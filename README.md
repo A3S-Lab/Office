@@ -139,8 +139,22 @@ The images below are committed visual-regression baselines from the real
 - **Framework choice** — React components, Vue 3 adapters, Custom Elements,
   and a framework-neutral Core API over the same engine.
 - **Responsive computation** — Lazy editor chunks, cancellable Workers,
+  streamed dense XLSX and eligible large-DOCX parsing in dedicated
+  transferable-input Workers, including a fail-closed plain-OOXML path that
+  reuses the package Worker's decompressed worksheet XML and aborts speculative
+  SheetJS parsing only after package authentication,
   CSS-compatible font-weight matching, Rust WebAssembly layout and
-  calculation, and PDFium rendering.
+  calculation, and PDFium rendering. Spreadsheet Canvas painting is bounded
+  to the visible row and column range. Eligible structurally plain large DOCX
+  files retain one complete canonical structured model while TipTap initially
+  materializes only two equal-position chunks and hydrates a selected chunk on
+  demand. The large-DOCX Worker streams 2,048-item batches and columnar table
+  metadata instead of cloning one complete object graph. Pooled semantic
+  previews, physical page sheets, and pagination widgets are windowed
+  independently. The checked 100,000-block fixtures keep
+  selection, editing, and export positions in the canonical model instead of
+  replacing them with a React-only virtual list; rich and collaborative models
+  deliberately retain the complete compatibility path.
 - **AI without UI scraping** — Typed agent ports and host-defined selection
   actions receive structured context and editing commands.
 - **Automation outside the browser** — The native Rust CLI, standard MCP
@@ -579,7 +593,9 @@ import {
 } from '@a3s-lab/office/core';
 
 const controller = new AbortController();
+const shell = createArtifact('blank-document');
 const imported = await importOfficeFile(file, {
+  artifactId: shell.id,
   signal: controller.signal,
   onProgress: ({ stage, progress }) => {
     console.info(stage, `${Math.round(progress * 100)}%`);
@@ -587,12 +603,35 @@ const imported = await importOfficeFile(file, {
 });
 const output = await createArtifactBlob(imported);
 const blankDeck = createArtifact('blank-presentation');
+
+const workbookShell = createArtifact('blank-spreadsheet');
+if (workbookShell.content.type !== 'spreadsheet') {
+  throw new Error('Expected a Spreadsheet shell.');
+}
+const workbook = await importOfficeFile(spreadsheetFile, {
+  artifactId: workbookShell.id,
+  spreadsheetSheetIds: workbookShell.content.sheets.flatMap((sheet) =>
+    sheet.id ? [sheet.id] : [],
+  ),
+});
 ```
 
 Import progress advances monotonically through `reading`, `parsing`,
 `analyzing`, and `finalizing`. Calling `controller.abort()` rejects with an
 `AbortError`; large reads and parser checkpoints yield so a host can keep the
-progress and Cancel controls responsive.
+progress and Cancel controls responsive. An optional host-reserved
+`artifactId` lets the UI mount an editor shell before parsing finishes and then
+apply the imported controlled value without remounting that surface. The
+Playground uses this boundary to overlap DOCX Worker parsing with editor
+initialization; source-backed export remains attached to the reserved ID. A
+Spreadsheet host can also reserve worksheet identities with
+`spreadsheetSheetIds`. Eligible structurally plain workbooks then replace the
+authenticated frozen matrix inside the mounted Fortune instance instead of
+cloning one million cells through a second mount. Sheet-count or identity
+changes, preview mode, charts, protection, merged or styled geometry, and other
+stateful workbook structures retain the complete remount path. The plain-OOXML
+Worker authenticates row and cell coordinates directly in its XML buffer, so a
+million-cell import does not allocate or regex-match a million address strings.
 
 Spreadsheet import and export preserve sparse worksheets up to the XLSX limit
 of 1,048,576 rows by 16,384 columns. The logical `data.length`, `row`, and

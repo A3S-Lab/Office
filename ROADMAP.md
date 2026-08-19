@@ -84,7 +84,7 @@ collaboration transport, and AI providers.
 | Compare/combine documents | **Gap** | No deterministic document diff/merge producing reviewable revisions | P1 |
 | Content controls and forms | **Partial**: eligible static text controls can be preserved/reconstructed | Data binding, repeating sections, form controls, placeholders, and active behavior are intentionally limited | P1/P2 |
 | Spelling, grammar, language, translation | **Partial**: browser spellcheck and host actions | No suite-grade proofing dictionaries, grammar engine, or bundled translation service | Host/provider-owned; P2 adapter |
-| Find, navigation, physical thumbnails, long-document review | **Supported** with bounded virtualization and keyboard navigation | Exact WPS outline modes and every navigation filter are not duplicated | Maintain |
+| Find, navigation, physical thumbnails, long-document review | **Supported** with transferable Worker import, bounded auxiliary-pane virtualization, model-level text/table-row NodeView windows for eligible structurally plain large DOCX files, and model-boundary keyboard navigation | Rich-feature giant DOCX fallback paths still need the same bounded body rendering and broader performance fixtures | P0 |
 | PDF output | **Partial**: live browser pages share editor pagination | Output is currently rasterized; searchable text, tagged output, and vector fidelity remain gaps | P0/P1 |
 | DOCX no-clobber round trip | **Partial but strong**: safe source-only parts and stable identities are preserved under bounded rules | Unsupported, relationship-bound, ambiguous, active, or changed structures may normalize and must stay diagnosed | P0 continuous work |
 
@@ -92,7 +92,7 @@ collaboration transport, and AI providers.
 
 | Capability | A3S Office status | Main gap or boundary | Priority |
 | --- | --- | --- | --- |
-| Cell editing, multiple sheets, selection, keyboard navigation, search, clipboard, format painter, undo/redo | **Supported**, including maximum-dimension XLSX sheets with sparse virtual editing | Continue large-workbook interoperability and formula-performance matrices | P0 |
+| Cell editing, multiple sheets, selection, keyboard navigation, search, clipboard, format painter, undo/redo | **Supported**, including maximum-dimension XLSX sheets with sparse virtual editing, viewport-bounded Canvas painting, streamed SheetJS Worker rows, an allocation-bounded transferable plain-OOXML cursor, and clone-free adoption of authenticated frozen matrices for eligible reserved-ID imports | Rich or structurally stateful imports still use the complete Fortune remount path; replace the remaining Fortune-owned redraw boundary with an A3S-owned virtual grid and continue large-workbook performance matrices | P0 |
 | Formula entry and dependency-aware recalculation | **Partial** | WPS/Excel function breadth, array/dynamic formulas, volatile/external semantics, and calculation parity are broader | P0 |
 | Calculation settings and cached results | **Supported** for explicit modes and bounded calculation metadata | Complex data tables and compatibility calculation paths need broader parity | P0 |
 | Cell formatting, number formats, alignment, wrapping, borders, merge/center | **Partial** | Advanced number formats, border cases, rich text, themes, and locale behavior can normalize | P0/P1 |

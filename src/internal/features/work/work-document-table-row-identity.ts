@@ -4,6 +4,10 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { type EditorState, Plugin, type Transaction } from '@tiptap/pm/state';
 import { Mapping } from '@tiptap/pm/transform';
 import {
+  DOCUMENT_INTEGRITY_TABLE_ROW_IDENTITY,
+  documentHasIntegrityFeature,
+} from './work-document-integrity-index';
+import {
   createDocumentParagraphIdentity,
   createDocumentParagraphIdentityRegistry,
   normalizeDocumentParagraphId,
@@ -141,11 +145,16 @@ function normalizeDocumentTableRowIdentities(
   oldState?: EditorState,
   transactions: readonly Transaction[] = [],
 ): Transaction | null {
+  if (
+    !documentHasIntegrityFeature(
+      state.doc,
+      DOCUMENT_INTEGRITY_TABLE_ROW_IDENTITY,
+    )
+  ) {
+    return null;
+  }
   const rows = documentTableRows(state.doc);
-  const identifiedRows = rows.filter(({ node }) =>
-    hasDocumentTableRowIdentityComponent(node),
-  );
-  if (!identifiedRows.length) return null;
+  if (!rows.length) return null;
   const retainedPositions = oldState
     ? retainedDocumentTableRowPositions(oldState, state, transactions)
     : new Set<number>();
@@ -154,8 +163,8 @@ function normalizeDocumentTableRowIdentities(
       ? editedDocumentTableRowPositions(oldState, state, transactions)
       : new Set<number>();
   const ordered = [
-    ...identifiedRows.filter((item) => retainedPositions.has(item.position)),
-    ...identifiedRows.filter((item) => !retainedPositions.has(item.position)),
+    ...rows.filter((item) => retainedPositions.has(item.position)),
+    ...rows.filter((item) => !retainedPositions.has(item.position)),
   ];
   const registry = createDocumentParagraphIdentityRegistry();
   const updates = new Map<number, WorkDocumentTableRowIdentity>();
@@ -317,7 +326,12 @@ function documentTableRows(
 ): DocumentTableRowAtPosition[] {
   const rows: DocumentTableRowAtPosition[] = [];
   document.descendants((node, position) => {
-    if (node.type.name === 'tableRow') rows.push({ node, position });
+    if (
+      node.type.name === 'tableRow' &&
+      hasDocumentTableRowIdentityComponent(node)
+    ) {
+      rows.push({ node, position });
+    }
   });
   return rows;
 }

@@ -125,6 +125,21 @@ describe('office core', () => {
     expect(sourceReads).toBe(1);
   });
 
+  test('keeps a host-reserved artifact identity and its source bytes', async () => {
+    const bytes = new Uint8Array([
+      0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x37, 0x0a,
+    ]);
+    const artifact = await importOfficeFile(
+      new File([bytes], 'reserved.pdf', { type: 'application/pdf' }),
+      { artifactId: 'artifact-reserved-import' },
+    );
+
+    expect(artifact.id).toBe('artifact-reserved-import');
+    expect(
+      new Uint8Array(await (await createArtifactBlob(artifact)).arrayBuffer()),
+    ).toEqual(bytes);
+  });
+
   test('imports browser documents into the versioned structured model', async () => {
     const artifact = await importOfficeFile(
       new File(['<h1>A3S Office</h1><p>Structured import.</p>'], 'brief.html', {

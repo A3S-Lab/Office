@@ -20,13 +20,22 @@ import type {
   WorkDocumentSelectionMenuIcon,
   WorkDocumentSelectionMenuItem,
 } from '../work-document-selection-menu';
+import { DOCUMENT_LAZY_POSITION_BOUNDARY } from '../work-document-lazy-model';
+export {
+  type DocumentTextStatistics,
+  documentTextStatistics,
+  documentWordCount,
+} from '../work-document-text-statistics';
 
 export function documentEditorSelectionText(
   editor: Pick<Editor, 'state'>,
 ): string {
   const { from, to, empty } = editor.state.selection;
   if (empty) return '';
-  return editor.state.doc.textBetween(from, to, '\n').trim();
+  return editor.state.doc
+    .textBetween(from, to, '\n')
+    .replaceAll(DOCUMENT_LAZY_POSITION_BOUNDARY, ' ')
+    .trim();
 }
 
 export function documentAgentMenuItems(
@@ -243,43 +252,6 @@ export function documentCurrentPage(editor: Editor): number {
     sectionIndex += 1;
   });
   return page;
-}
-
-export function documentWordCount(value: string): number {
-  return Array.from(
-    value.matchAll(
-      /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|[\p{L}\p{N}]+/gu,
-    ),
-  ).length;
-}
-
-export interface DocumentTextStatistics {
-  characterCountWithSpaces: number;
-  characterCountWithoutSpaces: number;
-  paragraphCount: number;
-  wordCount: number;
-}
-
-export function documentTextStatistics(
-  editor: Pick<Editor, 'getText' | 'state'>,
-): DocumentTextStatistics {
-  const text = editor.getText({ blockSeparator: '\n' });
-  const characters = Array.from(text).filter(
-    (character) => character !== '\n' && character !== '\r',
-  );
-  let paragraphCount = 0;
-  editor.state.doc.descendants((node) => {
-    if (node.isTextblock) paragraphCount += 1;
-  });
-
-  return {
-    characterCountWithSpaces: characters.length,
-    characterCountWithoutSpaces: characters.filter(
-      (character) => !/\s/u.test(character),
-    ).length,
-    paragraphCount,
-    wordCount: documentWordCount(text),
-  };
 }
 
 async function copyDocumentSelection(selection: string): Promise<void> {

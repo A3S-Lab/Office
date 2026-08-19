@@ -5,6 +5,10 @@ import {
   positionWorkLiveDocumentCapture,
   type WorkLiveDocumentCapturePage,
 } from './work-document-page-capture';
+import {
+  documentPageSurfaceGeometryForElement,
+  type RegisteredDocumentPageSurfaceFrame,
+} from './work-document-page-surface-registry';
 
 type PdfPageSize = WorkSpreadsheetPaperSize;
 
@@ -225,29 +229,46 @@ export function workLiveDocumentPdfSurfaceForExport(
     return null;
   }
 
+  const stack = element.querySelector<HTMLElement>('.work-document-page-stack');
   const sheets = Array.from(
-    element.querySelectorAll<HTMLElement>(
-      '.work-document-page-stack > [data-work-document-page-sheet]',
-    ),
+    stack?.querySelectorAll<HTMLElement>(
+      ':scope > [data-work-document-page-sheet]',
+    ) ?? [],
   );
-  if (sheets.length > 0 && sheets.length !== pageCount) return null;
-  const pages = sheets.length
-    ? sheets.map((sheet, pageIndex) =>
-        liveDocumentPdfPageFromSheet(sheet, pageIndex),
-      )
-    : Array.from({ length: pageCount }, (_, pageIndex) => ({
-        height: pageHeight,
-        left: 0,
-        orientation:
-          element.dataset.pdfOrientation === 'landscape'
-            ? ('landscape' as const)
-            : ('portrait' as const),
-        pageHeightPoints,
-        pageSize: pdfPageSize(element.dataset.pdfPageSize),
-        pageWidthPoints,
-        top: pageIndex * (pageHeight + pageGap),
-        width: pageWidth,
-      }));
+  const registeredFrames = stack
+    ? documentPageSurfaceGeometryForElement(stack)
+    : null;
+  const completeRegisteredGeometry =
+    registeredFrames?.length === pageCount ? registeredFrames : null;
+  if (
+    sheets.length > 0 &&
+    sheets.length !== pageCount &&
+    !completeRegisteredGeometry
+  ) {
+    return null;
+  }
+  const pages =
+    sheets.length === pageCount
+      ? sheets.map((sheet, pageIndex) =>
+          liveDocumentPdfPageFromSheet(sheet, pageIndex),
+        )
+      : completeRegisteredGeometry
+        ? completeRegisteredGeometry.map((frame, pageIndex) =>
+            liveDocumentPdfPageFromRegisteredFrame(frame, pageIndex),
+          )
+        : Array.from({ length: pageCount }, (_, pageIndex) => ({
+            height: pageHeight,
+            left: 0,
+            orientation:
+              element.dataset.pdfOrientation === 'landscape'
+                ? ('landscape' as const)
+                : ('portrait' as const),
+            pageHeightPoints,
+            pageSize: pdfPageSize(element.dataset.pdfPageSize),
+            pageWidthPoints,
+            top: pageIndex * (pageHeight + pageGap),
+            width: pageWidth,
+          }));
   if (pages.some((page) => page === null)) return null;
   const resolvedPages = pages as WorkLiveDocumentPdfPage[];
   const firstPage = resolvedPages[0];
@@ -312,6 +333,39 @@ function liveDocumentPdfPageFromSheet(
     pageWidthPoints,
     top,
     width,
+  };
+}
+
+function liveDocumentPdfPageFromRegisteredFrame(
+  frame: RegisteredDocumentPageSurfaceFrame,
+  pageIndex: number,
+): WorkLiveDocumentPdfPage | null {
+  if (
+    frame.pageIndex !== pageIndex ||
+    !Number.isFinite(frame.height) ||
+    frame.height <= 0 ||
+    !Number.isFinite(frame.left) ||
+    frame.left < 0 ||
+    !Number.isFinite(frame.pageHeightPoints) ||
+    frame.pageHeightPoints <= 0 ||
+    !Number.isFinite(frame.pageWidthPoints) ||
+    frame.pageWidthPoints <= 0 ||
+    !Number.isFinite(frame.top) ||
+    frame.top < 0 ||
+    !Number.isFinite(frame.width) ||
+    frame.width <= 0
+  ) {
+    return null;
+  }
+  return {
+    height: frame.height,
+    left: frame.left,
+    orientation: frame.orientation,
+    pageHeightPoints: frame.pageHeightPoints,
+    pageSize: frame.pageSize,
+    pageWidthPoints: frame.pageWidthPoints,
+    top: frame.top,
+    width: frame.width,
   };
 }
 

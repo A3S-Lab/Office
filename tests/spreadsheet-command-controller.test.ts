@@ -538,6 +538,34 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('uses precomputed grid dimensions for structure capabilities', () => {
+    const fixture = commandFixture();
+    const data = new Proxy([[{ v: 'Anchor' }]], {
+      ownKeys: () => {
+        throw new Error('Structure capability rescanned the worksheet.');
+      },
+    });
+    fixture.context.content = {
+      ...fixture.context.content,
+      sheets: [
+        {
+          ...fixture.context.content.sheets[0],
+          data,
+          row: 40,
+          column: 12,
+        },
+      ],
+    };
+    fixture.context.targetSheetGridSize = {
+      rowCount: 40,
+      columnCount: 12,
+    };
+    const can = spreadsheetEditor(fixture.context).can();
+
+    expect(can.insertSelectedStructure('column', 'before')).toBe(true);
+    expect(can.deleteSelectedStructure('column')).toBe(true);
+  });
+
   test('sorts the selected rows without dropping cell formatting', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [{ row: [0, 2], column: [0, 1] }];

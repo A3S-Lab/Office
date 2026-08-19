@@ -258,9 +258,26 @@
 .work-document-page .tiptap > .work-document-section {
   position: relative;
   min-height: 120px;
-  column-count: var(--work-document-column-count, 1);
   column-gap: var(--work-document-column-gap, 12mm);
   column-rule: var(--work-document-column-rule, none);
+}
+
+.work-document-page
+  .tiptap
+  > .work-document-section:not([data-section-column-count="1"]) {
+  column-count: var(--work-document-column-count);
+}
+
+.work-document-page .tiptap .work-document-chunk {
+  display: flow-root;
+  width: 100%;
+}
+
+.work-document-page .tiptap .work-document-chunk.placeholder {
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
 }
 
 .work-document-page .tiptap > .work-document-section:first-child {
@@ -395,6 +412,17 @@
 .work-document-preview-page table[data-office-table-layout="contents"],
 .work-document-print-body table[data-office-table-layout="contents"] {
   table-layout: auto;
+}
+
+.work-document-preview-page
+  table[data-office-table-layout="autofit"][data-office-table-width-type="auto"]
+  col,
+.work-document-print-body
+  table[data-office-table-layout="autofit"][data-office-table-width-type="auto"]
+  col,
+.work-document-preview-page table[data-office-table-layout="contents"] col,
+.work-document-print-body table[data-office-table-layout="contents"] col {
+  width: auto !important;
 }
 
 .work-document-preview-page table[data-office-table-layout="fixed"],

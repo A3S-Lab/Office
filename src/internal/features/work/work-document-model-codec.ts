@@ -12,6 +12,10 @@ import {
   documentModelForContent,
 } from './work-document-model';
 import { syncDocumentContentFromHtml } from './work-document-section';
+import {
+  materializeWindowedDocumentModel,
+  windowDocumentModel,
+} from './work-document-windowing';
 import type { WorkDocumentContent, WorkDocumentNode } from './work-types';
 
 let schema: ReturnType<typeof getSchema> | null = null;
@@ -23,7 +27,10 @@ export function workDocumentSchema(): ReturnType<typeof getSchema> {
 }
 
 export function serializeWorkDocumentNode(root: WorkDocumentNode): string {
-  return generateHTML(root as unknown as JSONContent, documentExtensions());
+  return generateHTML(
+    materializeWindowedDocumentModel(root) as unknown as JSONContent,
+    documentExtensions(),
+  );
 }
 
 export function createWorkDocumentModelFromContent(
@@ -35,9 +42,11 @@ export function createWorkDocumentModelFromContent(
     synchronized.html,
     'text/html',
   );
-  const root = ProseMirrorDOMParser.fromSchema(workDocumentSchema())
-    .parse(document.body)
-    .toJSON() as unknown as WorkDocumentNode;
+  const root = windowDocumentModel(
+    ProseMirrorDOMParser.fromSchema(workDocumentSchema())
+      .parse(document.body)
+      .toJSON() as unknown as WorkDocumentNode,
+  );
   return {
     ...synchronized,
     model: createWorkDocumentModel(synchronized.html, root, previous),

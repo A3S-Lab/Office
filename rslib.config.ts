@@ -87,6 +87,12 @@ export default defineConfig({
         entry: {
           'office-kernel.worker':
             './src/internal/kernel/office-kernel.worker.ts',
+          'work-document-import.worker':
+            './src/internal/features/work/work-document-import.worker.ts',
+          'work-spreadsheet-import.worker':
+            './src/internal/features/work/work-spreadsheet-import.worker.ts',
+          'work-spreadsheet-package-scan.worker':
+            './src/internal/features/work/work-spreadsheet-package-scan.worker.ts',
         },
       },
     },

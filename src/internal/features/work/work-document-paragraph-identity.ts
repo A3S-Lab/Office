@@ -1,8 +1,12 @@
 import { Extension } from '@tiptap/core';
+import { isHistoryTransaction } from '@tiptap/pm/history';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { type EditorState, Plugin, type Transaction } from '@tiptap/pm/state';
 import { Mapping } from '@tiptap/pm/transform';
-import { isHistoryTransaction } from '@tiptap/pm/history';
+import {
+  DOCUMENT_INTEGRITY_PARAGRAPH_IDENTITY,
+  documentHasIntegrityFeature,
+} from './work-document-integrity-index';
 
 export interface WorkDocumentParagraphIdentity {
   paragraphId: string;
@@ -179,11 +183,16 @@ function normalizeDocumentParagraphIdentities(
   oldState?: EditorState,
   transactions: readonly Transaction[] = [],
 ): Transaction | null {
+  if (
+    !documentHasIntegrityFeature(
+      state.doc,
+      DOCUMENT_INTEGRITY_PARAGRAPH_IDENTITY,
+    )
+  ) {
+    return null;
+  }
   const paragraphs = documentParagraphs(state.doc, trackedTypes);
-  const identifiedParagraphs = paragraphs.filter(({ node }) =>
-    hasDocumentParagraphIdentityComponent(node),
-  );
-  if (!identifiedParagraphs.length) return null;
+  if (!paragraphs.length) return null;
   const retainedPositions = oldState
     ? retainedDocumentParagraphPositions(
         oldState,
@@ -202,12 +211,8 @@ function normalizeDocumentParagraphIdentities(
         )
       : new Set<number>();
   const ordered = [
-    ...identifiedParagraphs.filter((item) =>
-      retainedPositions.has(item.position),
-    ),
-    ...identifiedParagraphs.filter(
-      (item) => !retainedPositions.has(item.position),
-    ),
+    ...paragraphs.filter((item) => retainedPositions.has(item.position)),
+    ...paragraphs.filter((item) => !retainedPositions.has(item.position)),
   ];
   const registry = createDocumentParagraphIdentityRegistry();
   const updates = new Map<number, WorkDocumentParagraphIdentity>();
@@ -350,7 +355,12 @@ function documentParagraphs(
 ): DocumentParagraphAtPosition[] {
   const paragraphs: DocumentParagraphAtPosition[] = [];
   document.descendants((node, position) => {
-    if (trackedTypes.has(node.type.name)) paragraphs.push({ node, position });
+    if (
+      trackedTypes.has(node.type.name) &&
+      hasDocumentParagraphIdentityComponent(node)
+    ) {
+      paragraphs.push({ node, position });
+    }
   });
   return paragraphs;
 }

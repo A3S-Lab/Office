@@ -1,18 +1,17 @@
 import type { Selection } from '@fortune-sheet/core';
-import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react';
+import { type RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
 } from '../work-types';
+import {
+  spreadsheetAutoFilterHeaderColumn,
+  toggleSpreadsheetAutoFilter,
+} from './spreadsheet-auto-filter';
 import type {
   SpreadsheetAutoFilterCommandPort,
   SpreadsheetWorkbookCommandPort,
 } from './spreadsheet-command-controller';
-import {
-  spreadsheetAutoFilterHeaderColumn,
-  spreadsheetAutoFilterRange,
-  toggleSpreadsheetAutoFilter,
-} from './spreadsheet-auto-filter';
 
 export interface UseSpreadsheetAutoFilterOptions {
   canvasRef: RefObject<HTMLElement | null>;
@@ -60,11 +59,7 @@ export function useSpreadsheetAutoFilter({
 
   const sheet = content.sheets.find((candidate) => candidate.id === sheetId);
   const active = Boolean(sheet?.filter_select);
-  const canToggle = Boolean(
-    editable &&
-      sheet &&
-      (active || spreadsheetAutoFilterRange(sheet, selection)),
-  );
+  const canToggle = Boolean(editable && sheet);
   const canOpenMenu = Boolean(editable && sheet?.filter_select);
 
   const toggle = useCallback((): boolean => {

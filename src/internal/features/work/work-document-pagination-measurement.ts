@@ -6,6 +6,8 @@ import type {
   OfficeKernelTextLayoutParagraphResult,
 } from '../../kernel/office-kernel-protocol';
 import { millimetersToPixels } from './work-document-layout';
+import { documentLazyChunkContentForEditor } from './work-document-chunk-node';
+import { estimateLazyDocumentLayoutBlocks } from './work-document-lazy-pagination-measurement';
 import { resolveDocumentPageMargins } from './work-document-page-margins';
 import { resolveDocumentPageSize } from './work-document-page-size';
 import { normalizeDocumentImageLayout } from './work-document-image-layout';
@@ -19,6 +21,7 @@ import {
   isDocumentListNode,
   measuredDocumentBlock,
   outerHeight,
+  reusableDocumentChunkLayoutBlocks,
   reusableDocumentLayoutBlocks,
   shouldKeepDocumentBlockTogether,
   verticalBlockEnd,
@@ -43,6 +46,13 @@ export interface IncrementalDocumentLayoutMeasurementOptions {
 
 const DOCUMENT_LAYOUT_MEASUREMENT_SLICE_MS = 32;
 
+interface DocumentMeasurementCounts {
+  measured: number;
+  prefixOpen: boolean;
+  reused: number;
+  reusedPrefix: number;
+}
+
 export function measureDocumentLayoutBlocks(
   editor: Editor,
   previous: DocumentPaginationSnapshot | null = null,
@@ -55,7 +65,12 @@ export function measureDocumentLayoutBlocks(
 ): DocumentPaginationSnapshot {
   const blocks: MeasuredDocumentLayoutBlock[] = [];
   const pageStyleByMetrics = new Map<string, OfficeKernelPageStyle>();
-  const counts = { measured: 0, reused: 0 };
+  const counts: DocumentMeasurementCounts = {
+    measured: 0,
+    prefixOpen: true,
+    reused: 0,
+    reusedPrefix: 0,
+  };
   let unsupportedLayout = false;
   editor.state.doc.forEach((section, sectionPosition, sectionIndex) => {
     if (section.type.name !== 'documentSection') return;
@@ -96,6 +111,7 @@ export function measureDocumentLayoutBlocks(
     pageStyles: [...pageStyleByMetrics.values()],
     measuredBlockCount: counts.measured,
     reusedBlockCount: counts.reused,
+    reusedPrefixBlockCount: counts.reusedPrefix,
     unsupportedLayout,
   };
 }
@@ -119,7 +135,12 @@ export async function measureDocumentLayoutBlocksIncrementally(
 ): Promise<DocumentPaginationSnapshot> {
   const blocks: MeasuredDocumentLayoutBlock[] = [];
   const pageStyleByMetrics = new Map<string, OfficeKernelPageStyle>();
-  const counts = { measured: 0, reused: 0 };
+  const counts: DocumentMeasurementCounts = {
+    measured: 0,
+    prefixOpen: true,
+    reused: 0,
+    reusedPrefix: 0,
+  };
   const checkpoint =
     options.checkpoint ?? createDocumentLayoutMeasurementCheckpoint();
   throwIfDocumentMeasurementAborted(options.signal);
@@ -173,6 +194,7 @@ export async function measureDocumentLayoutBlocksIncrementally(
     pageStyles: [...pageStyleByMetrics.values()],
     measuredBlockCount: counts.measured,
     reusedBlockCount: counts.reused,
+    reusedPrefixBlockCount: counts.reusedPrefix,
     unsupportedLayout,
   };
 }
@@ -228,7 +250,7 @@ function measureSectionBlocks(
   dirtyFrom: number,
   textLayouts: ReadonlyMap<string, OfficeKernelTextLayoutParagraphResult>,
   maximumFragmentedTableRowHeight: number,
-  counts: { measured: number; reused: number },
+  counts: DocumentMeasurementCounts,
   result: MeasuredDocumentLayoutBlock[],
 ): void {
   const sectionBlocks: MeasuredDocumentLayoutBlock[] = [];
@@ -270,7 +292,7 @@ async function measureSectionBlocksIncrementally(
   dirtyFrom: number,
   textLayouts: ReadonlyMap<string, OfficeKernelTextLayoutParagraphResult>,
   maximumFragmentedTableRowHeight: number,
-  counts: { measured: number; reused: number },
+  counts: DocumentMeasurementCounts,
   result: MeasuredDocumentLayoutBlock[],
   checkpoint: (signal?: AbortSignal) => Promise<void>,
   signal?: AbortSignal,
@@ -318,13 +340,37 @@ function measureSectionBlock(
   dirtyFrom: number,
   textLayouts: ReadonlyMap<string, OfficeKernelTextLayoutParagraphResult>,
   maximumFragmentedTableRowHeight: number,
-  counts: { measured: number; reused: number },
+  counts: DocumentMeasurementCounts,
   sectionBlocks: MeasuredDocumentLayoutBlock[],
 ): void {
   const position = sectionPosition + offset + 1;
   const element = elementForNode(editor, position);
   if (!element) return;
   const id = documentBlockId(sectionPosition, index, position);
+  if (node.type.name === 'documentChunk') {
+    const reused = reusableDocumentChunkLayoutBlocks(
+      previous,
+      element,
+      position,
+      position + node.nodeSize,
+      dirtyFrom,
+    );
+    if (reused.length) {
+      recordReusedDocumentBlocks(counts, reused.length);
+      sectionBlocks.push(...reused);
+      return;
+    }
+    const estimated = estimatedDocumentChunkBlocks(
+      editor,
+      node,
+      element,
+      id,
+      position,
+    );
+    recordMeasuredDocumentBlocks(counts, estimated.length);
+    sectionBlocks.push(...estimated);
+    return;
+  }
   const paragraphPagination = documentNodeParagraphPagination(node);
   if (isDocumentListNode(node)) {
     const reused = reusableDocumentListLayoutBlocks(
@@ -334,7 +380,7 @@ function measureSectionBlock(
       dirtyFrom,
     );
     if (reused.length) {
-      counts.reused += reused.length;
+      recordReusedDocumentBlocks(counts, reused.length);
       sectionBlocks.push(...reused);
       return;
     }
@@ -348,7 +394,7 @@ function measureSectionBlock(
       maximumFragmentedTableRowHeight,
     );
     if (listBlocks.length) {
-      counts.measured += listBlocks.length;
+      recordMeasuredDocumentBlocks(counts, listBlocks.length);
       sectionBlocks.push(...listBlocks);
       return;
     }
@@ -361,7 +407,7 @@ function measureSectionBlock(
     dirtyFrom,
   );
   if (reused.length) {
-    counts.reused += reused.length;
+    recordReusedDocumentBlocks(counts, reused.length);
     sectionBlocks.push(...reused);
     return;
   }
@@ -375,7 +421,7 @@ function measureSectionBlock(
       maximumFragmentedTableRowHeight,
     );
     if (tableRows.length) {
-      counts.measured += tableRows.length;
+      recordMeasuredDocumentBlocks(counts, tableRows.length);
       sectionBlocks.push(...tableRows);
       return;
     }
@@ -391,11 +437,11 @@ function measureSectionBlock(
     textLayouts.get(id),
   );
   if (lineFragments.length > 1) {
-    counts.measured += lineFragments.length;
+    recordMeasuredDocumentBlocks(counts, lineFragments.length);
     sectionBlocks.push(...lineFragments);
     return;
   }
-  counts.measured += 1;
+  recordMeasuredDocumentBlocks(counts, 1);
   sectionBlocks.push(
     measuredDocumentBlock({
       block: {
@@ -413,6 +459,180 @@ function measureSectionBlock(
       to: position + node.nodeSize,
     }),
   );
+}
+
+function estimatedDocumentChunkBlocks(
+  editor: Editor,
+  chunk: ProseMirrorNode,
+  element: HTMLElement,
+  chunkId: string,
+  chunkPosition: number,
+): MeasuredDocumentLayoutBlock[] {
+  const blocks: MeasuredDocumentLayoutBlock[] = [];
+  chunk.forEach((node, offset, index) => {
+    const position = chunkPosition + offset + 1;
+    const id = `${chunkId}-child-${index}-${position}`;
+    if (node.type.name === 'documentChunk') {
+      blocks.push(
+        ...estimatedDocumentChunkBlocks(editor, node, element, id, position),
+      );
+      return;
+    }
+    if (node.type.name === 'documentLazyBlock') {
+      const sourceId = typeof chunk.attrs.id === 'string' ? chunk.attrs.id : '';
+      const payload = documentLazyChunkContentForEditor(editor, sourceId);
+      if (payload?.length) {
+        blocks.push(
+          ...estimateLazyDocumentLayoutBlocks(
+            payload,
+            element,
+            chunkId,
+            position,
+          ),
+        );
+      }
+      return;
+    }
+    if (node.type.name === 'table') {
+      blocks.push(...estimatedDocumentTableRows(node, element, id, position));
+      return;
+    }
+    const pagination = documentNodeParagraphPagination(node);
+    const block = measuredDocumentBlock({
+      block: {
+        id,
+        height: estimatedProseMirrorNodeHeight(node),
+        breakBefore: pagination.pageBreakBefore,
+        breakAfter: node.type.name === 'pageBreak',
+        keepTogether:
+          pagination.keepLines || shouldKeepDocumentBlockTogether(node),
+        keepWithNext: pagination.keepWithNext,
+      },
+      element,
+      from: position,
+      to: position + node.nodeSize,
+    });
+    block.observeResize = false;
+    blocks.push(block);
+  });
+  return blocks;
+}
+
+function estimatedDocumentTableRows(
+  table: ProseMirrorNode,
+  element: HTMLElement,
+  blockId: string,
+  tablePosition: number,
+): MeasuredDocumentLayoutBlock[] {
+  const rowCount = table.childCount;
+  if (!rowCount) return [];
+  const virtualTableId =
+    typeof table.attrs.virtualTableId === 'string' && table.attrs.virtualTableId
+      ? table.attrs.virtualTableId
+      : blockId;
+  const sliceIndex = Number.isSafeInteger(table.attrs.virtualTableIndex)
+    ? Number(table.attrs.virtualTableIndex)
+    : 0;
+  const flowId = `${virtualTableId}-slice-${sliceIndex}`;
+  const columnCount = estimatedDocumentTableColumnCount(table);
+  const tableBreak = {
+    tableId: flowId,
+    columnCount,
+    colgroupHtml: '',
+    repeatedHeaderRowsHtml: [],
+    repeatedHeaderOverlayHtml: '',
+    repeatHeaderHeight: 0,
+    tableWidth: 0,
+    leadingCellOffsetLeft: 0,
+  };
+  const result: MeasuredDocumentLayoutBlock[] = [];
+  table.forEach((row, offset, rowIndex) => {
+    const position = tablePosition + offset + 1;
+    result.push({
+      block: {
+        id: `${flowId}-row-${rowIndex}`,
+        height: estimatedProseMirrorTableRowHeight(row),
+        flowId,
+        flowIndex: rowIndex,
+        flowCount: rowCount,
+        minimumFragmentsPerPage: 1,
+      },
+      element,
+      from: position,
+      to: position + row.nodeSize,
+      inlineOffsetLeft: 0,
+      inlineOffsetRight: 0,
+      observeResize: false,
+      selectionRanges: estimatedDocumentTableRowSelectionRanges(row, position),
+      tableBreak,
+    });
+  });
+  return result;
+}
+
+function estimatedDocumentTableRowSelectionRanges(
+  row: ProseMirrorNode,
+  rowPosition: number,
+): Array<{ from: number; to: number }> {
+  const ranges: Array<{ from: number; to: number }> = [];
+  row.forEach((cell, offset) => {
+    const cellPosition = rowPosition + offset + 1;
+    ranges.push({
+      from: cellPosition + 1,
+      to: Math.max(cellPosition + 1, cellPosition + cell.nodeSize - 1),
+    });
+  });
+  return ranges;
+}
+
+function estimatedDocumentTableColumnCount(table: ProseMirrorNode): number {
+  let maximum = 1;
+  table.forEach((row) => {
+    let columns = 0;
+    row.forEach((cell) => {
+      const colspan = Number(cell.attrs.colspan);
+      columns += Number.isSafeInteger(colspan) && colspan > 0 ? colspan : 1;
+    });
+    maximum = Math.max(maximum, columns);
+  });
+  return maximum;
+}
+
+function estimatedProseMirrorTableRowHeight(row: ProseMirrorNode): number {
+  const explicit = Number(row.attrs.rowHeight);
+  let maximumTextLength = 0;
+  row.forEach((cell) => {
+    maximumTextLength = Math.max(maximumTextLength, cell.textContent.length);
+  });
+  const lines = Math.max(1, Math.ceil(maximumTextLength / 88));
+  return Math.max(
+    22,
+    Number.isFinite(explicit) && explicit > 0 ? explicit : 0,
+    lines * 21 + 1,
+  );
+}
+
+function estimatedProseMirrorNodeHeight(node: ProseMirrorNode): number {
+  const lines = Math.max(1, Math.ceil(node.textContent.length / 88));
+  if (node.type.name === 'heading') {
+    const level = Number(node.attrs.level);
+    const lineHeight = level <= 1 ? 32 : level === 2 ? 28 : 25;
+    return lines * lineHeight + 18;
+  }
+  if (node.type.name === 'image') {
+    const height = Number(node.attrs.height);
+    return Math.max(
+      21,
+      (Number.isFinite(height) && height > 0 ? height : 120) + 36,
+    );
+  }
+  if (node.type.name === 'horizontalRule' || node.type.name === 'pageBreak') {
+    return 38;
+  }
+  if (node.type.name === 'bulletList' || node.type.name === 'orderedList') {
+    return Math.max(29, node.childCount * 29);
+  }
+  return lines * 21 + 8;
 }
 
 function finishMeasuredSection(
@@ -448,6 +668,24 @@ function finishMeasuredSection(
     block.section = sectionMetadata;
   }
   result.push(...sectionBlocks);
+}
+
+function recordReusedDocumentBlocks(
+  counts: DocumentMeasurementCounts,
+  count: number,
+): void {
+  if (count <= 0) return;
+  counts.reused += count;
+  if (counts.prefixOpen) counts.reusedPrefix += count;
+}
+
+function recordMeasuredDocumentBlocks(
+  counts: DocumentMeasurementCounts,
+  count: number,
+): void {
+  if (count <= 0) return;
+  counts.measured += count;
+  counts.prefixOpen = false;
 }
 
 function createDocumentLayoutMeasurementCheckpoint(): (

@@ -13,6 +13,10 @@ export interface WorkFileImportProgress {
 }
 
 export interface WorkFileImportOptions {
+  /** Reuses a host-reserved identity so an editor shell can mount in parallel. */
+  artifactId?: string;
+  /** Reuses host-reserved worksheet identities during a spreadsheet import. */
+  spreadsheetSheetIds?: readonly string[];
   signal?: AbortSignal;
   onProgress?: (progress: WorkFileImportProgress) => void;
 }
@@ -20,6 +24,7 @@ export interface WorkFileImportOptions {
 export interface WorkFileImportContext {
   bytes: ArrayBuffer;
   controller: WorkFileImportController;
+  spreadsheetSheetIds?: readonly string[];
 }
 
 const stageRanges: Record<WorkFileImportStage, readonly [number, number]> = {
@@ -78,7 +83,16 @@ export class WorkFileImportController {
 
   async yieldToMainThread(): Promise<void> {
     this.throwIfAborted();
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    const taskScheduler = (
+      globalThis as typeof globalThis & {
+        scheduler?: { yield?: () => Promise<void> };
+      }
+    ).scheduler;
+    if (typeof taskScheduler?.yield === 'function') {
+      await taskScheduler.yield();
+    } else {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
     this.throwIfAborted();
   }
 

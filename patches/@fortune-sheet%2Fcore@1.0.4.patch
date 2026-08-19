@@ -1,8 +1,87 @@
+diff --git a/node_modules/@fortune-sheet/core/.bun-tag-2046ba19efa7aaa6 b/.bun-tag-2046ba19efa7aaa6
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/@fortune-sheet/core/.bun-tag-d2c3bca883b11a53 b/.bun-tag-d2c3bca883b11a53
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/dist/index.esm.js b/dist/index.esm.js
-index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474a33ecc02 100644
+index 5c9820b1a261305d500e69eeaf350821872beaf4..bea2a75939022dc658a07fb7c7843221b10b9b0f 100644
 --- a/dist/index.esm.js
 +++ b/dist/index.esm.js
-@@ -58277,6 +58277,19 @@ function functionCopy(ctx, txt, mode, step) {
+@@ -131,6 +131,7 @@ function _unsupportedIterableToArray(r, a) {
+   }
+ }
+ 
++var enFunctionlist;
+ var en = {
+   generalDialog: {
+     partiallyError: "Cannot perform this operation on partially merged cells",
+@@ -139,7 +140,8 @@ var en = {
+     noSeletionError: "The selection operation has not been performed yet",
+     cannotSelectMultiple: "Cannot select multiple selections"
+   },
+-  functionlist: [{
++  get functionlist() {
++    if (enFunctionlist === undefined) enFunctionlist = [{
+     n: "SUMIF",
+     t: 0,
+     d: "Returns a conditional sum across a range.",
+@@ -8979,7 +8981,9 @@ var en = {
+       repeat: "n",
+       type: "string"
+     }]
+-  }],
++    }];
++    return enFunctionlist;
++  },
+   toolbar: {
+     toolbar: "Toolbar",
+     undo: "Undo",
+@@ -10718,6 +10722,7 @@ var en = {
+   }
+ };
+ 
++var zhFunctionlist;
+ var zh = {
+   generalDialog: {
+     partiallyError: "无法对部分合并单元格执行此操作",
+@@ -10726,7 +10731,8 @@ var zh = {
+     noSeletionError: "还未进行选区操作",
+     cannotSelectMultiple: "无法选择多选区"
+   },
+-  functionlist: [{
++  get functionlist() {
++    if (zhFunctionlist === undefined) zhFunctionlist = [{
+     n: "SUMIF",
+     t: 0,
+     d: "对范围中符合指定条件的值求和。",
+@@ -19552,7 +19558,9 @@ var zh = {
+       repeat: "n",
+       type: "rangeall"
+     }]
+-  }],
++    }];
++    return zhFunctionlist;
++  },
+   toolbar: {
+     toolbar: "工具栏",
+     undo: "撤销",
+@@ -52070,10 +52078,10 @@ var zh_tw = {
+ var localeObj = {
+   en: en,
+   zh: zh,
+-  es: es,
+-  "zh-TW": zh_tw,
+-  hi: hi,
+-  ru: ru
++  es: en,
++  "zh-TW": zh,
++  hi: en,
++  ru: en
+ };
+ function locale(ctx) {
+   var _ctx$lang;
+@@ -58277,6 +58285,19 @@ function functionCopy(ctx, txt, mode, step) {
    return function_str;
  }
  
@@ -22,7 +101,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
  function checkCellIsLocked(ctx, r, c, sheetId) {
    var _data$r, _sheetFile$config;
    var sheetFile = getSheetByIndex(ctx, sheetId);
-@@ -58289,6 +58302,8 @@ function checkCellIsLocked(ctx, r, c, sheetId) {
+@@ -58289,6 +58310,8 @@ function checkCellIsLocked(ctx, r, c, sheetId) {
      return !!(cell === null || cell === void 0 ? void 0 : cell.lo);
    }
    var aut = (_sheetFile$config = sheetFile.config) === null || _sheetFile$config === void 0 ? void 0 : _sheetFile$config.authority;
@@ -31,7 +110,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    var sheetInEditable = _.isNil(aut) || _.isNil(aut.sheet) || aut.sheet === 0;
    return !sheetInEditable;
  }
-@@ -58305,9 +58320,7 @@ function checkProtectionSelectLockedOrUnLockedCells(ctx, r, c, sheetId) {
+@@ -58305,9 +58328,7 @@ function checkProtectionSelectLockedOrUnLockedCells(ctx, r, c, sheetId) {
    if (_.isNil(aut) || _.isNil(aut.sheet) || aut.sheet === 0) {
      return true;
    }
@@ -42,7 +121,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
      if (aut.selectunLockedCells === 1 || _.isNil(aut.selectunLockedCells)) {
        return true;
      }
-@@ -58547,10 +58560,230 @@ function getColorGradation(color1, color2, value1, value2, value) {
+@@ -58547,10 +58568,230 @@ function getColorGradation(color1, color2, value1, value2, value) {
    var b = Math.round(b1 - (b1 - b2) / v12 * v10);
    return "rgb(".concat(r, ", ").concat(g, ", ").concat(b, ")");
  }
@@ -273,7 +352,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    var computeMap = {};
    if (ruleArr.length > 0) {
      var _loop = function _loop() {
-@@ -59123,8 +59356,19 @@ function getComputeMap(ctx) {
+@@ -59123,8 +59364,19 @@ function getComputeMap(ctx) {
    return computeMap;
  }
  function checkCF(r, c, computeMap) {
@@ -295,7 +374,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    }
    return null;
  }
-@@ -59822,11 +60066,40 @@ function validateCellData(ctx, item, cellValue) {
+@@ -59822,11 +60074,40 @@ function validateCellData(ctx, item, cellValue) {
    }
    return true;
  }
@@ -339,7 +418,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    item.checked = !item.checked;
    var value = item.value2;
    if (item.checked) {
-@@ -60149,10 +60422,7 @@ function cellFocus(ctx, r, c, clickMode) {
+@@ -60149,10 +60430,7 @@ function cellFocus(ctx, r, c, clickMode) {
    if (!showHintBox || !dropDownBtn) return;
    showHintBox.style.display = "none";
    dropDownBtn.style.display = "none";
@@ -350,7 +429,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    var row = ctx.visibledatarow[r];
    var row_pre = r === 0 ? 0 : ctx.visibledatarow[r - 1];
    var col = ctx.visibledatacolumn[c];
-@@ -60168,7 +60438,7 @@ function cellFocus(ctx, r, c, clickMode) {
+@@ -60168,7 +60446,7 @@ function cellFocus(ctx, r, c, clickMode) {
      col_pre = _margeSet$column[0];
      col = _margeSet$column[1];
    }
@@ -359,7 +438,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    if (!item) return;
    if (clickMode && item.type === "checkbox") {
      checkboxChange(ctx, r, c);
-@@ -60238,8 +60508,8 @@ function setDropcownValue(ctx, value, arr) {
+@@ -60238,8 +60516,8 @@ function setDropcownValue(ctx, value, arr) {
    var rowIndex = last.row_focus;
    var colIndex = last.column_focus;
    if (rowIndex == null || colIndex == null) return;
@@ -370,7 +449,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    if (item.type2 === "true") {
      value = item.value1.split(",").filter(function (v) {
        return arr.indexOf(v) >= 0;
-@@ -60389,7 +60659,6 @@ function normalizedCellAttr(cell, attr) {
+@@ -60389,7 +60667,6 @@ function normalizedCellAttr(cell, attr) {
  }
  function normalizedAttr(data, r, c, attr) {
    if (!data || !data[r]) {
@@ -378,7 +457,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
      return null;
    }
    var cell = data[r][c];
-@@ -60402,7 +60671,7 @@ function getCellValue(r, c, data, attr) {
+@@ -60402,7 +60679,7 @@ function getCellValue(r, c, data, attr) {
    }
    var d_value;
    if (!_.isNil(r) && !_.isNil(c)) {
@@ -387,7 +466,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    } else if (!_.isNil(r)) {
      d_value = data[r];
    } else if (!_.isNil(c)) {
-@@ -60438,6 +60707,11 @@ function setCellValue(ctx, r, c, d, v) {
+@@ -60438,6 +60715,11 @@ function setCellValue(ctx, r, c, d, v) {
      d = getFlowdata(ctx);
    }
    if (!d) return;
@@ -399,7 +478,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    var cell = d[r][c];
    var vupdate;
    if (_.isPlainObject(v)) {
-@@ -60641,7 +60915,6 @@ function getRealCellValue(r, c, data, attr) {
+@@ -60641,7 +60923,6 @@ function getRealCellValue(r, c, data, attr) {
  }
  function mergeBorder(ctx, d, row_index, col_index) {
    if (!d || !d[row_index]) {
@@ -407,7 +486,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
      return null;
    }
    var value = d[row_index][col_index];
-@@ -60824,16 +61097,17 @@ function updateCell(ctx, r, c, $input, value, canvas) {
+@@ -60824,16 +61105,17 @@ function updateCell(ctx, r, c, $input, value, canvas) {
    var inputHtml = $input === null || $input === void 0 ? void 0 : $input.innerHTML;
    var flowdata = getFlowdata(ctx);
    if (!flowdata) return;
@@ -435,7 +514,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    }
    var curv = flowdata[r][c];
    var oldValue = _.cloneDeep(curv);
-@@ -61075,7 +61349,7 @@ function getcellFormula(ctx, r, c, i, data) {
+@@ -61075,7 +61357,7 @@ function getcellFormula(ctx, r, c, i, data) {
    if (_.isNil(data)) {
      cell = getOrigincell(ctx, r, c, i);
    } else {
@@ -444,7 +523,101 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    }
    if (_.isNil(cell)) {
      return null;
-@@ -66976,12 +67250,17 @@ function initSheetData(draftCtx, index, newData) {
+@@ -63467,32 +63749,42 @@ function getFlowdata(ctx, id) {
+   return (_ctx$luckysheetfile = ctx.luckysheetfile) === null || _ctx$luckysheetfile === void 0 ? void 0 : (_ctx$luckysheetfile$i = _ctx$luckysheetfile[i]) === null || _ctx$luckysheetfile$i === void 0 ? void 0 : _ctx$luckysheetfile$i.data;
+ }
+ function calcRowColSize(ctx, rowCount, colCount) {
+-  ctx.visibledatarow = [];
+-  ctx.rh_height = 0;
+-  for (var r = 0; r < rowCount; r += 1) {
+-    var _ctx$config$rowlen, _ctx$config2, _ctx$config2$rowhidde;
+-    var rowlen = ctx.defaultrowlen;
+-    if ((_ctx$config$rowlen = ctx.config.rowlen) === null || _ctx$config$rowlen === void 0 ? void 0 : _ctx$config$rowlen[r]) {
+-      var _ctx$config, _ctx$config$rowlen2;
+-      rowlen = (_ctx$config = ctx.config) === null || _ctx$config === void 0 ? void 0 : (_ctx$config$rowlen2 = _ctx$config.rowlen) === null || _ctx$config$rowlen2 === void 0 ? void 0 : _ctx$config$rowlen2[r];
++  var visibleRows = new Array(rowCount);
++  var rowHeight = 0;
++  var rowLengths = ctx.config.rowlen;
++  var hiddenRows = ctx.config.rowhidden;
++  if (rowLengths == null && hiddenRows == null) {
++    var defaultRowStep = Math.round((ctx.defaultrowlen + 1) * ctx.zoomRatio);
++    for (var r = 0; r < rowCount; r += 1) {
++      rowHeight += defaultRowStep;
++      visibleRows[r] = rowHeight;
+     }
+-    if (((_ctx$config2 = ctx.config) === null || _ctx$config2 === void 0 ? void 0 : (_ctx$config2$rowhidde = _ctx$config2.rowhidden) === null || _ctx$config2$rowhidde === void 0 ? void 0 : _ctx$config2$rowhidde[r]) != null) {
+-      ctx.visibledatarow.push(ctx.rh_height);
+-      continue;
++  } else {
++    for (var _r = 0; _r < rowCount; _r += 1) {
++      var rowlen = ctx.defaultrowlen;
++      if (rowLengths === null || rowLengths === void 0 ? void 0 : rowLengths[_r]) {
++        rowlen = rowLengths[_r];
++      }
++      if ((hiddenRows === null || hiddenRows === void 0 ? void 0 : hiddenRows[_r]) != null) {
++        visibleRows[_r] = rowHeight;
++        continue;
++      }
++      rowHeight += Math.round((rowlen + 1) * ctx.zoomRatio);
++      visibleRows[_r] = rowHeight;
+     }
+-    ctx.rh_height += Math.round((rowlen + 1) * ctx.zoomRatio);
+-    ctx.visibledatarow.push(ctx.rh_height);
+   }
+-  ctx.rh_height += 80;
+-  ctx.visibledatacolumn = [];
+-  ctx.ch_width = 0;
++  ctx.visibledatarow = visibleRows;
++  ctx.rh_height = rowHeight + 80;
++  var visibleColumns = new Array(colCount);
++  var columnWidth = 0;
+   var maxColumnlen = 120;
+   var flowdata = getFlowdata(ctx);
++  var columnLengths = ctx.config.columnlen;
++  var hiddenColumns = ctx.config.colhidden;
+   for (var c = 0; c < colCount; c += 1) {
+-    var _ctx$config3, _ctx$config3$columnle, _ctx$config5, _ctx$config5$colhidde;
+     var firstcolumnlen = ctx.defaultcollen;
+-    if ((_ctx$config3 = ctx.config) === null || _ctx$config3 === void 0 ? void 0 : (_ctx$config3$columnle = _ctx$config3.columnlen) === null || _ctx$config3$columnle === void 0 ? void 0 : _ctx$config3$columnle[c]) {
+-      firstcolumnlen = ctx.config.columnlen[c];
++    if (columnLengths === null || columnLengths === void 0 ? void 0 : columnLengths[c]) {
++      firstcolumnlen = columnLengths[c];
+     } else {
+       var _flowdata$;
+       if (flowdata === null || flowdata === void 0 ? void 0 : (_flowdata$ = flowdata[0]) === null || _flowdata$ === void 0 ? void 0 : _flowdata$[c]) {
+@@ -63502,22 +63794,23 @@ function calcRowColSize(ctx, rowCount, colCount) {
+           firstcolumnlen = ctx.defaultcollen;
+         }
+         if (firstcolumnlen !== ctx.defaultcollen) {
+-          var _ctx$config4;
+-          if (!((_ctx$config4 = ctx.config) === null || _ctx$config4 === void 0 ? void 0 : _ctx$config4.columnlen)) {
++          if (!columnLengths) {
+             ctx.config.columnlen = {};
++            columnLengths = ctx.config.columnlen;
+           }
+-          ctx.config.columnlen[c] = firstcolumnlen;
++          columnLengths[c] = firstcolumnlen;
+         }
+       }
+     }
+-    if (((_ctx$config5 = ctx.config) === null || _ctx$config5 === void 0 ? void 0 : (_ctx$config5$colhidde = _ctx$config5.colhidden) === null || _ctx$config5$colhidde === void 0 ? void 0 : _ctx$config5$colhidde[c]) != null) {
+-      ctx.visibledatacolumn.push(ctx.ch_width);
++    if ((hiddenColumns === null || hiddenColumns === void 0 ? void 0 : hiddenColumns[c]) != null) {
++      visibleColumns[c] = columnWidth;
+       continue;
+     }
+-    ctx.ch_width += Math.round((firstcolumnlen + 1) * ctx.zoomRatio);
+-    ctx.visibledatacolumn.push(ctx.ch_width);
++    columnWidth += Math.round((firstcolumnlen + 1) * ctx.zoomRatio);
++    visibleColumns[c] = columnWidth;
+   }
+-  ctx.ch_width += maxColumnlen;
++  ctx.visibledatacolumn = visibleColumns;
++  ctx.ch_width = columnWidth + maxColumnlen;
+ }
+ function ensureSheetIndex(data, generateSheetId) {
+   if ((data === null || data === void 0 ? void 0 : data.length) > 0) {
+@@ -66976,12 +67269,17 @@ function initSheetData(draftCtx, index, newData) {
      lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
    }
    if (lastRowNum && lastColNum) {
@@ -467,7 +640,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
        expandedData[d.r][d.c] = d.v;
      });
      if (draftCtx.luckysheetfile[index] == null) {
-@@ -67067,24 +67346,25 @@ function copySheet(ctx, sheetId) {
+@@ -67067,24 +67365,25 @@ function copySheet(ctx, sheetId) {
  function calculateSheetFromula(ctx, id, range) {
    var index$1 = getSheetIndex(ctx, id);
    if (!ctx.luckysheetfile[index$1].data) return;
@@ -506,9 +679,21 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
        insertUpdateFunctionGroup(ctx, r, c, id);
      }
    }
-@@ -67226,7 +67506,11 @@ function updateSheet(ctx, newData) {
+@@ -67225,8 +67524,23 @@ function updateSheet(ctx, newData) {
+       column = newDatum.column;
      var index = getSheetIndex(ctx, newDatum.id);
      if (data != null) {
++      if (Object.isFrozen(data) && Array.isArray(data.__a3sShownCommentCells)) {
++        newDatum.data = data;
++        delete newDatum.celldata;
++        if (ctx.luckysheetfile[index] == null) {
++          ctx.luckysheetfile.push(newDatum);
++        } else {
++          ctx.luckysheetfile[index] = newDatum;
++        }
++        setFormulaCellInfoMap(ctx, newDatum.calcChain, data);
++        return;
++      }
        var lastRowNum = data.length;
 -      var lastColNum = data[0].length;
 +      var populatedRows = Object.keys(data);
@@ -519,7 +704,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
        if (row != null && column != null && row > 0 && column > 0) {
          lastRowNum = Math.max(lastRowNum, row);
          lastColNum = Math.max(lastColNum, column);
-@@ -67234,19 +67518,28 @@ function updateSheet(ctx, newData) {
+@@ -67234,19 +67548,28 @@ function updateSheet(ctx, newData) {
          lastRowNum = Math.max(lastRowNum, ctx.defaultrowNum);
          lastColNum = Math.max(lastColNum, ctx.defaultcolumnNum);
        }
@@ -557,7 +742,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
          }
        }
        newDatum.data = expandedData;
-@@ -72990,10 +73283,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -72990,10 +73313,7 @@ var Canvas = /*#__PURE__*/function () {
          var _startX = item.startX;
          var _endY = item.endY;
          var _endX = item.endX;
@@ -569,7 +754,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
            this.nullCellRender(_r, _c, _startY, _startX, _endY, _endX, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05);
          } else {
            var cell = flowdata[_r][_c];
-@@ -73191,8 +73481,10 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73191,8 +73511,10 @@ var Canvas = /*#__PURE__*/function () {
            continue;
          }
          var hasCellOver = false;
@@ -581,7 +766,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
            var cell = data[r][c];
            if (((_this$sheetCtx$config16 = this.sheetCtx.config) === null || _this$sheetCtx$config16 === void 0 ? void 0 : (_this$sheetCtx$config17 = _this$sheetCtx$config16.colhidden) === null || _this$sheetCtx$config17 === void 0 ? void 0 : _this$sheetCtx$config17[c]) != null) {
              continue;
-@@ -73274,6 +73566,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73274,6 +73596,7 @@ var Canvas = /*#__PURE__*/function () {
        var checksCF = checkCF(r, c, cfCompute);
        var flowdata = getFlowdata(this.sheetCtx);
        if (!flowdata) return;
@@ -589,7 +774,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
        var borderfix = getBorderFix();
        var fillStyle = normalizedAttr(flowdata, r, c, "bg");
        if (!_.isNil(checksCF) && !_.isNil(checksCF.cellColor)) {
-@@ -73285,7 +73578,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73285,7 +73608,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.fillStyle = fillStyle;
        }
        var cellsize = [startX + offsetLeft + borderfix[0], startY + offsetTop + borderfix[1], endX - startX + borderfix[2] - (isMerge ? 1 : 0), endY - startY + borderfix[3]];
@@ -598,7 +783,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
          row: r,
          column: c,
          startX: cellsize[0],
-@@ -73341,7 +73634,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73341,7 +73664,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.stroke();
          renderCtx.closePath();
        }
@@ -607,7 +792,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
          row: r,
          column: c,
          startY: cellsize[1],
-@@ -73353,7 +73646,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73353,7 +73676,7 @@ var Canvas = /*#__PURE__*/function () {
    }, {
      key: "cellRender",
      value: function cellRender(r, c, startY, startX, endY, endX, value, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05) {
@@ -616,7 +801,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
        var isMerge = arguments.length > 19 && arguments[19] !== undefined ? arguments[19] : false;
        var flowdata = getFlowdata(this.sheetCtx);
        if (!flowdata) {
-@@ -73390,9 +73683,8 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73390,9 +73713,8 @@ var Canvas = /*#__PURE__*/function () {
          return;
        }
        renderCtx.fillRect(cellsize[0], cellsize[1], cellsize[2], cellsize[3]);
@@ -628,7 +813,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
          var dv_w = 5 * this.sheetCtx.zoomRatio;
          var dv_h = 5 * this.sheetCtx.zoomRatio;
          renderCtx.beginPath();
-@@ -73433,7 +73725,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73433,7 +73755,7 @@ var Canvas = /*#__PURE__*/function () {
          } else {
            cellOverflow_bd_r_render = false;
          }
@@ -637,7 +822,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
          var pos_x = startX + offsetLeft;
          var pos_y = startY + offsetTop + 1;
          renderCtx.save();
-@@ -73469,7 +73761,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73469,7 +73791,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.lineWidth = 1;
          renderCtx.strokeStyle = "#000";
          renderCtx.strokeRect(horizonAlignPos, verticalAlignPos_checkbox, 10, 10);
@@ -646,7 +831,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
            renderCtx.beginPath();
            renderCtx.lineTo(horizonAlignPos + 1, verticalAlignPos_checkbox + 6);
            renderCtx.lineTo(horizonAlignPos + 4, verticalAlignPos_checkbox + 9);
-@@ -76066,8 +76358,12 @@ var dataToCelldata = function dataToCelldata(data) {
+@@ -76066,8 +76388,12 @@ var dataToCelldata = function dataToCelldata(data) {
    if (data == null) {
      return celldata;
    }
@@ -661,7 +846,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
        var v = data[r][c];
        if (v != null) {
          celldata.push({
-@@ -76076,8 +76372,8 @@ var dataToCelldata = function dataToCelldata(data) {
+@@ -76076,8 +76402,8 @@ var dataToCelldata = function dataToCelldata(data) {
            v: v
          });
        }
@@ -672,7 +857,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    return celldata;
  };
  var celldataToData = function celldataToData(celldata, rowCount, colCount) {
-@@ -76091,13 +76387,18 @@ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
+@@ -76091,13 +76417,18 @@ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
      lastColNum = Math.max(lastColNum, colCount);
    }
    if (lastRowNum && lastColNum) {
@@ -697,7 +882,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
      });
      return expandedData;
    }
-@@ -76136,7 +76437,8 @@ function getCellValue$1(ctx, row, column) {
+@@ -76136,7 +76467,8 @@ function getCellValue$1(ctx, row, column) {
    if (!targetSheetData) {
      throw SHEET_NOT_FOUND;
    }
@@ -707,7 +892,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    var ret;
    if (cellData && _.isPlainObject(cellData)) {
      var _cellData$ct;
-@@ -76166,6 +76468,14 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
+@@ -76166,6 +76498,14 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
    }
    var sheet = getSheet(ctx, options);
    var data = sheet.data;
@@ -722,7 +907,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    var formatList = {
      bg: 1,
      ff: 1,
-@@ -77702,12 +78012,8 @@ function handleCellAreaDoubleClick(ctx, globalCache, settings, e, container) {
+@@ -77702,12 +78042,8 @@ function handleCellAreaDoubleClick(ctx, globalCache, settings, e, container) {
    var row_index = row_location[2];
    var col_location = colLocation(x, ctx.visibledatacolumn);
    var col_index = col_location[2];
@@ -737,17 +922,90 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474
    var margeset = mergeBorder(ctx, flowdata, row_index, col_index);
    if (margeset) {
      var _margeset$row2 = _slicedToArray(margeset.row, 3);
-@@ -80366,4 +80672,4 @@ function handlePasteByClick(ctx, clipboardData, triggerType) {
+@@ -80366,4 +80702,4 @@ function handlePasteByClick(ctx, clipboardData, triggerType) {
    } else ;
  }
  
 -export { CFSplitRange, Canvas, FormulaCache, MAX_ZOOM_RATIO, MIN_ZOOM_RATIO, addSheet, index as api, applyLocation, attrToCssName, autoSelectionFormula, calcSelectionInfo, cancelActiveImgItem, cancelFunctionrangeSelected, cancelNormalSelected, cancelPaintModel, cellFocus, cfSplitRange, changeSheet, chatatABC, checkCF, checkCellIsLocked, checkProtectionAllSelected, checkProtectionFormatCells, checkProtectionSelectLockedOrUnLockedCells, checkboxChange, clearFilter, clearMeasureTextCache, colHasMerged, colLocation, colLocationByIndex, colors, columnCharToIndex, commentBoxProps, compute, computeRowlenArr, confirmMessage, convertCssToStyleList, convertSpanToShareString, copy, createDropCellRange, createFilter, createFilterOptions, createFormulaRangeSelect, createRangeHightlight, dataRangeSelection, datenum_local, defaultContext, defaultFont, defaultSettings, defaultStyle, delFunctionGroup, deleteCellInSave, deleteComment, deleteRowCol, deleteSelectedCellText, deleteSheet, diff, drawArrow, drawLineInfo, dropCellCache, editComment, editSheetName, ensureSheetIndex, error, escapeHTMLTag, escapeScriptTag, execFunctionGroup, execfunction, expandRowsAndColumns, extractFormulaCellOps, filterPatch, fixColumnStyleOverflowInFreeze, fixPositionOnFrozenCells, fixRowStyleOverflowInFreeze, functionCopy, functionHTMLGenerate, functionStrChange, genarate, generateRandomId, generateRandomSheetName, getAllFunctionGroup, getArrowCanvasSize, getBorderInfoCompute, getBorderInfoComputeRange, getCellHyperlink, getCellRowColumn, getCellTextInfo, getCellTopRightPostion, getCellValue, getColMerge, getColorGradation, getCommentBoxByRC, getCommentBoxPosition, getComputeMap, getCurrentRules, getDataArr, getDataBySelectionNoCopy, getDropdownList, getFailureText, getFilterColumnColors, getFilterColumnValues, getFlattenedRange, getFlowdata, getFontSet, getFontStyleByCell, getFrozenHandleLeft, getFrozenHandleTop, getHintText, getHistoryRules, getInlineStringHTML, getInlineStringNoStyle, getMeasureText, getNowDateTime, getNullData, getOptionValue, getOrigincell, getQKBorder, getRange, getRangeArr, getRangeByTxt, getRangetxt, getRealCellValue, getRegExpStr, getRegStr, getRowMerge, getSearchIndexArr, getSelectRange, getSheetByIndex, getSheetIdByName, getSheetIndex, getStyleByCell, getTypeItemHide, getcellFormula, getcellrange, getdatabyselection, getrangeseleciton, goToLink, groupValuesRefresh, handleArrowKey, handleBold, handleBorder, handleCellAreaDoubleClick, handleCellAreaMouseDown, handleClearFormat, handleColFreezeHandleMouseDown, handleColSizeHandleMouseDown, handleColumnHeaderMouseDown, handleContextMenu, handleCopy, handleCurrencyFormat, handleFormatPainter, handleFormulaInput, handleFreeze, handleGlobalEnter, handleGlobalKeyDown, handleGlobalWheel, handleHorizontalAlign, handleItalic, handleKeydownForZoom, handleLink, handleMerge, handleNumberDecrease, handleNumberIncrease, handleOverlayMouseMove, handleOverlayMouseUp, handleOverlayTouchEnd, handleOverlayTouchMove, handleOverlayTouchStart, handlePaste, handlePasteByClick, handlePercentageFormat, handleRowFreezeHandleMouseDown, handleRowHeaderMouseDown, handleRowSizeHandleMouseDown, handleScreenShot, handleSort, handleStrikeThrough, handleSum, handleTextBackground, handleTextColor, handleTextSize, handleUnderline, handleVerticalAlign, handleWithCtrlOrMetaKey, hasChinaword, hasPartMC, hideCRCount, hideDropCellSelection, hideSelected, imageProps, indexToColumnChar, initFreeze, initSheetIndex, inlineStyleAffectAttribute, inlineStyleAffectCssName, insertImage, insertRowCol, insertUpdateFunctionGroup, inverseRowColOptions, isAllSelectedCellsInStatus, isAllowEdit, isFormula, isFunctionRange, isInlineStringCT, isInlineStringCell, isLinkValid, isRealNull, isRealNum, isShowHidenCR, isSupportBoundingBox, is_date, iscelldata, isdatatype, isdatatypemulti, isdatetime, israngeseleciton, jfrefreshgrid, labelFilterOptionState, locale, luckysheetUpdateCell, mergeBorder, mergeCells, mergeMoveMain, mousePosition, moveHighlightCell, moveHighlightRange, moveToEnd, newComment, normalizeSelection, normalizedAttr, normalizedCellAttr, onCellsMove, onCellsMoveEnd, onCellsMoveStart, onCommentBoxMove, onCommentBoxMoveEnd, onCommentBoxMoveStart, onCommentBoxResize, onCommentBoxResizeEnd, onCommentBoxResizeStart, onDropCellSelect, onDropCellSelectEnd, onFormulaRangeDragEnd, onImageMove, onImageMoveEnd, onImageMoveStart, onImageResize, onImageResizeEnd, onImageResizeStart, onRangeSelectionModalMove, onRangeSelectionModalMoveEnd, onRangeSelectionModalMoveStart, onSearchDialogMove, onSearchDialogMoveEnd, onSearchDialogMoveStart, opToPatch, orderbydata, orderbydatafiler, overShowComment, pasteHandlerOfPaintModel, patchToOp, rangeDrag, rangeDragColumn, rangeDragRow, rangeHightlightselected, rangeSetValue, rangeValueToHtml, removeActiveImage, removeEditingComment, removeHyperlink, replace, replaceAll, replaceHtml, rgbToHex, rowHasMerged, rowLocation, rowLocationByIndex, saveFilter, saveHyperlink, saveImage, scrollToFrozenRowCol, scrollToHighlightCell, searchAll, searchNext, selectAll, selectIsOverlap, selectTextContent, selectTextContentCross, selectTitlesMap, selectTitlesRange, selectionCache, selectionCopyShow, seletedHighlistByindex, setCaretPosition, setCellValue, setConditionRules, setDropcownValue, setEditingComment, setFormulaCellInfoMap, showComments, showDropCellSelection, showHideAllComments, showHideComment, showImgChooser, showLinkCard, showSelected, sortDataRange, sortSelection, storeSheetParamALL, toolbarItemClickHandler, toolbarItemSelectedFunc, update, updateCell, updateContextWithCanvas, updateContextWithSheetData, updateDropCell, updateFormat, updateFormatCell, updateInlineStringFormat, updateInlineStringFormatOutside, updateItem, updateMoreCell, updateSheet, validateCellData, validateIdCard, valueIsError, valueShowEs };
 +export { CFSplitRange, Canvas, FormulaCache, MAX_ZOOM_RATIO, MIN_ZOOM_RATIO, addSheet, index as api, applyLocation, attrToCssName, autoSelectionFormula, calcSelectionInfo, cancelActiveImgItem, cancelFunctionrangeSelected, cancelNormalSelected, cancelPaintModel, cellFocus, cfSplitRange, changeSheet, chatatABC, checkCF, checkCellIsLocked, checkProtectionAllSelected, checkProtectionFormatCells, checkProtectionSelectLockedOrUnLockedCells, checkboxChange, clearFilter, clearMeasureTextCache, colHasMerged, colLocation, colLocationByIndex, colors, columnCharToIndex, commentBoxProps, compute, computeRowlenArr, confirmMessage, convertCssToStyleList, convertSpanToShareString, copy, createDropCellRange, createFilter, createFilterOptions, createFormulaRangeSelect, createRangeHightlight, dataRangeSelection, datenum_local, defaultContext, defaultFont, defaultSettings, defaultStyle, delFunctionGroup, deleteCellInSave, deleteComment, deleteRowCol, deleteSelectedCellText, deleteSheet, diff, drawArrow, drawLineInfo, dropCellCache, editComment, editSheetName, ensureSheetIndex, error, escapeHTMLTag, escapeScriptTag, execFunctionGroup, execfunction, expandRowsAndColumns, extractFormulaCellOps, filterPatch, fixColumnStyleOverflowInFreeze, fixPositionOnFrozenCells, fixRowStyleOverflowInFreeze, functionCopy, functionHTMLGenerate, functionStrChange, genarate, generateRandomId, generateRandomSheetName, getAllFunctionGroup, getArrowCanvasSize, getBorderInfoCompute, getBorderInfoComputeRange, getCellHyperlink, getCellRowColumn, getCellTextInfo, getCellTopRightPostion, getCellValue, getColMerge, getColorGradation, getCommentBoxByRC, getCommentBoxPosition, getComputeMap, getCurrentRules, getDataArr, getDataBySelectionNoCopy, getDataVerificationItem, getDropdownList, getFailureText, getFilterColumnColors, getFilterColumnValues, getFlattenedRange, getFlowdata, getFontSet, getFontStyleByCell, getFrozenHandleLeft, getFrozenHandleTop, getHintText, getHistoryRules, getInlineStringHTML, getInlineStringNoStyle, getMeasureText, getNowDateTime, getNullData, getOptionValue, getOrigincell, getQKBorder, getRange, getRangeArr, getRangeByTxt, getRangetxt, getRealCellValue, getRegExpStr, getRegStr, getRowMerge, getSearchIndexArr, getSelectRange, getSheetByIndex, getSheetIdByName, getSheetIndex, getStyleByCell, getTypeItemHide, getcellFormula, getcellrange, getdatabyselection, getrangeseleciton, goToLink, groupValuesRefresh, handleArrowKey, handleBold, handleBorder, handleCellAreaDoubleClick, handleCellAreaMouseDown, handleClearFormat, handleColFreezeHandleMouseDown, handleColSizeHandleMouseDown, handleColumnHeaderMouseDown, handleContextMenu, handleCopy, handleCurrencyFormat, handleFormatPainter, handleFormulaInput, handleFreeze, handleGlobalEnter, handleGlobalKeyDown, handleGlobalWheel, handleHorizontalAlign, handleItalic, handleKeydownForZoom, handleLink, handleMerge, handleNumberDecrease, handleNumberIncrease, handleOverlayMouseMove, handleOverlayMouseUp, handleOverlayTouchEnd, handleOverlayTouchMove, handleOverlayTouchStart, handlePaste, handlePasteByClick, handlePercentageFormat, handleRowFreezeHandleMouseDown, handleRowHeaderMouseDown, handleRowSizeHandleMouseDown, handleScreenShot, handleSort, handleStrikeThrough, handleSum, handleTextBackground, handleTextColor, handleTextSize, handleUnderline, handleVerticalAlign, handleWithCtrlOrMetaKey, hasChinaword, hasPartMC, hideCRCount, hideDropCellSelection, hideSelected, imageProps, indexToColumnChar, initFreeze, initSheetIndex, inlineStyleAffectAttribute, inlineStyleAffectCssName, insertImage, insertRowCol, insertUpdateFunctionGroup, inverseRowColOptions, isAllSelectedCellsInStatus, isAllowEdit, isFormula, isFunctionRange, isInlineStringCT, isInlineStringCell, isLinkValid, isRealNull, isRealNum, isShowHidenCR, isSupportBoundingBox, is_date, iscelldata, isdatatype, isdatatypemulti, isdatetime, israngeseleciton, jfrefreshgrid, labelFilterOptionState, locale, luckysheetUpdateCell, mergeBorder, mergeCells, mergeMoveMain, mousePosition, moveHighlightCell, moveHighlightRange, moveToEnd, newComment, normalizeSelection, normalizedAttr, normalizedCellAttr, onCellsMove, onCellsMoveEnd, onCellsMoveStart, onCommentBoxMove, onCommentBoxMoveEnd, onCommentBoxMoveStart, onCommentBoxResize, onCommentBoxResizeEnd, onCommentBoxResizeStart, onDropCellSelect, onDropCellSelectEnd, onFormulaRangeDragEnd, onImageMove, onImageMoveEnd, onImageMoveStart, onImageResize, onImageResizeEnd, onImageResizeStart, onRangeSelectionModalMove, onRangeSelectionModalMoveEnd, onRangeSelectionModalMoveStart, onSearchDialogMove, onSearchDialogMoveEnd, onSearchDialogMoveStart, opToPatch, orderbydata, orderbydatafiler, overShowComment, pasteHandlerOfPaintModel, patchToOp, rangeDrag, rangeDragColumn, rangeDragRow, rangeHightlightselected, rangeSetValue, rangeValueToHtml, removeActiveImage, removeEditingComment, removeHyperlink, replace, replaceAll, replaceHtml, rgbToHex, rowHasMerged, rowLocation, rowLocationByIndex, saveFilter, saveHyperlink, saveImage, scrollToFrozenRowCol, scrollToHighlightCell, searchAll, searchNext, selectAll, selectIsOverlap, selectTextContent, selectTextContentCross, selectTitlesMap, selectTitlesRange, selectionCache, selectionCopyShow, seletedHighlistByindex, setCaretPosition, setCellValue, setConditionRules, setDropcownValue, setEditingComment, setFormulaCellInfoMap, showComments, showDropCellSelection, showHideAllComments, showHideComment, showImgChooser, showLinkCard, showSelected, sortDataRange, sortSelection, storeSheetParamALL, toolbarItemClickHandler, toolbarItemSelectedFunc, update, updateCell, updateContextWithCanvas, updateContextWithSheetData, updateDropCell, updateFormat, updateFormatCell, updateInlineStringFormat, updateInlineStringFormatOutside, updateItem, updateMoreCell, updateSheet, validateCellData, validateIdCard, valueIsError, valueShowEs };
 diff --git a/dist/index.js b/dist/index.js
-index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb871f6bd77 100644
+index 04113a18dee9feee28e9434ee3023626c800e7d3..074734f5241eb6105bb4e8daa24da1f13c5296c5 100644
 --- a/dist/index.js
 +++ b/dist/index.js
-@@ -58287,6 +58287,19 @@ function functionCopy(ctx, txt, mode, step) {
+@@ -141,6 +141,7 @@ function _unsupportedIterableToArray(r, a) {
+   }
+ }
+ 
++var enFunctionlist;
+ var en = {
+   generalDialog: {
+     partiallyError: "Cannot perform this operation on partially merged cells",
+@@ -149,7 +150,8 @@ var en = {
+     noSeletionError: "The selection operation has not been performed yet",
+     cannotSelectMultiple: "Cannot select multiple selections"
+   },
+-  functionlist: [{
++  get functionlist() {
++    if (enFunctionlist === undefined) enFunctionlist = [{
+     n: "SUMIF",
+     t: 0,
+     d: "Returns a conditional sum across a range.",
+@@ -8989,7 +8991,9 @@ var en = {
+       repeat: "n",
+       type: "string"
+     }]
+-  }],
++    }];
++    return enFunctionlist;
++  },
+   toolbar: {
+     toolbar: "Toolbar",
+     undo: "Undo",
+@@ -10728,6 +10732,7 @@ var en = {
+   }
+ };
+ 
++var zhFunctionlist;
+ var zh = {
+   generalDialog: {
+     partiallyError: "无法对部分合并单元格执行此操作",
+@@ -10736,7 +10741,8 @@ var zh = {
+     noSeletionError: "还未进行选区操作",
+     cannotSelectMultiple: "无法选择多选区"
+   },
+-  functionlist: [{
++  get functionlist() {
++    if (zhFunctionlist === undefined) zhFunctionlist = [{
+     n: "SUMIF",
+     t: 0,
+     d: "对范围中符合指定条件的值求和。",
+@@ -19562,7 +19568,9 @@ var zh = {
+       repeat: "n",
+       type: "rangeall"
+     }]
+-  }],
++    }];
++    return zhFunctionlist;
++  },
+   toolbar: {
+     toolbar: "工具栏",
+     undo: "撤销",
+@@ -52080,10 +52088,10 @@ var zh_tw = {
+ var localeObj = {
+   en: en,
+   zh: zh,
+-  es: es,
+-  "zh-TW": zh_tw,
+-  hi: hi,
+-  ru: ru
++  es: en,
++  "zh-TW": zh,
++  hi: en,
++  ru: en
+ };
+ function locale(ctx) {
+   var _ctx$lang;
+@@ -58287,6 +58295,19 @@ function functionCopy(ctx, txt, mode, step) {
    return function_str;
  }
  
@@ -767,7 +1025,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
  function checkCellIsLocked(ctx, r, c, sheetId) {
    var _data$r, _sheetFile$config;
    var sheetFile = getSheetByIndex(ctx, sheetId);
-@@ -58299,6 +58312,8 @@ function checkCellIsLocked(ctx, r, c, sheetId) {
+@@ -58299,6 +58320,8 @@ function checkCellIsLocked(ctx, r, c, sheetId) {
      return !!(cell === null || cell === void 0 ? void 0 : cell.lo);
    }
    var aut = (_sheetFile$config = sheetFile.config) === null || _sheetFile$config === void 0 ? void 0 : _sheetFile$config.authority;
@@ -776,7 +1034,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    var sheetInEditable = ___default['default'].isNil(aut) || ___default['default'].isNil(aut.sheet) || aut.sheet === 0;
    return !sheetInEditable;
  }
-@@ -58315,9 +58330,7 @@ function checkProtectionSelectLockedOrUnLockedCells(ctx, r, c, sheetId) {
+@@ -58315,9 +58338,7 @@ function checkProtectionSelectLockedOrUnLockedCells(ctx, r, c, sheetId) {
    if (___default['default'].isNil(aut) || ___default['default'].isNil(aut.sheet) || aut.sheet === 0) {
      return true;
    }
@@ -787,7 +1045,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
      if (aut.selectunLockedCells === 1 || ___default['default'].isNil(aut.selectunLockedCells)) {
        return true;
      }
-@@ -58557,10 +58570,230 @@ function getColorGradation(color1, color2, value1, value2, value) {
+@@ -58557,10 +58578,230 @@ function getColorGradation(color1, color2, value1, value2, value) {
    var b = Math.round(b1 - (b1 - b2) / v12 * v10);
    return "rgb(".concat(r, ", ").concat(g, ", ").concat(b, ")");
  }
@@ -1018,7 +1276,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    var computeMap = {};
    if (ruleArr.length > 0) {
      var _loop = function _loop() {
-@@ -59133,8 +59366,19 @@ function getComputeMap(ctx) {
+@@ -59133,8 +59374,19 @@ function getComputeMap(ctx) {
    return computeMap;
  }
  function checkCF(r, c, computeMap) {
@@ -1040,7 +1298,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    }
    return null;
  }
-@@ -59832,11 +60076,40 @@ function validateCellData(ctx, item, cellValue) {
+@@ -59832,11 +60084,40 @@ function validateCellData(ctx, item, cellValue) {
    }
    return true;
  }
@@ -1084,7 +1342,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    item.checked = !item.checked;
    var value = item.value2;
    if (item.checked) {
-@@ -60159,10 +60432,7 @@ function cellFocus(ctx, r, c, clickMode) {
+@@ -60159,10 +60440,7 @@ function cellFocus(ctx, r, c, clickMode) {
    if (!showHintBox || !dropDownBtn) return;
    showHintBox.style.display = "none";
    dropDownBtn.style.display = "none";
@@ -1095,7 +1353,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    var row = ctx.visibledatarow[r];
    var row_pre = r === 0 ? 0 : ctx.visibledatarow[r - 1];
    var col = ctx.visibledatacolumn[c];
-@@ -60178,7 +60448,7 @@ function cellFocus(ctx, r, c, clickMode) {
+@@ -60178,7 +60456,7 @@ function cellFocus(ctx, r, c, clickMode) {
      col_pre = _margeSet$column[0];
      col = _margeSet$column[1];
    }
@@ -1104,7 +1362,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    if (!item) return;
    if (clickMode && item.type === "checkbox") {
      checkboxChange(ctx, r, c);
-@@ -60248,8 +60518,8 @@ function setDropcownValue(ctx, value, arr) {
+@@ -60248,8 +60526,8 @@ function setDropcownValue(ctx, value, arr) {
    var rowIndex = last.row_focus;
    var colIndex = last.column_focus;
    if (rowIndex == null || colIndex == null) return;
@@ -1115,7 +1373,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    if (item.type2 === "true") {
      value = item.value1.split(",").filter(function (v) {
        return arr.indexOf(v) >= 0;
-@@ -60399,7 +60669,6 @@ function normalizedCellAttr(cell, attr) {
+@@ -60399,7 +60677,6 @@ function normalizedCellAttr(cell, attr) {
  }
  function normalizedAttr(data, r, c, attr) {
    if (!data || !data[r]) {
@@ -1123,7 +1381,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
      return null;
    }
    var cell = data[r][c];
-@@ -60412,7 +60681,7 @@ function getCellValue(r, c, data, attr) {
+@@ -60412,7 +60689,7 @@ function getCellValue(r, c, data, attr) {
    }
    var d_value;
    if (!___default['default'].isNil(r) && !___default['default'].isNil(c)) {
@@ -1132,7 +1390,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    } else if (!___default['default'].isNil(r)) {
      d_value = data[r];
    } else if (!___default['default'].isNil(c)) {
-@@ -60448,6 +60717,11 @@ function setCellValue(ctx, r, c, d, v) {
+@@ -60448,6 +60725,11 @@ function setCellValue(ctx, r, c, d, v) {
      d = getFlowdata(ctx);
    }
    if (!d) return;
@@ -1144,7 +1402,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    var cell = d[r][c];
    var vupdate;
    if (___default['default'].isPlainObject(v)) {
-@@ -60651,7 +60925,6 @@ function getRealCellValue(r, c, data, attr) {
+@@ -60651,7 +60933,6 @@ function getRealCellValue(r, c, data, attr) {
  }
  function mergeBorder(ctx, d, row_index, col_index) {
    if (!d || !d[row_index]) {
@@ -1152,7 +1410,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
      return null;
    }
    var value = d[row_index][col_index];
-@@ -60834,16 +61107,17 @@ function updateCell(ctx, r, c, $input, value, canvas) {
+@@ -60834,16 +61115,17 @@ function updateCell(ctx, r, c, $input, value, canvas) {
    var inputHtml = $input === null || $input === void 0 ? void 0 : $input.innerHTML;
    var flowdata = getFlowdata(ctx);
    if (!flowdata) return;
@@ -1180,7 +1438,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    }
    var curv = flowdata[r][c];
    var oldValue = ___default['default'].cloneDeep(curv);
-@@ -61085,7 +61359,7 @@ function getcellFormula(ctx, r, c, i, data) {
+@@ -61085,7 +61367,7 @@ function getcellFormula(ctx, r, c, i, data) {
    if (___default['default'].isNil(data)) {
      cell = getOrigincell(ctx, r, c, i);
    } else {
@@ -1189,7 +1447,101 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    }
    if (___default['default'].isNil(cell)) {
      return null;
-@@ -66986,12 +67260,17 @@ function initSheetData(draftCtx, index, newData) {
+@@ -63477,32 +63759,42 @@ function getFlowdata(ctx, id) {
+   return (_ctx$luckysheetfile = ctx.luckysheetfile) === null || _ctx$luckysheetfile === void 0 ? void 0 : (_ctx$luckysheetfile$i = _ctx$luckysheetfile[i]) === null || _ctx$luckysheetfile$i === void 0 ? void 0 : _ctx$luckysheetfile$i.data;
+ }
+ function calcRowColSize(ctx, rowCount, colCount) {
+-  ctx.visibledatarow = [];
+-  ctx.rh_height = 0;
+-  for (var r = 0; r < rowCount; r += 1) {
+-    var _ctx$config$rowlen, _ctx$config2, _ctx$config2$rowhidde;
+-    var rowlen = ctx.defaultrowlen;
+-    if ((_ctx$config$rowlen = ctx.config.rowlen) === null || _ctx$config$rowlen === void 0 ? void 0 : _ctx$config$rowlen[r]) {
+-      var _ctx$config, _ctx$config$rowlen2;
+-      rowlen = (_ctx$config = ctx.config) === null || _ctx$config === void 0 ? void 0 : (_ctx$config$rowlen2 = _ctx$config.rowlen) === null || _ctx$config$rowlen2 === void 0 ? void 0 : _ctx$config$rowlen2[r];
++  var visibleRows = new Array(rowCount);
++  var rowHeight = 0;
++  var rowLengths = ctx.config.rowlen;
++  var hiddenRows = ctx.config.rowhidden;
++  if (rowLengths == null && hiddenRows == null) {
++    var defaultRowStep = Math.round((ctx.defaultrowlen + 1) * ctx.zoomRatio);
++    for (var r = 0; r < rowCount; r += 1) {
++      rowHeight += defaultRowStep;
++      visibleRows[r] = rowHeight;
+     }
+-    if (((_ctx$config2 = ctx.config) === null || _ctx$config2 === void 0 ? void 0 : (_ctx$config2$rowhidde = _ctx$config2.rowhidden) === null || _ctx$config2$rowhidde === void 0 ? void 0 : _ctx$config2$rowhidde[r]) != null) {
+-      ctx.visibledatarow.push(ctx.rh_height);
+-      continue;
++  } else {
++    for (var _r = 0; _r < rowCount; _r += 1) {
++      var rowlen = ctx.defaultrowlen;
++      if (rowLengths === null || rowLengths === void 0 ? void 0 : rowLengths[_r]) {
++        rowlen = rowLengths[_r];
++      }
++      if ((hiddenRows === null || hiddenRows === void 0 ? void 0 : hiddenRows[_r]) != null) {
++        visibleRows[_r] = rowHeight;
++        continue;
++      }
++      rowHeight += Math.round((rowlen + 1) * ctx.zoomRatio);
++      visibleRows[_r] = rowHeight;
+     }
+-    ctx.rh_height += Math.round((rowlen + 1) * ctx.zoomRatio);
+-    ctx.visibledatarow.push(ctx.rh_height);
+   }
+-  ctx.rh_height += 80;
+-  ctx.visibledatacolumn = [];
+-  ctx.ch_width = 0;
++  ctx.visibledatarow = visibleRows;
++  ctx.rh_height = rowHeight + 80;
++  var visibleColumns = new Array(colCount);
++  var columnWidth = 0;
+   var maxColumnlen = 120;
+   var flowdata = getFlowdata(ctx);
++  var columnLengths = ctx.config.columnlen;
++  var hiddenColumns = ctx.config.colhidden;
+   for (var c = 0; c < colCount; c += 1) {
+-    var _ctx$config3, _ctx$config3$columnle, _ctx$config5, _ctx$config5$colhidde;
+     var firstcolumnlen = ctx.defaultcollen;
+-    if ((_ctx$config3 = ctx.config) === null || _ctx$config3 === void 0 ? void 0 : (_ctx$config3$columnle = _ctx$config3.columnlen) === null || _ctx$config3$columnle === void 0 ? void 0 : _ctx$config3$columnle[c]) {
+-      firstcolumnlen = ctx.config.columnlen[c];
++    if (columnLengths === null || columnLengths === void 0 ? void 0 : columnLengths[c]) {
++      firstcolumnlen = columnLengths[c];
+     } else {
+       var _flowdata$;
+       if (flowdata === null || flowdata === void 0 ? void 0 : (_flowdata$ = flowdata[0]) === null || _flowdata$ === void 0 ? void 0 : _flowdata$[c]) {
+@@ -63512,22 +63804,23 @@ function calcRowColSize(ctx, rowCount, colCount) {
+           firstcolumnlen = ctx.defaultcollen;
+         }
+         if (firstcolumnlen !== ctx.defaultcollen) {
+-          var _ctx$config4;
+-          if (!((_ctx$config4 = ctx.config) === null || _ctx$config4 === void 0 ? void 0 : _ctx$config4.columnlen)) {
++          if (!columnLengths) {
+             ctx.config.columnlen = {};
++            columnLengths = ctx.config.columnlen;
+           }
+-          ctx.config.columnlen[c] = firstcolumnlen;
++          columnLengths[c] = firstcolumnlen;
+         }
+       }
+     }
+-    if (((_ctx$config5 = ctx.config) === null || _ctx$config5 === void 0 ? void 0 : (_ctx$config5$colhidde = _ctx$config5.colhidden) === null || _ctx$config5$colhidde === void 0 ? void 0 : _ctx$config5$colhidde[c]) != null) {
+-      ctx.visibledatacolumn.push(ctx.ch_width);
++    if ((hiddenColumns === null || hiddenColumns === void 0 ? void 0 : hiddenColumns[c]) != null) {
++      visibleColumns[c] = columnWidth;
+       continue;
+     }
+-    ctx.ch_width += Math.round((firstcolumnlen + 1) * ctx.zoomRatio);
+-    ctx.visibledatacolumn.push(ctx.ch_width);
++    columnWidth += Math.round((firstcolumnlen + 1) * ctx.zoomRatio);
++    visibleColumns[c] = columnWidth;
+   }
+-  ctx.ch_width += maxColumnlen;
++  ctx.visibledatacolumn = visibleColumns;
++  ctx.ch_width = columnWidth + maxColumnlen;
+ }
+ function ensureSheetIndex(data, generateSheetId) {
+   if ((data === null || data === void 0 ? void 0 : data.length) > 0) {
+@@ -66986,12 +67279,17 @@ function initSheetData(draftCtx, index, newData) {
      lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
    }
    if (lastRowNum && lastColNum) {
@@ -1212,7 +1564,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
        expandedData[d.r][d.c] = d.v;
      });
      if (draftCtx.luckysheetfile[index] == null) {
-@@ -67077,24 +67356,25 @@ function copySheet(ctx, sheetId) {
+@@ -67077,24 +67375,25 @@ function copySheet(ctx, sheetId) {
  function calculateSheetFromula(ctx, id, range) {
    var index$1 = getSheetIndex(ctx, id);
    if (!ctx.luckysheetfile[index$1].data) return;
@@ -1251,9 +1603,21 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
        insertUpdateFunctionGroup(ctx, r, c, id);
      }
    }
-@@ -67236,7 +67516,11 @@ function updateSheet(ctx, newData) {
+@@ -67235,8 +67534,23 @@ function updateSheet(ctx, newData) {
+       column = newDatum.column;
      var index = getSheetIndex(ctx, newDatum.id);
      if (data != null) {
++      if (Object.isFrozen(data) && Array.isArray(data.__a3sShownCommentCells)) {
++        newDatum.data = data;
++        delete newDatum.celldata;
++        if (ctx.luckysheetfile[index] == null) {
++          ctx.luckysheetfile.push(newDatum);
++        } else {
++          ctx.luckysheetfile[index] = newDatum;
++        }
++        setFormulaCellInfoMap(ctx, newDatum.calcChain, data);
++        return;
++      }
        var lastRowNum = data.length;
 -      var lastColNum = data[0].length;
 +      var populatedRows = Object.keys(data);
@@ -1264,7 +1628,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
        if (row != null && column != null && row > 0 && column > 0) {
          lastRowNum = Math.max(lastRowNum, row);
          lastColNum = Math.max(lastColNum, column);
-@@ -67244,19 +67528,28 @@ function updateSheet(ctx, newData) {
+@@ -67244,19 +67558,28 @@ function updateSheet(ctx, newData) {
          lastRowNum = Math.max(lastRowNum, ctx.defaultrowNum);
          lastColNum = Math.max(lastColNum, ctx.defaultcolumnNum);
        }
@@ -1302,7 +1666,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
          }
        }
        newDatum.data = expandedData;
-@@ -73000,10 +73293,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73000,10 +73323,7 @@ var Canvas = /*#__PURE__*/function () {
          var _startX = item.startX;
          var _endY = item.endY;
          var _endX = item.endX;
@@ -1314,7 +1678,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
            this.nullCellRender(_r, _c, _startY, _startX, _endY, _endX, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05);
          } else {
            var cell = flowdata[_r][_c];
-@@ -73201,8 +73491,10 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73201,8 +73521,10 @@ var Canvas = /*#__PURE__*/function () {
            continue;
          }
          var hasCellOver = false;
@@ -1326,7 +1690,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
            var cell = data[r][c];
            if (((_this$sheetCtx$config16 = this.sheetCtx.config) === null || _this$sheetCtx$config16 === void 0 ? void 0 : (_this$sheetCtx$config17 = _this$sheetCtx$config16.colhidden) === null || _this$sheetCtx$config17 === void 0 ? void 0 : _this$sheetCtx$config17[c]) != null) {
              continue;
-@@ -73284,6 +73576,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73284,6 +73606,7 @@ var Canvas = /*#__PURE__*/function () {
        var checksCF = checkCF(r, c, cfCompute);
        var flowdata = getFlowdata(this.sheetCtx);
        if (!flowdata) return;
@@ -1334,7 +1698,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
        var borderfix = getBorderFix();
        var fillStyle = normalizedAttr(flowdata, r, c, "bg");
        if (!___default['default'].isNil(checksCF) && !___default['default'].isNil(checksCF.cellColor)) {
-@@ -73295,7 +73588,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73295,7 +73618,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.fillStyle = fillStyle;
        }
        var cellsize = [startX + offsetLeft + borderfix[0], startY + offsetTop + borderfix[1], endX - startX + borderfix[2] - (isMerge ? 1 : 0), endY - startY + borderfix[3]];
@@ -1343,7 +1707,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
          row: r,
          column: c,
          startX: cellsize[0],
-@@ -73351,7 +73644,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73351,7 +73674,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.stroke();
          renderCtx.closePath();
        }
@@ -1352,7 +1716,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
          row: r,
          column: c,
          startY: cellsize[1],
-@@ -73363,7 +73656,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73363,7 +73686,7 @@ var Canvas = /*#__PURE__*/function () {
    }, {
      key: "cellRender",
      value: function cellRender(r, c, startY, startX, endY, endX, value, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05) {
@@ -1361,7 +1725,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
        var isMerge = arguments.length > 19 && arguments[19] !== undefined ? arguments[19] : false;
        var flowdata = getFlowdata(this.sheetCtx);
        if (!flowdata) {
-@@ -73400,9 +73693,8 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73400,9 +73723,8 @@ var Canvas = /*#__PURE__*/function () {
          return;
        }
        renderCtx.fillRect(cellsize[0], cellsize[1], cellsize[2], cellsize[3]);
@@ -1373,7 +1737,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
          var dv_w = 5 * this.sheetCtx.zoomRatio;
          var dv_h = 5 * this.sheetCtx.zoomRatio;
          renderCtx.beginPath();
-@@ -73443,7 +73735,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73443,7 +73765,7 @@ var Canvas = /*#__PURE__*/function () {
          } else {
            cellOverflow_bd_r_render = false;
          }
@@ -1382,7 +1746,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
          var pos_x = startX + offsetLeft;
          var pos_y = startY + offsetTop + 1;
          renderCtx.save();
-@@ -73479,7 +73771,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73479,7 +73801,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.lineWidth = 1;
          renderCtx.strokeStyle = "#000";
          renderCtx.strokeRect(horizonAlignPos, verticalAlignPos_checkbox, 10, 10);
@@ -1391,7 +1755,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
            renderCtx.beginPath();
            renderCtx.lineTo(horizonAlignPos + 1, verticalAlignPos_checkbox + 6);
            renderCtx.lineTo(horizonAlignPos + 4, verticalAlignPos_checkbox + 9);
-@@ -76076,8 +76368,12 @@ var dataToCelldata = function dataToCelldata(data) {
+@@ -76076,8 +76398,12 @@ var dataToCelldata = function dataToCelldata(data) {
    if (data == null) {
      return celldata;
    }
@@ -1406,7 +1770,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
        var v = data[r][c];
        if (v != null) {
          celldata.push({
-@@ -76086,8 +76382,8 @@ var dataToCelldata = function dataToCelldata(data) {
+@@ -76086,8 +76412,8 @@ var dataToCelldata = function dataToCelldata(data) {
            v: v
          });
        }
@@ -1417,7 +1781,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    return celldata;
  };
  var celldataToData = function celldataToData(celldata, rowCount, colCount) {
-@@ -76101,13 +76397,18 @@ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
+@@ -76101,13 +76427,18 @@ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
      lastColNum = Math.max(lastColNum, colCount);
    }
    if (lastRowNum && lastColNum) {
@@ -1442,7 +1806,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
      });
      return expandedData;
    }
-@@ -76146,7 +76447,8 @@ function getCellValue$1(ctx, row, column) {
+@@ -76146,7 +76477,8 @@ function getCellValue$1(ctx, row, column) {
    if (!targetSheetData) {
      throw SHEET_NOT_FOUND;
    }
@@ -1452,7 +1816,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    var ret;
    if (cellData && ___default['default'].isPlainObject(cellData)) {
      var _cellData$ct;
-@@ -76176,6 +76478,14 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
+@@ -76176,6 +76508,14 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
    }
    var sheet = getSheet(ctx, options);
    var data = sheet.data;
@@ -1467,7 +1831,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    var formatList = {
      bg: 1,
      ff: 1,
-@@ -77712,12 +78022,8 @@ function handleCellAreaDoubleClick(ctx, globalCache, settings, e, container) {
+@@ -77712,12 +78052,8 @@ function handleCellAreaDoubleClick(ctx, globalCache, settings, e, container) {
    var row_index = row_location[2];
    var col_location = colLocation(x, ctx.visibledatacolumn);
    var col_index = col_location[2];
@@ -1482,7 +1846,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb8
    var margeset = mergeBorder(ctx, flowdata, row_index, col_index);
    if (margeset) {
      var _margeset$row2 = _slicedToArray(margeset.row, 3);
-@@ -80473,6 +80779,7 @@ exports.getComputeMap = getComputeMap;
+@@ -80473,6 +80809,7 @@ exports.getComputeMap = getComputeMap;
  exports.getCurrentRules = getCurrentRules;
  exports.getDataArr = getDataArr;
  exports.getDataBySelectionNoCopy = getDataBySelectionNoCopy;

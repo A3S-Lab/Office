@@ -8,9 +8,14 @@ import {
 } from '../src/internal/features/work/editors/spreadsheet-calculation-model';
 import {
   createSpreadsheetKernelWorkbook,
+  prepareSpreadsheetKernelWorkbook,
   projectSpreadsheetKernelWorkbookOperations,
   spreadsheetOperationsMayChangeCalculation,
 } from '../src/internal/features/work/editors/spreadsheet-calculation-projection';
+import {
+  freezeImportedSpreadsheetCell,
+  registerImportedSpreadsheetMatrix,
+} from '../src/internal/features/work/work-spreadsheet-matrix-profile';
 
 describe('Spreadsheet calculation model', () => {
   test('creates a deterministic sparse workbook and ignores presentation-only cells', () => {
@@ -123,6 +128,55 @@ describe('Spreadsheet calculation model', () => {
     const content = workbook();
     delete content.sheets[0]?.id;
     expect(createSpreadsheetKernelWorkbook(content)).toBeNull();
+  });
+
+  test('distinguishes a value-only workbook from an unsupported formula workbook', () => {
+    const valueOnly = workbook();
+    const oversizedRow = valueOnly.sheets[0]?.data?.[0];
+    if (!oversizedRow) throw new Error('Workbook fixture is incomplete.');
+    oversizedRow[1] = { v: 4, m: '4' };
+    oversizedRow.length = 16_385;
+
+    expect(prepareSpreadsheetKernelWorkbook(valueOnly)).toEqual({
+      hasFormulaCells: false,
+      workbook: null,
+    });
+
+    const formula = valueOnly.sheets[0]?.data?.[0]?.[1];
+    if (!formula) throw new Error('Formula fixture is incomplete.');
+    formula.f = '=A1*2';
+    expect(prepareSpreadsheetKernelWorkbook(valueOnly)).toMatchObject({
+      hasFormulaCells: true,
+      workbook: null,
+    });
+  });
+
+  test('uses an authenticated import formula summary without rescanning cells', () => {
+    let enumerations = 0;
+    const row = [freezeImportedSpreadsheetCell({ v: 4, m: '4' })];
+    const data = new Proxy([row], {
+      ownKeys(target) {
+        enumerations += 1;
+        return Reflect.ownKeys(target);
+      },
+    });
+    registerImportedSpreadsheetMatrix(data, {
+      columnCount: 1,
+      formulaCells: [],
+      fortuneReady: true,
+      populatedCellCount: 1,
+      protectionCellKey: '',
+      rowCount: 1,
+      shownCommentCells: [],
+    });
+    enumerations = 0;
+
+    expect(
+      prepareSpreadsheetKernelWorkbook({
+        sheets: [{ id: 'sheet-1', name: 'Imported', data }],
+      }),
+    ).toEqual({ hasFormulaCells: false, workbook: null });
+    expect(enumerations).toBe(0);
   });
 
   test('rejects invalid sparse inputs before posting a Worker request', () => {

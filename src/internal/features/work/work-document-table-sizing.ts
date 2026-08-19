@@ -182,6 +182,38 @@ export const DocumentTable = Table.extend({
             ? { 'data-office-table-imported': 'true' }
             : {},
       },
+      virtualTableId: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          element.dataset.documentVirtualTableId || null,
+        renderHTML: (attributes: Record<string, unknown>) =>
+          typeof attributes.virtualTableId === 'string' &&
+          attributes.virtualTableId
+            ? { 'data-document-virtual-table-id': attributes.virtualTableId }
+            : {},
+      },
+      virtualTableIndex: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          nonNegativeSafeInteger(element.dataset.documentVirtualTableIndex),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const index = nonNegativeSafeInteger(attributes.virtualTableIndex);
+          return index === null
+            ? {}
+            : { 'data-document-virtual-table-index': String(index) };
+        },
+      },
+      virtualTableCount: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          positiveSafeInteger(element.dataset.documentVirtualTableCount),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const count = positiveSafeInteger(attributes.virtualTableCount);
+          return count === null
+            ? {}
+            : { 'data-document-virtual-table-count': String(count) };
+        },
+      },
     };
   },
 }).configure({
@@ -189,6 +221,17 @@ export const DocumentTable = Table.extend({
   allowTableNodeSelection: true,
   View: WorkDocumentTableView,
 });
+
+function nonNegativeSafeInteger(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number >= 0 ? number : null;
+}
+
+function positiveSafeInteger(value: unknown): number | null {
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number > 0 ? number : null;
+}
 
 export const DocumentTableSizing = Extension.create({
   name: 'documentTableSizing',

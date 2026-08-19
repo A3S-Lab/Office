@@ -15,6 +15,7 @@ import type {
   WorkDocumentFieldContext,
   WorkDocumentFieldContextResolver,
 } from '../work-document-fields';
+import { documentTransactionsOnlyHydrateChunks } from '../work-document-chunk-node';
 import {
   documentLayoutFontKey,
   type WorkDocumentLayoutFont,
@@ -88,6 +89,8 @@ export interface UseDocumentPaginationValue {
   resolveFieldContext: WorkDocumentFieldContextResolver | null;
 }
 
+const MAX_DOCUMENT_BLOCK_RESIZE_OBSERVATIONS = 4_096;
+
 export function useDocumentPagination({
   editor,
   documentRevision,
@@ -156,6 +159,7 @@ export function useDocumentPagination({
           delete editorDom.dataset.paginationFallbackGlyphs;
           delete editorDom.dataset.paginationFlows;
           delete editorDom.dataset.paginationMeasuredBlocks;
+          delete editorDom.dataset.paginationObservedBlocks;
           delete editorDom.dataset.paginationLaidOutBlocks;
           delete editorDom.dataset.paginationPages;
           delete editorDom.dataset.paginationReusedBlocks;
@@ -175,6 +179,7 @@ export function useDocumentPagination({
           delete editorDom.dataset.paginationDocumentTriggers;
           delete editorDom.dataset.paginationFontTriggers;
           delete editorDom.dataset.paginationResizeTriggers;
+          delete editorDom.dataset.paginationResizeScope;
           delete editorDom.dataset.paginationRuns;
           delete editorDom.dataset.paginationTextBatch;
           delete editorDom.dataset.paginationTextBatches;
@@ -255,7 +260,12 @@ export function useDocumentPagination({
 
     const observeBlocks = (blocks: MeasuredDocumentLayoutBlock[]) => {
       stopObservingBlocks();
-      observedBlockPositions = documentResizeObservationPositions(blocks);
+      const observation = documentResizeObservationTargets(editorDom, blocks);
+      editorDom.dataset.paginationObservedBlocks = String(
+        observation.observedBlockCount,
+      );
+      editorDom.dataset.paginationResizeScope = observation.scope;
+      observedBlockPositions = observation.positions;
       observedElements = Array.from(observedBlockPositions.keys());
       observedHeights.clear();
       for (const element of observedElements) {
@@ -415,6 +425,7 @@ export function useDocumentPagination({
           previousPagination,
           snapshot.blocks,
           measurementStart,
+          snapshot.reusedPrefixBlockCount,
         );
         editorDom.dataset.paginationLaidOutBlocks = String(
           layoutPlan.blocks.length,
@@ -584,7 +595,18 @@ export function useDocumentPagination({
     const markDirty = (position: number) => {
       measurementRange.invalidate(position);
     };
-    const handleDocumentUpdate = ({ transaction }: EditorEvents['update']) => {
+    const handleDocumentUpdate = ({
+      appendedTransactions,
+      transaction,
+    }: EditorEvents['update']) => {
+      if (
+        documentTransactionsOnlyHydrateChunks([
+          transaction,
+          ...(appendedTransactions ?? []),
+        ])
+      ) {
+        return;
+      }
       updateDiagnostic('documentTriggers', 'paginationDocumentTriggers');
       markDirty(earliestChangedPosition(transaction));
       schedule(true);
@@ -720,6 +742,29 @@ export function documentResizeObservationPositions(
     );
   }
   return positions;
+}
+
+export function documentResizeObservationTargets(
+  editorDom: HTMLElement,
+  blocks: readonly MeasuredDocumentLayoutBlock[],
+): {
+  observedBlockCount: number;
+  positions: ReadonlyMap<HTMLElement, number>;
+  scope: 'blocks' | 'document';
+} {
+  const positions = documentResizeObservationPositions(blocks);
+  if (positions.size <= MAX_DOCUMENT_BLOCK_RESIZE_OBSERVATIONS) {
+    return {
+      observedBlockCount: positions.size,
+      positions,
+      scope: 'blocks',
+    };
+  }
+  return {
+    observedBlockCount: positions.size,
+    positions: new Map([[editorDom, 0]]),
+    scope: 'document',
+  };
 }
 
 export function documentPaginationPageDescriptors(
@@ -982,27 +1027,41 @@ function blockForPosition(
   blocks: readonly MeasuredDocumentLayoutBlock[],
   position: number,
 ): MeasuredDocumentLayoutBlock | undefined {
-  const rangedBlock = blocks.find((block) =>
-    block.selectionRanges?.some(
-      (range) => range.from <= position && position < range.to,
-    ),
-  );
-  if (rangedBlock) return rangedBlock;
+  if (!blocks.length) return undefined;
 
   let lower = 0;
   let upper = blocks.length - 1;
-  let containing = blocks[0];
+  let containingIndex = 0;
   while (lower <= upper) {
     const middle = Math.floor((lower + upper) / 2);
     const candidate = blocks[middle];
     if (candidate.from <= position) {
-      containing = candidate;
+      containingIndex = middle;
       lower = middle + 1;
     } else {
       upper = middle - 1;
     }
   }
-  return containing;
+
+  // Table-row fragments can share the same broad `from`/`to` interval while
+  // their cell selection ranges belong to different physical pages. Search
+  // only the small overlapping fragment group around the binary-search hit;
+  // scanning every pagination block makes cursor movement O(document size).
+  let overlappingFrom = containingIndex;
+  while (overlappingFrom > 0 && blocks[overlappingFrom - 1].to > position) {
+    overlappingFrom -= 1;
+  }
+  for (let index = overlappingFrom; index <= containingIndex; index += 1) {
+    const candidate = blocks[index];
+    if (
+      candidate.selectionRanges?.some(
+        (range) => range.from <= position && position < range.to,
+      )
+    ) {
+      return candidate;
+    }
+  }
+  return blocks[containingIndex];
 }
 
 function pageMetricsKey(page: OfficeKernelPageMetrics): string {

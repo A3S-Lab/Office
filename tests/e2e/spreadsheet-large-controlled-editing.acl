@@ -1,0 +1,152 @@
+suite "spreadsheet-large-controlled-editing" {
+    version = 1
+
+    scenario "import-edit-and-reopen-one-million-cells" {
+        name = "Keep consecutive controlled edits after reopening a 100k by 10 workbook"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1440
+            height = 1000
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-large-controlled-editing"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-million-cell-workbook" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/performance/fixtures/spreadsheet-table-100k-x10.xlsx"]
+        }
+
+        wait "million-cell-grid-ready" {
+            visible = css(".work-spreadsheet-editor[data-spreadsheet-profile='ready'][data-profile-row-count='100000'][data-populated-cell-count='1000000'] .fortune-sheet-overlay")
+        }
+
+        focus "focus-million-cell-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "reach-final-populated-cell" {
+            key = "Control+End"
+        }
+
+        expect "final-cell-selected" {
+            text = "J100000"
+        }
+
+        expect "final-source-value-loaded" {
+            text = "900000"
+        }
+
+        fill "edit-final-cell" {
+            target = css("[aria-label='当前单元格输入']")
+            value = "ACL_EDIT_J100000"
+        }
+
+        press "commit-final-cell" {
+            key = "Enter"
+        }
+
+        focus "refocus-grid-for-second-edit" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "return-to-final-cell" {
+            key = "Control+End"
+        }
+
+        press "select-previous-final-row-cell" {
+            key = "ArrowLeft"
+        }
+
+        expect "previous-cell-selected" {
+            text = "I100000"
+        }
+
+        fill "edit-previous-final-row-cell" {
+            target = css("[aria-label='当前单元格输入']")
+            value = "ACL_EDIT_I100000"
+        }
+
+        press "commit-previous-final-row-cell" {
+            key = "Enter"
+        }
+
+        focus "refocus-grid-for-verification" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "reselect-final-cell" {
+            key = "Control+End"
+        }
+
+        expect "first-controlled-edit-persisted" {
+            text = "ACL_EDIT_J100000"
+        }
+
+        press "reselect-previous-cell" {
+            key = "ArrowLeft"
+        }
+
+        expect "second-controlled-edit-persisted" {
+            text = "ACL_EDIT_I100000"
+        }
+
+        click "return-to-office-home" {
+            target = role("button", "返回办公首页")
+        }
+
+        wait "imported-workbook-card-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "reopen-imported-workbook" {
+            target = text("spreadsheet-table-100k-x10", true)
+        }
+
+        wait "reopened-million-cell-grid-ready" {
+            visible = css(".work-spreadsheet-editor[data-spreadsheet-profile='ready'][data-profile-row-count='100000'][data-populated-cell-count='1000000'] .fortune-sheet-overlay")
+        }
+
+        focus "focus-reopened-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "reach-reopened-final-cell" {
+            key = "Control+End"
+        }
+
+        expect "final-edit-survives-remount" {
+            text = "ACL_EDIT_J100000"
+        }
+
+        press "select-reopened-previous-cell" {
+            key = "ArrowLeft"
+        }
+
+        expect "previous-edit-survives-remount" {
+            text = "ACL_EDIT_I100000"
+        }
+
+        screenshot "reopened-million-cell-workbook" {
+            path = "screenshots/spreadsheet-large-controlled-editing.png"
+        }
+
+        console "million-cell-console" {
+            path = "diagnostics/spreadsheet-large-controlled-editing-console.json"
+            clear = false
+        }
+
+        page_errors "million-cell-errors" {
+            path = "diagnostics/spreadsheet-large-controlled-editing-errors.json"
+            clear = false
+        }
+    }
+}

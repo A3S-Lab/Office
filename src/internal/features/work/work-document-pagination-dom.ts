@@ -24,6 +24,37 @@ export function reusableDocumentLayoutBlocks(
     }));
 }
 
+export function reusableDocumentChunkLayoutBlocks(
+  previous: readonly MeasuredDocumentLayoutBlock[],
+  element: HTMLElement,
+  chunkFrom: number,
+  chunkTo: number,
+  dirtyFrom: number,
+): MeasuredDocumentLayoutBlock[] {
+  if (chunkTo > dirtyFrom || chunkTo <= chunkFrom || !previous.length) {
+    return [];
+  }
+  let lower = 0;
+  let upper = previous.length;
+  while (lower < upper) {
+    const middle = Math.floor((lower + upper) / 2);
+    if (previous[middle].from < chunkFrom) lower = middle + 1;
+    else upper = middle;
+  }
+  const reused: MeasuredDocumentLayoutBlock[] = [];
+  for (let index = lower; index < previous.length; index += 1) {
+    const candidate = previous[index];
+    if (candidate.from >= chunkTo) break;
+    if (candidate.to > chunkTo) continue;
+    reused.push({
+      ...candidate,
+      block: { ...candidate.block },
+      element,
+    });
+  }
+  return reused;
+}
+
 export function isDocumentListNode(node: ProseMirrorNode): boolean {
   return node.type.name === 'bulletList' || node.type.name === 'orderedList';
 }

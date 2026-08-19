@@ -23,6 +23,10 @@ import {
   type WorkDocumentBookmarkReferenceRename,
   type WorkDocumentBookmarkReferenceTarget,
 } from './work-document-bookmark-references';
+import {
+  DOCUMENT_INTEGRITY_BOOKMARK,
+  documentHasIntegrityFeature,
+} from './work-document-integrity-index';
 import { createWorkId } from './work-templates';
 
 export type WorkDocumentBookmarkBoundaryKind = 'start' | 'end';
@@ -399,6 +403,12 @@ function normalizeDocumentBookmarks(
   oldState?: EditorState,
   transactions: readonly Transaction[] = [],
 ): Transaction | null {
+  if (
+    boundaryNodeName === 'documentBookmarkBoundary' &&
+    !documentHasIntegrityFeature(state.doc, DOCUMENT_INTEGRITY_BOOKMARK)
+  ) {
+    return null;
+  }
   const collection = collectDocumentBookmarkPairs(state.doc, boundaryNodeName);
   const retained = oldState
     ? retainedDocumentBookmarkPairs(

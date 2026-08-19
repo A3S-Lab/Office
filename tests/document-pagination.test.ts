@@ -6,6 +6,7 @@ import {
   deriveDocumentPaginationPageDescriptors,
   documentPaginationPageDescriptors,
   documentResizeObservationPositions,
+  documentResizeObservationTargets,
   pageForPosition,
 } from '../src/internal/features/work/editors/use-document-pagination';
 import type { MeasuredDocumentLayoutBlock } from '../src/internal/features/work/work-document-pagination';
@@ -17,6 +18,7 @@ import {
   documentPageMetrics,
   documentPaginationSurfaceHeight,
   findDocumentLineStartOffset,
+  reusableDocumentChunkLayoutBlocks,
   reusableDocumentLayoutBlocks,
 } from '../src/internal/features/work/work-document-pagination';
 import type { WorkDocumentSectionLayout } from '../src/internal/features/work/work-types';
@@ -52,6 +54,28 @@ test('indexes the earliest resize-observed block for each element', () => {
   expect(positions.size).toBe(1);
   expect(positions.get(observed)).toBe(10);
   expect(positions.has(ignored)).toBe(false);
+});
+
+test('observes the document root instead of thousands of individual blocks', () => {
+  const layout = sectionLayout();
+  const editor = document.createElement('div');
+  const blocks = Array.from({ length: 4_097 }, (_, index) => ({
+    ...measuredBlock(
+      `paragraph-${index}`,
+      'section-a',
+      0,
+      layout,
+      document.createElement('p'),
+    ),
+    from: index + 1,
+    observeResize: true,
+  }));
+
+  const observation = documentResizeObservationTargets(editor, blocks);
+
+  expect(observation.observedBlockCount).toBe(4_097);
+  expect(observation.scope).toBe('document');
+  expect(Array.from(observation.positions.entries())).toEqual([[editor, 0]]);
 });
 
 test('treats page chrome as overlays and keeps complete physical pages', () => {
@@ -214,6 +238,49 @@ test('reuses stable measured blocks before the earliest document change', () => 
   ).toEqual([]);
 });
 
+test('reuses only the stable pagination blocks inside a document chunk', () => {
+  const previousElement = document.createElement('div');
+  const currentElement = document.createElement('div');
+  const block = (
+    id: string,
+    from: number,
+    to: number,
+  ): MeasuredDocumentLayoutBlock => ({
+    block: { id, height: 20 },
+    element: previousElement,
+    from,
+    to,
+    inlineOffsetLeft: 0,
+    inlineOffsetRight: 0,
+    observeResize: false,
+  });
+  const previous = [
+    block('before', 1, 9),
+    block('chunk-row-1', 11, 15),
+    block('chunk-row-2', 15, 20),
+    block('after', 21, 30),
+  ];
+
+  const reused = reusableDocumentChunkLayoutBlocks(
+    previous,
+    currentElement,
+    10,
+    21,
+    40,
+  );
+
+  expect(reused.map(({ block }) => block.id)).toEqual([
+    'chunk-row-1',
+    'chunk-row-2',
+  ]);
+  expect(reused.every(({ element }) => element === currentElement)).toBe(true);
+  expect(reused[0]).not.toBe(previous[1]);
+  expect(reused[0].block).not.toBe(previous[1].block);
+  expect(
+    reusableDocumentChunkLayoutBlocks(previous, currentElement, 10, 21, 15),
+  ).toEqual([]);
+});
+
 test('aligns safe table-cell boundaries into row fragments', () => {
   const fragments = createDocumentTableRowFragmentPlan(
     [
@@ -341,6 +408,52 @@ test('maps a selection in a fragmented table row to its visual page', () => {
   expect(pageForPosition(pagination, 15)).toBe(1);
   expect(pageForPosition(pagination, 20)).toBe(2);
   expect(pageForPosition(pagination, 55)).toBe(2);
+});
+
+test('locates the current page without scanning every selection range', () => {
+  const element = document.createElement('table');
+  let selectionRangeReads = 0;
+  const blocks = Array.from({ length: 2_048 }, (_, index) => {
+    const from = index * 10 + 1;
+    const block: MeasuredDocumentLayoutBlock = {
+      block: { id: `block-${index}`, height: 10 },
+      element,
+      from,
+      to: from + 9,
+      inlineOffsetLeft: 0,
+      inlineOffsetRight: 0,
+      observeResize: false,
+    };
+    Object.defineProperty(block, 'selectionRanges', {
+      configurable: true,
+      get: () => {
+        selectionRangeReads += 1;
+        return [{ from, to: from + 9 }];
+      },
+    });
+    return block;
+  });
+  const finalBlock = blocks.at(-1);
+  if (!finalBlock) throw new Error('Expected a final pagination block.');
+  const pagination: DocumentPaginationResult = {
+    layout: {
+      protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+      kind: 'layoutResult',
+      requestId: 1,
+      revision: 1,
+      documentRevision: 1,
+      startPageIndex: 0,
+      engine: 'javascript',
+      pages: [],
+      breaks: [],
+    },
+    blocks,
+    pages: [],
+    pageByBlockId: new Map([[finalBlock.block.id, 2]]),
+  };
+
+  expect(pageForPosition(pagination, finalBlock.from + 1)).toBe(2);
+  expect(selectionRangeReads).toBeLessThan(4);
 });
 
 test('resolves page chrome from physical and section-aware pagination', () => {

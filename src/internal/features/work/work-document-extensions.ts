@@ -19,6 +19,7 @@ import {
   DocumentSubscript,
   DocumentSuperscript,
 } from './work-document-character-formatting';
+import { DocumentChunk } from './work-document-chunk-node';
 import {
   DocumentBibliography,
   DocumentCitation,
@@ -27,6 +28,7 @@ import { DocumentComment } from './work-document-comments';
 import { DocumentEquation } from './work-document-equations';
 import { DocumentField } from './work-document-field-node';
 import { DocumentImage } from './work-document-image-layout';
+import { DocumentLazyBlock } from './work-document-lazy-block';
 import {
   DocumentBulletList,
   DocumentListCommands,
@@ -69,6 +71,7 @@ export interface WorkDocumentExtensionOptions {
   onContentChange?: (content: WorkDocumentContent) => void;
   onTrackingChange?: (enabled: boolean) => void;
   rotateTrackedTextIdentities?: () => boolean;
+  trustInitialIntegrityFeatures?: boolean;
 }
 
 export function createWorkDocumentExtensions(
@@ -111,6 +114,13 @@ export function createWorkDocumentExtensions(
     DocumentBulletList,
     DocumentOrderedList,
     DocumentListCommands,
+    DocumentLazyBlock,
+    DocumentChunk.configure({
+      ...(options.getContent ? { getContent: options.getContent } : {}),
+      trustInitialIntegrityFeatures: Boolean(
+        options.trustInitialIntegrityFeatures,
+      ),
+    }),
     DocumentSection,
     DocumentBookmarkBoundary,
     DocumentCaption,

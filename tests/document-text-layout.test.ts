@@ -7,6 +7,7 @@ import {
   collectDocumentTextLayoutRuns,
   documentTextLayoutBatches,
 } from '../src/internal/features/work/work-document-pagination';
+import type { DocumentPaginationSnapshot } from '../src/internal/features/work/work-document-pagination';
 import type { OfficeKernelTextLayoutParagraph } from '../src/internal/kernel/office-kernel-protocol';
 
 const layoutFont: WorkDocumentLayoutFont = {
@@ -441,6 +442,69 @@ describe('document mixed-run text layout', () => {
           maxWidth: 400,
         }),
       ]);
+    } finally {
+      editor.view.dom.remove();
+      editor.destroy();
+    }
+  });
+
+  test('skips window chunks before consulting the previous block snapshot', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: {
+        type: 'doc',
+        content: [
+          {
+            type: 'documentSection',
+            content: [
+              {
+                type: 'documentChunk',
+                attrs: {
+                  id: 'chunk-1',
+                  blockCount: 1,
+                  estimatedHeight: 24,
+                },
+                content: [
+                  {
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: 'Windowed paragraph' }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    document.body.append(editor.view.dom);
+    const blocks: DocumentPaginationSnapshot['blocks'] = [];
+    let blockFilterCalls = 0;
+    Object.defineProperty(blocks, 'filter', {
+      configurable: true,
+      value: () => {
+        blockFilterCalls += 1;
+        return [];
+      },
+    });
+
+    try {
+      expect(
+        collectDocumentTextLayoutParagraphs(
+          editor,
+          [layoutFont],
+          new Set([layoutFont.id]),
+          {
+            blocks,
+            measuredBlockCount: 0,
+            pageStyles: [],
+            reusedBlockCount: 0,
+            reusedPrefixBlockCount: 0,
+            unsupportedLayout: false,
+          },
+          Number.MAX_SAFE_INTEGER,
+        ).paragraphs,
+      ).toEqual([]);
+      expect(blockFilterCalls).toBe(0);
     } finally {
       editor.view.dom.remove();
       editor.destroy();

@@ -9,6 +9,7 @@ import {
   volatileSpreadsheetFormulaFunctions,
 } from './work-spreadsheet-formulas';
 import { unsupportedSpreadsheetFormulaFunctions } from './work-spreadsheet-formula-support';
+import { spreadsheetMatrixProfile } from './work-spreadsheet-matrix-profile';
 import type { WorkSpreadsheetContent } from './work-types';
 
 export interface SpreadsheetFormulaSummary {
@@ -55,17 +56,26 @@ interface FormulaScan {
 export function spreadsheetFormulaCount(
   content: WorkSpreadsheetContent,
 ): number {
-  return content.sheets.reduce(
-    (count, sheet) =>
-      count +
-      (sheet.data ?? []).reduce(
-        (sheetCount, row) =>
-          sheetCount +
-          row.reduce((rowCount, cell) => rowCount + (cell?.f ? 1 : 0), 0),
-        0,
-      ),
-    0,
-  );
+  let count = 0;
+  for (const sheet of content.sheets) {
+    const profile = spreadsheetMatrixProfile(sheet.data);
+    if (profile) {
+      count += profile.formulaCells.length;
+      continue;
+    }
+    if (sheet.data) {
+      for (const [, row] of sparseArrayEntries(sheet.data)) {
+        for (const [, cell] of sparseArrayEntries(row)) {
+          if (cell?.f) count += 1;
+        }
+      }
+      continue;
+    }
+    for (const entry of sheet.celldata ?? []) {
+      if (entry.v?.f) count += 1;
+    }
+  }
+  return count;
 }
 
 export function spreadsheetFormulaSummary(

@@ -25,6 +25,7 @@ export function planIncrementalDocumentLayout(
   } | null,
   next: readonly PositionedOfficeKernelLayoutBlock[],
   dirtyFrom: number,
+  reusedPrefixBlockCount = 0,
 ): IncrementalDocumentLayoutPlan {
   const fullLayout = (): IncrementalDocumentLayoutPlan => ({
     blocks: next.map(({ block }) => block),
@@ -42,10 +43,19 @@ export function planIncrementalDocumentLayout(
     return fullLayout();
   }
 
+  const stablePrefixBlockCount = Math.max(
+    0,
+    Math.min(
+      Math.trunc(reusedPrefixBlockCount),
+      previous.blocks.length,
+      next.length,
+    ),
+  );
   const affectedBlockIndex = earliestAffectedBlockIndex(
     previous.blocks,
     next,
     dirtyFrom,
+    stablePrefixBlockCount,
   );
   const pageByBlockId = new Map(
     previous.layout.pages.flatMap((page) =>
@@ -68,9 +78,6 @@ export function planIncrementalDocumentLayout(
 
   const nextBlockIndex = new Map(
     next.map(({ block }, index) => [block.id, index] as const),
-  );
-  const previousBlockById = new Map(
-    previous.blocks.map(({ block }) => [block.id, block] as const),
   );
   let startPageIndex = affectedPageIndex - 1;
 
@@ -120,9 +127,10 @@ export function planIncrementalDocumentLayout(
       !prefixMatches(
         previous.layout.pages,
         startPageIndex,
-        previousBlockById,
+        previous.blocks,
         next,
         startBlockIndex,
+        stablePrefixBlockCount,
       )
     ) {
       startPageIndex -= 1;
@@ -177,14 +185,27 @@ function earliestAffectedBlockIndex(
   previous: readonly PositionedOfficeKernelLayoutBlock[],
   next: readonly PositionedOfficeKernelLayoutBlock[],
   dirtyFrom: number,
+  stablePrefixBlockCount: number,
 ): number {
-  const positionIndex = next.findIndex((candidate) => candidate.to > dirtyFrom);
+  let lower = 0;
+  let upper = next.length;
+  while (lower < upper) {
+    const middle = Math.floor((lower + upper) / 2);
+    if (next[middle].to <= dirtyFrom) lower = middle + 1;
+    else upper = middle;
+  }
+  const positionIndex = lower < next.length ? lower : -1;
   const sharedLength = Math.min(previous.length, next.length);
-  let divergentIndex = -1;
-  for (let index = 0; index < sharedLength; index += 1) {
-    if (!sameLayoutBlock(previous[index].block, next[index].block)) {
-      divergentIndex = index;
-      break;
+  let divergentIndex =
+    stablePrefixBlockCount > 0 && stablePrefixBlockCount < sharedLength
+      ? stablePrefixBlockCount
+      : -1;
+  if (stablePrefixBlockCount === 0) {
+    for (let index = 0; index < sharedLength; index += 1) {
+      if (!sameLayoutBlock(previous[index].block, next[index].block)) {
+        divergentIndex = index;
+        break;
+      }
     }
   }
   if (divergentIndex < 0 && previous.length !== next.length) {
@@ -201,23 +222,30 @@ function earliestAffectedBlockIndex(
 function prefixMatches(
   pages: readonly OfficeKernelLayoutPage[],
   startPageIndex: number,
-  previousBlockById: ReadonlyMap<string, OfficeKernelLayoutBlock>,
+  previous: readonly PositionedOfficeKernelLayoutBlock[],
   next: readonly PositionedOfficeKernelLayoutBlock[],
   startBlockIndex: number,
+  stablePrefixBlockCount: number,
 ): boolean {
-  const prefixIds = pages
-    .slice(0, startPageIndex)
-    .flatMap((page) => page.placements.map((placement) => placement.blockId));
-  if (prefixIds.length !== startBlockIndex) return false;
-  return prefixIds.every((blockId, index) => {
-    const previous = previousBlockById.get(blockId);
-    const candidate = next[index]?.block;
-    return (
-      previous !== undefined &&
-      candidate?.id === blockId &&
-      sameLayoutBlock(previous, candidate)
-    );
-  });
+  let blockIndex = 0;
+  for (let pageIndex = 0; pageIndex < startPageIndex; pageIndex += 1) {
+    for (const placement of pages[pageIndex]?.placements ?? []) {
+      if (blockIndex >= startBlockIndex) return false;
+      if (blockIndex >= stablePrefixBlockCount) {
+        const previousBlock = previous[blockIndex]?.block;
+        const nextBlock = next[blockIndex]?.block;
+        if (
+          previousBlock?.id !== placement.blockId ||
+          nextBlock?.id !== placement.blockId ||
+          !sameLayoutBlock(previousBlock, nextBlock)
+        ) {
+          return false;
+        }
+      }
+      blockIndex += 1;
+    }
+  }
+  return blockIndex === startBlockIndex;
 }
 
 function sameLayoutBlock(

@@ -12,8 +12,14 @@ export interface SpreadsheetWorkbookSyncController {
   takeOperations: () => Op[];
 }
 
+export type SpreadsheetExternalWorkbookSynchronizer = (
+  previous: WorkSpreadsheetContent,
+  next: WorkSpreadsheetContent,
+) => boolean;
+
 export function useSpreadsheetWorkbookSync(
   content: WorkSpreadsheetContent,
+  synchronizeExternalWorkbook?: SpreadsheetExternalWorkbookSynchronizer,
 ): SpreadsheetWorkbookSyncController {
   const mountedContentRef = useRef(content);
   const externalSyncPendingRef = useRef(false);
@@ -25,9 +31,12 @@ export function useSpreadsheetWorkbookSync(
 
   useLayoutEffect(() => {
     if (mountedContentRef.current === content) return;
+    const previous = mountedContentRef.current;
     mountedContentRef.current = content;
     pendingOperationsRef.current = [];
-    setMountRevision((revision) => revision + 1);
+    if (!synchronizeExternalWorkbook?.(previous, content)) {
+      setMountRevision((revision) => revision + 1);
+    }
   });
 
   const acceptContent = useCallback((nextContent: WorkSpreadsheetContent) => {

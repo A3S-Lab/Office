@@ -4,6 +4,7 @@ import {
   workLiveDocumentPdfCaptureBatches,
   workPdfPagesForExport,
 } from '../src/internal/features/work/work-pdf-export';
+import { registerDocumentPageSurfaceGeometry } from '../src/internal/features/work/work-document-page-surface-registry';
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -187,6 +188,89 @@ test('reads exact geometry for every mixed-size live document page', () => {
         orientation: 'landscape',
         pageHeightPoints: 150,
         pageWidthPoints: 375,
+        top: 420,
+        width: 500,
+      },
+    ],
+  });
+});
+
+test('reads complete registered geometry from a virtualized page stack', () => {
+  document.body.innerHTML = `
+    <section data-work-pdf-artifact="document-windowed" data-work-pdf-surface="live">
+      <article
+        data-work-pdf-live-document
+        data-pdf-orientation="portrait"
+        data-pdf-page-count="2"
+        data-pdf-page-gap="20"
+        data-pdf-page-height="400"
+        data-pdf-page-size="a4"
+        data-pdf-page-width="500"
+      >
+        <div class="work-document-page-stack">
+          <div
+            data-work-document-page-sheet
+            data-page-index="1"
+            data-page-top="0"
+            data-page-left="100"
+            data-page-width="300"
+            data-page-height="400"
+            data-pdf-orientation="portrait"
+            data-pdf-page-size="a4"
+            data-pdf-page-width-points="225"
+            data-pdf-page-height-points="300"
+          ></div>
+        </div>
+        <section class="work-document-editable">
+          <div
+            class="ProseMirror"
+            data-pagination-pages="2"
+            data-pagination-state="ready"
+          ></div>
+        </section>
+      </article>
+    </section>
+  `;
+  const stack = document.querySelector<HTMLElement>(
+    '.work-document-page-stack',
+  );
+  if (!stack) throw new Error('Expected a virtualized page stack.');
+  registerDocumentPageSurfaceGeometry(stack, () => [
+    {
+      height: 400,
+      left: 100,
+      orientation: 'portrait',
+      pageHeightPoints: 300,
+      pageIndex: 0,
+      pageSize: 'a4',
+      pageWidthPoints: 225,
+      top: 0,
+      width: 300,
+    },
+    {
+      height: 200,
+      left: 0,
+      orientation: 'landscape',
+      pageHeightPoints: 150,
+      pageIndex: 1,
+      pageSize: 'letter',
+      pageWidthPoints: 375,
+      top: 420,
+      width: 500,
+    },
+  ]);
+
+  expect(
+    workLiveDocumentPdfSurfaceForExport('document-windowed'),
+  ).toMatchObject({
+    pageCount: 2,
+    pages: [
+      { height: 400, left: 100, top: 0, width: 300 },
+      {
+        height: 200,
+        left: 0,
+        orientation: 'landscape',
+        pageSize: 'letter',
         top: 420,
         width: 500,
       },

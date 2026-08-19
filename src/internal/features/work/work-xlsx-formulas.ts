@@ -1,6 +1,6 @@
 import type { Cell } from '@fortune-sheet/core';
 import JSZip from 'jszip';
-import type { WorkSheet } from 'xlsx';
+import type { CellObject, WorkSheet } from 'xlsx';
 import {
   attribute,
   descendants,
@@ -9,6 +9,7 @@ import {
   firstDescendant,
   OoxmlPackage,
   parseXml,
+  xmlContainsAnyElement,
 } from './work-ooxml-package';
 import {
   editableSpreadsheetFormula,
@@ -27,6 +28,8 @@ import type {
   WorkSpreadsheetFormulaRange,
   WorkSpreadsheetSheet,
 } from './work-types';
+import { xlsxWorksheetCellEntries } from './work-xlsx-worksheet';
+import type { XlsxWorksheetXmlScan } from './work-xlsx-worksheet-scan';
 
 export interface XlsxFormulaCell {
   address: string;
@@ -66,6 +69,7 @@ export async function readXlsxFormulaFeatures(
 
 export async function readXlsxFormulaFeaturesFromPackage(
   archive: OoxmlPackage,
+  worksheetScans?: Readonly<Record<string, XlsxWorksheetXmlScan>>,
 ): Promise<XlsxFormulaFeatures> {
   if (!archive.has('xl/workbook.xml')) {
     return {
@@ -80,12 +84,19 @@ export async function readXlsxFormulaFeaturesFromPackage(
   const sheets = new Map<string, XlsxFormulaSheetFeatures>();
   for (const [sheetName, partPath] of worksheetParts) {
     if (!archive.has(partPath)) continue;
+    const scan = worksheetScans?.[partPath];
+    if (scan && !scan.hasFormulaFeatures) {
+      sheets.set(sheetName, emptyXlsxFormulaSheetFeatures());
+      continue;
+    }
+    const source = await archive.text(partPath);
+    if (!scan && !xmlContainsAnyElement(source, ['f'])) {
+      sheets.set(sheetName, emptyXlsxFormulaSheetFeatures());
+      continue;
+    }
     sheets.set(
       sheetName,
-      readWorksheetFormulaFeatures(
-        await archive.xml(partPath),
-        dynamicMetadata,
-      ),
+      readWorksheetFormulaFeatures(parseXml(source, partPath), dynamicMetadata),
     );
   }
   return {
@@ -93,6 +104,17 @@ export async function readXlsxFormulaFeaturesFromPackage(
     sheets,
     unsupportedCalculationAttributes:
       readUnsupportedCalculationAttributes(workbook),
+  };
+}
+
+function emptyXlsxFormulaSheetFeatures(): XlsxFormulaSheetFeatures {
+  return {
+    formulas: [],
+    ranges: [],
+    sourceFormulas: {},
+    sharedFormulaGroups: 0,
+    sharedFormulaCells: 0,
+    unsupportedFormulaAttributes: [],
   };
 }
 
@@ -108,29 +130,28 @@ export function createSpreadsheetFormulaMetadata(
     ]),
   );
 
-  for (const [address, value] of Object.entries(worksheet)) {
-    if (address.startsWith('!') || !value || typeof value !== 'object')
-      continue;
-    const cell = value as { f?: string; F?: string; D?: boolean };
-    if (cell.f) {
-      const source = features?.sourceFormulas[address.toUpperCase()] ?? cell.f;
+  for (const { address, cell } of xlsxWorksheetCellEntries(worksheet)) {
+    const formulaCell = cell as CellObject & { D?: boolean };
+    if (formulaCell.f) {
+      const source =
+        features?.sourceFormulas[address.toUpperCase()] ?? formulaCell.f;
       if (editableSpreadsheetFormula(source) !== source)
         sourceFormulas[address.toUpperCase()] = source;
     }
-    if (!cell.f || !cell.F) continue;
-    const reference = cell.F.toUpperCase().replaceAll('$', '');
+    if (!formulaCell.f || !formulaCell.F) continue;
+    const reference = formulaCell.F.toUpperCase().replaceAll('$', '');
     const existing = rangeByReference.get(reference);
     if (existing) {
-      if (cell.D && existing.type === 'array') {
+      if (formulaCell.D && existing.type === 'array') {
         rangeByReference.set(reference, { ...existing, type: 'dynamic-array' });
       }
       continue;
     }
     rangeByReference.set(reference, {
-      type: cell.D ? 'dynamic-array' : 'array',
+      type: formulaCell.D ? 'dynamic-array' : 'array',
       anchor: address.toUpperCase(),
-      reference: cell.F,
-      formula: features?.sourceFormulas[address.toUpperCase()] ?? cell.f,
+      reference: formulaCell.F,
+      formula: features?.sourceFormulas[address.toUpperCase()] ?? formulaCell.f,
     });
   }
 

@@ -69,6 +69,12 @@ export function collectDocumentTextLayoutParagraphs(
     position: number,
   ): void => {
     if (paragraphs.length >= MAX_DOCUMENT_TEXT_LAYOUT_PARAGRAPHS) return;
+    // Large-document window containers and lazy blocks are measured by the
+    // pagination estimator, not by the paragraph shaping kernel. Reject them
+    // before looking up reusable blocks: the previous pagination snapshot can
+    // contain 100,000 entries, so filtering it once per chunk turns a local
+    // edit into O(chunks * blocks) work.
+    if (!isDocumentLineFragmentNode(node)) return;
     if (
       reusableDocumentLayoutBlocks(
         previous?.blocks ?? [],

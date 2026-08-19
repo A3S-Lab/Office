@@ -1,7 +1,9 @@
 import { describe, expect, test } from '@rstest/core';
 import {
+  createSchemaValidatedWorkDocumentModel,
   createWorkDocumentModel,
   documentModelForContent,
+  documentModelHasTrustedInitialIntegrityFeatures,
   resolveWorkDocumentEditorInput,
 } from '../src/internal/features/work/work-document-model';
 import { syncDocumentContentFromHtml } from '../src/internal/features/work/work-document-section';
@@ -52,6 +54,51 @@ describe('structured document model', () => {
 
     expect(first.revision).toBe(1);
     expect(second.revision).toBe(2);
+  });
+
+  test('keeps schema-validation trust process-local', () => {
+    const html = '<p>Structured content</p>';
+    const model = createSchemaValidatedWorkDocumentModel(html, root, {
+      initialIntegrityFeatures: 0,
+    });
+    const content = {
+      type: 'document',
+      pageSize: 'a4',
+      html,
+      model,
+    } satisfies WorkDocumentContent;
+
+    expect(documentModelHasTrustedInitialIntegrityFeatures(model)).toBe(true);
+    expect(documentModelForContent(content)).toBe(model);
+
+    const clonedModel = structuredClone(model);
+    expect(documentModelHasTrustedInitialIntegrityFeatures(clonedModel)).toBe(
+      false,
+    );
+    expect(documentModelForContent({ ...content, model: clonedModel })).toEqual(
+      clonedModel,
+    );
+  });
+
+  test('keeps the trusted HTML shortcut bound to the exact model snapshot', () => {
+    const html = '<p>Structured content</p>';
+    const model = createSchemaValidatedWorkDocumentModel(html, root, {
+      initialIntegrityFeatures: 0,
+    });
+    const content = {
+      type: 'document',
+      pageSize: 'a4',
+      html,
+      model,
+    } satisfies WorkDocumentContent;
+
+    expect(documentModelForContent(content)).toBe(model);
+    expect(
+      documentModelForContent({ ...content, html: '<p>Host edit</p>' }),
+    ).toBeNull();
+
+    model.htmlFingerprint = 'mutated';
+    expect(documentModelForContent(content)).toBeNull();
   });
 
   test('ignores a stale model when a host changes legacy HTML', () => {

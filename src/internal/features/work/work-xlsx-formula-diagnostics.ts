@@ -1,17 +1,25 @@
+import type { OoxmlPackage } from './work-ooxml-package';
+import { unsupportedSpreadsheetFormulaFunctions } from './work-spreadsheet-formula-support';
 import {
   formulaHasExternalReference,
   formulaHasStructuredReference,
   volatileSpreadsheetFormulaFunctions,
 } from './work-spreadsheet-formulas';
-import { unsupportedSpreadsheetFormulaFunctions } from './work-spreadsheet-formula-support';
-import { readXlsxFormulaFeaturesFromPackage } from './work-xlsx-formulas';
-import type { OoxmlPackage } from './work-ooxml-package';
 import type { WorkCompatibilityIssue } from './work-types';
+import {
+  readXlsxFormulaFeaturesFromPackage,
+  type XlsxFormulaFeatures,
+} from './work-xlsx-formulas';
+import type { XlsxWorksheetXmlScan } from './work-xlsx-worksheet-scan';
 
 export async function diagnoseXlsxFormulas(
   archive: OoxmlPackage,
+  importedFeatures?: XlsxFormulaFeatures | null,
+  worksheetScans?: Readonly<Record<string, XlsxWorksheetXmlScan>>,
 ): Promise<WorkCompatibilityIssue[]> {
-  const features = await readXlsxFormulaFeaturesFromPackage(archive);
+  const features =
+    importedFeatures ??
+    (await readXlsxFormulaFeaturesFromPackage(archive, worksheetScans));
   const formulas = Array.from(features.sheets.entries()).flatMap(
     ([sheetName, sheet]) =>
       sheet.formulas.map((formula) => ({ ...formula, sheetName })),

@@ -1,13 +1,16 @@
 diff --git a/dist/index.esm.js b/dist/index.esm.js
-index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e1488fcf4a9d 100644
+index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e073248fe 100644
 --- a/dist/index.esm.js
 +++ b/dist/index.esm.js
-@@ -1,4 +1,4 @@
+@@ -1,6 +1,6 @@
 -import { defaultContext, defaultSettings, getSheetIndex, colLocationByIndex, fixPositionOnFrozenCells, colLocation, getFlowdata, isAllowEdit, handleColumnHeaderMouseDown, handleColSizeHandleMouseDown, handleColFreezeHandleMouseDown, handleContextMenu, selectTitlesMap, selectTitlesRange, fixColumnStyleOverflowInFreeze, rowLocationByIndex, rowLocation, handleRowHeaderMouseDown, handleRowSizeHandleMouseDown, handleRowFreezeHandleMouseDown, fixRowStyleOverflowInFreeze, locale, getStyleByCell, getCellValue, createRangeHightlight, isInlineStringCell, getInlineStringHTML, valueShowEs, escapeHTMLTag, escapeScriptTag, moveToEnd, isShowHidenCR, getrangeseleciton, cancelNormalSelected, moveHighlightCell, israngeseleciton, handleFormulaInput, onSearchDialogMoveStart, replaceAll, replace, searchAll, searchNext, normalizeSelection, scrollToHighlightCell, isLinkValid, getRangetxt, goToLink, replaceHtml, removeHyperlink, onRangeSelectionModalMoveStart, saveHyperlink, createFilterOptions, onImageMoveStart, onImageResizeStart, showComments, setEditingComment, onCommentBoxMoveStart, onCommentBoxResizeStart, confirmMessage, getRangeByTxt, getDropdownList, setCellValue, setConditionRules, mergeBorder, setDropcownValue, handleCellAreaMouseDown, handleCellAreaDoubleClick, selectAll, showLinkCard, getCellRowColumn, getCellHyperlink, handleOverlayMouseMove, handleOverlayMouseUp, handleKeydownForZoom, handleOverlayTouchStart, handleOverlayTouchMove, handleOverlayTouchEnd, insertRowCol, api, drawArrow, onCellsMoveStart, createDropCellRange, updateContextWithSheetData, updateContextWithCanvas, initFreeze, Canvas, handleGlobalWheel, setCaretPosition, getDataArr, updateMoreCell, getRegStr, getOptionValue, getSelectRange, applyLocation, updateItem, update, normalizedCellAttr, updateFormat, handleTextSize, handleHorizontalAlign, handleVerticalAlign, handleScreenShot, showImgChooser, insertImage, editComment, deleteComment, showHideComment, showHideAllComments, newComment, handleSum, autoSelectionFormula, handleMerge, handleBorder, handleFreeze, handleSort, createFilter, clearFilter, toolbarItemSelectedFunc, toolbarItemClickHandler, handleTextColor, handleTextBackground, getInlineStringNoStyle, rangeHightlightselected, updateCell, editSheetName, cancelActiveImgItem, MAX_ZOOM_RATIO, MIN_ZOOM_RATIO, addSheet, indexToColumnChar, sortSelection, handleCopy, deleteRowCol, hideSelected, showSelected, removeActiveImage, deleteSelectedCellText, jfrefreshgrid, handleLink, handlePasteByClick, deleteSheet, opToPatch, orderbydatafiler, getFilterColumnValues, getFilterColumnColors, saveFilter, calcSelectionInfo, patchToOp, filterPatch, inverseRowColOptions, ensureSheetIndex, setFormulaCellInfoMap, initSheetIndex, handleGlobalKeyDown, handlePaste, groupValuesRefresh } from '@fortune-sheet/core';
 +import { defaultContext, defaultSettings, getSheetIndex, colLocationByIndex, fixPositionOnFrozenCells, colLocation, getFlowdata, isAllowEdit, handleColumnHeaderMouseDown, handleColSizeHandleMouseDown, handleColFreezeHandleMouseDown, handleContextMenu, selectTitlesMap, selectTitlesRange, fixColumnStyleOverflowInFreeze, rowLocationByIndex, rowLocation, handleRowHeaderMouseDown, handleRowSizeHandleMouseDown, handleRowFreezeHandleMouseDown, fixRowStyleOverflowInFreeze, locale, getStyleByCell, getCellValue, createRangeHightlight, isInlineStringCell, getInlineStringHTML, valueShowEs, escapeHTMLTag, escapeScriptTag, moveToEnd, isShowHidenCR, getrangeseleciton, cancelNormalSelected, moveHighlightCell, israngeseleciton, handleFormulaInput, onSearchDialogMoveStart, replaceAll, replace, searchAll, searchNext, normalizeSelection, scrollToHighlightCell, isLinkValid, getRangetxt, goToLink, replaceHtml, removeHyperlink, onRangeSelectionModalMoveStart, saveHyperlink, createFilterOptions, onImageMoveStart, onImageResizeStart, showComments, setEditingComment, onCommentBoxMoveStart, onCommentBoxResizeStart, confirmMessage, getRangeByTxt, getDataVerificationItem, getDropdownList, setCellValue, setConditionRules, mergeBorder, setDropcownValue, handleCellAreaMouseDown, handleCellAreaDoubleClick, selectAll, showLinkCard, getCellRowColumn, getCellHyperlink, handleOverlayMouseMove, handleOverlayMouseUp, handleKeydownForZoom, handleOverlayTouchStart, handleOverlayTouchMove, handleOverlayTouchEnd, insertRowCol, api, drawArrow, onCellsMoveStart, createDropCellRange, updateContextWithSheetData, updateContextWithCanvas, initFreeze, Canvas, handleGlobalWheel, setCaretPosition, getDataArr, updateMoreCell, getRegStr, getOptionValue, getSelectRange, applyLocation, updateItem, update, normalizedCellAttr, updateFormat, handleTextSize, handleHorizontalAlign, handleVerticalAlign, handleScreenShot, showImgChooser, insertImage, editComment, deleteComment, showHideComment, showHideAllComments, newComment, handleSum, autoSelectionFormula, handleMerge, handleBorder, handleFreeze, handleSort, createFilter, clearFilter, toolbarItemSelectedFunc, toolbarItemClickHandler, handleTextColor, handleTextBackground, getInlineStringNoStyle, rangeHightlightselected, updateCell, editSheetName, cancelActiveImgItem, MAX_ZOOM_RATIO, MIN_ZOOM_RATIO, addSheet, indexToColumnChar, sortSelection, handleCopy, deleteRowCol, hideSelected, showSelected, removeActiveImage, deleteSelectedCellText, jfrefreshgrid, handleLink, handlePasteByClick, deleteSheet, opToPatch, orderbydatafiler, getFilterColumnValues, getFilterColumnColors, saveFilter, calcSelectionInfo, patchToOp, filterPatch, inverseRowColOptions, ensureSheetIndex, setFormulaCellInfoMap, initSheetIndex, handleGlobalKeyDown, handlePaste, groupValuesRefresh } from '@fortune-sheet/core';
  import React, { useContext, useRef, useState, useMemo, useCallback, useEffect, useLayoutEffect, useImperativeHandle } from 'react';
- import produce, { applyPatches, enablePatches, produceWithPatches } from 'immer';
+-import produce, { applyPatches, enablePatches, produceWithPatches } from 'immer';
++import produce, { applyPatches, enablePatches, produceWithPatches, setAutoFreeze } from 'immer';
  import _ from 'lodash';
+ import regeneratorRuntime from 'regenerator-runtime';
+ 
 @@ -1161,6 +1161,8 @@ var ScrollBar = function ScrollBar(_ref) {
      context = _useContext.context,
      refs = _useContext.refs,
@@ -34,46 +37,70 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
      className: "luckysheet-scrollbars luckysheet-scrollbar-ltr luckysheet-scrollbar-".concat(axis),
      onScroll: function onScroll() {
 -      if (axis === "x") {
--        setContext(function (draftCtx) {
--          draftCtx.scrollLeft = refs.scrollbarX.current.scrollLeft;
--        });
--      } else {
 +      pendingScrollRef.current = axis === "x" ? refs.scrollbarX.current.scrollLeft : refs.scrollbarY.current.scrollTop;
 +      if (frameRef.current !== undefined) return;
 +      frameRef.current = requestAnimationFrame(function () {
 +        frameRef.current = undefined;
 +        var scroll = pendingScrollRef.current;
          setContext(function (draftCtx) {
--          draftCtx.scrollTop = refs.scrollbarY.current.scrollTop;
+-          draftCtx.scrollLeft = refs.scrollbarX.current.scrollLeft;
 +          if (axis === "x") draftCtx.scrollLeft = scroll;else draftCtx.scrollTop = scroll;
          });
+-      } else {
+-        setContext(function (draftCtx) {
+-          draftCtx.scrollTop = refs.scrollbarY.current.scrollTop;
+-        });
 -      }
 +      });
      }
    }, /*#__PURE__*/React.createElement("div", {
      style: axis === "x" ? {
-@@ -2205,9 +2212,15 @@ var NotationBoxes = function NotationBoxes() {
+@@ -2204,19 +2211,30 @@ var NotationBoxes = function NotationBoxes() {
+   var flowdata = getFlowdata(context);
    useEffect(function () {
      if (flowdata) {
-       var psShownCells = [];
+-      var psShownCells = [];
 -      for (var i = 0; i < flowdata.length; i += 1) {
 -        for (var j = 0; j < flowdata[i].length; j += 1) {
-+      var populatedRows = Object.keys(flowdata);
-+      for (var rowIndex = 0; rowIndex < populatedRows.length; rowIndex += 1) {
-+        var i = Number(populatedRows[rowIndex]);
-+        var row = flowdata[i];
-+        if (!row) continue;
-+        var populatedColumns = Object.keys(row);
-+        for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
-           var _cell$ps;
-+          var j = Number(populatedColumns[columnIndex]);
-           var cell = flowdata[i][j];
-           if (!cell) continue;
-           if ((_cell$ps = cell.ps) === null || _cell$ps === void 0 ? void 0 : _cell$ps.isShow) {
-@@ -2376,6 +2389,86 @@ function useDialog() {
+-          var _cell$ps;
+-          var cell = flowdata[i][j];
+-          if (!cell) continue;
+-          if ((_cell$ps = cell.ps) === null || _cell$ps === void 0 ? void 0 : _cell$ps.isShow) {
+-            psShownCells.push({
+-              r: i,
+-              c: j
+-            });
++      var indexedShownCells = flowdata.__a3sShownCommentCells;
++      if (Array.isArray(indexedShownCells) && indexedShownCells.length === 0 && _.isEmpty(context.commentBoxes) && !context.editingCommentBox && !context.hoveredCommentBox) return;
++      var psShownCells = Array.isArray(indexedShownCells) ? indexedShownCells : [];
++      if (!Array.isArray(indexedShownCells)) {
++        var populatedRows = Object.keys(flowdata);
++        for (var rowIndex = 0; rowIndex < populatedRows.length; rowIndex += 1) {
++          var i = Number(populatedRows[rowIndex]);
++          var row = flowdata[i];
++          if (!row) continue;
++          var populatedColumns = Object.keys(row);
++          for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
++            var _cell$ps;
++            var j = Number(populatedColumns[columnIndex]);
++            var cell = flowdata[i][j];
++            if (!cell) continue;
++            if ((_cell$ps = cell.ps) === null || _cell$ps === void 0 ? void 0 : _cell$ps.isShow) {
++              psShownCells.push({
++                r: i,
++                c: j
++              });
++            }
+           }
+         }
++        attachA3sShownCommentCells(flowdata, psShownCells);
+       }
+       setContext(function (ctx) {
+         return showComments(ctx, psShownCells);
+@@ -2376,6 +2394,86 @@ function useDialog() {
    };
  }
-
+ 
 +var DATA_VALIDATION_EXPANSION_LIMIT = 10000;
 +function normalizedDataValidationRanges(source) {
 +  if (!Array.isArray(source)) return [];
@@ -157,7 +184,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
  var DataVerification = function DataVerification() {
    var _context$dataVerifica, _context$dataVerifica2, _context$dataVerifica3, _context$dataVerifica4, _context$dataVerifica5, _context$dataVerifica6, _context$dataVerifica7, _context$dataVerifica8, _context$dataVerifica9, _context$dataVerifica0, _context$dataVerifica1, _context$dataVerifica10, _context$dataVerifica11, _context$dataVerifica12, _context$dataVerifica13, _context$dataVerifica14, _context$dataVerifica15, _context$dataVerifica16, _context$dataVerifica17, _context$dataVerifica18, _context$dataVerifica19, _context$dataVerifica20, _context$dataVerifica21, _context$dataVerifica22, _context$dataVerifica23;
    var _useContext = useContext(WorkbookContext),
-@@ -2408,7 +2501,7 @@ var DataVerification = function DataVerification() {
+@@ -2408,7 +2506,7 @@ var DataVerification = function DataVerification() {
        setContext(function (ctx) {
          var isPass = confirmMessage(ctx, generalDialog, dataVerification);
          if (isPass) {
@@ -166,7 +193,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
            var range = getRangeByTxt(ctx, (_ctx$dataVerification = ctx.dataVerification) === null || _ctx$dataVerification === void 0 ? void 0 : (_ctx$dataVerification2 = _ctx$dataVerification.dataRegulation) === null || _ctx$dataVerification2 === void 0 ? void 0 : _ctx$dataVerification2.rangeTxt);
            if (range.length === 0) {
              return;
-@@ -2423,44 +2516,47 @@ var DataVerification = function DataVerification() {
+@@ -2423,44 +2521,47 @@ var DataVerification = function DataVerification() {
              var list = getDropdownList(ctx, value1);
              item.value1 = list.join(",");
            }
@@ -240,7 +267,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
        });
      }
      hideDialog();
-@@ -2473,14 +2569,12 @@ var DataVerification = function DataVerification() {
+@@ -2473,14 +2574,12 @@ var DataVerification = function DataVerification() {
          var range = ctx.luckysheet_select_save[ctx.luckysheet_select_save.length - 1];
          rangeT = getRangetxt(context, context.currentSheetId, range, context.currentSheetId);
        }
@@ -256,7 +283,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
        var defaultItem = item !== null && item !== void 0 ? item : {};
        var rangValue = (_defaultItem$value = defaultItem.value1) !== null && _defaultItem$value !== void 0 ? _defaultItem$value : "";
        if (((_ctx$rangeDialog = ctx.rangeDialog) === null || _ctx$rangeDialog === void 0 ? void 0 : _ctx$rangeDialog.type) === "dropDown" && ctx.dataVerification && ctx.dataVerification.dataRegulation && ctx.dataVerification.dataRegulation.rangeTxt) {
-@@ -3262,9 +3356,8 @@ var DropDownList = function DropDownList() {
+@@ -3262,9 +3361,8 @@ var DropDownList = function DropDownList() {
        var _margeSet$column = _slicedToArray(margeSet.column, 2);
        col_pre = _margeSet$column[0];
      }
@@ -268,7 +295,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
      var dropdownList = getDropdownList(context, item.value1);
      var cellValue = getCellValue(rowIndex, colIndex, d);
      if (cellValue) {
-@@ -3283,9 +3376,8 @@ var DropDownList = function DropDownList() {
+@@ -3283,9 +3381,8 @@ var DropDownList = function DropDownList() {
      var rowIndex = last.row_focus;
      var colIndex = last.column_focus;
      if (rowIndex == null || colIndex == null) return;
@@ -280,7 +307,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
      if (item.type2 !== "true") return;
      var d = getFlowdata(context);
      if (!d) return;
-@@ -3957,8 +4049,12 @@ var Sheet = function Sheet(_ref) {
+@@ -3957,8 +4054,12 @@ var Sheet = function Sheet(_ref) {
    var _context$config, _context$config2, _context$config3;
    var sheet = _ref.sheet;
    var data = sheet.data;
@@ -293,7 +320,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
    var _useContext = useContext(WorkbookContext),
      context = _useContext.context,
      setContext = _useContext.setContext,
-@@ -3985,7 +4081,7 @@ var Sheet = function Sheet(_ref) {
+@@ -3985,7 +4086,7 @@ var Sheet = function Sheet(_ref) {
      setContext(function (draftCtx) {
        return updateContextWithSheetData(draftCtx, data);
      });
@@ -302,7 +329,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
    useEffect(function () {
      setContext(function (draftCtx) {
        return updateContextWithCanvas(draftCtx, refs.canvas.current, placeholderRef.current);
-@@ -3999,7 +4095,15 @@ var Sheet = function Sheet(_ref) {
+@@ -3999,7 +4100,15 @@ var Sheet = function Sheet(_ref) {
      if (context.groupValuesRefreshData.length > 0) {
        return;
      }
@@ -319,7 +346,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
      if (tableCanvas == null) return;
      var freeze = (_refs$globalCache$fre = refs.globalCache.freezen) === null || _refs$globalCache$fre === void 0 ? void 0 : _refs$globalCache$fre[sheet.id];
      if ((freeze === null || freeze === void 0 ? void 0 : (_freeze$horizontal = freeze.horizontal) === null || _freeze$horizontal === void 0 ? void 0 : _freeze$horizontal.freezenhorizontaldata) || (freeze === null || freeze === void 0 ? void 0 : (_freeze$vertical = freeze.vertical) === null || _freeze$vertical === void 0 ? void 0 : _freeze$vertical.freezenverticaldata)) {
-@@ -9919,7 +10023,7 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
+@@ -9919,7 +10028,7 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
      setSelection: function setSelection(range) {
        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
        return setContext(function (draftCtx) {
@@ -328,7 +355,93 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
        });
      },
      setCellValuesByRange: function setCellValuesByRange(data, range) {
-@@ -10862,12 +10966,17 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+@@ -10768,6 +10877,69 @@ var SheetList = function SheetList() {
+ 
+ var _excluded = ["onChange", "onOp", "data"];
+ enablePatches();
++setAutoFreeze(false);
++var A3S_SHOWN_COMMENT_CELLS_PROPERTY = "__a3sShownCommentCells";
++var attachA3sShownCommentCells = function attachA3sShownCommentCells(data, cells) {
++  if (!data || !Object.isExtensible(data) || Object.prototype.hasOwnProperty.call(data, A3S_SHOWN_COMMENT_CELLS_PROPERTY)) return;
++  Object.defineProperty(data, A3S_SHOWN_COMMENT_CELLS_PROPERTY, {
++    configurable: false,
++    enumerable: false,
++    value: cells,
++    writable: false
++  });
++};
++var carryA3sShownCommentCells = function carryA3sShownCommentCells(contextBefore, contextAfter, patches) {
++  var changedSheets = new Set();
++  var invalidatedSheets = new Set();
++  var commentCellsBySheet = new Map();
++  patches.forEach(function (patch) {
++    var path = patch.path;
++    if (path[0] !== "luckysheetfile" || !Number.isSafeInteger(path[1]) || path[2] !== "data") return;
++    var sheetIndex = path[1];
++    changedSheets.add(sheetIndex);
++    var row = path[3];
++    var column = path[4];
++    if (path.length < 5 || !Number.isSafeInteger(row) || !Number.isSafeInteger(column)) {
++      invalidatedSheets.add(sheetIndex);
++      return;
++    }
++    if (path.length === 5 || path[5] === "ps") {
++      var cells = commentCellsBySheet.get(sheetIndex) || new Map();
++      cells.set("".concat(row, ":").concat(column), {
++        r: row,
++        c: column
++      });
++      commentCellsBySheet.set(sheetIndex, cells);
++    }
++  });
++  changedSheets.forEach(function (sheetIndex) {
++    var _contextBefore$lucky, _contextAfter$luckys;
++    var sourceData = (_contextBefore$lucky = contextBefore.luckysheetfile[sheetIndex]) === null || _contextBefore$lucky === void 0 ? void 0 : _contextBefore$lucky.data;
++    var targetData = (_contextAfter$luckys = contextAfter.luckysheetfile[sheetIndex]) === null || _contextAfter$luckys === void 0 ? void 0 : _contextAfter$luckys.data;
++    var sourceCells = sourceData === null || sourceData === void 0 ? void 0 : sourceData[A3S_SHOWN_COMMENT_CELLS_PROPERTY];
++    if (sourceData === targetData || !Array.isArray(sourceCells) || invalidatedSheets.has(sheetIndex)) return;
++    var changedCommentCells = commentCellsBySheet.get(sheetIndex);
++    if (!changedCommentCells || changedCommentCells.size === 0) {
++      attachA3sShownCommentCells(targetData, sourceCells);
++      return;
++    }
++    var indexedCells = new Map(sourceCells.map(function (cell) {
++      return ["".concat(cell.r, ":").concat(cell.c), cell];
++    }));
++    changedCommentCells.forEach(function (cell, key) {
++      var _targetData$cell$r, _targetData$cell$r$c, _targetData$cell$r$c$;
++      if ((_targetData$cell$r = targetData[cell.r]) !== null && _targetData$cell$r !== void 0 && (_targetData$cell$r$c = _targetData$cell$r[cell.c]) !== null && _targetData$cell$r$c !== void 0 && (_targetData$cell$r$c$ = _targetData$cell$r$c.ps) !== null && _targetData$cell$r$c$ !== void 0 && _targetData$cell$r$c$.isShow) {
++        indexedCells.set(key, cell);
++      } else {
++        indexedCells.delete(key);
++      }
++    });
++    attachA3sShownCommentCells(targetData, Array.from(indexedCells.values()).sort(function (left, right) {
++      return left.r - right.r || left.c - right.c;
++    }));
++  });
++  return contextAfter;
++};
+ var triggerGroupValuesRefresh = function triggerGroupValuesRefresh(ctx) {
+   if (ctx.groupValuesRefreshData.length > 0) {
+     groupValuesRefresh(ctx);
+@@ -10847,9 +11019,14 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+   }, [context.luckysheet_select_save]);
+   var initSheetData = useCallback(function (draftCtx, newData, index) {
+     var _lastRow$r, _lastCol$c;
+-    var celldata = newData.celldata,
++    var data = newData.data,
++      celldata = newData.celldata,
+       row = newData.row,
+       column = newData.column;
++    if (data != null) {
++      delete newData.celldata;
++      return data;
++    }
+     var lastRow = _.maxBy(celldata, "r");
+     var lastCol = _.maxBy(celldata, "c");
+     var lastRowNum = ((_lastRow$r = lastRow === null || lastRow === void 0 ? void 0 : lastRow.r) !== null && _lastRow$r !== void 0 ? _lastRow$r : 0) + 1;
+@@ -10862,12 +11039,17 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
        lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
      }
      if (lastRowNum && lastColNum) {
@@ -351,7 +464,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
          expandedData[d.r][d.c] = d.v;
        });
        draftCtx.luckysheetfile = produce(draftCtx.luckysheetfile, function (d) {
-@@ -10928,18 +11037,21 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+@@ -10928,18 +11110,21 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
    }
    function dataToCelldata(data) {
      var cellData = [];
@@ -379,8 +492,34 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e148
      return cellData;
    }
    var setContextWithProduce = useCallback(function (recipe) {
+@@ -10950,6 +11135,7 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+         result = _produceWithPatches2[0],
+         patches = _produceWithPatches2[1],
+         inversePatches = _produceWithPatches2[2];
++      result = carryA3sShownCommentCells(ctx_, result, patches);
+       if (patches.length > 0 && !options.noHistory) {
+         if (options.logPatch) {
+           console.info("patch", patches);
+@@ -11021,7 +11207,7 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+             });
+           });
+         }
+-        var newContext = applyPatches(ctx_, history.inversePatches);
++        var newContext = carryA3sShownCommentCells(ctx_, applyPatches(ctx_, history.inversePatches), history.inversePatches);
+         globalCache.current.redoList.push(history);
+         var inversedOptions = inverseRowColOptions(history.options);
+         if (inversedOptions === null || inversedOptions === void 0 ? void 0 : inversedOptions.insertRowColOp) {
+@@ -11049,7 +11235,7 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+     if (history) {
+       setContext(function (ctx_) {
+         var _history$options7, _history$options8, _history$options9;
+-        var newContext = applyPatches(ctx_, history.patches);
++        var newContext = carryA3sShownCommentCells(ctx_, applyPatches(ctx_, history.patches), history.patches);
+         globalCache.current.undoList.push(history);
+         emitOp(newContext, history.patches, history.options);
+         if (((_history$options7 = history.options) === null || _history$options7 === void 0 ? void 0 : _history$options7.deleteRowColOp) || ((_history$options8 = history.options) === null || _history$options8 === void 0 ? void 0 : _history$options8.insertRowColOp) || ((_history$options9 = history.options) === null || _history$options9 === void 0 ? void 0 : _history$options9.restoreDeletedCells)) newContext.formulaCache.formulaCellInfoMap = null;else newContext.formulaCache.updateFormulaCache(newContext, history, "redo");
 diff --git a/dist/index.js b/dist/index.js
-index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb664d7bc366 100644
+index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d595b8c409f 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -1172,6 +1172,8 @@ var ScrollBar = function ScrollBar(_ref) {
@@ -409,46 +548,70 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
      className: "luckysheet-scrollbars luckysheet-scrollbar-ltr luckysheet-scrollbar-".concat(axis),
      onScroll: function onScroll() {
 -      if (axis === "x") {
--        setContext(function (draftCtx) {
--          draftCtx.scrollLeft = refs.scrollbarX.current.scrollLeft;
--        });
--      } else {
 +      pendingScrollRef.current = axis === "x" ? refs.scrollbarX.current.scrollLeft : refs.scrollbarY.current.scrollTop;
 +      if (frameRef.current !== undefined) return;
 +      frameRef.current = requestAnimationFrame(function () {
 +        frameRef.current = undefined;
 +        var scroll = pendingScrollRef.current;
          setContext(function (draftCtx) {
--          draftCtx.scrollTop = refs.scrollbarY.current.scrollTop;
+-          draftCtx.scrollLeft = refs.scrollbarX.current.scrollLeft;
 +          if (axis === "x") draftCtx.scrollLeft = scroll;else draftCtx.scrollTop = scroll;
          });
+-      } else {
+-        setContext(function (draftCtx) {
+-          draftCtx.scrollTop = refs.scrollbarY.current.scrollTop;
+-        });
 -      }
 +      });
      }
    }, /*#__PURE__*/React__default['default'].createElement("div", {
      style: axis === "x" ? {
-@@ -2216,9 +2223,15 @@ var NotationBoxes = function NotationBoxes() {
+@@ -2215,19 +2222,30 @@ var NotationBoxes = function NotationBoxes() {
+   var flowdata = core.getFlowdata(context);
    React.useEffect(function () {
      if (flowdata) {
-       var psShownCells = [];
+-      var psShownCells = [];
 -      for (var i = 0; i < flowdata.length; i += 1) {
 -        for (var j = 0; j < flowdata[i].length; j += 1) {
-+      var populatedRows = Object.keys(flowdata);
-+      for (var rowIndex = 0; rowIndex < populatedRows.length; rowIndex += 1) {
-+        var i = Number(populatedRows[rowIndex]);
-+        var row = flowdata[i];
-+        if (!row) continue;
-+        var populatedColumns = Object.keys(row);
-+        for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
-           var _cell$ps;
-+          var j = Number(populatedColumns[columnIndex]);
-           var cell = flowdata[i][j];
-           if (!cell) continue;
-           if ((_cell$ps = cell.ps) === null || _cell$ps === void 0 ? void 0 : _cell$ps.isShow) {
-@@ -2387,6 +2400,86 @@ function useDialog() {
+-          var _cell$ps;
+-          var cell = flowdata[i][j];
+-          if (!cell) continue;
+-          if ((_cell$ps = cell.ps) === null || _cell$ps === void 0 ? void 0 : _cell$ps.isShow) {
+-            psShownCells.push({
+-              r: i,
+-              c: j
+-            });
++      var indexedShownCells = flowdata.__a3sShownCommentCells;
++      if (Array.isArray(indexedShownCells) && indexedShownCells.length === 0 && _.isEmpty(context.commentBoxes) && !context.editingCommentBox && !context.hoveredCommentBox) return;
++      var psShownCells = Array.isArray(indexedShownCells) ? indexedShownCells : [];
++      if (!Array.isArray(indexedShownCells)) {
++        var populatedRows = Object.keys(flowdata);
++        for (var rowIndex = 0; rowIndex < populatedRows.length; rowIndex += 1) {
++          var i = Number(populatedRows[rowIndex]);
++          var row = flowdata[i];
++          if (!row) continue;
++          var populatedColumns = Object.keys(row);
++          for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
++            var _cell$ps;
++            var j = Number(populatedColumns[columnIndex]);
++            var cell = flowdata[i][j];
++            if (!cell) continue;
++            if ((_cell$ps = cell.ps) === null || _cell$ps === void 0 ? void 0 : _cell$ps.isShow) {
++              psShownCells.push({
++                r: i,
++                c: j
++              });
++            }
+           }
+         }
++        attachA3sShownCommentCells(flowdata, psShownCells);
+       }
+       setContext(function (ctx) {
+         return core.showComments(ctx, psShownCells);
+@@ -2387,6 +2405,86 @@ function useDialog() {
    };
  }
-
+ 
 +var DATA_VALIDATION_EXPANSION_LIMIT = 10000;
 +function normalizedDataValidationRanges(source) {
 +  if (!Array.isArray(source)) return [];
@@ -532,7 +695,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
  var DataVerification = function DataVerification() {
    var _context$dataVerifica, _context$dataVerifica2, _context$dataVerifica3, _context$dataVerifica4, _context$dataVerifica5, _context$dataVerifica6, _context$dataVerifica7, _context$dataVerifica8, _context$dataVerifica9, _context$dataVerifica0, _context$dataVerifica1, _context$dataVerifica10, _context$dataVerifica11, _context$dataVerifica12, _context$dataVerifica13, _context$dataVerifica14, _context$dataVerifica15, _context$dataVerifica16, _context$dataVerifica17, _context$dataVerifica18, _context$dataVerifica19, _context$dataVerifica20, _context$dataVerifica21, _context$dataVerifica22, _context$dataVerifica23;
    var _useContext = React.useContext(WorkbookContext),
-@@ -2419,7 +2512,7 @@ var DataVerification = function DataVerification() {
+@@ -2419,7 +2517,7 @@ var DataVerification = function DataVerification() {
        setContext(function (ctx) {
          var isPass = core.confirmMessage(ctx, generalDialog, dataVerification);
          if (isPass) {
@@ -541,7 +704,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
            var range = core.getRangeByTxt(ctx, (_ctx$dataVerification = ctx.dataVerification) === null || _ctx$dataVerification === void 0 ? void 0 : (_ctx$dataVerification2 = _ctx$dataVerification.dataRegulation) === null || _ctx$dataVerification2 === void 0 ? void 0 : _ctx$dataVerification2.rangeTxt);
            if (range.length === 0) {
              return;
-@@ -2434,44 +2527,47 @@ var DataVerification = function DataVerification() {
+@@ -2434,44 +2532,47 @@ var DataVerification = function DataVerification() {
              var list = core.getDropdownList(ctx, value1);
              item.value1 = list.join(",");
            }
@@ -615,7 +778,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
        });
      }
      hideDialog();
-@@ -2484,14 +2580,12 @@ var DataVerification = function DataVerification() {
+@@ -2484,14 +2585,12 @@ var DataVerification = function DataVerification() {
          var range = ctx.luckysheet_select_save[ctx.luckysheet_select_save.length - 1];
          rangeT = core.getRangetxt(context, context.currentSheetId, range, context.currentSheetId);
        }
@@ -631,7 +794,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
        var defaultItem = item !== null && item !== void 0 ? item : {};
        var rangValue = (_defaultItem$value = defaultItem.value1) !== null && _defaultItem$value !== void 0 ? _defaultItem$value : "";
        if (((_ctx$rangeDialog = ctx.rangeDialog) === null || _ctx$rangeDialog === void 0 ? void 0 : _ctx$rangeDialog.type) === "dropDown" && ctx.dataVerification && ctx.dataVerification.dataRegulation && ctx.dataVerification.dataRegulation.rangeTxt) {
-@@ -3273,9 +3367,8 @@ var DropDownList = function DropDownList() {
+@@ -3273,9 +3372,8 @@ var DropDownList = function DropDownList() {
        var _margeSet$column = _slicedToArray(margeSet.column, 2);
        col_pre = _margeSet$column[0];
      }
@@ -643,7 +806,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
      var dropdownList = core.getDropdownList(context, item.value1);
      var cellValue = core.getCellValue(rowIndex, colIndex, d);
      if (cellValue) {
-@@ -3294,9 +3387,8 @@ var DropDownList = function DropDownList() {
+@@ -3294,9 +3392,8 @@ var DropDownList = function DropDownList() {
      var rowIndex = last.row_focus;
      var colIndex = last.column_focus;
      if (rowIndex == null || colIndex == null) return;
@@ -655,7 +818,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
      if (item.type2 !== "true") return;
      var d = core.getFlowdata(context);
      if (!d) return;
-@@ -3968,8 +4060,12 @@ var Sheet = function Sheet(_ref) {
+@@ -3968,8 +4065,12 @@ var Sheet = function Sheet(_ref) {
    var _context$config, _context$config2, _context$config3;
    var sheet = _ref.sheet;
    var data = sheet.data;
@@ -668,7 +831,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
    var _useContext = React.useContext(WorkbookContext),
      context = _useContext.context,
      setContext = _useContext.setContext,
-@@ -3996,7 +4092,7 @@ var Sheet = function Sheet(_ref) {
+@@ -3996,7 +4097,7 @@ var Sheet = function Sheet(_ref) {
      setContext(function (draftCtx) {
        return core.updateContextWithSheetData(draftCtx, data);
      });
@@ -677,7 +840,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
    React.useEffect(function () {
      setContext(function (draftCtx) {
        return core.updateContextWithCanvas(draftCtx, refs.canvas.current, placeholderRef.current);
-@@ -4010,7 +4106,15 @@ var Sheet = function Sheet(_ref) {
+@@ -4010,7 +4111,15 @@ var Sheet = function Sheet(_ref) {
      if (context.groupValuesRefreshData.length > 0) {
        return;
      }
@@ -694,7 +857,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
      if (tableCanvas == null) return;
      var freeze = (_refs$globalCache$fre = refs.globalCache.freezen) === null || _refs$globalCache$fre === void 0 ? void 0 : _refs$globalCache$fre[sheet.id];
      if ((freeze === null || freeze === void 0 ? void 0 : (_freeze$horizontal = freeze.horizontal) === null || _freeze$horizontal === void 0 ? void 0 : _freeze$horizontal.freezenhorizontaldata) || (freeze === null || freeze === void 0 ? void 0 : (_freeze$vertical = freeze.vertical) === null || _freeze$vertical === void 0 ? void 0 : _freeze$vertical.freezenverticaldata)) {
-@@ -9930,7 +10034,11 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
+@@ -9930,7 +10039,11 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
      setSelection: function setSelection(range) {
        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
        return setContext(function (draftCtx) {
@@ -707,7 +870,93 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
        });
      },
      setCellValuesByRange: function setCellValuesByRange(data, range) {
-@@ -10873,12 +10981,17 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+@@ -10779,6 +10892,69 @@ var SheetList = function SheetList() {
+ 
+ var _excluded = ["onChange", "onOp", "data"];
+ produce.enablePatches();
++produce.setAutoFreeze(false);
++var A3S_SHOWN_COMMENT_CELLS_PROPERTY = "__a3sShownCommentCells";
++var attachA3sShownCommentCells = function attachA3sShownCommentCells(data, cells) {
++  if (!data || !Object.isExtensible(data) || Object.prototype.hasOwnProperty.call(data, A3S_SHOWN_COMMENT_CELLS_PROPERTY)) return;
++  Object.defineProperty(data, A3S_SHOWN_COMMENT_CELLS_PROPERTY, {
++    configurable: false,
++    enumerable: false,
++    value: cells,
++    writable: false
++  });
++};
++var carryA3sShownCommentCells = function carryA3sShownCommentCells(contextBefore, contextAfter, patches) {
++  var changedSheets = new Set();
++  var invalidatedSheets = new Set();
++  var commentCellsBySheet = new Map();
++  patches.forEach(function (patch) {
++    var path = patch.path;
++    if (path[0] !== "luckysheetfile" || !Number.isSafeInteger(path[1]) || path[2] !== "data") return;
++    var sheetIndex = path[1];
++    changedSheets.add(sheetIndex);
++    var row = path[3];
++    var column = path[4];
++    if (path.length < 5 || !Number.isSafeInteger(row) || !Number.isSafeInteger(column)) {
++      invalidatedSheets.add(sheetIndex);
++      return;
++    }
++    if (path.length === 5 || path[5] === "ps") {
++      var cells = commentCellsBySheet.get(sheetIndex) || new Map();
++      cells.set("".concat(row, ":").concat(column), {
++        r: row,
++        c: column
++      });
++      commentCellsBySheet.set(sheetIndex, cells);
++    }
++  });
++  changedSheets.forEach(function (sheetIndex) {
++    var _contextBefore$lucky, _contextAfter$luckys;
++    var sourceData = (_contextBefore$lucky = contextBefore.luckysheetfile[sheetIndex]) === null || _contextBefore$lucky === void 0 ? void 0 : _contextBefore$lucky.data;
++    var targetData = (_contextAfter$luckys = contextAfter.luckysheetfile[sheetIndex]) === null || _contextAfter$luckys === void 0 ? void 0 : _contextAfter$luckys.data;
++    var sourceCells = sourceData === null || sourceData === void 0 ? void 0 : sourceData[A3S_SHOWN_COMMENT_CELLS_PROPERTY];
++    if (sourceData === targetData || !Array.isArray(sourceCells) || invalidatedSheets.has(sheetIndex)) return;
++    var changedCommentCells = commentCellsBySheet.get(sheetIndex);
++    if (!changedCommentCells || changedCommentCells.size === 0) {
++      attachA3sShownCommentCells(targetData, sourceCells);
++      return;
++    }
++    var indexedCells = new Map(sourceCells.map(function (cell) {
++      return ["".concat(cell.r, ":").concat(cell.c), cell];
++    }));
++    changedCommentCells.forEach(function (cell, key) {
++      var _targetData$cell$r, _targetData$cell$r$c, _targetData$cell$r$c$;
++      if ((_targetData$cell$r = targetData[cell.r]) !== null && _targetData$cell$r !== void 0 && (_targetData$cell$r$c = _targetData$cell$r[cell.c]) !== null && _targetData$cell$r$c !== void 0 && (_targetData$cell$r$c$ = _targetData$cell$r$c.ps) !== null && _targetData$cell$r$c$ !== void 0 && _targetData$cell$r$c$.isShow) {
++        indexedCells.set(key, cell);
++      } else {
++        indexedCells.delete(key);
++      }
++    });
++    attachA3sShownCommentCells(targetData, Array.from(indexedCells.values()).sort(function (left, right) {
++      return left.r - right.r || left.c - right.c;
++    }));
++  });
++  return contextAfter;
++};
+ var triggerGroupValuesRefresh = function triggerGroupValuesRefresh(ctx) {
+   if (ctx.groupValuesRefreshData.length > 0) {
+     core.groupValuesRefresh(ctx);
+@@ -10858,9 +11034,14 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+   }, [context.luckysheet_select_save]);
+   var initSheetData = React.useCallback(function (draftCtx, newData, index) {
+     var _lastRow$r, _lastCol$c;
+-    var celldata = newData.celldata,
++    var data = newData.data,
++      celldata = newData.celldata,
+       row = newData.row,
+       column = newData.column;
++    if (data != null) {
++      delete newData.celldata;
++      return data;
++    }
+     var lastRow = ___default['default'].maxBy(celldata, "r");
+     var lastCol = ___default['default'].maxBy(celldata, "c");
+     var lastRowNum = ((_lastRow$r = lastRow === null || lastRow === void 0 ? void 0 : lastRow.r) !== null && _lastRow$r !== void 0 ? _lastRow$r : 0) + 1;
+@@ -10873,12 +11054,17 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
        lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
      }
      if (lastRowNum && lastColNum) {
@@ -730,7 +979,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
          expandedData[d.r][d.c] = d.v;
        });
        draftCtx.luckysheetfile = produce__default['default'](draftCtx.luckysheetfile, function (d) {
-@@ -10939,18 +11052,21 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+@@ -10939,18 +11125,21 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
    }
    function dataToCelldata(data) {
      var cellData = [];
@@ -758,11 +1007,79 @@ index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb66
      return cellData;
    }
    var setContextWithProduce = React.useCallback(function (recipe) {
+@@ -10961,6 +11150,7 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+         result = _produceWithPatches2[0],
+         patches = _produceWithPatches2[1],
+         inversePatches = _produceWithPatches2[2];
++      result = carryA3sShownCommentCells(ctx_, result, patches);
+       if (patches.length > 0 && !options.noHistory) {
+         if (options.logPatch) {
+           console.info("patch", patches);
+@@ -11032,7 +11222,7 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+             });
+           });
+         }
+-        var newContext = produce.applyPatches(ctx_, history.inversePatches);
++        var newContext = carryA3sShownCommentCells(ctx_, produce.applyPatches(ctx_, history.inversePatches), history.inversePatches);
+         globalCache.current.redoList.push(history);
+         var inversedOptions = core.inverseRowColOptions(history.options);
+         if (inversedOptions === null || inversedOptions === void 0 ? void 0 : inversedOptions.insertRowColOp) {
+@@ -11060,7 +11250,7 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+     if (history) {
+       setContext(function (ctx_) {
+         var _history$options7, _history$options8, _history$options9;
+-        var newContext = produce.applyPatches(ctx_, history.patches);
++        var newContext = carryA3sShownCommentCells(ctx_, produce.applyPatches(ctx_, history.patches), history.patches);
+         globalCache.current.undoList.push(history);
+         emitOp(newContext, history.patches, history.options);
+         if (((_history$options7 = history.options) === null || _history$options7 === void 0 ? void 0 : _history$options7.deleteRowColOp) || ((_history$options8 = history.options) === null || _history$options8 === void 0 ? void 0 : _history$options8.insertRowColOp) || ((_history$options9 = history.options) === null || _history$options9 === void 0 ? void 0 : _history$options9.restoreDeletedCells)) newContext.formulaCache.formulaCellInfoMap = null;else newContext.formulaCache.updateFormulaCache(newContext, history, "redo");
 diff --git a/dist/index.umd.js b/dist/index.umd.js
-index e1c484068e24e3dc31a2831de32b58e898edde85..14baf7e17fd2d03692c80443404ea9a0720e0dd7 100644
+index e1c484068e24e3dc31a2831de32b58e898edde85..1dc1ccaa7b6cf4bee6a9f92db95b16157248406c 100644
 --- a/dist/index.umd.js
 +++ b/dist/index.umd.js
-@@ -45249,7 +45249,7 @@
+@@ -36771,19 +36771,30 @@
+     var flowdata = getFlowdata(context);
+     React.useEffect(function () {
+       if (flowdata) {
+-        var psShownCells = [];
+-        for (var i = 0; i < flowdata.length; i += 1) {
+-          for (var j = 0; j < flowdata[i].length; j += 1) {
+-            var _cell$ps;
+-            var cell = flowdata[i][j];
+-            if (!cell) continue;
+-            if ((_cell$ps = cell.ps) === null || _cell$ps === void 0 ? void 0 : _cell$ps.isShow) {
+-              psShownCells.push({
+-                r: i,
+-                c: j
+-              });
++        var indexedShownCells = flowdata.__a3sShownCommentCells;
++        if (Array.isArray(indexedShownCells) && indexedShownCells.length === 0 && _.isEmpty(context.commentBoxes) && !context.editingCommentBox && !context.hoveredCommentBox) return;
++        var psShownCells = Array.isArray(indexedShownCells) ? indexedShownCells : [];
++        if (!Array.isArray(indexedShownCells)) {
++          var populatedRows = Object.keys(flowdata);
++          for (var rowIndex = 0; rowIndex < populatedRows.length; rowIndex += 1) {
++            var i = Number(populatedRows[rowIndex]);
++            var row = flowdata[i];
++            if (!row) continue;
++            var populatedColumns = Object.keys(row);
++            for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
++              var _cell$ps;
++              var j = Number(populatedColumns[columnIndex]);
++              var cell = flowdata[i][j];
++              if (!cell) continue;
++              if ((_cell$ps = cell.ps) === null || _cell$ps === void 0 ? void 0 : _cell$ps.isShow) {
++                psShownCells.push({
++                  r: i,
++                  c: j
++                });
++              }
+             }
+           }
++          attachA3sShownCommentCells(flowdata, psShownCells);
+         }
+         setContext(function (ctx) {
+           return showComments(ctx, psShownCells);
+@@ -45249,7 +45260,7 @@
        setSelection: function setSelection(range) {
          var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
          return setContext(function (draftCtx) {
@@ -771,3 +1088,99 @@ index e1c484068e24e3dc31a2831de32b58e898edde85..14baf7e17fd2d03692c80443404ea9a0
          });
        },
        setCellValuesByRange: function setCellValuesByRange(data, range) {
+@@ -46098,6 +46109,69 @@
+ 
+   var _excluded = ["onChange", "onOp", "data"];
+   T();
++  sn(false);
++  var A3S_SHOWN_COMMENT_CELLS_PROPERTY = "__a3sShownCommentCells";
++  var attachA3sShownCommentCells = function attachA3sShownCommentCells(data, cells) {
++    if (!data || !Object.isExtensible(data) || Object.prototype.hasOwnProperty.call(data, A3S_SHOWN_COMMENT_CELLS_PROPERTY)) return;
++    Object.defineProperty(data, A3S_SHOWN_COMMENT_CELLS_PROPERTY, {
++      configurable: false,
++      enumerable: false,
++      value: cells,
++      writable: false
++    });
++  };
++  var carryA3sShownCommentCells = function carryA3sShownCommentCells(contextBefore, contextAfter, patches) {
++    var changedSheets = new Set();
++    var invalidatedSheets = new Set();
++    var commentCellsBySheet = new Map();
++    patches.forEach(function (patch) {
++      var path = patch.path;
++      if (path[0] !== "luckysheetfile" || !Number.isSafeInteger(path[1]) || path[2] !== "data") return;
++      var sheetIndex = path[1];
++      changedSheets.add(sheetIndex);
++      var row = path[3];
++      var column = path[4];
++      if (path.length < 5 || !Number.isSafeInteger(row) || !Number.isSafeInteger(column)) {
++        invalidatedSheets.add(sheetIndex);
++        return;
++      }
++      if (path.length === 5 || path[5] === "ps") {
++        var cells = commentCellsBySheet.get(sheetIndex) || new Map();
++        cells.set("".concat(row, ":").concat(column), {
++          r: row,
++          c: column
++        });
++        commentCellsBySheet.set(sheetIndex, cells);
++      }
++    });
++    changedSheets.forEach(function (sheetIndex) {
++      var _contextBefore$lucky, _contextAfter$luckys;
++      var sourceData = (_contextBefore$lucky = contextBefore.luckysheetfile[sheetIndex]) === null || _contextBefore$lucky === void 0 ? void 0 : _contextBefore$lucky.data;
++      var targetData = (_contextAfter$luckys = contextAfter.luckysheetfile[sheetIndex]) === null || _contextAfter$luckys === void 0 ? void 0 : _contextAfter$luckys.data;
++      var sourceCells = sourceData === null || sourceData === void 0 ? void 0 : sourceData[A3S_SHOWN_COMMENT_CELLS_PROPERTY];
++      if (sourceData === targetData || !Array.isArray(sourceCells) || invalidatedSheets.has(sheetIndex)) return;
++      var changedCommentCells = commentCellsBySheet.get(sheetIndex);
++      if (!changedCommentCells || changedCommentCells.size === 0) {
++        attachA3sShownCommentCells(targetData, sourceCells);
++        return;
++      }
++      var indexedCells = new Map(sourceCells.map(function (cell) {
++        return ["".concat(cell.r, ":").concat(cell.c), cell];
++      }));
++      changedCommentCells.forEach(function (cell, key) {
++        var _targetData$cell$r, _targetData$cell$r$c, _targetData$cell$r$c$;
++        if ((_targetData$cell$r = targetData[cell.r]) !== null && _targetData$cell$r !== void 0 && (_targetData$cell$r$c = _targetData$cell$r[cell.c]) !== null && _targetData$cell$r$c !== void 0 && (_targetData$cell$r$c$ = _targetData$cell$r$c.ps) !== null && _targetData$cell$r$c$ !== void 0 && _targetData$cell$r$c$.isShow) {
++          indexedCells.set(key, cell);
++        } else {
++          indexedCells.delete(key);
++        }
++      });
++      attachA3sShownCommentCells(targetData, Array.from(indexedCells.values()).sort(function (left, right) {
++        return left.r - right.r || left.c - right.c;
++      }));
++    });
++    return contextAfter;
++  };
+   var triggerGroupValuesRefresh = function triggerGroupValuesRefresh(ctx) {
+     if (ctx.groupValuesRefreshData.length > 0) {
+       groupValuesRefresh(ctx);
+@@ -46280,6 +46354,7 @@
+           result = _produceWithPatches2[0],
+           patches = _produceWithPatches2[1],
+           inversePatches = _produceWithPatches2[2];
++        result = carryA3sShownCommentCells(ctx_, result, patches);
+         if (patches.length > 0 && !options.noHistory) {
+           if (options.logPatch) {
+             console.info("patch", patches);
+@@ -46351,7 +46426,7 @@
+               });
+             });
+           }
+-          var newContext = pn(ctx_, history.inversePatches);
++          var newContext = carryA3sShownCommentCells(ctx_, pn(ctx_, history.inversePatches), history.inversePatches);
+           globalCache.current.redoList.push(history);
+           var inversedOptions = inverseRowColOptions(history.options);
+           if (inversedOptions === null || inversedOptions === void 0 ? void 0 : inversedOptions.insertRowColOp) {
+@@ -46379,7 +46454,7 @@
+       if (history) {
+         setContext(function (ctx_) {
+           var _history$options7, _history$options8, _history$options9;
+-          var newContext = pn(ctx_, history.patches);
++          var newContext = carryA3sShownCommentCells(ctx_, pn(ctx_, history.patches), history.patches);
+           globalCache.current.undoList.push(history);
+           emitOp(newContext, history.patches, history.options);
+           if (((_history$options7 = history.options) === null || _history$options7 === void 0 ? void 0 : _history$options7.deleteRowColOp) || ((_history$options8 = history.options) === null || _history$options8 === void 0 ? void 0 : _history$options8.insertRowColOp) || ((_history$options9 = history.options) === null || _history$options9 === void 0 ? void 0 : _history$options9.restoreDeletedCells)) newContext.formulaCache.formulaCellInfoMap = null;else newContext.formulaCache.updateFormulaCache(newContext, history, "redo");

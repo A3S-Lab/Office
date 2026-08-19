@@ -1,4 +1,4 @@
-import type { Extensions } from '@tiptap/core';
+import type { Editor, Extensions } from '@tiptap/core';
 import Placeholder from '@tiptap/extension-placeholder';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { EditorContent, useEditor } from '@tiptap/react';
@@ -35,13 +35,25 @@ import {
   collectDocumentCommentAnchors,
   retainAnchoredDocumentComments,
 } from '../work-document-comments';
+import { documentTransactionsOnlyHydrateChunks } from '../work-document-chunk-node';
 import { createWorkDocumentExtensions } from '../work-document-extensions';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import { millimetersToPixels } from '../work-document-layout';
 import {
-  createWorkDocumentModel,
+  documentLazyHtmlProjection,
+  materializeLazyDocumentEditorRoot,
+} from '../work-document-lazy-model';
+import {
+  materializeLazyDocumentUpdate,
+  transferLazyDocumentTextStatistics,
+} from '../work-document-lazy-update';
+import {
+  createSchemaDerivedWorkDocumentModel,
+  documentModelForContent,
+  documentModelHasTrustedInitialIntegrityFeatures,
   resolveWorkDocumentEditorInput,
 } from '../work-document-model';
+import { serializeWorkDocumentNode } from '../work-document-model-codec';
 import { normalizeDocumentPageChrome } from '../work-document-page-chrome';
 import {
   documentPageColor,
@@ -71,6 +83,7 @@ import {
   type WorkGetDocumentSelectionMenuItems,
 } from '../work-document-selection-menu';
 import { documentParagraphTabStops } from '../work-document-tab-stops';
+import { documentModelUsesWindowing } from '../work-document-windowing';
 import { createWorkId } from '../work-templates';
 import type { WorkDocumentContent, WorkDocumentNode } from '../work-types';
 import { DocumentChangesPanel } from './document-changes-panel';
@@ -78,12 +91,12 @@ import { DocumentCitationsPanel } from './document-citations-panel';
 import { DocumentCommentsPanel } from './document-comments-panel';
 import { restoreDocumentEditorFocus } from './document-editor-focus';
 import { fallbackPaginationPageDescriptor } from './document-editor-pagination';
-import { shouldPublishDocumentUpdate } from './document-external-content';
 import {
   documentCurrentPage,
   documentPageCount,
   documentTextStatistics,
 } from './document-editor-support';
+import { shouldPublishDocumentUpdate } from './document-external-content';
 import {
   type DocumentFindReplaceMode,
   DocumentFindReplacePanel,
@@ -110,13 +123,13 @@ import {
   type DocumentZoomFit,
   documentZoomForFit,
 } from './document-zoom';
-import { OfficeFileInput, useOfficeDialog } from './office-controls';
-import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
 import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
 import {
   OfficeTiptapPresenceLayer,
   useOfficePublishPresenceLocation,
 } from './office-collaboration-presence-ui';
+import { OfficeFileInput, useOfficeDialog } from './office-controls';
+import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
 import {
   useOfficeTaskPaneEscape,
   useOfficeTaskPaneModal,
@@ -189,6 +202,12 @@ interface DocumentEditorSurfaceProps extends DocumentEditorProps {
   collaborationBinding?: WorkOfficeDocumentCollaborationBinding;
   collaborationBridge?: { current: DocumentCollaborationBridge };
   collaborationInitialContent?: WorkDocumentContent;
+}
+
+interface PendingLazyDocumentPublication {
+  before: ProseMirrorNode;
+  cancel: () => void;
+  editor: Editor;
 }
 
 export function DocumentEditor(props: DocumentEditorProps) {
@@ -335,23 +354,40 @@ function DocumentEditorSurface({
   const citationsDraftFocusRef = useRef<HTMLElement | null>(null);
   const statisticsInvokerRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef(effectiveContent);
+  const editorMountStartedAtRef = useRef(documentEditorNow());
+  const editorBeforeCreateAtRef = useRef<number | null>(null);
+  const editorDetachedMountAtRef = useRef<number | null>(null);
   const onChangeRef = useRef(onChange);
   const trackChangesRef = useRef(
     suggestionOnly || Boolean(effectiveContent.trackChanges),
   );
   const collaborationBindingRef = useRef(collaborationBinding);
-  const normalizedContent = useMemo(
-    () => normalizeDocumentHtml(effectiveContent),
+  const validatedModel = useMemo(
+    () => documentModelForContent(effectiveContent),
     [effectiveContent],
   );
+  const normalizedContent = useMemo(
+    () =>
+      validatedModel
+        ? effectiveContent.html
+        : normalizeDocumentHtml(effectiveContent),
+    [effectiveContent, validatedModel],
+  );
   const editorInput = useMemo(
-    () => resolveWorkDocumentEditorInput(effectiveContent, normalizedContent),
-    [effectiveContent, normalizedContent],
+    () =>
+      resolveWorkDocumentEditorInput(
+        effectiveContent,
+        normalizedContent,
+        validatedModel,
+      ),
+    [effectiveContent, normalizedContent, validatedModel],
   );
   const initialEditorSourceRef = useRef(editorInput.source);
   const appliedSourceKeyRef = useRef(editorInput.sourceKey);
   const activeReviewConflictsRef = useRef<WorkDocumentReviewConflict[]>([]);
   const publishedDocumentRef = useRef<ProseMirrorNode | null>(null);
+  const pendingLazyPublicationRef =
+    useRef<PendingLazyDocumentPublication | null>(null);
   const [taskPane, setTaskPane] = useState<DocumentTaskPane | null>(null);
   const [layoutPanelTab, setLayoutPanelTab] =
     useState<DocumentLayoutPanelTab>('page');
@@ -399,34 +435,48 @@ function DocumentEditorSurface({
       },
     };
   }
-  const editorExtensions = useMemo(
-    () =>
-      mergeOfficeTiptapExtensions(
-        'DocumentEditor',
-        [
-          ...(collaborationBinding?.extensions ??
-            createWorkDocumentExtensions({
-              getContent: () => contentRef.current,
-              isTracking: () => trackChangesRef.current,
-              createChange: (kind) =>
-                createTrackedDocumentChange(kind, collaboration?.actor),
-              onContentChange: (next) => {
-                commitContentChange(next);
-              },
-              onTrackingChange: (trackChanges) => {
-                if (suggestionOnly) return;
-                trackChangesRef.current = trackChanges;
-                const next = { ...contentRef.current, trackChanges };
-                commitContentChange(next);
-              },
-            })),
-          Placeholder.configure({ placeholder: '在这里开始输入…' }),
-          DocumentPagination,
-        ],
-        collaboration ? EMPTY_DOCUMENT_EXTENSIONS : extensions,
-      ),
-    [collaboration, collaborationBinding, commitContentChange, extensions],
-  );
+  const trustInitialIntegrityFeatures =
+    documentModelHasTrustedInitialIntegrityFeatures(editorInput.model);
+  const editorExtensions = useMemo(() => {
+    const startedAt = documentEditorNow();
+    const merged = mergeOfficeTiptapExtensions(
+      'DocumentEditor',
+      [
+        ...(collaborationBinding?.extensions ??
+          createWorkDocumentExtensions({
+            getContent: () => contentRef.current,
+            isTracking: () => trackChangesRef.current,
+            createChange: (kind) =>
+              createTrackedDocumentChange(kind, collaboration?.actor),
+            onContentChange: (next) => {
+              commitContentChange(next);
+            },
+            onTrackingChange: (trackChanges) => {
+              if (suggestionOnly) return;
+              trackChangesRef.current = trackChanges;
+              const next = { ...contentRef.current, trackChanges };
+              commitContentChange(next);
+            },
+            trustInitialIntegrityFeatures,
+          })),
+        Placeholder.configure({ placeholder: '在这里开始输入…' }),
+        DocumentPagination,
+      ],
+      collaboration ? EMPTY_DOCUMENT_EXTENSIONS : extensions,
+    );
+    recordDocumentEditorMeasure(
+      'a3s-office.document.editor-extensions',
+      startedAt,
+      documentEditorNow(),
+    );
+    return merged;
+  }, [
+    collaboration,
+    collaborationBinding,
+    commitContentChange,
+    extensions,
+    trustInitialIntegrityFeatures,
+  ]);
   const editorProps = useMemo(
     () => ({
       attributes: {
@@ -439,16 +489,183 @@ function DocumentEditorSurface({
     }),
     [commentOnly],
   );
+  const publishDocumentUpdate = useCallback(
+    (current: Editor, previousDocument: ProseMirrorNode) => {
+      if (current.isDestroyed || previousDocument.eq(current.state.doc)) return;
+      const publishStartedAt = documentEditorNow();
+      const previousContent = contentRef.current;
+      const previousModel = previousContent.model;
+      const compactRoot = current.getJSON() as unknown as WorkDocumentNode;
+      const materialized =
+        previousModel && documentLazyHtmlProjection(previousModel)
+          ? materializeLazyDocumentUpdate(
+              previousDocument,
+              current.state.doc,
+              compactRoot,
+              previousModel,
+            )
+          : {
+              html: null,
+              root: materializeLazyDocumentEditorRoot(
+                compactRoot,
+                previousModel,
+              ),
+            };
+      const anchors = collectDocumentCommentAnchors(current.state.doc);
+      const retainedCommentIds = new Set(
+        activeReviewConflictsRef.current
+          .filter((conflict) => conflict.kind === 'comment')
+          .map((conflict) => conflict.id),
+      );
+      const synchronized =
+        materialized.html === null
+          ? syncDocumentContentFromHtml(
+              previousContent,
+              documentModelUsesWindowing(materialized.root)
+                ? serializeWorkDocumentNode(materialized.root)
+                : current.getHTML(),
+            )
+          : { ...previousContent, html: materialized.html };
+      const model = createSchemaDerivedWorkDocumentModel(
+        synchronized.html,
+        materialized.root,
+        previousModel,
+      );
+      const next: WorkDocumentContent = {
+        ...synchronized,
+        model,
+        comments: retainAnchoredDocumentComments(
+          previousContent.comments ?? [],
+          anchors,
+          retainedCommentIds,
+        ),
+      };
+      appliedSourceKeyRef.current = `model:${model.revision}:${model.htmlFingerprint}`;
+      if (!collaborationBindingRef.current) {
+        contentRef.current = next;
+        onChangeRef.current(next);
+      }
+      const publishEndedAt = documentEditorNow();
+      const publishCount =
+        Number(current.view.dom.dataset.documentControlledPublishCount) || 0;
+      current.view.dom.dataset.documentControlledPublishCount = String(
+        publishCount + 1,
+      );
+      current.view.dom.dataset.documentControlledPublishMode =
+        materialized.html === null ? 'full' : 'lazy-chunk';
+      current.view.dom.dataset.documentControlledPublishMs = String(
+        Math.round((publishEndedAt - publishStartedAt) * 10) / 10,
+      );
+      recordDocumentEditorMeasure(
+        'a3s-office.document.controlled-publish',
+        publishStartedAt,
+        publishEndedAt,
+        { mode: current.view.dom.dataset.documentControlledPublishMode },
+      );
+    },
+    [],
+  );
+  const queueLazyDocumentPublication = useCallback(
+    (current: Editor, previousDocument: ProseMirrorNode) => {
+      const pending = pendingLazyPublicationRef.current;
+      if (pending) {
+        pending.editor = current;
+        return;
+      }
+      const flush = () => {
+        const queued = pendingLazyPublicationRef.current;
+        pendingLazyPublicationRef.current = null;
+        if (queued) publishDocumentUpdate(queued.editor, queued.before);
+      };
+      pendingLazyPublicationRef.current = {
+        before: previousDocument,
+        cancel: scheduleDocumentEditorFrame(flush),
+        editor: current,
+      };
+    },
+    [publishDocumentUpdate],
+  );
+  useEffect(
+    () => () => {
+      const pending = pendingLazyPublicationRef.current;
+      pendingLazyPublicationRef.current = null;
+      if (!pending) return;
+      pending.cancel();
+      publishDocumentUpdate(pending.editor, pending.before);
+    },
+    [publishDocumentUpdate],
+  );
   const editor = useEditor({
+    // TipTap's immediate constructor runs inside a React state initializer,
+    // which StrictMode deliberately invokes more than once. Deferring creation
+    // to the committed effect avoids materializing editor instances repeatedly.
+    immediatelyRender: false,
     extensions: editorExtensions,
     content: collaboration ? undefined : initialEditorSourceRef.current,
     editable: !readOnly,
     editorProps,
+    onBeforeCreate: () => {
+      const beforeCreateAt = documentEditorNow();
+      editorBeforeCreateAtRef.current = beforeCreateAt;
+      recordDocumentEditorMeasure(
+        'a3s-office.document.editor-before-create',
+        editorMountStartedAtRef.current,
+        beforeCreateAt,
+      );
+    },
+    onMount: () => {
+      const mountedAt = documentEditorNow();
+      editorDetachedMountAtRef.current = mountedAt;
+      const beforeCreateAt = editorBeforeCreateAtRef.current;
+      if (beforeCreateAt !== null) {
+        recordDocumentEditorMeasure(
+          'a3s-office.document.editor-state-view',
+          beforeCreateAt,
+          mountedAt,
+        );
+      }
+    },
     onCreate: ({ editor: current }) => {
       publishedDocumentRef.current = current.state.doc;
+      const mountedAt = documentEditorNow();
+      const detachedMountAt = editorDetachedMountAtRef.current;
+      if (detachedMountAt !== null) {
+        recordDocumentEditorMeasure(
+          'a3s-office.document.editor-create-dispatch',
+          detachedMountAt,
+          mountedAt,
+        );
+      }
+      current.view.dom.dataset.documentEditorMountMs = String(
+        Math.round((mountedAt - editorMountStartedAtRef.current) * 10) / 10,
+      );
+      recordDocumentEditorMeasure(
+        'a3s-office.document.editor-mount',
+        editorMountStartedAtRef.current,
+        mountedAt,
+        {
+          source: editorInput.model ? 'model' : 'html',
+          windowed: Boolean(
+            editorInput.model &&
+              documentModelUsesWindowing(editorInput.model.root),
+          ),
+        },
+      );
     },
-    onUpdate: ({ editor: current, transaction }) => {
-      if (!shouldPublishDocumentUpdate(transaction)) {
+    onTransaction: ({ appendedTransactions, editor: current, transaction }) => {
+      if (
+        documentTransactionsOnlyHydrateChunks([
+          transaction,
+          ...appendedTransactions,
+        ])
+      ) {
+        publishedDocumentRef.current = current.state.doc;
+      }
+    },
+    onUpdate: ({ appendedTransactions, editor: current, transaction }) => {
+      if (
+        !shouldPublishDocumentUpdate(transaction, appendedTransactions ?? [])
+      ) {
         publishedDocumentRef.current = current.state.doc;
         return;
       }
@@ -456,36 +673,19 @@ function DocumentEditorSurface({
         publishedDocumentRef.current = current.state.doc;
         return;
       }
-      if (publishedDocumentRef.current.eq(current.state.doc)) return;
-      publishedDocumentRef.current = current.state.doc;
-      const anchors = collectDocumentCommentAnchors(current.state.doc);
-      const retainedCommentIds = new Set(
-        activeReviewConflictsRef.current
-          .filter((conflict) => conflict.kind === 'comment')
-          .map((conflict) => conflict.id),
-      );
-      const synchronized = syncDocumentContentFromHtml(
-        contentRef.current,
-        current.getHTML(),
-      );
-      const model = createWorkDocumentModel(
-        synchronized.html,
-        current.getJSON() as unknown as WorkDocumentNode,
+      const previousDocument = publishedDocumentRef.current;
+      if (previousDocument.eq(current.state.doc)) return;
+      const lazyProjection = documentLazyHtmlProjection(
         contentRef.current.model,
       );
-      const next: WorkDocumentContent = {
-        ...synchronized,
-        model,
-        comments: retainAnchoredDocumentComments(
-          contentRef.current.comments ?? [],
-          anchors,
-          retainedCommentIds,
-        ),
-      };
-      appliedSourceKeyRef.current = `model:${model.revision}:${model.htmlFingerprint}`;
-      if (!collaborationBinding) {
-        contentRef.current = next;
-        onChangeRef.current(next);
+      if (lazyProjection) {
+        transferLazyDocumentTextStatistics(previousDocument, current.state.doc);
+      }
+      publishedDocumentRef.current = current.state.doc;
+      if (lazyProjection) {
+        queueLazyDocumentPublication(current, previousDocument);
+      } else {
+        publishDocumentUpdate(current, previousDocument);
       }
     },
     onSelectionUpdate: () => setSelectionVersion((value) => value + 1),
@@ -1749,4 +1949,30 @@ function DocumentEditorSurface({
 function cssPixelValue(value: string): number {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function scheduleDocumentEditorFrame(callback: () => void): () => void {
+  if (typeof requestAnimationFrame === 'function') {
+    const frame = requestAnimationFrame(callback);
+    return () => cancelAnimationFrame(frame);
+  }
+  const timeout = setTimeout(callback, 0);
+  return () => clearTimeout(timeout);
+}
+
+function documentEditorNow(): number {
+  return globalThis.performance?.now?.() ?? Date.now();
+}
+
+function recordDocumentEditorMeasure(
+  name: string,
+  start: number,
+  end: number,
+  detail?: Record<string, unknown>,
+): void {
+  try {
+    globalThis.performance?.measure(name, { detail, end, start });
+  } catch {
+    // User Timing diagnostics must never affect editor creation.
+  }
 }

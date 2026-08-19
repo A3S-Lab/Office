@@ -2,6 +2,10 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { type EditorState, Plugin, type Transaction } from '@tiptap/pm/state';
 import { Mapping } from '@tiptap/pm/transform';
 import {
+  DOCUMENT_INTEGRITY_NOTE,
+  documentHasIntegrityFeature,
+} from './work-document-integrity-index';
+import {
   documentNoteKey,
   documentNoteKind,
   type WorkDocumentNoteKind,
@@ -69,6 +73,13 @@ function normalizeDocumentNoteGraph(
   oldState?: EditorState,
   transactions: readonly Transaction[] = [],
 ): Transaction | null {
+  if (
+    referenceNodeName === 'documentNoteReference' &&
+    definitionNodeName === 'documentNote' &&
+    !documentHasIntegrityFeature(state.doc, DOCUMENT_INTEGRITY_NOTE)
+  ) {
+    return null;
+  }
   const allReferences = documentNoteNodes(state.doc, referenceNodeName);
   const nestedReferences = allReferences.filter((reference) =>
     positionInsideNode(state.doc, reference.position, definitionNodeName),

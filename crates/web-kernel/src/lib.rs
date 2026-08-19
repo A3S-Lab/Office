@@ -34,8 +34,8 @@ pub use text_layout::{
 };
 
 pub const OFFICE_KERNEL_PROTOCOL_VERSION: u32 = 16;
-const MAX_LAYOUT_BLOCKS: usize = 10_000;
-const MAX_LAYOUT_PAGE_STYLES: usize = MAX_LAYOUT_BLOCKS;
+const MAX_LAYOUT_BLOCKS: usize = 200_000;
+const MAX_LAYOUT_PAGE_STYLES: usize = 10_000;
 const MAX_LAYOUT_EXTENT: f64 = 1_000_000.0;
 const MAX_LAYOUT_PAGE_INDEX: u32 = 1_000_000;
 
@@ -451,6 +451,7 @@ fn layout_flow(
 
     let minimum = first.minimum_fragments_per_page.unwrap_or(1).max(1) as usize;
     let mut cursor = 0;
+    let mut remaining_flow_height = total_height;
     while cursor < blocks.len() {
         if cursor >= repeat_header_count
             && cursor > 0
@@ -468,10 +469,6 @@ fn layout_flow(
         let current_has_content = !current.placements.is_empty();
         let remaining_height = (available_height - current.used_height).max(0.0);
         let remaining_fragments = blocks.len() - cursor;
-        let remaining_flow_height = blocks[cursor..]
-            .iter()
-            .map(|block| block.height)
-            .sum::<f64>();
         if next_height > 0.0
             && current_has_content
             && remaining_flow_height <= remaining_height
@@ -505,6 +502,10 @@ fn layout_flow(
             continue;
         }
         let fitting = fitting.max(1);
+        remaining_flow_height -= blocks[cursor..cursor + fitting]
+            .iter()
+            .map(|block| block.height)
+            .sum::<f64>();
         place_fragments(&blocks[cursor..cursor + fitting], pages, available_height);
         cursor += fitting;
         if cursor < blocks.len() {

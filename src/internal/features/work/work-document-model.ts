@@ -4,26 +4,108 @@ import type {
   WorkDocumentModel,
   WorkDocumentNode,
 } from './work-types';
+import {
+  prepareLazyDocumentEditorSource,
+  transferLazyDocumentModelState,
+} from './work-document-lazy-model';
 
 const DOCUMENT_MODEL_SCHEMA = 'a3s.office.document';
 const DOCUMENT_MODEL_VERSION = 1;
 const MAX_DOCUMENT_MODEL_DEPTH = 256;
-const MAX_DOCUMENT_MODEL_NODES = 100_000;
-const MAX_DOCUMENT_MODEL_MARKS = 500_000;
-const MAX_DOCUMENT_MODEL_ATTRIBUTE_VALUES = 1_000_000;
+// A 100,000-row, three-column Word table contains roughly one million
+// semantic nodes even when its DOM is windowed. These limits remain bounded
+// against hostile snapshots while admitting the supported large-file scale.
+const MAX_DOCUMENT_MODEL_NODES = 2_000_000;
+const MAX_DOCUMENT_MODEL_MARKS = 2_000_000;
+const MAX_DOCUMENT_MODEL_ATTRIBUTE_VALUES = 10_000_000;
+
+interface SchemaValidatedDocumentModelOptions {
+  initialIntegrityFeatures?: number;
+  previous?: WorkDocumentModel | null;
+}
+
+interface SchemaValidatedDocumentModel {
+  html: string;
+  htmlFingerprint: string;
+  initialIntegrityFeatures: number | null;
+  root: WorkDocumentNode;
+}
+
+const schemaValidatedDocumentModels = new WeakMap<
+  WorkDocumentModel,
+  SchemaValidatedDocumentModel
+>();
 
 export function createWorkDocumentModel(
   html: string,
   root: WorkDocumentNode,
   previous?: WorkDocumentModel | null,
 ): WorkDocumentModel {
-  return {
+  const model: WorkDocumentModel = {
     schema: DOCUMENT_MODEL_SCHEMA,
     version: DOCUMENT_MODEL_VERSION,
     revision: nextRevision(previous),
     htmlFingerprint: documentHtmlFingerprint(html),
     root,
   };
+  transferLazyDocumentModelState(previous, model);
+  return model;
+}
+
+/**
+ * Creates a model for a root assembled by a schema-constrained parser. The
+ * trust record is process-local and is lost across cloning or persistence, so
+ * external snapshots still receive the complete structural validation.
+ */
+export function createSchemaValidatedWorkDocumentModel(
+  html: string,
+  root: WorkDocumentNode,
+  options: SchemaValidatedDocumentModelOptions = {},
+): WorkDocumentModel {
+  const model = createWorkDocumentModel(html, root, options.previous);
+  schemaValidatedDocumentModels.set(model, {
+    html,
+    htmlFingerprint: model.htmlFingerprint,
+    initialIntegrityFeatures: nonNegativeInteger(
+      options.initialIntegrityFeatures,
+    ),
+    root,
+  });
+  return model;
+}
+
+/**
+ * Records a root emitted by the live TipTap schema without rescanning up to two
+ * million JSON nodes on the next controlled render.
+ */
+export function createSchemaDerivedWorkDocumentModel(
+  html: string,
+  root: WorkDocumentNode,
+  previous?: WorkDocumentModel | null,
+): WorkDocumentModel {
+  const model = createWorkDocumentModel(html, root, previous);
+  schemaValidatedDocumentModels.set(model, {
+    html,
+    htmlFingerprint: model.htmlFingerprint,
+    initialIntegrityFeatures:
+      (previous &&
+        schemaValidatedDocumentModels.get(previous)
+          ?.initialIntegrityFeatures) ??
+      null,
+    root,
+  });
+  return model;
+}
+
+export function documentModelHasTrustedInitialIntegrityFeatures(
+  model: WorkDocumentModel | null,
+): boolean {
+  if (!model) return false;
+  const validated = schemaValidatedDocumentModels.get(model);
+  return (
+    validated?.root === model.root &&
+    validated.initialIntegrityFeatures !== null
+  );
 }
 
 export function documentModelForContent(
@@ -37,13 +119,23 @@ export function documentModelForHtml(
   html: string,
 ): WorkDocumentModel | null {
   if (!isRecord(candidate)) return null;
+  const validated = schemaValidatedDocumentModels.get(
+    candidate as unknown as WorkDocumentModel,
+  );
+  const trustedHtmlMatches = Boolean(
+    validated &&
+      validated.root === candidate.root &&
+      validated.html === html &&
+      validated.htmlFingerprint === candidate.htmlFingerprint,
+  );
   if (
     candidate.schema !== DOCUMENT_MODEL_SCHEMA ||
     candidate.version !== DOCUMENT_MODEL_VERSION ||
     !Number.isSafeInteger(candidate.revision) ||
     Number(candidate.revision) < 1 ||
-    candidate.htmlFingerprint !== documentHtmlFingerprint(html) ||
-    !isDocumentRoot(candidate.root)
+    (!trustedHtmlMatches &&
+      candidate.htmlFingerprint !== documentHtmlFingerprint(html)) ||
+    (validated?.root !== candidate.root && !isDocumentRoot(candidate.root))
   ) {
     return null;
   }
@@ -60,12 +152,13 @@ export interface WorkDocumentEditorInput {
 export function resolveWorkDocumentEditorInput(
   content: WorkDocumentContent,
   fallbackHtml: string,
+  validatedModel: WorkDocumentModel | null = documentModelForContent(content),
 ): WorkDocumentEditorInput {
   // The structured model is synchronized to the controlled `content.html`
   // value. `fallbackHtml` may be a browser-normalized legacy projection, so
   // validating against it would discard a valid model and turn mount-time HTML
   // normalization into a false user edit.
-  const model = documentModelForContent(content);
+  const model = validatedModel;
   if (!model) {
     return {
       model: null,
@@ -76,7 +169,12 @@ export function resolveWorkDocumentEditorInput(
   }
   return {
     model,
-    source: model.root,
+    source:
+      prepareLazyDocumentEditorSource(
+        model,
+        documentModelHasTrustedInitialIntegrityFeatures(model),
+        content.html,
+      )?.root ?? model.root,
     sourceKey: `model:${model.revision}:${model.htmlFingerprint}`,
     revision: model.revision,
   };
@@ -100,6 +198,11 @@ function nextRevision(previous: WorkDocumentModel | null | undefined): number {
       ? previous.revision
       : 0;
   return revision >= Number.MAX_SAFE_INTEGER ? 1 : revision + 1;
+}
+
+function nonNegativeInteger(value: unknown): number | null {
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number >= 0 ? number : null;
 }
 
 function isDocumentRoot(value: unknown): value is WorkDocumentNode {

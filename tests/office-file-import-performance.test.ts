@@ -1,6 +1,7 @@
 import { describe, expect, test } from '@rstest/core';
 import JSZip from 'jszip';
 import { checkCellIsLocked, type Context } from '@fortune-sheet/core';
+import * as XLSX from 'xlsx';
 import {
   createArtifact,
   createArtifactBlob,
@@ -12,8 +13,72 @@ import {
   withEditableRange,
   withSheetProtection,
 } from '../src/internal/features/work/work-spreadsheet-protection';
+import { WorkFileImportController } from '../src/internal/features/work/work-file-import';
+import { documentModelUsesWindowing } from '../src/internal/features/work/work-document-windowing';
 
 describe('office file import performance', () => {
+  test('yields through the browser scheduler when it is available', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'scheduler');
+    let yieldCount = 0;
+    Object.defineProperty(globalThis, 'scheduler', {
+      configurable: true,
+      value: {
+        yield: async () => {
+          yieldCount += 1;
+        },
+      },
+    });
+    try {
+      await new WorkFileImportController({}, 0).yieldToMainThread();
+      expect(yieldCount).toBe(1);
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(globalThis, 'scheduler', descriptor);
+      } else {
+        Reflect.deleteProperty(globalThis, 'scheduler');
+      }
+    }
+  });
+
+  test('formats only cells that need non-General display text', async () => {
+    const worksheet = XLSX.utils.aoa_to_sheet([
+      [0.25, new Date('2026-08-18T00:00:00.000Z')],
+      ['Plain text', 42],
+    ]);
+    if (!worksheet.A1 || !worksheet.B1) {
+      throw new Error('Expected formatted worksheet cells.');
+    }
+    worksheet.A1.z = '0.0%';
+    worksheet.B1.z = 'yyyy-mm-dd';
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Formatted');
+    const bytes = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array',
+    }) as ArrayBuffer;
+
+    const artifact = await importOfficeFile(
+      new File([bytes], 'formatted.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }),
+    );
+    if (artifact.content.type !== 'spreadsheet') {
+      throw new Error('Expected a spreadsheet artifact.');
+    }
+
+    expect(artifact.content.sheets[0]?.data?.[0]?.[0]).toMatchObject({
+      m: '25.0%',
+      v: 0.25,
+    });
+    expect(artifact.content.sheets[0]?.data?.[0]?.[1]).toMatchObject({
+      m: '2026-08-18',
+    });
+    expect(artifact.content.sheets[0]?.data?.[1]?.[0]).toEqual({
+      v: 'Plain text',
+    });
+    expect(artifact.content.sheets[0]?.data?.[1]?.[1]).toEqual({ v: 42 });
+  });
+
   test('reads an XLSX source once and keeps a maximum worksheet range sparse', async () => {
     const buffer = await sparseWorkbookBuffer();
     const source = new File([buffer], 'maximum-range.xlsx', {
@@ -46,7 +111,6 @@ describe('office file import performance', () => {
     expect(Object.keys(sheet?.data?.[0] ?? [])).toEqual(['0']);
     expect(sheet?.data?.[0]?.[0]).toMatchObject({
       v: 'Anchor',
-      m: 'Anchor',
     });
 
     expect(progress[0]).toMatchObject({
@@ -82,6 +146,35 @@ describe('office file import performance', () => {
     );
 
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  test('bypasses full HTML conversion for a large plain DOCX', async () => {
+    const paragraphCount = 20_000;
+    const buffer = await largePlainDocumentBuffer(paragraphCount);
+    performance.clearMeasures();
+
+    const artifact = await importOfficeFile(
+      new File([buffer], 'large-plain.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      }),
+    );
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+
+    expect(artifact.content.model).toBeDefined();
+    expect(
+      documentModelUsesWindowing(
+        artifact.content.model?.root ?? { type: 'doc' },
+      ),
+    ).toBe(true);
+    expect(artifact.content.html.match(/<p>/g)).toHaveLength(paragraphCount);
+    expect(artifact.compatibility?.issues).toContainEqual(
+      expect.objectContaining({ code: 'docx.large-document-windowing' }),
+    );
+    expect(
+      performance.getEntriesByName('a3s-office.document.import-total').at(-1),
+    ).toMatchObject({ detail: { path: 'large-simple' } });
   });
 
   test('exports and reimports a maximum sparse worksheet', async () => {
@@ -273,6 +366,46 @@ async function sparseWorkbookBuffer(): Promise<ArrayBuffer> {
       '<dimension ref="A1:XFD1048576"/>',
       '<sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Anchor</t></is></c></row></sheetData>',
       '</worksheet>',
+    ].join(''),
+  );
+  return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
+}
+
+async function largePlainDocumentBuffer(
+  paragraphCount: number,
+): Promise<ArrayBuffer> {
+  const zip = new JSZip();
+  zip.file(
+    '[Content_Types].xml',
+    [
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">',
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>',
+      '<Default Extension="xml" ContentType="application/xml"/>',
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>',
+      '</Types>',
+    ].join(''),
+  );
+  zip.file(
+    '_rels/.rels',
+    [
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">',
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>',
+      '</Relationships>',
+    ].join(''),
+  );
+  zip.file(
+    'word/document.xml',
+    [
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+      '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>',
+      Array.from(
+        { length: paragraphCount },
+        (_, index) => `<w:p><w:r><w:t>Line ${index + 1}</w:t></w:r></w:p>`,
+      ).join(''),
+      '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>',
+      '</w:body></w:document>',
     ].join(''),
   );
   return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });

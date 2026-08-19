@@ -9,9 +9,9 @@ import { diagnoseDocxPageChrome } from './work-docx-page-chrome-diagnostics';
 import { diagnoseDocxPageMargins } from './work-docx-page-margins-diagnostics';
 import { diagnoseDocxPageSize } from './work-docx-page-size-diagnostics';
 import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diagnostics';
-import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import { isSupportedDocxParagraphFormattingChange } from './work-docx-paragraph-format-change-import';
+import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { isSupportedDocxRunFormattingChange } from './work-docx-run-formatting-import';
 import {
   attribute,
@@ -21,7 +21,14 @@ import {
   directChildren,
   firstDescendant,
   OoxmlPackage,
+  parseXml,
+  xmlContainsAnyElement,
 } from './work-ooxml-package';
+import {
+  emptySpreadsheetWorksheetCompatibilitySummary,
+  type SpreadsheetWorksheetCompatibilitySummary,
+  updateSpreadsheetWorksheetCompatibilitySummary,
+} from './work-spreadsheet-compatibility-summary';
 import {
   parseSpreadsheetPrintTitles,
   stripSpreadsheetSheetQualifier,
@@ -33,18 +40,42 @@ import type {
 import { diagnoseXlsxCharts } from './work-xlsx-chart-diagnostics';
 import { diagnoseXlsxConditionalFormatting } from './work-xlsx-conditional-format-diagnostics';
 import { diagnoseXlsxFormulas } from './work-xlsx-formula-diagnostics';
+import type { XlsxFormulaFeatures } from './work-xlsx-formulas';
 import {
   isSupportedXlsxWorksheetImageContentType,
   MAX_XLSX_WORKSHEET_IMAGE_BYTES,
 } from './work-xlsx-images';
 import { diagnoseXlsxPageSetup } from './work-xlsx-page-setup-diagnostics';
 import { diagnoseXlsxPivots } from './work-xlsx-pivot-diagnostics';
+import type { XlsxPivotReadResult } from './work-xlsx-pivots';
 import { diagnoseXlsxProtection } from './work-xlsx-protection';
+import { xlsxWorksheetCellEntries } from './work-xlsx-worksheet';
+import type { XlsxWorksheetXmlScan } from './work-xlsx-worksheet-scan';
 
 interface ConversionMessage {
   type: string;
   message: string;
 }
+
+export interface SpreadsheetCompatibilityImportMetadata {
+  formulaFeatures?: XlsxFormulaFeatures | null;
+  pivotFeatures?: XlsxPivotReadResult | null;
+  worksheetScans?: Readonly<Record<string, XlsxWorksheetXmlScan>>;
+}
+
+const XLSX_DIAGNOSTIC_WORKSHEET_ELEMENTS = [
+  'conditionalFormatting',
+  'dataValidation',
+  'sheetProtection',
+  'protectedRange',
+  'pageSetup',
+  'pageMargins',
+  'printOptions',
+  'headerFooter',
+  'pageSetUpPr',
+  'rowBreaks',
+  'colBreaks',
+] as const;
 
 export async function analyzeDocxCompatibility(
   file: File,
@@ -404,6 +435,11 @@ export async function analyzeSpreadsheetCompatibility(
   extension: string,
   workbook: WorkBook,
   sourcePackage?: OoxmlPackage | null,
+  worksheetSummaries?: ReadonlyMap<
+    string,
+    SpreadsheetWorksheetCompatibilitySummary
+  >,
+  importedMetadata?: SpreadsheetCompatibilityImportMetadata,
 ): Promise<WorkCompatibilityReport | null> {
   if (extension === 'csv') return null;
   const sourceFormat = extension.toUpperCase();
@@ -486,7 +522,13 @@ export async function analyzeSpreadsheetCompatibility(
   }
   for (const [index, name] of workbook.SheetNames.entries()) {
     const worksheet = workbook.Sheets[name];
-    inspectWorksheetModel(worksheet, name, issues, extension === 'xlsx');
+    inspectWorksheetModel(
+      worksheet,
+      name,
+      issues,
+      extension === 'xlsx',
+      worksheetSummaries?.get(name),
+    );
     if ((workbook.Workbook?.Sheets?.[index]?.Hidden ?? 0) > 0) {
       issues.push(
         issue(
@@ -507,7 +549,7 @@ export async function analyzeSpreadsheetCompatibility(
           ? await OoxmlPackage.load(await file.arrayBuffer())
           : sourcePackage;
       if (!archive) throw new Error('The XLSX package could not be loaded.');
-      await inspectXlsxPackage(archive, issues);
+      await inspectXlsxPackage(archive, issues, importedMetadata);
     } catch {
       issues.push(
         issue(
@@ -527,6 +569,7 @@ function inspectWorksheetModel(
   name: string,
   issues: WorkCompatibilityIssue[],
   nativeXlsxFormulaInspection: boolean,
+  importedSummary?: SpreadsheetWorksheetCompatibilitySummary,
 ) {
   if (!worksheet) return;
   if (worksheet['!autofilter']) {
@@ -540,28 +583,13 @@ function inspectWorksheetModel(
       ),
     );
   }
-  let hasComments = false;
-  let hasCommentThreads = false;
-  let hasLinks = false;
-  let hasArrayFormulas = false;
-  let hasRichText = false;
-  for (const [address, cell] of Object.entries(worksheet)) {
-    if (address.startsWith('!') || !cell || typeof cell !== 'object') continue;
-    const source = cell as {
-      c?: Array<{ T?: boolean }>;
-      l?: { Target?: string };
-      F?: string;
-      r?: string;
-    };
-    if (source.c?.length) {
-      hasComments = true;
-      if (source.c.length > 1 || source.c.some((comment) => comment.T))
-        hasCommentThreads = true;
-    }
-    if (source.l?.Target) hasLinks = true;
-    if (source.F) hasArrayFormulas = true;
-    if (source.r) hasRichText = true;
-  }
+  const {
+    hasArrayFormulas,
+    hasComments,
+    hasCommentThreads,
+    hasLinks,
+    hasRichText,
+  } = importedSummary ?? summarizeSpreadsheetWorksheet(worksheet);
   if (hasComments) {
     issues.push(
       issue(
@@ -619,13 +647,32 @@ function inspectWorksheetModel(
   }
 }
 
+function summarizeSpreadsheetWorksheet(
+  worksheet: WorkSheet,
+): SpreadsheetWorksheetCompatibilitySummary {
+  const summary = emptySpreadsheetWorksheetCompatibilitySummary();
+  for (const { cell } of xlsxWorksheetCellEntries(worksheet)) {
+    updateSpreadsheetWorksheetCompatibilitySummary(summary, cell);
+  }
+  return summary;
+}
+
 async function inspectXlsxPackage(
   archive: OoxmlPackage,
   issues: WorkCompatibilityIssue[],
+  importedMetadata?: SpreadsheetCompatibilityImportMetadata,
 ) {
   issues.push(...(await diagnoseXlsxCharts(archive)));
-  issues.push(...(await diagnoseXlsxFormulas(archive)));
-  issues.push(...(await diagnoseXlsxPivots(archive)));
+  issues.push(
+    ...(await diagnoseXlsxFormulas(
+      archive,
+      importedMetadata?.formulaFeatures,
+      importedMetadata?.worksheetScans,
+    )),
+  );
+  issues.push(
+    ...(await diagnoseXlsxPivots(archive, importedMetadata?.pivotFeatures)),
+  );
   const drawingParts = archive
     .paths('xl/drawings/')
     .filter((path) => /^xl\/drawings\/drawing\d+\.xml$/i.test(path));
@@ -796,7 +843,16 @@ async function inspectXlsxPackage(
   }
   for (const part of archive.paths('xl/worksheets/')) {
     if (!part.endsWith('.xml')) continue;
-    const worksheet = await archive.xml(part);
+    const scan = importedMetadata?.worksheetScans?.[part];
+    if (scan && !scan.hasDiagnosticFeatures) continue;
+    const source = await archive.text(part);
+    if (
+      !scan &&
+      !xmlContainsAnyElement(source, XLSX_DIAGNOSTIC_WORKSHEET_ELEMENTS)
+    ) {
+      continue;
+    }
+    const worksheet = parseXml(source, part);
     if (descendants(worksheet, 'conditionalFormatting').length) {
       for (const diagnostic of diagnoseXlsxConditionalFormatting(
         worksheet,

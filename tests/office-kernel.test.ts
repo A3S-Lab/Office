@@ -34,6 +34,21 @@ describe('Office layout kernel', () => {
     expect(result.documentRevision).toBe(4);
   });
 
+  test('lays out one hundred thousand blocks in the JavaScript fallback', () => {
+    const blocks = Array.from({ length: 100_000 }, (_, index) =>
+      block(`paragraph-${index}`, 1),
+    );
+
+    const result = layoutOfficeDocumentInJavaScript(request(blocks));
+
+    expect(
+      result.pages.reduce((count, page) => count + page.placements.length, 0),
+    ).toBe(100_000);
+    expect(result.pages.at(-1)?.placements.at(-1)?.blockId).toBe(
+      'paragraph-99999',
+    );
+  });
+
   test('keeps page chrome inside the physical margins', () => {
     const input = request([block('body', 150), block('tail', 20)]);
     input.page = {

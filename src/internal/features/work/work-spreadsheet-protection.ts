@@ -4,6 +4,7 @@ import {
   sparseArrayEntries,
   sparseMatrixColumnCount,
 } from './spreadsheet-sparse';
+import { spreadsheetMatrixProfile } from './work-spreadsheet-matrix-profile';
 import {
   formatSpreadsheetCellRanges,
   parseSpreadsheetCellRanges,
@@ -338,16 +339,21 @@ export function spreadsheetProtectionKey(sheets: Sheet[]): string {
   return sheets
     .map((sheet) => {
       const authority = sheetProtectionAuthority(sheet);
-      const cells: string[] = [];
-      for (const [row, values] of sparseArrayEntries(sheet.data)) {
-        for (const [column, cell] of sparseArrayEntries(values)) {
-          const hidden = (cell as ProtectionCell | null)?.hi;
-          if (cell?.lo !== undefined || hidden !== undefined) {
-            cells.push(`${row}_${column}:${cell?.lo ?? ''}:${hidden ?? ''}`);
+      const profile = spreadsheetMatrixProfile(sheet.data);
+      let protectionCellKey = profile?.protectionCellKey;
+      if (protectionCellKey === undefined) {
+        const cells: string[] = [];
+        for (const [row, values] of sparseArrayEntries(sheet.data)) {
+          for (const [column, cell] of sparseArrayEntries(values)) {
+            const hidden = (cell as ProtectionCell | null)?.hi;
+            if (cell?.lo !== undefined || hidden !== undefined) {
+              cells.push(`${row}_${column}:${cell?.lo ?? ''}:${hidden ?? ''}`);
+            }
           }
         }
+        protectionCellKey = cells.join(',');
       }
-      return `${sheet.id ?? sheet.name}:${JSON.stringify(authority)}:${cells.join(',')}`;
+      return `${sheet.id ?? sheet.name}:${JSON.stringify(authority)}:${protectionCellKey}`;
     })
     .join('|');
 }

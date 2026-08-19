@@ -16,9 +16,18 @@ import {
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import '@a3s-lab/office/styles.css';
-import { WORK_IMPORT_ACCEPT as OFFICE_FILE_ACCEPT } from '../../src/internal/features/work/work-file-contract';
 import { serializeDocumentParagraphFormatting } from '../../src/internal/features/work/work-document-paragraph-format-changes';
+import { WORK_IMPORT_ACCEPT as OFFICE_FILE_ACCEPT } from '../../src/internal/features/work/work-file-contract';
 import { createWorkArtifact as createArtifact } from '../../src/internal/features/work/work-templates';
+import {
+  createMaximumSparseSpreadsheetArtifact,
+  MAXIMUM_SPARSE_SPREADSHEET_ARTIFACT_ID,
+  MAXIMUM_SPARSE_SPREADSHEET_FIXTURE,
+} from './maximum-sparse-spreadsheet-fixture';
+import {
+  PlaygroundImportProgress,
+  type PlaygroundImportState,
+} from './playground-import-progress';
 import type { NoticeTone, PlaygroundNotice } from './playground-types';
 import {
   collaborationServerDocumentationUrl,
@@ -29,15 +38,6 @@ import { SiteSidebar } from './site-sidebar';
 import { useMediaQuery } from './use-media-query';
 import { usePlaygroundSidebarState } from './use-playground-sidebar-state';
 import { WorkspaceHome } from './workspace-home';
-import {
-  createMaximumSparseSpreadsheetArtifact,
-  MAXIMUM_SPARSE_SPREADSHEET_ARTIFACT_ID,
-  MAXIMUM_SPARSE_SPREADSHEET_FIXTURE,
-} from './maximum-sparse-spreadsheet-fixture';
-import {
-  PlaygroundImportProgress,
-  type PlaygroundImportState,
-} from './playground-import-progress';
 import './playground.css';
 import './workspace.css';
 
@@ -80,6 +80,8 @@ function Playground() {
   const importController = useRef<{
     controller: AbortController;
     id: number;
+    placeholderId?: string;
+    restoreArtifactId: string | null;
   } | null>(null);
   const activeArtifact =
     artifacts.find((artifact) => artifact.id === activeArtifactId) ?? null;
@@ -231,11 +233,48 @@ function Playground() {
   );
 
   const importFile = async (file: File) => {
-    importController.current?.controller.abort();
+    const previousImport = importController.current;
+    previousImport?.controller.abort();
+    if (previousImport?.placeholderId) {
+      setArtifacts((current) =>
+        current.filter(
+          (artifact) => artifact.id !== previousImport.placeholderId,
+        ),
+      );
+      setActiveArtifactId((current) =>
+        current === previousImport.placeholderId
+          ? previousImport.restoreArtifactId
+          : current,
+      );
+    }
     const id = importCounter.current + 1;
     importCounter.current = id;
     const controller = new AbortController();
-    importController.current = { controller, id };
+    const restoreArtifactId = previousImport?.placeholderId
+      ? previousImport.restoreArtifactId
+      : activeArtifactId;
+    const placeholderTemplate = importPlaceholderTemplate(file.name);
+    const placeholder = placeholderTemplate
+      ? createArtifact(placeholderTemplate)
+      : null;
+    importController.current = {
+      controller,
+      id,
+      ...(placeholder ? { placeholderId: placeholder.id } : {}),
+      restoreArtifactId,
+    };
+    if (placeholder) {
+      placeholder.title =
+        file.name.replace(/\.[^.]+$/i, '') || placeholder.title;
+      setArtifacts((current) => [
+        placeholder,
+        ...current.filter((artifact) => artifact.id !== placeholder.id),
+      ]);
+      setActiveArtifactId(placeholder.id);
+      setLastAgentRequest(null);
+      setAssistantOpen(false);
+      closeSidebarForEditor();
+    }
     const initialProgress: OfficeFileImportProgress = {
       stage: 'reading',
       stageProgress: 0,
@@ -247,6 +286,14 @@ function Playground() {
     try {
       const { importOfficeFile } = await import('@a3s-lab/office/core');
       const imported = await importOfficeFile(file, {
+        ...(placeholder ? { artifactId: placeholder.id } : {}),
+        ...(placeholder?.content.type === 'spreadsheet'
+          ? {
+              spreadsheetSheetIds: placeholder.content.sheets.flatMap(
+                (sheet) => (sheet.id ? [sheet.id] : []),
+              ),
+            }
+          : {}),
         signal: controller.signal,
         onProgress: (progress) => {
           if (importController.current?.id !== id) return;
@@ -268,6 +315,14 @@ function Playground() {
       showNotice(`${file.name} 已打开`, 'success');
     } catch (error) {
       if (importController.current?.id !== id) return;
+      if (placeholder) {
+        setArtifacts((current) =>
+          current.filter((artifact) => artifact.id !== placeholder.id),
+        );
+        setActiveArtifactId((current) =>
+          current === placeholder.id ? restoreArtifactId : current,
+        );
+      }
       if (error instanceof Error && error.name === 'AbortError') {
         showNotice(`已取消导入 ${file.name}`, 'neutral');
         return;
@@ -433,6 +488,17 @@ function Playground() {
       {notice && <PlaygroundToast key={notice.id} notice={notice} />}
     </main>
   );
+}
+
+function importPlaceholderTemplate(
+  fileName: string,
+): 'blank-document' | 'blank-spreadsheet' | null {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  if (extension === 'docx') return 'blank-document';
+  if (extension && ['csv', 'ods', 'xls', 'xlsx'].includes(extension)) {
+    return 'blank-spreadsheet';
+  }
+  return null;
 }
 
 function PlaygroundToast({ notice }: { notice: PlaygroundNotice }) {

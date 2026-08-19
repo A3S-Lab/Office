@@ -2,6 +2,10 @@ import { isHistoryTransaction } from '@tiptap/pm/history';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { type EditorState, Plugin, type Transaction } from '@tiptap/pm/state';
 import { Mapping } from '@tiptap/pm/transform';
+import {
+  DOCUMENT_INTEGRITY_IMAGE,
+  documentHasIntegrityFeature,
+} from './work-document-integrity-index';
 
 export interface WorkDocumentImageIdentity {
   objectId: string;
@@ -211,6 +215,12 @@ function normalizeDocumentImageIdentities(
   oldState?: EditorState,
   transactions: readonly Transaction[] = [],
 ): Transaction | null {
+  if (
+    imageNodeName === 'image' &&
+    !documentHasIntegrityFeature(state.doc, DOCUMENT_INTEGRITY_IMAGE)
+  ) {
+    return null;
+  }
   const images = documentImages(state.doc, imageNodeName);
   if (!images.length) return null;
   const retainedPositions = oldState

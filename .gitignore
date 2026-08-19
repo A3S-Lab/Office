@@ -2,7 +2,15 @@
 .DS_Store
 *.local
 *.log*
-.a3s-test/
+.a3s-test/*
+!.a3s-test/performance/
+.a3s-test/performance/*
+!.a3s-test/performance/benchmark-document-edit.ts
+!.a3s-test/performance/benchmark-browser.ts
+!.a3s-test/performance/benchmark-metrics.ts
+!.a3s-test/performance/benchmark-spreadsheet-edit.ts
+!.a3s-test/performance/benchmark.ts
+!.a3s-test/performance/generate-fixtures.ts
 
 # Dist
 node_modules

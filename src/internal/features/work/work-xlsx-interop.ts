@@ -7,8 +7,18 @@ import {
   firstDescendant,
   OoxmlPackage,
   parseXml,
+  xmlContainsAnyElement,
 } from './work-ooxml-package';
 import { sheetHasProtectionState } from './work-spreadsheet-protection';
+import type {
+  WorkSpreadsheetContent,
+  WorkSpreadsheetDataValidationItem,
+  WorkSpreadsheetDataValidationRange,
+} from './work-types';
+import {
+  readXlsxWorksheetCharts,
+  type XlsxWorksheetChart,
+} from './work-xlsx-charts';
 import {
   type FortuneConditionalFormatRule,
   readXlsxConditionalFormats,
@@ -17,34 +27,26 @@ import {
   XlsxDifferentialFormatWriter,
 } from './work-xlsx-conditional-format';
 import {
-  readXlsxProtection,
-  writeXlsxProtection,
-  XlsxCellProtectionWriter,
-  type XlsxProtectionFeatures,
-} from './work-xlsx-protection';
+  readXlsxWorksheetImages,
+  type XlsxWorksheetImage,
+} from './work-xlsx-images';
 import {
   readXlsxManualPageBreaks,
   writeXlsxManualPageBreaks,
   type XlsxManualPageBreaks,
 } from './work-xlsx-page-breaks';
 import {
-  readXlsxWorksheetCharts,
-  type XlsxWorksheetChart,
-} from './work-xlsx-charts';
-import {
-  readXlsxWorksheetImages,
-  type XlsxWorksheetImage,
-} from './work-xlsx-images';
-import {
   readXlsxPageSetup,
   writeXlsxPageSetup,
   type XlsxPageSetup,
 } from './work-xlsx-page-setup';
-import type {
-  WorkSpreadsheetContent,
-  WorkSpreadsheetDataValidationItem,
-  WorkSpreadsheetDataValidationRange,
-} from './work-types';
+import {
+  readXlsxProtection,
+  writeXlsxProtection,
+  XlsxCellProtectionWriter,
+  type XlsxProtectionFeatures,
+} from './work-xlsx-protection';
+import type { XlsxWorksheetXmlScan } from './work-xlsx-worksheet-scan';
 
 type FrozenPane = NonNullable<Sheet['frozen']>;
 
@@ -66,6 +68,22 @@ export interface XlsxSheetFeatures {
 
 export type FortuneDataValidationItem = WorkSpreadsheetDataValidationItem;
 
+const XLSX_IMPORTED_WORKSHEET_ELEMENTS = [
+  'pane',
+  'dataValidation',
+  'conditionalFormatting',
+  'sheetProtection',
+  'protectedRange',
+  'rowBreaks',
+  'colBreaks',
+  'pageSetup',
+  'pageMargins',
+  'printOptions',
+  'headerFooter',
+  'pageSetUpPr',
+  'drawing',
+] as const;
+
 export async function readXlsxSheetFeatures(
   buffer: ArrayBuffer,
 ): Promise<Map<string, XlsxSheetFeatures>> {
@@ -74,6 +92,7 @@ export async function readXlsxSheetFeatures(
 
 export async function readXlsxSheetFeaturesFromPackage(
   archive: OoxmlPackage,
+  worksheetScans?: Readonly<Record<string, XlsxWorksheetXmlScan>>,
 ): Promise<Map<string, XlsxSheetFeatures>> {
   const worksheetParts = await readWorksheetParts(archive);
   const styles = archive.has('xl/styles.xml')
@@ -84,7 +103,20 @@ export async function readXlsxSheetFeaturesFromPackage(
   const imageBudget = { bytes: 0 };
   for (const [sheetName, partPath] of worksheetParts) {
     if (!archive.has(partPath)) continue;
-    const document = await archive.xml(partPath);
+    const scan = worksheetScans?.[partPath];
+    if (scan && !scan.hasImportedFeatures) {
+      features.set(sheetName, emptyXlsxSheetFeatures());
+      continue;
+    }
+    const source = await archive.text(partPath);
+    if (
+      !scan &&
+      !xmlContainsAnyElement(source, XLSX_IMPORTED_WORKSHEET_ELEMENTS)
+    ) {
+      features.set(sheetName, emptyXlsxSheetFeatures());
+      continue;
+    }
+    const document = parseXml(source, partPath);
     features.set(sheetName, {
       frozen: parseFrozenPane(document) ?? undefined,
       validations: parseDataValidations(document),
@@ -105,6 +137,17 @@ export async function readXlsxSheetFeaturesFromPackage(
     });
   }
   return features;
+}
+
+function emptyXlsxSheetFeatures(): XlsxSheetFeatures {
+  return {
+    validations: [],
+    conditionalFormats: [],
+    protection: { cellProtectionRanges: [] },
+    pageBreaks: { rows: [], columns: [] },
+    images: [],
+    charts: [],
+  };
 }
 
 export async function patchXlsxSheetFeatures(

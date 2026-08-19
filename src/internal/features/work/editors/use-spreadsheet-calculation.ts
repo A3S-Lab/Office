@@ -18,7 +18,7 @@ import {
   spreadsheetCalculationTargets,
 } from './spreadsheet-calculation-model';
 import {
-  createSpreadsheetKernelWorkbook,
+  prepareSpreadsheetKernelWorkbook,
   projectSpreadsheetKernelWorkbookOperations,
   refreshSpreadsheetKernelWorkbook,
   spreadsheetOperationsMayChangeCalculation,
@@ -55,6 +55,7 @@ interface PreparedSessionPatch {
 interface SynchronizeSnapshotOptions {
   baseWorkbook?: SpreadsheetKernelWorkbook;
   forceCalculation?: boolean;
+  hasFormulaCells?: boolean;
   projection?: SpreadsheetKernelOperationProjection;
   sourceChanged?: boolean;
 }
@@ -303,7 +304,9 @@ export function useSpreadsheetCalculation({
         automaticTimerRef.current = null;
         if (documentRevisionRef.current !== documentRevision) return;
         if (!calculationSnapshot) {
-          fallbackWithFortune(workbookRef.current, { scope: 'workbook' });
+          if (options.hasFormulaCells !== false) {
+            fallbackWithFortune(workbookRef.current, { scope: 'workbook' });
+          }
           return;
         }
         if (
@@ -356,11 +359,11 @@ export function useSpreadsheetCalculation({
         });
         return;
       }
-      synchronizeSnapshot(
-        nextContent,
-        createSpreadsheetKernelWorkbook(nextContent),
-        { forceCalculation },
-      );
+      const preparation = prepareSpreadsheetKernelWorkbook(nextContent);
+      synchronizeSnapshot(nextContent, preparation.workbook, {
+        forceCalculation,
+        hasFormulaCells: preparation.hasFormulaCells,
+      });
     },
     [synchronizeSnapshot],
   );
@@ -392,7 +395,10 @@ export function useSpreadsheetCalculation({
     acceptedContentRef.current = null;
     resultOperationsRef.current = [];
     pendingOperationCancellationRef.current = false;
-    synchronizeSnapshot(content, createSpreadsheetKernelWorkbook(content));
+    const preparation = prepareSpreadsheetKernelWorkbook(content);
+    synchronizeSnapshot(content, preparation.workbook, {
+      hasFormulaCells: preparation.hasFormulaCells,
+    });
   }, [content, kernelWasmUrl, synchronizeSnapshot]);
 
   const recalculate = useCallback(
@@ -400,8 +406,12 @@ export function useSpreadsheetCalculation({
       clearTimer(automaticTimerRef);
       let snapshot = snapshotRef.current;
       if (!snapshot) {
-        snapshot = createSpreadsheetKernelWorkbook(latestContentRef.current);
+        const preparation = prepareSpreadsheetKernelWorkbook(
+          latestContentRef.current,
+        );
+        snapshot = preparation.workbook;
         snapshotRef.current = snapshot;
+        if (!snapshot && !preparation.hasFormulaCells) return;
       }
       if (!snapshot) {
         fallbackWithFortune(workbookRef.current, command);

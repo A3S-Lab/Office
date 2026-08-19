@@ -96,6 +96,7 @@ export interface DocumentPaginationSnapshot {
   pageStyles: OfficeKernelPageStyle[];
   measuredBlockCount: number;
   reusedBlockCount: number;
+  reusedPrefixBlockCount: number;
   unsupportedLayout: boolean;
 }
 

@@ -11,6 +11,23 @@ import type {
 } from '../src/internal/kernel/office-kernel-protocol';
 
 describe('Spreadsheet calculation hook', () => {
+  test('does not scan Fortune when an oversized workbook has no formulas', async () => {
+    const value = content(2);
+    const row = value.sheets[0]?.data?.[0];
+    if (!row) throw new Error('Workbook fixture is incomplete.');
+    row[1] = { v: 4, m: '4' };
+    row.length = 16_385;
+    const workbook = new RecordingWorkbook(value.sheets);
+    const workbookRef = { current: workbook as unknown as WorkbookInstance };
+    const { unmount } = renderHook(() =>
+      useSpreadsheetCalculation({ content: value, workbookRef }),
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(workbook.fallbacks).toEqual([]);
+    unmount();
+  });
+
   test('reuses one Worker session and posts only changed cells after initialization', async () => {
     const workerDescriptor = Object.getOwnPropertyDescriptor(
       globalThis,

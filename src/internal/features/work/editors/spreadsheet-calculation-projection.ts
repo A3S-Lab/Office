@@ -14,6 +14,7 @@ import {
   OFFICE_KERNEL_SPREADSHEET_MAX_TEXT_BYTES,
 } from '../../../kernel/office-kernel-spreadsheet-protocol';
 import { spreadsheetFormulaRangeForCell } from '../work-spreadsheet-formulas';
+import { spreadsheetMatrixProfile } from '../work-spreadsheet-matrix-profile';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetFormulaRangeType,
@@ -49,6 +50,11 @@ export interface SpreadsheetKernelOperationProjection {
   workbook: SpreadsheetKernelWorkbook;
 }
 
+export interface SpreadsheetKernelWorkbookPreparation {
+  hasFormulaCells: boolean;
+  workbook: SpreadsheetKernelWorkbook | null;
+}
+
 interface SpreadsheetKernelSourceState {
   cellCount: number;
   fingerprintA: bigint;
@@ -60,23 +66,27 @@ interface SpreadsheetKernelSourceState {
 export function createSpreadsheetKernelWorkbook(
   content: Pick<WorkSpreadsheetContent, 'sheets'>,
 ): SpreadsheetKernelWorkbook | null {
-  const fallbackCells = content.sheets.flatMap((sheet) =>
-    spreadsheetFormulaCoordinates(sheet).flatMap(({ row, column }) => {
-      if (!sheet.id) return [];
-      const range = spreadsheetFormulaRangeForCell(sheet, row, column);
-      return range
-        ? [
-            {
-              sheetId: sheet.id,
-              row,
-              column,
-              type: range.type,
-            },
-          ]
-        : [];
-    }),
+  return compileSpreadsheetKernelWorkbook(
+    content.sheets,
+    analyzeSpreadsheetFormulaCells(content.sheets).fallbackCells,
   );
-  return compileSpreadsheetKernelWorkbook(content.sheets, fallbackCells);
+}
+
+/**
+ * Prepares automatic calculation without compiling a value-only workbook that
+ * cannot produce any formula result. A later formula edit will prepare a fresh
+ * snapshot from the updated controlled content.
+ */
+export function prepareSpreadsheetKernelWorkbook(
+  content: Pick<WorkSpreadsheetContent, 'sheets'>,
+): SpreadsheetKernelWorkbookPreparation {
+  const analysis = analyzeSpreadsheetFormulaCells(content.sheets);
+  return {
+    hasFormulaCells: analysis.hasFormulaCells,
+    workbook: analysis.hasFormulaCells
+      ? compileSpreadsheetKernelWorkbook(content.sheets, analysis.fallbackCells)
+      : null,
+  };
 }
 
 export function refreshSpreadsheetKernelWorkbook(
@@ -671,15 +681,49 @@ function sameSpreadsheetValue(
 
 function spreadsheetFormulaCoordinates(
   sheet: WorkSpreadsheetSheet,
-): Array<{ row: number; column: number }> {
+): readonly Readonly<{ row: number; column: number }>[] {
+  const coordinates: Array<{ row: number; column: number }> = [];
   if (sheet.data) {
-    return sheet.data.flatMap((cells, row) =>
-      cells.flatMap((cell, column) => (cell?.f ? [{ row, column }] : [])),
-    );
+    const profile = spreadsheetMatrixProfile(sheet.data);
+    if (profile) return profile.formulaCells;
+    for (let row = 0; row < sheet.data.length; row += 1) {
+      const cells = sheet.data[row];
+      if (!cells) continue;
+      for (let column = 0; column < cells.length; column += 1) {
+        if (cells[column]?.f) coordinates.push({ row, column });
+      }
+    }
+    return coordinates;
   }
-  return (sheet.celldata ?? []).flatMap((entry) =>
-    entry.v?.f ? [{ row: entry.r, column: entry.c }] : [],
-  );
+  for (const entry of sheet.celldata ?? []) {
+    if (entry.v?.f) coordinates.push({ row: entry.r, column: entry.c });
+  }
+  return coordinates;
+}
+
+function analyzeSpreadsheetFormulaCells(
+  sheets: readonly WorkSpreadsheetSheet[],
+): {
+  fallbackCells: SpreadsheetKernelFallbackCell[];
+  hasFormulaCells: boolean;
+} {
+  const fallbackCells: SpreadsheetKernelFallbackCell[] = [];
+  let hasFormulaCells = false;
+  for (const sheet of sheets) {
+    for (const { row, column } of spreadsheetFormulaCoordinates(sheet)) {
+      hasFormulaCells = true;
+      if (!sheet.id) continue;
+      const range = spreadsheetFormulaRangeForCell(sheet, row, column);
+      if (!range) continue;
+      fallbackCells.push({
+        sheetId: sheet.id,
+        row,
+        column,
+        type: range.type,
+      });
+    }
+  }
+  return { fallbackCells, hasFormulaCells };
 }
 
 function sparseSpreadsheetCells(

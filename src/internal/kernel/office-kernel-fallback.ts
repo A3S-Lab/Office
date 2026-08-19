@@ -7,8 +7,8 @@ import {
   OFFICE_KERNEL_PROTOCOL_VERSION,
 } from './office-kernel-protocol';
 
-const MAX_LAYOUT_BLOCKS = 10_000;
-const MAX_LAYOUT_PAGE_STYLES = MAX_LAYOUT_BLOCKS;
+const MAX_LAYOUT_BLOCKS = 200_000;
+const MAX_LAYOUT_PAGE_STYLES = 10_000;
 const MAX_LAYOUT_EXTENT = 1_000_000;
 const MAX_LAYOUT_PAGE_INDEX = 1_000_000;
 
@@ -36,8 +36,9 @@ export function layoutOfficeDocumentInJavaScript(
     if (block.flowCount !== undefined) {
       const end = index + block.flowCount;
       layoutFlow(
-        request.blocks.slice(index, end),
-        request.blocks.slice(end),
+        request.blocks,
+        index,
+        end,
         pages,
         page,
         request.page,
@@ -48,7 +49,8 @@ export function layoutOfficeDocumentInJavaScript(
     } else {
       layoutSingleBlock(
         block,
-        request.blocks.slice(index + 1),
+        request.blocks,
+        index + 1,
         pages,
         page,
         request.page,
@@ -173,7 +175,8 @@ function validateLayoutRequest(request: OfficeKernelLayoutRequest): void {
 
 function layoutSingleBlock(
   block: OfficeKernelLayoutRequest['blocks'][number],
-  next: OfficeKernelLayoutRequest['blocks'],
+  blocks: OfficeKernelLayoutRequest['blocks'],
+  nextIndex: number,
   pages: OfficeKernelLayoutPage[],
   page: OfficeKernelPageMetrics,
   defaultPage: OfficeKernelPageMetrics,
@@ -191,7 +194,8 @@ function layoutSingleBlock(
 
   const remaining = Math.max(0, availableHeight - current.usedHeight);
   const nextHeight = nextBlockPreviewHeight(
-    next,
+    blocks,
+    nextIndex,
     page,
     defaultPage,
     pageStyles,
@@ -216,7 +220,8 @@ function layoutSingleBlock(
 
 function layoutFlow(
   blocks: OfficeKernelLayoutRequest['blocks'],
-  next: OfficeKernelLayoutRequest['blocks'],
+  start: number,
+  end: number,
   pages: OfficeKernelLayoutPage[],
   page: OfficeKernelPageMetrics,
   defaultPage: OfficeKernelPageMetrics,
@@ -224,15 +229,15 @@ function layoutFlow(
   hasMoreBlocks: boolean,
 ): void {
   const availableHeight = pageBodyHeight(page);
-  const first = blocks[0];
-  const last = blocks.at(-1) as OfficeKernelLayoutRequest['blocks'][number];
+  const first = blocks[start];
+  const last = blocks[end - 1] as OfficeKernelLayoutRequest['blocks'][number];
   if (first.breakBefore && pages.at(-1)?.placements.length) {
     pages.push(emptyPage(nextPageIndex(pages), page));
   }
 
-  const totalHeight = fragmentHeight(blocks, 0, blocks.length);
+  const totalHeight = fragmentHeight(blocks, start, end);
   const nextHeight = last.keepWithNext
-    ? nextBlockPreviewHeight(next, page, defaultPage, pageStyles)
+    ? nextBlockPreviewHeight(blocks, end, page, defaultPage, pageStyles)
     : 0;
   let current = pages.at(-1) as OfficeKernelLayoutPage;
   const repeatHeaderCount = first.repeatHeaderCount ?? 0;
@@ -247,8 +252,12 @@ function layoutFlow(
     current = emptyPage(nextPageIndex(pages), page);
     pages.push(current);
   }
-  if (repeatHeaderCount > 0 && repeatHeaderCount < blocks.length) {
-    const leadingHeight = fragmentHeight(blocks, 0, repeatHeaderCount + 1);
+  if (repeatHeaderCount > 0 && repeatHeaderCount < end - start) {
+    const leadingHeight = fragmentHeight(
+      blocks,
+      start,
+      start + repeatHeaderCount + 1,
+    );
     const remainingHeight = Math.max(0, availableHeight - current.usedHeight);
     if (
       current.placements.length > 0 &&
@@ -261,12 +270,13 @@ function layoutFlow(
   }
 
   const minimum = Math.max(1, first.minimumFragmentsPerPage ?? 1);
-  let cursor = 0;
-  while (cursor < blocks.length) {
+  let cursor = start;
+  let remainingFlowHeight = totalHeight;
+  while (cursor < end) {
     current = pages.at(-1) as OfficeKernelLayoutPage;
     if (
-      cursor >= repeatHeaderCount &&
-      cursor > 0 &&
+      cursor - start >= repeatHeaderCount &&
+      cursor > start &&
       repeatHeaderHeight > 0 &&
       current.placements.length === 0 &&
       current.usedHeight === 0
@@ -275,8 +285,7 @@ function layoutFlow(
     }
     const currentHasContent = current.placements.length > 0;
     const remainingHeight = Math.max(0, availableHeight - current.usedHeight);
-    const remainingFragments = blocks.length - cursor;
-    const remainingFlowHeight = fragmentHeight(blocks, cursor, blocks.length);
+    const remainingFragments = end - cursor;
     if (
       nextHeight > 0 &&
       currentHasContent &&
@@ -287,16 +296,12 @@ function layoutFlow(
       pages.push(emptyPage(nextPageIndex(pages), page));
       continue;
     }
-    let fitting = fragmentsFitting(
-      blocks,
-      cursor,
-      blocks.length,
-      remainingHeight,
-    );
+    let fitting = fragmentsFitting(blocks, cursor, end, remainingHeight);
 
     if (fitting === remainingFragments) {
-      placeFragments(blocks, cursor, blocks.length, current, availableHeight);
-      cursor = blocks.length;
+      placeFragments(blocks, cursor, end, current, availableHeight);
+      cursor = end;
+      remainingFlowHeight = 0;
       continue;
     }
     if (fitting === 0) {
@@ -315,9 +320,10 @@ function layoutFlow(
       continue;
     }
     fitting = Math.max(1, fitting);
+    remainingFlowHeight -= fragmentHeight(blocks, cursor, cursor + fitting);
     placeFragments(blocks, cursor, cursor + fitting, current, availableHeight);
     cursor += fitting;
-    if (cursor < blocks.length) {
+    if (cursor < end) {
       pages.push(emptyPage(nextPageIndex(pages), page));
     }
   }
@@ -329,11 +335,12 @@ function layoutFlow(
 
 function nextBlockPreviewHeight(
   blocks: OfficeKernelLayoutRequest['blocks'],
+  start: number,
   currentPage: OfficeKernelPageMetrics,
   defaultPage: OfficeKernelPageMetrics,
   pageStyles: ReadonlyMap<string, OfficeKernelPageMetrics>,
 ): number {
-  const first = blocks[0];
+  const first = blocks[start];
   if (!first || first.breakBefore) return 0;
   if (
     !pageMetricsEqual(
@@ -344,7 +351,7 @@ function nextBlockPreviewHeight(
     return 0;
   }
   const count = Math.min(2, first.flowCount ?? 1);
-  return fragmentHeight(blocks, 0, count);
+  return fragmentHeight(blocks, start, Math.min(blocks.length, start + count));
 }
 
 function fragmentsFitting(
@@ -514,14 +521,14 @@ function validateFlowSequences(
     const count = block.flowCount as number;
     const repeatHeaderCount = block.repeatHeaderCount;
     const repeatHeaderHeight = block.repeatHeaderHeight;
-    const flow = blocks.slice(index, index + count);
-    if (flow.length !== count) {
+    if (index + count > blocks.length) {
       throw kernelError(
         'office.kernel.flow_sequence_invalid',
         'A layout flow must contain its declared number of fragments.',
       );
     }
-    flow.forEach((fragment, flowIndex) => {
+    for (let flowIndex = 0; flowIndex < count; flowIndex += 1) {
+      const fragment = blocks[index + flowIndex];
       if (
         fragment.flowId !== block.flowId ||
         fragment.flowIndex !== flowIndex ||
@@ -548,7 +555,7 @@ function validateFlowSequences(
           'Only the last flow fragment may request breakAfter.',
         );
       }
-    });
+    }
     index += count;
   }
 }

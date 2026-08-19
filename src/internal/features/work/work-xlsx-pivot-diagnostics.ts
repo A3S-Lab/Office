@@ -1,11 +1,16 @@
 import type { OoxmlPackage } from './work-ooxml-package';
 import type { WorkCompatibilityIssue } from './work-types';
-import { inspectXlsxPivotTables } from './work-xlsx-pivots';
+import {
+  inspectXlsxPivotTables,
+  type XlsxPivotReadResult,
+} from './work-xlsx-pivots';
 
 export async function diagnoseXlsxPivots(
   archive: OoxmlPackage,
+  importedInspection?: XlsxPivotReadResult | null,
 ): Promise<WorkCompatibilityIssue[]> {
-  const inspection = await inspectXlsxPivotTables(archive);
+  const inspection =
+    importedInspection ?? (await inspectXlsxPivotTables(archive));
   const issues: WorkCompatibilityIssue[] = [];
   if (inspection.tables.length) {
     issues.push({

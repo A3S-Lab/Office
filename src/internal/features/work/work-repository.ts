@@ -10,6 +10,22 @@ export function forgetWorkSourceBlob(artifactId: string): void {
   sourceBlobs.delete(artifactId);
 }
 
+export function moveWorkSourceBlob(
+  sourceArtifactId: string,
+  targetArtifactId: string,
+): void {
+  if (sourceArtifactId === targetArtifactId) return;
+  const source = sourceBlobs.get(sourceArtifactId);
+  if (!source) return;
+  if (sourceBlobs.has(targetArtifactId)) {
+    throw new Error(
+      `The target artifact '${targetArtifactId}' already owns a source file.`,
+    );
+  }
+  sourceBlobs.set(targetArtifactId, source);
+  sourceBlobs.delete(sourceArtifactId);
+}
+
 export async function readWorkSourceBlob(
   artifact: WorkArtifact,
 ): Promise<Blob> {

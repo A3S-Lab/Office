@@ -44,6 +44,30 @@ test('ignores stale workbook changes until external content finishes mounting', 
   expect(result.current.ignoreChangeDuringExternalSync(false)).toBe(false);
 });
 
+test('keeps the mounted workbook when authenticated external content is synchronized in place', () => {
+  const initial = workbook(1);
+  const external = workbook(2);
+  const calls: Array<[WorkSpreadsheetContent, WorkSpreadsheetContent]> = [];
+  const synchronize = (
+    previous: WorkSpreadsheetContent,
+    next: WorkSpreadsheetContent,
+  ) => {
+    calls.push([previous, next]);
+    return true;
+  };
+  const { result, rerender } = renderHook(
+    ({ content }) => useSpreadsheetWorkbookSync(content, synchronize),
+    { initialProps: { content: initial } },
+  );
+
+  rerender({ content: external });
+
+  expect(calls).toEqual([[initial, external]]);
+  expect(result.current.mountRevision).toBe(0);
+  expect(result.current.ignoreChangeDuringExternalSync(false)).toBe(true);
+  expect(result.current.ignoreChangeDuringExternalSync(true)).toBe(true);
+});
+
 test('preserves Fortune operation order until the matching workbook change', () => {
   const value = workbook(1);
   const { result } = renderHook(() => useSpreadsheetWorkbookSync(value));

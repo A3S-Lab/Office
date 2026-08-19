@@ -9,13 +9,22 @@ grid, slide canvas, or PDF page.
 
 | Product | Interaction surface | TipTap responsibility | Kernel responsibility |
 | --- | --- | --- | --- |
-| Document | TipTap and ProseMirror | Complete logical document, selection, commands, history, comments, and collaboration boundary | Page layout, style and font resolution, OOXML semantics, and serialization |
+| Document | TipTap and ProseMirror | Canonical structured model plus an equal-position lazy live tree for eligible giant DOCX files; selection, commands, history, comments, and collaboration boundary | Page layout, style and font resolution, OOXML semantics, and serialization |
 | Spreadsheet | Virtualized grid and canvas | Rich text inside a cell or floating text object | Formula calculation, workbook semantics, print layout, OOXML, and serialization |
 | Presentation | Scene graph and slide canvas | Text inside an individual text box | Masters, layouts, themes, object geometry, OOXML, and serialization |
 | PDF | PDFium page surface | None | PDF parsing, rendering, annotation serialization, and document save |
 
 This separation prevents an editor framework from becoming a false abstraction
 over products with different selection, layout, and performance requirements.
+
+TipTap and ProseMirror are not competing choices in this stack. TipTap owns the
+extension, command, schema, React integration, and public customization layer;
+ProseMirror is the model and view engine underneath it. Ordinary document
+features stay at the TipTap layer. Position-sensitive infrastructure such as
+pagination decorations, transaction mapping, collaboration bindings, and
+large-document NodeViews uses ProseMirror primitives through TipTap extensions
+because those primitives expose the exact model positions and view lifecycle
+that the higher-level API intentionally abstracts.
 
 ## Shared platform layers
 
@@ -320,6 +329,91 @@ removes editing-only state, and crops exact physical pages from bounded capture
 batches when their geometry is uniform or from exact per-page viewports when
 it differs. Explicit descriptor pages remain a fallback for surfaces without a
 registered live document.
+
+Eligible structurally plain large DOCX files take a narrow import path in a
+dedicated Worker. The main thread inflates `word/document.xml` once and
+transfers its exact `ArrayBuffer`; the Worker decodes it, performs the strict
+WordprocessingML tag and envelope checks, and streams paragraphs or table rows
+in batches of 2,048. Table messages carry one text vector plus transferable
+`Uint32Array` bands for row-to-cell and cell-to-paragraph counts, so neither
+side clones a 100,000-row nested object graph. The main thread constructs the
+complete, schema-validated `WorkDocumentModel` and canonical HTML from those
+bounded messages, but it does not create the complete live ProseMirror tree.
+The TipTap source initially materializes
+only the first two leaf chunks. Every later leaf contains an internal
+`documentLazyBlock` whose position tape has exactly the same `nodeSize`, text
+offsets, and block boundaries as the canonical payload. Ordinary text uses
+128-block leaves above 2,048 blocks, while tables use 16-row leaves above 512
+rows. Runs longer than 32 table leaves are nested under geometry containers, so
+a 100,000-row table exposes 6,250 logical leaves through only 196 top-level
+containers without changing any canonical position.
+
+The Worker boundary is deliberately fail-closed. An explicit `ineligible`
+result continues to the complete Mammoth and OOXML-marker importer. Worker
+creation, execution, message-validation, or timeout failure terminates that
+exact Worker and retries the same narrow parser synchronously; cancellation
+terminates it and propagates `AbortError`. The production import Worker is
+23.9 kB uncompressed, about 97.4 percent smaller than the earlier
+dependency-heavy prototype, and contains neither JSZip nor the rich
+section-normalization pipeline. Envelope counting uses one scan, and the row
+parser emits the same columnar shape that the Worker protocol consumes.
+
+Hosts may reserve an artifact ID before starting import. The Playground mounts
+a blank editor shell under that ID while the Worker parses, then applies the
+final controlled model to the already mounted editor. Parsing and editor
+initialization are therefore parallel critical paths rather than serial work;
+source-backed export is rekeyed atomically to the reserved identity. A failed
+or cancelled import removes only its own placeholder and restores the previous
+workspace.
+
+The chunk NodeView omits descendant DOM for an off-screen leaf. A visible lazy
+leaf receives a read-only semantic preview from a structure-keyed DOM pool;
+paragraph and table nodes are updated in place and returned to the pool as the
+window moves. Pointer selection, search, model-boundary navigation, or a real
+edit hydrates only the selected chunk from its canonical payload before the
+selection is applied. Hydration is history-free, does not publish a controlled
+edit, and transfers cached document statistics because its logical content is
+unchanged. The placeholder retains estimated content height plus indexed
+pagination spacer height, and nested leaf heights aggregate into the collapsed
+container. Expanding, collapsing, and pooling therefore do not change the
+scroll range. A cumulative geometry index and binary search map the viewport
+to its exact leaves. `Ctrl+Home`, `Ctrl+End`, and the macOS equivalents operate
+on model positions first and never depend on mounted DOM.
+
+Pagination reads the canonical JSON payloads of lazy chunks without hydrating
+them into ProseMirror. A text edit reuses the measured block and page prefix
+before the first changed position, locates the current page with a binary
+search, and shapes only real paragraph or heading nodes. This prevents a local
+tail edit from filtering, comparing, or recreating all 100,000 prior blocks.
+Selection, IME, undo, comments, revisions, and exported model positions remain
+model-authoritative throughout this process.
+
+Controlled ownership remains intact. Text-only transactions in an eligible
+lazy document are coalesced to one animation-frame publication. The editor
+finds the changed persistent chunk, updates document statistics by subtree
+delta, materializes the complete JSON model from the payload registry, serializes
+only that chunk, and patches its indexed range in the canonical HTML. The host
+still receives complete `html` and `model` values. Formatting, structure, or
+unsupported edits deliberately fall back to complete schema serialization.
+The lazy projection is process-local and parser-authenticated; rich compatibility
+imports, cloned untrusted models, and collaboration bindings retain the complete
+TipTap path.
+
+Physical page chrome has a separate React window above 24 pages and mounts only
+the nearby sheets. A WeakMap-backed page-surface registry retains all page
+frames for PDF geometry without recreating thousands of page-sheet elements.
+Pagination widgets are indexed by leaf chunk and appear only with a mounted
+leaf; logical spacer height remains in the chunk geometry when the widget DOM
+is absent. Single-column sections deliberately use ordinary block flow rather
+than CSS Multi-column, while true multi-column sections retain the column
+algorithm. Word content-autofit tables ignore TipTap's inline grid widths at
+render time so the browser sizes them from content; fixed and percentage table
+geometry remains unchanged.
+
+This path is not a claim that every rich 100,000-block DOCX is already bounded.
+Unsupported tags, relationships, tracked structures, drawings, or other rich
+features route to the complete compatibility importer. Extending the same
+model-preserving window to those paths remains a performance gate.
 
 The Word navigation pane uses that same capture boundary for real physical-page
 thumbnails instead of reconstructing an approximate text card. The current and
@@ -852,6 +946,48 @@ use Fortune coercion and eager-branch evaluation for formulas beyond the
 shared parity fixtures; this is an explicit first-slice compatibility limit,
 not a cross-engine equivalence claim.
 
+XLSX file import starts two bounded, one-shot Workers before the calculation
+session. The general Worker runs SheetJS off the main thread and streams dense
+worksheets in 512-row chunks or sparse worksheets in 8,192-cell chunks. In
+parallel, the package Worker decompresses each worksheet XML part once and
+builds the feature and style gates used by the rest of the importer.
+
+The package Worker also owns a deliberately narrow, fail-closed path for plain
+OOXML workbooks. It first authenticates an exact package envelope: workbook,
+content types, relationships, and worksheet ownership must form a closed set
+with no styles, shared strings, external targets, or unknown parts. It then
+parses only ordered primitive numeric, Boolean, error, and simple inline-string
+cells. A worksheet-start message authenticates its declared range before any
+cell is accepted. Each later transferable columnar chunk covers at most 256
+rows and 4,096 cells and carries packed coordinates, value kinds, numeric
+values, and the remaining text vector instead of a million nested cell
+objects. The hot cursor validates row and cell coordinates in place with
+bounded character-code arithmetic; it creates neither an address substring nor
+a regular-expression match per cell. The main thread treats those chunks as
+provisional until the complete worksheet XML has been consumed.
+A formula, style index, rich/shared string, unknown element or attribute,
+malformed entity, invalid address, relationship, or trailing payload rejects
+the candidate instead of guessing. Package authentication cancels the
+speculative SheetJS Worker early; a later cell-level rejection discards every
+provisional row and restarts SheetJS with the original private bytes. Worker
+creation, protocol, timeout, and cancellation failures retain the synchronous
+parser as the final compatibility fallback. This removes the second complete
+worksheet decompression and SheetJS object-materialization pass for eligible
+million-cell files without weakening the full XLSX path.
+
+Primitive imported cells and their sparse rows are frozen once, and an
+identity-keyed profile authenticates the resulting matrix as directly
+consumable by Fortune. A host may reserve worksheet IDs while the Playground
+mounts a blank workbook shell. If the final workbook is editable, preserves
+the same sheet count and identities, and contains no stateful structure such
+as charts, protection, merged geometry, filters, validation, images, or custom
+view state, the editor replaces that certified matrix through the existing
+Fortune instance. Fortune adopts the frozen matrix and rebuilds only its
+formula index; it does not clone every populated cell or remount the workbook.
+Any failed predicate or update exception returns to the complete controlled
+remount path. This narrow eligibility gate preserves correctness for rich and
+multi-sheet imports while removing the simple million-cell first-mount task.
+
 The browser pagination implementation is split by capability instead of
 accumulating in one editor module. `work-document-pagination.ts` owns only the
 TipTap extension and public facade; dedicated modules own block measurement,
@@ -1212,9 +1348,103 @@ repeatable fixtures. The targets below are release gates, not current claims:
 - Every editor has fixture-based memory, interaction-latency, load-time, and
   output-size budgets in CI before it can be called production-ready.
 
+### Current 100,000-unit evidence
+
+The following cold local Playground measurements were captured on 2026-08-19
+on an Apple M2 Pro with 16 GB of memory, Playwright 1.61.1, headless Chrome 149,
+and a 1,440 × 1,000 viewport. Document values are the median and range of three
+fresh browser processes; Spreadsheet values use five. The benchmark drains
+diagnostic memory-counter work before starting the scroll profile so
+DevTools-triggered V8 cleanup is not charged to the product. These measurements
+are evidence of current limits, not universal release targets. The spreadsheet
+readiness milestone is observed inside the page on animation frames; automation
+runner polling backoff is therefore excluded from the load time.
+
+| Fixture | Editor visible | Pagination ready | Longest task before visible |
+| --- | ---: | ---: | ---: |
+| DOCX, 100,000 text paragraphs, 4.50 million characters | 0.397 s (0.396–0.480) | 1.460 s (1.381–1.525), 3,125 pages | 131 ms (128–140) |
+| DOCX table, 100,000 rows × 3 columns | 0.813 s (0.810–0.814) | 1.747 s (1.739–1.749), 2,381 pages | 96 ms (88–144) |
+| XLSX table, 100,000 rows × 10 columns, 1 million populated cells | 0.480 s (0.474–0.494) | n/a | No task ≥50 ms in any of five runs |
+
+The median text phases were 121.6 ms for the complete import, 76.1 ms inside
+the Worker, and 56.6 ms for Worker parsing. The table phases were 462.6 ms,
+377.6 ms, and 311.6 ms respectively; the already mounted editor applied that
+100,000-row controlled model in 32.3 ms. Editor-shell initialization overlaps
+these import phases instead of extending the critical path. Against the prior
+Worker/windowing baseline, median editor visibility improved from 0.815 to
+0.397 seconds for text and from 1.316 to 0.813 seconds for the table;
+pagination readiness improved from 1.749 to 1.460 seconds and from 2.366 to
+1.747 seconds respectively.
+
+For the XLSX fixture, the complete import measured 375.8 ms (372.3–386.4).
+The authenticated package Worker fast path owned 345.5 ms (343.6–355.8), while
+main-thread canonical conversion took 13.8 ms (12.7–15.4). The hot worksheet
+cursor now authenticates row and cell coordinates directly in the 35.7 MB XML
+string instead of allocating and matching one million address substrings. Its
+isolated median fell from 178.3 to 124.3 ms (30.3%). Against the immediately
+preceding corrected end-to-end baseline, editor visibility improved from 536.7
+to 480.2 ms (10.5%), complete import from 432.0 to 375.8 ms (13.0%), and the
+Worker fast path from 403.5 to 345.5 ms (14.4%). No import Long Task, browser
+error, page error, or console error occurred in the retained five-run result.
+
+These values supersede the earlier 830.5 ms visibility figure. Page-local
+observation showed that Fortune had become visible before Playwright's next
+progressively backed-off locator poll; the old figure therefore included test
+runner latency rather than product work.
+
+| Fixture | Continuous scroll | p95 frame interval | Scroll long tasks | Retained browser state | Bounded render state |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 100,000 text paragraphs | 120.0 FPS in every run | 10.7 ms (10.2–10.8) | 0 in every run | 70.4 MiB; 2,867 median DOM nodes | 1 of 782 content chunks at readiness, 2 after end navigation, and 4 of 3,125 page sheets mounted |
+| 100,000 table rows | 120.6 FPS (120.5–120.9) | 10.1 ms (9.9–10.4) | 0 in every run | 145.8 MiB; 3,106 DOM nodes | 4 of 6,250 leaves at readiness, 1 after end navigation; 196 outer containers; 4 of 2,381 page sheets mounted |
+| 100,000 × 10 spreadsheet cells | 120.1 FPS (120.0–120.2) | 12.9 ms (12.9–13.0) | 0 in every run | 38.41 MiB; 903 DOM nodes | Fortune Canvas paints only the visible row and column range; Ctrl+End reached `J100000` in 77.3 ms (76.0–79.7) |
+
+The controlled-edit benchmark sends one browser text-insertion event at the
+exact final paragraph or cell, waits for the complete host publication, then
+does it again against the new controlled revision. `Wall latency` includes the
+input transaction, React and pagination scheduling, and publication. `Publish
+CPU` measures only construction of the complete `html` and `model` values.
+
+| Fixture | First edit wall / publish CPU | Second edit wall / publish CPU | Publication path |
+| --- | ---: | ---: | --- |
+| 100,000 text paragraphs | 84.0 ms (83.2–84.1) / 14.6 ms (14.3–15.0) | 162.2 ms (85.5–171.9) / 16.0 ms (14.6–16.4) | `lazy-chunk` in all six publications |
+| 100,000 table rows × 3 columns | 181.4 ms (176.5–188.0) / 39.6 ms (39.5–42.8) | 240.5 ms (234.6–244.5) / 40.8 ms (40.0–42.4) | `lazy-chunk` in all six publications |
+| 100,000 × 10 spreadsheet cells | 52.5 ms (49.6–56.4) / 2.5 ms (2.5–2.6) | 45.9 ms (45.9–47.0) / 2.3 ms (2.2–2.3) | Incremental 3-operation projection of one changed cell; 0 Long Tasks |
+
+Every run reached the exact final paragraph or row, both consecutive edit
+markers survived in the final controlled value, and no browser, page, or
+console error was recorded. Pooled previews reduced detached scroll DOM by
+about 92 percent during profiling. Cached statistics removed the previous
+233–246 ms scroll task, while early non-paragraph rejection, binary page
+lookup, and measured-prefix reuse removed document-sized work from tail edits.
+
+The remaining cold-open boundary is the 100,000-row Worker's approximately
+222 ms content scan plus main-thread construction and retention of the
+canonical model. The live ProseMirror tree and strict OOXML inspection are no
+longer document-sized main-thread constructors. A WASM parser is justified
+only if it consumes the transferred bytes directly and emits the same columnar
+protocol without adding a second complete copy or JSON serialization step.
+During editing, controlled ownership intentionally requires a complete HTML
+string; the indexed chunk patch avoids complete semantic serialization, but
+allocating and fingerprinting that host value remains a measurable lower bound.
+A future optional patch callback may remove that copy only if the complete
+`onChange` contract remains available.
+
+The million-cell XLSX path now retains about 38.41 MiB after collection and has
+neither import nor continuous-scroll Long Tasks in any run. The remaining
+cold-open boundary is the package Worker's approximately 344 ms XML scan and
+columnar cell construction; canonical main-thread conversion is already about
+13.8 ms. A WASM parser is justified only if it consumes the transferred bytes
+directly, emits the same bounded columnar protocol, and improves that Worker
+phase without introducing another complete copy. Fortune Canvas still owns
+painting, but imported matrix adoption is now outside the rich-workbook remount
+path for the strictly authenticated simple case.
+
 ## Performance and safety rules
 
-- Editing and selection stay on the main thread; parsing and layout do not.
+- Editing and selection stay on the main thread. XLSX parsing, eligible
+  large-DOCX inspection/parsing, and document layout use dedicated Workers;
+  canonical large-document model assembly remains a measured main-thread
+  boundary.
 - The public React entry loads editor engines as independent asynchronous
   chunks. `preloadOfficeEditor` may warm one engine from hover or keyboard
   focus without mounting it.
@@ -1227,7 +1457,8 @@ repeatable fixtures. The targets below are release gates, not current claims:
   CI against the scripts referenced by the generated `index.html`.
 - One active layout request exists per editor. A newer revision cancels the
   previous request.
-- Requests reject invalid dimensions and more than 10,000 layout blocks.
+- Requests reject invalid dimensions and more than 200,000 layout blocks.
+  Page-style tables remain bounded to 10,000 entries.
 - Text requests are bounded to 1,024 paragraphs and 1 MiB of UTF-8 text.
   They accept at most 16,384 contiguous runs, with no more than 4,096 in one
   paragraph and no more than eight ordered faces per run. Font registration is
@@ -1255,18 +1486,20 @@ The browser kernel is covered at four boundaries:
 1. Rust unit tests for deterministic pagination, Unicode line breaking,
    grapheme-safe emergency wrapping, whitespace modes, shared formula parsing,
    scalar dependency calculation, cycles, targets, and validation.
-2. JavaScript fallback tests for protocol parity, safe page-prefix reuse,
-   no-Worker operation, cancellation, sparse Spreadsheet calculation,
-   revisioned session fallback, and the shared Spreadsheet parity fixtures.
+2. JavaScript fallback tests for protocol parity, 100,000-block linear
+   pagination, safe page-prefix reuse, no-Worker operation, cancellation,
+   sparse Spreadsheet calculation, revisioned session fallback, dense and
+   sparse worksheet iteration, and the shared Spreadsheet parity fixtures.
 3. A raw generated-WASM ABI smoke test that registers both shipped fonts,
    proves the Latin face lacks CJK glyphs, resolves them through the ordered
    fallback face, verifies mixed-face line metrics, initializes a Spreadsheet
    session, and recalculates a dirty formula chain from a cell patch.
-4. Browser checks for real Worker/WASM/font loading, shaped-line parity with
-   browser line boxes at non-100% zoom, real per-grapheme fallback diagnostics,
-   explicit unresolved-glyph fallback, page-view reflow, web-view clearing,
-   page counts, one physical sheet per measured page, visible page gaps, nested
-   and RTL list flow, undo behavior, and slide-relative element alignment.
+4. Browser checks for real layout and XLSX-import Worker/WASM/font loading,
+   shaped-line parity with browser line boxes at non-100% zoom, real
+   per-grapheme fallback diagnostics, explicit unresolved-glyph fallback,
+   page-view reflow, web-view clearing, page counts, one physical sheet per
+   measured page, visible page gaps, nested and RTL list flow, undo behavior,
+   and slide-relative element alignment.
 
 Presentation group serialization tests inspect generated slide and layout
 OOXML, nested group order, identity child-coordinate transforms, unique
@@ -1293,4 +1526,12 @@ Build and verify the Playground performance boundary with:
 bun run playground:build
 bun run playground:bundle-check
 bun run playground:visual
+bun run test:e2e:large-documents:check
+bun run test:e2e:large-documents
+bun run performance:large-documents
+bun run performance:large-document-edits
+bun run test:e2e:spreadsheet-large:check
+bun run test:e2e:spreadsheet-large
+bun run performance:large-spreadsheets
+bun run performance:large-spreadsheet-edits
 ```

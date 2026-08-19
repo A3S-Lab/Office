@@ -114,6 +114,33 @@ test('mounts host TipTap extensions in the document editor', async () => {
   expect(shortcutCalls).toBe(1);
 });
 
+test('constructs the document editor once under React StrictMode', async () => {
+  let createCalls = 0;
+  const lifecycleProbe = Extension.create({
+    name: 'testDocumentStrictModeLifecycle',
+    onCreate() {
+      createCalls += 1;
+    },
+  });
+  const artifact = createArtifact('blank-document');
+
+  render(
+    <StrictMode>
+      <DocumentEditor
+        content={artifact.content as DocumentContent}
+        extensions={[lifecycleProbe]}
+        onChange={() => undefined}
+        theme="light"
+      />
+    </StrictMode>,
+  );
+
+  expect(
+    await screen.findByRole('textbox', { name: '文档正文' }),
+  ).toBeInTheDocument();
+  expect(createCalls).toBe(1);
+});
+
 test('does not publish a same-value editor transaction as a controlled change', async () => {
   let changeCalls = 0;
   const sameValueTransaction = Extension.create({

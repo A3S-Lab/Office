@@ -9,6 +9,8 @@ export interface OoxmlRelationship {
 }
 
 export class OoxmlPackage {
+  private readonly textCache = new Map<string, Promise<string>>();
+
   private constructor(private readonly zip: JSZip) {}
 
   static async load(buffer: ArrayBuffer): Promise<OoxmlPackage> {
@@ -26,9 +28,20 @@ export class OoxmlPackage {
   }
 
   async text(partPath: string): Promise<string> {
+    const cached = this.textCache.get(partPath);
+    if (cached) return cached;
     const entry = this.zip.file(partPath);
     if (!entry) throw new Error(`Office package part is missing: ${partPath}`);
-    return decodeXmlBytes(await entry.async('uint8array'), partPath);
+    const pending = entry
+      .async('uint8array')
+      .then((bytes) => decodeXmlBytes(bytes, partPath));
+    this.textCache.set(partPath, pending);
+    try {
+      return await pending;
+    } catch (error) {
+      this.textCache.delete(partPath);
+      throw error;
+    }
   }
 
   async xml(partPath: string): Promise<Document> {
@@ -72,6 +85,33 @@ export function parseXml(source: string, label = 'Office XML'): Document {
       `${label} is not valid XML: ${error.textContent?.trim() || 'parse error'}`,
     );
   return document;
+}
+
+const xmlElementPatterns = new Map<string, RegExp>();
+
+/**
+ * Checks raw XML for selected element names before paying the cost of a full
+ * DOM tree. False positives are safe because they only select the slower
+ * parser path; the tag boundary prevents cell values and longer tag names
+ * from selecting it accidentally.
+ */
+export function xmlContainsAnyElement(
+  source: string,
+  localNames: readonly string[],
+): boolean {
+  if (!source || !localNames.length) return false;
+  const key = localNames.join('\u0000');
+  let pattern = xmlElementPatterns.get(key);
+  if (!pattern) {
+    const alternatives = localNames
+      .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|');
+    pattern = new RegExp(
+      `<(?:[A-Za-z_][\\w.-]*:)?(?:${alternatives})(?=[\\s/>])`,
+    );
+    xmlElementPatterns.set(key, pattern);
+  }
+  return pattern.test(source);
 }
 
 export function attribute(element: Element, name: string): string | null {

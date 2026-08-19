@@ -1153,6 +1153,14 @@
   table-layout: auto;
 }
 
+/* TipTap emits inline grid widths, but Word's contents mode must size from content. */
+.work-document-page .tiptap
+  table[data-office-table-layout="autofit"][data-office-table-width-type="auto"]
+  col,
+.work-document-page .tiptap table[data-office-table-layout="contents"] col {
+  width: auto !important;
+}
+
 .work-document-page .tiptap table[data-office-table-layout="fixed"] {
   table-layout: fixed;
 }

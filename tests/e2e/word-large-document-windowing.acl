@@ -1,0 +1,139 @@
+suite "office-word-large-document-windowing" {
+    version = 1
+
+    scenario "reach-the-end-of-a-100k-paragraph-document" {
+        name = "Keep a 100k-paragraph Word document bounded and end-reachable"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-large-text-windowing"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-100k-paragraph-document" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/performance/fixtures/document-text-100k.docx"]
+        }
+
+        wait "document-window-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-document-windowed='true'][data-document-chunk-count='782'][data-pagination-state='ready']")
+        }
+
+        wait "page-stack-is-windowed" {
+            visible = css(".work-document-page-stack[data-page-windowed='true'][data-page-count='3125']")
+        }
+
+        focus "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "move-to-document-end" {
+            key = "Control+End"
+        }
+
+        wait "final-chunk-mounted" {
+            visible = css("[data-document-chunk-id='document-chunk-1-782'][data-document-chunk-mounted='true']:not([data-document-lazy-preview]) p:last-child")
+        }
+
+        expect "final-line-is-reachable" {
+            text = "Line 100000 - A3S Office 100k text benchmark."
+        }
+
+        type "edit-final-line" {
+            target = css("[data-document-chunk-id='document-chunk-1-782'] p:last-child")
+            value = " ACL-TEXT-END-EDIT"
+        }
+
+        expect "final-line-edit-is-visible" {
+            text = "ACL-TEXT-END-EDIT"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/text-console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/text-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "reach-the-end-of-a-100k-row-table" {
+        name = "Keep a 100k-row Word table bounded and end-reachable"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-large-table-windowing"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-100k-row-table" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/performance/fixtures/document-table-100k.docx"]
+        }
+
+        wait "table-window-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-document-windowed='true'][data-document-chunk-count='6250'][data-pagination-state='ready']")
+        }
+
+        wait "page-stack-is-windowed" {
+            visible = css(".work-document-page-stack[data-page-windowed='true']")
+        }
+
+        focus "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "move-to-document-end" {
+            key = "Control+End"
+        }
+
+        wait "final-table-slice-mounted" {
+            visible = css("[data-document-chunk-id='document-chunk-1-6250'][data-document-chunk-mounted='true']:not([data-document-lazy-preview]) tbody > tr:last-child")
+        }
+
+        expect "final-row-is-reachable" {
+            text = "Record 100000"
+        }
+
+        type "edit-final-table-cell" {
+            target = css("[data-document-chunk-id='document-chunk-1-6250'] tbody > tr:last-child > td:last-child p")
+            value = " ACL-TABLE-END-EDIT"
+        }
+
+        expect "final-table-edit-is-visible" {
+            text = "ACL-TABLE-END-EDIT"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/table-console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/table-page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -1,6 +1,10 @@
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { type EditorState, Plugin, type Transaction } from '@tiptap/pm/state';
 import { Mapping } from '@tiptap/pm/transform';
+import {
+  DOCUMENT_INTEGRITY_FIELD,
+  documentHasIntegrityFeature,
+} from './work-document-integrity-index';
 import { createWorkId } from './work-templates';
 
 interface DocumentFieldAtPosition {
@@ -44,6 +48,12 @@ function normalizeDocumentFieldIdentities(
   oldState?: EditorState,
   transactions: readonly Transaction[] = [],
 ): Transaction | null {
+  if (
+    fieldNodeName === 'documentField' &&
+    !documentHasIntegrityFeature(state.doc, DOCUMENT_INTEGRITY_FIELD)
+  ) {
+    return null;
+  }
   const fields = documentFields(state.doc, fieldNodeName);
   if (!fields.length) return null;
   const retained = oldState

@@ -1,4 +1,9 @@
-import type { CellMatrix } from '@fortune-sheet/core';
+import type { CellMatrix, Sheet } from '@fortune-sheet/core';
+
+export interface SpreadsheetGridSize {
+  rowCount: number;
+  columnCount: number;
+}
 
 export function sparseArrayIndexes(
   values: readonly unknown[] | undefined,
@@ -30,6 +35,19 @@ export function sparseMatrixColumnCount(
     maximum = Math.max(maximum, row.length);
   }
   return maximum;
+}
+
+export function spreadsheetGridSize(
+  sheet: Pick<Sheet, 'column' | 'data' | 'row'> | undefined,
+): SpreadsheetGridSize | null {
+  if (!sheet) return null;
+  return {
+    rowCount: Math.max(sheet.row ?? 0, sheet.data?.length ?? 0),
+    columnCount: Math.max(
+      sheet.column ?? 0,
+      sparseMatrixColumnCount(sheet.data),
+    ),
+  };
 }
 
 export function cloneSparseMatrix(source: CellMatrix | undefined): CellMatrix {

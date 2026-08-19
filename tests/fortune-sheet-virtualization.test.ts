@@ -6,10 +6,32 @@ import {
   type Context,
   defaultContext,
   getDataVerificationItem,
+  locale,
   setCellValue,
+  updateContextWithSheetData,
   updateSheet,
 } from '@fortune-sheet/core';
 import { expect, test } from '@rstest/core';
+
+test('loads cached formula help only when the active locale requests it', () => {
+  const english = locale({ lang: 'en' } as Context);
+  const chinese = locale({ lang: 'zh' } as Context);
+
+  expect(Object.getOwnPropertyDescriptor(english, 'functionlist')?.get).toEqual(
+    expect.any(Function),
+  );
+  expect(Object.getOwnPropertyDescriptor(chinese, 'functionlist')?.get).toEqual(
+    expect.any(Function),
+  );
+  expect(english.functionlist).toBe(english.functionlist);
+  expect(chinese.functionlist).toBe(chinese.functionlist);
+  expect(english.functionlist.some((item) => item.n === 'SUM')).toBe(true);
+  expect(chinese.functionlist.some((item) => item.n === 'SUM')).toBe(true);
+  expect(locale({ lang: 'es' } as Context)).toBe(english);
+  expect(locale({ lang: 'hi' } as Context)).toBe(english);
+  expect(locale({ lang: 'ru' } as Context)).toBe(english);
+  expect(locale({ lang: 'zh-TW' } as Context)).toBe(chinese);
+});
 
 test('converts Fortune celldata into a sparse logical matrix', () => {
   const data = api.celldataToData(
@@ -137,6 +159,63 @@ test('updates a maximum worksheet without materializing every logical row', () =
   expect(updated).toHaveLength(1_048_576);
   expect(Object.keys(updated ?? [])).toHaveLength(101);
   expect(updated?.[1_048_575]?.[16_383]).toMatchObject({ v: 'Tail' });
+});
+
+test('adopts an authenticated frozen matrix without cloning populated cells', () => {
+  const data: CellMatrix = [[Object.freeze({ v: 1, m: '1' })]];
+  Object.freeze(data[0]);
+  Object.defineProperty(data, '__a3sShownCommentCells', {
+    configurable: false,
+    enumerable: false,
+    value: Object.freeze([]),
+    writable: false,
+  });
+  Object.freeze(data);
+  const context = {
+    defaultcolumnNum: 26,
+    defaultrowNum: 60,
+    formulaCache: { formulaCellInfoMap: {} },
+    luckysheetfile: [{ id: 'sheet-1', name: 'Before', data: [] }],
+  } as unknown as Context;
+
+  updateSheet(context, [
+    {
+      id: 'sheet-1',
+      name: 'After',
+      data,
+    },
+  ]);
+
+  expect(context.luckysheetfile[0]?.data).toBe(data);
+  expect(context.luckysheetfile[0]?.name).toBe('After');
+});
+
+test('calculates logical row and column offsets with compact local arrays', () => {
+  const context = defaultContext({
+    globalCache: {} as never,
+    cellInput: { current: null },
+    fxInput: { current: null },
+    canvas: { current: null },
+    cellArea: { current: null },
+    workbookContainer: { current: null },
+  });
+  context.config = {
+    rowlen: { 1: 30 },
+    rowhidden: { 2: 0 },
+    columnlen: { 1: 100 },
+    colhidden: { 2: 0 },
+  };
+  const data: CellMatrix = [];
+  data.length = 4;
+  data[0] = [];
+  data[0].length = 4;
+
+  updateContextWithSheetData(context, data);
+
+  expect(context.visibledatarow).toEqual([20, 51, 51, 71]);
+  expect(context.rh_height).toBe(151);
+  expect(context.visibledatacolumn).toEqual([74, 175, 175, 249]);
+  expect(context.ch_width).toBe(369);
 });
 
 test('materializes only the edited far row for direct and API cell writes', () => {

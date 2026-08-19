@@ -1,10 +1,19 @@
 import { expect, test } from '@rstest/core';
+import { produce } from 'immer';
 import {
   sameSpreadsheetHistoryContent,
   sameSpreadsheetWorkbookState,
+  sameSpreadsheetWorkbookStateAfterOperations,
   spreadsheetSheetsForFortune,
   spreadsheetSheetsFromFortune,
 } from '../src/internal/features/work/editors/spreadsheet-editor-support';
+import {
+  freezeImportedSpreadsheetCell,
+  registerImportedSpreadsheetMatrix,
+  spreadsheetMatrixProfile,
+  SPREADSHEET_SHOWN_COMMENT_CELLS_PROPERTY,
+} from '../src/internal/features/work/work-spreadsheet-matrix-profile';
+import { spreadsheetProtectionKey } from '../src/internal/features/work/work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 
 test('projects sparse workbook cells without cloning logical empty ranges', () => {
@@ -24,18 +33,435 @@ test('projects sparse workbook cells without cloning logical empty ranges', () =
     },
   ]);
 
-  expect(projected[0]?.data).toBeUndefined();
-  expect(projected[0]?.celldata).toEqual([
-    {
-      r: 0,
-      c: 0,
-      v: { v: 'Anchor', m: 'Anchor', mc: { r: 0, c: 0, rs: 1, cs: 2 } },
-    },
-    { r: 0, c: 1, v: { mc: { r: 0, c: 0 } } },
-    { r: 999_999, c: 16_383, v: { v: 'Tail', m: 'Tail' } },
-  ]);
+  const fortuneData = projected[0]?.data;
+  expect(projected[0]?.celldata).toBeUndefined();
+  expect(fortuneData).toHaveLength(1_000_000);
+  expect(Object.keys(fortuneData ?? [])).toEqual(['0', '999999']);
+  expect(fortuneData?.[0]?.[0]).toEqual({
+    v: 'Anchor',
+    m: 'Anchor',
+    mc: { r: 0, c: 0, rs: 1, cs: 2 },
+  });
+  expect(fortuneData?.[0]?.[1]).toEqual({ mc: { r: 0, c: 0 } });
+  expect(fortuneData?.[999_999]?.[16_383]).toEqual({
+    v: 'Tail',
+    m: 'Tail',
+  });
+  expect(fortuneData).not.toBe(data);
+  expect(fortuneData?.[0]).not.toBe(data[0]);
+  expect(fortuneData?.[0]?.[0]).not.toBe(data[0]?.[0]);
+  expect(Object.isFrozen(fortuneData)).toBe(true);
+  expect(Object.isFrozen(fortuneData?.[0])).toBe(true);
+  expect(Object.isFrozen(fortuneData?.[0]?.[0])).toBe(true);
   expect(Object.keys(data)).toEqual(['0', '999999']);
   expect(data[0]?.[0]).not.toHaveProperty('mc');
+});
+
+test('projects celldata as an independent sparse Fortune matrix', () => {
+  const sourceCell = {
+    f: '=A1*2',
+    v: 4,
+    m: '4',
+    ct: { fa: '0.00', t: 'n' },
+  };
+  const projected = spreadsheetSheetsForFortune([
+    {
+      id: 'sheet-celldata',
+      name: 'Cell data',
+      row: 100_000,
+      column: 10,
+      celldata: [{ r: 99_999, c: 9, v: sourceCell }],
+    },
+  ]);
+
+  const data = projected[0]?.data;
+  expect(projected[0]?.celldata).toBeUndefined();
+  expect(data).toHaveLength(100_000);
+  expect(Object.keys(data ?? [])).toEqual(['0', '99999']);
+  expect(data?.[0]).toHaveLength(10);
+  expect(data?.[99_999]?.[9]).toEqual(sourceCell);
+  expect(data?.[99_999]?.[9]).not.toBe(sourceCell);
+  expect(data?.[99_999]?.[9]?.ct).not.toBe(sourceCell.ct);
+});
+
+test('reuses an authenticated immutable import matrix at the Fortune boundary', () => {
+  const sourceCell = freezeImportedSpreadsheetCell({
+    v: 'Imported',
+    m: 'Imported',
+  });
+  const sourceRow = [sourceCell];
+  const data = [sourceRow];
+  data.length = 100_000;
+  registerImportedSpreadsheetMatrix(data, {
+    columnCount: 10,
+    formulaCells: [],
+    fortuneReady: true,
+    populatedCellCount: 1,
+    protectionCellKey: '',
+    rowCount: 100_000,
+    shownCommentCells: [],
+  });
+
+  const projected = spreadsheetSheetsForFortune([
+    {
+      id: 'sheet-imported',
+      name: 'Imported',
+      row: 100_000,
+      column: 10,
+      data,
+    },
+  ]);
+  const projectedData = projected[0]?.data;
+  expect(projectedData).toBe(data);
+  expect(projectedData?.[0]).toBe(sourceRow);
+  expect(projectedData?.[0]?.[0]).toBe(sourceCell);
+  expect(Object.isFrozen(data)).toBe(true);
+  expect(Object.isFrozen(sourceRow)).toBe(true);
+  expect(Object.isFrozen(sourceCell)).toBe(true);
+  expect(
+    (
+      data as typeof data & {
+        __a3sShownCommentCells?: readonly unknown[];
+      }
+    )[SPREADSHEET_SHOWN_COMMENT_CELLS_PROPERTY],
+  ).toEqual([]);
+  expect(Object.keys(data)).not.toContain(
+    SPREADSHEET_SHOWN_COMMENT_CELLS_PROPERTY,
+  );
+
+  const edited = produce(projected, (draft) => {
+    const cell = draft[0]?.data?.[0]?.[0];
+    if (cell) cell.v = 'Edited';
+  });
+  expect(edited[0]?.data?.[0]?.[0]?.v).toBe('Edited');
+  expect(data[0]?.[0]?.v).toBe('Imported');
+  expect(
+    (
+      edited[0]?.data as
+        | (NonNullable<(typeof edited)[number]['data']> & {
+            __a3sShownCommentCells?: readonly unknown[];
+          })
+        | undefined
+    )?.[SPREADSHEET_SHOWN_COMMENT_CELLS_PROPERTY],
+  ).toBeUndefined();
+});
+
+test('reconciles authenticated cell operations with row-level copy-on-write', () => {
+  const visibleComment = {
+    height: null,
+    isShow: true,
+    left: null,
+    top: null,
+    value: 'Visible',
+    width: null,
+  };
+  const sourceCell = freezeImportedSpreadsheetCell({
+    f: '=1+1',
+    lo: 0,
+    m: '2',
+    ps: visibleComment,
+    v: 2,
+  });
+  const untouchedCell = freezeImportedSpreadsheetCell({
+    m: 'Untouched',
+    v: 'Untouched',
+  });
+  const sourceRow = [sourceCell];
+  const untouchedRow = [untouchedCell];
+  const data = [sourceRow, untouchedRow];
+  data.length = 100_000;
+  registerImportedSpreadsheetMatrix(data, {
+    columnCount: 10,
+    formulaCells: [{ column: 0, row: 0 }],
+    fortuneReady: true,
+    populatedCellCount: 2,
+    protectionCellKey: '0_0:0:',
+    rowCount: 100_000,
+    shownCommentCells: [{ c: 0, r: 0 }],
+  });
+  const source = {
+    column: 10,
+    data,
+    id: 'sheet-imported',
+    name: 'Imported',
+    row: 100_000,
+  };
+  const changed = produce([source], (draft) => {
+    const cell = draft[0]?.data?.[0]?.[0] as
+      | (NonNullable<(typeof draft)[0]>['data'][number][number] & {
+          hi?: number;
+        })
+      | undefined;
+    if (!cell) throw new Error('Expected the imported formula cell.');
+    delete cell.f;
+    delete cell.ps;
+    cell.hi = 1;
+    cell.lo = 1;
+    cell.m = '3';
+    cell.v = 3;
+  });
+
+  const controlled = spreadsheetSheetsFromFortune(
+    changed,
+    [source],
+    [
+      {
+        id: 'sheet-imported',
+        op: 'replace',
+        path: ['data', 0, 0],
+        value: changed[0]?.data?.[0]?.[0],
+      },
+    ],
+  );
+  const controlledData = controlled[0]?.data;
+  const profile = spreadsheetMatrixProfile(controlledData);
+
+  expect(controlledData).not.toBe(data);
+  expect(controlledData?.[0]).not.toBe(sourceRow);
+  expect(controlledData?.[1]).toBe(untouchedRow);
+  expect(controlledData?.[0]?.[0]).not.toBe(changed[0]?.data?.[0]?.[0]);
+  expect(controlledData?.[0]?.[0]).toMatchObject({ hi: 1, lo: 1, v: 3 });
+  expect(profile).toMatchObject({
+    columnCount: 10,
+    formulaCells: [],
+    fortuneReady: true,
+    populatedCellCount: 2,
+    protectionCellKey: '0_0:1:1',
+    rowCount: 100_000,
+    shownCommentCells: [],
+  });
+  expect(profile?.historyRoot).toBe(
+    spreadsheetMatrixProfile(data)?.historyRoot,
+  );
+  expect(profile?.historyState).not.toBe(
+    spreadsheetMatrixProfile(data)?.historyState,
+  );
+  expect(
+    sameSpreadsheetHistoryContent(
+      { sheets: [source], type: 'spreadsheet' },
+      { sheets: controlled, type: 'spreadsheet' },
+    ),
+  ).toBe(false);
+  expect(spreadsheetSheetsForFortune(controlled)[0]?.data).toBe(controlledData);
+});
+
+test('reuses incremental history state for formula result-only changes', () => {
+  const data = [[freezeImportedSpreadsheetCell({ f: '=1+1', m: '2', v: 2 })]];
+  registerImportedSpreadsheetMatrix(data, {
+    columnCount: 1,
+    formulaCells: [{ column: 0, row: 0 }],
+    fortuneReady: true,
+    populatedCellCount: 1,
+    protectionCellKey: '',
+    rowCount: 1,
+    shownCommentCells: [],
+  });
+  const source = { data, id: 'sheet-formula', name: 'Formula' };
+  const changed = produce([source], (draft) => {
+    const cell = draft[0]?.data?.[0]?.[0];
+    if (!cell) throw new Error('Expected the formula cell.');
+    cell.ct = { fa: 'General', t: 'n' };
+    cell.m = '999';
+    cell.v = 999;
+  });
+  const controlled = spreadsheetSheetsFromFortune(
+    changed,
+    [source],
+    [
+      {
+        id: 'sheet-formula',
+        op: 'replace',
+        path: ['data', 0, 0],
+        value: changed[0]?.data?.[0]?.[0],
+      },
+    ],
+  );
+
+  expect(spreadsheetMatrixProfile(controlled[0]?.data)?.historyState).toBe(
+    spreadsheetMatrixProfile(data)?.historyState,
+  );
+  expect(
+    sameSpreadsheetHistoryContent(
+      { sheets: [source], type: 'spreadsheet' },
+      { sheets: controlled, type: 'spreadsheet' },
+    ),
+  ).toBe(true);
+});
+
+test('preserves consecutive controlled edits through incremental operations', () => {
+  const sourceCell = freezeImportedSpreadsheetCell({ m: 'First', v: 'First' });
+  const data = [[sourceCell]];
+  data.length = 100_000;
+  registerImportedSpreadsheetMatrix(data, {
+    columnCount: 10,
+    formulaCells: [],
+    fortuneReady: true,
+    populatedCellCount: 1,
+    protectionCellKey: '',
+    rowCount: 100_000,
+    shownCommentCells: [],
+  });
+  const source = {
+    column: 10,
+    data,
+    id: 'sheet-imported',
+    name: 'Imported',
+    row: 100_000,
+  };
+  const firstChanged = produce([source], (draft) => {
+    const row = [] as NonNullable<(typeof source)['data']>[number];
+    row.length = 10;
+    row[9] = { m: 'Second', v: 'Second' };
+    if (draft[0]?.data) draft[0].data[99_999] = row;
+  });
+  const firstControlled = spreadsheetSheetsFromFortune(
+    firstChanged,
+    [source],
+    [
+      {
+        id: 'sheet-imported',
+        op: 'add',
+        path: ['data', 99_999, 9],
+        value: firstChanged[0]?.data?.[99_999]?.[9],
+      },
+    ],
+  );
+  const secondChanged = produce(firstControlled, (draft) => {
+    const cell = draft[0]?.data?.[0]?.[0];
+    if (!cell) throw new Error('Expected the first controlled cell.');
+    cell.m = 'Updated';
+    cell.v = 'Updated';
+  });
+  const secondControlled = spreadsheetSheetsFromFortune(
+    secondChanged,
+    firstControlled,
+    [
+      {
+        id: 'sheet-imported',
+        op: 'replace',
+        path: ['data', 0, 0],
+        value: secondChanged[0]?.data?.[0]?.[0],
+      },
+    ],
+  );
+
+  expect(firstControlled[0]?.data?.[99_999]?.[9]?.v).toBe('Second');
+  expect(secondControlled[0]?.data?.[0]?.[0]?.v).toBe('Updated');
+  expect(secondControlled[0]?.data?.[99_999]?.[9]?.v).toBe('Second');
+  expect(spreadsheetMatrixProfile(secondControlled[0]?.data)).toMatchObject({
+    fortuneReady: true,
+    populatedCellCount: 2,
+  });
+});
+
+test('falls back to full reconciliation for structural operation batches', () => {
+  const sourceCell = freezeImportedSpreadsheetCell({
+    m: 'Before',
+    v: 'Before',
+  });
+  const data = [[sourceCell]];
+  registerImportedSpreadsheetMatrix(data, {
+    columnCount: 1,
+    formulaCells: [],
+    fortuneReady: true,
+    populatedCellCount: 1,
+    protectionCellKey: '',
+    rowCount: 1,
+    shownCommentCells: [],
+  });
+  const source = { data, id: 'sheet-imported', name: 'Imported' };
+  const changed = produce([source], (draft) => {
+    const cell = draft[0]?.data?.[0]?.[0];
+    if (cell) {
+      cell.m = 'After';
+      cell.v = 'After';
+    }
+  });
+  const controlled = spreadsheetSheetsFromFortune(
+    changed,
+    [source],
+    [
+      {
+        id: 'sheet-imported',
+        op: 'insertRowCol',
+        path: [],
+        value: {
+          count: 1,
+          direction: 'rightbottom',
+          id: 'sheet-imported',
+          index: 0,
+          type: 'row',
+        },
+      },
+    ],
+  );
+
+  expect(controlled[0]?.data).not.toBe(data);
+  expect(controlled[0]?.data?.[0]).not.toBe(data[0]);
+  expect(controlled[0]?.data?.[0]?.[0]?.v).toBe('After');
+  expect(spreadsheetMatrixProfile(controlled[0]?.data)).toBeUndefined();
+});
+
+test('indexes initially visible comments without exposing enumerable metadata', () => {
+  const projected = spreadsheetSheetsForFortune([
+    {
+      id: 'sheet-comments',
+      name: 'Comments',
+      data: [
+        [
+          {
+            v: 'Commented',
+            ps: {
+              left: null,
+              top: null,
+              width: null,
+              height: null,
+              value: 'Visible',
+              isShow: true,
+            },
+          },
+        ],
+      ],
+    },
+  ]);
+  const data = projected[0]?.data as
+    | (NonNullable<(typeof projected)[number]['data']> & {
+        __a3sShownCommentCells?: readonly unknown[];
+      })
+    | undefined;
+
+  expect(data?.[SPREADSHEET_SHOWN_COMMENT_CELLS_PROPERTY]).toEqual([
+    { c: 0, r: 0 },
+  ]);
+  expect(Object.keys(data ?? [])).toEqual(['0']);
+});
+
+test('uses the imported protection summary without enumerating cells again', () => {
+  let enumerations = 0;
+  const row = [freezeImportedSpreadsheetCell({ v: 1 })];
+  const data = new Proxy([row], {
+    ownKeys(target) {
+      enumerations += 1;
+      return Reflect.ownKeys(target);
+    },
+  });
+  registerImportedSpreadsheetMatrix(data, {
+    columnCount: 1,
+    formulaCells: [],
+    fortuneReady: true,
+    populatedCellCount: 1,
+    protectionCellKey: '',
+    rowCount: 1,
+    shownCommentCells: [],
+  });
+  enumerations = 0;
+
+  expect(
+    spreadsheetProtectionKey([
+      { id: 'sheet-imported', name: 'Imported', data },
+    ]),
+  ).toContain('sheet-imported');
+  expect(enumerations).toBe(0);
 });
 
 test('compares workbook state without JSON serialization', () => {
@@ -52,6 +478,110 @@ test('compares workbook state without JSON serialization', () => {
   } as WorkSpreadsheetContent['sheets'][number] & { sentinel: typeof sentinel };
 
   expect(sameSpreadsheetWorkbookState([sheet], [{ ...sheet }])).toBe(true);
+});
+
+test('accepts shared Fortune matrices without enumerating their cells', () => {
+  let enumerations = 0;
+  const source = [[{ v: 'Shared', m: 'Shared' }]];
+  const data = new Proxy(source, {
+    ownKeys(target) {
+      enumerations += 1;
+      return Reflect.ownKeys(target);
+    },
+  });
+  const sheet = { id: 'sheet-1', name: 'Shared', data };
+
+  expect(sameSpreadsheetWorkbookState([sheet], [{ ...sheet }])).toBe(true);
+  expect(enumerations).toBe(0);
+});
+
+test('compares only operation coordinates in a large changed matrix', () => {
+  let enumerations = 0;
+  const renderedData = [[{ m: 'First', v: 'First' }]];
+  renderedData.length = 100_000;
+  renderedData[99_999] = [];
+  renderedData[99_999][9] = { m: 'Before', v: 'Before' };
+  const changedStorage = renderedData.slice();
+  changedStorage[99_999] = renderedData[99_999].slice();
+  changedStorage[99_999][9] = { m: 'After', v: 'After' };
+  const changedData = new Proxy(changedStorage, {
+    ownKeys(target) {
+      enumerations += 1;
+      return Reflect.ownKeys(target);
+    },
+  });
+  const renderedDataProxy = new Proxy(renderedData, {
+    ownKeys(target) {
+      enumerations += 1;
+      return Reflect.ownKeys(target);
+    },
+  });
+  const rendered = [{ id: 'sheet-1', name: 'Large', data: renderedDataProxy }];
+  const changed = [{ id: 'sheet-1', name: 'Large', data: changedData }];
+
+  expect(
+    sameSpreadsheetWorkbookStateAfterOperations(changed, rendered, [
+      {
+        id: 'sheet-1',
+        op: 'replace',
+        path: ['data', 99_999, 9, 'v'],
+        value: 'After',
+      },
+    ]),
+  ).toBe(false);
+  expect(enumerations).toBe(0);
+});
+
+test('accepts formula result-only operations without a full matrix scan', () => {
+  const rendered = [
+    {
+      data: [[{ f: '=1+1', v: 2 }]],
+      id: 'sheet-1',
+      name: 'Formula',
+    },
+  ];
+  const changed = [
+    {
+      data: [[{ ct: { fa: 'General', t: 'n' }, f: '=1+1', m: '2', v: 2 }]],
+      id: 'sheet-1',
+      name: 'Formula',
+    },
+  ];
+
+  expect(
+    sameSpreadsheetWorkbookStateAfterOperations(changed, rendered, [
+      {
+        id: 'sheet-1',
+        op: 'replace',
+        path: ['data', 0, 0],
+        value: changed[0]?.data[0]?.[0],
+      },
+    ]),
+  ).toBe(true);
+});
+
+test('rejects sheet metadata changes before enumerating large cell data', () => {
+  let enumerations = 0;
+  const data = new Proxy([[{ v: 'Value', m: 'Value' }]], {
+    ownKeys(target) {
+      enumerations += 1;
+      return Reflect.ownKeys(target);
+    },
+  });
+
+  expect(
+    sameSpreadsheetWorkbookState(
+      [{ id: 'sheet-1', name: 'Renamed', data }],
+      [
+        {
+          id: 'sheet-1',
+          name: 'Original',
+          data: [[{ v: 'Value', m: 'Value' }]],
+        },
+      ],
+    ),
+  ).toBe(false);
+  expect(enumerations).toBe(0);
 });
 
 test('ignores Fortune formula result normalization in workbook comparisons', () => {

@@ -2,6 +2,7 @@ import type { Hooks, Op, Selection } from '@fortune-sheet/core';
 import { Workbook, type WorkbookInstance } from '@fortune-sheet/react';
 import { Cloud, Grid3X3 } from 'lucide-react';
 import {
+  memo,
   type ClipboardEvent as ReactClipboardEvent,
   useCallback,
   useEffect,
@@ -24,6 +25,7 @@ import {
   workspaceContextMenuPosition,
 } from '../../workspace/components/workspace-context-menu';
 import { spreadsheetAgentMenuItems } from '../components/work-editor-agent-menus';
+import { spreadsheetGridSize } from '../spreadsheet-sparse';
 import { applySpreadsheetAgentProposalChanges } from '../work-agent-proposal-apply';
 import type { WorkEditorAgentRequest } from '../work-agent-request';
 import {
@@ -40,6 +42,7 @@ import {
 } from '../work-spreadsheet-conditional-canvas';
 import { spreadsheetConditionalFormatStyles } from '../work-spreadsheet-conditional-format';
 import { drawSpreadsheetConditionalIcon } from '../work-spreadsheet-conditional-icons';
+import { spreadsheetMatrixProfile } from '../work-spreadsheet-matrix-profile';
 import {
   reconcileSpreadsheetPivots,
   refreshSpreadsheetPivotTables,
@@ -48,10 +51,11 @@ import {
 } from '../work-spreadsheet-pivots';
 import { spreadsheetProtectionKey } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
-import { useOfficeDialog } from './office-dialog';
-import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
 import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
+import { useOfficeDialog } from './office-dialog';
+import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
+import { useSpreadsheetCollaborationPresenceProjection } from './spreadsheet-collaboration-presence';
 import {
   createSpreadsheetEditorExtensions,
   type SpreadsheetCommandRange,
@@ -77,6 +81,7 @@ import {
   isSpreadsheetNativeTextUndoTarget,
   sameSpreadsheetHistoryContent,
   sameSpreadsheetWorkbookState,
+  sameSpreadsheetWorkbookStateAfterOperations,
   spreadsheetCellAt,
   spreadsheetContentWithSelection,
   spreadsheetSelectionReference,
@@ -88,6 +93,8 @@ import {
 } from './spreadsheet-editor-support';
 import type { SpreadsheetFindMatch } from './spreadsheet-find';
 import { SpreadsheetFindBar } from './spreadsheet-find-bar';
+import { spreadsheetFreezePanesStatus } from './spreadsheet-freeze-panes';
+import { synchronizeSpreadsheetWorkbookInPlace } from './spreadsheet-in-place-workbook-sync';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
 import {
   SpreadsheetWorkbookPanel,
@@ -100,20 +107,18 @@ import {
   useOfficeEditorWheelZoom,
 } from './use-office-editor-wheel-zoom';
 import { useOfficeHistory } from './use-office-history';
-import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
 import { useSpreadsheetAutoFilter } from './use-spreadsheet-auto-filter';
-import {
-  type SpreadsheetFormatPainterMode,
-  useSpreadsheetFormatPainter,
-} from './use-spreadsheet-format-painter';
-import { spreadsheetFreezePanesStatus } from './spreadsheet-freeze-panes';
-import { useSpreadsheetCollaborationPresenceProjection } from './spreadsheet-collaboration-presence';
-import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
+import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
 import {
   type SpreadsheetCollaborationHistory,
   type SpreadsheetCollaborationViewController,
   useSpreadsheetCollaboration,
 } from './use-spreadsheet-collaboration';
+import {
+  type SpreadsheetFormatPainterMode,
+  useSpreadsheetFormatPainter,
+} from './use-spreadsheet-format-painter';
+import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
   type WorkOfficeFileAction,
   WorkOfficePreviewBar,
@@ -136,6 +141,21 @@ export interface SpreadsheetEditorProps {
 const spreadsheetFocusRetryFrames = 12;
 const spreadsheetFocusObservationMs = 5_000;
 const spreadsheetFocusCleanups = new WeakMap<HTMLElement, () => void>();
+const ControlledWorkbook = memo(Workbook, (previous, next) => {
+  const previousProps = previous as Record<string, unknown>;
+  const nextProps = next as Record<string, unknown>;
+  const previousKeys = Object.keys(previousProps).filter(
+    (key) => key !== 'data',
+  );
+  const nextKeys = Object.keys(nextProps).filter((key) => key !== 'data');
+  return (
+    previousKeys.length === nextKeys.length &&
+    previousKeys.every(
+      (key) =>
+        Object.hasOwn(nextProps, key) && previousProps[key] === nextProps[key],
+    )
+  );
+});
 
 interface SpreadsheetSelectionState {
   sheetId: string;
@@ -216,6 +236,9 @@ function SpreadsheetEditorSurface({
   const spreadsheetCanvasRef = useRef<HTMLDivElement>(null);
   const editorFocusOrigin = useOfficeEditorFocusOrigin();
   const workbookRef = useRef<WorkbookInstance>(null);
+  const projectedWorkbookSheetsRef = useRef<WorkSpreadsheetContent['sheets']>(
+    [],
+  );
   const spreadsheetZoomRef = useRef(100);
   const [workbookInstance, setWorkbookInstance] =
     useState<WorkbookInstance | null>(null);
@@ -228,13 +251,27 @@ function SpreadsheetEditorSurface({
     },
     [],
   );
+  const synchronizeExternalWorkbook = useCallback(
+    (previous: WorkSpreadsheetContent, next: WorkSpreadsheetContent) =>
+      synchronizeSpreadsheetWorkbookInPlace(
+        workbookRef.current,
+        previous,
+        next,
+        projectedWorkbookSheetsRef.current,
+        previewRef.current,
+      ),
+    [],
+  );
   const {
     acceptContent: acceptWorkbookContent,
     ignoreChangeDuringExternalSync,
     mountRevision: workbookMountRevision,
     recordOperations: recordWorkbookOperations,
     takeOperations: takeWorkbookOperations,
-  } = useSpreadsheetWorkbookSync(materializedContent);
+  } = useSpreadsheetWorkbookSync(
+    materializedContent,
+    synchronizeExternalWorkbook,
+  );
   const calculation = useSpreadsheetCalculation({
     content: materializedContent,
     kernelWasmUrl,
@@ -302,6 +339,8 @@ function SpreadsheetEditorSurface({
       ),
     [materializedContent.sheets],
   );
+  const conditionalStylesBySheetRef = useRef(conditionalStylesBySheet);
+  conditionalStylesBySheetRef.current = conditionalStylesBySheet;
   useEffect(() => {
     setPreviewActiveSheetId(preview ? contentActiveSheetId : null);
   }, [contentActiveSheetId, preview]);
@@ -397,14 +436,14 @@ function SpreadsheetEditorSurface({
         );
       },
       beforeRenderCell: (_cell, cellInfo, context) => {
-        const style = conditionalStylesBySheet
+        const style = conditionalStylesBySheetRef.current
           .get(activeSheetIdRef.current)
           ?.get(`${cellInfo.row}_${cellInfo.column}`);
         if (style?.cellColor) context.fillStyle = style.cellColor;
         return true;
       },
       afterRenderCell: (cell, cellInfo, context) => {
-        const style = conditionalStylesBySheet
+        const style = conditionalStylesBySheetRef.current
           .get(activeSheetIdRef.current)
           ?.get(`${cellInfo.row}_${cellInfo.column}`);
         if (!style?.icon && !style?.dataBar) return;
@@ -437,15 +476,22 @@ function SpreadsheetEditorSurface({
         if (cell?.ps) drawSpreadsheetCommentMarker(context, cellInfo);
       },
     }),
-    [collaborationView, conditionalStylesBySheet],
+    [collaborationView],
   );
-  const conditionalFormatKey = content.sheets
-    .map(
-      (sheet) =>
-        `${sheet.id}:${JSON.stringify(sheet.luckysheet_conditionformat_save ?? [])}`,
-    )
-    .join('|');
-  const protectionKey = spreadsheetProtectionKey(content.sheets);
+  const conditionalFormatKey = useMemo(
+    () =>
+      content.sheets
+        .map(
+          (sheet) =>
+            `${sheet.id}:${JSON.stringify(sheet.luckysheet_conditionformat_save ?? [])}`,
+        )
+        .join('|'),
+    [content.sheets],
+  );
+  const protectionKey = useMemo(
+    () => spreadsheetProtectionKey(content.sheets),
+    [content.sheets],
+  );
   const renderedWorkbookSheets = useMemo(
     () =>
       spreadsheetSheetsWithFiniteSelections(
@@ -468,29 +514,34 @@ function SpreadsheetEditorSurface({
         : workbookSheets,
     [activeSheetId, preview, previewZoom, workbookSheets],
   );
-  const workbookSheetsRef = useRef(workbookSheets);
-  workbookSheetsRef.current = displayedWorkbookSheets;
+  projectedWorkbookSheetsRef.current = displayedWorkbookSheets;
   const handleWorkbookChange = useCallback(
     (sheets: WorkSpreadsheetContent['sheets']) => {
-      const controlledSheets = spreadsheetSheetsFromFortune(
-        sheets,
-        contentRef.current.sheets,
-      );
-      const matchesRenderedWorkbook = sameSpreadsheetWorkbookState(
-        controlledSheets,
-        workbookSheetsRef.current,
-      );
+      const operations = takeWorkbookOperations();
+      const matchesRenderedWorkbook =
+        sameSpreadsheetWorkbookStateAfterOperations(
+          sheets,
+          projectedWorkbookSheetsRef.current,
+          operations,
+        ) ??
+        sameSpreadsheetWorkbookState(
+          sheets,
+          projectedWorkbookSheetsRef.current,
+        );
       if (ignoreChangeDuringExternalSync(matchesRenderedWorkbook)) {
-        takeWorkbookOperations();
         return;
       }
-      const operations = takeWorkbookOperations();
       const hasPendingResultPatches = calculation.hasPendingResultPatches();
       if (
         previewRef.current ||
         (matchesRenderedWorkbook && !hasPendingResultPatches)
       )
         return;
+      const controlledSheets = spreadsheetSheetsFromFortune(
+        sheets,
+        contentRef.current.sheets,
+        operations,
+      );
       const withCharts = reconcileSpreadsheetChartPreviews(
         contentRef.current,
         controlledSheets,
@@ -520,21 +571,26 @@ function SpreadsheetEditorSurface({
     },
     [calculation, recordWorkbookOperations],
   );
-  const chartPreviewKey = workbookSheets
-    .flatMap((sheet) =>
-      (sheet.images ?? [])
-        .filter((image) => image.id.startsWith('work-chart-preview-'))
-        .map(
-          (image) =>
-            `${image.id}:${image.src}:${image.left}:${image.top}:${image.width}:${image.height}`,
-        ),
-    )
-    .join('|');
+  const chartPreviewKey = useMemo(
+    () =>
+      workbookSheets
+        .flatMap((sheet) =>
+          (sheet.images ?? [])
+            .filter((image) => image.id.startsWith('work-chart-preview-'))
+            .map(
+              (image) =>
+                `${image.id}:${image.src}:${image.left}:${image.top}:${image.width}:${image.height}`,
+            ),
+        )
+        .join('|'),
+    [workbookSheets],
+  );
   const panelSheetId =
     selectionState?.sheetId ?? activeSheetIdRef.current ?? activeSheetId;
   const activeSheet = materializedContent.sheets.find(
     (sheet) => sheet.id === activeSheetId,
   );
+  const activeSheetProfile = spreadsheetMatrixProfile(activeSheet?.data);
   const zoom = Math.round((activeSheet?.zoomRatio ?? 1) * 100);
   spreadsheetZoomRef.current = preview ? previewZoom : zoom;
   useEffect(() => {
@@ -543,6 +599,18 @@ function SpreadsheetEditorSurface({
   const gridLinesVisible =
     activeSheet?.showGridLines !== false && activeSheet?.showGridLines !== 0;
   const toolbarSheetId = selectionState?.sheetId ?? activeSheetId;
+  const targetSheetGridSize = useMemo(() => {
+    const sheet = materializedContent.sheets.find(
+      (candidate) => candidate.id === toolbarSheetId,
+    );
+    const profile = spreadsheetMatrixProfile(sheet?.data);
+    return profile
+      ? {
+          columnCount: Math.max(sheet?.column ?? 0, profile.columnCount),
+          rowCount: Math.max(sheet?.row ?? 0, profile.rowCount),
+        }
+      : spreadsheetGridSize(sheet);
+  }, [materializedContent.sheets, toolbarSheetId]);
   const toolbarSheet = workbookSheets.find(
     (sheet) => sheet.id === toolbarSheetId,
   );
@@ -721,6 +789,7 @@ function SpreadsheetEditorSurface({
         onChange(next);
       },
       selection: selectionState,
+      targetSheetGridSize,
       targetSheetId: toolbarSheetId,
       toolbarCell,
       view:
@@ -1001,8 +1070,16 @@ function SpreadsheetEditorSurface({
       ref={spreadsheetRootRef}
       className={`work-spreadsheet-editor ${preview ? 'preview' : ''}`}
       data-auto-filter={autoFilterActive ? 'active' : undefined}
+      data-column-count={targetSheetGridSize?.columnCount}
       data-format-painter={formatPainterMode ?? undefined}
       data-freeze-panes={toolbarSheet?.frozen ? 'active' : undefined}
+      data-populated-cell-count={activeSheetProfile?.populatedCellCount}
+      data-profile-column-count={activeSheetProfile?.columnCount}
+      data-profile-row-count={activeSheetProfile?.rowCount}
+      data-row-count={targetSheetGridSize?.rowCount}
+      data-spreadsheet-profile={
+        activeSheetProfile?.fortuneReady ? 'ready' : undefined
+      }
       aria-label="表格工作区"
       onKeyDownCapture={handleSpreadsheetKeyDownCapture}
       onCopyCapture={(event) => handleSpreadsheetCopy(event, false)}
@@ -1079,7 +1156,7 @@ function SpreadsheetEditorSurface({
             openSpreadsheetContextMenu(event);
           }}
         >
-          <Workbook
+          <ControlledWorkbook
             ref={bindWorkbookInstance}
             key={`spreadsheet:${workbookMountRevision}:${preview ? `preview-${previewZoom}` : 'edit'}:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}`}
             data={displayedWorkbookSheets}

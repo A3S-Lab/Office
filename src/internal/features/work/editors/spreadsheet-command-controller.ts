@@ -1,5 +1,8 @@
 import type { Cell, Selection, Sheet } from '@fortune-sheet/core';
-import { sparseMatrixColumnCount } from '../spreadsheet-sparse';
+import {
+  type SpreadsheetGridSize,
+  spreadsheetGridSize,
+} from '../spreadsheet-sparse';
 import type { WorkSpreadsheetContent } from '../work-types';
 import {
   createOfficeEditorExtension,
@@ -7,27 +10,27 @@ import {
   type OfficeEditorExtension,
 } from './office-editor-extension';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
-import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
 import {
   clearSpreadsheetSheetSelection,
   type SpreadsheetCellClearMode,
 } from './spreadsheet-cell-clear';
 import {
   canApplySpreadsheetCellMerge,
-  spreadsheetCellMergeApiCalls,
   type SpreadsheetCellMergeCommand,
+  spreadsheetCellMergeApiCalls,
 } from './spreadsheet-cell-merge';
+import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
 import {
   finiteSpreadsheetSelection,
   isSpreadsheetNativeTextUndoTarget,
   selectSpreadsheetFormulaBarContents,
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
+import type { SpreadsheetFormatPainterMode } from './spreadsheet-format-painter';
 import {
   type SpreadsheetFreezePanePreset,
   updateSpreadsheetFreezePanes,
 } from './spreadsheet-freeze-panes';
-import type { SpreadsheetFormatPainterMode } from './spreadsheet-format-painter';
 import {
   isSpreadsheetGridKeyboardTarget,
   moveSpreadsheetKeyboardSelection,
@@ -240,6 +243,7 @@ export interface SpreadsheetCommandContext {
   history: SpreadsheetHistoryCommandPort | null;
   onChange: (content: WorkSpreadsheetContent) => void;
   selection: SpreadsheetCommandSelection | null;
+  targetSheetGridSize?: SpreadsheetGridSize | null;
   targetSheetId: string;
   toolbarCell: Cell | null;
   view: SpreadsheetViewCommandPort | null;
@@ -1103,11 +1107,9 @@ function spreadsheetStructureExtent(
   );
   const range = spreadsheetStructureRange(liveRange(context), axis);
   if (!sheet) return range[1] + 1;
-  if (axis === 'row') {
-    return Math.max(sheet.row ?? 0, sheet.data?.length ?? 0, range[1] + 1);
-  }
-  const dataWidth = sparseMatrixColumnCount(sheet.data);
-  return Math.max(sheet.column ?? 0, dataWidth, range[1] + 1);
+  const size = context.targetSheetGridSize ?? spreadsheetGridSize(sheet);
+  const extent = axis === 'row' ? size?.rowCount : size?.columnCount;
+  return Math.max(extent ?? 0, range[1] + 1);
 }
 
 function clearSelectedCells(

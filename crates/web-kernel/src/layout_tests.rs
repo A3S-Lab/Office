@@ -178,6 +178,32 @@ fn paginates_blocks_and_reports_visual_spacers() {
 }
 
 #[test]
+fn lays_out_one_hundred_thousand_blocks() {
+    let blocks = (0..100_000)
+        .map(|index| block(&format!("paragraph-{index}"), 1.0))
+        .collect();
+
+    let result = layout_document(&request(blocks)).expect("large layout");
+
+    assert_eq!(
+        result
+            .pages
+            .iter()
+            .map(|page| page.placements.len())
+            .sum::<usize>(),
+        100_000
+    );
+    assert_eq!(
+        result
+            .pages
+            .last()
+            .and_then(|page| page.placements.last())
+            .map(|placement| placement.block_id.as_str()),
+        Some("paragraph-99999")
+    );
+}
+
+#[test]
 fn keeps_page_chrome_inside_the_physical_margins() {
     let mut input = request(vec![block("body", 150.0), block("tail", 20.0)]);
     input.page = LayoutPageMetrics {

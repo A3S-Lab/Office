@@ -34,6 +34,42 @@ test('publishes one controlled workbook change when AutoFilter is toggled', () =
   expect(result.current.active).toBe(true);
 });
 
+test('defers worksheet range discovery until AutoFilter is toggled', () => {
+  let worksheetScans = 0;
+  const content = spreadsheetContent(false);
+  const sourceData = content.sheets[0]?.data;
+  if (!sourceData) throw new Error('Expected spreadsheet fixture data.');
+  content.sheets[0] = {
+    ...content.sheets[0],
+    data: new Proxy(sourceData, {
+      ownKeys: (target) => {
+        worksheetScans += 1;
+        return Reflect.ownKeys(target);
+      },
+    }),
+  };
+  const canvas = document.createElement('div');
+  const { result, rerender, unmount } = renderHook(
+    ({ selection }) =>
+      useSpreadsheetAutoFilter({
+        canvasRef: { current: canvas },
+        content,
+        editable: true,
+        onChange: () => undefined,
+        selection,
+        sheetId: 'sheet-1',
+      }),
+    { initialProps: { selection: cellSelection(3, 1) } },
+  );
+
+  rerender({ selection: cellSelection(3, 1) });
+
+  expect(worksheetScans).toBe(0);
+  act(() => expect(result.current.commandPort.toggle()).toBe(true));
+  expect(worksheetScans).toBe(1);
+  unmount();
+});
+
 test('adapts the vendor filter trigger and menu for keyboard use', async () => {
   const canvas = document.createElement('div');
   const triggers = Array.from({ length: 3 }, () => {

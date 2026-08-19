@@ -11,10 +11,15 @@ export type ExternalDocumentContentResult =
  * Returns whether an editor transaction represents a user-authored document
  * change that the controlled host must persist.
  */
-export function shouldPublishDocumentUpdate(transaction: Transaction): boolean {
-  return (
-    !transaction.getMeta('preventUpdate') &&
-    transaction.getMeta('addToHistory') !== false
+export function shouldPublishDocumentUpdate(
+  transaction: Transaction,
+  appendedTransactions: readonly Transaction[] = [],
+): boolean {
+  return [transaction, ...appendedTransactions].some(
+    (candidate) =>
+      candidate.docChanged &&
+      !candidate.getMeta('preventUpdate') &&
+      candidate.getMeta('addToHistory') !== false,
   );
 }
 
@@ -27,6 +32,24 @@ export function applyExternalDocumentContent(
   editor: Editor,
   content: Content,
 ): ExternalDocumentContentResult {
+  const startedAt = externalContentNow();
+  const finish = (
+    result: ExternalDocumentContentResult,
+  ): ExternalDocumentContentResult => {
+    const finishedAt = externalContentNow();
+    editor.view.dom.dataset.documentExternalApplyMs = String(
+      Math.round((finishedAt - startedAt) * 10) / 10,
+    );
+    try {
+      globalThis.performance?.measure(
+        'a3s-office.document.external-content-apply',
+        { detail: { result }, end: finishedAt, start: startedAt },
+      );
+    } catch {
+      // User Timing diagnostics must never affect controlled updates.
+    }
+    return result;
+  };
   let nextDocument: ProseMirrorNode | Fragment;
   try {
     nextDocument = createNodeFromContent(content, editor.schema, {
@@ -34,13 +57,13 @@ export function applyExternalDocumentContent(
       slice: false,
     });
   } catch {
-    return 'unsupported';
+    return finish('unsupported');
   }
-  if (!(nextDocument instanceof ProseMirrorNode)) return 'unsupported';
+  if (!(nextDocument instanceof ProseMirrorNode)) return finish('unsupported');
 
   const currentDocument = editor.state.doc;
   const start = currentDocument.content.findDiffStart(nextDocument.content);
-  if (start === null) return 'unchanged';
+  if (start === null) return finish('unchanged');
   const end = currentDocument.content.findDiffEnd(nextDocument.content);
   let currentEnd = end?.a ?? currentDocument.content.size;
   let nextEnd = end?.b ?? nextDocument.content.size;
@@ -64,8 +87,12 @@ export function applyExternalDocumentContent(
       .setMeta('addToHistory', false)
       .setMeta('preventUpdate', true);
     editor.view.dispatch(transaction);
-    return 'applied';
+    return finish('applied');
   } catch {
-    return 'unsupported';
+    return finish('unsupported');
   }
+}
+
+function externalContentNow(): number {
+  return globalThis.performance?.now?.() ?? Date.now();
 }
