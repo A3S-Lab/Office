@@ -789,6 +789,21 @@ component, focus, desktop and compact Canvas rendering, undo, and
 schema-validated local A3S Test coverage protect the complete workflow. GitHub
 Actions keeps A3S Test excluded and runs the Playwright rendering contract.
 
+The twelfth slice adds Fill to Home and Editing with Down, Right, Up, and Left
+commands. The menu uses Arrow, Home, End, Enter, and Escape, while
+`Cmd/Ctrl+D` and `Cmd/Ctrl+R` share the same typed command path and retain grid
+focus. Each direction copies the appropriate selection edge through Fortune's
+native relative-formula, number-series, and style semantics in one history
+record. Preflight rejects multiple selections, merged intersections, pivot
+sheets, read-only rows or columns, protected cells, inactive sheets, and more
+than 50,000 target cells. The focused adapter satisfies Fortune's sparse-matrix
+precondition by creating only missing row arrays inside the selection and
+restores the exact sparse shape on a native failure. Unit, controller,
+component, focus, desktop, and compact Playwright regressions cover all four
+directions, formula and bold-style propagation, one-step Undo and Redo, and
+`Ctrl+R` browser-refresh ownership. A schema-validated A3S Test ACL remains a
+local release gate; GitHub Actions neither installs nor runs A3S Test.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

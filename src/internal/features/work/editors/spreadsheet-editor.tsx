@@ -1501,6 +1501,7 @@ export function spreadsheetCommandsWithGridFocus(
     deleteSelectedStructure: afterSuccessfulCommand(
       commands.deleteSelectedStructure,
     ),
+    fillSelectedCells: afterSuccessfulCommand(commands.fillSelectedCells),
     insertSelectedStructure: afterSuccessfulCommand(
       commands.insertSelectedStructure,
     ),

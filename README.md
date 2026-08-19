@@ -543,6 +543,10 @@ interaction model.
   a Home and Editing Clear menu for independently removing content, formats,
   comments, hyperlinks, or all cell state while preserving merge geometry,
   with Delete and Backspace mapped to Clear Contents,
+  a Home and Editing Fill menu for Down, Right, Up, and Left with native
+  relative-formula and style propagation, WPS `Cmd/Ctrl+D` and `Cmd/Ctrl+R`
+  shortcuts, one-step history, protected-range preflight, a 50,000-target-cell
+  guard, and sparse-row-safe execution,
   a View and Window Freeze Panes menu for current-cell, top-row, first-column,
   and unfreeze patterns with XLSX round trips, and visible F9 workbook
   recalculation,

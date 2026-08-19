@@ -213,6 +213,7 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
   await expect(dialog).toHaveCount(0);
   await expect(grid).toBeFocused();
 
+  await page.keyboard.press('Control+Home');
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowDown');
@@ -471,6 +472,135 @@ test('Spreadsheet clears cell state from the WPS Home editing group', async ({
   await page.keyboard.press('ArrowUp');
   await page.keyboard.press('Delete');
   await expect(formulaBar).toHaveText('');
+  expect(browserErrors).toEqual([]);
+});
+
+test('Spreadsheet fills formulas and styles with WPS shortcuts and one-step history', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const formulaBar = page.locator('.fortune-fx-input');
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  const bold = ribbon.getByRole('button', { name: '加粗' });
+  const fill = ribbon.getByRole('button', { name: '填充', exact: true });
+
+  await grid.focus();
+  await page.keyboard.press('Shift+F11');
+  await expect(nameBox).toHaveText('A1');
+  await page.keyboard.type('2');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('4');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.type('=A1*3');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await expect(nameBox).toHaveText('B1');
+  await expect(formulaBar).toHaveText('=A1*3');
+  await bold.click();
+  await expect(grid).toBeFocused();
+
+  await page.keyboard.press('Shift+ArrowDown');
+  await page.keyboard.press('Shift+ArrowDown');
+  await expect(nameBox).toHaveText('B1:B3');
+  await expect(fill).toBeEnabled();
+  await expect(fill).toHaveAttribute('aria-haspopup', 'menu');
+  await fill.click();
+  const fillMenu = page.getByRole('menu', { name: '填充选项' });
+  const fillDown = fillMenu.getByRole('menuitem', { name: '向下填充' });
+  const fillUp = fillMenu.getByRole('menuitem', { name: '向上填充' });
+  await expect(fillMenu.getByRole('menuitem')).toHaveCount(4);
+  await expect(fillDown).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+D Meta+D',
+  );
+  await expect(
+    fillMenu.getByRole('menuitem', { name: '向右填充' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+R Meta+R');
+  await expect(fillDown).toBeFocused();
+  await fillMenu.press('End');
+  await expect(fillUp).toBeFocused();
+  await fillMenu.press('Home');
+  await expect(fillDown).toBeFocused();
+  await page.screenshot({
+    path: testInfo.outputPath('spreadsheet-fill-menu.png'),
+    animations: 'disabled',
+  });
+  await page.keyboard.press('Escape');
+  await expect(fill).toBeFocused();
+
+  await grid.focus();
+  await page.keyboard.press('Control+d');
+  await expect(grid).toBeFocused();
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowDown');
+  await expect(nameBox).toHaveText('B2');
+  await expect(formulaBar).toHaveText('=A2*3');
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('ArrowDown');
+  await expect(nameBox).toHaveText('B3');
+  await expect(formulaBar).toHaveText('=A3*3');
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+
+  await page.keyboard.press('Control+z');
+  await expect(formulaBar).toHaveText('');
+  await expect(bold).toHaveAttribute('aria-pressed', 'false');
+  await page.keyboard.press('ArrowUp');
+  await expect(nameBox).toHaveText('B2');
+  await expect(formulaBar).toHaveText('');
+  await page.keyboard.press('Control+y');
+  await expect(formulaBar).toHaveText('=A2*3');
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+
+  await page.keyboard.press('Control+Home');
+  for (let index = 0; index < 4; index += 1) {
+    await page.keyboard.press('ArrowDown');
+  }
+  await expect(nameBox).toHaveText('A5');
+  await page.keyboard.type('Right edge');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowRight');
+  await expect(nameBox).toHaveText('A5:C5');
+  await page.keyboard.press('Control+r');
+  await expect(grid).toBeFocused();
+  await page.keyboard.press('Control+Home');
+  for (let index = 0; index < 4; index += 1) {
+    await page.keyboard.press('ArrowDown');
+  }
+  await page.keyboard.press('ArrowRight');
+  await expect(nameBox).toHaveText('B5');
+  await expect(formulaBar).toHaveText('Right edge');
+  await page.keyboard.press('ArrowRight');
+  await expect(formulaBar).toHaveText('Right edge');
+  await page.keyboard.press('Control+z');
+  await expect(formulaBar).toHaveText('');
+  await page.keyboard.press('ArrowLeft');
+  await expect(formulaBar).toHaveText('');
+
+  await page.keyboard.press('Control+Home');
+  await page.evaluate(() => {
+    (
+      window as unknown as { __a3sFillShortcutPageState?: string }
+    ).__a3sFillShortcutPageState = 'retained';
+  });
+  await page.keyboard.press('Control+r');
+  await expect(nameBox).toHaveText('A1');
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __a3sFillShortcutPageState?: string })
+          .__a3sFillShortcutPageState,
+    ),
+  ).toBe('retained');
   expect(browserErrors).toEqual([]);
 });
 

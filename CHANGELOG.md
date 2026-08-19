@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added WPS-aligned Spreadsheet Fill Down, Right, Up, and Left commands under
+  Home and Editing, with `Cmd/Ctrl+D` and `Cmd/Ctrl+R`, native relative-formula
+  and style propagation, one-step Undo and Redo, protected-range preflight, and
+  a 50,000-target-cell limit. The Fortune adapter now materializes only selected
+  sparse rows and restores the original sparse shape if native fill fails.
+- Added focused unit, component, desktop/compact Playwright, and local-only A3S
+  Test coverage for fill menus, shortcuts, formula/style propagation, history,
+  sparse rows, and browser diagnostics. GitHub Actions remains Playwright-only
+  and now has a repository policy regression that rejects A3S Test references.
+
 ## 0.12.0 - 2026-08-18
 
 - Added cancellable browser file imports with monotonic `reading`, `parsing`,

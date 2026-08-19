@@ -6,6 +6,10 @@ import {
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
   AlignVerticalJustifyStart,
+  ArrowDownToLine,
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  ArrowUpToLine,
   BarChart3,
   BetweenHorizontalEnd,
   BetweenHorizontalStart,
@@ -53,6 +57,7 @@ import { protectedSheetCount } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
 import type { SpreadsheetCellMergeCommand } from './spreadsheet-cell-merge';
 import type { SpreadsheetCellClearMode } from './spreadsheet-cell-clear';
+import type { SpreadsheetCellFillDirection } from './spreadsheet-cell-fill';
 import {
   type SpreadsheetRibbonTabId,
   spreadsheetCommandCatalog,
@@ -329,6 +334,7 @@ export function SpreadsheetEditorRibbon({
               <SpreadsheetRowsAndColumnsMenu can={can} commands={commands} />
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="编辑" priority="low">
+              <SpreadsheetFillMenu can={can} commands={commands} />
               <SpreadsheetClearMenu can={can} commands={commands} />
               <WorkOfficeRibbonButton
                 label={spreadsheetCommandCatalog.find.label}
@@ -887,6 +893,98 @@ function SpreadsheetClearMenu({
             onClick={() => {
               close();
               commands.clearSelectedCells(mode);
+            }}
+          >
+            <span className="work-spreadsheet-ribbon-menu-item-icon">
+              {icon}
+            </span>
+            <span>{label}</span>
+          </button>
+        ))
+      }
+    </Popover>
+  );
+}
+
+function SpreadsheetFillMenu({
+  can,
+  commands,
+}: {
+  can: SpreadsheetEditorCanCommands;
+  commands: SpreadsheetEditorCommands;
+}) {
+  const items: readonly {
+    direction: SpreadsheetCellFillDirection;
+    id: string;
+    label: string;
+    icon: ReactNode;
+    shortcut?: string;
+  }[] = [
+    {
+      direction: 'down',
+      id: spreadsheetCommandCatalog.fillDown.id,
+      label: spreadsheetCommandCatalog.fillDown.label,
+      icon: <ArrowDownToLine size={16} />,
+      shortcut: spreadsheetCommandCatalog.fillDown.shortcut.aria,
+    },
+    {
+      direction: 'right',
+      id: spreadsheetCommandCatalog.fillRight.id,
+      label: spreadsheetCommandCatalog.fillRight.label,
+      icon: <ArrowRightToLine size={16} />,
+      shortcut: spreadsheetCommandCatalog.fillRight.shortcut.aria,
+    },
+    {
+      direction: 'up',
+      id: spreadsheetCommandCatalog.fillUp.id,
+      label: spreadsheetCommandCatalog.fillUp.label,
+      icon: <ArrowUpToLine size={16} />,
+    },
+    {
+      direction: 'left',
+      id: spreadsheetCommandCatalog.fillLeft.id,
+      label: spreadsheetCommandCatalog.fillLeft.label,
+      icon: <ArrowLeftToLine size={16} />,
+    },
+  ];
+  const disabled = items.every(
+    ({ direction }) => !can.fillSelectedCells(direction),
+  );
+
+  return (
+    <Popover
+      label="填充"
+      panelLabel="填充选项"
+      panelRole="menu"
+      portal
+      className="work-spreadsheet-ribbon-menu-root"
+      panelClassName="work-office-context-menu work-spreadsheet-ribbon-menu"
+      disabled={disabled}
+      focusFirstOnOpen
+      onPanelKeyDown={moveOfficeMenuFocus}
+      trigger={(triggerProps, { open }) => (
+        <button
+          {...triggerProps}
+          className={`with-label work-spreadsheet-ribbon-menu-trigger${open ? ' active' : ''}`}
+          title="填充"
+        >
+          <ArrowDownToLine size={19} />
+          <span>填充</span>
+        </button>
+      )}
+    >
+      {(close) =>
+        items.map(({ direction, id, label, icon, shortcut }) => (
+          <button
+            key={id}
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            aria-keyshortcuts={shortcut}
+            disabled={!can.fillSelectedCells(direction)}
+            onClick={() => {
+              close();
+              commands.fillSelectedCells(direction);
             }}
           >
             <span className="work-spreadsheet-ribbon-menu-item-icon">

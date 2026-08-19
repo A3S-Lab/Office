@@ -133,6 +133,10 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     tab: 'home',
   });
   for (const command of [
+    spreadsheetCommandCatalog.fillDown,
+    spreadsheetCommandCatalog.fillRight,
+    spreadsheetCommandCatalog.fillUp,
+    spreadsheetCommandCatalog.fillLeft,
     spreadsheetCommandCatalog.clearAll,
     spreadsheetCommandCatalog.clearFormats,
     spreadsheetCommandCatalog.clearContents,
@@ -149,6 +153,16 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     aria: 'Delete Backspace',
     editor: ['Delete', 'Backspace'],
     label: 'Delete/Backspace',
+  });
+  expect(spreadsheetCommandCatalog.fillDown.shortcut).toEqual({
+    aria: 'Control+D Meta+D',
+    editor: ['Mod-d'],
+    label: 'Cmd/Ctrl+D',
+  });
+  expect(spreadsheetCommandCatalog.fillRight.shortcut).toEqual({
+    aria: 'Control+R Meta+R',
+    editor: ['Mod-r'],
+    label: 'Cmd/Ctrl+R',
   });
   expect(spreadsheetCommandCatalog.insertChart.location).toEqual({
     area: 'ribbon',

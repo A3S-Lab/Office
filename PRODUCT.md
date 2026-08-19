@@ -90,6 +90,14 @@ exact color input. One immutable A3S-owned command compacts overlapping native
 range records, preserves malformed vendor records, emits one controlled update,
 and returns focus to the grid. Diagonal writes stay bounded to 4,096 cells and
 undo through the shared workbook history.
+The twelfth milestone adds Fill under Home and Editing. Fill Down, Right, Up,
+and Left copy the appropriate selection edge through Fortune's native formula
+and style semantics; `Cmd/Ctrl+D` and `Cmd/Ctrl+R` provide the WPS fast paths.
+One editable, unmerged, unprotected, non-pivot range may fill at most 50,000
+target cells. The adapter materializes only missing row arrays inside that
+range before calling Fortune and restores the original sparse shape if the
+native command fails. A successful fill remains one undoable operation and
+returns focus to the workbook grid.
 
 ## Product Rules
 

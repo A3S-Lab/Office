@@ -1,0 +1,250 @@
+suite "spreadsheet-cell-fill" {
+    version = 1
+
+    scenario "fill-formulas-styles-and-sparse-rows" {
+        name = "Fill Spreadsheet formulas and styles without densifying blank rows"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-cell-fill"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "create-blank-sheet" {
+            key = "Shift+F11"
+        }
+
+        expect "blank-sheet-starts-at-a1" {
+            text = "A1"
+        }
+
+        fill "enter-first-source-number" {
+            target = css("[aria-label='当前单元格输入']")
+            value = "2"
+        }
+
+        press "commit-first-source-number" {
+            key = "Enter"
+        }
+
+        fill "enter-second-source-number" {
+            target = css("[aria-label='当前单元格输入']")
+            value = "4"
+        }
+
+        press "commit-second-source-number" {
+            key = "Enter"
+        }
+
+        press "return-to-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "select-formula-source" {
+            key = "ArrowRight"
+        }
+
+        fill "enter-relative-formula" {
+            target = css("[aria-label='当前单元格输入']")
+            value = "=A1*3"
+        }
+
+        press "commit-relative-formula" {
+            key = "Enter"
+        }
+
+        press "return-to-formula-source" {
+            key = "ArrowUp"
+        }
+
+        expect "relative-formula-is-visible" {
+            text = "=A1*3"
+        }
+
+        click "make-source-bold" {
+            target = role("button", "加粗")
+        }
+
+        press "extend-selection-to-b2" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-selection-to-b3" {
+            key = "Shift+ArrowDown"
+        }
+
+        expect "fill-down-selection-is-visible" {
+            text = "B1:B3"
+        }
+
+        expect "fill-menu-is-available" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='填充'][aria-haspopup='menu']")
+        }
+
+        press "fill-down" {
+            key = "Control+D"
+        }
+
+        press "return-to-filled-column" {
+            key = "Control+Home"
+        }
+
+        press "select-b1" {
+            key = "ArrowRight"
+        }
+
+        press "select-b2" {
+            key = "ArrowDown"
+        }
+
+        expect "b2-relative-formula-is-filled" {
+            text = "=A2*3"
+        }
+
+        expect "b2-bold-style-is-filled" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='true']")
+        }
+
+        press "select-b3" {
+            key = "ArrowDown"
+        }
+
+        expect "b3-relative-formula-is-filled" {
+            text = "=A3*3"
+        }
+
+        press "undo-complete-fill" {
+            key = "Control+Z"
+        }
+
+        expect "fill-undo-restores-style" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='false']")
+        }
+
+        press "redo-complete-fill" {
+            key = "Control+Y"
+        }
+
+        expect "fill-redo-restores-formula" {
+            text = "=A3*3"
+        }
+
+        expect "fill-redo-restores-style" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='true']")
+        }
+
+        press "return-to-a1" {
+            key = "Control+Home"
+        }
+
+        press "move-to-a2" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-a3" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-a4" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-a5" {
+            key = "ArrowDown"
+        }
+
+        fill "enter-right-fill-source" {
+            target = css("[aria-label='当前单元格输入']")
+            value = "Right edge"
+        }
+
+        press "commit-right-fill-source" {
+            key = "Enter"
+        }
+
+        press "return-to-right-fill-source" {
+            key = "ArrowUp"
+        }
+
+        press "extend-right-fill-to-b5" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-right-fill-to-c5" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "fill-right-without-browser-refresh" {
+            key = "Control+R"
+        }
+
+        press "return-to-a1-after-fill-right" {
+            key = "Control+Home"
+        }
+
+        press "return-to-a2-after-fill-right" {
+            key = "ArrowDown"
+        }
+
+        press "return-to-a3-after-fill-right" {
+            key = "ArrowDown"
+        }
+
+        press "return-to-a4-after-fill-right" {
+            key = "ArrowDown"
+        }
+
+        press "return-to-a5-after-fill-right" {
+            key = "ArrowDown"
+        }
+
+        press "select-filled-b5" {
+            key = "ArrowRight"
+        }
+
+        expect "b5-is-filled-without-reload" {
+            text = "Right edge"
+        }
+
+        screenshot "spreadsheet-cell-fill" {
+            path = "screenshots/spreadsheet-cell-fill.png"
+        }
+
+        accessibility "spreadsheet-cell-fill-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

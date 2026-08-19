@@ -206,6 +206,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     copySelection: record('copySelection'),
     cutSelection: record('cutSelection', false),
     deleteSelectedStructure: record('deleteSelectedStructure'),
+    fillSelectedCells: record('fillSelectedCells'),
     insertSelectedStructure: record('insertSelectedStructure'),
     mergeSelectedCells: record('mergeSelectedCells'),
     openAutoFilterMenu: record('openAutoFilterMenu'),
@@ -237,6 +238,7 @@ test('returns grid focus after successful ribbon commands only', () => {
   expect(ribbon.setFreezePanes('topRow')).toBe(true);
   expect(ribbon.insertSelectedStructure('row', 'before')).toBe(true);
   expect(ribbon.deleteSelectedStructure('column')).toBe(true);
+  expect(ribbon.fillSelectedCells('down')).toBe(true);
   expect(ribbon.mergeSelectedCells('merge-and-center')).toBe(true);
   expect(ribbon.toggleAutoFilter()).toBe(true);
   expect(ribbon.openAutoFilterMenu()).toBe(true);
@@ -256,6 +258,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setFreezePanes:topRow',
     'insertSelectedStructure:row,before',
     'deleteSelectedStructure:column',
+    'fillSelectedCells:down',
     'mergeSelectedCells:merge-and-center',
     'toggleAutoFilter:',
     'openAutoFilterMenu:',
@@ -268,6 +271,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setZoom:125',
   ]);
   expect(focused).toEqual([
+    'grid',
     'grid',
     'grid',
     'grid',

@@ -1,6 +1,6 @@
 # A3S Office / WPS Capability Gap Roadmap
 
-Last reviewed: 2026-08-18
+Last reviewed: 2026-08-20
 
 This roadmap compares the current `main` branch of A3S Office with the public
 capability surface of WPS Office. It is a prioritization tool, not a claim that
@@ -92,7 +92,7 @@ collaboration transport, and AI providers.
 
 | Capability | A3S Office status | Main gap or boundary | Priority |
 | --- | --- | --- | --- |
-| Cell editing, multiple sheets, selection, keyboard navigation, search, clipboard, format painter, undo/redo | **Supported**, including maximum-dimension XLSX sheets with sparse virtual editing, viewport-bounded Canvas painting, streamed SheetJS Worker rows, an allocation-bounded transferable plain-OOXML cursor, and clone-free adoption of authenticated frozen matrices for eligible reserved-ID imports | Rich or structurally stateful imports still use the complete Fortune remount path; replace the remaining Fortune-owned redraw boundary with an A3S-owned virtual grid and continue large-workbook performance matrices | P0 |
+| Cell editing, multiple sheets, selection, keyboard navigation, search, clipboard, format painter, four-direction fill, undo/redo | **Supported**, including WPS `Cmd/Ctrl+D` and `Cmd/Ctrl+R` fill habits, native relative-formula and style propagation, sparse-row-safe execution, maximum-dimension XLSX sheets with sparse virtual editing, viewport-bounded Canvas painting, streamed SheetJS Worker rows, an allocation-bounded transferable plain-OOXML cursor, and clone-free adoption of authenticated frozen matrices for eligible reserved-ID imports | Rich or structurally stateful imports still use the complete Fortune remount path; replace the remaining Fortune-owned redraw boundary with an A3S-owned virtual grid and continue large-workbook performance matrices | P0 |
 | Formula entry and dependency-aware recalculation | **Partial** | WPS/Excel function breadth, array/dynamic formulas, volatile/external semantics, and calculation parity are broader | P0 |
 | Calculation settings and cached results | **Supported** for explicit modes and bounded calculation metadata | Complex data tables and compatibility calculation paths need broader parity | P0 |
 | Cell formatting, number formats, alignment, wrapping, borders, merge/center | **Partial** | Advanced number formats, border cases, rich text, themes, and locale behavior can normalize | P0/P1 |

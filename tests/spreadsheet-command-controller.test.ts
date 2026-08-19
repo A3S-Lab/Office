@@ -69,6 +69,154 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('routes all four WPS fill directions through one native command port', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [3, 1], column: [4, 2] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetCellFill');
+    for (const direction of ['down', 'right', 'up', 'left'] as const) {
+      expect(editor.can().fillSelectedCells(direction)).toBe(true);
+      expect(editor.commands.fillSelectedCells(direction)).toBe(true);
+    }
+    expect(fixture.workbook.fills).toEqual([
+      {
+        applyRange: { row: [2, 3], column: [2, 4] },
+        copyRange: { row: [1, 1], column: [2, 4] },
+        direction: 'down',
+      },
+      {
+        applyRange: { row: [1, 3], column: [3, 4] },
+        copyRange: { row: [1, 3], column: [2, 2] },
+        direction: 'right',
+      },
+      {
+        applyRange: { row: [1, 2], column: [2, 4] },
+        copyRange: { row: [3, 3], column: [2, 4] },
+        direction: 'up',
+      },
+      {
+        applyRange: { row: [1, 3], column: [2, 3] },
+        copyRange: { row: [1, 3], column: [4, 4] },
+        direction: 'left',
+      },
+    ]);
+    expect(fixture.workbook.selection).toEqual([
+      { row: [3, 1], column: [4, 2] },
+    ]);
+    expect(fixture.workbook.fillRowsAtCall).toEqual([
+      [1, 2, 3],
+      [1, 2, 3],
+      [1, 2, 3],
+      [1, 2, 3],
+    ]);
+  });
+
+  test('requires one editable unmerged range before native fill', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [
+      { row: [0, 2], column: [0, 0] },
+      { row: [0, 2], column: [2, 2] },
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().fillSelectedCells('down')).toBe(false);
+    expect(editor.commands.fillSelectedCells('down')).toBe(false);
+    expect(fixture.workbook.fills).toEqual([]);
+
+    fixture.workbook.selection = [{ row: [0, 2], column: [0, 0] }];
+    fixture.workbook.failFill = true;
+    expect(editor.can().fillSelectedCells('down')).toBe(true);
+    expect(editor.commands.fillSelectedCells('down')).toBe(false);
+    expect(fixture.workbook.fills).toEqual([]);
+    expect(fixture.workbook.fillRowsAtCall).toEqual([[0, 1, 2]]);
+    expect(fixture.workbook.sheet.data).toEqual([[null]]);
+
+    editor.updateContext({ ...fixture.context, editable: false });
+    fixture.workbook.failFill = false;
+    expect(editor.can().fillSelectedCells('down')).toBe(false);
+    expect(editor.commands.fillSelectedCells('down')).toBe(false);
+    expect(fixture.workbook.fills).toEqual([]);
+  });
+
+  test('restores an absent native data matrix when fill fails', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 2], column: [0, 0] }];
+    fixture.workbook.failFill = true;
+    delete fixture.workbook.sheet.data;
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().fillSelectedCells('down')).toBe(true);
+    expect(editor.commands.fillSelectedCells('down')).toBe(false);
+    expect(fixture.workbook.fillRowsAtCall).toEqual([[0, 1, 2]]);
+    expect(Object.hasOwn(fixture.workbook.sheet, 'data')).toBe(false);
+  });
+
+  test('owns Cmd/Ctrl+D and Cmd/Ctrl+R on the spreadsheet grid', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 2], column: [0, 2] }];
+    const editor = spreadsheetEditor(fixture.context);
+    const shortcuts = [
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        ctrlKey: true,
+        key: 'd',
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        key: 'r',
+        metaKey: true,
+      }),
+    ];
+
+    expect(shortcuts.map((event) => editor.handleKeyDown(event))).toEqual([
+      true,
+      true,
+    ]);
+    expect(shortcuts.every((event) => event.defaultPrevented)).toBe(true);
+    expect(fixture.workbook.fills.map(({ direction }) => direction)).toEqual([
+      'down',
+      'right',
+    ]);
+  });
+
+  test('keeps unavailable or failed WPS fill shortcuts out of the browser', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 0], column: [0, 0] }];
+    const editor = spreadsheetEditor(fixture.context);
+    const unavailable = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: 'r',
+    });
+
+    expect(editor.can().fillSelectedCells('right')).toBe(false);
+    expect(editor.handleKeyDown(unavailable)).toBe(true);
+    expect(unavailable.defaultPrevented).toBe(true);
+    expect(fixture.workbook.fills).toEqual([]);
+
+    fixture.workbook.selection = [{ row: [0, 2], column: [0, 0] }];
+    fixture.workbook.failFill = true;
+    const failed = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: 'd',
+    });
+    expect(editor.handleKeyDown(failed)).toBe(true);
+    expect(failed.defaultPrevented).toBe(true);
+    expect(fixture.workbook.fills).toEqual([]);
+    expect(fixture.workbook.sheet.data).toEqual([[null]]);
+
+    editor.updateContext({ ...fixture.context, editable: false });
+    const readOnly = new KeyboardEvent('keydown', {
+      cancelable: true,
+      metaKey: true,
+      key: 'r',
+    });
+    expect(editor.handleKeyDown(readOnly)).toBe(true);
+    expect(readOnly.defaultPrevented).toBe(true);
+  });
+
   test('commits cell borders through one immutable controlled update', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [{ row: [4, 2], column: [3, 1] }];
@@ -1311,6 +1459,13 @@ function spreadsheetEditor(context: SpreadsheetCommandContext) {
 class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
   cells: (Cell | null)[][] = [];
   clearBatches: Array<Array<{ name: string; args: unknown[] }>> = [];
+  failFill = false;
+  fillRowsAtCall: number[][] = [];
+  fills: Array<{
+    applyRange: SpreadsheetCommandRange;
+    copyRange: SpreadsheetCommandRange;
+    direction: 'down' | 'left' | 'right' | 'up';
+  }> = [];
   sheet: Sheet = { id: 'sheet-1', name: 'Sheet 1', data: [[null]] };
   formats: Array<{
     attribute: string;
@@ -1379,6 +1534,27 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
     }
   }
 
+  autoFillCell(
+    copyRange: SpreadsheetCommandRange,
+    applyRange: SpreadsheetCommandRange,
+    direction: 'down' | 'left' | 'right' | 'up',
+  ): void {
+    const firstRow = Math.min(copyRange.row[0] ?? 0, applyRange.row[0] ?? 0);
+    const lastRow = Math.max(copyRange.row[1] ?? 0, applyRange.row[1] ?? 0);
+    const rows = Array.from(
+      { length: lastRow - firstRow + 1 },
+      (_, index) => firstRow + index,
+    );
+    this.fillRowsAtCall.push(
+      rows.filter((row) => Array.isArray(this.sheet.data?.[row])),
+    );
+    if (rows.some((row) => !Array.isArray(this.sheet.data?.[row]))) {
+      throw new Error('Native fill requires materialized data rows.');
+    }
+    if (this.failFill) throw new Error('Native fill failed.');
+    this.fills.push({ applyRange, copyRange, direction });
+  }
+
   getSelection(): SpreadsheetCommandRange[] | undefined {
     return this.selection;
   }
@@ -1388,7 +1564,7 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
   }
 
   getSheet(): Sheet {
-    return structuredClone(this.sheet);
+    return this.sheet;
   }
 
   insertRowOrColumn(

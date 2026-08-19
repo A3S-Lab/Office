@@ -536,6 +536,60 @@ test('operates the WPS Clear menu from the Home editing group', () => {
   expect(screen.queryByRole('menu', { name: '清除选项' })).toBeNull();
 });
 
+test('operates the keyboard-accessible WPS Fill menu from Home', async () => {
+  const actions: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          fillSelectedCells: (direction) => {
+            actions.push(direction);
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      findOpen={false}
+      gridLinesVisible
+      panel={null}
+      toolbarCell={null}
+      onOpenFind={() => undefined}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const editing = screen.getByRole('region', { name: '编辑' });
+  const trigger = within(editing).getByRole('button', { name: '填充' });
+  expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  fireEvent.click(trigger);
+
+  const menu = screen.getByRole('menu', { name: '填充选项' });
+  const down = within(menu).getByRole('menuitem', { name: '向下填充' });
+  const right = within(menu).getByRole('menuitem', { name: '向右填充' });
+  const up = within(menu).getByRole('menuitem', { name: '向上填充' });
+  const left = within(menu).getByRole('menuitem', { name: '向左填充' });
+  expect(down).toHaveAttribute('aria-keyshortcuts', 'Control+D Meta+D');
+  expect(right).toHaveAttribute('aria-keyshortcuts', 'Control+R Meta+R');
+  expect(up).not.toHaveAttribute('aria-keyshortcuts');
+  expect(left).not.toHaveAttribute('aria-keyshortcuts');
+  await waitFor(() => expect(down).toHaveFocus());
+  fireEvent.keyDown(menu, { key: 'End' });
+  expect(left).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'Home' });
+  expect(down).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'ArrowDown' });
+  expect(right).toHaveFocus();
+  fireEvent.click(right);
+  expect(actions).toEqual(['right']);
+  expect(screen.queryByRole('menu', { name: '填充选项' })).toBeNull();
+  expect(trigger).toHaveFocus();
+});
+
 test('places the WPS merge split control in the Home alignment group', () => {
   const actions: string[] = [];
   render(
@@ -719,6 +773,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     deleteSelectedStructure: () => true,
     deleteSheet: () => true,
     duplicateSheet: () => true,
+    fillSelectedCells: () => true,
     hideSheet: () => true,
     insertSelectedStructure: () => true,
     mergeSelectedCells: () => true,
@@ -759,6 +814,7 @@ function spreadsheetCommands(
       | 'copySelection'
       | 'cutSelection'
       | 'deleteSelectedStructure'
+      | 'fillSelectedCells'
       | 'insertSelectedStructure'
       | 'mergeSelectedCells'
       | 'pasteSelection'
@@ -779,6 +835,7 @@ function spreadsheetCommands(
     deleteSelectedStructure: overrides.deleteSelectedStructure ?? (() => true),
     deleteSheet: () => true,
     duplicateSheet: () => true,
+    fillSelectedCells: overrides.fillSelectedCells ?? (() => true),
     hideSheet: () => true,
     insertSelectedStructure: overrides.insertSelectedStructure ?? (() => true),
     mergeSelectedCells: overrides.mergeSelectedCells ?? (() => true),

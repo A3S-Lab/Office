@@ -249,6 +249,36 @@ export const spreadsheetCommandCatalog = {
     label: '删除所选列',
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
   },
+  fillDown: {
+    id: 'editing.fillDown',
+    label: '向下填充',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+    shortcut: {
+      label: 'Cmd/Ctrl+D',
+      aria: 'Control+D Meta+D',
+      editor: ['Mod-d'],
+    },
+  },
+  fillRight: {
+    id: 'editing.fillRight',
+    label: '向右填充',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+    shortcut: {
+      label: 'Cmd/Ctrl+R',
+      aria: 'Control+R Meta+R',
+      editor: ['Mod-r'],
+    },
+  },
+  fillUp: {
+    id: 'editing.fillUp',
+    label: '向上填充',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+  },
+  fillLeft: {
+    id: 'editing.fillLeft',
+    label: '向左填充',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+  },
   clearAll: {
     id: 'editing.clearAll',
     label: '清除全部',

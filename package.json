@@ -130,6 +130,8 @@
     "test:e2e:writer-ribbon:check": "a3s-test check tests/e2e/word-ribbon-collapse.acl --json",
     "test:e2e:spreadsheet-ribbon": "a3s-test run tests/e2e/spreadsheet-ribbon-alignment.acl --json",
     "test:e2e:spreadsheet-ribbon:check": "a3s-test check tests/e2e/spreadsheet-ribbon-alignment.acl --json",
+    "test:e2e:spreadsheet-cell-fill": "a3s-test run tests/e2e/spreadsheet-cell-fill.acl --json",
+    "test:e2e:spreadsheet-cell-fill:check": "a3s-test check tests/e2e/spreadsheet-cell-fill.acl --json",
     "test:e2e:spreadsheet-maximum-sparse": "a3s-test run tests/e2e/spreadsheet-maximum-sparse.acl --json",
     "test:e2e:spreadsheet-maximum-sparse:check": "a3s-test check tests/e2e/spreadsheet-maximum-sparse.acl --json",
     "test:e2e:spreadsheet-large": "bun .a3s-test/performance/generate-fixtures.ts --spreadsheets-only && a3s-test run tests/e2e/spreadsheet-large-controlled-editing.acl --json",

@@ -111,6 +111,18 @@ bun run test:e2e:spreadsheet-maximum-sparse:check
 bun run test:e2e:spreadsheet-maximum-sparse
 ```
 
+The Spreadsheet four-direction fill workflow has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-cell-fill:check
+bun run test:e2e:spreadsheet-cell-fill
+```
+
+It proves relative-formula and style propagation, one-step Undo and Redo,
+sparse blank-row safety, and ownership of `Cmd/Ctrl+D` and `Cmd/Ctrl+R` without
+turning the latter into a browser refresh. This suite remains local-only and is
+not referenced by a GitHub Actions workflow.
+
 The native Presentation scene-element and z-order lifecycle has a focused gate:
 
 ```bash

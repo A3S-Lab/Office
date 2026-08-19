@@ -121,6 +121,28 @@ native record per cell and therefore accept at most 4,096 selected cells per
 command. Clear Formats and Clear All remove the selected border ranges without
 changing merge geometry.
 
+## Four-direction cell fill
+
+Home and Editing exposes Fill Down, Fill Right, Fill Up, and Fill Left in one
+keyboard-operated menu. Down and Up copy the selected range's top or bottom
+row; Right and Left copy its left or right column. Fortune Sheet retains its
+native relative-formula translation, number-series behavior, and complete cell
+style copying. `Cmd/Ctrl+D` runs Fill Down and `Cmd/Ctrl+R` runs Fill Right
+inside the focused grid, so the latter never becomes a browser refresh.
+
+A fill requires exactly one range on the active editable worksheet. It rejects
+merged intersections, pivot sheets, read-only rows or columns, protected cells,
+and commands with more than 50,000 target cells before mutation. A successful
+fill creates one workbook history entry and restores grid focus, so one Undo or
+Redo covers the complete target range.
+
+Fortune's native fill API assumes every selected row array exists even when the
+worksheet uses a sparse matrix. The A3S adapter therefore materializes only
+missing row arrays inside the selected range immediately before the native
+call; it does not allocate empty cells or rows outside that range. If the native
+call throws, the adapter restores the original array holes, length, and absent
+`data` property before returning a recoverable failure.
+
 ## Collaboration and native cell mutations
 
 Pass an initialized Spreadsheet `OfficeCollaborationSession` through

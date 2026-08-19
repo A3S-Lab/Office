@@ -16,6 +16,8 @@ import {
 } from './spreadsheet-cell-clear';
 import type { SpreadsheetCellBorderFormat } from './spreadsheet-cell-border';
 import { createSpreadsheetCellBorderExtension } from './spreadsheet-cell-border-command';
+import type { SpreadsheetCellFillDirection } from './spreadsheet-cell-fill';
+import { createSpreadsheetCellFillExtension } from './spreadsheet-cell-fill-command';
 import {
   canApplySpreadsheetCellMerge,
   type SpreadsheetCellMergeCommand,
@@ -59,6 +61,11 @@ import {
 import { spreadsheetSelectionAfterStructureDeletion } from './spreadsheet-structure-selection';
 
 export interface SpreadsheetWorkbookCommandPort {
+  autoFillCell: (
+    copyRange: SpreadsheetCommandRange,
+    applyRange: SpreadsheetCommandRange,
+    direction: SpreadsheetCellFillDirection,
+  ) => void;
   batchCallApis: (apiCalls: Array<{ name: string; args: unknown[] }>) => void;
   getSelection: () => SpreadsheetCommandRange[] | undefined;
   getCellsByRange: (
@@ -187,6 +194,7 @@ export interface SpreadsheetEditorCommands {
   deleteSelectedStructure: (axis: SpreadsheetStructureAxis) => boolean;
   deleteSheet: (sheetId: string) => boolean;
   duplicateSheet: (sheetId: string) => boolean;
+  fillSelectedCells: (direction: SpreadsheetCellFillDirection) => boolean;
   hideSheet: (sheetId: string) => boolean;
   insertSelectedStructure: (
     axis: SpreadsheetStructureAxis,
@@ -274,6 +282,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
       }),
     }),
     createSpreadsheetCellBorderExtension(),
+    createSpreadsheetCellFillExtension(),
     createOfficeEditorExtension<
       SpreadsheetCommandContext,
       SpreadsheetEditorCommands
@@ -497,6 +506,13 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             can.copySelection,
             commands.copySelection,
           ),
+        'Mod-d': ({ can, commands }, event) =>
+          runSpreadsheetFillShortcut(
+            event,
+            can.fillSelectedCells,
+            commands.fillSelectedCells,
+            'down',
+          ),
         'Mod-i': ({ can, commands, context }, event) =>
           runSpreadsheetCellFormatShortcut(
             event,
@@ -504,6 +520,13 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             can.setCellFormat,
             commands.setCellFormat,
             'it',
+          ),
+        'Mod-r': ({ can, commands }, event) =>
+          runSpreadsheetFillShortcut(
+            event,
+            can.fillSelectedCells,
+            commands.fillSelectedCells,
+            'right',
           ),
         'Mod-v': ({ can, commands }, event) =>
           runSpreadsheetClipboardShortcut(
@@ -1526,6 +1549,24 @@ function runSpreadsheetClearShortcut(
     return false;
   }
   return execute();
+}
+
+function runSpreadsheetFillShortcut(
+  event: KeyboardEvent,
+  canExecute: SpreadsheetEditorCanCommands['fillSelectedCells'],
+  execute: SpreadsheetEditorCommands['fillSelectedCells'],
+  direction: SpreadsheetCellFillDirection,
+): boolean {
+  if (
+    event.isComposing ||
+    isOfficeShortcutBlocked(event.target) ||
+    isSpreadsheetNativeTextUndoTarget(event.target) ||
+    !isSpreadsheetGridKeyboardTarget(event.target)
+  ) {
+    return false;
+  }
+  if (!event.repeat && canExecute(direction)) execute(direction);
+  return true;
 }
 
 function runSpreadsheetAutoFilterShortcut(
