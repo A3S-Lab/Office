@@ -74,7 +74,7 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
       - name: Install visual-test browser
-        run: bunx playwright install --with-deps chromium
+        run: bunx playwright install chromium
 
       - name: Check editor visual contracts
         run: bun run playground:visual
