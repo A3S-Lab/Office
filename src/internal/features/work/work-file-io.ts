@@ -7,6 +7,7 @@ import {
   fileNameWithoutExtension,
   safeFileName,
 } from './work-file-download';
+import { workFileExtension, workKindForFile } from './work-file-kind';
 import { materializeWorkFileSource } from './work-file-data';
 import {
   type WorkFileImportContext,
@@ -30,19 +31,9 @@ import {
 import { createWorkSpreadsheetBlob } from './work-spreadsheet-file-export';
 import { importWorkSpreadsheetFile } from './work-spreadsheet-file-import';
 import { createWorkArtifact } from './work-templates';
-import {
-  type WorkArtifact,
-  type WorkArtifactKind,
-  workArtifactExtension,
-} from './work-types';
+import { type WorkArtifact, workArtifactExtension } from './work-types';
 
 export { WORK_IMPORT_ACCEPT } from './work-file-contract';
-
-const DOCUMENT_EXTENSIONS = new Set(['docx', 'html', 'htm', 'txt']);
-const MARKDOWN_EXTENSIONS = new Set(['md', 'markdown']);
-const SPREADSHEET_EXTENSIONS = new Set(['xlsx', 'xls', 'csv', 'ods']);
-const PRESENTATION_EXTENSIONS = new Set(['pptx']);
-const PDF_EXTENSIONS = new Set(['pdf']);
 
 export type WorkArtifactExportOptions = WorkPresentationExportOptions;
 
@@ -54,14 +45,9 @@ export async function importWorkFile(
   const reservedSpreadsheetSheetIds = normalizedReservedSpreadsheetSheetIds(
     options.spreadsheetSheetIds,
   );
-  const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-  if (
-    !MARKDOWN_EXTENSIONS.has(extension) &&
-    !DOCUMENT_EXTENSIONS.has(extension) &&
-    !SPREADSHEET_EXTENSIONS.has(extension) &&
-    !PRESENTATION_EXTENSIONS.has(extension) &&
-    !PDF_EXTENSIONS.has(extension)
-  ) {
+  const extension = workFileExtension(file.name);
+  const kind = workKindForFile(file);
+  if (!kind) {
     throw new Error(
       '目前可导入 DOCX、XLSX、XLS、ODS、CSV、PPTX、PDF、HTML、Markdown 和文本文件。',
     );
@@ -77,13 +63,13 @@ export async function importWorkFile(
   };
   controller.report('parsing', 0);
   let artifact: WorkArtifact;
-  if (MARKDOWN_EXTENSIONS.has(extension)) {
+  if (kind === 'markdown') {
     artifact = await importWorkMarkdownFile(source.file, context);
-  } else if (DOCUMENT_EXTENSIONS.has(extension)) {
+  } else if (kind === 'document') {
     artifact = await importWorkDocumentFile(source.file, extension, context);
-  } else if (SPREADSHEET_EXTENSIONS.has(extension)) {
+  } else if (kind === 'spreadsheet') {
     artifact = await importWorkSpreadsheetFile(source.file, extension, context);
-  } else if (PRESENTATION_EXTENSIONS.has(extension)) {
+  } else if (kind === 'presentation') {
     artifact = await importWorkPresentationFile(source.file, context);
   } else {
     artifact = await importPdf(source.file);
@@ -171,12 +157,4 @@ async function importPdf(file: File): Promise<WorkArtifact> {
   return artifact;
 }
 
-export function workKindForFile(file: File): WorkArtifactKind | null {
-  const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-  if (MARKDOWN_EXTENSIONS.has(extension)) return 'markdown';
-  if (DOCUMENT_EXTENSIONS.has(extension)) return 'document';
-  if (SPREADSHEET_EXTENSIONS.has(extension)) return 'spreadsheet';
-  if (PRESENTATION_EXTENSIONS.has(extension)) return 'presentation';
-  if (PDF_EXTENSIONS.has(extension)) return 'pdf';
-  return null;
-}
+export { workKindForFile } from './work-file-kind';

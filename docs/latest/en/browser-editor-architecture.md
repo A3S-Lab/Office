@@ -1310,8 +1310,27 @@ their direct toolbar controls are hidden. The product-owned thumbnail rail uses
 PDFium thumbnail capabilities without enabling the embedded sidebar, keeps page
 numbers and active-page state synchronized with the main scroll controller,
 automatically reveals the current page, and mounts only a bounded page window
-for long files. At phone widths the same navigation becomes a focus-contained,
-dismissible drawer rather than reducing the document canvas.
+for long files. Files above 48 pages retain virtual spacers and mount only the
+viewport plus five items of overscan on either side, with a hard ceiling of 32
+thumbnail buttons. Leaving the window aborts the exact pending PDFium thumbnail
+task and revokes its object URL. Long-distance Home and End navigation uses an
+instant rail jump so intermediate windows do not start disposable bitmap work
+or unmount the keyboard destination after it receives focus. At phone widths
+the same navigation becomes a focus-contained, dismissible drawer rather than
+reducing the document canvas.
+
+`preloadOfficeEditor('pdf', { preloadRuntimeAssets: true })` can move the PDF
+editor chunk and PDFium response body ahead of a high-confidence navigation.
+Runtime-asset loading is opt-in because the unpacked binary is about 4.4 MiB,
+and the helper does not initialize the PDFium Worker. Runtime fetching is best
+effort: a failure leaves editor opening unaffected and clears the request cache
+so a later intent can retry. The reference benchmark therefore treats
+module/asset availability and Worker-side initialization as separate
+boundaries. Host CSS `content-visibility` is not applied to the internal PDF
+pages: EmbedPDF already mounts only six to seven pages behind its Shadow DOM
+boundary, while CSS containment cannot cancel PDFium tasks or release bitmap
+memory.
+
 Existing PDF password handling remains in the PDF document lifecycle rather
 than the removed toolbar. Form-authoring controls, redaction review, page
 organization, and compatibility fixtures remain part of this stage.
@@ -1455,6 +1474,37 @@ phase without introducing another complete copy. Fortune Canvas still owns
 painting, but imported matrix adoption is now outside the rich-workbook remount
 path for the strictly authenticated simple case.
 
+### Current 1,000-page PDF evidence
+
+The deterministic PDF fixture is 412,852 bytes with SHA-256
+`eb86216416a633ce86dd4b31c1c0d9e42792e7bb802946cc0bb6e2b395ae79cb`.
+It contains 1,000 A4 pages with stable page markers. The measurements below
+combine two counterbalanced three-run batches on the same 2026-08-19 reference
+machine and browser described above. Every value is the median and complete
+range of six fresh browser processes. `Runtime preloaded` waits for the editor
+module and PDFium response body before starting the file-open clock.
+
+| Mode | Editor shell | Viewer ready | First page bitmap | End to page 1,000 | Retained heap |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Import-time warm-up | 410.7 ms (399.4–433.1) | 7.430 s (4.403–13.742) | 7.626 s (4.611–13.944) | 21.7 ms (19.6–28.7) | 10.04 MiB (9.48–10.52) |
+| Runtime preloaded | 369.1 ms (322.8–428.6) | 9.464 s (5.286–12.390) | 9.655 s (5.478–12.580) | 23.5 ms (18.0–33.9) | 9.72 MiB (9.61–10.47) |
+
+Runtime preloading moved the shell median forward by 41.6 ms (10.1%) but did
+not improve viewer-ready or first-bitmap medians on the local server. The
+dominant and highly variable boundary is PDFium Worker initialization, not
+main-thread layout or local transfer. Runtime preloading remains an explicit
+network-latency tool rather than a claimed local-startup acceleration.
+
+All twelve runs mounted exactly seven main-view pages and 15 thumbnail buttons
+at readiness. The final window contained pages 986–1,000, page-local End
+navigation produced no Long Task, and no browser, page, or console error was
+recorded. Cold import produced no task at or above 50 ms. Three runtime-preload
+runs recorded one import task each, between 59 and 89 ms; this remains a gate
+for later Worker-initialization work rather than being hidden by the preload
+API. The deterministic A3S Test suite independently verifies the 15-item first
+and final windows, retained keyboard focus on page 1,000, the page counter,
+accessibility output, and empty console/page-error evidence.
+
 ## Performance and safety rules
 
 - Editing and selection stay on the main thread. XLSX parsing, eligible
@@ -1550,4 +1600,7 @@ bun run test:e2e:spreadsheet-large:check
 bun run test:e2e:spreadsheet-large
 bun run performance:large-spreadsheets
 bun run performance:large-spreadsheet-edits
+bun run test:e2e:large-pdf:check
+bun run test:e2e:large-pdf
+bun run performance:pdf
 ```

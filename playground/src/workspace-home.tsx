@@ -16,18 +16,13 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { WORK_TEMPLATES as officeTemplates } from '../../src/internal/features/work/work-templates';
+import { warmPlaygroundEditor } from './editor-preload';
 import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
 
 const templateCellIds = Array.from(
   { length: 20 },
   (_, index) => `cell-${index + 1}`,
 );
-
-function warmOfficeEditor(kind: OfficeArtifactKind): void {
-  void import('@a3s-lab/office/react')
-    .then(({ preloadOfficeEditor }) => preloadOfficeEditor(kind))
-    .catch(() => undefined);
-}
 
 export function WorkspaceHome({
   artifacts,
@@ -186,9 +181,9 @@ export function WorkspaceHome({
           <button
             type="button"
             className="playground-template-card pdf"
-            onFocus={() => warmOfficeEditor('pdf')}
+            onFocus={() => warmPlaygroundEditor('pdf')}
             onClick={onOpenPdf}
-            onPointerEnter={() => warmOfficeEditor('pdf')}
+            onPointerEnter={() => warmPlaygroundEditor('pdf')}
           >
             <span className="playground-template-preview pdf">
               <span className="template-document-sheet">
@@ -232,9 +227,9 @@ export function WorkspaceHome({
                 type="button"
                 className={`playground-artifact-card ${artifact.kind}`}
                 key={artifact.id}
-                onFocus={() => warmOfficeEditor(artifact.kind)}
+                onFocus={() => warmPlaygroundEditor(artifact.kind)}
                 onClick={() => onOpen(artifact.id)}
-                onPointerEnter={() => warmOfficeEditor(artifact.kind)}
+                onPointerEnter={() => warmPlaygroundEditor(artifact.kind)}
               >
                 <ArtifactPreview kind={artifact.kind} />
                 <span className="playground-artifact-copy">
@@ -288,9 +283,9 @@ function TemplateCard({
           '--template-accent': template.accent,
         } as React.CSSProperties
       }
-      onFocus={() => warmOfficeEditor(template.kind)}
+      onFocus={() => warmPlaygroundEditor(template.kind)}
       onClick={onCreate}
-      onPointerEnter={() => warmOfficeEditor(template.kind)}
+      onPointerEnter={() => warmPlaygroundEditor(template.kind)}
     >
       <span className={`playground-template-preview ${template.kind}`}>
         <TemplateArtwork kind={template.kind} />

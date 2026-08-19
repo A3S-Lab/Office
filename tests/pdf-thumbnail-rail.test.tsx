@@ -133,6 +133,49 @@ test('focuses a keyboard destination after long-document virtualization mounts i
   }
 });
 
+test('uses an instant rail jump when a long-document window moves', async () => {
+  const urls = installObjectUrlFixture();
+  const registry = createRegistry(
+    (pageIndex) => new Blob([`page-${pageIndex}`], { type: 'image/png' }),
+  );
+  const view = render(
+    <PdfThumbnailRail
+      currentPage={1}
+      registry={registry}
+      totalPages={240}
+      onSelectPage={() => undefined}
+    />,
+  );
+  const viewport = screen.getByRole('navigation', {
+    name: 'PDF 页面缩略图',
+  });
+  const scrolls: ScrollToOptions[] = [];
+  Object.defineProperty(viewport, 'scrollTo', {
+    configurable: true,
+    value: (options: ScrollToOptions) => {
+      scrolls.push(options);
+    },
+  });
+
+  try {
+    view.rerender(
+      <PdfThumbnailRail
+        currentPage={240}
+        registry={registry}
+        totalPages={240}
+        onSelectPage={() => undefined}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(scrolls.at(-1)).toMatchObject({ behavior: 'auto' }),
+    );
+  } finally {
+    view.unmount();
+    urls.restore();
+  }
+});
+
 test('windows long documents around the current page and keeps it mounted', async () => {
   const renderedPages: number[] = [];
   const urls = installObjectUrlFixture();
@@ -205,6 +248,25 @@ test('calculates bounded ranges without mounting every page', () => {
   ).toEqual({ end: 3, start: 0, windowed: false });
 });
 
+test('aborts pending thumbnail work when its window unmounts', async () => {
+  const abortedPages: number[] = [];
+  const requestedPages: number[] = [];
+  const registry = createPendingRegistry(requestedPages, abortedPages);
+  const view = render(
+    <PdfThumbnailRail
+      currentPage={1}
+      registry={registry}
+      totalPages={240}
+      onSelectPage={() => undefined}
+    />,
+  );
+
+  await waitFor(() => expect(requestedPages.length).toBeGreaterThan(0));
+  view.unmount();
+
+  expect(abortedPages).toEqual(requestedPages);
+});
+
 function createRegistry(render: (pageIndex: number) => Blob): PluginRegistry {
   const capabilities = {
     'document-manager': {
@@ -213,8 +275,44 @@ function createRegistry(render: (pageIndex: number) => Blob): PluginRegistry {
     thumbnail: {
       forDocument: () => ({
         renderThumb: (pageIndex: number) => ({
+          abort: () => undefined,
           toPromise: () => Promise.resolve(render(pageIndex)),
         }),
+      }),
+    },
+  };
+  return {
+    pluginsReady: () => Promise.resolve(),
+    getPlugin: (id: keyof typeof capabilities) => ({
+      provides: () => capabilities[id],
+    }),
+  } as unknown as PluginRegistry;
+}
+
+function createPendingRegistry(
+  requestedPages: number[],
+  abortedPages: number[],
+): PluginRegistry {
+  const capabilities = {
+    'document-manager': {
+      getActiveDocumentId: () => 'document-1',
+    },
+    thumbnail: {
+      forDocument: () => ({
+        renderThumb: (pageIndex: number) => {
+          requestedPages.push(pageIndex);
+          let rejectTask: (reason: unknown) => void = () => undefined;
+          const pending = new Promise<Blob>((_, reject) => {
+            rejectTask = reject;
+          });
+          return {
+            abort: () => {
+              abortedPages.push(pageIndex);
+              rejectTask(new Error('cancelled'));
+            },
+            toPromise: () => pending,
+          };
+        },
       }),
     },
   };

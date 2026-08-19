@@ -12,15 +12,9 @@ import {
   PanelLeftClose,
   Presentation,
 } from 'lucide-react';
-import type { OfficeEditorKind } from '@a3s-lab/office/react';
 import { useRef } from 'react';
 import { useDialogFocusScope } from '../../src/internal/design-system/primitives/overlay/dialog-focus-scope';
-
-function warmOfficeEditor(kind: OfficeEditorKind): void {
-  void import('@a3s-lab/office/react')
-    .then(({ preloadOfficeEditor }) => preloadOfficeEditor(kind))
-    .catch(() => undefined);
-}
+import { warmPlaygroundEditor } from './editor-preload';
 
 export function SiteSidebar({
   docsUrl,
@@ -110,9 +104,9 @@ export function SiteSidebar({
         <span className="playground-sidebar-label">快速新建</span>
         <button
           type="button"
-          onFocus={() => warmOfficeEditor('document')}
+          onFocus={() => warmPlaygroundEditor('document')}
           onClick={() => onCreate('blank-document')}
-          onPointerEnter={() => warmOfficeEditor('document')}
+          onPointerEnter={() => warmPlaygroundEditor('document')}
         >
           <span className="quick-create-icon document">
             <FileText size={15} />
@@ -121,9 +115,9 @@ export function SiteSidebar({
         </button>
         <button
           type="button"
-          onFocus={() => warmOfficeEditor('spreadsheet')}
+          onFocus={() => warmPlaygroundEditor('spreadsheet')}
           onClick={() => onCreate('blank-spreadsheet')}
-          onPointerEnter={() => warmOfficeEditor('spreadsheet')}
+          onPointerEnter={() => warmPlaygroundEditor('spreadsheet')}
         >
           <span className="quick-create-icon spreadsheet">
             <FileSpreadsheet size={15} />
@@ -132,9 +126,9 @@ export function SiteSidebar({
         </button>
         <button
           type="button"
-          onFocus={() => warmOfficeEditor('presentation')}
+          onFocus={() => warmPlaygroundEditor('presentation')}
           onClick={() => onCreate('blank-presentation')}
-          onPointerEnter={() => warmOfficeEditor('presentation')}
+          onPointerEnter={() => warmPlaygroundEditor('presentation')}
         >
           <span className="quick-create-icon presentation">
             <Presentation size={15} />
@@ -143,9 +137,9 @@ export function SiteSidebar({
         </button>
         <button
           type="button"
-          onFocus={() => warmOfficeEditor('pdf')}
+          onFocus={() => warmPlaygroundEditor('pdf')}
           onClick={onOpenPdf}
-          onPointerEnter={() => warmOfficeEditor('pdf')}
+          onPointerEnter={() => warmPlaygroundEditor('pdf')}
         >
           <span className="quick-create-icon pdf">
             <FileType2 size={15} />
@@ -155,9 +149,9 @@ export function SiteSidebar({
         </button>
         <button
           type="button"
-          onFocus={() => warmOfficeEditor('markdown')}
+          onFocus={() => warmPlaygroundEditor('markdown')}
           onClick={() => onCreate('blank-markdown')}
-          onPointerEnter={() => warmOfficeEditor('markdown')}
+          onPointerEnter={() => warmPlaygroundEditor('markdown')}
         >
           <span className="quick-create-icon markdown">
             <FileCode2 size={15} />

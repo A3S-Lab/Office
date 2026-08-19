@@ -151,7 +151,11 @@ The images below are committed visual-regression baselines from the real
   demand. The large-DOCX Worker streams 2,048-item batches and columnar table
   metadata instead of cloning one complete object graph. Pooled semantic
   previews, physical page sheets, and pagination widgets are windowed
-  independently. The checked 100,000-block fixtures keep
+  independently. The PDF rail mounts at most 32 thumbnail buttons, aborts the
+  exact PDFium task when a thumbnail leaves the window, and uses instant
+  long-distance keyboard jumps so the destination retains focus. The checked
+  1,000-page fixture mounts 15 thumbnails and seven main-view pages at
+  readiness. The checked 100,000-block fixtures keep
   selection, editing, and export positions in the canonical model instead of
   replacing them with a React-only virtual list; rich and collaborative models
   deliberately retain the complete compatibility path. Consecutive controlled
@@ -265,6 +269,32 @@ export function ProjectBrief() {
 
 The editor owns editing, layout, import/export, and browser rendering. The host
 owns persistence and decides when, where, and how the emitted content is saved.
+
+### Preload an anticipated PDF
+
+Editor modules remain lazy. PDFium runtime loading is a separate, explicit
+choice because its unpacked WebAssembly binary is about 4.4 MiB. Warm both only
+from a high-confidence intent, and use the same URL when mounting `PdfViewer`:
+
+```tsx
+import { PdfViewer, preloadOfficeEditor } from '@a3s-lab/office/react';
+
+const pdfiumUrl = '/assets/pdfium.wasm';
+
+void preloadOfficeEditor('pdf', {
+  pdfWasmUrl: pdfiumUrl,
+  preloadRuntimeAssets: true,
+});
+
+<PdfViewer loadSource={loadPdf} wasmUrl={pdfiumUrl} />;
+```
+
+The preload caches the module and, when the request succeeds, the response
+body. Runtime warming is best effort: a network failure does not block editor
+opening, and a later call retries it. The helper does not create a hidden
+viewer or pre-initialize the PDFium Worker. On the local reference machine it
+improved median shell mount by 41.6 ms but did not improve the viewer-ready
+median, so Worker initialization remains the measured boundary.
 
 ### Persist a structured document snapshot
 
@@ -532,9 +562,10 @@ interaction model.
 - **PDF** — PDFium rendering, navigation, search, form filling, annotations,
   annotation color, opacity, compatible stroke-width controls, history,
   a scrollable page-thumbnail rail with current-page synchronization and
-  focus-synchronized Arrow/Home/End navigation, bounded rendering for long
-  files, and a dismissible page drawer whose phone trigger stays in the page
-  controls instead of covering PDF content,
+  focus-synchronized Arrow/Home/End navigation, a 32-thumbnail hard window,
+  cancellation of stale PDFium bitmap tasks, bounded main-page rendering for
+  long files, and a dismissible page drawer whose phone trigger stays in the
+  page controls instead of covering PDF content,
   focus-safe page and search drafts, responsive search-result, navigation, and
   zoom controls, editor-scoped shortcuts, and a keyboard-operated overflow menu
   that retains secondary annotation tools and appearance settings on phones.
@@ -1382,6 +1413,9 @@ bun run lint
 bun run typecheck
 bun run test
 bun run build
+bun run test:e2e:large-pdf:check
+bun run test:e2e:large-pdf
+bun run performance:pdf
 ```
 
 Start the integration Playground with `bun run playground`. The full pull

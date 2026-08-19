@@ -3,6 +3,7 @@ import {
   type PluginRegistry,
   ThumbnailPlugin,
 } from '@embedpdf/react-pdf-viewer';
+import { PdfErrorCode, type PdfErrorReason, type Task } from '@embedpdf/models';
 import { X } from 'lucide-react';
 import {
   useEffect,
@@ -18,6 +19,10 @@ const PDF_THUMBNAIL_WINDOW_THRESHOLD = 48;
 const PDF_THUMBNAIL_OVERSCAN = 5;
 const PDF_THUMBNAIL_FALLBACK_VIEWPORT_HEIGHT = 720;
 export const PDF_THUMBNAIL_WINDOW_LIMIT = 32;
+const PDF_THUMBNAIL_CANCEL_REASON: Readonly<PdfErrorReason> = Object.freeze({
+  code: PdfErrorCode.Cancelled,
+  message: 'PDF thumbnail rendering was cancelled.',
+});
 
 interface PdfThumbnailRange {
   end: number;
@@ -84,7 +89,11 @@ export function PdfThumbnailRail({
     if (pageTop >= visibleTop && pageBottom <= visibleBottom) return;
     const top = Math.max(0, pageTop - (viewportHeight - itemHeight) / 2);
     if (typeof viewport.scrollTo === 'function') {
-      viewport.scrollTo({ top, behavior: 'smooth' });
+      viewport.scrollTo({
+        top,
+        behavior:
+          totalPages > PDF_THUMBNAIL_WINDOW_THRESHOLD ? 'auto' : 'smooth',
+      });
     } else {
       viewport.scrollTop = top;
     }
@@ -152,7 +161,9 @@ export function PdfThumbnailRail({
       className="work-pdf-thumbnail-rail"
       aria-label="PDF 页面"
       data-pdf-page-count={totalPages}
+      data-pdf-thumbnail-mounted-count={pages.length}
       data-pdf-thumbnail-window-end={range.end}
+      data-pdf-thumbnail-window-limit={PDF_THUMBNAIL_WINDOW_LIMIT}
       data-pdf-thumbnail-window-start={range.start}
       data-pdf-thumbnail-windowed={range.windowed ? 'true' : 'false'}
     >
@@ -295,7 +306,8 @@ function usePdfThumbnailSource(
     let objectUrl: string | null = null;
     setSourceUrl(null);
     setState('loading');
-    void renderPdfThumbnail(registry, page)
+    const request = requestPdfThumbnail(registry, page);
+    void request.result
       .then((blob) => {
         objectUrl = URL.createObjectURL(blob);
         if (disposed) {
@@ -310,6 +322,7 @@ function usePdfThumbnailSource(
       });
     return () => {
       disposed = true;
+      request.abort();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [page, registry]);
@@ -317,29 +330,56 @@ function usePdfThumbnailSource(
   return { sourceUrl, state };
 }
 
-async function renderPdfThumbnail(
+interface PdfThumbnailRequest {
+  abort: () => void;
+  result: Promise<Blob>;
+}
+
+function requestPdfThumbnail(
   registry: PluginRegistry,
   page: number,
-): Promise<Blob> {
-  await registry.pluginsReady();
-  const documentManager = registry
-    .getPlugin<DocumentManagerPlugin>(DocumentManagerPlugin.id)
-    ?.provides();
-  const thumbnail = registry
-    .getPlugin<ThumbnailPlugin>(ThumbnailPlugin.id)
-    ?.provides();
-  const documentId = documentManager?.getActiveDocumentId();
-  if (!documentId || !thumbnail) {
-    throw new Error('PDF thumbnail rendering is unavailable.');
-  }
-  const devicePixelRatio =
-    typeof window === 'undefined'
-      ? 1
-      : Math.min(2, Math.max(1, window.devicePixelRatio || 1));
-  return thumbnail
-    .forDocument(documentId)
-    .renderThumb(page - 1, devicePixelRatio)
-    .toPromise();
+): PdfThumbnailRequest {
+  let aborted = false;
+  let task: Task<Blob, PdfErrorReason> | null = null;
+  const result = registry.pluginsReady().then(() => {
+    if (aborted) throw thumbnailAbortError();
+    const documentManager = registry
+      .getPlugin<DocumentManagerPlugin>(DocumentManagerPlugin.id)
+      ?.provides();
+    const thumbnail = registry
+      .getPlugin<ThumbnailPlugin>(ThumbnailPlugin.id)
+      ?.provides();
+    const documentId = documentManager?.getActiveDocumentId();
+    if (!documentId || !thumbnail) {
+      throw new Error('PDF thumbnail rendering is unavailable.');
+    }
+    const devicePixelRatio =
+      typeof window === 'undefined'
+        ? 1
+        : Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    task = thumbnail
+      .forDocument(documentId)
+      .renderThumb(page - 1, devicePixelRatio);
+    if (aborted) {
+      task.abort(PDF_THUMBNAIL_CANCEL_REASON);
+      throw thumbnailAbortError();
+    }
+    return task.toPromise();
+  });
+  return {
+    abort: () => {
+      if (aborted) return;
+      aborted = true;
+      task?.abort(PDF_THUMBNAIL_CANCEL_REASON);
+    },
+    result,
+  };
+}
+
+function thumbnailAbortError(): Error {
+  const error = new Error(PDF_THUMBNAIL_CANCEL_REASON.message);
+  error.name = 'AbortError';
+  return error;
 }
 
 function PdfThumbnailSpacer({

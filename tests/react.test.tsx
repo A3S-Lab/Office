@@ -243,6 +243,80 @@ test('preloads an editor without mounting it', async () => {
   await expect(preloadOfficeEditor('document')).resolves.toBeUndefined();
 });
 
+test('preloads the PDF runtime asset with the editor chunk', async () => {
+  const previousFetch = globalThis.fetch;
+  const requested: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => {
+    requested.push({ input, init });
+    return {
+      arrayBuffer: async () => new ArrayBuffer(8),
+      ok: true,
+    } as Response;
+  };
+
+  try {
+    await expect(
+      preloadOfficeEditor('pdf', {
+        pdfWasmUrl: '/assets/test-pdfium.wasm',
+        preloadRuntimeAssets: true,
+      }),
+    ).resolves.toBeUndefined();
+    expect(requested).toEqual([
+      {
+        input: '/assets/test-pdfium.wasm',
+        init: { cache: 'force-cache', credentials: 'same-origin' },
+      },
+    ]);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test('preloads only the PDF module unless runtime assets are requested', async () => {
+  const previousFetch = globalThis.fetch;
+  let requested = false;
+  globalThis.fetch = async () => {
+    requested = true;
+    throw new Error('The runtime asset should not be requested.');
+  };
+
+  try {
+    await expect(
+      preloadOfficeEditor('pdf', {
+        pdfWasmUrl: '/assets/module-only-pdfium.wasm',
+      }),
+    ).resolves.toBeUndefined();
+    expect(requested).toBe(false);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test('retries a PDF runtime preload after a synchronous host fetch failure', async () => {
+  const previousFetch = globalThis.fetch;
+  let requests = 0;
+  globalThis.fetch = ((input: RequestInfo | URL) => {
+    requests += 1;
+    if (requests === 1) throw new TypeError(`Cannot fetch ${String(input)}`);
+    return Promise.resolve({
+      arrayBuffer: async () => new ArrayBuffer(8),
+      ok: true,
+    } as Response);
+  }) as typeof fetch;
+
+  try {
+    const options = {
+      pdfWasmUrl: '/assets/retry-pdfium.wasm',
+      preloadRuntimeAssets: true,
+    } as const;
+    await expect(preloadOfficeEditor('pdf', options)).resolves.toBeUndefined();
+    await expect(preloadOfficeEditor('pdf', options)).resolves.toBeUndefined();
+    expect(requests).toBe(2);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('publishes a colocated default PDFium URL', () => {
   expect(new URL(defaultPdfiumWasmUrl).pathname).toMatch(/\/pdfium\.wasm$/);
 });

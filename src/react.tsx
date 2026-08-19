@@ -93,6 +93,14 @@ const officeEditorLoaders: Record<OfficeEditorKind, () => Promise<unknown>> = {
   presentation: loadPresentationEditor,
   pdf: loadPdfViewer,
 };
+const officeRuntimeAssetPreloads = new Map<string, Promise<void>>();
+
+export interface OfficeEditorPreloadOptions {
+  /** Overrides the packaged PDFium asset when preloading the PDF runtime. */
+  pdfWasmUrl?: string;
+  /** Also fetches PDFium WebAssembly. Disabled unless explicitly enabled. */
+  preloadRuntimeAssets?: boolean;
+}
 
 /**
  * Starts loading one editor without mounting it.
@@ -102,8 +110,41 @@ const officeEditorLoaders: Record<OfficeEditorKind, () => Promise<unknown>> = {
  */
 export async function preloadOfficeEditor(
   kind: OfficeEditorKind,
+  options: OfficeEditorPreloadOptions = {},
 ): Promise<void> {
-  await officeEditorLoaders[kind]();
+  const editor = officeEditorLoaders[kind]();
+  if (kind !== 'pdf' || options.preloadRuntimeAssets !== true) {
+    await editor;
+    return;
+  }
+  await Promise.all([
+    editor,
+    preloadOfficeRuntimeAsset(options.pdfWasmUrl ?? defaultPdfiumWasmUrl),
+  ]);
+}
+
+async function preloadOfficeRuntimeAsset(url: string): Promise<void> {
+  if (typeof document === 'undefined' || typeof fetch !== 'function') return;
+  const cached = officeRuntimeAssetPreloads.get(url);
+  if (cached) return cached;
+  const preload = Promise.resolve()
+    .then(() =>
+      fetch(url, {
+        cache: 'force-cache',
+        credentials: 'same-origin',
+      }),
+    )
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Unable to preload the Office runtime asset: ${url}`);
+      }
+      await response.arrayBuffer();
+    })
+    .catch(() => {
+      officeRuntimeAssetPreloads.delete(url);
+    });
+  officeRuntimeAssetPreloads.set(url, preload);
+  await preload;
 }
 
 export const defaultPdfiumWasmUrl = new URL(

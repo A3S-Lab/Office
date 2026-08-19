@@ -46,3 +46,34 @@ import { preloadOfficeEditor } from '@a3s-lab/office/react';
   Open workbook
 </button>;
 ```
+
+PDF runtime assets are intentionally opt-in because the colocated PDFium
+WebAssembly binary is about 4.4 MiB before transfer compression. Use the option
+only for a high-confidence intent such as focus or hover on an explicit PDF
+action. Pass the same custom URL to `PdfViewer` when the host does not use the
+packaged default.
+
+```tsx
+import { PdfViewer, preloadOfficeEditor } from '@a3s-lab/office/react';
+
+const pdfiumUrl = '/assets/pdfium.wasm';
+
+<button
+  onFocus={() =>
+    void preloadOfficeEditor('pdf', {
+      pdfWasmUrl: pdfiumUrl,
+      preloadRuntimeAssets: true,
+    })
+  }
+>
+  Open PDF
+</button>;
+
+<PdfViewer loadSource={loadPdf} wasmUrl={pdfiumUrl} />;
+```
+
+The preload resolves after the editor module and any successful runtime request
+complete. Runtime warming is best effort: a failed request does not block
+editor opening, and a later call retries it. The helper does not instantiate
+PDFium or keep a hidden viewer alive; Worker-side compilation and document
+initialization still happen when `PdfViewer` mounts.

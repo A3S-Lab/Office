@@ -9,6 +9,7 @@
         "@embedpdf/fonts-hebrew": "1.0.0",
         "@embedpdf/fonts-latin": "1.0.0",
         "@embedpdf/fonts-sc": "1.0.0",
+        "@embedpdf/models": "2.14.3",
         "@embedpdf/pdfium": "2.14.3",
         "@embedpdf/react-pdf-viewer": "2.14.3",
         "@fortune-sheet/core": "^1.0.4",

@@ -1,24 +1,35 @@
 import JSZip from 'jszip';
+import { jsPDF } from 'jspdf';
 
 const ROW_COUNT = 100_000;
 const TABLE_COLUMN_COUNT = 3;
 const SPREADSHEET_COLUMN_COUNT = 10;
+const PDF_PAGE_COUNT = 1_000;
 const fixtureDirectory = new URL('./fixtures/', import.meta.url);
 const documentsOnly = process.argv.includes('--documents-only');
 const spreadsheetsOnly = process.argv.includes('--spreadsheets-only');
+const pdfOnly = process.argv.includes('--pdf-only');
+
+if (Number(documentsOnly) + Number(spreadsheetsOnly) + Number(pdfOnly) > 1) {
+  throw new Error('Select at most one performance fixture family.');
+}
 
 const manifest: Record<string, unknown> = {
   generatedAt: new Date().toISOString(),
+  pdfPageCount: PDF_PAGE_COUNT,
   rowCount: ROW_COUNT,
   fixtures: [],
 };
 
-if (!spreadsheetsOnly) {
+if (!spreadsheetsOnly && !pdfOnly) {
   await generateFixture('document-text-100k.docx', () => textDocumentXml());
   await generateFixture('document-table-100k.docx', () => tableDocumentXml());
 }
-if (!documentsOnly) {
+if (!documentsOnly && !pdfOnly) {
   await generateSpreadsheetFixture('spreadsheet-table-100k-x10.xlsx');
+}
+if (!documentsOnly && !spreadsheetsOnly) {
+  await generatePdfFixture('pdf-pages-1000.pdf');
 }
 
 await Bun.write(
@@ -77,6 +88,45 @@ async function generateSpreadsheetFixture(name: string): Promise<void> {
     rows: ROW_COUNT,
     columns: SPREADSHEET_COLUMN_COUNT,
     populatedCells: ROW_COUNT * SPREADSHEET_COLUMN_COUNT,
+  });
+}
+
+async function generatePdfFixture(name: string): Promise<void> {
+  const startedAt = performance.now();
+  const pdf = new jsPDF({
+    compress: true,
+    format: 'a4',
+    orientation: 'portrait',
+    unit: 'pt',
+  });
+  pdf.setCreationDate(new Date('2026-08-19T00:00:00.000Z'));
+  pdf.setFileId('00000000000000000000000000001000');
+  pdf.setProperties({
+    author: 'A3S Lab',
+    creator: 'A3S Office performance fixtures',
+    subject: 'Deterministic 1,000-page PDF windowing benchmark',
+    title: 'A3S Office 1,000-page PDF benchmark',
+  });
+  for (let page = 1; page <= PDF_PAGE_COUNT; page += 1) {
+    if (page > 1) pdf.addPage('a4', 'portrait');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(24);
+    pdf.text(`A3S Office PDF page ${page}`, 72, 96);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(12);
+    pdf.text(
+      `Deterministic page marker ${String(page).padStart(4, '0')}.`,
+      72,
+      124,
+    );
+  }
+  const bytes = pdf.output('arraybuffer');
+  await Bun.write(new URL(name, fixtureDirectory), bytes);
+  (manifest.fixtures as unknown[]).push({
+    name,
+    compressedBytes: bytes.byteLength,
+    generationMs: round(performance.now() - startedAt),
+    pages: PDF_PAGE_COUNT,
   });
 }
 

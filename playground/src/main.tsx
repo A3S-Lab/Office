@@ -1,6 +1,7 @@
 import type {
   EditorAgentRequest,
   OfficeArtifact,
+  OfficeArtifactKind,
   OfficeArtifactContent,
   OfficeFileImportProgress,
 } from '@a3s-lab/office/core';
@@ -18,7 +19,12 @@ import { createRoot } from 'react-dom/client';
 import '@a3s-lab/office/styles.css';
 import { serializeDocumentParagraphFormatting } from '../../src/internal/features/work/work-document-paragraph-format-changes';
 import { WORK_IMPORT_ACCEPT as OFFICE_FILE_ACCEPT } from '../../src/internal/features/work/work-file-contract';
+import { workKindForFile } from '../../src/internal/features/work/work-file-kind';
 import { createWorkArtifact as createArtifact } from '../../src/internal/features/work/work-templates';
+import {
+  loadPlaygroundEditorWorkspace,
+  preloadPlaygroundEditor,
+} from './editor-preload';
 import {
   createMaximumSparseSpreadsheetArtifact,
   MAXIMUM_SPARSE_SPREADSHEET_ARTIFACT_ID,
@@ -42,7 +48,7 @@ import './playground.css';
 import './workspace.css';
 
 const EditorWorkspace = lazy(async () => ({
-  default: (await import('./editor-workspace')).EditorWorkspace,
+  default: (await loadPlaygroundEditorWorkspace()).EditorWorkspace,
 }));
 
 function Playground() {
@@ -233,6 +239,12 @@ function Playground() {
   );
 
   const importFile = async (file: File) => {
+    const editorKind = workKindForFile(file);
+    const editorPreload = editorKind
+      ? preloadPlaygroundEditor(editorKind, {
+          preloadRuntimeAssets: editorKind === 'pdf',
+        }).catch(() => undefined)
+      : Promise.resolve();
     const previousImport = importController.current;
     previousImport?.controller.abort();
     if (previousImport?.placeholderId) {
@@ -253,7 +265,7 @@ function Playground() {
     const restoreArtifactId = previousImport?.placeholderId
       ? previousImport.restoreArtifactId
       : activeArtifactId;
-    const placeholderTemplate = importPlaceholderTemplate(file.name);
+    const placeholderTemplate = importPlaceholderTemplate(editorKind);
     const placeholder = placeholderTemplate
       ? createArtifact(placeholderTemplate)
       : null;
@@ -300,6 +312,7 @@ function Playground() {
           setActiveImport({ fileName: file.name, id, progress });
         },
       });
+      if (editorKind === 'pdf') await editorPreload;
       if (importController.current?.id !== id) return;
       const opened = { ...imported, lastOpenedAt: Date.now() };
       setCollaborationDemoArtifactId(null);
@@ -491,13 +504,10 @@ function Playground() {
 }
 
 function importPlaceholderTemplate(
-  fileName: string,
+  kind: OfficeArtifactKind | null,
 ): 'blank-document' | 'blank-spreadsheet' | null {
-  const extension = fileName.split('.').pop()?.toLowerCase();
-  if (extension === 'docx') return 'blank-document';
-  if (extension && ['csv', 'ods', 'xls', 'xlsx'].includes(extension)) {
-    return 'blank-spreadsheet';
-  }
+  if (kind === 'document') return 'blank-document';
+  if (kind === 'spreadsheet') return 'blank-spreadsheet';
   return null;
 }
 

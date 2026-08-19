@@ -1,0 +1,71 @@
+suite "office-pdf-large-windowing" {
+    version = 1
+
+    scenario "reach-the-end-of-a-1000-page-pdf" {
+        name = "Keep a 1,000-page PDF bounded and end-reachable"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1440
+            height = 1000
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=pdf-large-windowing"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-1000-page-pdf" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/performance/fixtures/pdf-pages-1000.pdf"]
+        }
+
+        wait "pdf-window-ready" {
+            visible = css(".work-pdf-thumbnail-rail[data-pdf-page-count='1000'][data-pdf-thumbnail-windowed='true'][data-pdf-thumbnail-window-start='0'][data-pdf-thumbnail-window-end='15'][data-pdf-thumbnail-mounted-count='15'][data-pdf-thumbnail-window-limit='32'] [data-pdf-page-index='0'][aria-current='page']")
+        }
+
+        focus "focus-first-page" {
+            target = css("[data-pdf-page-index='0']")
+        }
+
+        press "move-to-final-page" {
+            key = "End"
+        }
+
+        wait "final-window-ready" {
+            visible = css(".work-pdf-thumbnail-rail[data-pdf-page-count='1000'][data-pdf-thumbnail-windowed='true'][data-pdf-thumbnail-window-start='985'][data-pdf-thumbnail-window-end='1000'][data-pdf-thumbnail-mounted-count='15'][data-pdf-thumbnail-window-limit='32'] [data-pdf-page-index='999'][aria-current='page']:focus")
+        }
+
+        wait "final-thumbnail-ready" {
+            visible = css("[data-pdf-page-index='999'] [data-pdf-thumbnail-state='ready'] img")
+        }
+
+        expect "page-counter-reaches-1000" {
+            visible = css("input[aria-label='页码'][value='1000']")
+        }
+
+        screenshot "final-bounded-pdf-window" {
+            path = "screenshots/pdf-large-windowing.png"
+        }
+
+        accessibility "final-page-semantics" {
+            path = "evidence/pdf-large-windowing.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/pdf-large-windowing-console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/pdf-large-windowing-errors.json"
+            clear = false
+        }
+    }
+}
