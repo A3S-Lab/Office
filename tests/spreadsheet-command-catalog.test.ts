@@ -46,6 +46,16 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     group: 'clipboard',
     tab: 'home',
   });
+  expect(spreadsheetCommandCatalog.strike.location).toEqual({
+    area: 'ribbon',
+    group: 'font',
+    tab: 'home',
+  });
+  expect(spreadsheetCommandCatalog.strike.shortcut).toEqual({
+    aria: 'Control+5 Meta+5',
+    editor: ['Mod-5'],
+    label: 'Cmd/Ctrl+5',
+  });
   expect(spreadsheetCommandCatalog.conditionalFormatting.location).toEqual({
     area: 'ribbon',
     group: 'styles',

@@ -60,6 +60,26 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='格式刷'][aria-pressed='false']")
         }
 
+        expect "strikethrough-shortcut-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='删除线'][aria-keyshortcuts='Control+5 Meta+5'][aria-pressed='false']")
+        }
+
+        press "toggle-strikethrough-from-grid" {
+            key = "Control+5"
+        }
+
+        expect "strikethrough-is-active" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='删除线'][aria-pressed='true']")
+        }
+
+        press "restore-strikethrough-from-grid" {
+            key = "Control+5"
+        }
+
+        expect "strikethrough-is-restored" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='删除线'][aria-pressed='false']")
+        }
+
         click "activate-one-shot-format-painter" {
             target = role("button", "格式刷")
         }

@@ -767,6 +767,16 @@ ranges. Focused unit and round-trip tests and a deterministic A3S Test workflow
 cover `Control+End`, read-only far navigation, one-row materialization,
 persisted editing, accessibility, console output, and page errors.
 
+The tenth slice completes the first missing WPS font-emphasis path. Home and
+Font now exposes Strikethrough with the WPS `Cmd/Ctrl+5` shortcut. The button,
+shortcut metadata, and editor keymap come from the Spreadsheet command catalog;
+both entry points use the existing typed `setCellFormat` command and Fortune's
+native `cl` cell style. Successful commands restore grid focus, create one
+undoable controlled update, remain scoped away from host text inputs and modal
+surfaces, and continue through Clear Formats and Format Painter without a
+parallel style model. Focused catalog, controller, component, desktop browser,
+and schema-validated local A3S Test coverage protect the workflow.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

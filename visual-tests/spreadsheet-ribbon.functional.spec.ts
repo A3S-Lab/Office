@@ -108,6 +108,47 @@ test('Spreadsheet runs clipboard commands from the WPS Home group', async ({
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet renders WPS strikethrough from the ribbon and Ctrl+5', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const formulaBar = page.locator('.fortune-fx-input');
+  const strike = page.getByRole('button', { name: '删除线' });
+
+  await grid.focus();
+  await page.keyboard.press('Shift+F11');
+  await page.keyboard.type('WPS strike');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await expect(nameBox).toHaveText('A1');
+  await expect(formulaBar).toHaveText('WPS strike');
+  await expect(strike).toHaveAttribute('aria-keyshortcuts', 'Control+5 Meta+5');
+  await expect(strike).toHaveAttribute('aria-pressed', 'false');
+
+  await strike.click();
+  await expect(strike).toHaveAttribute('aria-pressed', 'true');
+  await expect(grid).toBeFocused();
+  await page.screenshot({
+    path: testInfo.outputPath('spreadsheet-strikethrough.png'),
+    animations: 'disabled',
+  });
+
+  await page.keyboard.press('Control+5');
+  await expect(strike).toHaveAttribute('aria-pressed', 'false');
+  await page.keyboard.press('Control+5');
+  await expect(strike).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('Control+z');
+  await expect(strike).toHaveAttribute('aria-pressed', 'false');
+  await expect(formulaBar).toHaveText('WPS strike');
+  await expect(grid).toBeFocused();
+  expect(browserErrors).toEqual([]);
+});
+
 test('Spreadsheet inserts and deletes rows from the WPS Home cells group', async ({
   page,
 }, testInfo) => {

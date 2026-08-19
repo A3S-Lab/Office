@@ -74,6 +74,15 @@ clearing retains formats, comments, links, and merge geometry; format-only
 clearing retains content, comments, links, and merge geometry while removing
 direct, border, conditional, and alternating formats. Every mode uses one typed
 command and one controlled workbook batch, then returns focus to the grid.
+The ninth milestone establishes the maximum-dimension sparse workbook contract.
+A sheet retains 1,048,576 logical rows and 16,384 logical columns without
+allocating its empty range, while navigation, editing, formatting, filtering,
+statistics, collaboration, import, and export visit only materialized cells.
+The tenth milestone completes the first missing WPS font-emphasis path by
+placing Strikethrough in Home and Font. The ribbon button and `Cmd/Ctrl+5`
+share the existing typed cell-format command, preserve grid focus, produce one
+undoable controlled update, and expose the active native `cl` style without a
+second formatting model.
 
 ## Product Rules
 

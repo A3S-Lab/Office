@@ -521,6 +521,14 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             commands.setCellFormat,
             'un',
           ),
+        'Mod-5': ({ can, commands, context }, event) =>
+          runSpreadsheetCellFormatShortcut(
+            event,
+            context,
+            can.setCellFormat,
+            commands.setCellFormat,
+            'cl',
+          ),
         'Mod-z': ({ can, commands }, event) =>
           runSpreadsheetHistoryShortcut(event, can.undo, commands.undo),
         'Mod-Shift-z': ({ can, commands }, event) =>
@@ -1470,7 +1478,7 @@ function runSpreadsheetCellFormatShortcut(
   context: SpreadsheetCommandContext,
   canExecute: SpreadsheetEditorCanCommands['setCellFormat'],
   execute: SpreadsheetEditorCommands['setCellFormat'],
-  attribute: 'bl' | 'it' | 'un',
+  attribute: 'bl' | 'cl' | 'it' | 'un',
 ): boolean {
   if (
     event.repeat ||

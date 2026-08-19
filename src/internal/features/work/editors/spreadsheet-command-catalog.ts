@@ -119,6 +119,16 @@ export const spreadsheetCommandCatalog = {
       editor: ['Mod-u'],
     },
   },
+  strike: {
+    id: 'font.strike',
+    label: '删除线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+5',
+      aria: 'Control+5 Meta+5',
+      editor: ['Mod-5'],
+    },
+  },
   mergeAndCenter: {
     id: 'alignment.mergeAndCenter',
     label: '合并居中',

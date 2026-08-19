@@ -11,26 +11,21 @@ import {
   BetweenHorizontalStart,
   BetweenVerticalEnd,
   BetweenVerticalStart,
-  Bold,
   Bookmark,
   Calculator,
   ChevronDown,
   ClipboardPaste,
   Copy,
-  DecimalsArrowLeft,
-  DecimalsArrowRight,
   Columns3,
   Eraser,
   FileX2,
   Grid3X3,
-  Italic,
   Link2Off,
   ListFilter,
   MessageSquareX,
   Merge,
   Paintbrush,
   Palette,
-  Percent,
   PanelLeft,
   PanelTop,
   PanelsTopLeft,
@@ -45,7 +40,6 @@ import {
   Rows3,
   TableProperties,
   Trash2,
-  Underline,
   Undo2,
   WrapText,
   X,
@@ -57,7 +51,6 @@ import { spreadsheetFormulaCount } from '../work-spreadsheet-formula-analysis';
 import { spreadsheetPivotCount } from '../work-spreadsheet-pivots';
 import { protectedSheetCount } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
-import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import type { SpreadsheetCellMergeCommand } from './spreadsheet-cell-merge';
 import type { SpreadsheetCellClearMode } from './spreadsheet-cell-clear';
 import {
@@ -70,22 +63,15 @@ import type {
   SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
 import { managedConditionalFormatCount } from './spreadsheet-conditional-format-panel';
-import {
-  spreadsheetFontFamilyOptions,
-  spreadsheetFontSizeOptions,
-} from './spreadsheet-editor-support';
 import type { SpreadsheetFormatPainterMode } from './spreadsheet-format-painter';
 import {
   type SpreadsheetFreezePanePreset,
   spreadsheetFreezePanesSelectionLabel,
 } from './spreadsheet-freeze-panes';
 import {
-  adjustSpreadsheetNumberFormat,
-  type SpreadsheetNumberFormatPreset,
-  spreadsheetNumberFormatCode,
-  spreadsheetNumberFormatPreset,
-  spreadsheetNumberFormatValue,
-} from './spreadsheet-number-format';
+  SpreadsheetFontRibbonGroup,
+  SpreadsheetNumberRibbonGroup,
+} from './spreadsheet-home-format-ribbon';
 import { spreadsheetPrintSettingCount } from './spreadsheet-print-settings-panel';
 import type { SpreadsheetWorkbookPanelView } from './spreadsheet-workbook-panel';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
@@ -95,17 +81,6 @@ import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
-
-const spreadsheetNumberFormatOptions: readonly {
-  value: SpreadsheetNumberFormatPreset;
-  label: string;
-  disabled?: boolean;
-}[] = [
-  { value: 'general', label: '常规' },
-  { value: 'number', label: '数字' },
-  { value: 'percent', label: '百分比' },
-  { value: 'custom', label: '自定义', disabled: true },
-];
 
 const defaultSpreadsheetFreezePanesSelection: Selection = {
   row: [0, 0],
@@ -161,23 +136,6 @@ export function SpreadsheetEditorRibbon({
     [content],
   );
   const pivotCount = useMemo(() => spreadsheetPivotCount(content), [content]);
-  const numberFormat = toolbarCell?.ct?.fa?.trim() || 'General';
-  const numberFormatPreset = spreadsheetNumberFormatPreset(numberFormat);
-  const decreasedNumberFormat = adjustSpreadsheetNumberFormat(numberFormat, -1);
-  const increasedNumberFormat = adjustSpreadsheetNumberFormat(numberFormat, 1);
-  const currentNumberFormatValue = spreadsheetNumberFormatValue(
-    numberFormat,
-    toolbarCell,
-  );
-  const decreasedNumberFormatValue = spreadsheetNumberFormatValue(
-    decreasedNumberFormat,
-    toolbarCell,
-  );
-  const increasedNumberFormatValue = spreadsheetNumberFormatValue(
-    increasedNumberFormat,
-    toolbarCell,
-  );
-
   return (
     <WorkOfficeRibbon
       ariaLabel="表格功能区"
@@ -270,145 +228,11 @@ export function SpreadsheetEditorRibbon({
                 <Paintbrush size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="字体" priority="high">
-              <OfficeSelect
-                className="work-spreadsheet-font-family"
-                ariaLabel="字体"
-                value={
-                  typeof toolbarCell?.ff === 'string' ? toolbarCell.ff : 'Aptos'
-                }
-                disabled={
-                  !can.setCellFormat(
-                    'ff',
-                    typeof toolbarCell?.ff === 'string'
-                      ? toolbarCell.ff
-                      : 'Aptos',
-                  )
-                }
-                options={spreadsheetFontFamilyOptions(
-                  typeof toolbarCell?.ff === 'string'
-                    ? toolbarCell.ff
-                    : undefined,
-                )}
-                onValueChange={(value) => commands.setCellFormat('ff', value)}
-              />
-              <OfficeSelect
-                ariaLabel="字号"
-                value={String(toolbarCell?.fs ?? 10)}
-                disabled={
-                  !can.setCellFormat('fs', Number(toolbarCell?.fs ?? 10))
-                }
-                options={spreadsheetFontSizeOptions(toolbarCell?.fs)}
-                onValueChange={(value) =>
-                  commands.setCellFormat('fs', Number(value))
-                }
-              />
-              <WorkOfficeRibbonButton
-                label={spreadsheetCommandCatalog.bold.label}
-                title={`${spreadsheetCommandCatalog.bold.label}（${spreadsheetCommandCatalog.bold.shortcut.label}）`}
-                aria-keyshortcuts={spreadsheetCommandCatalog.bold.shortcut.aria}
-                displayLabel={false}
-                active={Number(toolbarCell?.bl) === 1}
-                disabled={
-                  !can.setCellFormat(
-                    'bl',
-                    Number(toolbarCell?.bl) === 1 ? 0 : 1,
-                  )
-                }
-                onClick={() =>
-                  commands.setCellFormat(
-                    'bl',
-                    Number(toolbarCell?.bl) === 1 ? 0 : 1,
-                  )
-                }
-              >
-                <Bold size={15} />
-              </WorkOfficeRibbonButton>
-              <WorkOfficeRibbonButton
-                label={spreadsheetCommandCatalog.italic.label}
-                title={`${spreadsheetCommandCatalog.italic.label}（${spreadsheetCommandCatalog.italic.shortcut.label}）`}
-                aria-keyshortcuts={
-                  spreadsheetCommandCatalog.italic.shortcut.aria
-                }
-                displayLabel={false}
-                active={Number(toolbarCell?.it) === 1}
-                disabled={
-                  !can.setCellFormat(
-                    'it',
-                    Number(toolbarCell?.it) === 1 ? 0 : 1,
-                  )
-                }
-                onClick={() =>
-                  commands.setCellFormat(
-                    'it',
-                    Number(toolbarCell?.it) === 1 ? 0 : 1,
-                  )
-                }
-              >
-                <Italic size={15} />
-              </WorkOfficeRibbonButton>
-              <WorkOfficeRibbonButton
-                label={spreadsheetCommandCatalog.underline.label}
-                title={`${spreadsheetCommandCatalog.underline.label}（${spreadsheetCommandCatalog.underline.shortcut.label}）`}
-                aria-keyshortcuts={
-                  spreadsheetCommandCatalog.underline.shortcut.aria
-                }
-                displayLabel={false}
-                active={Number(toolbarCell?.un) === 1}
-                disabled={
-                  !can.setCellFormat(
-                    'un',
-                    Number(toolbarCell?.un) === 1 ? 0 : 1,
-                  )
-                }
-                onClick={() =>
-                  commands.setCellFormat(
-                    'un',
-                    Number(toolbarCell?.un) === 1 ? 0 : 1,
-                  )
-                }
-              >
-                <Underline size={15} />
-              </WorkOfficeRibbonButton>
-              <OfficeColorPicker
-                compact
-                className="work-color-tool"
-                ariaLabel="文字颜色"
-                value={
-                  typeof toolbarCell?.fc === 'string'
-                    ? toolbarCell.fc
-                    : '#172033'
-                }
-                disabled={
-                  !can.setCellFormat(
-                    'fc',
-                    typeof toolbarCell?.fc === 'string'
-                      ? toolbarCell.fc
-                      : '#172033',
-                  )
-                }
-                onValueChange={(value) => commands.setCellFormat('fc', value)}
-              />
-              <OfficeColorPicker
-                compact
-                className="work-color-tool work-spreadsheet-fill-color"
-                ariaLabel="填充颜色"
-                value={
-                  typeof toolbarCell?.bg === 'string'
-                    ? toolbarCell.bg
-                    : '#ffffff'
-                }
-                disabled={
-                  !can.setCellFormat(
-                    'bg',
-                    typeof toolbarCell?.bg === 'string'
-                      ? toolbarCell.bg
-                      : '#ffffff',
-                  )
-                }
-                onValueChange={(value) => commands.setCellFormat('bg', value)}
-              />
-            </WorkOfficeRibbonGroup>
+            <SpreadsheetFontRibbonGroup
+              can={can}
+              commands={commands}
+              toolbarCell={toolbarCell}
+            />
             <WorkOfficeRibbonGroup label="对齐" priority="high">
               <WorkOfficeRibbonButton
                 label="左对齐"
@@ -485,79 +309,11 @@ export function SpreadsheetEditorRibbon({
               </WorkOfficeRibbonButton>
               <SpreadsheetMergeMenu can={can} commands={commands} />
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="数字" priority="high">
-              <OfficeSelect
-                className="work-spreadsheet-number-format"
-                ariaLabel="数字格式"
-                value={numberFormatPreset}
-                disabled={!can.setCellFormat('ct', currentNumberFormatValue)}
-                options={spreadsheetNumberFormatOptions}
-                onValueChange={(preset) => {
-                  if (preset === 'custom') return;
-                  commands.setCellFormat(
-                    'ct',
-                    spreadsheetNumberFormatValue(
-                      spreadsheetNumberFormatCode(preset),
-                      toolbarCell,
-                    ),
-                  );
-                }}
-              />
-              <WorkOfficeRibbonButton
-                label="百分比格式"
-                title="百分比格式"
-                displayLabel={false}
-                active={numberFormatPreset === 'percent'}
-                disabled={
-                  !can.setCellFormat(
-                    'ct',
-                    spreadsheetNumberFormatValue(
-                      spreadsheetNumberFormatCode('percent'),
-                      toolbarCell,
-                    ),
-                  )
-                }
-                onClick={() =>
-                  commands.setCellFormat(
-                    'ct',
-                    spreadsheetNumberFormatValue(
-                      spreadsheetNumberFormatCode('percent'),
-                      toolbarCell,
-                    ),
-                  )
-                }
-              >
-                <Percent size={15} />
-              </WorkOfficeRibbonButton>
-              <WorkOfficeRibbonButton
-                label="减少小数位"
-                title="减少小数位"
-                displayLabel={false}
-                disabled={
-                  decreasedNumberFormat === numberFormat ||
-                  !can.setCellFormat('ct', decreasedNumberFormatValue)
-                }
-                onClick={() =>
-                  commands.setCellFormat('ct', decreasedNumberFormatValue)
-                }
-              >
-                <DecimalsArrowLeft size={16} />
-              </WorkOfficeRibbonButton>
-              <WorkOfficeRibbonButton
-                label="增加小数位"
-                title="增加小数位"
-                displayLabel={false}
-                disabled={
-                  increasedNumberFormat === numberFormat ||
-                  !can.setCellFormat('ct', increasedNumberFormatValue)
-                }
-                onClick={() =>
-                  commands.setCellFormat('ct', increasedNumberFormatValue)
-                }
-              >
-                <DecimalsArrowRight size={16} />
-              </WorkOfficeRibbonButton>
-            </WorkOfficeRibbonGroup>
+            <SpreadsheetNumberRibbonGroup
+              can={can}
+              commands={commands}
+              toolbarCell={toolbarCell}
+            />
             <WorkOfficeRibbonGroup label="样式">
               <SpreadsheetRibbonTool
                 controlsId={panelId}

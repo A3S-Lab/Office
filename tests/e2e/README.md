@@ -191,8 +191,9 @@ browser diagnostics;
 the phone body-field workflow covering physical PAGE and NUMPAGES results,
 F9 refresh, one-action undo and redo, phone ribbon overflow, accessibility,
 and browser diagnostics;
-the phone Spreadsheet
-worksheet-rename workflow plus viewport-safe, touch-sized Find controls,
+the Spreadsheet ribbon workflow with command-catalogued native strikethrough
+and its WPS `Cmd/Ctrl+5` shortcut, plus the phone worksheet-rename workflow and
+viewport-safe, touch-sized Find controls,
 exact-result navigation, and grid-focus restoration, a safe-area-aware bottom
 context menu with 44 px actions, bounded scrolling, screenshot and
 accessibility evidence, together with modal

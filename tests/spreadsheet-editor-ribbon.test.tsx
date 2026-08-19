@@ -319,7 +319,7 @@ test('disables unavailable WPS row and column actions independently', () => {
   ).toBeDisabled();
 });
 
-test('routes font, vertical alignment, and wrapping through cell formats', () => {
+test('routes WPS font, vertical alignment, and wrapping through cell formats', () => {
   const formats: Array<{ attribute: string; value: unknown }> = [];
   render(
     <SpreadsheetEditorRibbon
@@ -333,7 +333,7 @@ test('routes font, vertical alignment, and wrapping through cell formats', () =>
       gridLinesVisible
       findOpen={false}
       panel={null}
-      toolbarCell={{ ff: 'Arial', vt: 0, tb: '2' }}
+      toolbarCell={{ cl: 0, ff: 'Arial', vt: 0, tb: '2' }}
       onTabChange={() => undefined}
       onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
@@ -349,11 +349,13 @@ test('routes font, vertical alignment, and wrapping through cell formats', () =>
     'font-family: SimSun, "Songti SC", serif;',
   );
   fireEvent.click(simSun);
+  fireEvent.click(screen.getByRole('button', { name: '删除线' }));
   fireEvent.click(screen.getByRole('button', { name: '底端对齐' }));
   fireEvent.click(screen.getByRole('button', { name: '自动换行' }));
 
   expect(formats).toEqual([
     { attribute: 'ff', value: 'SimSun' },
+    { attribute: 'cl', value: 1 },
     { attribute: 'vt', value: 2 },
     { attribute: 'tb', value: '1' },
   ]);
@@ -368,6 +370,10 @@ test('routes font, vertical alignment, and wrapping through cell formats', () =>
   expect(screen.getByRole('button', { name: '下划线' })).toHaveAttribute(
     'aria-keyshortcuts',
     'Control+U Meta+U',
+  );
+  expect(screen.getByRole('button', { name: '删除线' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+5 Meta+5',
   );
 });
 

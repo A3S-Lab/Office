@@ -723,7 +723,7 @@ describe('spreadsheet command controller', () => {
 
   test('owns core cell-format and clear shortcuts', () => {
     const fixture = commandFixture();
-    fixture.context.toolbarCell = { bl: 0, it: 1, un: 0 };
+    fixture.context.toolbarCell = { bl: 0, cl: 0, it: 1, un: 0 };
     const editor = spreadsheetEditor(fixture.context);
 
     const shortcuts = [
@@ -744,11 +744,17 @@ describe('spreadsheet command controller', () => {
       }),
       new KeyboardEvent('keydown', {
         cancelable: true,
+        key: '5',
+        metaKey: true,
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
         key: 'Delete',
       }),
     ];
 
     expect(shortcuts.map((event) => editor.handleKeyDown(event))).toEqual([
+      true,
       true,
       true,
       true,
@@ -770,6 +776,12 @@ describe('spreadsheet command controller', () => {
       },
       {
         attribute: 'un',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: 1,
+      },
+      {
+        attribute: 'cl',
         range: { row: [0, 1], column: [0, 2] },
         sheetId: 'sheet-1',
         value: 1,

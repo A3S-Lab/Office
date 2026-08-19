@@ -14,6 +14,7 @@ test('Spreadsheet routes formatting and history shortcuts from the live grid', a
     { button: page.getByRole('button', { name: '加粗' }), key: 'b' },
     { button: page.getByRole('button', { name: '斜体' }), key: 'i' },
     { button: page.getByRole('button', { name: '下划线' }), key: 'u' },
+    { button: page.getByRole('button', { name: '删除线' }), key: '5' },
   ];
   for (const shortcut of shortcuts) await expect(shortcut.button).toBeEnabled();
   for (const modifier of ['Control', 'Meta']) {
