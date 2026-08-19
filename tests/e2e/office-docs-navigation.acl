@@ -28,6 +28,14 @@ suite "office-docs-navigation" {
             visible = css(".rp-search-button")
         }
 
+        expect "primary-navigation-matches-a3s-ui-shell" {
+            visible = css(".rp-nav__left .rp-nav-menu--left .rp-nav-menu__item__container")
+        }
+
+        expect "utility-navigation-follows-search" {
+            visible = css(".rp-nav__right .rp-search-button--mobile + .rp-nav-menu--right")
+        }
+
         expect "shared-a3s-brand-is-visible" {
             visible = css(".rp-nav__title__logo img[src$='/a3s-logo.png']")
         }
@@ -247,7 +255,7 @@ suite "office-docs-navigation" {
         timeout_ms = 90000
 
         viewport "desktop-version-navigation" {
-            width = 1200
+            width = 1440
             height = 900
             scale = 1
         }
@@ -411,13 +419,17 @@ suite "office-docs-navigation" {
         timeout_ms = 90000
 
         viewport "release-documentation" {
-            width = 1200
+            width = 1440
             height = 900
             scale = 1
         }
 
         navigate "open-chinese-release-homepage" {
             url = "http://127.0.0.1:4175/docs/0.11.0/index.html"
+        }
+
+        wait "release-homepage-hydrated" {
+            load = "networkidle"
         }
 
         expect "release-collaboration-action-uses-html-route" {

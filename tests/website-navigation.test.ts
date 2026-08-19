@@ -76,12 +76,19 @@ test('matches the A3S UI documentation rendering contract', async () => {
 
   expect(themeEntry).toContain("import '@fontsource-variable/geist'");
   expect(themeEntry).toContain("import '@fontsource-variable/geist-mono'");
+  expect(themeStyles).toContain(
+    'A3S-Lab/UI@e3440e29fa3058fa31a2aacab715833c595fdbc7',
+  );
   expect(themeStyles).toMatch(/--rp-content-max-width:\s*920px/);
-  expect(themeStyles).toMatch(/["']Geist Variable["']/);
-  expect(themeStyles).toMatch(/["']Geist Mono Variable["']/);
+  expect(themeStyles).toContain('Geist, "Avenir Next"');
+  expect(themeStyles).toContain('"Geist Mono"');
+  expect(themeStyles).toContain('--rp-code-title-bg');
+  expect(themeStyles).toContain('--rp-code-block-bg');
   expect(themeStyles).toContain('.rp-codeblock__content__scroll-container');
-  expect(themeStyles).toContain('.rp-codeblock__content:focus-within');
+  expect(themeStyles).toContain('.rp-doc .rp-code-button-group__button');
+  expect(themeStyles).toMatch(
+    /\.rp-doc \.rp-code-button-group__button\s*\{[^}]*opacity:\s*1/s,
+  );
   expect(themeStyles).toMatch(/:not\(pre\)\s*> code/);
-  expect(themeStyles).toContain('border-collapse: separate');
-  expect(themeStyles).toContain('--shiki-token-keyword');
+  expect(themeStyles).toContain('.rp-doc .rp-table-scroll-container');
 });

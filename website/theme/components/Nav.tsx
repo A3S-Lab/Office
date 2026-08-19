@@ -310,6 +310,16 @@ export function Nav({
   const navList = useNav();
   const language = useLang();
   const { site } = useSite();
+  const primaryNavList = navList.map((item) =>
+    item.position === undefined && !('items' in item && item.items.length > 0)
+      ? { ...item, position: 'left' as const }
+      : item,
+  );
+  const utilityNavList = navList.filter(
+    (item) =>
+      item.position === 'right' ||
+      (item.position === undefined && 'items' in item && item.items.length > 0),
+  );
   const hasAppearanceSwitch = isDarkModeSwitchEnabled(
     site.themeConfig.darkMode,
   );
@@ -388,13 +398,13 @@ export function Nav({
       <div className="rp-nav__left">
         {beforeNavTitle}
         {navTitle ?? <NavTitle />}
-        <NavMenu menuItems={navList} position="left" />
+        <NavMenu menuItems={primaryNavList} position="left" />
         {afterNavTitle}
       </div>
       <div className="rp-nav__right">
         {beforeNavMenu}
         <Search />
-        <NavMenu menuItems={navList} position="right" />
+        <NavMenu menuItems={utilityNavList} position="right" />
         <div className="rp-nav__others">
           <NavMenuDivider />
           <NavLangs />

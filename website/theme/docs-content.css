@@ -1,142 +1,143 @@
-:root {
-  --rp-c-brand: #2864e8;
-  --rp-c-brand-dark: #1f51b8;
-  --rp-c-brand-darker: #194596;
-  --rp-c-brand-light: #4f7ff0;
-  --rp-c-brand-lighter: #9cb8f8;
-  --rp-c-brand-tint: rgb(40 100 232 / 10%);
-  --rp-c-bg: #ffffff;
-  --rp-c-bg-soft: #f2f3f5;
-  --rp-c-bg-mute: #eceef1;
-  --rp-c-divider: #e2e4e8;
-  --rp-c-divider-light: #e8eaed;
-  --rp-c-text-1: #17181a;
-  --rp-c-text-2: #62666f;
-  --rp-c-text-3: #6d727b;
-  --rp-content-max-width: 920px;
+/*
+ * Documentation shell synchronized with A3S UI.
+ * Source: A3S-Lab/UI@e3440e29fa3058fa31a2aacab715833c595fdbc7
+ * File: site/theme/styles/DocsShell.css
+ * Product-specific rules belong in website/theme/index.css.
+ */
+
+html:root {
+  --rp-c-brand: #1456f0;
+  --rp-c-brand-dark: #0f46c7;
+  --rp-c-brand-darker: #0d3aa4;
+  --rp-c-brand-light: #3b73f4;
+  --rp-c-brand-lighter: #dce8ff;
+  --rp-c-brand-tint: rgb(20 86 240 / 10%);
+  --rp-c-link: #0f46c7;
+  --rp-c-bg: #f5f7fb;
+  --rp-c-bg-soft: #ffffff;
+  --rp-c-bg-mute: #eaf0f8;
+  --rp-c-divider: #cbd4e0;
+  --rp-c-divider-light: #dce3ec;
+  --rp-c-text-1: #142033;
+  --rp-c-text-2: #526078;
+  --rp-c-text-3: #748095;
   --rp-nav-height: 72px;
-  --rp-font-family-base: var(--office-font);
-  --rp-font-family-mono: var(--office-mono);
-  --office-nav-width: 1440px;
-  --office-font:
-    "Geist Variable", "PingFang SC", "Microsoft YaHei", ui-sans-serif,
+  --rp-sidebar-width: 320px;
+  --rp-sidebar-padding: 20px;
+  --rp-outline-width: 268px;
+  --rp-content-padding-x: 80px;
+  --rp-content-padding-y: 48px;
+  --rp-content-max-width: 920px;
+  --rp-radius: 16px;
+  --rp-radius-small: 8px;
+  --rp-radius-large: 24px;
+  --rp-font-family-base:
+    Geist, "Avenir Next", "HarmonyOS Sans SC", "PingFang SC", ui-sans-serif,
     system-ui, sans-serif;
-  --office-mono:
-    "Geist Mono Variable", "SFMono-Regular", "Cascadia Code", Consolas,
-    monospace;
-  --ui-canvas: #f7f7f8;
+  --rp-font-family-mono: var(--ui-mono);
+  --rp-code-title-bg: #eaf0f8;
+  --rp-code-block-bg: #f5f7fb;
+  --rp-c-text-code-bg: #eaf0f8;
+  --rp-c-text-code-border: #dce3ec;
+  --rp-c-text-code: #0f46c7;
+  --ui-home-width: 1380px;
+  --ui-nav-width: 1440px;
+  --ui-canvas: #f5f7fb;
   --ui-paper: #ffffff;
-  --ui-panel: #f2f3f5;
-  --ui-panel-raised: #ffffff;
-  --ui-ink: #17181a;
-  --ui-muted: #62666f;
-  --ui-faint: #6d727b;
-  --ui-line: #e2e4e8;
-  --ui-line-strong: #d3d6dc;
-  --ui-blue: #2864e8;
-  --ui-blue-deep: #1f51b8;
-  --ui-mono: var(--office-mono);
-  --a3s-docs-ink: var(--ui-ink);
-  --a3s-docs-muted: var(--ui-muted);
-  --a3s-docs-line: var(--ui-line);
-  --a3s-docs-blue: var(--ui-blue);
-  --a3s-docs-blue-dark: var(--ui-blue-deep);
-  --a3s-docs-blue-soft: #edf3ff;
-  --a3s-docs-canvas: var(--ui-canvas);
-  --a3s-docs-paper: var(--ui-paper);
+  --ui-panel: #eaf0f8;
+  --ui-panel-raised: #e3eaf5;
+  --ui-panel-active: #dce6f4;
+  --ui-ink: #142033;
+  --ui-muted: #526078;
+  --ui-faint: #748095;
+  --ui-line: #dce3ec;
+  --ui-line-strong: #cbd4e0;
+  --ui-border-strong: #aab7c8;
+  --ui-blue: #1456f0;
+  --ui-blue-deep: #0f46c7;
+  --ui-brand-blue: #243a9a;
+  --ui-green: #16845b;
+  --ui-purple: #5b57d9;
+  --ui-amber: #a86412;
+  --ui-red: #c93d45;
+  --ui-shadow: 0 20px 32px -18px rgb(15 35 70 / 28%);
+  --ui-shadow-floating: 0 10px 24px -12px rgb(15 35 70 / 28%);
+  --ui-mono:
+    "Geist Mono", "SFMono-Regular", "Cascadia Code", Menlo, Consolas, monospace;
+  color-scheme: light;
 }
 
-html.rp-dark {
+html.dark,
+html.rp-dark,
+html[data-theme="dark"] {
   --rp-c-brand: #6ca3ff;
-  --rp-c-brand-dark: #8fb1ff;
-  --rp-c-brand-darker: #b7ccff;
-  --rp-c-brand-light: #a8c1ff;
-  --rp-c-brand-lighter: #d2deff;
-  --rp-c-brand-tint: rgb(108 163 255 / 14%);
-  --rp-c-bg: #171820;
-  --rp-c-bg-soft: #1e2028;
-  --rp-c-bg-mute: #282b35;
-  --rp-c-divider: #2a2d35;
-  --rp-c-divider-light: #343741;
-  --rp-c-text-1: #f2f3f5;
-  --rp-c-text-2: #a4a8b2;
-  --rp-c-text-3: #7d838f;
-  --ui-canvas: #101118;
-  --ui-paper: #171820;
-  --ui-panel: #1e2028;
-  --ui-panel-raised: #282b35;
-  --ui-ink: #f2f3f5;
-  --ui-muted: #a4a8b2;
-  --ui-faint: #7d838f;
-  --ui-line: #2a2d35;
-  --ui-line-strong: #3a3d48;
+  --rp-c-brand-dark: #86b4ff;
+  --rp-c-brand-darker: #a7c9ff;
+  --rp-c-brand-light: #4f8df7;
+  --rp-c-brand-lighter: #223c66;
+  --rp-c-brand-tint: rgb(108 163 255 / 13%);
+  --rp-c-link: #86b4ff;
+  --rp-c-bg: #0d1118;
+  --rp-c-bg-soft: #121824;
+  --rp-c-bg-mute: #172131;
+  --rp-c-divider: #2a3547;
+  --rp-c-divider-light: #222c3b;
+  --rp-c-text-1: #eef4ff;
+  --rp-c-text-2: #a8b3c6;
+  --rp-c-text-3: #7c899f;
+  --rp-code-title-bg: #172131;
+  --rp-code-block-bg: #0d1118;
+  --rp-c-text-code-bg: #172131;
+  --rp-c-text-code-border: #2a3547;
+  --rp-c-text-code: #a7c9ff;
+  --ui-canvas: #0d1118;
+  --ui-paper: #121824;
+  --ui-panel: #172131;
+  --ui-panel-raised: #1b2739;
+  --ui-panel-active: #223149;
+  --ui-ink: #eef4ff;
+  --ui-muted: #a8b3c6;
+  --ui-faint: #7c899f;
+  --ui-line: #222c3b;
+  --ui-line-strong: #2a3547;
+  --ui-border-strong: #44536a;
   --ui-blue: #6ca3ff;
-  --ui-blue-deep: #8fb1ff;
-  --a3s-docs-blue-soft: #1a2943;
+  --ui-blue-deep: #86b4ff;
+  --ui-brand-blue: #a7c9ff;
+  --ui-green: #69d3a5;
+  --ui-purple: #9b92ff;
+  --ui-amber: #efb861;
+  --ui-red: #f1838b;
+  --ui-shadow: 0 22px 36px -18px rgb(0 0 0 / 56%);
+  --ui-shadow-floating: 0 12px 28px -14px rgb(0 0 0 / 58%);
   color-scheme: dark;
 }
 
-html:not(.rp-dark) {
-  --rp-code-title-bg: var(--ui-panel);
-  --rp-code-block-color: #2e3440;
-  --rp-code-block-bg: var(--ui-paper);
-  --rp-code-block-border: 1px solid var(--ui-line-strong);
-  --shiki-foreground: #2e3440;
-  --shiki-background: transparent;
-  --shiki-token-constant: #1976d2;
-  --shiki-token-string: #218438;
-  --shiki-token-comment: #747b86;
-  --shiki-token-keyword: #cf2727;
-  --shiki-token-parameter: #b86600;
-  --shiki-token-function: #7041c8;
-  --shiki-token-string-expression: #218438;
-  --shiki-token-punctuation: #242323;
-  --shiki-token-link: #22863a;
-  --shiki-token-deleted: #d32828;
-  --shiki-token-inserted: #22863a;
+@media (max-width: 1279px) {
+  html:root {
+    --rp-content-padding-x: 36px;
+  }
 }
 
-html.rp-dark {
-  --rp-code-title-bg: #1c2432;
-  --rp-code-block-color: #e5e7eb;
-  --rp-code-block-bg: #10141c;
-  --rp-code-block-border: 1px solid #303849;
-  --shiki-foreground: #e5e7eb;
-  --shiki-background: transparent;
-  --shiki-token-constant: #6fb0fa;
-  --shiki-token-string: #f9a86e;
-  --shiki-token-comment: #8c96a5;
-  --shiki-token-keyword: #f47481;
-  --shiki-token-parameter: #ffb340;
-  --shiki-token-function: #ae8eeb;
-  --shiki-token-string-expression: #67c968;
-  --shiki-token-punctuation: #c4c8d0;
-  --shiki-token-link: #f9a76d;
-  --shiki-token-deleted: #ee6d7a;
-  --shiki-token-inserted: #36c47f;
+@media (max-width: 768px) {
+  html:root {
+    --rp-sidebar-width: min(320px, 88vw);
+    --rp-content-padding-x: 24px;
+  }
 }
 
 html {
-  min-width: 0;
   overflow-x: clip;
-  color-scheme: light;
   scroll-behavior: smooth;
 }
 
 body {
   min-width: 0;
   overflow-x: clip;
-  background: var(--a3s-docs-canvas);
-  color: var(--a3s-docs-ink);
-  font-family: var(--office-font);
+  background: var(--ui-canvas);
+  color: var(--ui-ink);
+  font-family: var(--rp-font-family-base);
   text-rendering: optimizeLegibility;
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
 }
 
 ::selection {
@@ -144,18 +145,30 @@ textarea {
   color: var(--ui-ink);
 }
 
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--ui-blue) 42%, transparent);
+:where(a, button, [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ui-blue) 46%, transparent);
   outline-offset: 3px;
 }
 
-.rp-nav {
+html .rp-nav {
   height: var(--rp-nav-height);
-  padding-right: max(24px, calc((100vw - var(--office-nav-width)) / 2 + 24px));
-  padding-left: max(24px, calc((100vw - var(--office-nav-width)) / 2 + 24px));
+  padding-right: max(24px, calc((100vw - var(--ui-nav-width)) / 2 + 24px));
+  padding-left: max(24px, calc((100vw - var(--ui-nav-width)) / 2 + 24px));
   border-bottom: 1px solid var(--ui-line);
   background: color-mix(in srgb, var(--ui-paper) 94%, transparent);
-  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  transition: none;
+}
+
+.rp-nav__left,
+.rp-nav__right {
+  min-width: 0;
+}
+
+.rp-nav__left {
+  align-items: center;
+  gap: 32px;
 }
 
 .rp-nav__title__link {
@@ -163,33 +176,38 @@ textarea {
   letter-spacing: -0.025em;
 }
 
-.rp-nav__title__logo,
-.rspress-logo {
+html .rp-nav__title__logo {
   display: grid;
   overflow: hidden;
   width: 31px;
   min-width: 31px;
+  max-width: 31px;
   height: 31px;
+  min-height: 31px;
+  max-height: 31px;
+  aspect-ratio: 1;
+  flex: 0 0 31px;
   margin-right: 0;
   border-radius: 9px;
-  box-shadow: 0 6px 16px rgb(46 62 184 / 20%);
+  box-shadow: 0 6px 16px rgb(36 58 154 / 20%);
+  place-items: center;
+}
+
+html .rp-nav__title__logo img,
+html img.rspress-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: 1;
   object-fit: contain;
 }
 
-.rp-nav__title__logo img,
-img.rspress-logo {
-  display: block;
-  width: 31px !important;
-  height: 31px !important;
-  max-height: none !important;
-  object-fit: contain !important;
-}
-
 .rp-nav__title__link > span {
-  color: var(--a3s-docs-ink);
+  color: var(--ui-ink);
   font-size: 17px;
   font-weight: 740;
-  letter-spacing: -0.025em;
 }
 
 .rp-nav-menu__item {
@@ -203,20 +221,16 @@ img.rspress-logo {
   color: var(--ui-blue);
 }
 
-.rp-nav .rp-search-button {
+html .rp-nav .rp-search-button {
   border-color: var(--ui-line);
   border-radius: 9px;
   background: var(--ui-paper);
-  box-shadow: none;
-}
-
-.rp-nav-hamburger {
-  min-width: 44px;
-  min-height: 44px;
 }
 
 .rp-nav-hamburger,
 .rp-search-button--mobile {
+  min-width: 44px;
+  min-height: 44px;
   color: var(--ui-ink);
 }
 
@@ -224,28 +238,24 @@ html .rp-switch-appearance {
   width: 32px;
   height: 32px;
   flex: 0 0 32px;
-  border: 1px solid var(--ui-line);
+  border: 0;
   border-radius: 8px;
-  background: var(--ui-paper);
+  background: transparent;
 }
 
-/* Keep language and version controls visible at ordinary laptop widths. */
-@media (min-width: 1120px) and (max-width: 1280px) {
-  .rp-nav .rp-nav__right {
-    gap: 14px;
-  }
-
-  .rp-nav .rp-nav__others {
-    display: flex;
-    gap: 10px;
-  }
-
-  .rp-nav .rp-nav-hamburger__md {
-    display: none;
-  }
+html .rp-switch-appearance:hover {
+  background: var(--ui-panel);
 }
 
-/* Rspress may leave the open mobile language grid at zero height. */
+.rp-search-button--mobile:focus-visible,
+.rp-nav-hamburger:focus-visible,
+html .rp-switch-appearance:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ui-blue) 46%, transparent);
+  outline-offset: 2px;
+}
+
+/* Rspress 2.0.19 can resolve the expanded mobile language grid to zero
+   height in Chromium. Keep each preference row atomic. */
 html .rp-nav-screen .rp-nav-screen-langs-group {
   display: none;
 }
@@ -258,154 +268,95 @@ html
 }
 
 .rp-doc-layout {
-  --rp-c-bg: var(--ui-paper);
-  --rp-c-bg-soft: var(--ui-panel);
-  --rp-c-divider: var(--ui-line);
+  --rp-c-bg: var(--ui-canvas);
+  --rp-c-bg-soft: var(--ui-paper);
+  --rp-c-bg-mute: var(--ui-panel);
+  --rp-c-divider: var(--ui-line-strong);
+  --rp-c-divider-light: var(--ui-line);
   --rp-c-text-1: var(--ui-ink);
   --rp-c-text-2: var(--ui-muted);
   --rp-c-text-3: var(--ui-faint);
-  min-width: 0;
-  background: var(--a3s-docs-canvas);
 }
 
+.rp-doc-container,
+.rp-doc-layout__doc-container {
+  background: var(--ui-canvas);
+}
+
+.rp-doc-layout,
 .rp-doc-layout__container,
 .rp-doc-layout__content,
 .rp-doc-container,
 .rp-doc {
   min-width: 0;
   max-width: 100%;
+  color: var(--ui-ink);
 }
 
-.rp-doc-container {
-  background: var(--ui-paper);
+html .rp-doc-layout__doc {
+  min-width: 0;
+  overflow: visible;
 }
 
-.rp-doc-layout__sidebar {
-  border-right: 1px solid var(--ui-line);
-  background: var(--ui-panel);
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(h1, h2, h3) {
+  color: var(--ui-ink);
+  letter-spacing: -0.025em;
 }
 
-.rp-doc-layout__sidebar[aria-hidden="true"] {
-  visibility: hidden;
-  pointer-events: none;
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(h1) {
+  margin-bottom: 2rem;
+  font-size: 2rem;
+  font-weight: 680;
+  line-height: 1.18;
 }
 
-.rp-sidebar-item {
-  border-radius: 6px;
-  color: var(--ui-muted);
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(h2) {
+  margin-top: 3rem;
+  margin-bottom: 1.25rem;
+  font-size: 1.75rem;
+  line-height: 1.25;
 }
 
-.rp-sidebar-item--active,
-.rp-sidebar-item--active:hover {
-  background: color-mix(in srgb, var(--ui-blue) 12%, var(--ui-panel));
-  color: var(--ui-blue-deep);
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(h3) {
+  margin-top: 2rem;
+  margin-bottom: 1.25rem;
+  font-size: 1.5rem;
+  line-height: 1.3;
 }
 
-.rp-doc {
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(h4) {
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+
+.rp-doc > p:first-of-type {
   color: var(--ui-ink);
   font-size: 16px;
-  line-height: 1.72;
-}
-
-.rp-doc:not(:has(.docs-home))
-  :not(:where(.rp-not-doc, .rp-not-doc *)):where(h1) {
-  margin-bottom: 18px;
-  color: var(--ui-ink);
-  font-size: clamp(36px, 4.2vw, 52px);
-  font-weight: 690;
-  letter-spacing: -0.04em;
-  line-height: 1.04;
-  text-wrap: balance;
-}
-
-.rp-doc:not(:has(.docs-home))
-  :not(:where(.rp-not-doc, .rp-not-doc *)):where(h2, h3, h4) {
-  color: var(--ui-ink);
-  letter-spacing: -0.026em;
-}
-
-.rp-doc:not(:has(.docs-home))
-  :not(:where(.rp-not-doc, .rp-not-doc *)):where(h2) {
-  margin-top: 54px;
-  padding-top: 24px;
-  border-top: 1px solid var(--ui-line);
-  font-size: 27px;
-}
-
-.rp-doc:not(:has(.docs-home))
-  :not(:where(.rp-not-doc, .rp-not-doc *)):where(h3) {
-  margin-top: 34px;
-  font-size: 20px;
-}
-
-.rp-doc:not(:has(.docs-home)) > p:first-of-type {
-  max-width: 72ch;
-  color: var(--ui-muted);
-  font-size: 17px;
   line-height: 1.75;
 }
 
-.rp-doc:not(:has(.docs-home))
-  :not(:where(.rp-not-doc, .rp-not-doc *)):where(p, li) {
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(p, li) {
   overflow-wrap: anywhere;
-  line-height: 1.72;
+  font-size: 16px;
+  line-height: 1.75;
 }
 
-.rp-doc:not(:has(.docs-home)) > :where(p, ul, ol, blockquote) {
-  max-width: 72ch;
-}
-
-.rp-doc a:not([class]) {
-  text-decoration-color: color-mix(in srgb, var(--ui-blue) 42%, transparent);
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(a[href]:not([class])) {
+  color: var(--ui-blue-deep);
+  text-decoration-color: color-mix(in srgb, currentcolor 34%, transparent);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
 
-.rp-doc a:not([class]):hover {
-  text-decoration-color: currentColor;
+.rp-doc
+  :not(:where(.rp-not-doc, .rp-not-doc *)):where(a[href]:not([class])):hover {
+  text-decoration-color: currentcolor;
 }
 
-.rp-doc:not(:has(.docs-home))
-  :not(:where(.rp-not-doc, .rp-not-doc *)):where(table) {
-  display: block;
-  overflow-x: auto;
-  width: 100%;
-  max-width: 100%;
-  border: 1px solid var(--ui-line);
-  border-radius: 10px;
-  background: var(--ui-paper);
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.rp-doc:not(:has(.docs-home))
-  :not(:where(.rp-not-doc, .rp-not-doc *)):where(th) {
-  background: var(--ui-panel);
-  color: var(--ui-muted);
-  font-family: var(--ui-mono);
-  font-size: 12px;
-  font-weight: 650;
-  letter-spacing: 0.065em;
-  text-transform: uppercase;
-}
-
-.rp-doc:not(:has(.docs-home))
-  :not(:where(.rp-not-doc, .rp-not-doc *)):where(th, td) {
-  padding: 12px 14px;
-  border-right: 1px solid var(--ui-line);
-  border-bottom: 1px solid var(--ui-line);
-  vertical-align: top;
-}
-
-.rp-doc:not(:has(.docs-home))
-  :not(:where(.rp-not-doc, .rp-not-doc *)):where(tr:last-child)
-  td {
-  border-bottom: 0;
-}
-
-.rp-doc:not(:has(.docs-home))
-  :not(:where(.rp-not-doc, .rp-not-doc *)):where(th:last-child, td:last-child) {
-  border-right: 0;
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(a[href]):focus-visible {
+  border-radius: 3px;
+  outline: 2px solid var(--ui-blue);
+  outline-offset: 3px;
 }
 
 .rp-codeblock,
@@ -415,58 +366,273 @@ html
   max-width: 100%;
 }
 
-.rp-doc:not(:has(.docs-home)) .rp-codeblock {
-  overflow: hidden;
-  margin: 20px 0 28px;
-  border-radius: 10px;
-}
-
-.rp-codeblock__title {
-  color: var(--ui-muted);
-  font-family: var(--ui-mono);
-  font-size: 12px;
-}
-
 .rp-codeblock__content__scroll-container {
   overflow-x: auto;
 }
 
-.rp-codeblock__content:focus-within .rp-code-button-group__button {
+.rp-doc .rp-codeblock {
+  margin: 1.5rem 0;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--rp-radius);
+  background: var(--ui-canvas);
+  box-shadow: none;
+  direction: ltr;
+}
+
+.rp-doc .rp-codeblock__title {
+  border-bottom: 1px solid var(--ui-line);
+  background: var(--ui-panel);
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rp-doc .rp-codeblock__content {
+  background: var(--ui-canvas);
+}
+
+.rp-doc .rp-code-button-group {
+  top: 12px;
+  right: 12px;
+  gap: 4px;
+}
+
+.rp-doc .rp-code-button-group__button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
   opacity: 1;
-  transition-duration: 0s;
 }
 
-.rp-codeblock__content .shiki code .line {
-  min-width: max-content;
-  white-space: pre;
+.rp-doc .rp-code-button-group__button:hover {
+  background: var(--ui-panel);
 }
 
-.rp-codeblock__content code {
-  font-family: var(--ui-mono);
+.rp-doc .rp-code-button-group__button:focus-visible {
+  outline: 2px solid var(--ui-blue);
+  outline-offset: 2px;
 }
 
-.rp-doc:not(:has(.docs-home))
-  :not(:where(.rp-not-doc, .rp-not-doc *)):not(pre)
-  > code {
-  border: 1px solid var(--ui-line);
-  border-radius: 5px;
+.rp-doc .rp-code-button-group__icon {
+  width: 18px;
+  height: 18px;
+  color: var(--ui-muted);
+  opacity: 1;
+}
+
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):not(pre) > code {
+  border-color: var(--ui-line-strong);
   background: var(--ui-panel);
   color: var(--ui-blue-deep);
   font-family: var(--ui-mono);
-  font-size: 0.84em;
 }
 
+.rp-doc .rp-table-scroll-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-color: var(--ui-line-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.rp-doc .rp-table-scroll-container:focus-visible {
+  outline: 2px solid var(--ui-blue);
+  outline-offset: 3px;
+}
+
+.rp-doc .rp-table-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.rp-doc .rp-table-scroll-container::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--ui-line-strong);
+  background-clip: padding-box;
+}
+
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(table) {
+  border-color: var(--ui-line-strong);
+  background: var(--ui-paper);
+}
+
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(thead) {
+  background: var(--ui-panel);
+}
+
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(th) {
+  color: var(--ui-ink);
+  font-family: inherit;
+  font-weight: 650;
+}
+
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(td) {
+  color: var(--ui-muted);
+}
+
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(tbody) {
+  background: var(--ui-paper);
+}
+
+.rp-doc :not(:where(.rp-not-doc, .rp-not-doc *)):where(tbody tr:hover) {
+  background: var(--ui-panel);
+}
+
+.rp-sidebar,
+.rp-doc-layout__sidebar {
+  border-right-color: var(--ui-line-strong);
+  background: var(--ui-canvas);
+}
+
+.rp-outline,
 .rp-doc-layout__outline {
-  box-shadow: none;
+  border-left-color: var(--ui-line-strong);
 }
 
-.rp-outline {
-  border-left: 1px solid var(--ui-line);
+.rp-doc-footer {
+  margin-top: 72px;
+  padding-bottom: 32px;
+}
+
+.rp-doc-footer__edit {
+  min-height: 44px;
+  padding: 12px 0;
+  border-top: 1px solid var(--ui-line-strong);
+  gap: 16px;
+}
+
+.rp-doc-footer .rp-edit-link {
+  display: inline-flex;
+  min-height: 36px;
+  margin-inline-start: -10px;
+  padding: 0 10px;
+  border-radius: 8px;
+  align-items: center;
+  color: var(--ui-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rp-doc-footer .rp-edit-link:hover {
+  background: var(--ui-panel);
+  color: var(--ui-blue-deep);
+}
+
+.rp-doc-footer .rp-edit-link:focus-visible,
+.rp-prev-next-page__item:focus-visible {
+  outline: 2px solid var(--ui-blue);
+  outline-offset: 3px;
+}
+
+.rp-last-updated {
+  color: var(--ui-faint);
+  font-size: 13px;
+}
+
+.rp-doc-footer__divider {
+  height: 1px;
+  margin: 20px 0 16px;
+  background: var(--ui-line);
+}
+
+.rp-prev-next-page {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rp-prev-next-page__item {
+  min-width: 0;
+  min-height: 88px;
+  padding: 16px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: 12px;
+  background: var(--ui-paper);
+  color: var(--ui-ink);
+  opacity: 1;
+  transition:
+    border-color 140ms ease-out,
+    background-color 140ms ease-out;
+}
+
+.rp-prev-next-page__item:hover {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-panel);
+  opacity: 1;
+}
+
+.rp-prev-next-page__item__desc {
+  margin-bottom: 4px;
+  padding: 0;
+  color: var(--ui-faint);
+  font-size: 12px;
+  font-weight: 520;
+  line-height: 1.4;
+}
+
+.rp-prev-next-page__item__title {
+  min-width: 0;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.rp-prev-next-page__item__title > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rp-prev-next-page__icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  .rp-nav {
-    background: var(--ui-paper);
+  html .rp-nav {
+    background: var(--ui-canvas);
+    -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+  }
+}
+
+/* A3S Office keeps product copy and routes while sharing the UI docs shell. */
+html:root {
+  --rp-font-family-base:
+    "Geist Variable", "Avenir Next", "HarmonyOS Sans SC", "PingFang SC",
+    ui-sans-serif, system-ui, sans-serif;
+  --rp-font-family-mono:
+    "Geist Mono Variable", "SFMono-Regular", "Cascadia Code", Menlo, Consolas,
+    monospace;
+  --office-font: var(--rp-font-family-base);
+  --office-mono: var(--rp-font-family-mono);
+  --a3s-docs-ink: var(--ui-ink);
+  --a3s-docs-muted: var(--ui-muted);
+  --a3s-docs-line: var(--ui-line);
+  --a3s-docs-blue: var(--ui-blue);
+  --a3s-docs-blue-dark: var(--ui-blue-deep);
+  --a3s-docs-blue-soft: color-mix(in srgb, var(--ui-blue) 10%, var(--ui-paper));
+  --a3s-docs-canvas: var(--ui-canvas);
+  --a3s-docs-paper: var(--ui-paper);
 }

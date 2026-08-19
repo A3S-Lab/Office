@@ -40,7 +40,7 @@ export default defineConfig({
   outDir: path.resolve(import.meta.dirname, '../playground-dist/docs'),
   llms: true,
   head: [
-    ['meta', { name: 'theme-color', content: '#f7f7f8' }],
+    ['meta', { name: 'theme-color', content: '#f5f7fb' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: 'A3S Office Docs' }],
     (route) => [
@@ -54,7 +54,7 @@ export default defineConfig({
   themeConfig: {
     search: true,
     fallbackHeadingTitle: false,
-    enableContentAnimation: true,
+    enableContentAnimation: false,
     editLink: {
       docRepoBaseUrl: 'https://github.com/A3S-Lab/Office/tree/main/docs',
     },

@@ -684,24 +684,24 @@
 
 @media (max-width: 640px) {
   .rp-nav {
-    background: var(--ui-paper);
+    background: var(--ui-canvas);
     backdrop-filter: none;
   }
 
   .rp-doc:not(:has(.docs-home))
     :not(:where(.rp-not-doc, .rp-not-doc *)):where(h1) {
-    font-size: 38px;
-    line-height: 1.08;
+    font-size: 32px;
+    line-height: 1.16;
   }
 
   .rp-doc:not(:has(.docs-home))
     :not(:where(.rp-not-doc, .rp-not-doc *)):where(h2) {
-    margin-top: 44px;
-    font-size: 24px;
+    margin-top: 48px;
+    font-size: 28px;
   }
 
   .rp-doc:not(:has(.docs-home)) > p:first-of-type {
-    font-size: 15px;
+    font-size: 16px;
   }
 }
 
