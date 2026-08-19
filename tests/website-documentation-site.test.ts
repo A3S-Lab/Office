@@ -14,6 +14,7 @@ const documentationRoot = path.resolve(import.meta.dirname, '../docs');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.13.0' ||
     version === '0.12.0' ||
     version === '0.11.0' ||
     version === '0.10.0' ||
@@ -34,6 +35,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.13.0',
     '0.12.0',
     '0.11.0',
     '0.10.0',
@@ -69,6 +71,7 @@ test('keeps every public route available in every language and version', async (
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.13.0',
     '0.12.0',
     '0.11.0',
     '0.10.0',
@@ -119,6 +122,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.13.0',
     '0.12.0',
     '0.11.0',
     '0.10.0',
@@ -148,6 +152,7 @@ test('uses deployable HTML targets in current release homepage actions', async (
 test('publishes real-time collaboration as a bilingual first-class capability', async () => {
   for (const version of [
     'latest',
+    '0.13.0',
     '0.12.0',
     '0.11.0',
     '0.10.0',
@@ -190,6 +195,7 @@ test('publishes real-time collaboration as a bilingual first-class capability', 
 test('publishes the runnable collaboration backend in latest releases', async () => {
   for (const version of [
     'latest',
+    '0.13.0',
     '0.12.0',
     '0.11.0',
     '0.10.0',
@@ -227,7 +233,14 @@ test('publishes the runnable collaboration backend in latest releases', async ()
 });
 
 test('documents ephemeral native agent presence in current releases', async () => {
-  for (const version of ['latest', '0.12.0', '0.11.0', '0.10.0', '0.9.2']) {
+  for (const version of [
+    'latest',
+    '0.13.0',
+    '0.12.0',
+    '0.11.0',
+    '0.10.0',
+    '0.9.2',
+  ]) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [collaboration, server, cli] = await Promise.all([
@@ -252,6 +265,7 @@ test('documents ephemeral native agent presence in current releases', async () =
 test('documents durable Document comments in current releases', async () => {
   for (const version of [
     'latest',
+    '0.13.0',
     '0.12.0',
     '0.11.0',
     '0.10.0',
@@ -291,6 +305,7 @@ test('documents durable Document comments in current releases', async () => {
 test('documents attributed Document suggestions and native typed mutations', async () => {
   for (const version of [
     'latest',
+    '0.13.0',
     '0.12.0',
     '0.11.0',
     '0.10.0',
@@ -326,7 +341,7 @@ test('documents attributed Document suggestions and native typed mutations', asy
 });
 
 test('documents collaborative character-formatting revisions', async () => {
-  for (const version of ['latest', '0.12.0', '0.11.0', '0.10.0']) {
+  for (const version of ['latest', '0.13.0', '0.12.0', '0.11.0', '0.10.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [document, collaboration, server] = await Promise.all([
@@ -350,7 +365,7 @@ test('documents collaborative character-formatting revisions', async () => {
 });
 
 test('documents collaborative paragraph-formatting revisions', async () => {
-  for (const version of ['latest', '0.12.0', '0.11.0']) {
+  for (const version of ['latest', '0.13.0', '0.12.0', '0.11.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [document, collaboration, server, architecture, roadmap] =
@@ -391,6 +406,7 @@ test('documents collaborative paragraph-formatting revisions', async () => {
 test('documents atomic native Spreadsheet cell batches', async () => {
   for (const version of [
     'latest',
+    '0.13.0',
     '0.12.0',
     '0.11.0',
     '0.10.0',
@@ -415,7 +431,7 @@ test('documents atomic native Spreadsheet cell batches', async () => {
 });
 
 test('documents maximum sparse spreadsheets and cancellable imports in 0.12.0', async () => {
-  for (const version of ['latest', '0.12.0']) {
+  for (const version of ['latest', '0.13.0', '0.12.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [guide, spreadsheet] = await Promise.all([
@@ -438,39 +454,66 @@ test('documents maximum sparse spreadsheets and cancellable imports in 0.12.0', 
   }
 });
 
-test('publishes reproducible 100k Document performance evidence', async () => {
-  const [document, architecture] = await Promise.all([
-    readFile(
-      path.join(documentationRoot, 'latest/en/components/document.mdx'),
+test('documents WPS four-direction cell fill in 0.13.0', async () => {
+  for (const version of ['latest', '0.13.0']) {
+    const spreadsheet = await readFile(
+      path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
       'utf8',
-    ),
-    readFile(
-      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
-      'utf8',
-    ),
-  ]);
+    );
 
-  for (const evidence of [
-    '100,000 text paragraphs',
-    '100,000 table rows',
-    '0.397 s',
-    '120.0 FPS',
-    '70.4 MiB',
-    '53.9 ms',
-  ]) {
-    expect(document).toContain(evidence);
-    expect(architecture).toContain(evidence);
+    for (const evidence of [
+      'Fill Down',
+      'Fill Right',
+      'Fill Up',
+      'Fill Left',
+      'Cmd/Ctrl+D',
+      'Cmd/Ctrl+R',
+      '50,000 target cells',
+    ]) {
+      expect(spreadsheet).toContain(evidence);
+    }
   }
-  for (const command of [
-    'bun run performance:large-documents',
-    'bun run performance:large-document-edits',
-    'bun run test:e2e:large-documents',
-  ]) {
-    expect(document).toContain(command);
+});
+
+test('publishes reproducible 100k Document performance evidence', async () => {
+  for (const version of ['latest', '0.13.0']) {
+    const [document, architecture] = await Promise.all([
+      readFile(
+        path.join(documentationRoot, version, 'en/components/document.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          documentationRoot,
+          version,
+          'en/browser-editor-architecture.md',
+        ),
+        'utf8',
+      ),
+    ]);
+
+    for (const evidence of [
+      '100,000 text paragraphs',
+      '100,000 table rows',
+      '0.397 s',
+      '120.0 FPS',
+      '70.4 MiB',
+      '53.9 ms',
+    ]) {
+      expect(document).toContain(evidence);
+      expect(architecture).toContain(evidence);
+    }
+    for (const command of [
+      'bun run performance:large-documents',
+      'bun run performance:large-document-edits',
+      'bun run test:e2e:large-documents',
+    ]) {
+      expect(document).toContain(command);
+    }
+    expect(document).toContain(
+      '../browser-editor-architecture.md#current-100000-unit-evidence',
+    );
   }
-  expect(document).toContain(
-    '../browser-editor-architecture.md#current-100000-unit-evidence',
-  );
 });
 
 test('keeps the 0.8.0 native suggestion limitation frozen', async () => {

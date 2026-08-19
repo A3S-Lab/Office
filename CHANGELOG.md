@@ -4,15 +4,30 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
-- Added WPS-aligned Spreadsheet Fill Down, Right, Up, and Left commands under
-  Home and Editing, with `Cmd/Ctrl+D` and `Cmd/Ctrl+R`, native relative-formula
-  and style propagation, one-step Undo and Redo, protected-range preflight, and
-  a 50,000-target-cell limit. The Fortune adapter now materializes only selected
-  sparse rows and restores the original sparse shape if native fill fails.
-- Added focused unit, component, desktop/compact Playwright, and local-only A3S
-  Test coverage for fill menus, shortcuts, formula/style propagation, history,
-  sparse rows, and browser diagnostics. GitHub Actions remains Playwright-only
-  and now has a repository policy regression that rejects A3S Test references.
+## 0.13.0 - 2026-08-20
+
+- Reworked large Document and Spreadsheet editing around bounded windowing,
+  incremental projections, cancellable Workers, and persistent Rust/WASM
+  sessions. Cold import, first interactive paint, `Ctrl+End`, repeated edits,
+  and controlled publication now avoid rebuilding complete 100,000-unit models.
+- Bounded PDF runtime and thumbnail work and Presentation layout, snapping,
+  thumbnail, and scene rendering. Production keeps explicit windowing while
+  `content-visibility` remains a measured opt-in benchmark mode where browser
+  behavior does not provide a reliable product contract.
+- Published reproducible 100,000-paragraph, 100,000-table-row, and one-million-
+  cell measurements for import, readiness, scrolling, memory, DOM size, and
+  repeated edits. The documentation shell now follows the A3S navigation and
+  code-rendering system, and every editor uses a centered accessible loading
+  state with reduced-motion support.
+- Added WPS-aligned Spreadsheet single strikethrough, native cell-border
+  presets and styles, and Fill Down, Right, Up, and Left. Fill preserves native
+  relative-formula, series, style, Undo/Redo, sparse-matrix, protection,
+  merge, pivot, read-only, and browser-shortcut semantics, with a
+  50,000-target-cell limit.
+- Expanded unit, component, Rust/WASM, production-build, bundle-budget,
+  desktop/compact Playwright, and local ACL coverage. A repository policy now
+  prevents GitHub Actions from installing or invoking A3S Test; CI and Pages
+  retain Playwright as their browser regression gate.
 
 ## 0.12.0 - 2026-08-18
 
