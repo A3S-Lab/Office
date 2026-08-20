@@ -157,6 +157,38 @@ native record per cell and therefore accept at most 4,096 selected cells per
 command. Clear Formats and Clear All remove the selected border ranges without
 changing merge geometry.
 
+## AutoSum and aggregate totals
+
+Home and Editing exposes a WPS-style split command before Fill. The primary
+button inserts `SUM` and advertises the editor-scoped `Alt+=` shortcut. Its
+keyboard-operated menu inserts `SUM`, `AVERAGE`, `COUNT`, `MAX`, or `MIN` and
+supports Arrow, Home, End, Enter, and Escape navigation with exact focus
+restoration.
+
+For one blank selected cell, AutoSum first reads the contiguous numeric or
+formula block immediately above it and falls back to the contiguous block on
+its left. Text and blank cells are boundaries. An explicit selection that
+includes a blank totals row or totals column discovers every numeric/formula
+axis and can write multiple aggregate formulas in one gesture. Label and
+text-only axes remain unchanged, and non-consecutive outputs are compacted into
+the smallest consecutive native write ranges.
+
+AutoSum writes formula strings through one Fortune `batchCallApis` operation,
+then selects the complete output range and synchronizes the formula bar. It
+does not replace an occupied eligible target and preserves every target cell's
+existing style. A command requires one live range on the active editable
+worksheet and rejects merged targets, pivot sheets, read-only rows or columns,
+protected cells, invalid Excel coordinates, and more than 1,000 formula
+targets before mutation. Dense worksheets remain dense, sparse `celldata`
+worksheets remain sparse, one controlled `onChange` is emitted, and one Undo
+reverts the complete gesture.
+
+Rstest covers inference, multi-output compaction, sparse access, mutation
+guards, formula-bar synchronization, style preservation, controlled updates,
+and one-step Undo. Playwright exercises `Alt+=` and the aggregate menu at both
+desktop and compact widths. GitHub Actions and Pages use those Rstest and
+Playwright gates and do not install or run A3S Test.
+
 ## Four-direction cell fill
 
 Home and Editing exposes Fill Down, Fill Right, Fill Up, and Fill Left in one

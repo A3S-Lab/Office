@@ -211,6 +211,11 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     tab: 'home',
   });
   for (const command of [
+    spreadsheetCommandCatalog.autoSum,
+    spreadsheetCommandCatalog.autoAverage,
+    spreadsheetCommandCatalog.autoCount,
+    spreadsheetCommandCatalog.autoMaximum,
+    spreadsheetCommandCatalog.autoMinimum,
     spreadsheetCommandCatalog.fillDown,
     spreadsheetCommandCatalog.fillRight,
     spreadsheetCommandCatalog.fillUp,
@@ -231,6 +236,11 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     aria: 'Delete Backspace',
     editor: ['Delete', 'Backspace'],
     label: 'Delete/Backspace',
+  });
+  expect(spreadsheetCommandCatalog.autoSum.shortcut).toEqual({
+    aria: 'Alt+=',
+    editor: ['Alt-equal'],
+    label: 'Alt+=',
   });
   expect(spreadsheetCommandCatalog.fillDown.shortcut).toEqual({
     aria: 'Control+D Meta+D',

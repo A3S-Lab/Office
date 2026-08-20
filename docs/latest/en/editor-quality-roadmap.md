@@ -867,6 +867,24 @@ exercise launch, six-tab Apply, reopen, and one-step Undo. A3S Test remains an
 optional local-only release aid; GitHub Actions and Pages neither install nor
 run it and use Rstest, Playwright, and Cargo instead.
 
+The seventeenth slice adds the WPS AutoSum split command before Fill under Home
+and Editing. Sum remains the primary action and owns the editor-scoped `Alt+=`
+shortcut; the disclosure menu adds Average, Count, Maximum, and Minimum with
+Arrow, Home, End, Enter, and Escape behavior. A single blank target infers the
+nearest contiguous numeric or formula run above before falling back to the
+left. Explicit totals rows and columns discover numeric/formula axes, preserve
+labels and text-only axes, and compact consecutive outputs into native ranges.
+Every function writes native formulas, retains target formatting, updates the
+formula bar, and commits through one Fortune batch, one controlled `onChange`,
+and one Undo record. Preflight rejects occupied eligible targets, multiple
+selections, inactive or read-only sheets, merged or protected targets, pivot
+sheets, invalid Excel coordinates, and more than 1,000 formula outputs. Sparse
+`celldata` is read through indexed coordinates without a dense projection.
+Focused planner, command, editor, catalog, ribbon, focus, desktop, and compact
+Playwright coverage verifies inference, menu navigation, formula synchronization,
+style retention, one-step Undo, and responsive layout. GitHub Actions and Pages
+continue to use Rstest and Playwright without installing or invoking A3S Test.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

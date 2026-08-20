@@ -1,0 +1,158 @@
+suite "spreadsheet-auto-sum" {
+    version = 1
+
+    scenario "apply-sum-and-average-with-one-step-undo" {
+        name = "Apply WPS AutoSum formulas without replacing target styles"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-auto-sum"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "select-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "select-row-three" {
+            key = "ArrowDown"
+        }
+
+        press "select-row-four" {
+            key = "ArrowDown"
+        }
+
+        press "select-row-five" {
+            key = "ArrowDown"
+        }
+
+        press "select-row-six" {
+            key = "ArrowDown"
+        }
+
+        press "select-row-seven" {
+            key = "ArrowDown"
+        }
+
+        press "select-row-eight" {
+            key = "ArrowDown"
+        }
+
+        press "select-column-b" {
+            key = "ArrowRight"
+        }
+
+        press "select-column-c" {
+            key = "ArrowRight"
+        }
+
+        expect "blank-total-cell-selected" {
+            text = "C8"
+        }
+
+        click "style-total-cell" {
+            target = role("button", "加粗")
+        }
+
+        press "apply-sum-shortcut" {
+            key = "Alt+="
+        }
+
+        expect "sum-formula-is-visible" {
+            text = "=SUM(C4:C7)"
+        }
+
+        expect "target-style-is-preserved" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='true']")
+        }
+
+        press "undo-complete-sum" {
+            key = "Control+Z"
+        }
+
+        expect "sum-is-undone-in-one-step" {
+            visible = css(".fortune-fx-input:empty")
+        }
+
+        expect "undo-keeps-prior-target-style" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='true']")
+        }
+
+        click "open-aggregate-menu" {
+            target = role("button", "更多自动计算方式")
+        }
+
+        expect "aggregate-menu-has-five-functions" {
+            visible = css("[role='menu'][aria-label='自动计算选项'] button:nth-of-type(5)")
+        }
+
+        expect "sum-menu-item-is-focused" {
+            visible = css("[role='menu'][aria-label='自动计算选项'] [role='menuitem'][aria-keyshortcuts='Alt+=']:focus")
+        }
+
+        press "focus-average" {
+            key = "ArrowDown"
+        }
+
+        expect "average-menu-item-is-focused" {
+            visible = css("[role='menu'][aria-label='自动计算选项'] [role='menuitem']:nth-of-type(2):focus")
+        }
+
+        press "apply-average" {
+            key = "Enter"
+        }
+
+        expect "average-formula-is-visible" {
+            text = "=AVERAGE(C4:C7)"
+        }
+
+        expect "grid-focus-is-restored" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        screenshot "spreadsheet-auto-sum" {
+            path = "screenshots/spreadsheet-auto-sum.png"
+        }
+
+        accessibility "spreadsheet-auto-sum-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

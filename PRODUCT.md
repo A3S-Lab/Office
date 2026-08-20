@@ -126,6 +126,24 @@ of inheriting the focused cell's code. Identical results compact into native
 rectangles, one command emits one workbook batch and one Undo record, and date,
 time, fraction, text, and unknown custom formats remain untouched. A 10,000-cell
 bound prevents blank maximum-size ranges from becoming dense.
+The sixteenth milestone adds the complete WPS-style Format Cells workflow under
+Home and Number with the editor-scoped `Cmd/Ctrl+1` shortcut. Number, Alignment,
+Font, Border, Fill, and Protection share one dialog that preserves untouched
+mixed values, captures its exact source range, retains dense or sparse worksheet
+representation, and publishes one controlled update and one Undo record. The
+general command accepts at most 10,000 cells and diagonal borders retain their
+stricter 4,096-cell bound; host inputs, formula or cell editing, and modal
+controls keep their native shortcut behavior.
+The seventeenth milestone adds the WPS AutoSum split command before Fill under
+Home and Editing. Sum is the primary action and `Alt+=` fast path; the menu adds
+Average, Count, Maximum, and Minimum with complete Arrow, Home, End, Enter, and
+Escape behavior. One blank target infers the nearest contiguous numeric or
+formula block above before looking left, while an explicit totals row or column
+can emit multiple formulas without replacing label or text axes. The command
+preserves target formatting, rejects occupied, merged, protected, read-only,
+inactive, or pivot targets, caps one gesture at 1,000 formula cells, keeps sparse
+worksheets sparse, and commits one native batch, one controlled update, and one
+Undo record.
 
 ## Product Rules
 

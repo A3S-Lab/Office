@@ -663,6 +663,65 @@ test('operates the WPS Clear menu from the Home editing group', () => {
   expect(screen.queryByRole('menu', { name: '清除选项' })).toBeNull();
 });
 
+test('operates the WPS AutoSum split command and aggregate menu from Home', async () => {
+  const actions: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          applyAutoSum: (functionName) => {
+            actions.push(functionName);
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      findOpen={false}
+      gridLinesVisible
+      panel={null}
+      toolbarCell={null}
+      onOpenFind={() => undefined}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const editing = screen.getByRole('region', { name: '编辑' });
+  const primary = within(editing).getByRole('button', { name: '自动求和' });
+  const disclosure = within(editing).getByRole('button', {
+    name: '更多自动计算方式',
+  });
+  expect(primary).toHaveAttribute('aria-keyshortcuts', 'Alt+=');
+  expect(primary).toHaveAttribute('title', '自动求和（Alt+=）');
+  fireEvent.click(primary);
+  expect(actions).toEqual(['sum']);
+
+  expect(disclosure).toHaveAttribute('aria-haspopup', 'menu');
+  fireEvent.click(disclosure);
+  const menu = screen.getByRole('menu', { name: '自动计算选项' });
+  const sum = within(menu).getByRole('menuitem', { name: '自动求和' });
+  const average = within(menu).getByRole('menuitem', { name: '平均值' });
+  const count = within(menu).getByRole('menuitem', { name: '计数' });
+  const maximum = within(menu).getByRole('menuitem', { name: '最大值' });
+  const minimum = within(menu).getByRole('menuitem', { name: '最小值' });
+  expect(sum).toHaveAttribute('aria-keyshortcuts', 'Alt+=');
+  await waitFor(() => expect(sum).toHaveFocus());
+  fireEvent.keyDown(menu, { key: 'ArrowDown' });
+  expect(average).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'End' });
+  expect(minimum).toHaveFocus();
+  expect(count).toBeEnabled();
+  expect(maximum).toBeEnabled();
+  fireEvent.click(average);
+  expect(actions).toEqual(['sum', 'average']);
+  expect(screen.queryByRole('menu', { name: '自动计算选项' })).toBeNull();
+  expect(disclosure).toHaveFocus();
+});
+
 test('operates the keyboard-accessible WPS Fill menu from Home', async () => {
   const actions: string[] = [];
   render(
@@ -894,6 +953,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     adjustDecimalPlaces: () => true,
     applyCellStyle: () => true,
     applyCellFormat: () => true,
+    applyAutoSum: () => true,
     clearSelectedCells: () => true,
     activateFormatPainter: () => true,
     applyFormatPainter: () => true,
@@ -943,6 +1003,7 @@ function spreadsheetCommands(
       | 'activateFormatPainter'
       | 'applyCellStyle'
       | 'applyCellFormat'
+      | 'applyAutoSum'
       | 'cancelFormatPainter'
       | 'clearSelectedCells'
       | 'copySelection'
@@ -965,6 +1026,7 @@ function spreadsheetCommands(
     adjustDecimalPlaces: overrides.adjustDecimalPlaces ?? (() => true),
     applyCellStyle: overrides.applyCellStyle ?? (() => true),
     applyCellFormat: overrides.applyCellFormat ?? (() => true),
+    applyAutoSum: overrides.applyAutoSum ?? (() => true),
     applyFormatPainter: () => true,
     cancelFormatPainter: overrides.cancelFormatPainter ?? (() => true),
     clearSelectedCells: overrides.clearSelectedCells ?? (() => true),

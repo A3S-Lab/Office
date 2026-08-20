@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added the WPS Spreadsheet AutoSum split command before Fill with Sum,
+  Average, Count, Maximum, and Minimum plus the editor-scoped `Alt+=` Sum
+  shortcut. It infers contiguous sources above or left, supports multi-formula
+  totals rows and columns, preserves target styles and sparse worksheets,
+  rejects unsafe targets, and commits one bounded native batch and Undo record.
+- Added the complete WPS-style Format Cells dialog under Home and Number with
+  Number, Alignment, Font, Border, Fill, and Protection tabs and the
+  editor-scoped `Cmd/Ctrl+1` shortcut. Mixed values, dense/sparse representation,
+  one controlled update, one-step Undo, and exact focus restoration are
+  preserved across the bounded workflow.
 - Made Spreadsheet Increase Decimal and Decrease Decimal first-class WPS Home
   and Number commands. Mixed selections now retain each cell's currency,
   accounting, percentage, number, or scientific format family, compact equal

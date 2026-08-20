@@ -547,6 +547,12 @@ interaction model.
   relative-formula and style propagation, WPS `Cmd/Ctrl+D` and `Cmd/Ctrl+R`
   shortcuts, one-step history, protected-range preflight, a 50,000-target-cell
   guard, and sparse-row-safe execution,
+  a WPS AutoSum split command before Fill with Sum, Average, Count, Maximum,
+  and Minimum, the editor-scoped `Alt+=` Sum shortcut, contiguous source
+  inference above or left of a blank target, multi-formula totals rows and
+  columns, target-style preservation, merged/protected/read-only/pivot and
+  overwrite preflight, a 1,000-formula bound, sparse-safe native batches, and
+  one-step history,
   Home and Number presets for General, Number, CNY Currency, Accounting,
   Percentage, Short Date, Time, Scientific, Fraction, and Text, including the
   seven standard `Cmd/Ctrl+Shift` format shortcuts, exact XLSX format-code

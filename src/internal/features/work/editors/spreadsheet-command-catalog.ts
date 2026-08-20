@@ -361,6 +361,36 @@ export const spreadsheetCommandCatalog = {
     label: '删除所选列',
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
   },
+  autoSum: {
+    id: 'editing.autoSum',
+    label: '自动求和',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+    shortcut: {
+      label: 'Alt+=',
+      aria: 'Alt+=',
+      editor: ['Alt-equal'],
+    },
+  },
+  autoAverage: {
+    id: 'editing.autoAverage',
+    label: '平均值',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+  },
+  autoCount: {
+    id: 'editing.autoCount',
+    label: '计数',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+  },
+  autoMaximum: {
+    id: 'editing.autoMaximum',
+    label: '最大值',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+  },
+  autoMinimum: {
+    id: 'editing.autoMinimum',
+    label: '最小值',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+  },
   fillDown: {
     id: 'editing.fillDown',
     label: '向下填充',

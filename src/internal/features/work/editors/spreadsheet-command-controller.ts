@@ -10,6 +10,8 @@ import {
   type OfficeEditorExtension,
 } from './office-editor-extension';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
+import type { SpreadsheetAutoSumFunction } from './spreadsheet-auto-sum';
+import { createSpreadsheetAutoSumExtension } from './spreadsheet-auto-sum-command';
 import {
   clearSpreadsheetSheetSelection,
   type SpreadsheetCellClearMode,
@@ -218,6 +220,7 @@ export interface SpreadsheetEditorCommands {
   ) => boolean;
   applyCellStyle: (preset: SpreadsheetCellStyleChoice) => boolean;
   applyCellFormat: (request: SpreadsheetCellFormatRequest) => boolean;
+  applyAutoSum: (functionName: SpreadsheetAutoSumFunction) => boolean;
   applyFormatPainter: (target: SpreadsheetCommandSelection) => boolean;
   cancelFormatPainter: () => boolean;
   clearSelectedCells: (mode?: SpreadsheetCellClearMode) => boolean;
@@ -319,6 +322,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     createSpreadsheetCellBorderExtension(),
     createSpreadsheetCellStyleExtension(),
     createSpreadsheetNumberFormatExtension(),
+    createSpreadsheetAutoSumExtension(),
     createSpreadsheetCellFillExtension(),
     createOfficeEditorExtension<
       SpreadsheetCommandContext,
