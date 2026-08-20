@@ -885,6 +885,21 @@ Playwright coverage verifies inference, menu navigation, formula synchronization
 style retention, one-step Undo, and responsive layout. GitHub Actions and Pages
 continue to use Rstest and Playwright without installing or invoking A3S Test.
 
+The eighteenth slice replaces the standalone Home and Editing Find button with
+the WPS-style Find and Select menu. Find retains `Cmd/Ctrl+F`; Go To adds
+`Ctrl+G` and `F5` for one bounded direct A1 range, quoted cross-sheet
+references, and worksheet- or workbook-scoped names. The shared dialog reports
+empty, invalid, ambiguous, hidden, missing, multi-area, unsupported, and
+out-of-bounds targets before submission. One view-only navigation primitive
+activates the target sheet, sets the exact range, scrolls to the focused cell,
+and restores grid focus for Go To and participant following. It emits no
+controlled `onChange`, creates no Undo record, and never materializes sparse
+cells. Command ownership excludes host inputs, formula and cell editing,
+popovers, and modal controls. Focused resolver, shortcut, controller, ribbon,
+editor, sparse, and browser regressions protect the workflow. Its deterministic
+A3S Test ACL is a local release gate; GitHub Actions and Pages continue to use
+Rstest and Playwright only.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,
@@ -903,12 +918,6 @@ continue to use Rstest and Playwright without installing or invoking A3S Test.
   tools yield the available width, invalid feedback expands into a readable
   second row, and successful or cancelled edits restore the normal workbook
   status controls without covering the grid.
-- Keep Cmd/Ctrl+F inside the editor through the compact Spreadsheet Find bar,
-  including displayed, raw, formula, and sparse-cell matching, deterministic
-  navigation, repeated-shortcut refocus, and grid-focus restoration on close.
-- Keep the phone Find surface within the viewport with a 40 px input and 40 px
-  previous, next, and close actions. The deterministic phone workflow must
-  prove an exact cell result and return focus to the grid after Escape.
 - Keep workbook task panes as bounded desktop regions and focus-contained phone
   dialogs. At phone widths the ribbon, grid, and worksheet footer remain inert;
   Tab and Shift+Tab stay in the pane; Escape cancels a dirty draft before it

@@ -694,6 +694,10 @@
   grid-template-columns: 20px minmax(0, 1fr);
 }
 
+.work-spreadsheet-find-select-menu > button {
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+}
+
 .work-spreadsheet-ribbon-menu > button > span:last-child {
   white-space: normal;
 }

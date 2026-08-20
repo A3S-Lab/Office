@@ -144,6 +144,15 @@ preserves target formatting, rejects occupied, merged, protected, read-only,
 inactive, or pivot targets, caps one gesture at 1,000 formula cells, keeps sparse
 worksheets sparse, and commits one native batch, one controlled update, and one
 Undo record.
+The eighteenth milestone replaces the standalone Home and Editing Find button
+with the WPS-style Find and Select menu. Find retains `Cmd/Ctrl+F`; Go To adds
+`Ctrl+G` and `F5` for direct A1 cells, continuous ranges, quoted cross-sheet
+references, and worksheet- or workbook-scoped names. Invalid, ambiguous,
+hidden, multi-area, unsupported, and out-of-bounds targets fail inside the
+shared dialog. Successful navigation activates the target sheet, selects and
+scrolls to the focused cell, and restores grid focus without publishing
+`onChange`, adding Undo history, or materializing sparse cells. Host inputs,
+formula or cell editing, popovers, and modal controls retain their native keys.
 
 ## Product Rules
 

@@ -225,6 +225,9 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     spreadsheetCommandCatalog.clearContents,
     spreadsheetCommandCatalog.clearComments,
     spreadsheetCommandCatalog.clearHyperlinks,
+    spreadsheetCommandCatalog.find,
+    spreadsheetCommandCatalog.findAndSelect,
+    spreadsheetCommandCatalog.goTo,
   ]) {
     expect(command.location).toEqual({
       area: 'ribbon',
@@ -251,6 +254,16 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     aria: 'Control+R Meta+R',
     editor: ['Mod-r'],
     label: 'Cmd/Ctrl+R',
+  });
+  expect(spreadsheetCommandCatalog.find.shortcut).toEqual({
+    aria: 'Control+F Meta+F',
+    editor: ['Mod-f'],
+    label: 'Cmd/Ctrl+F',
+  });
+  expect(spreadsheetCommandCatalog.goTo.shortcut).toEqual({
+    aria: 'Control+G F5',
+    editor: ['Control-g', 'F5'],
+    label: 'Ctrl+G 或 F5',
   });
   expect(spreadsheetCommandCatalog.insertChart.location).toEqual({
     area: 'ribbon',

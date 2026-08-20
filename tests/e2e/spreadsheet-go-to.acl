@@ -1,0 +1,137 @@
+suite "spreadsheet-go-to" {
+    version = 1
+
+    scenario "navigate-ranges-without-mutating-content" {
+        name = "Navigate direct and named ranges with the WPS Find and Select workflow"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-go-to-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-go-to"
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        click "open-find-and-select" {
+            target = role("button", "查找和选择")
+        }
+
+        expect "find-and-select-menu-visible" {
+            visible = css("[role='menu'][aria-label='查找和选择选项']")
+        }
+
+        expect "find-command-focused" {
+            visible = css("[role='menu'][aria-label='查找和选择选项'] [role='menuitem'][aria-keyshortcuts='Control+F Meta+F']:focus")
+        }
+
+        press "focus-go-to" {
+            key = "ArrowDown"
+        }
+
+        expect "go-to-command-focused" {
+            visible = css("[role='menu'][aria-label='查找和选择选项'] [role='menuitem'][aria-keyshortcuts='Control+G F5']:focus")
+        }
+
+        press "open-go-to-from-menu" {
+            key = "Enter"
+        }
+
+        fill "choose-cross-sheet-name" {
+            target = label("引用位置")
+            value = "ArchiveBlock"
+        }
+
+        click "navigate-to-name" {
+            target = role("button", "定位")
+        }
+
+        expect "archive-sheet-active" {
+            visible = css("[role='tab'][title='Archive 2025'][aria-selected='true']")
+        }
+
+        expect "named-range-selected" {
+            text = "C9:E12"
+        }
+
+        wait "grid-focused-after-name" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "open-go-to-with-f5" {
+            key = "F5"
+        }
+
+        fill "choose-qualified-range" {
+            target = label("引用位置")
+            value = "Inputs!B2:D3"
+        }
+
+        click "navigate-to-qualified-range" {
+            target = role("button", "定位")
+        }
+
+        expect "inputs-sheet-active" {
+            visible = css("[role='tab'][title='Inputs'][aria-selected='true']")
+        }
+
+        expect "qualified-range-selected" {
+            text = "B2:D3"
+        }
+
+        wait "grid-focused-after-qualified-range" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "open-go-to-with-control-g" {
+            key = "Control+g"
+        }
+
+        fill "enter-out-of-bounds-reference" {
+            target = label("引用位置")
+            value = "A41"
+        }
+
+        expect "out-of-bounds-error-visible" {
+            text = "引用超出了目标工作表的有效边界。"
+        }
+
+        press "cancel-invalid-go-to" {
+            key = "Escape"
+        }
+
+        wait "grid-focused-after-cancel" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        expect "navigation-keeps-undo-empty" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='撤销']:disabled")
+        }
+
+        screenshot "spreadsheet-go-to" {
+            path = "screenshots/spreadsheet-go-to.png"
+        }
+
+        accessibility "spreadsheet-go-to-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

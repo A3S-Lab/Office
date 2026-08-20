@@ -136,6 +136,8 @@
     "test:e2e:spreadsheet-cell-fill:check": "a3s-test check tests/e2e/spreadsheet-cell-fill.acl --json",
     "test:e2e:spreadsheet-auto-sum": "a3s-test run tests/e2e/spreadsheet-auto-sum.acl --json",
     "test:e2e:spreadsheet-auto-sum:check": "a3s-test check tests/e2e/spreadsheet-auto-sum.acl --json",
+    "test:e2e:spreadsheet-go-to": "a3s-test run tests/e2e/spreadsheet-go-to.acl --json",
+    "test:e2e:spreadsheet-go-to:check": "a3s-test check tests/e2e/spreadsheet-go-to.acl --json",
     "test:e2e:spreadsheet-maximum-sparse": "a3s-test run tests/e2e/spreadsheet-maximum-sparse.acl --json",
     "test:e2e:spreadsheet-maximum-sparse:check": "a3s-test check tests/e2e/spreadsheet-maximum-sparse.acl --json",
     "test:e2e:spreadsheet-large": "bun .a3s-test/performance/generate-fixtures.ts --spreadsheets-only && a3s-test run tests/e2e/spreadsheet-large-controlled-editing.acl --json",

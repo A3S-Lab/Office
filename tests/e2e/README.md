@@ -123,6 +123,18 @@ sparse blank-row safety, and ownership of `Cmd/Ctrl+D` and `Cmd/Ctrl+R` without
 turning the latter into a browser refresh. This suite remains local-only and is
 not referenced by a GitHub Actions workflow.
 
+The WPS Find and Select / Go To workflow has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-go-to:check
+bun run test:e2e:spreadsheet-go-to
+```
+
+It covers the keyboard-accessible Find and Select menu, `Ctrl+G`, `F5`,
+direct and named cross-sheet ranges, validation, exact focus restoration, and
+the view-only contract that leaves content and Undo unchanged. It is local-only
+and is not referenced by a GitHub Actions workflow.
+
 The WPS built-in Cell Styles gallery has a focused local gate:
 
 ```bash

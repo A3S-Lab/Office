@@ -64,6 +64,7 @@ import {
   type SpreadsheetFormatCellsOpenRequest,
   type SpreadsheetStructureAxis,
 } from './spreadsheet-command-controller';
+import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import {
   browserSpreadsheetClipboard,
   copySpreadsheetSelection,
@@ -101,7 +102,12 @@ import {
   type SpreadsheetFormatCellsDialogSource,
 } from './spreadsheet-format-cells-dialog-model';
 import { spreadsheetFreezePanesStatus } from './spreadsheet-freeze-panes';
+import {
+  resolveSpreadsheetGoToTarget,
+  spreadsheetGoToValidationMessage,
+} from './spreadsheet-go-to';
 import { synchronizeSpreadsheetWorkbookInPlace } from './spreadsheet-in-place-workbook-sync';
+import { spreadsheetSelectionContainsFocus } from './spreadsheet-keyboard-navigation';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
 import {
   SpreadsheetWorkbookPanel,
@@ -305,6 +311,9 @@ function SpreadsheetEditorSurface({
   const officeDialog = useOfficeDialog();
   const [findOpen, setFindOpen] = useState(false);
   const [findFocusRequest, setFindFocusRequest] = useState(0);
+  const [navigationActiveSheetId, setNavigationActiveSheetId] = useState<
+    string | null
+  >(null);
   const [previewZoom, setPreviewZoom] = useState(100);
   const [previewActiveSheetId, setPreviewActiveSheetId] = useState<
     string | null
@@ -313,13 +322,15 @@ function SpreadsheetEditorSurface({
     content.sheets.find((sheet) => sheet.status === 1)?.id ??
     content.sheets.find((sheet) => !sheet.hide)?.id ??
     '';
+  const viewActiveSheetId = preview
+    ? previewActiveSheetId
+    : navigationActiveSheetId;
   const activeSheetId =
-    preview &&
-    previewActiveSheetId &&
+    viewActiveSheetId &&
     content.sheets.some(
-      (sheet) => sheet.id === previewActiveSheetId && sheet.hide !== 1,
+      (sheet) => sheet.id === viewActiveSheetId && sheet.hide !== 1,
     )
-      ? previewActiveSheetId
+      ? viewActiveSheetId
       : contentActiveSheetId;
   const activeSheetIdRef = useRef(activeSheetId);
   const focusedSheetIdRef = useRef<string | null>(null);
@@ -358,6 +369,9 @@ function SpreadsheetEditorSurface({
   useEffect(() => {
     setPreviewActiveSheetId(preview ? contentActiveSheetId : null);
   }, [contentActiveSheetId, preview]);
+  useEffect(() => {
+    setNavigationActiveSheetId(null);
+  }, [contentActiveSheetId]);
   useEffect(() => {
     activeSheetIdRef.current = activeSheetId;
   }, [activeSheetId]);
@@ -425,6 +439,7 @@ function SpreadsheetEditorSurface({
         activeSheetIdRef.current = id;
         collaborationView?.activateSheet(id);
         if (previewRef.current) setPreviewActiveSheetId(id);
+        else setNavigationActiveSheetId(id);
         setSelectionState(null);
       },
       afterSelectionChange: (sheetId, selection) => {
@@ -826,6 +841,126 @@ function SpreadsheetEditorSurface({
     },
     [collaborationView],
   );
+  const navigateToSpreadsheetRange = useCallback(
+    (
+      sheetId: string,
+      ranges: SpreadsheetCommandRange[],
+      activeCell: { column: number; row: number },
+      focusGrid = true,
+    ): boolean => {
+      const workbook = workbookRef.current;
+      const sheet = contentRef.current.sheets.find(
+        (candidate) => candidate.id === sheetId && candidate.hide !== 1,
+      );
+      if (!workbook || !sheet || !ranges.length) return false;
+      const focusedRange =
+        ranges.find((range) =>
+          spreadsheetSelectionContainsFocus(range, activeCell),
+        ) ?? ranges[0];
+      if (!focusedRange) return false;
+      try {
+        if (collaborationView && !collaborationView.activateSheet(sheetId)) {
+          return false;
+        }
+        activeSheetIdRef.current = sheetId;
+        if (previewRef.current) setPreviewActiveSheetId(sheetId);
+        else setNavigationActiveSheetId(sheetId);
+        workbook.activateSheet({ id: sheetId });
+        workbook.setSelection(ranges, { id: sheetId });
+        workbook.scroll({
+          targetRow: activeCell.row,
+          targetColumn: activeCell.column,
+        });
+        setSelectionState({
+          sheetId,
+          selection: {
+            row: [...focusedRange.row],
+            column: [...focusedRange.column],
+            row_focus: activeCell.row,
+            column_focus: activeCell.column,
+          },
+        });
+      } catch {
+        return false;
+      }
+      if (focusGrid) {
+        requestAnimationFrame(() =>
+          focusSpreadsheetGrid(spreadsheetCanvasRef.current),
+        );
+      }
+      return true;
+    },
+    [collaborationView],
+  );
+  const openSpreadsheetFind = useCallback((): boolean => {
+    if (previewRef.current) return false;
+    setFindOpen(true);
+    setFindFocusRequest((current) => current + 1);
+    return true;
+  }, []);
+  const openSpreadsheetGoTo = useCallback((): boolean => {
+    if (previewRef.current) return false;
+    const sourceSheetId = activeSheetIdRef.current;
+    const sourceSheet = contentRef.current.sheets.find(
+      (sheet) => sheet.id === sourceSheetId && sheet.hide !== 1,
+    );
+    if (!sourceSheet) return false;
+    const invoker =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : spreadsheetGridFocusTarget(spreadsheetCanvasRef.current);
+    const selection = workbookRef.current?.getSelection()?.at(-1) ??
+      sourceSheet.luckysheet_select_save?.at(-1) ?? {
+        row: [0, 0],
+        column: [0, 0],
+      };
+    let navigated = false;
+    void officeDialog
+      .prompt({
+        title: spreadsheetCommandCatalog.goTo.label,
+        description:
+          '输入单元格、连续区域或已定义名称；可用工作表名称限定目标。',
+        fieldLabel: '引用位置',
+        initialValue: spreadsheetSelectionReference(selection),
+        placeholder: '例如 A1、B2:D8 或 MyRange',
+        confirmLabel: spreadsheetCommandCatalog.goTo.label,
+        required: '请输入单元格、连续区域或已定义名称。',
+        validate: (candidate) =>
+          spreadsheetGoToValidationMessage(
+            contentRef.current,
+            sourceSheetId,
+            candidate,
+          ),
+        restoreFocusTarget: () =>
+          navigated
+            ? spreadsheetGridFocusTarget(spreadsheetCanvasRef.current)
+            : invoker?.isConnected
+              ? invoker
+              : spreadsheetGridFocusTarget(spreadsheetCanvasRef.current),
+      })
+      .then((value) => {
+        if (value === null) return;
+        const resolution = resolveSpreadsheetGoToTarget(
+          contentRef.current,
+          sourceSheetId,
+          value,
+        );
+        if (!resolution.ok) {
+          showToast(resolution.message, 'error');
+          return;
+        }
+        navigated = navigateToSpreadsheetRange(
+          resolution.target.sheetId,
+          [resolution.target.selection],
+          {
+            row: resolution.target.selection.row_focus,
+            column: resolution.target.selection.column_focus,
+          },
+        );
+        if (!navigated) showToast('无法定位到所选区域。', 'error');
+      });
+    return true;
+  }, [navigateToSpreadsheetRange, officeDialog]);
   const spreadsheetExtensions = useMemo(createSpreadsheetEditorExtensions, []);
   const spreadsheetEditor = useOfficeEditorRuntime(
     {
@@ -860,6 +995,12 @@ function SpreadsheetEditorSurface({
         open: openSpreadsheetFormatCells,
       },
       history,
+      navigation: {
+        canOpenFind: !preview,
+        canOpenGoTo: !preview,
+        openFind: openSpreadsheetFind,
+        openGoTo: openSpreadsheetGoTo,
+      },
       onChange: (next) => {
         const formatCellsSelection = formatCellsApplyingRef.current
           ? formatCellsSelectionRef.current
@@ -918,56 +1059,34 @@ function SpreadsheetEditorSurface({
         column: ranges[0]?.column[0] ?? 0,
       };
       if (!spreadsheetPresenceCellExists(sheet, activeCell)) return false;
-      try {
-        activeSheetIdRef.current = location.sheetId;
-        collaborationView?.activateSheet(location.sheetId);
-        if (previewRef.current) setPreviewActiveSheetId(location.sheetId);
-        workbook.activateSheet({ id: location.sheetId });
-        workbook.setSelection(ranges, { id: location.sheetId });
-        workbook.scroll({
-          targetRow: activeCell.row,
-          targetColumn: activeCell.column,
-        });
-      } catch {
-        return false;
-      }
-      requestAnimationFrame(() =>
-        focusSpreadsheetGrid(spreadsheetCanvasRef.current),
-      );
-      return true;
+      return navigateToSpreadsheetRange(location.sheetId, ranges, activeCell);
     },
-    [collaborationView, materializedContent.sheets],
+    [materializedContent.sheets, navigateToSpreadsheetRange],
   );
   useOfficeCollaborationLocationNavigator(navigateToSpreadsheetParticipant);
   const restoreSpreadsheetGridFocus = useCallback(
     () => focusSpreadsheetGrid(spreadsheetCanvasRef.current),
     [],
   );
-  const openSpreadsheetFind = useCallback(() => {
-    setFindOpen(true);
-    setFindFocusRequest((current) => current + 1);
-  }, []);
   const closeSpreadsheetFind = useCallback(() => {
     setFindOpen(false);
     focusSpreadsheetGrid(spreadsheetCanvasRef.current);
   }, []);
   const selectSpreadsheetFindMatch = useCallback(
     (match: SpreadsheetFindMatch) => {
-      try {
-        workbookRef.current?.setSelection(
-          [
-            {
-              row: [match.row, match.row],
-              column: [match.column, match.column],
-            },
-          ],
-          { id: match.sheetId },
-        );
-      } catch {
-        return;
-      }
+      navigateToSpreadsheetRange(
+        match.sheetId,
+        [
+          {
+            row: [match.row, match.row],
+            column: [match.column, match.column],
+          },
+        ],
+        { row: match.row, column: match.column },
+        false,
+      );
     },
-    [],
+    [navigateToSpreadsheetRange],
   );
   const spreadsheetRibbonCommands = useMemo(
     () =>
@@ -980,6 +1099,7 @@ function SpreadsheetEditorSurface({
   const restoreSpreadsheetShortcutFocus = useCallback(
     (event: KeyboardEvent) => {
       event.stopPropagation();
+      if (spreadsheetNavigationShortcutOwnsFocus(event)) return;
       if (
         (event.metaKey || event.ctrlKey) &&
         !event.altKey &&
@@ -1041,17 +1161,6 @@ function SpreadsheetEditorSurface({
       // WPS-compatible AutoFilter shortcut.
       event.preventDefault();
       event.stopPropagation();
-      return;
-    }
-    if (
-      (event.metaKey || event.ctrlKey) &&
-      !event.altKey &&
-      !event.shiftKey &&
-      event.key.toLocaleLowerCase() === 'f'
-    ) {
-      event.preventDefault();
-      event.stopPropagation();
-      openSpreadsheetFind();
       return;
     }
     handleSpreadsheetEditingEscape(event);
@@ -1204,7 +1313,6 @@ function SpreadsheetEditorSurface({
           freezePanesSelection={toolbarSelection}
           gridLinesVisible={gridLinesVisible}
           panelId={panelId}
-          onOpenFind={openSpreadsheetFind}
           onTabChange={(tab) => {
             setRibbonTab(tab);
             if (panel) closeWorkbookPanel();
@@ -1645,6 +1753,14 @@ export function spreadsheetCommandsWithGridFocus(
 
 function ignoreSpreadsheetControlledHistory(): boolean {
   return true;
+}
+
+function spreadsheetNavigationShortcutOwnsFocus(event: KeyboardEvent): boolean {
+  if (event.altKey || event.shiftKey) return false;
+  const key = event.key.toLocaleLowerCase();
+  if ((event.metaKey || event.ctrlKey) && key === 'f') return true;
+  if (event.ctrlKey && !event.metaKey && key === 'g') return true;
+  return !event.ctrlKey && !event.metaKey && event.key === 'F5';
 }
 
 function spreadsheetFormatPainterStatus(

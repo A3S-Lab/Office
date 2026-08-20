@@ -204,6 +204,12 @@ function autoSumFixture(sheetOverride: Partial<Sheet> = {}): {
       cancel: () => false,
     },
     history: null,
+    navigation: {
+      canOpenFind: false,
+      canOpenGoTo: false,
+      openFind: () => false,
+      openGoTo: () => false,
+    },
     onChange: () => undefined,
     selection: null,
     targetSheetId: 'sheet-1',

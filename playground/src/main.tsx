@@ -37,6 +37,11 @@ import {
 } from './playground-import-progress';
 import type { NoticeTone, PlaygroundNotice } from './playground-types';
 import {
+  createSpreadsheetGoToArtifact,
+  SPREADSHEET_GO_TO_ARTIFACT_ID,
+  SPREADSHEET_GO_TO_FIXTURE,
+} from './spreadsheet-go-to-fixture';
+import {
   collaborationServerDocumentationUrl,
   documentationEntryUrl,
   legacyDocsPath,
@@ -66,7 +71,9 @@ function Playground() {
   const [activeArtifactId, setActiveArtifactId] = useState<string | null>(
     e2eFixture === MAXIMUM_SPARSE_SPREADSHEET_FIXTURE
       ? MAXIMUM_SPARSE_SPREADSHEET_ARTIFACT_ID
-      : null,
+      : e2eFixture === SPREADSHEET_GO_TO_FIXTURE
+        ? SPREADSHEET_GO_TO_ARTIFACT_ID
+        : null,
   );
   const [collaborationDemoArtifactId, setCollaborationDemoArtifactId] =
     useState<string | null>(null);
@@ -564,9 +571,13 @@ function createInitialArtifacts(e2eFixture: string | null): OfficeArtifact[] {
     { ...deck, lastOpenedAt: now - 3_000 },
     { ...markdown, lastOpenedAt: now - 4_000 },
   ];
-  return e2eFixture === MAXIMUM_SPARSE_SPREADSHEET_FIXTURE
-    ? [createMaximumSparseSpreadsheetArtifact(), ...artifacts]
-    : artifacts;
+  if (e2eFixture === MAXIMUM_SPARSE_SPREADSHEET_FIXTURE) {
+    return [createMaximumSparseSpreadsheetArtifact(), ...artifacts];
+  }
+  if (e2eFixture === SPREADSHEET_GO_TO_FIXTURE) {
+    return [createSpreadsheetGoToArtifact(), ...artifacts];
+  }
+  return artifacts;
 }
 
 function readPlaygroundE2eFixture(): string | null {

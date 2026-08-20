@@ -215,7 +215,7 @@ export function spreadsheetSelectionContainsFocus(
   );
 }
 
-function spreadsheetSheetBounds(sheet: WorkSpreadsheetSheet): {
+export function spreadsheetSheetBounds(sheet: WorkSpreadsheetSheet): {
   lastColumn: number;
   lastRow: number;
 } {

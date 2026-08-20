@@ -517,9 +517,12 @@ interaction model.
   selection-preserving undo/redo, deterministic Arrow, Enter, Tab, Home,
   PageUp/PageDown, row, column, and all-cells selection shortcuts, Cmd/Ctrl
   formatting through root-scoped capture before vendor grid listeners, an
-  editor-owned Cmd/Ctrl+F search bar that finds displayed values, raw values,
-  formulas, and sparse cells without opening browser Find, with a viewport-safe
-  phone layout, touch-sized controls, and exact grid-focus restoration,
+  WPS-style Home and Editing Find and Select menu whose editor-owned
+  `Cmd/Ctrl+F` search finds displayed values, raw values, formulas, and sparse
+  cells without opening browser Find, plus view-only `Ctrl+G` and `F5` Go To
+  for direct, quoted cross-sheet, and named ranges without content updates,
+  Undo records, or sparse materialization, with a viewport-safe phone Find
+  layout, touch-sized controls, bounded validation, and exact focus restoration,
   desktop workbook task panes that become focus-contained phone dialogs with
   an inert workbook background and exact ribbon-invoker restoration,
   a WPS-familiar command catalog and tab order, quick-access Undo and Redo,

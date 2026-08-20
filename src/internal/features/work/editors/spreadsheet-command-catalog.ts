@@ -461,6 +461,21 @@ export const spreadsheetCommandCatalog = {
       editor: ['Mod-f'],
     },
   },
+  findAndSelect: {
+    id: 'editing.findAndSelect',
+    label: '查找和选择',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+  },
+  goTo: {
+    id: 'editing.goTo',
+    label: '定位',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+    shortcut: {
+      label: 'Ctrl+G 或 F5',
+      aria: 'Control+G F5',
+      editor: ['Control-g', 'F5'],
+    },
+  },
   insertChart: {
     id: 'insert.chart',
     label: '插入图表',

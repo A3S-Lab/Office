@@ -84,10 +84,10 @@ test('Spreadsheet handles editor shortcuts before workbook document listeners ca
   await expectGridFocus(page);
 });
 
-test('Spreadsheet owns find, match navigation, and focus restoration', async ({
+test('Spreadsheet owns Find, Go To, match navigation, and focus restoration', async ({
   page,
 }) => {
-  await openSpreadsheetFixture(page);
+  await openSpreadsheetGoToFixture(page);
 
   const grid = page.locator('.fortune-sheet-overlay');
   for (const modifier of ['Control', 'Meta']) {
@@ -101,9 +101,16 @@ test('Spreadsheet owns find, match navigation, and focus restoration', async ({
     await expectGridFocus(page);
   }
 
-  await page.getByRole('button', { name: '查找' }).click();
+  const findAndSelect = page.getByRole('button', { name: '查找和选择' });
+  await findAndSelect.click();
+  const findAndSelectMenu = page.getByRole('menu', {
+    name: '查找和选择选项',
+  });
+  await expect(findAndSelectMenu.getByRole('menuitem')).toHaveCount(2);
+  await findAndSelectMenu.getByRole('menuitem', { name: '查找' }).click();
   const query = page.getByRole('textbox', { name: '查找当前工作表' });
   await expect(query).toBeFocused();
+  await expect(findAndSelect).toHaveAttribute('aria-pressed', 'true');
   const findGeometry = await page.evaluate(() => {
     const bar = document.querySelector('.work-spreadsheet-find-bar');
     const columnHeader = document.querySelector('.fortune-col-header');
@@ -143,6 +150,23 @@ test('Spreadsheet owns find, match navigation, and focus restoration', async ({
 
   await query.press('Escape');
   await expect(query).toHaveCount(0);
+  await expectGridFocus(page);
+
+  await page.keyboard.press('Control+g');
+  const goToDialog = page.getByRole('dialog', { name: '定位' });
+  const reference = goToDialog.getByRole('textbox', { name: '引用位置' });
+  await expect(reference).toHaveValue('A5');
+  await reference.fill('B4:D5');
+  await goToDialog.getByRole('button', { name: '定位' }).click();
+  await expect(goToDialog).toHaveCount(0);
+  await expect(page.locator('.fortune-name-box')).toHaveText('B4:D5');
+  await expectGridFocus(page);
+  await expect(page.getByRole('button', { name: '撤销' })).toBeDisabled();
+
+  await page.keyboard.press('F5');
+  await expect(page.getByRole('dialog', { name: '定位' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: '定位' })).toHaveCount(0);
   await expectGridFocus(page);
 });
 
@@ -861,6 +885,11 @@ async function openSpreadsheetFixture(page: Page) {
       name: '季度执行计划 XLSX · 本次会话',
     })
     .click();
+  await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
+}
+
+async function openSpreadsheetGoToFixture(page: Page) {
+  await page.goto('/?e2e=spreadsheet-go-to');
   await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
 }
 

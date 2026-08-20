@@ -24,7 +24,6 @@ test('uses the shared quick access and collapsible adaptive ribbon', () => {
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -85,7 +84,6 @@ test('routes number-format controls through typed spreadsheet commands', () => {
       panel={null}
       toolbarCell={{ v: 0.5, m: '50.0%', ct: { fa: '0.0%', t: 'n' } }}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -159,7 +157,6 @@ test('applies grouped WPS cell styles from a preview gallery', async () => {
       panel={null}
       toolbarCell={{ bg: '#c6efce', fc: '#006100' }}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -256,7 +253,6 @@ test('routes the WPS Home clipboard group through typed commands', () => {
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -314,7 +310,6 @@ test('exposes locked format-painter state and exits on another click', () => {
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -358,7 +353,6 @@ test('operates WPS row and column actions from the Home cells group', async () =
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -422,7 +416,6 @@ test('disables unavailable WPS row and column actions independently', () => {
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -462,7 +455,6 @@ test('routes WPS font, vertical alignment, and wrapping through cell formats', (
       panel={null}
       toolbarCell={{ cl: 0, ff: 'Arial', vt: 0, tb: '2' }}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -516,7 +508,6 @@ test('omits empty resource counts from spreadsheet ribbon actions', () => {
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -548,7 +539,6 @@ test('keeps conditional formatting in Home and sorting in Data', () => {
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={(panel) => panels.push(panel)}
     />,
   );
@@ -573,7 +563,6 @@ test('keeps conditional formatting in Home and sorting in Data', () => {
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -583,30 +572,64 @@ test('keeps conditional formatting in Home and sorting in Data', () => {
   expect(sorts).toEqual(['ascending', 'descending']);
 });
 
-test('exposes the spreadsheet find shortcut through the home ribbon', () => {
-  let openCount = 0;
+test('operates the WPS Find and Select menu from the Home ribbon', async () => {
+  const actions: string[] = [];
   render(
     <SpreadsheetEditorRibbon
       activeTab="home"
       can={spreadsheetCan()}
-      commands={spreadsheetCommands(() => true)}
+      commands={spreadsheetCommands(() => true, undefined, {
+        openFind: () => {
+          actions.push('find');
+          return true;
+        },
+        openGoTo: () => {
+          actions.push('go-to');
+          return true;
+        },
+      })}
       content={{ type: 'spreadsheet', sheets: [] }}
       findOpen={false}
       gridLinesVisible
       panel={null}
       toolbarCell={null}
-      onOpenFind={() => {
-        openCount += 1;
-      }}
       onTabChange={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
 
-  const find = screen.getByRole('button', { name: '查找' });
+  const trigger = screen.getByRole('button', { name: '查找和选择' });
+  expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  fireEvent.click(trigger);
+
+  const menu = screen.getByRole('menu', { name: '查找和选择选项' });
+  const find = within(menu).getByRole('menuitem', { name: '查找' });
+  const goTo = within(menu).getByRole('menuitem', { name: '定位' });
   expect(find).toHaveAttribute('aria-keyshortcuts', 'Control+F Meta+F');
-  fireEvent.click(find);
-  expect(openCount).toBe(1);
+  expect(find).toHaveTextContent('Cmd/Ctrl+F');
+  expect(goTo).toHaveAttribute('aria-keyshortcuts', 'Control+G F5');
+  expect(goTo).toHaveTextContent('Ctrl+G 或 F5');
+  await waitFor(() => expect(find).toHaveFocus());
+  fireEvent.keyDown(menu, { key: 'ArrowDown' });
+  expect(goTo).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'Home' });
+  expect(find).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'End' });
+  expect(goTo).toHaveFocus();
+  fireEvent.click(goTo);
+  expect(actions).toEqual(['go-to']);
+  expect(screen.queryByRole('menu', { name: '查找和选择选项' })).toBeNull();
+  expect(trigger).toHaveFocus();
+
+  fireEvent.click(trigger);
+  fireEvent.click(
+    within(screen.getByRole('menu', { name: '查找和选择选项' })).getByRole(
+      'menuitem',
+      { name: '查找' },
+    ),
+  );
+  expect(actions).toEqual(['go-to', 'find']);
 });
 
 test('operates the WPS Clear menu from the Home editing group', () => {
@@ -630,7 +653,6 @@ test('operates the WPS Clear menu from the Home editing group', () => {
       gridLinesVisible
       panel={null}
       toolbarCell={null}
-      onOpenFind={() => undefined}
       onTabChange={() => undefined}
       onTogglePanel={() => undefined}
     />,
@@ -684,7 +706,6 @@ test('operates the WPS AutoSum split command and aggregate menu from Home', asyn
       gridLinesVisible
       panel={null}
       toolbarCell={null}
-      onOpenFind={() => undefined}
       onTabChange={() => undefined}
       onTogglePanel={() => undefined}
     />,
@@ -743,7 +764,6 @@ test('operates the keyboard-accessible WPS Fill menu from Home', async () => {
       gridLinesVisible
       panel={null}
       toolbarCell={null}
-      onOpenFind={() => undefined}
       onTabChange={() => undefined}
       onTogglePanel={() => undefined}
     />,
@@ -798,7 +818,6 @@ test('places the WPS merge split control in the Home alignment group', () => {
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
-      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -865,7 +884,6 @@ test('exposes WPS AutoFilter state and routes the Data ribbon action', () => {
       gridLinesVisible
       panel={null}
       toolbarCell={null}
-      onOpenFind={() => undefined}
       onTabChange={() => undefined}
       onTogglePanel={() => undefined}
     />,
@@ -913,7 +931,6 @@ test('operates WPS Freeze Panes from the View window group', () => {
       gridLinesVisible
       panel={null}
       toolbarCell={null}
-      onOpenFind={() => undefined}
       onTabChange={() => undefined}
       onTogglePanel={() => undefined}
     />,
@@ -970,7 +987,9 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     moveSheet: () => true,
     moveSelection: () => true,
     openAutoFilterMenu: () => true,
+    openFind: () => true,
     openFormatCells: () => true,
+    openGoTo: () => true,
     pasteCells: () => true,
     pasteSelection: () => true,
     recalculateFormula: () => true,
@@ -1012,7 +1031,9 @@ function spreadsheetCommands(
       | 'fillSelectedCells'
       | 'insertSelectedStructure'
       | 'mergeSelectedCells'
+      | 'openFind'
       | 'openFormatCells'
+      | 'openGoTo'
       | 'pasteSelection'
       | 'setFreezePanes'
       | 'toggleAutoFilter'
@@ -1042,7 +1063,9 @@ function spreadsheetCommands(
     moveSheet: () => true,
     moveSelection: () => true,
     openAutoFilterMenu: () => true,
+    openFind: overrides.openFind ?? (() => true),
     openFormatCells: overrides.openFormatCells ?? (() => true),
+    openGoTo: overrides.openGoTo ?? (() => true),
     pasteCells: () => true,
     pasteSelection: overrides.pasteSelection ?? (() => true),
     recalculateFormula: () => true,

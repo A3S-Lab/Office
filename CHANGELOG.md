@@ -4,6 +4,12 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Replaced Spreadsheet's standalone Home Find action with a keyboard-accessible
+  WPS Find and Select menu. Find retains `Cmd/Ctrl+F`; Go To adds `Ctrl+G` and
+  `F5` for bounded direct, quoted cross-sheet, and named ranges while keeping
+  host inputs and editing surfaces untouched. Navigation changes only the live
+  worksheet view and selection, so sparse data, controlled content, and Undo
+  history remain unchanged.
 - Added the WPS Spreadsheet AutoSum split command before Fill with Sum,
   Average, Count, Maximum, and Minimum plus the editor-scoped `Alt+=` Sum
   shortcut. It infers contiguous sources above or left, supports multi-formula

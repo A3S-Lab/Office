@@ -11,6 +11,7 @@ import {
   type SpreadsheetEditorCommands,
   type SpreadsheetFormatCellsCommandPort,
   type SpreadsheetFormatPainterCommandPort,
+  type SpreadsheetNavigationCommandPort,
   type SpreadsheetWorkbookCommandPort,
 } from '../src/internal/features/work/editors/spreadsheet-command-controller';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
@@ -1570,6 +1571,7 @@ function commandFixture(): {
   formulaBarValues: unknown[];
   formatPainter: RecordingSpreadsheetFormatPainter;
   formatCells: RecordingSpreadsheetFormatCells;
+  navigation: RecordingSpreadsheetNavigation;
   workbook: RecordingSpreadsheetWorkbook;
 } {
   const content = {
@@ -1590,6 +1592,7 @@ function commandFixture(): {
   const formulaBarValues: unknown[] = [];
   const formatPainter = new RecordingSpreadsheetFormatPainter();
   const formatCells = new RecordingSpreadsheetFormatCells();
+  const navigation = new RecordingSpreadsheetNavigation();
   const workbook = new RecordingSpreadsheetWorkbook();
   return {
     autoFilter,
@@ -1599,6 +1602,7 @@ function commandFixture(): {
     formulaBarValues,
     formatPainter,
     formatCells,
+    navigation,
     workbook,
     context: {
       activeSheetId: 'sheet-1',
@@ -1614,6 +1618,7 @@ function commandFixture(): {
       formatPainter,
       formatCells,
       history: null,
+      navigation,
       onChange: (next) => changes.push(next),
       selection: {
         sheetId: 'sheet-1',
@@ -1628,6 +1633,26 @@ function commandFixture(): {
       workbook,
     },
   };
+}
+
+class RecordingSpreadsheetNavigation
+  implements SpreadsheetNavigationCommandPort
+{
+  calls: string[] = [];
+  canOpenFind = true;
+  canOpenGoTo = true;
+
+  openFind(): boolean {
+    if (!this.canOpenFind) return false;
+    this.calls.push('find');
+    return true;
+  }
+
+  openGoTo(): boolean {
+    if (!this.canOpenGoTo) return false;
+    this.calls.push('go-to');
+    return true;
+  }
 }
 
 class RecordingSpreadsheetFormatCells

@@ -29,6 +29,7 @@ import {
   Hash,
   Link2Off,
   ListFilter,
+  LocateFixed,
   MessageSquareX,
   Merge,
   Paintbrush,
@@ -116,7 +117,6 @@ export function SpreadsheetEditorRibbon({
   freezePanesSelection = defaultSpreadsheetFreezePanesSelection,
   gridLinesVisible,
   panelId,
-  onOpenFind,
   onTabChange,
   onTogglePanel,
   panel,
@@ -135,7 +135,6 @@ export function SpreadsheetEditorRibbon({
   freezePanesSelection?: Selection;
   gridLinesVisible: boolean;
   panelId: string;
-  onOpenFind: () => void;
   onTabChange: (tab: SpreadsheetRibbonTabId) => void;
   onTogglePanel: (
     panel: SpreadsheetWorkbookPanelView,
@@ -352,15 +351,11 @@ export function SpreadsheetEditorRibbon({
               <SpreadsheetAutoSumMenu can={can} commands={commands} />
               <SpreadsheetFillMenu can={can} commands={commands} />
               <SpreadsheetClearMenu can={can} commands={commands} />
-              <WorkOfficeRibbonButton
-                label={spreadsheetCommandCatalog.find.label}
-                title={`${spreadsheetCommandCatalog.find.label}（${spreadsheetCommandCatalog.find.shortcut.label}）`}
-                aria-keyshortcuts={spreadsheetCommandCatalog.find.shortcut.aria}
-                active={findOpen}
-                onClick={onOpenFind}
-              >
-                <Search size={19} />
-              </WorkOfficeRibbonButton>
+              <SpreadsheetFindAndSelectMenu
+                can={can}
+                commands={commands}
+                findOpen={findOpen}
+              />
             </WorkOfficeRibbonGroup>
           </>
         ),
@@ -508,6 +503,84 @@ export function SpreadsheetEditorRibbon({
         ),
       }}
     />
+  );
+}
+
+function SpreadsheetFindAndSelectMenu({
+  can,
+  commands,
+  findOpen,
+}: {
+  can: SpreadsheetEditorCanCommands;
+  commands: SpreadsheetEditorCommands;
+  findOpen: boolean;
+}) {
+  const findDisabled = !can.openFind();
+  const goToDisabled = !can.openGoTo();
+  return (
+    <Popover
+      label={spreadsheetCommandCatalog.findAndSelect.label}
+      panelLabel="查找和选择选项"
+      panelRole="menu"
+      portal
+      className="work-spreadsheet-ribbon-menu-root"
+      panelClassName="work-office-context-menu work-spreadsheet-ribbon-menu work-spreadsheet-find-select-menu"
+      disabled={findDisabled && goToDisabled}
+      focusFirstOnOpen
+      onPanelKeyDown={moveOfficeMenuFocus}
+      trigger={(triggerProps, { open }) => (
+        <button
+          {...triggerProps}
+          className={`with-label work-spreadsheet-ribbon-menu-trigger${findOpen || open ? ' active' : ''}`}
+          aria-pressed={findOpen}
+          title={spreadsheetCommandCatalog.findAndSelect.label}
+        >
+          <Search size={19} />
+          <span>{spreadsheetCommandCatalog.findAndSelect.label}</span>
+        </button>
+      )}
+    >
+      {(close) => (
+        <>
+          <button
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            aria-label={spreadsheetCommandCatalog.find.label}
+            aria-keyshortcuts={spreadsheetCommandCatalog.find.shortcut.aria}
+            disabled={findDisabled}
+            onClick={() => {
+              close();
+              commands.openFind();
+            }}
+          >
+            <span className="work-spreadsheet-ribbon-menu-item-icon">
+              <Search size={16} />
+            </span>
+            <span>{spreadsheetCommandCatalog.find.label}</span>
+            <kbd>{spreadsheetCommandCatalog.find.shortcut.label}</kbd>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            aria-label={spreadsheetCommandCatalog.goTo.label}
+            aria-keyshortcuts={spreadsheetCommandCatalog.goTo.shortcut.aria}
+            disabled={goToDisabled}
+            onClick={() => {
+              close();
+              commands.openGoTo();
+            }}
+          >
+            <span className="work-spreadsheet-ribbon-menu-item-icon">
+              <LocateFixed size={16} />
+            </span>
+            <span>{spreadsheetCommandCatalog.goTo.label}</span>
+            <kbd>{spreadsheetCommandCatalog.goTo.shortcut.label}</kbd>
+          </button>
+        </>
+      )}
+    </Popover>
   );
 }
 

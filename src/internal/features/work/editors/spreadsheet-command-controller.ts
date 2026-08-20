@@ -12,6 +12,7 @@ import {
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import type { SpreadsheetAutoSumFunction } from './spreadsheet-auto-sum';
 import { createSpreadsheetAutoSumExtension } from './spreadsheet-auto-sum-command';
+import { createSpreadsheetNavigationExtension } from './spreadsheet-navigation-command';
 import {
   clearSpreadsheetSheetSelection,
   type SpreadsheetCellClearMode,
@@ -203,6 +204,13 @@ export interface SpreadsheetFormatCellsCommandPort {
   open: (request: SpreadsheetFormatCellsOpenRequest) => boolean;
 }
 
+export interface SpreadsheetNavigationCommandPort {
+  canOpenFind: boolean;
+  canOpenGoTo: boolean;
+  openFind: () => boolean;
+  openGoTo: () => boolean;
+}
+
 export interface SpreadsheetFormulaBarCommandPort {
   setValue: (value: unknown) => void;
 }
@@ -242,7 +250,9 @@ export interface SpreadsheetEditorCommands {
   ) => boolean;
   moveSelection: (move: SpreadsheetSelectionMove, extend: boolean) => boolean;
   openAutoFilterMenu: () => boolean;
+  openFind: () => boolean;
   openFormatCells: () => boolean;
+  openGoTo: () => boolean;
   pasteCells: (values: readonly (readonly unknown[])[]) => boolean;
   pasteSelection: () => boolean;
   recalculateFormula: (scope: 'selection' | 'workbook') => boolean;
@@ -284,6 +294,7 @@ export interface SpreadsheetCommandContext {
   formatPainter: SpreadsheetFormatPainterCommandPort;
   formatCells: SpreadsheetFormatCellsCommandPort;
   history: SpreadsheetHistoryCommandPort | null;
+  navigation: SpreadsheetNavigationCommandPort;
   onChange: (content: WorkSpreadsheetContent) => void;
   selection: SpreadsheetCommandSelection | null;
   targetSheetGridSize?: SpreadsheetGridSize | null;
@@ -322,6 +333,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     createSpreadsheetCellBorderExtension(),
     createSpreadsheetCellStyleExtension(),
     createSpreadsheetNumberFormatExtension(),
+    createSpreadsheetNavigationExtension(),
     createSpreadsheetAutoSumExtension(),
     createSpreadsheetCellFillExtension(),
     createOfficeEditorExtension<

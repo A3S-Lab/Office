@@ -56,6 +56,31 @@ uses the worksheet dimension without allocating every blank cell. XLSX export
 writes the logical dimension and populated cells only, so a maximum-size sparse
 worksheet can round-trip without becoming a dense matrix.
 
+## Find and Go To
+
+Home and Editing exposes one WPS-style Find and Select menu. Find keeps the
+editor-owned `Cmd/Ctrl+F` workflow for displayed values, raw values, formulas,
+and materialized sparse cells. Go To opens from the same menu, `Ctrl+G`, or
+`F5`. These shortcuts are owned only while the live workbook grid has focus;
+host inputs, the formula bar, active cell editing, popovers, and modal controls
+retain their native keyboard behavior.
+
+Go To accepts one direct A1 cell or continuous range, an optional quoted sheet
+qualifier such as `'Archive 2025'!$C$9:$E$12`, or a workbook- or
+worksheet-scoped name from `content.namedRanges`. Worksheet-scoped names take
+precedence over workbook names. Reversed and absolute references normalize to
+one increasing range. Multi-area references, formulas stored as names,
+ambiguous names, missing or hidden sheets, and coordinates outside both the
+worksheet and XLSX limits fail with field-level feedback before navigation.
+
+A successful command activates the target worksheet, selects the normalized
+range, scrolls the focused cell into view, and returns focus to the grid. It is
+a view operation: it does not call `onChange`, create an Undo record, write a
+selection into controlled content, or materialize a sparse row or cell. The
+same view-only navigation primitive is used when following a remote
+collaboration participant. Rstest and Playwright are the CI and Pages gates;
+the equivalent A3S Test ACL remains local-only.
+
 ## Compact validation, protection, and formatting
 
 Large data-validation regions live in `sheet.dataValidationRanges` as compact,
