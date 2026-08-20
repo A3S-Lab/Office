@@ -1,0 +1,201 @@
+suite "spreadsheet-hyperlink" {
+    version = 1
+
+    scenario "insert-edit-remove-and-undo-hyperlinks" {
+        name = "Insert, edit, remove, and undo native WPS spreadsheet hyperlinks"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-hyperlink-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-hyperlink"
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "open-hyperlink-from-ribbon" {
+            target = role("button", "超链接")
+        }
+
+        expect "insert-dialog-visible" {
+            visible = css("[role='dialog'].work-spreadsheet-hyperlink-dialog")
+        }
+
+        press "cancel-ribbon-dialog" {
+            key = "Escape"
+        }
+
+        expect "ribbon-trigger-restored" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='超链接']:focus")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "open-hyperlink-shortcut" {
+            key = "Control+k"
+        }
+
+        expect "shortcut-insert-dialog-visible" {
+            text = "插入超链接"
+        }
+
+        click "choose-cell-range" {
+            target = text("单元格区域", true)
+        }
+
+        fill "enter-hidden-range" {
+            target = css(".work-spreadsheet-hyperlink-dialog input[inputmode='text']")
+            value = "'Hidden Archive'!A1"
+        }
+
+        expect "hidden-sheet-rejected" {
+            text = "不能链接到隐藏工作表。"
+        }
+
+        click "choose-worksheet" {
+            target = text("工作表", true)
+        }
+
+        expect "visible-worksheet-options-only" {
+            visible = css("select[aria-required='true']:not(:has(option[value='Hidden Archive']))")
+        }
+
+        click "choose-webpage" {
+            target = text("网页", true)
+        }
+
+        fill "enter-invalid-address" {
+            target = css(".work-spreadsheet-hyperlink-dialog input[inputmode='url']")
+            value = "javascript:alert(1)"
+        }
+
+        expect "unsafe-address-rejected" {
+            text = "请输入有效的 HTTP 或 HTTPS 地址。"
+        }
+
+        fill "enter-web-address" {
+            target = css(".work-spreadsheet-hyperlink-dialog input[inputmode='url']")
+            value = "a3s.dev/office"
+        }
+
+        screenshot "insert-hyperlink-dialog" {
+            path = "screenshots/spreadsheet-hyperlink-dialog.png"
+        }
+
+        click "apply-hyperlink" {
+            target = role("button", "确定")
+        }
+
+        wait "grid-focused-after-insert" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "reopen-inserted-hyperlink" {
+            key = "Control+k"
+        }
+
+        expect "edit-dialog-visible" {
+            text = "编辑超链接"
+        }
+
+        expect "normalized-address-visible" {
+            visible = css(".work-spreadsheet-hyperlink-dialog input[value='https://a3s.dev/office']")
+        }
+
+        click "remove-hyperlink" {
+            target = role("button", "移除超链接")
+        }
+
+        wait "grid-focused-after-remove" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "verify-link-was-removed" {
+            key = "Control+k"
+        }
+
+        expect "new-insert-dialog-after-remove" {
+            text = "插入超链接"
+        }
+
+        press "close-insert-dialog-after-remove" {
+            key = "Escape"
+        }
+
+        wait "grid-focused-before-remove-undo" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "undo-remove" {
+            key = "Control+z"
+        }
+
+        press "verify-remove-undo" {
+            key = "Control+k"
+        }
+
+        expect "edit-dialog-restored-in-one-step" {
+            text = "编辑超链接"
+        }
+
+        press "close-restored-edit-dialog" {
+            key = "Escape"
+        }
+
+        wait "grid-focused-before-insert-undo" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "undo-insert" {
+            key = "Control+z"
+        }
+
+        press "verify-insert-undo" {
+            key = "Control+k"
+        }
+
+        expect "insert-dialog-restored-in-one-step" {
+            text = "插入超链接"
+        }
+
+        press "close-final-dialog" {
+            key = "Escape"
+        }
+
+        expect "hyperlink-history-empty" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='撤销']:disabled")
+        }
+
+        screenshot "spreadsheet-hyperlink-complete" {
+            path = "screenshots/spreadsheet-hyperlink-complete.png"
+        }
+
+        accessibility "spreadsheet-hyperlink-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

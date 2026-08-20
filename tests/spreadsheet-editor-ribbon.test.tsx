@@ -517,11 +517,17 @@ test('routes WPS font, vertical alignment, and wrapping through cell formats', (
 });
 
 test('omits empty resource counts from spreadsheet ribbon actions', () => {
+  const actions: string[] = [];
   render(
     <SpreadsheetEditorRibbon
       activeTab="insert"
       can={spreadsheetCan()}
-      commands={spreadsheetCommands(() => true)}
+      commands={spreadsheetCommands(() => true, undefined, {
+        openHyperlink: () => {
+          actions.push('hyperlink');
+          return true;
+        },
+      })}
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
       findOpen={false}
@@ -533,6 +539,12 @@ test('omits empty resource counts from spreadsheet ribbon actions', () => {
   );
 
   expect(screen.getByRole('button', { name: '插入图表' })).toBeInTheDocument();
+  const links = screen.getByRole('region', { name: '链接' });
+  const hyperlink = within(links).getByRole('button', { name: '超链接' });
+  expect(hyperlink).toHaveAttribute('aria-keyshortcuts', 'Control+K Meta+K');
+  expect(hyperlink).toHaveAttribute('title', '超链接（Cmd/Ctrl+K）');
+  fireEvent.click(hyperlink);
+  expect(actions).toEqual(['hyperlink']);
   expect(
     screen.queryByRole('button', { name: '条件格式' }),
   ).not.toBeInTheDocument();
@@ -991,6 +1003,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     applyCellStyle: () => true,
     applyCellFormat: () => true,
     applyAutoSum: () => true,
+    applyHyperlink: () => true,
     clearSelectedCells: () => true,
     activateFormatPainter: () => true,
     applyFormatPainter: () => true,
@@ -1010,11 +1023,13 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     openFind: () => true,
     openFormatCells: () => true,
     openGoTo: () => true,
+    openHyperlink: () => true,
     openPasteSpecial: () => true,
     pasteCells: () => true,
     pasteSelection: () => true,
     pasteSpecial: () => true,
     recalculateFormula: () => true,
+    removeHyperlink: () => true,
     renameSheet: () => true,
     redo: () => false,
     setCellFormat: () => true,
@@ -1045,6 +1060,7 @@ function spreadsheetCommands(
       | 'applyCellStyle'
       | 'applyCellFormat'
       | 'applyAutoSum'
+      | 'applyHyperlink'
       | 'cancelFormatPainter'
       | 'clearSelectedCells'
       | 'copySelection'
@@ -1056,6 +1072,7 @@ function spreadsheetCommands(
       | 'openFind'
       | 'openFormatCells'
       | 'openGoTo'
+      | 'openHyperlink'
       | 'openPasteSpecial'
       | 'pasteSelection'
       | 'pasteSpecial'
@@ -1072,6 +1089,7 @@ function spreadsheetCommands(
     applyCellStyle: overrides.applyCellStyle ?? (() => true),
     applyCellFormat: overrides.applyCellFormat ?? (() => true),
     applyAutoSum: overrides.applyAutoSum ?? (() => true),
+    applyHyperlink: overrides.applyHyperlink ?? (() => true),
     applyFormatPainter: () => true,
     cancelFormatPainter: overrides.cancelFormatPainter ?? (() => true),
     clearSelectedCells: overrides.clearSelectedCells ?? (() => true),
@@ -1090,11 +1108,13 @@ function spreadsheetCommands(
     openFind: overrides.openFind ?? (() => true),
     openFormatCells: overrides.openFormatCells ?? (() => true),
     openGoTo: overrides.openGoTo ?? (() => true),
+    openHyperlink: overrides.openHyperlink ?? (() => true),
     openPasteSpecial: overrides.openPasteSpecial ?? (() => true),
     pasteCells: () => true,
     pasteSelection: overrides.pasteSelection ?? (() => true),
     pasteSpecial: overrides.pasteSpecial ?? (() => true),
     recalculateFormula: () => true,
+    removeHyperlink: () => true,
     renameSheet: () => true,
     redo: () => false,
     setCellFormat,

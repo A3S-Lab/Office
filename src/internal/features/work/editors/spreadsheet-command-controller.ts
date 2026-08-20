@@ -42,6 +42,11 @@ import {
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
 import type { SpreadsheetFormatPainterMode } from './spreadsheet-format-painter';
+import { createSpreadsheetHyperlinkExtension } from './spreadsheet-hyperlink-command';
+import type {
+  SpreadsheetHyperlinkCell,
+  SpreadsheetHyperlinkRequest,
+} from './spreadsheet-hyperlink';
 import {
   type SpreadsheetFreezePanePreset,
   updateSpreadsheetFreezePanes,
@@ -212,6 +217,11 @@ export interface SpreadsheetFormatCellsCommandPort {
   open: (request: SpreadsheetFormatCellsOpenRequest) => boolean;
 }
 
+export interface SpreadsheetHyperlinkCommandPort {
+  canOpen: boolean;
+  open: (request: SpreadsheetHyperlinkCell) => boolean;
+}
+
 export interface SpreadsheetNavigationCommandPort {
   canOpenFind: boolean;
   canOpenGoTo: boolean;
@@ -238,6 +248,7 @@ export interface SpreadsheetEditorCommands {
   applyCellFormat: (request: SpreadsheetCellFormatRequest) => boolean;
   applyAutoSum: (functionName: SpreadsheetAutoSumFunction) => boolean;
   applyFormatPainter: (target: SpreadsheetCommandSelection) => boolean;
+  applyHyperlink: (request: SpreadsheetHyperlinkRequest) => boolean;
   cancelFormatPainter: () => boolean;
   clearSelectedCells: (mode?: SpreadsheetCellClearMode) => boolean;
   copySelection: () => boolean;
@@ -261,11 +272,13 @@ export interface SpreadsheetEditorCommands {
   openFind: () => boolean;
   openFormatCells: () => boolean;
   openGoTo: () => boolean;
+  openHyperlink: () => boolean;
   openPasteSpecial: () => boolean;
   pasteCells: (values: readonly (readonly unknown[])[]) => boolean;
   pasteSelection: () => boolean;
   pasteSpecial: (content: SpreadsheetPasteContent) => boolean;
   recalculateFormula: (scope: 'selection' | 'workbook') => boolean;
+  removeHyperlink: (target: SpreadsheetHyperlinkCell) => boolean;
   renameSheet: (sheetId: string, name: string) => boolean;
   redo: () => boolean;
   setCellFormat: (attribute: keyof Cell, value: unknown) => boolean;
@@ -303,6 +316,7 @@ export interface SpreadsheetCommandContext {
   formulaBar: SpreadsheetFormulaBarCommandPort | null;
   formatPainter: SpreadsheetFormatPainterCommandPort;
   formatCells: SpreadsheetFormatCellsCommandPort;
+  hyperlink: SpreadsheetHyperlinkCommandPort;
   history: SpreadsheetHistoryCommandPort | null;
   navigation: SpreadsheetNavigationCommandPort;
   onChange: (content: WorkSpreadsheetContent) => void;
@@ -344,6 +358,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     createSpreadsheetCellStyleExtension(),
     createSpreadsheetNumberFormatExtension(),
     createSpreadsheetNavigationExtension(),
+    createSpreadsheetHyperlinkExtension(),
     createSpreadsheetAutoSumExtension(),
     createSpreadsheetCellFillExtension(),
     createOfficeEditorExtension<

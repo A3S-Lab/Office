@@ -534,7 +534,12 @@ interaction model.
   modes, arithmetic operations, Skip blanks, Transpose, translated formula
   references, rich same-editor styles/comments/validation/merges/column widths,
   bounded TSV fallback, one-step Undo, and fail-closed protected or unsafe
-  targets, a WPS-style Format Painter with single-use and double-click locked
+  targets, an Insert and Links Hyperlink command with grid-scoped `Cmd/Ctrl+K`,
+  accessible Web page, cell-range, and worksheet targets, explicit Edit and
+  Remove, immutable dense/sparse updates, content/style/comment preservation,
+  exact focus restoration, one-step Undo, and fail-closed unsafe, hidden,
+  protected, pivot, or out-of-bounds targets, a WPS-style Format Painter with
+  single-use and double-click locked
   sessions, cross-sheet range-pattern tiling, Escape cancellation, and native
   style-only writes, a Home and Font cell-border split control with side, all,
   outside, inside, horizontal, vertical, clear, and diagonal targets, ten

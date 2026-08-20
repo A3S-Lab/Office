@@ -23,12 +23,22 @@ require_executable() {
 a3s_test="${A3S_TEST_BIN:-$(require_executable a3s-test)}"
 browser_driver="${A3S_TEST_BROWSER_DRIVER:-standalone}"
 browser_arguments=(--browser-driver "$browser_driver")
+required_a3s_test_version="a3s-test 1.0.0"
+required_agent_browser_version="agent-browser 0.26.0"
+required_protocol_revision=15
 require_executable bun >/dev/null
 require_executable curl >/dev/null
 require_executable jq >/dev/null
 
 if [[ ! -x "$a3s_test" ]]; then
   echo "A3S Test executable is missing: $a3s_test" >&2
+  exit 1
+fi
+
+actual_a3s_test_version="$("$a3s_test" --version)"
+if [[ "$actual_a3s_test_version" != "$required_a3s_test_version" ]]; then
+  echo "Unsupported A3S Test version: $actual_a3s_test_version" >&2
+  echo "Expected the local release gate to use: $required_a3s_test_version" >&2
   exit 1
 fi
 
@@ -41,6 +51,13 @@ case "$browser_driver" in
 
     if [[ ! -x "$agent_browser" ]]; then
       echo "Standalone browser executable is missing: $agent_browser" >&2
+      exit 1
+    fi
+
+    actual_agent_browser_version="$("$agent_browser" --version)"
+    if [[ "$actual_agent_browser_version" != "$required_agent_browser_version" ]]; then
+      echo "Unsupported agent-browser version: $actual_agent_browser_version" >&2
+      echo "Expected the local release gate to use: $required_agent_browser_version" >&2
       exit 1
     fi
 
@@ -65,6 +82,27 @@ case "$browser_driver" in
     ;;
 esac
 
+capabilities_result="$artifact_root/capabilities.json"
+"$a3s_test" capabilities "${browser_arguments[@]}" --json \
+  >"$capabilities_result"
+if ! jq -e \
+  --arg driver "$browser_driver" \
+  --arg standalone_version "${required_agent_browser_version#agent-browser }" \
+  --argjson protocol_revision "$required_protocol_revision" \
+  '
+    .protocol_revision == $protocol_revision and
+    if $driver == "standalone" then
+      .integration == "standalone" and .version == $standalone_version
+    else
+      .integration == "a3s"
+    end
+  ' "$capabilities_result" >/dev/null; then
+  echo "A3S Test Web capability contract is incompatible:" >&2
+  jq '{integration, version, protocol_revision}' "$capabilities_result" >&2
+  exit 1
+fi
+jq '{integration, version, protocol_revision}' "$capabilities_result"
+
 cleanup() {
   if [[ -n "$preview_pid" ]] && kill -0 "$preview_pid" 2>/dev/null; then
     kill -TERM "$preview_pid" 2>/dev/null || true
@@ -80,6 +118,7 @@ suites=(
   "tests/e2e/office-docs-navigation.acl"
   "tests/e2e/spreadsheet-maximum-sparse.acl"
   "tests/e2e/spreadsheet-cell-fill.acl"
+  "tests/e2e/spreadsheet-hyperlink.acl"
   "tests/e2e/spreadsheet-paste-special.acl"
   "tests/e2e/collaboration-playground-entry.acl"
   "tests/e2e/collaboration-document-suggestions.acl"

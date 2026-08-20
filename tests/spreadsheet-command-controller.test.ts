@@ -11,6 +11,7 @@ import {
   type SpreadsheetEditorCommands,
   type SpreadsheetFormatCellsCommandPort,
   type SpreadsheetFormatPainterCommandPort,
+  type SpreadsheetHyperlinkCommandPort,
   type SpreadsheetNavigationCommandPort,
   type SpreadsheetWorkbookCommandPort,
 } from '../src/internal/features/work/editors/spreadsheet-command-controller';
@@ -297,6 +298,153 @@ describe('spreadsheet command controller', () => {
       key: '1',
     });
     expect(editor.handleKeyDown(readOnlyShortcut)).toBe(false);
+  });
+
+  test('opens, applies, and removes hyperlinks through typed commands', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      row: 40,
+      column: 12,
+      celldata: [{ r: 2, c: 4, v: { v: 'A3S Office', bg: '#fff2cc' } }],
+    };
+    fixture.workbook.selection = [
+      {
+        row: [2, 3],
+        column: [3, 4],
+        row_focus: 2,
+        column_focus: 4,
+      },
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetHyperlink');
+    expect(editor.can().openHyperlink()).toBe(true);
+    expect(editor.commands.openHyperlink()).toBe(true);
+    expect(fixture.hyperlink.requests).toEqual([
+      { sheetId: 'sheet-1', row: 2, column: 4 },
+    ]);
+    expect(fixture.changes).toEqual([]);
+
+    expect(
+      editor.commands.applyHyperlink({
+        sheetId: 'sheet-1',
+        row: 2,
+        column: 4,
+        linkType: 'webpage',
+        linkAddress: 'a3s.dev/office',
+      }),
+    ).toBe(true);
+    expect(fixture.changes).toHaveLength(1);
+    expect(fixture.changes[0]?.sheets[0]?.hyperlink?.['2_4']).toEqual({
+      linkType: 'webpage',
+      linkAddress: 'https://a3s.dev/office',
+    });
+    expect(fixture.changes[0]?.sheets[0]?.celldata?.[0]?.v).toMatchObject({
+      v: 'A3S Office',
+      bg: '#fff2cc',
+      hl: { r: 2, c: 4, id: 'sheet-1' },
+    });
+
+    const appliedChange = fixture.changes[0];
+    if (!appliedChange) {
+      throw new Error('Expected the hyperlink command to emit one change');
+    }
+    editor.updateContext({
+      ...fixture.context,
+      content: appliedChange,
+    });
+    expect(
+      editor.commands.removeHyperlink({
+        sheetId: 'sheet-1',
+        row: 2,
+        column: 4,
+      }),
+    ).toBe(true);
+    expect(fixture.changes).toHaveLength(2);
+    expect(fixture.changes[1]?.sheets[0]?.hyperlink).toBeUndefined();
+    expect(fixture.changes[1]?.sheets[0]?.celldata?.[0]?.v).toEqual({
+      v: 'A3S Office',
+      bg: '#fff2cc',
+    });
+  });
+
+  test('owns Cmd/Ctrl+K only on the active spreadsheet grid', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [
+      { row: [0, 0], column: [0, 0], row_focus: 0, column_focus: 0 },
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+    const container = document.createElement('div');
+    container.className = 'fortune-container';
+    const grid = document.createElement('div');
+    container.append(grid);
+    document.body.append(container);
+    let gridHandled = false;
+    grid.addEventListener('keydown', (event) => {
+      gridHandled = editor.handleKeyDown(event);
+    });
+
+    grid.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        ctrlKey: true,
+        key: 'k',
+      }),
+    );
+    expect(gridHandled).toBe(true);
+    expect(fixture.hyperlink.requests).toHaveLength(1);
+
+    const hostInput = document.createElement('input');
+    document.body.append(hostInput);
+    let inputHandled = true;
+    hostInput.addEventListener('keydown', (event) => {
+      inputHandled = editor.handleKeyDown(event);
+    });
+    hostInput.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        metaKey: true,
+        key: 'k',
+      }),
+    );
+    expect(inputHandled).toBe(false);
+
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    const dialogInput = document.createElement('input');
+    dialog.append(dialogInput);
+    document.body.append(dialog);
+    let dialogHandled = true;
+    dialogInput.addEventListener('keydown', (event) => {
+      dialogHandled = editor.handleKeyDown(event);
+    });
+    dialogInput.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        ctrlKey: true,
+        key: 'k',
+      }),
+    );
+    expect(dialogHandled).toBe(false);
+    expect(fixture.hyperlink.requests).toHaveLength(1);
+
+    editor.updateContext({ ...fixture.context, editable: false });
+    const readOnlyShortcut = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: 'k',
+    });
+    Object.defineProperty(readOnlyShortcut, 'target', { value: grid });
+    expect(editor.handleKeyDown(readOnlyShortcut)).toBe(false);
+
+    dialog.remove();
+    hostInput.remove();
+    container.remove();
   });
 
   test('routes all four WPS fill directions through one native command port', () => {
@@ -1599,6 +1747,7 @@ function commandFixture(): {
   formulaBarValues: unknown[];
   formatPainter: RecordingSpreadsheetFormatPainter;
   formatCells: RecordingSpreadsheetFormatCells;
+  hyperlink: RecordingSpreadsheetHyperlink;
   navigation: RecordingSpreadsheetNavigation;
   workbook: RecordingSpreadsheetWorkbook;
 } {
@@ -1620,6 +1769,7 @@ function commandFixture(): {
   const formulaBarValues: unknown[] = [];
   const formatPainter = new RecordingSpreadsheetFormatPainter();
   const formatCells = new RecordingSpreadsheetFormatCells();
+  const hyperlink = new RecordingSpreadsheetHyperlink();
   const navigation = new RecordingSpreadsheetNavigation();
   const workbook = new RecordingSpreadsheetWorkbook();
   return {
@@ -1630,6 +1780,7 @@ function commandFixture(): {
     formulaBarValues,
     formatPainter,
     formatCells,
+    hyperlink,
     navigation,
     workbook,
     context: {
@@ -1645,6 +1796,7 @@ function commandFixture(): {
       },
       formatPainter,
       formatCells,
+      hyperlink,
       history: null,
       navigation,
       onChange: (next) => changes.push(next),
@@ -1691,6 +1843,19 @@ class RecordingSpreadsheetFormatCells
 
   open(
     request: Parameters<SpreadsheetFormatCellsCommandPort['open']>[0],
+  ): boolean {
+    if (!this.canOpen) return false;
+    this.requests.push(request);
+    return true;
+  }
+}
+
+class RecordingSpreadsheetHyperlink implements SpreadsheetHyperlinkCommandPort {
+  canOpen = true;
+  requests: Parameters<SpreadsheetHyperlinkCommandPort['open']>[0][] = [];
+
+  open(
+    request: Parameters<SpreadsheetHyperlinkCommandPort['open']>[0],
   ): boolean {
     if (!this.canOpen) return false;
     this.requests.push(request);

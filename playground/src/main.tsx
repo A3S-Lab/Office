@@ -42,6 +42,11 @@ import {
   SPREADSHEET_GO_TO_FIXTURE,
 } from './spreadsheet-go-to-fixture';
 import {
+  createSpreadsheetHyperlinkArtifact,
+  SPREADSHEET_HYPERLINK_ARTIFACT_ID,
+  SPREADSHEET_HYPERLINK_FIXTURE,
+} from './spreadsheet-hyperlink-fixture';
+import {
   createSpreadsheetPasteSpecialArtifact,
   SPREADSHEET_PASTE_SPECIAL_ARTIFACT_ID,
   SPREADSHEET_PASTE_SPECIAL_FIXTURE,
@@ -78,9 +83,11 @@ function Playground() {
       ? MAXIMUM_SPARSE_SPREADSHEET_ARTIFACT_ID
       : e2eFixture === SPREADSHEET_GO_TO_FIXTURE
         ? SPREADSHEET_GO_TO_ARTIFACT_ID
-        : e2eFixture === SPREADSHEET_PASTE_SPECIAL_FIXTURE
-          ? SPREADSHEET_PASTE_SPECIAL_ARTIFACT_ID
-          : null,
+        : e2eFixture === SPREADSHEET_HYPERLINK_FIXTURE
+          ? SPREADSHEET_HYPERLINK_ARTIFACT_ID
+          : e2eFixture === SPREADSHEET_PASTE_SPECIAL_FIXTURE
+            ? SPREADSHEET_PASTE_SPECIAL_ARTIFACT_ID
+            : null,
   );
   const [collaborationDemoArtifactId, setCollaborationDemoArtifactId] =
     useState<string | null>(null);
@@ -583,6 +590,9 @@ function createInitialArtifacts(e2eFixture: string | null): OfficeArtifact[] {
   }
   if (e2eFixture === SPREADSHEET_GO_TO_FIXTURE) {
     return [createSpreadsheetGoToArtifact(), ...artifacts];
+  }
+  if (e2eFixture === SPREADSHEET_HYPERLINK_FIXTURE) {
+    return [createSpreadsheetHyperlinkArtifact(), ...artifacts];
   }
   if (e2eFixture === SPREADSHEET_PASTE_SPECIAL_FIXTURE) {
     return [createSpreadsheetPasteSpecialArtifact(), ...artifacts];

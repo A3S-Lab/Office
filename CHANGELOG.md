@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added WPS-style Spreadsheet Insert/Edit Hyperlink under Insert and Links,
+  including the grid-scoped `Cmd/Ctrl+K` shortcut and accessible Web page,
+  cell-range, and worksheet targets. One immutable controlled update preserves
+  dense or sparse storage, cell values, formulas, formatting, comments, and
+  unrelated vendor records; Remove and one-step Undo use the same typed path.
+  Unsafe URLs, missing or hidden sheets, invalid or out-of-bounds ranges,
+  protected cells, pivots, read-only views, host inputs, and modal surfaces
+  fail before mutation. Desktop and compact Playwright coverage is paired with
+  a local-only A3S Test 1.0.0 gate using agent-browser 0.26.0 and protocol 15;
+  GitHub Actions does not install or invoke A3S Test.
+
 ## 0.14.0 - 2026-08-21
 
 - Added WPS-style Spreadsheet Paste Special with a split Paste command,

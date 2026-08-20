@@ -6,6 +6,12 @@ GitHub Actions does not install or run A3S Test. Local development may use the
 A3S Browser adapter or the standalone `agent-browser` adapter.
 Evidence is written under `.a3s-test/`, which is ignored by Git.
 
+The current local release contract pins `a3s-test 1.0.0`, standalone
+`agent-browser 0.26.0`, and Web protocol revision 15. The gate reuses the
+Chromium executable already provided by the repository's Playwright install;
+it never downloads or installs a browser. A missing or incompatible executable
+fails before any suite starts.
+
 Build the Playground and start its static preview in one terminal:
 
 ```bash
@@ -134,6 +140,19 @@ It covers the keyboard-accessible Find and Select menu, `Ctrl+G`, `F5`,
 direct and named cross-sheet ranges, validation, exact focus restoration, and
 the view-only contract that leaves content and Undo unchanged. It is local-only
 and is not referenced by a GitHub Actions workflow.
+
+The WPS Spreadsheet hyperlink workflow has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-hyperlink:check
+bun run test:e2e:spreadsheet-hyperlink
+```
+
+It covers the Insert ribbon command, grid-scoped `Cmd/Ctrl+K`, safe Web,
+cell-range, and worksheet targets, hidden-sheet and unsafe-URL validation,
+Insert/Edit/Remove dialog semantics, exact ribbon and grid focus restoration,
+and one-step Undo. The suite runs only through the local A3S Test release gate
+and is not referenced by GitHub Actions.
 
 The WPS Spreadsheet Paste Special workflow has a focused local gate:
 

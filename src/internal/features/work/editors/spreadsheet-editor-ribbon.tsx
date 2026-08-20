@@ -28,6 +28,7 @@ import {
   Grid3X3,
   Hash,
   Link2Off,
+  Link2,
   ListFilter,
   LocateFixed,
   MessageSquareX,
@@ -351,17 +352,32 @@ export function SpreadsheetEditorRibbon({
           </>
         ),
         insert: (
-          <WorkOfficeRibbonGroup label="图表" priority="high">
-            <SpreadsheetRibbonTool
-              controlsId={panelId}
-              panel="charts"
-              label={spreadsheetCommandCatalog.insertChart.label}
-              count={spreadsheetChartCount(content)}
-              icon={<BarChart3 size={19} />}
-              active={panel === 'charts'}
-              onToggle={onTogglePanel}
-            />
-          </WorkOfficeRibbonGroup>
+          <>
+            <WorkOfficeRibbonGroup label="链接" priority="high">
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.hyperlink.label}
+                title={`${spreadsheetCommandCatalog.hyperlink.label}（${spreadsheetCommandCatalog.hyperlink.shortcut.label}）`}
+                aria-keyshortcuts={
+                  spreadsheetCommandCatalog.hyperlink.shortcut.aria
+                }
+                disabled={!can.openHyperlink()}
+                onClick={commands.openHyperlink}
+              >
+                <Link2 size={19} />
+              </WorkOfficeRibbonButton>
+            </WorkOfficeRibbonGroup>
+            <WorkOfficeRibbonGroup label="图表" priority="high">
+              <SpreadsheetRibbonTool
+                controlsId={panelId}
+                panel="charts"
+                label={spreadsheetCommandCatalog.insertChart.label}
+                count={spreadsheetChartCount(content)}
+                icon={<BarChart3 size={19} />}
+                active={panel === 'charts'}
+                onToggle={onTogglePanel}
+              />
+            </WorkOfficeRibbonGroup>
+          </>
         ),
         pageLayout: (
           <WorkOfficeRibbonGroup label="页面设置" priority="high">

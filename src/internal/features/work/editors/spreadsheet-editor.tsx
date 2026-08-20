@@ -133,6 +133,7 @@ import {
   type SpreadsheetFormatPainterMode,
   useSpreadsheetFormatPainter,
 } from './use-spreadsheet-format-painter';
+import { useSpreadsheetHyperlink } from './use-spreadsheet-hyperlink';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
   type WorkOfficeFileAction,
@@ -310,6 +311,28 @@ function SpreadsheetEditorSurface({
     null,
   );
   const formatCellsApplyingRef = useRef(false);
+  const focusSpreadsheetHyperlinkGrid = useCallback(
+    (focusOrigin: Element | null) =>
+      focusSpreadsheetGrid(spreadsheetCanvasRef.current, { focusOrigin }),
+    [],
+  );
+  const getSpreadsheetHyperlinkGridFocusTarget = useCallback(
+    () => spreadsheetGridFocusTarget(spreadsheetCanvasRef.current),
+    [],
+  );
+  const getSpreadsheetHyperlinkLiveSelection = useCallback(
+    () => workbookRef.current?.getSelection()?.at(-1),
+    [],
+  );
+  const spreadsheetHyperlink = useSpreadsheetHyperlink({
+    commandsRef: spreadsheetCommandsRef,
+    contentRef,
+    focusGrid: focusSpreadsheetHyperlinkGrid,
+    getGridFocusTarget: getSpreadsheetHyperlinkGridFocusTarget,
+    getLiveSelection: getSpreadsheetHyperlinkLiveSelection,
+    preview,
+    selectionState,
+  });
   const officeDialog = useOfficeDialog();
   const [findOpen, setFindOpen] = useState(false);
   const [findFocusRequest, setFindFocusRequest] = useState(0);
@@ -991,6 +1014,7 @@ function SpreadsheetEditorSurface({
         canOpen: !preview && formatCellsSource === null,
         open: openSpreadsheetFormatCells,
       },
+      hyperlink: spreadsheetHyperlink.commandPort,
       history,
       navigation: {
         canOpenFind: !preview,
@@ -999,15 +1023,15 @@ function SpreadsheetEditorSurface({
         openGoTo: openSpreadsheetGoTo,
       },
       onChange: (next) => {
-        const formatCellsSelection = formatCellsApplyingRef.current
+        const preservedSelection = formatCellsApplyingRef.current
           ? formatCellsSelectionRef.current
-          : null;
+          : spreadsheetHyperlink.selectionForChange();
         const controlled =
-          formatCellsSelection && !collaborationView
+          preservedSelection && !collaborationView
             ? spreadsheetContentWithSelection(
                 next,
-                formatCellsSelection.sheetId,
-                formatCellsSelection.selection,
+                preservedSelection.sheetId,
+                preservedSelection.selection,
               )
             : next;
         contentRef.current = controlled;
@@ -1577,6 +1601,7 @@ function SpreadsheetEditorSurface({
           onClose={closeSpreadsheetFormatCells}
         />
       )}
+      {spreadsheetHyperlink.dialog}
       {spreadsheetClipboard.dialogSource && (
         <SpreadsheetPasteSpecialDialog
           source={spreadsheetClipboard.dialogSource}

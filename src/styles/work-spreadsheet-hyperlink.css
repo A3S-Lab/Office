@@ -1,0 +1,169 @@
+.work-spreadsheet-hyperlink-dialog {
+  --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
+
+  width: min(610px, 100%);
+}
+
+.work-spreadsheet-hyperlink-dialog form {
+  display: grid;
+  gap: 18px;
+}
+
+.work-spreadsheet-hyperlink-types {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-spreadsheet-hyperlink-types > legend {
+  margin-bottom: 8px;
+  color: var(--a3s-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.work-spreadsheet-hyperlink-types > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.work-spreadsheet-hyperlink-types label {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 62px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 8px;
+  background: var(--a3s-panel);
+  color: var(--a3s-muted);
+  cursor: pointer;
+}
+
+.work-spreadsheet-hyperlink-types label:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 42%,
+    var(--a3s-line)
+  );
+}
+
+.work-spreadsheet-hyperlink-types label.selected {
+  border-color: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 58%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 8%,
+    var(--a3s-panel)
+  );
+  color: var(--work-spreadsheet-accent, #159469);
+}
+
+.work-spreadsheet-hyperlink-types label:has(input:focus-visible) {
+  outline: 2px solid
+    color-mix(in srgb, var(--work-spreadsheet-accent, #159469) 38%, transparent);
+  outline-offset: 2px;
+}
+
+.work-spreadsheet-hyperlink-types input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.work-spreadsheet-hyperlink-types label > span {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.work-spreadsheet-hyperlink-types strong,
+.work-spreadsheet-hyperlink-types small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-hyperlink-types strong {
+  color: var(--a3s-ink);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-hyperlink-types small {
+  color: var(--a3s-muted);
+  font-size: 9px;
+}
+
+.work-spreadsheet-hyperlink-preview {
+  display: grid;
+  min-width: 0;
+  min-height: 56px;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: var(--a3s-panel-soft);
+}
+
+.work-spreadsheet-hyperlink-preview > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 7px;
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 11%,
+    var(--a3s-panel)
+  );
+  color: var(--work-spreadsheet-accent, #159469);
+}
+
+.work-spreadsheet-hyperlink-preview > div {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.work-spreadsheet-hyperlink-preview strong,
+.work-spreadsheet-hyperlink-preview small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-hyperlink-preview strong {
+  color: var(--a3s-ink);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-hyperlink-preview small {
+  color: var(--a3s-muted);
+  font-size: 10px;
+}
+
+.work-spreadsheet-hyperlink-remove {
+  margin-right: auto;
+}
+
+@media (max-width: 560px) {
+  .work-spreadsheet-hyperlink-types > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-hyperlink-types label {
+    min-height: 50px;
+  }
+}

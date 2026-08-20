@@ -491,6 +491,16 @@ export const spreadsheetCommandCatalog = {
     label: '插入图表',
     location: { area: 'ribbon', tab: 'insert', group: 'charts' },
   },
+  hyperlink: {
+    id: 'insert.hyperlink',
+    label: '超链接',
+    location: { area: 'ribbon', tab: 'insert', group: 'links' },
+    shortcut: {
+      label: 'Cmd/Ctrl+K',
+      aria: 'Control+K Meta+K',
+      editor: ['Mod-k'],
+    },
+  },
   printSettings: {
     id: 'pageLayout.printSettings',
     label: '打印设置',

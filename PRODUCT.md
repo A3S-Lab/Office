@@ -165,6 +165,18 @@ Undo record, restores the current grid after a dialog-driven remount, and caps
 the destination at 50,000 cells. Pivot sheets, partial merge intersections,
 protected or read-only targets, out-of-bounds writes, unsupported formula
 state, and divide-by-zero operations fail before mutation.
+The twentieth milestone adds Hyperlink under Insert and Links with the
+grid-scoped `Cmd/Ctrl+K` shortcut. One accessible Insert/Edit dialog supports
+HTTP(S), one direct A1 cell or continuous range, and visible worksheet targets,
+plus explicit Remove. The command captures the exact active cell and selection,
+uses Fortune's native `webpage`, `cellrange`, and `sheet` records through an
+A3S-owned immutable update, and preserves dense or sparse representation,
+content, formulas, formatting, comments, unrelated hyperlinks, and malformed
+vendor records. One Apply or Remove emits one controlled value and one Undo
+record, then restores the exact ribbon invoker or current grid after a remount.
+Read-only, protected, pivot, missing, hidden, unsafe, invalid, and out-of-bounds
+requests fail before mutation; host inputs, formula or cell editing, and modal
+controls retain their native `Cmd/Ctrl+K` behavior.
 
 ## Product Rules
 

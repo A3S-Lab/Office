@@ -270,6 +270,16 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     group: 'charts',
     tab: 'insert',
   });
+  expect(spreadsheetCommandCatalog.hyperlink.location).toEqual({
+    area: 'ribbon',
+    group: 'links',
+    tab: 'insert',
+  });
+  expect(spreadsheetCommandCatalog.hyperlink.shortcut).toEqual({
+    aria: 'Control+K Meta+K',
+    editor: ['Mod-k'],
+    label: 'Cmd/Ctrl+K',
+  });
   expect(spreadsheetCommandCatalog.sortAscending.location).toEqual({
     area: 'ribbon',
     group: 'sortAndFilter',

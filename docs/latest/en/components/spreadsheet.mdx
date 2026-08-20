@@ -81,6 +81,37 @@ same view-only navigation primitive is used when following a remote
 collaboration participant. Rstest and Playwright are the CI and Pages gates;
 the equivalent A3S Test ACL remains local-only.
 
+## Hyperlinks
+
+Insert and Links exposes the WPS-style Hyperlink command. Press `Cmd/Ctrl+K`
+while the live workbook grid has focus to open the same accessible dialog for
+the exact active cell. The shortcut is not captured from host inputs, the
+formula bar, active cell editing, popovers, or modal controls. Cancel and
+Escape restore the exact ribbon button or grid node that opened the dialog.
+
+| Link type | Stored target | Accepted input |
+| --- | --- | --- |
+| Web page | Fortune `webpage` | An HTTP or HTTPS URL; a missing scheme normalizes to HTTPS |
+| Cell range | Fortune `cellrange` | One A1 cell or continuous range, optionally qualified by a quoted worksheet name |
+| Worksheet | Fortune `sheet` | One existing visible worksheet |
+
+The same surface edits an existing native link and exposes Remove. Display
+text is optional and changes only when explicitly submitted; formula cells keep
+their calculated display text. Unsafe schemes, missing or hidden worksheets,
+invalid or out-of-bounds ranges, read-only views, protected source cells, and
+pivot-output cells fail before any content change.
+
+Apply and Remove use an A3S-owned immutable path instead of Fortune's destructive
+hyperlink helpers. A single intent publishes one controlled workbook value and
+one Undo record while retaining the worksheet's existing dense `data` or sparse
+`celldata` representation, values, formulas, formatting, comments, unrelated
+hyperlinks, and malformed vendor records. The captured selection is restored
+after a controlled remount. Focused model, command, dialog, editor, desktop, and
+compact regressions cover the contract. The deterministic
+`tests/e2e/spreadsheet-hyperlink.acl` suite runs only through the local release
+gate with A3S Test 1.0.0, agent-browser 0.26.0, and Web protocol revision 15;
+GitHub Actions and Pages do not install or invoke A3S Test.
+
 ## Paste Special and the rich clipboard
 
 Home and Clipboard exposes Paste as a WPS-style split command. The primary

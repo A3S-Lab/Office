@@ -920,6 +920,23 @@ fallback, desktop, and compact regressions cover the contract. The deterministic
 A3S Test suite remains a local-only release gate and records screenshot,
 accessibility, empty console, and empty page-error evidence.
 
+The twentieth slice adds Hyperlink to Insert and Links with the grid-scoped
+`Cmd/Ctrl+K` shortcut. A single accessible Insert/Edit dialog owns Web page,
+direct or continuous A1 cell-range, and visible worksheet targets, display-text
+changes, and explicit Remove. An A3S-owned immutable model writes Fortune's
+native `webpage`, `cellrange`, and `sheet` records without using the vendor
+helpers that replace displayed values or hyperlink formatting. Dense `data`
+and sparse `celldata` representation, formulas, values, native formatting,
+comments, unrelated links, and malformed vendor records remain intact. Apply
+and Remove each publish one controlled value and one Undo record, preserve the
+captured selection, and restore the exact ribbon trigger or current grid after
+a remount. Validation rejects unsafe URLs, malformed or out-of-bounds ranges,
+missing or hidden worksheets, protected cells, pivot output, and read-only
+views before mutation. Focused model, command, dialog, editor, ribbon, desktop,
+and compact regressions cover the workflow. Its deterministic ACL is checked
+and run locally with A3S Test 1.0.0, agent-browser 0.26.0, and Web protocol 15;
+GitHub Actions and Pages do not install or invoke A3S Test.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,
