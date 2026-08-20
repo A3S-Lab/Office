@@ -957,7 +957,10 @@ fn cli_session_bridges_ephemeral_native_presence_without_touching_the_replica() 
         }),
     );
     let remote_snapshot = read_jsonl(&mut stdout);
-    assert_eq!(remote_snapshot["type"], "presence");
+    assert_eq!(
+        remote_snapshot["type"], "presence",
+        "unexpected remote Awareness response: {remote_snapshot}"
+    );
     assert_eq!(remote_snapshot["changed"], true);
     assert_eq!(
         remote_snapshot["snapshot"]["participants"]

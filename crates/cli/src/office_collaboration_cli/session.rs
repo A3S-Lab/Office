@@ -448,7 +448,6 @@ async fn read_bounded_jsonl<R>(reader: &mut R, output: &mut Vec<u8>) -> UseResul
 where
     R: AsyncBufRead + Unpin,
 {
-    output.clear();
     loop {
         let available = reader.fill_buf().await.map_err(|error| {
             collaboration_cli_error(
@@ -479,16 +478,17 @@ where
             break;
         }
     }
-    if output.last() == Some(&b'\r') {
-        output.pop();
+    let mut record = std::mem::take(output);
+    if record.last() == Some(&b'\r') {
+        record.pop();
     }
-    if output.is_empty() {
+    if record.is_empty() {
         return Err(collaboration_cli_error(
             "office.collaboration.session_input_invalid",
             "Collaboration session JSONL records must not be empty.",
         ));
     }
-    Ok(Some(output.clone()))
+    Ok(Some(record))
 }
 
 struct SessionOutput {
@@ -875,5 +875,29 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(error.code, "office.collaboration.session_input_invalid");
+    }
+
+    #[tokio::test]
+    async fn bounded_jsonl_reader_preserves_a_partial_record_when_cancelled() {
+        let (mut writer, reader) = tokio::io::duplex(64);
+        let mut reader = BufReader::new(reader);
+        let mut buffer = Vec::new();
+
+        writer.write_all(br#"{"type":"re"#).await.unwrap();
+        tokio::select! {
+            result = read_bounded_jsonl(&mut reader, &mut buffer) => {
+                panic!("reader completed before the JSONL record: {result:?}");
+            }
+            _ = tokio::time::sleep(Duration::from_millis(10)) => {}
+        }
+        assert_eq!(buffer, br#"{"type":"re"#);
+
+        writer.write_all(b"connect\"}\n").await.unwrap();
+        drop(writer);
+        let record = read_bounded_jsonl(&mut reader, &mut buffer)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(record, br#"{"type":"reconnect"}"#);
     }
 }

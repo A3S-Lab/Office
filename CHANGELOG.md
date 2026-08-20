@@ -21,6 +21,9 @@ All notable changes to A3S Office will be documented in this file.
   local ACL coverage. A3S Test remains a local release gate; GitHub CI and
   Pages continue to use Rstest and Playwright without installing or invoking
   A3S Test.
+- Made native collaboration-session JSONL input cancellation-safe so periodic
+  polling cannot discard a partially received host record or parse its suffix
+  as a new command.
 
 ## 0.13.0 - 2026-08-20
 
