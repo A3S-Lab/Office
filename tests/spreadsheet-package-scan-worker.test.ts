@@ -14,6 +14,7 @@ describe('spreadsheet package scan worker', () => {
         '<worksheet><sheetData><row r="1"><c><v>cols f pane customHeight</v></c></row></sheetData></worksheet>',
       ),
     ).toEqual({
+      hasDirectCellStyles: false,
       hasDiagnosticFeatures: false,
       hasFormulaFeatures: false,
       hasImportedFeatures: false,
@@ -26,13 +27,14 @@ describe('spreadsheet package scan worker', () => {
           '<x:worksheet xmlns:x="urn:test">',
           '<x:cols><x:col min="1" max="1"/></x:cols>',
           '<x:sheetData><x:row r="1" customHeight="1" ht="30">',
-          '<x:c r="A1"><x:f>SUM(A2:A3)</x:f></x:c>',
+          '<x:c r="A1" s="5"><x:f>SUM(A2:A3)</x:f></x:c>',
           '</x:row></x:sheetData>',
           '<x:pane/><x:dataValidation/><x:drawing/>',
           '</x:worksheet>',
         ].join(''),
       ),
     ).toEqual({
+      hasDirectCellStyles: true,
       hasDiagnosticFeatures: true,
       hasFormulaFeatures: true,
       hasImportedFeatures: true,
@@ -49,6 +51,7 @@ describe('spreadsheet package scan worker', () => {
             kind: 'success',
             worksheets: {
               'xl/worksheets/sheet1.xml': {
+                hasDirectCellStyles: false,
                 hasDiagnosticFeatures: false,
                 hasFormulaFeatures: false,
                 hasImportedFeatures: false,
@@ -66,6 +69,7 @@ describe('spreadsheet package scan worker', () => {
           workbook: null,
           worksheets: {
             'xl/worksheets/sheet1.xml': {
+              hasDirectCellStyles: false,
               hasDiagnosticFeatures: false,
               hasFormulaFeatures: false,
               hasImportedFeatures: false,
@@ -121,6 +125,7 @@ describe('spreadsheet package scan worker', () => {
             kind: 'success',
             worksheets: {
               'xl/worksheets/sheet1.xml': {
+                hasDirectCellStyles: false,
                 hasDiagnosticFeatures: false,
                 hasFormulaFeatures: false,
                 hasImportedFeatures: false,

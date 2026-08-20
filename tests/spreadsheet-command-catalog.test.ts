@@ -133,6 +133,11 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     group: 'styles',
     tab: 'home',
   });
+  expect(spreadsheetCommandCatalog.cellStyles.location).toEqual({
+    area: 'ribbon',
+    group: 'styles',
+    tab: 'home',
+  });
   expect(spreadsheetCommandCatalog.mergeAndCenter.location).toEqual({
     area: 'ribbon',
     group: 'alignment',

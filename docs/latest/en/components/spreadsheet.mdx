@@ -104,6 +104,42 @@ The public workbook extension context is not yet stable. Use `fileActions` for
 host workflows and `onAgentRequest` for structured AI actions. Do not import
 command runtime modules from internal package paths.
 
+## Built-in cell styles
+
+Home and Styles exposes 17 WPS-familiar built-in choices. The gallery renders
+the actual font, foreground, fill, and emphasis for every choice instead of a
+generic swatch. It uses semantic groups and `menuitemradio` state; Home and End
+move to the first or last choice, Left and Right move between adjacent choices,
+and Up and Down follow the three-column desktop or two-column compact layout.
+
+| Group | Styles |
+| --- | --- |
+| Common | Normal, Good, Bad, Neutral |
+| Data and Model | Calculation, Check Cell, Explanatory Text, Input, Linked Cell, Note, Output, Warning Text |
+| Titles and Totals | Heading 1, Heading 2, Heading 3, Heading 4, Total |
+
+One command accepts at most 10,000 cells. It materializes only the selected
+blank cells and writes Fortune Sheet's native `bg`, `fc`, `ff`, `fs`, `bl`,
+`it`, `un`, and `cl` properties. Values, formulas, number formats, alignment,
+wrapping, comments, links, and merge geometry remain unchanged. Styles that
+include a rule or total border write the corresponding edge to every cell, as
+required by XLSX Cell XF semantics, rather than drawing only the outside of the
+selection. The complete selection emits one controlled `onChange` and one Undo
+record.
+
+The ribbon derives the current choice from the focused cell's native format
+and resolved borders. There is no parallel style ID or private marker, so Clear
+Formats, Format Painter, direct formatting, collaboration, and imported cells
+continue to share one workbook model. A partially edited appearance is shown
+as Custom rather than being mislabeled as a built-in choice.
+
+XLSX import and export retain direct font family, size, color, bold, italic,
+underline, strikethrough, solid fill, horizontal and vertical alignment,
+wrapping, rotation, four side borders, diagonal borders, and the original
+number-format XF. RGB, theme, indexed, automatic, and valid tint colors resolve
+to stable browser RGB values. Style-only blank cells are retained as sparse
+materialized cells; unrelated empty worksheet space remains unallocated.
+
 ## Cell borders
 
 Home and Font exposes a split border control for top, bottom, left, right, no,

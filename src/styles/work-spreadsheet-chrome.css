@@ -721,6 +721,132 @@
   color: currentcolor;
 }
 
+.work-spreadsheet-cell-style-panel {
+  display: grid;
+  width: min(440px, calc(100vw - 32px));
+  gap: 10px;
+  padding: 9px;
+}
+
+.work-spreadsheet-cell-style-group {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  gap: 4px;
+}
+
+.work-spreadsheet-cell-style-group + .work-spreadsheet-cell-style-group {
+  padding-top: 8px;
+  border-top: 1px solid var(--a3s-line);
+}
+
+.work-spreadsheet-cell-style-group-label {
+  padding-inline: 2px;
+  color: var(--a3s-faint);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 16px;
+}
+
+.work-spreadsheet-cell-style-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.work-spreadsheet-cell-style-grid > button {
+  display: grid;
+  min-width: 0;
+  min-height: 64px;
+  align-content: start;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  outline: 0;
+  background: transparent;
+  color: var(--a3s-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-spreadsheet-cell-style-preview {
+  display: flex;
+  min-width: 0;
+  height: 29px;
+  align-items: center;
+  padding-inline: 7px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, currentcolor 28%, var(--a3s-line));
+  border-radius: 4px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-cell-style-description {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--a3s-faint);
+  font-size: 10px;
+  line-height: 13px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.work-spreadsheet-cell-style-grid > button:hover:not(:disabled),
+.work-spreadsheet-cell-style-grid > button:focus-visible {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-control-accent, #159469) 38%,
+    var(--a3s-line)
+  );
+  background: var(--a3s-panel-soft);
+}
+
+.work-spreadsheet-cell-style-grid > button:focus-visible {
+  box-shadow: 0 0 0 2px
+    color-mix(
+      in srgb,
+      var(--work-office-control-accent, #159469) 18%,
+      transparent
+    );
+}
+
+.work-spreadsheet-cell-style-grid > button[aria-checked="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-control-accent, #159469) 58%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-office-control-accent, #159469) 7%,
+    var(--a3s-panel)
+  );
+}
+
+.work-spreadsheet-cell-style-grid > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+@media (max-width: 520px) {
+  .work-spreadsheet-cell-style-panel {
+    width: min(328px, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+    padding: 8px;
+  }
+
+  .work-spreadsheet-cell-style-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .work-spreadsheet-border-split-root {
   display: inline-flex;
   height: 29px;

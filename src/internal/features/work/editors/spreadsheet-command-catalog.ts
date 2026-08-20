@@ -306,6 +306,11 @@ export const spreadsheetCommandCatalog = {
     label: '条件格式',
     location: { area: 'ribbon', tab: 'home', group: 'styles' },
   },
+  cellStyles: {
+    id: 'styles.cellStyles',
+    label: '单元格样式',
+    location: { area: 'ribbon', tab: 'home', group: 'styles' },
+  },
   insertRowsAbove: {
     id: 'cells.insertRowsAbove',
     label: '在上方插入行',

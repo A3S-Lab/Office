@@ -7,7 +7,6 @@ import {
   firstDescendant,
   OoxmlPackage,
   parseXml,
-  xmlContainsAnyElement,
 } from './work-ooxml-package';
 import { sheetHasProtectionState } from './work-spreadsheet-protection';
 import type {
@@ -19,6 +18,13 @@ import {
   readXlsxWorksheetCharts,
   type XlsxWorksheetChart,
 } from './work-xlsx-charts';
+import {
+  readXlsxDirectCellStyles,
+  sheetHasDirectCellStyles,
+  type XlsxDirectCellStyle,
+  writeXlsxDirectCellStyles,
+  XlsxDirectCellStyleWriter,
+} from './work-xlsx-cell-styles';
 import {
   type FortuneConditionalFormatRule,
   readXlsxConditionalFormats,
@@ -46,7 +52,10 @@ import {
   XlsxCellProtectionWriter,
   type XlsxProtectionFeatures,
 } from './work-xlsx-protection';
-import type { XlsxWorksheetXmlScan } from './work-xlsx-worksheet-scan';
+import {
+  scanXlsxWorksheetXml,
+  type XlsxWorksheetXmlScan,
+} from './work-xlsx-worksheet-scan';
 
 type FrozenPane = NonNullable<Sheet['frozen']>;
 
@@ -56,6 +65,7 @@ export interface XlsxDataValidation {
 }
 
 export interface XlsxSheetFeatures {
+  directCellStyles: XlsxDirectCellStyle[];
   frozen?: FrozenPane;
   validations: XlsxDataValidation[];
   conditionalFormats: FortuneConditionalFormatRule[];
@@ -67,22 +77,6 @@ export interface XlsxSheetFeatures {
 }
 
 export type FortuneDataValidationItem = WorkSpreadsheetDataValidationItem;
-
-const XLSX_IMPORTED_WORKSHEET_ELEMENTS = [
-  'pane',
-  'dataValidation',
-  'conditionalFormatting',
-  'sheetProtection',
-  'protectedRange',
-  'rowBreaks',
-  'colBreaks',
-  'pageSetup',
-  'pageMargins',
-  'printOptions',
-  'headerFooter',
-  'pageSetUpPr',
-  'drawing',
-] as const;
 
 export async function readXlsxSheetFeatures(
   buffer: ArrayBuffer,
@@ -98,26 +92,28 @@ export async function readXlsxSheetFeaturesFromPackage(
   const styles = archive.has('xl/styles.xml')
     ? await archive.xml('xl/styles.xml')
     : null;
+  const theme = archive.has('xl/theme/theme1.xml')
+    ? await archive.xml('xl/theme/theme1.xml')
+    : null;
   const differentialFormats = readXlsxDifferentialFormats(styles);
   const features = new Map<string, XlsxSheetFeatures>();
   const imageBudget = { bytes: 0 };
   for (const [sheetName, partPath] of worksheetParts) {
     if (!archive.has(partPath)) continue;
     const scan = worksheetScans?.[partPath];
-    if (scan && !scan.hasImportedFeatures) {
+    if (scan && !scan.hasImportedFeatures && !scan.hasDirectCellStyles) {
       features.set(sheetName, emptyXlsxSheetFeatures());
       continue;
     }
     const source = await archive.text(partPath);
-    if (
-      !scan &&
-      !xmlContainsAnyElement(source, XLSX_IMPORTED_WORKSHEET_ELEMENTS)
-    ) {
+    const detected = scan ?? scanXlsxWorksheetXml(source);
+    if (!detected.hasImportedFeatures && !detected.hasDirectCellStyles) {
       features.set(sheetName, emptyXlsxSheetFeatures());
       continue;
     }
     const document = parseXml(source, partPath);
     features.set(sheetName, {
+      directCellStyles: readXlsxDirectCellStyles(document, styles, theme),
       frozen: parseFrozenPane(document) ?? undefined,
       validations: parseDataValidations(document),
       conditionalFormats: readXlsxConditionalFormats(
@@ -141,6 +137,7 @@ export async function readXlsxSheetFeaturesFromPackage(
 
 function emptyXlsxSheetFeatures(): XlsxSheetFeatures {
   return {
+    directCellStyles: [],
     validations: [],
     conditionalFormats: [],
     protection: { cellProtectionRanges: [] },
@@ -174,6 +171,7 @@ export async function patchXlsxSheetFeatures(
         Object.keys(sheet.dataVerification ?? {}).length ||
         sheet.dataValidationRanges?.length ||
         sheet.luckysheet_conditionformat_save?.length ||
+        sheetHasDirectCellStyles(sheet) ||
         sheetHasProtectionState(sheet) ||
         Boolean(
           sheet.id &&
@@ -194,6 +192,9 @@ export async function patchXlsxSheetFeatures(
   const differentialFormats = styles
     ? new XlsxDifferentialFormatWriter(styles)
     : undefined;
+  const directCellStyles = styles
+    ? new XlsxDirectCellStyleWriter(styles)
+    : undefined;
   const cellProtection = styles
     ? new XlsxCellProtectionWriter(styles)
     : undefined;
@@ -206,6 +207,7 @@ export async function patchXlsxSheetFeatures(
       !Object.keys(sheet.dataVerification ?? {}).length &&
       !sheet.dataValidationRanges?.length &&
       !sheet.luckysheet_conditionformat_save?.length &&
+      !sheetHasDirectCellStyles(sheet) &&
       !sheetHasProtectionState(sheet) &&
       !(pageBreaks?.rows?.length || pageBreaks?.columns?.length) &&
       !pageSetup
@@ -228,16 +230,20 @@ export async function patchXlsxSheetFeatures(
       sheet.luckysheet_conditionformat_save,
       differentialFormats,
     );
+    if (directCellStyles)
+      writeXlsxDirectCellStyles(document, sheet, directCellStyles);
     writeXlsxProtection(document, sheet, cellProtection);
     writeXlsxPageSetup(document, pageSetup);
     writeXlsxManualPageBreaks(document, pageBreaks);
     zip.file(partPath, new XMLSerializer().serializeToString(document));
   }
-  if (differentialFormats?.changed || cellProtection?.changed) {
-    zip.file(
-      'xl/styles.xml',
-      differentialFormats?.serialize() ?? cellProtection?.serialize() ?? '',
-    );
+  if (
+    styles &&
+    (differentialFormats?.changed ||
+      directCellStyles?.changed ||
+      cellProtection?.changed)
+  ) {
+    zip.file('xl/styles.xml', new XMLSerializer().serializeToString(styles));
   }
 
   return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });

@@ -52,6 +52,19 @@ export interface SpreadsheetCellBorderFormat {
   style: SpreadsheetCellBorderStyle;
 }
 
+export interface SpreadsheetResolvedCellBorderLine {
+  color: string;
+  style: string;
+}
+
+export interface SpreadsheetResolvedCellBorders {
+  bottom?: SpreadsheetResolvedCellBorderLine;
+  diagonal?: SpreadsheetResolvedCellBorderLine;
+  left?: SpreadsheetResolvedCellBorderLine;
+  right?: SpreadsheetResolvedCellBorderLine;
+  top?: SpreadsheetResolvedCellBorderLine;
+}
+
 export const MAX_SPREADSHEET_DIAGONAL_BORDER_CELLS = 4_096;
 
 type SpreadsheetNativeBorderType =
@@ -115,6 +128,12 @@ const spreadsheetNativeBorderStyleByName: Record<
   'medium-dash-dot-dot': '11',
   thick: '13',
 };
+
+export function spreadsheetNativeBorderStyle(
+  style: SpreadsheetCellBorderStyle,
+): string {
+  return spreadsheetNativeBorderStyleByName[style];
+}
 
 export function canSetSpreadsheetCellBorders(
   content: WorkSpreadsheetContent,
@@ -191,7 +210,57 @@ export function setSpreadsheetCellBorders(
   return { ...content, sheets };
 }
 
-function normalizeSpreadsheetBorderFormat(
+export function spreadsheetCellBordersAt(
+  sheet: WorkSpreadsheetSheet | undefined,
+  row: number,
+  column: number,
+): SpreadsheetResolvedCellBorders {
+  const borders: SpreadsheetResolvedCellBorders = {};
+  const source = Array.isArray(sheet?.config?.borderInfo)
+    ? (sheet.config.borderInfo as unknown[])
+    : [];
+  for (const candidate of source) {
+    if (!isRecord(candidate)) continue;
+    if (candidate.rangeType === 'cell') {
+      if (!isRecord(candidate.value)) continue;
+      if (
+        finiteSpreadsheetBorderIndex(candidate.value.row_index) !== row ||
+        finiteSpreadsheetBorderIndex(candidate.value.col_index) !== column
+      ) {
+        continue;
+      }
+      applyResolvedCellBorderLine(borders, 'left', candidate.value.l);
+      applyResolvedCellBorderLine(borders, 'right', candidate.value.r);
+      applyResolvedCellBorderLine(borders, 'top', candidate.value.t);
+      applyResolvedCellBorderLine(borders, 'bottom', candidate.value.b);
+      applyResolvedCellBorderLine(borders, 'diagonal', candidate.value.s);
+      continue;
+    }
+    if (
+      candidate.rangeType !== 'range' ||
+      !isSpreadsheetNativeBorderType(candidate.borderType) ||
+      !Array.isArray(candidate.range)
+    ) {
+      continue;
+    }
+    const line = resolvedRangeBorderLine(candidate);
+    for (const rangeCandidate of candidate.range) {
+      const range = parseSpreadsheetCellRange(rangeCandidate);
+      if (!range || !spreadsheetCellRangeContains(range, row, column)) continue;
+      applyResolvedRangeBorder(
+        borders,
+        range,
+        row,
+        column,
+        candidate.borderType,
+        line,
+      );
+    }
+  }
+  return borders;
+}
+
+export function normalizeSpreadsheetBorderFormat(
   format: SpreadsheetCellBorderFormat,
 ): SpreadsheetCellBorderFormat | null {
   if (
@@ -298,6 +367,103 @@ function spreadsheetNativeBorderRecords(
     }
   }
   return records;
+}
+
+function applyResolvedCellBorderLine(
+  borders: SpreadsheetResolvedCellBorders,
+  side: keyof SpreadsheetResolvedCellBorders,
+  value: unknown,
+): void {
+  if (value === null) {
+    delete borders[side];
+    return;
+  }
+  if (!isRecord(value)) return;
+  const color =
+    typeof value.color === 'string'
+      ? normalizeSpreadsheetBorderColor(value.color)
+      : null;
+  const style = typeof value.style === 'string' ? value.style : null;
+  if (color && style) borders[side] = { color, style };
+}
+
+function resolvedRangeBorderLine(
+  value: UnknownRecord,
+): SpreadsheetResolvedCellBorderLine | null {
+  const color =
+    typeof value.color === 'string'
+      ? normalizeSpreadsheetBorderColor(value.color)
+      : null;
+  const style = typeof value.style === 'string' ? value.style : null;
+  return color && style ? { color, style } : null;
+}
+
+function applyResolvedRangeBorder(
+  borders: SpreadsheetResolvedCellBorders,
+  range: SpreadsheetCellRange,
+  row: number,
+  column: number,
+  type: SpreadsheetNativeBorderType,
+  line: SpreadsheetResolvedCellBorderLine | null,
+): void {
+  const onTop = row === range.row[0];
+  const onBottom = row === range.row[1];
+  const onLeft = column === range.column[0];
+  const onRight = column === range.column[1];
+  const set = (side: keyof SpreadsheetResolvedCellBorders) => {
+    if (line) borders[side] = line;
+    else delete borders[side];
+  };
+  switch (type) {
+    case 'border-top':
+      if (onTop) set('top');
+      break;
+    case 'border-bottom':
+      if (onBottom) set('bottom');
+      break;
+    case 'border-left':
+      if (onLeft) set('left');
+      break;
+    case 'border-right':
+      if (onRight) set('right');
+      break;
+    case 'border-none':
+      delete borders.top;
+      delete borders.bottom;
+      delete borders.left;
+      delete borders.right;
+      delete borders.diagonal;
+      break;
+    case 'border-all':
+      set('top');
+      set('bottom');
+      set('left');
+      set('right');
+      break;
+    case 'border-outside':
+      if (onTop) set('top');
+      if (onBottom) set('bottom');
+      if (onLeft) set('left');
+      if (onRight) set('right');
+      break;
+    case 'border-inside':
+      if (!onTop) set('top');
+      if (!onBottom) set('bottom');
+      if (!onLeft) set('left');
+      if (!onRight) set('right');
+      break;
+    case 'border-horizontal':
+      if (!onTop) set('top');
+      if (!onBottom) set('bottom');
+      break;
+    case 'border-vertical':
+      if (!onLeft) set('left');
+      if (!onRight) set('right');
+      break;
+    case 'border-slash':
+      set('diagonal');
+      break;
+  }
 }
 
 function isSpreadsheetNativeBorderType(

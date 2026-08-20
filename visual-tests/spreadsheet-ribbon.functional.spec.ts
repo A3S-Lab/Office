@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
+import { openSpreadsheetFixture } from './visual-test-support';
 
 test('Spreadsheet follows the WPS ribbon information architecture', async ({
   page,
@@ -924,16 +925,6 @@ test('Spreadsheet freezes panes from the WPS View window group', async ({
   await expect(grid).toBeFocused();
   expect(browserErrors).toEqual([]);
 });
-
-async function openSpreadsheetFixture(page: Page): Promise<void> {
-  await page.goto('/');
-  await page
-    .getByRole('button', {
-      name: '季度执行计划 XLSX · 本次会话',
-    })
-    .click();
-  await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
-}
 
 interface SpreadsheetCanvasGeometry {
   bottom: number;

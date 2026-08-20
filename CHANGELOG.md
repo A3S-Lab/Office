@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added 17 grouped WPS built-in Spreadsheet cell styles with native previews,
+  two-dimensional keyboard navigation, current-style recognition, bounded
+  blank-cell application, per-cell border semantics, and one-step Undo. Direct
+  XLSX font, fill, alignment, wrapping, rotation, border, and number-format XF
+  state now round-trips, including RGB normalization for theme, indexed, and
+  tint colors. The existing common number-format presets and seven WPS/Excel
+  formatting shortcuts remain on the same native style and history path.
+
 ## 0.13.0 - 2026-08-20
 
 - Reworked large Document and Spreadsheet editing around bounded windowing,

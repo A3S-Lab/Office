@@ -319,6 +319,7 @@ class CandidateRejectingWorker {
           kind: 'success',
           worksheets: {
             'xl/worksheets/sheet1.xml': {
+              hasDirectCellStyles: false,
               hasDiagnosticFeatures: false,
               hasFormulaFeatures: true,
               hasImportedFeatures: false,

@@ -28,6 +28,7 @@ import type {
   WorkSpreadsheetDataValidationRange,
 } from './work-types';
 import { xlsxWorksheetChartsToSheet } from './work-xlsx-charts';
+import { fortuneBorderInfoFromXlsxCells } from './work-xlsx-cell-borders';
 import { importXlsxDefinedNames } from './work-xlsx-defined-names';
 import {
   createSpreadsheetFormulaMetadata,
@@ -37,6 +38,7 @@ import { xlsxWorksheetImagesToSheet } from './work-xlsx-images';
 import {
   readXlsxSheetFeaturesFromPackage,
   type XlsxDataValidation,
+  type XlsxSheetFeatures,
 } from './work-xlsx-interop';
 import {
   applyImportedXlsxPivotTables,
@@ -173,8 +175,8 @@ export async function importWorkSpreadsheetFile(
       ? readXlsxSheetFeaturesFromPackage(
           archive,
           packageScanResult?.worksheets,
-        ).catch(() => new Map())
-      : Promise.resolve(new Map()),
+        ).catch(() => new Map<string, XlsxSheetFeatures>())
+      : Promise.resolve(new Map<string, XlsxSheetFeatures>()),
     archive
       ? readXlsxFormulaFeaturesFromPackage(
           archive,
@@ -217,6 +219,12 @@ export async function importWorkSpreadsheetFile(
     if (!worksheet) continue;
     const plainWorksheet = packageScanResult?.plainWorksheets?.[name];
     const features = sheetFeatures.get(name);
+    const directCellStyles = new Map(
+      (features?.directCellStyles ?? []).map((entry) => [
+        spreadsheetCellKey(entry.row, entry.column),
+        entry,
+      ]),
+    );
     const range = safeSpreadsheetRange(worksheet, XLSX);
     let rowCount = Math.max(plainWorksheet?.rowCount ?? range.e.r + 1, 40);
     let columnCount = Math.max(
@@ -260,6 +268,10 @@ export async function importWorkSpreadsheetFile(
           source,
         );
         if (hyperlink) hyperlinks[`${row}_${column}`] = hyperlink;
+        const directCellStyle = directCellStyles.get(
+          spreadsheetCellKey(row, column),
+        );
+        directCellStyles.delete(spreadsheetCellKey(row, column));
         data[row] ??= [];
         data[row][column] = freezeImportedSpreadsheetCell(
           fortuneCellFromXlsx(
@@ -270,6 +282,7 @@ export async function importWorkSpreadsheetFile(
             hyperlink,
             comment,
             XLSX,
+            directCellStyle?.style,
           ),
         );
         if (source.f) formulaCells.push({ column, row });
@@ -289,10 +302,30 @@ export async function importWorkSpreadsheetFile(
         sheetProgressStart + sheetProgressSize * 0.95,
       );
     }
+    for (const { column, row, style } of directCellStyles.values()) {
+      rowCount = Math.max(rowCount, row + 1);
+      columnCount = Math.max(columnCount, column + 1);
+      data[row] ??= [];
+      const existing = data[row][column];
+      data[row][column] = freezeImportedSpreadsheetCell({
+        ...(existing ?? {}),
+        ...style,
+      });
+      if (!existing) entryIndex += 1;
+    }
     populatedCellCount += entryIndex;
     worksheetCompatibility.set(name, compatibilitySummary);
     data.length = Math.max(data.length, rowCount);
     const config = fortuneSheetConfig(worksheet);
+    const importedBorderInfo = fortuneBorderInfoFromXlsxCells(
+      features?.directCellStyles ?? [],
+    );
+    if (importedBorderInfo.length) {
+      config.borderInfo = [
+        ...(Array.isArray(config.borderInfo) ? config.borderInfo : []),
+        ...importedBorderInfo,
+      ];
+    }
     registerImportedSpreadsheetMatrix(data, {
       columnCount,
       formulaCells,
@@ -557,8 +590,9 @@ function fortuneCellFromXlsx(
   hyperlink: ReturnType<typeof fortuneSheetHyperlink>,
   comment: ReturnType<typeof importXlsxCellComment>,
   XLSX: typeof import('xlsx'),
+  directStyle?: Partial<Cell>,
 ): Cell {
-  const cell: Cell = fortuneCellStyle(source);
+  const cell: Cell = { ...fortuneCellStyle(source), ...directStyle };
   if (source.v !== undefined) cell.v = source.v as Cell['v'];
   const displayText = fortuneCellDisplayText(source, XLSX);
   if (displayText !== undefined) cell.m = displayText;
@@ -572,6 +606,10 @@ function fortuneCellFromXlsx(
   return cell;
 }
 
+function spreadsheetCellKey(row: number, column: number): string {
+  return `${row}_${column}`;
+}
+
 function fortuneCellStyle(source: CellObject): Partial<Cell> {
   const style = source.s;
   const font =
@@ -580,6 +618,7 @@ function fortuneCellStyle(source: CellObject): Partial<Cell> {
           | {
               bold?: boolean;
               italic?: boolean;
+              strike?: boolean;
               underline?: boolean;
               name?: string;
               sz?: number;
@@ -605,6 +644,7 @@ function fortuneCellStyle(source: CellObject): Partial<Cell> {
   const target: Partial<Cell> = {};
   if (font?.bold) target.bl = 1;
   if (font?.italic) target.it = 1;
+  if (font?.strike) target.cl = 1;
   if (font?.underline) target.un = 1;
   if (font?.name) target.ff = font.name;
   if (font?.sz !== undefined) target.fs = font.sz;

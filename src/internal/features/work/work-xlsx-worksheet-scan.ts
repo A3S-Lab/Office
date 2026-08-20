@@ -1,4 +1,5 @@
 export interface XlsxWorksheetXmlScan {
+  hasDirectCellStyles: boolean;
   hasDiagnosticFeatures: boolean;
   hasFormulaFeatures: boolean;
   hasImportedFeatures: boolean;
@@ -36,7 +37,7 @@ const DIAGNOSTIC_WORKSHEET_ELEMENTS = new Set([
 ]);
 
 const WORKSHEET_SCAN_PATTERN =
-  /<(?:[A-Za-z_][\w.-]*:)?(?:(cols|f|pane|dataValidation|conditionalFormatting|sheetProtection|protectedRange|rowBreaks|colBreaks|pageSetup|pageMargins|printOptions|headerFooter|pageSetUpPr|drawing)(?=[\s/>])|(row)(?=[\s/>])[^>]*\s(?:collapsed|customFormat|customHeight|hidden|ht|outlineLevel|thickBot|thickTop)\s*=)/g;
+  /<(?:[A-Za-z_][\w.-]*:)?(?:(cols|f|pane|dataValidation|conditionalFormatting|sheetProtection|protectedRange|rowBreaks|colBreaks|pageSetup|pageMargins|printOptions|headerFooter|pageSetUpPr|drawing)(?=[\s/>])|(row)(?=[\s/>])[^>]*\s(?:collapsed|customFormat|customHeight|hidden|ht|outlineLevel|thickBot|thickTop)\s*=|(c)(?=[\s/>])[^>]*\ss\s*=)/g;
 
 /**
  * Builds every worksheet gate in one pass over the decompressed XML. The
@@ -44,6 +45,7 @@ const WORKSHEET_SCAN_PATTERN =
  * existing full parser path; a false negative could discard workbook state.
  */
 export function scanXlsxWorksheetXml(source: string): XlsxWorksheetXmlScan {
+  let hasDirectCellStyles = false;
   let hasDiagnosticFeatures = false;
   let hasFormulaFeatures = false;
   let hasImportedFeatures = false;
@@ -52,7 +54,10 @@ export function scanXlsxWorksheetXml(source: string): XlsxWorksheetXmlScan {
 
   for (let match = WORKSHEET_SCAN_PATTERN.exec(source); match; ) {
     const element = match[1];
-    if (match[2] || element === 'cols') requiresSheetJsCellStyles = true;
+    if (match[3]) hasDirectCellStyles = true;
+    if (match[2] || match[3] || element === 'cols') {
+      requiresSheetJsCellStyles = true;
+    }
     if (element === 'f') hasFormulaFeatures = true;
     if (element && IMPORTED_WORKSHEET_ELEMENTS.has(element)) {
       hasImportedFeatures = true;
@@ -61,6 +66,7 @@ export function scanXlsxWorksheetXml(source: string): XlsxWorksheetXmlScan {
       hasDiagnosticFeatures = true;
     }
     if (
+      hasDirectCellStyles &&
       hasDiagnosticFeatures &&
       hasFormulaFeatures &&
       hasImportedFeatures &&
@@ -73,6 +79,7 @@ export function scanXlsxWorksheetXml(source: string): XlsxWorksheetXmlScan {
   WORKSHEET_SCAN_PATTERN.lastIndex = 0;
 
   return {
+    hasDirectCellStyles,
     hasDiagnosticFeatures,
     hasFormulaFeatures,
     hasImportedFeatures,

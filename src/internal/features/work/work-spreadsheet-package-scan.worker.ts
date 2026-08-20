@@ -113,6 +113,7 @@ scope.onmessage = async (event) => {
 };
 
 const PLAIN_WORKSHEET_SCAN = {
+  hasDirectCellStyles: false,
   hasDiagnosticFeatures: false,
   hasFormulaFeatures: false,
   hasImportedFeatures: false,

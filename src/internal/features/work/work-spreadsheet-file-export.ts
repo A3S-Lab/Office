@@ -214,6 +214,7 @@ function xlsxCellStyle(cell: Cell): CellObject['s'] | undefined {
     font: {
       bold: Boolean(cell.bl),
       italic: Boolean(cell.it),
+      strike: Boolean(cell.cl),
       underline: Boolean(cell.un),
       name: cell.ff,
       sz: cell.fs,

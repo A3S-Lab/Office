@@ -551,6 +551,13 @@ interaction model.
   Percentage, Short Date, Time, Scientific, Fraction, and Text, including the
   seven standard `Cmd/Ctrl+Shift` format shortcuts, exact XLSX format-code
   round trips, value/formula preservation, and one-step history,
+  a Home and Styles gallery with 17 WPS built-in cell styles grouped as Common,
+  Data and Model, and Titles and Totals, true native previews, two-dimensional
+  keyboard navigation, a 10,000-cell bound, blank-cell styling, per-cell border
+  semantics, current-style recognition without private markers, one-step
+  history, and direct XLSX font, fill, alignment, wrap, rotation, border, and
+  number-format XF round trips with theme, indexed, and tint colors normalized
+  to stable RGB,
   a View and Window Freeze Panes menu for current-cell, top-row, first-column,
   and unfreeze patterns with XLSX round trips, and visible F9 workbook
   recalculation,

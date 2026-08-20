@@ -329,6 +329,34 @@ describe('spreadsheet command controller', () => {
     expect(fixture.changes).toHaveLength(1);
   });
 
+  test('applies a WPS cell style through one controlled update', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [1, 0], column: [2, 1] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetCellStyles');
+    expect(editor.can().applyCellStyle('good')).toBe(true);
+    expect(editor.commands.applyCellStyle('good')).toBe(true);
+    expect(fixture.changes).toHaveLength(1);
+    expect(fixture.context.content.sheets[0]?.data).toBeUndefined();
+    expect(fixture.changes[0]?.sheets[0]?.data?.[0]?.[1]).toMatchObject({
+      bg: '#c6efce',
+      fc: '#006100',
+      ff: 'Aptos',
+      fs: 10,
+    });
+    expect(fixture.changes[0]?.sheets[0]?.data?.[1]?.[2]).toMatchObject({
+      bg: '#c6efce',
+      fc: '#006100',
+    });
+    expect(fixture.workbook.formats).toEqual([]);
+
+    editor.updateContext({ ...fixture.context, editable: false });
+    expect(editor.can().applyCellStyle('bad')).toBe(false);
+    expect(editor.commands.applyCellStyle('bad')).toBe(false);
+    expect(fixture.changes).toHaveLength(1);
+  });
+
   test('runs WPS merge commands as one workbook batch', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [{ row: [0, 1], column: [0, 2] }];

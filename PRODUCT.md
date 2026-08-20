@@ -108,6 +108,17 @@ Fortune value type, preserves values and formulas, creates one undo record, and
 round-trips its exact XLSX format code. Imported combined date-time and other
 unmodeled codes remain visible as disabled Custom state rather than being
 silently rewritten.
+The fourteenth milestone adds the WPS-familiar Cell Styles gallery under Home
+and Styles. Its 17 built-in choices are grouped as Common, Data and Model, and
+Titles and Totals, with a faithful visual preview and two-dimensional keyboard
+navigation. One command applies native Fortune font, fill, emphasis, and
+per-cell border properties to at most 10,000 populated or blank cells while
+preserving values, formulas, links, comments, merge geometry, alignment, and
+number formats. The selected style is inferred from those native properties
+instead of a private marker, emits one controlled update, and creates one Undo
+record. XLSX import and export retain direct font, fill, alignment, wrapping,
+rotation, border, and original number-format XF state; theme, indexed, and tint
+colors resolve to stable RGB for the browser model.
 
 ## Product Rules
 

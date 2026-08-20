@@ -116,6 +116,87 @@ test('routes number-format controls through typed spreadsheet commands', () => {
   ]);
 });
 
+test('applies grouped WPS cell styles from a preview gallery', async () => {
+  const styles: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          applyCellStyle: (preset) => {
+            styles.push(preset);
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      findOpen={false}
+      panel={null}
+      toolbarCell={{ bg: '#c6efce', fc: '#006100' }}
+      onTabChange={() => undefined}
+      onOpenFind={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '单元格样式' });
+  expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  expect(trigger).toHaveAttribute('title', '单元格样式（当前：好）');
+  fireEvent.click(trigger);
+
+  const menu = screen.getByRole('menu', { name: '单元格样式库' });
+  expect(within(menu).getByRole('group', { name: '常用' })).toBeInTheDocument();
+  expect(
+    within(menu).getByRole('group', { name: '数据和模型' }),
+  ).toBeInTheDocument();
+  expect(
+    within(menu).getByRole('group', { name: '标题和汇总' }),
+  ).toBeInTheDocument();
+  expect(within(menu).getAllByRole('menuitemradio')).toHaveLength(17);
+  const good = within(menu).getByRole('menuitemradio', {
+    name: '应用单元格样式：好',
+  });
+  expect(good).toHaveAttribute('aria-checked', 'true');
+  expect(
+    good.querySelector('.work-spreadsheet-cell-style-preview'),
+  ).toHaveStyle({
+    backgroundColor: '#c6efce',
+    color: '#006100',
+  });
+  await waitFor(() =>
+    expect(
+      within(menu).getByRole('menuitemradio', {
+        name: '应用单元格样式：常规',
+      }),
+    ).toHaveFocus(),
+  );
+  const total = within(menu).getByRole('menuitemradio', {
+    name: '应用单元格样式：总计',
+  });
+  const neutral = within(menu).getByRole('menuitemradio', {
+    name: '应用单元格样式：适中',
+  });
+  fireEvent.keyDown(menu, { key: 'ArrowRight' });
+  expect(good).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'ArrowDown' });
+  expect(neutral).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'End' });
+  expect(total).toHaveFocus();
+
+  fireEvent.click(
+    within(menu).getByRole('menuitemradio', {
+      name: '应用单元格样式：输入',
+    }),
+  );
+  expect(styles).toEqual(['input']);
+  expect(screen.queryByRole('menu', { name: '单元格样式库' })).toBeNull();
+  expect(trigger).toHaveFocus();
+});
+
 test('routes the WPS Home clipboard group through typed commands', () => {
   const actions: string[] = [];
   render(
@@ -789,6 +870,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
   return {
     activateSheet: () => true,
     addSheet: () => true,
+    applyCellStyle: () => true,
     clearSelectedCells: () => true,
     activateFormatPainter: () => true,
     applyFormatPainter: () => true,
@@ -834,6 +916,7 @@ function spreadsheetCommands(
     Pick<
       SpreadsheetEditorCommands,
       | 'activateFormatPainter'
+      | 'applyCellStyle'
       | 'cancelFormatPainter'
       | 'clearSelectedCells'
       | 'copySelection'
@@ -852,6 +935,7 @@ function spreadsheetCommands(
     activateSheet: () => true,
     activateFormatPainter: overrides.activateFormatPainter ?? (() => true),
     addSheet: () => true,
+    applyCellStyle: overrides.applyCellStyle ?? (() => true),
     applyFormatPainter: () => true,
     cancelFormatPainter: overrides.cancelFormatPainter ?? (() => true),
     clearSelectedCells: overrides.clearSelectedCells ?? (() => true),

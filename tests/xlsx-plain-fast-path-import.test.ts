@@ -171,6 +171,7 @@ class PlainFastPathWorker {
         kind: 'success',
         worksheets: {
           'xl/worksheets/sheet1.xml': {
+            hasDirectCellStyles: false,
             hasDiagnosticFeatures: false,
             hasFormulaFeatures: false,
             hasImportedFeatures: false,

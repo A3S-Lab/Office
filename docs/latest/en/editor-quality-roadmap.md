@@ -819,6 +819,23 @@ Focused parser, catalog, controller, component, XLSX, desktop, and compact
 Playwright coverage protects the complete path. A3S Test remains a local-only
 release gate and is absent from GitHub Actions.
 
+The fourteenth slice adds a WPS-familiar Cell Styles gallery under Home and
+Styles. It owns 17 built-in choices grouped as Common, Data and Model, and
+Titles and Totals, renders the native appearance in each preview, and supports
+Home, End, and two-dimensional arrow navigation across desktop and compact
+layouts. A single typed selection command applies Fortune's native font, fill,
+emphasis, and per-cell border properties to at most 10,000 populated or blank
+cells. It preserves values, formulas, comments, links, merges, alignment, and
+number formats, publishes one controlled value, and creates one Undo record.
+Current-state recognition resolves the focused cell's native border records and
+does not introduce a second style marker. The XLSX path now round-trips direct
+font family, size, color, emphasis, solid fill, alignment, wrap, rotation, four
+side and diagonal borders, and the original number-format XF; theme, indexed,
+automatic, and tint colors resolve to stable RGB. Focused model, controller,
+component, import/export, desktop, compact, accessibility, blank-cell, and Undo
+coverage protects the path. The deterministic A3S Test ACL remains a local
+release gate; GitHub Actions uses the equivalent Playwright regression only.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

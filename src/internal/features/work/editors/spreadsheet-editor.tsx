@@ -55,6 +55,7 @@ import { useOfficeCollaborationLocationNavigator } from './office-collaboration-
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { useOfficeDialog } from './office-dialog';
 import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
+import { spreadsheetCellBordersAt } from './spreadsheet-cell-border';
 import { useSpreadsheetCollaborationPresenceProjection } from './spreadsheet-collaboration-presence';
 import {
   createSpreadsheetEditorExtensions,
@@ -649,10 +650,18 @@ function SpreadsheetEditorSurface({
     content: materializedContent,
     workbook: workbookInstance,
   });
+  const toolbarRow = toolbarSelection.row_focus ?? toolbarSelection.row[0];
+  const toolbarColumn =
+    toolbarSelection.column_focus ?? toolbarSelection.column[0];
   const toolbarCell = spreadsheetCellAt(
     toolbarSheet,
-    toolbarSelection.row_focus ?? toolbarSelection.row[0],
-    toolbarSelection.column_focus ?? toolbarSelection.column[0],
+    toolbarRow,
+    toolbarColumn,
+  );
+  const toolbarCellBorders = spreadsheetCellBordersAt(
+    toolbarSheet,
+    toolbarRow,
+    toolbarColumn,
   );
   const selectedRange = spreadsheetSingleRange(toolbarSelection);
   const multipleCellsSelected =
@@ -1124,6 +1133,7 @@ function SpreadsheetEditorSurface({
           }}
           panel={panel}
           toolbarCell={toolbarCell}
+          toolbarCellBorders={toolbarCellBorders}
         />
       )}
       <output className="sr-only" aria-live="polite" aria-atomic="true">

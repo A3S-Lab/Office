@@ -16,6 +16,8 @@ import {
 } from './spreadsheet-cell-clear';
 import type { SpreadsheetCellBorderFormat } from './spreadsheet-cell-border';
 import { createSpreadsheetCellBorderExtension } from './spreadsheet-cell-border-command';
+import type { SpreadsheetCellStyleChoice } from './spreadsheet-cell-style';
+import { createSpreadsheetCellStyleExtension } from './spreadsheet-cell-style-command';
 import type { SpreadsheetCellFillDirection } from './spreadsheet-cell-fill';
 import { createSpreadsheetCellFillExtension } from './spreadsheet-cell-fill-command';
 import {
@@ -192,6 +194,7 @@ export interface SpreadsheetEditorCommands {
   activateSheet: (sheetId: string) => boolean;
   activateFormatPainter: (mode: SpreadsheetFormatPainterMode) => boolean;
   addSheet: () => boolean;
+  applyCellStyle: (preset: SpreadsheetCellStyleChoice) => boolean;
   applyFormatPainter: (target: SpreadsheetCommandSelection) => boolean;
   cancelFormatPainter: () => boolean;
   clearSelectedCells: (mode?: SpreadsheetCellClearMode) => boolean;
@@ -288,6 +291,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
       }),
     }),
     createSpreadsheetCellBorderExtension(),
+    createSpreadsheetCellStyleExtension(),
     createSpreadsheetCellFillExtension(),
     createOfficeEditorExtension<
       SpreadsheetCommandContext,

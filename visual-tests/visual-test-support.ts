@@ -11,6 +11,16 @@ export async function openDocumentFixture(page: Page): Promise<void> {
     .click();
 }
 
+export async function openSpreadsheetFixture(page: Page): Promise<void> {
+  await page.goto('/');
+  await page
+    .getByRole('button', {
+      name: '季度执行计划 XLSX · 本次会话',
+    })
+    .click();
+  await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
+}
+
 export async function waitForDocumentFixture(page: Page): Promise<void> {
   const editor = page.locator('.ProseMirror[data-pagination-state="ready"]');
   await editor.waitFor();

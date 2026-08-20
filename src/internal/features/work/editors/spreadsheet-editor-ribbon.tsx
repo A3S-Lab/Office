@@ -56,8 +56,10 @@ import { spreadsheetPivotCount } from '../work-spreadsheet-pivots';
 import { protectedSheetCount } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
 import type { SpreadsheetCellMergeCommand } from './spreadsheet-cell-merge';
+import type { SpreadsheetResolvedCellBorders } from './spreadsheet-cell-border';
 import type { SpreadsheetCellClearMode } from './spreadsheet-cell-clear';
 import type { SpreadsheetCellFillDirection } from './spreadsheet-cell-fill';
+import { SpreadsheetCellStyleRibbon } from './spreadsheet-cell-style-ribbon';
 import {
   type SpreadsheetRibbonTabId,
   spreadsheetCommandCatalog,
@@ -114,6 +116,7 @@ export function SpreadsheetEditorRibbon({
   onTogglePanel,
   panel,
   toolbarCell,
+  toolbarCellBorders,
 }: {
   activeTab: SpreadsheetRibbonTabId;
   autoFilterActive?: boolean;
@@ -135,6 +138,7 @@ export function SpreadsheetEditorRibbon({
   ) => void;
   panel: SpreadsheetWorkbookPanelView | null;
   toolbarCell: Cell | null | undefined;
+  toolbarCellBorders?: SpreadsheetResolvedCellBorders;
 }) {
   const formulaCount = useMemo(
     () => spreadsheetFormulaCount(content),
@@ -320,6 +324,12 @@ export function SpreadsheetEditorRibbon({
               toolbarCell={toolbarCell}
             />
             <WorkOfficeRibbonGroup label="样式">
+              <SpreadsheetCellStyleRibbon
+                can={can}
+                commands={commands}
+                toolbarCell={toolbarCell}
+                toolbarCellBorders={toolbarCellBorders}
+              />
               <SpreadsheetRibbonTool
                 controlsId={panelId}
                 panel="conditional-formatting"

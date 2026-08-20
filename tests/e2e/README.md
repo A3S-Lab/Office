@@ -123,6 +123,18 @@ sparse blank-row safety, and ownership of `Cmd/Ctrl+D` and `Cmd/Ctrl+R` without
 turning the latter into a browser refresh. This suite remains local-only and is
 not referenced by a GitHub Actions workflow.
 
+The WPS built-in Cell Styles gallery has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-cell-style:check
+bun run test:e2e:spreadsheet-cell-style
+```
+
+It covers the grouped desktop/compact gallery, preview semantics, keyboard
+focus, native styling of populated and blank cells, one-step Undo, and clean
+browser diagnostics. The equivalent Playwright regression remains the browser
+coverage used by GitHub Actions.
+
 The native Presentation scene-element and z-order lifecycle has a focused gate:
 
 ```bash
