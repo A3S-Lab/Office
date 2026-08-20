@@ -238,7 +238,7 @@ test('Spreadsheet runs clipboard commands from the WPS Home group', async ({
   const clipboard = page
     .locator('.work-spreadsheet-ribbon')
     .getByRole('region', { name: '剪贴板' });
-  const paste = clipboard.getByRole('button', { name: '粘贴' });
+  const paste = clipboard.getByRole('button', { name: '粘贴', exact: true });
   const cut = clipboard.getByRole('button', { name: '剪切' });
   const copy = clipboard.getByRole('button', { name: '复制' });
   await expect(paste).toHaveAttribute('aria-keyshortcuts', 'Control+V Meta+V');
