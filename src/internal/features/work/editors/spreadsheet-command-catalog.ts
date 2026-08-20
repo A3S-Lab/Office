@@ -216,6 +216,16 @@ export const spreadsheetCommandCatalog = {
     label: spreadsheetNumberFormatPresetLabels.text,
     location: { area: 'ribbon', tab: 'home', group: 'number' },
   },
+  decreaseDecimalPlaces: {
+    id: 'number.decreaseDecimalPlaces',
+    label: '减少小数位',
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+  },
+  increaseDecimalPlaces: {
+    id: 'number.increaseDecimalPlaces',
+    label: '增加小数位',
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+  },
   borderTop: {
     id: 'font.borderTop',
     label: '上框线',

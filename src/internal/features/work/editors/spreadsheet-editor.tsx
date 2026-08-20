@@ -1501,6 +1501,7 @@ export function spreadsheetCommandsWithGridFocus(
 
   return {
     ...commands,
+    adjustDecimalPlaces: afterSuccessfulCommand(commands.adjustDecimalPlaces),
     activateFormatPainter: afterSuccessfulCommand(
       commands.activateFormatPainter,
     ),

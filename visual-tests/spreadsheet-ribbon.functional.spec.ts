@@ -148,6 +148,72 @@ test('Spreadsheet applies common WPS number formats without changing cell values
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet adjusts mixed decimal formats without flattening their families', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const numberGroup = page
+    .locator('.work-spreadsheet-ribbon')
+    .getByRole('region', { name: '数字' });
+  const formatSelect = numberGroup.getByRole('combobox', {
+    name: '数字格式',
+  });
+
+  await grid.focus();
+  await page.keyboard.press('Shift+F11');
+  await expect(nameBox).toHaveText('A1');
+  await page.keyboard.type('1234.5');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await numberGroup.getByRole('button', { name: '货币格式' }).click();
+  await expect(formatSelect).toContainText('货币');
+
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.type('0.25');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await numberGroup.getByRole('button', { name: '百分比格式' }).click();
+  await expect(formatSelect).toContainText('百分比');
+
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.type('45292');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Control+Shift+Digit3');
+  await expect(formatSelect).toContainText('短日期');
+
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowRight');
+  await numberGroup.getByRole('button', { name: '增加小数位' }).click();
+  await expect(grid).toBeFocused();
+
+  await page.keyboard.press('Control+Home');
+  await expect(formatSelect).toContainText('货币');
+  await page.keyboard.press('ArrowRight');
+  await expect(formatSelect).toContainText('百分比');
+  await page.keyboard.press('ArrowRight');
+  await expect(formatSelect).toContainText('短日期');
+  await page.keyboard.press('ArrowRight');
+  await expect(formatSelect).toContainText('数字');
+
+  await page.keyboard.press('Control+z');
+  await expect(formatSelect).toContainText('常规');
+  await page.keyboard.press('Control+Home');
+  await expect(formatSelect).toContainText('货币');
+  await page.keyboard.press('ArrowRight');
+  await expect(formatSelect).toContainText('百分比');
+  await page.keyboard.press('ArrowRight');
+  await expect(formatSelect).toContainText('短日期');
+  expect(browserErrors).toEqual([]);
+});
+
 test('Spreadsheet runs clipboard commands from the WPS Home group', async ({
   page,
 }) => {

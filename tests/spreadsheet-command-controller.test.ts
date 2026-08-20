@@ -148,6 +148,57 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('adjusts mixed decimal formats per cell in one native batch', () => {
+    const fixture = commandFixture();
+    const cells: (Cell | null)[][] = [
+      [
+        { ct: { fa: '[$¥-804]#,##0.00', t: 'n' }, v: 12.5 },
+        { ct: { fa: '0.0%', t: 'n' }, v: 0.25 },
+        { ct: { fa: 'yyyy-MM-dd', t: 'd' }, v: 45_292 },
+      ],
+      [
+        { ct: { fa: '[$¥-804]#,##0.00', t: 'n' }, v: 20.5 },
+        { ct: { fa: '0.0%', t: 'n' }, v: 0.5 },
+        { ct: { fa: '@', t: 's' }, v: '001' },
+      ],
+    ];
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      column: 3,
+      data: cells,
+      row: 2,
+    };
+    fixture.workbook.cells = cells;
+    fixture.workbook.selection = [{ row: [0, 1], column: [0, 2] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetNumberFormats');
+    expect(editor.can().adjustDecimalPlaces('increase')).toBe(true);
+    expect(editor.commands.adjustDecimalPlaces('increase')).toBe(true);
+    expect(fixture.workbook.clearBatches).toEqual([
+      [
+        {
+          name: 'setCellFormatByRange',
+          args: [
+            'ct',
+            { fa: '[$¥-804]#,##0.000', t: 'n' },
+            { row: [0, 1], column: [0, 0] },
+            { id: 'sheet-1' },
+          ],
+        },
+        {
+          name: 'setCellFormatByRange',
+          args: [
+            'ct',
+            { fa: '0.00%', t: 'n' },
+            { row: [0, 1], column: [1, 1] },
+            { id: 'sheet-1' },
+          ],
+        },
+      ],
+    ]);
+  });
+
   test('routes all four WPS fill directions through one native command port', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [{ row: [3, 1], column: [4, 2] }];

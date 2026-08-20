@@ -4,6 +4,12 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Made Spreadsheet Increase Decimal and Decrease Decimal first-class WPS Home
+  and Number commands. Mixed selections now retain each cell's currency,
+  accounting, percentage, number, or scientific format family, compact equal
+  results into one bounded native batch, and leave date, time, fraction, text,
+  and unknown custom formats unchanged.
+
 ## 0.13.1 - 2026-08-20
 
 - Added explicit WPS Spreadsheet presets for General, Number, CNY Currency,

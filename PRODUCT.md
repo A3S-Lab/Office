@@ -119,6 +119,13 @@ instead of a private marker, emits one controlled update, and creates one Undo
 record. XLSX import and export retain direct font, fill, alignment, wrapping,
 rotation, border, and original number-format XF state; theme, indexed, and tint
 colors resolve to stable RGB for the browser model.
+The fifteenth milestone hardens Increase Decimal and Decrease Decimal as
+catalogued Home and Number commands. Mixed selections retain each cell's
+currency, accounting, percentage, number, or scientific format family instead
+of inheriting the focused cell's code. Identical results compact into native
+rectangles, one command emits one workbook batch and one Undo record, and date,
+time, fraction, text, and unknown custom formats remain untouched. A 10,000-cell
+bound prevents blank maximum-size ranges from becoming dense.
 
 ## Product Rules
 

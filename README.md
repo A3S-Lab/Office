@@ -550,7 +550,9 @@ interaction model.
   Home and Number presets for General, Number, CNY Currency, Accounting,
   Percentage, Short Date, Time, Scientific, Fraction, and Text, including the
   seven standard `Cmd/Ctrl+Shift` format shortcuts, exact XLSX format-code
-  round trips, value/formula preservation, and one-step history,
+  round trips, value/formula preservation, and one-step history, plus
+  10,000-cell-bounded Increase/Decrease Decimal commands that retain every
+  cell's format family across mixed selections and commit one native batch,
   a Home and Styles gallery with 17 WPS built-in cell styles grouped as Common,
   Data and Model, and Titles and Totals, true native previews, two-dimensional
   keyboard navigation, a 10,000-cell bound, blank-cell styling, per-cell border

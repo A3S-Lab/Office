@@ -26,7 +26,6 @@ import {
   spreadsheetFontSizeOptions,
 } from './spreadsheet-editor-support';
 import {
-  adjustSpreadsheetNumberFormat,
   type SpreadsheetNumberFormatPreset,
   spreadsheetNumberFormatCode,
   spreadsheetNumberFormatPreset,
@@ -207,22 +206,14 @@ export function SpreadsheetNumberRibbonGroup({
 }: SpreadsheetHomeFormatRibbonProps) {
   const numberFormat = toolbarCell?.ct?.fa?.trim() || 'General';
   const numberFormatPreset = spreadsheetNumberFormatPreset(numberFormat);
-  const decreasedNumberFormat = adjustSpreadsheetNumberFormat(numberFormat, -1);
-  const increasedNumberFormat = adjustSpreadsheetNumberFormat(numberFormat, 1);
   const currentNumberFormatValue = spreadsheetNumberFormatValue(
     numberFormat,
     toolbarCell,
   );
-  const decreasedNumberFormatValue = spreadsheetNumberFormatValue(
-    decreasedNumberFormat,
-    toolbarCell,
-  );
-  const increasedNumberFormatValue = spreadsheetNumberFormatValue(
-    increasedNumberFormat,
-    toolbarCell,
-  );
   const currencyDefinition = spreadsheetCommandCatalog.numberFormatCurrency;
   const percentDefinition = spreadsheetCommandCatalog.numberFormatPercent;
+  const decreaseDefinition = spreadsheetCommandCatalog.decreaseDecimalPlaces;
+  const increaseDefinition = spreadsheetCommandCatalog.increaseDecimalPlaces;
 
   return (
     <WorkOfficeRibbonGroup label="数字" priority="high">
@@ -298,26 +289,20 @@ export function SpreadsheetNumberRibbonGroup({
         <Percent size={15} />
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
-        label="减少小数位"
-        title="减少小数位"
+        label={decreaseDefinition.label}
+        title={decreaseDefinition.label}
         displayLabel={false}
-        disabled={
-          decreasedNumberFormat === numberFormat ||
-          !can.setCellFormat('ct', decreasedNumberFormatValue)
-        }
-        onClick={() => commands.setCellFormat('ct', decreasedNumberFormatValue)}
+        disabled={!can.adjustDecimalPlaces('decrease')}
+        onClick={() => commands.adjustDecimalPlaces('decrease')}
       >
         <DecimalsArrowLeft size={16} />
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
-        label="增加小数位"
-        title="增加小数位"
+        label={increaseDefinition.label}
+        title={increaseDefinition.label}
         displayLabel={false}
-        disabled={
-          increasedNumberFormat === numberFormat ||
-          !can.setCellFormat('ct', increasedNumberFormatValue)
-        }
-        onClick={() => commands.setCellFormat('ct', increasedNumberFormatValue)}
+        disabled={!can.adjustDecimalPlaces('increase')}
+        onClick={() => commands.adjustDecimalPlaces('increase')}
       >
         <DecimalsArrowRight size={16} />
       </WorkOfficeRibbonButton>

@@ -836,6 +836,17 @@ component, import/export, desktop, compact, accessibility, blank-cell, and Undo
 coverage protects the path. The deterministic A3S Test ACL remains a local
 release gate; GitHub Actions uses the equivalent Playwright regression only.
 
+The fifteenth slice makes Increase Decimal and Decrease Decimal first-class
+Home and Number commands instead of toolbar-only helpers. The command reads
+each selected cell's native format independently, so mixed Currency,
+Accounting, Percentage, Number, and Scientific selections retain their format
+families. Date, time, fraction, text, and unrecognized custom codes remain
+unchanged. Equal results compact into rectangular native calls, the complete
+gesture commits through one batch and one Undo record, and a 10,000-cell guard
+prevents a blank maximum-size selection from becoming dense. Focused model,
+catalog, controller, component, and desktop browser coverage protect mixed
+format semantics and focus restoration.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

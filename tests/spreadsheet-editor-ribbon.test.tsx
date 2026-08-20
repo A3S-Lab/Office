@@ -54,10 +54,20 @@ test('uses the shared quick access and collapsible adaptive ribbon', () => {
 
 test('routes number-format controls through typed spreadsheet commands', () => {
   const formats: Array<{ attribute: string; value: unknown }> = [];
-  const commands = spreadsheetCommands((attribute, value) => {
-    formats.push({ attribute, value });
-    return true;
-  });
+  const decimalAdjustments: string[] = [];
+  const commands = spreadsheetCommands(
+    (attribute, value) => {
+      formats.push({ attribute, value });
+      return true;
+    },
+    undefined,
+    {
+      adjustDecimalPlaces: (direction) => {
+        decimalAdjustments.push(direction);
+        return true;
+      },
+    },
+  );
 
   render(
     <SpreadsheetEditorRibbon
@@ -111,9 +121,8 @@ test('routes number-format controls through typed spreadsheet commands', () => {
     { attribute: 'ct', value: { fa: '@', t: 's' } },
     { attribute: 'ct', value: { fa: '[$¥-804]#,##0.00', t: 'n' } },
     { attribute: 'ct', value: { fa: '0.00%', t: 'n' } },
-    { attribute: 'ct', value: { fa: '0%', t: 'n' } },
-    { attribute: 'ct', value: { fa: '0.00%', t: 'n' } },
   ]);
+  expect(decimalAdjustments).toEqual(['decrease', 'increase']);
 });
 
 test('applies grouped WPS cell styles from a preview gallery', async () => {
@@ -870,6 +879,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
   return {
     activateSheet: () => true,
     addSheet: () => true,
+    adjustDecimalPlaces: () => true,
     applyCellStyle: () => true,
     clearSelectedCells: () => true,
     activateFormatPainter: () => true,
@@ -915,6 +925,7 @@ function spreadsheetCommands(
   overrides: Partial<
     Pick<
       SpreadsheetEditorCommands,
+      | 'adjustDecimalPlaces'
       | 'activateFormatPainter'
       | 'applyCellStyle'
       | 'cancelFormatPainter'
@@ -935,6 +946,7 @@ function spreadsheetCommands(
     activateSheet: () => true,
     activateFormatPainter: overrides.activateFormatPainter ?? (() => true),
     addSheet: () => true,
+    adjustDecimalPlaces: overrides.adjustDecimalPlaces ?? (() => true),
     applyCellStyle: overrides.applyCellStyle ?? (() => true),
     applyFormatPainter: () => true,
     cancelFormatPainter: overrides.cancelFormatPainter ?? (() => true),

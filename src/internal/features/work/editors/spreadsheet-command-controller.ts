@@ -55,6 +55,10 @@ import {
   spreadsheetNumberFormatValue,
 } from './spreadsheet-number-format';
 import {
+  createSpreadsheetNumberFormatExtension,
+  type SpreadsheetDecimalPlacesDirection,
+} from './spreadsheet-number-format-command';
+import {
   activateSpreadsheetSheet,
   addSpreadsheetSheet,
   adjacentSpreadsheetSheetId,
@@ -194,6 +198,9 @@ export interface SpreadsheetEditorCommands {
   activateSheet: (sheetId: string) => boolean;
   activateFormatPainter: (mode: SpreadsheetFormatPainterMode) => boolean;
   addSheet: () => boolean;
+  adjustDecimalPlaces: (
+    direction: SpreadsheetDecimalPlacesDirection,
+  ) => boolean;
   applyCellStyle: (preset: SpreadsheetCellStyleChoice) => boolean;
   applyFormatPainter: (target: SpreadsheetCommandSelection) => boolean;
   cancelFormatPainter: () => boolean;
@@ -292,6 +299,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     }),
     createSpreadsheetCellBorderExtension(),
     createSpreadsheetCellStyleExtension(),
+    createSpreadsheetNumberFormatExtension(),
     createSpreadsheetCellFillExtension(),
     createOfficeEditorExtension<
       SpreadsheetCommandContext,

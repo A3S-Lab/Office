@@ -67,6 +67,8 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     spreadsheetCommandCatalog.numberFormatScientific,
     spreadsheetCommandCatalog.numberFormatFraction,
     spreadsheetCommandCatalog.numberFormatText,
+    spreadsheetCommandCatalog.decreaseDecimalPlaces,
+    spreadsheetCommandCatalog.increaseDecimalPlaces,
   ]) {
     expect(command.location).toEqual({
       area: 'ribbon',
@@ -108,6 +110,14 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     aria: 'Control+Shift+^ Meta+Shift+^',
     editor: ['Mod-Shift-^'],
     label: 'Cmd/Ctrl+Shift+^',
+  });
+  expect(spreadsheetCommandCatalog.decreaseDecimalPlaces).toMatchObject({
+    id: 'number.decreaseDecimalPlaces',
+    label: '减少小数位',
+  });
+  expect(spreadsheetCommandCatalog.increaseDecimalPlaces).toMatchObject({
+    id: 'number.increaseDecimalPlaces',
+    label: '增加小数位',
   });
   for (const command of [
     spreadsheetCommandCatalog.borderTop,
