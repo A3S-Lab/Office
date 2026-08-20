@@ -553,6 +553,12 @@ interaction model.
   round trips, value/formula preservation, and one-step history, plus
   10,000-cell-bounded Increase/Decrease Decimal commands that retain every
   cell's format family across mixed selections and commit one native batch,
+  a WPS-style Format Cells dialog under Home and Number with the editor-scoped
+  `Cmd/Ctrl+1` shortcut, functional Number, Alignment, Font, Border, Fill, and
+  Protection tabs, untouched mixed-value preservation, custom native number
+  codes, compact protection ranges, dense/sparse representation retention,
+  bounded blank-cell materialization, one controlled update and one Undo
+  record per Apply, and exact launcher or remounted-grid focus restoration,
   a Home and Styles gallery with 17 WPS built-in cell styles grouped as Common,
   Data and Model, and Titles and Totals, true native previews, two-dimensional
   keyboard navigation, a 10,000-cell bound, blank-cell styling, per-cell border

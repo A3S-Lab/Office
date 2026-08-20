@@ -16,6 +16,9 @@ import {
 } from './spreadsheet-cell-clear';
 import type { SpreadsheetCellBorderFormat } from './spreadsheet-cell-border';
 import { createSpreadsheetCellBorderExtension } from './spreadsheet-cell-border-command';
+import type { SpreadsheetCellFormatRequest } from './spreadsheet-cell-format';
+import { createSpreadsheetCellFormatExtension } from './spreadsheet-cell-format-command';
+import type { SpreadsheetCellRange } from './spreadsheet-cell-range';
 import type { SpreadsheetCellStyleChoice } from './spreadsheet-cell-style';
 import { createSpreadsheetCellStyleExtension } from './spreadsheet-cell-style-command';
 import type { SpreadsheetCellFillDirection } from './spreadsheet-cell-fill';
@@ -186,6 +189,18 @@ export interface SpreadsheetFormatPainterCommandPort {
   cancel: () => boolean;
 }
 
+export interface SpreadsheetFormatCellsOpenRequest {
+  sheetId: string;
+  range: SpreadsheetCellRange;
+  activeCell: { row: number; column: number };
+  cells: (Cell | null)[][];
+}
+
+export interface SpreadsheetFormatCellsCommandPort {
+  canOpen: boolean;
+  open: (request: SpreadsheetFormatCellsOpenRequest) => boolean;
+}
+
 export interface SpreadsheetFormulaBarCommandPort {
   setValue: (value: unknown) => void;
 }
@@ -202,6 +217,7 @@ export interface SpreadsheetEditorCommands {
     direction: SpreadsheetDecimalPlacesDirection,
   ) => boolean;
   applyCellStyle: (preset: SpreadsheetCellStyleChoice) => boolean;
+  applyCellFormat: (request: SpreadsheetCellFormatRequest) => boolean;
   applyFormatPainter: (target: SpreadsheetCommandSelection) => boolean;
   cancelFormatPainter: () => boolean;
   clearSelectedCells: (mode?: SpreadsheetCellClearMode) => boolean;
@@ -223,6 +239,7 @@ export interface SpreadsheetEditorCommands {
   ) => boolean;
   moveSelection: (move: SpreadsheetSelectionMove, extend: boolean) => boolean;
   openAutoFilterMenu: () => boolean;
+  openFormatCells: () => boolean;
   pasteCells: (values: readonly (readonly unknown[])[]) => boolean;
   pasteSelection: () => boolean;
   recalculateFormula: (scope: 'selection' | 'workbook') => boolean;
@@ -262,6 +279,7 @@ export interface SpreadsheetCommandContext {
   fallbackRange: SpreadsheetCommandRange;
   formulaBar: SpreadsheetFormulaBarCommandPort | null;
   formatPainter: SpreadsheetFormatPainterCommandPort;
+  formatCells: SpreadsheetFormatCellsCommandPort;
   history: SpreadsheetHistoryCommandPort | null;
   onChange: (content: WorkSpreadsheetContent) => void;
   selection: SpreadsheetCommandSelection | null;
@@ -297,6 +315,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
         },
       }),
     }),
+    createSpreadsheetCellFormatExtension(),
     createSpreadsheetCellBorderExtension(),
     createSpreadsheetCellStyleExtension(),
     createSpreadsheetNumberFormatExtension(),

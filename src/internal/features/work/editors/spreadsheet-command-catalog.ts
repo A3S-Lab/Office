@@ -226,6 +226,16 @@ export const spreadsheetCommandCatalog = {
     label: '增加小数位',
     location: { area: 'ribbon', tab: 'home', group: 'number' },
   },
+  formatCells: {
+    id: 'number.formatCells',
+    label: '设置单元格格式',
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+    shortcut: {
+      label: 'Cmd/Ctrl+1',
+      aria: 'Control+1 Meta+1',
+      editor: ['Mod-1'],
+    },
+  },
   borderTop: {
     id: 'font.borderTop',
     label: '上框线',

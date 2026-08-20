@@ -61,6 +61,7 @@ import {
   createSpreadsheetEditorExtensions,
   type SpreadsheetCommandRange,
   type SpreadsheetEditorCommands,
+  type SpreadsheetFormatCellsOpenRequest,
   type SpreadsheetStructureAxis,
 } from './spreadsheet-command-controller';
 import {
@@ -94,6 +95,11 @@ import {
 } from './spreadsheet-editor-support';
 import type { SpreadsheetFindMatch } from './spreadsheet-find';
 import { SpreadsheetFindBar } from './spreadsheet-find-bar';
+import { SpreadsheetFormatCellsDialog } from './spreadsheet-format-cells-dialog';
+import {
+  createSpreadsheetFormatCellsDialogSource,
+  type SpreadsheetFormatCellsDialogSource,
+} from './spreadsheet-format-cells-dialog-model';
 import { spreadsheetFreezePanesStatus } from './spreadsheet-freeze-panes';
 import { synchronizeSpreadsheetWorkbookInPlace } from './spreadsheet-in-place-workbook-sync';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
@@ -289,6 +295,13 @@ function SpreadsheetEditorSurface({
   );
   const [contextMenu, setContextMenu] =
     useState<SpreadsheetContextMenuState | null>(null);
+  const [formatCellsSource, setFormatCellsSource] =
+    useState<SpreadsheetFormatCellsDialogSource | null>(null);
+  const formatCellsInvokerRef = useRef<HTMLElement | null>(null);
+  const formatCellsSelectionRef = useRef<SpreadsheetSelectionState | null>(
+    null,
+  );
+  const formatCellsApplyingRef = useRef(false);
   const officeDialog = useOfficeDialog();
   const [findOpen, setFindOpen] = useState(false);
   const [findFocusRequest, setFindFocusRequest] = useState(0);
@@ -393,6 +406,10 @@ function SpreadsheetEditorSurface({
     panelTriggerRef.current = null;
     setPanel(null);
     setContextMenu(null);
+    setFormatCellsSource(null);
+    formatCellsInvokerRef.current = null;
+    formatCellsSelectionRef.current = null;
+    formatCellsApplyingRef.current = false;
   }, [preview]);
   const closeWorkbookPanel = useCallback(() => {
     const trigger = panelTriggerRef.current;
@@ -741,6 +758,52 @@ function SpreadsheetEditorSurface({
     );
     return true;
   };
+  const openSpreadsheetFormatCells = useCallback(
+    (request: SpreadsheetFormatCellsOpenRequest): boolean => {
+      if (previewRef.current) return false;
+      const source = createSpreadsheetFormatCellsDialogSource(
+        contentRef.current,
+        request.sheetId,
+        request.range,
+        request.cells,
+        request.activeCell,
+      );
+      if (!source) return false;
+      formatCellsInvokerRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : spreadsheetGridFocusTarget(spreadsheetCanvasRef.current);
+      formatCellsSelectionRef.current = {
+        sheetId: request.sheetId,
+        selection: {
+          row: [...request.range.row],
+          column: [...request.range.column],
+          row_focus: request.activeCell.row,
+          column_focus: request.activeCell.column,
+        },
+      };
+      setFormatCellsSource(source);
+      return true;
+    },
+    [],
+  );
+  const closeSpreadsheetFormatCells = useCallback(() => {
+    const invoker = formatCellsInvokerRef.current;
+    const canvas = spreadsheetCanvasRef.current;
+    const openedFromGrid = Boolean(invoker && canvas?.contains(invoker));
+    setFormatCellsSource(null);
+    requestAnimationFrame(() => {
+      if (openedFromGrid || !invoker?.isConnected) {
+        focusSpreadsheetGrid(canvas, { focusOrigin: invoker });
+      } else {
+        invoker.focus({ preventScroll: true });
+      }
+      if (formatCellsInvokerRef.current === invoker) {
+        formatCellsInvokerRef.current = null;
+      }
+      formatCellsSelectionRef.current = null;
+    });
+  }, []);
   const activateLocalSpreadsheetSheet = useCallback(
     (sheetId: string) => {
       if (!previewRef.current && !collaborationView) return false;
@@ -792,10 +855,25 @@ function SpreadsheetEditorSurface({
         },
       },
       formatPainter,
+      formatCells: {
+        canOpen: !preview && formatCellsSource === null,
+        open: openSpreadsheetFormatCells,
+      },
       history,
       onChange: (next) => {
-        contentRef.current = next;
-        onChange(next);
+        const formatCellsSelection = formatCellsApplyingRef.current
+          ? formatCellsSelectionRef.current
+          : null;
+        const controlled =
+          formatCellsSelection && !collaborationView
+            ? spreadsheetContentWithSelection(
+                next,
+                formatCellsSelection.sheetId,
+                formatCellsSelection.selection,
+              )
+            : next;
+        contentRef.current = controlled;
+        onChange(controlled);
       },
       selection: selectionState,
       targetSheetGridSize,
@@ -902,6 +980,14 @@ function SpreadsheetEditorSurface({
   const restoreSpreadsheetShortcutFocus = useCallback(
     (event: KeyboardEvent) => {
       event.stopPropagation();
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        !event.altKey &&
+        !event.shiftKey &&
+        event.key === '1'
+      ) {
+        return;
+      }
       if (!isSpreadsheetCellEditingTarget(event.target)) {
         focusSpreadsheetGrid(spreadsheetCanvasRef.current);
       }
@@ -1354,6 +1440,32 @@ function SpreadsheetEditorSurface({
           onRestoreFocus={() =>
             focusSpreadsheetGrid(spreadsheetCanvasRef.current)
           }
+        />
+      )}
+      {formatCellsSource && (
+        <SpreadsheetFormatCellsDialog
+          source={formatCellsSource}
+          restoreFocusTarget={() =>
+            formatCellsInvokerRef.current?.isConnected
+              ? formatCellsInvokerRef.current
+              : spreadsheetGridFocusTarget(spreadsheetCanvasRef.current)
+          }
+          onApply={(patch) => {
+            formatCellsApplyingRef.current = true;
+            let handled = false;
+            try {
+              handled = spreadsheetCommands.applyCellFormat({
+                sheetId: formatCellsSource.sheetId,
+                range: formatCellsSource.range,
+                patch,
+              });
+            } finally {
+              formatCellsApplyingRef.current = false;
+            }
+            if (!handled) showToast('无法应用单元格格式。', 'error');
+            return handled;
+          }}
+          onClose={closeSpreadsheetFormatCells}
         />
       )}
       {officeDialog.dialog}

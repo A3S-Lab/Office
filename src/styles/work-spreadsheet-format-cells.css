@@ -1,0 +1,337 @@
+.work-spreadsheet-format-cells-dialog {
+  width: min(680px, 100%);
+}
+
+.work-spreadsheet-format-cells-dialog > .ds-dialog-body {
+  padding-top: 0;
+}
+
+.work-spreadsheet-format-cells-tabs.ds-tabs {
+  gap: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--a3s-line);
+  scrollbar-width: thin;
+}
+
+.work-spreadsheet-format-cells-tabs.ds-tabs > button {
+  min-width: max-content;
+  flex: 1 0 auto;
+  padding-inline: 13px;
+}
+
+.work-spreadsheet-format-cells-dialog form {
+  min-height: 290px;
+}
+
+.work-spreadsheet-format-cells-panel {
+  min-height: 270px;
+  padding: 20px 2px 4px;
+  outline: 0;
+}
+
+.work-spreadsheet-format-cells-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+.work-spreadsheet-format-cells-grid.font {
+  align-items: start;
+}
+
+.work-spreadsheet-format-cells-field {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.work-spreadsheet-format-cells-field > .work-office-select,
+.work-spreadsheet-format-cells-field > .work-office-number-field,
+.work-spreadsheet-format-cells-field > .work-office-text-field,
+.work-spreadsheet-format-cells-field > .work-office-color-picker {
+  width: 100%;
+}
+
+.work-spreadsheet-format-cells-field
+  > .work-office-select
+  > button[role="combobox"],
+.work-spreadsheet-format-cells-field .work-office-color-trigger {
+  width: 100%;
+}
+
+.work-spreadsheet-format-cells-field > .work-office-text-field {
+  min-height: 29px;
+}
+
+.work-spreadsheet-format-cells-number {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(240px, 1.3fr);
+  gap: 16px 20px;
+}
+
+.work-spreadsheet-format-cells-number > [role="alert"],
+.work-spreadsheet-format-cells-grid > [role="alert"] {
+  grid-column: 1 / -1;
+  margin: -8px 0 0;
+  color: var(--a3s-red);
+  font-size: 11px;
+}
+
+.work-spreadsheet-format-cells-sample {
+  display: grid;
+  min-height: 104px;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  gap: 7px 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 10px;
+  background: var(--a3s-panel-soft);
+}
+
+.work-spreadsheet-format-cells-sample > span {
+  grid-column: 1 / -1;
+  color: var(--a3s-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-format-cells-sample > output {
+  overflow: hidden;
+  color: var(--a3s-ink);
+  font-size: 22px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-format-cells-sample > small {
+  align-self: center;
+  color: var(--a3s-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.work-spreadsheet-format-cells-options {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  margin: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 8px;
+}
+
+.work-spreadsheet-format-cells-options > legend {
+  padding: 0 4px;
+  color: var(--a3s-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-format-cells-options.emphasis {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.work-spreadsheet-format-cells-font-preview {
+  min-height: 72px;
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 9px;
+  background: var(--a3s-panel-soft);
+  text-align: center;
+}
+
+.work-spreadsheet-format-cells-border {
+  display: grid;
+  gap: 18px;
+}
+
+.work-spreadsheet-format-cells-border-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.work-spreadsheet-format-cells-border-layout {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(220px, 1.2fr);
+  align-items: center;
+  gap: 24px;
+}
+
+.work-spreadsheet-format-cells-border-actions {
+  display: grid;
+  grid-template-columns: repeat(5, 34px);
+  gap: 8px;
+}
+
+.work-spreadsheet-format-cells-border-actions > .ds-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.work-spreadsheet-border-edge {
+  position: relative;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 7px;
+  place-items: center;
+  border: 1px solid var(--a3s-line);
+  border-radius: 7px;
+  background: var(--a3s-panel);
+  cursor: pointer;
+}
+
+.work-spreadsheet-border-edge:hover,
+.work-spreadsheet-border-edge[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--a3s-green) 48%, var(--a3s-line));
+  background: color-mix(in srgb, var(--a3s-green) 9%, var(--a3s-panel));
+}
+
+.work-spreadsheet-border-edge > span {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--a3s-line-strong);
+}
+
+.work-spreadsheet-border-edge.top > span {
+  border-top: 2px solid currentColor;
+}
+
+.work-spreadsheet-border-edge.bottom > span {
+  border-bottom: 2px solid currentColor;
+}
+
+.work-spreadsheet-border-edge.left > span {
+  border-left: 2px solid currentColor;
+}
+
+.work-spreadsheet-border-edge.right > span {
+  border-right: 2px solid currentColor;
+}
+
+.work-spreadsheet-border-edge.diagonal > span::after {
+  position: absolute;
+  top: 8px;
+  left: -2px;
+  width: 20px;
+  border-top: 2px solid currentColor;
+  content: "";
+  transform: rotate(-45deg);
+}
+
+.work-spreadsheet-format-cells-border-preview {
+  position: relative;
+  display: grid;
+  width: min(220px, 100%);
+  height: 126px;
+  place-items: center;
+  justify-self: center;
+  border: 1px dashed var(--a3s-line-strong);
+  background: var(--a3s-panel-soft);
+}
+
+.work-spreadsheet-format-cells-border-preview > span {
+  position: absolute;
+  inset: 10px;
+  pointer-events: none;
+}
+
+.work-spreadsheet-format-cells-border-preview > .diagonal {
+  inset: 50% 5%;
+  transform: rotate(-26deg);
+}
+
+.work-spreadsheet-format-cells-border-preview > strong {
+  color: var(--a3s-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.work-spreadsheet-format-cells-fill {
+  display: grid;
+  max-width: 430px;
+  grid-template-columns: minmax(190px, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+}
+
+.work-spreadsheet-format-cells-fill-preview {
+  display: grid;
+  min-height: 118px;
+  grid-column: 1 / -1;
+  place-items: center;
+  border: 1px solid var(--a3s-line);
+  border-radius: 9px;
+  color: var(--a3s-ink);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-format-cells-fill-preview.empty {
+  background: var(--a3s-panel-soft);
+  color: var(--a3s-muted);
+}
+
+.work-spreadsheet-format-cells-protection {
+  display: grid;
+  max-width: 460px;
+  gap: 8px;
+}
+
+.work-spreadsheet-format-cells-protection > p,
+.work-spreadsheet-format-cells-mixed {
+  margin: 8px 0 0;
+  color: var(--a3s-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.work-spreadsheet-format-cells-mixed {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 620px) {
+  .work-spreadsheet-format-cells-dialog form {
+    min-height: 360px;
+  }
+
+  .work-spreadsheet-format-cells-panel {
+    min-height: 340px;
+  }
+
+  .work-spreadsheet-format-cells-grid,
+  .work-spreadsheet-format-cells-number,
+  .work-spreadsheet-format-cells-border-tools,
+  .work-spreadsheet-format-cells-border-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-format-cells-border-layout {
+    align-items: start;
+  }
+
+  .work-spreadsheet-format-cells-border-preview {
+    width: 100%;
+    height: 100px;
+  }
+
+  .work-spreadsheet-format-cells-fill {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-format-cells-fill-preview {
+    grid-column: 1;
+  }
+}

@@ -210,10 +210,49 @@ calls and committed as one batch and one Undo record. The command is bounded to
 10,000 selected cells so formatting blank ranges cannot densify a maximum-size
 worksheet accidentally. Export and reopen tests verify the exact format codes
 across XLSX. The built-in currency choice is CNY because the current
-Spreadsheet chrome is `zh-CN`; host-selected currencies, locale-specific dates,
-combined date-time presets, and arbitrary custom-format authoring remain future
-compatibility work. Imported unmodeled codes stay visible as Custom and are not
-silently replaced.
+Spreadsheet chrome is `zh-CN`; host-selected preset currencies,
+locale-specific date presets, and combined date-time presets remain future
+compatibility work. Format Cells can author and retain a custom native format
+code. Imported unmodeled codes stay visible as Custom and are not silently
+replaced.
+
+## Format Cells
+
+Use the Home and Number launcher or `Cmd/Ctrl+1` while the workbook grid has
+focus. The shortcut is editor-scoped: host inputs, the formula bar, active cell
+editing, and modal controls retain their native number-key behavior.
+
+| Tab | Supported settings |
+| --- | --- |
+| Number | Common categories and an exact custom native format code |
+| Alignment | Horizontal and vertical alignment, wrapping, and -90 to 90 degree rotation |
+| Font | Family, size, color, bold, italic, underline, and strikethrough |
+| Border | Line style, color, top, bottom, left, right, diagonal, and no-border state |
+| Fill | Exact RGB fill or no fill |
+| Protection | Locked and hidden formula state, effective when worksheet protection is enabled |
+
+The dialog snapshots the exact worksheet, normalized range, focused cell, and
+cell matrix when it opens. Apply never follows a selection change made after
+that point. A mixed selection exposes an indeterminate state and keeps each
+untouched property unchanged; only fields the user explicitly changes are
+included in the patch. One Apply emits the complete next controlled workbook
+once and creates one Undo record. Cancel, the close button, and Escape do not
+publish content. Focus returns to the exact ribbon launcher or to the current
+grid node after a controlled workbook remount.
+
+The command accepts at most 10,000 cells. Diagonal borders retain the stricter
+4,096-cell bound because the native renderer stores one diagonal record per
+cell. Values, formulas, comments, hyperlinks, merge geometry, and unrelated
+metadata remain unchanged. A worksheet that starts with `data` remains a
+matrix and one that starts with `celldata` remains sparse. Formatting a blank
+cell materializes that coordinate only; clearing a property that is already
+absent does not create a blank cell. Cell protection is compacted into
+`config.authority.cellProtectionRanges` rather than expanded across the
+selection.
+
+CI validates this workflow with Rstest and Playwright at desktop and compact
+widths. A3S Test is optional and local-only; GitHub Actions and Pages do not
+install or run it.
 
 ## Collaboration and native cell mutations
 

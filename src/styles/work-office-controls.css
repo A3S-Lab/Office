@@ -278,7 +278,8 @@
   color: white;
 }
 
-.work-office-checkbox.checked .work-office-checkbox-box {
+.work-office-checkbox.checked .work-office-checkbox-box,
+.work-office-checkbox.indeterminate .work-office-checkbox-box {
   border-color: var(--work-office-control-accent, var(--a3s-blue));
   background: var(--work-office-control-accent, var(--a3s-blue));
 }

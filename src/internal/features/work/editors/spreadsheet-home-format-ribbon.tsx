@@ -6,6 +6,7 @@ import {
   DecimalsArrowRight,
   Italic,
   Percent,
+  Settings2,
   Strikethrough,
   Underline,
 } from 'lucide-react';
@@ -214,6 +215,7 @@ export function SpreadsheetNumberRibbonGroup({
   const percentDefinition = spreadsheetCommandCatalog.numberFormatPercent;
   const decreaseDefinition = spreadsheetCommandCatalog.decreaseDecimalPlaces;
   const increaseDefinition = spreadsheetCommandCatalog.increaseDecimalPlaces;
+  const formatCellsDefinition = spreadsheetCommandCatalog.formatCells;
 
   return (
     <WorkOfficeRibbonGroup label="数字" priority="high">
@@ -305,6 +307,16 @@ export function SpreadsheetNumberRibbonGroup({
         onClick={() => commands.adjustDecimalPlaces('increase')}
       >
         <DecimalsArrowRight size={16} />
+      </WorkOfficeRibbonButton>
+      <WorkOfficeRibbonButton
+        label={formatCellsDefinition.label}
+        title={`${formatCellsDefinition.label}（${formatCellsDefinition.shortcut.label}）`}
+        aria-keyshortcuts={formatCellsDefinition.shortcut.aria}
+        displayLabel={false}
+        disabled={!can.openFormatCells()}
+        onClick={() => commands.openFormatCells()}
+      >
+        <Settings2 size={15} />
       </WorkOfficeRibbonButton>
     </WorkOfficeRibbonGroup>
   );

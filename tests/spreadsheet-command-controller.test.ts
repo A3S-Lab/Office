@@ -9,6 +9,7 @@ import {
   type SpreadsheetCommandContext,
   type SpreadsheetCommandRange,
   type SpreadsheetEditorCommands,
+  type SpreadsheetFormatCellsCommandPort,
   type SpreadsheetFormatPainterCommandPort,
   type SpreadsheetWorkbookCommandPort,
 } from '../src/internal/features/work/editors/spreadsheet-command-controller';
@@ -197,6 +198,104 @@ describe('spreadsheet command controller', () => {
         },
       ],
     ]);
+  });
+
+  test('opens and applies Format Cells through typed commands', () => {
+    const fixture = commandFixture();
+    fixture.workbook.cells = [[{ v: 'A3S' }, null]];
+    fixture.workbook.selection = [
+      {
+        row: [2, 2],
+        column: [4, 3],
+        row_focus: 2,
+        column_focus: 4,
+      },
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetCellFormat');
+    expect(editor.can().openFormatCells()).toBe(true);
+    expect(editor.commands.openFormatCells()).toBe(true);
+    expect(fixture.formatCells.requests).toEqual([
+      {
+        sheetId: 'sheet-1',
+        range: { row: [2, 2], column: [3, 4] },
+        activeCell: { row: 2, column: 4 },
+        cells: [[{ v: 'A3S' }, null]],
+      },
+    ]);
+    expect(fixture.changes).toEqual([]);
+
+    expect(
+      editor.commands.applyCellFormat({
+        sheetId: 'sheet-1',
+        range: { row: [2, 2], column: [3, 4] },
+        patch: { bold: true, fillColor: '#fff2cc' },
+      }),
+    ).toBe(true);
+    expect(fixture.changes).toHaveLength(1);
+    expect(fixture.changes[0]?.sheets[0]?.celldata).toEqual([
+      { r: 2, c: 3, v: { bg: '#fff2cc', bl: 1 } },
+      { r: 2, c: 4, v: { bg: '#fff2cc', bl: 1 } },
+    ]);
+  });
+
+  test('owns Cmd/Ctrl+1 only on the spreadsheet editing surface', () => {
+    const fixture = commandFixture();
+    fixture.workbook.cells = [[{ v: 'A3S' }]];
+    fixture.workbook.selection = [{ row: [0, 0], column: [0, 0] }];
+    const editor = spreadsheetEditor(fixture.context);
+    const gridShortcut = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: '1',
+    });
+
+    expect(editor.handleKeyDown(gridShortcut)).toBe(true);
+    expect(gridShortcut.defaultPrevented).toBe(true);
+    expect(fixture.formatCells.requests).toHaveLength(1);
+
+    const input = document.createElement('input');
+    document.body.append(input);
+    let inputHandled = true;
+    input.addEventListener('keydown', (event) => {
+      inputHandled = editor.handleKeyDown(event);
+    });
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        metaKey: true,
+        key: '1',
+      }),
+    );
+    expect(inputHandled).toBe(false);
+    expect(fixture.formatCells.requests).toHaveLength(1);
+    input.remove();
+
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    const dialogButton = document.createElement('button');
+    dialog.append(dialogButton);
+    document.body.append(dialog);
+    const modalShortcut = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: '1',
+    });
+    Object.defineProperty(modalShortcut, 'target', { value: dialogButton });
+    expect(editor.handleKeyDown(modalShortcut)).toBe(false);
+    expect(fixture.formatCells.requests).toHaveLength(1);
+    dialog.remove();
+
+    editor.updateContext({ ...fixture.context, editable: false });
+    const readOnlyShortcut = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: '1',
+    });
+    expect(editor.handleKeyDown(readOnlyShortcut)).toBe(false);
   });
 
   test('routes all four WPS fill directions through one native command port', () => {
@@ -1470,6 +1569,7 @@ function commandFixture(): {
   context: SpreadsheetCommandContext;
   formulaBarValues: unknown[];
   formatPainter: RecordingSpreadsheetFormatPainter;
+  formatCells: RecordingSpreadsheetFormatCells;
   workbook: RecordingSpreadsheetWorkbook;
 } {
   const content = {
@@ -1489,6 +1589,7 @@ function commandFixture(): {
   const clipboard = new RecordingSpreadsheetClipboard();
   const formulaBarValues: unknown[] = [];
   const formatPainter = new RecordingSpreadsheetFormatPainter();
+  const formatCells = new RecordingSpreadsheetFormatCells();
   const workbook = new RecordingSpreadsheetWorkbook();
   return {
     autoFilter,
@@ -1497,6 +1598,7 @@ function commandFixture(): {
     changes,
     formulaBarValues,
     formatPainter,
+    formatCells,
     workbook,
     context: {
       activeSheetId: 'sheet-1',
@@ -1510,6 +1612,7 @@ function commandFixture(): {
         setValue: (value) => formulaBarValues.push(value),
       },
       formatPainter,
+      formatCells,
       history: null,
       onChange: (next) => changes.push(next),
       selection: {
@@ -1525,6 +1628,21 @@ function commandFixture(): {
       workbook,
     },
   };
+}
+
+class RecordingSpreadsheetFormatCells
+  implements SpreadsheetFormatCellsCommandPort
+{
+  canOpen = true;
+  requests: Parameters<SpreadsheetFormatCellsCommandPort['open']>[0][] = [];
+
+  open(
+    request: Parameters<SpreadsheetFormatCellsCommandPort['open']>[0],
+  ): boolean {
+    if (!this.canOpen) return false;
+    this.requests.push(request);
+    return true;
+  }
 }
 
 class RecordingSpreadsheetAutoFilter

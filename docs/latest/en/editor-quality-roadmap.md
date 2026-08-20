@@ -847,6 +847,26 @@ prevents a blank maximum-size selection from becoming dense. Focused model,
 catalog, controller, component, and desktop browser coverage protect mixed
 format semantics and focus restoration.
 
+The sixteenth slice adds the complete WPS-style Format Cells workflow to Home
+and Number and the editor-scoped `Cmd/Ctrl+1` shortcut. One modal surface owns
+Number, Alignment, Font, Border, Fill, and Protection tabs, including custom
+number codes, wrapping and rotation, mixed font emphasis, per-edge and
+diagonal borders, no-fill state, and compact locked or hidden ranges. The
+dialog captures the exact worksheet, range, active cell, and source cells when
+it opens. A later selection change therefore cannot retarget Apply. Mixed
+selections retain every untouched field; only explicitly changed fields are
+unified. Applying all six tabs emits one controlled `onChange` and creates one
+Undo record, while Cancel and Escape emit neither. Dense `data` and sparse
+`celldata` worksheets retain their original representation, formatting a blank
+cell materializes only that cell, and removing an absent property does not
+materialize it. General formatting is bounded to 10,000 cells and diagonal
+borders to 4,096 cells. The shortcut remains with host inputs, formula and cell
+editing, and modal controls. Focused Rstest model, controller, component,
+history, and focus coverage plus desktop and compact Playwright regression
+exercise launch, six-tab Apply, reopen, and one-step Undo. A3S Test remains an
+optional local-only release aid; GitHub Actions and Pages neither install nor
+run it and use Rstest, Playwright, and Cargo instead.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

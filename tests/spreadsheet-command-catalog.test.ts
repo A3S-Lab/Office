@@ -119,6 +119,16 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     id: 'number.increaseDecimalPlaces',
     label: '增加小数位',
   });
+  expect(spreadsheetCommandCatalog.formatCells.location).toEqual({
+    area: 'ribbon',
+    group: 'number',
+    tab: 'home',
+  });
+  expect(spreadsheetCommandCatalog.formatCells.shortcut).toEqual({
+    aria: 'Control+1 Meta+1',
+    editor: ['Mod-1'],
+    label: 'Cmd/Ctrl+1',
+  });
   for (const command of [
     spreadsheetCommandCatalog.borderTop,
     spreadsheetCommandCatalog.borderBottom,

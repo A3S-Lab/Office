@@ -55,6 +55,7 @@ test('uses the shared quick access and collapsible adaptive ribbon', () => {
 test('routes number-format controls through typed spreadsheet commands', () => {
   const formats: Array<{ attribute: string; value: unknown }> = [];
   const decimalAdjustments: string[] = [];
+  const formatCellsOpens: string[] = [];
   const commands = spreadsheetCommands(
     (attribute, value) => {
       formats.push({ attribute, value });
@@ -64,6 +65,10 @@ test('routes number-format controls through typed spreadsheet commands', () => {
     {
       adjustDecimalPlaces: (direction) => {
         decimalAdjustments.push(direction);
+        return true;
+      },
+      openFormatCells: () => {
+        formatCellsOpens.push('open');
         return true;
       },
     },
@@ -114,6 +119,12 @@ test('routes number-format controls through typed spreadsheet commands', () => {
   fireEvent.click(percent);
   fireEvent.click(screen.getByRole('button', { name: '减少小数位' }));
   fireEvent.click(screen.getByRole('button', { name: '增加小数位' }));
+  const formatCells = screen.getByRole('button', {
+    name: '设置单元格格式',
+  });
+  expect(formatCells).toHaveAttribute('aria-keyshortcuts', 'Control+1 Meta+1');
+  expect(formatCells).toHaveAttribute('title', '设置单元格格式（Cmd/Ctrl+1）');
+  fireEvent.click(formatCells);
 
   expect(formats).toEqual([
     { attribute: 'ct', value: { fa: '#,##0.00', t: 'n' } },
@@ -123,6 +134,7 @@ test('routes number-format controls through typed spreadsheet commands', () => {
     { attribute: 'ct', value: { fa: '0.00%', t: 'n' } },
   ]);
   expect(decimalAdjustments).toEqual(['decrease', 'increase']);
+  expect(formatCellsOpens).toEqual(['open']);
 });
 
 test('applies grouped WPS cell styles from a preview gallery', async () => {
@@ -881,6 +893,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     addSheet: () => true,
     adjustDecimalPlaces: () => true,
     applyCellStyle: () => true,
+    applyCellFormat: () => true,
     clearSelectedCells: () => true,
     activateFormatPainter: () => true,
     applyFormatPainter: () => true,
@@ -897,6 +910,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     moveSheet: () => true,
     moveSelection: () => true,
     openAutoFilterMenu: () => true,
+    openFormatCells: () => true,
     pasteCells: () => true,
     pasteSelection: () => true,
     recalculateFormula: () => true,
@@ -928,6 +942,7 @@ function spreadsheetCommands(
       | 'adjustDecimalPlaces'
       | 'activateFormatPainter'
       | 'applyCellStyle'
+      | 'applyCellFormat'
       | 'cancelFormatPainter'
       | 'clearSelectedCells'
       | 'copySelection'
@@ -936,6 +951,7 @@ function spreadsheetCommands(
       | 'fillSelectedCells'
       | 'insertSelectedStructure'
       | 'mergeSelectedCells'
+      | 'openFormatCells'
       | 'pasteSelection'
       | 'setFreezePanes'
       | 'toggleAutoFilter'
@@ -948,6 +964,7 @@ function spreadsheetCommands(
     addSheet: () => true,
     adjustDecimalPlaces: overrides.adjustDecimalPlaces ?? (() => true),
     applyCellStyle: overrides.applyCellStyle ?? (() => true),
+    applyCellFormat: overrides.applyCellFormat ?? (() => true),
     applyFormatPainter: () => true,
     cancelFormatPainter: overrides.cancelFormatPainter ?? (() => true),
     clearSelectedCells: overrides.clearSelectedCells ?? (() => true),
@@ -963,6 +980,7 @@ function spreadsheetCommands(
     moveSheet: () => true,
     moveSelection: () => true,
     openAutoFilterMenu: () => true,
+    openFormatCells: overrides.openFormatCells ?? (() => true),
     pasteCells: () => true,
     pasteSelection: overrides.pasteSelection ?? (() => true),
     recalculateFormula: () => true,

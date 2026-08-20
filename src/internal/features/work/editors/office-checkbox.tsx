@@ -1,5 +1,5 @@
-import { Check } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Check, Minus } from 'lucide-react';
+import { type ReactNode, useEffect, useRef } from 'react';
 
 export function OfficeCheckbox({
   ariaLabel,
@@ -8,6 +8,7 @@ export function OfficeCheckbox({
   children,
   disabled = false,
   className = '',
+  indeterminate = false,
 }: {
   ariaLabel: string;
   checked: boolean;
@@ -15,20 +16,27 @@ export function OfficeCheckbox({
   children: ReactNode;
   disabled?: boolean;
   className?: string;
+  indeterminate?: boolean;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (inputRef.current) inputRef.current.indeterminate = indeterminate;
+  }, [indeterminate]);
   return (
     <label
-      className={`work-office-checkbox ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} ${className}`.trim()}
+      className={`work-office-checkbox ${checked ? 'checked' : ''} ${indeterminate ? 'indeterminate' : ''} ${disabled ? 'disabled' : ''} ${className}`.trim()}
     >
       <input
+        ref={inputRef}
         type="checkbox"
         aria-label={ariaLabel}
+        aria-checked={indeterminate ? 'mixed' : checked}
         checked={checked}
         disabled={disabled}
         onChange={(event) => onCheckedChange(event.target.checked)}
       />
       <span className="work-office-checkbox-box" aria-hidden="true">
-        {checked && <Check size={11} />}
+        {indeterminate ? <Minus size={11} /> : checked && <Check size={11} />}
       </span>
       <span className="work-office-checkbox-label">{children}</span>
     </label>
