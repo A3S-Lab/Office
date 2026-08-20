@@ -153,6 +153,18 @@ shared dialog. Successful navigation activates the target sheet, selects and
 scrolls to the focused cell, and restores grid focus without publishing
 `onChange`, adding Undo history, or materializing sparse cells. Host inputs,
 formula or cell editing, popovers, and modal controls retain their native keys.
+The nineteenth milestone adds the WPS-style Paste split command and Paste
+Special dialog to Home and Clipboard. Quick commands cover All, Values,
+Formulas, and Formatting; `Cmd/Ctrl+Alt+V` opens ten content modes plus Add,
+Subtract, Multiply, Divide, Skip blanks, and Transpose. A same-editor rich
+snapshot retains formulas, styles, comments, validation, protection,
+hyperlinks, borders, merges, and column widths, while external clipboard text
+uses a bounded TSV snapshot. Relative and mixed formula references translate
+at the destination. One paste publishes one controlled workbook value and one
+Undo record, restores the current grid after a dialog-driven remount, and caps
+the destination at 50,000 cells. Pivot sheets, partial merge intersections,
+protected or read-only targets, out-of-bounds writes, unsupported formula
+state, and divide-by-zero operations fail before mutation.
 
 ## Product Rules
 

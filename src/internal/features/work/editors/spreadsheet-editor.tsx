@@ -66,10 +66,6 @@ import {
 } from './spreadsheet-command-controller';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import {
-  browserSpreadsheetClipboard,
-  copySpreadsheetSelection,
-  parseSpreadsheetClipboardText,
-  pasteSpreadsheetSelection,
   spreadsheetCoreContextMenuItems,
   spreadsheetSortContextMenuItems,
   spreadsheetStructureContextMenuItems,
@@ -101,6 +97,8 @@ import {
   createSpreadsheetFormatCellsDialogSource,
   type SpreadsheetFormatCellsDialogSource,
 } from './spreadsheet-format-cells-dialog-model';
+import { MAX_SPREADSHEET_PASTE_SPECIAL_CELLS } from './spreadsheet-paste-special';
+import { SpreadsheetPasteSpecialDialog } from './spreadsheet-paste-special-dialog';
 import { spreadsheetFreezePanesStatus } from './spreadsheet-freeze-panes';
 import {
   resolveSpreadsheetGoToTarget,
@@ -122,6 +120,10 @@ import {
 import { useOfficeHistory } from './use-office-history';
 import { useSpreadsheetAutoFilter } from './use-spreadsheet-auto-filter';
 import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
+import {
+  type SpreadsheetClipboardSelectionSource,
+  useSpreadsheetClipboard,
+} from './use-spreadsheet-clipboard';
 import {
   type SpreadsheetCollaborationHistory,
   type SpreadsheetCollaborationViewController,
@@ -729,50 +731,53 @@ function SpreadsheetEditorSurface({
     sheetId: toolbarSheetId,
     workbook: workbookInstance,
   });
-  const currentClipboardSelection = () => {
-    if (previewRef.current) return null;
-    const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
-    const sheet = contentRef.current.sheets.find(
-      (candidate) => candidate.id === sheetId,
-    );
-    const selection =
-      selectionState?.selection ?? sheet?.luckysheet_select_save?.at(-1);
-    if (!selection) return null;
-    const range = spreadsheetSingleRange(selection);
-    const maximumCells =
-      (range.row[1] - range.row[0] + 1) *
-      (range.column[1] - range.column[0] + 1);
-    return spreadsheetAgentSelection(
-      contentRef.current,
-      sheetId,
-      selection,
-      maximumCells,
-    );
-  };
-  const runSpreadsheetClipboardCopy = (cut: boolean): boolean => {
-    const selection = currentClipboardSelection();
-    const commands = spreadsheetCommandsRef.current;
-    if (!selection || (cut && !commands)) return false;
-    void copySpreadsheetSelection(
-      browserSpreadsheetClipboard,
-      selection.clipboard,
-      cut,
-    ).then((copied) => {
-      if (copied && cut && !commands?.clearSelectedCells()) {
-        showToast('选区已复制，但无法清除原内容。', 'error');
-      }
-    });
-    return true;
-  };
-  const runSpreadsheetClipboardPaste = (): boolean => {
-    const commands = spreadsheetCommandsRef.current;
-    if (!commands) return false;
-    void pasteSpreadsheetSelection(
-      browserSpreadsheetClipboard,
-      commands.pasteCells,
-    );
-    return true;
-  };
+  const currentClipboardSelection =
+    useCallback((): SpreadsheetClipboardSelectionSource | null => {
+      if (previewRef.current) return null;
+      const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
+      const sheet = contentRef.current.sheets.find(
+        (candidate) => candidate.id === sheetId,
+      );
+      const selection =
+        selectionState?.selection ?? sheet?.luckysheet_select_save?.at(-1);
+      if (!selection) return null;
+      const range = spreadsheetSingleRange(selection);
+      const maximumCells =
+        (range.row[1] - range.row[0] + 1) *
+        (range.column[1] - range.column[0] + 1);
+      if (maximumCells > MAX_SPREADSHEET_PASTE_SPECIAL_CELLS) return null;
+      const agentSelection = spreadsheetAgentSelection(
+        contentRef.current,
+        sheetId,
+        selection,
+        maximumCells,
+      );
+      return agentSelection
+        ? {
+            sheetId,
+            range: {
+              row: [range.row[0] ?? 0, range.row[1] ?? range.row[0] ?? 0],
+              column: [
+                range.column[0] ?? 0,
+                range.column[1] ?? range.column[0] ?? 0,
+              ],
+            },
+            plainText: agentSelection.clipboard,
+          }
+        : null;
+    }, [selectionState]);
+  const spreadsheetClipboard = useSpreadsheetClipboard({
+    canAccessSelection: Boolean(toolbarSheet && workbookInstance),
+    clearSelection: () =>
+      spreadsheetCommandsRef.current?.clearSelectedCells() ?? false,
+    commit: (next) =>
+      spreadsheetCommandsRef.current?.setSpreadsheetContent(next) ?? false,
+    contentRef,
+    editable: !preview,
+    fallbackFocusTarget: () =>
+      spreadsheetGridFocusTarget(spreadsheetCanvasRef.current),
+    getSelection: currentClipboardSelection,
+  });
   const openSpreadsheetFormatCells = useCallback(
     (request: SpreadsheetFormatCellsOpenRequest): boolean => {
       if (previewRef.current) return false;
@@ -967,15 +972,7 @@ function SpreadsheetEditorSurface({
       activeSheetId,
       autoFilter,
       calculation,
-      clipboard: {
-        canCopySelection: !preview && Boolean(toolbarSheet),
-        canCutSelection: !preview && Boolean(toolbarSheet && workbookInstance),
-        canPasteSelection:
-          !preview && Boolean(toolbarSheet && workbookInstance),
-        copySelection: () => runSpreadsheetClipboardCopy(false),
-        cutSelection: () => runSpreadsheetClipboardCopy(true),
-        pasteSelection: runSpreadsheetClipboardPaste,
-      },
+      clipboard: spreadsheetClipboard.commandPort,
       content: contentRef.current,
       editable: !preview,
       fallbackRange: selectedRange,
@@ -1170,13 +1167,12 @@ function SpreadsheetEditorSurface({
     cut: boolean,
   ) => {
     if (isSpreadsheetNativeTextUndoTarget(event.target)) return;
-    const selection = currentClipboardSelection();
-    if (!selection) return;
-    event.clipboardData.setData('text/plain', selection.clipboard);
+    if (!spreadsheetClipboard.copyToDataTransfer(event.clipboardData, cut)) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     if (cut) {
-      spreadsheetCommands.clearSelectedCells();
       focusSpreadsheetGrid(spreadsheetCanvasRef.current);
     }
   };
@@ -1184,10 +1180,15 @@ function SpreadsheetEditorSurface({
     if (previewRef.current || isSpreadsheetNativeTextUndoTarget(event.target)) {
       return;
     }
-    const values = parseSpreadsheetClipboardText(
-      event.clipboardData.getData('text/plain'),
-    );
-    if (!values.length || !spreadsheetCommands.pasteCells(values)) return;
+    if (
+      !spreadsheetClipboard.pasteText(
+        event.clipboardData.getData('text/plain'),
+        'all',
+        false,
+      )
+    ) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     focusSpreadsheetGrid(spreadsheetCanvasRef.current);
@@ -1576,6 +1577,15 @@ function SpreadsheetEditorSurface({
           onClose={closeSpreadsheetFormatCells}
         />
       )}
+      {spreadsheetClipboard.dialogSource && (
+        <SpreadsheetPasteSpecialDialog
+          source={spreadsheetClipboard.dialogSource}
+          restoreFocusTarget={spreadsheetClipboard.restoreDialogFocusTarget}
+          onApply={spreadsheetClipboard.applyDialog}
+          onClose={spreadsheetClipboard.closeDialog}
+          onValidate={spreadsheetClipboard.validateDialog}
+        />
+      )}
       {officeDialog.dialog}
     </section>
   );
@@ -1738,7 +1748,9 @@ export function spreadsheetCommandsWithGridFocus(
       commands.insertSelectedStructure,
     ),
     mergeSelectedCells: afterSuccessfulCommand(commands.mergeSelectedCells),
+    openPasteSpecial: afterSuccessfulCommand(commands.openPasteSpecial),
     pasteSelection: afterSuccessfulCommand(commands.pasteSelection),
+    pasteSpecial: afterSuccessfulCommand(commands.pasteSpecial),
     redo: afterSuccessfulCommand(commands.redo),
     setCellFormat: afterSuccessfulCommand(commands.setCellFormat),
     setFreezePanes: afterSuccessfulCommand(commands.setFreezePanes),

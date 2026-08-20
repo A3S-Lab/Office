@@ -698,6 +698,17 @@
   grid-template-columns: 20px minmax(0, 1fr) auto;
 }
 
+.work-spreadsheet-paste-menu > button {
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+}
+
+.work-spreadsheet-ribbon-menu-separator {
+  height: 1px;
+  margin: 4px 8px;
+  border: 0;
+  background: var(--a3s-line);
+}
+
 .work-spreadsheet-ribbon-menu > button > span:last-child {
   white-space: normal;
 }

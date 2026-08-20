@@ -237,6 +237,14 @@ test('routes the WPS Home clipboard group through typed commands', () => {
             actions.push('paste');
             return true;
           },
+          pasteSpecial: (content) => {
+            actions.push(`paste-special:${content}`);
+            return true;
+          },
+          openPasteSpecial: () => {
+            actions.push('open-paste-special');
+            return true;
+          },
           activateFormatPainter: (mode) => {
             actions.push(`format-painter:${mode}`);
             return true;
@@ -278,12 +286,24 @@ test('routes the WPS Home clipboard group through typed commands', () => {
   fireEvent.click(copy);
   fireEvent.click(formatPainter);
   fireEvent.doubleClick(formatPainter);
+  const pasteDisclosure = within(clipboard).getByTitle('更多粘贴方式');
+  fireEvent.click(pasteDisclosure);
+  let pasteMenu = screen.getByRole('menu', { name: '粘贴选项' });
+  fireEvent.click(within(pasteMenu).getByRole('menuitem', { name: '值' }));
+  expect(pasteDisclosure).toHaveFocus();
+  fireEvent.click(pasteDisclosure);
+  pasteMenu = screen.getByRole('menu', { name: '粘贴选项' });
+  fireEvent.click(
+    within(pasteMenu).getByRole('menuitem', { name: /选择性粘贴/ }),
+  );
   expect(actions).toEqual([
     'paste',
     'cut',
     'copy',
     'format-painter:once',
     'format-painter:locked',
+    'paste-special:values',
+    'open-paste-special',
   ]);
 });
 
@@ -990,8 +1010,10 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     openFind: () => true,
     openFormatCells: () => true,
     openGoTo: () => true,
+    openPasteSpecial: () => true,
     pasteCells: () => true,
     pasteSelection: () => true,
+    pasteSpecial: () => true,
     recalculateFormula: () => true,
     renameSheet: () => true,
     redo: () => false,
@@ -1034,7 +1056,9 @@ function spreadsheetCommands(
       | 'openFind'
       | 'openFormatCells'
       | 'openGoTo'
+      | 'openPasteSpecial'
       | 'pasteSelection'
+      | 'pasteSpecial'
       | 'setFreezePanes'
       | 'toggleAutoFilter'
     >
@@ -1066,8 +1090,10 @@ function spreadsheetCommands(
     openFind: overrides.openFind ?? (() => true),
     openFormatCells: overrides.openFormatCells ?? (() => true),
     openGoTo: overrides.openGoTo ?? (() => true),
+    openPasteSpecial: overrides.openPasteSpecial ?? (() => true),
     pasteCells: () => true,
     pasteSelection: overrides.pasteSelection ?? (() => true),
+    pasteSpecial: overrides.pasteSpecial ?? (() => true),
     recalculateFormula: () => true,
     renameSheet: () => true,
     redo: () => false,

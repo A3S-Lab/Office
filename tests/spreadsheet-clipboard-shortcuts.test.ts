@@ -1,5 +1,8 @@
 import { expect, test } from '@rstest/core';
-import { runSpreadsheetClipboardShortcut } from '../src/internal/features/work/editors/spreadsheet-clipboard-shortcuts';
+import {
+  runSpreadsheetClipboardShortcut,
+  runSpreadsheetPasteSpecialShortcut,
+} from '../src/internal/features/work/editors/spreadsheet-clipboard-shortcuts';
 
 test('routes grid clipboard shortcuts through the typed command port', () => {
   const calls: string[] = [];
@@ -119,4 +122,35 @@ test('does not consume a shortcut when execution declines it', () => {
     ),
   ).toBe(false);
   expect(copy.defaultPrevented).toBe(false);
+});
+
+test('owns Cmd/Ctrl+Alt+V only for Paste Special on the spreadsheet grid', () => {
+  const special = new KeyboardEvent('keydown', {
+    altKey: true,
+    cancelable: true,
+    ctrlKey: true,
+    key: 'v',
+  });
+  expect(
+    runSpreadsheetPasteSpecialShortcut(
+      special,
+      () => true,
+      () => true,
+    ),
+  ).toBe(true);
+  expect(special.defaultPrevented).toBe(true);
+
+  const ordinaryPaste = new KeyboardEvent('keydown', {
+    cancelable: true,
+    ctrlKey: true,
+    key: 'v',
+  });
+  expect(
+    runSpreadsheetPasteSpecialShortcut(
+      ordinaryPaste,
+      () => true,
+      () => true,
+    ),
+  ).toBe(false);
+  expect(ordinaryPaste.defaultPrevented).toBe(false);
 });

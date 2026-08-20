@@ -1,0 +1,198 @@
+suite "spreadsheet-paste-special" {
+    version = 1
+
+    scenario "paste-rich-content-with-one-step-undo" {
+        name = "Paste rich spreadsheet cells through the WPS Paste Special workflow"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-paste-special-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-paste-special"
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-source-start" {
+            key = "Control+Home"
+        }
+
+        press "extend-source-right" {
+            key = "Shift+ArrowRight"
+        }
+
+        expect "source-range-selected" {
+            text = "A1:B1"
+        }
+
+        click "copy-rich-source" {
+            target = role("button", "复制")
+        }
+
+        press "return-to-start" {
+            key = "Control+Home"
+        }
+
+        press "move-target-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "move-target-row-three" {
+            key = "ArrowDown"
+        }
+
+        press "move-target-column-b" {
+            key = "ArrowRight"
+        }
+
+        press "move-target-column-c" {
+            key = "ArrowRight"
+        }
+
+        expect "target-cell-selected" {
+            text = "C3"
+        }
+
+        press "open-paste-special-shortcut" {
+            key = "Control+Alt+v"
+        }
+
+        expect "paste-special-dialog-visible" {
+            visible = css("[role='dialog'][aria-modal='true'] .work-spreadsheet-paste-special-modes")
+        }
+
+        expect "rich-source-is-available" {
+            text = "A3S 富剪贴板"
+        }
+
+        click "choose-values" {
+            target = css(".work-spreadsheet-paste-special-modes label:has(input[value='values'])")
+        }
+
+        click "choose-add" {
+            target = css(".work-spreadsheet-paste-special-operations label:has(input[value='add'])")
+        }
+
+        click "skip-blank-cells" {
+            target = css(".work-spreadsheet-paste-special-options label:has(input[aria-label='跳过空白单元格'])")
+        }
+
+        screenshot "paste-special-dialog" {
+            path = "screenshots/spreadsheet-paste-special-dialog.png"
+        }
+
+        click "apply-paste-special" {
+            target = css(".work-spreadsheet-paste-special-dialog button[type='submit']")
+        }
+
+        expect "pasted-range-selected" {
+            text = "C3:D3"
+        }
+
+        expect "first-arithmetic-value" {
+            text = "110"
+        }
+
+        wait "grid-focused-after-dialog" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "select-second-result" {
+            key = "ArrowRight"
+        }
+
+        expect "second-arithmetic-value" {
+            text = "220"
+        }
+
+        press "undo-complete-paste" {
+            key = "Control+z"
+        }
+
+        expect "second-value-restored-in-one-step" {
+            text = "200"
+        }
+
+        press "select-first-restored-value" {
+            key = "ArrowLeft"
+        }
+
+        expect "first-value-restored-in-one-step" {
+            text = "100"
+        }
+
+        click "open-paste-split-menu" {
+            target = role("button", "更多粘贴方式")
+        }
+
+        expect "paste-menu-visible" {
+            visible = css("[role='menu'][aria-label='粘贴选项']")
+        }
+
+        expect "paste-menu-first-command-focused" {
+            visible = css("[role='menu'][aria-label='粘贴选项'] [role='menuitem']:first-of-type:focus")
+        }
+
+        press "focus-values-paste" {
+            key = "ArrowDown"
+        }
+
+        press "focus-formulas-paste" {
+            key = "ArrowDown"
+        }
+
+        press "apply-formulas-paste" {
+            key = "Enter"
+        }
+
+        expect "formula-range-selected" {
+            text = "C3:D3"
+        }
+
+        expect "first-formula-result" {
+            text = "10"
+        }
+
+        press "select-translated-formula" {
+            key = "ArrowRight"
+        }
+
+        expect "relative-formula-translated" {
+            text = "=$A3+C$1"
+        }
+
+        press "undo-formula-paste" {
+            key = "Control+z"
+        }
+
+        expect "formula-paste-undone-in-one-step" {
+            text = "200"
+        }
+
+        accessibility "paste-special-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

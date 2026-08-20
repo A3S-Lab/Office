@@ -642,12 +642,22 @@ describe('spreadsheet command controller', () => {
 
     expect(editor.extensionNames).toContain('spreadsheetClipboard');
     expect(editor.can().pasteSelection()).toBe(true);
+    expect(editor.can().pasteSpecial('values')).toBe(true);
+    expect(editor.can().openPasteSpecial()).toBe(true);
     expect(editor.can().cutSelection()).toBe(true);
     expect(editor.can().copySelection()).toBe(true);
     expect(editor.commands.pasteSelection()).toBe(true);
+    expect(editor.commands.pasteSpecial('values')).toBe(true);
+    expect(editor.commands.openPasteSpecial()).toBe(true);
     expect(editor.commands.cutSelection()).toBe(true);
     expect(editor.commands.copySelection()).toBe(true);
-    expect(fixture.clipboard.calls).toEqual(['paste', 'cut', 'copy']);
+    expect(fixture.clipboard.calls).toEqual([
+      'paste',
+      'paste-special:values',
+      'open-paste-special',
+      'cut',
+      'copy',
+    ]);
 
     editor.updateContext({
       ...fixture.context,
@@ -655,16 +665,28 @@ describe('spreadsheet command controller', () => {
         ...fixture.clipboard,
         canCopySelection: false,
         canCutSelection: false,
+        canOpenPasteSpecial: false,
         canPasteSelection: false,
+        canPasteSpecial: () => false,
       },
     });
     expect(editor.can().pasteSelection()).toBe(false);
+    expect(editor.can().pasteSpecial('formats')).toBe(false);
+    expect(editor.can().openPasteSpecial()).toBe(false);
     expect(editor.can().cutSelection()).toBe(false);
     expect(editor.can().copySelection()).toBe(false);
     expect(editor.commands.pasteSelection()).toBe(false);
+    expect(editor.commands.pasteSpecial('formats')).toBe(false);
+    expect(editor.commands.openPasteSpecial()).toBe(false);
     expect(editor.commands.cutSelection()).toBe(false);
     expect(editor.commands.copySelection()).toBe(false);
-    expect(fixture.clipboard.calls).toEqual(['paste', 'cut', 'copy']);
+    expect(fixture.clipboard.calls).toEqual([
+      'paste',
+      'paste-special:values',
+      'open-paste-special',
+      'cut',
+      'copy',
+    ]);
   });
 
   test('owns WPS clipboard shortcuts through the same command port', () => {
@@ -674,6 +696,7 @@ describe('spreadsheet command controller', () => {
       { key: 'c', metaKey: true },
       { ctrlKey: true, key: 'x' },
       { key: 'v', metaKey: true },
+      { altKey: true, ctrlKey: true, key: 'v' },
     ]) {
       const event = new KeyboardEvent('keydown', {
         ...shortcut,
@@ -682,7 +705,12 @@ describe('spreadsheet command controller', () => {
       expect(editor.handleKeyDown(event)).toBe(true);
       expect(event.defaultPrevented).toBe(true);
     }
-    expect(fixture.clipboard.calls).toEqual(['copy', 'cut', 'paste']);
+    expect(fixture.clipboard.calls).toEqual([
+      'copy',
+      'cut',
+      'paste',
+      'open-paste-special',
+    ]);
   });
 
   test('routes the WPS format painter lifecycle through one typed command port', () => {
@@ -1732,7 +1760,9 @@ class RecordingSpreadsheetClipboard implements SpreadsheetClipboardCommandPort {
   calls: string[] = [];
   canCopySelection = true;
   canCutSelection = true;
+  canOpenPasteSpecial = true;
   canPasteSelection = true;
+  canPasteSpecial = () => true;
 
   copySelection(): boolean {
     this.calls.push('copy');
@@ -1744,8 +1774,18 @@ class RecordingSpreadsheetClipboard implements SpreadsheetClipboardCommandPort {
     return true;
   }
 
+  openPasteSpecial(): boolean {
+    this.calls.push('open-paste-special');
+    return true;
+  }
+
   pasteSelection(): boolean {
     this.calls.push('paste');
+    return true;
+  }
+
+  pasteSpecial(content: string): boolean {
+    this.calls.push(`paste-special:${content}`);
     return true;
   }
 }

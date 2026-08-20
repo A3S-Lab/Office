@@ -66,6 +66,16 @@ export const spreadsheetCommandCatalog = {
       editor: ['Mod-v'],
     },
   },
+  pasteSpecial: {
+    id: 'clipboard.pasteSpecial',
+    label: '选择性粘贴',
+    location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Alt+V',
+      aria: 'Control+Alt+V Meta+Alt+V',
+      editor: ['Mod-Alt-v'],
+    },
+  },
   cut: {
     id: 'clipboard.cut',
     label: '剪切',

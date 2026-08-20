@@ -212,7 +212,9 @@ test('returns grid focus after successful ribbon commands only', () => {
     insertSelectedStructure: record('insertSelectedStructure'),
     mergeSelectedCells: record('mergeSelectedCells'),
     openAutoFilterMenu: record('openAutoFilterMenu'),
+    openPasteSpecial: record('openPasteSpecial'),
     pasteSelection: record('pasteSelection'),
+    pasteSpecial: record('pasteSpecial'),
     redo: record('redo'),
     setCellFormat: record('setCellFormat'),
     setFreezePanes: record('setFreezePanes'),
@@ -251,6 +253,8 @@ test('returns grid focus after successful ribbon commands only', () => {
   expect(ribbon.copySelection()).toBe(true);
   expect(ribbon.cutSelection()).toBe(false);
   expect(ribbon.pasteSelection()).toBe(true);
+  expect(ribbon.pasteSpecial('values')).toBe(true);
+  expect(ribbon.openPasteSpecial()).toBe(true);
   expect(ribbon.undo()).toBe(false);
   expect(ribbon.setZoom(125)).toBe(true);
 
@@ -273,10 +277,14 @@ test('returns grid focus after successful ribbon commands only', () => {
     'copySelection:',
     'cutSelection:',
     'pasteSelection:',
+    'pasteSpecial:values',
+    'openPasteSpecial:',
     'undo:',
     'setZoom:125',
   ]);
   expect(focused).toEqual([
+    'grid',
+    'grid',
     'grid',
     'grid',
     'grid',

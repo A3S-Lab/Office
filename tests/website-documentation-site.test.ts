@@ -14,6 +14,7 @@ const documentationRoot = path.resolve(import.meta.dirname, '../docs');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.14.0' ||
     version === '0.13.1' ||
     version === '0.13.0' ||
     version === '0.12.0' ||
@@ -36,6 +37,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.14.0',
     '0.13.1',
     '0.13.0',
     '0.12.0',
@@ -73,6 +75,7 @@ test('keeps every public route available in every language and version', async (
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.14.0',
     '0.13.1',
     '0.13.0',
     '0.12.0',
@@ -125,6 +128,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.14.0',
     '0.13.1',
     '0.13.0',
     '0.12.0',
@@ -156,6 +160,7 @@ test('uses deployable HTML targets in current release homepage actions', async (
 test('publishes real-time collaboration as a bilingual first-class capability', async () => {
   for (const version of [
     'latest',
+    '0.14.0',
     '0.13.1',
     '0.13.0',
     '0.12.0',
@@ -200,6 +205,7 @@ test('publishes real-time collaboration as a bilingual first-class capability', 
 test('publishes the runnable collaboration backend in latest releases', async () => {
   for (const version of [
     'latest',
+    '0.14.0',
     '0.13.1',
     '0.13.0',
     '0.12.0',
@@ -241,6 +247,7 @@ test('publishes the runnable collaboration backend in latest releases', async ()
 test('documents ephemeral native agent presence in current releases', async () => {
   for (const version of [
     'latest',
+    '0.14.0',
     '0.13.1',
     '0.13.0',
     '0.12.0',
@@ -272,6 +279,7 @@ test('documents ephemeral native agent presence in current releases', async () =
 test('documents durable Document comments in current releases', async () => {
   for (const version of [
     'latest',
+    '0.14.0',
     '0.13.1',
     '0.13.0',
     '0.12.0',
@@ -313,6 +321,7 @@ test('documents durable Document comments in current releases', async () => {
 test('documents attributed Document suggestions and native typed mutations', async () => {
   for (const version of [
     'latest',
+    '0.14.0',
     '0.13.1',
     '0.13.0',
     '0.12.0',
@@ -352,6 +361,7 @@ test('documents attributed Document suggestions and native typed mutations', asy
 test('documents collaborative character-formatting revisions', async () => {
   for (const version of [
     'latest',
+    '0.14.0',
     '0.13.1',
     '0.13.0',
     '0.12.0',
@@ -381,7 +391,14 @@ test('documents collaborative character-formatting revisions', async () => {
 });
 
 test('documents collaborative paragraph-formatting revisions', async () => {
-  for (const version of ['latest', '0.13.1', '0.13.0', '0.12.0', '0.11.0']) {
+  for (const version of [
+    'latest',
+    '0.14.0',
+    '0.13.1',
+    '0.13.0',
+    '0.12.0',
+    '0.11.0',
+  ]) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [document, collaboration, server, architecture, roadmap] =
@@ -422,6 +439,7 @@ test('documents collaborative paragraph-formatting revisions', async () => {
 test('documents atomic native Spreadsheet cell batches', async () => {
   for (const version of [
     'latest',
+    '0.14.0',
     '0.13.1',
     '0.13.0',
     '0.12.0',
@@ -448,7 +466,7 @@ test('documents atomic native Spreadsheet cell batches', async () => {
 });
 
 test('documents maximum sparse spreadsheets and cancellable imports in 0.12.0', async () => {
-  for (const version of ['latest', '0.13.1', '0.13.0', '0.12.0']) {
+  for (const version of ['latest', '0.14.0', '0.13.1', '0.13.0', '0.12.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [guide, spreadsheet] = await Promise.all([
@@ -472,7 +490,7 @@ test('documents maximum sparse spreadsheets and cancellable imports in 0.12.0', 
 });
 
 test('documents WPS four-direction cell fill in 0.13.0', async () => {
-  for (const version of ['latest', '0.13.1', '0.13.0']) {
+  for (const version of ['latest', '0.14.0', '0.13.1', '0.13.0']) {
     const spreadsheet = await readFile(
       path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
       'utf8',
@@ -493,7 +511,7 @@ test('documents WPS four-direction cell fill in 0.13.0', async () => {
 });
 
 test('documents WPS number formats and cell styles in 0.13.1', async () => {
-  for (const version of ['latest', '0.13.1']) {
+  for (const version of ['latest', '0.14.0', '0.13.1']) {
     const spreadsheet = await readFile(
       path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
       'utf8',
@@ -512,8 +530,30 @@ test('documents WPS number formats and cell styles in 0.13.1', async () => {
   }
 });
 
+test('documents WPS Paste Special and its bounded rich clipboard in 0.14.0', async () => {
+  for (const version of ['latest', '0.14.0']) {
+    const spreadsheet = await readFile(
+      path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
+      'utf8',
+    );
+
+    for (const evidence of [
+      'Paste Special and the rich clipboard',
+      'Cmd/Ctrl+Alt+V',
+      'All except borders',
+      'Values and number formats',
+      'Column widths',
+      '50,000 destination cells',
+      'one Undo record',
+      'spreadsheet-paste-special.acl',
+    ]) {
+      expect(spreadsheet).toContain(evidence);
+    }
+  }
+});
+
 test('publishes reproducible 100k Document performance evidence', async () => {
-  for (const version of ['latest', '0.13.1', '0.13.0']) {
+  for (const version of ['latest', '0.14.0', '0.13.1', '0.13.0']) {
     const [document, architecture] = await Promise.all([
       readFile(
         path.join(documentationRoot, version, 'en/components/document.mdx'),

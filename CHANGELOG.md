@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.14.0 - 2026-08-21
+
+- Added WPS-style Spreadsheet Paste Special with a split Paste command,
+  `Cmd/Ctrl+Alt+V`, ten content modes, four arithmetic operations, Skip
+  blanks, and Transpose. Same-editor copies retain formulas, native styles,
+  comments, validation, protection, hyperlinks, borders, merges, and column
+  widths; external tabular text remains a bounded TSV fallback. Formula
+  references translate at the destination, one paste creates one controlled
+  update and Undo record, and unsafe merge, pivot, protection, bounds,
+  unsupported-formula, and divide-by-zero cases fail before mutation.
 - Replaced Spreadsheet's standalone Home Find action with a keyboard-accessible
   WPS Find and Select menu. Find retains `Cmd/Ctrl+F`; Go To adds `Ctrl+G` and
   `F5` for bounded direct, quoted cross-sheet, and named ranges while keeping

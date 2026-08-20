@@ -86,6 +86,7 @@ import {
   SpreadsheetNumberRibbonGroup,
 } from './spreadsheet-home-format-ribbon';
 import { spreadsheetPrintSettingCount } from './spreadsheet-print-settings-panel';
+import type { SpreadsheetPasteContent } from './spreadsheet-paste-special';
 import type { SpreadsheetWorkbookPanelView } from './spreadsheet-workbook-panel';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import {
@@ -189,17 +190,7 @@ export function SpreadsheetEditorRibbon({
         home: (
           <>
             <WorkOfficeRibbonGroup label="剪贴板" priority="high">
-              <WorkOfficeRibbonButton
-                label={spreadsheetCommandCatalog.paste.label}
-                title={`${spreadsheetCommandCatalog.paste.label}（${spreadsheetCommandCatalog.paste.shortcut.label}）`}
-                aria-keyshortcuts={
-                  spreadsheetCommandCatalog.paste.shortcut.aria
-                }
-                disabled={!can.pasteSelection()}
-                onClick={commands.pasteSelection}
-              >
-                <ClipboardPaste size={19} />
-              </WorkOfficeRibbonButton>
+              <SpreadsheetPasteMenu can={can} commands={commands} />
               <WorkOfficeRibbonButton
                 label={spreadsheetCommandCatalog.cut.label}
                 title={`${spreadsheetCommandCatalog.cut.label}（${spreadsheetCommandCatalog.cut.shortcut.label}）`}
@@ -577,6 +568,130 @@ function SpreadsheetFindAndSelectMenu({
             </span>
             <span>{spreadsheetCommandCatalog.goTo.label}</span>
             <kbd>{spreadsheetCommandCatalog.goTo.shortcut.label}</kbd>
+          </button>
+        </>
+      )}
+    </Popover>
+  );
+}
+
+function SpreadsheetPasteMenu({
+  can,
+  commands,
+}: {
+  can: SpreadsheetEditorCanCommands;
+  commands: SpreadsheetEditorCommands;
+}) {
+  const items: readonly {
+    content: SpreadsheetPasteContent;
+    id: string;
+    label: string;
+    icon: ReactNode;
+  }[] = [
+    {
+      content: 'all',
+      id: `${spreadsheetCommandCatalog.paste.id}.all`,
+      label: '全部',
+      icon: <ClipboardPaste size={16} />,
+    },
+    {
+      content: 'values',
+      id: `${spreadsheetCommandCatalog.paste.id}.values`,
+      label: '值',
+      icon: <Hash size={16} />,
+    },
+    {
+      content: 'formulas',
+      id: `${spreadsheetCommandCatalog.paste.id}.formulas`,
+      label: '公式',
+      icon: <Sigma size={16} />,
+    },
+    {
+      content: 'formats',
+      id: `${spreadsheetCommandCatalog.paste.id}.formats`,
+      label: '格式',
+      icon: <Paintbrush size={16} />,
+    },
+  ];
+  const primaryDisabled = !can.pasteSelection();
+  const menuDisabled =
+    !can.openPasteSpecial() &&
+    items.every(({ content }) => !can.pasteSpecial(content));
+
+  return (
+    <Popover
+      label="更多粘贴方式"
+      panelLabel="粘贴选项"
+      panelRole="menu"
+      portal
+      className="work-spreadsheet-ribbon-split-root"
+      panelClassName="work-office-context-menu work-spreadsheet-ribbon-menu work-spreadsheet-paste-menu"
+      disabled={menuDisabled}
+      focusFirstOnOpen
+      onPanelKeyDown={moveOfficeMenuFocus}
+      trigger={(triggerProps, { open }) => (
+        <>
+          <button
+            type="button"
+            className="with-label work-spreadsheet-ribbon-split-primary"
+            aria-label={spreadsheetCommandCatalog.paste.label}
+            aria-keyshortcuts={spreadsheetCommandCatalog.paste.shortcut.aria}
+            title={`${spreadsheetCommandCatalog.paste.label}（${spreadsheetCommandCatalog.paste.shortcut.label}）`}
+            disabled={primaryDisabled}
+            onClick={commands.pasteSelection}
+          >
+            <ClipboardPaste size={19} />
+            <span>{spreadsheetCommandCatalog.paste.label}</span>
+          </button>
+          <button
+            {...triggerProps}
+            className={`work-spreadsheet-ribbon-split-disclosure${open ? ' active' : ''}`}
+            title="更多粘贴方式"
+          >
+            <ChevronDown size={13} aria-hidden="true" />
+          </button>
+        </>
+      )}
+    >
+      {(close) => (
+        <>
+          {items.map(({ content, id, label, icon }) => (
+            <button
+              key={id}
+              type="button"
+              role="menuitem"
+              tabIndex={-1}
+              disabled={!can.pasteSpecial(content)}
+              onClick={() => {
+                close();
+                commands.pasteSpecial(content);
+              }}
+            >
+              <span className="work-spreadsheet-ribbon-menu-item-icon">
+                {icon}
+              </span>
+              <span>{label}</span>
+            </button>
+          ))}
+          <hr className="work-spreadsheet-ribbon-menu-separator" />
+          <button
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            aria-keyshortcuts={
+              spreadsheetCommandCatalog.pasteSpecial.shortcut.aria
+            }
+            disabled={!can.openPasteSpecial()}
+            onClick={() => {
+              close();
+              commands.openPasteSpecial();
+            }}
+          >
+            <span className="work-spreadsheet-ribbon-menu-item-icon">
+              <TableProperties size={16} />
+            </span>
+            <span>{spreadsheetCommandCatalog.pasteSpecial.label}…</span>
+            <kbd>{spreadsheetCommandCatalog.pasteSpecial.shortcut.label}</kbd>
           </button>
         </>
       )}

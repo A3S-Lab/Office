@@ -31,7 +31,10 @@ import {
   type SpreadsheetCellMergeCommand,
   spreadsheetCellMergeApiCalls,
 } from './spreadsheet-cell-merge';
-import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
+import {
+  runSpreadsheetClipboardShortcut,
+  runSpreadsheetPasteSpecialShortcut,
+} from './spreadsheet-clipboard-shortcuts';
 import {
   finiteSpreadsheetSelection,
   isSpreadsheetNativeTextUndoTarget,
@@ -55,6 +58,7 @@ import {
   spreadsheetSelectionContainsFocus,
 } from './spreadsheet-keyboard-navigation';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
+import type { SpreadsheetPasteContent } from './spreadsheet-paste-special';
 import {
   type SpreadsheetNumberFormatChoice,
   spreadsheetNumberFormatCode,
@@ -169,10 +173,14 @@ export interface SpreadsheetHistoryCommandPort {
 export interface SpreadsheetClipboardCommandPort {
   canCopySelection: boolean;
   canCutSelection: boolean;
+  canOpenPasteSpecial: boolean;
   canPasteSelection: boolean;
+  canPasteSpecial: (content: SpreadsheetPasteContent) => boolean;
   copySelection: () => boolean;
   cutSelection: () => boolean;
+  openPasteSpecial: () => boolean;
   pasteSelection: () => boolean;
+  pasteSpecial: (content: SpreadsheetPasteContent) => boolean;
 }
 
 export interface SpreadsheetAutoFilterCommandPort {
@@ -253,8 +261,10 @@ export interface SpreadsheetEditorCommands {
   openFind: () => boolean;
   openFormatCells: () => boolean;
   openGoTo: () => boolean;
+  openPasteSpecial: () => boolean;
   pasteCells: (values: readonly (readonly unknown[])[]) => boolean;
   pasteSelection: () => boolean;
+  pasteSpecial: (content: SpreadsheetPasteContent) => boolean;
   recalculateFormula: (scope: 'selection' | 'workbook') => boolean;
   renameSheet: (sheetId: string, name: string) => boolean;
   redo: () => boolean;
@@ -397,6 +407,18 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
           canExecute: ({ clipboard }) => clipboard.canPasteSelection,
           execute: ({ clipboard }) =>
             clipboard.canPasteSelection && clipboard.pasteSelection(),
+        },
+        pasteSpecial: {
+          canExecute: ({ clipboard }, content) =>
+            clipboard.canPasteSpecial(content),
+          execute: ({ clipboard }, content) =>
+            clipboard.canPasteSpecial(content) &&
+            clipboard.pasteSpecial(content),
+        },
+        openPasteSpecial: {
+          canExecute: ({ clipboard }) => clipboard.canOpenPasteSpecial,
+          execute: ({ clipboard }) =>
+            clipboard.canOpenPasteSpecial && clipboard.openPasteSpecial(),
         },
       }),
     }),
@@ -586,6 +608,15 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             event,
             can.pasteSelection,
             commands.pasteSelection,
+          ),
+        [spreadsheetCommandCatalog.pasteSpecial.shortcut.editor[0]]: (
+          { can, commands },
+          event,
+        ) =>
+          runSpreadsheetPasteSpecialShortcut(
+            event,
+            can.openPasteSpecial,
+            commands.openPasteSpecial,
           ),
         'Mod-x': ({ can, commands }, event) =>
           runSpreadsheetClipboardShortcut(

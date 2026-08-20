@@ -22,6 +22,7 @@
 @import "./work-spreadsheet.css";
 @import "./work-spreadsheet-chrome.css";
 @import "./work-spreadsheet-format-cells.css";
+@import "./work-spreadsheet-paste-special.css";
 @import "./work-spreadsheet-charts.css";
 @import "./work-spreadsheet-formulas.css";
 @import "./work-spreadsheet-pivots.css";

@@ -529,7 +529,12 @@ interaction model.
   a priority-aware adaptive and collapsible ribbon with temporary tab
   expansion, an executable Home clipboard group whose Paste, Cut, and Copy
   commands share the permission-resilient local fallback with their WPS
-  shortcuts, a WPS-style Format Painter with single-use and double-click locked
+  shortcuts, a WPS-style Paste split command with quick All, Values, Formulas,
+  and Formatting actions plus `Cmd/Ctrl+Alt+V` Paste Special for ten content
+  modes, arithmetic operations, Skip blanks, Transpose, translated formula
+  references, rich same-editor styles/comments/validation/merges/column widths,
+  bounded TSV fallback, one-step Undo, and fail-closed protected or unsafe
+  targets, a WPS-style Format Painter with single-use and double-click locked
   sessions, cross-sheet range-pattern tiling, Escape cancellation, and native
   style-only writes, a Home and Font cell-border split control with side, all,
   outside, inside, horizontal, vertical, clear, and diagonal targets, ten
@@ -1479,6 +1484,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.14.0 documentation](https://a3s-lab.github.io/Office/docs/0.14.0/)
 - [A3S Office 0.13.1 documentation](https://a3s-lab.github.io/Office/docs/0.13.1/)
 - [A3S Office 0.13.0 documentation](https://a3s-lab.github.io/Office/docs/0.13.0/)
 - [A3S Office 0.12.0 documentation](https://a3s-lab.github.io/Office/docs/0.12.0/)

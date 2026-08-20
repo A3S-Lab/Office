@@ -119,10 +119,14 @@ function navigationFixture(): {
       clipboard: {
         canCopySelection: false,
         canCutSelection: false,
+        canOpenPasteSpecial: false,
         canPasteSelection: false,
+        canPasteSpecial: () => false,
         copySelection: () => false,
         cutSelection: () => false,
+        openPasteSpecial: () => false,
         pasteSelection: () => false,
+        pasteSpecial: () => false,
       },
       content: {
         type: 'spreadsheet',

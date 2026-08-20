@@ -1,5 +1,4 @@
 import { expect, test } from '@rstest/core';
-import { waitFor } from '@testing-library/react';
 import {
   parseSpreadsheetClipboardText,
   readSpreadsheetClipboardText,
@@ -21,6 +20,7 @@ test('parses tabular clipboard text without adding a trailing empty row', () => 
 test('falls back when the system clipboard is blocked or does not settle', async () => {
   const localWrites: string[] = [];
   const systemReads: string[] = [];
+  const systemWriteResults: boolean[] = [];
 
   await expect(
     readSpreadsheetClipboardText(
@@ -46,33 +46,54 @@ test('falls back when the system clipboard is blocked or does not settle', async
       () => new Promise<void>(() => undefined),
       (value) => localWrites.push(value),
       1,
+      (succeeded) => systemWriteResults.push(succeeded),
     ),
   ).resolves.toBeUndefined();
   expect(localWrites).toEqual(['A3S\tOffice']);
   expect(systemReads).toEqual([]);
+  expect(systemWriteResults).toEqual([false]);
+
+  await expect(
+    writeSpreadsheetClipboardText(
+      'A3S\tOffice',
+      async () => undefined,
+      () => undefined,
+      10,
+      (succeeded) => systemWriteResults.push(succeeded),
+    ),
+  ).resolves.toBeUndefined();
+  expect(systemWriteResults).toEqual([false, true]);
 });
 
-test('puts standard spreadsheet editing actions before optional AI actions', async () => {
+test('puts standard spreadsheet editing actions before optional AI actions', () => {
   const calls: string[] = [];
-  const clipboard = {
-    readText: async () => '项目\t金额\n研发\t120',
-    writeText: async (value: string) => {
-      calls.push(`copy:${value}`);
-    },
-  };
   const items = spreadsheetCoreContextMenuItems({
     can: {
       clearSelectedCells: () => true,
-      pasteCells: () => true,
+      copySelection: () => true,
+      cutSelection: () => true,
+      openPasteSpecial: () => true,
+      pasteSelection: () => true,
     },
-    clipboard,
     commands: {
       clearSelectedCells: () => {
         calls.push('clear');
         return true;
       },
-      pasteCells: (values) => {
-        calls.push(`paste:${JSON.stringify(values)}`);
+      copySelection: () => {
+        calls.push('copy');
+        return true;
+      },
+      cutSelection: () => {
+        calls.push('cut');
+        return true;
+      },
+      openPasteSpecial: () => {
+        calls.push('paste-special');
+        return true;
+      },
+      pasteSelection: () => {
+        calls.push('paste');
         return true;
       },
     },
@@ -86,35 +107,16 @@ test('puts standard spreadsheet editing actions before optional AI actions', asy
     '剪切',
     '复制',
     '粘贴',
+    '选择性粘贴…',
     '清除内容',
   ]);
 
   items[1].onSelect();
-  await waitFor(() => expect(calls).toEqual(['copy:A3S\tOffice']));
-
   items[0].onSelect();
-  await waitFor(() =>
-    expect(calls).toEqual(['copy:A3S\tOffice', 'copy:A3S\tOffice', 'clear']),
-  );
-
   items[2].onSelect();
-  await waitFor(() =>
-    expect(calls).toEqual([
-      'copy:A3S\tOffice',
-      'copy:A3S\tOffice',
-      'clear',
-      'paste:[["项目","金额"],["研发","120"]]',
-    ]),
-  );
-
   items[3].onSelect();
-  expect(calls).toEqual([
-    'copy:A3S\tOffice',
-    'copy:A3S\tOffice',
-    'clear',
-    'paste:[["项目","金额"],["研发","120"]]',
-    'clear',
-  ]);
+  items[4].onSelect();
+  expect(calls).toEqual(['copy', 'cut', 'paste', 'paste-special', 'clear']);
 });
 
 test('uses one A3S command model for row and column header menus', () => {

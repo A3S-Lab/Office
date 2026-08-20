@@ -1,0 +1,229 @@
+.work-spreadsheet-paste-special-dialog {
+  --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
+
+  width: min(660px, 100%);
+}
+
+.work-spreadsheet-paste-special-dialog > .ds-dialog-body {
+  padding-top: 0;
+}
+
+.work-spreadsheet-paste-special-source {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 15px;
+  padding: 0 11px;
+  border-radius: 7px;
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 7%,
+    var(--a3s-panel-soft)
+  );
+  color: var(--a3s-muted);
+  font-size: 11px;
+}
+
+.work-spreadsheet-paste-special-source strong {
+  color: var(--a3s-ink);
+  font-weight: 650;
+}
+
+.work-spreadsheet-paste-special-dialog form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(170px, 0.75fr);
+  align-items: start;
+  gap: 18px 22px;
+}
+
+.work-spreadsheet-paste-special-dialog fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-spreadsheet-paste-special-dialog legend {
+  width: 100%;
+  margin-bottom: 8px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-paste-special-modes {
+  grid-row: span 2;
+}
+
+.work-spreadsheet-paste-special-modes > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.work-spreadsheet-paste-special-modes label {
+  position: relative;
+  display: grid;
+  min-height: 37px;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  color: var(--a3s-ink);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.work-spreadsheet-paste-special-modes label:hover {
+  background: var(--a3s-panel-soft);
+}
+
+.work-spreadsheet-paste-special-modes label.selected {
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 10%,
+    var(--a3s-panel)
+  );
+}
+
+.work-spreadsheet-paste-special-modes label:has(input:focus-visible),
+.work-spreadsheet-paste-special-operations label:has(input:focus-visible) {
+  outline: 2px solid
+    color-mix(in srgb, var(--work-spreadsheet-accent, #159469) 32%, transparent);
+  outline-offset: 1px;
+}
+
+.work-spreadsheet-paste-special-modes label:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.work-spreadsheet-paste-special-modes input,
+.work-spreadsheet-paste-special-operations input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.work-spreadsheet-paste-special-modes label > span[aria-hidden="true"] {
+  box-sizing: border-box;
+  display: grid;
+  width: 14px;
+  height: 14px;
+  place-items: center;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 50%;
+  background: var(--a3s-panel);
+}
+
+.work-spreadsheet-paste-special-modes
+  label.selected
+  > span[aria-hidden="true"] {
+  border: 4px solid var(--work-spreadsheet-accent, #159469);
+}
+
+.work-spreadsheet-paste-special-modes small {
+  grid-column: 2;
+  margin-top: -2px;
+  color: var(--a3s-muted);
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.work-spreadsheet-paste-special-operations > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.work-spreadsheet-paste-special-operations label {
+  position: relative;
+  display: grid;
+  min-height: 30px;
+  place-items: center;
+  border: 1px solid var(--a3s-line);
+  border-radius: 6px;
+  background: var(--a3s-panel);
+  color: var(--a3s-muted);
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.work-spreadsheet-paste-special-operations label:first-child {
+  grid-column: 1 / -1;
+}
+
+.work-spreadsheet-paste-special-operations label:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 42%,
+    var(--a3s-line)
+  );
+}
+
+.work-spreadsheet-paste-special-operations label.selected {
+  border-color: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 58%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 9%,
+    var(--a3s-panel)
+  );
+  color: var(--a3s-ink);
+  font-weight: 650;
+}
+
+.work-spreadsheet-paste-special-operations label:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.work-spreadsheet-paste-special-options {
+  display: grid;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.work-spreadsheet-paste-special-options .work-office-checkbox {
+  min-height: 28px;
+}
+
+.work-spreadsheet-paste-special-error {
+  grid-column: 1 / -1;
+  margin: -4px 0 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--a3s-red) 8%, var(--a3s-panel));
+  color: color-mix(in srgb, var(--a3s-red) 88%, var(--a3s-ink));
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+@media (max-width: 620px) {
+  .work-spreadsheet-paste-special-dialog form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .work-spreadsheet-paste-special-modes {
+    grid-row: auto;
+  }
+
+  .work-spreadsheet-paste-special-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .work-spreadsheet-paste-special-modes > div,
+  .work-spreadsheet-paste-special-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

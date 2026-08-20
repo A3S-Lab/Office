@@ -135,6 +135,18 @@ direct and named cross-sheet ranges, validation, exact focus restoration, and
 the view-only contract that leaves content and Undo unchanged. It is local-only
 and is not referenced by a GitHub Actions workflow.
 
+The WPS Spreadsheet Paste Special workflow has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-paste-special:check
+bun run test:e2e:spreadsheet-paste-special
+```
+
+It covers the rich same-editor clipboard, the Paste split menu,
+`Cmd/Ctrl+Alt+V`, content and arithmetic choices, formula translation, exact
+grid-focus restoration, and one-step Undo. The suite runs only through the
+local A3S Test release gate and is not referenced by GitHub Actions.
+
 The WPS built-in Cell Styles gallery has a focused local gate:
 
 ```bash
