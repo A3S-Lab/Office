@@ -1,0 +1,113 @@
+---
+title: SpreadsheetEditor
+description: 工作簿内容、计算内核配置、事件与宿主扩展接口。
+---
+
+# SpreadsheetEditor
+
+`SpreadsheetEditor` 是受控工作簿组件，提供工作表、公式、图表、条件格式、数据透视表
+与打印布局模型。
+
+## 属性
+
+| 属性 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `content` | `SpreadsheetContent` | 是 | — | 受控工作簿内容。 |
+| `onChange` | `(content: SpreadsheetContent) => void` | 是 | — | 返回完整的新工作簿。 |
+| `collaboration` | `OfficeCollaborationSession` | 否 | 无 | 以已初始化的 Yjs Spreadsheet 作为规范值。 |
+| `presence` | `OfficeCollaborationPresence` | 否 | 无 | 发布区域、显示原生远端单元格位置并支持成员跳转；必须与 `collaboration` 使用同一会话。 |
+| `preview` | `boolean` | 否 | `false` | 只读工作簿。 |
+| `saveStatus` | `string` | 否 | `'Saved automatically'` | 由宿主管理的保存状态。 |
+| `fileActions` | `readonly OfficeFileAction[]` | 否 | `[]` | 保存、导出、历史记录与审批等操作。 |
+| `kernelWasmUrl` | `string` | 否 | 内置内核 | 公式与工作簿计算内核地址。 |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | 否 | — | 把当前单元格或区域发送给宿主 AI 流程。 |
+| `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
+
+## 内容结构
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `type` | `'spreadsheet'` | 内容类型标识。 |
+| `sheets` | `WorkSpreadsheetSheet[]` | 工作表、单元格、公式、样式、图片、图表与数据透视表。 |
+| `calculation` | `WorkSpreadsheetCalculationSettings` | 计算模式、迭代、精度与加载行为。 |
+| `namedRanges` | `WorkSpreadsheetNamedRange[]` | 工作簿级与工作表级名称。 |
+| `printAreas`, `printTitles` | 表格打印字段 | 打印区域与重复打印的行、列。 |
+| `pageBreaks`, `pageSetups` | 表格页面字段 | 分页符、纸张、方向、缩放、边距、页眉与页脚。 |
+
+## 稀疏工作表与虚拟编辑
+
+`row` 和 `column` 表示工作表的逻辑尺寸。`data` 可以是稀疏 JavaScript 矩阵，其
+`length` 达到逻辑尺寸，但只有已填充的行与单元格索引是数组自身属性。工作表也可以使用
+Fortune Sheet 的稀疏 `celldata` 投影。不要使用 `Array.from`、遍历完整区域的嵌套循环，
+或会把数组空位展开的 JSON 序列化把它转换成密集矩阵。
+
+编辑器只渲染和搜索已经物化的单元格，同时保留完整滚动范围。滚动到任意位置，包括工作表
+最大行或最大列，都不会触发 `onChange`。在虚拟空白行输入时，只会物化该行和被编辑的
+单元格，不会分配已有数据与新坐标之间的所有行。公式依赖扫描、选区统计、条件格式与宿主
+投影也遵循同一稀疏约定。
+
+支持的 XLSX 上限为 1,048,576 行、16,384 列（`XFD`）。导入会保留工作表逻辑尺寸，
+但不会分配每个空白单元格；导出只写入逻辑尺寸与已填充单元格，因此最大尺寸的稀疏工作表
+也可以完成 XLSX 往返，而不会变成密集矩阵。
+
+## 紧凑的数据验证、保护与条件格式
+
+大范围数据验证保存在 `sheet.dataValidationRanges` 中，区域使用从零开始、包含端点的
+紧凑坐标：
+
+```ts
+const sheet = {
+  row: 1_048_576,
+  column: 16_384,
+  dataValidationRanges: [
+    {
+      ranges: [
+        { row: [0, 1_048_575], column: [0, 16_383] },
+      ],
+      item: {
+        type: 'dropdown',
+        type2: '',
+        rangeTxt: 'A1:XFD1048576',
+        value1: 'Ready,Blocked',
+        value2: '',
+        validity: '',
+        remote: false,
+        prohibitInput: true,
+        hintShow: true,
+        hintValue: 'Choose a workflow state.',
+      },
+    },
+  ],
+};
+```
+
+较小且经过编辑的区域也可能出现在 Fortune Sheet 的直接 `dataVerification` 映射中。
+精确匹配某个单元格的直接规则优先于覆盖该单元格的紧凑区域。通过编辑器创建或删除验证
+规则时，会更新紧凑区域，并避免展开超过 10,000 个单元格。
+
+工作表保护仍保存在 `config.authority`。大范围锁定或解锁区域存入
+`cellProtectionRanges`，无密码可编辑区域则紧凑地保存在 `allowRangeList`；只有已经物化的
+单元格才会写入直接保护标记。条件格式继续使用
+`luckysheet_conditionformat_save[].cellrange` 紧凑区域，并且只计算已填充单元格。导入与
+导出会把这些区域保留为原生 XLSX `sqref`、工作表保护和条件格式记录。
+
+工作簿 Extension 上下文目前还不是稳定公共 API。宿主流程应使用 `fileActions`，
+结构化 AI 操作应使用 `onAgentRequest`；不要从包的内部路径导入命令运行时模块。
+
+## 协作与原生单元格修改
+
+通过 `collaboration` 传入已初始化的 Spreadsheet
+`OfficeCollaborationSession` 后，字段级寻址的 Yjs 模型成为规范值。浏览器绑定按稳定 ID
+管理工作表和已填充单元格，投影远端修改，并把撤销限制在当前挂载客户端自己的事务。
+`presence` 必须绑定同一个会话，用于发布区域并显示远端单元格选择。
+
+Rust、CLI、标准 MCP 与 A3S Code 使用 `spreadsheet-set-cell` 创建或递归修改一个从零
+开始的坐标，使用 `spreadsheet-delete-cell` 删除完整精确匹配的单元格。
+一次粘贴、填充或其他多单元格手势应使用 `spreadsheet-batch-cells`，它接受同一工作表内
+1 至 4096 个不同坐标。每一项都必须提供 `nextCell`；只有 `nextCell: null` 才表示带完整
+保护的精确删除。
+`expectedCell: null` 只用于创建已经确认为空的坐标；其他修改会递归比较观察值，因此
+不同叶子的并发修改可以合并，同一叶子的过期修改会在写入前失败。密集工作表保留矩阵
+投影，稀疏工作表和首次写入的空工作表继续使用 `celldata`。批次中的所有保护先基于
+同一份共享快照检查，再在一个 Yjs 事务中提交完整结果；任一冲突都不会留下部分单元格、
+Presence、尺寸或持久日志修改。

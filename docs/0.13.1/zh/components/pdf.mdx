@@ -1,0 +1,77 @@
+---
+title: PdfViewer
+description: PDF 数据加载、PDFium 资源、批注与保存接口。
+---
+
+# PdfViewer
+
+`PdfViewer` 按需加载 PDF，通过 PDFium WebAssembly 渲染页面，并提供导航、搜索、
+批注、历史记录和保存能力。
+
+PDF 与其他编辑器不同，不使用受控内容对象。宿主通过明确的输入、输出接口提供并保存
+完整 `Blob`。可选的 Yjs 会话只同步类型化批注与表单覆盖层，不会把 PDF 源文件放进
+共享文档。
+
+## 属性
+
+| 属性 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `collaboration` | `OfficeCollaborationSession` | 否 | — | 已初始化的 PDF Yjs 会话；不可变源文件身份必须与 `loadSource` 一致。 |
+| `presence` | `OfficeCollaborationPresence` | 否 | 无 | 发布页码与批注位置并显示远端成员；必须属于同一个 `collaboration` 会话。 |
+| `onCollaborationChange` | `(content: PdfCollaborationContent) => void` | 否 | — | 接收本地和远端协作快照；持久化时应保存 Yjs 更新，而不是覆盖快照。 |
+| `loadSource` | `() => Promise<Blob>` | 是 | — | 读取 PDF，不要求文件系统权限。 |
+| `onSave` | `(pdf: Blob) => Promise<boolean>` | 否 | — | 保存编辑后的 PDF；返回 `true` 表示成功。 |
+| `fileName` | `string` | 否 | `'document.pdf'` | 文件标识与下载名称。 |
+| `saveLabel` | `string` | 否 | `'Save'` | 保存按钮文字。 |
+| `sourceKey` | `string` | 否 | — | 数据版本标识；变化后会释放并重新加载数据。 |
+| `wasmUrl` | `string` | 否 | 内置 `pdfium.wasm` | PDFium WebAssembly 地址。 |
+| `worker` | `boolean` | 否 | `true` | 在 Web Worker 中运行 PDFium；宿主 CSP 无法允许 Blob Worker 时可设为 `false`。 |
+| `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
+
+```tsx
+import { PdfViewer } from '@a3s-lab/office/react';
+
+export function PdfPage({ file }: { file: File }) {
+  return (
+    <PdfViewer
+      fileName={file.name}
+      sourceKey={`${file.name}:${file.lastModified}`}
+      loadSource={() => Promise.resolve(file)}
+      onSave={async (pdf) => {
+        await uploadPdf(pdf);
+        return true;
+      }}
+    />
+  );
+}
+```
+
+使用 `loadSource` 接入对象存储、IndexedDB 或本地文件句柄。宿主通过 `onSave`
+管理权限、进度、版本与失败处理。PDFium 和批注控制器内部实现不是公共扩展接口。
+
+## 实时协作
+
+宿主完成初次同步后再创建 `kind: 'pdf'` 会话，并把同一份不可变源文件交给
+`PdfViewer`。查看器会校验 SHA-256、字节数和页数，读取源批注与表单值，然后双向投影
+共享覆盖层。删除批注会写入不可逆 tombstone；远端更新不会进入本地撤销历史。
+
+当前支持 FreeText、Highlight、Underline、StrikeOut 与 Ink。Stamp、签名等依赖
+二进制上下文的类型会在宿主提供认证资源接口前明确失败。Rust API、`collab mutate`、
+标准 MCP 与 A3S Code 可以写入相同的表单值、批注、脱敏提议、页面操作提议和最终审核
+决定。原生 Highlight 使用 EmbedPDF 的 `rect.origin`、`rect.size` 与
+`segmentRects` 结构，因此标准 Yjs 更新可以直接投影到查看器。Rust、CLI/MCP、浏览器
+互操作与 `a3s-test` Playground 回归共同覆盖创建、更新、删除、乱序投递和重启恢复。
+
+当前页、缩放、搜索、选择、渲染位图、缓存和源文件字节都不进入协作模型。宿主仍负责
+传输授权，以及把合并结果保存并重新打开验证。
+
+## 页面导航
+
+桌面端左侧提供可滚动缩略图列表，并与页码输入框、PDF 视口保持同步。窄屏下同一列表
+变为可关闭抽屉，入口位于工具栏的页码控件内，不会覆盖文档内容。长文档只渲染有限的
+缩略图窗口，页面越多也不会线性增加界面成本。
+
+每个缩略图都是可聚焦按钮。`ArrowUp`、`ArrowDown` 前后翻页，`Home`、`End`
+跳到首尾。目标超出当前虚拟窗口时，挂载完成后仍会同步 `aria-current` 与 DOM 焦点。
+多个翻页请求重叠时，查看器会按顺序处理，并保留最后一次目标页请求；宿主无需协调焦点
+或页码状态。

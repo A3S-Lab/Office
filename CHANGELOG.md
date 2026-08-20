@@ -4,13 +4,23 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.13.1 - 2026-08-20
+
+- Added explicit WPS Spreadsheet presets for General, Number, CNY Currency,
+  Accounting, Percentage, Short Date, Time, Scientific, Fraction, and Text,
+  plus the seven standard `Cmd/Ctrl+Shift` formatting shortcuts. Each command
+  preserves values and formulas, creates one Undo entry, and retains its exact
+  XLSX number-format code.
 - Added 17 grouped WPS built-in Spreadsheet cell styles with native previews,
   two-dimensional keyboard navigation, current-style recognition, bounded
   blank-cell application, per-cell border semantics, and one-step Undo. Direct
   XLSX font, fill, alignment, wrapping, rotation, border, and number-format XF
   state now round-trips, including RGB normalization for theme, indexed, and
-  tint colors. The existing common number-format presets and seven WPS/Excel
-  formatting shortcuts remain on the same native style and history path.
+  tint colors.
+- Expanded focused unit, component, desktop, compact, accessibility, XLSX, and
+  local ACL coverage. A3S Test remains a local release gate; GitHub CI and
+  Pages continue to use Rstest and Playwright without installing or invoking
+  A3S Test.
 
 ## 0.13.0 - 2026-08-20
 

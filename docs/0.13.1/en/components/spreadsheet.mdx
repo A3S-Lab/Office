@@ -1,0 +1,233 @@
+---
+title: SpreadsheetEditor
+description: Spreadsheet content, calculation-kernel configuration, events, and host extension points.
+---
+
+# SpreadsheetEditor
+
+`SpreadsheetEditor` is a controlled workbook surface with worksheet, formula,
+chart, conditional-format, pivot, and print-layout models.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `content` | `SpreadsheetContent` | Yes | — | Controlled workbook content. |
+| `onChange` | `(content: SpreadsheetContent) => void` | Yes | — | Emits the complete next workbook. |
+| `collaboration` | `OfficeCollaborationSession` | No | none | Uses an initialized Yjs Spreadsheet as the canonical value. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Publishes ranges, projects native remote cell presence and roster navigation; requires the exact `collaboration` session. |
+| `preview` | `boolean` | No | `false` | Read-only workbook rendering. |
+| `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |
+| `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host save, export, history, and approval actions. |
+| `kernelWasmUrl` | `string` | No | packaged kernel | Formula and workbook-kernel resource URL. |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | No | — | Sends the active cell or range to the host AI flow. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+## Content contract
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `type` | `'spreadsheet'` | Content discriminator. |
+| `sheets` | `WorkSpreadsheetSheet[]` | Worksheets, cells, formulas, styles, images, charts, and pivots. |
+| `calculation` | `WorkSpreadsheetCalculationSettings` | Calculation mode, iteration, precision, and load behavior. |
+| `namedRanges` | `WorkSpreadsheetNamedRange[]` | Workbook- and worksheet-scoped names. |
+| `printAreas`, `printTitles` | spreadsheet print fields | Print areas and repeated rows or columns. |
+| `pageBreaks`, `pageSetups` | spreadsheet page fields | Breaks, paper, orientation, scale, margins, headers, and footers. |
+
+## Sparse worksheets and virtual editing
+
+`row` and `column` describe the logical worksheet dimensions. `data` may be a
+sparse JavaScript matrix whose `length` reaches those dimensions while only
+populated row and cell indexes exist as own properties. A worksheet may also
+use Fortune Sheet's sparse `celldata` projection. Do not densify either form
+with `Array.from`, nested full-range loops, or JSON serialization that expands
+array holes.
+
+The editor renders and searches only materialized cells while retaining the
+full scroll range. Scrolling, including navigation to the maximum worksheet
+row or column, does not emit `onChange`. Typing into a virtual blank row
+materializes that row and the edited cell only; it does not allocate the rows
+between the previous data and the new coordinate. Formula dependency scans,
+selection summaries, conditional formatting, and host-side projections follow
+the same sparse contract.
+
+The supported XLSX limits are 1,048,576 rows and 16,384 columns (`XFD`). Import
+uses the worksheet dimension without allocating every blank cell. XLSX export
+writes the logical dimension and populated cells only, so a maximum-size sparse
+worksheet can round-trip without becoming a dense matrix.
+
+## Compact validation, protection, and formatting
+
+Large data-validation regions live in `sheet.dataValidationRanges` as compact,
+zero-based inclusive ranges:
+
+```ts
+const sheet = {
+  row: 1_048_576,
+  column: 16_384,
+  dataValidationRanges: [
+    {
+      ranges: [
+        { row: [0, 1_048_575], column: [0, 16_383] },
+      ],
+      item: {
+        type: 'dropdown',
+        type2: '',
+        rangeTxt: 'A1:XFD1048576',
+        value1: 'Ready,Blocked',
+        value2: '',
+        validity: '',
+        remote: false,
+        prohibitInput: true,
+        hintShow: true,
+        hintValue: 'Choose a workflow state.',
+      },
+    },
+  ],
+};
+```
+
+Small edited ranges can also appear in Fortune Sheet's direct
+`dataVerification` map. An exact direct cell entry takes precedence over a
+matching compact range. Creating or deleting a validation through the editor
+updates compact ranges without expanding more than 10,000 cells.
+
+Worksheet protection remains under `config.authority`. Large locked or
+unlocked regions are kept in `cellProtectionRanges`, and passwordless editable
+ranges remain compact in `allowRangeList`; only populated cells receive direct
+cell protection flags. Conditional-format rules continue to use compact
+`luckysheet_conditionformat_save[].cellrange` regions and evaluate populated
+cells only. Import and export preserve these compact ranges in native XLSX
+`sqref`, protection, and conditional-format records.
+
+The public workbook extension context is not yet stable. Use `fileActions` for
+host workflows and `onAgentRequest` for structured AI actions. Do not import
+command runtime modules from internal package paths.
+
+## Built-in cell styles
+
+Home and Styles exposes 17 WPS-familiar built-in choices. The gallery renders
+the actual font, foreground, fill, and emphasis for every choice instead of a
+generic swatch. It uses semantic groups and `menuitemradio` state; Home and End
+move to the first or last choice, Left and Right move between adjacent choices,
+and Up and Down follow the three-column desktop or two-column compact layout.
+
+| Group | Styles |
+| --- | --- |
+| Common | Normal, Good, Bad, Neutral |
+| Data and Model | Calculation, Check Cell, Explanatory Text, Input, Linked Cell, Note, Output, Warning Text |
+| Titles and Totals | Heading 1, Heading 2, Heading 3, Heading 4, Total |
+
+One command accepts at most 10,000 cells. It materializes only the selected
+blank cells and writes Fortune Sheet's native `bg`, `fc`, `ff`, `fs`, `bl`,
+`it`, `un`, and `cl` properties. Values, formulas, number formats, alignment,
+wrapping, comments, links, and merge geometry remain unchanged. Styles that
+include a rule or total border write the corresponding edge to every cell, as
+required by XLSX Cell XF semantics, rather than drawing only the outside of the
+selection. The complete selection emits one controlled `onChange` and one Undo
+record.
+
+The ribbon derives the current choice from the focused cell's native format
+and resolved borders. There is no parallel style ID or private marker, so Clear
+Formats, Format Painter, direct formatting, collaboration, and imported cells
+continue to share one workbook model. A partially edited appearance is shown
+as Custom rather than being mislabeled as a built-in choice.
+
+XLSX import and export retain direct font family, size, color, bold, italic,
+underline, strikethrough, solid fill, horizontal and vertical alignment,
+wrapping, rotation, four side borders, diagonal borders, and the original
+number-format XF. RGB, theme, indexed, automatic, and valid tint colors resolve
+to stable browser RGB values. Style-only blank cells are retained as sparse
+materialized cells; unrelated empty worksheet space remains unallocated.
+
+## Cell borders
+
+Home and Font exposes a split border control for top, bottom, left, right, no,
+all, outside, inside, horizontal, vertical, and diagonal borders. The dialog
+keeps the chosen target, exact color, and one of ten native line styles for the
+next primary-button command. Successful commands close the dialog, return
+focus to the workbook grid, emit one controlled `onChange`, and create one
+undoable workbook operation.
+
+Non-diagonal borders remain compact native range records. Reapplying a border
+subtracts the edited rectangle from overlapping records before adding the new
+record, so repeated formatting does not accumulate stale duplicate ranges.
+Unknown or malformed vendor records are preserved. Diagonal borders require a
+native record per cell and therefore accept at most 4,096 selected cells per
+command. Clear Formats and Clear All remove the selected border ranges without
+changing merge geometry.
+
+## Four-direction cell fill
+
+Home and Editing exposes Fill Down, Fill Right, Fill Up, and Fill Left in one
+keyboard-operated menu. Down and Up copy the selected range's top or bottom
+row; Right and Left copy its left or right column. Fortune Sheet retains its
+native relative-formula translation, number-series behavior, and complete cell
+style copying. `Cmd/Ctrl+D` runs Fill Down and `Cmd/Ctrl+R` runs Fill Right
+inside the focused grid, so the latter never becomes a browser refresh.
+
+A fill requires exactly one range on the active editable worksheet. It rejects
+merged intersections, pivot sheets, read-only rows or columns, protected cells,
+and commands with more than 50,000 target cells before mutation. A successful
+fill creates one workbook history entry and restores grid focus, so one Undo or
+Redo covers the complete target range.
+
+Fortune's native fill API assumes every selected row array exists even when the
+worksheet uses a sparse matrix. The A3S adapter therefore materializes only
+missing row arrays inside the selected range immediately before the native
+call; it does not allocate empty cells or rows outside that range. If the native
+call throws, the adapter restores the original array holes, length, and absent
+`data` property before returning a recoverable failure.
+
+## Common number formats
+
+Home and Number exposes the common WPS format set as native Fortune cell-format
+codes. Applying a preset changes only `cell.ct.fa` and `cell.ct.t`; it does not
+rewrite `v`, `f`, comments, links, or merge geometry. One selection-level intent
+creates one controlled workbook update and one Undo record.
+
+| Preset | Native format code | Fortune type | Shortcut |
+| --- | --- | --- | --- |
+| General | `General` | `n` for numbers, otherwise `g` or `b` | `Cmd/Ctrl+Shift+~` |
+| Number | `#,##0.00` | `n` | `Cmd/Ctrl+Shift+!` |
+| CNY Currency | `[$¥-804]#,##0.00` | `n` | `Cmd/Ctrl+Shift+$` |
+| Accounting | CNY accounting alignment and negative-parenthesis sections | `n` | — |
+| Percentage | `0.00%` | `n` | `Cmd/Ctrl+Shift+%` |
+| Short Date | `yyyy-MM-dd` | `d` | `Cmd/Ctrl+Shift+#` |
+| Time | `hh:mm` | `d` | `Cmd/Ctrl+Shift+@` |
+| Scientific | `0.00E+00` | `n` | `Cmd/Ctrl+Shift+^` |
+| Fraction | `# ?/?` | `n` | — |
+| Text | `@` | `s` | — |
+
+The Currency and Percentage buttons execute the same typed command as the
+picker and shortcuts. Increase Decimal and Decrease Decimal retain grouping,
+currency, accounting, percentage, and scientific sections while ignoring date,
+time, fraction, text, and unrecognized custom formats. Export and reopen tests
+verify the exact format codes across XLSX. The built-in currency choice is CNY
+because the current Spreadsheet chrome is `zh-CN`; host-selected currencies,
+locale-specific dates, combined date-time presets, and arbitrary custom-format
+authoring remain future compatibility work. Imported unmodeled codes stay
+visible as Custom and are not silently replaced.
+
+## Collaboration and native cell mutations
+
+Pass an initialized Spreadsheet `OfficeCollaborationSession` through
+`collaboration` to make its field-addressed Yjs model canonical. The browser
+binding keeps sheets and populated cells ID-addressed, projects remote changes,
+and limits undo to the mounted client's own transactions. Pair `presence` with
+the exact same session to publish ranges and show remote cell selections.
+
+Rust, CLI, standard MCP, and A3S Code use `spreadsheet-set-cell` to create or
+recursively patch one zero-based coordinate and `spreadsheet-delete-cell` to
+delete one exact complete cell. Use `spreadsheet-batch-cells` for one bounded
+paste, fill, or other gesture containing 1 to 4,096 distinct coordinates in
+one sheet. Every change must include `nextCell`; `nextCell: null` is an exact
+guarded deletion. `expectedCell: null` is the creation guard;
+otherwise the observed cell is compared recursively so unrelated concurrent
+leaves merge while stale same-leaf changes fail closed. Dense worksheets keep
+their matrix projection, while sparse and initially empty worksheets remain
+`celldata`. Batch guards are all evaluated against one shared snapshot and the
+complete result commits in one Yjs transaction, so one conflict produces no
+partial cell, presence, dimension, or durable-log change. See
+[Real-time collaboration](./collaboration.mdx) for the JSON contracts and
+lifecycle rules.
