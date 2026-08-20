@@ -547,6 +547,10 @@ interaction model.
   relative-formula and style propagation, WPS `Cmd/Ctrl+D` and `Cmd/Ctrl+R`
   shortcuts, one-step history, protected-range preflight, a 50,000-target-cell
   guard, and sparse-row-safe execution,
+  Home and Number presets for General, Number, CNY Currency, Accounting,
+  Percentage, Short Date, Time, Scientific, Fraction, and Text, including the
+  seven standard `Cmd/Ctrl+Shift` format shortcuts, exact XLSX format-code
+  round trips, value/formula preservation, and one-step history,
   a View and Window Freeze Panes menu for current-cell, top-row, first-column,
   and unfreeze patterns with XLSX round trips, and visible F9 workbook
   recalculation,
@@ -557,7 +561,7 @@ interaction model.
   keyboard-operated cells and sheet tabs, direct type-to-edit,
   permission-resilient multi-cell cut/copy/paste, clear, F2 editing, and
   focus-safe Escape behavior, direct
-  font-family, vertical-alignment, text-wrap, number/percent, and decimal
+  font-family, vertical-alignment, text-wrap, number-format, and decimal
   controls, charts, validation, protection, comments, and print settings.
   _XLSX, XLS, ODS, and CSV import; XLSX and PDF export._
 - **Presentation** — Typed slide scene graph, multi-selection, groups, object

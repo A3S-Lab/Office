@@ -143,6 +143,36 @@ call; it does not allocate empty cells or rows outside that range. If the native
 call throws, the adapter restores the original array holes, length, and absent
 `data` property before returning a recoverable failure.
 
+## Common number formats
+
+Home and Number exposes the common WPS format set as native Fortune cell-format
+codes. Applying a preset changes only `cell.ct.fa` and `cell.ct.t`; it does not
+rewrite `v`, `f`, comments, links, or merge geometry. One selection-level intent
+creates one controlled workbook update and one Undo record.
+
+| Preset | Native format code | Fortune type | Shortcut |
+| --- | --- | --- | --- |
+| General | `General` | `n` for numbers, otherwise `g` or `b` | `Cmd/Ctrl+Shift+~` |
+| Number | `#,##0.00` | `n` | `Cmd/Ctrl+Shift+!` |
+| CNY Currency | `[$¥-804]#,##0.00` | `n` | `Cmd/Ctrl+Shift+$` |
+| Accounting | CNY accounting alignment and negative-parenthesis sections | `n` | — |
+| Percentage | `0.00%` | `n` | `Cmd/Ctrl+Shift+%` |
+| Short Date | `yyyy-MM-dd` | `d` | `Cmd/Ctrl+Shift+#` |
+| Time | `hh:mm` | `d` | `Cmd/Ctrl+Shift+@` |
+| Scientific | `0.00E+00` | `n` | `Cmd/Ctrl+Shift+^` |
+| Fraction | `# ?/?` | `n` | — |
+| Text | `@` | `s` | — |
+
+The Currency and Percentage buttons execute the same typed command as the
+picker and shortcuts. Increase Decimal and Decrease Decimal retain grouping,
+currency, accounting, percentage, and scientific sections while ignoring date,
+time, fraction, text, and unrecognized custom formats. Export and reopen tests
+verify the exact format codes across XLSX. The built-in currency choice is CNY
+because the current Spreadsheet chrome is `zh-CN`; host-selected currencies,
+locale-specific dates, combined date-time presets, and arbitrary custom-format
+authoring remain future compatibility work. Imported unmodeled codes stay
+visible as Custom and are not silently replaced.
+
 ## Collaboration and native cell mutations
 
 Pass an initialized Spreadsheet `OfficeCollaborationSession` through

@@ -98,6 +98,16 @@ target cells. The adapter materializes only missing row arrays inside that
 range before calling Fortune and restores the original sparse shape if the
 native command fails. A successful fill remains one undoable operation and
 returns focus to the workbook grid.
+The thirteenth milestone completes the common WPS number-format path under Home
+and Number. General, Number, CNY Currency, Accounting, Percentage, Short Date,
+Time, Scientific, Fraction, and Text are explicit native presets instead of
+collapsing into Custom. The format picker, direct Currency and Percentage
+buttons, and the seven standard `Cmd/Ctrl+Shift` formatting shortcuts share one
+typed `ct` command. Each intent updates only the selected cells' format code and
+Fortune value type, preserves values and formulas, creates one undo record, and
+round-trips its exact XLSX format code. Imported combined date-time and other
+unmodeled codes remain visible as disabled Custom state rather than being
+silently rewritten.
 
 ## Product Rules
 

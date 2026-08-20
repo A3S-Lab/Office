@@ -804,14 +804,30 @@ directions, formula and bold-style propagation, one-step Undo and Redo, and
 `Ctrl+R` browser-refresh ownership. A schema-validated A3S Test ACL remains a
 local release gate; GitHub Actions neither installs nor runs A3S Test.
 
+The thirteenth slice completes the common WPS number-format path under Home and
+Number. General, Number, CNY Currency, Accounting, Percentage, Short Date,
+Time, Scientific, Fraction, and Text now map to explicit Fortune `ct` codes and
+types instead of presenting date, time, currency, scientific, fraction, and
+text cells as an undifferentiated Custom state. The grouped picker exposes all
+presets, direct Currency and Percentage buttons advertise their shortcuts, and
+`Cmd/Ctrl+Shift+~`, `!`, `$`, `%`, `#`, `@`, and `^` share the same typed
+selection command. Each action preserves values and formulas, produces one
+native controlled update and one Undo record, and retains its exact format code
+through XLSX export and reopen. Decimal adjustment skips date, time, fraction,
+text, and unknown custom codes and no longer edits digits inside locale tags.
+Focused parser, catalog, controller, component, XLSX, desktop, and compact
+Playwright coverage protects the complete path. A3S Test remains a local-only
+release gate and is absent from GitHub Actions.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,
   advanced sorting and filter predicates, validation, charts, pivots, and print
   layout.
 - Keep lightweight selection statistics responsive for dense and sparse sheets.
-- Keep common number and percent presets plus decimal-place commands available
-  from the primary ribbon while the native format engine expands.
+- Expand the native format engine from the common preset set into host-selected
+  currencies, locale-aware dates, custom conditional sections, and explicit
+  unsupported-format diagnostics without rewriting imported codes.
 - Keep font family, vertical alignment, and text wrapping available from the
   primary ribbon and backed by the native workbook cell-style model.
 - Keep worksheet lifecycle actions in the shared Office interaction system:

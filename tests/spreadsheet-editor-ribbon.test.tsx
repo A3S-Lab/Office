@@ -78,13 +78,38 @@ test('routes number-format controls through typed spreadsheet commands', () => {
   const formatSelect = screen.getByRole('combobox', { name: '数字格式' });
   expect(formatSelect).toHaveTextContent('百分比');
   fireEvent.click(formatSelect);
+  expect(screen.getAllByRole('option')).toHaveLength(11);
+  expect(screen.getByRole('option', { name: '货币' })).toHaveTextContent(
+    'Cmd/Ctrl+Shift+$',
+  );
+  expect(screen.getByRole('option', { name: '短日期' })).toHaveTextContent(
+    'Cmd/Ctrl+Shift+#',
+  );
   fireEvent.click(screen.getByRole('option', { name: '数字' }));
-  fireEvent.click(screen.getByRole('button', { name: '百分比格式' }));
+  fireEvent.click(formatSelect);
+  fireEvent.click(screen.getByRole('option', { name: '短日期' }));
+  fireEvent.click(formatSelect);
+  fireEvent.click(screen.getByRole('option', { name: '文本' }));
+  const currency = screen.getByRole('button', { name: '货币格式' });
+  expect(currency).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+$ Meta+Shift+$',
+  );
+  fireEvent.click(currency);
+  const percent = screen.getByRole('button', { name: '百分比格式' });
+  expect(percent).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+% Meta+Shift+%',
+  );
+  fireEvent.click(percent);
   fireEvent.click(screen.getByRole('button', { name: '减少小数位' }));
   fireEvent.click(screen.getByRole('button', { name: '增加小数位' }));
 
   expect(formats).toEqual([
     { attribute: 'ct', value: { fa: '#,##0.00', t: 'n' } },
+    { attribute: 'ct', value: { fa: 'yyyy-MM-dd', t: 'd' } },
+    { attribute: 'ct', value: { fa: '@', t: 's' } },
+    { attribute: 'ct', value: { fa: '[$¥-804]#,##0.00', t: 'n' } },
     { attribute: 'ct', value: { fa: '0.00%', t: 'n' } },
     { attribute: 'ct', value: { fa: '0%', t: 'n' } },
     { attribute: 'ct', value: { fa: '0.00%', t: 'n' } },

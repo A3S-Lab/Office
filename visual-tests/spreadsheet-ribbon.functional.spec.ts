@@ -59,6 +59,94 @@ test('Spreadsheet follows the WPS ribbon information architecture', async ({
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet applies common WPS number formats without changing cell values', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const formulaBar = page.locator('.fortune-fx-input');
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  const numberGroup = ribbon.getByRole('region', { name: '数字' });
+  const formatSelect = numberGroup.getByRole('combobox', {
+    name: '数字格式',
+  });
+  const currency = numberGroup.getByRole('button', { name: '货币格式' });
+  const percent = numberGroup.getByRole('button', { name: '百分比格式' });
+
+  await grid.focus();
+  await page.keyboard.press('Control+Home');
+  for (let index = 0; index < 3; index += 1) {
+    await page.keyboard.press('ArrowDown');
+  }
+  for (let index = 0; index < 2; index += 1) {
+    await page.keyboard.press('ArrowRight');
+  }
+  await expect(nameBox).toHaveText('C4');
+  await expect(formulaBar).toHaveText('100%');
+  await expect(formatSelect).toContainText('百分比');
+  await expect(currency).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+$ Meta+Shift+$',
+  );
+  await expect(percent).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+% Meta+Shift+%',
+  );
+
+  await formatSelect.click();
+  const formatList = page.getByRole('listbox', { name: '数字格式' });
+  await expect(formatList).toBeVisible();
+  await expect(formatList.getByRole('option')).toHaveCount(11);
+  await page.keyboard.press('End');
+  await expect(formatList.getByRole('option', { name: '文本' })).toBeFocused();
+  await page.keyboard.press('Home');
+  await expect(formatList.getByRole('option', { name: '常规' })).toBeFocused();
+  const listBounds = await formatList.boundingBox();
+  const viewport = page.viewportSize();
+  expect(listBounds).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect((listBounds?.x ?? 0) + (listBounds?.width ?? 0)).toBeLessThanOrEqual(
+    viewport?.width ?? 0,
+  );
+  expect((listBounds?.y ?? 0) + (listBounds?.height ?? 0)).toBeLessThanOrEqual(
+    viewport?.height ?? 0,
+  );
+  await page.screenshot({
+    path: testInfo.outputPath('spreadsheet-number-formats.png'),
+    animations: 'disabled',
+  });
+  await formatList.getByRole('option', { name: '货币' }).click();
+  await expect(formatSelect).toContainText('货币');
+  await expect(formulaBar).toHaveText('1');
+  await expect(grid).toBeFocused();
+
+  for (const shortcut of [
+    { key: 'Control+Shift+Backquote', label: '常规' },
+    { key: 'Control+Shift+Digit1', label: '数字' },
+    { key: 'Control+Shift+Digit4', label: '货币' },
+    { key: 'Control+Shift+Digit5', label: '百分比' },
+    { key: 'Control+Shift+Digit3', label: '短日期' },
+    { key: 'Control+Shift+Digit2', label: '时间' },
+    { key: 'Control+Shift+Digit6', label: '科学计数' },
+  ]) {
+    await page.keyboard.press(shortcut.key);
+    await expect(formatSelect).toContainText(shortcut.label);
+    await expect(grid).toBeFocused();
+  }
+
+  await page.keyboard.press('Control+z');
+  await expect(formatSelect).toContainText('时间');
+  await page.keyboard.press('Control+Shift+Backquote');
+  await expect(formatSelect).toContainText('常规');
+  await expect(formulaBar).toHaveText('1');
+  await expect(grid).toBeFocused();
+  expect(browserErrors).toEqual([]);
+});
+
 test('Spreadsheet runs clipboard commands from the WPS Home group', async ({
   page,
 }) => {

@@ -1,3 +1,5 @@
+import { spreadsheetNumberFormatPresetLabels } from './spreadsheet-number-format';
+
 export const spreadsheetRibbonTabs = [
   { id: 'home', label: '开始' },
   { id: 'insert', label: '插入' },
@@ -128,6 +130,91 @@ export const spreadsheetCommandCatalog = {
       aria: 'Control+5 Meta+5',
       editor: ['Mod-5'],
     },
+  },
+  numberFormatGeneral: {
+    id: 'number.general',
+    label: spreadsheetNumberFormatPresetLabels.general,
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+~',
+      aria: 'Control+Shift+~ Meta+Shift+~',
+      editor: ['Mod-Shift-~'],
+    },
+  },
+  numberFormatNumber: {
+    id: 'number.number',
+    label: spreadsheetNumberFormatPresetLabels.number,
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+!',
+      aria: 'Control+Shift+! Meta+Shift+!',
+      editor: ['Mod-Shift-!'],
+    },
+  },
+  numberFormatCurrency: {
+    id: 'number.currency',
+    label: spreadsheetNumberFormatPresetLabels.currency,
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+$',
+      aria: 'Control+Shift+$ Meta+Shift+$',
+      editor: ['Mod-Shift-$'],
+    },
+  },
+  numberFormatAccounting: {
+    id: 'number.accounting',
+    label: spreadsheetNumberFormatPresetLabels.accounting,
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+  },
+  numberFormatPercent: {
+    id: 'number.percent',
+    label: spreadsheetNumberFormatPresetLabels.percent,
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+%',
+      aria: 'Control+Shift+% Meta+Shift+%',
+      editor: ['Mod-Shift-%'],
+    },
+  },
+  numberFormatDate: {
+    id: 'number.date',
+    label: spreadsheetNumberFormatPresetLabels.date,
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+#',
+      aria: 'Control+Shift+# Meta+Shift+#',
+      editor: ['Mod-Shift-#'],
+    },
+  },
+  numberFormatTime: {
+    id: 'number.time',
+    label: spreadsheetNumberFormatPresetLabels.time,
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+@',
+      aria: 'Control+Shift+@ Meta+Shift+@',
+      editor: ['Mod-Shift-@'],
+    },
+  },
+  numberFormatScientific: {
+    id: 'number.scientific',
+    label: spreadsheetNumberFormatPresetLabels.scientific,
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+^',
+      aria: 'Control+Shift+^ Meta+Shift+^',
+      editor: ['Mod-Shift-^'],
+    },
+  },
+  numberFormatFraction: {
+    id: 'number.fraction',
+    label: spreadsheetNumberFormatPresetLabels.fraction,
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+  },
+  numberFormatText: {
+    id: 'number.text',
+    label: spreadsheetNumberFormatPresetLabels.text,
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
   },
   borderTop: {
     id: 'font.borderTop',

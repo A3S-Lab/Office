@@ -46,6 +46,12 @@ import {
   scopeSpreadsheetKeyboardSelection,
   spreadsheetSelectionContainsFocus,
 } from './spreadsheet-keyboard-navigation';
+import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
+import {
+  type SpreadsheetNumberFormatChoice,
+  spreadsheetNumberFormatCode,
+  spreadsheetNumberFormatValue,
+} from './spreadsheet-number-format';
 import {
   activateSpreadsheetSheet,
   addSpreadsheetSheet,
@@ -555,6 +561,83 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             can.setCellFormat,
             commands.setCellFormat,
             'cl',
+          ),
+        [spreadsheetCommandCatalog.numberFormatGeneral.shortcut.editor[0]]: (
+          { can, commands, context },
+          event,
+        ) =>
+          runSpreadsheetNumberFormatShortcut(
+            event,
+            context,
+            can.setCellFormat,
+            commands.setCellFormat,
+            'general',
+          ),
+        [spreadsheetCommandCatalog.numberFormatNumber.shortcut.editor[0]]: (
+          { can, commands, context },
+          event,
+        ) =>
+          runSpreadsheetNumberFormatShortcut(
+            event,
+            context,
+            can.setCellFormat,
+            commands.setCellFormat,
+            'number',
+          ),
+        [spreadsheetCommandCatalog.numberFormatCurrency.shortcut.editor[0]]: (
+          { can, commands, context },
+          event,
+        ) =>
+          runSpreadsheetNumberFormatShortcut(
+            event,
+            context,
+            can.setCellFormat,
+            commands.setCellFormat,
+            'currency',
+          ),
+        [spreadsheetCommandCatalog.numberFormatPercent.shortcut.editor[0]]: (
+          { can, commands, context },
+          event,
+        ) =>
+          runSpreadsheetNumberFormatShortcut(
+            event,
+            context,
+            can.setCellFormat,
+            commands.setCellFormat,
+            'percent',
+          ),
+        [spreadsheetCommandCatalog.numberFormatDate.shortcut.editor[0]]: (
+          { can, commands, context },
+          event,
+        ) =>
+          runSpreadsheetNumberFormatShortcut(
+            event,
+            context,
+            can.setCellFormat,
+            commands.setCellFormat,
+            'date',
+          ),
+        [spreadsheetCommandCatalog.numberFormatTime.shortcut.editor[0]]: (
+          { can, commands, context },
+          event,
+        ) =>
+          runSpreadsheetNumberFormatShortcut(
+            event,
+            context,
+            can.setCellFormat,
+            commands.setCellFormat,
+            'time',
+          ),
+        [spreadsheetCommandCatalog.numberFormatScientific.shortcut.editor[0]]: (
+          { can, commands, context },
+          event,
+        ) =>
+          runSpreadsheetNumberFormatShortcut(
+            event,
+            context,
+            can.setCellFormat,
+            commands.setCellFormat,
+            'scientific',
           ),
         'Mod-z': ({ can, commands }, event) =>
           runSpreadsheetHistoryShortcut(event, can.undo, commands.undo),
@@ -1516,6 +1599,27 @@ function runSpreadsheetCellFormatShortcut(
   }
   const value = Number(context.toolbarCell?.[attribute]) === 1 ? 0 : 1;
   return canExecute(attribute, value) && execute(attribute, value);
+}
+
+function runSpreadsheetNumberFormatShortcut(
+  event: KeyboardEvent,
+  context: SpreadsheetCommandContext,
+  canExecute: SpreadsheetEditorCanCommands['setCellFormat'],
+  execute: SpreadsheetEditorCommands['setCellFormat'],
+  preset: SpreadsheetNumberFormatChoice,
+): boolean {
+  if (
+    event.repeat ||
+    isOfficeShortcutBlocked(event.target) ||
+    isSpreadsheetNativeTextUndoTarget(event.target)
+  ) {
+    return false;
+  }
+  const value = spreadsheetNumberFormatValue(
+    spreadsheetNumberFormatCode(preset),
+    context.toolbarCell,
+  );
+  return canExecute('ct', value) && execute('ct', value);
 }
 
 function runSpreadsheetMergeShortcut(

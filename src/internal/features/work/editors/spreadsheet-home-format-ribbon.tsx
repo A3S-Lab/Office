@@ -1,5 +1,6 @@
 import type { Cell } from '@fortune-sheet/core';
 import {
+  BadgeJapaneseYen,
   Bold,
   DecimalsArrowLeft,
   DecimalsArrowRight,
@@ -10,7 +11,11 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { SpreadsheetBorderRibbon } from './spreadsheet-border-ribbon';
-import { OfficeColorPicker, OfficeSelect } from './office-controls';
+import {
+  OfficeColorPicker,
+  OfficeSelect,
+  type OfficeSelectOption,
+} from './office-controls';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
   SpreadsheetEditorCanCommands,
@@ -25,6 +30,7 @@ import {
   type SpreadsheetNumberFormatPreset,
   spreadsheetNumberFormatCode,
   spreadsheetNumberFormatPreset,
+  spreadsheetNumberFormatPresetLabels,
   spreadsheetNumberFormatValue,
 } from './spreadsheet-number-format';
 import {
@@ -32,16 +38,72 @@ import {
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
 
-const spreadsheetNumberFormatOptions: readonly {
-  value: SpreadsheetNumberFormatPreset;
-  label: string;
-  disabled?: boolean;
-}[] = [
-  { value: 'general', label: '常规' },
-  { value: 'number', label: '数字' },
-  { value: 'percent', label: '百分比' },
-  { value: 'custom', label: '自定义', disabled: true },
-];
+const spreadsheetNumberFormatOptions: readonly OfficeSelectOption<SpreadsheetNumberFormatPreset>[] =
+  [
+    {
+      value: 'general',
+      label: spreadsheetCommandCatalog.numberFormatGeneral.label,
+      group: '常用',
+      meta: spreadsheetCommandCatalog.numberFormatGeneral.shortcut.label,
+    },
+    {
+      value: 'number',
+      label: spreadsheetCommandCatalog.numberFormatNumber.label,
+      group: '常用',
+      meta: spreadsheetCommandCatalog.numberFormatNumber.shortcut.label,
+    },
+    {
+      value: 'currency',
+      label: spreadsheetCommandCatalog.numberFormatCurrency.label,
+      group: '常用',
+      meta: spreadsheetCommandCatalog.numberFormatCurrency.shortcut.label,
+    },
+    {
+      value: 'accounting',
+      label: spreadsheetCommandCatalog.numberFormatAccounting.label,
+      group: '常用',
+    },
+    {
+      value: 'percent',
+      label: spreadsheetCommandCatalog.numberFormatPercent.label,
+      group: '常用',
+      meta: spreadsheetCommandCatalog.numberFormatPercent.shortcut.label,
+    },
+    {
+      value: 'date',
+      label: spreadsheetCommandCatalog.numberFormatDate.label,
+      group: '日期与时间',
+      meta: spreadsheetCommandCatalog.numberFormatDate.shortcut.label,
+    },
+    {
+      value: 'time',
+      label: spreadsheetCommandCatalog.numberFormatTime.label,
+      group: '日期与时间',
+      meta: spreadsheetCommandCatalog.numberFormatTime.shortcut.label,
+    },
+    {
+      value: 'scientific',
+      label: spreadsheetCommandCatalog.numberFormatScientific.label,
+      group: '其他',
+      meta: spreadsheetCommandCatalog.numberFormatScientific.shortcut.label,
+    },
+    {
+      value: 'fraction',
+      label: spreadsheetCommandCatalog.numberFormatFraction.label,
+      group: '其他',
+    },
+    {
+      value: 'text',
+      label: spreadsheetCommandCatalog.numberFormatText.label,
+      group: '其他',
+    },
+    {
+      value: 'custom',
+      label: spreadsheetNumberFormatPresetLabels.custom,
+      group: '其他',
+      disabled: true,
+    },
+  ];
 
 interface SpreadsheetHomeFormatRibbonProps {
   can: SpreadsheetEditorCanCommands;
@@ -159,6 +221,8 @@ export function SpreadsheetNumberRibbonGroup({
     increasedNumberFormat,
     toolbarCell,
   );
+  const currencyDefinition = spreadsheetCommandCatalog.numberFormatCurrency;
+  const percentDefinition = spreadsheetCommandCatalog.numberFormatPercent;
 
   return (
     <WorkOfficeRibbonGroup label="数字" priority="high">
@@ -180,8 +244,36 @@ export function SpreadsheetNumberRibbonGroup({
         }}
       />
       <WorkOfficeRibbonButton
-        label="百分比格式"
-        title="百分比格式"
+        label={`${currencyDefinition.label}格式`}
+        title={`${currencyDefinition.label}格式（${currencyDefinition.shortcut.label}）`}
+        aria-keyshortcuts={currencyDefinition.shortcut.aria}
+        displayLabel={false}
+        active={numberFormatPreset === 'currency'}
+        disabled={
+          !can.setCellFormat(
+            'ct',
+            spreadsheetNumberFormatValue(
+              spreadsheetNumberFormatCode('currency'),
+              toolbarCell,
+            ),
+          )
+        }
+        onClick={() =>
+          commands.setCellFormat(
+            'ct',
+            spreadsheetNumberFormatValue(
+              spreadsheetNumberFormatCode('currency'),
+              toolbarCell,
+            ),
+          )
+        }
+      >
+        <BadgeJapaneseYen size={15} />
+      </WorkOfficeRibbonButton>
+      <WorkOfficeRibbonButton
+        label={`${percentDefinition.label}格式`}
+        title={`${percentDefinition.label}格式（${percentDefinition.shortcut.label}）`}
+        aria-keyshortcuts={percentDefinition.shortcut.aria}
         displayLabel={false}
         active={numberFormatPreset === 'percent'}
         disabled={

@@ -69,6 +69,85 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('owns the common WPS number-format shortcuts', () => {
+    const fixture = commandFixture();
+    fixture.context.toolbarCell = { v: 45_292.5 };
+    const editor = spreadsheetEditor(fixture.context);
+    const shortcuts = [
+      { code: 'Backquote', key: '~' },
+      { code: 'Digit1', key: '!' },
+      { code: 'Digit4', key: '$' },
+      { code: 'Digit5', key: '%' },
+      { code: 'Digit3', key: '#' },
+      { code: 'Digit2', key: '@' },
+      { code: 'Digit6', key: '^' },
+    ].map(
+      ({ code, key }) =>
+        new KeyboardEvent('keydown', {
+          cancelable: true,
+          code,
+          key,
+          metaKey: true,
+          shiftKey: true,
+        }),
+    );
+
+    expect(shortcuts.map((event) => editor.handleKeyDown(event))).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
+    expect(shortcuts.every((event) => event.defaultPrevented)).toBe(true);
+    expect(fixture.workbook.formats).toEqual([
+      {
+        attribute: 'ct',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: { fa: 'General', t: 'n' },
+      },
+      {
+        attribute: 'ct',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: { fa: '#,##0.00', t: 'n' },
+      },
+      {
+        attribute: 'ct',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: { fa: '[$¥-804]#,##0.00', t: 'n' },
+      },
+      {
+        attribute: 'ct',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: { fa: '0.00%', t: 'n' },
+      },
+      {
+        attribute: 'ct',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: { fa: 'yyyy-MM-dd', t: 'd' },
+      },
+      {
+        attribute: 'ct',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: { fa: 'hh:mm', t: 'd' },
+      },
+      {
+        attribute: 'ct',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: { fa: '0.00E+00', t: 'n' },
+      },
+    ]);
+  });
+
   test('routes all four WPS fill directions through one native command port', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [{ row: [3, 1], column: [4, 2] }];

@@ -57,6 +57,59 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     label: 'Cmd/Ctrl+5',
   });
   for (const command of [
+    spreadsheetCommandCatalog.numberFormatGeneral,
+    spreadsheetCommandCatalog.numberFormatNumber,
+    spreadsheetCommandCatalog.numberFormatCurrency,
+    spreadsheetCommandCatalog.numberFormatAccounting,
+    spreadsheetCommandCatalog.numberFormatPercent,
+    spreadsheetCommandCatalog.numberFormatDate,
+    spreadsheetCommandCatalog.numberFormatTime,
+    spreadsheetCommandCatalog.numberFormatScientific,
+    spreadsheetCommandCatalog.numberFormatFraction,
+    spreadsheetCommandCatalog.numberFormatText,
+  ]) {
+    expect(command.location).toEqual({
+      area: 'ribbon',
+      group: 'number',
+      tab: 'home',
+    });
+  }
+  expect(spreadsheetCommandCatalog.numberFormatGeneral.shortcut).toEqual({
+    aria: 'Control+Shift+~ Meta+Shift+~',
+    editor: ['Mod-Shift-~'],
+    label: 'Cmd/Ctrl+Shift+~',
+  });
+  expect(spreadsheetCommandCatalog.numberFormatNumber.shortcut).toEqual({
+    aria: 'Control+Shift+! Meta+Shift+!',
+    editor: ['Mod-Shift-!'],
+    label: 'Cmd/Ctrl+Shift+!',
+  });
+  expect(spreadsheetCommandCatalog.numberFormatCurrency.shortcut).toEqual({
+    aria: 'Control+Shift+$ Meta+Shift+$',
+    editor: ['Mod-Shift-$'],
+    label: 'Cmd/Ctrl+Shift+$',
+  });
+  expect(spreadsheetCommandCatalog.numberFormatPercent.shortcut).toEqual({
+    aria: 'Control+Shift+% Meta+Shift+%',
+    editor: ['Mod-Shift-%'],
+    label: 'Cmd/Ctrl+Shift+%',
+  });
+  expect(spreadsheetCommandCatalog.numberFormatDate.shortcut).toEqual({
+    aria: 'Control+Shift+# Meta+Shift+#',
+    editor: ['Mod-Shift-#'],
+    label: 'Cmd/Ctrl+Shift+#',
+  });
+  expect(spreadsheetCommandCatalog.numberFormatTime.shortcut).toEqual({
+    aria: 'Control+Shift+@ Meta+Shift+@',
+    editor: ['Mod-Shift-@'],
+    label: 'Cmd/Ctrl+Shift+@',
+  });
+  expect(spreadsheetCommandCatalog.numberFormatScientific.shortcut).toEqual({
+    aria: 'Control+Shift+^ Meta+Shift+^',
+    editor: ['Mod-Shift-^'],
+    label: 'Cmd/Ctrl+Shift+^',
+  });
+  for (const command of [
     spreadsheetCommandCatalog.borderTop,
     spreadsheetCommandCatalog.borderBottom,
     spreadsheetCommandCatalog.borderLeft,
