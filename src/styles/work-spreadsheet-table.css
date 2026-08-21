@@ -1,0 +1,198 @@
+.work-spreadsheet-table-dialog {
+  --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
+
+  width: min(480px, 100%);
+}
+
+.work-spreadsheet-table-dialog form {
+  display: grid;
+  gap: 16px;
+}
+
+.work-spreadsheet-table-scope {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--a3s-panel-soft);
+}
+
+.work-spreadsheet-table-scope > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 7px;
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 11%,
+    var(--a3s-panel)
+  );
+  color: var(--work-spreadsheet-accent, #159469);
+}
+
+.work-spreadsheet-table-scope > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.work-spreadsheet-table-scope strong,
+.work-spreadsheet-table-scope small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-table-scope strong {
+  color: var(--a3s-ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-table-scope small {
+  color: var(--a3s-muted);
+  font-size: 10px;
+}
+
+.work-spreadsheet-table-dialog .work-office-checkbox {
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.work-spreadsheet-table-name {
+  display: grid;
+  width: 132px;
+  align-content: center;
+  gap: 3px;
+  padding: 2px 5px;
+}
+
+.work-spreadsheet-table-name > span {
+  color: var(--a3s-muted);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.work-spreadsheet-table-name > input {
+  width: 100%;
+  height: 27px;
+  padding: 0 8px;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 5px;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font-size: 11px;
+}
+
+.work-spreadsheet-table-style-root {
+  display: flex;
+}
+
+.work-office-ribbon .work-spreadsheet-table-style-trigger {
+  min-width: 76px;
+}
+
+.work-spreadsheet-table-style-preview {
+  display: grid;
+  width: 48px;
+  height: 28px;
+  overflow: hidden;
+  grid-template-rows: 8px 1fr 1fr;
+  border: 1px solid rgb(15 23 42 / 16%);
+  border-radius: 3px;
+  background: #ffffff;
+}
+
+.work-spreadsheet-table-style-preview > i {
+  display: block;
+  min-height: 0;
+}
+
+.work-spreadsheet-table-style-menu {
+  width: min(464px, calc(100vw - 24px));
+  max-height: min(520px, calc(100vh - 32px));
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--a3s-overlay-border);
+  border-radius: var(--a3s-overlay-radius);
+  background: var(--a3s-overlay-surface);
+  box-shadow: var(--a3s-shadow-soft);
+}
+
+.work-spreadsheet-table-style-family {
+  display: grid;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  gap: 6px;
+}
+
+.work-spreadsheet-table-style-family + .work-spreadsheet-table-style-family {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--a3s-line);
+}
+
+.work-spreadsheet-table-style-family > span {
+  color: var(--a3s-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-table-style-family > div {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.work-spreadsheet-table-style-family button {
+  display: grid;
+  min-width: 0;
+  height: 38px;
+  padding: 4px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.work-spreadsheet-table-style-family button:hover,
+.work-spreadsheet-table-style-family button:focus-visible,
+.work-spreadsheet-table-style-family button[aria-checked="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 46%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 8%,
+    var(--a3s-panel)
+  );
+}
+
+.work-spreadsheet-table-style-family button:focus-visible {
+  outline: 2px solid
+    color-mix(in srgb, var(--work-spreadsheet-accent, #159469) 66%, white);
+  outline-offset: 1px;
+}
+
+@media (max-width: 620px) {
+  .work-spreadsheet-table-name {
+    width: 104px;
+  }
+
+  .work-spreadsheet-table-style-menu {
+    width: min(356px, calc(100vw - 16px));
+    padding: 8px;
+  }
+
+  .work-spreadsheet-table-style-family > div {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

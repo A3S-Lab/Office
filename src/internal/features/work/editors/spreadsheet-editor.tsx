@@ -109,6 +109,12 @@ import { synchronizeSpreadsheetWorkbookInPlace } from './spreadsheet-in-place-wo
 import { spreadsheetSelectionContainsFocus } from './spreadsheet-keyboard-navigation';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
 import {
+  beginSpreadsheetTableCellRender,
+  finishSpreadsheetTableCellRender,
+} from './spreadsheet-table-render';
+import { createSpreadsheetTableRenderResolver } from './spreadsheet-table-style';
+import { spreadsheetTableAtCell } from './spreadsheet-table';
+import {
   SpreadsheetWorkbookPanel,
   type SpreadsheetWorkbookPanelView,
 } from './spreadsheet-workbook-panel';
@@ -136,6 +142,7 @@ import {
 } from './use-spreadsheet-format-painter';
 import { useSpreadsheetDataValidation } from './use-spreadsheet-data-validation';
 import { useSpreadsheetHyperlink } from './use-spreadsheet-hyperlink';
+import { useSpreadsheetTable } from './use-spreadsheet-table';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
   type WorkOfficeFileAction,
@@ -347,6 +354,14 @@ function SpreadsheetEditorSurface({
     getLiveSelections: getSpreadsheetDataValidationLiveSelections,
     preview,
   });
+  const spreadsheetTable = useSpreadsheetTable({
+    commandsRef: spreadsheetCommandsRef,
+    contentRef,
+    focusGrid: focusSpreadsheetDialogGrid,
+    getGridFocusTarget: getSpreadsheetDialogGridFocusTarget,
+    getLiveSelection: getSpreadsheetHyperlinkLiveSelection,
+    preview,
+  });
   const officeDialog = useOfficeDialog();
   const [findOpen, setFindOpen] = useState(false);
   const [findFocusRequest, setFindFocusRequest] = useState(0);
@@ -405,6 +420,24 @@ function SpreadsheetEditorSurface({
   );
   const conditionalStylesBySheetRef = useRef(conditionalStylesBySheet);
   conditionalStylesBySheetRef.current = conditionalStylesBySheet;
+  const tableStylesBySheet = useMemo(
+    () =>
+      new Map(
+        materializedContent.sheets.flatMap((sheet) =>
+          sheet.id
+            ? [
+                [
+                  sheet.id,
+                  createSpreadsheetTableRenderResolver(sheet.tables ?? []),
+                ] as const,
+              ]
+            : [],
+        ),
+      ),
+    [materializedContent.sheets],
+  );
+  const tableStylesBySheetRef = useRef(tableStylesBySheet);
+  tableStylesBySheetRef.current = tableStylesBySheet;
   useEffect(() => {
     setPreviewActiveSheetId(preview ? contentActiveSheetId : null);
   }, [contentActiveSheetId, preview]);
@@ -507,45 +540,61 @@ function SpreadsheetEditorSurface({
             }).length,
         );
       },
-      beforeRenderCell: (_cell, cellInfo, context) => {
+      beforeRenderCell: (cell, cellInfo, context) => {
+        const tableStyle =
+          tableStylesBySheetRef.current.get(activeSheetIdRef.current)?.(
+            cellInfo.row,
+            cellInfo.column,
+          ) ?? null;
         const style = conditionalStylesBySheetRef.current
           .get(activeSheetIdRef.current)
           ?.get(`${cellInfo.row}_${cellInfo.column}`);
-        if (style?.cellColor) context.fillStyle = style.cellColor;
+        beginSpreadsheetTableCellRender(cell, tableStyle, style, context);
         return true;
       },
       afterRenderCell: (cell, cellInfo, context) => {
+        const tableStyle =
+          tableStylesBySheetRef.current.get(activeSheetIdRef.current)?.(
+            cellInfo.row,
+            cellInfo.column,
+          ) ?? null;
         const style = conditionalStylesBySheetRef.current
           .get(activeSheetIdRef.current)
           ?.get(`${cellInfo.row}_${cellInfo.column}`);
-        if (!style?.icon && !style?.dataBar) return;
-        const background =
-          style.cellColor ??
-          (typeof cell?.bg === 'string' ? cell.bg : '#ffffff');
-        if (style.dataBar) {
-          drawSpreadsheetConditionalDataBar(
-            context,
-            cellInfo,
-            {
-              ...style.dataBar,
-              showValue:
-                style.dataBar.showValue && (style.icon?.showValue ?? true),
-            },
-            cell,
-            background,
-            style.textColor,
-          );
+        try {
+          if (style?.icon || style?.dataBar) {
+            const background =
+              style.cellColor ??
+              tableStyle?.background ??
+              (typeof cell?.bg === 'string' ? cell.bg : '#ffffff');
+            if (style.dataBar) {
+              drawSpreadsheetConditionalDataBar(
+                context,
+                cellInfo,
+                {
+                  ...style.dataBar,
+                  showValue:
+                    style.dataBar.showValue && (style.icon?.showValue ?? true),
+                },
+                cell,
+                background,
+                style.textColor,
+              );
+            }
+            if (style.icon) {
+              drawSpreadsheetConditionalIcon(
+                context,
+                cellInfo,
+                style.icon,
+                background,
+                style.dataBar ? false : !style.icon.showValue,
+              );
+            }
+            if (cell?.ps) drawSpreadsheetCommentMarker(context, cellInfo);
+          }
+        } finally {
+          finishSpreadsheetTableCellRender(cell, cellInfo, tableStyle, context);
         }
-        if (style.icon) {
-          drawSpreadsheetConditionalIcon(
-            context,
-            cellInfo,
-            style.icon,
-            background,
-            style.dataBar ? false : !style.icon.showValue,
-          );
-        }
-        if (cell?.ps) drawSpreadsheetCommentMarker(context, cellInfo);
       },
     }),
     [collaborationView],
@@ -734,6 +783,23 @@ function SpreadsheetEditorSurface({
     toolbarRow,
     toolbarColumn,
   );
+  const toolbarContentSheet = materializedContent.sheets.find(
+    (sheet) => sheet.id === toolbarSheetId,
+  );
+  const activeTable = spreadsheetTableAtCell(
+    toolbarContentSheet,
+    toolbarRow,
+    toolbarColumn,
+  );
+  const activeTableId = activeTable?.id ?? null;
+  useEffect(() => {
+    setRibbonTab((current) => {
+      if (activeTableId) {
+        return current === 'tableDesign' ? current : 'tableDesign';
+      }
+      return current === 'tableDesign' ? 'home' : current;
+    });
+  }, [activeTableId]);
   const selectedRange = spreadsheetSingleRange(toolbarSelection);
   const multipleCellsSelected =
     selectedRange.row[0] !== selectedRange.row[1] ||
@@ -1043,19 +1109,25 @@ function SpreadsheetEditorSurface({
           : null;
         const dataValidationSelection =
           spreadsheetDataValidation.selectionForChange();
+        const tableSelection = spreadsheetTable.selectionForChange();
         const hyperlinkSelection = spreadsheetHyperlink.selectionForChange();
         const preservedSelection = formatCellsSelection
           ? {
               sheetId: formatCellsSelection.sheetId,
               selections: [formatCellsSelection.selection],
             }
-          : (dataValidationSelection ??
-            (hyperlinkSelection
-              ? {
-                  sheetId: hyperlinkSelection.sheetId,
-                  selections: [hyperlinkSelection.selection],
-                }
-              : null));
+          : tableSelection
+            ? {
+                sheetId: tableSelection.sheetId,
+                selections: [tableSelection.selection],
+              }
+            : (dataValidationSelection ??
+              (hyperlinkSelection
+                ? {
+                    sheetId: hyperlinkSelection.sheetId,
+                    selections: [hyperlinkSelection.selection],
+                  }
+                : null));
         const controlled =
           preservedSelection && !collaborationView
             ? spreadsheetContentWithSelections(
@@ -1068,6 +1140,7 @@ function SpreadsheetEditorSurface({
         onChange(controlled);
       },
       selection: selectionState,
+      table: spreadsheetTable.commandPort,
       targetSheetGridSize,
       targetSheetId: toolbarSheetId,
       toolbarCell,
@@ -1357,6 +1430,8 @@ function SpreadsheetEditorSurface({
       {!preview && (
         <SpreadsheetEditorRibbon
           activeTab={ribbonTab}
+          activeTable={activeTable}
+          activeTableSheetId={activeTable ? toolbarSheetId : undefined}
           autoFilterActive={autoFilterActive}
           can={spreadsheetCan}
           commands={spreadsheetRibbonCommands}
@@ -1633,6 +1708,7 @@ function SpreadsheetEditorSurface({
       )}
       {spreadsheetDataValidation.dialog}
       {spreadsheetHyperlink.dialog}
+      {spreadsheetTable.dialog}
       {spreadsheetClipboard.dialogSource && (
         <SpreadsheetPasteSpecialDialog
           source={spreadsheetClipboard.dialogSource}
@@ -1795,6 +1871,7 @@ export function spreadsheetCommandsWithGridFocus(
     cancelFormatPainter: afterSuccessfulCommand(commands.cancelFormatPainter),
     clearSelectedCells: afterSuccessfulCommand(commands.clearSelectedCells),
     copySelection: afterSuccessfulCommand(commands.copySelection),
+    convertTableToRange: afterSuccessfulCommand(commands.convertTableToRange),
     cutSelection: afterSuccessfulCommand(commands.cutSelection),
     deleteSelectedStructure: afterSuccessfulCommand(
       commands.deleteSelectedStructure,

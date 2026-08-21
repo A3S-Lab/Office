@@ -5,16 +5,64 @@ import {
 } from '../kernel/office-kernel-spreadsheet-protocol';
 import type {
   WorkSpreadsheetContent,
+  WorkSpreadsheetDynamicFilter,
   WorkSpreadsheetSheet,
+  WorkSpreadsheetTable,
+  WorkSpreadsheetTableFilterCriteria,
 } from '../features/work/work-types';
+import { isValidSpreadsheetDefinedName } from '../features/work/work-spreadsheet-ranges';
 import { WorkOfficeCollaborationError } from './office-collaboration';
 import {
-  cloneWorkOfficeCollaborationJson as cloneJsonValue,
-  isWorkOfficeCollaborationRecord as isRecord,
-} from './office-collaboration-json';
+  invalidWorkOfficeSpreadsheetInput,
+  requiredCoordinate,
+  requiredIdentifier,
+  requiredInputRecord,
+  requiredNonEmptyString,
+  validateJsonRecord,
+} from './office-spreadsheet-collaboration-validation-support';
 
 const MAX_POPULATED_CELLS = 1_000_000;
 const MAX_DENSE_MATRIX_CELLS = 1_000_000;
+const MAX_FILTER_VALUES_PER_COLUMN = 10_000;
+const MAX_FILTER_VALUE_CHARACTERS = 32_767;
+const MAX_FILTER_TEXT_BYTES = 1_048_576;
+const FILTER_TEXT_ENCODER = new TextEncoder();
+const SPREADSHEET_DYNAMIC_FILTERS: ReadonlySet<string> = new Set([
+  'above-average',
+  'below-average',
+  'tomorrow',
+  'today',
+  'yesterday',
+  'next-week',
+  'this-week',
+  'last-week',
+  'next-month',
+  'this-month',
+  'last-month',
+  'next-quarter',
+  'this-quarter',
+  'last-quarter',
+  'next-year',
+  'this-year',
+  'last-year',
+  'year-to-date',
+  'quarter-1',
+  'quarter-2',
+  'quarter-3',
+  'quarter-4',
+  'month-1',
+  'month-2',
+  'month-3',
+  'month-4',
+  'month-5',
+  'month-6',
+  'month-7',
+  'month-8',
+  'month-9',
+  'month-10',
+  'month-11',
+  'month-12',
+]);
 const TRANSIENT_SHEET_FIELDS = [
   'calcChain',
   'dynamicArray_compute',
@@ -134,6 +182,9 @@ function validateSheet(value: unknown): WorkSpreadsheetSheet {
       source.pivotTables,
       `pivot table in sheet '${result.id}'`,
     ) as unknown as NonNullable<WorkSpreadsheetSheet['pivotTables']>;
+  }
+  if (source.tables !== undefined) {
+    result.tables = validateSpreadsheetTables(source.tables, result.id);
   }
   if (source.formulaMetadata !== undefined) {
     result.formulaMetadata = validateJsonRecord(
@@ -266,6 +317,487 @@ function validateIdRecords(
   });
 }
 
+function validateSpreadsheetTables(
+  value: unknown,
+  sheetId: string,
+): WorkSpreadsheetTable[] {
+  const records = validateIdRecords(value, `table in sheet '${sheetId}'`);
+  return records.map((record) => {
+    const label = `table '${record.id}' in sheet '${sheetId}'`;
+    const range = requiredSpreadsheetTableRange(record.range, label, sheetId);
+    const width = range.column[1] - range.column[0] + 1;
+    const columns = requiredSpreadsheetTableColumns(
+      record.columns,
+      width,
+      label,
+    );
+    const filters = requiredSpreadsheetTableFilters(
+      record.filters,
+      width,
+      label,
+    );
+    const headerRow = requiredBoolean(record.headerRow, `${label} header row`);
+    const totalsRow = requiredBoolean(record.totalsRow, `${label} totals row`);
+    const height = range.row[1] - range.row[0] + 1;
+    if (height <= Number(headerRow) + Number(totalsRow)) {
+      invalidWorkOfficeSpreadsheetInput(
+        `${label} to include at least one body row`,
+      );
+    }
+    const result = record as unknown as WorkSpreadsheetTable;
+    result.name = requiredSpreadsheetTableName(record.name, `${label} name`);
+    if (record.displayName !== undefined) {
+      result.displayName = requiredSpreadsheetTableName(
+        record.displayName,
+        `${label} display name`,
+      );
+    }
+    if (record.ooxmlId !== undefined) {
+      if (!Number.isSafeInteger(record.ooxmlId) || Number(record.ooxmlId) < 1) {
+        invalidWorkOfficeSpreadsheetInput(`a positive OOXML ID for ${label}`);
+      }
+      result.ooxmlId = Number(record.ooxmlId);
+    }
+    result.range = range;
+    result.columns = columns;
+    result.filters = filters as WorkSpreadsheetTable['filters'];
+    result.headerRow = headerRow;
+    result.totalsRow = totalsRow;
+    const style = requiredSpreadsheetTableStyle(record.style, label);
+    const showFirstColumn = requiredBoolean(
+      record.showFirstColumn,
+      `${label} first-column emphasis`,
+    );
+    const showLastColumn = requiredBoolean(
+      record.showLastColumn,
+      `${label} last-column emphasis`,
+    );
+    const showRowStripes = requiredBoolean(
+      record.showRowStripes,
+      `${label} row stripes`,
+    );
+    const showColumnStripes = requiredBoolean(
+      record.showColumnStripes,
+      `${label} column stripes`,
+    );
+    if (!headerRow && filters.length > 0) {
+      invalidWorkOfficeSpreadsheetInput(
+        `${label} filters to require an enabled header row`,
+      );
+    }
+    if (
+      style.family === 'none' &&
+      (showFirstColumn || showLastColumn || showRowStripes || showColumnStripes)
+    ) {
+      invalidWorkOfficeSpreadsheetInput(
+        `${label} style flags to require a built-in style`,
+      );
+    }
+    result.style = style;
+    result.showFirstColumn = showFirstColumn;
+    result.showLastColumn = showLastColumn;
+    result.showRowStripes = showRowStripes;
+    result.showColumnStripes = showColumnStripes;
+    return result;
+  });
+}
+
+function requiredSpreadsheetTableRange(
+  value: unknown,
+  label: string,
+  sheetId: string,
+): WorkSpreadsheetTable['range'] {
+  const record = requiredInputRecord(value, `${label} range`);
+  const readAxis = (
+    candidate: unknown,
+    maximum: number,
+    axis: 'column' | 'row',
+  ): [number, number] => {
+    if (!Array.isArray(candidate) || candidate.length !== 2) {
+      invalidWorkOfficeSpreadsheetInput(`a bounded ${axis} range for ${label}`);
+    }
+    const start = requiredCoordinate(
+      candidate[0],
+      maximum,
+      `${axis} start`,
+      sheetId,
+    );
+    const end = requiredCoordinate(
+      candidate[1],
+      maximum,
+      `${axis} end`,
+      sheetId,
+    );
+    if (start > end) {
+      invalidWorkOfficeSpreadsheetInput(
+        `an ordered ${axis} range for ${label}`,
+      );
+    }
+    return [start, end];
+  };
+  return {
+    row: readAxis(record.row, OFFICE_KERNEL_SPREADSHEET_MAX_ROWS, 'row'),
+    column: readAxis(
+      record.column,
+      OFFICE_KERNEL_SPREADSHEET_MAX_COLUMNS,
+      'column',
+    ),
+  };
+}
+
+function requiredSpreadsheetTableColumns(
+  value: unknown,
+  width: number,
+  label: string,
+): WorkSpreadsheetTable['columns'] {
+  if (!Array.isArray(value) || value.length !== width) {
+    invalidWorkOfficeSpreadsheetInput(
+      `${label} to have one column definition per worksheet column`,
+    );
+  }
+  const names = new Set<string>();
+  return value.map((candidate) => {
+    const record = requiredInputRecord(candidate, `${label} column`);
+    assertExactRecordKeys(record, ['name'], `column for ${label}`);
+    const name = requiredTableColumnName(record.name, label);
+    const normalized = name.toLocaleLowerCase();
+    if (names.has(normalized)) {
+      invalidWorkOfficeSpreadsheetInput(`unique column names for ${label}`);
+    }
+    names.add(normalized);
+    return { name };
+  });
+}
+
+function requiredSpreadsheetTableFilters(
+  value: unknown,
+  width: number,
+  label: string,
+): WorkSpreadsheetTable['filters'] {
+  if (!Array.isArray(value)) {
+    invalidWorkOfficeSpreadsheetInput(`an array of filters for ${label}`);
+  }
+  const columns = new Set<number>();
+  const textBudget = { bytes: 0 };
+  return value.map((candidate) => {
+    const record = validateJsonRecord(
+      requiredInputRecord(candidate, `${label} filter`),
+      `${label} filter`,
+    );
+    assertExactRecordKeys(
+      record,
+      ['column', 'criteria'],
+      `filter for ${label}`,
+    );
+    if (
+      !Number.isSafeInteger(record.column) ||
+      Number(record.column) < 0 ||
+      Number(record.column) >= width ||
+      columns.has(Number(record.column))
+    ) {
+      invalidWorkOfficeSpreadsheetInput(
+        `unique in-range filter columns for ${label}`,
+      );
+    }
+    const column = Number(record.column);
+    const criteria = requiredSpreadsheetTableFilterCriteria(
+      record.criteria,
+      label,
+      textBudget,
+    );
+    columns.add(column);
+    return { column, criteria };
+  });
+}
+
+function requiredSpreadsheetTableFilterCriteria(
+  value: unknown,
+  label: string,
+  textBudget: { bytes: number },
+): WorkSpreadsheetTableFilterCriteria {
+  const record = validateJsonRecord(
+    requiredInputRecord(value, `filter criteria for ${label}`),
+    `filter criteria for ${label}`,
+  );
+  const type = record.type;
+  switch (type) {
+    case 'values': {
+      assertExactRecordKeys(
+        record,
+        ['type', 'values', 'includeBlanks'],
+        `filter criteria for ${label}`,
+      );
+      if (
+        !Array.isArray(record.values) ||
+        record.values.length > MAX_FILTER_VALUES_PER_COLUMN
+      ) {
+        invalidWorkOfficeSpreadsheetInput(
+          `at most ${MAX_FILTER_VALUES_PER_COLUMN.toLocaleString()} values in filter criteria for ${label}`,
+        );
+      }
+      const includeBlanks = requiredBoolean(
+        record.includeBlanks,
+        `filter blank inclusion for ${label}`,
+      );
+      if (record.values.length === 0 && !includeBlanks) {
+        invalidWorkOfficeSpreadsheetInput(
+          `at least one value or includeBlanks=true in filter criteria for ${label}`,
+        );
+      }
+      const observed = new Set<string>();
+      const values: string[] = [];
+      for (const candidate of record.values) {
+        const filterValue = requiredSpreadsheetFilterText(
+          candidate,
+          label,
+          textBudget,
+        );
+        if (observed.has(filterValue)) {
+          invalidWorkOfficeSpreadsheetInput(
+            `unique filter values in criteria for ${label}`,
+          );
+        }
+        observed.add(filterValue);
+        values.push(filterValue);
+      }
+      return { type, values, includeBlanks };
+    }
+    case 'equals':
+    case 'not-equals':
+    case 'contains':
+    case 'does-not-contain':
+    case 'begins-with':
+    case 'ends-with':
+    case 'greater-than':
+    case 'greater-than-or-equal':
+    case 'less-than':
+    case 'less-than-or-equal':
+      assertExactRecordKeys(
+        record,
+        ['type', 'value'],
+        `filter criteria for ${label}`,
+      );
+      return {
+        type,
+        value: requiredSpreadsheetFilterText(record.value, label, textBudget),
+      };
+    case 'between':
+    case 'not-between':
+      assertExactRecordKeys(
+        record,
+        ['type', 'lower', 'upper'],
+        `filter criteria for ${label}`,
+      );
+      return {
+        type,
+        lower: requiredSpreadsheetFilterText(record.lower, label, textBudget),
+        upper: requiredSpreadsheetFilterText(record.upper, label, textBudget),
+      };
+    case 'blanks':
+    case 'non-blanks':
+      assertExactRecordKeys(record, ['type'], `filter criteria for ${label}`);
+      return { type };
+    case 'top':
+    case 'bottom':
+      assertExactRecordKeys(
+        record,
+        ['type', 'count'],
+        `filter criteria for ${label}`,
+      );
+      return {
+        type,
+        count: requiredSpreadsheetFilterInteger(
+          record.count,
+          1,
+          500,
+          `a ${type} filter count from 1 through 500 for ${label}`,
+        ),
+      };
+    case 'top-percent':
+    case 'bottom-percent':
+      assertExactRecordKeys(
+        record,
+        ['type', 'percent'],
+        `filter criteria for ${label}`,
+      );
+      return {
+        type,
+        percent: requiredSpreadsheetFilterInteger(
+          record.percent,
+          1,
+          100,
+          `a ${type} filter percentage from 1 through 100 for ${label}`,
+        ),
+      };
+    case 'dynamic':
+      assertExactRecordKeys(
+        record,
+        ['type', 'kind'],
+        `filter criteria for ${label}`,
+      );
+      if (
+        typeof record.kind !== 'string' ||
+        !SPREADSHEET_DYNAMIC_FILTERS.has(record.kind)
+      ) {
+        invalidWorkOfficeSpreadsheetInput(
+          `a supported dynamic filter for ${label}`,
+        );
+      }
+      return { type, kind: record.kind as WorkSpreadsheetDynamicFilter };
+    default:
+      invalidWorkOfficeSpreadsheetInput(
+        `supported filter criteria for ${label}`,
+      );
+  }
+}
+
+function requiredSpreadsheetFilterText(
+  value: unknown,
+  label: string,
+  textBudget: { bytes: number },
+): string {
+  if (typeof value !== 'string') {
+    invalidWorkOfficeSpreadsheetInput(
+      `filter text containing 1 to ${MAX_FILTER_VALUE_CHARACTERS.toLocaleString()} characters for ${label}`,
+    );
+  }
+  let characters = 0;
+  for (const character of value) {
+    characters += 1;
+    const codePoint = character.codePointAt(0);
+    if (
+      codePoint === undefined ||
+      !(
+        codePoint === 0x9 ||
+        codePoint === 0xa ||
+        codePoint === 0xd ||
+        (codePoint >= 0x20 && codePoint <= 0xd7ff) ||
+        (codePoint >= 0xe000 && codePoint <= 0xfffd) ||
+        (codePoint >= 0x10000 && codePoint <= 0x10ffff)
+      )
+    ) {
+      invalidWorkOfficeSpreadsheetInput(
+        `XML-compatible filter text for ${label}`,
+      );
+    }
+  }
+  if (characters < 1 || characters > MAX_FILTER_VALUE_CHARACTERS) {
+    invalidWorkOfficeSpreadsheetInput(
+      `filter text containing 1 to ${MAX_FILTER_VALUE_CHARACTERS.toLocaleString()} characters for ${label}`,
+    );
+  }
+  textBudget.bytes += FILTER_TEXT_ENCODER.encode(value).byteLength;
+  if (textBudget.bytes > MAX_FILTER_TEXT_BYTES) {
+    invalidWorkOfficeSpreadsheetInput(
+      `filter text totaling at most ${MAX_FILTER_TEXT_BYTES.toLocaleString()} bytes for ${label}`,
+    );
+  }
+  return value;
+}
+
+function requiredSpreadsheetFilterInteger(
+  value: unknown,
+  minimum: number,
+  maximum: number,
+  expected: string,
+): number {
+  if (
+    !Number.isSafeInteger(value) ||
+    Number(value) < minimum ||
+    Number(value) > maximum
+  ) {
+    invalidWorkOfficeSpreadsheetInput(expected);
+  }
+  return Number(value);
+}
+
+function assertExactRecordKeys(
+  record: Record<string, unknown>,
+  keys: readonly string[],
+  label: string,
+): void {
+  const allowed = new Set(keys);
+  if (
+    keys.some((key) => !Object.hasOwn(record, key)) ||
+    Object.keys(record).some((key) => !allowed.has(key))
+  ) {
+    invalidWorkOfficeSpreadsheetInput(
+      `a complete ${label} record without unknown fields`,
+    );
+  }
+}
+
+function requiredSpreadsheetTableStyle(
+  value: unknown,
+  label: string,
+): WorkSpreadsheetTable['style'] {
+  const record = validateJsonRecord(
+    requiredInputRecord(value, `${label} style`),
+    `${label} style`,
+  );
+  const family = record.family;
+  if (family === 'none') {
+    assertExactRecordKeys(record, ['family'], `style for ${label}`);
+    return { family };
+  }
+  assertExactRecordKeys(record, ['family', 'number'], `style for ${label}`);
+  const maximum = family === 'light' ? 21 : family === 'medium' ? 28 : 11;
+  if (
+    (family !== 'light' && family !== 'medium' && family !== 'dark') ||
+    !Number.isSafeInteger(record.number) ||
+    Number(record.number) < 1 ||
+    Number(record.number) > maximum
+  ) {
+    invalidWorkOfficeSpreadsheetInput(`a built-in table style for ${label}`);
+  }
+  return { family, number: Number(record.number) };
+}
+
+function requiredSpreadsheetTableName(value: unknown, label: string): string {
+  if (
+    typeof value !== 'string' ||
+    value.trim() !== value ||
+    Array.from(value).length < 1 ||
+    Array.from(value).length > 255
+  ) {
+    invalidWorkOfficeSpreadsheetInput(`a valid table name for ${label}`);
+  }
+  const result = value as string;
+  if (
+    !isValidSpreadsheetDefinedName(result) ||
+    ['r', 'c'].includes(result.toLocaleLowerCase())
+  ) {
+    invalidWorkOfficeSpreadsheetInput(`a valid table name for ${label}`);
+  }
+  return result;
+}
+
+function requiredTableColumnName(value: unknown, label: string): string {
+  const characters = typeof value === 'string' ? Array.from(value) : [];
+  if (
+    typeof value !== 'string' ||
+    characters.length < 1 ||
+    characters.length > 255 ||
+    value.trim() !== value ||
+    characters.some(
+      (character) =>
+        /\p{Cc}/u.test(character) ||
+        character === '\uFFFE' ||
+        character === '\uFFFF',
+    )
+  ) {
+    invalidWorkOfficeSpreadsheetInput(`a valid column name for ${label}`);
+  }
+  return value as string;
+}
+
+function requiredBoolean(value: unknown, label: string): boolean {
+  if (typeof value !== 'boolean') {
+    invalidWorkOfficeSpreadsheetInput(`a Boolean value for ${label}`);
+  }
+  return value as boolean;
+}
+
 function copyOptionalSheetSidecars<
   K extends 'printAreas' | 'printTitles' | 'pageBreaks' | 'pageSetups',
 >(
@@ -312,6 +844,12 @@ function copyOptionalJsonField(
 
 function assertSpreadsheetReferences(content: WorkSpreadsheetContent): void {
   const sheetIds = new Set(content.sheets.map((sheet) => sheet.id as string));
+  const definedNames = new Set(
+    (content.namedRanges ?? []).map((range) =>
+      range.name.trim().toLocaleLowerCase(),
+    ),
+  );
+  const tableNames = new Set<string>();
   for (const range of content.namedRanges ?? []) {
     if (range.scopeSheetId !== undefined && !sheetIds.has(range.scopeSheetId)) {
       invalidWorkOfficeSpreadsheetInput(
@@ -325,6 +863,37 @@ function assertSpreadsheetReferences(content: WorkSpreadsheetContent): void {
         invalidWorkOfficeSpreadsheetInput(
           `pivot table '${pivot.id}' to reference an existing source sheet`,
         );
+      }
+    }
+    for (const [index, table] of (sheet.tables ?? []).entries()) {
+      const names = [table.name, table.displayName].filter(
+        (value): value is string => Boolean(value),
+      );
+      for (const name of names) {
+        const normalized = name.toLocaleLowerCase();
+        if (definedNames.has(normalized) || tableNames.has(normalized)) {
+          invalidWorkOfficeSpreadsheetInput(
+            `unique table and defined names; '${name}' is repeated`,
+          );
+        }
+        tableNames.add(normalized);
+      }
+      if (
+        table.range.row[1] >=
+          (sheet.row ?? OFFICE_KERNEL_SPREADSHEET_MAX_ROWS) ||
+        table.range.column[1] >=
+          (sheet.column ?? OFFICE_KERNEL_SPREADSHEET_MAX_COLUMNS)
+      ) {
+        invalidWorkOfficeSpreadsheetInput(
+          `table '${table.id}' to fit within sheet '${sheet.id}'`,
+        );
+      }
+      for (const other of (sheet.tables ?? []).slice(0, index)) {
+        if (spreadsheetTableRangesIntersect(table.range, other.range)) {
+          invalidWorkOfficeSpreadsheetInput(
+            `non-overlapping tables in sheet '${sheet.id}'`,
+          );
+        }
       }
     }
   }
@@ -344,6 +913,18 @@ function assertSpreadsheetReferences(content: WorkSpreadsheetContent): void {
   }
 }
 
+function spreadsheetTableRangesIntersect(
+  left: WorkSpreadsheetTable['range'],
+  right: WorkSpreadsheetTable['range'],
+): boolean {
+  return (
+    left.row[0] <= right.row[1] &&
+    left.row[1] >= right.row[0] &&
+    left.column[0] <= right.column[1] &&
+    left.column[1] >= right.column[0]
+  );
+}
+
 function validateOptionalDimension(
   sheet: WorkSpreadsheetSheet,
   key: 'row' | 'column',
@@ -358,77 +939,9 @@ function validateOptionalDimension(
   }
 }
 
-function requiredCoordinate(
-  value: unknown,
-  maximum: number,
-  label: string,
-  sheetId: string,
-): number {
-  if (
-    !Number.isSafeInteger(value) ||
-    (value as number) < 0 ||
-    (value as number) >= maximum
-  ) {
-    invalidWorkOfficeSpreadsheetInput(
-      `a valid ${label} coordinate in sheet '${sheetId}'`,
-    );
-  }
-  return value as number;
-}
-
-function requiredInputRecord(
-  value: unknown,
-  label: string,
-): Record<string, unknown> {
-  if (!isRecord(value)) {
-    invalidWorkOfficeSpreadsheetInput(`a valid ${label} record`);
-  }
-  return value as Record<string, unknown>;
-}
-
-function requiredIdentifier(value: unknown, label: string): string {
-  const result = requiredNonEmptyString(value, `${label} ID`);
-  if (result !== result.trim() || result.length > 256) {
-    invalidWorkOfficeSpreadsheetInput(
-      `a ${label} ID containing 1 to 256 characters`,
-    );
-  }
-  return result;
-}
-
-function requiredNonEmptyString(value: unknown, label: string): string {
-  if (typeof value !== 'string' || !value.trim() || value.length > 256) {
-    invalidWorkOfficeSpreadsheetInput(
-      `a non-empty string of at most 256 characters for ${label}`,
-    );
-  }
-  return value as string;
-}
-
-function validateJsonRecord(
-  value: Record<string, unknown>,
-  label: string,
-): Record<string, unknown> {
-  try {
-    return cloneJsonValue(value) as Record<string, unknown>;
-  } catch (error) {
-    throw new WorkOfficeCollaborationError(
-      'office.collaboration.content_invalid',
-      `Spreadsheet collaboration requires a JSON-compatible ${label}: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
-}
-
 function assertPopulatedCellLimit(count: number, sheetId: string): void {
   if (count <= MAX_POPULATED_CELLS) return;
   invalidWorkOfficeSpreadsheetInput(
     `at most ${MAX_POPULATED_CELLS.toLocaleString()} populated cells in sheet '${sheetId}'`,
-  );
-}
-
-function invalidWorkOfficeSpreadsheetInput(expected: string): never {
-  throw new WorkOfficeCollaborationError(
-    'office.collaboration.content_invalid',
-    `Spreadsheet collaboration requires ${expected}.`,
   );
 }

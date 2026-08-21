@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -90,6 +90,7 @@
     "playground:visual:spreadsheet-data-validation": "playwright test visual-tests/spreadsheet-data-validation.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-hyperlink": "playwright test visual-tests/spreadsheet-hyperlink.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-ribbon": "playwright test visual-tests/spreadsheet-ribbon.functional.spec.ts --config playwright.config.ts",
+    "playground:visual:spreadsheet-table": "playwright test visual-tests/spreadsheet-table.functional.spec.ts --config playwright.config.ts",
     "playground:visual:update": "playwright test --config playwright.config.ts --update-snapshots",
     "performance:fixtures": "bun .a3s-test/performance/generate-fixtures.ts",
     "performance:large-document-edits": "bun .a3s-test/performance/generate-fixtures.ts --documents-only && bun .a3s-test/performance/benchmark-document-edit.ts http://127.0.0.1:4175/ 3",
@@ -134,6 +135,8 @@
     "test:e2e:spreadsheet-ribbon:check": "a3s-test check tests/e2e/spreadsheet-ribbon-alignment.acl --json",
     "test:e2e:spreadsheet-cell-style": "a3s-test run tests/e2e/spreadsheet-cell-style.acl --json",
     "test:e2e:spreadsheet-cell-style:check": "a3s-test check tests/e2e/spreadsheet-cell-style.acl --json",
+    "test:e2e:spreadsheet-table": "a3s-test run tests/e2e/spreadsheet-table.acl --json",
+    "test:e2e:spreadsheet-table:check": "a3s-test check tests/e2e/spreadsheet-table.acl --json",
     "test:e2e:spreadsheet-cell-fill": "a3s-test run tests/e2e/spreadsheet-cell-fill.acl --json",
     "test:e2e:spreadsheet-cell-fill:check": "a3s-test check tests/e2e/spreadsheet-cell-fill.acl --json",
     "test:e2e:spreadsheet-auto-sum": "a3s-test run tests/e2e/spreadsheet-auto-sum.acl --json",

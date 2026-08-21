@@ -1,0 +1,1 @@
+export const MAX_SPREADSHEET_TABLE_CELLS = 100_000;

@@ -27,6 +27,8 @@ export const SPREADSHEET_RECORD_CHARTS = 'charts';
 export const SPREADSHEET_RECORD_CHART_ORDER = 'chartOrder';
 export const SPREADSHEET_RECORD_PIVOTS = 'pivotTables';
 export const SPREADSHEET_RECORD_PIVOT_ORDER = 'pivotOrder';
+export const SPREADSHEET_RECORD_TABLES = 'tables';
+export const SPREADSHEET_RECORD_TABLE_ORDER = 'tableOrder';
 
 const NESTED_SHEET_FIELDS = new Set([
   SPREADSHEET_RECORD_CELLS,
@@ -41,6 +43,8 @@ const NESTED_SHEET_FIELDS = new Set([
   SPREADSHEET_RECORD_CHART_ORDER,
   SPREADSHEET_RECORD_PIVOTS,
   SPREADSHEET_RECORD_PIVOT_ORDER,
+  SPREADSHEET_RECORD_TABLES,
+  SPREADSHEET_RECORD_TABLE_ORDER,
 ]);
 
 export function initializeSpreadsheetSheetRecord(
@@ -68,6 +72,11 @@ export function initializeSpreadsheetSheetRecord(
     SPREADSHEET_RECORD_PIVOTS,
     SPREADSHEET_RECORD_PIVOT_ORDER,
   );
+  initializeIdCollection(
+    record,
+    SPREADSHEET_RECORD_TABLES,
+    SPREADSHEET_RECORD_TABLE_ORDER,
+  );
   patchSpreadsheetSheetRecord(record, undefined, sheet);
 }
 
@@ -87,7 +96,8 @@ export function patchSpreadsheetSheetRecord(
       key === 'formulaMetadata' ||
       key === 'images' ||
       key === 'charts' ||
-      key === 'pivotTables'
+      key === 'pivotTables' ||
+      key === 'tables'
     ) {
       continue;
     }
@@ -137,6 +147,14 @@ export function patchSpreadsheetSheetRecord(
     previous?.pivotTables ?? [],
     next.pivotTables ?? [],
     `pivot table in sheet '${next.id}'`,
+  );
+  patchIdCollection(
+    record,
+    SPREADSHEET_RECORD_TABLES,
+    SPREADSHEET_RECORD_TABLE_ORDER,
+    previous?.tables ?? [],
+    next.tables ?? [],
+    `table in sheet '${next.id}'`,
   );
 }
 
@@ -193,6 +211,14 @@ export function readSpreadsheetSheetRecord(
     SPREADSHEET_RECORD_PIVOT_ORDER,
     `pivot table in sheet '${id}'`,
     'pivotTables',
+    result,
+  );
+  readBackwardCompatibleCollection(
+    record,
+    SPREADSHEET_RECORD_TABLES,
+    SPREADSHEET_RECORD_TABLE_ORDER,
+    `table in sheet '${id}'`,
+    'tables',
     result,
   );
   return sheet;
@@ -351,6 +377,28 @@ function readOptionalCollection(
     return value;
   });
   if (result.length > 0) output[outputKey] = result;
+}
+
+function readBackwardCompatibleCollection(
+  parent: Y.Map<unknown>,
+  recordsKey: string,
+  orderKey: string,
+  label: string,
+  outputKey: string,
+  output: Record<string, unknown>,
+): void {
+  const hasRecords = parent.has(recordsKey);
+  const hasOrder = parent.has(orderKey);
+  if (!hasRecords && !hasOrder) return;
+  if (hasRecords !== hasOrder) invalidSharedSpreadsheet(label);
+  readOptionalCollection(
+    parent,
+    recordsKey,
+    orderKey,
+    label,
+    outputKey,
+    output,
+  );
 }
 
 function patchJsonMap(

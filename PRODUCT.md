@@ -192,6 +192,27 @@ selected cells, malformed boundaries, two-dimensional list sources,
 out-of-bounds ranges, protection, merges, pivot output, and read-only views.
 Cancel, Escape, Apply, and Remove restore the exact ribbon invoker or current
 grid after a controlled remount.
+The twenty-second milestone adds native Spreadsheet Tables/ListObjects under
+Insert and Tables with the grid-scoped `Cmd/Ctrl+T` shortcut. A single-cell
+selection expands to its finite current region, an explicit multi-row
+selection remains exact, and one accessible dialog captures the range and
+header-row choice. Creation assigns a workbook-unique table name, canonicalizes
+unique column headers, rejects overlapping tables, worksheet AutoFilters,
+merges, protection, pivots, invalid ranges, and more than 100,000 cells, and
+publishes one controlled workbook value and one Undo record. Selecting a table
+opens the contextual Table Design ribbon with editable names, 60 native OOXML
+Light, Medium, and Dark styles, first/last-column emphasis, row/column stripes,
+and Convert to Range. Rendering resolves table appearance only for the visible
+Canvas cells without rewriting cell formats; conversion materializes that
+appearance into native sparse-safe cell styles and borders before removing the
+ListObject. Row and column structure commands reconcile ranges, columns,
+filters, and canonical headers. XLSX import and export preserve native table
+parts, relationships, content types, names, ranges, built-in styles, and the
+supported filter criteria. Yjs stores tables as ordered ID-keyed records with
+creation claims and field-local conflict handling, so independent design edits
+from two browser clients converge. Structured-reference calculation,
+calculated columns, complete totals-row authoring, slicers, and external/query
+tables remain explicit compatibility gaps.
 
 ## Product Rules
 

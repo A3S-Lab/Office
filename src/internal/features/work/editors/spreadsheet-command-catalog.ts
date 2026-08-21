@@ -10,8 +10,16 @@ export const spreadsheetRibbonTabs = [
   { id: 'view', label: '视图' },
 ] as const;
 
+export const spreadsheetTableDesignRibbonTab = {
+  id: 'tableDesign',
+  label: '表格设计',
+  compactLabel: '设计',
+  contextual: true,
+} as const;
+
 export type SpreadsheetRibbonTabId =
-  (typeof spreadsheetRibbonTabs)[number]['id'];
+  | (typeof spreadsheetRibbonTabs)[number]['id']
+  | typeof spreadsheetTableDesignRibbonTab.id;
 
 export interface SpreadsheetCommandShortcut {
   label: string;
@@ -490,6 +498,16 @@ export const spreadsheetCommandCatalog = {
     id: 'insert.chart',
     label: '插入图表',
     location: { area: 'ribbon', tab: 'insert', group: 'charts' },
+  },
+  table: {
+    id: 'insert.table',
+    label: '表格',
+    location: { area: 'ribbon', tab: 'insert', group: 'tables' },
+    shortcut: {
+      label: 'Cmd/Ctrl+T',
+      aria: 'Control+T Meta+T',
+      editor: ['Mod-t'],
+    },
   },
   hyperlink: {
     id: 'insert.hyperlink',

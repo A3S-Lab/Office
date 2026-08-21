@@ -283,15 +283,13 @@ export function Popover({
     };
   }, [open, portal, updateFloatingPosition]);
 
-  useEffect(() => {
-    if (!open || !focusFirstOnOpen) return;
-    const frame = requestAnimationFrame(() => {
-      firstFocusableElement(panelElementRef.current)?.focus({
-        preventScroll: true,
-      });
+  const panelReadyForFocus = !portal || floatingPosition !== null;
+  useLayoutEffect(() => {
+    if (!open || !focusFirstOnOpen || !panelReadyForFocus) return;
+    firstFocusableElement(panelElementRef.current)?.focus({
+      preventScroll: true,
     });
-    return () => cancelAnimationFrame(frame);
-  }, [focusFirstOnOpen, open]);
+  }, [focusFirstOnOpen, open, panelReadyForFocus]);
 
   const triggerProps: PopoverTriggerProps = {
     ref: (element) => {

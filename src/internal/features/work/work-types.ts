@@ -292,12 +292,104 @@ export interface WorkSpreadsheetDataValidationRange {
   item: WorkSpreadsheetDataValidationItem;
 }
 
+export type WorkSpreadsheetTableStyle =
+  | { family: 'none' }
+  | { family: 'light'; number: number }
+  | { family: 'medium'; number: number }
+  | { family: 'dark'; number: number };
+
+export interface WorkSpreadsheetTableColumn {
+  name: string;
+}
+
+export type WorkSpreadsheetDynamicFilter =
+  | 'above-average'
+  | 'below-average'
+  | 'tomorrow'
+  | 'today'
+  | 'yesterday'
+  | 'next-week'
+  | 'this-week'
+  | 'last-week'
+  | 'next-month'
+  | 'this-month'
+  | 'last-month'
+  | 'next-quarter'
+  | 'this-quarter'
+  | 'last-quarter'
+  | 'next-year'
+  | 'this-year'
+  | 'last-year'
+  | 'year-to-date'
+  | 'quarter-1'
+  | 'quarter-2'
+  | 'quarter-3'
+  | 'quarter-4'
+  | 'month-1'
+  | 'month-2'
+  | 'month-3'
+  | 'month-4'
+  | 'month-5'
+  | 'month-6'
+  | 'month-7'
+  | 'month-8'
+  | 'month-9'
+  | 'month-10'
+  | 'month-11'
+  | 'month-12';
+
+export type WorkSpreadsheetTableFilterCriteria =
+  | { type: 'values'; values: string[]; includeBlanks: boolean }
+  | { type: 'equals'; value: string }
+  | { type: 'not-equals'; value: string }
+  | { type: 'contains'; value: string }
+  | { type: 'does-not-contain'; value: string }
+  | { type: 'begins-with'; value: string }
+  | { type: 'ends-with'; value: string }
+  | { type: 'greater-than'; value: string }
+  | { type: 'greater-than-or-equal'; value: string }
+  | { type: 'less-than'; value: string }
+  | { type: 'less-than-or-equal'; value: string }
+  | { type: 'between'; lower: string; upper: string }
+  | { type: 'not-between'; lower: string; upper: string }
+  | { type: 'blanks' }
+  | { type: 'non-blanks' }
+  | { type: 'top'; count: number }
+  | { type: 'top-percent'; percent: number }
+  | { type: 'bottom'; count: number }
+  | { type: 'bottom-percent'; percent: number }
+  | { type: 'dynamic'; kind: WorkSpreadsheetDynamicFilter };
+
+export interface WorkSpreadsheetTableFilter {
+  column: number;
+  criteria: WorkSpreadsheetTableFilterCriteria;
+}
+
+export interface WorkSpreadsheetTable {
+  /** Stable browser-model identity. OOXML numeric identity is kept separately. */
+  id: string;
+  ooxmlId?: number;
+  name: string;
+  displayName?: string;
+  range: WorkSpreadsheetCellRange;
+  columns: WorkSpreadsheetTableColumn[];
+  filters: WorkSpreadsheetTableFilter[];
+  headerRow: boolean;
+  totalsRow: boolean;
+  style: WorkSpreadsheetTableStyle;
+  showFirstColumn: boolean;
+  showLastColumn: boolean;
+  showRowStripes: boolean;
+  showColumnStripes: boolean;
+}
+
 export type WorkSpreadsheetSheet = Omit<Sheet, 'images'> & {
   images?: WorkSpreadsheetImage[];
   charts?: WorkSpreadsheetChart[];
   pivotTables?: WorkSpreadsheetPivotTable[];
   formulaMetadata?: WorkSpreadsheetFormulaMetadata;
   dataValidationRanges?: WorkSpreadsheetDataValidationRange[];
+  tables?: WorkSpreadsheetTable[];
 };
 
 export type WorkSpreadsheetPivotAggregation =

@@ -91,6 +91,13 @@ import {
   setSpreadsheetSheetColor,
 } from './spreadsheet-sheet-model';
 import { spreadsheetSelectionAfterStructureDeletion } from './spreadsheet-structure-selection';
+import { createSpreadsheetTableExtension } from './spreadsheet-table-command';
+import type {
+  SpreadsheetTableDesignPatch,
+  SpreadsheetTableRequest,
+  SpreadsheetTableTarget,
+} from './spreadsheet-table';
+import { canApplySpreadsheetTableStructureChange } from './spreadsheet-table-reconciliation';
 
 export interface SpreadsheetWorkbookCommandPort {
   autoFillCell: (
@@ -232,6 +239,11 @@ export interface SpreadsheetHyperlinkCommandPort {
   open: (request: SpreadsheetHyperlinkCell) => boolean;
 }
 
+export interface SpreadsheetTableCommandPort {
+  canOpen: boolean;
+  open: (target: SpreadsheetTableTarget) => boolean;
+}
+
 export interface SpreadsheetNavigationCommandPort {
   canOpenFind: boolean;
   canOpenGoTo: boolean;
@@ -260,6 +272,7 @@ export interface SpreadsheetEditorCommands {
   applyAutoSum: (functionName: SpreadsheetAutoSumFunction) => boolean;
   applyFormatPainter: (target: SpreadsheetCommandSelection) => boolean;
   applyHyperlink: (request: SpreadsheetHyperlinkRequest) => boolean;
+  applyTable: (request: SpreadsheetTableRequest) => boolean;
   cancelFormatPainter: () => boolean;
   clearSelectedCells: (mode?: SpreadsheetCellClearMode) => boolean;
   copySelection: () => boolean;
@@ -286,6 +299,7 @@ export interface SpreadsheetEditorCommands {
   openGoTo: () => boolean;
   openHyperlink: () => boolean;
   openPasteSpecial: () => boolean;
+  openTable: () => boolean;
   pasteCells: (values: readonly (readonly unknown[])[]) => boolean;
   pasteSelection: () => boolean;
   pasteSpecial: (content: SpreadsheetPasteContent) => boolean;
@@ -312,6 +326,12 @@ export interface SpreadsheetEditorCommands {
   setZoom: (percent: number) => boolean;
   sortSelectedCells: (direction: SpreadsheetSortDirection) => boolean;
   toggleAutoFilter: () => boolean;
+  updateTable: (
+    sheetId: string,
+    tableId: string,
+    patch: SpreadsheetTableDesignPatch,
+  ) => boolean;
+  convertTableToRange: (sheetId: string, tableId: string) => boolean;
   undo: () => boolean;
 }
 
@@ -335,6 +355,7 @@ export interface SpreadsheetCommandContext {
   navigation: SpreadsheetNavigationCommandPort;
   onChange: (content: WorkSpreadsheetContent) => void;
   selection: SpreadsheetCommandSelection | null;
+  table: SpreadsheetTableCommandPort;
   targetSheetGridSize?: SpreadsheetGridSize | null;
   targetSheetId: string;
   toolbarCell: Cell | null;
@@ -374,6 +395,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     createSpreadsheetNavigationExtension(),
     createSpreadsheetDataValidationExtension(),
     createSpreadsheetHyperlinkExtension(),
+    createSpreadsheetTableExtension(),
     createSpreadsheetAutoSumExtension(),
     createSpreadsheetCellFillExtension(),
     createOfficeEditorExtension<
@@ -1116,7 +1138,21 @@ function canInsertSelectedStructure(
   const [start, end] = spreadsheetStructureRange(range, axis);
   const count = end - start + 1;
   const maximum = axis === 'row' ? 10_000 : 1_000;
-  return spreadsheetStructureExtent(context, axis) + count < maximum;
+  return (
+    spreadsheetStructureExtent(context, axis) + count < maximum &&
+    canApplySpreadsheetTableStructureChange(
+      context.content.sheets.find(
+        (sheet) => sheet.id === context.targetSheetId,
+      ),
+      {
+        axis,
+        count,
+        direction: _position === 'before' ? 'lefttop' : 'rightbottom',
+        index: _position === 'before' ? start : end,
+        kind: 'insert',
+      },
+    )
+  );
 }
 
 function insertSelectedStructure(
@@ -1124,6 +1160,7 @@ function insertSelectedStructure(
   axis: SpreadsheetStructureAxis,
   position: SpreadsheetStructureInsertPosition,
 ): boolean {
+  if (!canInsertSelectedStructure(context, axis, position)) return false;
   if (!context.workbook || !context.targetSheetId) return false;
   const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
   const before = position === 'before';
@@ -1147,13 +1184,22 @@ function canDeleteSelectedStructure(
 ): boolean {
   if (!canEditSelectedCells(context)) return false;
   const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
-  return end - start + 1 < spreadsheetStructureExtent(context, axis);
+  return (
+    end - start + 1 < spreadsheetStructureExtent(context, axis) &&
+    canApplySpreadsheetTableStructureChange(
+      context.content.sheets.find(
+        (sheet) => sheet.id === context.targetSheetId,
+      ),
+      { axis, end, kind: 'delete', start },
+    )
+  );
 }
 
 function deleteSelectedStructure(
   context: SpreadsheetCommandContext,
   axis: SpreadsheetStructureAxis,
 ): boolean {
+  if (!canDeleteSelectedStructure(context, axis)) return false;
   if (!context.workbook || !context.targetSheetId) return false;
   const range = liveRange(context);
   const [start, end] = spreadsheetStructureRange(range, axis);

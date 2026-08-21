@@ -60,6 +60,8 @@ import {
   scanXlsxWorksheetXml,
   type XlsxWorksheetXmlScan,
 } from './work-xlsx-worksheet-scan';
+import { readXlsxWorksheetTables } from './work-xlsx-tables';
+import type { WorkSpreadsheetTable } from './work-types';
 
 type FrozenPane = NonNullable<Sheet['frozen']>;
 
@@ -78,6 +80,7 @@ export interface XlsxSheetFeatures {
   pageSetup?: XlsxPageSetup;
   images: XlsxWorksheetImage[];
   charts: XlsxWorksheetChart[];
+  tables: WorkSpreadsheetTable[];
 }
 
 export type FortuneDataValidationItem = WorkSpreadsheetDataValidationItem;
@@ -138,6 +141,7 @@ export async function readXlsxSheetFeaturesFromPackage(
         imageBudget,
       ),
       charts: await readXlsxWorksheetCharts(archive, partPath, document),
+      tables: await readXlsxWorksheetTables(archive, partPath),
     });
   }
   return features;
@@ -152,6 +156,7 @@ function emptyXlsxSheetFeatures(): XlsxSheetFeatures {
     pageBreaks: { rows: [], columns: [] },
     images: [],
     charts: [],
+    tables: [],
   };
 }
 

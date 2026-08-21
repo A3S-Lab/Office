@@ -1022,6 +1022,111 @@ test('operates WPS Freeze Panes from the View window group', () => {
   expect(screen.queryByRole('menu', { name: '冻结窗格选项' })).toBeNull();
 });
 
+test('shows a contextual Table Design ribbon with all 60 built-in styles', () => {
+  const actions: string[] = [];
+  const table = {
+    id: 'table-1',
+    name: 'SalesTable',
+    range: {
+      row: [0, 2] as [number, number],
+      column: [0, 2] as [number, number],
+    },
+    columns: [{ name: 'Region' }, { name: 'Revenue' }, { name: 'Status' }],
+    filters: [],
+    headerRow: true,
+    totalsRow: false,
+    style: { family: 'medium' as const, number: 2 },
+    showFirstColumn: false,
+    showLastColumn: false,
+    showRowStripes: true,
+    showColumnStripes: false,
+  };
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="tableDesign"
+      activeTable={table}
+      activeTableSheetId="sheet-1"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          convertTableToRange: () => {
+            actions.push('convert');
+            return true;
+          },
+          updateTable: (_sheetId, _tableId, patch) => {
+            actions.push(JSON.stringify(patch));
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      findOpen={false}
+      gridLinesVisible
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const contextualTab = screen.getByRole('tab', { name: '表格设计' });
+  expect(contextualTab).toHaveAttribute('data-contextual', 'true');
+  expect(contextualTab).toHaveAttribute('aria-selected', 'true');
+
+  const name = screen.getByRole('textbox', { name: '表格名称' });
+  expect(name).toHaveValue('SalesTable');
+  fireEvent.change(name, { target: { value: 'Sales_2026' } });
+  fireEvent.keyDown(name, { key: 'Enter' });
+
+  const tableStyleTrigger = screen.getByRole('button', { name: '表格样式' });
+  fireEvent.click(tableStyleTrigger);
+  const gallery = screen.getByRole('menu', { name: '表格样式库' });
+  expect(within(gallery).getAllByRole('menuitemradio')).toHaveLength(60);
+  expect(
+    within(gallery).getByRole('group', { name: '浅色' }),
+  ).toBeInTheDocument();
+  expect(
+    within(gallery).getByRole('group', { name: '中等' }),
+  ).toBeInTheDocument();
+  expect(
+    within(gallery).getByRole('group', { name: '深色' }),
+  ).toBeInTheDocument();
+  const light1 = within(gallery).getByRole('menuitemradio', {
+    name: '应用表格样式：浅色 1',
+  });
+  const light2 = within(gallery).getByRole('menuitemradio', {
+    name: '应用表格样式：浅色 2',
+  });
+  const light9 = within(gallery).getByRole('menuitemradio', {
+    name: '应用表格样式：浅色 9',
+  });
+  light1.focus();
+  fireEvent.keyDown(gallery, { key: 'ArrowRight' });
+  expect(light2).toHaveFocus();
+  fireEvent.keyDown(gallery, { key: 'ArrowDown' });
+  expect(light9).toHaveFocus();
+  fireEvent.click(
+    within(gallery).getByRole('menuitemradio', {
+      name: '应用表格样式：深色 11',
+    }),
+  );
+  expect(tableStyleTrigger).toHaveFocus();
+
+  fireEvent.click(screen.getByRole('button', { name: '首列' }));
+  fireEvent.click(screen.getByRole('button', { name: '列条纹' }));
+  fireEvent.click(screen.getByRole('button', { name: '转换为区域' }));
+
+  expect(actions).toEqual([
+    JSON.stringify({ name: 'Sales_2026' }),
+    JSON.stringify({ style: { family: 'dark', number: 11 } }),
+    JSON.stringify({ showFirstColumn: true }),
+    JSON.stringify({ showColumnStripes: true }),
+    'convert',
+  ]);
+});
+
 function spreadsheetCan(): SpreadsheetEditorCanCommands {
   return {
     activateSheet: () => true,
@@ -1032,6 +1137,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     applyDataValidation: () => true,
     applyAutoSum: () => true,
     applyHyperlink: () => true,
+    applyTable: () => true,
     clearSelectedCells: () => true,
     activateFormatPainter: () => true,
     applyFormatPainter: () => true,
@@ -1054,6 +1160,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     openGoTo: () => true,
     openHyperlink: () => true,
     openPasteSpecial: () => true,
+    openTable: () => true,
     pasteCells: () => true,
     pasteSelection: () => true,
     pasteSpecial: () => true,
@@ -1074,6 +1181,8 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     selectCellRange: () => true,
     sortSelectedCells: () => true,
     toggleAutoFilter: () => true,
+    updateTable: () => true,
+    convertTableToRange: () => true,
     undo: () => false,
   };
 }
@@ -1095,6 +1204,7 @@ function spreadsheetCommands(
       | 'cancelFormatPainter'
       | 'clearSelectedCells'
       | 'copySelection'
+      | 'convertTableToRange'
       | 'cutSelection'
       | 'deleteSelectedStructure'
       | 'fillSelectedCells'
@@ -1106,11 +1216,13 @@ function spreadsheetCommands(
       | 'openGoTo'
       | 'openHyperlink'
       | 'openPasteSpecial'
+      | 'openTable'
       | 'pasteSelection'
       | 'pasteSpecial'
       | 'removeDataValidation'
       | 'setFreezePanes'
       | 'toggleAutoFilter'
+      | 'updateTable'
     >
   > = {},
 ): SpreadsheetEditorCommands {
@@ -1124,6 +1236,7 @@ function spreadsheetCommands(
     applyDataValidation: overrides.applyDataValidation ?? (() => true),
     applyAutoSum: overrides.applyAutoSum ?? (() => true),
     applyHyperlink: overrides.applyHyperlink ?? (() => true),
+    applyTable: () => true,
     applyFormatPainter: () => true,
     cancelFormatPainter: overrides.cancelFormatPainter ?? (() => true),
     clearSelectedCells: overrides.clearSelectedCells ?? (() => true),
@@ -1145,6 +1258,7 @@ function spreadsheetCommands(
     openGoTo: overrides.openGoTo ?? (() => true),
     openHyperlink: overrides.openHyperlink ?? (() => true),
     openPasteSpecial: overrides.openPasteSpecial ?? (() => true),
+    openTable: overrides.openTable ?? (() => true),
     pasteCells: () => true,
     pasteSelection: overrides.pasteSelection ?? (() => true),
     pasteSpecial: overrides.pasteSpecial ?? (() => true),
@@ -1165,6 +1279,8 @@ function spreadsheetCommands(
     selectCellRange: () => true,
     sortSelectedCells,
     toggleAutoFilter: overrides.toggleAutoFilter ?? (() => true),
+    updateTable: overrides.updateTable ?? (() => true),
+    convertTableToRange: overrides.convertTableToRange ?? (() => true),
     undo: () => false,
   };
 }

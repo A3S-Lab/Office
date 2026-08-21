@@ -223,6 +223,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     setZoom: record('setZoom'),
     toggleAutoFilter: record('toggleAutoFilter'),
     undo: record('undo', false),
+    updateTable: record('updateTable'),
   } as unknown as SpreadsheetEditorCommands;
   const focused: string[] = [];
   const ribbon = spreadsheetCommandsWithGridFocus(commands, () =>
@@ -256,6 +257,9 @@ test('returns grid focus after successful ribbon commands only', () => {
   expect(ribbon.pasteSpecial('values')).toBe(true);
   expect(ribbon.openPasteSpecial()).toBe(true);
   expect(ribbon.undo()).toBe(false);
+  expect(
+    ribbon.updateTable('sheet-1', 'table-1', { showFirstColumn: true }),
+  ).toBe(true);
   expect(ribbon.setZoom(125)).toBe(true);
 
   expect(calls).toEqual([
@@ -280,6 +284,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     'pasteSpecial:values',
     'openPasteSpecial:',
     'undo:',
+    'updateTable:sheet-1,table-1,[object Object]',
     'setZoom:125',
   ]);
   expect(focused).toEqual([

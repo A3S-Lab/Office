@@ -11,7 +11,7 @@ import { createWorkArtifact } from '../src/internal/features/work/work-templates
 import type { WorkSpreadsheetSheet } from '../src/internal/features/work/work-types';
 
 describe('spreadsheet cell merge model', () => {
-  test('rejects malformed and native-merge-intersecting ranges', () => {
+  test('rejects malformed, native-merge-intersecting, and table ranges', () => {
     const activeSheet = sheet();
 
     expect(
@@ -35,6 +35,31 @@ describe('spreadsheet cell merge model', () => {
         'unmerge-cells',
       ),
     ).toBe(true);
+    expect(
+      canApplySpreadsheetCellMerge(
+        {
+          ...activeSheet,
+          tables: [
+            {
+              id: 'table-1',
+              name: 'Table1',
+              range: { row: [4, 6], column: [0, 2] },
+              columns: [{ name: 'A' }, { name: 'B' }, { name: 'C' }],
+              filters: [],
+              headerRow: true,
+              totalsRow: false,
+              style: { family: 'medium', number: 2 },
+              showFirstColumn: false,
+              showLastColumn: false,
+              showRowStripes: true,
+              showColumnStripes: false,
+            },
+          ],
+        },
+        { row: [5, 5], column: [0, 1] },
+        'merge-cells',
+      ),
+    ).toBe(false);
   });
 
   test('fills every unmerged cell without mutating the native anchor', () => {

@@ -229,6 +229,301 @@ test('merges formula, style, note, config, and metadata edits by object field', 
   });
 });
 
+test('syncs native table records and merges independent design edits', () => {
+  const { first, firstDocument, second, secondDocument } = connectedPair(
+    'spreadsheet-table-convergence',
+  );
+  const firstBinding = createOfficeSpreadsheetCollaborationBinding(first);
+  const secondBinding = createOfficeSpreadsheetCollaborationBinding(second);
+  const before = firstBinding.content();
+  const table = {
+    id: 'table-inputs',
+    name: 'InputTable',
+    range: {
+      row: [1, 2] as [number, number],
+      column: [0, 2] as [number, number],
+    },
+    columns: [{ name: 'A' }, { name: 'B' }, { name: 'C' }],
+    filters: [],
+    headerRow: true,
+    totalsRow: false,
+    style: { family: 'medium' as const, number: 2 },
+    showFirstColumn: false,
+    showLastColumn: false,
+    showRowStripes: true,
+    showColumnStripes: false,
+  };
+
+  expect(
+    firstBinding.replace(before, {
+      ...before,
+      sheets: before.sheets.map((sheet) =>
+        sheet.id === 'sheet-input' ? { ...sheet, tables: [table] } : sheet,
+      ),
+    }),
+  ).toBe(true);
+  exchangeUpdates(firstDocument, secondDocument);
+  expect(secondBinding.content().sheets[0]?.tables).toEqual([table]);
+
+  const firstBefore = firstBinding.content();
+  const secondBefore = secondBinding.content();
+  firstBinding.replace(firstBefore, {
+    ...firstBefore,
+    sheets: firstBefore.sheets.map((sheet) =>
+      sheet.id === 'sheet-input'
+        ? {
+            ...sheet,
+            tables: sheet.tables?.map((candidate) =>
+              candidate.id === table.id
+                ? { ...candidate, name: 'Inputs_2026' }
+                : candidate,
+            ),
+          }
+        : sheet,
+    ),
+  });
+  secondBinding.replace(secondBefore, {
+    ...secondBefore,
+    sheets: secondBefore.sheets.map((sheet) =>
+      sheet.id === 'sheet-input'
+        ? {
+            ...sheet,
+            tables: sheet.tables?.map((candidate) =>
+              candidate.id === table.id
+                ? { ...candidate, showColumnStripes: true }
+                : candidate,
+            ),
+          }
+        : sheet,
+    ),
+  });
+  exchangeUpdates(firstDocument, secondDocument);
+
+  const converged = firstBinding.content();
+  expect(secondBinding.content()).toEqual(converged);
+  expect(converged.sheets[0]?.tables?.[0]).toMatchObject({
+    id: table.id,
+    name: 'Inputs_2026',
+    showColumnStripes: true,
+  });
+});
+
+test('accepts every closed native table filter criterion', () => {
+  const criteria = [
+    { type: 'values', values: ['Open', 'Closed'], includeBlanks: true },
+    { type: 'equals', value: 'Exact' },
+    { type: 'not-equals', value: 'Excluded' },
+    { type: 'contains', value: 'middle' },
+    { type: 'does-not-contain', value: 'blocked' },
+    { type: 'begins-with', value: 'prefix' },
+    { type: 'ends-with', value: 'suffix' },
+    { type: 'greater-than', value: '10' },
+    { type: 'greater-than-or-equal', value: '20' },
+    { type: 'less-than', value: '90' },
+    { type: 'less-than-or-equal', value: '80' },
+    { type: 'between', lower: '30', upper: '70' },
+    { type: 'not-between', lower: '40', upper: '60' },
+    { type: 'blanks' },
+    { type: 'non-blanks' },
+    { type: 'top', count: 10 },
+    { type: 'top-percent', percent: 20 },
+    { type: 'bottom', count: 5 },
+    { type: 'bottom-percent', percent: 15 },
+    { type: 'dynamic', kind: 'this-month' },
+  ];
+  const session = spreadsheetSession('spreadsheet-table-filter-criteria');
+
+  initializeOfficeSpreadsheetCollaboration(
+    session,
+    spreadsheetTableFilterContent(criteria),
+  );
+
+  expect(
+    readOfficeSpreadsheetCollaboration(session).sheets[0]?.tables?.[0]?.filters,
+  ).toEqual(
+    criteria.map((criterion, column) => ({ column, criteria: criterion })),
+  );
+});
+
+test('rejects malformed native table filters before collaboration writes', () => {
+  const oversizedAggregate = Array.from({ length: 33 }, (_, index) =>
+    `${index}:`.padEnd(32_767, 'x'),
+  );
+  const cases: Array<{
+    criteria: unknown;
+    expected: RegExp;
+    name: string;
+  }> = [
+    {
+      name: 'unknown criterion',
+      criteria: { type: 'future-filter', value: 'Open' },
+      expected: /supported filter criteria/,
+    },
+    {
+      name: 'unknown field',
+      criteria: { type: 'blanks', executable: true },
+      expected: /without unknown fields/,
+    },
+    {
+      name: 'empty value set',
+      criteria: { type: 'values', values: [], includeBlanks: false },
+      expected: /at least one value/,
+    },
+    {
+      name: 'too many values',
+      criteria: {
+        type: 'values',
+        values: Array.from({ length: 10_001 }, (_, index) => String(index)),
+        includeBlanks: false,
+      },
+      expected: /at most 10,000 values/,
+    },
+    {
+      name: 'duplicate value',
+      criteria: {
+        type: 'values',
+        values: ['Open', 'Open'],
+        includeBlanks: false,
+      },
+      expected: /unique filter values/,
+    },
+    {
+      name: 'empty comparison',
+      criteria: { type: 'equals', value: '' },
+      expected: /1 to 32,767 characters/,
+    },
+    {
+      name: 'oversized comparison',
+      criteria: { type: 'contains', value: 'x'.repeat(32_768) },
+      expected: /1 to 32,767 characters/,
+    },
+    {
+      name: 'XML-forbidden comparison',
+      criteria: { type: 'ends-with', value: 'unsafe\u0000value' },
+      expected: /XML-compatible filter text/,
+    },
+    {
+      name: 'top count outside contract',
+      criteria: { type: 'top', count: 501 },
+      expected: /1 through 500/,
+    },
+    {
+      name: 'percentage outside contract',
+      criteria: { type: 'bottom-percent', percent: 101 },
+      expected: /1 through 100/,
+    },
+    {
+      name: 'unknown dynamic family',
+      criteria: { type: 'dynamic', kind: 'current-century' },
+      expected: /supported dynamic filter/,
+    },
+    {
+      name: 'aggregate text budget',
+      criteria: {
+        type: 'values',
+        values: oversizedAggregate,
+        includeBlanks: false,
+      },
+      expected: /1,048,576 bytes/,
+    },
+  ];
+
+  for (const [index, candidate] of cases.entries()) {
+    const session = spreadsheetSession(`spreadsheet-table-filter-${index}`);
+    expect(
+      () =>
+        initializeOfficeSpreadsheetCollaboration(
+          session,
+          spreadsheetTableFilterContent([candidate.criteria]),
+        ),
+      candidate.name,
+    ).toThrow(candidate.expected);
+    expect(session.document.getMap(session.rootName('metadata')).size).toBe(0);
+  }
+});
+
+test('rejects malformed native table metadata before collaboration writes', () => {
+  const cases: Array<{
+    expected: RegExp;
+    mutate: (table: Record<string, unknown>) => void;
+    name: string;
+  }> = [
+    {
+      name: 'A1-like table name',
+      mutate: (table) => {
+        table.name = 'A1';
+      },
+      expected: /valid table name/,
+    },
+    {
+      name: 'filter without header',
+      mutate: (table) => {
+        table.headerRow = false;
+      },
+      expected: /filters to require an enabled header row/,
+    },
+    {
+      name: 'style flags without style',
+      mutate: (table) => {
+        table.style = { family: 'none' };
+      },
+      expected: /style flags to require a built-in style/,
+    },
+    {
+      name: 'unknown style field',
+      mutate: (table) => {
+        table.style = { family: 'none', number: 2 };
+      },
+      expected: /without unknown fields/,
+    },
+    {
+      name: 'unknown column field',
+      mutate: (table) => {
+        const columns = table.columns as Array<Record<string, unknown>>;
+        if (columns[0]) columns[0].formula = '=1';
+      },
+      expected: /without unknown fields/,
+    },
+  ];
+
+  for (const [index, candidate] of cases.entries()) {
+    const content = spreadsheetTableFilterContent([{ type: 'blanks' }]);
+    const table = content.sheets[0]?.tables?.[0] as unknown as Record<
+      string,
+      unknown
+    >;
+    candidate.mutate(table);
+    const session = spreadsheetSession(`spreadsheet-table-metadata-${index}`);
+    expect(
+      () => initializeOfficeSpreadsheetCollaboration(session, content),
+      candidate.name,
+    ).toThrow(candidate.expected);
+    expect(session.document.getMap(session.rootName('metadata')).size).toBe(0);
+  }
+});
+
+test('accepts Rust-compatible Unicode table and column name limits', () => {
+  const content = spreadsheetTableFilterContent([
+    { type: 'blanks' },
+    { type: 'non-blanks' },
+  ]);
+  const table = content.sheets[0]?.tables?.[0];
+  if (!table) throw new Error('Expected a table fixture.');
+  table.name = '𐐀'.repeat(255);
+  table.columns[0] = { name: '🙂'.repeat(255) };
+  table.columns[1] = { name: 'join\u200Der' };
+  const session = spreadsheetSession('spreadsheet-table-unicode-contract');
+
+  initializeOfficeSpreadsheetCollaboration(session, content);
+
+  expect(
+    readOfficeSpreadsheetCollaboration(session).sheets[0]?.tables?.[0],
+  ).toMatchObject({
+    name: table.name,
+    columns: table.columns,
+  });
+});
+
 test('converges concurrent first writes to one blank cell by nested field', () => {
   const { first, firstDocument, second, secondDocument } = connectedPair(
     'spreadsheet-blank-cell-convergence',
@@ -689,6 +984,44 @@ function addedSheet(id: string, name: string) {
     column: 1,
     data: [[{ v: name, m: name }]],
   };
+}
+
+function spreadsheetTableFilterContent(
+  criteria: readonly unknown[],
+): SpreadsheetContent {
+  const width = criteria.length;
+  const content = {
+    type: 'spreadsheet',
+    sheets: [
+      {
+        id: 'sheet-table-filters',
+        name: 'Table filters',
+        data: [Array(width).fill(null), Array(width).fill(null)],
+        tables: [
+          {
+            id: 'table-filters',
+            name: 'FilterTable',
+            range: { row: [0, 1], column: [0, width - 1] },
+            columns: Array.from({ length: width }, (_, index) => ({
+              name: `Column ${index + 1}`,
+            })),
+            filters: criteria.map((criterion, column) => ({
+              column,
+              criteria: criterion,
+            })),
+            headerRow: true,
+            totalsRow: false,
+            style: { family: 'medium', number: 2 },
+            showFirstColumn: false,
+            showLastColumn: false,
+            showRowStripes: true,
+            showColumnStripes: false,
+          },
+        ],
+      },
+    ],
+  };
+  return content as unknown as SpreadsheetContent;
 }
 
 function exchangeUpdates(first: Y.Doc, second: Y.Doc): void {

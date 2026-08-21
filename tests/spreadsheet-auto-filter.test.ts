@@ -69,7 +69,7 @@ describe('spreadsheet AutoFilter model', () => {
     ).toEqual({ row: [2, 4], column: [1, 3] });
   });
 
-  test('rejects empty data, merged ranges, and pivot output', () => {
+  test('rejects empty data, merged ranges, tables, and pivot output', () => {
     const sheet = quarterlySheet();
     expect(
       spreadsheetAutoFilterRange(
@@ -99,6 +99,32 @@ describe('spreadsheet AutoFilter model', () => {
     expect(
       spreadsheetAutoFilterRange(
         { ...sheet, isPivotTable: true },
+        selection(3, 1),
+      ),
+    ).toBeNull();
+    expect(
+      spreadsheetAutoFilterRange(
+        {
+          ...sheet,
+          tables: [
+            {
+              id: 'table-1',
+              name: 'Table1',
+              range: { row: [2, 6], column: [0, 6] },
+              columns: Array.from({ length: 7 }, (_, index) => ({
+                name: `Column${index + 1}`,
+              })),
+              filters: [],
+              headerRow: true,
+              totalsRow: false,
+              style: { family: 'medium', number: 2 },
+              showFirstColumn: false,
+              showLastColumn: false,
+              showRowStripes: true,
+              showColumnStripes: false,
+            },
+          ],
+        },
         selection(3, 1),
       ),
     ).toBeNull();

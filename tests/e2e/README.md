@@ -196,6 +196,20 @@ focus, native styling of populated and blank cells, one-step Undo, and clean
 browser diagnostics. The equivalent Playwright regression remains the browser
 coverage used by GitHub Actions.
 
+The native Spreadsheet Table lifecycle has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-table:check
+bun run test:e2e:spreadsheet-table
+```
+
+It covers grid-scoped `Cmd/Ctrl+T`, captured-range and header semantics, the
+contextual Table Design ribbon, all three built-in style families, responsive
+two-dimensional keyboard navigation, exact style-trigger focus restoration,
+table-style options, Convert to Range, one-step Undo, accessibility, and clean
+browser diagnostics. The suite is local-only; GitHub Actions keeps the
+equivalent Playwright regression and never installs or invokes A3S Test.
+
 The native Presentation scene-element and z-order lifecycle has a focused gate:
 
 ```bash

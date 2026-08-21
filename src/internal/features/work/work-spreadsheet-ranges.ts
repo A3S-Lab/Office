@@ -28,7 +28,7 @@ export function isValidSpreadsheetDefinedName(value: string): boolean {
   const name = value.trim();
   if (
     !name ||
-    name.length > 255 ||
+    Array.from(name).length > 255 ||
     !DEFINED_NAME.test(name) ||
     /^_xlnm\./i.test(name)
   )

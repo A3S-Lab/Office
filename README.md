@@ -192,6 +192,9 @@ through the CLI, standard MCP server, or A3S Code.
 The host owns rooms, authentication, authorization, network delivery, offline
 buffering, persistence, and the `Y.Doc`; A3S Office owns format-specific
 bindings, local undo, validated presence, and conflict-local typed mutations.
+Spreadsheet table state uses ordered, ID-keyed records with creation claims;
+independent table name, style, stripe, column, and filter fields can converge
+without replacing a serialized worksheet.
 An authenticated Document `comment` session can select text, create a durable
 thread, reply, resolve or reopen it, and delete only review records owned by
 its actor while canonical content remains read-only. The server independently
@@ -543,7 +546,15 @@ interaction model.
   multiple ranges, compact rule writes and removal, input messages,
   invalid-input blocking, 1900/1904-aware XLSX date round trips, exact focus
   restoration, one-step Undo, and fail-closed protected, merged, pivot,
-  read-only, invalid, out-of-bounds, or over-10,000-cell targets, a WPS-style
+  read-only, invalid, out-of-bounds, or over-10,000-cell targets, native
+  Spreadsheet Tables/ListObjects through Insert and grid-scoped `Cmd/Ctrl+T`,
+  bounded current-region or explicit-range creation, canonical unique headers,
+  a contextual Table Design ribbon with editable names, 60 OOXML
+  Light/Medium/Dark styles, first/last-column emphasis and row/column stripes,
+  visible-range Canvas styling, sparse-safe Convert to Range, row/column
+  reconciliation, native XLSX table parts and supported filters, one-step Undo,
+  browser/Yjs record convergence, and fail-closed overlap, merge, AutoFilter,
+  protection, pivot, invalid, or over-100,000-cell targets, a WPS-style
   Format Painter with
   single-use and double-click locked
   sessions, cross-sheet range-pattern tiling, Escape cancellation, and native
@@ -733,6 +744,15 @@ only that row. Data-validation regions remain compact in
 Protection ranges, passwordless editable ranges, and conditional formatting
 also remain compact and round-trip through native XLSX records without
 allocating every covered cell.
+
+Worksheet Tables/ListObjects live in `sheet.tables` as semantic records with
+stable IDs, workbook-unique names, zero-based ranges, ordered columns, filters,
+header/totals flags, and built-in style identity. XLSX import and export keep
+native table parts and relationships. Table styling is resolved only for the
+visible Canvas cells; converting a table to a range materializes the confirmed
+appearance without densifying unrelated worksheet space. Structured-reference
+calculation, calculated columns, complete totals authoring, slicers, and
+external/query tables are not yet claimed.
 
 Use `downloadArtifact` to start a browser download or
 `createArtifactBlob` when your application owns upload and persistence.
@@ -1495,6 +1515,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.16.0 documentation](https://a3s-lab.github.io/Office/docs/0.16.0/)
 - [A3S Office 0.15.0 documentation](https://a3s-lab.github.io/Office/docs/0.15.0/)
 - [A3S Office 0.14.0 documentation](https://a3s-lab.github.io/Office/docs/0.14.0/)
 - [A3S Office 0.13.1 documentation](https://a3s-lab.github.io/Office/docs/0.13.1/)

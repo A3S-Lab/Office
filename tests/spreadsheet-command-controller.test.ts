@@ -1242,6 +1242,47 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('blocks structure commands that would destroy table semantics', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      row: 12,
+      column: 8,
+      tables: [
+        {
+          id: 'table-1',
+          name: 'Table1',
+          range: { row: [2, 4], column: [1, 3] },
+          columns: [{ name: 'A' }, { name: 'B' }, { name: 'C' }],
+          filters: [],
+          headerRow: true,
+          totalsRow: false,
+          style: { family: 'medium', number: 2 },
+          showFirstColumn: false,
+          showLastColumn: false,
+          showRowStripes: true,
+          showColumnStripes: false,
+        },
+      ],
+    };
+    const editor = spreadsheetEditor(fixture.context);
+
+    fixture.workbook.selection = [{ row: [2, 2], column: [0, 7] }];
+    expect(editor.can().deleteSelectedStructure('row')).toBe(false);
+    expect(editor.commands.deleteSelectedStructure('row')).toBe(false);
+
+    fixture.workbook.selection = [{ row: [0, 11], column: [1, 3] }];
+    expect(editor.can().deleteSelectedStructure('column')).toBe(false);
+    expect(editor.commands.deleteSelectedStructure('column')).toBe(false);
+
+    fixture.workbook.selection = [{ row: [3, 3], column: [0, 7] }];
+    expect(editor.can().deleteSelectedStructure('row')).toBe(true);
+    expect(editor.commands.deleteSelectedStructure('row')).toBe(true);
+    expect(editor.can().insertSelectedStructure('row', 'after')).toBe(true);
+    expect(editor.commands.insertSelectedStructure('row', 'after')).toBe(true);
+    expect(fixture.workbook.structureChanges).toHaveLength(2);
+  });
+
   test('clamps the selection after deleting terminal rows and columns', () => {
     const fixture = commandFixture();
     fixture.context.content.sheets[0] = {

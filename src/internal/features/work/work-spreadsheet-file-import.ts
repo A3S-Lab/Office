@@ -386,6 +386,7 @@ export async function importWorkSpreadsheetFile(
       charts: features?.charts.length
         ? xlsxWorksheetChartsToSheet(features.charts, config)
         : undefined,
+      tables: features?.tables.length ? features.tables : undefined,
       formulaMetadata,
     });
     await context.controller.checkpoint(

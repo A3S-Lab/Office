@@ -34,7 +34,7 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     id: 'blank-spreadsheet',
     kind: 'spreadsheet',
     name: '空白表格',
-    description: '公式、筛选与多工作表',
+    description: '公式、表格、筛选与多工作表',
     accent: '#16a36a',
   },
   {

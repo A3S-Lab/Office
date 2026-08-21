@@ -49,6 +49,7 @@ import {
   SortDesc,
   Sigma,
   Rows3,
+  Table2,
   TableProperties,
   Trash2,
   Undo2,
@@ -61,7 +62,10 @@ import { spreadsheetChartCount } from '../work-spreadsheet-charts';
 import { spreadsheetFormulaCount } from '../work-spreadsheet-formula-analysis';
 import { spreadsheetPivotCount } from '../work-spreadsheet-pivots';
 import { protectedSheetCount } from '../work-spreadsheet-protection';
-import type { WorkSpreadsheetContent } from '../work-types';
+import type {
+  WorkSpreadsheetContent,
+  WorkSpreadsheetTable,
+} from '../work-types';
 import type { SpreadsheetCellMergeCommand } from './spreadsheet-cell-merge';
 import type { SpreadsheetAutoSumFunction } from './spreadsheet-auto-sum';
 import type { SpreadsheetResolvedCellBorders } from './spreadsheet-cell-border';
@@ -72,6 +76,7 @@ import {
   type SpreadsheetRibbonTabId,
   spreadsheetCommandCatalog,
   spreadsheetRibbonTabs,
+  spreadsheetTableDesignRibbonTab,
 } from './spreadsheet-command-catalog';
 import type {
   SpreadsheetEditorCanCommands,
@@ -90,6 +95,7 @@ import {
 import { spreadsheetPrintSettingCount } from './spreadsheet-print-settings-panel';
 import type { SpreadsheetPasteContent } from './spreadsheet-paste-special';
 import type { SpreadsheetWorkbookPanelView } from './spreadsheet-workbook-panel';
+import { SpreadsheetTableDesignRibbon } from './spreadsheet-table-ribbon';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import {
   type WorkOfficeFileAction,
@@ -109,6 +115,8 @@ export type { SpreadsheetRibbonTabId } from './spreadsheet-command-catalog';
 
 export function SpreadsheetEditorRibbon({
   activeTab,
+  activeTable = null,
+  activeTableSheetId,
   autoFilterActive = false,
   can,
   commands,
@@ -127,6 +135,8 @@ export function SpreadsheetEditorRibbon({
   toolbarCellBorders,
 }: {
   activeTab: SpreadsheetRibbonTabId;
+  activeTable?: WorkSpreadsheetTable | null;
+  activeTableSheetId?: string;
   autoFilterActive?: boolean;
   can: SpreadsheetEditorCanCommands;
   commands: SpreadsheetEditorCommands;
@@ -147,6 +157,9 @@ export function SpreadsheetEditorRibbon({
   toolbarCell: Cell | null | undefined;
   toolbarCellBorders?: SpreadsheetResolvedCellBorders;
 }) {
+  const ribbonTabs = activeTable
+    ? [...spreadsheetRibbonTabs, spreadsheetTableDesignRibbonTab]
+    : spreadsheetRibbonTabs;
   const formulaCount = useMemo(
     () => spreadsheetFormulaCount(content),
     [content],
@@ -155,7 +168,7 @@ export function SpreadsheetEditorRibbon({
   return (
     <WorkOfficeRibbon
       ariaLabel="表格功能区"
-      tabs={spreadsheetRibbonTabs}
+      tabs={ribbonTabs}
       defaultTab="home"
       activeTab={activeTab}
       onTabChange={onTabChange}
@@ -354,6 +367,19 @@ export function SpreadsheetEditorRibbon({
         ),
         insert: (
           <>
+            <WorkOfficeRibbonGroup label="表格" priority="high">
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.table.label}
+                title={`${spreadsheetCommandCatalog.table.label}（${spreadsheetCommandCatalog.table.shortcut.label}）`}
+                aria-keyshortcuts={
+                  spreadsheetCommandCatalog.table.shortcut.aria
+                }
+                disabled={!can.openTable()}
+                onClick={commands.openTable}
+              >
+                <Table2 size={19} />
+              </WorkOfficeRibbonButton>
+            </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="链接" priority="high">
               <WorkOfficeRibbonButton
                 label={spreadsheetCommandCatalog.hyperlink.label}
@@ -518,6 +544,15 @@ export function SpreadsheetEditorRibbon({
             </WorkOfficeRibbonGroup>
           </>
         ),
+        tableDesign:
+          activeTable && activeTableSheetId ? (
+            <SpreadsheetTableDesignRibbon
+              can={can}
+              commands={commands}
+              sheetId={activeTableSheetId}
+              table={activeTable}
+            />
+          ) : null,
       }}
     />
   );

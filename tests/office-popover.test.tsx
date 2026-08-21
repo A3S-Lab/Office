@@ -85,6 +85,39 @@ test('moves portal menu focus to the tab stop beside its trigger', async () => {
   );
 });
 
+test('focuses a positioned portal menu without an animation frame', async () => {
+  const requestAnimationFrame = window.requestAnimationFrame;
+  window.requestAnimationFrame = () => 1;
+  try {
+    render(
+      <Popover
+        label="Open commands"
+        panelLabel="Commands"
+        panelRole="menu"
+        portal
+        focusFirstOnOpen
+        trigger={(triggerProps) => (
+          <button {...triggerProps}>Open commands</button>
+        )}
+      >
+        <button type="button" role="menuitem" tabIndex={-1}>
+          First command
+        </button>
+      </Popover>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open commands' }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', { name: 'First command' }),
+      ).toHaveFocus(),
+    );
+  } finally {
+    window.requestAnimationFrame = requestAnimationFrame;
+  }
+});
+
 test('keeps Tab inside a portal dialog until its focus boundary', async () => {
   render(
     <>

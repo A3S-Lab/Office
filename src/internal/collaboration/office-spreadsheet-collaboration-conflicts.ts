@@ -75,6 +75,7 @@ function assertCompatibleSheet(
     'images',
     'charts',
     'pivotTables',
+    'tables',
   ]);
   assertCompatibleValue(
     withoutKeys(previous, omitted),
@@ -114,6 +115,13 @@ function assertCompatibleSheet(
     shared.pivotTables ?? [],
     (pivot) => pivot.id,
     `${label} pivot table`,
+  );
+  assertRecordCollection(
+    previous.tables ?? [],
+    next.tables ?? [],
+    shared.tables ?? [],
+    (table) => table.id,
+    `${label} table`,
   );
   assertCellCollection(
     spreadsheetCells(previous),

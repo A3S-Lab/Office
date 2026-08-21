@@ -4,6 +4,26 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.16.0 - 2026-08-22
+
+- Added native Spreadsheet Tables/ListObjects through Insert and the
+  grid-scoped `Cmd/Ctrl+T` shortcut. The bounded creation dialog captures a
+  current region or explicit range, canonicalizes unique headers, and rejects
+  merges, protection, overlapping tables or worksheet AutoFilters, pivots,
+  invalid bounds, and selections above 100,000 cells before one controlled
+  update and one-step Undo. A contextual Table Design ribbon exposes table
+  names, 60 OOXML Light/Medium/Dark styles, first/last-column emphasis,
+  row/column stripes, exact style-trigger focus restoration, and sparse-safe
+  Convert to Range. Visible-range Canvas painting retains cell ownership while
+  row/column reconciliation keeps ranges, columns, filters, and headers
+  coherent. Native XLSX table parts, relationships, content types, built-in
+  styles, and supported filters round-trip, and ordered ID-keyed Yjs records
+  converge independent two-client design edits. Focused Rstest, desktop and
+  compact Playwright, and a local-only A3S Test 1.0.0 regression cover the
+  workflow; GitHub Actions does not install or invoke A3S Test. Structured
+  references, calculated columns, complete totals authoring, slicers, and
+  external/query tables remain explicit gaps.
+
 ## 0.15.0 - 2026-08-21
 
 - Added WPS-style Spreadsheet Data Validation under Data and Data Tools for

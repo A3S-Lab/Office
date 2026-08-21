@@ -1,0 +1,206 @@
+suite "office-spreadsheet-table" {
+    version = 1
+
+    scenario "create-design-convert-and-undo" {
+        name = "Create, design, convert, and undo a native Spreadsheet table"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-table"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-first-cell" {
+            key = "Control+Home"
+        }
+
+        press "move-to-table-start-row-one" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-table-start-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "extend-selection-column-one" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-selection-column-two" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-selection-column-three" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-selection-column-four" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-selection-column-five" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-selection-column-six" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-selection-row-one" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-selection-row-two" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-selection-row-three" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-selection-row-four" {
+            key = "Shift+ArrowDown"
+        }
+
+        expect "table-range-selected" {
+            text = "A3:G7"
+        }
+
+        press "open-create-table-dialog" {
+            key = "Control+T"
+        }
+
+        expect "create-table-dialog-visible" {
+            visible = css(".work-spreadsheet-table-dialog[role='dialog']")
+        }
+
+        expect "captured-range-visible" {
+            visible = css(".work-spreadsheet-table-dialog input[value='A3:G7']")
+        }
+
+        expect "header-row-enabled" {
+            visible = css(".work-spreadsheet-table-dialog .work-office-checkbox.checked:has(input[aria-label='表包含标题']:checked)")
+        }
+
+        click "create-table" {
+            target = role("button", "确定")
+        }
+
+        expect "table-design-active" {
+            visible = css(".work-spreadsheet-ribbon [role='tab'][aria-selected='true'][data-contextual='true']")
+        }
+
+        click "open-table-style-gallery" {
+            target = role("button", "表格样式")
+        }
+
+        expect "light-style-group-visible" {
+            visible = css("[role='menu'][aria-label='表格样式库'] fieldset[aria-label='浅色']")
+        }
+
+        expect "medium-style-group-visible" {
+            visible = css("[role='menu'][aria-label='表格样式库'] fieldset[aria-label='中等']")
+        }
+
+        expect "dark-style-group-visible" {
+            visible = css("[role='menu'][aria-label='表格样式库'] fieldset[aria-label='深色']")
+        }
+
+        expect "first-style-focused" {
+            visible = css("[role='menu'][aria-label='表格样式库'] [role='menuitemradio'][aria-label='应用表格样式：浅色 1']:focus")
+        }
+
+        press "focus-next-style" {
+            key = "ArrowRight"
+        }
+
+        expect "second-style-focused" {
+            visible = css("[role='menu'][aria-label='表格样式库'] [role='menuitemradio'][aria-label='应用表格样式：浅色 2']:focus")
+        }
+
+        press "focus-next-style-row" {
+            key = "ArrowDown"
+        }
+
+        expect "ninth-style-focused" {
+            visible = css("[role='menu'][aria-label='表格样式库'] [role='menuitemradio'][aria-label='应用表格样式：浅色 9']:focus")
+        }
+
+        click "apply-dark-style" {
+            target = role("menuitemradio", "应用表格样式：深色 11")
+        }
+
+        expect "style-trigger-restored" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='表格样式'][title='表格样式（当前：深色 11）']:focus")
+        }
+
+        click "enable-first-column" {
+            target = role("button", "首列")
+        }
+
+        expect "first-column-enabled" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='首列'][aria-pressed='true']")
+        }
+
+        click "disable-row-stripes" {
+            target = role("button", "行条纹")
+        }
+
+        expect "row-stripes-disabled" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='行条纹'][aria-pressed='false']")
+        }
+
+        click "convert-table-to-range" {
+            target = role("button", "转换为区域")
+        }
+
+        expect "conversion-returned-focus-to-grid" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay:focus")
+        }
+
+        click "undo-conversion" {
+            target = role("button", "撤销")
+        }
+
+        expect "table-restored-in-one-step" {
+            visible = css(".work-spreadsheet-ribbon [role='tab'][aria-selected='true'][data-contextual='true']")
+        }
+
+        accessibility "spreadsheet-table-accessibility" {
+            path = "evidence/spreadsheet-table-accessibility.json"
+            interactive = true
+        }
+
+        console "spreadsheet-table-console" {
+            path = "diagnostics/spreadsheet-table-console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-table-page-errors" {
+            path = "diagnostics/spreadsheet-table-page-errors.json"
+            clear = false
+        }
+    }
+}

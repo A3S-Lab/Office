@@ -15,14 +15,20 @@ export function spreadsheetAutoFilterRange(
   sheet: WorkSpreadsheetSheet,
   selection: Selection,
 ): SpreadsheetAutoFilterRange | null {
-  if (sheet.isPivotTable || sheet.pivotTables?.length) return null;
-  const normalized = normalizeAutoFilterSelection(selection);
-  const range =
-    normalized.row[0] !== normalized.row[1]
-      ? normalized
-      : spreadsheetCurrentRegion(sheet, normalized);
+  const range = spreadsheetSelectionOrCurrentRegion(sheet, selection);
   if (!range || !validSpreadsheetAutoFilterRange(sheet, range)) return null;
   return range;
+}
+
+export function spreadsheetSelectionOrCurrentRegion(
+  sheet: WorkSpreadsheetSheet,
+  selection: Selection,
+): SpreadsheetAutoFilterRange | null {
+  if (sheet.isPivotTable || sheet.pivotTables?.length) return null;
+  const normalized = normalizeAutoFilterSelection(selection);
+  return normalized.row[0] !== normalized.row[1]
+    ? normalized
+    : spreadsheetCurrentRegion(sheet, normalized);
 }
 
 export function spreadsheetAutoFilterHeaderColumn(
@@ -170,6 +176,7 @@ function validSpreadsheetAutoFilterRange(
   range: SpreadsheetAutoFilterRange,
 ): boolean {
   if (range.row[1] <= range.row[0]) return false;
+  if (spreadsheetAutoFilterIntersectsTable(sheet, range)) return false;
   const cells = spreadsheetCellReader(sheet);
   if (
     !spreadsheetRowHasContent(
@@ -191,6 +198,19 @@ function validSpreadsheetAutoFilterRange(
     }
   }
   return dataFound && !spreadsheetRangeIntersectsMerge(sheet, range);
+}
+
+function spreadsheetAutoFilterIntersectsTable(
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetAutoFilterRange,
+): boolean {
+  return (sheet.tables ?? []).some(
+    (table) =>
+      table.range.row[0] <= range.row[1] &&
+      table.range.row[1] >= range.row[0] &&
+      table.range.column[0] <= range.column[1] &&
+      table.range.column[1] >= range.column[0],
+  );
 }
 
 function spreadsheetRangeIntersectsMerge(

@@ -38,10 +38,24 @@ export function canApplySpreadsheetCellMerge(
     return merged.length > 0;
   }
   if (merged.length > 0) return false;
+  if (spreadsheetMergeIntersectsTable(sheet, normalized)) return false;
   const rowCount = normalized.row[1] - normalized.row[0] + 1;
   const columnCount = normalized.column[1] - normalized.column[0] + 1;
   if (command === 'merge-across') return columnCount > 1;
   return rowCount * columnCount > 1;
+}
+
+function spreadsheetMergeIntersectsTable(
+  sheet: WorkSpreadsheetSheet,
+  range: { row: [number, number]; column: [number, number] },
+): boolean {
+  return (sheet.tables ?? []).some(
+    (table) =>
+      table.range.row[0] <= range.row[1] &&
+      table.range.row[1] >= range.row[0] &&
+      table.range.column[0] <= range.column[1] &&
+      table.range.column[1] >= range.column[0],
+  );
 }
 
 export function spreadsheetCellMergeApiCalls(

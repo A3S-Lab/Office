@@ -12,6 +12,7 @@ import {
   MAXIMUM_INCREMENTAL_SPREADSHEET_OPERATIONS,
   projectSpreadsheetSheetsFromFortuneOperations,
 } from './spreadsheet-operation-projection';
+import { reconcileSpreadsheetTablesAfterFortune } from './spreadsheet-table-reconciliation';
 
 const spreadsheetFontSizes = [
   9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 36, 48, 72,
@@ -361,7 +362,11 @@ export function spreadsheetSheetsFromFortune(
         operationCount: operations.length,
       },
     );
-    return incremental.sheets;
+    return reconcileSpreadsheetTablesAfterFortune(
+      incremental.sheets,
+      sourceSheets,
+      operations,
+    );
   }
 
   const projected = sheets.map((sheet, index) => {
@@ -404,7 +409,11 @@ export function spreadsheetSheetsFromFortune(
       operationCount: operations.length,
     },
   );
-  return projected;
+  return reconcileSpreadsheetTablesAfterFortune(
+    projected,
+    sourceSheets,
+    operations,
+  );
 }
 
 function recordSpreadsheetControlledProjectionMeasure(

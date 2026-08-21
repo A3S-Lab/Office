@@ -16,6 +16,7 @@ import {
 import { patchXlsxWorksheetDrawings } from './work-xlsx-images';
 import { patchXlsxSheetFeatures } from './work-xlsx-interop';
 import { patchXlsxPivotTables } from './work-xlsx-pivots';
+import { patchXlsxSpreadsheetTables } from './work-xlsx-tables';
 
 export async function createWorkSpreadsheetBlob(
   artifact: WorkArtifact,
@@ -48,7 +49,8 @@ export async function createWorkSpreadsheetBlob(
     compression: true,
   }) as ArrayBuffer;
   const withFeatures = await patchXlsxSheetFeatures(bytes, content);
-  const withDrawings = await patchXlsxWorksheetDrawings(withFeatures, content);
+  const withTables = await patchXlsxSpreadsheetTables(withFeatures, content);
+  const withDrawings = await patchXlsxWorksheetDrawings(withTables, content);
   const withFormulas = await patchXlsxFormulaFeatures(withDrawings, content);
   const output = await patchXlsxPivotTables(withFormulas, content);
   return new Blob([output], {

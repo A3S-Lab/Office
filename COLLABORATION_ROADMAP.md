@@ -271,9 +271,10 @@ comments, and delete-vs-edit cases converge and survive PPTX round trips.
 
 ### Phase 4: Spreadsheet
 
-Status: browser collaboration foundation plus native conflict-local single-cell
-and atomic batch-cell mutations implemented; structural operations, native
-recalculation parity, and XLSX concurrency coverage are pending.
+Status: browser collaboration foundation, ordered ID-keyed native table
+records, and native conflict-local single-cell plus atomic batch-cell mutations
+implemented; broader structural operations, native recalculation parity, and
+XLSX concurrency coverage are pending.
 
 - Stable sheet/named-range order arrays, ID-keyed records, and append-only
   creation claims avoid a serialized workbook or dense worksheet root.
@@ -285,6 +286,12 @@ recalculation parity, and XLSX concurrency coverage are pending.
   and dynamic-array metadata leaves do not replace their containing object.
 - Images, charts, pivot tables, defined names, calculation settings, print
   areas/titles, page breaks, and page setup have conflict-local typed roots.
+- Native Tables/ListObjects use a per-sheet ID-keyed record map plus an explicit
+  order array. Immutable parent-scoped creation claims prevent ID reuse;
+  recursively patched name, range, column, filter, style, header/totals, and
+  stripe fields let independent browser design edits converge. Shared-input
+  validation rejects duplicate table/defined names, overlaps, invalid styles,
+  malformed columns or filters, and out-of-sheet ranges before projection.
 - Snapshot writes are translated into `previous -> next` patches. Unrelated
   stale snapshots preserve remote cells and records; a delete that would
   discard a remote edit fails closed and asks the caller to refresh.
@@ -316,8 +323,11 @@ recalculation parity, and XLSX concurrency coverage are pending.
 
 Remaining:
 
-- Add stable structural operations and reference transforms for row/column
-  insertion/deletion, merged ranges, tables, sort, and named references.
+- Add native typed structural operations and reference transforms for
+  row/column insertion/deletion, merged ranges, sort, and named references;
+  bridge the existing native table add/set/remove file mutations into the
+  browser-convergent table records, then add collaboration-aware conversion,
+  calculated-column, totals, and structured-reference operations.
 - Treat calculated values as derived once browser and native recalculation are
   deterministic and source formulas remain the only canonical formula state.
 - Add offline/reordered-update property tests plus merged XLSX export/reopen.

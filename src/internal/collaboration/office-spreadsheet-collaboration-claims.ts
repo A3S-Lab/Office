@@ -15,6 +15,7 @@ type SpreadsheetRecordClaimKind =
   | 'image'
   | 'named-range'
   | 'pivot-table'
+  | 'table'
   | 'sheet';
 
 interface SpreadsheetRecordClaim {
@@ -38,6 +39,7 @@ export function appendWorkOfficeSpreadsheetRecordClaims(
     appendChildClaims(claims, before, sheet, 'image', 'images');
     appendChildClaims(claims, before, sheet, 'chart', 'charts');
     appendChildClaims(claims, before, sheet, 'pivot-table', 'pivotTables');
+    appendChildClaims(claims, before, sheet, 'table', 'tables');
   }
   const previousNamedRanges = new Set(
     (previous?.namedRanges ?? []).map(({ id }) => id),
@@ -82,6 +84,9 @@ export function assertWorkOfficeSpreadsheetRecordClaims(
         sheet.id as string,
       );
     }
+    for (const table of sheet.tables ?? []) {
+      assertClaimExists(fingerprints, 'table', table.id, sheet.id as string);
+    }
   }
   for (const range of content.namedRanges ?? []) {
     assertClaimExists(fingerprints, 'named-range', range.id);
@@ -92,8 +97,8 @@ function appendChildClaims(
   claims: Y.Array<string>,
   previous: WorkSpreadsheetSheet | undefined,
   next: WorkSpreadsheetSheet,
-  kind: 'chart' | 'image' | 'pivot-table',
-  key: 'charts' | 'images' | 'pivotTables',
+  kind: 'chart' | 'image' | 'pivot-table' | 'table',
+  key: 'charts' | 'images' | 'pivotTables' | 'tables',
 ): void {
   const previousIds = new Set(
     (previous?.[key] ?? []).map(({ id }) => id as string),
@@ -177,6 +182,7 @@ function requiredClaimKind(value: unknown): SpreadsheetRecordClaimKind {
     value === 'image' ||
     value === 'named-range' ||
     value === 'pivot-table' ||
+    value === 'table' ||
     value === 'sheet'
   ) {
     return value;
@@ -222,6 +228,7 @@ function claimLabel(
   if (claim.kind === 'pivot-table') {
     return `pivot table in sheet '${claim.parentId}'`;
   }
+  if (claim.kind === 'table') return `table in sheet '${claim.parentId}'`;
   if (claim.kind === 'sheet') return 'sheet';
   return `${claim.kind} in sheet '${claim.parentId}'`;
 }

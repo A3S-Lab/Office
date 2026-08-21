@@ -1,6 +1,6 @@
 # A3S Office / WPS Capability Gap Roadmap
 
-Last reviewed: 2026-08-20
+Last reviewed: 2026-08-22
 
 This roadmap compares the current `main` branch of A3S Office with the public
 capability surface of WPS Office. It is a prioritization tool, not a claim that
@@ -36,7 +36,7 @@ collaboration transport, and AI providers.
 | --- | --- | --- | --- |
 | Shared shell | Five lazy browser surfaces, responsive ribbon and dialogs, keyboard/focus contracts, typed host ports | Bundled cloud workspace, live co-editing service, native desktop/mobile shells, large template marketplace | Keep services host-owned; deepen reusable integration protocols |
 | Writer | Strongest surface: structured editing, sections, tables, images, equations, comments, revisions, fields, notes, page chrome, source-backed DOCX | TOC/index authoring, complete revision types, broad DrawingML objects, mail merge, compare/merge, exact desktop pagination | Remains the first fidelity track |
-| Spreadsheet | Workbook editing, formulas, recalculation, charts, pivots, conditional formatting, validation, protection, comments, print setup | Broader formula parity, native Excel tables, advanced pivots/slicers, external data, macros/add-ins, advanced analysis | Stabilize calculation and native workbook semantics before adding more UI |
+| Spreadsheet | Workbook editing, formulas, recalculation, native Tables/ListObjects, charts, pivots, conditional formatting, validation, protection, comments, print setup | Broader formula and structured-reference parity, calculated table columns/totals, advanced pivots/slicers, external data, macros/add-ins, advanced analysis | Stabilize calculation and native workbook semantics before adding more UI |
 | Presentation | Editable scene graph, masters/layouts, text, shapes, images, tables, charts, groups, comments, transitions, slideshow/presenter view | Object animations, media, broad shape/SmartArt fidelity, full master authoring, richer views and video export | Build expressiveness on the typed scene graph |
 | PDF | PDFium rendering, search, forms, annotations, navigation, bounded long-file rendering, save | Native text/object editing, page organization, conversion, OCR, signatures, redaction, compression | Evolve from viewer/annotator into an optional PDF workbench |
 | Markdown | GFM source, visual editing, split preview, tables, task lists, links, images, code | No direct WPS equivalent | Maintain as an A3S differentiator |
@@ -97,7 +97,7 @@ collaboration transport, and AI providers.
 | Calculation settings and cached results | **Supported** for explicit modes and bounded calculation metadata | Complex data tables and compatibility calculation paths need broader parity | P0 |
 | Cell formatting, number formats, alignment, wrapping, borders, merge/center | **Partial**, with explicit General, Number, CNY Currency, Accounting, Percentage, Short Date, Time, Scientific, Fraction, and Text presets; seven WPS/Excel formatting shortcuts; 17 grouped WPS built-in cell styles; and direct XLSX font, fill, alignment, wrap, rotation, border, and number-format XF round trips | Custom conditional sections, broader locale/currency choices, the complete themed style gallery, advanced border cases, rich text, and semantic theme/indexed color identities can normalize | P0/P1 |
 | Sort and AutoFilter | **Partial** with current-region discovery, toggling, hidden-row state, and keyboard menu | Advanced criteria, color/icon filters, multi-key custom sorts, and some active criteria normalize | P1 |
-| Native spreadsheet tables | **Gap/partial preservation** | Values survive, but table names, structured references, styles, totals, and table behavior normalize | P0/P1 |
+| Native spreadsheet tables | **Partial**: Insert Table and grid-scoped `Cmd/Ctrl+T`, semantic ID-keyed ListObjects, contextual Table Design, 60 built-in OOXML styles, sparse-safe Convert to Range, row/column reconciliation, supported filters, native XLSX table parts, and browser/Yjs convergence | Structured-reference calculation, calculated columns, complete totals-row authoring, slicers, external/query tables, and broader table integrations remain incomplete | P0/P1 |
 | Pivot tables | **Partial**: rows, columns, report filters, common aggregations, and native XML paths | Calculated fields/items, grouping, slicers, timelines, pivot charts, style controls, and broader cache semantics are incomplete | P1 |
 | Charts | **Partial**: common, combination, scatter, bubble, radar, axes, labels, trendlines, and error bars | 3D/specialized charts, full formatting, drawing interactions, and every Excel chart extension are incomplete | P1/P2 |
 | Conditional formatting | **Partial**: common comparisons, scales, data bars, icon sets, editable rules, and compact maximum-sheet ranges | Formula rules, priority/stop-if-true edge cases, and advanced visuals need more coverage | P1 |
@@ -208,7 +208,9 @@ and review workflows can be completed without leaving the embedded editor.
 
 - Build a versioned formula-compatibility corpus against WPS/Excel behavior,
   including locale, errors, arrays, volatility, dates, and dependency updates.
-- Model native spreadsheet tables, structured references, totals, and styles.
+- Extend the implemented native table model with structured-reference
+  calculation, calculated columns, complete totals authoring, slicers, and
+  external/query-table boundaries.
 - Complete advanced sort/filter and conditional-format precedence.
 - Expand pivot caches, grouping, calculated fields, slicers/timelines, styles,
   and pivot charts.

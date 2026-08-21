@@ -96,6 +96,7 @@ outline: false
         <li>Document 评论模式支持实名线程、回复、解决/重开和本人记录删除</li>
         <li>Document 建议模式支持署名插入/删除/替换提案与不可变编辑决定</li>
         <li>字符格式修订可保留新 Mark 或恢复准确旧格式，并以 DOCX <code>w:rPrChange</code> 往返</li>
+        <li>Spreadsheet 表格/ListObject 以经过校验、有序且按 ID 索引的记录收敛，不会替换整份工作表</li>
         <li>浏览器 Yjs 与原生 Yrs 交换标准增量更新</li>
         <li>A3S Boot 示例在持久化和广播前执行审核语义授权</li>
       </ul>
@@ -133,7 +134,7 @@ outline: false
     <ul className="docs-home-surface-list">
       <li><a href="./components/document.html"><strong>文档</strong><span>TipTap / ProseMirror 与 A3S Office 排版内核</span><code>DocumentEditor</code></a></li>
       <li><a href="./components/markdown.html"><strong>Markdown</strong><span>可视化编辑与受控 Markdown 源码</span><code>MarkdownEditor</code></a></li>
-      <li><a href="./components/spreadsheet.html"><strong>表格</strong><span>工作表交互与 A3S Office 计算内核</span><code>SpreadsheetEditor</code></a></li>
+      <li><a href="./components/spreadsheet.html"><strong>表格</strong><span>稀疏工作簿、原生 Table/ListObject 与 A3S Office 计算内核</span><code>SpreadsheetEditor</code></a></li>
       <li><a href="./components/presentation.html"><strong>演示文稿</strong><span>场景图与按需加载的文本编辑</span><code>PresentationEditor</code></a></li>
       <li><a href="./components/pdf.html"><strong>PDF</strong><span>PDFium WebAssembly 渲染与批注控制器</span><code>PdfViewer</code></a></li>
     </ul>
