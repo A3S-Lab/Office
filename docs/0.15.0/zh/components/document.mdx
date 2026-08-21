@@ -1,0 +1,211 @@
+---
+title: DocumentEditor
+description: 文档内容、属性、事件、选区菜单、排版字体与 Extension。
+---
+
+# DocumentEditor
+
+`DocumentEditor` 用于编辑需要分页的 DOCX 兼容文档、报告和长篇内容。
+TipTap 负责逻辑文档与选区，A3S Office 内核负责确定性分页、文本塑形和文件语义。
+
+长文档 DOM 测量采用协作式调度。编辑器以 32 毫秒为上限分片测量规范的顶层块，只在块之间
+让出事件循环；受控文档发生变化时会中止旧任务。只有完整测量才会更新可复用分页快照，
+Worker/WASM 布局结果仍是最终依据。
+
+## 属性
+
+| 属性 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `content` | `DocumentContent` | 是 | — | 受控文档内容。 |
+| `onChange` | `(content: DocumentContent) => void` | 是 | — | 返回完整的新内容。 |
+| `collaboration` | `OfficeCollaborationSession` | 否 | 无 | 使用已经初始化的 Yjs Document 作为规范值；`comment` 开放评论记录，经过认证的 `suggest` 开放署名文字建议，但都不能直接修改规范正文。 |
+| `presence` | `OfficeCollaborationPresence` | 否 | 无 | 发布本地选区，显示远端光标、选区与成员导航；必须属于同一个 `collaboration` 会话。 |
+| `artifactId` | `string` | 否 | — | 在线 PDF 导出使用的稳定宿主 ID。 |
+| `preview` | `boolean` | 否 | `false` | 使用同一分页结果的只读渲染。 |
+| `saveStatus` | `string` | 否 | `'Saved automatically'` | 由宿主管理的保存状态。 |
+| `fileActions` | `readonly OfficeFileAction[]` | 否 | `[]` | 宿主文件操作。 |
+| `extensions` | `Extensions` | 否 | `[]` | 名称不重复的附加 TipTap Extension。 |
+| `kernelWasmUrl` | `string` | 否 | 内置内核 | 覆盖 Office 排版内核地址。 |
+| `layoutFonts` | `readonly DocumentLayoutFont[]` | 否 | 内置字体 | 浏览器与塑形内核共用、并显示在字体菜单中的字体。 |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | 否 | — | 把类型化编辑请求发送给宿主 AI 流程。 |
+| `onReviewConflict` | `(event: DocumentReviewConflictEvent) => void` | 否 | — | 报告规范受控更新改变审核范围的冲突。 |
+| `getSelectionMenuItems` | `GetDocumentSelectionMenuItems` | 否 | 内置菜单 | 完全替换选中文本后的右键菜单。 |
+| `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
+
+## 内容结构
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `type` | `'document'` | 内容类型标识。 |
+| `html` | `string` | 与结构化模型一起保存的兼容表示。 |
+| `model` | `WorkDocumentModel` | 带版本的 TipTap 文档树，也是精确编辑源。 |
+| `pageSize` | `'a4' \| 'letter'` | 默认纸张；分节可以覆盖。 |
+| `pageColor` | `string` | DOCX 与 PDF 导出保留的页面颜色。 |
+| `orientation`, `margins`, `columns` | 文档布局字段 | 分节覆盖前的默认布局。 |
+| `pageChrome` | `WorkDocumentPageChrome` | 首页、奇数页、偶数页的页眉、页脚和页码。 |
+| `trackChanges` | `boolean` | 是否记录修订。 |
+| `changeDecisions` | `WorkDocumentChangeDecision[]` | 协作修订接受/拒绝后的不可变共享审计记录。 |
+| `comments` | `WorkDocumentComment[]` | 批注、回复与解决状态。 |
+| `bibliography` | `WorkDocumentBibliography` | 引用样式与文献记录。 |
+
+## 实时评论模式
+
+传入已经初始化、带认证 Actor 且 `mode: 'comment'` 的 Document 协作会话，可以在不开放
+正文编辑的情况下创建选区评论。审阅者可以创建线程、回复、解决或重开，并且只能删除
+自己拥有的记录。线程、选区 Mark、Actor 归属和脱离锚点状态会持久化到 Yjs/Yrs；远端
+审核变化不会进入本地撤销历史。浏览器、CLI/MCP 与 A3S Boot 的完整授权流程见
+[多人实时协作](./collaboration.mdx#使用-comment-模式审阅-document)。
+
+## 实时建议模式
+
+传入已经初始化、带认证 Actor 且 `mode: 'suggest'` 的 Document 协作会话，可以创建署名
+插入、删除与替换建议。编辑器会强制记录文字修订，不显示普通格式、评论与最终决定控件，
+并且只允许当前 Actor 撤回自己的建议。规范文字、结构、非建议格式、选项、评论和其他
+Actor 的建议都保持受保护状态。
+
+`edit` 参与者在修订面板中接受或拒绝建议。可见修改和一条不可变
+`WorkDocumentChangeDecision` 会在同一个 Yjs 事务中提交。记录保留建议与决定双方的
+Actor、名称和时间，并通过 `content.changeDecisions` 返回；第二个冲突决定会失败关闭。
+A3S Boot 参考服务还会在持久化和广播之前，通过 Yrs 重复执行同一套语义授权。完整浏览器
+与后端契约，以及当前原生 CLI/MCP 的限制，见
+[使用 suggest 模式提出修订](./collaboration.mdx#使用-suggest-模式提出修订)。
+
+## 字符格式修订
+
+开启修订后，对已有文字应用直接字符格式会创建一条 `formatting` 修订。有界模型覆盖粗体、
+斜体、下划线、删除线、上下标、字体、字号、文字颜色、高亮和 Word 文档网格状态。仍处于
+待处理插入修订中的文字继续归属于该插入，不会再嵌套一条格式修订。
+
+修订保存准确的旧直接 Mark，同时用新 Mark 渲染选中文字。接受只移除修订包装并保留新
+格式；拒绝恢复旧 Mark 并移除包装，不改变任何字符。两种操作都只产生一个事务；清除
+直接格式也不会删除评论或修订 Mark。
+
+受支持的严格或过渡 DOCX `w:rPrChange` 会导入为同一张审核卡，保留作者、可选日期、
+当前格式和旧格式；导出时重新写成原生 `w:rPrChange`。不支持、格式错误、重复或命名空间
+伪造的运行属性修订继续进入结构诊断，不会被误解为可编辑状态。
+
+在协作中，修订 Mark 与接受/拒绝审计记录都通过标准 Yjs v1 更新传输。Yrs 会校验有界
+格式快照并读取 `formatting` 决定记录；经过认证的 `suggest` 会话必须保留已有格式修订，
+不能创建或改写它。完整边界见
+[同步字符格式修订](./collaboration.mdx#同步字符格式修订)与
+[A3S Boot 后端](./collaboration-server.mdx#更新授权)。在 Playground 中依次点击
+**体验格式修订**、**审阅**、**查看修订（2）**，即可审核“格式”卡。
+
+## 段落格式修订
+
+开启修订后，段落命令会给每个受影响的段落或标题创建独立的
+`paragraph-formatting` 修订。有界快照覆盖对齐、文字方向、左右及首行或悬挂缩进、
+段前段后间距、行距与规则、段中不分页、与下段同页、段前分页、孤行控制、同样式段落
+间距、Outline Level、制表位、边框、底纹和默认折叠状态。一次跨段命令共享稳定修订
+身份；未决状态下再次修改格式仍保留第一次修改前的完整快照，不会重置审核起点。
+
+接受会保留当前段落属性，只移除审核元数据。拒绝会恢复完整旧段落属性，不改动正文或
+行内 Mark。原格式命令、接受与拒绝分别形成独立撤销边界；旧快照损坏或不是规范形式时
+会失败关闭，不会只恢复一部分属性。
+
+受支持的严格或过渡 DOCX `w:pPrChange` 会导入为“段落格式”卡，保留作者、可选日期、
+当前属性和完整的受支持旧属性快照；导出会重新生成原生 `w:pPrChange`，并移除全部私有
+传输标记。重复、格式错误、命名空间伪造或包含不支持属性的段落属性修订继续进入结构
+诊断。
+
+节点元数据与不可变 `changeKind: "paragraph-formatting"` 决定记录都使用标准 Yjs v1
+更新。Yrs 能读取该决定类型，让浏览器创建的修订跨重启、重复和乱序投递后继续存在，
+并拒绝 `suggest` 更新创建或改写段落审核元数据。完整链路见
+[同步段落格式修订](./collaboration.mdx#同步段落格式修订)。Playground 的第二张卡就是
+“段落格式”；拒绝后会恢复旧对齐、缩进、间距和行距，同时保留正文与独立的字符格式
+修订。
+
+## DOCX 文字与文档网格保真
+
+导入的分节布局会保留可选的 `WorkDocumentGrid`，包括 OOXML 网格类型和以磅为单位的行间距；
+文字运行会保留明确声明的 `snapToGrid`。这些属性在编辑和 DOCX 导出后仍然存在；没有文档
+网格的源文件不会被文档生成器补入默认网格。
+
+对于 Word 自动行距，浏览器会把原始段落倍数与解析后字体的实测 WPS 行进高度组合使用。
+这些渲染指标属于内部兼容数据；导出仍使用原始 OOXML 段落倍数，因此浏览器校准不会改写
+文档的行距语义。
+
+## 内置导航
+
+“视图”选项卡会在宽屏打开固定的标题导航，在窄屏打开可管理焦点的抽屉。
+导航搜索同时覆盖标题与正文，按当前章节组织结果，高亮所有命中项，并把编辑器选区
+移动到目标位置，但不会增加撤销记录。窄屏选择结果后，抽屉先关闭，再把焦点和精确
+文本范围还给正文。
+
+“页面”视图显示实时物理页面缩略图。超过 48 页时只挂载最多 24 个连续页面按钮，并在
+需要时额外保留当前页和键盘游标页。物理滚动占位保持完整文档距离，Home 和 End 可以
+直接到达首尾页，无需同时挂载全部页面。
+
+标题和全文搜索集合超过 48 条后也使用同一窗口机制：最多挂载 32 个连续条目，并在窗口
+外稀疏保留当前项、选中项和键盘游标项。原生滚动距离、全局列表序号、方向键遍历、
+Home/End 和精确搜索选区都不会丢失。长距离搜索跳转会在选区生效的一帧内使用即时滚动，
+随后恢复编辑器原有滚动样式。
+
+## 引用与题注
+
+“引用”选项卡可以插入题注、交叉引用、脚注、尾注、页码字段、日期与文献引用。
+删除或移动题注会在同一事务中更新相关交叉引用：有效目标会重新编号，目标缺失时显示
+`Missing reference`，而不是继续显示过期编号。一次撤销会同时恢复题注与引用字段。
+
+## 图片属性
+
+选中正文图片后会打开“图片”功能区。常用环绕和对齐命令可以直接使用，“图片属性”弹窗则
+统一编辑厘米宽高、每张图片独立的纵横比锁定、环绕方式、位置、文字距离和替代文字，并
+适配手机视口。
+
+一次确定只产生一条撤销记录，并且只改动用户实际编辑过的字段。导入图片的像素尺寸如果
+只是以两位小数厘米显示，会原样保留。取消或 Escape 不修改文档，图片仍保持选中，键盘
+焦点会回到“图片属性”按钮。
+
+## 自定义选区菜单
+
+菜单工厂会收到不可变的选区快照，其中包含精确文本、结构化片段、前后文、全文纯文本、
+同步 HTML 与当前受控内容，同时提供能检测冲突的编辑命令。
+
+```tsx
+import type {
+  DocumentContent,
+  GetDocumentSelectionMenuItems,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const getSelectionMenuItems: GetDocumentSelectionMenuItems = (snapshot) => [
+  {
+    id: 'rewrite',
+    label: '润色',
+    onSelect: async (context) => {
+      const replacement = await rewriteWithModel({
+        selection: snapshot.selection.text,
+        before: snapshot.selection.beforeText,
+        after: snapshot.selection.afterText,
+        document: snapshot.document.text,
+      });
+      context.commands.replaceText(replacement);
+    },
+  },
+];
+
+export function Editor(props: {
+  content: DocumentContent;
+  onChange: (content: DocumentContent) => void;
+}) {
+  return (
+    <DocumentEditor
+      {...props}
+      getSelectionMenuItems={getSelectionMenuItems}
+    />
+  );
+}
+```
+
+异步操作需要返回 Promise。编辑器会在无关事务发生后重新映射原选区；如果选中的文本
+本身已经变化，后续 `replaceText` 会返回 `stale-selection`，不会改错内容。
+
+“询问 AI”这类开放操作，应先在宿主界面收集用户问题，再发出请求。Playground 的实现
+会打开独立问题输入框；提交后仍可查看所附上下文，但不会用整篇上下文占满助手消息流。
+
+## Extension
+
+`extensions` 接收 TipTap Extension。数组引用应保持稳定，每个 Extension 必须使用
+唯一名称。如果自定义 Node 或 Mark 需要经过 DOCX 导入导出后仍然存在，还要提供相应
+文件语义。详见[扩展机制](./extensions.mdx)。

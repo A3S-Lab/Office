@@ -1,0 +1,144 @@
+.work-spreadsheet-data-validation-dialog {
+  --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
+
+  width: min(640px, 100%);
+}
+
+.work-spreadsheet-data-validation-dialog form {
+  display: grid;
+  gap: 18px;
+}
+
+.work-spreadsheet-data-validation-dialog section {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.work-spreadsheet-data-validation-dialog section + section {
+  padding-top: 16px;
+  border-top: 1px solid var(--a3s-line);
+}
+
+.work-spreadsheet-data-validation-dialog h3 {
+  margin: 0;
+  color: var(--a3s-ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-data-validation-scope {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: var(--a3s-panel-soft);
+}
+
+.work-spreadsheet-data-validation-scope > span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 7px;
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 11%,
+    var(--a3s-panel)
+  );
+  color: var(--work-spreadsheet-accent, #159469);
+}
+
+.work-spreadsheet-data-validation-scope > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.work-spreadsheet-data-validation-scope strong,
+.work-spreadsheet-data-validation-scope small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-data-validation-scope strong {
+  color: var(--a3s-ink);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-data-validation-scope small {
+  color: var(--a3s-muted);
+  font-size: 10px;
+}
+
+.work-spreadsheet-data-validation-mixed {
+  margin: -6px 0 0;
+  color: color-mix(in srgb, var(--a3s-ink) 74%, #9a6900);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.work-spreadsheet-data-validation-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--work-spreadsheet-accent, #159469);
+}
+
+.work-spreadsheet-data-validation-condition-grid,
+.work-spreadsheet-data-validation-values.two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.work-spreadsheet-data-validation-values {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.work-spreadsheet-data-validation-inline-error {
+  grid-column: 1 / -1;
+  color: var(--a3s-danger, #c23535);
+  font-size: 10px;
+}
+
+.work-spreadsheet-data-validation-behavior {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.work-spreadsheet-data-validation-behavior .work-office-checkbox {
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+.work-spreadsheet-data-validation-dialog textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.work-spreadsheet-data-validation-error {
+  margin: 0;
+  color: var(--a3s-danger, #c23535);
+  font-size: 11px;
+}
+
+.work-spreadsheet-data-validation-remove {
+  margin-right: auto;
+}
+
+@media (max-width: 560px) {
+  .work-spreadsheet-data-validation-condition-grid,
+  .work-spreadsheet-data-validation-values.two,
+  .work-spreadsheet-data-validation-behavior {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

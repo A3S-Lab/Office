@@ -170,10 +170,6 @@ suite "office-docs-navigation" {
             visible = css("main .rp-codeblock.language-ts .rp-code-copy-button[title='复制代码']")
         }
 
-        screenshot "collaboration-server-guide" {
-            path = "screenshots/collaboration-server-guide.png"
-        }
-
         accessibility "collaboration-server-accessibility" {
             path = "evidence/collaboration-server.json"
             interactive = true
@@ -277,10 +273,6 @@ suite "office-docs-navigation" {
 
         expect "phone-backend-guide-is-discoverable" {
             visible = css("main .docs-home-stage--collaborate a[href$='/components/collaboration-server.html']")
-        }
-
-        screenshot "phone-documentation-center" {
-            path = "screenshots/documentation-center-phone.png"
         }
 
         accessibility "phone-documentation-accessibility" {
@@ -542,8 +534,9 @@ suite "office-docs-navigation" {
             visible = css("html[lang=en]")
         }
 
-        screenshot "english-collaboration-server-release" {
-            path = "screenshots/collaboration-server-0.11.0-en.png"
+        accessibility "english-collaboration-server-release" {
+            path = "evidence/collaboration-server-0.11.0-en.json"
+            interactive = true
         }
 
         console "release-browser-console" {

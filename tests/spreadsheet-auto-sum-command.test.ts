@@ -195,6 +195,7 @@ function autoSumFixture(sheetOverride: Partial<Sheet> = {}): {
       pasteSpecial: () => false,
     },
     content: { type: 'spreadsheet', sheets: [sheet] },
+    dataValidation: { canOpen: false, open: () => false },
     editable: true,
     fallbackRange: { row: [3, 3], column: [0, 0] },
     formulaBar: { setValue: (value) => formulaBarValues.push(value) },

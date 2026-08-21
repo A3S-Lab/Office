@@ -48,10 +48,6 @@ suite "collaboration-playground-entry" {
             text = "A3S Agent"
         }
 
-        screenshot "desktop-collaboration-demo" {
-            path = "screenshots/collaboration-playground-desktop.png"
-        }
-
         accessibility "desktop-collaboration-accessibility" {
             path = "evidence/collaboration-playground-desktop.json"
             interactive = true
@@ -115,8 +111,9 @@ suite "collaboration-playground-entry" {
             text = "A3S Agent"
         }
 
-        screenshot "compact-collaboration-demo" {
-            path = "screenshots/collaboration-playground-compact.png"
+        accessibility "compact-collaboration-accessibility" {
+            path = "evidence/collaboration-playground-compact.json"
+            interactive = true
         }
 
         console "compact-console" {

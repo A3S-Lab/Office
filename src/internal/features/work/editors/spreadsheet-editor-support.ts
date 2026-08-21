@@ -551,13 +551,25 @@ export function spreadsheetContentWithSelection(
   sheetId: string,
   selection: Selection | null | undefined,
 ): WorkSpreadsheetContent {
-  if (!sheetId || !selection) return content;
-  const nextSelection = finiteSpreadsheetSelection(selection);
+  return spreadsheetContentWithSelections(
+    content,
+    sheetId,
+    selection ? [selection] : [],
+  );
+}
+
+export function spreadsheetContentWithSelections(
+  content: WorkSpreadsheetContent,
+  sheetId: string,
+  selections: readonly Selection[],
+): WorkSpreadsheetContent {
+  if (!sheetId || !selections.length) return content;
+  const nextSelections = selections.map(finiteSpreadsheetSelection);
   let changed = false;
   const sheets = content.sheets.map((sheet) => {
     if (sheet.id !== sheetId) return sheet;
     changed = true;
-    return { ...sheet, luckysheet_select_save: [nextSelection] };
+    return { ...sheet, luckysheet_select_save: nextSelections };
   });
   return changed ? { ...content, sheets } : content;
 }

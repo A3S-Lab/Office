@@ -104,10 +104,6 @@ suite "collaboration-document-suggestions" {
             text = "A3S Agent → Native Editor"
         }
 
-        screenshot "native-suggestion-accepted" {
-            path = "screenshots/native-document-suggestion-accepted.png"
-        }
-
         accessibility "native-suggestion-accessibility" {
             path = "evidence/native-document-suggestion-accepted.json"
             interactive = false
@@ -190,10 +186,6 @@ suite "collaboration-document-suggestions" {
 
         expect "pending-decision-is-explicit" {
             text = "有待处理建议"
-        }
-
-        screenshot "pending-suggestion" {
-            path = "screenshots/document-suggestion-pending.png"
         }
 
         focus "focus-editor-review-tab" {
@@ -305,10 +297,6 @@ suite "collaboration-document-suggestions" {
 
         expect "compact-native-agent-control-is-reachable" {
             visible = css("button[aria-label='运行原生 Agent 提议']")
-        }
-
-        screenshot "compact-suggestion-peers" {
-            path = "screenshots/document-suggestion-compact.png"
         }
 
         focus "focus-compact-suggester-document" {

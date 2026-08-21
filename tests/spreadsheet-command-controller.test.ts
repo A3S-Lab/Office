@@ -8,6 +8,7 @@ import {
   type SpreadsheetClipboardCommandPort,
   type SpreadsheetCommandContext,
   type SpreadsheetCommandRange,
+  type SpreadsheetDataValidationCommandPort,
   type SpreadsheetEditorCommands,
   type SpreadsheetFormatCellsCommandPort,
   type SpreadsheetFormatPainterCommandPort,
@@ -367,6 +368,88 @@ describe('spreadsheet command controller', () => {
       v: 'A3S Office',
       bg: '#fff2cc',
     });
+  });
+
+  test('opens, applies, and removes data validation through typed commands', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      row: 40,
+      column: 12,
+    };
+    fixture.workbook.selection = [
+      {
+        row: [1, 2],
+        column: [1, 1],
+        row_focus: 1,
+        column_focus: 1,
+      },
+      {
+        row: [4, 4],
+        column: [3, 4],
+        row_focus: 4,
+        column_focus: 4,
+      },
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetDataValidation');
+    expect(editor.can().openDataValidation()).toBe(true);
+    expect(editor.commands.openDataValidation()).toBe(true);
+    expect(fixture.dataValidation.requests).toEqual([
+      {
+        sheetId: 'sheet-1',
+        ranges: [
+          { row: [1, 2], column: [1, 1] },
+          { row: [4, 4], column: [3, 4] },
+        ],
+        activeCell: { row: 4, column: 4 },
+      },
+    ]);
+    expect(fixture.changes).toEqual([]);
+
+    const target = fixture.dataValidation.requests[0];
+    if (!target) throw new Error('Expected a data-validation target');
+    expect(
+      editor.commands.applyDataValidation({
+        ...target,
+        value: {
+          type: 'dropdown',
+          type2: '',
+          value1: 'Ready,Blocked',
+          value2: '',
+          prohibitInput: true,
+          hintShow: true,
+          hintValue: 'Choose a state.',
+        },
+      }),
+    ).toBe(true);
+    expect(fixture.changes).toHaveLength(1);
+    expect(fixture.changes[0]?.sheets[0]?.dataValidationRanges).toEqual([
+      {
+        ranges: target.ranges,
+        item: expect.objectContaining({
+          type: 'dropdown',
+          rangeTxt: 'B2:B3,D5:E5',
+          value1: 'Ready,Blocked',
+        }),
+      },
+    ]);
+
+    const applied = fixture.changes[0];
+    if (!applied) throw new Error('Expected an applied validation change');
+    editor.updateContext({ ...fixture.context, content: applied });
+    expect(editor.commands.removeDataValidation(target)).toBe(true);
+    expect(fixture.changes).toHaveLength(2);
+    expect(fixture.changes[1]?.sheets[0]?.dataValidationRanges).toBeUndefined();
+
+    editor.updateContext({
+      ...fixture.context,
+      content: applied,
+      editable: false,
+    });
+    expect(editor.can().openDataValidation()).toBe(false);
+    expect(editor.commands.removeDataValidation(target)).toBe(false);
   });
 
   test('owns Cmd/Ctrl+K only on the active spreadsheet grid', () => {
@@ -1744,6 +1827,7 @@ function commandFixture(): {
   changes: WorkSpreadsheetContent[];
   calculation: RecordingSpreadsheetCalculation;
   context: SpreadsheetCommandContext;
+  dataValidation: RecordingSpreadsheetDataValidation;
   formulaBarValues: unknown[];
   formatPainter: RecordingSpreadsheetFormatPainter;
   formatCells: RecordingSpreadsheetFormatCells;
@@ -1766,6 +1850,7 @@ function commandFixture(): {
   const autoFilter = new RecordingSpreadsheetAutoFilter();
   const calculation = new RecordingSpreadsheetCalculation();
   const clipboard = new RecordingSpreadsheetClipboard();
+  const dataValidation = new RecordingSpreadsheetDataValidation();
   const formulaBarValues: unknown[] = [];
   const formatPainter = new RecordingSpreadsheetFormatPainter();
   const formatCells = new RecordingSpreadsheetFormatCells();
@@ -1776,6 +1861,7 @@ function commandFixture(): {
     autoFilter,
     calculation,
     clipboard,
+    dataValidation,
     changes,
     formulaBarValues,
     formatPainter,
@@ -1789,6 +1875,7 @@ function commandFixture(): {
       calculation,
       clipboard,
       content,
+      dataValidation,
       editable: true,
       fallbackRange: { row: [0, 1], column: [0, 2] },
       formulaBar: {
@@ -1813,6 +1900,21 @@ function commandFixture(): {
       workbook,
     },
   };
+}
+
+class RecordingSpreadsheetDataValidation
+  implements SpreadsheetDataValidationCommandPort
+{
+  canOpen = true;
+  requests: Parameters<SpreadsheetDataValidationCommandPort['open']>[0][] = [];
+
+  open(
+    request: Parameters<SpreadsheetDataValidationCommandPort['open']>[0],
+  ): boolean {
+    if (!this.canOpen) return false;
+    this.requests.push(request);
+    return true;
+  }
 }
 
 class RecordingSpreadsheetNavigation

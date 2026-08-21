@@ -300,6 +300,15 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     editor: ['Alt-ArrowDown'],
     label: 'Alt+↓',
   });
+  expect(spreadsheetCommandCatalog.dataValidation).toMatchObject({
+    id: 'data.validation',
+    label: '数据验证',
+    location: {
+      area: 'ribbon',
+      group: 'dataTools',
+      tab: 'data',
+    },
+  });
   expect(spreadsheetCommandCatalog.recalculateWorkbook.shortcut).toEqual({
     aria: 'F9',
     editor: ['F9'],

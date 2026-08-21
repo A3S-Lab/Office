@@ -48,10 +48,6 @@ suite "word-formatting-revision" {
             visible = css(".ProseMirror span[data-document-change='true'][data-change-kind='formatting'] strong")
         }
 
-        screenshot "pending-formatting-revision" {
-            path = "screenshots/formatting-revision-pending.png"
-        }
-
         click "reject-formatting-revision" {
             target = role("button", "拒绝修订 1")
         }
@@ -70,10 +66,6 @@ suite "word-formatting-revision" {
 
         expect "paragraph-formatting-revision-is-preserved" {
             visible = css(".ProseMirror p[data-document-change='true'][data-change-kind='paragraph-formatting']")
-        }
-
-        screenshot "rejected-formatting-revision" {
-            path = "screenshots/formatting-revision-rejected.png"
         }
 
         accessibility "rejected-formatting-accessibility" {

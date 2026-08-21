@@ -88,10 +88,6 @@ suite "spreadsheet-paste-special" {
             target = css(".work-spreadsheet-paste-special-options label:has(input[aria-label='跳过空白单元格'])")
         }
 
-        screenshot "paste-special-dialog" {
-            path = "screenshots/spreadsheet-paste-special-dialog.png"
-        }
-
         click "apply-paste-special" {
             target = css(".work-spreadsheet-paste-special-dialog button[type='submit']")
         }

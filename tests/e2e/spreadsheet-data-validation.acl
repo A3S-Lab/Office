@@ -1,0 +1,161 @@
+suite "spreadsheet-data-validation" {
+    version = 1
+
+    scenario "apply-remove-and-undo-data-validation" {
+        name = "Apply, remove, and undo WPS spreadsheet data validation"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-data-validation-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-data-validation"
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        click "open-data-tab" {
+            target = role("tab", "数据")
+        }
+
+        click "open-data-validation" {
+            target = role("button", "数据验证")
+        }
+
+        expect "multi-range-dialog-visible" {
+            text = "Inputs!B2:B3,D5:E5"
+        }
+
+        expect "multi-range-count-visible" {
+            text = "2 个选定区域"
+        }
+
+        press "cancel-first-dialog" {
+            key = "Escape"
+        }
+
+        expect "ribbon-trigger-restored" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='数据验证']:focus")
+        }
+
+        click "reopen-data-validation" {
+            target = role("button", "数据验证")
+        }
+
+        fill "enter-invalid-list-range" {
+            target = css(".work-spreadsheet-data-validation-dialog input[autocapitalize='none']")
+            value = "'Lists'!A1:B2"
+        }
+
+        expect "two-dimensional-source-rejected" {
+            text = "下拉列表来源只能是一行或一列连续单元格。"
+        }
+
+        fill "enter-valid-list-range" {
+            target = css(".work-spreadsheet-data-validation-dialog input[autocapitalize='none']")
+            value = "'Lists'!A1:A3"
+        }
+
+        click "enable-input-message" {
+            target = css(".work-spreadsheet-data-validation-dialog .work-office-checkbox:has(input[aria-label='选中单元格时显示输入信息'])")
+        }
+
+        fill "enter-input-message" {
+            target = css(".work-spreadsheet-data-validation-dialog textarea")
+            value = "Choose a workflow state."
+        }
+
+        click "apply-data-validation" {
+            target = role("button", "确定")
+        }
+
+        expect "trigger-restored-after-apply" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='数据验证']:focus")
+        }
+
+        click "reopen-applied-validation" {
+            target = role("button", "数据验证")
+        }
+
+        expect "normalized-list-source-visible" {
+            visible = css(".work-spreadsheet-data-validation-dialog input[value=\"'Lists'!A1:A3\"]")
+        }
+
+        expect "remove-action-visible" {
+            visible = css(".work-spreadsheet-data-validation-remove")
+        }
+
+        click "remove-data-validation" {
+            target = role("button", "全部清除")
+        }
+
+        click "verify-validation-was-removed" {
+            target = role("button", "数据验证")
+        }
+
+        expect "remove-action-absent" {
+            visible = css(".work-spreadsheet-data-validation-dialog:not(:has(.work-spreadsheet-data-validation-remove))")
+        }
+
+        press "close-empty-dialog" {
+            key = "Escape"
+        }
+
+        click "undo-remove" {
+            target = role("button", "撤销")
+        }
+
+        click "verify-remove-undo" {
+            target = role("button", "数据验证")
+        }
+
+        expect "remove-restored-in-one-step" {
+            visible = css(".work-spreadsheet-data-validation-remove")
+        }
+
+        press "close-restored-dialog" {
+            key = "Escape"
+        }
+
+        click "undo-apply" {
+            target = role("button", "撤销")
+        }
+
+        click "verify-apply-undo" {
+            target = role("button", "数据验证")
+        }
+
+        expect "validation-absent-after-undo" {
+            visible = css(".work-spreadsheet-data-validation-dialog:not(:has(.work-spreadsheet-data-validation-remove))")
+        }
+
+        press "close-final-dialog" {
+            key = "Escape"
+        }
+
+        expect "validation-history-empty" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='撤销']:disabled")
+        }
+
+        accessibility "spreadsheet-data-validation-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

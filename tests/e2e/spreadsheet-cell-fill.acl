@@ -228,10 +228,6 @@ suite "spreadsheet-cell-fill" {
             text = "Right edge"
         }
 
-        screenshot "spreadsheet-cell-fill" {
-            path = "screenshots/spreadsheet-cell-fill.png"
-        }
-
         accessibility "spreadsheet-cell-fill-accessibility" {
             path = "evidence/accessibility.json"
             interactive = true

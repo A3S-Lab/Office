@@ -14,6 +14,7 @@ const documentationRoot = path.resolve(import.meta.dirname, '../docs');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.15.0' ||
     version === '0.14.0' ||
     version === '0.13.1' ||
     version === '0.13.0' ||
@@ -37,6 +38,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.15.0',
     '0.14.0',
     '0.13.1',
     '0.13.0',
@@ -75,6 +77,7 @@ test('keeps every public route available in every language and version', async (
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.15.0',
     '0.14.0',
     '0.13.1',
     '0.13.0',
@@ -128,6 +131,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.15.0',
     '0.14.0',
     '0.13.1',
     '0.13.0',
@@ -160,6 +164,7 @@ test('uses deployable HTML targets in current release homepage actions', async (
 test('publishes real-time collaboration as a bilingual first-class capability', async () => {
   for (const version of [
     'latest',
+    '0.15.0',
     '0.14.0',
     '0.13.1',
     '0.13.0',
@@ -205,6 +210,7 @@ test('publishes real-time collaboration as a bilingual first-class capability', 
 test('publishes the runnable collaboration backend in latest releases', async () => {
   for (const version of [
     'latest',
+    '0.15.0',
     '0.14.0',
     '0.13.1',
     '0.13.0',
@@ -247,6 +253,7 @@ test('publishes the runnable collaboration backend in latest releases', async ()
 test('documents ephemeral native agent presence in current releases', async () => {
   for (const version of [
     'latest',
+    '0.15.0',
     '0.14.0',
     '0.13.1',
     '0.13.0',
@@ -279,6 +286,7 @@ test('documents ephemeral native agent presence in current releases', async () =
 test('documents durable Document comments in current releases', async () => {
   for (const version of [
     'latest',
+    '0.15.0',
     '0.14.0',
     '0.13.1',
     '0.13.0',
@@ -321,6 +329,7 @@ test('documents durable Document comments in current releases', async () => {
 test('documents attributed Document suggestions and native typed mutations', async () => {
   for (const version of [
     'latest',
+    '0.15.0',
     '0.14.0',
     '0.13.1',
     '0.13.0',
@@ -361,6 +370,7 @@ test('documents attributed Document suggestions and native typed mutations', asy
 test('documents collaborative character-formatting revisions', async () => {
   for (const version of [
     'latest',
+    '0.15.0',
     '0.14.0',
     '0.13.1',
     '0.13.0',
@@ -393,6 +403,7 @@ test('documents collaborative character-formatting revisions', async () => {
 test('documents collaborative paragraph-formatting revisions', async () => {
   for (const version of [
     'latest',
+    '0.15.0',
     '0.14.0',
     '0.13.1',
     '0.13.0',
@@ -439,6 +450,7 @@ test('documents collaborative paragraph-formatting revisions', async () => {
 test('documents atomic native Spreadsheet cell batches', async () => {
   for (const version of [
     'latest',
+    '0.15.0',
     '0.14.0',
     '0.13.1',
     '0.13.0',
@@ -466,7 +478,14 @@ test('documents atomic native Spreadsheet cell batches', async () => {
 });
 
 test('documents maximum sparse spreadsheets and cancellable imports in 0.12.0', async () => {
-  for (const version of ['latest', '0.14.0', '0.13.1', '0.13.0', '0.12.0']) {
+  for (const version of [
+    'latest',
+    '0.15.0',
+    '0.14.0',
+    '0.13.1',
+    '0.13.0',
+    '0.12.0',
+  ]) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [guide, spreadsheet] = await Promise.all([
@@ -490,7 +509,7 @@ test('documents maximum sparse spreadsheets and cancellable imports in 0.12.0', 
 });
 
 test('documents WPS four-direction cell fill in 0.13.0', async () => {
-  for (const version of ['latest', '0.14.0', '0.13.1', '0.13.0']) {
+  for (const version of ['latest', '0.15.0', '0.14.0', '0.13.1', '0.13.0']) {
     const spreadsheet = await readFile(
       path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
       'utf8',
@@ -511,7 +530,7 @@ test('documents WPS four-direction cell fill in 0.13.0', async () => {
 });
 
 test('documents WPS number formats and cell styles in 0.13.1', async () => {
-  for (const version of ['latest', '0.14.0', '0.13.1']) {
+  for (const version of ['latest', '0.15.0', '0.14.0', '0.13.1']) {
     const spreadsheet = await readFile(
       path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
       'utf8',
@@ -531,7 +550,7 @@ test('documents WPS number formats and cell styles in 0.13.1', async () => {
 });
 
 test('documents WPS Paste Special and its bounded rich clipboard in 0.14.0', async () => {
-  for (const version of ['latest', '0.14.0']) {
+  for (const version of ['latest', '0.15.0', '0.14.0']) {
     const spreadsheet = await readFile(
       path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
       'utf8',
@@ -552,8 +571,52 @@ test('documents WPS Paste Special and its bounded rich clipboard in 0.14.0', asy
   }
 });
 
+test('documents WPS hyperlinks and immutable workbook updates in 0.15.0', async () => {
+  for (const version of ['latest', '0.15.0']) {
+    const spreadsheet = await readFile(
+      path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
+      'utf8',
+    );
+
+    for (const evidence of [
+      '## Hyperlinks',
+      'Cmd/Ctrl+K',
+      'Web page',
+      'Cell range',
+      'existing dense `data` or sparse',
+      'one Undo record',
+      'spreadsheet-hyperlink.acl',
+      'A3S Test 1.0.0',
+    ]) {
+      expect(spreadsheet).toContain(evidence);
+    }
+  }
+});
+
+test('documents WPS data validation and native XLSX semantics in 0.15.0', async () => {
+  for (const version of ['latest', '0.15.0']) {
+    const spreadsheet = await readFile(
+      path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
+      'utf8',
+    );
+
+    for (const evidence of [
+      '## Data validation',
+      'Whole number',
+      'Text length',
+      '1900 or 1904 date system',
+      '10,000 cells',
+      'dataValidationRanges',
+      'spreadsheet-data-validation.acl',
+      'A3S Test 1.0.0',
+    ]) {
+      expect(spreadsheet).toContain(evidence);
+    }
+  }
+});
+
 test('publishes reproducible 100k Document performance evidence', async () => {
-  for (const version of ['latest', '0.14.0', '0.13.1', '0.13.0']) {
+  for (const version of ['latest', '0.15.0', '0.14.0', '0.13.1', '0.13.0']) {
     const [document, architecture] = await Promise.all([
       readFile(
         path.join(documentationRoot, version, 'en/components/document.mdx'),

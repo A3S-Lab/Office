@@ -177,6 +177,21 @@ record, then restores the exact ribbon invoker or current grid after a remount.
 Read-only, protected, pivot, missing, hidden, unsafe, invalid, and out-of-bounds
 requests fail before mutation; host inputs, formula or cell editing, and modal
 controls retain their native `Cmd/Ctrl+K` behavior.
+The twenty-first milestone adds Data Validation under Data and Data Tools. One
+accessible dialog creates, edits, or removes list, whole-number, decimal, date,
+and text-length rules across one or more captured ranges, with optional input
+messages and explicit invalid-input blocking. List sources accept bounded
+comma-separated values, one continuous row or column, or a named range. Date
+boundaries accept ISO dates, Excel serials, and `DATE(...)`, normalize to a
+Fortune-compatible ISO value, honor the XLSX 1900 or 1904 date system, and
+export as stable native formulas. Apply and Remove each publish one controlled
+workbook value and one Undo record while retaining dense or sparse cells,
+values, formulas, formatting, comments, hyperlinks, unrelated direct rules,
+and compact ranges outside the selection. Preflight rejects more than 10,000
+selected cells, malformed boundaries, two-dimensional list sources,
+out-of-bounds ranges, protection, merges, pivot output, and read-only views.
+Cancel, Escape, Apply, and Remove restore the exact ribbon invoker or current
+grid after a controlled remount.
 
 ## Product Rules
 

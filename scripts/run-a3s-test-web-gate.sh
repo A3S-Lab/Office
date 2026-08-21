@@ -118,6 +118,7 @@ suites=(
   "tests/e2e/office-docs-navigation.acl"
   "tests/e2e/spreadsheet-maximum-sparse.acl"
   "tests/e2e/spreadsheet-cell-fill.acl"
+  "tests/e2e/spreadsheet-data-validation.acl"
   "tests/e2e/spreadsheet-hyperlink.acl"
   "tests/e2e/spreadsheet-paste-special.acl"
   "tests/e2e/collaboration-playground-entry.acl"

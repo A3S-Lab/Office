@@ -83,6 +83,7 @@ import {
   sameSpreadsheetWorkbookStateAfterOperations,
   spreadsheetCellAt,
   spreadsheetContentWithSelection,
+  spreadsheetContentWithSelections,
   spreadsheetSelectionReference,
   spreadsheetSelectionSummary,
   spreadsheetSheetsForFortune,
@@ -133,6 +134,7 @@ import {
   type SpreadsheetFormatPainterMode,
   useSpreadsheetFormatPainter,
 } from './use-spreadsheet-format-painter';
+import { useSpreadsheetDataValidation } from './use-spreadsheet-data-validation';
 import { useSpreadsheetHyperlink } from './use-spreadsheet-hyperlink';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
@@ -311,12 +313,12 @@ function SpreadsheetEditorSurface({
     null,
   );
   const formatCellsApplyingRef = useRef(false);
-  const focusSpreadsheetHyperlinkGrid = useCallback(
+  const focusSpreadsheetDialogGrid = useCallback(
     (focusOrigin: Element | null) =>
       focusSpreadsheetGrid(spreadsheetCanvasRef.current, { focusOrigin }),
     [],
   );
-  const getSpreadsheetHyperlinkGridFocusTarget = useCallback(
+  const getSpreadsheetDialogGridFocusTarget = useCallback(
     () => spreadsheetGridFocusTarget(spreadsheetCanvasRef.current),
     [],
   );
@@ -327,11 +329,23 @@ function SpreadsheetEditorSurface({
   const spreadsheetHyperlink = useSpreadsheetHyperlink({
     commandsRef: spreadsheetCommandsRef,
     contentRef,
-    focusGrid: focusSpreadsheetHyperlinkGrid,
-    getGridFocusTarget: getSpreadsheetHyperlinkGridFocusTarget,
+    focusGrid: focusSpreadsheetDialogGrid,
+    getGridFocusTarget: getSpreadsheetDialogGridFocusTarget,
     getLiveSelection: getSpreadsheetHyperlinkLiveSelection,
     preview,
     selectionState,
+  });
+  const getSpreadsheetDataValidationLiveSelections = useCallback(
+    () => workbookRef.current?.getSelection(),
+    [],
+  );
+  const spreadsheetDataValidation = useSpreadsheetDataValidation({
+    commandsRef: spreadsheetCommandsRef,
+    contentRef,
+    focusGrid: focusSpreadsheetDialogGrid,
+    getGridFocusTarget: getSpreadsheetDialogGridFocusTarget,
+    getLiveSelections: getSpreadsheetDataValidationLiveSelections,
+    preview,
   });
   const officeDialog = useOfficeDialog();
   const [findOpen, setFindOpen] = useState(false);
@@ -997,6 +1011,7 @@ function SpreadsheetEditorSurface({
       calculation,
       clipboard: spreadsheetClipboard.commandPort,
       content: contentRef.current,
+      dataValidation: spreadsheetDataValidation.commandPort,
       editable: !preview,
       fallbackRange: selectedRange,
       formulaBar: {
@@ -1023,15 +1038,30 @@ function SpreadsheetEditorSurface({
         openGoTo: openSpreadsheetGoTo,
       },
       onChange: (next) => {
-        const preservedSelection = formatCellsApplyingRef.current
+        const formatCellsSelection = formatCellsApplyingRef.current
           ? formatCellsSelectionRef.current
-          : spreadsheetHyperlink.selectionForChange();
+          : null;
+        const dataValidationSelection =
+          spreadsheetDataValidation.selectionForChange();
+        const hyperlinkSelection = spreadsheetHyperlink.selectionForChange();
+        const preservedSelection = formatCellsSelection
+          ? {
+              sheetId: formatCellsSelection.sheetId,
+              selections: [formatCellsSelection.selection],
+            }
+          : (dataValidationSelection ??
+            (hyperlinkSelection
+              ? {
+                  sheetId: hyperlinkSelection.sheetId,
+                  selections: [hyperlinkSelection.selection],
+                }
+              : null));
         const controlled =
           preservedSelection && !collaborationView
-            ? spreadsheetContentWithSelection(
+            ? spreadsheetContentWithSelections(
                 next,
                 preservedSelection.sheetId,
-                preservedSelection.selection,
+                preservedSelection.selections,
               )
             : next;
         contentRef.current = controlled;
@@ -1601,6 +1631,7 @@ function SpreadsheetEditorSurface({
           onClose={closeSpreadsheetFormatCells}
         />
       )}
+      {spreadsheetDataValidation.dialog}
       {spreadsheetHyperlink.dialog}
       {spreadsheetClipboard.dialogSource && (
         <SpreadsheetPasteSpecialDialog

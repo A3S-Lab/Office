@@ -547,6 +547,11 @@ export const spreadsheetCommandCatalog = {
       editor: ['Alt-ArrowDown'],
     },
   },
+  dataValidation: {
+    id: 'data.validation',
+    label: '数据验证',
+    location: { area: 'ribbon', tab: 'data', group: 'dataTools' },
+  },
   pivotTable: {
     id: 'data.pivotTable',
     label: '数据透视表',

@@ -91,10 +91,6 @@ suite "spreadsheet-hyperlink" {
             value = "a3s.dev/office"
         }
 
-        screenshot "insert-hyperlink-dialog" {
-            path = "screenshots/spreadsheet-hyperlink-dialog.png"
-        }
-
         click "apply-hyperlink" {
             target = role("button", "确定")
         }
@@ -177,10 +173,6 @@ suite "spreadsheet-hyperlink" {
 
         expect "hyperlink-history-empty" {
             visible = css(".work-spreadsheet-ribbon button[aria-label='撤销']:disabled")
-        }
-
-        screenshot "spreadsheet-hyperlink-complete" {
-            path = "screenshots/spreadsheet-hyperlink-complete.png"
         }
 
         accessibility "spreadsheet-hyperlink-accessibility" {

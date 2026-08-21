@@ -26,6 +26,11 @@ import type { SpreadsheetCellStyleChoice } from './spreadsheet-cell-style';
 import { createSpreadsheetCellStyleExtension } from './spreadsheet-cell-style-command';
 import type { SpreadsheetCellFillDirection } from './spreadsheet-cell-fill';
 import { createSpreadsheetCellFillExtension } from './spreadsheet-cell-fill-command';
+import { createSpreadsheetDataValidationExtension } from './spreadsheet-data-validation-command';
+import type {
+  SpreadsheetDataValidationRequest,
+  SpreadsheetDataValidationTarget,
+} from './spreadsheet-data-validation';
 import {
   canApplySpreadsheetCellMerge,
   type SpreadsheetCellMergeCommand,
@@ -217,6 +222,11 @@ export interface SpreadsheetFormatCellsCommandPort {
   open: (request: SpreadsheetFormatCellsOpenRequest) => boolean;
 }
 
+export interface SpreadsheetDataValidationCommandPort {
+  canOpen: boolean;
+  open: (request: SpreadsheetDataValidationTarget) => boolean;
+}
+
 export interface SpreadsheetHyperlinkCommandPort {
   canOpen: boolean;
   open: (request: SpreadsheetHyperlinkCell) => boolean;
@@ -246,6 +256,7 @@ export interface SpreadsheetEditorCommands {
   ) => boolean;
   applyCellStyle: (preset: SpreadsheetCellStyleChoice) => boolean;
   applyCellFormat: (request: SpreadsheetCellFormatRequest) => boolean;
+  applyDataValidation: (request: SpreadsheetDataValidationRequest) => boolean;
   applyAutoSum: (functionName: SpreadsheetAutoSumFunction) => boolean;
   applyFormatPainter: (target: SpreadsheetCommandSelection) => boolean;
   applyHyperlink: (request: SpreadsheetHyperlinkRequest) => boolean;
@@ -269,6 +280,7 @@ export interface SpreadsheetEditorCommands {
   ) => boolean;
   moveSelection: (move: SpreadsheetSelectionMove, extend: boolean) => boolean;
   openAutoFilterMenu: () => boolean;
+  openDataValidation: () => boolean;
   openFind: () => boolean;
   openFormatCells: () => boolean;
   openGoTo: () => boolean;
@@ -279,6 +291,7 @@ export interface SpreadsheetEditorCommands {
   pasteSpecial: (content: SpreadsheetPasteContent) => boolean;
   recalculateFormula: (scope: 'selection' | 'workbook') => boolean;
   removeHyperlink: (target: SpreadsheetHyperlinkCell) => boolean;
+  removeDataValidation: (target: SpreadsheetDataValidationTarget) => boolean;
   renameSheet: (sheetId: string, name: string) => boolean;
   redo: () => boolean;
   setCellFormat: (attribute: keyof Cell, value: unknown) => boolean;
@@ -311,6 +324,7 @@ export interface SpreadsheetCommandContext {
   calculation: SpreadsheetCalculationCommandPort | null;
   clipboard: SpreadsheetClipboardCommandPort;
   content: WorkSpreadsheetContent;
+  dataValidation: SpreadsheetDataValidationCommandPort;
   editable: boolean;
   fallbackRange: SpreadsheetCommandRange;
   formulaBar: SpreadsheetFormulaBarCommandPort | null;
@@ -358,6 +372,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     createSpreadsheetCellStyleExtension(),
     createSpreadsheetNumberFormatExtension(),
     createSpreadsheetNavigationExtension(),
+    createSpreadsheetDataValidationExtension(),
     createSpreadsheetHyperlinkExtension(),
     createSpreadsheetAutoSumExtension(),
     createSpreadsheetCellFillExtension(),

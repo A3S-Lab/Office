@@ -30,6 +30,7 @@ import {
   Link2Off,
   Link2,
   ListFilter,
+  ListChecks,
   LocateFixed,
   MessageSquareX,
   Merge,
@@ -457,6 +458,15 @@ export function SpreadsheetEditorRibbon({
                 onClick={() => commands.toggleAutoFilter()}
               >
                 <ListFilter size={19} />
+              </WorkOfficeRibbonButton>
+            </WorkOfficeRibbonGroup>
+            <WorkOfficeRibbonGroup label="数据工具" priority="high">
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.dataValidation.label}
+                disabled={!can.openDataValidation()}
+                onClick={commands.openDataValidation}
+              >
+                <ListChecks size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="分析">

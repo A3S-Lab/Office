@@ -37,6 +37,11 @@ import {
 } from './playground-import-progress';
 import type { NoticeTone, PlaygroundNotice } from './playground-types';
 import {
+  createSpreadsheetDataValidationArtifact,
+  SPREADSHEET_DATA_VALIDATION_ARTIFACT_ID,
+  SPREADSHEET_DATA_VALIDATION_FIXTURE,
+} from './spreadsheet-data-validation-fixture';
+import {
   createSpreadsheetGoToArtifact,
   SPREADSHEET_GO_TO_ARTIFACT_ID,
   SPREADSHEET_GO_TO_FIXTURE,
@@ -83,11 +88,13 @@ function Playground() {
       ? MAXIMUM_SPARSE_SPREADSHEET_ARTIFACT_ID
       : e2eFixture === SPREADSHEET_GO_TO_FIXTURE
         ? SPREADSHEET_GO_TO_ARTIFACT_ID
-        : e2eFixture === SPREADSHEET_HYPERLINK_FIXTURE
-          ? SPREADSHEET_HYPERLINK_ARTIFACT_ID
-          : e2eFixture === SPREADSHEET_PASTE_SPECIAL_FIXTURE
-            ? SPREADSHEET_PASTE_SPECIAL_ARTIFACT_ID
-            : null,
+        : e2eFixture === SPREADSHEET_DATA_VALIDATION_FIXTURE
+          ? SPREADSHEET_DATA_VALIDATION_ARTIFACT_ID
+          : e2eFixture === SPREADSHEET_HYPERLINK_FIXTURE
+            ? SPREADSHEET_HYPERLINK_ARTIFACT_ID
+            : e2eFixture === SPREADSHEET_PASTE_SPECIAL_FIXTURE
+              ? SPREADSHEET_PASTE_SPECIAL_ARTIFACT_ID
+              : null,
   );
   const [collaborationDemoArtifactId, setCollaborationDemoArtifactId] =
     useState<string | null>(null);
@@ -590,6 +597,9 @@ function createInitialArtifacts(e2eFixture: string | null): OfficeArtifact[] {
   }
   if (e2eFixture === SPREADSHEET_GO_TO_FIXTURE) {
     return [createSpreadsheetGoToArtifact(), ...artifacts];
+  }
+  if (e2eFixture === SPREADSHEET_DATA_VALIDATION_FIXTURE) {
+    return [createSpreadsheetDataValidationArtifact(), ...artifacts];
   }
   if (e2eFixture === SPREADSHEET_HYPERLINK_FIXTURE) {
     return [createSpreadsheetHyperlinkArtifact(), ...artifacts];

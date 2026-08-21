@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import {
   sameSpreadsheetHistoryContent,
   spreadsheetContentWithSelection,
+  spreadsheetContentWithSelections,
 } from '../src/internal/features/work/editors/spreadsheet-editor-support';
 import { useOfficeHistory } from '../src/internal/features/work/editors/use-office-history';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
@@ -115,6 +116,32 @@ test('preserves the live cell selection when applying spreadsheet history', () =
       column_focus: 5,
     },
   ]);
+});
+
+test('preserves every live range after a multi-range controlled update', () => {
+  const initial = workbook();
+  const selections = [
+    {
+      row: [1, 2],
+      column: [1, 1],
+      row_focus: 1,
+      column_focus: 1,
+    },
+    {
+      row: [4, 4],
+      column: [3, 4],
+      row_focus: 4,
+      column_focus: 4,
+    },
+  ];
+  const selected = spreadsheetContentWithSelections(
+    initial,
+    'sheet-1',
+    selections,
+  );
+
+  expect(selected.sheets[0].luckysheet_select_save).toEqual(selections);
+  expect(initial.sheets[0].luckysheet_select_save).toBeUndefined();
 });
 
 function workbook(): WorkSpreadsheetContent {

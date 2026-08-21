@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -87,6 +87,7 @@
     "playground:preview": "rsbuild preview --config playground/rsbuild.config.ts --host 127.0.0.1 --port 4175 --strict-port",
     "playground:typecheck": "tsc --noEmit -p playground/tsconfig.json",
     "playground:visual": "playwright test --config playwright.config.ts",
+    "playground:visual:spreadsheet-data-validation": "playwright test visual-tests/spreadsheet-data-validation.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-hyperlink": "playwright test visual-tests/spreadsheet-hyperlink.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-ribbon": "playwright test visual-tests/spreadsheet-ribbon.functional.spec.ts --config playwright.config.ts",
     "playground:visual:update": "playwright test --config playwright.config.ts --update-snapshots",
@@ -141,6 +142,8 @@
     "test:e2e:spreadsheet-paste-special:check": "a3s-test check tests/e2e/spreadsheet-paste-special.acl --json",
     "test:e2e:spreadsheet-go-to": "a3s-test run tests/e2e/spreadsheet-go-to.acl --json",
     "test:e2e:spreadsheet-go-to:check": "a3s-test check tests/e2e/spreadsheet-go-to.acl --json",
+    "test:e2e:spreadsheet-data-validation": "a3s-test run tests/e2e/spreadsheet-data-validation.acl --json",
+    "test:e2e:spreadsheet-data-validation:check": "a3s-test check tests/e2e/spreadsheet-data-validation.acl --json",
     "test:e2e:spreadsheet-hyperlink": "a3s-test run tests/e2e/spreadsheet-hyperlink.acl --json",
     "test:e2e:spreadsheet-hyperlink:check": "a3s-test check tests/e2e/spreadsheet-hyperlink.acl --json",
     "test:e2e:spreadsheet-maximum-sparse": "a3s-test run tests/e2e/spreadsheet-maximum-sparse.acl --json",

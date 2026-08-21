@@ -46,6 +46,12 @@ to `tests/e2e/`.
 - Capture one final-state screenshot when visual proof matters, accessibility
   only for the semantic contract under test, and console plus page errors for
   browser failures. Keep every artifact path relative.
+- The pinned standalone `agent-browser 0.26.0` release gate uses Playwright for
+  pixel evidence and ACL accessibility output for semantic evidence. Its CDP
+  screenshot command can exceed the bounded command deadline with both the
+  existing Playwright Chromium and its version-matched local Chrome, so release
+  ACL suites must not depend on that command until the adapter contract fixes
+  the timeout.
 - Let A3S Test own and clean up each browser surface. Do not terminate shared
   browser processes by name.
 
@@ -153,6 +159,18 @@ cell-range, and worksheet targets, hidden-sheet and unsafe-URL validation,
 Insert/Edit/Remove dialog semantics, exact ribbon and grid focus restoration,
 and one-step Undo. The suite runs only through the local A3S Test release gate
 and is not referenced by GitHub Actions.
+
+The WPS Spreadsheet data-validation workflow has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-data-validation:check
+bun run test:e2e:spreadsheet-data-validation
+```
+
+It covers multiple captured ranges, invalid and valid list sources, input
+messages, compact Apply and Remove, exact focus restoration, and one-step Undo.
+The suite runs only through the local A3S Test release gate and is not
+referenced by GitHub Actions.
 
 The WPS Spreadsheet Paste Special workflow has a focused local gate:
 
@@ -300,8 +318,8 @@ exact trigger after Escape.
 The Document suggestion workflow uses two independent Yjs documents, proves
 attributed insertion synchronization, keeps accept and reject controls out of
 the suggester surface, records the editor's final decision, and verifies the
-converged audit trail on desktop together with phone reachability. It captures
-the pending visual state, final accessibility state, and clean browser
+converged audit trail on desktop together with phone reachability. It asserts
+the pending state and captures final accessibility plus clean browser
 diagnostics.
 The Writer character-formatting revision workflow enters through the public
 Playground demo, verifies the dedicated Formatting card and native revision
@@ -311,8 +329,8 @@ paragraph revision remains pending. The paragraph-formatting workflow opens the
 same public fixture, verifies the Paragraph Formatting card, rejects the
 paragraph revision, and proves that the original alignment, indentation,
 spacing, and line height return without changing text or the character
-revision. Both capture pending and rejected visual states, final accessibility,
-and clean browser diagnostics.
+revision. Both assert pending and rejected states and capture final
+accessibility plus clean browser diagnostics.
 The native Spreadsheet collaboration workflow applies the Rust CLI's real Yjs
 updates to an initialized browser workbook, verifies the visible A2 value and
 formula change, then covers sparse cell creation and exact deletion with

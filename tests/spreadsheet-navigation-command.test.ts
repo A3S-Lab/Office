@@ -132,6 +132,7 @@ function navigationFixture(): {
         type: 'spreadsheet',
         sheets: [{ id: 'sheet-1', name: 'Sheet 1', status: 1 }],
       },
+      dataValidation: { canOpen: false, open: () => false },
       editable: true,
       fallbackRange: { row: [0, 0], column: [0, 0] },
       formulaBar: null,

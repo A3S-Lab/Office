@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.15.0 - 2026-08-21
+
+- Added WPS-style Spreadsheet Data Validation under Data and Data Tools for
+  lists, whole numbers, decimals, dates, and text length across one or more
+  selected ranges. The accessible dialog supports input messages, explicit
+  invalid-input blocking, compact Apply and Remove, exact focus restoration,
+  and one-step Undo without materializing blank cells. Validation rejects
+  protected, merged, pivot, read-only, out-of-bounds, malformed, and
+  over-10,000-cell targets before mutation. XLSX decimal rules now accept
+  integers correctly, and date boundaries normalize across the 1900 and 1904
+  date systems before stable `DATE(...)` export. Focused Rstest, desktop and
+  compact Playwright, and a local-only A3S Test 1.0.0 regression cover the
+  workflow; GitHub Actions does not install or invoke A3S Test.
 - Added WPS-style Spreadsheet Insert/Edit Hyperlink under Insert and Links,
   including the grid-scoped `Cmd/Ctrl+K` shortcut and accessible Web page,
   cell-range, and worksheet targets. One immutable controlled update preserves

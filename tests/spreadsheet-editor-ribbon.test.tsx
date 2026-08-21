@@ -604,6 +604,33 @@ test('keeps conditional formatting in Home and sorting in Data', () => {
   expect(sorts).toEqual(['ascending', 'descending']);
 });
 
+test('places data validation in the WPS Data tools group', () => {
+  const actions: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="data"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(() => true, undefined, {
+        openDataValidation: () => {
+          actions.push('data-validation');
+          return true;
+        },
+      })}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      findOpen={false}
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const dataTools = screen.getByRole('region', { name: '数据工具' });
+  fireEvent.click(within(dataTools).getByRole('button', { name: '数据验证' }));
+  expect(actions).toEqual(['data-validation']);
+});
+
 test('operates the WPS Find and Select menu from the Home ribbon', async () => {
   const actions: string[] = [];
   render(
@@ -1002,6 +1029,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     adjustDecimalPlaces: () => true,
     applyCellStyle: () => true,
     applyCellFormat: () => true,
+    applyDataValidation: () => true,
     applyAutoSum: () => true,
     applyHyperlink: () => true,
     clearSelectedCells: () => true,
@@ -1020,6 +1048,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     moveSheet: () => true,
     moveSelection: () => true,
     openAutoFilterMenu: () => true,
+    openDataValidation: () => true,
     openFind: () => true,
     openFormatCells: () => true,
     openGoTo: () => true,
@@ -1030,6 +1059,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     pasteSpecial: () => true,
     recalculateFormula: () => true,
     removeHyperlink: () => true,
+    removeDataValidation: () => true,
     renameSheet: () => true,
     redo: () => false,
     setCellFormat: () => true,
@@ -1059,6 +1089,7 @@ function spreadsheetCommands(
       | 'activateFormatPainter'
       | 'applyCellStyle'
       | 'applyCellFormat'
+      | 'applyDataValidation'
       | 'applyAutoSum'
       | 'applyHyperlink'
       | 'cancelFormatPainter'
@@ -1070,12 +1101,14 @@ function spreadsheetCommands(
       | 'insertSelectedStructure'
       | 'mergeSelectedCells'
       | 'openFind'
+      | 'openDataValidation'
       | 'openFormatCells'
       | 'openGoTo'
       | 'openHyperlink'
       | 'openPasteSpecial'
       | 'pasteSelection'
       | 'pasteSpecial'
+      | 'removeDataValidation'
       | 'setFreezePanes'
       | 'toggleAutoFilter'
     >
@@ -1088,6 +1121,7 @@ function spreadsheetCommands(
     adjustDecimalPlaces: overrides.adjustDecimalPlaces ?? (() => true),
     applyCellStyle: overrides.applyCellStyle ?? (() => true),
     applyCellFormat: overrides.applyCellFormat ?? (() => true),
+    applyDataValidation: overrides.applyDataValidation ?? (() => true),
     applyAutoSum: overrides.applyAutoSum ?? (() => true),
     applyHyperlink: overrides.applyHyperlink ?? (() => true),
     applyFormatPainter: () => true,
@@ -1105,6 +1139,7 @@ function spreadsheetCommands(
     moveSheet: () => true,
     moveSelection: () => true,
     openAutoFilterMenu: () => true,
+    openDataValidation: overrides.openDataValidation ?? (() => true),
     openFind: overrides.openFind ?? (() => true),
     openFormatCells: overrides.openFormatCells ?? (() => true),
     openGoTo: overrides.openGoTo ?? (() => true),
@@ -1115,6 +1150,7 @@ function spreadsheetCommands(
     pasteSpecial: overrides.pasteSpecial ?? (() => true),
     recalculateFormula: () => true,
     removeHyperlink: () => true,
+    removeDataValidation: overrides.removeDataValidation ?? (() => true),
     renameSheet: () => true,
     redo: () => false,
     setCellFormat,

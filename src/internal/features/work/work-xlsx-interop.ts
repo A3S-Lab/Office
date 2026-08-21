@@ -9,6 +9,10 @@ import {
   parseXml,
 } from './work-ooxml-package';
 import { sheetHasProtectionState } from './work-spreadsheet-protection';
+import {
+  normalizeSpreadsheetDateValidationBoundary,
+  spreadsheetDateValidationFormula,
+} from './work-spreadsheet-data-validation';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetDataValidationItem,
@@ -88,7 +92,11 @@ export async function readXlsxSheetFeaturesFromPackage(
   archive: OoxmlPackage,
   worksheetScans?: Readonly<Record<string, XlsxWorksheetXmlScan>>,
 ): Promise<Map<string, XlsxSheetFeatures>> {
-  const worksheetParts = await readWorksheetParts(archive);
+  const workbook = archive.has('xl/workbook.xml')
+    ? await archive.xml('xl/workbook.xml')
+    : null;
+  const worksheetParts = await readWorksheetParts(archive, workbook);
+  const uses1904DateSystem = xlsxUses1904DateSystem(workbook);
   const styles = archive.has('xl/styles.xml')
     ? await archive.xml('xl/styles.xml')
     : null;
@@ -115,7 +123,7 @@ export async function readXlsxSheetFeaturesFromPackage(
     features.set(sheetName, {
       directCellStyles: readXlsxDirectCellStyles(document, styles, theme),
       frozen: parseFrozenPane(document) ?? undefined,
-      validations: parseDataValidations(document),
+      validations: parseDataValidations(document, uses1904DateSystem),
       conditionalFormats: readXlsxConditionalFormats(
         document,
         differentialFormats,
@@ -224,6 +232,14 @@ export async function patchXlsxSheetFeatures(
       document,
       sheet.dataVerification,
       sheet.dataValidationRanges,
+      new Set(
+        (content.namedRanges ?? [])
+          .filter(
+            (namedRange) =>
+              !namedRange.scopeSheetId || namedRange.scopeSheetId === sheet.id,
+          )
+          .map((namedRange) => namedRange.name.trim().toLocaleLowerCase()),
+      ),
     );
     writeXlsxConditionalFormats(
       document,
@@ -251,9 +267,10 @@ export async function patchXlsxSheetFeatures(
 
 async function readWorksheetParts(
   archive: OoxmlPackage,
+  workbookDocument?: Document | null,
 ): Promise<Map<string, string>> {
   if (!archive.has('xl/workbook.xml')) return new Map();
-  const workbook = await archive.xml('xl/workbook.xml');
+  const workbook = workbookDocument ?? (await archive.xml('xl/workbook.xml'));
   const relationships = await archive.relationships('xl/workbook.xml');
   const parts = new Map<string, string>();
   for (const sheet of firstDescendant(workbook, 'sheets')?.children ?? []) {
@@ -285,7 +302,10 @@ function parseFrozenPane(document: Document): FrozenPane | null {
   };
 }
 
-function parseDataValidations(document: Document): XlsxDataValidation[] {
+function parseDataValidations(
+  document: Document,
+  uses1904DateSystem: boolean,
+): XlsxDataValidation[] {
   const validations = firstDescendant(document, 'dataValidations');
   if (!validations) return [];
   return directChildren(validations, 'dataValidation').flatMap((element) => {
@@ -301,10 +321,27 @@ function parseDataValidations(document: Document): XlsxDataValidation[] {
       firstDescendant(element, 'formula2')?.textContent?.trim() ?? '';
     const item: FortuneDataValidationItem = {
       type,
-      type2: fortuneValidationOperator(attribute(element, 'operator')),
+      type2: fortuneValidationOperator(
+        attribute(element, 'operator'),
+        type === 'date',
+      ),
       rangeTxt: references.join(','),
-      value1: type === 'dropdown' ? parseListFormula(formula1) : formula1,
-      value2: formula2,
+      value1:
+        type === 'dropdown'
+          ? parseListFormula(formula1)
+          : type === 'date'
+            ? (normalizeSpreadsheetDateValidationBoundary(
+                formula1,
+                uses1904DateSystem,
+              ) ?? formula1)
+            : formula1,
+      value2:
+        type === 'date'
+          ? (normalizeSpreadsheetDateValidationBoundary(
+              formula2,
+              uses1904DateSystem,
+            ) ?? formula2)
+          : formula2,
       validity: '',
       remote: false,
       prohibitInput: booleanAttribute(element, 'showErrorMessage'),
@@ -320,6 +357,7 @@ function writeDataValidations(
   document: Document,
   source: unknown,
   compact: WorkSpreadsheetDataValidationRange[] | undefined,
+  namedListSources: ReadonlySet<string>,
 ): void {
   const root = document.documentElement;
   for (const existing of directChildren(root, 'dataValidations'))
@@ -344,8 +382,20 @@ function writeDataValidations(
     if (item.hintValue)
       element.setAttribute('prompt', item.hintValue.slice(0, 255));
     element.setAttribute('sqref', references.join(' '));
-    appendFormula(document, element, 'formula1', xlsxValidationFormula(item));
-    if (item.value2) appendFormula(document, element, 'formula2', item.value2);
+    appendFormula(
+      document,
+      element,
+      'formula1',
+      xlsxValidationFormula(item, item.value1, namedListSources),
+    );
+    if (item.value2) {
+      appendFormula(
+        document,
+        element,
+        'formula2',
+        xlsxValidationFormula(item, item.value2, namedListSources),
+      );
+    }
     container.append(element);
   }
   if (!container.children.length) return;
@@ -457,14 +507,21 @@ function appendFormula(
   parent.append(formula);
 }
 
-function xlsxValidationFormula(item: FortuneDataValidationItem): string {
-  const value = item.value1.trim();
+function xlsxValidationFormula(
+  item: FortuneDataValidationItem,
+  source: string,
+  namedListSources: ReadonlySet<string>,
+): string {
+  const value = source.trim();
+  if (item.type === 'date') return spreadsheetDateValidationFormula(value);
   if (item.type !== 'dropdown') return value;
+  const formula = value.replace(/^=/, '');
   if (
     /^=?[^,]+![A-Z]+\d+(?::[A-Z]+\d+)?$/i.test(value) ||
-    /^=?\$?[A-Z]+\$?\d+(?::\$?[A-Z]+\$?\d+)?$/i.test(value)
+    /^=?\$?[A-Z]+\$?\d+(?::\$?[A-Z]+\$?\d+)?$/i.test(value) ||
+    namedListSources.has(formula.toLocaleLowerCase())
   ) {
-    return value.replace(/^=/, '');
+    return formula;
   }
   return `"${value.replaceAll('"', '""')}"`;
 }
@@ -479,7 +536,7 @@ function fortuneValidationType(value: string | null): string | null {
   const types: Record<string, string> = {
     list: 'dropdown',
     whole: 'number_integer',
-    decimal: 'number_decimal',
+    decimal: 'number',
     textLength: 'text_length',
     date: 'date',
   };
@@ -498,7 +555,19 @@ function xlsxValidationType(value: string): string | null {
   return types[value] ?? null;
 }
 
-function fortuneValidationOperator(value: string | null): string {
+function fortuneValidationOperator(
+  value: string | null,
+  date: boolean,
+): string {
+  if (date) {
+    const dateOperators: Record<string, string> = {
+      lessThan: 'earlierThan',
+      lessThanOrEqual: 'noLaterThan',
+      greaterThan: 'laterThan',
+      greaterThanOrEqual: 'noEarlierThan',
+    };
+    if (value && dateOperators[value]) return dateOperators[value];
+  }
   const operators: Record<string, string> = {
     between: 'between',
     notBetween: 'notBetween',
@@ -522,8 +591,20 @@ function xlsxValidationOperator(value: string): string | null {
     lessThan: 'lessThan',
     greaterOrEqualTo: 'greaterThanOrEqual',
     lessThanOrEqualTo: 'lessThanOrEqual',
+    earlierThan: 'lessThan',
+    noEarlierThan: 'greaterThanOrEqual',
+    laterThan: 'greaterThan',
+    noLaterThan: 'lessThanOrEqual',
   };
   return operators[value] ?? null;
+}
+
+function xlsxUses1904DateSystem(workbook: Document | null): boolean {
+  if (!workbook) return false;
+  const workbookProperties = firstDescendant(workbook, 'workbookPr');
+  return workbookProperties
+    ? booleanAttribute(workbookProperties, 'date1904')
+    : false;
 }
 
 function booleanAttribute(element: Element, name: string): boolean {
