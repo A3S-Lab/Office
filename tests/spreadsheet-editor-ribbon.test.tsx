@@ -459,7 +459,7 @@ test('disables unavailable WPS row and column actions independently', () => {
   ).toBeDisabled();
 });
 
-test('routes WPS font, vertical alignment, and wrapping through cell formats', () => {
+test('routes WPS font, underline styles, vertical alignment, and wrapping through cell formats', () => {
   const formats: Array<{ attribute: string; value: unknown }> = [];
   const fontSteps: string[] = [];
   render(
@@ -483,7 +483,7 @@ test('routes WPS font, vertical alignment, and wrapping through cell formats', (
       gridLinesVisible
       findOpen={false}
       panel={null}
-      toolbarCell={{ cl: 0, ff: 'Arial', vt: 0, tb: '2' }}
+      toolbarCell={{ cl: 0, ff: 'Arial', un: 4, vt: 0, tb: '2' }}
       onTabChange={() => undefined}
       onTogglePanel={() => undefined}
     />,
@@ -502,12 +502,29 @@ test('routes WPS font, vertical alignment, and wrapping through cell formats', (
   const shrinkFont = screen.getByRole('button', { name: '减小字号' });
   fireEvent.click(growFont);
   fireEvent.click(shrinkFont);
+  const underline = screen.getByRole('button', { name: '下划线' });
+  expect(underline).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(underline);
+  fireEvent.click(screen.getByRole('button', { name: '更多下划线' }));
+  const underlineMenu = screen.getByRole('menu', { name: '下划线样式' });
+  expect(
+    within(underlineMenu).getByRole('menuitemradio', {
+      name: '双会计用下划线',
+    }),
+  ).toHaveAttribute('aria-checked', 'true');
+  fireEvent.click(
+    within(underlineMenu).getByRole('menuitemradio', {
+      name: '双会计用下划线',
+    }),
+  );
   fireEvent.click(screen.getByRole('button', { name: '删除线' }));
   fireEvent.click(screen.getByRole('button', { name: '底端对齐' }));
   fireEvent.click(screen.getByRole('button', { name: '自动换行' }));
 
   expect(formats).toEqual([
     { attribute: 'ff', value: 'SimSun' },
+    { attribute: 'un', value: 0 },
+    { attribute: 'un', value: 4 },
     { attribute: 'cl', value: 1 },
     { attribute: 'vt', value: 2 },
     { attribute: 'tb', value: '1' },
@@ -533,10 +550,7 @@ test('routes WPS font, vertical alignment, and wrapping through cell formats', (
     'aria-keyshortcuts',
     'Control+I Meta+I',
   );
-  expect(screen.getByRole('button', { name: '下划线' })).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Control+U Meta+U',
-  );
+  expect(underline).toHaveAttribute('aria-keyshortcuts', 'Control+U Meta+U');
   expect(screen.getByRole('button', { name: '删除线' })).toHaveAttribute(
     'aria-keyshortcuts',
     'Control+5 Meta+5',

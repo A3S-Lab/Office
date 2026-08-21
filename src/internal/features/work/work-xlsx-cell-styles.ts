@@ -15,6 +15,7 @@ import {
   resolveXlsxColor,
   type XlsxColorResolver,
 } from './work-xlsx-colors';
+import { spreadsheetUnderlineCellValueFromXlsx } from './work-spreadsheet-underline';
 import {
   attribute,
   descendants,
@@ -160,7 +161,12 @@ function readDirectFontStyle(
   const strike = directChild(font, 'strike');
   if (strike && toggleEnabled(strike)) style.cl = 1;
   const underline = directChild(font, 'u');
-  if (underline && underlineEnabled(underline)) style.un = 1;
+  if (underline) {
+    const value = spreadsheetUnderlineCellValueFromXlsx(
+      attribute(underline, 'val'),
+    );
+    if (value) style.un = value;
+  }
 
   const name = attribute(directChild(font, 'name') ?? font, 'val')?.trim();
   if (name) style.ff = name;
@@ -243,11 +249,6 @@ function readBorderLine(
 function toggleEnabled(element: Element): boolean {
   const value = attribute(element, 'val')?.trim().toLowerCase();
   return value !== '0' && value !== 'false' && value !== 'off';
-}
-
-function underlineEnabled(element: Element): boolean {
-  const value = attribute(element, 'val')?.trim().toLowerCase();
-  return value !== '0' && value !== 'false' && value !== 'none';
 }
 
 function booleanAttribute(element: Element, name: string): boolean {

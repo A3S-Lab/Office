@@ -59,7 +59,7 @@ describe('spreadsheet cell format', () => {
         fontColor: '#2463eb',
         bold: true,
         italic: true,
-        underline: true,
+        underline: 'doubleAccounting',
         strike: true,
         fillColor: '#fff2cc',
         borders: [
@@ -93,7 +93,7 @@ describe('spreadsheet cell format', () => {
       fc: '#2463eb',
       bl: 1,
       it: 1,
-      un: 1,
+      un: 4,
       cl: 1,
       bg: '#fff2cc',
       ps: expect.objectContaining({ value: 'Keep comment' }),

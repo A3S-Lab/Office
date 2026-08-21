@@ -103,6 +103,45 @@ describe('spreadsheet format cells dialog model', () => {
     ).toEqual({});
   });
 
+  test('keeps advanced underline variants distinct in mixed selections', () => {
+    const content = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sheet 1',
+          data: [
+            [
+              { v: 'A', un: 4 },
+              { v: 'B', un: 2 },
+            ],
+          ],
+        },
+      ],
+    } satisfies WorkSpreadsheetContent;
+    const source = createSpreadsheetFormatCellsDialogSource(
+      content,
+      'sheet-1',
+      { row: [0, 0], column: [0, 1] },
+      content.sheets[0]?.data ?? [],
+      { row: 0, column: 0 },
+    );
+    if (!source) throw new Error('Expected a format-cells dialog source.');
+    const draft = createSpreadsheetFormatCellsDraft(source);
+
+    expect(source.fields.underline).toEqual({
+      mixed: true,
+      value: 'doubleAccounting',
+    });
+    expect(
+      spreadsheetFormatCellsPatch(
+        source,
+        { ...draft, underline: 'singleAccounting' },
+        { underline: true },
+      ),
+    ).toEqual({ underline: 'singleAccounting' });
+  });
+
   test('validates custom number codes, font sizes, and rotation', () => {
     const content = {
       type: 'spreadsheet',

@@ -1,6 +1,10 @@
 import type { Cell } from '@fortune-sheet/core';
 import type { WorkSpreadsheetContent } from '../work-types';
 import {
+  spreadsheetUnderlineStyle,
+  type SpreadsheetUnderlineStyle,
+} from '../work-spreadsheet-underline';
+import {
   spreadsheetCellBordersAt,
   type SpreadsheetCellBorderFormat,
   type SpreadsheetCellBorderStyle,
@@ -46,7 +50,7 @@ export interface SpreadsheetFormatCellsFields {
   fontColor: SpreadsheetFormatCellsField<string>;
   bold: SpreadsheetFormatCellsField<boolean>;
   italic: SpreadsheetFormatCellsField<boolean>;
-  underline: SpreadsheetFormatCellsField<boolean>;
+  underline: SpreadsheetFormatCellsField<SpreadsheetUnderlineStyle>;
   strike: SpreadsheetFormatCellsField<boolean>;
   fillColor: SpreadsheetFormatCellsField<string | null>;
   borders: SpreadsheetFormatCellsField<readonly SpreadsheetCellBorderFormat[]>;
@@ -72,7 +76,7 @@ export interface SpreadsheetFormatCellsDraft {
   fontColor: string;
   bold: boolean;
   italic: boolean;
-  underline: boolean;
+  underline: SpreadsheetUnderlineStyle;
   strike: boolean;
   fillColor: string | null;
   borders: SpreadsheetCellBorderFormat[];
@@ -163,7 +167,7 @@ export function createSpreadsheetFormatCellsDialogSource(
       fontColor: values((cell) => normalizedColor(cell?.fc, '#172033')),
       bold: values((cell) => Number(cell?.bl) === 1),
       italic: values((cell) => Number(cell?.it) === 1),
-      underline: values((cell) => Number(cell?.un) === 1),
+      underline: values((cell) => spreadsheetUnderlineStyle(cell?.un)),
       strike: values((cell) => Number(cell?.cl) === 1),
       fillColor: values((cell) =>
         typeof cell?.bg === 'string' && cell.bg.trim()

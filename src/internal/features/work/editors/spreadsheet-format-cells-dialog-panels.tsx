@@ -4,6 +4,7 @@ import type {
   SpreadsheetCellBorderFormat,
   SpreadsheetCellBorderStyle,
 } from './spreadsheet-cell-border';
+import type { SpreadsheetUnderlineStyle } from '../work-spreadsheet-underline';
 import type { SpreadsheetCellFormatPatch } from './spreadsheet-cell-format';
 import type {
   SpreadsheetFormatCellsDialogSource,
@@ -74,6 +75,14 @@ const verticalOptions = [
   { value: 'middle', label: '垂直居中' },
   { value: 'bottom', label: '底端对齐' },
 ] as const;
+
+const underlineOptions = [
+  { value: 'none', label: '无' },
+  { value: 'single', label: '单下划线' },
+  { value: 'double', label: '双下划线' },
+  { value: 'singleAccounting', label: '单会计用下划线' },
+  { value: 'doubleAccounting', label: '双会计用下划线' },
+] as const satisfies readonly OfficeSelectOption<SpreadsheetUnderlineStyle>[];
 
 const borderStyleOptions = [
   { value: 'thin', label: '细实线' },
@@ -255,10 +264,8 @@ function FontPanel({
 }: PanelProps) {
   const familyMixed = source.fields.fontFamily.mixed && !touched.fontFamily;
   const sizeMixed = source.fields.fontSize.mixed && !touched.fontSize;
-  const toggle = (
-    field: 'bold' | 'italic' | 'underline' | 'strike',
-    checked: boolean,
-  ) => {
+  const underlineMixed = source.fields.underline.mixed && !touched.underline;
+  const toggle = (field: 'bold' | 'italic' | 'strike', checked: boolean) => {
     touch(field);
     setDraft((current) => ({ ...current, [field]: checked }));
   };
@@ -301,7 +308,6 @@ function FontPanel({
           [
             ['bold', '加粗'],
             ['italic', '斜体'],
-            ['underline', '下划线'],
             ['strike', '删除线'],
           ] as const
         ).map(([field, label]) => (
@@ -316,6 +322,18 @@ function FontPanel({
           </OfficeCheckbox>
         ))}
       </fieldset>
+      <Field label="下划线">
+        <OfficeSelect
+          ariaLabel="下划线样式"
+          value={underlineMixed ? MIXED_VALUE : draft.underline}
+          options={withMixedOption(underlineOptions, underlineMixed)}
+          onValueChange={(value) => {
+            if (value === MIXED_VALUE) return;
+            touch('underline');
+            setDraft((current) => ({ ...current, underline: value }));
+          }}
+        />
+      </Field>
       <Field label="文字颜色">
         <OfficeColorPicker
           ariaLabel="单元格文字颜色"
@@ -334,12 +352,22 @@ function FontPanel({
           fontSize: `${Math.max(10, draft.fontSize)}px`,
           fontStyle: draft.italic ? 'italic' : 'normal',
           fontWeight: draft.bold ? 700 : 400,
-          textDecoration: [
-            draft.underline && 'underline',
+          textDecorationLine: [
+            draft.underline !== 'none' && 'underline',
             draft.strike && 'line-through',
           ]
             .filter(Boolean)
             .join(' '),
+          textDecorationStyle:
+            draft.underline === 'double' ||
+            draft.underline === 'doubleAccounting'
+              ? 'double'
+              : 'solid',
+          textUnderlineOffset:
+            draft.underline === 'singleAccounting' ||
+            draft.underline === 'doubleAccounting'
+              ? '0.24em'
+              : '0.12em',
         }}
       >
         A3S Office 字体预览

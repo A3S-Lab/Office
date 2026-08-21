@@ -1,5 +1,6 @@
 import type { XlsxCellBorderLine } from './work-xlsx-cell-borders';
 import { directChild, directChildren } from './work-ooxml-package';
+import type { SpreadsheetUnderlineStyle } from './work-spreadsheet-underline';
 
 const borderChildOrder = [
   'start',
@@ -173,16 +174,16 @@ export function setXlsxToggleChild(
 export function setXlsxUnderlineChild(
   document: Document,
   parent: Element,
-  enabled: boolean,
+  style: SpreadsheetUnderlineStyle,
   order: readonly string[],
 ): void {
   removeXlsxChildren(parent, 'u');
-  if (!enabled) return;
+  if (style === 'none') return;
   const child = document.createElementNS(
     document.documentElement.namespaceURI,
     'u',
   );
-  child.setAttribute('val', 'single');
+  child.setAttribute('val', style);
   insertXlsxOrderedChild(parent, child, order);
 }
 

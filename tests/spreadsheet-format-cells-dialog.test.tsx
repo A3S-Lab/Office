@@ -41,6 +41,8 @@ test('applies explicitly touched settings from every Format Cells tab', () => {
   const bold = screen.getByRole('checkbox', { name: '加粗' });
   expect(bold).toHaveAttribute('aria-checked', 'mixed');
   fireEvent.click(bold);
+  fireEvent.click(screen.getByRole('combobox', { name: '下划线样式' }));
+  fireEvent.click(screen.getByRole('option', { name: '双下划线' }));
 
   fireEvent.click(screen.getByRole('tab', { name: '边框' }));
   fireEvent.click(screen.getByRole('button', { name: '上框线' }));
@@ -57,6 +59,7 @@ test('applies explicitly touched settings from every Format Cells tab', () => {
       numberFormat: '0.000',
       wrapText: true,
       bold: false,
+      underline: 'double',
       borders: [{ target: 'top', color: '#172033', style: 'thin' }],
       fillColor: null,
       hidden: true,

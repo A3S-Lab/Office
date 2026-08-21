@@ -9,6 +9,11 @@ import type {
   WorkSpreadsheetSheet,
 } from '../work-types';
 import {
+  isSpreadsheetUnderlineStyle,
+  spreadsheetUnderlineCellValue,
+  type SpreadsheetUnderlineStyle,
+} from '../work-spreadsheet-underline';
+import {
   MAX_SPREADSHEET_DIAGONAL_BORDER_CELLS,
   normalizeSpreadsheetBorderFormat,
   type SpreadsheetCellBorderFormat,
@@ -43,7 +48,7 @@ export interface SpreadsheetCellFormatPatch {
   fontColor?: string;
   bold?: boolean;
   italic?: boolean;
-  underline?: boolean;
+  underline?: SpreadsheetUnderlineStyle;
   strike?: boolean;
   fillColor?: string | null;
   borders?: readonly SpreadsheetCellBorderFormat[];
@@ -128,7 +133,8 @@ export function canApplySpreadsheetCellFormat(
       !normalizeColor(patch.fillColor)) ||
     !validOptionalBoolean(patch.bold) ||
     !validOptionalBoolean(patch.italic) ||
-    !validOptionalBoolean(patch.underline) ||
+    (patch.underline !== undefined &&
+      !isSpreadsheetUnderlineStyle(patch.underline)) ||
     !validOptionalBoolean(patch.strike) ||
     !validOptionalBoolean(patch.locked) ||
     !validOptionalBoolean(patch.hidden)
@@ -342,7 +348,9 @@ function formatCell(
     next.fc = normalizeColor(patch.fontColor) ?? patch.fontColor;
   if (patch.bold !== undefined) next.bl = patch.bold ? 1 : 0;
   if (patch.italic !== undefined) next.it = patch.italic ? 1 : 0;
-  if (patch.underline !== undefined) next.un = patch.underline ? 1 : 0;
+  if (patch.underline !== undefined) {
+    next.un = spreadsheetUnderlineCellValue(patch.underline);
+  }
   if (patch.strike !== undefined) next.cl = patch.strike ? 1 : 0;
   if (patch.fillColor !== undefined) {
     if (patch.fillColor === null) delete next.bg;

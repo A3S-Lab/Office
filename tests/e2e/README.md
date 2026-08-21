@@ -209,6 +209,19 @@ one-step Undo, accessibility, and clean browser diagnostics. The suite runs
 only through the local A3S Test release gate; GitHub Actions keeps the
 equivalent Rstest and desktop/compact Playwright coverage.
 
+The WPS Spreadsheet underline styles have a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-underline-styles:check
+bun run test:e2e:spreadsheet-underline-styles
+```
+
+It covers the five-state split menu, initial menu focus, double-accounting
+application, active-style-aware `Cmd/Ctrl+U`, one-step Undo, compact Ribbon
+layout, accessibility, screenshot evidence, and clean browser diagnostics.
+The suite runs only through the local A3S Test release gate; GitHub Actions
+keeps the equivalent Rstest and desktop/compact Playwright coverage.
+
 The native Spreadsheet Table lifecycle has a focused local gate:
 
 ```bash

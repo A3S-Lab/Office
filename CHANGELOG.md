@@ -4,6 +4,20 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.18.0 - 2026-08-22
+
+- Added WPS-style Spreadsheet advanced underline formatting with a split Home
+  and Font control for none, single, double, single-accounting, and
+  double-accounting styles. Format Cells preserves mixed selections and exposes
+  the same five states; `Cmd/Ctrl+U` turns any active underline variant off and
+  restores single underline from the off state through one controlled update
+  and one Undo record. Native XLSX import and export now retain the exact OOXML
+  underline value instead of collapsing every variant to single, and SheetJS
+  fallback imports normalize the corresponding Boolean, numeric, and named
+  values. Focused Rstest, desktop and compact Playwright, and a local-only A3S
+  Test 1.0.0 regression cover the workflow with empty console and page-error
+  diagnostics; GitHub Actions does not install or invoke A3S Test.
+
 ## 0.17.0 - 2026-08-22
 
 - Added WPS-style Spreadsheet Grow Font and Shrink Font commands to Home and

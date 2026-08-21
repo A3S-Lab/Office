@@ -1652,7 +1652,7 @@ describe('spreadsheet command controller', () => {
 
   test('owns core cell-format and clear shortcuts', () => {
     const fixture = commandFixture();
-    fixture.context.toolbarCell = { bl: 0, cl: 0, it: 1, un: 0 };
+    fixture.context.toolbarCell = { bl: 0, cl: 0, it: 1, un: 4 };
     const editor = spreadsheetEditor(fixture.context);
 
     const shortcuts = [
@@ -1707,7 +1707,7 @@ describe('spreadsheet command controller', () => {
         attribute: 'un',
         range: { row: [0, 1], column: [0, 2] },
         sheetId: 'sheet-1',
-        value: 1,
+        value: 0,
       },
       {
         attribute: 'cl',

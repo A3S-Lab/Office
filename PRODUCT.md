@@ -225,6 +225,17 @@ rectangles, blank cells start from 10 points, and one gesture covers at most
 buttons, border-menu hints, and `aria-keyshortcuts` expose the same catalog
 metadata on desktop and compact Web. Grid ownership excludes host inputs,
 formula or cell editing, and modal controls.
+The twenty-fourth milestone preserves the complete native Spreadsheet
+underline family. Home and Font exposes a WPS-style split control for none,
+single, double, single-accounting, and double-accounting underline; Format
+Cells uses the same typed states and retains untouched mixed selections.
+`Cmd/Ctrl+U` turns every active variant off instead of downgrading an advanced
+style to single, while an unformatted cell still enables single underline.
+Fortune's native `un` values remain the only browser model, and XLSX fonts
+round-trip the exact OOXML `u` value, including an omitted value as single.
+Every ribbon, dialog, or shortcut intent emits one controlled update and one
+Undo record, restores grid focus, and keeps host inputs, the formula bar,
+active cell editing, and modal controls outside editor shortcut ownership.
 
 ## Product Rules
 

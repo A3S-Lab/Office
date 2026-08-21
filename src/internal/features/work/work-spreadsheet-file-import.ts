@@ -35,6 +35,7 @@ import {
   readXlsxFormulaFeaturesFromPackage,
 } from './work-xlsx-formulas';
 import { xlsxWorksheetImagesToSheet } from './work-xlsx-images';
+import { spreadsheetUnderlineCellValueFromSheetJs } from './work-spreadsheet-underline';
 import {
   readXlsxSheetFeaturesFromPackage,
   type XlsxDataValidation,
@@ -620,7 +621,7 @@ function fortuneCellStyle(source: CellObject): Partial<Cell> {
               bold?: boolean;
               italic?: boolean;
               strike?: boolean;
-              underline?: boolean;
+              underline?: boolean | number | string;
               name?: string;
               sz?: number;
               color?: { rgb?: string };
@@ -646,7 +647,9 @@ function fortuneCellStyle(source: CellObject): Partial<Cell> {
   if (font?.bold) target.bl = 1;
   if (font?.italic) target.it = 1;
   if (font?.strike) target.cl = 1;
-  if (font?.underline) target.un = 1;
+  if (font?.underline) {
+    target.un = spreadsheetUnderlineCellValueFromSheetJs(font.underline);
+  }
   if (font?.name) target.ff = font.name;
   if (font?.sz !== undefined) target.fs = font.sz;
   const fontColor = spreadsheetColor(font?.color?.rgb);

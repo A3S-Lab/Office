@@ -870,6 +870,141 @@
   border-radius: 6px;
 }
 
+.work-spreadsheet-underline-split-root {
+  display: inline-flex;
+  height: 29px;
+  flex: 0 0 auto;
+  align-items: stretch;
+  border-radius: 6px;
+}
+
+.work-office-ribbon .work-office-toolbar .work-spreadsheet-underline-primary,
+.work-office-ribbon
+  .work-office-toolbar
+  .work-spreadsheet-underline-disclosure {
+  height: 29px;
+  padding: 0;
+  border-radius: 0;
+}
+
+.work-office-ribbon .work-office-toolbar .work-spreadsheet-underline-primary {
+  width: 29px;
+  min-width: 29px;
+  border-radius: 6px 0 0 6px;
+}
+
+.work-office-ribbon
+  .work-office-toolbar
+  .work-spreadsheet-underline-disclosure {
+  width: 16px;
+  min-width: 16px;
+  border-left: 1px solid color-mix(in srgb, var(--a3s-line) 72%, transparent);
+  border-radius: 0 6px 6px 0;
+}
+
+.work-spreadsheet-underline-disclosure svg {
+  transition: transform 120ms ease;
+}
+
+.work-spreadsheet-underline-disclosure[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.work-spreadsheet-underline-primary:focus-visible,
+.work-spreadsheet-underline-disclosure:focus-visible {
+  outline: 0;
+  box-shadow: inset 0 0 0 1px var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-underline-menu {
+  width: min(252px, calc(100vw - 32px));
+}
+
+.work-spreadsheet-underline-menu > button {
+  grid-template-columns: 22px minmax(0, 1fr) 14px;
+}
+
+.work-spreadsheet-underline-menu > button[aria-checked="true"] {
+  background: color-mix(
+    in srgb,
+    var(--work-office-menu-accent) 9%,
+    transparent
+  );
+}
+
+.work-spreadsheet-underline-menu > button[aria-checked="true"]::after {
+  grid-column: 3;
+  color: var(--work-office-menu-accent);
+  content: "✓";
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.work-spreadsheet-underline-glyph {
+  position: relative;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  color: var(--work-office-menu-accent);
+}
+
+.work-spreadsheet-underline-glyph[data-underline-style="none"] {
+  opacity: 0.42;
+}
+
+.work-spreadsheet-underline-glyph[data-underline-style="none"]::after {
+  position: absolute;
+  width: 18px;
+  height: 1px;
+  background: currentcolor;
+  content: "";
+  transform: rotate(-38deg);
+}
+
+.work-spreadsheet-underline-glyph[data-underline-style="double"]::before {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  left: 2px;
+  height: 1px;
+  background: currentcolor;
+  content: "";
+}
+
+.work-spreadsheet-underline-glyph[data-underline-style="singleAccounting"]
+  svg
+  line,
+.work-spreadsheet-underline-glyph[data-underline-style="doubleAccounting"]
+  svg
+  line {
+  display: none;
+}
+
+.work-spreadsheet-underline-glyph[data-underline-style="singleAccounting"]::after,
+.work-spreadsheet-underline-glyph[data-underline-style="doubleAccounting"]::before,
+.work-spreadsheet-underline-glyph[data-underline-style="doubleAccounting"]::after {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: currentcolor;
+  content: "";
+}
+
+.work-spreadsheet-underline-glyph[data-underline-style="singleAccounting"]::after {
+  bottom: 1px;
+}
+
+.work-spreadsheet-underline-glyph[data-underline-style="doubleAccounting"]::before {
+  bottom: 3px;
+}
+
+.work-spreadsheet-underline-glyph[data-underline-style="doubleAccounting"]::after {
+  bottom: 0;
+}
+
 .work-office-ribbon .work-office-toolbar .work-spreadsheet-border-primary,
 .work-office-ribbon .work-office-toolbar .work-spreadsheet-border-disclosure {
   height: 29px;

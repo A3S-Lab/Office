@@ -119,6 +119,7 @@ suites=(
   "tests/e2e/spreadsheet-maximum-sparse.acl"
   "tests/e2e/spreadsheet-cell-fill.acl"
   "tests/e2e/spreadsheet-font-size-border-shortcuts.acl"
+  "tests/e2e/spreadsheet-underline-styles.acl"
   "tests/e2e/spreadsheet-table.acl"
   "tests/e2e/spreadsheet-data-validation.acl"
   "tests/e2e/spreadsheet-hyperlink.acl"

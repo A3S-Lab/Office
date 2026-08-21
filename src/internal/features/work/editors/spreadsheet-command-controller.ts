@@ -4,6 +4,7 @@ import {
   spreadsheetGridSize,
 } from '../spreadsheet-sparse';
 import type { WorkSpreadsheetContent } from '../work-types';
+import { spreadsheetUnderlineStyle } from '../work-spreadsheet-underline';
 import {
   createOfficeEditorExtension,
   type OfficeEditorCanCommands,
@@ -1757,7 +1758,11 @@ function runSpreadsheetCellFormatShortcut(
   ) {
     return false;
   }
-  const value = Number(context.toolbarCell?.[attribute]) === 1 ? 0 : 1;
+  const active =
+    attribute === 'un'
+      ? spreadsheetUnderlineStyle(context.toolbarCell?.un) !== 'none'
+      : Number(context.toolbarCell?.[attribute]) === 1;
+  const value = active ? 0 : 1;
   return canExecute(attribute, value) && execute(attribute, value);
 }
 

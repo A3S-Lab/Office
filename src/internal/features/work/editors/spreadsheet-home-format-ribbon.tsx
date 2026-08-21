@@ -10,10 +10,10 @@ import {
   Percent,
   Settings2,
   Strikethrough,
-  Underline,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { SpreadsheetBorderRibbon } from './spreadsheet-border-ribbon';
+import { SpreadsheetUnderlineRibbon } from './spreadsheet-underline-ribbon';
 import {
   OfficeColorPicker,
   OfficeSelect,
@@ -123,7 +123,6 @@ export function SpreadsheetFontRibbonGroup({
   const fontSize = Number(toolbarCell?.fs ?? 10);
   const bold = Number(toolbarCell?.bl) === 1;
   const italic = Number(toolbarCell?.it) === 1;
-  const underline = Number(toolbarCell?.un) === 1;
   const strike = Number(toolbarCell?.cl) === 1;
   const textColor =
     typeof toolbarCell?.fc === 'string' ? toolbarCell.fc : '#172033';
@@ -187,13 +186,10 @@ export function SpreadsheetFontRibbonGroup({
         command="italic"
         icon={<Italic size={15} />}
       />
-      <SpreadsheetFontToggle
-        active={underline}
-        attribute="un"
+      <SpreadsheetUnderlineRibbon
         can={can}
         commands={commands}
-        command="underline"
-        icon={<Underline size={15} />}
+        value={toolbarCell?.un}
       />
       <SpreadsheetFontToggle
         active={strike}
@@ -355,8 +351,8 @@ function SpreadsheetFontToggle({
   icon,
 }: Pick<SpreadsheetHomeFormatRibbonProps, 'can' | 'commands'> & {
   active: boolean;
-  attribute: 'bl' | 'cl' | 'it' | 'un';
-  command: 'bold' | 'italic' | 'strike' | 'underline';
+  attribute: 'bl' | 'cl' | 'it';
+  command: 'bold' | 'italic' | 'strike';
   icon: ReactNode;
 }) {
   const definition = spreadsheetCommandCatalog[command];

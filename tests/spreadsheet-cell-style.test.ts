@@ -298,6 +298,24 @@ describe('spreadsheet cell styles', () => {
     ]);
   });
 
+  test('preserves every native XLSX underline variant for Fortune rendering', () => {
+    const worksheet = parseXml(
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" s="1"/><c r="B1" s="2"/><c r="C1" s="3"/><c r="D1" s="4"/></row></sheetData></worksheet>',
+      'xl/worksheets/sheet1.xml',
+    );
+    const styles = parseXml(
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="5"><font/><font><u/></font><font><u val="double"/></font><font><u val="singleAccounting"/></font><font><u val="doubleAccounting"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" applyFont="1"/><xf numFmtId="0" fontId="3" fillId="0" borderId="0" applyFont="1"/><xf numFmtId="0" fontId="4" fillId="0" borderId="0" applyFont="1"/></cellXfs></styleSheet>',
+      'xl/styles.xml',
+    );
+
+    expect(readXlsxDirectCellStyles(worksheet, styles)).toEqual([
+      { border: undefined, column: 0, row: 0, style: { un: 1 } },
+      { border: undefined, column: 1, row: 0, style: { un: 2 } },
+      { border: undefined, column: 2, row: 0, style: { un: 3 } },
+      { border: undefined, column: 3, row: 0, style: { un: 4 } },
+    ]);
+  });
+
   test('round-trips the exact direct style through XLSX', async () => {
     const artifact = createWorkArtifact('blank-spreadsheet');
     if (artifact.content.type !== 'spreadsheet')
@@ -342,6 +360,35 @@ describe('spreadsheet cell styles', () => {
       ff: 'Aptos',
       fs: 10,
     });
+  });
+
+  test('round-trips all advanced underline styles through native XLSX fonts', async () => {
+    const artifact = createWorkArtifact('blank-spreadsheet');
+    if (artifact.content.type !== 'spreadsheet')
+      throw new Error('Expected a blank spreadsheet.');
+    const sheet = artifact.content.sheets[0];
+    if (!sheet) throw new Error('Expected a worksheet.');
+    sheet.data = [
+      [
+        { un: 1, v: 'Single' },
+        { un: 2, v: 'Double' },
+        { un: 3, v: 'Single accounting' },
+        { un: 4, v: 'Double accounting' },
+      ],
+    ];
+
+    const blob = await createWorkArtifactBlob(artifact);
+    const imported = await importWorkFile(
+      new File([blob], 'underline-styles.xlsx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'spreadsheet')
+      throw new Error('Expected an imported spreadsheet.');
+
+    expect(
+      imported.content.sheets[0]?.data?.[0]
+        ?.slice(0, 4)
+        .map((cell) => cell?.un),
+    ).toEqual([1, 2, 3, 4]);
   });
 
   test('round-trips built-in style borders through native XLSX records', async () => {

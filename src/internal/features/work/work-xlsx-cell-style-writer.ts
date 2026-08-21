@@ -14,6 +14,10 @@ import {
   xlsxRgbColor,
 } from './work-xlsx-cell-style-xml';
 import { attribute, directChildren } from './work-ooxml-package';
+import {
+  spreadsheetUnderlineStyle,
+  type SpreadsheetUnderlineStyle,
+} from './work-spreadsheet-underline';
 
 const fontChildOrder = [
   'name',
@@ -40,7 +44,7 @@ interface XlsxDirectFontStyle {
   name?: string;
   size?: number;
   strike?: boolean;
-  underline?: boolean;
+  underline?: SpreadsheetUnderlineStyle;
 }
 
 export class XlsxDirectCellStyleWriter {
@@ -330,7 +334,9 @@ function directFontStyle(cell: Cell): XlsxDirectFontStyle {
       ? { size: cell.fs }
       : {}),
     ...(cell.cl !== undefined ? { strike: Number(cell.cl) === 1 } : {}),
-    ...(cell.un !== undefined ? { underline: Number(cell.un) === 1 } : {}),
+    ...(cell.un !== undefined
+      ? { underline: spreadsheetUnderlineStyle(cell.un) }
+      : {}),
   };
 }
 

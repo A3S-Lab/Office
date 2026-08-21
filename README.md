@@ -561,7 +561,10 @@ interaction model.
   style-only writes, Home and Font Grow/Shrink Font commands with
   `Cmd/Ctrl+Shift+.` / `Cmd/Ctrl+]` and `Cmd/Ctrl+Shift+,` / `Cmd/Ctrl+[` aliases,
   per-cell mixed-size stepping, native rectangle compaction, a 10,000-cell
-  bound, and one-step Undo, plus a cell-border split control with side, all,
+  bound, and one-step Undo, a WPS-style Underline split control with single,
+  double, single-accounting, and double-accounting styles, exact Format Cells
+  and XLSX round trips, and active-style-aware `Cmd/Ctrl+U` toggling, plus a
+  cell-border split control with side, all,
   outside, inside, horizontal, vertical, clear, and diagonal targets, ten
   native line styles, exact color selection, compact overlapping range writes,
   `Cmd/Ctrl+Shift+&` Outside Borders and `Cmd/Ctrl+Shift+_` Clear Borders,
@@ -1519,6 +1522,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.18.0 documentation](https://a3s-lab.github.io/Office/docs/0.18.0/)
 - [A3S Office 0.17.0 documentation](https://a3s-lab.github.io/Office/docs/0.17.0/)
 - [A3S Office 0.16.0 documentation](https://a3s-lab.github.io/Office/docs/0.16.0/)
 - [A3S Office 0.15.0 documentation](https://a3s-lab.github.io/Office/docs/0.15.0/)
