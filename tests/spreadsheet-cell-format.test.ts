@@ -53,7 +53,7 @@ describe('spreadsheet cell format', () => {
         horizontalAlignment: 'center',
         verticalAlignment: 'middle',
         wrapText: true,
-        rotation: -45,
+        rotation: -30,
         fontFamily: 'Arial',
         fontSize: 12,
         fontColor: '#2463eb',
@@ -87,7 +87,7 @@ describe('spreadsheet cell format', () => {
       ht: '0',
       vt: 0,
       tb: '2',
-      rt: 135,
+      rt: 120,
       ff: 'Arial',
       fs: 12,
       fc: '#2463eb',
@@ -122,6 +122,48 @@ describe('spreadsheet cell format', () => {
         hidden: true,
       },
     ]);
+  });
+
+  test('switches numeric and stacked orientations without stale Fortune fields', () => {
+    const content = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sheet 1',
+          data: [[{ v: 'A3S', rt: 45, tr: '1' }]],
+        },
+      ],
+    } satisfies WorkSpreadsheetContent;
+
+    const stacked = applySpreadsheetCellFormat(content, {
+      sheetId: 'sheet-1',
+      range: { row: [0, 0], column: [0, 0] },
+      patch: { textOrientation: 'vertical' },
+    });
+    expect(stacked?.sheets[0]?.data?.[0]?.[0]).toMatchObject({
+      tr: '3',
+      v: 'A3S',
+    });
+    expect(stacked?.sheets[0]?.data?.[0]?.[0]?.rt).toBeUndefined();
+
+    const rotated = stacked
+      ? applySpreadsheetCellFormat(stacked, {
+          sheetId: 'sheet-1',
+          range: { row: [0, 0], column: [0, 0] },
+          patch: { rotation: -30 },
+        })
+      : null;
+    expect(rotated?.sheets[0]?.data?.[0]?.[0]).toMatchObject({ rt: 120 });
+    expect(rotated?.sheets[0]?.data?.[0]?.[0]?.tr).toBeUndefined();
+
+    expect(
+      canApplySpreadsheetCellFormat(content, {
+        sheetId: 'sheet-1',
+        range: { row: [0, 0], column: [0, 0] },
+        patch: { rotation: 0, textOrientation: 'horizontal' },
+      }),
+    ).toBe(false);
   });
 
   test('preserves celldata storage and materializes only formatted blank cells', () => {

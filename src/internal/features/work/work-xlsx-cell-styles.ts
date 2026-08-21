@@ -17,6 +17,10 @@ import {
 } from './work-xlsx-colors';
 import { spreadsheetUnderlineCellValueFromXlsx } from './work-spreadsheet-underline';
 import {
+  spreadsheetTextOrientationCellStyle,
+  spreadsheetTextOrientationFromXlsx,
+} from './work-spreadsheet-text-orientation';
+import {
   attribute,
   descendants,
   directChild,
@@ -203,7 +207,9 @@ function readDirectAlignmentStyle(
 
   if (booleanAttribute(alignment, 'wrapText')) style.tb = '2';
   const rotation = nonNegativeInteger(attribute(alignment, 'textRotation'));
-  if (rotation !== null && rotation <= 180) style.tr = String(rotation);
+  const orientation = spreadsheetTextOrientationFromXlsx(rotation);
+  const orientationStyle = spreadsheetTextOrientationCellStyle(orientation);
+  if (orientationStyle) Object.assign(style, orientationStyle);
 }
 
 function readDirectCellBorder(

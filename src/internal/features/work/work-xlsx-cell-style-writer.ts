@@ -18,6 +18,7 @@ import {
   spreadsheetUnderlineStyle,
   type SpreadsheetUnderlineStyle,
 } from './work-spreadsheet-underline';
+import { spreadsheetTextOrientationXlsxValueFromCell } from './work-spreadsheet-text-orientation';
 
 const fontChildOrder = [
   'name',
@@ -305,6 +306,7 @@ export function hasXlsxDirectCellStyle(cell: Cell): boolean {
       cell.ht !== undefined ||
       cell.vt !== undefined ||
       cell.tb !== undefined ||
+      cell.rt !== undefined ||
       cell.tr !== undefined,
   );
 }
@@ -359,12 +361,8 @@ function directAlignment(cell: Cell): XlsxDirectAlignmentStyle | null {
           : 'bottom';
   }
   if (cell.tb !== undefined) alignment.wrapText = cell.tb === '2';
-  if (cell.tr !== undefined) {
-    const rotation = Number(cell.tr);
-    if (Number.isFinite(rotation) && rotation >= 0 && rotation <= 180) {
-      alignment.textRotation = Math.round(rotation);
-    }
-  }
+  const rotation = spreadsheetTextOrientationXlsxValueFromCell(cell);
+  if (rotation !== null) alignment.textRotation = rotation;
   return Object.keys(alignment).length ? alignment : null;
 }
 

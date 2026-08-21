@@ -236,6 +236,19 @@ round-trip the exact OOXML `u` value, including an omitted value as single.
 Every ribbon, dialog, or shortcut intent emits one controlled update and one
 Undo record, restores grid focus, and keeps host inputs, the formula bar,
 active cell editing, and modal controls outside editor shortcut ownership.
+The twenty-fifth milestone completes the common WPS text-orientation and
+row/column visibility path. Home and Alignment exposes Horizontal, Angle
+Counterclockwise, Angle Clockwise, Vertical, Rotate Up, and Rotate Down through
+one keyboard-accessible radio menu. Numeric rotation uses Fortune `rt`, stacked
+vertical text uses `tr='3'`, and native XLSX import/export maps the complete
+OOXML 0–180 plus 255 range without reversing negative angles. One orientation
+intent covers at most 10,000 cells and emits one Fortune batch and one Undo
+record. Home and Cells now exposes Hide and Unhide for rows and columns, while
+grid-scoped `Cmd/Ctrl+9`, `Cmd/Ctrl+0`, `Cmd/Ctrl+Shift+9`, and
+`Cmd/Ctrl+Shift+0` share the same typed commands. Visibility mutation is capped
+before allocation at 10,000 rows or 1,000 columns and never captures host
+inputs, active editing, popovers, modal controls, read-only views, or repeated
+keydown events.
 
 ## Product Rules
 

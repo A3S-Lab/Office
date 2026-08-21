@@ -1432,6 +1432,176 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('applies each WPS text orientation in one native workbook batch', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [2, 3], column: [1, 2] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetTextOrientation');
+    expect(editor.commands.setTextOrientation('angleClockwise')).toBe(true);
+    expect(editor.commands.setTextOrientation('vertical')).toBe(true);
+    expect(fixture.workbook.clearBatches).toEqual([
+      [
+        {
+          name: 'setCellFormatByRange',
+          args: [
+            'tr',
+            undefined,
+            { row: [2, 3], column: [1, 2] },
+            { id: 'sheet-1' },
+          ],
+        },
+        {
+          name: 'setCellFormatByRange',
+          args: ['rt', 135, { row: [2, 3], column: [1, 2] }, { id: 'sheet-1' }],
+        },
+      ],
+      [
+        {
+          name: 'setCellFormatByRange',
+          args: [
+            'rt',
+            undefined,
+            { row: [2, 3], column: [1, 2] },
+            { id: 'sheet-1' },
+          ],
+        },
+        {
+          name: 'setCellFormatByRange',
+          args: ['tr', '3', { row: [2, 3], column: [1, 2] }, { id: 'sheet-1' }],
+        },
+      ],
+    ]);
+
+    editor.updateContext({ ...fixture.context, editable: false });
+    expect(editor.can().setTextOrientation('rotateUp')).toBe(false);
+    expect(editor.commands.setTextOrientation('rotateUp')).toBe(false);
+    expect(fixture.workbook.clearBatches).toHaveLength(2);
+  });
+
+  test('rejects oversized text-orientation ranges before native formatting', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 100], column: [0, 99] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().setTextOrientation('angleClockwise')).toBe(false);
+    expect(editor.commands.setTextOrientation('angleClockwise')).toBe(false);
+    expect(fixture.workbook.clearBatches).toEqual([]);
+  });
+
+  test('bounds row and column visibility mutations before allocating indices', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      row: 20_000,
+      column: 2_000,
+    };
+    fixture.workbook.selection = [{ row: [0, 10_000], column: [0, 0] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().setSelectedStructureHidden('row', true)).toBe(false);
+    expect(editor.commands.setSelectedStructureHidden('row', true)).toBe(false);
+
+    fixture.workbook.selection = [{ row: [0, 0], column: [0, 1_000] }];
+    expect(editor.can().setSelectedStructureHidden('column', false)).toBe(
+      false,
+    );
+    expect(editor.commands.setSelectedStructureHidden('column', false)).toBe(
+      false,
+    );
+    expect(fixture.workbook.visibilityChanges).toEqual([]);
+  });
+
+  test('owns WPS row and column visibility shortcuts only on an editable grid', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      column: 8,
+      row: 12,
+    };
+    fixture.workbook.selection = [{ row: [3, 4], column: [2, 3] }];
+    const editor = spreadsheetEditor(fixture.context);
+    const grid = document.createElement('div');
+    grid.className = 'fortune-container';
+    const shortcuts = [
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        code: 'Digit9',
+        key: '9',
+        metaKey: true,
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        code: 'Digit0',
+        ctrlKey: true,
+        key: '0',
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        code: 'Digit9',
+        key: '(',
+        metaKey: true,
+        shiftKey: true,
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        code: 'Digit0',
+        ctrlKey: true,
+        key: ')',
+        shiftKey: true,
+      }),
+    ];
+    for (const event of shortcuts) {
+      Object.defineProperty(event, 'target', { value: grid });
+    }
+
+    expect(shortcuts.map((event) => editor.handleKeyDown(event))).toEqual([
+      true,
+      true,
+      true,
+      true,
+    ]);
+    expect(shortcuts.every((event) => event.defaultPrevented)).toBe(true);
+    expect(fixture.workbook.visibilityChanges).toEqual([
+      { axis: 'row', hidden: true, indices: ['3', '4'] },
+      { axis: 'column', hidden: true, indices: ['2', '3'] },
+      { axis: 'row', hidden: false, indices: ['3', '4'] },
+      { axis: 'column', hidden: false, indices: ['2', '3'] },
+    ]);
+
+    const input = document.createElement('input');
+    const blocked = new KeyboardEvent('keydown', {
+      cancelable: true,
+      code: 'Digit9',
+      key: '9',
+      metaKey: true,
+    });
+    Object.defineProperty(blocked, 'target', { value: input });
+    expect(editor.handleKeyDown(blocked)).toBe(false);
+    expect(blocked.defaultPrevented).toBe(false);
+
+    const repeated = new KeyboardEvent('keydown', {
+      cancelable: true,
+      code: 'Digit0',
+      ctrlKey: true,
+      key: '0',
+      repeat: true,
+    });
+    Object.defineProperty(repeated, 'target', { value: grid });
+    expect(editor.handleKeyDown(repeated)).toBe(false);
+
+    editor.updateContext({ ...fixture.context, editable: false });
+    const readOnly = new KeyboardEvent('keydown', {
+      cancelable: true,
+      code: 'Digit9',
+      key: '9',
+      metaKey: true,
+    });
+    Object.defineProperty(readOnly, 'target', { value: grid });
+    expect(editor.handleKeyDown(readOnly)).toBe(false);
+    expect(fixture.workbook.visibilityChanges).toHaveLength(4);
+  });
+
   test('blocks structure commands that would destroy table semantics', () => {
     const fixture = commandFixture();
     fixture.context.content.sheets[0] = {

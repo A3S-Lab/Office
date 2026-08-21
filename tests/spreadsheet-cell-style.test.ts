@@ -316,6 +316,24 @@ describe('spreadsheet cell styles', () => {
     ]);
   });
 
+  test('imports native OOXML rotation and stacked text for Fortune rendering', () => {
+    const worksheet = parseXml(
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" s="1"/><c r="B1" s="2"/><c r="C1" s="3"/><c r="D1" s="4"/></row></sheetData></worksheet>',
+      'xl/worksheets/sheet1.xml',
+    );
+    const styles = parseXml(
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font/></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment textRotation="30"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment textRotation="120"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment textRotation="180"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment textRotation="255"/></xf></cellXfs></styleSheet>',
+      'xl/styles.xml',
+    );
+
+    expect(readXlsxDirectCellStyles(worksheet, styles)).toEqual([
+      { border: undefined, column: 0, row: 0, style: { rt: 30 } },
+      { border: undefined, column: 1, row: 0, style: { rt: 120 } },
+      { border: undefined, column: 2, row: 0, style: { rt: 180 } },
+      { border: undefined, column: 3, row: 0, style: { tr: '3' } },
+    ]);
+  });
+
   test('round-trips the exact direct style through XLSX', async () => {
     const artifact = createWorkArtifact('blank-spreadsheet');
     if (artifact.content.type !== 'spreadsheet')
@@ -389,6 +407,45 @@ describe('spreadsheet cell styles', () => {
         ?.slice(0, 4)
         .map((cell) => cell?.un),
     ).toEqual([1, 2, 3, 4]);
+  });
+
+  test('round-trips all six WPS text orientations through native XLSX alignment', async () => {
+    const artifact = createWorkArtifact('blank-spreadsheet');
+    if (artifact.content.type !== 'spreadsheet')
+      throw new Error('Expected a blank spreadsheet.');
+    const sheet = artifact.content.sheets[0];
+    if (!sheet) throw new Error('Expected a worksheet.');
+    sheet.data = [
+      [
+        { rt: 0, v: 'Horizontal' },
+        { rt: 45, v: 'Counterclockwise' },
+        { rt: 135, v: 'Clockwise' },
+        { tr: '3', v: 'Vertical' },
+        { rt: 90, v: 'Rotate up' },
+        { rt: 180, v: 'Rotate down' },
+      ],
+    ];
+
+    const blob = await createWorkArtifactBlob(artifact);
+    const imported = await importWorkFile(
+      new File([blob], 'text-orientations.xlsx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'spreadsheet')
+      throw new Error('Expected an imported spreadsheet.');
+
+    expect(
+      imported.content.sheets[0]?.data?.[0]?.slice(0, 6).map((cell) => ({
+        rt: cell?.rt,
+        tr: cell?.tr,
+      })),
+    ).toEqual([
+      { rt: 0, tr: undefined },
+      { rt: 45, tr: undefined },
+      { rt: 135, tr: undefined },
+      { rt: undefined, tr: '3' },
+      { rt: 90, tr: undefined },
+      { rt: 180, tr: undefined },
+    ]);
   });
 
   test('round-trips built-in style borders through native XLSX records', async () => {

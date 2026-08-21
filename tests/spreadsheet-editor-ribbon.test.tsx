@@ -359,6 +359,10 @@ test('operates WPS row and column actions from the Home cells group', async () =
         actions.push(`insert:${axis}:${position}`);
         return true;
       },
+      setSelectedStructureHidden: (axis, hidden) => {
+        actions.push(`${hidden ? 'hide' : 'unhide'}:${axis}`);
+        return true;
+      },
     },
   );
 
@@ -388,6 +392,12 @@ test('operates WPS row and column actions from the Home cells group', async () =
   const deleteColumns = within(menu).getByRole('menuitem', {
     name: '删除所选列',
   });
+  const hideRows = within(menu).getByRole('menuitem', {
+    name: '隐藏所选行',
+  });
+  const unhideColumns = within(menu).getByRole('menuitem', {
+    name: '取消隐藏所选列',
+  });
   expect(
     within(menu).getByRole('menuitem', { name: '在下方插入行' }),
   ).toBeInTheDocument();
@@ -400,10 +410,16 @@ test('operates WPS row and column actions from the Home cells group', async () =
   expect(
     within(menu).getByRole('menuitem', { name: '删除所选行' }),
   ).toBeInTheDocument();
+  expect(hideRows).toHaveAttribute('aria-keyshortcuts', 'Control+9 Meta+9');
+  expect(hideRows).toHaveTextContent('Cmd/Ctrl+9');
+  expect(unhideColumns).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+0 Meta+Shift+0',
+  );
 
   await waitFor(() => expect(insertAbove).toHaveFocus());
   fireEvent.keyDown(menu, { key: 'End' });
-  expect(deleteColumns).toHaveFocus();
+  expect(unhideColumns).toHaveFocus();
   fireEvent.click(deleteColumns);
   expect(actions).toEqual(['delete:column']);
   expect(screen.queryByRole('menu', { name: '行和列选项' })).toBeNull();
@@ -417,6 +433,15 @@ test('operates WPS row and column actions from the Home cells group', async () =
     ),
   );
   expect(actions).toEqual(['delete:column', 'insert:row:before']);
+
+  fireEvent.click(trigger);
+  fireEvent.click(
+    within(screen.getByRole('menu', { name: '行和列选项' })).getByRole(
+      'menuitem',
+      { name: '隐藏所选行' },
+    ),
+  );
+  expect(actions).toEqual(['delete:column', 'insert:row:before', 'hide:row']);
 });
 
 test('disables unavailable WPS row and column actions independently', () => {
@@ -424,6 +449,7 @@ test('disables unavailable WPS row and column actions independently', () => {
   can.insertSelectedStructure = (axis, position) =>
     axis === 'row' && position === 'before';
   can.deleteSelectedStructure = (axis) => axis === 'row';
+  can.setSelectedStructureHidden = (axis, hidden) => axis === 'row' && hidden;
 
   render(
     <SpreadsheetEditorRibbon
@@ -457,6 +483,68 @@ test('disables unavailable WPS row and column actions independently', () => {
   expect(
     within(menu).getByRole('menuitem', { name: '删除所选列' }),
   ).toBeDisabled();
+  expect(
+    within(menu).getByRole('menuitem', { name: '隐藏所选行' }),
+  ).toBeEnabled();
+  expect(
+    within(menu).getByRole('menuitem', { name: '取消隐藏所选行' }),
+  ).toBeDisabled();
+});
+
+test('offers the six WPS text orientations as an accessible radio menu', async () => {
+  const orientations: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          setTextOrientation: (orientation) => {
+            orientations.push(orientation);
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      findOpen={false}
+      panel={null}
+      toolbarCell={{ rt: 135 }}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const alignment = screen.getByRole('region', { name: '对齐' });
+  const trigger = within(alignment).getByRole('button', { name: '文字方向' });
+  expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  expect(trigger).toHaveAttribute('aria-pressed', 'true');
+  expect(trigger).toHaveAttribute('title', '文字方向（当前：顺时针倾斜）');
+  fireEvent.click(trigger);
+
+  const menu = screen.getByRole('menu', { name: '文字方向选项' });
+  const options = within(menu).getAllByRole('menuitemradio');
+  expect(options).toHaveLength(6);
+  expect(
+    within(menu).getByRole('menuitemradio', { name: '顺时针倾斜' }),
+  ).toHaveAttribute('aria-checked', 'true');
+  const horizontal = within(menu).getByRole('menuitemradio', {
+    name: '横排文字',
+  });
+  const rotateDown = within(menu).getByRole('menuitemradio', {
+    name: '向下旋转文字',
+  });
+  await waitFor(() => expect(horizontal).toHaveFocus());
+  fireEvent.keyDown(menu, { key: 'End' });
+  expect(rotateDown).toHaveFocus();
+  fireEvent.click(
+    within(menu).getByRole('menuitemradio', { name: '竖排文字' }),
+  );
+  expect(orientations).toEqual(['vertical']);
+  expect(screen.queryByRole('menu', { name: '文字方向选项' })).toBeNull();
+  expect(trigger).toHaveFocus();
 });
 
 test('routes WPS font, underline styles, vertical alignment, and wrapping through cell formats', () => {
@@ -1212,6 +1300,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     renameSheet: () => true,
     redo: () => false,
     setCellFormat: () => true,
+    setTextOrientation: () => true,
     setFreezePanes: () => true,
     setGridLines: () => true,
     setSelectedCellBorders: () => true,
@@ -1264,6 +1353,8 @@ function spreadsheetCommands(
       | 'pasteSpecial'
       | 'removeDataValidation'
       | 'setFreezePanes'
+      | 'setSelectedStructureHidden'
+      | 'setTextOrientation'
       | 'toggleAutoFilter'
       | 'updateTable'
     >
@@ -1316,7 +1407,9 @@ function spreadsheetCommands(
     setGridLines: () => true,
     setSelectedCellBorders: () => true,
     setSheetColor: () => true,
-    setSelectedStructureHidden: () => true,
+    setSelectedStructureHidden:
+      overrides.setSelectedStructureHidden ?? (() => true),
+    setTextOrientation: overrides.setTextOrientation ?? (() => true),
     setSelectedStructureSize: () => true,
     setSpreadsheetContent: () => true,
     setZoom: () => true,

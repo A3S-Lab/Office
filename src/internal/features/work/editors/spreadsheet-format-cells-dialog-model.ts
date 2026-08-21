@@ -4,6 +4,7 @@ import {
   spreadsheetUnderlineStyle,
   type SpreadsheetUnderlineStyle,
 } from '../work-spreadsheet-underline';
+import { spreadsheetVisibleTextRotationFromCell } from '../work-spreadsheet-text-orientation';
 import {
   spreadsheetCellBordersAt,
   type SpreadsheetCellBorderFormat,
@@ -155,7 +156,7 @@ export function createSpreadsheetFormatCellsDialogSource(
       horizontalAlignment: values((cell) => horizontalAlignment(cell?.ht)),
       verticalAlignment: values((cell) => verticalAlignment(cell?.vt)),
       wrapText: values((cell) => String(cell?.tb) === '2'),
-      rotation: values((cell) => cellRotation(cell)),
+      rotation: values((cell) => spreadsheetVisibleTextRotationFromCell(cell)),
       fontFamily: values((cell) =>
         typeof cell?.ff === 'string' && cell.ff.trim()
           ? cell.ff.trim()
@@ -326,14 +327,6 @@ function verticalAlignment(value: Cell['vt']): SpreadsheetVerticalAlignment {
   if (Number(value) === 0) return 'middle';
   if (Number(value) === 2) return 'bottom';
   return 'top';
-}
-
-function cellRotation(cell: Cell | null): number {
-  const direct = Number(cell?.rt);
-  if (Number.isFinite(direct) && direct >= 0 && direct <= 180) {
-    return direct > 90 ? direct - 180 : direct;
-  }
-  return { '1': 45, '2': -45, '4': 90, '5': -90 }[String(cell?.tr)] ?? 0;
 }
 
 function borderFormatsAt(

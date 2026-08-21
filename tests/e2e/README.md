@@ -222,6 +222,21 @@ layout, accessibility, screenshot evidence, and clean browser diagnostics.
 The suite runs only through the local A3S Test release gate; GitHub Actions
 keeps the equivalent Rstest and desktop/compact Playwright coverage.
 
+The WPS Spreadsheet text-orientation and row/column visibility workflow has a
+focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-orientation-visibility:check
+bun run test:e2e:spreadsheet-orientation-visibility
+```
+
+It covers all six orientation choices, menu radio state, exact grid-focus and
+one-step Undo behavior, the four hide/unhide shortcut declarations, runtime
+focus ownership, accessibility, and clean browser diagnostics. Playwright owns
+the desktop/compact screenshots and Canvas pixel comparisons because the pinned
+standalone adapter's CDP screenshot command is not a reliable bounded gate.
+The suite remains local-only and is not referenced by GitHub Actions.
+
 The native Spreadsheet Table lifecycle has a focused local gate:
 
 ```bash

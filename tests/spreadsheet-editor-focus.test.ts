@@ -221,6 +221,8 @@ test('returns grid focus after successful ribbon commands only', () => {
     setFreezePanes: record('setFreezePanes'),
     setGridLines: record('setGridLines'),
     setSelectedCellBorders: record('setSelectedCellBorders'),
+    setSelectedStructureHidden: record('setSelectedStructureHidden'),
+    setTextOrientation: record('setTextOrientation'),
     setZoom: record('setZoom'),
     toggleAutoFilter: record('toggleAutoFilter'),
     undo: record('undo', false),
@@ -247,6 +249,8 @@ test('returns grid focus after successful ribbon commands only', () => {
   expect(ribbon.setFreezePanes('topRow')).toBe(true);
   expect(ribbon.insertSelectedStructure('row', 'before')).toBe(true);
   expect(ribbon.deleteSelectedStructure('column')).toBe(true);
+  expect(ribbon.setSelectedStructureHidden('row', true)).toBe(true);
+  expect(ribbon.setTextOrientation('vertical')).toBe(true);
   expect(ribbon.fillSelectedCells('down')).toBe(true);
   expect(ribbon.mergeSelectedCells('merge-and-center')).toBe(true);
   expect(ribbon.toggleAutoFilter()).toBe(true);
@@ -275,6 +279,8 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setFreezePanes:topRow',
     'insertSelectedStructure:row,before',
     'deleteSelectedStructure:column',
+    'setSelectedStructureHidden:row,true',
+    'setTextOrientation:vertical',
     'fillSelectedCells:down',
     'mergeSelectedCells:merge-and-center',
     'toggleAutoFilter:',
@@ -291,6 +297,8 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setZoom:125',
   ]);
   expect(focused).toEqual([
+    'grid',
+    'grid',
     'grid',
     'grid',
     'grid',

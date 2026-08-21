@@ -563,8 +563,11 @@ interaction model.
   per-cell mixed-size stepping, native rectangle compaction, a 10,000-cell
   bound, and one-step Undo, a WPS-style Underline split control with single,
   double, single-accounting, and double-accounting styles, exact Format Cells
-  and XLSX round trips, and active-style-aware `Cmd/Ctrl+U` toggling, plus a
-  cell-border split control with side, all,
+  and XLSX round trips, and active-style-aware `Cmd/Ctrl+U` toggling, a
+  keyboard-accessible WPS Text Orientation menu with horizontal, both 45-degree
+  angles, stacked vertical, rotate-up, and rotate-down choices, exact Fortune
+  `rt` / `tr='3'` and OOXML 0–180 / 255 round trips, a 10,000-cell guard, and
+  one-batch Undo, plus a cell-border split control with side, all,
   outside, inside, horizontal, vertical, clear, and diagonal targets, ten
   native line styles, exact color selection, compact overlapping range writes,
   `Cmd/Ctrl+Shift+&` Outside Borders and `Cmd/Ctrl+Shift+_` Clear Borders,
@@ -573,8 +576,11 @@ interaction model.
   sorting plus WPS-style AutoFilter under Data, finite current-region discovery,
   `Cmd/Ctrl+Shift+L` toggling, an `Alt+ArrowDown` keyboard filter menu,
   a Home and Cells Rows and Columns menu for inserting above, below, left, or
-  right and deleting selected rows or columns through the shared structure
-  command port, a Home and Alignment Merge and Center split control with
+  right, deleting selected rows or columns, and hiding or unhiding rows and
+  columns through the shared structure command port, including grid-scoped
+  `Cmd/Ctrl+9`, `Cmd/Ctrl+0`, `Cmd/Ctrl+Shift+9`, and `Cmd/Ctrl+Shift+0`
+  shortcuts with 10,000-row and 1,000-column allocation guards, a Home and
+  Alignment Merge and Center split control with
   Merge Cells, Merge Across, Unmerge Cells, Unmerge and Fill, and the WPS
   `Ctrl+M` shortcut through one controlled native workbook batch,
   a Home and Editing Clear menu for independently removing content, formats,
@@ -1522,6 +1528,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.19.0 documentation](https://a3s-lab.github.io/Office/docs/0.19.0/)
 - [A3S Office 0.18.0 documentation](https://a3s-lab.github.io/Office/docs/0.18.0/)
 - [A3S Office 0.17.0 documentation](https://a3s-lab.github.io/Office/docs/0.17.0/)
 - [A3S Office 0.16.0 documentation](https://a3s-lab.github.io/Office/docs/0.16.0/)

@@ -537,7 +537,7 @@ test('Spreadsheet inserts and deletes rows from the WPS Home cells group', async
   await expect(menu).toBeVisible();
   const insertAbove = menu.getByRole('menuitem', { name: '在上方插入行' });
   await expect(insertAbove).toBeFocused();
-  await expect(menu.getByRole('menuitem')).toHaveCount(6);
+  await expect(menu.getByRole('menuitem')).toHaveCount(10);
 
   const menuBounds = await menu.boundingBox();
   const viewport = page.viewportSize();
@@ -571,6 +571,167 @@ test('Spreadsheet inserts and deletes rows from the WPS Home cells group', async
   await expect(grid).toBeFocused();
   await expect(nameBox).toHaveText('A4');
   await expect(formulaBar).toHaveText('客户洞察报告');
+  expect(browserErrors).toEqual([]);
+});
+
+test('Spreadsheet applies accessible WPS text orientations as one undoable intent', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  const alignment = ribbon.getByRole('region', { name: '对齐' });
+  const trigger = alignment.getByRole('button', { name: '文字方向' });
+
+  await grid.focus();
+  await page.keyboard.press('Shift+F11');
+  await page.keyboard.type('A3S orientation');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await expect(nameBox).toHaveText('A1');
+  await expect(trigger).toHaveAttribute('title', '文字方向（当前：横排文字）');
+  await expect(trigger).toHaveAttribute('aria-pressed', 'false');
+
+  await trigger.click();
+  const menu = page.getByRole('menu', { name: '文字方向选项' });
+  const horizontal = menu.getByRole('menuitemradio', { name: '横排文字' });
+  const clockwise = menu.getByRole('menuitemradio', { name: '顺时针倾斜' });
+  const rotateDown = menu.getByRole('menuitemradio', {
+    name: '向下旋转文字',
+  });
+  await expect(menu.getByRole('menuitemradio')).toHaveCount(6);
+  await expect(horizontal).toHaveAttribute('aria-checked', 'true');
+  await expect(horizontal).toBeFocused();
+  await menu.press('End');
+  await expect(rotateDown).toBeFocused();
+  await menu.press('Home');
+  await expect(horizontal).toBeFocused();
+
+  const menuBounds = await menu.boundingBox();
+  const viewport = page.viewportSize();
+  expect(menuBounds).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect((menuBounds?.x ?? 0) + (menuBounds?.width ?? 0)).toBeLessThanOrEqual(
+    viewport?.width ?? 0,
+  );
+  expect((menuBounds?.y ?? 0) + (menuBounds?.height ?? 0)).toBeLessThanOrEqual(
+    viewport?.height ?? 0,
+  );
+
+  await clockwise.click();
+  await expect(grid).toBeFocused();
+  await expect(trigger).toHaveAttribute('aria-pressed', 'true');
+  await expect(trigger).toHaveAttribute(
+    'title',
+    '文字方向（当前：顺时针倾斜）',
+  );
+  await page.screenshot({
+    path: testInfo.outputPath('spreadsheet-text-orientation.png'),
+    animations: 'disabled',
+  });
+
+  await trigger.click();
+  await expect(
+    page
+      .getByRole('menu', { name: '文字方向选项' })
+      .getByRole('menuitemradio', { name: '顺时针倾斜' }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('Escape');
+  await grid.focus();
+  await page.keyboard.press('Control+z');
+  await expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  await expect(trigger).toHaveAttribute('title', '文字方向（当前：横排文字）');
+  await expect(grid).toBeFocused();
+  expect(browserErrors).toEqual([]);
+});
+
+test('Spreadsheet hides and unhides selected rows with WPS menu and grid shortcuts', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  const trigger = ribbon
+    .getByRole('region', { name: '单元格' })
+    .getByRole('button', { name: '行和列' });
+
+  await grid.focus();
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('.fortune-name-box')).toHaveText('A4');
+  const visibleCanvasDigest = await spreadsheetCanvasDigest(page);
+
+  await trigger.click();
+  const menu = page.getByRole('menu', { name: '行和列选项' });
+  const hideRows = menu.getByRole('menuitem', {
+    name: '隐藏所选行',
+    exact: true,
+  });
+  const hideColumns = menu.getByRole('menuitem', {
+    name: '隐藏所选列',
+    exact: true,
+  });
+  const unhideRows = menu.getByRole('menuitem', {
+    name: '取消隐藏所选行',
+    exact: true,
+  });
+  const unhideColumns = menu.getByRole('menuitem', {
+    name: '取消隐藏所选列',
+    exact: true,
+  });
+  await expect(hideRows).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+9 Meta+9',
+  );
+  await expect(hideColumns).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+0 Meta+0',
+  );
+  await expect(unhideRows).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+9 Meta+Shift+9',
+  );
+  await expect(unhideColumns).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+0 Meta+Shift+0',
+  );
+  await expect(hideRows.locator('kbd')).toHaveText('Cmd/Ctrl+9');
+  await expect(unhideRows.locator('kbd')).toHaveText('Cmd/Ctrl+Shift+9');
+  await page.screenshot({
+    path: testInfo.outputPath('spreadsheet-row-column-visibility.png'),
+    animations: 'disabled',
+  });
+
+  await page.keyboard.press('Escape');
+  await grid.focus();
+  await page.keyboard.press('Control+9');
+  await expect(grid).toBeFocused();
+  await expect
+    .poll(() => spreadsheetCanvasDigest(page))
+    .not.toBe(visibleCanvasDigest);
+  await page.keyboard.press('Control+Shift+9');
+  await expect(grid).toBeFocused();
+  await expect
+    .poll(() => spreadsheetCanvasDigest(page))
+    .toBe(visibleCanvasDigest);
+  await page.keyboard.press('Control+0');
+  await expect
+    .poll(() => spreadsheetCanvasDigest(page))
+    .not.toBe(visibleCanvasDigest);
+  await page.keyboard.press('Control+Shift+0');
+  await expect
+    .poll(() => spreadsheetCanvasDigest(page))
+    .toBe(visibleCanvasDigest);
+  await expect(grid).toBeFocused();
   expect(browserErrors).toEqual([]);
 });
 
@@ -1190,4 +1351,24 @@ async function spreadsheetCanvasColorCount(
     },
     { bounds: geometry, expected: color },
   );
+}
+
+async function spreadsheetCanvasDigest(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>(
+      '.fortune-sheet-canvas',
+    );
+    const context = canvas?.getContext('2d');
+    if (!canvas || !context) return 0;
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let digest = 2_166_136_261;
+    for (let index = 0; index < pixels.length; index += 16) {
+      digest ^=
+        (pixels[index] ?? 0) ^
+        ((pixels[index + 1] ?? 0) << 8) ^
+        ((pixels[index + 2] ?? 0) << 16);
+      digest = Math.imul(digest, 16_777_619);
+    }
+    return digest >>> 0;
+  });
 }

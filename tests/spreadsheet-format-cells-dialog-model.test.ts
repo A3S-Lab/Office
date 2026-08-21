@@ -170,4 +170,26 @@ describe('spreadsheet format cells dialog model', () => {
       rotation: '文字旋转角度需为 -90–90 之间的整数。',
     });
   });
+
+  test('reads arbitrary negative Fortune rotations as their visible angle', () => {
+    const content = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sheet 1',
+          data: [[{ v: 'Clockwise', rt: 120 }]],
+        },
+      ],
+    } satisfies WorkSpreadsheetContent;
+    const source = createSpreadsheetFormatCellsDialogSource(
+      content,
+      'sheet-1',
+      { row: [0, 0], column: [0, 0] },
+      content.sheets[0]?.data ?? [],
+      { row: 0, column: 0 },
+    );
+
+    expect(source?.fields.rotation).toEqual({ mixed: false, value: -30 });
+  });
 });

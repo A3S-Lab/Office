@@ -1,0 +1,257 @@
+suite "office-spreadsheet-ribbon-orientation-visibility" {
+    version = 1
+
+    scenario "use-wps-text-orientation-from-home" {
+        name = "Use WPS text orientation from the Home alignment group"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "select-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "select-row-three" {
+            key = "ArrowDown"
+        }
+
+        press "select-customer-report" {
+            key = "ArrowDown"
+        }
+
+        expect "orientation-command-is-horizontal" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-group[aria-label='对齐'] button[aria-label='文字方向'][aria-pressed='false'][title='文字方向（当前：横排文字）']")
+        }
+
+        click "open-orientation-menu" {
+            target = role("button", "文字方向")
+        }
+
+        expect "orientation-menu-visible" {
+            visible = css("[role='menu'][aria-label='文字方向选项']")
+        }
+
+        expect "horizontal-orientation-checked" {
+            visible = css("[role='menu'][aria-label='文字方向选项'] button[role='menuitemradio'][aria-checked='true']:first-child")
+        }
+
+        press "focus-last-orientation" {
+            key = "End"
+        }
+
+        expect "last-orientation-focused" {
+            visible = css("[role='menu'][aria-label='文字方向选项'] button[role='menuitemradio']:last-child:focus")
+        }
+
+        press "focus-first-orientation" {
+            key = "Home"
+        }
+
+        expect "first-orientation-focused" {
+            visible = css("[role='menu'][aria-label='文字方向选项'] button[role='menuitemradio']:first-child:focus")
+        }
+
+        click "apply-clockwise-orientation" {
+            target = role("menuitemradio", "顺时针倾斜")
+        }
+
+        expect "clockwise-orientation-active" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='文字方向'][aria-pressed='true'][title='文字方向（当前：顺时针倾斜）']")
+        }
+
+        expect "grid-focus-restored-after-orientation" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        click "reopen-orientation-menu" {
+            target = role("button", "文字方向")
+        }
+
+        expect "clockwise-orientation-checked" {
+            visible = css("[role='menu'][aria-label='文字方向选项'] button[role='menuitemradio'][aria-checked='true']")
+        }
+
+        press "close-orientation-menu" {
+            key = "Escape"
+        }
+
+        focus "return-focus-to-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "undo-orientation" {
+            key = "Control+z"
+        }
+
+        expect "horizontal-orientation-restored" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='文字方向'][aria-pressed='false'][title='文字方向（当前：横排文字）']")
+        }
+
+        accessibility "spreadsheet-orientation-accessibility" {
+            path = "evidence/orientation-accessibility.json"
+            interactive = true
+        }
+
+        console "orientation-browser-console" {
+            path = "diagnostics/orientation-console.json"
+            clear = false
+        }
+
+        page_errors "orientation-browser-errors" {
+            path = "diagnostics/orientation-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "use-wps-row-column-visibility-shortcuts" {
+        name = "Use WPS row and column visibility shortcuts on the active grid"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "select-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "select-row-three" {
+            key = "ArrowDown"
+        }
+
+        press "select-customer-report" {
+            key = "ArrowDown"
+        }
+
+        click "open-rows-and-columns-menu" {
+            target = role("button", "行和列")
+        }
+
+        expect "hide-row-shortcut-visible" {
+            visible = css("[role='menu'][aria-label='行和列选项'] button[aria-label='隐藏所选行'][aria-keyshortcuts='Control+9 Meta+9']")
+        }
+
+        expect "hide-column-shortcut-visible" {
+            visible = css("[role='menu'][aria-label='行和列选项'] button[aria-label='隐藏所选列'][aria-keyshortcuts='Control+0 Meta+0']")
+        }
+
+        expect "unhide-row-shortcut-visible" {
+            visible = css("[role='menu'][aria-label='行和列选项'] button[aria-label='取消隐藏所选行'][aria-keyshortcuts='Control+Shift+9 Meta+Shift+9']")
+        }
+
+        expect "unhide-column-shortcut-visible" {
+            visible = css("[role='menu'][aria-label='行和列选项'] button[aria-label='取消隐藏所选列'][aria-keyshortcuts='Control+Shift+0 Meta+Shift+0']")
+        }
+
+        press "close-rows-and-columns-menu" {
+            key = "Escape"
+        }
+
+        focus "return-focus-to-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "hide-selected-row" {
+            key = "Control+9"
+        }
+
+        expect "grid-focus-retained-after-row-hide" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "unhide-selected-row" {
+            key = "Control+Shift+9"
+        }
+
+        expect "grid-focus-retained-after-row-unhide" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "hide-selected-column" {
+            key = "Control+0"
+        }
+
+        expect "grid-focus-retained-after-column-hide" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "unhide-selected-column" {
+            key = "Control+Shift+0"
+        }
+
+        expect "grid-focus-retained-after-visibility-shortcuts" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        accessibility "spreadsheet-visibility-accessibility" {
+            path = "evidence/visibility-accessibility.json"
+            interactive = true
+        }
+
+        console "visibility-browser-console" {
+            path = "diagnostics/visibility-console.json"
+            clear = false
+        }
+
+        page_errors "visibility-browser-errors" {
+            path = "diagnostics/visibility-page-errors.json"
+            clear = false
+        }
+    }
+}

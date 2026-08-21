@@ -4,6 +4,25 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.19.0 - 2026-08-22
+
+- Added a keyboard-accessible WPS Spreadsheet Text Orientation menu with
+  horizontal, counterclockwise, clockwise, stacked vertical, rotate-up, and
+  rotate-down choices. Fortune `rt` and `tr='3'` now round-trip the complete
+  native XLSX 0–180 and 255 mapping without reversing negative angles.
+- Expanded Home and Cells Rows and Columns with row/column Hide and Unhide plus
+  grid-scoped `Cmd/Ctrl+9`, `Cmd/Ctrl+0`, `Cmd/Ctrl+Shift+9`, and
+  `Cmd/Ctrl+Shift+0`, with exact focus ownership and read-only exclusions.
+- Bounded text-orientation mutation to 10,000 cells and visibility mutation to
+  10,000 rows or 1,000 columns before native calls or index allocation. One
+  orientation intent remains one Fortune batch and one Undo record.
+- Split the Spreadsheet controller and Ribbon into focused selection,
+  navigation, structure, keyboard, alignment, clipboard, editing, view, and
+  row/column modules without changing the public editor API.
+- Added focused Rstest, XLSX, desktop/compact Playwright Canvas, accessibility,
+  console, page-error, and local A3S Test 1.0.0 regression coverage. GitHub
+  Actions and Pages continue to exclude A3S Test.
+
 ## 0.18.0 - 2026-08-22
 
 - Added WPS-style Spreadsheet advanced underline formatting with a split Home

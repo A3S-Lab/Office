@@ -1892,6 +1892,10 @@ export function spreadsheetCommandsWithGridFocus(
     setSelectedCellBorders: afterSuccessfulCommand(
       commands.setSelectedCellBorders,
     ),
+    setSelectedStructureHidden: afterSuccessfulCommand(
+      commands.setSelectedStructureHidden,
+    ),
+    setTextOrientation: afterSuccessfulCommand(commands.setTextOrientation),
     toggleAutoFilter: afterSuccessfulCommand(commands.toggleAutoFilter),
     undo: afterSuccessfulCommand(commands.undo),
   };

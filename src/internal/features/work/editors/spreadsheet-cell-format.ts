@@ -14,6 +14,13 @@ import {
   type SpreadsheetUnderlineStyle,
 } from '../work-spreadsheet-underline';
 import {
+  isSpreadsheetTextOrientationId,
+  spreadsheetTextOrientationCellStyle,
+  spreadsheetTextOrientationFromAngle,
+  spreadsheetTextOrientationFromChoice,
+  type SpreadsheetTextOrientationId,
+} from '../work-spreadsheet-text-orientation';
+import {
   MAX_SPREADSHEET_DIAGONAL_BORDER_CELLS,
   normalizeSpreadsheetBorderFormat,
   type SpreadsheetCellBorderFormat,
@@ -43,6 +50,7 @@ export interface SpreadsheetCellFormatPatch {
   verticalAlignment?: SpreadsheetVerticalAlignment;
   wrapText?: boolean;
   rotation?: number;
+  textOrientation?: SpreadsheetTextOrientationId;
   fontFamily?: string;
   fontSize?: number;
   fontColor?: string;
@@ -73,6 +81,7 @@ const patchKeys = new Set<keyof SpreadsheetCellFormatPatch>([
   'verticalAlignment',
   'wrapText',
   'rotation',
+  'textOrientation',
   'fontFamily',
   'fontSize',
   'fontColor',
@@ -121,6 +130,9 @@ export function canApplySpreadsheetCellFormat(
       (!Number.isInteger(patch.rotation) ||
         patch.rotation < -90 ||
         patch.rotation > 90)) ||
+    (patch.textOrientation !== undefined &&
+      !isSpreadsheetTextOrientationId(patch.textOrientation)) ||
+    (patch.rotation !== undefined && patch.textOrientation !== undefined) ||
     (patch.fontFamily !== undefined &&
       !validTrimmedString(patch.fontFamily, 128)) ||
     (patch.fontSize !== undefined &&
@@ -338,9 +350,16 @@ function formatCell(
     next.vt = { top: 1, middle: 0, bottom: 2 }[patch.verticalAlignment];
   }
   if (patch.wrapText !== undefined) next.tb = patch.wrapText ? '2' : '1';
-  if (patch.rotation !== undefined) {
-    next.rt = patch.rotation < 0 ? 180 + patch.rotation : patch.rotation;
+  if (patch.rotation !== undefined || patch.textOrientation !== undefined) {
+    const orientation =
+      patch.textOrientation !== undefined
+        ? spreadsheetTextOrientationFromChoice(patch.textOrientation)
+        : spreadsheetTextOrientationFromAngle(patch.rotation);
+    const style = spreadsheetTextOrientationCellStyle(orientation);
+    delete next.rt;
     delete next.tr;
+    if (style?.rt !== undefined) next.rt = style.rt;
+    if (style?.tr !== undefined) next.tr = style.tr;
   }
   if (patch.fontFamily !== undefined) next.ff = patch.fontFamily.trim();
   if (patch.fontSize !== undefined) next.fs = patch.fontSize;

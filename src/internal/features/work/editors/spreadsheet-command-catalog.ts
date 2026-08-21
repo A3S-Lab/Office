@@ -339,6 +339,36 @@ export const spreadsheetCommandCatalog = {
     label: '斜线框线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
+  textOrientationHorizontal: {
+    id: 'alignment.textOrientation.horizontal',
+    label: '横排文字',
+    location: { area: 'ribbon', tab: 'home', group: 'alignment' },
+  },
+  textOrientationAngleCounterclockwise: {
+    id: 'alignment.textOrientation.angleCounterclockwise',
+    label: '逆时针倾斜',
+    location: { area: 'ribbon', tab: 'home', group: 'alignment' },
+  },
+  textOrientationAngleClockwise: {
+    id: 'alignment.textOrientation.angleClockwise',
+    label: '顺时针倾斜',
+    location: { area: 'ribbon', tab: 'home', group: 'alignment' },
+  },
+  textOrientationVertical: {
+    id: 'alignment.textOrientation.vertical',
+    label: '竖排文字',
+    location: { area: 'ribbon', tab: 'home', group: 'alignment' },
+  },
+  textOrientationRotateUp: {
+    id: 'alignment.textOrientation.rotateUp',
+    label: '向上旋转文字',
+    location: { area: 'ribbon', tab: 'home', group: 'alignment' },
+  },
+  textOrientationRotateDown: {
+    id: 'alignment.textOrientation.rotateDown',
+    label: '向下旋转文字',
+    location: { area: 'ribbon', tab: 'home', group: 'alignment' },
+  },
   mergeAndCenter: {
     id: 'alignment.mergeAndCenter',
     label: '合并居中',
@@ -408,6 +438,46 @@ export const spreadsheetCommandCatalog = {
     id: 'cells.deleteColumns',
     label: '删除所选列',
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
+  },
+  hideRows: {
+    id: 'cells.hideRows',
+    label: '隐藏所选行',
+    location: { area: 'ribbon', tab: 'home', group: 'cells' },
+    shortcut: {
+      label: 'Cmd/Ctrl+9',
+      aria: 'Control+9 Meta+9',
+      editor: ['Mod-9'],
+    },
+  },
+  hideColumns: {
+    id: 'cells.hideColumns',
+    label: '隐藏所选列',
+    location: { area: 'ribbon', tab: 'home', group: 'cells' },
+    shortcut: {
+      label: 'Cmd/Ctrl+0',
+      aria: 'Control+0 Meta+0',
+      editor: ['Mod-0'],
+    },
+  },
+  unhideRows: {
+    id: 'cells.unhideRows',
+    label: '取消隐藏所选行',
+    location: { area: 'ribbon', tab: 'home', group: 'cells' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+9',
+      aria: 'Control+Shift+9 Meta+Shift+9',
+      editor: ['Mod-Shift-9'],
+    },
+  },
+  unhideColumns: {
+    id: 'cells.unhideColumns',
+    label: '取消隐藏所选列',
+    location: { area: 'ribbon', tab: 'home', group: 'cells' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+0',
+      aria: 'Control+Shift+0 Meta+Shift+0',
+      editor: ['Mod-Shift-0'],
+    },
   },
   autoSum: {
     id: 'editing.autoSum',

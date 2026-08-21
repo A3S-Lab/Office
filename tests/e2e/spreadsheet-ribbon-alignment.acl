@@ -28,6 +28,10 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
         }
 
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
         expect "quick-access-visible" {
             visible = css(".work-spreadsheet-ribbon .work-office-quick-access[role='toolbar']")
         }
@@ -168,10 +172,6 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".work-spreadsheet-ribbon[data-collapsed='true'] .work-office-ribbon-panel:not([hidden]) button[aria-label='升序']")
         }
 
-        screenshot "spreadsheet-ribbon-alignment" {
-            path = "screenshots/spreadsheet-ribbon-alignment.png"
-        }
-
         click "return-to-grid" {
             target = css(".fortune-sheet-overlay")
         }
@@ -307,10 +307,6 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".fortune-filter-menu input[aria-label='搜索筛选值']")
         }
 
-        screenshot "spreadsheet-autofilter-compact" {
-            path = "screenshots/spreadsheet-autofilter-compact.png"
-        }
-
         press "close-filter-dialog" {
             key = "Escape"
         }
@@ -396,10 +392,6 @@ suite "office-spreadsheet-ribbon-alignment" {
 
         expect "custom-freeze-boundary-visible" {
             visible = css("[role='menu'][aria-label='冻结窗格选项'] button[role='menuitem']:first-child")
-        }
-
-        screenshot "spreadsheet-freeze-panes-compact" {
-            path = "screenshots/spreadsheet-freeze-panes-compact.png"
         }
 
         click "freeze-at-current-cell" {
@@ -525,10 +517,6 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css("[role='menu'][aria-label='行和列选项'] button[role='menuitem']:first-child:focus")
         }
 
-        screenshot "spreadsheet-rows-and-columns-compact" {
-            path = "screenshots/spreadsheet-rows-and-columns-compact.png"
-        }
-
         press "insert-row-above" {
             key = "Enter"
         }
@@ -613,7 +601,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         fill "enter-merge-content" {
-            target = label("当前单元格输入")
+            target = css("[aria-label='当前单元格输入']")
             value = "North"
         }
 
@@ -663,10 +651,6 @@ suite "office-spreadsheet-ribbon-alignment" {
 
         expect "unmerge-and-fill-enabled" {
             visible = css("[role='menu'][aria-label='合并选项'] button[role='menuitem']:last-child:not(:disabled)")
-        }
-
-        screenshot "spreadsheet-merge-menu-compact" {
-            path = "screenshots/spreadsheet-merge-menu-compact.png"
         }
 
         press "focus-unmerge-and-fill" {
@@ -790,7 +774,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         fill "choose-red-border" {
-            target = label("框线颜色")
+            target = css("[aria-label='框线颜色']")
             value = "#b42318"
         }
 
@@ -804,10 +788,6 @@ suite "office-spreadsheet-ribbon-alignment" {
 
         expect "border-command-is-undoable" {
             visible = css(".work-office-quick-access button[aria-label='撤销']:not(:disabled)")
-        }
-
-        screenshot "spreadsheet-cell-borders-compact" {
-            path = "screenshots/spreadsheet-cell-borders-compact.png"
         }
 
         click "undo-border" {
@@ -870,7 +850,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         fill "enter-content" {
-            target = label("当前单元格输入")
+            target = css("[aria-label='当前单元格输入']")
             value = "Keep style"
         }
 
@@ -926,10 +906,6 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css("[role='menu'][aria-label='清除选项'] button[role='menuitem'][aria-keyshortcuts='Delete Backspace']")
         }
 
-        screenshot "spreadsheet-clear-menu-compact" {
-            path = "screenshots/spreadsheet-clear-menu-compact.png"
-        }
-
         press "focus-clear-hyperlinks" {
             key = "End"
         }
@@ -951,7 +927,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         fill "enter-retained-content" {
-            target = label("当前单元格输入")
+            target = css("[aria-label='当前单元格输入']")
             value = "Keep value"
         }
 

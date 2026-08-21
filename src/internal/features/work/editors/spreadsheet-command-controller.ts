@@ -1,16 +1,12 @@
 import type { Cell, Selection, Sheet } from '@fortune-sheet/core';
-import {
-  type SpreadsheetGridSize,
-  spreadsheetGridSize,
-} from '../spreadsheet-sparse';
+import type { SpreadsheetGridSize } from '../spreadsheet-sparse';
 import type { WorkSpreadsheetContent } from '../work-types';
-import { spreadsheetUnderlineStyle } from '../work-spreadsheet-underline';
+import type { SpreadsheetTextOrientationId } from '../work-spreadsheet-text-orientation';
 import {
   createOfficeEditorExtension,
   type OfficeEditorCanCommands,
   type OfficeEditorExtension,
 } from './office-editor-extension';
-import { isOfficeShortcutBlocked } from './office-shortcuts';
 import type { SpreadsheetAutoSumFunction } from './spreadsheet-auto-sum';
 import { createSpreadsheetAutoSumExtension } from './spreadsheet-auto-sum-command';
 import { createSpreadsheetNavigationExtension } from './spreadsheet-navigation-command';
@@ -28,6 +24,10 @@ import { createSpreadsheetCellStyleExtension } from './spreadsheet-cell-style-co
 import type { SpreadsheetCellFillDirection } from './spreadsheet-cell-fill';
 import { createSpreadsheetCellFillExtension } from './spreadsheet-cell-fill-command';
 import {
+  canEditSpreadsheetSelection,
+  spreadsheetLiveCommandRange,
+} from './spreadsheet-command-selection';
+import {
   createSpreadsheetFontSizeExtension,
   type SpreadsheetFontSizeDirection,
 } from './spreadsheet-font-size-command';
@@ -42,13 +42,7 @@ import {
   spreadsheetCellMergeApiCalls,
 } from './spreadsheet-cell-merge';
 import {
-  runSpreadsheetClipboardShortcut,
-  runSpreadsheetPasteSpecialShortcut,
-} from './spreadsheet-clipboard-shortcuts';
-import {
   finiteSpreadsheetSelection,
-  isSpreadsheetNativeTextUndoTarget,
-  selectSpreadsheetFormulaBarContents,
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
 import type { SpreadsheetFormatPainterMode } from './spreadsheet-format-painter';
@@ -61,24 +55,13 @@ import {
   type SpreadsheetFreezePanePreset,
   updateSpreadsheetFreezePanes,
 } from './spreadsheet-freeze-panes';
-import {
-  isSpreadsheetGridKeyboardTarget,
-  moveSpreadsheetKeyboardSelection,
-  runSpreadsheetSelectionMoveShortcut,
-  runSpreadsheetSelectionScopeShortcut,
-  type SpreadsheetKeyboardSelection,
-  type SpreadsheetSelectionMove,
-  type SpreadsheetSelectionScope,
-  scopeSpreadsheetKeyboardSelection,
-  spreadsheetSelectionContainsFocus,
+import type {
+  SpreadsheetKeyboardSelection,
+  SpreadsheetSelectionMove,
+  SpreadsheetSelectionScope,
 } from './spreadsheet-keyboard-navigation';
-import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
+import { createSpreadsheetKeyboardShortcutExtension } from './spreadsheet-keyboard-shortcuts';
 import type { SpreadsheetPasteContent } from './spreadsheet-paste-special';
-import {
-  type SpreadsheetNumberFormatChoice,
-  spreadsheetNumberFormatCode,
-  spreadsheetNumberFormatValue,
-} from './spreadsheet-number-format';
 import {
   createSpreadsheetNumberFormatExtension,
   type SpreadsheetDecimalPlacesDirection,
@@ -86,7 +69,6 @@ import {
 import {
   activateSpreadsheetSheet,
   addSpreadsheetSheet,
-  adjacentSpreadsheetSheetId,
   deleteSpreadsheetSheet,
   duplicateSpreadsheetSheet,
   hideSpreadsheetSheet,
@@ -95,14 +77,16 @@ import {
   type SpreadsheetSheetMoveDirection,
   setSpreadsheetSheetColor,
 } from './spreadsheet-sheet-model';
-import { spreadsheetSelectionAfterStructureDeletion } from './spreadsheet-structure-selection';
+import { createSpreadsheetSelectionNavigationExtension } from './spreadsheet-selection-navigation-command';
+import { createSpreadsheetStructureExtension } from './spreadsheet-structure-command';
 import { createSpreadsheetTableExtension } from './spreadsheet-table-command';
+import { createSpreadsheetTextOrientationExtension } from './spreadsheet-text-orientation-command';
 import type {
   SpreadsheetTableDesignPatch,
   SpreadsheetTableRequest,
   SpreadsheetTableTarget,
 } from './spreadsheet-table';
-import { canApplySpreadsheetTableStructureChange } from './spreadsheet-table-reconciliation';
+import { createSpreadsheetVisibilityShortcutExtension } from './spreadsheet-visibility-shortcuts';
 
 export interface SpreadsheetWorkbookCommandPort {
   autoFillCell: (
@@ -315,6 +299,7 @@ export interface SpreadsheetEditorCommands {
   renameSheet: (sheetId: string, name: string) => boolean;
   redo: () => boolean;
   setCellFormat: (attribute: keyof Cell, value: unknown) => boolean;
+  setTextOrientation: (orientation: SpreadsheetTextOrientationId) => boolean;
   setSelectedCellBorders: (format: SpreadsheetCellBorderFormat) => boolean;
   setFreezePanes: (preset: SpreadsheetFreezePanePreset) => boolean;
   setGridLines: (visible: boolean) => boolean;
@@ -369,10 +354,6 @@ export interface SpreadsheetCommandContext {
   workbook: SpreadsheetWorkbookCommandPort | null;
 }
 
-interface SpreadsheetSelectionNavigationStorage {
-  focus: { column: number; row: number } | null;
-}
-
 export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtension<
   SpreadsheetCommandContext,
   SpreadsheetEditorCommands
@@ -395,6 +376,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
       }),
     }),
     createSpreadsheetCellFormatExtension(),
+    createSpreadsheetTextOrientationExtension(),
     createSpreadsheetFontSizeExtension(),
     createSpreadsheetCellBorderExtension(),
     createSpreadsheetCellStyleExtension(),
@@ -405,6 +387,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     createSpreadsheetTableExtension(),
     createSpreadsheetAutoSumExtension(),
     createSpreadsheetCellFillExtension(),
+    createSpreadsheetVisibilityShortcutExtension(),
     createOfficeEditorExtension<
       SpreadsheetCommandContext,
       SpreadsheetEditorCommands
@@ -612,462 +595,9 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
         },
       }),
     }),
-    createOfficeEditorExtension<
-      SpreadsheetCommandContext,
-      SpreadsheetEditorCommands
-    >({
-      name: 'spreadsheetKeyboardShortcuts',
-      addKeyboardShortcuts: () => ({
-        'Mod-a': ({ can, commands }, event) =>
-          selectSpreadsheetFormulaBarContents(event) ||
-          runSpreadsheetSelectionScopeShortcut(
-            event,
-            can.selectCellRange,
-            commands.selectCellRange,
-            'all',
-          ),
-        'Mod-b': ({ can, commands, context }, event) =>
-          runSpreadsheetCellFormatShortcut(
-            event,
-            context,
-            can.setCellFormat,
-            commands.setCellFormat,
-            'bl',
-          ),
-        'Mod-c': ({ can, commands }, event) =>
-          runSpreadsheetClipboardShortcut(
-            event,
-            can.copySelection,
-            commands.copySelection,
-          ),
-        'Mod-d': ({ can, commands }, event) =>
-          runSpreadsheetFillShortcut(
-            event,
-            can.fillSelectedCells,
-            commands.fillSelectedCells,
-            'down',
-          ),
-        'Mod-i': ({ can, commands, context }, event) =>
-          runSpreadsheetCellFormatShortcut(
-            event,
-            context,
-            can.setCellFormat,
-            commands.setCellFormat,
-            'it',
-          ),
-        'Mod-r': ({ can, commands }, event) =>
-          runSpreadsheetFillShortcut(
-            event,
-            can.fillSelectedCells,
-            commands.fillSelectedCells,
-            'right',
-          ),
-        'Mod-v': ({ can, commands }, event) =>
-          runSpreadsheetClipboardShortcut(
-            event,
-            can.pasteSelection,
-            commands.pasteSelection,
-          ),
-        [spreadsheetCommandCatalog.pasteSpecial.shortcut.editor[0]]: (
-          { can, commands },
-          event,
-        ) =>
-          runSpreadsheetPasteSpecialShortcut(
-            event,
-            can.openPasteSpecial,
-            commands.openPasteSpecial,
-          ),
-        'Mod-x': ({ can, commands }, event) =>
-          runSpreadsheetClipboardShortcut(
-            event,
-            can.cutSelection,
-            commands.cutSelection,
-          ),
-        'Mod-u': ({ can, commands, context }, event) =>
-          runSpreadsheetCellFormatShortcut(
-            event,
-            context,
-            can.setCellFormat,
-            commands.setCellFormat,
-            'un',
-          ),
-        'Mod-5': ({ can, commands, context }, event) =>
-          runSpreadsheetCellFormatShortcut(
-            event,
-            context,
-            can.setCellFormat,
-            commands.setCellFormat,
-            'cl',
-          ),
-        [spreadsheetCommandCatalog.numberFormatGeneral.shortcut.editor[0]]: (
-          { can, commands, context },
-          event,
-        ) =>
-          runSpreadsheetNumberFormatShortcut(
-            event,
-            context,
-            can.setCellFormat,
-            commands.setCellFormat,
-            'general',
-          ),
-        [spreadsheetCommandCatalog.numberFormatNumber.shortcut.editor[0]]: (
-          { can, commands, context },
-          event,
-        ) =>
-          runSpreadsheetNumberFormatShortcut(
-            event,
-            context,
-            can.setCellFormat,
-            commands.setCellFormat,
-            'number',
-          ),
-        [spreadsheetCommandCatalog.numberFormatCurrency.shortcut.editor[0]]: (
-          { can, commands, context },
-          event,
-        ) =>
-          runSpreadsheetNumberFormatShortcut(
-            event,
-            context,
-            can.setCellFormat,
-            commands.setCellFormat,
-            'currency',
-          ),
-        [spreadsheetCommandCatalog.numberFormatPercent.shortcut.editor[0]]: (
-          { can, commands, context },
-          event,
-        ) =>
-          runSpreadsheetNumberFormatShortcut(
-            event,
-            context,
-            can.setCellFormat,
-            commands.setCellFormat,
-            'percent',
-          ),
-        [spreadsheetCommandCatalog.numberFormatDate.shortcut.editor[0]]: (
-          { can, commands, context },
-          event,
-        ) =>
-          runSpreadsheetNumberFormatShortcut(
-            event,
-            context,
-            can.setCellFormat,
-            commands.setCellFormat,
-            'date',
-          ),
-        [spreadsheetCommandCatalog.numberFormatTime.shortcut.editor[0]]: (
-          { can, commands, context },
-          event,
-        ) =>
-          runSpreadsheetNumberFormatShortcut(
-            event,
-            context,
-            can.setCellFormat,
-            commands.setCellFormat,
-            'time',
-          ),
-        [spreadsheetCommandCatalog.numberFormatScientific.shortcut.editor[0]]: (
-          { can, commands, context },
-          event,
-        ) =>
-          runSpreadsheetNumberFormatShortcut(
-            event,
-            context,
-            can.setCellFormat,
-            commands.setCellFormat,
-            'scientific',
-          ),
-        'Mod-z': ({ can, commands }, event) =>
-          runSpreadsheetHistoryShortcut(event, can.undo, commands.undo),
-        'Mod-Shift-z': ({ can, commands }, event) =>
-          runSpreadsheetHistoryShortcut(event, can.redo, commands.redo),
-        'Mod-y': ({ can, commands }, event) =>
-          runSpreadsheetHistoryShortcut(event, can.redo, commands.redo),
-        'Control-m': ({ can, commands }, event) =>
-          runSpreadsheetMergeShortcut(
-            event,
-            can.mergeSelectedCells,
-            commands.mergeSelectedCells,
-          ),
-        'Mod-Shift-l': ({ can, commands }, event) =>
-          runSpreadsheetAutoFilterShortcut(
-            event,
-            can.toggleAutoFilter,
-            commands.toggleAutoFilter,
-          ),
-        'Alt-ArrowDown': ({ can, commands }, event) =>
-          runSpreadsheetAutoFilterShortcut(
-            event,
-            can.openAutoFilterMenu,
-            commands.openAutoFilterMenu,
-          ),
-        'Control-PageUp': ({ context, commands }, event) =>
-          runSpreadsheetSheetNavigationShortcut(
-            event,
-            context,
-            commands.activateSheet,
-            -1,
-          ),
-        'Control-PageDown': ({ context, commands }, event) =>
-          runSpreadsheetSheetNavigationShortcut(
-            event,
-            context,
-            commands.activateSheet,
-            1,
-          ),
-        'Mod-PageUp': ({ context, commands }, event) =>
-          runSpreadsheetSheetNavigationShortcut(
-            event,
-            context,
-            commands.activateSheet,
-            -1,
-          ),
-        'Mod-PageDown': ({ context, commands }, event) =>
-          runSpreadsheetSheetNavigationShortcut(
-            event,
-            context,
-            commands.activateSheet,
-            1,
-          ),
-        'Shift-F11': ({ can, commands }, event) =>
-          runSpreadsheetAddSheetShortcut(
-            event,
-            can.addSheet,
-            commands.addSheet,
-          ),
-        'Alt-Shift-F1': ({ can, commands }, event) =>
-          runSpreadsheetAddSheetShortcut(
-            event,
-            can.addSheet,
-            commands.addSheet,
-          ),
-        Escape: ({ can, commands }, event) =>
-          runSpreadsheetFormatPainterEscape(
-            event,
-            can.cancelFormatPainter,
-            commands.cancelFormatPainter,
-          ),
-        F9: ({ can, commands }, event) =>
-          runSpreadsheetRecalculationShortcut(
-            event,
-            can.recalculateFormula,
-            commands.recalculateFormula,
-          ),
-        Delete: ({ can, commands }, event) =>
-          runSpreadsheetClearShortcut(
-            event,
-            can.clearSelectedCells,
-            commands.clearSelectedCells,
-          ),
-        Backspace: ({ can, commands }, event) =>
-          runSpreadsheetClearShortcut(
-            event,
-            can.clearSelectedCells,
-            commands.clearSelectedCells,
-          ),
-        ArrowUp: ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'up',
-            false,
-          ),
-        ArrowDown: ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'down',
-            false,
-          ),
-        ArrowLeft: ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'left',
-            false,
-          ),
-        ArrowRight: ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'right',
-            false,
-          ),
-        'Shift-ArrowUp': ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'up',
-            true,
-          ),
-        'Shift-ArrowDown': ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'down',
-            true,
-          ),
-        'Shift-ArrowLeft': ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'left',
-            true,
-          ),
-        'Shift-ArrowRight': ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'right',
-            true,
-          ),
-        Enter: ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'down',
-            false,
-          ),
-        'Shift-Enter': ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'up',
-            false,
-          ),
-        Tab: ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'next-cell',
-            false,
-          ),
-        'Shift-Tab': ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'previous-cell',
-            false,
-          ),
-        Home: ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'row-start',
-            false,
-          ),
-        'Mod-Home': ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'sheet-start',
-            false,
-          ),
-        'Mod-End': ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'used-end',
-            false,
-          ),
-        PageUp: ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'page-up',
-            false,
-          ),
-        PageDown: ({ can, commands }, event) =>
-          runSpreadsheetSelectionMoveShortcut(
-            event,
-            can.moveSelection,
-            commands.moveSelection,
-            'page-down',
-            false,
-          ),
-        'Control-Space': ({ can, commands }, event) =>
-          runSpreadsheetSelectionScopeShortcut(
-            event,
-            can.selectCellRange,
-            commands.selectCellRange,
-            'column',
-          ),
-        'Shift-Space': ({ can, commands }, event) =>
-          runSpreadsheetSelectionScopeShortcut(
-            event,
-            can.selectCellRange,
-            commands.selectCellRange,
-            'row',
-          ),
-      }),
-    }),
-    createOfficeEditorExtension<
-      SpreadsheetCommandContext,
-      SpreadsheetEditorCommands,
-      SpreadsheetSelectionNavigationStorage
-    >({
-      name: 'spreadsheetSelectionNavigation',
-      addStorage: () => ({ focus: null }),
-      addCommands: ({ storage }) => ({
-        moveSelection: {
-          canExecute: canNavigateSpreadsheetSelection,
-          execute: (context, move, extend) =>
-            updateSpreadsheetSelection(context, storage, (sheet, selection) =>
-              moveSpreadsheetKeyboardSelection(sheet, selection, move, extend),
-            ),
-        },
-        selectCellRange: {
-          canExecute: canNavigateSpreadsheetSelection,
-          execute: (context, scope) =>
-            updateSpreadsheetSelection(context, storage, (sheet, selection) =>
-              scopeSpreadsheetKeyboardSelection(sheet, selection, scope),
-            ),
-        },
-      }),
-    }),
-    createOfficeEditorExtension<
-      SpreadsheetCommandContext,
-      SpreadsheetEditorCommands
-    >({
-      name: 'spreadsheetStructure',
-      addCommands: () => ({
-        deleteSelectedStructure: {
-          canExecute: canDeleteSelectedStructure,
-          execute: deleteSelectedStructure,
-        },
-        insertSelectedStructure: {
-          canExecute: canInsertSelectedStructure,
-          execute: insertSelectedStructure,
-        },
-        setSelectedStructureHidden: {
-          canExecute: canSetSelectedStructureHidden,
-          execute: setSelectedStructureHidden,
-        },
-        setSelectedStructureSize: {
-          canExecute: canSetSelectedStructureSize,
-          execute: setSelectedStructureSize,
-        },
-        sortSelectedCells: {
-          canExecute: canSortSelectedCells,
-          execute: sortSelectedCells,
-        },
-      }),
-    }),
+    createSpreadsheetKeyboardShortcutExtension(),
+    createSpreadsheetSelectionNavigationExtension(),
+    createSpreadsheetStructureExtension(),
     createOfficeEditorExtension<
       SpreadsheetCommandContext,
       SpreadsheetEditorCommands
@@ -1075,16 +605,17 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
       name: 'spreadsheetCellFormatting',
       addCommands: () => ({
         clearSelectedCells: {
-          canExecute: (context) => canEditSelectedCells(context),
+          canExecute: (context) => canEditSpreadsheetSelection(context),
           execute: clearSelectedCells,
         },
         pasteCells: {
           canExecute: (context, values) =>
-            canEditSelectedCells(context) && isRectangularCellMatrix(values),
+            canEditSpreadsheetSelection(context) &&
+            isRectangularCellMatrix(values),
           execute: pasteCells,
         },
         setCellFormat: {
-          canExecute: canEditSelectedCells,
+          canExecute: canEditSpreadsheetSelection,
           execute: formatCells,
         },
         mergeSelectedCells: {
@@ -1135,278 +666,12 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
   ];
 }
 
-function canInsertSelectedStructure(
-  context: SpreadsheetCommandContext,
-  axis: SpreadsheetStructureAxis,
-  _position: SpreadsheetStructureInsertPosition,
-): boolean {
-  if (!canEditSelectedCells(context)) return false;
-  const range = liveRange(context);
-  const [start, end] = spreadsheetStructureRange(range, axis);
-  const count = end - start + 1;
-  const maximum = axis === 'row' ? 10_000 : 1_000;
-  return (
-    spreadsheetStructureExtent(context, axis) + count < maximum &&
-    canApplySpreadsheetTableStructureChange(
-      context.content.sheets.find(
-        (sheet) => sheet.id === context.targetSheetId,
-      ),
-      {
-        axis,
-        count,
-        direction: _position === 'before' ? 'lefttop' : 'rightbottom',
-        index: _position === 'before' ? start : end,
-        kind: 'insert',
-      },
-    )
-  );
-}
-
-function insertSelectedStructure(
-  context: SpreadsheetCommandContext,
-  axis: SpreadsheetStructureAxis,
-  position: SpreadsheetStructureInsertPosition,
-): boolean {
-  if (!canInsertSelectedStructure(context, axis, position)) return false;
-  if (!context.workbook || !context.targetSheetId) return false;
-  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
-  const before = position === 'before';
-  try {
-    context.workbook.insertRowOrColumn(
-      axis,
-      before ? start : end,
-      end - start + 1,
-      before ? 'lefttop' : 'rightbottom',
-      { id: context.targetSheetId },
-    );
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function canDeleteSelectedStructure(
-  context: SpreadsheetCommandContext,
-  axis: SpreadsheetStructureAxis,
-): boolean {
-  if (!canEditSelectedCells(context)) return false;
-  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
-  return (
-    end - start + 1 < spreadsheetStructureExtent(context, axis) &&
-    canApplySpreadsheetTableStructureChange(
-      context.content.sheets.find(
-        (sheet) => sheet.id === context.targetSheetId,
-      ),
-      { axis, end, kind: 'delete', start },
-    )
-  );
-}
-
-function deleteSelectedStructure(
-  context: SpreadsheetCommandContext,
-  axis: SpreadsheetStructureAxis,
-): boolean {
-  if (!canDeleteSelectedStructure(context, axis)) return false;
-  if (!context.workbook || !context.targetSheetId) return false;
-  const range = liveRange(context);
-  const [start, end] = spreadsheetStructureRange(range, axis);
-  const selection = spreadsheetSelectionAfterStructureDeletion(
-    range,
-    axis,
-    spreadsheetStructureExtent(context, axis),
-    start,
-    end,
-  );
-  try {
-    context.workbook.batchCallApis([
-      {
-        name: 'deleteRowOrColumn',
-        args: [axis, start, end, { id: context.targetSheetId }],
-      },
-      {
-        name: 'setSelection',
-        args: [[selection], { id: context.targetSheetId }],
-      },
-    ]);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function canSetSelectedStructureHidden(
-  context: SpreadsheetCommandContext,
-  axis: SpreadsheetStructureAxis,
-  hidden: boolean,
-): boolean {
-  if (!canEditSelectedCells(context)) return false;
-  if (!hidden) return true;
-  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
-  return end - start + 1 < spreadsheetStructureExtent(context, axis);
-}
-
-function setSelectedStructureHidden(
-  context: SpreadsheetCommandContext,
-  axis: SpreadsheetStructureAxis,
-  hidden: boolean,
-): boolean {
-  if (!context.workbook) return false;
-  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
-  const indices = Array.from({ length: end - start + 1 }, (_, offset) =>
-    String(start + offset),
-  );
-  try {
-    if (hidden) context.workbook.hideRowOrColumn(indices, axis);
-    else context.workbook.showRowOrColumn(indices, axis);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function canSetSelectedStructureSize(
-  context: SpreadsheetCommandContext,
-  axis: SpreadsheetStructureAxis,
-  size: number,
-): boolean {
-  const maximum = axis === 'row' ? 545 : 2_038;
-  return Boolean(
-    canEditSelectedCells(context) &&
-      Number.isFinite(size) &&
-      size >= 1 &&
-      size <= maximum,
-  );
-}
-
-function setSelectedStructureSize(
-  context: SpreadsheetCommandContext,
-  axis: SpreadsheetStructureAxis,
-  size: number,
-): boolean {
-  if (!context.workbook || !context.targetSheetId) return false;
-  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
-  const sizes = Object.fromEntries(
-    Array.from({ length: end - start + 1 }, (_, offset) => [
-      String(start + offset),
-      size,
-    ]),
-  );
-  try {
-    if (axis === 'row') {
-      context.workbook.setRowHeight(sizes, { id: context.targetSheetId }, true);
-    } else {
-      context.workbook.setColumnWidth(
-        sizes,
-        { id: context.targetSheetId },
-        true,
-      );
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function canSortSelectedCells(
-  context: SpreadsheetCommandContext,
-  _direction: SpreadsheetSortDirection,
-): boolean {
-  if (!canEditSelectedCells(context)) return false;
-  const [start, end] = spreadsheetStructureRange(liveRange(context), 'row');
-  return end > start;
-}
-
-function sortSelectedCells(
-  context: SpreadsheetCommandContext,
-  direction: SpreadsheetSortDirection,
-): boolean {
-  if (!context.workbook || !context.targetSheetId) return false;
-  const range = liveRange(context);
-  try {
-    const rows = context.workbook.getCellsByRange(range, {
-      id: context.targetSheetId,
-    });
-    if (rows.length < 2) return false;
-    const sorted = rows
-      .map((cells, index) => ({ cells, index }))
-      .sort((left, right) => {
-        const result = compareSpreadsheetSortCells(
-          left.cells[0] ?? null,
-          right.cells[0] ?? null,
-          direction,
-        );
-        return result || left.index - right.index;
-      })
-      .map(({ cells }) => cells);
-    context.workbook.setCellValuesByRange(sorted, range, {
-      id: context.targetSheetId,
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function compareSpreadsheetSortCells(
-  left: Cell | null,
-  right: Cell | null,
-  direction: SpreadsheetSortDirection,
-): number {
-  const leftValue = spreadsheetSortValue(left);
-  const rightValue = spreadsheetSortValue(right);
-  if (leftValue === null) return rightValue === null ? 0 : 1;
-  if (rightValue === null) return -1;
-  const order =
-    typeof leftValue === 'number' && typeof rightValue === 'number'
-      ? leftValue - rightValue
-      : spreadsheetSortCollator.compare(String(leftValue), String(rightValue));
-  return direction === 'ascending' ? order : -order;
-}
-
-function spreadsheetSortValue(cell: Cell | null): number | string | null {
-  const value = cell?.v ?? cell?.m;
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim()) return value.trim();
-  if (typeof value === 'boolean') return value ? 1 : 0;
-  return null;
-}
-
-const spreadsheetSortCollator = new Intl.Collator('zh-CN', {
-  numeric: true,
-  sensitivity: 'base',
-});
-
-function spreadsheetStructureRange(
-  range: SpreadsheetCommandRange,
-  axis: SpreadsheetStructureAxis,
-): [number, number] {
-  const values = axis === 'row' ? range.row : range.column;
-  return [
-    Math.min(values[0] ?? 0, values[1] ?? 0),
-    Math.max(values[0] ?? 0, values[1] ?? 0),
-  ];
-}
-
-function spreadsheetStructureExtent(
-  context: SpreadsheetCommandContext,
-  axis: SpreadsheetStructureAxis,
-): number {
-  const sheet = context.content.sheets.find(
-    (candidate) => candidate.id === context.targetSheetId,
-  );
-  const range = spreadsheetStructureRange(liveRange(context), axis);
-  if (!sheet) return range[1] + 1;
-  const size = context.targetSheetGridSize ?? spreadsheetGridSize(sheet);
-  const extent = axis === 'row' ? size?.rowCount : size?.columnCount;
-  return Math.max(extent ?? 0, range[1] + 1);
-}
-
 function clearSelectedCells(
   context: SpreadsheetCommandContext,
   mode: SpreadsheetCellClearMode = 'contents',
 ): boolean {
   if (!context.workbook || !context.targetSheetId) return false;
-  const range = liveRange(context);
+  const range = spreadsheetLiveCommandRange(context);
   const calls: Array<{ name: string; args: unknown[] }> = [];
   try {
     const sheet = context.workbook.getSheet({ id: context.targetSheetId });
@@ -1438,56 +703,6 @@ function clearSelectedCells(
   return true;
 }
 
-function canNavigateSpreadsheetSelection(
-  context: SpreadsheetCommandContext,
-): boolean {
-  return Boolean(
-    context.workbook &&
-      context.targetSheetId &&
-      context.content.sheets.some(
-        (sheet) => sheet.id === context.targetSheetId,
-      ),
-  );
-}
-
-function updateSpreadsheetSelection(
-  context: SpreadsheetCommandContext,
-  storage: SpreadsheetSelectionNavigationStorage,
-  update: (
-    sheet: WorkSpreadsheetContent['sheets'][number],
-    selection: SpreadsheetCommandRange,
-  ) => SpreadsheetCommandRange,
-): boolean {
-  if (!context.workbook || !context.targetSheetId) return false;
-  const sheet = context.content.sheets.find(
-    (candidate) => candidate.id === context.targetSheetId,
-  );
-  if (!sheet) return false;
-  const liveSelection =
-    context.workbook.getSelection()?.at(-1) ?? context.fallbackRange;
-  const rememberedFocus = storage.focus;
-  const selection =
-    rememberedFocus &&
-    spreadsheetSelectionContainsFocus(liveSelection, rememberedFocus)
-      ? {
-          ...liveSelection,
-          row_focus: rememberedFocus.row,
-          column_focus: rememberedFocus.column,
-        }
-      : liveSelection;
-  const next = update(sheet, selection);
-  try {
-    context.workbook.setSelection([next], { id: context.targetSheetId });
-    storage.focus = {
-      row: next.row_focus ?? next.row[1] ?? next.row[0] ?? 0,
-      column: next.column_focus ?? next.column[1] ?? next.column[0] ?? 0,
-    };
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function pasteCells(
   context: SpreadsheetCommandContext,
   values: readonly (readonly unknown[])[],
@@ -1499,7 +714,7 @@ function pasteCells(
   ) {
     return false;
   }
-  const source = liveRange(context);
+  const source = spreadsheetLiveCommandRange(context);
   const data = values.map((row) => [...row]);
   const range = {
     row: [source.row[0], source.row[0] + data.length - 1],
@@ -1558,7 +773,7 @@ function formatCells(
     context.workbook.setCellFormatByRange(
       attribute,
       value,
-      liveRange(context),
+      spreadsheetLiveCommandRange(context),
       {
         id: context.targetSheetId,
       },
@@ -1586,10 +801,10 @@ function canMergeSelectedCells(
   context: SpreadsheetCommandContext,
   command: SpreadsheetCellMergeCommand,
 ): boolean {
-  if (!canEditSelectedCells(context)) return false;
+  if (!canEditSpreadsheetSelection(context)) return false;
   return canApplySpreadsheetCellMerge(
     context.content.sheets.find((sheet) => sheet.id === context.targetSheetId),
-    liveRange(context),
+    spreadsheetLiveCommandRange(context),
     command,
   );
 }
@@ -1602,7 +817,7 @@ function mergeSelectedCells(
   const calls = spreadsheetCellMergeApiCalls(
     context.content.sheets.find((sheet) => sheet.id === context.targetSheetId),
     context.targetSheetId,
-    liveRange(context),
+    spreadsheetLiveCommandRange(context),
     command,
   );
   if (!calls.length) return false;
@@ -1692,10 +907,6 @@ function liveFreezePanesSelection(
   );
 }
 
-function canEditSelectedCells(context: SpreadsheetCommandContext): boolean {
-  return Boolean(context.editable && context.workbook && context.targetSheetId);
-}
-
 function hasActiveSheet(context: SpreadsheetCommandContext): boolean {
   return Boolean(
     context.editable &&
@@ -1713,223 +924,4 @@ function applySpreadsheetSheetChange(
   if (!context.editable || !next) return false;
   context.onChange(next);
   return true;
-}
-
-function runSpreadsheetHistoryShortcut(
-  event: KeyboardEvent,
-  canExecute: () => boolean,
-  execute: () => boolean,
-): boolean {
-  if (
-    event.repeat ||
-    isOfficeShortcutBlocked(event.target) ||
-    isSpreadsheetNativeTextUndoTarget(event.target) ||
-    !canExecute()
-  ) {
-    return false;
-  }
-  return execute();
-}
-
-function isSpreadsheetAutoFilterTextTarget(
-  target: EventTarget | null,
-): boolean {
-  return (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    (target instanceof HTMLElement &&
-      (target.isContentEditable ||
-        Boolean(target.closest('[contenteditable="true"]'))))
-  );
-}
-
-function runSpreadsheetCellFormatShortcut(
-  event: KeyboardEvent,
-  context: SpreadsheetCommandContext,
-  canExecute: SpreadsheetEditorCanCommands['setCellFormat'],
-  execute: SpreadsheetEditorCommands['setCellFormat'],
-  attribute: 'bl' | 'cl' | 'it' | 'un',
-): boolean {
-  if (
-    event.repeat ||
-    isOfficeShortcutBlocked(event.target) ||
-    isSpreadsheetNativeTextUndoTarget(event.target)
-  ) {
-    return false;
-  }
-  const active =
-    attribute === 'un'
-      ? spreadsheetUnderlineStyle(context.toolbarCell?.un) !== 'none'
-      : Number(context.toolbarCell?.[attribute]) === 1;
-  const value = active ? 0 : 1;
-  return canExecute(attribute, value) && execute(attribute, value);
-}
-
-function runSpreadsheetNumberFormatShortcut(
-  event: KeyboardEvent,
-  context: SpreadsheetCommandContext,
-  canExecute: SpreadsheetEditorCanCommands['setCellFormat'],
-  execute: SpreadsheetEditorCommands['setCellFormat'],
-  preset: SpreadsheetNumberFormatChoice,
-): boolean {
-  if (
-    event.repeat ||
-    isOfficeShortcutBlocked(event.target) ||
-    isSpreadsheetNativeTextUndoTarget(event.target)
-  ) {
-    return false;
-  }
-  const value = spreadsheetNumberFormatValue(
-    spreadsheetNumberFormatCode(preset),
-    context.toolbarCell,
-  );
-  return canExecute('ct', value) && execute('ct', value);
-}
-
-function runSpreadsheetMergeShortcut(
-  event: KeyboardEvent,
-  canExecute: SpreadsheetEditorCanCommands['mergeSelectedCells'],
-  execute: SpreadsheetEditorCommands['mergeSelectedCells'],
-): boolean {
-  if (
-    event.repeat ||
-    isOfficeShortcutBlocked(event.target) ||
-    isSpreadsheetNativeTextUndoTarget(event.target) ||
-    !canExecute('merge-and-center')
-  ) {
-    return false;
-  }
-  return execute('merge-and-center');
-}
-
-function runSpreadsheetClearShortcut(
-  event: KeyboardEvent,
-  canExecute: SpreadsheetEditorCanCommands['clearSelectedCells'],
-  execute: SpreadsheetEditorCommands['clearSelectedCells'],
-): boolean {
-  if (
-    event.repeat ||
-    isOfficeShortcutBlocked(event.target) ||
-    isSpreadsheetNativeTextUndoTarget(event.target) ||
-    !isSpreadsheetGridKeyboardTarget(event.target) ||
-    !canExecute()
-  ) {
-    return false;
-  }
-  return execute();
-}
-
-function runSpreadsheetFillShortcut(
-  event: KeyboardEvent,
-  canExecute: SpreadsheetEditorCanCommands['fillSelectedCells'],
-  execute: SpreadsheetEditorCommands['fillSelectedCells'],
-  direction: SpreadsheetCellFillDirection,
-): boolean {
-  if (
-    event.isComposing ||
-    isOfficeShortcutBlocked(event.target) ||
-    isSpreadsheetNativeTextUndoTarget(event.target) ||
-    !isSpreadsheetGridKeyboardTarget(event.target)
-  ) {
-    return false;
-  }
-  if (!event.repeat && canExecute(direction)) execute(direction);
-  return true;
-}
-
-function runSpreadsheetAutoFilterShortcut(
-  event: KeyboardEvent,
-  canExecute: () => boolean,
-  execute: () => boolean,
-): boolean {
-  if (
-    event.repeat ||
-    isOfficeShortcutBlocked(event.target) ||
-    isSpreadsheetNativeTextUndoTarget(event.target) ||
-    isSpreadsheetAutoFilterTextTarget(event.target) ||
-    !isSpreadsheetGridKeyboardTarget(event.target) ||
-    !canExecute()
-  ) {
-    return false;
-  }
-  return execute();
-}
-
-function runSpreadsheetFormatPainterEscape(
-  event: KeyboardEvent,
-  canExecute: SpreadsheetEditorCanCommands['cancelFormatPainter'],
-  execute: SpreadsheetEditorCommands['cancelFormatPainter'],
-): boolean {
-  if (
-    event.repeat ||
-    isOfficeShortcutBlocked(event.target) ||
-    isSpreadsheetNativeTextUndoTarget(event.target) ||
-    !canExecute()
-  ) {
-    return false;
-  }
-  return execute();
-}
-
-function runSpreadsheetSheetNavigationShortcut(
-  event: KeyboardEvent,
-  context: SpreadsheetCommandContext,
-  activateSheet: SpreadsheetEditorCommands['activateSheet'],
-  direction: SpreadsheetSheetMoveDirection,
-): boolean {
-  if (
-    event.repeat ||
-    isOfficeShortcutBlocked(event.target) ||
-    isSpreadsheetNativeTextUndoTarget(event.target)
-  ) {
-    return false;
-  }
-  const target = adjacentSpreadsheetSheetId(
-    context.content,
-    context.activeSheetId,
-    direction,
-  );
-  return Boolean(
-    target && target !== context.activeSheetId && activateSheet(target),
-  );
-}
-
-function runSpreadsheetAddSheetShortcut(
-  event: KeyboardEvent,
-  canExecute: SpreadsheetEditorCanCommands['addSheet'],
-  execute: SpreadsheetEditorCommands['addSheet'],
-): boolean {
-  if (
-    event.repeat ||
-    isOfficeShortcutBlocked(event.target) ||
-    isSpreadsheetNativeTextUndoTarget(event.target) ||
-    !canExecute()
-  ) {
-    return false;
-  }
-  return execute();
-}
-
-function runSpreadsheetRecalculationShortcut(
-  event: KeyboardEvent,
-  canExecute: SpreadsheetEditorCanCommands['recalculateFormula'],
-  execute: SpreadsheetEditorCommands['recalculateFormula'],
-): boolean {
-  if (
-    event.repeat ||
-    isOfficeShortcutBlocked(event.target) ||
-    isSpreadsheetNativeTextUndoTarget(event.target) ||
-    !canExecute('workbook')
-  ) {
-    return false;
-  }
-  return execute('workbook');
-}
-
-function liveRange(
-  context: SpreadsheetCommandContext,
-): SpreadsheetCommandRange {
-  const live = context.workbook?.getSelection()?.at(-1);
-  return spreadsheetSingleRange(live ?? context.fallbackRange);
 }

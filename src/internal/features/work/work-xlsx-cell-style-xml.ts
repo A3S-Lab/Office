@@ -119,7 +119,12 @@ export function writeXlsxAlignment(
     alignment.setAttribute('vertical', style.vertical);
   if (style.wrapText !== undefined)
     alignment.setAttribute('wrapText', style.wrapText ? '1' : '0');
-  if (style.textRotation !== undefined)
+  if (
+    style.textRotation !== undefined &&
+    Number.isInteger(style.textRotation) &&
+    ((style.textRotation >= 0 && style.textRotation <= 180) ||
+      style.textRotation === 255)
+  )
     alignment.setAttribute('textRotation', String(style.textRotation));
 }
 

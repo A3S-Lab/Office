@@ -189,6 +189,12 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     label: 'Ctrl+M',
   });
   for (const command of [
+    spreadsheetCommandCatalog.textOrientationHorizontal,
+    spreadsheetCommandCatalog.textOrientationAngleCounterclockwise,
+    spreadsheetCommandCatalog.textOrientationAngleClockwise,
+    spreadsheetCommandCatalog.textOrientationVertical,
+    spreadsheetCommandCatalog.textOrientationRotateUp,
+    spreadsheetCommandCatalog.textOrientationRotateDown,
     spreadsheetCommandCatalog.mergeCells,
     spreadsheetCommandCatalog.mergeAcross,
     spreadsheetCommandCatalog.unmergeCells,
@@ -230,6 +236,38 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     group: 'cells',
     tab: 'home',
   });
+  expect(spreadsheetCommandCatalog.hideRows.shortcut).toEqual({
+    aria: 'Control+9 Meta+9',
+    editor: ['Mod-9'],
+    label: 'Cmd/Ctrl+9',
+  });
+  expect(spreadsheetCommandCatalog.hideColumns.shortcut).toEqual({
+    aria: 'Control+0 Meta+0',
+    editor: ['Mod-0'],
+    label: 'Cmd/Ctrl+0',
+  });
+  expect(spreadsheetCommandCatalog.unhideRows.shortcut).toEqual({
+    aria: 'Control+Shift+9 Meta+Shift+9',
+    editor: ['Mod-Shift-9'],
+    label: 'Cmd/Ctrl+Shift+9',
+  });
+  expect(spreadsheetCommandCatalog.unhideColumns.shortcut).toEqual({
+    aria: 'Control+Shift+0 Meta+Shift+0',
+    editor: ['Mod-Shift-0'],
+    label: 'Cmd/Ctrl+Shift+0',
+  });
+  for (const command of [
+    spreadsheetCommandCatalog.hideRows,
+    spreadsheetCommandCatalog.hideColumns,
+    spreadsheetCommandCatalog.unhideRows,
+    spreadsheetCommandCatalog.unhideColumns,
+  ]) {
+    expect(command.location).toEqual({
+      area: 'ribbon',
+      group: 'cells',
+      tab: 'home',
+    });
+  }
   for (const command of [
     spreadsheetCommandCatalog.autoSum,
     spreadsheetCommandCatalog.autoAverage,

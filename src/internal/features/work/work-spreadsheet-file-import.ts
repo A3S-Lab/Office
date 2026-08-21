@@ -37,6 +37,11 @@ import {
 import { xlsxWorksheetImagesToSheet } from './work-xlsx-images';
 import { spreadsheetUnderlineCellValueFromSheetJs } from './work-spreadsheet-underline';
 import {
+  spreadsheetExplicitTextOrientationFromCell,
+  spreadsheetTextOrientationCellStyle,
+  spreadsheetTextOrientationFromXlsx,
+} from './work-spreadsheet-text-orientation';
+import {
   readXlsxSheetFeaturesFromPackage,
   type XlsxDataValidation,
   type XlsxSheetFeatures,
@@ -595,6 +600,13 @@ function fortuneCellFromXlsx(
   directStyle?: Partial<Cell>,
 ): Cell {
   const cell: Cell = { ...fortuneCellStyle(source), ...directStyle };
+  const orientation = spreadsheetExplicitTextOrientationFromCell(cell);
+  if (orientation) {
+    const orientationStyle = spreadsheetTextOrientationCellStyle(orientation);
+    delete cell.rt;
+    delete cell.tr;
+    if (orientationStyle) Object.assign(cell, orientationStyle);
+  }
   if (source.v !== undefined) cell.v = source.v as Cell['v'];
   const displayText = fortuneCellDisplayText(source, XLSX);
   if (displayText !== undefined) cell.m = displayText;
@@ -663,9 +675,11 @@ function fortuneCellStyle(source: CellObject): Partial<Cell> {
   else if (alignment?.vertical === 'top') target.vt = 1;
   else if (alignment?.vertical === 'bottom') target.vt = 2;
   if (alignment?.wrapText) target.tb = '2';
-  if (alignment?.textRotation) {
-    target.tr = String(alignment.textRotation);
-  }
+  const orientation = spreadsheetTextOrientationFromXlsx(
+    alignment?.textRotation,
+  );
+  const orientationStyle = spreadsheetTextOrientationCellStyle(orientation);
+  if (orientationStyle) Object.assign(target, orientationStyle);
   if ((source.z && source.z !== 'General') || source.t === 'e') {
     target.ct = {
       fa: source.z && source.z !== 'General' ? String(source.z) : undefined,
