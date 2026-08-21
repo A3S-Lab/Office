@@ -80,6 +80,10 @@ export function SpreadsheetBorderRibbon({
   const currentDefinition = spreadsheetBorderTargetOptions.find(
     (option) => option.target === target,
   )?.definition;
+  const currentShortcut =
+    currentDefinition && 'shortcut' in currentDefinition
+      ? currentDefinition.shortcut
+      : undefined;
   const currentLabel = currentDefinition?.label ?? '所有框线';
   const styleLabel = spreadsheetBorderStyleOptions.find(
     (option) => option.value === style,
@@ -106,7 +110,10 @@ export function SpreadsheetBorderRibbon({
             type="button"
             className="work-spreadsheet-border-primary"
             aria-label={currentLabel}
-            title={`${currentLabel}（${styleLabel}，${color.toUpperCase()}）`}
+            aria-keyshortcuts={currentShortcut?.aria}
+            title={`${currentLabel}（${styleLabel}，${color.toUpperCase()}${
+              currentShortcut ? `；${currentShortcut.label}` : ''
+            }）`}
             disabled={!can.setSelectedCellBorders(format)}
             onClick={() => commands.setSelectedCellBorders(format)}
           >
@@ -134,6 +141,8 @@ export function SpreadsheetBorderRibbon({
             {spreadsheetBorderTargetOptions.map(
               ({ target: option, definition }, index) => {
                 const next = { ...format, target: option };
+                const shortcut =
+                  'shortcut' in definition ? definition.shortcut : undefined;
                 return (
                   <button
                     key={definition.id}
@@ -141,6 +150,8 @@ export function SpreadsheetBorderRibbon({
                     role="menuitemradio"
                     tabIndex={index === 0 ? 0 : -1}
                     aria-checked={option === target}
+                    aria-label={definition.label}
+                    aria-keyshortcuts={shortcut?.aria}
                     disabled={!can.setSelectedCellBorders(next)}
                     onClick={() => {
                       setTarget(option);
@@ -149,7 +160,10 @@ export function SpreadsheetBorderRibbon({
                     }}
                   >
                     <SpreadsheetBorderGlyph target={option} />
-                    <span>{definition.label}</span>
+                    <span className="work-spreadsheet-border-target-label">
+                      {definition.label}
+                    </span>
+                    {shortcut && <kbd>{shortcut.label}</kbd>}
                   </button>
                 );
               },

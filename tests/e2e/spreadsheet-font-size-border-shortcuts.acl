@@ -1,0 +1,250 @@
+suite "office-spreadsheet-font-size-border-shortcuts" {
+    version = 1
+
+    scenario "use-wps-font-size-and-border-shortcuts" {
+        name = "Use WPS font-size and border shortcuts from the Spreadsheet grid"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-font-size-border-shortcuts"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "create-worksheet" {
+            key = "Shift+F11"
+        }
+
+        expect "grow-font-command-visible" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='增大字号'][aria-keyshortcuts='Control+Shift+. Meta+Shift+. Control+] Meta+]']")
+        }
+
+        expect "shrink-font-command-visible" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='减小字号'][aria-keyshortcuts='Control+Shift+, Meta+Shift+, Control+[ Meta+[']")
+        }
+
+        click "open-font-size" {
+            target = role("combobox", "字号")
+        }
+
+        click "choose-nine-points" {
+            target = role("option", "9")
+        }
+
+        focus "return-to-grid-for-grow" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "grow-with-period" {
+            key = "Control+Shift+Period"
+        }
+
+        click "inspect-grown-size" {
+            target = role("combobox", "字号")
+        }
+
+        expect "ten-points-selected" {
+            visible = css("[role='listbox'][aria-label='字号'] [role='option'][aria-label='10'][aria-selected='true']")
+        }
+
+        press "close-ten-point-list" {
+            key = "Escape"
+        }
+
+        focus "return-to-grid-for-bracket-grow" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "grow-with-right-bracket" {
+            key = "Control+]"
+        }
+
+        click "inspect-bracket-grown-size" {
+            target = role("combobox", "字号")
+        }
+
+        expect "eleven-points-selected" {
+            visible = css("[role='listbox'][aria-label='字号'] [role='option'][aria-label='11'][aria-selected='true']")
+        }
+
+        press "close-eleven-point-list" {
+            key = "Escape"
+        }
+
+        focus "return-to-grid-for-shrink" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "shrink-with-comma" {
+            key = "Control+Shift+Comma"
+        }
+
+        press "shrink-with-left-bracket" {
+            key = "Control+["
+        }
+
+        click "inspect-shrunken-size" {
+            target = role("combobox", "字号")
+        }
+
+        expect "nine-points-restored" {
+            visible = css("[role='listbox'][aria-label='字号'] [role='option'][aria-label='9'][aria-selected='true']")
+        }
+
+        press "close-nine-point-list" {
+            key = "Escape"
+        }
+
+        click "open-border-menu" {
+            target = role("button", "更多框线")
+        }
+
+        expect "outside-border-shortcut-visible" {
+            visible = css("[role='menu'][aria-label='框线位置'] [role='menuitemradio'][aria-label='外侧框线'][aria-keyshortcuts='Control+Shift+& Meta+Shift+&'] kbd")
+        }
+
+        expect "clear-border-shortcut-visible" {
+            visible = css("[role='menu'][aria-label='框线位置'] [role='menuitemradio'][aria-label='无框线'][aria-keyshortcuts='Control+Shift+_ Meta+Shift+_'] kbd")
+        }
+
+        screenshot "border-shortcut-menu" {
+            path = "screenshots/spreadsheet-border-shortcut-menu.png"
+        }
+
+        press "close-border-menu" {
+            key = "Escape"
+        }
+
+        focus "return-to-grid-for-borders" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-first-cell" {
+            key = "Control+Home"
+        }
+
+        press "extend-selection-right" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-selection-down" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "apply-outside-border" {
+            key = "Control+Shift+Digit7"
+        }
+
+        expect "selection-preserved-after-border" {
+            text = "A1:B2"
+        }
+
+        press "move-away-from-border" {
+            key = "Control+Home"
+        }
+
+        press "move-away-right-one" {
+            key = "ArrowRight"
+        }
+
+        press "move-away-right-two" {
+            key = "ArrowRight"
+        }
+
+        press "move-away-down-one" {
+            key = "ArrowDown"
+        }
+
+        press "move-away-down-two" {
+            key = "ArrowDown"
+        }
+
+        screenshot "outside-border-applied" {
+            path = "screenshots/spreadsheet-outside-border-shortcut.png"
+        }
+
+        press "reselect-first-cell" {
+            key = "Control+Home"
+        }
+
+        press "reextend-selection-right" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "reextend-selection-down" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "clear-borders" {
+            key = "Control+Shift+Minus"
+        }
+
+        expect "selection-preserved-after-clear" {
+            text = "A1:B2"
+        }
+
+        press "move-away-after-clear" {
+            key = "Control+Home"
+        }
+
+        press "move-away-after-clear-right-one" {
+            key = "ArrowRight"
+        }
+
+        press "move-away-after-clear-right-two" {
+            key = "ArrowRight"
+        }
+
+        press "move-away-after-clear-down-one" {
+            key = "ArrowDown"
+        }
+
+        press "move-away-after-clear-down-two" {
+            key = "ArrowDown"
+        }
+
+        screenshot "borders-cleared" {
+            path = "screenshots/spreadsheet-borders-cleared.png"
+        }
+
+        press "undo-clear-borders" {
+            key = "Control+z"
+        }
+
+        accessibility "shortcut-accessibility" {
+            path = "evidence/shortcut-accessibility.json"
+            interactive = true
+        }
+
+        console "shortcut-console" {
+            path = "diagnostics/shortcut-console.json"
+            clear = false
+        }
+
+        page_errors "shortcut-page-errors" {
+            path = "diagnostics/shortcut-page-errors.json"
+            clear = false
+        }
+    }
+}

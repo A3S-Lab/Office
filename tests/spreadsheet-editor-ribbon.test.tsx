@@ -461,14 +461,24 @@ test('disables unavailable WPS row and column actions independently', () => {
 
 test('routes WPS font, vertical alignment, and wrapping through cell formats', () => {
   const formats: Array<{ attribute: string; value: unknown }> = [];
+  const fontSteps: string[] = [];
   render(
     <SpreadsheetEditorRibbon
       activeTab="home"
       can={spreadsheetCan()}
-      commands={spreadsheetCommands((attribute, value) => {
-        formats.push({ attribute, value });
-        return true;
-      })}
+      commands={spreadsheetCommands(
+        (attribute, value) => {
+          formats.push({ attribute, value });
+          return true;
+        },
+        undefined,
+        {
+          adjustFontSize: (direction) => {
+            fontSteps.push(direction);
+            return true;
+          },
+        },
+      )}
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
       findOpen={false}
@@ -488,6 +498,10 @@ test('routes WPS font, vertical alignment, and wrapping through cell formats', (
     'font-family: SimSun, "Songti SC", serif;',
   );
   fireEvent.click(simSun);
+  const growFont = screen.getByRole('button', { name: '增大字号' });
+  const shrinkFont = screen.getByRole('button', { name: '减小字号' });
+  fireEvent.click(growFont);
+  fireEvent.click(shrinkFont);
   fireEvent.click(screen.getByRole('button', { name: '删除线' }));
   fireEvent.click(screen.getByRole('button', { name: '底端对齐' }));
   fireEvent.click(screen.getByRole('button', { name: '自动换行' }));
@@ -498,6 +512,19 @@ test('routes WPS font, vertical alignment, and wrapping through cell formats', (
     { attribute: 'vt', value: 2 },
     { attribute: 'tb', value: '1' },
   ]);
+  expect(fontSteps).toEqual(['grow', 'shrink']);
+  expect(growFont).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+. Meta+Shift+. Control+] Meta+]',
+  );
+  expect(growFont).toHaveAttribute(
+    'title',
+    '增大字号（Cmd/Ctrl+Shift+. 或 Cmd/Ctrl+]）',
+  );
+  expect(shrinkFont).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+, Meta+Shift+, Control+[ Meta+[',
+  );
   expect(screen.getByRole('button', { name: '加粗' })).toHaveAttribute(
     'aria-keyshortcuts',
     'Control+B Meta+B',
@@ -1132,6 +1159,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     activateSheet: () => true,
     addSheet: () => true,
     adjustDecimalPlaces: () => true,
+    adjustFontSize: () => true,
     applyCellStyle: () => true,
     applyCellFormat: () => true,
     applyDataValidation: () => true,
@@ -1195,6 +1223,7 @@ function spreadsheetCommands(
     Pick<
       SpreadsheetEditorCommands,
       | 'adjustDecimalPlaces'
+      | 'adjustFontSize'
       | 'activateFormatPainter'
       | 'applyCellStyle'
       | 'applyCellFormat'
@@ -1231,6 +1260,7 @@ function spreadsheetCommands(
     activateFormatPainter: overrides.activateFormatPainter ?? (() => true),
     addSheet: () => true,
     adjustDecimalPlaces: overrides.adjustDecimalPlaces ?? (() => true),
+    adjustFontSize: overrides.adjustFontSize ?? (() => true),
     applyCellStyle: overrides.applyCellStyle ?? (() => true),
     applyCellFormat: overrides.applyCellFormat ?? (() => true),
     applyDataValidation: overrides.applyDataValidation ?? (() => true),

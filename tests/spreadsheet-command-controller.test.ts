@@ -203,6 +203,188 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('adjusts mixed WPS font sizes per cell in one native batch', () => {
+    const fixture = commandFixture();
+    const cells: (Cell | null)[][] = [
+      [{ fs: 9 }, { fs: 10 }, null],
+      [{ fs: 9 }, { fs: 10 }, { fs: 72 }],
+    ];
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      column: 3,
+      data: cells,
+      row: 2,
+    };
+    fixture.workbook.cells = cells;
+    fixture.workbook.selection = [{ row: [0, 1], column: [0, 2] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetFontSize');
+    expect(editor.can().adjustFontSize('grow')).toBe(true);
+    expect(editor.commands.adjustFontSize('grow')).toBe(true);
+    expect(fixture.workbook.clearBatches).toEqual([
+      [
+        {
+          name: 'setCellFormatByRange',
+          args: ['fs', 10, { row: [0, 1], column: [0, 0] }, { id: 'sheet-1' }],
+        },
+        {
+          name: 'setCellFormatByRange',
+          args: ['fs', 11, { row: [0, 0], column: [1, 2] }, { id: 'sheet-1' }],
+        },
+        {
+          name: 'setCellFormatByRange',
+          args: ['fs', 11, { row: [1, 1], column: [1, 1] }, { id: 'sheet-1' }],
+        },
+      ],
+    ]);
+  });
+
+  test('owns WPS font-size aliases only on the active grid', () => {
+    const fixture = commandFixture();
+    fixture.workbook.cells = [[{ fs: 10 }]];
+    fixture.workbook.selection = [{ row: [0, 0], column: [0, 0] }];
+    const editor = spreadsheetEditor(fixture.context);
+    const shortcuts = [
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        code: 'Period',
+        key: '>',
+        metaKey: true,
+        shiftKey: true,
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        code: 'BracketRight',
+        key: ']',
+        metaKey: true,
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        code: 'Comma',
+        key: '<',
+        metaKey: true,
+        shiftKey: true,
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        code: 'BracketLeft',
+        key: '[',
+        metaKey: true,
+      }),
+    ];
+
+    expect(shortcuts.map((event) => editor.handleKeyDown(event))).toEqual([
+      true,
+      true,
+      true,
+      true,
+    ]);
+    expect(shortcuts.every((event) => event.defaultPrevented)).toBe(true);
+    expect(fixture.workbook.clearBatches).toHaveLength(4);
+
+    const input = document.createElement('input');
+    const blocked = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: ']',
+      metaKey: true,
+    });
+    Object.defineProperty(blocked, 'target', { value: input });
+    expect(editor.handleKeyDown(blocked)).toBe(false);
+    expect(blocked.defaultPrevented).toBe(false);
+  });
+
+  test('owns WPS outline and clear-border shortcuts on the active grid', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 1], column: [0, 2] }];
+    const editor = spreadsheetEditor(fixture.context);
+    const outline = new KeyboardEvent('keydown', {
+      cancelable: true,
+      code: 'Digit7',
+      key: '7',
+      metaKey: true,
+      shiftKey: true,
+    });
+
+    expect(editor.handleKeyDown(outline)).toBe(true);
+    expect(outline.defaultPrevented).toBe(true);
+    expect(fixture.changes.at(-1)?.sheets[0]?.config?.borderInfo).toEqual([
+      {
+        borderType: 'border-outside',
+        color: '#000000',
+        range: [{ row: [0, 1], column: [0, 2] }],
+        rangeType: 'range',
+        style: '1',
+      },
+    ]);
+
+    const outsideContent = fixture.changes.at(-1);
+    if (!outsideContent) throw new Error('Expected an outside-border change.');
+    editor.updateContext({ ...fixture.context, content: outsideContent });
+    const clear = new KeyboardEvent('keydown', {
+      cancelable: true,
+      code: 'Minus',
+      key: '-',
+      metaKey: true,
+      shiftKey: true,
+    });
+    expect(editor.handleKeyDown(clear)).toBe(true);
+    expect(clear.defaultPrevented).toBe(true);
+    expect(fixture.changes.at(-1)?.sheets[0]?.config?.borderInfo).toEqual([
+      {
+        borderType: 'border-none',
+        color: '#000000',
+        range: [{ row: [0, 1], column: [0, 2] }],
+        rangeType: 'range',
+        style: '1',
+      },
+    ]);
+    expect(fixture.changes.at(-1)?.sheets[0]?.luckysheet_select_save).toEqual([
+      {
+        row: [0, 1],
+        column: [0, 2],
+        row_focus: 0,
+        column_focus: 0,
+      },
+    ]);
+
+    const changeCount = fixture.changes.length;
+    const hostInput = document.createElement('input');
+    document.body.append(hostInput);
+    let inputHandled = true;
+    hostInput.addEventListener('keydown', (event) => {
+      inputHandled = editor.handleKeyDown(event);
+    });
+    hostInput.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        key: '&',
+        metaKey: true,
+        shiftKey: true,
+      }),
+    );
+    expect(inputHandled).toBe(false);
+    hostInput.remove();
+
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    const dialogButton = document.createElement('button');
+    dialog.append(dialogButton);
+    document.body.append(dialog);
+    const modalShortcut = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: '_',
+      shiftKey: true,
+    });
+    Object.defineProperty(modalShortcut, 'target', { value: dialogButton });
+    expect(editor.handleKeyDown(modalShortcut)).toBe(false);
+    expect(fixture.changes).toHaveLength(changeCount);
+    dialog.remove();
+  });
+
   test('opens and applies Format Cells through typed commands', () => {
     const fixture = commandFixture();
     fixture.workbook.cells = [[{ v: 'A3S' }, null]];
@@ -700,6 +882,14 @@ describe('spreadsheet command controller', () => {
         color: '#2463eb',
         style: '8',
         range: [{ row: [2, 4], column: [1, 3] }],
+      },
+    ]);
+    expect(fixture.changes[0]?.sheets[0]?.luckysheet_select_save).toEqual([
+      {
+        row: [2, 4],
+        column: [1, 3],
+        row_focus: 2,
+        column_focus: 1,
       },
     ]);
     expect(fixture.workbook.clearBatches).toEqual([]);

@@ -1,5 +1,7 @@
 import type { Cell } from '@fortune-sheet/core';
 import {
+  AArrowDown,
+  AArrowUp,
   BadgeJapaneseYen,
   Bold,
   DecimalsArrowLeft,
@@ -127,6 +129,8 @@ export function SpreadsheetFontRibbonGroup({
     typeof toolbarCell?.fc === 'string' ? toolbarCell.fc : '#172033';
   const fillColor =
     typeof toolbarCell?.bg === 'string' ? toolbarCell.bg : '#ffffff';
+  const growFont = spreadsheetCommandCatalog.growFont;
+  const shrinkFont = spreadsheetCommandCatalog.shrinkFont;
 
   return (
     <WorkOfficeRibbonGroup label="字体" priority="high">
@@ -147,6 +151,26 @@ export function SpreadsheetFontRibbonGroup({
         options={spreadsheetFontSizeOptions(toolbarCell?.fs)}
         onValueChange={(value) => commands.setCellFormat('fs', Number(value))}
       />
+      <WorkOfficeRibbonButton
+        label={growFont.label}
+        title={`${growFont.label}（${growFont.shortcut.label}）`}
+        aria-keyshortcuts={growFont.shortcut.aria}
+        displayLabel={false}
+        disabled={!can.adjustFontSize('grow')}
+        onClick={() => commands.adjustFontSize('grow')}
+      >
+        <AArrowUp size={15} />
+      </WorkOfficeRibbonButton>
+      <WorkOfficeRibbonButton
+        label={shrinkFont.label}
+        title={`${shrinkFont.label}（${shrinkFont.shortcut.label}）`}
+        aria-keyshortcuts={shrinkFont.shortcut.aria}
+        displayLabel={false}
+        disabled={!can.adjustFontSize('shrink')}
+        onClick={() => commands.adjustFontSize('shrink')}
+      >
+        <AArrowDown size={15} />
+      </WorkOfficeRibbonButton>
       <SpreadsheetFontToggle
         active={bold}
         attribute="bl"

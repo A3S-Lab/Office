@@ -213,6 +213,18 @@ creation claims and field-local conflict handling, so independent design edits
 from two browser clients converge. Structured-reference calculation,
 calculated columns, complete totals-row authoring, slicers, and external/query
 tables remain explicit compatibility gaps.
+The twenty-third milestone completes the frequent WPS font-size and border
+keyboard path under Home and Font. Grow Font owns `Cmd/Ctrl+Shift+.` and
+`Cmd/Ctrl+]`; Shrink Font owns `Cmd/Ctrl+Shift+,` and `Cmd/Ctrl+[`; Outside
+Borders owns `Cmd/Ctrl+Shift+&`; and Clear Borders owns
+`Cmd/Ctrl+Shift+_`. Mixed-size selections advance each cell through the shared
+9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 36, 48, and 72 point scale instead
+of flattening to the focused cell. Equal results compact into native
+rectangles, blank cells start from 10 points, and one gesture covers at most
+10,000 cells before one Fortune batch and one Undo record. Visible ribbon
+buttons, border-menu hints, and `aria-keyshortcuts` expose the same catalog
+metadata on desktop and compact Web. Grid ownership excludes host inputs,
+formula or cell editing, and modal controls.
 
 ## Product Rules
 

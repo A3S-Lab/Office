@@ -214,6 +214,76 @@ test('Spreadsheet adjusts mixed decimal formats without flattening their familie
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet steps mixed WPS font sizes through one native batch', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const fontGroup = page
+    .locator('.work-spreadsheet-ribbon')
+    .getByRole('region', { name: '字体' });
+  const fontSize = fontGroup.getByRole('combobox', { name: '字号' });
+  const growFont = fontGroup.getByRole('button', { name: '增大字号' });
+  const shrinkFont = fontGroup.getByRole('button', { name: '减小字号' });
+
+  await expect(growFont).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+. Meta+Shift+. Control+] Meta+]',
+  );
+  await expect(shrinkFont).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+, Meta+Shift+, Control+[ Meta+[',
+  );
+
+  await grid.focus();
+  await page.keyboard.press('Shift+F11');
+  await expect(nameBox).toHaveText('A1');
+  await fontSize.click();
+  await page.getByRole('option', { name: '9', exact: true }).click();
+  await expect(grid).toBeFocused();
+
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowRight');
+  await expect(nameBox).toHaveText('A1:C1');
+  await growFont.click();
+  await expect(grid).toBeFocused();
+
+  await page.keyboard.press('Control+Home');
+  await expect(fontSize).toHaveText('10');
+  await page.keyboard.press('ArrowRight');
+  await expect(fontSize).toHaveText('11');
+  await page.keyboard.press('ArrowRight');
+  await expect(fontSize).toHaveText('11');
+  await page.screenshot({
+    path: testInfo.outputPath('spreadsheet-mixed-font-size.png'),
+    animations: 'disabled',
+  });
+
+  await page.keyboard.press('Control+z');
+  await expect(fontSize).toHaveText('10');
+  await page.keyboard.press('Control+Home');
+  await expect(fontSize).toHaveText('9');
+  await page.keyboard.press('ArrowRight');
+  await expect(fontSize).toHaveText('10');
+
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('Control+Shift+Period');
+  await expect(fontSize).toHaveText('10');
+  await page.keyboard.press('Control+]');
+  await expect(fontSize).toHaveText('11');
+  await page.keyboard.press('Control+Shift+Comma');
+  await expect(fontSize).toHaveText('10');
+  await page.keyboard.press('Control+[');
+  await expect(fontSize).toHaveText('9');
+  await expect(grid).toBeFocused();
+  expect(browserErrors).toEqual([]);
+});
+
 test('Spreadsheet runs clipboard commands from the WPS Home group', async ({
   page,
 }) => {
@@ -315,6 +385,7 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
   const nameBox = page.locator('.fortune-name-box');
   const ribbon = page.locator('.work-spreadsheet-ribbon');
   await grid.focus();
+  await page.keyboard.press('Shift+F11');
   await page.keyboard.press('Control+Home');
   await page.keyboard.press('Shift+ArrowRight');
   await page.keyboard.press('Shift+ArrowRight');
@@ -328,9 +399,23 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
   const dialog = page.getByRole('dialog', { name: '框线设置' });
   await expect(dialog).toBeVisible();
   const borderMenu = dialog.getByRole('menu', { name: '框线位置' });
+  const noBorder = borderMenu.getByRole('menuitemradio', { name: '无框线' });
+  const outsideBorder = borderMenu.getByRole('menuitemradio', {
+    name: '外侧框线',
+  });
   await expect(
     borderMenu.getByRole('menuitemradio', { name: '上框线' }),
   ).toBeFocused();
+  await expect(noBorder).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+_ Meta+Shift+_',
+  );
+  await expect(noBorder.locator('kbd')).toHaveText('Cmd/Ctrl+Shift+_');
+  await expect(outsideBorder).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+& Meta+Shift+&',
+  );
+  await expect(outsideBorder.locator('kbd')).toHaveText('Cmd/Ctrl+Shift+&');
 
   const dialogBounds = await dialog.boundingBox();
   const viewport = page.viewportSize();
@@ -389,6 +474,38 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
   await expect
     .poll(() => spreadsheetCanvasColorCount(page, borderGeometry, '#b42318'))
     .toBe(0);
+
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
+  const blackBaseline = await spreadsheetCanvasColorCount(
+    page,
+    borderGeometry,
+    '#000000',
+  );
+  await page.keyboard.press('Control+Shift+Digit7');
+  await expect
+    .poll(() => spreadsheetCanvasColorCount(page, borderGeometry, '#000000'))
+    .toBeGreaterThan(blackBaseline + 8);
+  await page.screenshot({
+    path: testInfo.outputPath('spreadsheet-border-shortcut.png'),
+    animations: 'disabled',
+  });
+
+  await page.keyboard.press('Control+Shift+Minus');
+  await expect
+    .poll(() => spreadsheetCanvasColorCount(page, borderGeometry, '#000000'))
+    .toBe(blackBaseline);
+  await page.keyboard.press('Control+z');
+  await expect
+    .poll(() => spreadsheetCanvasColorCount(page, borderGeometry, '#000000'))
+    .toBeGreaterThan(blackBaseline + 8);
+  await page.keyboard.press('Control+z');
+  await expect
+    .poll(() => spreadsheetCanvasColorCount(page, borderGeometry, '#000000'))
+    .toBe(blackBaseline);
+  await expect(grid).toBeFocused();
   expect(browserErrors).toEqual([]);
 });
 

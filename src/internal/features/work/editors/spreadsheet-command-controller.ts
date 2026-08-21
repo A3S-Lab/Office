@@ -26,6 +26,10 @@ import type { SpreadsheetCellStyleChoice } from './spreadsheet-cell-style';
 import { createSpreadsheetCellStyleExtension } from './spreadsheet-cell-style-command';
 import type { SpreadsheetCellFillDirection } from './spreadsheet-cell-fill';
 import { createSpreadsheetCellFillExtension } from './spreadsheet-cell-fill-command';
+import {
+  createSpreadsheetFontSizeExtension,
+  type SpreadsheetFontSizeDirection,
+} from './spreadsheet-font-size-command';
 import { createSpreadsheetDataValidationExtension } from './spreadsheet-data-validation-command';
 import type {
   SpreadsheetDataValidationRequest,
@@ -266,6 +270,7 @@ export interface SpreadsheetEditorCommands {
   adjustDecimalPlaces: (
     direction: SpreadsheetDecimalPlacesDirection,
   ) => boolean;
+  adjustFontSize: (direction: SpreadsheetFontSizeDirection) => boolean;
   applyCellStyle: (preset: SpreadsheetCellStyleChoice) => boolean;
   applyCellFormat: (request: SpreadsheetCellFormatRequest) => boolean;
   applyDataValidation: (request: SpreadsheetDataValidationRequest) => boolean;
@@ -389,6 +394,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
       }),
     }),
     createSpreadsheetCellFormatExtension(),
+    createSpreadsheetFontSizeExtension(),
     createSpreadsheetCellBorderExtension(),
     createSpreadsheetCellStyleExtension(),
     createSpreadsheetNumberFormatExtension(),

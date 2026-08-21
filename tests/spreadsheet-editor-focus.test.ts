@@ -201,6 +201,7 @@ test('returns grid focus after successful ribbon commands only', () => {
   const commands = {
     activateFormatPainter: record('activateFormatPainter'),
     adjustDecimalPlaces: record('adjustDecimalPlaces'),
+    adjustFontSize: record('adjustFontSize'),
     applyAutoSum: record('applyAutoSum'),
     applyFormatPainter: record('applyFormatPainter'),
     cancelFormatPainter: record('cancelFormatPainter'),
@@ -231,6 +232,7 @@ test('returns grid focus after successful ribbon commands only', () => {
   );
 
   expect(ribbon.adjustDecimalPlaces('increase')).toBe(true);
+  expect(ribbon.adjustFontSize('grow')).toBe(true);
   expect(ribbon.applyAutoSum('sum')).toBe(true);
   expect(ribbon.setCellFormat('bl', 1)).toBe(true);
   expect(ribbon.clearSelectedCells('formats')).toBe(true);
@@ -264,6 +266,7 @@ test('returns grid focus after successful ribbon commands only', () => {
 
   expect(calls).toEqual([
     'adjustDecimalPlaces:increase',
+    'adjustFontSize:grow',
     'applyAutoSum:sum',
     'setCellFormat:bl,1',
     'clearSelectedCells:formats',
@@ -288,6 +291,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setZoom:125',
   ]);
   expect(focused).toEqual([
+    'grid',
     'grid',
     'grid',
     'grid',

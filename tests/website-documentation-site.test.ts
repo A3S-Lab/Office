@@ -14,6 +14,7 @@ const documentationRoot = path.resolve(import.meta.dirname, '../docs');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.17.0' ||
     version === '0.16.0' ||
     version === '0.15.0' ||
     version === '0.14.0' ||
@@ -39,6 +40,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -79,6 +81,7 @@ test('keeps every public route available in every language and version', async (
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -134,6 +137,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -168,6 +172,7 @@ test('uses deployable HTML targets in current release homepage actions', async (
 test('publishes real-time collaboration as a bilingual first-class capability', async () => {
   for (const version of [
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -215,6 +220,7 @@ test('publishes real-time collaboration as a bilingual first-class capability', 
 test('publishes the runnable collaboration backend in latest releases', async () => {
   for (const version of [
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -259,6 +265,7 @@ test('publishes the runnable collaboration backend in latest releases', async ()
 test('documents ephemeral native agent presence in current releases', async () => {
   for (const version of [
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -293,6 +300,7 @@ test('documents ephemeral native agent presence in current releases', async () =
 test('documents durable Document comments in current releases', async () => {
   for (const version of [
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -337,6 +345,7 @@ test('documents durable Document comments in current releases', async () => {
 test('documents attributed Document suggestions and native typed mutations', async () => {
   for (const version of [
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -379,6 +388,7 @@ test('documents attributed Document suggestions and native typed mutations', asy
 test('documents collaborative character-formatting revisions', async () => {
   for (const version of [
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -413,6 +423,7 @@ test('documents collaborative character-formatting revisions', async () => {
 test('documents collaborative paragraph-formatting revisions', async () => {
   for (const version of [
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -461,6 +472,7 @@ test('documents collaborative paragraph-formatting revisions', async () => {
 test('documents atomic native Spreadsheet cell batches', async () => {
   for (const version of [
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -492,6 +504,7 @@ test('documents atomic native Spreadsheet cell batches', async () => {
 test('documents maximum sparse spreadsheets and cancellable imports in 0.12.0', async () => {
   for (const version of [
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -524,6 +537,7 @@ test('documents maximum sparse spreadsheets and cancellable imports in 0.12.0', 
 test('documents WPS four-direction cell fill in 0.13.0', async () => {
   for (const version of [
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',
@@ -550,7 +564,14 @@ test('documents WPS four-direction cell fill in 0.13.0', async () => {
 });
 
 test('documents WPS number formats and cell styles in 0.13.1', async () => {
-  for (const version of ['latest', '0.16.0', '0.15.0', '0.14.0', '0.13.1']) {
+  for (const version of [
+    'latest',
+    '0.17.0',
+    '0.16.0',
+    '0.15.0',
+    '0.14.0',
+    '0.13.1',
+  ]) {
     const spreadsheet = await readFile(
       path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
       'utf8',
@@ -570,7 +591,7 @@ test('documents WPS number formats and cell styles in 0.13.1', async () => {
 });
 
 test('documents WPS Paste Special and its bounded rich clipboard in 0.14.0', async () => {
-  for (const version of ['latest', '0.16.0', '0.15.0', '0.14.0']) {
+  for (const version of ['latest', '0.17.0', '0.16.0', '0.15.0', '0.14.0']) {
     const spreadsheet = await readFile(
       path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
       'utf8',
@@ -592,7 +613,7 @@ test('documents WPS Paste Special and its bounded rich clipboard in 0.14.0', asy
 });
 
 test('documents WPS hyperlinks and immutable workbook updates in 0.15.0', async () => {
-  for (const version of ['latest', '0.16.0', '0.15.0']) {
+  for (const version of ['latest', '0.17.0', '0.16.0', '0.15.0']) {
     const spreadsheet = await readFile(
       path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
       'utf8',
@@ -614,7 +635,7 @@ test('documents WPS hyperlinks and immutable workbook updates in 0.15.0', async 
 });
 
 test('documents WPS data validation and native XLSX semantics in 0.15.0', async () => {
-  for (const version of ['latest', '0.16.0', '0.15.0']) {
+  for (const version of ['latest', '0.17.0', '0.16.0', '0.15.0']) {
     const spreadsheet = await readFile(
       path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
       'utf8',
@@ -636,7 +657,7 @@ test('documents WPS data validation and native XLSX semantics in 0.15.0', async 
 });
 
 test('documents native Spreadsheet Tables, collaboration, and performance boundaries', async () => {
-  for (const version of ['latest', '0.16.0']) {
+  for (const version of ['latest', '0.17.0', '0.16.0']) {
     const [spreadsheet, collaboration, architecture, chineseSpreadsheet] =
       await Promise.all([
         readFile(
@@ -706,9 +727,49 @@ test('documents native Spreadsheet Tables, collaboration, and performance bounda
   }
 });
 
+test('documents WPS font-size and border shortcuts in 0.17.0', async () => {
+  for (const version of ['latest', '0.17.0']) {
+    const [english, chinese] = await Promise.all([
+      readFile(
+        path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, version, 'zh/components/spreadsheet.mdx'),
+        'utf8',
+      ),
+    ]);
+
+    for (const evidence of [
+      '## Font-size and border shortcuts',
+      'Cmd/Ctrl+Shift+.',
+      'Cmd/Ctrl+]',
+      'Cmd/Ctrl+Shift+&',
+      'Cmd/Ctrl+Shift+_',
+      '`batchCallApis`',
+      '10,000 cells',
+      '`aria-keyshortcuts`',
+      'spreadsheet-font-size-border-shortcuts.acl',
+    ]) {
+      expect(english).toContain(evidence);
+    }
+    for (const evidence of [
+      '## 字号步进与框线快捷键',
+      '增大字号',
+      '减小字号',
+      '外侧框线',
+      '清除框线',
+      '10,000 个',
+    ]) {
+      expect(chinese).toContain(evidence);
+    }
+  }
+});
+
 test('publishes reproducible 100k Document performance evidence', async () => {
   for (const version of [
     'latest',
+    '0.17.0',
     '0.16.0',
     '0.15.0',
     '0.14.0',

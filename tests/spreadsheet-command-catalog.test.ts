@@ -56,6 +56,16 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     editor: ['Mod-5'],
     label: 'Cmd/Ctrl+5',
   });
+  expect(spreadsheetCommandCatalog.growFont.shortcut).toEqual({
+    aria: 'Control+Shift+. Meta+Shift+. Control+] Meta+]',
+    editor: ['Mod-Shift-.', 'Mod-]'],
+    label: 'Cmd/Ctrl+Shift+. 或 Cmd/Ctrl+]',
+  });
+  expect(spreadsheetCommandCatalog.shrinkFont.shortcut).toEqual({
+    aria: 'Control+Shift+, Meta+Shift+, Control+[ Meta+[',
+    editor: ['Mod-Shift-,', 'Mod-['],
+    label: 'Cmd/Ctrl+Shift+, 或 Cmd/Ctrl+[',
+  });
   for (const command of [
     spreadsheetCommandCatalog.numberFormatGeneral,
     spreadsheetCommandCatalog.numberFormatNumber,
@@ -76,6 +86,16 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
       tab: 'home',
     });
   }
+  expect(spreadsheetCommandCatalog.borderOutside.shortcut).toEqual({
+    aria: 'Control+Shift+& Meta+Shift+&',
+    editor: ['Mod-Shift-&', 'Mod-Shift-7'],
+    label: 'Cmd/Ctrl+Shift+&',
+  });
+  expect(spreadsheetCommandCatalog.borderNone.shortcut).toEqual({
+    aria: 'Control+Shift+_ Meta+Shift+_',
+    editor: ['Mod-Shift-_', 'Mod-Shift-Minus'],
+    label: 'Cmd/Ctrl+Shift+_',
+  });
   expect(spreadsheetCommandCatalog.numberFormatGeneral.shortcut).toEqual({
     aria: 'Control+Shift+~ Meta+Shift+~',
     editor: ['Mod-Shift-~'],

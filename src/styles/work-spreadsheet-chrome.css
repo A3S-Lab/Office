@@ -907,7 +907,7 @@
 .work-spreadsheet-border-panel {
   --work-office-menu-accent: var(--work-office-control-accent, #159469);
 
-  width: min(292px, calc(100vw - 32px));
+  width: min(360px, calc(100vw - 32px));
   padding: 8px;
 }
 
@@ -928,7 +928,7 @@
   display: grid;
   min-width: 0;
   min-height: 32px;
-  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
   gap: 7px;
   padding: 4px 7px;
@@ -962,10 +962,17 @@
   opacity: 0.4;
 }
 
-.work-spreadsheet-border-targets > button > span:last-child {
+.work-spreadsheet-border-target-label {
   overflow: hidden;
   font-size: 11px;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-border-targets kbd {
+  color: var(--a3s-faint);
+  font: inherit;
+  font-size: 8px;
   white-space: nowrap;
 }
 
@@ -1117,6 +1124,11 @@
 
   .work-spreadsheet-border-targets > button {
     min-height: 44px;
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-border-targets kbd {
+    display: none;
   }
 
   .work-spreadsheet-border-settings {

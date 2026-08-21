@@ -4,6 +4,20 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.17.0 - 2026-08-22
+
+- Added WPS-style Spreadsheet Grow Font and Shrink Font commands to Home and
+  Font with `Cmd/Ctrl+Shift+.` / `Cmd/Ctrl+]` and
+  `Cmd/Ctrl+Shift+,` / `Cmd/Ctrl+[` aliases. Mixed selections step each cell
+  independently through the shared 9–72 point scale, compact equal results
+  into native rectangles, and commit one bounded Fortune batch and one Undo
+  record. Added grid-scoped `Cmd/Ctrl+Shift+&` Outside Borders and
+  `Cmd/Ctrl+Shift+_` Clear Borders commands with visible, accessible shortcut
+  metadata. Host inputs, formula or cell editing, and modal controls keep their
+  native keys. Focused Rstest, desktop and compact Playwright, and a local-only
+  A3S Test 1.0.0 regression cover the workflow; GitHub Actions does not install
+  or invoke A3S Test.
+
 ## 0.16.0 - 2026-08-22
 
 - Added native Spreadsheet Tables/ListObjects through Insert and the

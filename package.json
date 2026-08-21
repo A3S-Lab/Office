@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -135,6 +135,8 @@
     "test:e2e:spreadsheet-ribbon:check": "a3s-test check tests/e2e/spreadsheet-ribbon-alignment.acl --json",
     "test:e2e:spreadsheet-cell-style": "a3s-test run tests/e2e/spreadsheet-cell-style.acl --json",
     "test:e2e:spreadsheet-cell-style:check": "a3s-test check tests/e2e/spreadsheet-cell-style.acl --json",
+    "test:e2e:spreadsheet-font-size-border-shortcuts": "a3s-test run tests/e2e/spreadsheet-font-size-border-shortcuts.acl --json",
+    "test:e2e:spreadsheet-font-size-border-shortcuts:check": "a3s-test check tests/e2e/spreadsheet-font-size-border-shortcuts.acl --json",
     "test:e2e:spreadsheet-table": "a3s-test run tests/e2e/spreadsheet-table.acl --json",
     "test:e2e:spreadsheet-table:check": "a3s-test check tests/e2e/spreadsheet-table.acl --json",
     "test:e2e:spreadsheet-cell-fill": "a3s-test run tests/e2e/spreadsheet-cell-fill.acl --json",

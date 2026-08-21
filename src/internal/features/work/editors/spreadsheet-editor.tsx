@@ -1864,6 +1864,7 @@ export function spreadsheetCommandsWithGridFocus(
   return {
     ...commands,
     adjustDecimalPlaces: afterSuccessfulCommand(commands.adjustDecimalPlaces),
+    adjustFontSize: afterSuccessfulCommand(commands.adjustFontSize),
     applyAutoSum: afterSuccessfulCommand(commands.applyAutoSum),
     activateFormatPainter: afterSuccessfulCommand(
       commands.activateFormatPainter,

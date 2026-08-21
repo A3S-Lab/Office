@@ -12,11 +12,8 @@ import {
   MAXIMUM_INCREMENTAL_SPREADSHEET_OPERATIONS,
   projectSpreadsheetSheetsFromFortuneOperations,
 } from './spreadsheet-operation-projection';
+import { spreadsheetFontSizes } from './spreadsheet-font-size';
 import { reconcileSpreadsheetTablesAfterFortune } from './spreadsheet-table-reconciliation';
-
-const spreadsheetFontSizes = [
-  9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 36, 48, 72,
-] as const;
 
 export interface SpreadsheetSelectionSummary {
   average: number | null;

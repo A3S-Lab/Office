@@ -56,9 +56,23 @@ test('supports keyboard border selection with persistent line and color settings
   });
   await waitFor(() => expect(top).toHaveFocus());
   const all = within(menu).getByRole('menuitemradio', { name: '所有框线' });
+  const none = within(menu).getByRole('menuitemradio', { name: '无框线' });
+  const outside = within(menu).getByRole('menuitemradio', {
+    name: '外侧框线',
+  });
   expect(top).toHaveAttribute('tabindex', '0');
   expect(all).toHaveAttribute('tabindex', '-1');
   expect(all).toHaveAttribute('aria-checked', 'true');
+  expect(none).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+_ Meta+Shift+_',
+  );
+  expect(none.querySelector('kbd')).toHaveTextContent('Cmd/Ctrl+Shift+_');
+  expect(outside).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+& Meta+Shift+&',
+  );
+  expect(outside.querySelector('kbd')).toHaveTextContent('Cmd/Ctrl+Shift+&');
 
   fireEvent.keyDown(menu, { key: 'End' });
   expect(diagonal).toHaveFocus();
@@ -71,9 +85,7 @@ test('supports keyboard border selection with persistent line and color settings
   fireEvent.change(within(dialog).getByLabelText('框线颜色'), {
     target: { value: '#b42318' },
   });
-  fireEvent.click(
-    within(menu).getByRole('menuitemradio', { name: '外侧框线' }),
-  );
+  fireEvent.click(outside);
 
   expect(formats).toEqual([
     { target: 'outside', color: '#b42318', style: 'thick' },
@@ -81,7 +93,16 @@ test('supports keyboard border selection with persistent line and color settings
   expect(screen.queryByRole('dialog', { name: '框线设置' })).toBeNull();
   expect(disclosure).toHaveFocus();
 
-  fireEvent.click(screen.getByRole('button', { name: '外侧框线' }));
+  const primary = screen.getByRole('button', { name: '外侧框线' });
+  expect(primary).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+& Meta+Shift+&',
+  );
+  expect(primary).toHaveAttribute(
+    'title',
+    '外侧框线（粗实线，#B42318；Cmd/Ctrl+Shift+&）',
+  );
+  fireEvent.click(primary);
   expect(formats).toEqual([
     { target: 'outside', color: '#b42318', style: 'thick' },
     { target: 'outside', color: '#b42318', style: 'thick' },

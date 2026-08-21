@@ -196,6 +196,19 @@ focus, native styling of populated and blank cells, one-step Undo, and clean
 browser diagnostics. The equivalent Playwright regression remains the browser
 coverage used by GitHub Actions.
 
+The WPS Spreadsheet font-size and border shortcuts have a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-font-size-border-shortcuts:check
+bun run test:e2e:spreadsheet-font-size-border-shortcuts
+```
+
+It covers both Grow Font and Shrink Font aliases, visible ribbon commands,
+Outside Borders and Clear Borders, shortcut metadata in the border menu,
+one-step Undo, accessibility, and clean browser diagnostics. The suite runs
+only through the local A3S Test release gate; GitHub Actions keeps the
+equivalent Rstest and desktop/compact Playwright coverage.
+
 The native Spreadsheet Table lifecycle has a focused local gate:
 
 ```bash

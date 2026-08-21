@@ -149,6 +149,26 @@ export const spreadsheetCommandCatalog = {
       editor: ['Mod-5'],
     },
   },
+  growFont: {
+    id: 'font.grow',
+    label: '增大字号',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+. 或 Cmd/Ctrl+]',
+      aria: 'Control+Shift+. Meta+Shift+. Control+] Meta+]',
+      editor: ['Mod-Shift-.', 'Mod-]'],
+    },
+  },
+  shrinkFont: {
+    id: 'font.shrink',
+    label: '减小字号',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+, 或 Cmd/Ctrl+[',
+      aria: 'Control+Shift+, Meta+Shift+, Control+[ Meta+[',
+      editor: ['Mod-Shift-,', 'Mod-['],
+    },
+  },
   numberFormatGeneral: {
     id: 'number.general',
     label: spreadsheetNumberFormatPresetLabels.general,
@@ -278,6 +298,11 @@ export const spreadsheetCommandCatalog = {
     id: 'font.borderNone',
     label: '无框线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+_',
+      aria: 'Control+Shift+_ Meta+Shift+_',
+      editor: ['Mod-Shift-_', 'Mod-Shift-Minus'],
+    },
   },
   borderAll: {
     id: 'font.borderAll',
@@ -288,6 +313,11 @@ export const spreadsheetCommandCatalog = {
     id: 'font.borderOutside',
     label: '外侧框线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+&',
+      aria: 'Control+Shift+& Meta+Shift+&',
+      editor: ['Mod-Shift-&', 'Mod-Shift-7'],
+    },
   },
   borderInside: {
     id: 'font.borderInside',
