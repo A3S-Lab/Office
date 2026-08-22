@@ -24,6 +24,7 @@ import {
 } from '@a3s-lab/office/react';
 import {
   ArrowLeft,
+  ClipboardCopy,
   Download,
   Eye,
   MessageSquareText,
@@ -143,7 +144,17 @@ export function EditorWorkspace({
       : undefined;
   const spreadsheetRichTextRuns = spreadsheetRichTextCell
     ? richTextRunSummary(spreadsheetRichTextCell.ct?.s)
-    : { bold: '', colors: '', count: 0, origins: '', text: '' };
+    : {
+        bold: '',
+        colors: '',
+        count: 0,
+        fonts: '',
+        italic: '',
+        origins: '',
+        sizes: '',
+        text: '',
+        underline: '',
+      };
   const loadPdf = useCallback(() => readSourceBlob(artifact), [artifact]);
   const controlledReviewFixture = e2eFixture === 'word-review-conflict';
   const controlledReviewFixtureReady =
@@ -374,25 +385,63 @@ export function EditorWorkspace({
                 </output>
               )}
               {spreadsheetRichTextFixture && (
-                <output
-                  className="playground-sparse-fixture-status"
-                  data-testid="spreadsheet-rich-text-status"
-                  data-revision={artifact.revision}
-                  data-run-count={spreadsheetRichTextRuns.count}
-                  data-run-bold={spreadsheetRichTextRuns.bold}
-                  data-run-colors={spreadsheetRichTextRuns.colors}
-                  data-run-origins={spreadsheetRichTextRuns.origins}
-                  data-run-text={spreadsheetRichTextRuns.text}
-                  data-cell-text={
-                    typeof spreadsheetRichTextCell?.v === 'string'
-                      ? spreadsheetRichTextCell.v
-                      : ''
-                  }
-                  aria-live="polite"
-                >
-                  原生富文本 · {spreadsheetRichTextRuns.count} 个文字片段 · 修订{' '}
-                  {artifact.revision}
-                </output>
+                <>
+                  <button
+                    type="button"
+                    className="playground-rich-text-copy-sample"
+                    data-testid="spreadsheet-rich-text-copy-sample"
+                    onClick={() => {
+                      void copySpreadsheetRichTextSample()
+                        .then(() => onNotice('带格式文本已复制', 'success'))
+                        .catch(() =>
+                          onNotice('无法写入带格式剪贴板', 'danger'),
+                        );
+                    }}
+                  >
+                    <ClipboardCopy size={13} />
+                    复制格式示例
+                  </button>
+                  <button
+                    type="button"
+                    className="playground-rich-text-copy-sample"
+                    data-testid="spreadsheet-rich-text-paste-sample"
+                    onPointerDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      try {
+                        pasteSpreadsheetRichTextSample();
+                        onNotice('带格式文本已粘贴', 'success');
+                      } catch {
+                        onNotice('请先在公式栏选择粘贴位置', 'danger');
+                      }
+                    }}
+                  >
+                    <ClipboardCopy size={13} />
+                    粘贴格式示例
+                  </button>
+                  <output
+                    className="playground-sparse-fixture-status"
+                    data-testid="spreadsheet-rich-text-status"
+                    data-revision={artifact.revision}
+                    data-run-count={spreadsheetRichTextRuns.count}
+                    data-run-bold={spreadsheetRichTextRuns.bold}
+                    data-run-colors={spreadsheetRichTextRuns.colors}
+                    data-run-fonts={spreadsheetRichTextRuns.fonts}
+                    data-run-italic={spreadsheetRichTextRuns.italic}
+                    data-run-origins={spreadsheetRichTextRuns.origins}
+                    data-run-sizes={spreadsheetRichTextRuns.sizes}
+                    data-run-text={spreadsheetRichTextRuns.text}
+                    data-run-underline={spreadsheetRichTextRuns.underline}
+                    data-cell-text={
+                      typeof spreadsheetRichTextCell?.v === 'string'
+                        ? spreadsheetRichTextCell.v
+                        : ''
+                    }
+                    aria-live="polite"
+                  >
+                    原生富文本 · {spreadsheetRichTextRuns.count} 个文字片段 ·
+                    修订 {artifact.revision}
+                  </output>
+                </>
               )}
               {collaborationDemo && (
                 <output
@@ -1467,11 +1516,25 @@ function richTextRunSummary(source: unknown): {
   bold: string;
   colors: string;
   count: number;
+  fonts: string;
+  italic: string;
   origins: string;
+  sizes: string;
   text: string;
+  underline: string;
 } {
   if (!Array.isArray(source)) {
-    return { bold: '', colors: '', count: 0, origins: '', text: '' };
+    return {
+      bold: '',
+      colors: '',
+      count: 0,
+      fonts: '',
+      italic: '',
+      origins: '',
+      sizes: '',
+      text: '',
+      underline: '',
+    };
   }
   const runs = source.flatMap((candidate) => {
     if (
@@ -1490,7 +1553,17 @@ function richTextRunSummary(source: unknown): {
           'fc' in candidate && typeof candidate.fc === 'string'
             ? candidate.fc
             : 'none',
+        font:
+          'ff' in candidate && typeof candidate.ff === 'string'
+            ? candidate.ff
+            : 'none',
+        italic: Number('it' in candidate ? candidate.it : 0),
         origin: richTextRunColorOrigin(candidate),
+        size:
+          'fs' in candidate && typeof candidate.fs === 'number'
+            ? candidate.fs
+            : 'none',
+        underline: Number('un' in candidate ? candidate.un : 0),
         v: candidate.v,
       },
     ];
@@ -1499,9 +1572,74 @@ function richTextRunSummary(source: unknown): {
     bold: runs.map((run) => (run.bold === 1 ? 1 : 0)).join(','),
     colors: runs.map((run) => run.color).join(','),
     count: runs.length,
+    fonts: runs.map((run) => run.font).join(','),
+    italic: runs.map((run) => (run.italic === 1 ? 1 : 0)).join(','),
     origins: runs.map((run) => run.origin).join(','),
+    sizes: runs.map((run) => run.size).join(','),
     text: runs.map((run) => run.v).join(''),
+    underline: runs.map((run) => run.underline).join(','),
   };
+}
+
+async function copySpreadsheetRichTextSample(): Promise<void> {
+  if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+    throw new Error('Formatted clipboard writes are unavailable.');
+  }
+  await navigator.clipboard.write([
+    new ClipboardItem({
+      'text/html': new Blob([spreadsheetRichTextSampleHtml], {
+        type: 'text/html',
+      }),
+      'text/plain': new Blob([spreadsheetRichTextSampleText], {
+        type: 'text/plain',
+      }),
+    }),
+  ]);
+}
+
+const spreadsheetRichTextSampleText = 'Styled';
+const spreadsheetRichTextSampleHtml =
+  '<span style="font-family: Georgia; font-size: 16pt; color: #c00000; font-weight: bold; font-style: italic; text-decoration: underline; text-decoration-style: double">Styled</span>';
+
+function pasteSpreadsheetRichTextSample(): void {
+  const editor = document.querySelector<HTMLElement>(
+    '.fortune-fx-input:focus, .luckysheet-cell-input:focus',
+  );
+  const selection = window.getSelection();
+  if (!editor || !selection || selection.rangeCount !== 1) {
+    throw new Error('A spreadsheet text editor must own the selection.');
+  }
+  const range = selection.getRangeAt(0);
+  if (
+    !editor.contains(range.startContainer) ||
+    !editor.contains(range.endContainer)
+  ) {
+    throw new Error('The text selection is outside the spreadsheet editor.');
+  }
+  const clipboardData = new DataTransfer();
+  clipboardData.setData('text/html', spreadsheetRichTextSampleHtml);
+  clipboardData.setData('text/plain', spreadsheetRichTextSampleText);
+  editor.dispatchEvent(
+    new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData,
+    }),
+  );
+  range.deleteContents();
+  const inserted = document.createTextNode(spreadsheetRichTextSampleText);
+  range.insertNode(inserted);
+  range.setStartAfter(inserted);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  editor.dispatchEvent(
+    new InputEvent('input', {
+      bubbles: true,
+      data: spreadsheetRichTextSampleText,
+      inputType: 'insertFromPaste',
+    }),
+  );
 }
 
 function richTextRunColorOrigin(candidate: Record<string, unknown>): string {

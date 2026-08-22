@@ -5,20 +5,13 @@ import type {
   WorkSpreadsheetSheet,
 } from '../work-types';
 import {
-  normalizeXlsxSemanticColorOrigin,
-  xlsxCellStyleOrigin,
-  xlsxSemanticColorMatchesValue,
-} from '../work-xlsx-cell-style-origin';
-import {
   coalesceXlsxRichTextRuns,
-  MAX_XLSX_RICH_TEXT_CELL_CHARACTERS,
   MAX_XLSX_RICH_TEXT_FONT_NAME_CHARACTERS,
   MAX_XLSX_RICH_TEXT_FONT_SIZE,
   MAX_XLSX_RICH_TEXT_RUNS_PER_CELL,
-  normalizeXlsxRichTextCell,
+  normalizeXlsxRichTextEditSource,
   normalizeXlsxRichTextColor,
   type XlsxRichTextRun,
-  validXlsxRichText,
 } from '../work-xlsx-rich-text-model';
 
 export type SpreadsheetRichTextFormatAttribute =
@@ -221,55 +214,8 @@ function resolveSpreadsheetRichTextSelectionFormat(
 }
 
 function normalizedRichTextSource(cell: Cell): NormalizedRichTextSource | null {
-  if (cell.f) return null;
-  const rich = normalizeXlsxRichTextCell(cell);
-  if (rich) return rich;
-  if (
-    typeof cell.v !== 'string' ||
-    !cell.v ||
-    cell.v.length > MAX_XLSX_RICH_TEXT_CELL_CHARACTERS ||
-    !validXlsxRichText(cell.v)
-  ) {
-    return null;
-  }
-  return { runs: [plainTextBaseRun(cell, cell.v)], text: cell.v };
-}
-
-function plainTextBaseRun(cell: Cell, text: string): XlsxRichTextRun {
-  const run: XlsxRichTextRun = { v: text };
-  if (Number(cell.bl) === 1) run.bl = 1;
-  if (Number(cell.it) === 1) run.it = 1;
-  if (Number(cell.cl) === 1) run.cl = 1;
-  const underline = Number(cell.un);
-  if (Number.isSafeInteger(underline) && underline >= 1 && underline <= 4) {
-    run.un = underline as 1 | 2 | 3 | 4;
-  }
-  if (
-    typeof cell.ff === 'string' &&
-    cell.ff.trim() &&
-    cell.ff.trim().length <= MAX_XLSX_RICH_TEXT_FONT_NAME_CHARACTERS
-  ) {
-    run.ff = cell.ff.trim();
-  }
-  const size = Number(cell.fs);
-  if (
-    Number.isFinite(size) &&
-    size >= 1 &&
-    size <= MAX_XLSX_RICH_TEXT_FONT_SIZE
-  ) {
-    run.fs = size;
-  }
-  const color = normalizeXlsxRichTextColor(cell.fc);
-  if (color) {
-    run.fc = color;
-    const origin = normalizeXlsxSemanticColorOrigin(
-      xlsxCellStyleOrigin(cell)?.fontColor,
-    );
-    if (origin && xlsxSemanticColorMatchesValue(origin, color)) {
-      run.a3sXlsxColorOrigin = origin;
-    }
-  }
-  return run;
+  const source = normalizeXlsxRichTextEditSource(cell);
+  return source?.text ? source : null;
 }
 
 function normalizeFormatValue(

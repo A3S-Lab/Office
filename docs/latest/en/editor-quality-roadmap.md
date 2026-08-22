@@ -1119,7 +1119,25 @@ structural batches never infer by old coordinates. Formula-bar and F2 commits
 publish one controlled revision and one Undo record, while text-stable focus
 callbacks publish no revision. UTF-16 validity, 32,767-character, and 512-run
 bounds remain fail closed. Formatted paste and simultaneous disjoint edits
-remain open work.
+remained open work at that slice.
+
+The thirty-fourth slice closes common formatted rich-text paste in the formula
+bar and F2 editor. A paste event stages one bounded authority over the exact
+worksheet object, cell coordinate, controlled source text, UTF-16 selection,
+plain clipboard text, and sanitized font runs. Incremental and compatibility
+projection may consume it only when an authenticated cell operation emits the
+predicted replacement. Untouched source runs retain boundaries and semantic
+theme, indexed, automatic, or tint colors; pasted font family, size, explicit
+RGB, bold, italic, strikethrough, and underline apply only inside the inserted
+range. Eligible plain and empty cells become native inline strings. HTML is
+discarded after parsing and capped at 256,000 characters; cell text and result
+runs retain the 32,767/512 limits. Mismatch, malformed input, structural
+operations, and invalid UTF-16 fail closed to inherited or plain text rather
+than authorizing clipboard styles. One commit remains one controlled revision
+and one Undo record. Focused Rstest, registered and fallback projection tests,
+desktop and compact real-clipboard Playwright, and four local-only A3S Test
+1.0.0 scenarios cover the path with clean diagnostics. Simultaneous disjoint
+edits and non-font inline objects remain open work.
 
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.

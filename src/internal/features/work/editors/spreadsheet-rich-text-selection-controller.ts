@@ -6,6 +6,7 @@ import {
 import { normalizeCssColor } from '../work-css-color';
 import type { WorkSpreadsheetContent } from '../work-types';
 import { xlsxRichTextCellText } from '../work-xlsx-rich-text';
+import { captureSpreadsheetRichTextDomSelection } from './spreadsheet-rich-text-dom-selection';
 import {
   applySpreadsheetRichTextSelectionFormat,
   canApplySpreadsheetRichTextSelectionFormat,
@@ -197,33 +198,13 @@ export function captureSpreadsheetRichTextSelection({
   selection,
   sheetId,
 }: SpreadsheetRichTextSelectionCapture): SpreadsheetRichTextSelectionSnapshot | null {
-  const browserSelection = window.getSelection();
-  if (
-    !root ||
-    !sheetId ||
-    !selection ||
-    !browserSelection ||
-    browserSelection.rangeCount !== 1 ||
-    browserSelection.isCollapsed
-  ) {
-    return null;
-  }
-  const range = browserSelection.getRangeAt(0);
-  const editor = spreadsheetTextEditor(range.commonAncestorContainer);
-  if (
-    !editor ||
-    !root.contains(editor) ||
-    !editorContainsRange(editor, range)
-  ) {
-    return null;
-  }
-  const start = textOffsetAtPoint(
-    editor,
-    range.startContainer,
-    range.startOffset,
-  );
-  const end = textOffsetAtPoint(editor, range.endContainer, range.endOffset);
-  if (start === null || end === null || start >= end) return null;
+  if (!root) return null;
+  const domSelection = captureSpreadsheetRichTextDomSelection({
+    expandedOnly: true,
+    root,
+  });
+  if (!sheetId || !selection || !domSelection) return null;
+  const { editor, end, start } = domSelection;
   const row = focusedAxisIndex(selection.row_focus, selection.row);
   const column = focusedAxisIndex(selection.column_focus, selection.column);
   const source = sheetCellAt(content, sheetId, row, column);
@@ -277,40 +258,6 @@ function liveSpreadsheetTextCell(editor: HTMLElement, source: Cell): Cell {
     delete next.ct;
   }
   return next;
-}
-
-function spreadsheetTextEditor(node: Node): HTMLElement | null {
-  const element = node instanceof Element ? node : node.parentElement;
-  const editor = element?.closest<HTMLElement>(
-    '.luckysheet-cell-input, .fortune-fx-input',
-  );
-  return editor?.isContentEditable ||
-    editor?.getAttribute('contenteditable') === 'true'
-    ? editor
-    : null;
-}
-
-function editorContainsRange(editor: HTMLElement, range: Range): boolean {
-  return (
-    (range.startContainer === editor ||
-      editor.contains(range.startContainer)) &&
-    (range.endContainer === editor || editor.contains(range.endContainer))
-  );
-}
-
-function textOffsetAtPoint(
-  editor: HTMLElement,
-  node: Node,
-  offset: number,
-): number | null {
-  try {
-    const prefix = document.createRange();
-    prefix.selectNodeContents(editor);
-    prefix.setEnd(node, offset);
-    return prefix.toString().length;
-  } catch {
-    return null;
-  }
 }
 
 function textPointAtOffset(

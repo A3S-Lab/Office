@@ -153,6 +153,142 @@ describe('Spreadsheet rich-text edit reconciliation', () => {
     });
   });
 
+  test('applies only authenticated formatted paste runs inside the replaced range', () => {
+    const previous = richTextCell();
+    const current = {
+      bg: '#f4f7ff',
+      ct: { fa: 'General', t: 'g' },
+      v: 'Native styled text',
+    } satisfies Cell;
+
+    expect(
+      reconcileSpreadsheetRichTextCellEdit(previous, current, {
+        end: 11,
+        runs: [
+          {
+            bl: 1,
+            fc: '#c00000',
+            ff: 'Aptos Display',
+            fs: 16,
+            v: 'sty',
+          },
+          { it: 1, un: 2, v: 'led' },
+        ],
+        start: 7,
+        text: 'styled',
+      }),
+    ).toEqual({
+      bg: '#f4f7ff',
+      ct: {
+        fa: 'General',
+        t: 'inlineStr',
+        s: [
+          {
+            a3sXlsxColorOrigin: themeOrigin,
+            bl: 1,
+            fc: '#4472c4',
+            ff: 'Aptos Display',
+            fs: 14,
+            v: 'Native ',
+          },
+          {
+            bl: 1,
+            fc: '#c00000',
+            ff: 'Aptos Display',
+            fs: 16,
+            v: 'sty',
+          },
+          { it: 1, un: 2, v: 'led' },
+          {
+            a3sXlsxColorOrigin: indexedOrigin,
+            fc: '#159469',
+            ff: 'Georgia',
+            fs: 12,
+            it: 1,
+            v: ' ',
+          },
+          { cl: 1, fc: '#a04896', un: 2, v: 'text' },
+        ],
+      },
+      v: 'Native styled text',
+    });
+  });
+
+  test('creates native runs when formatted text is pasted into a plain or empty cell', () => {
+    expect(
+      reconcileSpreadsheetRichTextCellEdit(
+        { bl: 1, fc: '#4472c4', v: 'Plain text' },
+        { bl: 1, fc: '#4472c4', v: 'Plain red' },
+        {
+          end: 10,
+          runs: [{ fc: '#c00000', it: 1, v: 'red' }],
+          start: 6,
+          text: 'red',
+        },
+      ),
+    ).toMatchObject({
+      ct: {
+        t: 'inlineStr',
+        s: [
+          { bl: 1, fc: '#4472c4', v: 'Plain ' },
+          { fc: '#c00000', it: 1, v: 'red' },
+        ],
+      },
+      v: 'Plain red',
+    });
+
+    expect(
+      reconcileSpreadsheetRichTextCellEdit(
+        null,
+        { v: 'Fresh' },
+        {
+          end: 0,
+          runs: [{ bl: 1, ff: 'Georgia', v: 'Fresh' }],
+          start: 0,
+          text: 'Fresh',
+        },
+      ),
+    ).toEqual({
+      ct: {
+        s: [{ bl: 1, ff: 'Georgia', v: 'Fresh' }],
+        t: 'inlineStr',
+      },
+      v: 'Fresh',
+    });
+  });
+
+  test('ignores a formatted-paste intent that does not prove the emitted text', () => {
+    const previous = richTextCell();
+    const current = { v: 'Native plain text' } satisfies Cell;
+
+    expect(
+      reconcileSpreadsheetRichTextCellEdit(previous, current, {
+        end: 11,
+        runs: [{ bl: 1, fc: '#c00000', v: 'styled' }],
+        start: 7,
+        text: 'styled',
+      }).ct?.s,
+    ).toEqual([
+      {
+        a3sXlsxColorOrigin: themeOrigin,
+        bl: 1,
+        fc: '#4472c4',
+        ff: 'Aptos Display',
+        fs: 14,
+        v: 'Native ',
+      },
+      {
+        a3sXlsxColorOrigin: indexedOrigin,
+        fc: '#159469',
+        ff: 'Georgia',
+        fs: 12,
+        it: 1,
+        v: 'plain ',
+      },
+      { cl: 1, fc: '#a04896', un: 2, v: 'text' },
+    ]);
+  });
+
   test('restores matching semantic colors on live rich runs and splits conflicting origins safely', () => {
     const previous = {
       ct: {

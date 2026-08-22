@@ -330,6 +330,22 @@ exactly unchanged; structural operations disable coordinate inference. This
 keeps formula-bar and F2 commits to one host revision and one Undo record while
 discarding Fortune focus callbacks that merely flatten or strip run metadata.
 
+Formatted paste adds a separate one-shot authority instead of trusting live
+DOM markup. A paste event in the formula bar or F2 editor records the exact
+sheet object, coordinate, controlled source text, UTF-16 selection, sanitized
+clipboard runs, and plain text before the browser mutates the editor. The
+incremental and full projection paths may consume that authority only when an
+authenticated cell operation emits the exact predicted replacement. Prefix
+and suffix runs always come from the controlled source; only the inserted
+range may use clipboard font family, point size, RGB color, bold, italic,
+strikethrough, or underline. This also converts eligible plain or empty cells
+to native inline strings without granting structural callbacks a coordinate.
+The parser never retains clipboard HTML, ignores active/non-content elements,
+and rejects mismatched text, invalid UTF-16, more than 256,000 HTML characters,
+32,767 cell characters, or 512 resulting runs. Imported semantic color
+identities remain attached to untouched runs; pasted colors are explicit RGB
+unless a future package-level source can prove a native palette identity.
+
 The table is a fidelity statement, not a marketing capability list. The
 current Document path shapes text-flow paragraphs in Rust/WASM when every
 explicit CSS family resolves to an exact registered face. Each run may carry up

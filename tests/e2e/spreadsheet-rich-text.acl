@@ -286,4 +286,131 @@ suite "office-spreadsheet-rich-text" {
             clear = false
         }
     }
+
+    scenario "paste-formatted-rich-text-in-formula-bar" {
+        name = "Paste authenticated formatted text into a native Spreadsheet rich-text run"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-formatted-paste-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-rich-text"
+        }
+
+        wait "formatted-paste-ready" {
+            text = "复制格式示例"
+        }
+
+        click "copy-formatted-sample" {
+            target = role("button", "复制格式示例")
+        }
+
+        expect "formatted-sample-copied" {
+            text = "带格式文本已复制"
+        }
+
+        focus "focus-formula-bar-for-formatted-paste" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "formatted-paste-to-start" {
+            key = "Home"
+        }
+
+        press "formatted-paste-to-rich-1" {
+            key = "ArrowRight"
+        }
+
+        press "formatted-paste-to-rich-2" {
+            key = "ArrowRight"
+        }
+
+        press "formatted-paste-to-rich-3" {
+            key = "ArrowRight"
+        }
+
+        press "formatted-paste-to-rich-4" {
+            key = "ArrowRight"
+        }
+
+        press "formatted-paste-to-rich-5" {
+            key = "ArrowRight"
+        }
+
+        press "formatted-paste-to-rich-6" {
+            key = "ArrowRight"
+        }
+
+        press "formatted-paste-to-rich-7" {
+            key = "ArrowRight"
+        }
+
+        press "select-rich-for-paste-1" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "select-rich-for-paste-2" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "select-rich-for-paste-3" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "select-rich-for-paste-4" {
+            key = "Shift+ArrowRight"
+        }
+
+        click "paste-formatted-sample" {
+            target = role("button", "粘贴格式示例")
+        }
+
+        expect "formatted-sample-pasted" {
+            text = "带格式文本已粘贴"
+        }
+
+        expect "formatted-paste-draft-visible" {
+            text = "Native Styled text"
+        }
+
+        press "commit-formatted-paste" {
+            key = "Enter"
+        }
+
+        expect "formatted-paste-keeps-every-supported-run-style" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='2'][data-run-count='4'][data-run-bold='1,1,0,0'][data-run-italic='0,1,1,0'][data-run-colors='#2f6fed,#c00000,#159469,#000000'][data-run-fonts='Aptos Display,Georgia,Georgia,none'][data-run-sizes='14,16,12,none'][data-run-underline='0,2,0,2'][data-run-origins='theme,none,indexed,automatic'][data-run-text='Native Styled text']")
+        }
+
+        press "undo-formatted-paste" {
+            key = "Control+z"
+        }
+
+        expect "one-undo-restores-native-runs" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='3'][data-run-count='3'][data-run-origins='theme,indexed,automatic'][data-run-text='Native rich text']")
+        }
+
+        screenshot "spreadsheet-formatted-rich-text-paste" {
+            path = "screenshots/spreadsheet-formatted-rich-text-paste.png"
+        }
+
+        accessibility "spreadsheet-formatted-rich-text-paste-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "spreadsheet-formatted-rich-text-paste-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-formatted-rich-text-paste-page-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
 }

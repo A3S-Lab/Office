@@ -7,6 +7,7 @@ import {
   spreadsheetSheetsForFortune,
   spreadsheetSheetsFromFortune,
 } from '../src/internal/features/work/editors/spreadsheet-editor-support';
+import { stageSpreadsheetRichTextPaste } from '../src/internal/features/work/editors/spreadsheet-rich-text-paste';
 import {
   freezeImportedSpreadsheetCell,
   registerImportedSpreadsheetMatrix,
@@ -558,6 +559,62 @@ test('restores rich-text semantic metadata through authenticated cell operations
     },
     v: 'BluXe',
   });
+});
+
+test('projects authenticated formatted paste through registered and fallback matrices', () => {
+  for (const register of [false, true]) {
+    const sourceCell = freezeImportedSpreadsheetCell({
+      ct: {
+        t: 'inlineStr',
+        s: [{ bl: 1, fc: '#4472c4', v: 'Blue' }],
+      },
+      v: 'Blue',
+    });
+    const data = [[sourceCell]];
+    if (register) {
+      registerImportedSpreadsheetMatrix(data, {
+        columnCount: 1,
+        formulaCells: [],
+        fortuneReady: true,
+        populatedCellCount: 1,
+        protectionCellKey: '',
+        rowCount: 1,
+        shownCommentCells: [],
+      });
+    }
+    const source = { data, id: `sheet-paste-${register}`, name: 'Paste' };
+    stageSpreadsheetRichTextPaste(source, 0, 0, 'Blue', {
+      end: 4,
+      runs: [{ fc: '#c00000', it: 1, v: ' red' }],
+      start: 4,
+      text: ' red',
+    });
+    const changed = [{ ...source, data: [[{ v: 'Blue red' }]] }];
+
+    const controlled = spreadsheetSheetsFromFortune(
+      changed,
+      [source],
+      [
+        {
+          id: source.id,
+          op: 'replace',
+          path: ['data', 0, 0],
+          value: changed[0]?.data?.[0]?.[0],
+        },
+      ],
+    );
+
+    expect(controlled[0]?.data?.[0]?.[0]).toMatchObject({
+      ct: {
+        t: 'inlineStr',
+        s: [
+          { bl: 1, fc: '#4472c4', v: 'Blue' },
+          { fc: '#c00000', it: 1, v: ' red' },
+        ],
+      },
+      v: 'Blue red',
+    });
+  }
 });
 
 test('does not infer rich text across a structural operation batch', () => {

@@ -14,6 +14,7 @@ import {
 import { officeFontFamilies } from './office-font-families';
 import type { OfficeSelectOption } from './office-select';
 import { spreadsheetFontSizes } from './spreadsheet-font-size';
+import { takeSpreadsheetRichTextPaste } from './spreadsheet-rich-text-paste';
 import {
   MAXIMUM_INCREMENTAL_SPREADSHEET_OPERATIONS,
   projectSpreadsheetSheetsFromFortuneOperations,
@@ -396,7 +397,11 @@ export function spreadsheetSheetsFromFortune(
         sameSpreadsheetRichTextCellText(previous, entry.v);
       if (!exactCellOperation && !textStableNonStructuralCallback) return entry;
       const reconciled = exactCellOperation
-        ? reconcileSpreadsheetRichTextCellEdit(previous, entry.v)
+        ? reconcileSpreadsheetRichTextCellEdit(
+            previous,
+            entry.v,
+            takeSpreadsheetRichTextPaste(source, entry.r, entry.c, entry.v),
+          )
         : restoreSpreadsheetRichTextCellRuns(previous, entry.v);
       return reconciled === entry.v ? entry : { ...entry, v: reconciled };
     });

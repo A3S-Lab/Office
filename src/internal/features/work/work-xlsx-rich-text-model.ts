@@ -2,6 +2,8 @@ import type { Cell } from '@fortune-sheet/core';
 import {
   normalizeXlsxSemanticColorOrigin,
   type XlsxSemanticColorOrigin,
+  xlsxCellStyleOrigin,
+  xlsxSemanticColorMatchesValue,
 } from './work-xlsx-cell-style-origin';
 import { xlsxRgbColor } from './work-xlsx-cell-style-xml';
 import type { SpreadsheetUnderlineCellValue } from './work-spreadsheet-underline';
@@ -28,6 +30,76 @@ export interface XlsxRichTextRun {
 export interface NormalizedXlsxRichTextCell {
   runs: XlsxRichTextRun[];
   text: string;
+}
+
+/**
+ * Normalizes the text state that may participate in caret-level rich-text
+ * authoring. Native runs remain authoritative; bounded plain strings receive
+ * one run derived from the cell-wide font so partial formatting and formatted
+ * paste share the same conversion contract.
+ */
+export function normalizeXlsxRichTextEditSource(
+  cell: Cell | null | undefined,
+): NormalizedXlsxRichTextCell | null {
+  if (cell?.f) return null;
+  if (cell) {
+    const rich = normalizeXlsxRichTextCell(cell);
+    if (rich) return rich;
+  }
+  const text = cell?.v;
+  if (
+    text !== undefined &&
+    (typeof text !== 'string' ||
+      text.length > MAX_XLSX_RICH_TEXT_CELL_CHARACTERS ||
+      !validXlsxRichText(text))
+  ) {
+    return null;
+  }
+  const value = text ?? '';
+  return {
+    runs: value ? [xlsxRichTextBaseRun(cell, value)] : [],
+    text: value,
+  };
+}
+
+export function xlsxRichTextBaseRun(
+  cell: Cell | null | undefined,
+  text: string,
+): XlsxRichTextRun {
+  const run: XlsxRichTextRun = { v: text };
+  if (Number(cell?.bl) === 1) run.bl = 1;
+  if (Number(cell?.it) === 1) run.it = 1;
+  if (Number(cell?.cl) === 1) run.cl = 1;
+  const underline = Number(cell?.un);
+  if (Number.isSafeInteger(underline) && underline >= 1 && underline <= 4) {
+    run.un = underline as SpreadsheetUnderlineCellValue;
+  }
+  if (
+    typeof cell?.ff === 'string' &&
+    cell.ff.trim() &&
+    cell.ff.trim().length <= MAX_XLSX_RICH_TEXT_FONT_NAME_CHARACTERS
+  ) {
+    run.ff = cell.ff.trim();
+  }
+  const size = Number(cell?.fs);
+  if (
+    Number.isFinite(size) &&
+    size >= 1 &&
+    size <= MAX_XLSX_RICH_TEXT_FONT_SIZE
+  ) {
+    run.fs = size;
+  }
+  const color = normalizeXlsxRichTextColor(cell?.fc);
+  if (color) {
+    run.fc = color;
+    const origin = normalizeXlsxSemanticColorOrigin(
+      xlsxCellStyleOrigin(cell ?? {})?.fontColor,
+    );
+    if (origin && xlsxSemanticColorMatchesValue(origin, color)) {
+      run.a3sXlsxColorOrigin = origin;
+    }
+  }
+  return run;
 }
 
 export function normalizeXlsxRichTextCell(

@@ -814,21 +814,40 @@ Operation-free text-stable callbacks may only restore the previous controlled
 runs, and structural row, column, or sheet operations never infer rich text
 from an old coordinate.
 
+Formatted rich-text paste into a formula-bar or F2 selection now keeps the
+common font run properties listed above. Before native paste mutates the editor, the
+controller captures a one-shot intent containing the exact worksheet object,
+cell coordinate, controlled source text, UTF-16 selection, plain clipboard
+text, and sanitized runs. An authenticated cell operation must then emit the
+exact predicted replacement. Unaffected prefix and suffix runs always come
+from the controlled cell, so theme, indexed, automatic, and tint identities
+cannot be flattened by browser markup; pasted colors use explicit RGB. Plain
+and empty text cells become native inline strings only after this proof. The
+clipboard parser accepts semantic emphasis tags and common inline font CSS,
+discards the HTML tree after parsing, and ignores script, style, metadata, and
+other non-content elements.
+
 Rich-text parsing is bounded before materialization: one cell may contain at
 most 32,767 characters and 512 runs, one import may materialize at most 10,000
 rich-text cells and 100,000 runs, and malformed or oversized candidates do not
 enter the rich-run model. Partial formatting also rejects collapsed selections,
 invalid UTF-16 surrogate boundaries, formula cells, and any result beyond the
-per-cell run limit. Direct editing accepts one contiguous text replacement per
-commit. Formatted rich-text paste, simultaneous disjoint edits, and non-font
-run objects remain outside the public Spreadsheet surface.
+per-cell run limit. Formatted paste additionally caps clipboard HTML at 256,000
+characters and requires one exact selection replacement per commit. Plain,
+mismatched, malformed, or oversized clipboard markup cannot authorize runs;
+the browser's text paste remains available with inherited/plain formatting.
+Simultaneous disjoint edits and non-font run objects remain outside the public
+Spreadsheet surface.
 
 Focused import/export/reopen and formatting tests protect shared and inline
 strings, semantic colors, exact whitespace, immutable updates, and number-format
-retention. Desktop and compact Playwright exercise the controlled Playground
-fixture. `tests/e2e/spreadsheet-rich-text.acl` runs only through the local A3S
-Test 1.0.0 gate and captures accessibility plus clean console and page-error
-evidence; GitHub Actions and Pages do not install or invoke A3S Test.
+retention. Desktop and compact Playwright exercise a real browser HTML
+clipboard paste through the controlled Playground fixture, whose header also
+exposes deterministic copy/paste samples for local inspection.
+`tests/e2e/spreadsheet-rich-text.acl` runs four scenarios only through the local
+A3S Test 1.0.0 gate and captures accessibility plus clean console and
+page-error evidence; GitHub Actions and Pages do not install or invoke A3S
+Test.
 
 ## Format Cells
 

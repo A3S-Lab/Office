@@ -6,7 +6,14 @@ import {
   spreadsheetMatrixProfile,
 } from '../work-spreadsheet-matrix-profile';
 import type { WorkSpreadsheetContent } from '../work-types';
-import { reconcileSpreadsheetRichTextCellEdit } from '../work-xlsx-rich-text-edit';
+import {
+  reconcileSpreadsheetRichTextCellEdit,
+  type SpreadsheetRichTextPasteIntent,
+} from '../work-xlsx-rich-text-edit';
+import {
+  consumeSpreadsheetRichTextPaste,
+  peekSpreadsheetRichTextPaste,
+} from './spreadsheet-rich-text-paste';
 
 export const MAXIMUM_INCREMENTAL_SPREADSHEET_OPERATIONS = 10_000;
 
@@ -18,6 +25,12 @@ export interface SpreadsheetOperationProjection {
 export interface SpreadsheetCellOperationCoordinate {
   column: number;
   row: number;
+}
+
+interface PendingRichTextPasteCoordinate {
+  column: number;
+  row: number;
+  sheet: WorkSpreadsheetContent['sheets'][number];
 }
 
 export function spreadsheetCellOperationKey(
@@ -106,6 +119,7 @@ export function projectSpreadsheetSheetsFromFortuneOperations(
 
   let affectedCellCount = 0;
   const projectedSheets: WorkSpreadsheetContent['sheets'] = [];
+  const pendingRichTextPastes: PendingRichTextPasteCoordinate[] = [];
   for (const sheet of sheets) {
     const id = sheet.id;
     if (!id) return null;
@@ -134,10 +148,15 @@ export function projectSpreadsheetSheetsFromFortuneOperations(
       sheet,
       source,
       coordinates.values(),
+      pendingRichTextPastes,
     );
     if (!projection) return null;
     affectedCellCount += projection.affectedCellCount;
     projectedSheets.push({ ...metadata, data: projection.data });
+  }
+
+  for (const pending of pendingRichTextPastes) {
+    consumeSpreadsheetRichTextPaste(pending.sheet, pending.row, pending.column);
   }
 
   return { affectedCellCount, sheets: projectedSheets };
@@ -147,6 +166,7 @@ function projectSpreadsheetMatrixCells(
   changed: WorkSpreadsheetContent['sheets'][number],
   source: WorkSpreadsheetContent['sheets'][number],
   coordinates: Iterable<SpreadsheetCellOperationCoordinate>,
+  pendingRichTextPastes: PendingRichTextPasteCoordinate[],
 ): { affectedCellCount: number; data: CellMatrix } | null {
   if (!changed.data || !source.data) return null;
   const data = source.data.slice();
@@ -162,10 +182,20 @@ function projectSpreadsheetMatrixCells(
     const changedRow = changed.data[row];
     const sourceRow = source.data[row];
     const currentCell = changedRow?.[column];
+    const formattedPaste = currentCell
+      ? peekSpreadsheetRichTextPaste(source, row, column, currentCell)
+      : undefined;
     const nextCell =
       currentCell == null
         ? currentCell
-        : cloneControlledSpreadsheetCell(currentCell, sourceRow?.[column]);
+        : cloneControlledSpreadsheetCell(
+            currentCell,
+            sourceRow?.[column],
+            formattedPaste,
+          );
+    if (formattedPaste) {
+      pendingRichTextPastes.push({ column, row, sheet: source });
+    }
     let nextRow = mutableRows.get(row);
     if (!nextRow) {
       nextRow = sourceRow?.slice() ?? [];
@@ -196,9 +226,12 @@ function projectSpreadsheetMatrixCells(
 function cloneControlledSpreadsheetCell(
   cell: Cell,
   previous: Cell | null | undefined,
+  formattedPaste?: SpreadsheetRichTextPasteIntent,
 ): Cell {
   return freezeImportedSpreadsheetCell(
-    structuredClone(reconcileSpreadsheetRichTextCellEdit(previous, cell)),
+    structuredClone(
+      reconcileSpreadsheetRichTextCellEdit(previous, cell, formattedPaste),
+    ),
   );
 }
 

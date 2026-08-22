@@ -12,6 +12,8 @@ import {
   MAX_XLSX_RICH_TEXT_RUNS_PER_CELL,
   type NormalizedXlsxRichTextCell,
   normalizeXlsxRichTextCell,
+  normalizeXlsxRichTextEditSource,
+  normalizeXlsxRichTextRun,
   validXlsxRichText,
   type XlsxRichTextRun,
 } from './work-xlsx-rich-text-model';
@@ -28,6 +30,13 @@ interface RichTextReplacement {
   remove: number;
 }
 
+export interface SpreadsheetRichTextPasteIntent {
+  end: number;
+  runs: readonly XlsxRichTextRun[];
+  start: number;
+  text: string;
+}
+
 /**
  * Reconciles a text edit emitted by Fortune with the previous native XLSX
  * rich-text cell. Formula-bar edits may arrive as a plain string, while the
@@ -38,19 +47,33 @@ interface RichTextReplacement {
 export function reconcileSpreadsheetRichTextCellEdit(
   previous: Cell | null | undefined,
   current: Cell,
+  formattedPaste?: SpreadsheetRichTextPasteIntent,
 ): Cell {
-  if (!previous || current.f) return current;
-  const source = normalizeXlsxRichTextCell(previous);
+  if (current.f) return current;
+  const source = formattedPaste
+    ? normalizeXlsxRichTextEditSource(previous)
+    : previous
+      ? normalizeXlsxRichTextCell(previous)
+      : null;
   if (!source) return current;
   const live = liveRichTextValue(current);
   if (!live || live.text === '') return current;
 
   const replacement = richTextReplacement(source.text, live.text);
   const sourceRuns = indexRichTextRuns(source);
+  const formattedPasteRuns = formattedPaste
+    ? reconstructFormattedPasteRuns(
+        source,
+        sourceRuns,
+        live.text,
+        formattedPaste,
+      )
+    : null;
   const runs =
-    !live.rich || live.text !== source.text
+    formattedPasteRuns ??
+    (!live.rich || live.text !== source.text
       ? reconstructPlainTextRuns(sourceRuns, replacement)
-      : restoreSemanticColorOrigins(live.rich.runs, sourceRuns, replacement);
+      : restoreSemanticColorOrigins(live.rich.runs, sourceRuns, replacement));
   const normalizedRuns = coalesceXlsxRichTextRuns(runs);
   if (
     !normalizedRuns.length ||
@@ -90,7 +113,7 @@ export function restoreSpreadsheetRichTextCellRuns(
 }
 
 function spreadsheetRichTextCellWithRuns(
-  previous: Cell,
+  previous: Cell | null | undefined,
   current: Cell,
   text: string,
   runs: readonly XlsxRichTextRun[],
@@ -98,7 +121,7 @@ function spreadsheetRichTextCellWithRuns(
   const next: Cell = {
     ...current,
     ct: {
-      ...previous.ct,
+      ...previous?.ct,
       ...current.ct,
       s: runs.map((run) => ({ ...run })),
       t: 'inlineStr',
@@ -209,6 +232,83 @@ function reconstructPlainTextRuns(
     sourceLength,
   );
   return runs;
+}
+
+function reconstructFormattedPasteRuns(
+  source: NormalizedXlsxRichTextCell,
+  sourceRuns: readonly IndexedRichTextRun[],
+  currentText: string,
+  intent: SpreadsheetRichTextPasteIntent,
+): XlsxRichTextRun[] | null {
+  if (
+    !validRichTextPasteSelection(source.text, intent.start, intent.end) ||
+    typeof intent.text !== 'string' ||
+    !intent.text ||
+    intent.text.length > MAX_XLSX_RICH_TEXT_CELL_CHARACTERS ||
+    !validXlsxRichText(intent.text) ||
+    !Array.isArray(intent.runs) ||
+    !intent.runs.length ||
+    intent.runs.length > MAX_XLSX_RICH_TEXT_RUNS_PER_CELL
+  ) {
+    return null;
+  }
+  const pastedRuns: XlsxRichTextRun[] = [];
+  for (const candidate of intent.runs) {
+    const run = normalizeXlsxRichTextRun(candidate);
+    if (!run) return null;
+    if (run.v) pastedRuns.push(run);
+  }
+  if (
+    !pastedRuns.length ||
+    pastedRuns.map((run) => run.v).join('') !== intent.text
+  ) {
+    return null;
+  }
+  const expectedText =
+    source.text.slice(0, intent.start) +
+    intent.text +
+    source.text.slice(intent.end);
+  if (
+    expectedText !== currentText ||
+    expectedText.length > MAX_XLSX_RICH_TEXT_CELL_CHARACTERS ||
+    !validXlsxRichText(expectedText)
+  ) {
+    return null;
+  }
+
+  const runs: XlsxRichTextRun[] = [];
+  appendSourceRange(runs, sourceRuns, 0, intent.start);
+  runs.push(...pastedRuns);
+  appendSourceRange(runs, sourceRuns, intent.end, source.text.length);
+  const normalized = coalesceXlsxRichTextRuns(runs);
+  return normalized.length > 0 &&
+    normalized.length <= MAX_XLSX_RICH_TEXT_RUNS_PER_CELL
+    ? normalized
+    : null;
+}
+
+function validRichTextPasteSelection(
+  text: string,
+  start: number,
+  end: number,
+): boolean {
+  return Boolean(
+    Number.isInteger(start) &&
+      Number.isInteger(end) &&
+      start >= 0 &&
+      start <= end &&
+      end <= text.length &&
+      !splitsSurrogatePair(text, start) &&
+      !splitsSurrogatePair(text, end),
+  );
+}
+
+function splitsSurrogatePair(text: string, offset: number): boolean {
+  if (offset <= 0 || offset >= text.length) return false;
+  return (
+    isHighSurrogate(text.charCodeAt(offset - 1)) &&
+    isLowSurrogate(text.charCodeAt(offset))
+  );
 }
 
 function appendSourceRange(

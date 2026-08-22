@@ -119,6 +119,7 @@ import {
   isSpreadsheetRichTextFormatPointerTarget,
   SpreadsheetRichTextSelectionController,
 } from './spreadsheet-rich-text-selection-controller';
+import { captureSpreadsheetRichTextPaste } from './spreadsheet-rich-text-paste';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
 import { spreadsheetTableAtCell } from './spreadsheet-table';
 import {
@@ -1404,7 +1405,24 @@ function SpreadsheetEditorSurface({
     }
   };
   const handleSpreadsheetPaste = (event: ReactClipboardEvent<HTMLElement>) => {
-    if (previewRef.current || isSpreadsheetNativeTextUndoTarget(event.target)) {
+    if (previewRef.current) {
+      return;
+    }
+    if (isSpreadsheetNativeTextUndoTarget(event.target)) {
+      const sheetId = activeSheetIdRef.current;
+      const liveSelection = workbookRef.current?.getSelection()?.at(-1);
+      if (sheetId) {
+        captureSpreadsheetRichTextPaste({
+          clipboardData: event.clipboardData,
+          content: contentRef.current,
+          root: spreadsheetRootRef.current,
+          selection: liveSelection
+            ? ({ ...toolbarSelection, ...liveSelection } as Selection)
+            : toolbarSelection,
+          sheetId,
+          target: event.target,
+        });
+      }
       return;
     }
     if (

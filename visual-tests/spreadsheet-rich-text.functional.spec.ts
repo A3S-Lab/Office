@@ -168,6 +168,97 @@ test('Spreadsheet formula-bar insertion and deletion preserve native rich-text r
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet formula-bar paste preserves authenticated clipboard formatting', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await page.goto('/?e2e=spreadsheet-rich-text');
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], {
+    origin: new URL(page.url()).origin,
+  });
+
+  const status = page.getByTestId('spreadsheet-rich-text-status');
+  const formulaBar = page.locator('.fortune-fx-input');
+  await expect(formulaBar).toHaveText('Native rich text');
+  await formulaBar.click();
+  await formulaBar.evaluate((editor) => {
+    const text = editor.textContent ?? '';
+    const startOffset = text.indexOf('rich');
+    const pointAtOffset = (requestedOffset: number) => {
+      const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+      let remaining = requestedOffset;
+      let node = walker.nextNode();
+      while (node) {
+        const length = node.textContent?.length ?? 0;
+        if (remaining <= length) return { node, offset: remaining };
+        remaining -= length;
+        node = walker.nextNode();
+      }
+      throw new Error(`Cannot resolve formula-bar offset ${requestedOffset}.`);
+    };
+    if (startOffset < 0) throw new Error('Expected the rich-text fixture.');
+    const start = pointAtOffset(startOffset);
+    const end = pointAtOffset(startOffset + 'rich'.length);
+    const range = document.createRange();
+    range.setStart(start.node, start.offset);
+    range.setEnd(end.node, end.offset);
+    const selection = window.getSelection();
+    if (!selection) throw new Error('Expected a browser text selection.');
+    selection.removeAllRanges();
+    selection.addRange(range);
+    (editor as HTMLElement).focus();
+  });
+  await page.evaluate(async () => {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': new Blob(
+          [
+            '<span style="font-family: Georgia; font-size: 16pt; color: #c00000; font-weight: bold; font-style: italic; text-decoration: underline; text-decoration-style: double">Styled</span>',
+          ],
+          { type: 'text/html' },
+        ),
+        'text/plain': new Blob(['Styled'], { type: 'text/plain' }),
+      }),
+    ]);
+  });
+  const clipboardModifier = process.platform === 'darwin' ? 'Meta' : 'Control';
+  await page.keyboard.press(`${clipboardModifier}+v`);
+
+  await expect(formulaBar).toHaveText('Native Styled text');
+  await expect(status).toHaveAttribute('data-revision', '1');
+  await formulaBar.press('Enter');
+
+  await expect(status).toHaveAttribute('data-revision', '2');
+  await expect(status).toHaveAttribute('data-run-count', '4');
+  await expect(status).toHaveAttribute('data-run-bold', '1,1,0,0');
+  await expect(status).toHaveAttribute('data-run-italic', '0,1,1,0');
+  await expect(status).toHaveAttribute(
+    'data-run-colors',
+    '#2f6fed,#c00000,#159469,#000000',
+  );
+  await expect(status).toHaveAttribute(
+    'data-run-fonts',
+    'Aptos Display,Georgia,Georgia,none',
+  );
+  await expect(status).toHaveAttribute('data-run-sizes', '14,16,12,none');
+  await expect(status).toHaveAttribute('data-run-underline', '0,2,0,2');
+  await expect(status).toHaveAttribute(
+    'data-run-origins',
+    'theme,none,indexed,automatic',
+  );
+  await expect(status).toHaveAttribute('data-run-text', 'Native Styled text');
+
+  await page.keyboard.press(`${clipboardModifier}+z`);
+  await expect(status).toHaveAttribute('data-revision', '3');
+  await expect(status).toHaveAttribute('data-run-count', '3');
+  await expect(status).toHaveAttribute('data-run-text', 'Native rich text');
+  expect(browserErrors).toEqual([]);
+});
+
 test('Spreadsheet in-cell insertion and deletion retain rich-text semantics', async ({
   page,
 }) => {
