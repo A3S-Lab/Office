@@ -383,7 +383,7 @@ Spreadsheet 命令焦点还给工作表网格。
 导出只会在当前可见 RGB 仍与导入渲染值相同，且调色板槽位可以无冲突重建时复用语义来源。
 因此只修改“加粗”仍可保留 `<color theme="4" tint="0.5">`、
 `<fgColor indexed="0">` 或 `<color auto="1">`。若用户修改了可见颜色、两个导入来源对
-同一调色板槽位提出不同颜色，或颜色来自尚未支持的渐变或差异格式，导出会使用显式 RGB，
+同一调色板槽位提出不同颜色，或颜色来自尚未支持的差异格式，导出会使用显式 RGB，
 不会写出错误的语义引用。
 
 聚焦 Rstest 使用真实 XLSX 完成导入、无关编辑、导出、重新打开、XML 身份与渲染 RGB
@@ -422,6 +422,36 @@ Spreadsheet 会保留完整的 OOXML 非实心 `patternType` 集合：
 `visual-tests/spreadsheet-pattern-fill.functional.spec.ts` 提供桌面与紧凑 Canvas 像素证据。
 确定性的 `tests/e2e/spreadsheet-pattern-fill.acl` 通过本地 A3S Test 1.0.0 门禁采集截图、
 可访问性、控制台和页面错误；GitHub Actions 与 Pages 不安装也不调用 A3S Test。
+
+## 原生 XLSX 渐变填充
+
+Spreadsheet 会保留两类 OOXML 渐变，不会把它们扁平化成实心颜色：
+
+| 原生类型 | 保留的几何信息 | 可见单元格渲染方式 |
+| --- | --- | --- |
+| `linear` | 精确且有限的 `degree`；OOXML 0° 从左到右，90° 从上到下 | 一条覆盖完整单元格边界的原生 Canvas 线性渐变 |
+| `path` | 位于 0–1 区间内的 `left`、`right`、`top`、`bottom` 内矩形边界 | 从内矩形扩展到单元格边缘、最多 96 层的嵌套矩形轮廓 |
+
+每个 `a3sXlsxGradientFill` 字段包含 2 到 256 个有序色标。每个色标都会保留位置、渲染颜色，
+以及经过校验的 theme、indexed、automatic 或 tint 来源。Fortune `bg` 使用第一个色标作为投影，
+让普通工具栏与 Table 逻辑仍有确定背景；只有 `bg` 继续匹配该投影时，原生字段才生效，因此过期
+元数据不会覆盖用户明确选择的新颜色。
+
+条件格式与 Table 填充在外观层级中继续高于原生渐变。共享 Canvas 钩子只拦截 Fortune 对可见
+单元格的第一次背景绘制，并立即恢复原始 `fillRect`；隐藏或视口外单元格不会分配任何渐变工作。
+即使单元格很大，路径渐变也固定限制在 96 层轮廓以内。
+
+格式刷和“选择性粘贴格式”会复制渐变字段；无关的字体、框线、对齐、值、公式或数字格式修改，
+以及 Yjs 实时协作都会保留它。选择新填充、“无填充”、“清除格式”或内置单元格样式，会在同一次
+受控更新中同时移除原生图案与渐变元数据。导出会写回准确的线性/路径几何与色标，并且只在准备
+后的调色板一致时复用语义颜色身份；冲突时使用显式 RGB。未知类型、非法颜色、倒序或越界色标、
+非法路径边界、存在歧义的填充子节点，以及超过 256 个色标都会安全失败。
+
+在 Playground 打开 `?e2e=spreadsheet-gradient-fill` 可查看 0°、45°、90°、135° 线性渐变和
+两个路径渐变。聚焦 Rstest 覆盖导入、Canvas 顺序、编辑传播、协作、调色板冲突，以及导入、编辑、
+导出、重开保真度。`visual-tests/spreadsheet-gradient-fill.functional.spec.ts` 提供桌面与紧凑
+Canvas 像素证据。确定性的 `tests/e2e/spreadsheet-gradient-fill.acl` 通过本地 A3S Test 1.0.0
+门禁采集截图、可访问性、控制台和页面错误；GitHub Actions 与 Pages 不安装也不调用 A3S Test。
 
 ## 文字方向与行列显隐
 

@@ -1,6 +1,7 @@
 import type { Cell, CellMatrix } from '@fortune-sheet/core';
 import { sameSpreadsheetHistoryValue } from './spreadsheet-history-value';
 import { sparseArrayIndexes } from './spreadsheet-sparse';
+import { XLSX_GRADIENT_FILL_CELL_KEY } from './work-xlsx-gradient-fill';
 import { XLSX_PATTERN_FILL_CELL_KEY } from './work-xlsx-pattern-fill';
 
 export const SPREADSHEET_SHOWN_COMMENT_CELLS_PROPERTY =
@@ -46,6 +47,21 @@ const spreadsheetMatrixProfiles = new WeakMap<
  * freezing or cloning every populated cell during editor initialization.
  */
 export function freezeImportedSpreadsheetCell(cell: Cell): Cell {
+  const gradientFill = (cell as unknown as Record<string, unknown>)[
+    XLSX_GRADIENT_FILL_CELL_KEY
+  ];
+  if (gradientFill && typeof gradientFill === 'object') {
+    const stops = (gradientFill as Record<string, unknown>).stops;
+    if (Array.isArray(stops)) {
+      for (const stop of stops) {
+        if (!stop || typeof stop !== 'object') continue;
+        freezeObject((stop as Record<string, unknown>).colorOrigin);
+        freezeObject(stop);
+      }
+      Object.freeze(stops);
+    }
+  }
+  freezeObject(gradientFill);
   const patternFill = (cell as unknown as Record<string, unknown>)[
     XLSX_PATTERN_FILL_CELL_KEY
   ];

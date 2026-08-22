@@ -4,7 +4,7 @@ import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
 } from '../work-types';
-import { deleteXlsxPatternFill } from '../work-xlsx-pattern-fill';
+import { deleteXlsxNativeFills } from '../work-xlsx-native-fill';
 import {
   canSetSpreadsheetCellBorders,
   type SpreadsheetCellBorderFormat,
@@ -348,7 +348,7 @@ export function applySpreadsheetCellStyle(
         ...(values[column] ?? {}),
         ...definition.format,
       };
-      deleteXlsxPatternFill(cell);
+      deleteXlsxNativeFills(cell);
       values[column] = cell;
     }
   }

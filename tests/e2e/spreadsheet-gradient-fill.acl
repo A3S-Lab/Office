@@ -1,0 +1,89 @@
+suite "office-spreadsheet-gradient-fill" {
+    version = 1
+
+    scenario "render-gradient-gallery-at-desktop-width" {
+        name = "Render native XLSX linear and path gradients at desktop width"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-gradient-gallery" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-gradient-fill"
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "all-gradients-are-declared" {
+            visible = css("[data-testid='spreadsheet-gradient-fill-status'][data-gradient-count='6'][data-revision='1']")
+        }
+
+        expect "gradient-status-is-visible" {
+            text = "原生 XLSX 渐变填充 · 6 个示例"
+        }
+
+        screenshot "desktop-gradient-gallery" {
+            path = "screenshots/spreadsheet-gradient-fill-desktop.png"
+        }
+
+        accessibility "desktop-gradient-accessibility" {
+            path = "evidence/spreadsheet-gradient-fill-desktop.json"
+            interactive = true
+        }
+
+        console "desktop-gradient-console" {
+            path = "diagnostics/spreadsheet-gradient-fill-desktop-console.json"
+            clear = false
+        }
+
+        page_errors "desktop-gradient-page-errors" {
+            path = "diagnostics/spreadsheet-gradient-fill-desktop-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "render-gradient-gallery-at-compact-width" {
+        name = "Render native XLSX linear and path gradients at compact width"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-compact-gradient-gallery" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-gradient-fill"
+        }
+
+        wait "compact-spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        screenshot "compact-gradient-gallery" {
+            path = "screenshots/spreadsheet-gradient-fill-compact.png"
+        }
+
+        accessibility "compact-gradient-accessibility" {
+            path = "evidence/spreadsheet-gradient-fill-compact.json"
+            interactive = true
+        }
+
+        console "compact-gradient-console" {
+            path = "diagnostics/spreadsheet-gradient-fill-compact-console.json"
+            clear = false
+        }
+
+        page_errors "compact-gradient-page-errors" {
+            path = "diagnostics/spreadsheet-gradient-fill-compact-page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -57,6 +57,11 @@ import {
   SPREADSHEET_GO_TO_FIXTURE,
 } from './spreadsheet-go-to-fixture';
 import {
+  createSpreadsheetGradientFillArtifact,
+  SPREADSHEET_GRADIENT_FILL_ARTIFACT_ID,
+  SPREADSHEET_GRADIENT_FILL_FIXTURE,
+} from './spreadsheet-gradient-fill-fixture';
+import {
   createSpreadsheetHyperlinkArtifact,
   SPREADSHEET_HYPERLINK_ARTIFACT_ID,
   SPREADSHEET_HYPERLINK_FIXTURE,
@@ -118,11 +123,13 @@ function Playground() {
                 ? SPREADSHEET_COPY_FROM_ABOVE_ARTIFACT_ID
                 : e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE
                   ? SPREADSHEET_DATE_TIME_ARTIFACT_ID
-                  : e2eFixture === SPREADSHEET_PATTERN_FILL_FIXTURE
-                    ? SPREADSHEET_PATTERN_FILL_ARTIFACT_ID
-                    : e2eFixture === SPREADSHEET_RICH_TEXT_FIXTURE
-                      ? SPREADSHEET_RICH_TEXT_ARTIFACT_ID
-                      : null,
+                  : e2eFixture === SPREADSHEET_GRADIENT_FILL_FIXTURE
+                    ? SPREADSHEET_GRADIENT_FILL_ARTIFACT_ID
+                    : e2eFixture === SPREADSHEET_PATTERN_FILL_FIXTURE
+                      ? SPREADSHEET_PATTERN_FILL_ARTIFACT_ID
+                      : e2eFixture === SPREADSHEET_RICH_TEXT_FIXTURE
+                        ? SPREADSHEET_RICH_TEXT_ARTIFACT_ID
+                        : null,
   );
   const [collaborationDemoArtifactId, setCollaborationDemoArtifactId] =
     useState<string | null>(null);
@@ -640,6 +647,9 @@ function createInitialArtifacts(e2eFixture: string | null): OfficeArtifact[] {
   }
   if (e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE) {
     return [createSpreadsheetDateTimeArtifact(), ...artifacts];
+  }
+  if (e2eFixture === SPREADSHEET_GRADIENT_FILL_FIXTURE) {
+    return [createSpreadsheetGradientFillArtifact(), ...artifacts];
   }
   if (e2eFixture === SPREADSHEET_PATTERN_FILL_FIXTURE) {
     return [createSpreadsheetPatternFillArtifact(), ...artifacts];

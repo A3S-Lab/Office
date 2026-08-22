@@ -1153,6 +1153,23 @@ RGB. Focused Rstest, desktop/compact Canvas pixel evidence, and the local-only
 A3S Test 1.0.0 gallery gate cover every pattern identity with clean browser
 diagnostics; GitHub Actions and Pages do not install or invoke A3S Test.
 
+The thirty-sixth slice preserves native OOXML linear and path gradient fills.
+A dedicated cell field keeps exact finite linear angles or validated 0–1 path
+inner-rectangle edges, plus two through 256 non-descending stops with rendered
+colors and optional theme, indexed, automatic, or tint origins. Fortune `bg`
+projects the first stop and invalidates stale metadata after an explicit color
+change. A shared visible-cell Canvas interceptor renders native linear
+gradients or at most 96 nested rectangular path contours behind text;
+conditional and table fills remain authoritative and hidden cells do no work.
+Format Painter, Paste Special Formats, unrelated formatting, Yjs transport,
+export, and reopen preserve the field. Explicit fills, No Fill, Clear Formats,
+and built-in Cell Styles clear both native-fill metadata families. Unknown
+types, malformed colors, descending or out-of-range stops, invalid geometry,
+ambiguous XML, and excessive stop counts fail closed. Prepared-palette
+conflicts emit literal RGB instead of false semantic references. Focused
+Rstest, desktop/compact Canvas pixel evidence, and a local-only A3S Test 1.0.0
+gallery gate cover the path without adding A3S Test to Actions or Pages.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

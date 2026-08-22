@@ -1,5 +1,5 @@
 import type { Cell } from '@fortune-sheet/core';
-import { XLSX_PATTERN_FILL_CELL_KEY } from '../work-xlsx-pattern-fill';
+import { xlsxNativeFillCellKeys } from '../work-xlsx-native-fill';
 
 export const spreadsheetCellFormatAttributes = [
   'bl',
@@ -15,7 +15,7 @@ export const spreadsheetCellFormatAttributes = [
   'tr',
   'ct',
   'bg',
-  XLSX_PATTERN_FILL_CELL_KEY,
+  ...xlsxNativeFillCellKeys,
 ] as const;
 
 export type SpreadsheetCellFormatAttribute =

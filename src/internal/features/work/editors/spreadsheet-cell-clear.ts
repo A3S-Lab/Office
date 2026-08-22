@@ -1,5 +1,8 @@
 import type { Cell, Selection, Sheet } from '@fortune-sheet/core';
-import { XLSX_PATTERN_FILL_CELL_KEY } from '../work-xlsx-pattern-fill';
+import {
+  type XlsxNativeFillCellKey,
+  xlsxNativeFillCellKeys,
+} from '../work-xlsx-native-fill';
 import {
   parseSpreadsheetCellRange,
   type SpreadsheetCellRange,
@@ -17,10 +20,9 @@ export type SpreadsheetCellClearMode =
 
 type SpreadsheetCellClearRange = SpreadsheetCellRange;
 
-type ClearableCell = Cell & {
-  hi?: number;
-  [XLSX_PATTERN_FILL_CELL_KEY]?: unknown;
-};
+type ClearableCell = Cell & { hi?: number } & Partial<
+    Record<XlsxNativeFillCellKey, unknown>
+  >;
 type UnknownRecord = Record<string, unknown>;
 
 const spreadsheetCellFormatProperties = [
@@ -40,7 +42,7 @@ const spreadsheetCellFormatProperties = [
   'ct',
   'lo',
   'hi',
-  XLSX_PATTERN_FILL_CELL_KEY,
+  ...xlsxNativeFillCellKeys,
 ] as const satisfies readonly (keyof ClearableCell)[];
 
 export function clearSpreadsheetSheetSelection(

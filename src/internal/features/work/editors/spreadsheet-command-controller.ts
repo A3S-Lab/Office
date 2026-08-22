@@ -2,7 +2,7 @@ import type { Cell, Selection, Sheet } from '@fortune-sheet/core';
 import type { SpreadsheetGridSize } from '../spreadsheet-sparse';
 import type { SpreadsheetTextOrientationId } from '../work-spreadsheet-text-orientation';
 import type { WorkSpreadsheetContent } from '../work-types';
-import { XLSX_PATTERN_FILL_CELL_KEY } from '../work-xlsx-pattern-fill';
+import { xlsxNativeFillCellKeys } from '../work-xlsx-native-fill';
 import {
   createOfficeEditorExtension,
   type OfficeEditorCanCommands,
@@ -808,10 +808,10 @@ function formatCells(
           name: 'setCellFormatByRange',
           args: [attribute, value, range, options],
         },
-        {
+        ...xlsxNativeFillCellKeys.map((fillAttribute) => ({
           name: 'setCellFormatByRange',
-          args: [XLSX_PATTERN_FILL_CELL_KEY, undefined, range, options],
-        },
+          args: [fillAttribute, undefined, range, options],
+        })),
       ]);
       return true;
     }

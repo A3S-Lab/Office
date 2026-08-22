@@ -38,9 +38,9 @@ import {
   type XlsxSemanticColorOrigin,
 } from './work-xlsx-cell-style-origin';
 import {
-  activeXlsxPatternFill,
-  xlsxPatternFillSemanticColors,
-} from './work-xlsx-pattern-fill';
+  activeXlsxNativeFill,
+  xlsxNativeFillSemanticColors,
+} from './work-xlsx-native-fill';
 import {
   type FortuneConditionalFormatRule,
   readXlsxConditionalFormats,
@@ -355,7 +355,7 @@ function spreadsheetXlsxSemanticColors(
         const origin = xlsxCellStyleOrigin(cell);
         if (origin) colors.push(...xlsxCellStyleOriginSemanticColors(origin));
         colors.push(
-          ...xlsxPatternFillSemanticColors(activeXlsxPatternFill(cell)),
+          ...xlsxNativeFillSemanticColors(activeXlsxNativeFill(cell)),
         );
       }
     }

@@ -7,50 +7,6 @@ export interface SpreadsheetPatternFillBounds {
   startY: number;
 }
 
-interface SpreadsheetPatternFillContextRestore {
-  fillRect: CanvasRenderingContext2D['fillRect'];
-  fillRectOwned: boolean;
-}
-
-const pendingContextRestores = new WeakMap<
-  CanvasRenderingContext2D,
-  SpreadsheetPatternFillContextRestore
->();
-
-/**
- * Fortune Sheet paints the cell background immediately after beforeRenderCell.
- * Intercepting only that first viewport cell fill keeps the pattern behind text
- * and avoids allocating pattern state for cells outside the visible canvas.
- */
-export function beginSpreadsheetPatternFillRender(
-  fill: XlsxPatternFill | undefined,
-  context: CanvasRenderingContext2D,
-): void {
-  finishSpreadsheetPatternFillRender(context);
-  if (!fill || typeof context.fillRect !== 'function') return;
-  context.fillStyle = fill.backgroundColor;
-  const fillRect = context.fillRect;
-  pendingContextRestores.set(context, {
-    fillRect,
-    fillRectOwned: Object.hasOwn(context, 'fillRect'),
-  });
-  context.fillRect = (x, y, width, height) => {
-    restoreSpreadsheetPatternFillContext(context);
-    fillRect.call(context, x, y, width, height);
-    drawSpreadsheetPatternFillOverlay(
-      context,
-      { startX: x, startY: y, endX: x + width, endY: y + height },
-      fill,
-    );
-  };
-}
-
-export function finishSpreadsheetPatternFillRender(
-  context: CanvasRenderingContext2D,
-): void {
-  restoreSpreadsheetPatternFillContext(context);
-}
-
 export function drawSpreadsheetPatternFillOverlay(
   context: CanvasRenderingContext2D,
   bounds: SpreadsheetPatternFillBounds,
@@ -131,16 +87,6 @@ export function drawSpreadsheetPatternFillOverlay(
       break;
   }
   context.restore();
-}
-
-function restoreSpreadsheetPatternFillContext(
-  context: CanvasRenderingContext2D,
-): void {
-  const restore = pendingContextRestores.get(context);
-  if (!restore) return;
-  if (restore.fillRectOwned) context.fillRect = restore.fillRect;
-  else delete (context as Partial<CanvasRenderingContext2D>).fillRect;
-  pendingContextRestores.delete(context);
 }
 
 function drawHorizontalLines(

@@ -377,6 +377,19 @@ malformed metadata fails closed, and conflicting semantic palettes export
 literal RGB. Focused Rstest, desktop/compact Canvas evidence, and a local-only
 A3S Test 1.0.0 gallery gate cover all 17 pattern identities without adding A3S
 Test to GitHub Actions or Pages.
+The thirty-sixth milestone preserves native OOXML Spreadsheet gradient fills.
+Linear fills retain their exact angle; path fills retain validated inner-
+rectangle geometry; both keep two through 256 ordered stops with rendered RGB
+and optional theme, indexed, automatic, or tint identities. Fortune `bg`
+projects the first stop and invalidates stale metadata after an explicit color
+change. The visible-cell Canvas path uses native linear gradients or at most 96
+rectangular path contours behind text, while conditional and table fills remain
+authoritative. Format Painter, Paste Special Formats, unrelated formatting,
+Yjs transport, exact export, and reopen preserve the field. Explicit fills,
+No Fill, Clear Formats, and built-in Cell Styles clear it. Invalid geometry,
+colors, order, type, or stop budgets fail closed; palette conflicts emit
+literal RGB. Focused Rstest, desktop/compact Playwright, and a local-only A3S
+Test 1.0.0 gallery gate cover the slice without changing Actions or Pages.
 
 ## Product Rules
 

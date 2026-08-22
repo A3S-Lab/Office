@@ -21,6 +21,11 @@ import {
   type XlsxColorResolver,
 } from './work-xlsx-colors';
 import {
+  readXlsxGradientFill,
+  xlsxGradientFillFallbackColor,
+  type XlsxGradientFill,
+} from './work-xlsx-gradient-fill';
+import {
   readXlsxPatternFill,
   type XlsxPatternFill,
 } from './work-xlsx-pattern-fill';
@@ -57,6 +62,7 @@ const xlsxCellBorderStyles = new Set<XlsxCellBorderStyle>([
 export interface XlsxDirectCellStyle {
   border?: XlsxCellBorder;
   column: number;
+  gradientFill?: XlsxGradientFill;
   origin?: XlsxCellStyleOrigin;
   patternFill?: XlsxPatternFill;
   row: number;
@@ -95,13 +101,20 @@ export function readXlsxDirectCellStyles(
     if (!coordinate || !xf) return [];
     const style = readDirectCellStyle(xf, fonts, fills, colors);
     const border = readDirectCellBorder(xf, borders, colors);
-    const patternFill = readDirectCellPatternFill(xf, fills, colors);
+    const { gradientFill, patternFill } = readDirectCellNativeFill(
+      xf,
+      fills,
+      colors,
+    );
+    if (gradientFill) style.bg = xlsxGradientFillFallbackColor(gradientFill);
+    else if (patternFill) style.bg = patternFill.backgroundColor;
     const origin = readDirectCellStyleOrigin(xf, fonts, fills, borders, colors);
-    return Object.keys(style).length || border || patternFill
+    return Object.keys(style).length || border || patternFill || gradientFill
       ? [
           {
             ...coordinate,
             border,
+            ...(gradientFill ? { gradientFill } : {}),
             origin,
             ...(patternFill ? { patternFill } : {}),
             style,
@@ -267,27 +280,33 @@ function readDirectFillStyle(
   colors: XlsxColorResolver,
 ): void {
   const pattern = directChild(fill, 'patternFill');
-  if (!pattern) return;
+  if (!pattern || directChild(fill, 'gradientFill')) return;
   if (attribute(pattern, 'patternType') === 'solid') {
     const color = resolveXlsxColor(directChild(pattern, 'fgColor'), colors);
     if (color) style.bg = color;
     return;
   }
-  const patternFill = readXlsxPatternFill(pattern, colors);
-  if (patternFill) style.bg = patternFill.backgroundColor;
 }
 
-function readDirectCellPatternFill(
+function readDirectCellNativeFill(
   xf: Element,
   fills: Element[],
   colors: XlsxColorResolver,
-): XlsxPatternFill | undefined {
+): { gradientFill?: XlsxGradientFill; patternFill?: XlsxPatternFill } {
   const fillId = nonNegativeInteger(attribute(xf, 'fillId')) ?? 0;
   const fill = fills[fillId];
   if (!fill || (fillId === 0 && !booleanAttribute(xf, 'applyFill'))) {
-    return undefined;
+    return {};
   }
-  return readXlsxPatternFill(directChild(fill, 'patternFill'), colors);
+  const pattern = directChild(fill, 'patternFill');
+  const gradient = directChild(fill, 'gradientFill');
+  if (Boolean(pattern) === Boolean(gradient)) return {};
+  if (gradient) {
+    const gradientFill = readXlsxGradientFill(gradient, colors);
+    return gradientFill ? { gradientFill } : {};
+  }
+  const patternFill = readXlsxPatternFill(pattern, colors);
+  return patternFill ? { patternFill } : {};
 }
 
 function readDirectAlignmentStyle(

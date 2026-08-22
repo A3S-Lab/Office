@@ -17,6 +17,7 @@ import {
   type SpreadsheetWorkbookCommandPort,
 } from '../src/internal/features/work/editors/spreadsheet-command-controller';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
+import { XLSX_GRADIENT_FILL_CELL_KEY } from '../src/internal/features/work/work-xlsx-gradient-fill';
 import { XLSX_PATTERN_FILL_CELL_KEY } from '../src/internal/features/work/work-xlsx-pattern-fill';
 
 describe('spreadsheet command controller', () => {
@@ -113,6 +114,15 @@ describe('spreadsheet command controller', () => {
           name: 'setCellFormatByRange',
           args: [
             XLSX_PATTERN_FILL_CELL_KEY,
+            undefined,
+            { row: [0, 1], column: [0, 2] },
+            { id: 'sheet-1' },
+          ],
+        },
+        {
+          name: 'setCellFormatByRange',
+          args: [
+            XLSX_GRADIENT_FILL_CELL_KEY,
             undefined,
             { row: [0, 1], column: [0, 2] },
             { id: 'sheet-1' },

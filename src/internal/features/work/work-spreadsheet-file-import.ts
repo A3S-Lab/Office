@@ -30,6 +30,7 @@ import type {
 import { xlsxWorksheetChartsToSheet } from './work-xlsx-charts';
 import { fortuneBorderInfoFromXlsxCells } from './work-xlsx-cell-borders';
 import { withXlsxCellStyleOrigin } from './work-xlsx-cell-style-origin';
+import { withXlsxGradientFill } from './work-xlsx-gradient-fill';
 import { withXlsxPatternFill } from './work-xlsx-pattern-fill';
 import { importXlsxDefinedNames } from './work-xlsx-defined-names';
 import {
@@ -289,24 +290,27 @@ export async function importWorkSpreadsheetFile(
         directCellStyles.delete(spreadsheetCellKey(row, column));
         data[row] ??= [];
         data[row][column] = freezeImportedSpreadsheetCell(
-          withXlsxPatternFill(
-            withXlsxCellStyleOrigin(
-              applyImportedXlsxRichText(
-                fortuneCellFromXlsx(
-                  source,
-                  row,
-                  column,
-                  id,
-                  hyperlink,
-                  comment,
-                  XLSX,
-                  directCellStyle?.style,
+          withXlsxGradientFill(
+            withXlsxPatternFill(
+              withXlsxCellStyleOrigin(
+                applyImportedXlsxRichText(
+                  fortuneCellFromXlsx(
+                    source,
+                    row,
+                    column,
+                    id,
+                    hyperlink,
+                    comment,
+                    XLSX,
+                    directCellStyle?.style,
+                  ),
+                  richTextCells.get(spreadsheetCellKey(row, column)),
                 ),
-                richTextCells.get(spreadsheetCellKey(row, column)),
+                directCellStyle?.origin,
               ),
-              directCellStyle?.origin,
+              directCellStyle?.patternFill,
             ),
-            directCellStyle?.patternFill,
+            directCellStyle?.gradientFill,
           ),
         );
         if (source.f) formulaCells.push({ column, row });
@@ -328,6 +332,7 @@ export async function importWorkSpreadsheetFile(
     }
     for (const {
       column,
+      gradientFill,
       origin,
       patternFill,
       row,
@@ -338,15 +343,18 @@ export async function importWorkSpreadsheetFile(
       data[row] ??= [];
       const existing = data[row][column];
       data[row][column] = freezeImportedSpreadsheetCell(
-        withXlsxPatternFill(
-          withXlsxCellStyleOrigin(
-            {
-              ...(existing ?? {}),
-              ...style,
-            },
-            origin,
+        withXlsxGradientFill(
+          withXlsxPatternFill(
+            withXlsxCellStyleOrigin(
+              {
+                ...(existing ?? {}),
+                ...style,
+              },
+              origin,
+            ),
+            patternFill,
           ),
-          patternFill,
+          gradientFill,
         ),
       );
       if (!existing) entryIndex += 1;

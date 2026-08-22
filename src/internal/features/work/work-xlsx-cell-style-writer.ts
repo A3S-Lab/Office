@@ -40,9 +40,15 @@ import {
   type XlsxColorResolver,
 } from './work-xlsx-colors';
 import {
-  activeXlsxPatternFill,
-  type XlsxPatternFill,
-} from './work-xlsx-pattern-fill';
+  readXlsxGradientFill,
+  xlsxGradientFillKey,
+  type XlsxGradientFill,
+} from './work-xlsx-gradient-fill';
+import {
+  activeXlsxNativeFill,
+  xlsxNativeFillKey,
+  type XlsxNativeFill,
+} from './work-xlsx-native-fill';
 
 const fontChildOrder = [
   'name',
@@ -170,7 +176,7 @@ export class XlsxDirectCellStyleWriter {
       baseFillId,
       cell,
       origin?.fillColor,
-      activeXlsxPatternFill(cell),
+      activeXlsxNativeFill(cell),
     );
     const borderId = this.borderId(baseBorderId, border, origin?.borderColors);
     const alignment = directXlsxAlignment(cell);
@@ -312,8 +318,13 @@ export class XlsxDirectCellStyleWriter {
     baseFillId: number,
     cell: Cell,
     colorOrigin?: XlsxSemanticColorOrigin,
-    patternFill?: XlsxPatternFill,
+    nativeFill?: XlsxNativeFill,
   ): number {
+    if (nativeFill?.kind === 'gradient') {
+      return this.gradientFillId(baseFillId, nativeFill.value);
+    }
+    const patternFill =
+      nativeFill?.kind === 'pattern' ? nativeFill.value : undefined;
     if (!patternFill && cell.bg === undefined) return baseFillId;
     const solidColor = patternFill ? null : xlsxRgbColor(cell.bg);
     if (!patternFill && !solidColor) return baseFillId;
@@ -364,13 +375,22 @@ export class XlsxDirectCellStyleWriter {
     ) {
       return baseIndex;
     }
-    const key = [
-      patternType,
-      foregroundColor,
-      xlsxSemanticColorOriginKey(foregroundOrigin),
-      backgroundColor ?? '',
-      xlsxSemanticColorOriginKey(backgroundOrigin),
-    ].join(':');
+    const key = patternFill
+      ? xlsxNativeFillKey({
+          kind: 'pattern',
+          value: {
+            backgroundColor: patternFill.backgroundColor,
+            ...(backgroundOrigin
+              ? { backgroundColorOrigin: backgroundOrigin }
+              : {}),
+            foregroundColor: patternFill.foregroundColor,
+            ...(foregroundOrigin
+              ? { foregroundColorOrigin: foregroundOrigin }
+              : {}),
+            patternType: patternFill.patternType,
+          },
+        })
+      : `solid:${foregroundColor}:${xlsxSemanticColorOriginKey(foregroundOrigin)}`;
     const cached = this.generatedFills.get(key);
     if (cached !== undefined) return cached;
     const fill = this.styles.createElementNS(
@@ -408,8 +428,92 @@ export class XlsxDirectCellStyleWriter {
     return index;
   }
 
+  private gradientFillId(baseFillId: number, source: XlsxGradientFill): number {
+    const gradient = this.exportGradientFill(source);
+    const fills = directChildren(this.fills, 'fill');
+    const baseIndex = fills[baseFillId] ? baseFillId : 0;
+    const baseFill = fills[baseIndex];
+    const baseGradient = directChild(baseFill, 'gradientFill');
+    if (
+      !directChild(baseFill, 'patternFill') &&
+      xlsxGradientFillKey(readXlsxGradientFill(baseGradient, this.colors)) ===
+        xlsxGradientFillKey(gradient)
+    ) {
+      return baseIndex;
+    }
+
+    const key = xlsxNativeFillKey({ kind: 'gradient', value: gradient });
+    const cached = this.generatedFills.get(key);
+    if (cached !== undefined) return cached;
+
+    const fill = this.styles.createElementNS(
+      this.styles.documentElement.namespaceURI,
+      'fill',
+    );
+    const element = this.styles.createElementNS(
+      this.styles.documentElement.namespaceURI,
+      'gradientFill',
+    );
+    if (gradient.type === 'linear') {
+      element.setAttribute('degree', String(gradient.degree));
+    } else {
+      element.setAttribute('type', 'path');
+      element.setAttribute('left', String(gradient.left));
+      element.setAttribute('right', String(gradient.right));
+      element.setAttribute('top', String(gradient.top));
+      element.setAttribute('bottom', String(gradient.bottom));
+    }
+    for (const gradientStop of gradient.stops) {
+      const stop = this.styles.createElementNS(
+        this.styles.documentElement.namespaceURI,
+        'stop',
+      );
+      stop.setAttribute('position', String(gradientStop.position));
+      stop.append(
+        this.fillColorElement(
+          'color',
+          gradientStop.color,
+          gradientStop.colorOrigin,
+        ),
+      );
+      element.append(stop);
+    }
+    fill.append(element);
+    const index = fills.length;
+    this.fills.append(fill);
+    this.generatedFills.set(key, index);
+    this.changed = true;
+    this.updateCounts();
+    return index;
+  }
+
+  private exportGradientFill(source: XlsxGradientFill): XlsxGradientFill {
+    const stops = source.stops.map(({ color, colorOrigin, position }) => {
+      const semanticColor = activeXlsxSemanticColorOrigin(
+        colorOrigin,
+        color,
+        this.semanticPalette,
+      );
+      return {
+        color,
+        ...(semanticColor ? { colorOrigin: semanticColor } : {}),
+        position,
+      };
+    });
+    return source.type === 'linear'
+      ? { degree: source.degree, stops, type: 'linear' }
+      : {
+          bottom: source.bottom,
+          left: source.left,
+          right: source.right,
+          stops,
+          top: source.top,
+          type: 'path',
+        };
+  }
+
   private fillColorElement(
-    name: 'bgColor' | 'fgColor',
+    name: 'bgColor' | 'color' | 'fgColor',
     color: string,
     origin?: XlsxSemanticColorOrigin,
   ): Element {

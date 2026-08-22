@@ -58,6 +58,7 @@ import {
 import type { NoticeTone } from './playground-types';
 import { SPREADSHEET_DATE_TIME_FIXTURE } from './spreadsheet-date-time-fixture';
 import { SPREADSHEET_COPY_FROM_ABOVE_FIXTURE } from './spreadsheet-copy-from-above-fixture';
+import { SPREADSHEET_GRADIENT_FILL_FIXTURE } from './spreadsheet-gradient-fill-fixture';
 import { SPREADSHEET_PATTERN_FILL_FIXTURE } from './spreadsheet-pattern-fill-fixture';
 import { SPREADSHEET_RICH_TEXT_FIXTURE } from './spreadsheet-rich-text-fixture';
 import {
@@ -127,6 +128,9 @@ export function EditorWorkspace({
   ).length;
   const spreadsheetDateTimeFixture =
     e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE &&
+    artifact.content.type === 'spreadsheet';
+  const spreadsheetGradientFillFixture =
+    e2eFixture === SPREADSHEET_GRADIENT_FILL_FIXTURE &&
     artifact.content.type === 'spreadsheet';
   const spreadsheetPatternFillFixture =
     e2eFixture === SPREADSHEET_PATTERN_FILL_FIXTURE &&
@@ -375,6 +379,17 @@ export function EditorWorkspace({
                   aria-live="polite"
                 >
                   原生 XLSX 图案填充 · 17 种样式 · 修订 {artifact.revision}
+                </output>
+              )}
+              {spreadsheetGradientFillFixture && (
+                <output
+                  className="playground-sparse-fixture-status"
+                  data-testid="spreadsheet-gradient-fill-status"
+                  data-gradient-count="6"
+                  data-revision={artifact.revision}
+                  aria-live="polite"
+                >
+                  原生 XLSX 渐变填充 · 6 个示例 · 修订 {artifact.revision}
                 </output>
               )}
               {spreadsheetCopyFromAboveFixture && (

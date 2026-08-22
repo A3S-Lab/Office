@@ -124,7 +124,7 @@ baseline rather than one specific release.
 | Capability | A3S Office today | Traditional Office baseline |
 | --- | --- | --- |
 | Cells, sheets, navigation, and history | **Supported** — multiple sheets, sparse editing, search, clipboard, four-direction fill, exact formula/value copy from above, and undo/redo | Mature grid workflows across desktop and web |
-| Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, all 17 native non-solid OOXML pattern fills, static date/time entry, contrast-safe font preview, native XLSX rich-text runs, selected-text font formatting, direct formula-bar/F2 insertion or deletion, and bounded authenticated formatted-HTML paste | Disjoint multi-edit rich-text authoring, broader themes, locale formats, gradients, and advanced style effects |
+| Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, all 17 native non-solid OOXML pattern fills, native linear/path XLSX gradients, static date/time entry, contrast-safe font preview, native XLSX rich-text runs, selected-text font formatting, direct formula-bar/F2 insertion or deletion, and bounded authenticated formatted-HTML paste | Disjoint multi-edit rich-text authoring, broader themes, locale formats, gradient authoring, and advanced style effects |
 | Ribbon and shortcuts | **Partial** — common Office-style Home/Data/View commands, grid-scoped shortcuts, and focused Font-dialog aliases | Larger command catalog and platform-specific accelerators |
 | Formulas and recalculation | **Partial** — dependency-aware calculation and common formula paths | Wider functions, arrays, volatile semantics, and calculation parity |
 | Tables, pivots, charts, and rules | **Partial** — native tables, pivots, charts, conditional formatting, and validation | Calculated columns, slicers, pivot charts, advanced rules, and analysis |
@@ -585,6 +585,16 @@ formatting, Yjs collaboration, export, and reopen preserve the metadata; a new
 solid fill, No Fill, Clear Formats, or built-in Cell Style intentionally clears
 it. Malformed patterns fail closed, and semantic palette conflicts export
 literal RGB instead of a false theme or indexed reference.
+
+Native XLSX gradient fills retain linear angles, path inner-rectangle geometry,
+two through 256 ordered stops, and each stop's RGB, theme, indexed, automatic,
+or tint identity. Fortune projects the first stop into `bg`; metadata remains
+active only while that projection matches. Visible linear fills use Canvas
+gradients, while path fills use at most 96 clipped rectangular contours, so
+off-viewport cells do no work and rendering stays bounded. Format Painter,
+Paste Special Formats, unrelated edits, Yjs collaboration, export, and reopen
+preserve the fill. Explicit fills and format resets clear it, malformed input
+fails closed, and semantic palette conflicts fall back to literal RGB.
 
 Worksheet Tables/ListObjects live in `sheet.tables` as semantic records with
 stable IDs, workbook-unique names, zero-based ranges, ordered columns, filters,

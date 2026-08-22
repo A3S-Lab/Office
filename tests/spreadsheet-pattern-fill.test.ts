@@ -17,9 +17,9 @@ import {
   spreadsheetPasteCellInvalid,
 } from '../src/internal/features/work/editors/spreadsheet-paste-special-cell';
 import {
-  beginSpreadsheetPatternFillRender,
-  finishSpreadsheetPatternFillRender,
-} from '../src/internal/features/work/work-spreadsheet-pattern-fill-canvas';
+  beginSpreadsheetNativeFillRender,
+  finishSpreadsheetNativeFillRender,
+} from '../src/internal/features/work/work-spreadsheet-native-fill-canvas';
 import {
   createWorkArtifactBlob,
   importWorkFile,
@@ -177,10 +177,10 @@ describe('native XLSX pattern fills', () => {
     const fill = patternFill();
     const nativeFillRect = context.fillRect;
 
-    beginSpreadsheetPatternFillRender(fill, context);
+    beginSpreadsheetNativeFillRender({ kind: 'pattern', value: fill }, context);
     context.fillStyle = fill.backgroundColor;
     context.fillRect(2, 3, 40, 20);
-    finishSpreadsheetPatternFillRender(context);
+    finishSpreadsheetNativeFillRender(context);
     context.fillRect(50, 3, 10, 10);
 
     expect(calls[0]).toBe('fill:#ffffff:2:3:40:20');

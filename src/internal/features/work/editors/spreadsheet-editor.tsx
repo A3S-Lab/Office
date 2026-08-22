@@ -48,9 +48,9 @@ import {
   drawSpreadsheetDiagonalUpBorder,
 } from '../work-spreadsheet-diagonal-border-canvas';
 import {
-  beginSpreadsheetPatternFillRender,
-  finishSpreadsheetPatternFillRender,
-} from '../work-spreadsheet-pattern-fill-canvas';
+  beginSpreadsheetNativeFillRender,
+  finishSpreadsheetNativeFillRender,
+} from '../work-spreadsheet-native-fill-canvas';
 import { spreadsheetMatrixProfile } from '../work-spreadsheet-matrix-profile';
 import {
   reconcileSpreadsheetPivots,
@@ -60,7 +60,7 @@ import {
 } from '../work-spreadsheet-pivots';
 import { spreadsheetProtectionKey } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
-import { activeXlsxPatternFill } from '../work-xlsx-pattern-fill';
+import { activeXlsxNativeFill } from '../work-xlsx-native-fill';
 import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { useOfficeDialog } from './office-dialog';
@@ -588,10 +588,10 @@ function SpreadsheetEditorSurface({
           .get(activeSheetIdRef.current)
           ?.get(`${cellInfo.row}_${cellInfo.column}`);
         beginSpreadsheetTableCellRender(cell, tableStyle, style, context);
-        beginSpreadsheetPatternFillRender(
+        beginSpreadsheetNativeFillRender(
           tableStyle || style?.cellColor
             ? undefined
-            : activeXlsxPatternFill(cell),
+            : activeXlsxNativeFill(cell),
           context,
         );
         return true;
@@ -637,7 +637,7 @@ function SpreadsheetEditorSurface({
             if (cell?.ps) drawSpreadsheetCommentMarker(context, cellInfo);
           }
         } finally {
-          finishSpreadsheetPatternFillRender(context);
+          finishSpreadsheetNativeFillRender(context);
           finishSpreadsheetTableCellRender(cell, cellInfo, tableStyle, context);
           const diagonal = diagonalBordersBySheetRef.current
             .get(activeSheetIdRef.current)

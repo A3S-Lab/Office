@@ -1,5 +1,8 @@
 import type { Cell } from '@fortune-sheet/core';
-import { XLSX_PATTERN_FILL_CELL_KEY } from '../work-xlsx-pattern-fill';
+import {
+  type XlsxNativeFillCellKey,
+  xlsxNativeFillCellKeys,
+} from '../work-xlsx-native-fill';
 import type {
   SpreadsheetClipboardCell,
   SpreadsheetPasteContent,
@@ -15,10 +18,9 @@ export type SpreadsheetPasteCellResult =
   | null
   | typeof spreadsheetPasteCellInvalid;
 
-type MutableCell = Cell & {
-  hi?: number;
-  [XLSX_PATTERN_FILL_CELL_KEY]?: unknown;
-};
+type MutableCell = Cell & { hi?: number } & Partial<
+    Record<XlsxNativeFillCellKey, unknown>
+  >;
 type UnknownRecord = Record<string, unknown>;
 
 const spreadsheetCellContentKeys = [
@@ -43,7 +45,7 @@ const spreadsheetCellFormatKeys = [
   'un',
   'tr',
   'rt',
-  XLSX_PATTERN_FILL_CELL_KEY,
+  ...xlsxNativeFillCellKeys,
 ] as const satisfies readonly (keyof MutableCell)[];
 
 export function pasteSpreadsheetSpecialCell({

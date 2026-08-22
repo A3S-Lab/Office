@@ -522,7 +522,7 @@ without conflict. An unrelated edit such as Bold can therefore retain native
 references such as `<color theme="4" tint="0.5">`, `<fgColor indexed="0">`,
 or `<color auto="1">`. If the user changes the visible color, two imported
 workbooks claim different colors for the same palette slot, or the color comes
-from an unsupported gradient or differential style, export uses explicit RGB
+from an unsupported differential style, export uses explicit RGB
 rather than emitting a false semantic reference.
 
 Focused Rstest includes a real XLSX import, unrelated edit, export, reopen, XML
@@ -572,6 +572,49 @@ Special, Yjs, palette conflicts, and import-edit-export-reopen fidelity.
 `visual-tests/spreadsheet-pattern-fill.functional.spec.ts` adds desktop and
 compact Canvas pixel evidence. The deterministic
 `tests/e2e/spreadsheet-pattern-fill.acl` suite captures screenshots,
+accessibility, console, and page errors through the local A3S Test 1.0.0 gate;
+GitHub Actions and Pages do not install or invoke A3S Test.
+
+## Native XLSX gradient fills
+
+Spreadsheet preserves both OOXML gradient families without flattening them to
+a solid color:
+
+| Native type | Preserved geometry | Visible-cell renderer |
+| --- | --- | --- |
+| `linear` | Exact finite `degree`; OOXML 0° runs left to right and 90° runs top to bottom | One native Canvas linear gradient spanning the complete cell bounds |
+| `path` | `left`, `right`, `top`, and `bottom` inner-rectangle edges in the 0–1 interval | At most 96 nested rectangular contours from the inner rectangle to the cell edge |
+
+Each `a3sXlsxGradientFill` field contains two through 256 ordered stops. Every
+stop retains its position, rendered color, and any validated theme, indexed,
+automatic, or tint origin. Fortune `bg` projects the first stop so ordinary
+toolbar and table logic still has a deterministic background. The native field
+is active only while `bg` still matches that projection; stale metadata cannot
+override an explicit color change.
+
+Conditional-format and table fills remain above native gradients in the
+appearance stack. The shared Canvas hook intercepts only Fortune's first
+background paint for a visible cell, restores the original `fillRect`
+immediately, and never allocates gradient work for hidden or off-viewport
+cells. Path rendering has a fixed 96-contour ceiling even for very large cells.
+
+Format Painter and Paste Special Formats copy the gradient field. Unrelated
+font, border, alignment, value, formula, or number-format edits and Yjs
+collaboration preserve it. Choosing a new fill, No Fill, Clear Formats, or a
+built-in Cell Style removes both native pattern and gradient metadata in the
+same controlled update. Export writes exact linear/path geometry and stops,
+reusing semantic color identities only when the prepared palette agrees;
+conflicts use literal RGB. Unknown types, malformed colors, descending or
+out-of-range stops, invalid path edges, ambiguous fill children, and more than
+256 stops fail closed.
+
+Open `?e2e=spreadsheet-gradient-fill` in the Playground for linear 0°, 45°,
+90°, and 135° examples plus two path gradients. Focused Rstest covers import,
+Canvas ordering, edit propagation, collaboration, palette conflicts, and
+import-edit-export-reopen fidelity.
+`visual-tests/spreadsheet-gradient-fill.functional.spec.ts` supplies desktop
+and compact Canvas pixel evidence. The deterministic
+`tests/e2e/spreadsheet-gradient-fill.acl` suite captures screenshots,
 accessibility, console, and page errors through the local A3S Test 1.0.0 gate;
 GitHub Actions and Pages do not install or invoke A3S Test.
 
