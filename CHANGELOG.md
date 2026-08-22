@@ -4,6 +4,25 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.25.0 - 2026-08-22
+
+- Added bounded native XLSX rich-text cell import and export for shared strings
+  and inline strings. Ordered runs preserve font family, size, RGB color,
+  bold, italic, strikethrough, single/double/accounting underline variants,
+  leading or trailing whitespace, and matching theme, indexed, automatic, or
+  tint color identities across export and reopen.
+- Kept Fortune's existing `ct.s` inline-string model as the single browser
+  representation. Cell-wide Format Cells font changes immutably update every
+  run through one controlled workbook revision and one Undo record, while
+  number-format changes retain `ct.t='inlineStr'`. Edited semantic colors fall
+  back to explicit RGB rather than exporting a stale source identity.
+- Added fail-closed limits of 32,767 characters and 512 runs per cell, 10,000
+  rich-text cells, and 100,000 materialized runs. Focused Rstest,
+  import-export-reopen fixtures, desktop/compact Playwright, and a local-only
+  A3S Test 1.0.0 ACL cover rendering, formatting, focus restoration,
+  accessibility, and clean browser diagnostics. GitHub Actions and Pages do
+  not install or invoke A3S Test.
+
 ## 0.24.0 - 2026-08-22
 
 - Added editor-scoped Spreadsheet `Cmd/Ctrl+Shift+F` and

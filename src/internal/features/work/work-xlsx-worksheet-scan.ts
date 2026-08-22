@@ -3,6 +3,7 @@ export interface XlsxWorksheetXmlScan {
   hasDiagnosticFeatures: boolean;
   hasFormulaFeatures: boolean;
   hasImportedFeatures: boolean;
+  hasRichTextCells: boolean;
   requiresSheetJsCellStyles: boolean;
 }
 
@@ -38,7 +39,7 @@ const DIAGNOSTIC_WORKSHEET_ELEMENTS = new Set([
 ]);
 
 const WORKSHEET_SCAN_PATTERN =
-  /<(?:[A-Za-z_][\w.-]*:)?(?:(cols|f|pane|dataValidation|conditionalFormatting|sheetProtection|protectedRange|rowBreaks|colBreaks|pageSetup|pageMargins|printOptions|headerFooter|pageSetUpPr|drawing|tableParts)(?=[\s/>])|(row)(?=[\s/>])[^>]*\s(?:collapsed|customFormat|customHeight|hidden|ht|outlineLevel|thickBot|thickTop)\s*=|(c)(?=[\s/>])[^>]*\ss\s*=)/g;
+  /<(?:[A-Za-z_][\w.-]*:)?(?:(cols|f|pane|dataValidation|conditionalFormatting|sheetProtection|protectedRange|rowBreaks|colBreaks|pageSetup|pageMargins|printOptions|headerFooter|pageSetUpPr|drawing|tableParts)(?=[\s/>])|(row)(?=[\s/>])[^>]*\s(?:collapsed|customFormat|customHeight|hidden|ht|outlineLevel|thickBot|thickTop)\s*=|(c)(?=[\s/>])[^>]*\ss\s*=|(r)(?=[\s/>]))/g;
 
 /**
  * Builds every worksheet gate in one pass over the decompressed XML. The
@@ -50,12 +51,14 @@ export function scanXlsxWorksheetXml(source: string): XlsxWorksheetXmlScan {
   let hasDiagnosticFeatures = false;
   let hasFormulaFeatures = false;
   let hasImportedFeatures = false;
+  let hasRichTextCells = false;
   let requiresSheetJsCellStyles = false;
   WORKSHEET_SCAN_PATTERN.lastIndex = 0;
 
   for (let match = WORKSHEET_SCAN_PATTERN.exec(source); match; ) {
     const element = match[1];
     if (match[3]) hasDirectCellStyles = true;
+    if (match[4]) hasRichTextCells = true;
     if (match[2] || match[3] || element === 'cols') {
       requiresSheetJsCellStyles = true;
     }
@@ -71,6 +74,7 @@ export function scanXlsxWorksheetXml(source: string): XlsxWorksheetXmlScan {
       hasDiagnosticFeatures &&
       hasFormulaFeatures &&
       hasImportedFeatures &&
+      hasRichTextCells &&
       requiresSheetJsCellStyles
     ) {
       break;
@@ -84,6 +88,7 @@ export function scanXlsxWorksheetXml(source: string): XlsxWorksheetXmlScan {
     hasDiagnosticFeatures,
     hasFormulaFeatures,
     hasImportedFeatures,
+    hasRichTextCells,
     requiresSheetJsCellStyles,
   };
 }

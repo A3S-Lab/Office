@@ -18,6 +18,7 @@ describe('spreadsheet package scan worker', () => {
       hasDiagnosticFeatures: false,
       hasFormulaFeatures: false,
       hasImportedFeatures: false,
+      hasRichTextCells: false,
       requiresSheetJsCellStyles: false,
     });
 
@@ -38,8 +39,15 @@ describe('spreadsheet package scan worker', () => {
       hasDiagnosticFeatures: true,
       hasFormulaFeatures: true,
       hasImportedFeatures: true,
+      hasRichTextCells: false,
       requiresSheetJsCellStyles: true,
     });
+
+    expect(
+      scanXlsxWorksheetXml(
+        '<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><r><t>Rich</t></r></is></c></row></sheetData></worksheet>',
+      ),
+    ).toMatchObject({ hasRichTextCells: true });
   });
 
   test('returns typed scans and terminates after transferring the source', async () => {
@@ -55,6 +63,7 @@ describe('spreadsheet package scan worker', () => {
                 hasDiagnosticFeatures: false,
                 hasFormulaFeatures: false,
                 hasImportedFeatures: false,
+                hasRichTextCells: false,
                 requiresSheetJsCellStyles: false,
               },
             },
@@ -73,6 +82,7 @@ describe('spreadsheet package scan worker', () => {
               hasDiagnosticFeatures: false,
               hasFormulaFeatures: false,
               hasImportedFeatures: false,
+              hasRichTextCells: false,
               requiresSheetJsCellStyles: false,
             },
           },
@@ -129,6 +139,7 @@ describe('spreadsheet package scan worker', () => {
                 hasDiagnosticFeatures: false,
                 hasFormulaFeatures: false,
                 hasImportedFeatures: false,
+                hasRichTextCells: false,
                 requiresSheetJsCellStyles: false,
               },
             },

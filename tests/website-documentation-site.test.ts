@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.25.0' ||
     version === '0.24.0' ||
     version === '0.23.0' ||
     version === '0.22.0' ||
@@ -48,6 +49,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.25.0',
     '0.24.0',
     '0.23.0',
     '0.22.0',
@@ -138,6 +140,7 @@ test('keeps the five-editor README capability comparison complete', async () => 
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.25.0',
     '0.24.0',
     '0.23.0',
     '0.22.0',
@@ -201,6 +204,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.25.0',
     '0.24.0',
     '0.23.0',
     '0.22.0',
@@ -1212,6 +1216,48 @@ test('documents focused Spreadsheet font-dialog shortcuts in 0.24.0', async () =
       '字体下拉框',
       '相对亮度',
       'spreadsheet-font-dialog-shortcuts.acl',
+      'A3S Test 1.0.0',
+    ]) {
+      expect(chinese).toContain(evidence);
+    }
+  }
+});
+
+test('documents native Spreadsheet rich-text cells in 0.25.0', async () => {
+  for (const version of ['latest', '0.25.0']) {
+    const [english, chinese] = await Promise.all([
+      readFile(
+        path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, version, 'zh/components/spreadsheet.mdx'),
+        'utf8',
+      ),
+    ]);
+
+    for (const evidence of [
+      '## Native XLSX rich-text cells',
+      "`ct.t='inlineStr'`",
+      '`xml:space="preserve"`',
+      '32,767 characters',
+      '512 runs',
+      '100,000 runs',
+      'partial-run authoring',
+      'spreadsheet-rich-text.acl',
+      'A3S Test 1.0.0',
+    ]) {
+      expect(english).toContain(evidence);
+    }
+    for (const evidence of [
+      '## 原生 XLSX 单元格富文本',
+      "`ct.t='inlineStr'`",
+      '`xml:space="preserve"`',
+      '32,767 个字符',
+      '512 个文字片段',
+      '100,000 个片段',
+      '局部片段创作',
+      'spreadsheet-rich-text.acl',
       'A3S Test 1.0.0',
     ]) {
       expect(chinese).toContain(evidence);

@@ -34,6 +34,7 @@ import {
   subtractSpreadsheetCellRange,
 } from './spreadsheet-cell-range';
 import { spreadsheetNumberFormatValue } from './spreadsheet-number-format';
+import { patchSpreadsheetRichTextFontRuns } from '../work-xlsx-rich-text';
 
 export const MAX_SPREADSHEET_CELL_FORMAT_CELLS = 10_000;
 
@@ -345,7 +346,11 @@ function formatCell(
       patch.numberFormat.trim(),
       source,
     );
-    next.ct = { ...source?.ct, ...format };
+    next.ct = {
+      ...source?.ct,
+      ...format,
+      ...(source?.ct?.t === 'inlineStr' ? { t: 'inlineStr' } : {}),
+    };
     delete next.m;
   }
   if (patch.horizontalAlignment !== undefined) {
@@ -388,7 +393,8 @@ function formatCell(
     delete next.lo;
     delete next.hi;
   }
-  return Object.keys(next).length ? next : null;
+  const withRichText = patchSpreadsheetRichTextFontRuns(next, patch);
+  return Object.keys(withRichText).length ? withRichText : null;
 }
 
 function formatProtectionRanges(

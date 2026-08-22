@@ -57,6 +57,7 @@ import {
 import type { NoticeTone } from './playground-types';
 import { SPREADSHEET_DATE_TIME_FIXTURE } from './spreadsheet-date-time-fixture';
 import { SPREADSHEET_COPY_FROM_ABOVE_FIXTURE } from './spreadsheet-copy-from-above-fixture';
+import { SPREADSHEET_RICH_TEXT_FIXTURE } from './spreadsheet-rich-text-fixture';
 import {
   type PlaygroundPresentationElementStage,
   usePlaygroundPresentationCollaborationFixture,
@@ -133,6 +134,13 @@ export function EditorWorkspace({
     artifact.content.type === 'spreadsheet'
       ? artifact.content.sheets[0]?.data?.[1]?.[1]
       : undefined;
+  const spreadsheetRichTextFixture =
+    e2eFixture === SPREADSHEET_RICH_TEXT_FIXTURE &&
+    artifact.content.type === 'spreadsheet';
+  const spreadsheetRichTextRuns =
+    spreadsheetRichTextFixture && artifact.content.type === 'spreadsheet'
+      ? richTextRunSummary(artifact.content.sheets[0]?.data?.[0]?.[0]?.ct?.s)
+      : { bold: '', count: 0, text: '' };
   const loadPdf = useCallback(() => readSourceBlob(artifact), [artifact]);
   const controlledReviewFixture = e2eFixture === 'word-review-conflict';
   const controlledReviewFixtureReady =
@@ -360,6 +368,20 @@ export function EditorWorkspace({
                   aria-live="polite"
                 >
                   从上方复制 · 修订 {artifact.revision}
+                </output>
+              )}
+              {spreadsheetRichTextFixture && (
+                <output
+                  className="playground-sparse-fixture-status"
+                  data-testid="spreadsheet-rich-text-status"
+                  data-revision={artifact.revision}
+                  data-run-count={spreadsheetRichTextRuns.count}
+                  data-run-bold={spreadsheetRichTextRuns.bold}
+                  data-run-text={spreadsheetRichTextRuns.text}
+                  aria-live="polite"
+                >
+                  原生富文本 · {spreadsheetRichTextRuns.count} 个文字片段 · 修订{' '}
+                  {artifact.revision}
                 </output>
               )}
               {collaborationDemo && (
@@ -1429,6 +1451,36 @@ function assistantWelcomeCopy(kind: OfficeArtifact['kind']): {
         description: 'PDF 阅读与批注可直接使用；摘要与问答接入仍在完善。',
       };
   }
+}
+
+function richTextRunSummary(source: unknown): {
+  bold: string;
+  count: number;
+  text: string;
+} {
+  if (!Array.isArray(source)) return { bold: '', count: 0, text: '' };
+  const runs = source.flatMap((candidate) => {
+    if (
+      !candidate ||
+      typeof candidate !== 'object' ||
+      Array.isArray(candidate) ||
+      !('v' in candidate) ||
+      typeof candidate.v !== 'string'
+    ) {
+      return [];
+    }
+    return [
+      {
+        bold: Number('bl' in candidate ? candidate.bl : 0),
+        v: candidate.v,
+      },
+    ];
+  });
+  return {
+    bold: runs.map((run) => (run.bold === 1 ? 1 : 0)).join(','),
+    count: runs.length,
+    text: runs.map((run) => run.v).join(''),
+  };
 }
 
 function clampAssistantWidth(width: number): number {

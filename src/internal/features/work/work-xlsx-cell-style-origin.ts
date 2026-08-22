@@ -142,8 +142,8 @@ export function xlsxCellStyleOrigin(
   const candidate = (cell as CellWithXlsxStyleOrigin | null | undefined)
     ?.a3sXlsxStyleOrigin;
   if (!isRecord(candidate)) return undefined;
-  const fontColor = normalizedXlsxSemanticColor(candidate.fontColor);
-  const fillColor = normalizedXlsxSemanticColor(candidate.fillColor);
+  const fontColor = normalizeXlsxSemanticColorOrigin(candidate.fontColor);
+  const fillColor = normalizeXlsxSemanticColorOrigin(candidate.fillColor);
   const borderColors = normalizedBorderColors(candidate.borderColors);
   const origin = {
     ...(fontColor ? { fontColor } : {}),
@@ -337,13 +337,13 @@ function normalizedBorderColors(
   if (!isRecord(value)) return undefined;
   const result: XlsxBorderColorOrigins = {};
   for (const side of ['bottom', 'diagonal', 'left', 'right', 'top'] as const) {
-    const color = normalizedXlsxSemanticColor(value[side]);
+    const color = normalizeXlsxSemanticColorOrigin(value[side]);
     if (color) result[side] = color;
   }
   return Object.keys(result).length ? result : undefined;
 }
 
-function normalizedXlsxSemanticColor(
+export function normalizeXlsxSemanticColorOrigin(
   value: unknown,
 ): XlsxSemanticColorOrigin | undefined {
   if (!isRecord(value)) return undefined;

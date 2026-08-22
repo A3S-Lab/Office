@@ -175,6 +175,7 @@ class PlainFastPathWorker {
             hasDiagnosticFeatures: false,
             hasFormulaFeatures: false,
             hasImportedFeatures: false,
+            hasRichTextCells: false,
             requiresSheetJsCellStyles: false,
           },
         },

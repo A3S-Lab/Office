@@ -316,6 +316,21 @@ keys, and Escape restores the exact grid node. The font preview preserves the
 requested text color while selecting a dark or light canvas from relative
 luminance so white and other light fonts remain readable without falsifying
 their style.
+The thirty-first milestone preserves native Spreadsheet rich-text cells across
+XLSX import, cell-wide font formatting, export, and reopen. Shared strings and
+inline strings retain ordered runs for font family, size, RGB color, bold,
+italic, strikethrough, and all supported underline variants. Theme, indexed,
+automatic, and tint color identities remain semantic only while the rendered
+value still matches its origin; an edited color exports as explicit RGB.
+Imported runs use Fortune's existing `ct.s` representation with
+`ct.t='inlineStr'`, and export emits native inline-string runs with exact
+leading or trailing whitespace preservation. Format Cells applies one font
+intent immutably to every visible run, keeps one controlled update and one Undo
+record, and number-format edits retain the rich-string type. Parsing and
+materialization fail closed beyond 32,767 characters, 512 runs per cell,
+10,000 cells, or 100,000 total runs. Focused import/export/reopen, scanner,
+formatting, desktop/compact Playwright, and local-only A3S Test 1.0.0 evidence
+cover this boundary; partial-run authoring remains a documented gap.
 
 ## Product Rules
 

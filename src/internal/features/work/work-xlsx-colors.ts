@@ -108,11 +108,11 @@ const defaultIndexedColors = [
 ] as const;
 
 export function createXlsxColorResolver(
-  styles: Document,
+  styles: Document | null,
   theme: Document | null,
 ): XlsxColorResolver {
   return {
-    indexed: readIndexedColors(styles),
+    indexed: styles ? readIndexedColors(styles) : defaultIndexedColors,
     theme: readThemeColors(theme),
   };
 }

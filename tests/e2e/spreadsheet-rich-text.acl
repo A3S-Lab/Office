@@ -1,0 +1,74 @@
+suite "office-spreadsheet-rich-text" {
+    version = 1
+
+    scenario "format-every-native-rich-text-run" {
+        name = "Render and format every native Spreadsheet rich-text run"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-rich-text-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-rich-text"
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "native-runs-are-present" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='1'][data-run-count='3'][data-run-bold='1,0,0'][data-run-text='Native rich text']")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "open-font-format" {
+            key = "Control+Shift+F"
+        }
+
+        expect "font-dialog-open" {
+            visible = css(".work-spreadsheet-format-cells-dialog [role='tab'][data-tab-id='font'][aria-selected='true']")
+        }
+
+        click "enable-bold" {
+            target = css(".work-spreadsheet-format-cells-dialog input[type='checkbox'][aria-label='加粗']")
+        }
+
+        click "apply-font-format" {
+            target = text("应用", true)
+        }
+
+        expect "every-run-is-bold-in-one-update" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='2'][data-run-count='3'][data-run-bold='1,1,1'][data-run-text='Native rich text']")
+        }
+
+        expect "grid-focus-restored" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        screenshot "spreadsheet-rich-text" {
+            path = "screenshots/spreadsheet-rich-text.png"
+        }
+
+        accessibility "spreadsheet-rich-text-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "spreadsheet-rich-text-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-rich-text-page-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

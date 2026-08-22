@@ -312,6 +312,22 @@ evidence, and clean browser diagnostics. Desktop and compact Playwright use
 the same public Playground path. The A3S Test 1.0.0 suite remains local-only;
 GitHub Actions and Pages do not install or invoke it.
 
+Native Spreadsheet rich-text cells have a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-rich-text:check
+bun run test:e2e:spreadsheet-rich-text
+```
+
+It covers the controlled Playground fixture's three ordered native runs,
+cell-wide Bold formatting through one revision, preservation of run text and
+count, exact grid-focus restoration, screenshot and accessibility evidence,
+and clean console and page-error diagnostics. Import/export/reopen Rstest
+fixtures separately cover shared strings, inline strings, exact whitespace,
+semantic colors, and fail-closed budgets. Desktop and compact Playwright use
+the same public path. The A3S Test 1.0.0 suite remains local-only; GitHub
+Actions and Pages do not install or invoke it.
+
 The native Spreadsheet Table lifecycle has a focused local gate:
 
 ```bash

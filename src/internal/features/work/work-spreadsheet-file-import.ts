@@ -53,6 +53,7 @@ import {
 } from './work-xlsx-pivots';
 import { xlsxWorksheetRequiresSheetJsCellStyles } from './work-xlsx-style-gate';
 import { xlsxWorksheetCellEntries } from './work-xlsx-worksheet';
+import { applyImportedXlsxRichText } from './work-xlsx-rich-text';
 
 const MAX_INLINE_DATA_VALIDATION_CELLS = 10_000;
 
@@ -232,6 +233,12 @@ export async function importWorkSpreadsheetFile(
         entry,
       ]),
     );
+    const richTextCells = new Map(
+      (features?.richTextCells ?? []).map((entry) => [
+        spreadsheetCellKey(entry.row, entry.column),
+        entry,
+      ]),
+    );
     const range = safeSpreadsheetRange(worksheet, XLSX);
     let rowCount = Math.max(plainWorksheet?.rowCount ?? range.e.r + 1, 40);
     let columnCount = Math.max(
@@ -282,15 +289,18 @@ export async function importWorkSpreadsheetFile(
         data[row] ??= [];
         data[row][column] = freezeImportedSpreadsheetCell(
           withXlsxCellStyleOrigin(
-            fortuneCellFromXlsx(
-              source,
-              row,
-              column,
-              id,
-              hyperlink,
-              comment,
-              XLSX,
-              directCellStyle?.style,
+            applyImportedXlsxRichText(
+              fortuneCellFromXlsx(
+                source,
+                row,
+                column,
+                id,
+                hyperlink,
+                comment,
+                XLSX,
+                directCellStyle?.style,
+              ),
+              richTextCells.get(spreadsheetCellKey(row, column)),
             ),
             directCellStyle?.origin,
           ),

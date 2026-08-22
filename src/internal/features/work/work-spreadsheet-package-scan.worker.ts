@@ -117,6 +117,7 @@ const PLAIN_WORKSHEET_SCAN = {
   hasDiagnosticFeatures: false,
   hasFormulaFeatures: false,
   hasImportedFeatures: false,
+  hasRichTextCells: false,
   requiresSheetJsCellStyles: false,
 } as const;
 

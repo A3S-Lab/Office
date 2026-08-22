@@ -124,7 +124,7 @@ baseline rather than one specific release.
 | Capability | A3S Office today | Traditional Office baseline |
 | --- | --- | --- |
 | Cells, sheets, navigation, and history | **Supported** — multiple sheets, sparse editing, search, clipboard, four-direction fill, exact formula/value copy from above, and undo/redo | Mature grid workflows across desktop and web |
-| Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, static date/time entry, and contrast-safe font preview | Broader themes, locale formats, rich text, and advanced style effects |
+| Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, static date/time entry, contrast-safe font preview, and native XLSX rich-text runs with cell-wide font edits | Broader run-level rich-text authoring, themes, locale formats, and advanced style effects |
 | Ribbon and shortcuts | **Partial** — common Office-style Home/Data/View commands, grid-scoped shortcuts, and focused Font-dialog aliases | Larger command catalog and platform-specific accelerators |
 | Formulas and recalculation | **Partial** — dependency-aware calculation and common formula paths | Wider functions, arrays, volatile semantics, and calculation parity |
 | Tables, pivots, charts, and rules | **Partial** — native tables, pivots, charts, conditional formatting, and validation | Calculated columns, slicers, pivot charts, advanced rules, and analysis |
@@ -1347,6 +1347,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.25.0 documentation](https://a3s-lab.github.io/Office/docs/0.25.0/)
 - [A3S Office 0.24.0 documentation](https://a3s-lab.github.io/Office/docs/0.24.0/)
 - [A3S Office 0.23.0 documentation](https://a3s-lab.github.io/Office/docs/0.23.0/)
 - [A3S Office 0.22.0 documentation](https://a3s-lab.github.io/Office/docs/0.22.0/)

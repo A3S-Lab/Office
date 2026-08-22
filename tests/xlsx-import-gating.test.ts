@@ -323,6 +323,7 @@ class CandidateRejectingWorker {
               hasDiagnosticFeatures: false,
               hasFormulaFeatures: true,
               hasImportedFeatures: false,
+              hasRichTextCells: false,
               requiresSheetJsCellStyles: false,
             },
           },

@@ -17,6 +17,7 @@ import { patchXlsxWorksheetDrawings } from './work-xlsx-images';
 import { patchXlsxSheetFeatures } from './work-xlsx-interop';
 import { patchXlsxPivotTables } from './work-xlsx-pivots';
 import { patchXlsxSpreadsheetTables } from './work-xlsx-tables';
+import { xlsxRichTextCellText } from './work-xlsx-rich-text';
 
 export async function createWorkSpreadsheetBlob(
   artifact: WorkArtifact,
@@ -108,7 +109,7 @@ function xlsxCellObject(
   if (cell.f)
     return createXlsxFormulaCell(cell, row, column, sheet) as CellObject;
   if (cell.ct?.t === 'e') return createXlsxErrorCell(cell) as CellObject;
-  const value = cell.v ?? cell.m;
+  const value = xlsxRichTextCellText(cell) ?? cell.v ?? cell.m;
   if (value === undefined || value === null) {
     return cell.ps ? { t: 's', v: '' } : null;
   }

@@ -168,6 +168,126 @@ describe('spreadsheet cell format', () => {
     ).toBe(false);
   });
 
+  test('applies font patches to every rich-text run without mutating content', () => {
+    const firstOrigin = {
+      baseColor: '#4472c4',
+      index: 4,
+      kind: 'theme',
+      renderedColor: '#4472c4',
+    } as const;
+    const content = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sheet 1',
+          data: [
+            [
+              {
+                bg: '#fff2cc',
+                ct: {
+                  t: 'inlineStr',
+                  s: [
+                    {
+                      a3sXlsxColorOrigin: firstOrigin,
+                      bl: 1,
+                      fc: '#4472c4',
+                      v: 'A3S',
+                    },
+                    { it: 1, un: 2, v: ' Office' },
+                  ],
+                },
+                v: 'A3S Office',
+              },
+            ],
+          ],
+        },
+      ],
+    } satisfies WorkSpreadsheetContent;
+    const sourceCell = content.sheets[0]?.data?.[0]?.[0];
+    const sourceRuns = sourceCell?.ct?.s;
+
+    const next = applySpreadsheetCellFormat(content, {
+      sheetId: 'sheet-1',
+      range: { row: [0, 0], column: [0, 0] },
+      patch: {
+        bold: false,
+        fontColor: '#abc',
+        fontFamily: 'Arial',
+        fontSize: 14,
+        italic: true,
+        strike: true,
+        underline: 'doubleAccounting',
+      },
+    });
+    const nextCell = next?.sheets[0]?.data?.[0]?.[0];
+
+    expect(nextCell).toMatchObject({
+      bg: '#fff2cc',
+      bl: 0,
+      cl: 1,
+      fc: '#aabbcc',
+      ff: 'Arial',
+      fs: 14,
+      it: 1,
+      un: 4,
+      v: 'A3S Office',
+    });
+    expect(nextCell?.ct).toEqual({
+      t: 'inlineStr',
+      s: [
+        {
+          bl: 0,
+          cl: 1,
+          fc: '#aabbcc',
+          ff: 'Arial',
+          fs: 14,
+          it: 1,
+          un: 4,
+          v: 'A3S',
+        },
+        {
+          bl: 0,
+          cl: 1,
+          fc: '#aabbcc',
+          ff: 'Arial',
+          fs: 14,
+          it: 1,
+          un: 4,
+          v: ' Office',
+        },
+      ],
+    });
+    expect(nextCell?.ct?.s).not.toBe(sourceRuns);
+    expect(sourceCell?.ct).toEqual({
+      t: 'inlineStr',
+      s: [
+        {
+          a3sXlsxColorOrigin: firstOrigin,
+          bl: 1,
+          fc: '#4472c4',
+          v: 'A3S',
+        },
+        { it: 1, un: 2, v: ' Office' },
+      ],
+    });
+
+    const nonFont = applySpreadsheetCellFormat(content, {
+      sheetId: 'sheet-1',
+      range: { row: [0, 0], column: [0, 0] },
+      patch: {
+        fillColor: '#d9ead3',
+        horizontalAlignment: 'center',
+        numberFormat: '@',
+      },
+    });
+    expect(nonFont?.sheets[0]?.data?.[0]?.[0]?.ct).toEqual({
+      ...sourceCell?.ct,
+      fa: '@',
+      t: 'inlineStr',
+    });
+  });
+
   test('preserves celldata storage and materializes only formatted blank cells', () => {
     const content = {
       type: 'spreadsheet',

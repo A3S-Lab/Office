@@ -40,7 +40,7 @@ export function* xlsxWorksheetCellEntries(
   }
 }
 
-function xlsxCellAddress(row: number, column: number): string {
+export function xlsxCellAddress(row: number, column: number): string {
   let value = column + 1;
   let label = '';
   while (value > 0) {
@@ -51,7 +51,7 @@ function xlsxCellAddress(row: number, column: number): string {
   return `${label}${row + 1}`;
 }
 
-function decodeXlsxCellAddress(
+export function decodeXlsxCellAddress(
   address: string,
 ): { column: number; row: number } | null {
   const match = /^([A-Za-z]+)([1-9][0-9]*)$/.exec(address);

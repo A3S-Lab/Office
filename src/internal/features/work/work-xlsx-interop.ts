@@ -8,6 +8,7 @@ import {
   firstDescendant,
   OoxmlPackage,
   parseXml,
+  xmlContainsAnyElement,
 } from './work-ooxml-package';
 import { sheetHasProtectionState } from './work-spreadsheet-protection';
 import {
@@ -66,6 +67,14 @@ import {
   scanXlsxWorksheetXml,
   type XlsxWorksheetXmlScan,
 } from './work-xlsx-worksheet-scan';
+import {
+  createXlsxRichTextReadContext,
+  readXlsxRichTextCells,
+  sheetHasXlsxRichTextCells,
+  writeXlsxRichTextCells,
+  xlsxRichTextStyleOrigins,
+  type XlsxRichTextCell,
+} from './work-xlsx-rich-text';
 import { readXlsxWorksheetTables } from './work-xlsx-tables';
 import type { WorkSpreadsheetTable } from './work-types';
 
@@ -87,6 +96,7 @@ export interface XlsxSheetFeatures {
   images: XlsxWorksheetImage[];
   charts: XlsxWorksheetChart[];
   tables: WorkSpreadsheetTable[];
+  richTextCells: XlsxRichTextCell[];
 }
 
 export type FortuneDataValidationItem = WorkSpreadsheetDataValidationItem;
@@ -112,19 +122,45 @@ export async function readXlsxSheetFeaturesFromPackage(
   const theme = archive.has('xl/theme/theme1.xml')
     ? await archive.xml('xl/theme/theme1.xml')
     : null;
+  const sharedStringsSource = archive.has('xl/sharedStrings.xml')
+    ? await archive.text('xl/sharedStrings.xml')
+    : null;
+  const sharedStrings =
+    sharedStringsSource && xmlContainsAnyElement(sharedStringsSource, ['r'])
+      ? parseXml(sharedStringsSource, 'xl/sharedStrings.xml')
+      : null;
+  const richText = createXlsxRichTextReadContext({
+    sharedStrings,
+    styles,
+    theme,
+  });
   const differentialFormats = readXlsxDifferentialFormats(styles);
   const features = new Map<string, XlsxSheetFeatures>();
   const imageBudget = { bytes: 0 };
   for (const [sheetName, partPath] of worksheetParts) {
     if (!archive.has(partPath)) continue;
     const scan = worksheetScans?.[partPath];
-    if (scan && !scan.hasImportedFeatures && !scan.hasDirectCellStyles) {
+    if (
+      scan &&
+      !scan.hasImportedFeatures &&
+      !scan.hasDirectCellStyles &&
+      !scan.hasRichTextCells &&
+      !richText.hasRichSharedStrings
+    ) {
       features.set(sheetName, emptyXlsxSheetFeatures());
       continue;
     }
     const source = await archive.text(partPath);
     const detected = scan ?? scanXlsxWorksheetXml(source);
-    if (!detected.hasImportedFeatures && !detected.hasDirectCellStyles) {
+    const mayReferenceRichSharedString =
+      richText.hasRichSharedStrings &&
+      xlsxWorksheetMayReferenceSharedStrings(source);
+    if (
+      !detected.hasImportedFeatures &&
+      !detected.hasDirectCellStyles &&
+      !detected.hasRichTextCells &&
+      !mayReferenceRichSharedString
+    ) {
       features.set(sheetName, emptyXlsxSheetFeatures());
       continue;
     }
@@ -148,9 +184,16 @@ export async function readXlsxSheetFeaturesFromPackage(
       ),
       charts: await readXlsxWorksheetCharts(archive, partPath, document),
       tables: await readXlsxWorksheetTables(archive, partPath),
+      richTextCells: readXlsxRichTextCells(document, richText),
     });
   }
   return features;
+}
+
+function xlsxWorksheetMayReferenceSharedStrings(source: string): boolean {
+  return /<(?:[A-Za-z_][\w.-]*:)?c(?=[\s/>])[^>]*\bt\s*=\s*(?:"s"|'s')/.test(
+    source,
+  );
 }
 
 function emptyXlsxSheetFeatures(): XlsxSheetFeatures {
@@ -163,6 +206,7 @@ function emptyXlsxSheetFeatures(): XlsxSheetFeatures {
     images: [],
     charts: [],
     tables: [],
+    richTextCells: [],
   };
 }
 
@@ -190,6 +234,7 @@ export async function patchXlsxSheetFeatures(
         Object.keys(sheet.dataVerification ?? {}).length ||
         sheet.dataValidationRanges?.length ||
         sheet.luckysheet_conditionformat_save?.length ||
+        sheetHasXlsxRichTextCells(sheet) ||
         sheetHasDirectCellStyles(sheet) ||
         sheetHasProtectionState(sheet) ||
         Boolean(
@@ -236,6 +281,7 @@ export async function patchXlsxSheetFeatures(
       !Object.keys(sheet.dataVerification ?? {}).length &&
       !sheet.dataValidationRanges?.length &&
       !sheet.luckysheet_conditionformat_save?.length &&
+      !sheetHasXlsxRichTextCells(sheet) &&
       !sheetHasDirectCellStyles(sheet) &&
       !sheetHasProtectionState(sheet) &&
       !(pageBreaks?.rows?.length || pageBreaks?.columns?.length) &&
@@ -269,6 +315,7 @@ export async function patchXlsxSheetFeatures(
     );
     if (directCellStyles)
       writeXlsxDirectCellStyles(document, sheet, directCellStyles);
+    writeXlsxRichTextCells(document, sheet, semanticPalette?.palette);
     writeXlsxProtection(document, sheet, cellProtection);
     writeXlsxPageSetup(document, pageSetup);
     writeXlsxManualPageBreaks(document, pageBreaks);
@@ -304,6 +351,7 @@ function spreadsheetXlsxStyleOrigins(
         if (origin) origins.push(origin);
       }
     }
+    origins.push(...xlsxRichTextStyleOrigins(sheet));
   }
   return origins;
 }
