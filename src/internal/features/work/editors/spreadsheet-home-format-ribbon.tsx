@@ -12,13 +12,12 @@ import {
   Strikethrough,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { SpreadsheetBorderRibbon } from './spreadsheet-border-ribbon';
-import { SpreadsheetUnderlineRibbon } from './spreadsheet-underline-ribbon';
 import {
   OfficeColorPicker,
   OfficeSelect,
   type OfficeSelectOption,
 } from './office-controls';
+import { SpreadsheetBorderRibbon } from './spreadsheet-border-ribbon';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
   SpreadsheetEditorCanCommands,
@@ -36,6 +35,7 @@ import {
   spreadsheetNumberFormatPresetLabels,
   spreadsheetNumberFormatValue,
 } from './spreadsheet-number-format';
+import { SpreadsheetUnderlineRibbon } from './spreadsheet-underline-ribbon';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
@@ -145,6 +145,7 @@ export function SpreadsheetFontRibbonGroup({
         onValueChange={(value) => commands.setCellFormat('ff', value)}
       />
       <OfficeSelect
+        className="work-spreadsheet-font-size"
         ariaLabel="字号"
         value={String(fontSize)}
         disabled={!can.setCellFormat('fs', fontSize)}
@@ -202,7 +203,7 @@ export function SpreadsheetFontRibbonGroup({
       />
       <OfficeColorPicker
         compact
-        className="work-color-tool"
+        className="work-color-tool work-spreadsheet-font-color"
         ariaLabel="文字颜色"
         value={textColor}
         disabled={!can.setCellFormat('fc', textColor)}
@@ -370,16 +371,16 @@ function SpreadsheetFontToggle({
   icon: ReactNode;
 }) {
   const definition = spreadsheetCommandCatalog[command];
-  const value = active ? 0 : 1;
   return (
     <WorkOfficeRibbonButton
+      data-spreadsheet-rich-text-format="true"
       label={definition.label}
       title={`${definition.label}（${definition.shortcut.label}）`}
       aria-keyshortcuts={definition.shortcut.aria}
       displayLabel={false}
       active={active}
-      disabled={!can.setCellFormat(attribute, value)}
-      onClick={() => commands.setCellFormat(attribute, value)}
+      disabled={!can.toggleCellFormat(attribute)}
+      onClick={() => commands.toggleCellFormat(attribute)}
     >
       {icon}
     </WorkOfficeRibbonButton>

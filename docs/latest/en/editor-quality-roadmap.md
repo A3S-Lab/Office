@@ -1093,8 +1093,19 @@ Fail-closed budgets cap a cell at 32,767 characters and 512 runs, and an import
 at 10,000 rich-text cells and 100,000 materialized runs. Focused Rstest,
 import/export/reopen fixtures, desktop and compact Playwright, and the
 local-only A3S Test 1.0.0 regression cover fidelity, focus, accessibility, and
-clean diagnostics. Caret-level partial-run authoring remains explicit future
-work.
+clean diagnostics. At that slice, caret-level partial-run authoring remained
+explicit future work.
+
+The thirty-second slice closes the common partial-run formatting gap. A
+non-collapsed selection in the live cell editor or formula bar routes font
+family, size, color, bold, italic, strikethrough, and underline through one
+bounded model before the whole-cell command path. Plain strings become native
+inline-string runs only after a valid command; existing runs split and
+coalesce without changing untouched text or matching semantic color origins.
+Direct ribbon actions restore the selected text while the editor remains
+active. Malformed coordinates, invalid values, formula cells, UTF-16 surrogate
+splits, and results beyond 32,767 characters or 512 runs fail closed. Rich-text
+insertion and editing outside these font attributes remain future work.
 
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.

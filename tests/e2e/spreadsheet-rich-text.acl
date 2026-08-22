@@ -71,4 +71,107 @@ suite "office-spreadsheet-rich-text" {
             clear = false
         }
     }
+
+    scenario "format-selected-native-rich-text-run" {
+        name = "Format only selected Spreadsheet rich text and restore focus"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-rich-text-selection-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-rich-text"
+        }
+
+        wait "rich-text-selection-ready" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='1'][data-run-count='3'][data-run-bold='1,0,0']")
+        }
+
+        focus "focus-formula-bar" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "move-to-start" {
+            key = "Home"
+        }
+
+        press "move-to-r-1" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-r-2" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-r-3" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-r-4" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-r-5" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-r-6" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-r-7" {
+            key = "ArrowRight"
+        }
+
+        press "select-rich-1" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "select-rich-2" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "select-rich-3" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "select-rich-4" {
+            key = "Shift+ArrowRight"
+        }
+
+        click "bold-selected-rich-text" {
+            target = role("button", "加粗")
+        }
+
+        expect "only-selected-run-is-bold" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='2'][data-run-count='4'][data-run-bold='1,1,0,0'][data-run-text='Native rich text']")
+        }
+
+        expect "formula-bar-focus-restored" {
+            visible = css(".fortune-fx-input:focus")
+        }
+
+        screenshot "spreadsheet-selected-rich-text" {
+            path = "screenshots/spreadsheet-selected-rich-text.png"
+        }
+
+        accessibility "spreadsheet-selected-rich-text-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "spreadsheet-selected-rich-text-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-selected-rich-text-page-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
 }

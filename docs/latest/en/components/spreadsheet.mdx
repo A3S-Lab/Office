@@ -789,20 +789,26 @@ ordered content as native inline-string runs, including
 | Underline | Preserves single, double, single-accounting, and double-accounting variants |
 | Font color | Preserves explicit RGB and matching theme, indexed, automatic, or tint identity |
 
-Format Cells remains a cell-wide command. A family, size, color, bold, italic,
-underline, or strikethrough change is applied immutably to every visible run
-through one controlled workbook update and one Undo record. A number-format
-change retains the inline-string type instead of flattening the rich cell.
-Unchanged semantic color origins are emitted as their native palette reference;
-an edited run color falls back to explicit RGB rather than exporting stale
-theme or indexed metadata.
+Format Cells remains a cell-wide command. While the in-cell editor or formula
+bar contains a non-collapsed text selection, the Home ribbon applies font
+family, size, color, bold, italic, underline, or strikethrough only to that
+selection. Plain strings become native inline-string runs on the first partial
+format, and existing runs split and coalesce without flattening unaffected
+text. Direct ribbon actions restore the selection when the editor remains
+active. Whole-cell formatting and partial formatting both use one controlled
+workbook update so host history and collaboration retain ownership. A
+number-format change retains the inline-string type. Unchanged semantic color
+origins are emitted as their native palette reference; an edited run color
+falls back to explicit RGB rather than exporting stale theme or indexed
+metadata.
 
 Rich-text parsing is bounded before materialization: one cell may contain at
 most 32,767 characters and 512 runs, one import may materialize at most 10,000
 rich-text cells and 100,000 runs, and malformed or oversized candidates do not
-enter the rich-run model. This slice preserves, renders, and applies cell-wide
-font edits to existing runs; caret-level partial-run authoring remains outside
-the public Spreadsheet surface.
+enter the rich-run model. Partial formatting also rejects collapsed selections,
+invalid UTF-16 surrogate boundaries, formula cells, and any result beyond the
+per-cell run limit. Rich-text insertion and editing outside the supported font
+attributes remain outside the public Spreadsheet surface.
 
 Focused import/export/reopen and formatting tests protect shared and inline
 strings, semantic colors, exact whitespace, immutable updates, and number-format

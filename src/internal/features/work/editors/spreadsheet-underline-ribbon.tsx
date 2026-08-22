@@ -1,16 +1,16 @@
 import { ChevronDown, Underline } from 'lucide-react';
 import { Popover } from '../../../design-system/primitives';
 import {
+  type SpreadsheetUnderlineStyle,
   spreadsheetUnderlineCellValue,
   spreadsheetUnderlineStyle,
-  type SpreadsheetUnderlineStyle,
 } from '../work-spreadsheet-underline';
+import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
-import { moveOfficeMenuFocus } from './office-menu-keyboard';
 
 const underlineOptions = [
   { value: 'none', label: '无下划线' },
@@ -34,7 +34,6 @@ export function SpreadsheetUnderlineRibbon({
 }) {
   const style = spreadsheetUnderlineStyle(value);
   const active = style !== 'none';
-  const toggleValue = active ? 0 : 1;
   const definition = spreadsheetCommandCatalog.underline;
   const currentLabel =
     underlineOptions.find((option) => option.value === style)?.label ??
@@ -65,8 +64,8 @@ export function SpreadsheetUnderlineRibbon({
             aria-keyshortcuts={definition.shortcut.aria}
             aria-pressed={active}
             title={`${definition.label}（${currentLabel}；${definition.shortcut.label}）`}
-            disabled={!can.setCellFormat('un', toggleValue)}
-            onClick={() => commands.setCellFormat('un', toggleValue)}
+            disabled={!can.toggleCellFormat('un')}
+            onClick={() => commands.toggleCellFormat('un')}
           >
             <Underline size={15} aria-hidden="true" />
           </button>

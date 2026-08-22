@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added bounded Spreadsheet partial-run formatting while editing a cell or the
+  formula bar. A non-collapsed text selection now accepts font family, size,
+  color, bold, italic, strikethrough, and underline commands from the Home
+  ribbon, converts plain strings to native inline-string runs when needed, and
+  restores the text selection after direct ribbon actions.
+- Kept partial formatting on the controlled workbook path so one command
+  produces one immutable content update and remains available to host history
+  and collaboration. Run splitting rejects invalid UTF-16 boundaries and the
+  existing 32,767-character and 512-run limits still fail closed; unchanged
+  semantic color origins remain available for exact XLSX export.
+
 ## 0.25.0 - 2026-08-22
 
 - Added bounded native XLSX rich-text cell import and export for shared strings

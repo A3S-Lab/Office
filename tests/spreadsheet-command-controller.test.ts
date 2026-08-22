@@ -73,6 +73,39 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('routes font formatting through an active rich-text selection first', () => {
+    const fixture = commandFixture();
+    const calls: Array<{ attribute: keyof Cell; value: unknown }> = [];
+    const toggles: Array<keyof Cell> = [];
+    fixture.context.richTextFormat = {
+      canApply: (attribute) => attribute === 'bl',
+      apply: (attribute, value) => {
+        calls.push({ attribute, value });
+        return true;
+      },
+      canToggle: (attribute) => attribute === 'it',
+      toggle: (attribute) => {
+        toggles.push(attribute);
+        return true;
+      },
+    };
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.commands.setCellFormat('bl', 1)).toBe(true);
+    expect(editor.commands.setCellFormat('bg', '#fff2cc')).toBe(true);
+    expect(editor.commands.toggleCellFormat('it')).toBe(true);
+    expect(calls).toEqual([{ attribute: 'bl', value: 1 }]);
+    expect(toggles).toEqual(['it']);
+    expect(fixture.workbook.formats).toEqual([
+      {
+        attribute: 'bg',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: '#fff2cc',
+      },
+    ]);
+  });
+
   test('owns the common WPS number-format shortcuts', () => {
     const fixture = commandFixture();
     fixture.context.toolbarCell = { v: 45_292.5 };

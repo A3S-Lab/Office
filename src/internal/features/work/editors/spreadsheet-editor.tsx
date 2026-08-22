@@ -4,6 +4,7 @@ import { Cloud, Grid3X3 } from 'lucide-react';
 import {
   memo,
   type ClipboardEvent as ReactClipboardEvent,
+  type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
   useId,
@@ -40,12 +41,12 @@ import {
   drawSpreadsheetCommentMarker,
   drawSpreadsheetConditionalDataBar,
 } from '../work-spreadsheet-conditional-canvas';
+import { spreadsheetConditionalFormatStyles } from '../work-spreadsheet-conditional-format';
+import { drawSpreadsheetConditionalIcon } from '../work-spreadsheet-conditional-icons';
 import {
   drawSpreadsheetDiagonalDownBorder,
   drawSpreadsheetDiagonalUpBorder,
 } from '../work-spreadsheet-diagonal-border-canvas';
-import { spreadsheetConditionalFormatStyles } from '../work-spreadsheet-conditional-format';
-import { drawSpreadsheetConditionalIcon } from '../work-spreadsheet-conditional-icons';
 import { spreadsheetMatrixProfile } from '../work-spreadsheet-matrix-profile';
 import {
   reconcileSpreadsheetPivots,
@@ -64,6 +65,7 @@ import {
   spreadsheetRenderableDiagonalBorders,
 } from './spreadsheet-cell-border';
 import { useSpreadsheetCollaborationPresenceProjection } from './spreadsheet-collaboration-presence';
+import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import {
   createSpreadsheetEditorExtensions,
   type SpreadsheetCommandRange,
@@ -71,7 +73,6 @@ import {
   type SpreadsheetFormatCellsOpenRequest,
   type SpreadsheetStructureAxis,
 } from './spreadsheet-command-controller';
-import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import {
   spreadsheetCoreContextMenuItems,
   spreadsheetSortContextMenuItems,
@@ -105,8 +106,6 @@ import {
   createSpreadsheetFormatCellsDialogSource,
   type SpreadsheetFormatCellsDialogSource,
 } from './spreadsheet-format-cells-dialog-model';
-import { MAX_SPREADSHEET_PASTE_SPECIAL_CELLS } from './spreadsheet-paste-special';
-import { SpreadsheetPasteSpecialDialog } from './spreadsheet-paste-special-dialog';
 import { spreadsheetFreezePanesStatus } from './spreadsheet-freeze-panes';
 import {
   resolveSpreadsheetGoToTarget,
@@ -114,13 +113,19 @@ import {
 } from './spreadsheet-go-to';
 import { synchronizeSpreadsheetWorkbookInPlace } from './spreadsheet-in-place-workbook-sync';
 import { spreadsheetSelectionContainsFocus } from './spreadsheet-keyboard-navigation';
+import { MAX_SPREADSHEET_PASTE_SPECIAL_CELLS } from './spreadsheet-paste-special';
+import { SpreadsheetPasteSpecialDialog } from './spreadsheet-paste-special-dialog';
+import {
+  isSpreadsheetRichTextFormatPointerTarget,
+  SpreadsheetRichTextSelectionController,
+} from './spreadsheet-rich-text-selection-controller';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
+import { spreadsheetTableAtCell } from './spreadsheet-table';
 import {
   beginSpreadsheetTableCellRender,
   finishSpreadsheetTableCellRender,
 } from './spreadsheet-table-render';
 import { createSpreadsheetTableRenderResolver } from './spreadsheet-table-style';
-import { spreadsheetTableAtCell } from './spreadsheet-table';
 import {
   SpreadsheetWorkbookPanel,
   type SpreadsheetWorkbookPanelView,
@@ -143,11 +148,11 @@ import {
   type SpreadsheetCollaborationViewController,
   useSpreadsheetCollaboration,
 } from './use-spreadsheet-collaboration';
+import { useSpreadsheetDataValidation } from './use-spreadsheet-data-validation';
 import {
   type SpreadsheetFormatPainterMode,
   useSpreadsheetFormatPainter,
 } from './use-spreadsheet-format-painter';
-import { useSpreadsheetDataValidation } from './use-spreadsheet-data-validation';
 import { useSpreadsheetHyperlink } from './use-spreadsheet-hyperlink';
 import { useSpreadsheetTable } from './use-spreadsheet-table';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
@@ -263,6 +268,11 @@ function SpreadsheetEditorSurface({
   );
   const contentRef = useRef(materializedContent);
   const spreadsheetCommandsRef = useRef<SpreadsheetEditorCommands | null>(null);
+  const richTextSelectionRef =
+    useRef<SpreadsheetRichTextSelectionController>(null);
+  if (!richTextSelectionRef.current) {
+    richTextSelectionRef.current = new SpreadsheetRichTextSelectionController();
+  }
   const previewRef = useRef(preview);
   const spreadsheetRootRef = useRef<HTMLElement>(null);
   const spreadsheetCanvasRef = useRef<HTMLDivElement>(null);
@@ -1101,6 +1111,44 @@ function SpreadsheetEditorSurface({
     return true;
   }, [navigateToSpreadsheetRange, officeDialog]);
   const spreadsheetExtensions = useMemo(createSpreadsheetEditorExtensions, []);
+  const acceptSpreadsheetCommandChange = (
+    next: WorkSpreadsheetContent,
+  ): void => {
+    const formatCellsSelection = formatCellsApplyingRef.current
+      ? formatCellsSelectionRef.current
+      : null;
+    const dataValidationSelection =
+      spreadsheetDataValidation.selectionForChange();
+    const tableSelection = spreadsheetTable.selectionForChange();
+    const hyperlinkSelection = spreadsheetHyperlink.selectionForChange();
+    const preservedSelection = formatCellsSelection
+      ? {
+          sheetId: formatCellsSelection.sheetId,
+          selections: [formatCellsSelection.selection],
+        }
+      : tableSelection
+        ? {
+            sheetId: tableSelection.sheetId,
+            selections: [tableSelection.selection],
+          }
+        : (dataValidationSelection ??
+          (hyperlinkSelection
+            ? {
+                sheetId: hyperlinkSelection.sheetId,
+                selections: [hyperlinkSelection.selection],
+              }
+            : null));
+    const controlled =
+      preservedSelection && !collaborationView
+        ? spreadsheetContentWithSelections(
+            next,
+            preservedSelection.sheetId,
+            preservedSelection.selections,
+          )
+        : next;
+    contentRef.current = controlled;
+    onChange(controlled);
+  };
   const spreadsheetEditor = useOfficeEditorRuntime(
     {
       activeSheetId,
@@ -1134,41 +1182,32 @@ function SpreadsheetEditorSurface({
         openFind: openSpreadsheetFind,
         openGoTo: openSpreadsheetGoTo,
       },
-      onChange: (next) => {
-        const formatCellsSelection = formatCellsApplyingRef.current
-          ? formatCellsSelectionRef.current
-          : null;
-        const dataValidationSelection =
-          spreadsheetDataValidation.selectionForChange();
-        const tableSelection = spreadsheetTable.selectionForChange();
-        const hyperlinkSelection = spreadsheetHyperlink.selectionForChange();
-        const preservedSelection = formatCellsSelection
-          ? {
-              sheetId: formatCellsSelection.sheetId,
-              selections: [formatCellsSelection.selection],
-            }
-          : tableSelection
-            ? {
-                sheetId: tableSelection.sheetId,
-                selections: [tableSelection.selection],
-              }
-            : (dataValidationSelection ??
-              (hyperlinkSelection
-                ? {
-                    sheetId: hyperlinkSelection.sheetId,
-                    selections: [hyperlinkSelection.selection],
-                  }
-                : null));
-        const controlled =
-          preservedSelection && !collaborationView
-            ? spreadsheetContentWithSelections(
-                next,
-                preservedSelection.sheetId,
-                preservedSelection.selections,
-              )
-            : next;
-        contentRef.current = controlled;
-        onChange(controlled);
+      onChange: acceptSpreadsheetCommandChange,
+      richTextFormat: {
+        apply: (attribute, value) =>
+          richTextSelectionRef.current?.apply(
+            contentRef.current,
+            acceptSpreadsheetCommandChange,
+            attribute,
+            value,
+          ) ?? false,
+        canApply: (attribute, value) =>
+          richTextSelectionRef.current?.canApply(
+            contentRef.current,
+            attribute,
+            value,
+          ) ?? false,
+        canToggle: (attribute) =>
+          richTextSelectionRef.current?.canToggle(
+            contentRef.current,
+            attribute,
+          ) ?? false,
+        toggle: (attribute) =>
+          richTextSelectionRef.current?.toggle(
+            contentRef.current,
+            acceptSpreadsheetCommandChange,
+            attribute,
+          ) ?? false,
       },
       selection: selectionState,
       table: spreadsheetTable.commandPort,
@@ -1219,10 +1258,10 @@ function SpreadsheetEditorSurface({
     [materializedContent.sheets, navigateToSpreadsheetRange],
   );
   useOfficeCollaborationLocationNavigator(navigateToSpreadsheetParticipant);
-  const restoreSpreadsheetGridFocus = useCallback(
-    () => focusSpreadsheetGrid(spreadsheetCanvasRef.current),
-    [],
-  );
+  const restoreSpreadsheetGridFocus = useCallback(() => {
+    if (richTextSelectionRef.current?.restore()) return;
+    focusSpreadsheetGrid(spreadsheetCanvasRef.current);
+  }, []);
   const closeSpreadsheetFind = useCallback(() => {
     setFindOpen(false);
     focusSpreadsheetGrid(spreadsheetCanvasRef.current);
@@ -1319,6 +1358,30 @@ function SpreadsheetEditorSurface({
       return;
     }
     handleSpreadsheetEditingEscape(event);
+  };
+  const handleSpreadsheetPointerDownCapture = (
+    event: ReactPointerEvent<HTMLElement>,
+  ): void => {
+    const controller = richTextSelectionRef.current;
+    if (!controller) return;
+    if (!isSpreadsheetRichTextFormatPointerTarget(event.target)) {
+      controller.clear();
+      return;
+    }
+    const sheetId = activeSheetIdRef.current;
+    if (!sheetId) {
+      controller.clear();
+      return;
+    }
+    const liveSelection = workbookRef.current?.getSelection()?.at(-1);
+    controller.capture({
+      content: contentRef.current,
+      root: spreadsheetRootRef.current,
+      selection: liveSelection
+        ? ({ ...toolbarSelection, ...liveSelection } as Selection)
+        : toolbarSelection,
+      sheetId,
+    });
   };
   const handleSpreadsheetCopy = (
     event: ReactClipboardEvent<HTMLElement>,
@@ -1445,6 +1508,7 @@ function SpreadsheetEditorSurface({
       }
       aria-label="表格工作区"
       onKeyDownCapture={handleSpreadsheetKeyDownCapture}
+      onPointerDownCapture={handleSpreadsheetPointerDownCapture}
       onCopyCapture={(event) => handleSpreadsheetCopy(event, false)}
       onCutCapture={(event) => handleSpreadsheetCopy(event, true)}
       onPasteCapture={handleSpreadsheetPaste}
@@ -1932,6 +1996,7 @@ export function spreadsheetCommandsWithGridFocus(
       commands.setSelectedStructureHidden,
     ),
     setTextOrientation: afterSuccessfulCommand(commands.setTextOrientation),
+    toggleCellFormat: afterSuccessfulCommand(commands.toggleCellFormat),
     toggleAutoFilter: afterSuccessfulCommand(commands.toggleAutoFilter),
     undo: afterSuccessfulCommand(commands.undo),
   };

@@ -2,6 +2,7 @@ import { describe, expect, test } from '@rstest/core';
 import JSZip from 'jszip';
 import * as XLSX from 'xlsx';
 import { importOfficeFile } from '../src/core';
+import { applySpreadsheetRichTextSelectionFormat } from '../src/internal/features/work/editors/spreadsheet-rich-text-selection-format';
 import {
   createWorkArtifactBlob,
   importWorkFile,
@@ -247,6 +248,65 @@ describe('XLSX rich-text cells', () => {
         v: ' inline text',
       },
     ]);
+  });
+
+  test('exports and reopens partial-run formatting without losing untouched semantic colors', async () => {
+    const source = await nativeRichTextWorkbook();
+    const imported = await importOfficeFile(
+      new File([source], 'native-rich-text-partial-format.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }),
+    );
+    if (imported.content.type !== 'spreadsheet') {
+      throw new Error('Expected an imported spreadsheet.');
+    }
+    const sheetId = imported.content.sheets[0]?.id;
+    if (!sheetId) throw new Error('Expected an imported worksheet.');
+    const content = applySpreadsheetRichTextSelectionFormat(imported.content, {
+      attribute: 'fc',
+      column: 0,
+      row: 0,
+      selection: { start: 2, end: 9 },
+      sheetId,
+      value: '#ff0000',
+    });
+    if (!content) throw new Error('Expected partial formatting to succeed.');
+
+    const exported = await createWorkArtifactBlob({ ...imported, content });
+    const archive = await OoxmlPackage.load(await exported.arrayBuffer());
+    const worksheet = await archive.xml('xl/worksheets/sheet1.xml');
+    const cell = descendants(worksheet, 'c').find(
+      (candidate) => candidate.getAttribute('r') === 'A1',
+    );
+    if (!cell) throw new Error('Expected the formatted cell.');
+    const xml = new XMLSerializer().serializeToString(cell);
+    expect(xml).toContain('<color theme="4"');
+    expect(xml).toContain('rgb="FFFF0000"');
+    expect(xml).toContain('<t>Al</t>');
+    expect(xml).toContain('<t>pha</t>');
+    expect(xml).toContain('<t xml:space="preserve"> sha</t>');
+    expect(xml).toContain('<t xml:space="preserve">red </t>');
+
+    const reopened = await importWorkFile(
+      new File([exported], 'native-rich-text-partial-format-reopened.xlsx', {
+        type: exported.type,
+      }),
+    );
+    if (reopened.content.type !== 'spreadsheet') {
+      throw new Error('Expected a reopened spreadsheet.');
+    }
+    expect(reopened.content.sheets[0]?.data?.[0]?.[0]).toMatchObject({
+      ct: {
+        t: 'inlineStr',
+        s: [
+          { bl: 1, fc: '#4f81bd', v: 'Al' },
+          { bl: 1, fc: '#ff0000', v: 'pha' },
+          { fc: '#ff0000', it: 1, v: ' sha' },
+          { it: 1, v: 'red ' },
+        ],
+      },
+      v: 'Alpha shared ',
+    });
   });
 });
 

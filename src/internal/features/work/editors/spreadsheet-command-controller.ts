@@ -1,7 +1,7 @@
 import type { Cell, Selection, Sheet } from '@fortune-sheet/core';
 import type { SpreadsheetGridSize } from '../spreadsheet-sparse';
-import type { WorkSpreadsheetContent } from '../work-types';
 import type { SpreadsheetTextOrientationId } from '../work-spreadsheet-text-orientation';
+import type { WorkSpreadsheetContent } from '../work-types';
 import {
   createOfficeEditorExtension,
   type OfficeEditorCanCommands,
@@ -9,70 +9,72 @@ import {
 } from './office-editor-extension';
 import type { SpreadsheetAutoSumFunction } from './spreadsheet-auto-sum';
 import { createSpreadsheetAutoSumExtension } from './spreadsheet-auto-sum-command';
-import { createSpreadsheetNavigationExtension } from './spreadsheet-navigation-command';
+import type { SpreadsheetCellBorderFormat } from './spreadsheet-cell-border';
+import { createSpreadsheetCellBorderExtension } from './spreadsheet-cell-border-command';
 import {
   clearSpreadsheetSheetSelection,
   type SpreadsheetCellClearMode,
 } from './spreadsheet-cell-clear';
-import type { SpreadsheetCellBorderFormat } from './spreadsheet-cell-border';
-import { createSpreadsheetCellBorderExtension } from './spreadsheet-cell-border-command';
-import type { SpreadsheetCellFormatRequest } from './spreadsheet-cell-format';
-import type { SpreadsheetFormatCellsOpenIntent } from './spreadsheet-format-cells-intent';
-import { createSpreadsheetCellFormatExtension } from './spreadsheet-cell-format-command';
-import type { SpreadsheetCellRange } from './spreadsheet-cell-range';
-import type { SpreadsheetCellStyleChoice } from './spreadsheet-cell-style';
-import { createSpreadsheetCellStyleExtension } from './spreadsheet-cell-style-command';
 import type { SpreadsheetCellFillDirection } from './spreadsheet-cell-fill';
 import { createSpreadsheetCellFillExtension } from './spreadsheet-cell-fill-command';
-import type { SpreadsheetCopyFromAboveKind } from './spreadsheet-copy-from-above';
-import { createSpreadsheetCopyFromAboveExtension } from './spreadsheet-copy-from-above-command';
-import {
-  canEditSpreadsheetSelection,
-  spreadsheetLiveCommandRange,
-} from './spreadsheet-command-selection';
-import {
-  createSpreadsheetFontSizeExtension,
-  type SpreadsheetFontSizeDirection,
-} from './spreadsheet-font-size-command';
-import { createSpreadsheetDataValidationExtension } from './spreadsheet-data-validation-command';
-import {
-  createSpreadsheetDateTimeExtension,
-  type SpreadsheetDateTimeKind,
-} from './spreadsheet-date-time-command';
-import type {
-  SpreadsheetDataValidationRequest,
-  SpreadsheetDataValidationTarget,
-} from './spreadsheet-data-validation';
+import type { SpreadsheetCellFormatRequest } from './spreadsheet-cell-format';
+import { createSpreadsheetCellFormatExtension } from './spreadsheet-cell-format-command';
 import {
   canApplySpreadsheetCellMerge,
   type SpreadsheetCellMergeCommand,
   spreadsheetCellMergeApiCalls,
 } from './spreadsheet-cell-merge';
+import type { SpreadsheetCellRange } from './spreadsheet-cell-range';
+import type { SpreadsheetCellStyleChoice } from './spreadsheet-cell-style';
+import { createSpreadsheetCellStyleExtension } from './spreadsheet-cell-style-command';
+import {
+  canEditSpreadsheetSelection,
+  spreadsheetLiveCommandRange,
+} from './spreadsheet-command-selection';
+import type { SpreadsheetCopyFromAboveKind } from './spreadsheet-copy-from-above';
+import { createSpreadsheetCopyFromAboveExtension } from './spreadsheet-copy-from-above-command';
+import type {
+  SpreadsheetDataValidationRequest,
+  SpreadsheetDataValidationTarget,
+} from './spreadsheet-data-validation';
+import { createSpreadsheetDataValidationExtension } from './spreadsheet-data-validation-command';
+import {
+  createSpreadsheetDateTimeExtension,
+  type SpreadsheetDateTimeKind,
+} from './spreadsheet-date-time-command';
 import {
   finiteSpreadsheetSelection,
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
+import {
+  createSpreadsheetFontSizeExtension,
+  type SpreadsheetFontSizeDirection,
+} from './spreadsheet-font-size-command';
+import type { SpreadsheetFormatCellsOpenIntent } from './spreadsheet-format-cells-intent';
 import type { SpreadsheetFormatPainterMode } from './spreadsheet-format-painter';
-import { createSpreadsheetHyperlinkExtension } from './spreadsheet-hyperlink-command';
-import type {
-  SpreadsheetHyperlinkCell,
-  SpreadsheetHyperlinkRequest,
-} from './spreadsheet-hyperlink';
 import {
   type SpreadsheetFreezePanePreset,
   updateSpreadsheetFreezePanes,
 } from './spreadsheet-freeze-panes';
+import type {
+  SpreadsheetHyperlinkCell,
+  SpreadsheetHyperlinkRequest,
+} from './spreadsheet-hyperlink';
+import { createSpreadsheetHyperlinkExtension } from './spreadsheet-hyperlink-command';
 import type {
   SpreadsheetKeyboardSelection,
   SpreadsheetSelectionMove,
   SpreadsheetSelectionScope,
 } from './spreadsheet-keyboard-navigation';
 import { createSpreadsheetKeyboardShortcutExtension } from './spreadsheet-keyboard-shortcuts';
-import type { SpreadsheetPasteContent } from './spreadsheet-paste-special';
+import { createSpreadsheetNavigationExtension } from './spreadsheet-navigation-command';
 import {
   createSpreadsheetNumberFormatExtension,
   type SpreadsheetDecimalPlacesDirection,
 } from './spreadsheet-number-format-command';
+import type { SpreadsheetPasteContent } from './spreadsheet-paste-special';
+import type { SpreadsheetRichTextToggleAttribute } from './spreadsheet-rich-text-selection-format';
+import { createSpreadsheetSelectionNavigationExtension } from './spreadsheet-selection-navigation-command';
 import {
   activateSpreadsheetSheet,
   addSpreadsheetSheet,
@@ -84,15 +86,14 @@ import {
   type SpreadsheetSheetMoveDirection,
   setSpreadsheetSheetColor,
 } from './spreadsheet-sheet-model';
-import { createSpreadsheetSelectionNavigationExtension } from './spreadsheet-selection-navigation-command';
 import { createSpreadsheetStructureExtension } from './spreadsheet-structure-command';
-import { createSpreadsheetTableExtension } from './spreadsheet-table-command';
-import { createSpreadsheetTextOrientationExtension } from './spreadsheet-text-orientation-command';
 import type {
   SpreadsheetTableDesignPatch,
   SpreadsheetTableRequest,
   SpreadsheetTableTarget,
 } from './spreadsheet-table';
+import { createSpreadsheetTableExtension } from './spreadsheet-table-command';
+import { createSpreadsheetTextOrientationExtension } from './spreadsheet-text-orientation-command';
 import { createSpreadsheetVisibilityShortcutExtension } from './spreadsheet-visibility-shortcuts';
 
 export interface SpreadsheetWorkbookCommandPort {
@@ -252,6 +253,13 @@ export interface SpreadsheetFormulaBarCommandPort {
   setValue: (value: unknown) => void;
 }
 
+export interface SpreadsheetRichTextFormatCommandPort {
+  apply: (attribute: keyof Cell, value: unknown) => boolean;
+  canApply: (attribute: keyof Cell, value: unknown) => boolean;
+  canToggle: (attribute: SpreadsheetRichTextToggleAttribute) => boolean;
+  toggle: (attribute: SpreadsheetRichTextToggleAttribute) => boolean;
+}
+
 export interface SpreadsheetViewCommandPort {
   activateSheet: (sheetId: string) => boolean;
 }
@@ -309,6 +317,7 @@ export interface SpreadsheetEditorCommands {
   renameSheet: (sheetId: string, name: string) => boolean;
   redo: () => boolean;
   setCellFormat: (attribute: keyof Cell, value: unknown) => boolean;
+  toggleCellFormat: (attribute: SpreadsheetRichTextToggleAttribute) => boolean;
   setTextOrientation: (orientation: SpreadsheetTextOrientationId) => boolean;
   setSelectedCellBorders: (format: SpreadsheetCellBorderFormat) => boolean;
   setFreezePanes: (preset: SpreadsheetFreezePanePreset) => boolean;
@@ -355,6 +364,7 @@ export interface SpreadsheetCommandContext {
   history: SpreadsheetHistoryCommandPort | null;
   navigation: SpreadsheetNavigationCommandPort;
   onChange: (content: WorkSpreadsheetContent) => void;
+  richTextFormat?: SpreadsheetRichTextFormatCommandPort | null;
   selection: SpreadsheetCommandSelection | null;
   table: SpreadsheetTableCommandPort;
   targetSheetGridSize?: SpreadsheetGridSize | null;
@@ -630,6 +640,10 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
           canExecute: canEditSpreadsheetSelection,
           execute: formatCells,
         },
+        toggleCellFormat: {
+          canExecute: canToggleCellFormat,
+          execute: toggleCellFormat,
+        },
         mergeSelectedCells: {
           canExecute: canMergeSelectedCells,
           execute: mergeSelectedCells,
@@ -779,6 +793,9 @@ function formatCells(
   attribute: keyof Cell,
   value: unknown,
 ): boolean {
+  if (context.richTextFormat?.canApply(attribute, value)) {
+    return context.richTextFormat.apply(attribute, value);
+  }
   if (!context.workbook || !context.targetSheetId) return false;
   if (attribute === 'ct' && !isSpreadsheetCellTypeFormat(value)) return false;
   try {
@@ -794,6 +811,31 @@ function formatCells(
   } catch {
     return false;
   }
+}
+
+function canToggleCellFormat(
+  context: SpreadsheetCommandContext,
+  attribute: SpreadsheetRichTextToggleAttribute,
+): boolean {
+  if (!['bl', 'cl', 'it', 'un'].includes(attribute)) return false;
+  return Boolean(
+    context.richTextFormat?.canToggle(attribute) ||
+      canEditSpreadsheetSelection(context),
+  );
+}
+
+function toggleCellFormat(
+  context: SpreadsheetCommandContext,
+  attribute: SpreadsheetRichTextToggleAttribute,
+): boolean {
+  if (context.richTextFormat?.canToggle(attribute)) {
+    return context.richTextFormat.toggle(attribute);
+  }
+  const active =
+    attribute === 'un'
+      ? Number(context.toolbarCell?.un) >= 1
+      : Number(context.toolbarCell?.[attribute]) === 1;
+  return formatCells(context, attribute, active ? 0 : 1);
 }
 
 function isSpreadsheetCellTypeFormat(

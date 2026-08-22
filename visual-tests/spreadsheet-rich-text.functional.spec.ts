@@ -36,3 +36,62 @@ test('Spreadsheet renders native rich text and formats every run through one con
   });
   expect(browserErrors).toEqual([]);
 });
+
+test('Spreadsheet formats only selected rich text and restores the formula-bar selection', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await page.goto('/?e2e=spreadsheet-rich-text');
+
+  const status = page.getByTestId('spreadsheet-rich-text-status');
+  const formulaBar = page.locator('.fortune-fx-input');
+  await expect(formulaBar).toHaveText('Native rich text');
+  await formulaBar.click();
+  await formulaBar.evaluate((editor) => {
+    const text = editor.textContent ?? '';
+    const startOffset = text.indexOf('rich');
+    const endOffset = startOffset + 'rich'.length;
+    const pointAtOffset = (requestedOffset: number) => {
+      const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+      let remaining = requestedOffset;
+      let node = walker.nextNode();
+      while (node) {
+        const length = node.textContent?.length ?? 0;
+        if (remaining <= length) return { node, offset: remaining };
+        remaining -= length;
+        node = walker.nextNode();
+      }
+      throw new Error(`Cannot resolve formula-bar offset ${requestedOffset}.`);
+    };
+    if (startOffset < 0) throw new Error('Expected the rich-text fixture.');
+    const start = pointAtOffset(startOffset);
+    const end = pointAtOffset(endOffset);
+    const range = document.createRange();
+    range.setStart(start.node, start.offset);
+    range.setEnd(end.node, end.offset);
+    const selection = window.getSelection();
+    if (!selection) throw new Error('Expected a browser text selection.');
+    selection.removeAllRanges();
+    selection.addRange(range);
+    (editor as HTMLElement).focus();
+  });
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(
+    'rich',
+  );
+
+  await page.getByRole('button', { name: '加粗' }).click();
+
+  await expect(status).toHaveAttribute('data-revision', '2');
+  await expect(status).toHaveAttribute('data-run-count', '4');
+  await expect(status).toHaveAttribute('data-run-bold', '1,1,0,0');
+  await expect(status).toHaveAttribute('data-run-text', 'Native rich text');
+  await expect(formulaBar).toBeFocused();
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(
+    'rich',
+  );
+  expect(browserErrors).toEqual([]);
+});

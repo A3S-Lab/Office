@@ -330,7 +330,20 @@ record, and number-format edits retain the rich-string type. Parsing and
 materialization fail closed beyond 32,767 characters, 512 runs per cell,
 10,000 cells, or 100,000 total runs. Focused import/export/reopen, scanner,
 formatting, desktop/compact Playwright, and local-only A3S Test 1.0.0 evidence
-cover this boundary; partial-run authoring remains a documented gap.
+cover this boundary; at that milestone, partial-run authoring remained a
+documented gap.
+The thirty-second milestone adds bounded partial-run formatting to the live
+Spreadsheet cell editor and formula bar. A non-collapsed text selection routes
+font family, size, color, bold, italic, strikethrough, and underline through a
+single optional rich-text command port before whole-cell formatting. Plain
+strings become native inline-string runs only when the command succeeds;
+existing runs split and coalesce without flattening unaffected content, and
+unchanged semantic color origins remain eligible for exact XLSX export. Direct
+ribbon actions restore the selected text when the editor remains active. The
+model rejects malformed coordinates, invalid values, UTF-16 surrogate splits,
+formula cells, and results beyond 32,767 characters or 512 runs. One immutable
+controlled update preserves host history and collaboration ownership. Rich-text
+insertion and editing beyond the supported font attributes remain later work.
 
 ## Product Rules
 

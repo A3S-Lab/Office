@@ -1,4 +1,4 @@
-import { access, readFile, readdir } from 'node:fs/promises';
+import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@rstest/core';
 import {
@@ -1223,7 +1223,7 @@ test('documents focused Spreadsheet font-dialog shortcuts in 0.24.0', async () =
   }
 });
 
-test('documents native Spreadsheet rich-text cells in 0.25.0', async () => {
+test('documents native and partial-run Spreadsheet rich-text cells', async () => {
   for (const version of ['latest', '0.25.0']) {
     const [english, chinese] = await Promise.all([
       readFile(
@@ -1243,11 +1243,22 @@ test('documents native Spreadsheet rich-text cells in 0.25.0', async () => {
       '32,767 characters',
       '512 runs',
       '100,000 runs',
-      'partial-run authoring',
       'spreadsheet-rich-text.acl',
       'A3S Test 1.0.0',
     ]) {
       expect(english).toContain(evidence);
+    }
+    if (version === 'latest') {
+      for (const evidence of [
+        'non-collapsed text selection',
+        'Home ribbon applies font',
+        'bold, italic, underline, or strikethrough',
+        'invalid UTF-16 surrogate boundaries',
+      ]) {
+        expect(english).toContain(evidence);
+      }
+    } else {
+      expect(english).toContain('partial-run authoring');
     }
     for (const evidence of [
       '## 原生 XLSX 单元格富文本',
@@ -1256,11 +1267,21 @@ test('documents native Spreadsheet rich-text cells in 0.25.0', async () => {
       '32,767 个字符',
       '512 个文字片段',
       '100,000 个片段',
-      '局部片段创作',
       'spreadsheet-rich-text.acl',
       'A3S Test 1.0.0',
     ]) {
       expect(chinese).toContain(evidence);
+    }
+    if (version === 'latest') {
+      for (const evidence of [
+        '选中非空文字',
+        '字体、字号、颜色、粗体、斜体、下划线与删除线',
+        'UTF-16 代理对',
+      ]) {
+        expect(chinese).toContain(evidence);
+      }
+    } else {
+      expect(chinese).toContain('局部片段创作');
     }
   }
 });

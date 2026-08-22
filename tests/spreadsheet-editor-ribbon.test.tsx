@@ -550,6 +550,7 @@ test('offers the six WPS text orientations as an accessible radio menu', async (
 test('routes WPS font, underline styles, vertical alignment, and wrapping through cell formats', () => {
   const formats: Array<{ attribute: string; value: unknown }> = [];
   const fontSteps: string[] = [];
+  const toggles: string[] = [];
   render(
     <SpreadsheetEditorRibbon
       activeTab="home"
@@ -563,6 +564,10 @@ test('routes WPS font, underline styles, vertical alignment, and wrapping throug
         {
           adjustFontSize: (direction) => {
             fontSteps.push(direction);
+            return true;
+          },
+          toggleCellFormat: (attribute) => {
+            toggles.push(attribute);
             return true;
           },
         },
@@ -611,12 +616,11 @@ test('routes WPS font, underline styles, vertical alignment, and wrapping throug
 
   expect(formats).toEqual([
     { attribute: 'ff', value: 'SimSun' },
-    { attribute: 'un', value: 0 },
     { attribute: 'un', value: 4 },
-    { attribute: 'cl', value: 1 },
     { attribute: 'vt', value: 2 },
     { attribute: 'tb', value: '1' },
   ]);
+  expect(toggles).toEqual(['un', 'cl']);
   expect(fontSteps).toEqual(['grow', 'shrink']);
   expect(growFont).toHaveAttribute(
     'aria-keyshortcuts',
@@ -1340,6 +1344,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     renameSheet: () => true,
     redo: () => false,
     setCellFormat: () => true,
+    toggleCellFormat: () => true,
     setTextOrientation: () => true,
     setFreezePanes: () => true,
     setGridLines: () => true,
@@ -1396,6 +1401,7 @@ function spreadsheetCommands(
       | 'setFreezePanes'
       | 'setSelectedStructureHidden'
       | 'setTextOrientation'
+      | 'toggleCellFormat'
       | 'toggleAutoFilter'
       | 'updateTable'
     >
@@ -1445,6 +1451,7 @@ function spreadsheetCommands(
     renameSheet: () => true,
     redo: () => false,
     setCellFormat,
+    toggleCellFormat: overrides.toggleCellFormat ?? (() => true),
     setFreezePanes: overrides.setFreezePanes ?? (() => true),
     setGridLines: () => true,
     setSelectedCellBorders: () => true,
