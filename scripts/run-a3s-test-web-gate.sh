@@ -124,6 +124,7 @@ suites=(
   "tests/e2e/spreadsheet-ribbon-orientation-visibility.acl"
   "tests/e2e/spreadsheet-font-colors-shortcuts.acl"
   "tests/e2e/spreadsheet-date-time.acl"
+  "tests/e2e/spreadsheet-copy-from-above.acl"
   "tests/e2e/spreadsheet-table.acl"
   "tests/e2e/spreadsheet-data-validation.acl"
   "tests/e2e/spreadsheet-hyperlink.acl"
@@ -133,6 +134,14 @@ suites=(
   "tests/e2e/word-formatting-revision.acl"
   "tests/e2e/word-paragraph-formatting-revision.acl"
 )
+
+if [[ -n "${A3S_TEST_SUITE:-}" ]]; then
+  if [[ "$A3S_TEST_SUITE" != tests/e2e/*.acl || ! -f "$A3S_TEST_SUITE" ]]; then
+    echo "A3S_TEST_SUITE must name an existing tests/e2e/*.acl file." >&2
+    exit 1
+  fi
+  suites=("$A3S_TEST_SUITE")
+fi
 
 for suite in "${suites[@]}"; do
   suite_name="$(basename "$suite" .acl)"

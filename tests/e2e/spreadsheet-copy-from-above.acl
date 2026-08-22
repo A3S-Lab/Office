@@ -1,0 +1,90 @@
+suite "office-spreadsheet-copy-from-above" {
+    version = 1
+
+    scenario "copy-formula-and-value-from-above" {
+        name = "Copy the exact Spreadsheet formula or calculated value from above"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-copy-from-above-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-copy-from-above"
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "fixture-starts-at-first-revision" {
+            visible = css("[data-testid='spreadsheet-copy-from-above-status'][data-revision='1'][data-target-formula=''][data-target-value='Replace me']")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "copy-exact-formula-from-above" {
+            key = "Control+'"
+        }
+
+        expect "formula-copy-is-one-controlled-update" {
+            visible = css("[data-testid='spreadsheet-copy-from-above-status'][data-revision='2'][data-target-formula='=$A$1+A1'][data-target-bold='1'][data-target-italic='1'][data-target-fill='#ddebf7'][data-target-format='0.00']")
+        }
+
+        expect "formula-bar-keeps-the-source-formula" {
+            text = "=$A$1+A1"
+        }
+
+        expect "formula-copy-restores-grid-focus" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "undo-formula-copy" {
+            key = "Control+z"
+        }
+
+        expect "one-undo-restores-the-target" {
+            visible = css("[data-testid='spreadsheet-copy-from-above-status'][data-revision='3'][data-target-formula=''][data-target-value='Replace me']")
+        }
+
+        press "copy-calculated-value-from-above" {
+            key = "Control+Shift+'"
+        }
+
+        expect "value-copy-removes-formula-and-keeps-style" {
+            visible = css("[data-testid='spreadsheet-copy-from-above-status'][data-revision='4'][data-target-formula=''][data-target-value='6'][data-target-bold='1'][data-target-italic='1'][data-target-fill='#ddebf7'][data-target-format='0.00']")
+        }
+
+        press "undo-value-copy" {
+            key = "Control+z"
+        }
+
+        expect "value-copy-also-undoes-in-one-step" {
+            visible = css("[data-testid='spreadsheet-copy-from-above-status'][data-revision='5'][data-target-formula=''][data-target-value='Replace me']")
+        }
+
+        screenshot "spreadsheet-copy-from-above" {
+            path = "screenshots/spreadsheet-copy-from-above.png"
+        }
+
+        accessibility "spreadsheet-copy-from-above-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

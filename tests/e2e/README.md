@@ -283,6 +283,21 @@ only through the local A3S Test 1.0.0 release gate; GitHub Actions and Pages
 use equivalent Rstest and Playwright coverage and never install or invoke A3S
 Test.
 
+The Spreadsheet copy-from-above shortcuts have a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-copy-from-above:check
+bun run test:e2e:spreadsheet-copy-from-above
+```
+
+It covers exact formula copying with `Ctrl+'`, cached-value copying with
+`Ctrl+Shift+'`, formula-bar synchronization, target-style preservation, one
+controlled update per command, and one-step Undo. The dedicated Playground
+fixture exposes revision and cell-state evidence; desktop and compact
+Playwright keep the same workflow under the browser release gate. The A3S Test
+1.0.0 suite remains local-only and is never installed or invoked by GitHub
+Actions or Pages.
+
 The native Spreadsheet Table lifecycle has a focused local gate:
 
 ```bash

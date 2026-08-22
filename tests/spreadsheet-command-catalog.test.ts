@@ -306,6 +306,8 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     spreadsheetCommandCatalog.fillRight,
     spreadsheetCommandCatalog.fillUp,
     spreadsheetCommandCatalog.fillLeft,
+    spreadsheetCommandCatalog.copyFormulaFromAbove,
+    spreadsheetCommandCatalog.copyValueFromAbove,
     spreadsheetCommandCatalog.clearAll,
     spreadsheetCommandCatalog.clearFormats,
     spreadsheetCommandCatalog.clearContents,
@@ -340,6 +342,16 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     aria: 'Control+R Meta+R',
     editor: ['Mod-r'],
     label: 'Cmd/Ctrl+R',
+  });
+  expect(spreadsheetCommandCatalog.copyFormulaFromAbove.shortcut).toEqual({
+    aria: "Control+'",
+    editor: ["Control-'"],
+    label: "Ctrl+'",
+  });
+  expect(spreadsheetCommandCatalog.copyValueFromAbove.shortcut).toEqual({
+    aria: "Control+Shift+'",
+    editor: ["Control-Shift-'"],
+    label: "Ctrl+Shift+'",
   });
   expect(spreadsheetCommandCatalog.find.shortcut).toEqual({
     aria: 'Control+F Meta+F',

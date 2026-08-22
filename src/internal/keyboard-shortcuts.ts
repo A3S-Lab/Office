@@ -80,6 +80,7 @@ function shortcutCodeKey(code: string): string | null {
   if (code === 'Equal') return 'equal';
   if (code === 'Minus') return 'minus';
   if (code === 'Semicolon') return ';';
+  if (code === 'Quote') return "'";
   if (code === 'Comma') return ',';
   if (code === 'Period') return '.';
   return null;

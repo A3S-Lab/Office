@@ -1900,6 +1900,7 @@ export function spreadsheetCommandsWithGridFocus(
     ),
     cancelFormatPainter: afterSuccessfulCommand(commands.cancelFormatPainter),
     clearSelectedCells: afterSuccessfulCommand(commands.clearSelectedCells),
+    copyCellFromAbove: afterSuccessfulCommand(commands.copyCellFromAbove),
     copySelection: afterSuccessfulCommand(commands.copySelection),
     convertTableToRange: afterSuccessfulCommand(commands.convertTableToRange),
     cutSelection: afterSuccessfulCommand(commands.cutSelection),

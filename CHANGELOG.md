@@ -4,6 +4,26 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.23.0 - 2026-08-22
+
+- Added grid-scoped Spreadsheet `Ctrl+'` to copy the exact formula text from
+  the active cell's neighbor above without translating relative references.
+  When the source is a constant, the same command copies its scalar value.
+  Added `Ctrl+Shift+'` to copy only the source's calculated or displayed value
+  and remove an existing target formula.
+- Kept each gesture limited to the active cell while preserving the broader
+  selection and every target style, including emphasis, fill, and number
+  format. One native `setCellValuesByRange` batch produces one controlled
+  update and one Undo record, and the formula bar synchronizes on a best-effort
+  path after the mutation succeeds.
+- Added fail-closed guards for top-row, bounds, read-only, inactive, protected,
+  merged, pivot, array, dynamic-array, data-table, external, and malformed
+  formula cases. Focused Rstest, desktop/compact Playwright, and a local-only
+  A3S Test 1.0.0 ACL cover exact formula/value behavior, target-style
+  preservation, revision counts, one-step Undo, accessibility, and empty
+  browser diagnostics. GitHub Actions and Pages do not install or invoke A3S
+  Test.
+
 ## 0.22.0 - 2026-08-22
 
 - Added static Traditional Office/Excel Spreadsheet current-date (`Ctrl+;`) and

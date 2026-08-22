@@ -564,6 +564,26 @@ export const spreadsheetCommandCatalog = {
     label: '向左填充',
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
+  copyFormulaFromAbove: {
+    id: 'editing.copyFormulaFromAbove',
+    label: '复制上方公式',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+    shortcut: {
+      label: "Ctrl+'",
+      aria: "Control+'",
+      editor: ["Control-'"],
+    },
+  },
+  copyValueFromAbove: {
+    id: 'editing.copyValueFromAbove',
+    label: '复制上方值',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+    shortcut: {
+      label: "Ctrl+Shift+'",
+      aria: "Control+Shift+'",
+      editor: ["Control-Shift-'"],
+    },
+  },
   clearAll: {
     id: 'editing.clearAll',
     label: '清除全部',

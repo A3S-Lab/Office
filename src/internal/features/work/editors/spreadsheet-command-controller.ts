@@ -23,6 +23,8 @@ import type { SpreadsheetCellStyleChoice } from './spreadsheet-cell-style';
 import { createSpreadsheetCellStyleExtension } from './spreadsheet-cell-style-command';
 import type { SpreadsheetCellFillDirection } from './spreadsheet-cell-fill';
 import { createSpreadsheetCellFillExtension } from './spreadsheet-cell-fill-command';
+import type { SpreadsheetCopyFromAboveKind } from './spreadsheet-copy-from-above';
+import { createSpreadsheetCopyFromAboveExtension } from './spreadsheet-copy-from-above-command';
 import {
   canEditSpreadsheetSelection,
   spreadsheetLiveCommandRange,
@@ -269,6 +271,7 @@ export interface SpreadsheetEditorCommands {
   applyTable: (request: SpreadsheetTableRequest) => boolean;
   cancelFormatPainter: () => boolean;
   clearSelectedCells: (mode?: SpreadsheetCellClearMode) => boolean;
+  copyCellFromAbove: (kind: SpreadsheetCopyFromAboveKind) => boolean;
   copySelection: () => boolean;
   cutSelection: () => boolean;
   deleteSelectedStructure: (axis: SpreadsheetStructureAxis) => boolean;
@@ -393,6 +396,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     createSpreadsheetTableExtension(),
     createSpreadsheetAutoSumExtension(),
     createSpreadsheetCellFillExtension(),
+    createSpreadsheetCopyFromAboveExtension(),
     createSpreadsheetVisibilityShortcutExtension(),
     createOfficeEditorExtension<
       SpreadsheetCommandContext,

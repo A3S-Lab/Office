@@ -13,3 +13,22 @@ test('matches shifted semicolon shortcuts by physical key code', () => {
     true,
   );
 });
+
+test('matches shifted and unshifted apostrophe shortcuts by physical key code', () => {
+  const formula = new KeyboardEvent('keydown', {
+    code: 'Quote',
+    ctrlKey: true,
+    key: "'",
+  });
+  const value = new KeyboardEvent('keydown', {
+    code: 'Quote',
+    ctrlKey: true,
+    key: '"',
+    shiftKey: true,
+  });
+
+  expect(matchesOfficeEditorKeyboardShortcut(formula, "Control-'")).toBe(true);
+  expect(matchesOfficeEditorKeyboardShortcut(value, "Control-Shift-'")).toBe(
+    true,
+  );
+});

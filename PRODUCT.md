@@ -292,6 +292,18 @@ and one Undo record. Read-only, inactive, locked, protected, merged, pivot, and
 out-of-XLSX-bounds targets fail before mutation. Host inputs, formula or cell
 editing, modals, composing events, repeated keydown, and Meta-only gestures
 remain outside shortcut ownership.
+The twenty-ninth milestone adds exact copy-from-above semantics to the
+Spreadsheet command runtime. Grid-scoped `Ctrl+'` copies the source formula
+text without translating relative references and falls back to its scalar when
+the cell above is not a formula. `Ctrl+Shift+'` copies only the calculated or
+displayed source value and removes any target formula. Each command writes only
+the active cell through one native batch, preserves the broader selection and
+all target formatting, publishes one controlled update, and creates one Undo
+record. Top-row, out-of-bounds, inactive, read-only, protected, merged, pivot,
+array, dynamic-array, data-table, external, and malformed-formula cases fail
+closed at the appropriate formula or target boundary. Host inputs, the formula
+bar, active cell editing, popovers, dialogs, composing events, and repeated
+keydown remain outside shortcut ownership.
 
 ## Product Rules
 

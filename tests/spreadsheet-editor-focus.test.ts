@@ -206,6 +206,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     applyFormatPainter: record('applyFormatPainter'),
     cancelFormatPainter: record('cancelFormatPainter'),
     clearSelectedCells: record('clearSelectedCells'),
+    copyCellFromAbove: record('copyCellFromAbove'),
     copySelection: record('copySelection'),
     cutSelection: record('cutSelection', false),
     deleteSelectedStructure: record('deleteSelectedStructure'),
@@ -238,6 +239,7 @@ test('returns grid focus after successful ribbon commands only', () => {
   expect(ribbon.applyAutoSum('sum')).toBe(true);
   expect(ribbon.setCellFormat('bl', 1)).toBe(true);
   expect(ribbon.clearSelectedCells('formats')).toBe(true);
+  expect(ribbon.copyCellFromAbove('formula')).toBe(true);
   expect(ribbon.setGridLines(false)).toBe(true);
   expect(
     ribbon.setSelectedCellBorders({
@@ -274,6 +276,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     'applyAutoSum:sum',
     'setCellFormat:bl,1',
     'clearSelectedCells:formats',
+    'copyCellFromAbove:formula',
     'setGridLines:false',
     'setSelectedCellBorders:[object Object]',
     'setFreezePanes:topRow',
@@ -297,6 +300,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setZoom:125',
   ]);
   expect(focused).toEqual([
+    'grid',
     'grid',
     'grid',
     'grid',

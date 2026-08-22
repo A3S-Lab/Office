@@ -56,6 +56,7 @@ import {
 } from './pdf-collaboration-fixture';
 import type { NoticeTone } from './playground-types';
 import { SPREADSHEET_DATE_TIME_FIXTURE } from './spreadsheet-date-time-fixture';
+import { SPREADSHEET_COPY_FROM_ABOVE_FIXTURE } from './spreadsheet-copy-from-above-fixture';
 import {
   type PlaygroundPresentationElementStage,
   usePlaygroundPresentationCollaborationFixture,
@@ -124,6 +125,14 @@ export function EditorWorkspace({
   const spreadsheetDateTimeFixture =
     e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE &&
     artifact.content.type === 'spreadsheet';
+  const spreadsheetCopyFromAboveFixture =
+    e2eFixture === SPREADSHEET_COPY_FROM_ABOVE_FIXTURE &&
+    artifact.content.type === 'spreadsheet';
+  const spreadsheetCopyFromAboveTarget =
+    e2eFixture === SPREADSHEET_COPY_FROM_ABOVE_FIXTURE &&
+    artifact.content.type === 'spreadsheet'
+      ? artifact.content.sheets[0]?.data?.[1]?.[1]
+      : undefined;
   const loadPdf = useCallback(() => readSourceBlob(artifact), [artifact]);
   const controlledReviewFixture = e2eFixture === 'word-review-conflict';
   const controlledReviewFixtureReady =
@@ -329,6 +338,28 @@ export function EditorWorkspace({
                   aria-live="polite"
                 >
                   日期与时间快捷输入 · 修订 {artifact.revision}
+                </output>
+              )}
+              {spreadsheetCopyFromAboveFixture && (
+                <output
+                  className="playground-sparse-fixture-status"
+                  data-testid="spreadsheet-copy-from-above-status"
+                  data-revision={artifact.revision}
+                  data-target-formula={spreadsheetCopyFromAboveTarget?.f ?? ''}
+                  data-target-value={
+                    spreadsheetCopyFromAboveTarget?.v == null
+                      ? ''
+                      : String(spreadsheetCopyFromAboveTarget.v)
+                  }
+                  data-target-bold={spreadsheetCopyFromAboveTarget?.bl ?? 0}
+                  data-target-italic={spreadsheetCopyFromAboveTarget?.it ?? 0}
+                  data-target-fill={spreadsheetCopyFromAboveTarget?.bg ?? ''}
+                  data-target-format={
+                    spreadsheetCopyFromAboveTarget?.ct?.fa ?? ''
+                  }
+                  aria-live="polite"
+                >
+                  从上方复制 · 修订 {artifact.revision}
                 </output>
               )}
               {collaborationDemo && (

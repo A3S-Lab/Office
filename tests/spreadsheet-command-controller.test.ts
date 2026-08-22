@@ -880,6 +880,53 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('registers exact formula and cached-value copies from the cell above', () => {
+    const fixture = commandFixture();
+    const sheet: Sheet = {
+      id: 'sheet-1',
+      name: 'Sheet 1',
+      data: [
+        [{ v: 3 }, { f: '=$A$1+A1', v: 6, m: '6.00' }],
+        [null, { v: 'Replace me', bl: 1, bg: '#ddebf7' }],
+      ],
+    };
+    fixture.context.content.sheets[0] = sheet;
+    fixture.workbook.sheet = sheet;
+    fixture.workbook.selection = [
+      {
+        row: [1, 1],
+        column: [1, 1],
+        row_focus: 1,
+        column_focus: 1,
+      },
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetCopyFromAbove');
+    expect(editor.can().copyCellFromAbove('formula')).toBe(true);
+    expect(editor.commands.copyCellFromAbove('formula')).toBe(true);
+    expect(editor.commands.copyCellFromAbove('value')).toBe(true);
+    expect(fixture.workbook.clearBatches).toEqual([
+      [
+        {
+          name: 'setCellValuesByRange',
+          args: [
+            [['=$A$1+A1']],
+            { row: [1, 1], column: [1, 1] },
+            { id: 'sheet-1' },
+          ],
+        },
+      ],
+      [
+        {
+          name: 'setCellValuesByRange',
+          args: [[[6]], { row: [1, 1], column: [1, 1] }, { id: 'sheet-1' }],
+        },
+      ],
+    ]);
+    expect(fixture.formulaBarValues).toEqual(['=$A$1+A1', 6]);
+  });
+
   test('keeps unavailable or failed WPS fill shortcuts out of the browser', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [{ row: [0, 0], column: [0, 0] }];
