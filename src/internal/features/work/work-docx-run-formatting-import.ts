@@ -17,6 +17,8 @@ import {
   resolveDocxTableStyleResolver,
 } from './work-docx-table-styles';
 import { attribute, descendants, directChild } from './work-ooxml-package';
+import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
+import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
 import { documentWordLineHeightFactor } from './work-document-word-line-metrics';
 import {
   type DocxThemeColorReference,
@@ -50,6 +52,7 @@ export interface ImportedDocxRunFormatting {
   strike?: WorkDocumentStrikeFormatting;
   subscript?: boolean;
   superscript?: boolean;
+  characterSpacingTwips?: number;
   fontFamily?: string;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
@@ -93,6 +96,7 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'dstrike',
   'caps',
   'smallCaps',
+  'spacing',
   'rFonts',
   'sz',
   'szCs',
@@ -216,6 +220,7 @@ function resolvedRunFormatting(
   let fontHint: DocxFontSlot | undefined;
   let allCaps: boolean | undefined;
   let smallCaps: boolean | undefined;
+  let characterSpacingTwips: number | undefined;
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
@@ -239,6 +244,10 @@ function resolvedRunFormatting(
     smallCaps = overriddenBoolean(
       smallCaps,
       onOffProperty(properties, 'smallCaps'),
+    );
+    characterSpacingTwips = overriddenValue(
+      characterSpacingTwips,
+      docxCharacterSpacingTwipsFromProperties(properties),
     );
     const verticalAlign = directChild(properties, 'vertAlign');
     if (verticalAlign) {
@@ -408,6 +417,7 @@ function resolvedRunFormatting(
     ...(resolvedStrike ? { strike: resolvedStrike } : {}),
     ...(subscript !== undefined ? { subscript } : {}),
     ...(superscript !== undefined ? { superscript } : {}),
+    ...(characterSpacingTwips !== undefined ? { characterSpacingTwips } : {}),
     ...(fontFamily
       ? {
           fontFamily,
@@ -464,6 +474,14 @@ function formattingMarkup(
     span.style.textDecorationLine = 'none';
   }
   if (formatting.fontFamily) span.style.fontFamily = formatting.fontFamily;
+  if (formatting.characterSpacingTwips !== undefined) {
+    for (const [name, value] of Object.entries(
+      documentCharacterSpacingDomAttributes(formatting.characterSpacingTwips),
+    )) {
+      if (name === 'style') span.style.cssText += `; ${value}`;
+      else span.setAttribute(name, value);
+    }
+  }
   if (formatting.wordLineHeightFactor !== undefined) {
     const factor = formatLineHeightFactor(formatting.wordLineHeightFactor);
     span.dataset.officeWordLineHeightFactor = factor;

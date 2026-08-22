@@ -9,6 +9,7 @@ export interface DocumentWpsShortcutCallbacks {
   canInsertComment: boolean;
   canRefreshFields: boolean;
   onInsertComment: () => void;
+  onOpenFontDialog: () => void;
   onOpenWordCount: () => void;
   onRefreshFields: () => void;
   onToggleSpellcheck: () => void;
@@ -106,6 +107,10 @@ export function runDocumentWpsShortcut(
   }
   if (key === '[') {
     changeDocumentFontSize(editor, -1);
+    return true;
+  }
+  if (key === 'd') {
+    callbacks.onOpenFontDialog();
     return true;
   }
 

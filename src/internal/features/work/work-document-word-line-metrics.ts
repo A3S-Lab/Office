@@ -2,6 +2,11 @@ import FontFamily from '@tiptap/extension-text-style/font-family';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
 import {
+  documentCharacterSpacingDomAttributes,
+  documentCharacterSpacingTwipsFromElement,
+  normalizeDocumentCharacterSpacingTwips,
+} from './work-document-character-spacing';
+import {
   parseDocxThemeReference,
   serializeDocxThemeReference,
 } from './work-docx-theme-reference';
@@ -34,6 +39,7 @@ const DOCUMENT_WORD_LINE_HEIGHT_FACTORS = new Map<string, number>([
 
 declare module '@tiptap/extension-text-style' {
   interface TextStyleAttributes {
+    characterSpacingTwips?: number | null;
     wordLineHeightFactor?: number | null;
     wordSnapToGrid?: boolean | null;
     themeColor?: string | null;
@@ -64,6 +70,17 @@ export function normalizedDocumentWordLineHeightFactor(
 export const DocumentTextStyle = TextStyle.extend({
   addAttributes() {
     return {
+      characterSpacingTwips: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          documentCharacterSpacingTwipsFromElement(element),
+        renderHTML: (attributes: Record<string, unknown>) =>
+          documentCharacterSpacingDomAttributes(
+            normalizeDocumentCharacterSpacingTwips(
+              attributes.characterSpacingTwips,
+            ),
+          ),
+      },
       wordLineHeightFactor: {
         default: null,
         parseHTML: (element: HTMLElement) =>

@@ -141,6 +141,25 @@ test('executes scoped WPS Writer review shortcuts and ignores unrelated keys', (
   ]);
 });
 
+test('routes the unshifted font-dialog shortcut without colliding with double underline', () => {
+  editor = createEditor();
+  const calls: string[] = [];
+  const callbacks = createCallbacks(calls);
+
+  expect(
+    runDocumentWpsShortcut(editor, shortcut({ key: 'd' }), callbacks),
+  ).toBe(true);
+  expect(
+    runDocumentWpsShortcut(
+      editor,
+      shortcut({ key: 'd', shiftKey: true }),
+      callbacks,
+    ),
+  ).toBe(true);
+  expect(calls).toEqual(['fontDialog']);
+  expect(editor.getAttributes('underline').underlineStyle).toBe('double');
+});
+
 function createEditor(): Editor {
   const currentEditor = new Editor({
     extensions: createWorkDocumentExtensions(),
@@ -174,6 +193,7 @@ function createCallbacks(calls: string[] = []) {
     canInsertComment: true,
     canRefreshFields: true,
     onInsertComment: () => calls.push('comment'),
+    onOpenFontDialog: () => calls.push('fontDialog'),
     onOpenWordCount: () => calls.push('wordCount'),
     onRefreshFields: () => calls.push('refresh'),
     onToggleSpellcheck: () => calls.push('spellcheck'),

@@ -49,6 +49,7 @@ export function DocumentPageChromeRibbon({
   showPageNumber,
   onEditingPartChange,
   onTogglePageNumber,
+  onOpenFontDialog,
   onClose,
 }: {
   editor: Editor;
@@ -56,6 +57,7 @@ export function DocumentPageChromeRibbon({
   showPageNumber: boolean;
   onEditingPartChange: (part: DocumentPageChromeEditingPart) => void;
   onTogglePageNumber: () => void;
+  onOpenFontDialog?: () => void;
   onClose: () => void;
 }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -158,7 +160,18 @@ export function DocumentPageChromeRibbon({
           <Redo2 size={16} />
         </PageChromeRibbonButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="文字">
+      <WorkOfficeRibbonGroup
+        label="文字"
+        dialogLauncher={
+          onOpenFontDialog
+            ? {
+                label: '页眉页脚字体高级设置',
+                ...pageChromeCommandShortcut('fontDialog'),
+                onClick: onOpenFontDialog,
+              }
+            : undefined
+        }
+      >
         <PageChromeRibbonButton
           label="页眉页脚加粗"
           shortcut="Cmd/Ctrl+B"

@@ -130,6 +130,16 @@ export const documentCommandCatalog = {
       editor: ['Mod-Shift-v'],
     },
   },
+  fontDialog: {
+    id: 'font.dialog',
+    label: '字体高级设置',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+D',
+      aria: 'Control+D Meta+D',
+      editor: ['Mod-d'],
+    },
+  },
   formatPainter: {
     id: 'clipboard.formatPainter',
     label: '格式刷',

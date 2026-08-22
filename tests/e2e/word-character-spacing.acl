@@ -1,0 +1,119 @@
+suite "office-word-character-spacing" {
+    version = 1
+
+    scenario "author-native-character-spacing" {
+        name = "Author native Writer character spacing from the font dialog"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "font-dialog-shortcut-described" {
+            visible = css("[aria-label='字体'] button[aria-label='字体高级设置'][aria-keyshortcuts='Control+D Meta+D']")
+        }
+
+        click "focus-title" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-title-start" {
+            key = "Home"
+        }
+
+        press "select-title" {
+            key = "Shift+End"
+        }
+
+        press "open-font-dialog" {
+            key = "Control+d"
+        }
+
+        expect "font-dialog-visible" {
+            visible = css(".work-document-font-dialog[role='dialog']")
+        }
+
+        expect "character-spacing-focused" {
+            visible = css(".work-document-font-dialog [role='combobox'][aria-label='字符间距']:focus")
+        }
+
+        click "open-character-spacing-modes" {
+            target = role("combobox", "字符间距")
+        }
+
+        click "choose-expanded-spacing" {
+            target = role("option", "加宽")
+        }
+
+        fill "set-two-point-spacing" {
+            target = css(".work-document-font-dialog [aria-label='间距值（磅）']")
+            value = "2"
+        }
+
+        click "apply-character-spacing" {
+            target = role("button", "应用")
+        }
+
+        expect "native-spacing-applied" {
+            visible = css(".work-document-editable .ProseMirror h1 span[data-office-character-spacing-twips='40'][style*='letter-spacing: 2pt']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-character-spacing" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restored-title" {
+            visible = css(".work-document-editable .ProseMirror h1:not(:has(span[data-office-character-spacing-twips]))")
+        }
+
+        press "reopen-font-dialog" {
+            key = "Control+d"
+        }
+
+        press "cancel-font-dialog" {
+            key = "Escape"
+        }
+
+        expect "editor-focus-restored-after-cancel" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "character-spacing-accessibility" {
+            path = "evidence/character-spacing-accessibility.json"
+            interactive = true
+        }
+
+        console "character-spacing-console" {
+            path = "diagnostics/character-spacing-console.json"
+            clear = false
+        }
+
+        page_errors "character-spacing-page-errors" {
+            path = "diagnostics/character-spacing-page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -75,11 +75,13 @@ export function DocumentHomeRibbon({
   findReplaceMode,
   layoutFonts = [],
   onFindText,
+  onOpenFontDialog,
 }: {
   editor: Editor;
   findReplaceMode: DocumentFindReplaceMode | null;
   layoutFonts?: readonly WorkDocumentLayoutFont[];
   onFindText: (replace: boolean) => void;
+  onOpenFontDialog?: () => void;
 }) {
   const subscribe = useCallback(
     (notify: () => void) => {
@@ -102,7 +104,19 @@ export function DocumentHomeRibbon({
   return (
     <>
       <DocumentFormatTools editor={editor} />
-      <RibbonGroup label="字体" priority="high">
+      <RibbonGroup
+        label="字体"
+        priority="high"
+        dialogLauncher={
+          onOpenFontDialog
+            ? {
+                label: '字体高级设置',
+                ...commandShortcut('fontDialog'),
+                onClick: onOpenFontDialog,
+              }
+            : undefined
+        }
+      >
         <div className="work-document-font-tools">
           <div className="work-document-font-selects">
             <OfficeSelect

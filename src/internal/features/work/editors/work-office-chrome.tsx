@@ -1,4 +1,5 @@
 import {
+  ArrowUpRight,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -56,6 +57,13 @@ export interface WorkOfficeQuickAccessAction {
   ariaKeyShortcuts?: string;
   disabled?: boolean;
   onSelect: () => void | Promise<void>;
+}
+
+interface WorkOfficeRibbonDialogLauncher {
+  label: string;
+  shortcut?: string;
+  ariaKeyShortcuts?: string;
+  onClick: () => void;
 }
 
 export function WorkOfficeRibbon<T extends string>({
@@ -632,10 +640,12 @@ function WorkOfficeFileMenu({
 export function WorkOfficeRibbonGroup({
   label,
   priority = 'normal',
+  dialogLauncher,
   children,
 }: {
   label: string;
   priority?: 'high' | 'normal' | 'low';
+  dialogLauncher?: WorkOfficeRibbonDialogLauncher;
   children: ReactNode;
 }) {
   return (
@@ -643,9 +653,27 @@ export function WorkOfficeRibbonGroup({
       className="work-office-ribbon-group"
       aria-label={label}
       data-priority={priority}
+      data-has-dialog-launcher={dialogLauncher ? 'true' : undefined}
     >
       <div>{children}</div>
       <span aria-hidden="true">{label}</span>
+      {dialogLauncher && (
+        <button
+          type="button"
+          className="work-office-ribbon-dialog-launcher"
+          aria-label={dialogLauncher.label}
+          aria-keyshortcuts={dialogLauncher.ariaKeyShortcuts}
+          title={
+            dialogLauncher.shortcut
+              ? `${dialogLauncher.label}（${dialogLauncher.shortcut}）`
+              : dialogLauncher.label
+          }
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={dialogLauncher.onClick}
+        >
+          <ArrowUpRight size={9} aria-hidden="true" />
+        </button>
+      )}
     </section>
   );
 }

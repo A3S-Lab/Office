@@ -1,4 +1,6 @@
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
+import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
+import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
 import { documentParagraphBordersDomAttributes } from './work-document-paragraph-borders';
 import {
   documentPageChromeLegacyFields,
@@ -415,6 +417,14 @@ async function runHtml(
   );
   if (verticalAlign === 'superscript') content = `<sup>${content}</sup>`;
   if (verticalAlign === 'subscript') content = `<sub>${content}</sub>`;
+  const characterSpacing = docxCharacterSpacingTwipsFromProperties(
+    properties ?? run,
+  );
+  if (characterSpacing !== undefined) {
+    content = `<span${htmlAttributes(
+      documentCharacterSpacingDomAttributes(characterSpacing),
+    )}>${content}</span>`;
+  }
   const color = attribute(
     directChild(properties ?? run, 'color') ?? run,
     'val',

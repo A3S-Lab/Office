@@ -1,0 +1,112 @@
+.work-document-font-dialog {
+  width: min(560px, 100%);
+}
+
+.work-document-font-dialog form {
+  display: grid;
+  gap: 18px;
+}
+
+.work-document-font-dialog-spacing {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+  margin: 0;
+  padding: 15px 16px 17px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 10px;
+}
+
+.work-document-font-dialog-spacing > legend {
+  padding: 0 5px;
+  color: var(--a3s-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.work-document-font-dialog-field {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.work-document-font-dialog-field > .work-office-select,
+.work-document-font-dialog-field .work-office-number-field,
+.work-document-font-dialog-field button[role="combobox"] {
+  width: 100%;
+}
+
+.work-document-font-dialog-measure {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.work-document-font-dialog-measure > span {
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.work-document-font-dialog-mixed,
+.work-document-font-dialog-error {
+  grid-column: 1 / -1;
+  margin: -2px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.work-document-font-dialog-mixed {
+  color: var(--a3s-muted);
+}
+
+.work-document-font-dialog-error {
+  color: var(--a3s-red);
+}
+
+.work-document-font-dialog-preview {
+  display: grid;
+  min-height: 106px;
+  place-items: center;
+  overflow: hidden;
+  padding: 14px 18px 18px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 10px;
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-font-dialog-preview > span {
+  justify-self: start;
+  color: var(--a3s-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.work-document-font-dialog-preview > output {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--a3s-ink);
+  font-size: 22px;
+  line-height: 1.5;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  .work-document-font-dialog-spacing {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-document-font-dialog-preview {
+    min-height: 88px;
+  }
+
+  .work-document-font-dialog-preview > output {
+    font-size: 19px;
+  }
+}

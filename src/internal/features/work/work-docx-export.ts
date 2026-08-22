@@ -6,6 +6,7 @@ import type {
 } from 'docx';
 import { normalizeDocumentBookmarkReferencesHtml } from './work-document-bookmark-references';
 import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
+import { documentCharacterSpacingTwipsFromElement } from './work-document-character-spacing';
 import { normalizeDocumentHref } from './work-document-links';
 import {
   collectDocumentNotes,
@@ -34,6 +35,10 @@ import {
 import { docxSectionColumns } from './work-docx-column-export';
 import { createDocxCommentRecords } from './work-docx-comment-export';
 import { patchDocxCommentMetadata } from './work-docx-comment-metadata';
+import {
+  docxCharacterSpacingValue,
+  patchDocxExplicitZeroCharacterSpacing,
+} from './work-docx-character-spacing';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import {
   DocxEquationPatchCollector,
@@ -152,6 +157,7 @@ interface DocxNoteContext extends DocxListExportContext {
   equationPatches: DocxEquationPatchCollector;
   formattingChangePatches: DocxRunFormattingChangePatchCollector;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
+  hasExplicitZeroCharacterSpacing: boolean;
 }
 
 interface DocxTextRevision {
@@ -211,6 +217,7 @@ export async function createDocxBlob(
     formattingChangePatches: new DocxRunFormattingChangePatchCollector(),
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
+    hasExplicitZeroCharacterSpacing: false,
   };
   const commentRecords = createDocxCommentRecords(
     commentThreads,
@@ -276,8 +283,11 @@ export async function createDocxBlob(
     },
   });
   const packed = await docx.Packer.toBlob(document);
+  const characterSpacingPatched = noteContext.hasExplicitZeroCharacterSpacing
+    ? await patchDocxExplicitZeroCharacterSpacing(await packed.arrayBuffer())
+    : await packed.arrayBuffer();
   const formattingChangesPatched = await patchDocxRunFormattingChanges(
-    await packed.arrayBuffer(),
+    characterSpacingPatched,
     noteContext.formattingChangePatches.patches,
   );
   const noteImageRelationshipsPatched = await patchDocxNoteImageRelationships(
@@ -738,6 +748,15 @@ async function inlineRuns(
     const explicitTextCase = normalizeDocumentTextCase(
       node.dataset.officeTextCase,
     );
+    const explicitCharacterSpacing =
+      documentCharacterSpacingTwipsFromElement(node);
+    if (explicitCharacterSpacing === 0) {
+      noteContext.hasExplicitZeroCharacterSpacing = true;
+    }
+    const characterSpacing =
+      explicitCharacterSpacing === null
+        ? inherited.characterSpacing
+        : docxCharacterSpacingValue(explicitCharacterSpacing);
     const textCaseOptions = docxTextCaseRunOptions(explicitTextCase, inherited);
     const underline = docxUnderlineRunOptions(
       node,
@@ -756,6 +775,7 @@ async function inlineRuns(
       color: themeColorMarker ?? resolvedColor,
       font: cssFontFamily(node.style.fontFamily) ?? inherited.font,
       size: cssFontSize(node.style.fontSize) ?? inherited.size,
+      characterSpacing,
       shading: themeFillMarker ? { fill: themeFillMarker } : resolvedShading,
       snapToGrid:
         dataBoolean(node.dataset.officeWordSnapToGrid) ?? inherited.snapToGrid,

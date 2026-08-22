@@ -270,10 +270,12 @@ test('Spreadsheet in-cell insertion and deletion retain rich-text semantics', as
   await page.goto('/?e2e=spreadsheet-rich-text');
 
   const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
   const cellEditor = page.locator('.luckysheet-cell-input');
   const status = page.getByTestId('spreadsheet-rich-text-status');
   await expect(grid).toBeFocused();
   await page.keyboard.press('F2');
+  await expect(cellEditor).toBeFocused();
   await expect(cellEditor).toHaveText('Native rich text');
   await page.keyboard.insertText('!');
   await expect(cellEditor).toHaveText('Native rich text!');
@@ -289,7 +291,9 @@ test('Spreadsheet in-cell insertion and deletion retain rich-text semantics', as
   );
 
   await page.keyboard.press('ArrowUp');
+  await expect(nameBox).toHaveText('A1');
   await page.keyboard.press('F2');
+  await expect(cellEditor).toBeFocused();
   await page.keyboard.press('Backspace');
   await expect(cellEditor).toHaveText('Native rich text');
   await expect(status).toHaveAttribute('data-revision', '2');

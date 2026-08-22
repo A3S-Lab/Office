@@ -190,6 +190,47 @@ describe('document change commands', () => {
     editor.destroy();
   });
 
+  test('tracks and restores exact character spacing as native formatting', () => {
+    let sequence = 0;
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+        createChange: () => ({
+          id: `formatting-spacing-${++sequence}`,
+          author: 'Reviewer',
+          date: '2026-08-23T09:00:00.000Z',
+        }),
+      }),
+      content:
+        '<section data-document-section="true"><p><span data-office-character-spacing-twips="30" style="letter-spacing: 1.5pt">Tracked spacing</span></p></section>',
+    });
+    editor.commands.setTextSelection(textRange(editor, 'Tracked spacing'));
+
+    expect(editor.commands.setDocumentCharacterSpacing(-20)).toBe(true);
+    expect(editor.getAttributes('textStyle').characterSpacingTwips).toBe(-20);
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([
+      expect.objectContaining({
+        id: 'formatting-spacing-1',
+        kind: 'formatting',
+        text: 'Tracked spacing',
+      }),
+    ]);
+    expect(editor.getHTML()).toContain('&quot;characterSpacingTwips&quot;:30');
+
+    expect(editor.commands.rejectDocumentChange('formatting-spacing-1')).toBe(
+      true,
+    );
+    expect(editor.getAttributes('textStyle').characterSpacingTwips).toBe(30);
+    expect(editor.getHTML()).toContain('letter-spacing: 1.5pt');
+
+    expect(editor.commands.setDocumentCharacterSpacing(0)).toBe(true);
+    expect(editor.commands.acceptDocumentChange('formatting-spacing-2')).toBe(
+      true,
+    );
+    expect(editor.getAttributes('textStyle').characterSpacingTwips).toBe(0);
+    editor.destroy();
+  });
+
   test('keeps accepted formatting and groups revision metadata into one undo step', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions({

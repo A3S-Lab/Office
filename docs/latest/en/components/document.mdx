@@ -157,6 +157,24 @@ to the source UTF-16 offsets, and small caps changes font metrics. Keeping the
 browser authoritative for those paragraphs avoids inaccurate pagination; other
 eligible paragraphs continue through Worker/WASM shaping.
 
+## Native character spacing
+
+Writer keeps character spacing as one signed native `w:spacing` value from
+-31,680 through 31,680 twips, where 20 twips equal one point. `Cmd/Ctrl+D` or
+the Home ribbon opens **Advanced Font Settings** with Normal, Expanded, and
+Condensed modes plus an exact 0.05–1,584 point magnitude. A mixed selection is
+left unchanged until a mode is chosen. Apply restores the captured selection
+and creates one Undo record; Cancel and Escape leave the document unchanged and
+return focus to the editor.
+
+Body text and header/footer editors use the same TipTap command and preserve an
+explicit zero separately from inherited spacing. Format Painter, tracked
+character-format changes, Undo, DOCX import/export/reopen, and old formatting
+inside `w:rPrChange` retain the exact signed value. The DOM stores
+`data-office-character-spacing-twips`; CSS projects it as `letter-spacing`
+without rewriting text. Eligible paragraphs remain on the Worker/WASM layout
+path because the kernel applies the same linear advance adjustment.
+
 ## Real-time review mode
 
 Pass an initialized Document collaboration session with `mode: 'comment'` and
@@ -190,7 +208,7 @@ for the complete browser/backend contract and the current native CLI/MCP limit.
 With tracked changes enabled, applying direct character formatting to existing
 text creates one `formatting` revision. The bounded model covers bold, italic,
 underline, strike, subscript, superscript, font family, font size, text color,
-highlight, all-caps and small-caps effects, and Word grid state. Formatting
+highlight, character spacing, all-caps and small-caps effects, and Word grid state. Formatting
 applied to text that is still a pending insertion remains part of that insertion
 instead of creating a nested revision.
 

@@ -977,8 +977,11 @@ test('Spreadsheet fills formulas and styles with WPS shortcuts and one-step hist
   await grid.focus();
   await page.keyboard.press('Control+d');
   await expect(grid).toBeFocused();
+  await expect(nameBox).toHaveText('B1:B3');
   await page.keyboard.press('Control+Home');
+  await expect(nameBox).toHaveText('A1');
   await page.keyboard.press('ArrowRight');
+  await expect(nameBox).toHaveText('B1');
   await page.keyboard.press('ArrowDown');
   await expect(nameBox).toHaveText('B2');
   await expect(formulaBar).toHaveText('=A2*3');

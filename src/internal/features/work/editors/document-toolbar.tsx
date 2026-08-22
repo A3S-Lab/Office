@@ -60,6 +60,12 @@ import {
 } from './document-command-catalog';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 import { DocumentHomeRibbon } from './document-home-ribbon';
+import { DocumentFontDialog } from './document-font-dialog';
+import {
+  applyDocumentFontDialogPatch,
+  documentFontDialogSource,
+  type DocumentFontDialogSource,
+} from './document-font-dialog-model';
 import type { DocumentLayoutPanelTab } from './document-layout-panel';
 import {
   type DocumentPageChromeEditingPart,
@@ -92,6 +98,12 @@ import {
 } from './work-office-chrome';
 
 export type DocumentViewMode = 'page' | 'web';
+
+interface DocumentFontDialogRequest {
+  editor: Editor;
+  selection: { from: number; to: number };
+  source: DocumentFontDialogSource;
+}
 
 interface DocumentToolbarProps {
   editor: Editor;
@@ -227,6 +239,8 @@ export function DocumentToolbar({
   const [activeTab, setActiveTab] = useState<DocumentRibbonTabId>(
     reviewOnly ? 'review' : 'home',
   );
+  const [fontDialogRequest, setFontDialogRequest] =
+    useState<DocumentFontDialogRequest | null>(null);
   const officeDialog = useOfficeDialog();
   const prompt = officeDialog.prompt;
   const imageSelected = editor.isActive('image');
@@ -254,6 +268,15 @@ export function DocumentToolbar({
   const spellingCommand = getDocumentCommandDefinition('spelling');
   const insertCommentCommand = getDocumentCommandDefinition('insertComment');
   const trackChangesCommand = getDocumentCommandDefinition('trackChanges');
+  const openFontDialog = useCallback((target: Editor) => {
+    if (target.isDestroyed) return;
+    const { from, to } = target.state.selection;
+    setFontDialogRequest({
+      editor: target,
+      selection: { from, to },
+      source: documentFontDialogSource(target),
+    });
+  }, []);
   const ribbonTabs = reviewOnly
     ? documentRibbonTabs.filter(({ id }) => id === 'review' || id === 'view')
     : pageChromeEditor
@@ -342,6 +365,9 @@ export function DocumentToolbar({
       const insideEditor =
         event.target instanceof Node &&
         Boolean(editorDom?.contains(event.target));
+      const insidePageChromeEditor =
+        event.target instanceof Node &&
+        Boolean(pageChromeEditor?.view.dom.contains(event.target));
       if (reviewOnly) {
         if (
           insideEditor &&
@@ -356,11 +382,23 @@ export function DocumentToolbar({
         return;
       }
       if (
+        insidePageChromeEditor &&
+        (event.metaKey || event.ctrlKey) &&
+        !event.altKey &&
+        !event.shiftKey &&
+        key === 'd'
+      ) {
+        event.preventDefault();
+        openFontDialog(pageChromeEditor!);
+        return;
+      }
+      if (
         insideEditor &&
         runDocumentWpsShortcut(editor, event, {
           canInsertComment,
           canRefreshFields: hasRefreshableFields,
           onInsertComment,
+          onOpenFontDialog: () => openFontDialog(editor),
           onOpenWordCount,
           onRefreshFields,
           onToggleSpellcheck,
@@ -448,12 +486,14 @@ export function DocumentToolbar({
     hasRefreshableFields,
     history,
     onInsertComment,
+    openFontDialog,
     onOpenFindReplace,
     onOpenWordCount,
     onRefreshFields,
     reviewOnly,
     onToggleSpellcheck,
     onToggleTrackChanges,
+    pageChromeEditor,
     toggleLink,
   ]);
 
@@ -583,6 +623,7 @@ export function DocumentToolbar({
               editor={editor}
               findReplaceMode={findReplaceMode}
               layoutFonts={layoutFonts}
+              onOpenFontDialog={() => openFontDialog(editor)}
               onFindText={(replace) =>
                 onOpenFindReplace(replace ? 'replace' : 'find')
               }
@@ -964,11 +1005,30 @@ export function DocumentToolbar({
                 showPageNumber={pageChromeShowPageNumber}
                 onEditingPartChange={onPageChromeEditingPartChange}
                 onTogglePageNumber={onTogglePageChromePageNumber}
+                onOpenFontDialog={() => openFontDialog(pageChromeEditor)}
                 onClose={onClosePageChrome}
               />
             ) : null,
         }}
       />
+      {fontDialogRequest && (
+        <DocumentFontDialog
+          source={fontDialogRequest.source}
+          restoreFocusTarget={() =>
+            fontDialogRequest.editor.isDestroyed
+              ? null
+              : fontDialogRequest.editor.view.dom
+          }
+          onApply={(patch) =>
+            applyDocumentFontDialogPatch(
+              fontDialogRequest.editor,
+              fontDialogRequest.selection,
+              patch,
+            )
+          }
+          onClose={() => setFontDialogRequest(null)}
+        />
+      )}
       {officeDialog.dialog}
     </>
   );

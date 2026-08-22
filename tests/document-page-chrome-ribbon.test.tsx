@@ -18,6 +18,7 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
   editor.commands.setTextSelection({ from: 1, to: 17 });
   const parts: string[] = [];
   let pageNumberToggles = 0;
+  let fontDialogs = 0;
   let closes = 0;
 
   render(
@@ -28,6 +29,9 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
       onEditingPartChange={(part) => parts.push(part)}
       onTogglePageNumber={() => {
         pageNumberToggles += 1;
+      }}
+      onOpenFontDialog={() => {
+        fontDialogs += 1;
       }}
       onClose={() => {
         closes += 1;
@@ -52,6 +56,12 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
     'aria-keyshortcuts',
     'Control+E Meta+E',
   );
+  const fontDialog = screen.getByRole('button', {
+    name: '页眉页脚字体高级设置',
+  });
+  expect(fontDialog).toHaveAttribute('aria-keyshortcuts', 'Control+D Meta+D');
+  fireEvent.click(fontDialog);
+  expect(fontDialogs).toBe(1);
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚斜体' }));
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚下划线' }));
   fireEvent.click(screen.getByRole('button', { name: '更多页眉页脚下划线' }));

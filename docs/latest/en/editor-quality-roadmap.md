@@ -325,6 +325,13 @@ revisions, page chrome, Undo, and exact `w:caps` / `w:smallCaps` DOCX reopen.
 The source text remains semantic; paragraphs containing a case-shaping effect
 use browser-authoritative line measurement because transformed glyphs cannot
 yet be mapped safely onto the layout kernel's source UTF-16 offsets.
+Writer character spacing now uses one signed `w:spacing` value from -31,680 to
+31,680 twips, including explicit zero. `Cmd/Ctrl+D` and the Home or page-chrome
+ribbon open one accessible advanced font dialog with mixed-selection safety,
+exact selection restoration, live preview, validation, and one-step Undo.
+Format Painter, formatting revisions, body/header/footer import, export, and
+reopen retain the native value. CSS remains a paint projection while the same
+advance adjustment stays eligible for Worker/WASM layout.
 Writer underline formatting now uses one typed mark for all 18 native `w:u`
 values, direct RGB or theme/tint/shade color identity, and explicit `none`.
 The Home ribbon, selection toolbar, page chrome, Format Painter, formatting

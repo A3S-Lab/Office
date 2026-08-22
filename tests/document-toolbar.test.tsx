@@ -8,6 +8,7 @@ import {
 } from '@testing-library/react';
 import { Editor } from '@tiptap/core';
 import { clearDocumentFormatClipboard } from '../src/internal/features/work/editors/document-format-clipboard';
+import { createDocumentPageChromeEditorExtensions } from '../src/internal/features/work/editors/document-page-chrome-editor';
 import { DocumentToolbar } from '../src/internal/features/work/editors/document-toolbar';
 import { collectDocumentChanges } from '../src/internal/features/work/work-document-changes';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
@@ -419,6 +420,105 @@ test('routes WPS Writer formatting and review shortcuts inside the document', ()
   expect(calls.spellcheck).toBe(1);
 });
 
+test('opens and applies advanced font spacing from the scoped shortcut and launcher', async () => {
+  editor = createEditor();
+  const root = document.createElement('section');
+  root.className = 'work-document-editor';
+  const auxiliaryInput = document.createElement('input');
+  root.append(editor.view.dom, auxiliaryInput);
+  document.body.append(root);
+  render(toolbar(editor, createCalls()));
+  const selection = textRange(editor, 'Toolbar text');
+  editor.commands.setTextSelection(selection);
+
+  const launcher = screen.getByRole('button', {
+    name: '字体高级设置',
+  });
+  expect(launcher).toHaveAttribute('aria-keyshortcuts', 'Control+D Meta+D');
+
+  fireEvent.keyDown(auxiliaryInput, { key: 'd', ctrlKey: true });
+  expect(screen.queryByRole('dialog', { name: '字体高级设置' })).toBeNull();
+
+  fireEvent.keyDown(editor.view.dom, { key: 'd', ctrlKey: true });
+  const dialog = await screen.findByRole('dialog', {
+    name: '字体高级设置',
+  });
+  expect(editor.state.selection.toJSON()).toEqual({
+    type: 'text',
+    anchor: selection.from,
+    head: selection.to,
+  });
+  fireEvent.click(within(dialog).getByRole('combobox', { name: '字符间距' }));
+  fireEvent.click(await screen.findByRole('option', { name: '加宽' }));
+  fireEvent.change(
+    within(dialog).getByRole('textbox', { name: '间距值（磅）' }),
+    { target: { value: '1.5' } },
+  );
+  fireEvent.click(within(dialog).getByRole('button', { name: '应用' }));
+
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '字体高级设置' })).toBeNull(),
+  );
+  expect(editor.getAttributes('textStyle').characterSpacingTwips).toBe(30);
+  expect(editor.getHTML()).toContain('letter-spacing: 1.5pt');
+  expect(editor.view.dom).toHaveFocus();
+
+  expect(editor.commands.undo()).toBe(true);
+  editor.commands.setTextSelection(selection);
+  expect(
+    editor.getAttributes('textStyle').characterSpacingTwips,
+  ).toBeUndefined();
+
+  fireEvent.click(launcher);
+  const reopened = await screen.findByRole('dialog', {
+    name: '字体高级设置',
+  });
+  fireEvent.keyDown(
+    within(reopened).getByRole('combobox', { name: '字符间距' }),
+    { key: 'd', ctrlKey: true },
+  );
+  expect(screen.getAllByRole('dialog', { name: '字体高级设置' })).toHaveLength(
+    1,
+  );
+  fireEvent.click(within(reopened).getByRole('button', { name: '取消' }));
+});
+
+test('routes the advanced font shortcut to the active page-chrome editor', async () => {
+  editor = createEditor();
+  const pageChromeEditor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: '<p>Header spacing</p>',
+  });
+  const root = document.createElement('section');
+  root.className = 'work-document-editor';
+  root.append(editor.view.dom, pageChromeEditor.view.dom);
+  document.body.append(root);
+  render(toolbar(editor, createCalls(), 100, false, pageChromeEditor));
+  pageChromeEditor.commands.setTextSelection(
+    textRange(pageChromeEditor, 'Header spacing'),
+  );
+
+  fireEvent.keyDown(pageChromeEditor.view.dom, { key: 'd', ctrlKey: true });
+  const dialog = await screen.findByRole('dialog', {
+    name: '字体高级设置',
+  });
+  fireEvent.click(within(dialog).getByRole('combobox', { name: '字符间距' }));
+  fireEvent.click(await screen.findByRole('option', { name: '紧缩' }));
+  fireEvent.change(
+    within(dialog).getByRole('textbox', { name: '间距值（磅）' }),
+    { target: { value: '0.75' } },
+  );
+  fireEvent.click(within(dialog).getByRole('button', { name: '应用' }));
+
+  await waitFor(() =>
+    expect(pageChromeEditor.getHTML()).toContain('letter-spacing: -0.75pt'),
+  );
+  expect(
+    pageChromeEditor.getAttributes('textStyle').characterSpacingTwips,
+  ).toBe(-15);
+  pageChromeEditor.destroy();
+});
+
 test('routes WPS copy-format and paste-format shortcuts inside the document', () => {
   editor = createEditor();
   const root = document.createElement('section');
@@ -513,6 +613,7 @@ function toolbar(
   calls: ToolbarCalls,
   zoom = 100,
   defaultRibbonCollapsed = false,
+  currentPageChromeEditor: Editor | null = null,
 ) {
   return (
     <DocumentToolbar
@@ -534,8 +635,8 @@ function toolbar(
       spellcheckEnabled
       viewMode="page"
       zoom={zoom}
-      pageChromeEditor={null}
-      pageChromeEditingPart={null}
+      pageChromeEditor={currentPageChromeEditor}
+      pageChromeEditingPart={currentPageChromeEditor ? 'header' : null}
       pageChromeShowPageNumber={false}
       onRequestImage={() => {
         calls.imageRequests += 1;

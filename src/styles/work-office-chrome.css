@@ -513,6 +513,38 @@
   white-space: nowrap;
 }
 
+.work-office-ribbon-group[data-has-dialog-launcher="true"] > span {
+  right: 15px;
+}
+
+.work-office-ribbon .work-office-toolbar .work-office-ribbon-dialog-launcher {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  display: grid;
+  width: 11px;
+  min-width: 11px;
+  height: 11px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--a3s-faint);
+  cursor: pointer;
+}
+
+.work-office-ribbon
+  .work-office-toolbar
+  .work-office-ribbon-dialog-launcher:hover,
+.work-office-ribbon
+  .work-office-toolbar
+  .work-office-ribbon-dialog-launcher:focus-visible {
+  outline: 0;
+  background: var(--a3s-panel-strong);
+  color: var(--work-office-accent);
+}
+
 .work-office-ribbon
   .work-office-toolbar[data-density="compact-low"]
   .work-office-ribbon-group[data-priority="low"],

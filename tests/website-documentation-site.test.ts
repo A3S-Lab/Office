@@ -617,6 +617,18 @@ test('documents collaborative character-formatting revisions', async () => {
   }
 });
 
+test('documents native Writer character spacing in both current locales', async () => {
+  for (const { lang } of DOCUMENTATION_LOCALES) {
+    const source = await readFile(
+      path.join(documentationRoot, 'latest', lang, 'components/document.mdx'),
+      'utf8',
+    );
+    expect(source).toContain('w:spacing');
+    expect(source).toContain('Cmd/Ctrl+D');
+    expect(source).toContain('Worker/WASM');
+  }
+});
+
 test('documents collaborative paragraph-formatting revisions', async () => {
   for (const version of [
     'latest',

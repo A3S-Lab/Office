@@ -1,5 +1,6 @@
 import type { Mark, MarkType, Schema } from '@tiptap/pm/model';
 import type { Transaction } from '@tiptap/pm/state';
+import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
 import {
   normalizeDocumentTextCase,
   type WorkDocumentTextCase,
@@ -60,6 +61,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
   subscript: new Set(),
   superscript: new Set(),
   textStyle: new Set([
+    'characterSpacingTwips',
     'color',
     'fontFamily',
     'fontSize',
@@ -160,6 +162,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   subscript?: boolean;
   superscript?: boolean;
   fontFamily?: string;
+  characterSpacingTwips?: number;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
   fontSize?: number;
@@ -192,6 +195,7 @@ export function importedDocumentCharacterFormatting(formatting: {
     });
   }
   const textStyle = compactAttributes({
+    characterSpacingTwips: formatting.characterSpacingTwips,
     color: formatting.color,
     fontFamily: formatting.fontFamily,
     fontSize:
@@ -227,7 +231,14 @@ function normalizeCharacterFormatMark(
     if (!allowed.has(key) || candidate === null || candidate === undefined) {
       continue;
     }
+    if (type === 'textStyle' && key === 'characterSpacingTwips') {
+      const spacing = normalizeDocumentCharacterSpacingTwips(candidate);
+      if (spacing === null) return null;
+      attrs[key] = spacing;
+      continue;
+    }
     if (typeof candidate === 'string') {
+      if (!candidate.length) continue;
       if (
         type === 'textStyle' &&
         key === 'textCase' &&
@@ -235,10 +246,7 @@ function normalizeCharacterFormatMark(
       ) {
         return null;
       }
-      if (
-        !candidate.length ||
-        candidate.length > MAX_CHARACTER_FORMAT_ATTRIBUTE_LENGTH
-      ) {
+      if (candidate.length > MAX_CHARACTER_FORMAT_ATTRIBUTE_LENGTH) {
         return null;
       }
       const normalized = normalizeCharacterFormatStringAttribute(

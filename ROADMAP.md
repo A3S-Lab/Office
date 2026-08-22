@@ -66,7 +66,7 @@ collaboration transport, and AI providers.
 
 | Capability | A3S Office status | Main gap or boundary | Priority |
 | --- | --- | --- | --- |
-| Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported**, including mutually exclusive native `w:caps` / `w:smallCaps`; all 18 native `w:u` values with direct or theme color identity and explicit resets; independent native `w:strike` / `w:dstrike` state with explicit resets; standard shortcuts where Traditional Office defines them; page chrome; formatting revisions; and exact DOCX reopen | Long-tail Word style and typography effects outside the declared typed models can still normalize | Maintain / P0 fidelity |
+| Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported**, including mutually exclusive native `w:caps` / `w:smallCaps`; signed native `w:spacing` with an advanced font dialog and explicit zero; all 18 native `w:u` values with direct or theme color identity and explicit resets; independent native `w:strike` / `w:dstrike` state with explicit resets; standard shortcuts where Traditional Office defines them; page chrome; formatting revisions; and exact DOCX reopen | Long-tail Word style and typography effects outside the declared typed models can still normalize | Maintain / P0 fidelity |
 | Bullets, numbering, nesting, restarts, RTL lists | **Supported** for common editable structures | Exotic numbering pictures and some inherited list metadata remain compatibility work | P1 |
 | Page size, orientation, columns, section/page breaks | **Supported** per section | Browser line breaking and pagination are not yet desktop-engine exact | P0 |
 | Page margins (`w:pgMar`, `mirrorMargins`, `gutterAtTop`, `rtlGutter`) | **Supported** on current `main`: all seven native twip values, signed top/bottom overlap semantics, strict universal measures, header/footer distances, top/left/right gutters, facing-page swaps, multi-section inheritance, diagnostics, editing, PDF preview, and exact DOCX export | The continuous editing surface projects the first-page horizontal origin; physical-page PDF preview is authoritative for facing-page placement | Maintain / P0 regression gate |
@@ -187,6 +187,11 @@ a phase exits only when its evidence is complete.
   support, exact `w:caps` / `w:smallCaps` import-export-reopen, and
   browser-authoritative measurement for case-shaped paragraphs as permanent
   gates.
+- Treat native character spacing as a completed typography slice: retain signed
+  `w:spacing` values from -31,680 through 31,680 twips, explicit zero, mixed
+  selection safety, `Cmd/Ctrl+D`, body/header/footer parity, Format Painter,
+  formatting revisions, one-step Undo, strict-namespace import, exact DOCX
+  export/reopen, and Worker/WASM layout eligibility as permanent gates.
 - Make unsupported semantics explicit in compatibility reports; never attach
   relationship-bound or namespace-spoofed data to a regenerated identity.
 - Move browser document PDF output toward searchable text, vector content, and

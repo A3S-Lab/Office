@@ -2,6 +2,11 @@ import {
   createDocumentEquationElement,
   documentEquationFromElement,
 } from './work-document-equations';
+import {
+  DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
+  documentCharacterSpacingDomAttributes,
+  documentCharacterSpacingTwipsFromElement,
+} from './work-document-character-spacing';
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import {
   DOCUMENT_PARAGRAPH_BORDERS_ATTRIBUTE,
@@ -404,6 +409,10 @@ function sanitizeAttributes(element: Element, tag: string) {
           element.getAttribute(DOCUMENT_TEXT_CASE_ATTRIBUTE),
         )
       : null;
+  const characterSpacing =
+    tag === 'span' ? documentCharacterSpacingTwipsFromElement(element) : null;
+  const characterSpacingAttributes =
+    documentCharacterSpacingDomAttributes(characterSpacing);
   const underline =
     tag === 'u' ? documentUnderlineFormattingFromElement(element) : null;
   const underlineAttributes = underline
@@ -430,10 +439,12 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_STRIKE_STYLE_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_CHARACTER_SPACING_ATTRIBUTE);
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
     color ? `color: ${color}` : '',
     textCase ? documentTextCaseCss(textCase) : '',
+    characterSpacingAttributes.style ?? '',
     underlineAttributes.style ?? '',
     strikeAttributes.style ?? '',
     borderAttributes.style ?? '',
@@ -481,6 +492,12 @@ function sanitizeAttributes(element: Element, tag: string) {
   } else {
     element.removeAttribute(DOCUMENT_TEXT_CASE_ATTRIBUTE);
   }
+  if (tag === 'span' && characterSpacing !== null) {
+    element.setAttribute(
+      DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
+      String(characterSpacing),
+    );
+  }
   if (direction === 'ltr' || direction === 'rtl')
     element.setAttribute('dir', direction);
   else element.removeAttribute('dir');
@@ -518,7 +535,12 @@ function sanitizeAttributes(element: Element, tag: string) {
                     'dir',
                     'rowspan',
                     'style',
-                    ...(tag === 'span' ? [DOCUMENT_TEXT_CASE_ATTRIBUTE] : []),
+                    ...(tag === 'span'
+                      ? [
+                          DOCUMENT_TEXT_CASE_ATTRIBUTE,
+                          DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
+                        ]
+                      : []),
                     ...(tag === 'u'
                       ? [
                           DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,

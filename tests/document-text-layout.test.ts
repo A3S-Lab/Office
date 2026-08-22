@@ -135,6 +135,34 @@ describe('document mixed-run text layout', () => {
     }
   });
 
+  test('keeps practical character spacing on the deterministic kernel path', () => {
+    const paragraph = document.createElement('p');
+    applyTextMetrics(paragraph, 14, 21);
+    paragraph.innerHTML =
+      '<span style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; letter-spacing: 2px; unicode-bidi: normal">Spaced text</span>';
+    document.body.append(paragraph);
+
+    try {
+      expect(
+        collectDocumentTextLayoutRuns(
+          paragraph,
+          paragraph.textContent ?? '',
+          [layoutFont],
+          new Set([layoutFont.id]),
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          fontId: layoutFont.id,
+          letterSpacing: 2,
+          startUtf16: 0,
+          endUtf16: 11,
+        }),
+      ]);
+    } finally {
+      paragraph.remove();
+    }
+  });
+
   test('keeps case-transforming runs on the browser measurement path', () => {
     const effects = [
       'text-transform: uppercase',
