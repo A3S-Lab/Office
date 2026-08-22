@@ -137,6 +137,7 @@ suites=(
   "tests/e2e/collaboration-document-suggestions.acl"
   "tests/e2e/word-formatting-revision.acl"
   "tests/e2e/word-paragraph-formatting-revision.acl"
+  "tests/e2e/word-strike-styles.acl"
 )
 
 if [[ -n "${A3S_TEST_SUITE:-}" ]]; then

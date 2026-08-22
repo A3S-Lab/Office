@@ -58,6 +58,12 @@ theme/tint/shade 颜色身份，以及显式 `none` 重置。开始功能区、�
 视觉投影，不改变 Worker/WASM 排版资格。单下划线、双下划线和仅字下划线的标准快捷键
 也复用同一组命令。
 
+Writer 删除线现在使用一个 `none | single | double` 类型化 Mark，不再把原生状态压平为
+布尔值。独立的 `w:strike` 与 `w:dstrike` 继承、显式重置、正文和页眉页脚编辑、格式刷、
+字符格式修订、撤销、导出与重开都会保留准确状态。可访问拆分控件提供完整样式，但不会
+虚构快捷键；TipTap 无关的 `Mod+Shift+S` 绑定已禁用。CSS 投影仍然只影响绘制，不改变
+Worker/WASM 排版资格。
+
 表格几何已经把排版算法、自动 / 百分比 / 像素首选宽度、左中右对齐、缩进、表级四边
 单元格边距和单元格级边距覆盖拆成独立属性。`tblLayout`、`tblW`、`jc`、`tblInd`、
 `tblCellMar`、`tcMar`、`tblGrid` 与 `tcW` 分别往返，不再把网格列宽误当作整表首选

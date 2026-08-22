@@ -27,6 +27,8 @@ import {
 import { createDocxThemeResolver } from './work-docx-theme';
 import { documentUnderlineDomAttributes } from './work-document-underline';
 import { importedDocxUnderline } from './work-docx-underline';
+import { documentStrikeDomAttributes } from './work-document-strike';
+import { importedDocxStrike } from './work-docx-strike';
 import {
   xmlAttributeLocalName,
   xmlAttributeNamespace,
@@ -401,11 +403,11 @@ async function runHtml(
     );
     content = `<u${htmlAttributes(attributes)}>${content}</u>`;
   }
-  if (
-    enabledElement(directChild(properties ?? run, 'strike')) ||
-    enabledElement(directChild(properties ?? run, 'dstrike'))
-  ) {
-    content = `<s>${content}</s>`;
+  const strike = importedDocxStrike(properties ?? run);
+  if (strike) {
+    content = `<s${htmlAttributes(
+      documentStrikeDomAttributes(strike),
+    )}>${content}</s>`;
   }
   const verticalAlign = attribute(
     directChild(properties ?? run, 'vertAlign') ?? run,

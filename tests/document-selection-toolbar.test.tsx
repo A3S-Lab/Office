@@ -1,7 +1,13 @@
 import { Editor } from '@tiptap/core';
 import { EditorContent } from '@tiptap/react';
 import { afterEach, expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { DocumentSelectionToolbar } from '../src/internal/features/work/editors/document-selection-toolbar';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
@@ -48,8 +54,16 @@ test('formats the current text selection without losing it', async () => {
   });
   await waitFor(() => expect(toolbar).toBeVisible());
   fireEvent.click(screen.getByRole('button', { name: '加粗' }));
+  fireEvent.click(screen.getByRole('button', { name: '更多删除线' }));
+  const strikeMenu = await screen.findByRole('menu', {
+    name: '快捷删除线样式',
+  });
+  fireEvent.click(
+    within(strikeMenu).getByRole('menuitemradio', { name: '双删除线' }),
+  );
 
   expect(editor.isActive('bold')).toBe(true);
+  expect(editor.getAttributes('strike').strikeStyle).toBe('double');
   expect(editor.state.selection.empty).toBe(false);
 
   fireEvent.click(screen.getByRole('button', { name: '添加批注' }));

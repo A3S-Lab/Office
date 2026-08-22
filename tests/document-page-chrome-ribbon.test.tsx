@@ -64,6 +64,16 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
     }),
   );
   expect(editor.getAttributes('underline').underlineStyle).toBe('double');
+  fireEvent.click(screen.getByRole('button', { name: '更多页眉页脚删除线' }));
+  const strikeMenu = await screen.findByRole('menu', {
+    name: '页眉页脚删除线样式',
+  });
+  fireEvent.click(
+    within(strikeMenu).getByRole('menuitemradio', {
+      name: '双删除线',
+    }),
+  );
+  expect(editor.getAttributes('strike').strikeStyle).toBe('double');
   for (const label of [
     '页眉页脚左对齐',
     '页眉页脚居中',
@@ -79,6 +89,7 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
     expect(editor.getHTML()).toContain('<strong>');
     expect(editor.getHTML()).toContain('<em>');
     expect(editor.getHTML()).toContain('data-office-underline-style="double"');
+    expect(editor.getHTML()).toContain('data-office-strike-style="double"');
     expect(editor.getHTML()).toContain('text-align: justify');
     expect(editor.getHTML()).toContain('color: #0070c0');
     expect(editor.getHTML()).toContain('<sup>');

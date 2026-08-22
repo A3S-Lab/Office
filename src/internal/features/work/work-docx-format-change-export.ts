@@ -5,6 +5,7 @@ import {
 } from './work-document-format-changes';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import { normalizeDocumentUnderlineStyle } from './work-document-underline';
+import { normalizeDocumentStrikeStyle } from './work-document-strike';
 import { parseDocxThemeReference } from './work-docx-theme-reference';
 import { descendants, directChildren, parseXml } from './work-ooxml-package';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
@@ -284,14 +285,12 @@ function appendFormattingProperties(
     prefix,
     byType.get('underline'),
   );
-  appendBooleanProperty(
+  appendStrikeProperties(
     document,
     properties,
     namespace,
     prefix,
-    byType,
-    'strike',
-    'strike',
+    byType.get('strike'),
   );
   appendTextCaseProperties(
     document,
@@ -383,6 +382,34 @@ function appendBooleanProperty(
   if (marks.has(mark)) {
     properties.append(wordElement(document, namespace, prefix, property));
   }
+}
+
+function appendStrikeProperties(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  if (!mark) return;
+  const style =
+    normalizeDocumentStrikeStyle(mark.attrs?.strikeStyle) ?? 'single';
+  appendValuedProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    'strike',
+    style === 'single' ? '1' : '0',
+  );
+  appendValuedProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    'dstrike',
+    style === 'double' ? '1' : '0',
+  );
 }
 
 function appendValuedProperty(

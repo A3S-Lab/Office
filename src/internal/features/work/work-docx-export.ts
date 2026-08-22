@@ -118,9 +118,14 @@ import {
 import { preserveDocxSourcePackage } from './work-ooxml-package-preservation';
 import { normalizeDocumentTextCase } from './work-document-text-case';
 import {
+  DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
   documentUnderlineFormattingFromElement,
   type WorkDocumentUnderlineFormatting,
 } from './work-document-underline';
+import {
+  DOCUMENT_STRIKE_STYLE_ATTRIBUTE,
+  documentStrikeFormattingFromElement,
+} from './work-document-strike';
 import type {
   WorkDocumentComment,
   WorkDocumentContent,
@@ -739,12 +744,13 @@ async function inlineRuns(
       inherited.underline,
       noteContext.themePatches,
     );
+    const strike = docxStrikeRunOptions(node, inherited);
     const style: IRunOptions = {
       ...inherited,
       bold: inherited.bold || tag === 'strong' || tag === 'b',
       italics: inherited.italics || tag === 'em' || tag === 'i',
       underline,
-      strike: inherited.strike || tag === 's' || tag === 'strike',
+      ...strike,
       subScript: inherited.subScript || tag === 'sub',
       superScript: inherited.superScript || tag === 'sup',
       color: themeColorMarker ?? resolvedColor,
@@ -821,11 +827,43 @@ async function inlineRuns(
   return runs;
 }
 
+function docxStrikeRunOptions(
+  element: HTMLElement,
+  inherited: IRunOptions,
+): Pick<IRunOptions, 'doubleStrike' | 'strike'> {
+  if (
+    element.hasAttribute(DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE) &&
+    !element.hasAttribute(DOCUMENT_STRIKE_STYLE_ATTRIBUTE)
+  ) {
+    return {
+      doubleStrike: inherited.doubleStrike,
+      strike: inherited.strike,
+    };
+  }
+  const formatting = documentStrikeFormattingFromElement(element);
+  if (!formatting) {
+    return {
+      doubleStrike: inherited.doubleStrike,
+      strike: inherited.strike,
+    };
+  }
+  return {
+    doubleStrike: formatting.style === 'double',
+    strike: formatting.style === 'single',
+  };
+}
+
 function docxUnderlineRunOptions(
   element: HTMLElement,
   inherited: IRunOptions['underline'],
   themePatches: DocxThemePatchCollector,
 ): IRunOptions['underline'] {
+  if (
+    element.hasAttribute(DOCUMENT_STRIKE_STYLE_ATTRIBUTE) &&
+    !element.hasAttribute(DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE)
+  ) {
+    return inherited;
+  }
   const formatting = documentUnderlineFormattingFromElement(element);
   if (!formatting) return inherited;
   const color = docxUnderlineColor(formatting, themePatches);

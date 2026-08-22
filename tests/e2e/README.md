@@ -477,6 +477,14 @@ paragraph revision, and proves that the original alignment, indentation,
 spacing, and line height return without changing text or the character
 revision. Both assert pending and rejected states and capture final
 accessibility plus clean browser diagnostics.
+The Writer native strikethrough workflow selects real document text, authors
+double strike from the accessible split menu, proves the command catalog does
+not claim `Mod+Shift+S`, verifies that key chord leaves formatting unchanged,
+then checks explicit `none`, Undo restoration, native DOM metadata, a final
+accessibility snapshot, and clean browser diagnostics. Visual evidence remains
+covered by the focused Playwright functional test. Run it locally with
+`bun run test:e2e:writer-strike`; the focused gate reuses the repository's
+Playwright Chromium and is intentionally not part of GitHub Actions or Pages.
 The native Spreadsheet collaboration workflow applies the Rust CLI's real Yjs
 updates to an initialized browser workbook, verifies the visible A2 value and
 formula change, then covers sparse cell creation and exact deletion with

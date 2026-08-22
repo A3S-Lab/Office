@@ -38,6 +38,7 @@ import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
+import { DocumentStrikeRibbon } from './document-strike-ribbon';
 import { DocumentUnderlineRibbon } from './document-underline-ribbon';
 
 export type DocumentPageChromeEditingPart = 'footer' | 'header';
@@ -182,6 +183,12 @@ export function DocumentPageChromeRibbon({
           menuLabel="页眉页脚下划线样式"
           colorLabel="页眉页脚下划线颜色"
           className="work-document-page-chrome-underline"
+        />
+        <DocumentStrikeRibbon
+          editor={editor}
+          label="页眉页脚删除线"
+          menuLabel="页眉页脚删除线样式"
+          className="work-document-page-chrome-strike"
         />
         <PageChromeRibbonButton
           label="页眉页脚下标"

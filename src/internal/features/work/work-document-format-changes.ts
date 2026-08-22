@@ -10,6 +10,10 @@ import {
   type WorkDocumentUnderlineFormatting,
 } from './work-document-underline';
 import {
+  normalizeDocumentStrikeStyle,
+  type WorkDocumentStrikeFormatting,
+} from './work-document-strike';
+import {
   parseDocxThemeReference,
   serializeDocxThemeReference,
 } from './work-docx-theme-reference';
@@ -52,7 +56,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'underlineStyle',
     'underlineThemeColor',
   ]),
-  strike: new Set(),
+  strike: new Set(['strikeStyle']),
   subscript: new Set(),
   superscript: new Set(),
   textStyle: new Set([
@@ -152,7 +156,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   bold?: boolean;
   italic?: boolean;
   underline?: WorkDocumentUnderlineFormatting;
-  strike?: boolean;
+  strike?: WorkDocumentStrikeFormatting;
   subscript?: boolean;
   superscript?: boolean;
   fontFamily?: string;
@@ -166,14 +170,14 @@ export function importedDocumentCharacterFormatting(formatting: {
   textCase?: WorkDocumentTextCase;
 }): string {
   const marks: DocumentCharacterFormatMark[] = [];
-  for (const name of [
-    'bold',
-    'italic',
-    'strike',
-    'subscript',
-    'superscript',
-  ] as const) {
+  for (const name of ['bold', 'italic', 'subscript', 'superscript'] as const) {
     if (formatting[name]) marks.push({ type: name });
+  }
+  if (formatting.strike) {
+    marks.push({
+      type: 'strike',
+      attrs: { strikeStyle: formatting.strike.style },
+    });
   }
   if (formatting.underline) {
     marks.push({
@@ -271,6 +275,9 @@ function normalizeCharacterFormatStringAttribute(
   key: string,
   value: string,
 ): string | null {
+  if (type === 'strike') {
+    return key === 'strikeStyle' ? normalizeDocumentStrikeStyle(value) : null;
+  }
   if (type !== 'underline') return value;
   if (key === 'underlineStyle') {
     return normalizeDocumentUnderlineStyle(value);

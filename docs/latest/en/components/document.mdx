@@ -231,6 +231,26 @@ words-only underline. Format Painter, tracked character-format changes, Undo,
 DOCX export, and reopen preserve the exact typed state, including explicit
 `none` used to override inherited formatting.
 
+## Native strikethrough formatting
+
+Writer keeps strikethrough as one typed `none | single | double` mark. The
+Home ribbon, selection toolbar, and header/footer ribbon expose the same
+accessible split control, while the compact page-chrome toolbar provides a
+direct toggle. Body text, page chrome, Format Painter, tracked character-format
+changes, Undo, DOCX export, and reopen preserve the exact style, including an
+explicit `none` that overrides inherited formatting.
+
+DOCX import tracks `w:strike` and `w:dstrike` independently at every style and
+direct-format layer, then resolves double above single. Export writes both
+properties so switching from an inherited double strike to single, or clearing
+either inherited state, cannot revive stale formatting after reopen. CSS
+projects solid or double line-through without changing the text or excluding an
+otherwise eligible paragraph from Worker/WASM layout.
+
+Traditional Office does not define a direct Writer shortcut for this command,
+so the command catalog advertises none. The editor also disables TipTap's
+unrelated `Mod+Shift+S` binding; use the ribbon or selection toolbar instead.
+
 ## Paragraph-formatting revisions
 
 Tracked paragraph commands now create a separate `paragraph-formatting`

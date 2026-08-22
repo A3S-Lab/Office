@@ -34,6 +34,11 @@ import {
   documentUnderlineDomAttributes,
   documentUnderlineFormattingFromElement,
 } from './work-document-underline';
+import {
+  DOCUMENT_STRIKE_STYLE_ATTRIBUTE,
+  documentStrikeDomAttributes,
+  documentStrikeFormattingFromElement,
+} from './work-document-strike';
 import type {
   WorkDocumentPageChrome,
   WorkDocumentPageChromeContent,
@@ -404,6 +409,11 @@ function sanitizeAttributes(element: Element, tag: string) {
   const underlineAttributes = underline
     ? documentUnderlineDomAttributes(underline)
     : {};
+  const strike =
+    tag === 's' || tag === 'strike'
+      ? documentStrikeFormattingFromElement(element)
+      : null;
+  const strikeAttributes = strike ? documentStrikeDomAttributes(strike) : {};
   const paragraphShading =
     tag === 'p' ? parseDocumentParagraphShadingElement(element) : null;
   const shadingAttributes =
@@ -419,11 +429,13 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_STRIKE_STYLE_ATTRIBUTE);
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
     color ? `color: ${color}` : '',
     textCase ? documentTextCaseCss(textCase) : '',
     underlineAttributes.style ?? '',
+    strikeAttributes.style ?? '',
     borderAttributes.style ?? '',
     shadingAttributes.style ?? '',
   ].filter(Boolean);
@@ -456,6 +468,11 @@ function sanitizeAttributes(element: Element, tag: string) {
   if (tag === 'tr') normalizeTableRowIdentityAttributes(element);
   if (tag === 'u') {
     for (const [name, value] of Object.entries(underlineAttributes)) {
+      if (name !== 'style') element.setAttribute(name, value);
+    }
+  }
+  if (tag === 's' || tag === 'strike') {
+    for (const [name, value] of Object.entries(strikeAttributes)) {
       if (name !== 'style') element.setAttribute(name, value);
     }
   }
@@ -508,6 +525,9 @@ function sanitizeAttributes(element: Element, tag: string) {
                           DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE,
                           DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE,
                         ]
+                      : []),
+                    ...(tag === 's' || tag === 'strike'
+                      ? [DOCUMENT_STRIKE_STYLE_ATTRIBUTE]
                       : []),
                   ]);
   for (const attribute of Array.from(element.attributes)) {

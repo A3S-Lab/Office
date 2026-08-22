@@ -319,6 +319,10 @@ test('wires every direct character-format action to the TipTap selection', () =>
   for (const label of ['加粗', '斜体', '下划线', '删除线']) {
     fireEvent.click(within(font).getByRole('button', { name: label }));
   }
+  expect(editor.getAttributes('strike').strikeStyle).toBe('single');
+  fireEvent.click(within(font).getByRole('button', { name: '更多删除线' }));
+  fireEvent.click(screen.getByRole('menuitemradio', { name: '双删除线' }));
+  expect(editor.getAttributes('strike').strikeStyle).toBe('double');
   fireEvent.click(within(font).getByRole('combobox', { name: '字体' }));
   fireEvent.click(screen.getByRole('option', { name: 'Arial' }));
   fireEvent.click(within(font).getByRole('combobox', { name: '字号' }));

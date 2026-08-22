@@ -15,6 +15,7 @@ import {
   Italic,
   Link2,
   Redo2,
+  Strikethrough,
   Subscript as SubscriptIcon,
   Superscript as SuperscriptIcon,
   Underline as UnderlineIcon,
@@ -44,6 +45,11 @@ import {
   documentUnderlineStyle,
   type WorkDocumentUnderlineStyle,
 } from '../work-document-underline';
+import {
+  DocumentStrike,
+  documentStrikeStyle,
+  type WorkDocumentStrikeStyle,
+} from '../work-document-strike';
 import { DocumentPageChromeWpsShortcuts } from './document-page-chrome-wps-shortcuts';
 import {
   OfficeColorPicker,
@@ -66,6 +72,8 @@ export interface DocumentPageChromeEditorState {
   color: string;
   italic: boolean;
   link: string | null;
+  strike: boolean;
+  strikeStyle: WorkDocumentStrikeStyle;
   subscript: boolean;
   superscript: boolean;
   underline: boolean;
@@ -270,6 +278,13 @@ export function DocumentPageChromeRichTextEditor({
                   <UnderlineIcon size={14} />
                 </PageChromeButton>
                 <PageChromeButton
+                  label={`${label}删除线`}
+                  active={state?.strike}
+                  onClick={() => editor?.chain().focus().toggleStrike().run()}
+                >
+                  <Strikethrough size={14} />
+                </PageChromeButton>
+                <PageChromeButton
                   label={`${label}下标`}
                   active={state?.subscript}
                   onClick={() =>
@@ -390,6 +405,7 @@ export function createDocumentPageChromeEditorExtensions(
         openOnClick: false,
       },
       underline: false,
+      strike: false,
     }),
     TableKit.configure({
       table: {
@@ -402,6 +418,7 @@ export function createDocumentPageChromeEditorExtensions(
     DocumentTextStyle,
     Color,
     DocumentUnderline,
+    DocumentStrike,
     DocumentCharacterFormatting,
     DocumentSubscript,
     DocumentSuperscript,
@@ -424,6 +441,7 @@ export function documentPageChromeEditorState(
   >;
   const link = editor.getAttributes('link') as Record<string, unknown>;
   const underlineStyle = documentUnderlineStyle(editor);
+  const strikeStyle = documentStrikeStyle(editor);
   return {
     alignment: editor.isActive('paragraph', { textAlign: 'center' })
       ? 'center'
@@ -441,6 +459,8 @@ export function documentPageChromeEditorState(
         : DEFAULT_PAGE_CHROME_COLOR,
     italic: editor.isActive('italic'),
     link: typeof link.href === 'string' ? link.href : null,
+    strike: strikeStyle !== 'none',
+    strikeStyle,
     subscript: editor.isActive('subscript'),
     superscript: editor.isActive('superscript'),
     underline: underlineStyle !== 'none',

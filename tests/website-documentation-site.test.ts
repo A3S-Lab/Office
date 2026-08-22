@@ -186,6 +186,54 @@ test('documents the complete native Writer underline contract', async () => {
   }
 });
 
+test('documents the complete native Writer strikethrough contract', async () => {
+  const [
+    readme,
+    roadmap,
+    product,
+    english,
+    chinese,
+    englishRoadmap,
+    chineseRoadmap,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+  ]);
+
+  expect(readme).toContain('independent native single/double strikethrough');
+  expect(roadmap).toContain('native `w:strike` / `w:dstrike` state');
+  expect(product).toContain('The fortieth milestone');
+  for (const document of [english, englishRoadmap]) {
+    expect(document).toContain('`none | single | double`');
+    expect(document).toContain('`w:strike`');
+    expect(document).toContain('`w:dstrike`');
+    expect(document).toContain('`Mod+Shift+S`');
+  }
+  for (const document of [chinese, chineseRoadmap]) {
+    expect(document).toContain('`none | single | double`');
+    expect(document).toContain('`w:strike`');
+    expect(document).toContain('`w:dstrike`');
+    expect(document).toContain('`Mod+Shift+S`');
+  }
+});
+
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
     '0.26.0',

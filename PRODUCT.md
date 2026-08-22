@@ -430,6 +430,20 @@ projections without flattening the native metadata. Underline remains a paint
 effect, so the change does not exclude otherwise eligible paragraphs from the
 Worker/WASM layout path. Focused and full Rstest, formatting, lint, typecheck,
 and the production package build form the release evidence.
+The fortieth milestone restores Writer's native strikethrough identity instead
+of flattening `w:strike` and `w:dstrike` into one boolean. One typed
+`none | single | double` mark preserves independent inherited flags and explicit
+resets through body text, page chrome, Format Painter, tracked formatting
+revisions, Undo, DOCX export, and reopen. Accessible split controls expose all
+three states in the Home ribbon, selection toolbar, and header/footer ribbon;
+the compact page-chrome toolbar keeps a direct toggle. Export writes both native
+flags so a child run can override either inherited state, while import resolves
+double above single deterministically. The editor deliberately claims no direct
+strikethrough shortcut and disables TipTap's unrelated `Mod+Shift+S` binding.
+Strikethrough remains paint-only, so eligible paragraphs retain Worker/WASM
+layout. Focused Rstest, Playwright, local-only A3S Test, formatting, lint,
+typecheck, and production builds form the release evidence without adding A3S
+Test to Actions or Pages.
 
 ## Product Rules
 

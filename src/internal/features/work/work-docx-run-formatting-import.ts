@@ -34,12 +34,20 @@ import {
   type WorkDocumentUnderlineFormatting,
 } from './work-document-underline';
 import { importedDocxUnderline } from './work-docx-underline';
+import {
+  documentStrikeDomAttributes,
+  type WorkDocumentStrikeFormatting,
+} from './work-document-strike';
+import {
+  importedDocxStrikeFlags,
+  resolvedDocxStrikeFormatting,
+} from './work-docx-strike';
 
 export interface ImportedDocxRunFormatting {
   bold?: boolean;
   italic?: boolean;
   underline?: WorkDocumentUnderlineFormatting;
-  strike?: boolean;
+  strike?: WorkDocumentStrikeFormatting;
   subscript?: boolean;
   superscript?: boolean;
   fontFamily?: string;
@@ -199,6 +207,7 @@ function resolvedRunFormatting(
   let complexItalic: boolean | undefined;
   let underline: WorkDocumentUnderlineFormatting | undefined;
   let strike: boolean | undefined;
+  let doubleStrike: boolean | undefined;
   let subscript: boolean | undefined;
   let superscript: boolean | undefined;
   let snapToGrid: boolean | undefined;
@@ -223,8 +232,9 @@ function resolvedRunFormatting(
       underline,
       underlineProperty(properties, theme),
     );
-    strike = overriddenBoolean(strike, onOffProperty(properties, 'strike'));
-    strike = overriddenBoolean(strike, onOffProperty(properties, 'dstrike'));
+    const importedStrike = importedDocxStrikeFlags(properties);
+    strike = overriddenBoolean(strike, importedStrike.single);
+    doubleStrike = overriddenBoolean(doubleStrike, importedStrike.double);
     allCaps = overriddenBoolean(allCaps, onOffProperty(properties, 'caps'));
     smallCaps = overriddenBoolean(
       smallCaps,
@@ -379,6 +389,11 @@ function resolvedRunFormatting(
     );
   }
   const hasRunPropertySource = propertySources.length > 0;
+  const resolvedStrike = resolvedDocxStrikeFormatting(
+    strike,
+    doubleStrike,
+    hasRunPropertySource,
+  );
   const textCase = documentTextCaseFromWordFlags(allCaps, smallCaps);
   return {
     ...(resolvedBold !== undefined || hasRunPropertySource
@@ -390,9 +405,7 @@ function resolvedRunFormatting(
     ...(underline !== undefined || hasRunPropertySource
       ? { underline: underline ?? { style: 'none' } }
       : {}),
-    ...(strike !== undefined || hasRunPropertySource
-      ? { strike: strike ?? false }
-      : {}),
+    ...(resolvedStrike ? { strike: resolvedStrike } : {}),
     ...(subscript !== undefined ? { subscript } : {}),
     ...(superscript !== undefined ? { superscript } : {}),
     ...(fontFamily
@@ -440,10 +453,13 @@ function formattingMarkup(
   if (formatting.italic === false) span.style.fontStyle = 'normal';
   const underlineEnabled =
     formatting.underline !== undefined && formatting.underline.style !== 'none';
+  const strikeEnabled =
+    formatting.strike !== undefined && formatting.strike.style !== 'none';
   if (
-    (formatting.underline?.style === 'none' || formatting.strike === false) &&
+    (formatting.underline?.style === 'none' ||
+      formatting.strike?.style === 'none') &&
     !underlineEnabled &&
-    !formatting.strike
+    !strikeEnabled
   ) {
     span.style.textDecorationLine = 'none';
   }
@@ -475,7 +491,9 @@ function formattingMarkup(
     ...(formatting.underline
       ? [underlineFormattingWrapper(document, formatting.underline)]
       : []),
-    ...(formatting.strike ? [{ start: '<s>', end: '</s>' }] : []),
+    ...(formatting.strike
+      ? [strikeFormattingWrapper(document, formatting.strike)]
+      : []),
     ...(formatting.subscript ? [{ start: '<sub>', end: '</sub>' }] : []),
     ...(formatting.superscript ? [{ start: '<sup>', end: '</sup>' }] : []),
   ];
@@ -504,6 +522,23 @@ function underlineFormattingWrapper(
   return {
     start: html.slice(0, html.indexOf('>') + 1),
     end: '</u>',
+  };
+}
+
+function strikeFormattingWrapper(
+  document: Document,
+  formatting: WorkDocumentStrikeFormatting,
+): { start: string; end: string } {
+  const strike = document.createElement('s');
+  for (const [name, value] of Object.entries(
+    documentStrikeDomAttributes(formatting),
+  )) {
+    strike.setAttribute(name, value);
+  }
+  const html = strike.outerHTML;
+  return {
+    start: html.slice(0, html.indexOf('>') + 1),
+    end: '</s>',
   };
 }
 

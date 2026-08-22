@@ -58,6 +58,17 @@ test('defines the WPS Writer shortcut contract in one catalog', () => {
     aria: 'Control+Shift+W Meta+Shift+W',
     editor: ['Mod-Shift-w'],
   });
+  expect(getDocumentCommandDefinition('strike').shortcut).toBeUndefined();
+  expect(getDocumentCommandDefinition('doubleStrike')).toMatchObject({
+    id: 'font.doubleStrike',
+    label: '双删除线',
+  });
+  expect(getDocumentCommandDefinition('doubleStrike').shortcut).toBeUndefined();
+  expect(
+    Object.values(documentCommandCatalog).some((command) =>
+      command.shortcut?.editor?.includes('Mod-Shift-s'),
+    ),
+  ).toBe(false);
   expect(getDocumentCommandDefinition('growFont').shortcut?.editor).toEqual([
     'Mod-Shift-.',
     'Mod-]',

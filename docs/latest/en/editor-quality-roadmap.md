@@ -331,6 +331,13 @@ The Home ribbon, selection toolbar, page chrome, Format Painter, formatting
 revisions, Undo, export, and reopen retain that state. CSS renders bounded
 browser projections without changing Worker/WASM layout eligibility, and the
 standard single, double, and words-only shortcuts share the same commands.
+Writer strikethrough now uses one typed `none | single | double` mark instead of
+flattening native state to a boolean. Independent `w:strike` and `w:dstrike`
+inheritance, explicit resets, body and page-chrome editing, Format Painter,
+formatting revisions, Undo, export, and reopen all retain the exact state.
+Accessible split controls expose the complete family without inventing a
+shortcut; TipTap's unrelated `Mod+Shift+S` binding is disabled. CSS projection
+remains paint-only and does not change Worker/WASM layout eligibility.
 Header and footer surfaces use the same Traditional Office alignment and format-copy commands,
 falling back to their compatible paragraph schema when body heading formats are
 pasted. Undo and redo use the quick-access row, while double-clicking the active

@@ -15,6 +15,7 @@ import { analyzeDocxCompatibility } from '../src/internal/features/work/work-off
 import {
   attribute,
   descendants,
+  directChild,
   parseXml,
 } from '../src/internal/features/work/work-ooxml-package';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
@@ -22,6 +23,10 @@ import {
   documentUnderlineDomAttributes,
   workDocumentUnderlineStyles,
 } from '../src/internal/features/work/work-document-underline';
+import {
+  documentStrikeDomAttributes,
+  workDocumentStrikeStyles,
+} from '../src/internal/features/work/work-document-strike';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -45,6 +50,139 @@ function themeXml(body: string): Document {
 }
 
 describe('DOCX run formatting', () => {
+  test('resolves native single and double strike flags without flattening inheritance', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:r><w:rPr><w:strike/></w:rPr><w:t>single</w:t></w:r>
+        <w:r><w:rPr><w:dstrike/></w:rPr><w:t>double</w:t></w:r>
+        <w:r><w:rPr><w:strike/><w:dstrike/></w:rPr><w:t>double-wins</w:t></w:r>
+        <w:r><w:rPr><w:strike w:val="0"/><w:dstrike w:val="false"/></w:rPr><w:t>none</w:t></w:r>
+        <w:r><w:rPr><w:strike w:val="on"/><w:dstrike w:val="off"/></w:rPr><w:t>single-reset</w:t></w:r>
+      </w:p>
+    `);
+
+    const markers = markDocxRunFormatting(document);
+    expect(
+      markers.runs.map(({ formatting }) => formatting.strike?.style),
+    ).toEqual(['single', 'double', 'double', 'none', 'single']);
+
+    const html = new DOMParser().parseFromString(
+      `<p>${markers.runs
+        .map(
+          ({ startMarker, endMarker }, index) =>
+            `${startMarker}strike-${index}${endMarker}`,
+        )
+        .join('')}</p>`,
+      'text/html',
+    );
+    applyImportedDocxRunFormattingMarkers(html, markers);
+    const strikes = [...html.querySelectorAll<HTMLElement>('s')];
+    expect(strikes.map((element) => element.dataset.officeStrikeStyle)).toEqual(
+      ['single', 'double', 'double', 'none', 'single'],
+    );
+    expect(strikes[1]?.style.textDecorationStyle).toBe('double');
+    expect(strikes[3]?.style.textDecorationLine).toBe('none');
+  });
+
+  test('exports and reopens native strike styles in body and page chrome', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const strikeHtml = (
+      style: (typeof workDocumentStrikeStyles)[number],
+      text: string,
+    ) => {
+      const element = document.createElement('s');
+      for (const [name, value] of Object.entries(
+        documentStrikeDomAttributes({ style }),
+      )) {
+        element.setAttribute(name, value);
+      }
+      element.textContent = text;
+      return element.outerHTML;
+    };
+    artifact.content.html = `<p>${workDocumentStrikeStyles
+      .map((style) => strikeHtml(style, `body-${style}`))
+      .join(' ')}</p>`;
+    artifact.content.pageChrome = {
+      differentFirstPage: false,
+      differentOddEvenPages: false,
+      default: {
+        headerHtml: `<p>${strikeHtml('double', 'header-double')}</p>`,
+        footerHtml: `<p>${strikeHtml('none', 'footer-none')}</p>`,
+        showPageNumber: false,
+      },
+      first: { headerHtml: '', footerHtml: '', showPageNumber: false },
+      even: { headerHtml: '', footerHtml: '', showPageNumber: false },
+    };
+
+    const blob = await createDocxBlob(artifact.content);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const documentXml = parseXml(
+      (await archive.file('word/document.xml')?.async('text')) ?? '',
+    );
+    for (const style of workDocumentStrikeStyles) {
+      const run = descendants(documentXml, 'r').find(
+        (candidate) =>
+          directChild(candidate, 't')?.textContent === `body-${style}`,
+      );
+      if (!run) throw new Error(`Expected body ${style} strike run.`);
+      expect(docxStrikeFlags(run)).toEqual({
+        double: style === 'double',
+        single: style === 'single',
+      });
+    }
+    const headerPath = Object.keys(archive.files).find((path) =>
+      /^word\/header\d*\.xml$/i.test(path),
+    );
+    const footerPath = Object.keys(archive.files).find((path) =>
+      /^word\/footer\d*\.xml$/i.test(path),
+    );
+    if (!headerPath || !footerPath) {
+      throw new Error('Expected generated header and footer parts.');
+    }
+    const headerXml = parseXml(
+      (await archive.file(headerPath)?.async('text')) ?? '',
+    );
+    const footerXml = parseXml(
+      (await archive.file(footerPath)?.async('text')) ?? '',
+    );
+    const headerRun = descendants(headerXml, 'r').find(
+      (candidate) =>
+        directChild(candidate, 't')?.textContent === 'header-double',
+    );
+    const footerRun = descendants(footerXml, 'r').find(
+      (candidate) => directChild(candidate, 't')?.textContent === 'footer-none',
+    );
+    if (!headerRun || !footerRun) {
+      throw new Error('Expected strike runs in page chrome.');
+    }
+    expect(docxStrikeFlags(headerRun)).toEqual({ double: true, single: false });
+    expect(docxStrikeFlags(footerRun)).toEqual({
+      double: false,
+      single: false,
+    });
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'native-strikes.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    for (const style of workDocumentStrikeStyles) {
+      expect(reopened.content.html).toContain(
+        `data-office-strike-style="${style}"`,
+      );
+    }
+    expect(reopened.content.pageChrome?.default.headerHtml).toContain(
+      'data-office-strike-style="double"',
+    );
+    expect(reopened.content.pageChrome?.default.footerHtml).toContain(
+      'data-office-strike-style="none"',
+    );
+  });
+
   test('imports every native underline style and semantic underline color', () => {
     const document = wordXml(
       `<w:p>${workDocumentUnderlineStyles
@@ -308,7 +446,7 @@ describe('DOCX run formatting', () => {
       bold: false,
       italic: false,
       underline: { style: 'none' },
-      strike: false,
+      strike: { style: 'none' },
       fontFamily: 'Arial, SimSun',
       wordLineHeightFactor: 1.15,
       wordSnapToGrid: false,
@@ -506,7 +644,7 @@ describe('DOCX run formatting', () => {
       author: 'Ada Reviewer',
       date: '2026-08-17T14:30:00.000Z',
       before:
-        '[{"type":"italic"},{"type":"underline","attrs":{"underlineStyle":"none"}},{"type":"textStyle","attrs":{"color":"#336699","fontSize":"12pt","textCase":"small-caps"}}]',
+        '[{"type":"italic"},{"type":"underline","attrs":{"underlineStyle":"none"}},{"type":"strike","attrs":{"strikeStyle":"none"}},{"type":"textStyle","attrs":{"color":"#336699","fontSize":"12pt","textCase":"small-caps"}}]',
     });
     const html = new DOMParser().parseFromString(
       `<p>${marker.startMarker}Changed format${marker.endMarker}</p>`,
@@ -571,6 +709,51 @@ describe('DOCX run formatting', () => {
     );
     expect(reopened.content.html).toContain('underlineStyle');
     expect(reopened.content.html).toContain('double');
+  });
+
+  test('exports and reopens native strike formatting revisions', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const before = '[{"type":"strike","attrs":{"strikeStyle":"single"}}]';
+    const strike = document.createElement('s');
+    for (const [name, value] of Object.entries(
+      documentStrikeDomAttributes({ style: 'double' }),
+    )) {
+      strike.setAttribute(name, value);
+    }
+    strike.textContent = 'Changed strike';
+    artifact.content.html = `<p><span data-document-change="true" data-change-kind="formatting" data-change-before='${before}' data-change-id="formatting-strike" data-change-author="Ada Reviewer" data-change-date="2026-08-22T12:00:00.000Z">${strike.outerHTML}</span></p>`;
+    artifact.content.trackChanges = true;
+
+    const blob = await createDocxBlob(artifact.content);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = parseXml(
+      (await archive.file('word/document.xml')?.async('text')) ?? '',
+    );
+    const run = descendants(xml, 'r').find(
+      (candidate) =>
+        directChild(candidate, 't')?.textContent === 'Changed strike',
+    );
+    if (!run) throw new Error('Expected changed strike run.');
+    expect(docxStrikeFlags(run)).toEqual({ double: true, single: false });
+    const change = descendants(run, 'rPrChange')[0];
+    if (!change) throw new Error('Expected native run-property revision.');
+    expect(docxStrikeFlags(change)).toEqual({ double: false, single: true });
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'strike-revision.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain('data-change-kind="formatting"');
+    expect(reopened.content.html).toContain(
+      'data-office-strike-style="double"',
+    );
+    expect(reopened.content.html).toContain('strikeStyle');
+    expect(reopened.content.html).toContain('single');
   });
 
   test('reports supported character-formatting revisions without a structural warning', async () => {
@@ -916,7 +1099,7 @@ describe('DOCX run formatting', () => {
       bold: false,
       italic: false,
       underline: { style: 'none' },
-      strike: false,
+      strike: { style: 'none' },
       fontFamily: 'Aptos',
       wordLineHeightFactor: 1.15,
       fontSize: 16,
@@ -937,6 +1120,26 @@ describe('DOCX run formatting', () => {
     expect(span?.style.fontStyle).toBe('normal');
   });
 });
+
+function docxStrikeFlags(container: Element): {
+  double: boolean | undefined;
+  single: boolean | undefined;
+} {
+  const properties =
+    container.localName === 'rPr'
+      ? container
+      : descendants(container, 'rPr')[0];
+  return {
+    double: docxOnOff(directChild(properties ?? container, 'dstrike')),
+    single: docxOnOff(directChild(properties ?? container, 'strike')),
+  };
+}
+
+function docxOnOff(element: Element | undefined): boolean | undefined {
+  if (!element) return undefined;
+  const value = attribute(element, 'val')?.trim().toLowerCase();
+  return value !== '0' && value !== 'false' && value !== 'off';
+}
 
 async function formattingRevisionCompatibility(
   body: string,

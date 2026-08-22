@@ -7,7 +7,6 @@ import {
   Highlighter,
   Italic,
   MessageSquarePlus,
-  Strikethrough,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { officeOverlayPortalRoot } from '../../../design-system/primitives/overlay/portal-root';
@@ -19,6 +18,7 @@ import {
   documentFontSizeValue,
 } from './document-formatting-options';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
+import { DocumentStrikeRibbon } from './document-strike-ribbon';
 import { DocumentUnderlineRibbon } from './document-underline-ribbon';
 
 const bubbleMenuOptions = {
@@ -156,13 +156,11 @@ export function DocumentSelectionToolbar({
             showColor={false}
             className="work-document-selection-underline"
           />
-          <SelectionToolbarButton
-            label="删除线"
-            active={editor.isActive('strike')}
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-          >
-            <Strikethrough size={15} />
-          </SelectionToolbarButton>
+          <DocumentStrikeRibbon
+            editor={editor}
+            menuLabel="快捷删除线样式"
+            className="work-document-selection-strike"
+          />
           <OfficeColorPicker
             compact
             className="work-document-selection-color"

@@ -40,6 +40,20 @@ test('retains only normalized native image identities in page chrome', () => {
   expect(invalid).not.toContain('data-office-image-');
 });
 
+test('retains only normalized native strikethrough metadata in page chrome', () => {
+  const normalized = sanitizeDocumentPageChromeHtml(
+    '<p><s data-office-strike-style="DOUBLE" data-untrusted="drop">Header</s></p>',
+  );
+  expect(normalized).toContain('data-office-strike-style="double"');
+  expect(normalized).toContain('text-decoration-style: double');
+  expect(normalized).not.toContain('data-untrusted');
+
+  const fallback = sanitizeDocumentPageChromeHtml(
+    '<p><strike data-office-strike-style="invalid">Header</strike></p>',
+  );
+  expect(fallback).toContain('data-office-strike-style="single"');
+});
+
 test('keeps native page-chrome identities through edits', () => {
   const editor = new Editor({
     extensions: createDocumentPageChromeEditorExtensions(),
@@ -78,6 +92,13 @@ test('executes WPS alignment and format-copy shortcuts in page chrome', () => {
     shiftKey: true,
   });
   expect(editor.getAttributes('underline').underlineStyle).toBe('double');
+  expect(editor.commands.setDocumentStrike('double')).toBe(true);
+  fireEvent.keyDown(editor.view.dom, {
+    key: 's',
+    ctrlKey: true,
+    shiftKey: true,
+  });
+  expect(editor.getAttributes('strike').strikeStyle).toBe('double');
   fireEvent.keyDown(editor.view.dom, {
     key: 'c',
     ctrlKey: true,
@@ -116,6 +137,7 @@ test('applies typed page-chrome commands to a TipTap document', () => {
 
   expect(editor.chain().focus().toggleBold().run()).toBe(true);
   expect(editor.chain().focus().toggleUnderline().run()).toBe(true);
+  expect(editor.chain().focus().setDocumentStrike('double').run()).toBe(true);
   expect(editor.chain().focus().setColor('#175cd3').run()).toBe(true);
   expect(
     editor
@@ -133,6 +155,8 @@ test('applies typed page-chrome commands to a TipTap document', () => {
     bold: true,
     color: '#175cd3',
     link: 'https://a3s.dev/office',
+    strike: true,
+    strikeStyle: 'double',
     underline: true,
   });
   expect(html).toContain('text-align: right');
@@ -140,6 +164,7 @@ test('applies typed page-chrome commands to a TipTap document', () => {
   expect(html).toContain('href="https://a3s.dev/office"');
   expect(html).toContain('<strong>');
   expect(html).toContain('data-office-underline-style="single"');
+  expect(html).toContain('data-office-strike-style="double"');
 
   expect(editor.commands.setDocumentPageChromeLink('javascript:alert(1)')).toBe(
     false,
@@ -205,17 +230,19 @@ test('keeps the page-chrome surface controlled and exposes active formatting', a
   const alignmentAndInsert = within(toolbar).getByRole('group', {
     name: '默认页眉对齐与插入',
   });
-  expect(within(textFormatting).getAllByRole('button')).toHaveLength(7);
+  expect(within(textFormatting).getAllByRole('button')).toHaveLength(8);
   expect(within(alignmentAndInsert).getAllByRole('button')).toHaveLength(7);
   expect(editor).not.toBeNull();
   const current = editor as Editor;
   current.commands.setTextSelection({ from: 1, to: 5 });
   fireEvent.click(screen.getByRole('button', { name: '默认页眉加粗' }));
   fireEvent.click(screen.getByRole('button', { name: '默认页眉上标' }));
+  fireEvent.click(screen.getByRole('button', { name: '默认页眉删除线' }));
 
   await waitFor(() => {
     expect(changes.at(-1)).toContain('<strong>');
     expect(current.getHTML()).toContain('<sup>');
+    expect(current.getHTML()).toContain('data-office-strike-style="single"');
   });
   expect(screen.getByRole('button', { name: '默认页眉加粗' })).toHaveAttribute(
     'aria-pressed',

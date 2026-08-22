@@ -111,6 +111,44 @@ test('copies native underline style and color as one formatting mark', () => {
   expect(editor.isActive('underline')).toBe(false);
 });
 
+test('copies native double strike as one formatting mark across body and page chrome', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content:
+      '<p><s data-office-strike-style="double">Source</s> and <em>Target</em></p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Source'));
+  expect(copyDocumentFormatting(editor)).toBe(true);
+
+  editor.commands.setTextSelection(textRange(editor, 'Target'));
+  expect(pasteDocumentFormatting(editor)).toBe(true);
+  expect(editor.getAttributes('strike')).toMatchObject({
+    strikeStyle: 'double',
+  });
+  expect(editor.isActive('italic')).toBe(false);
+
+  const pageChromeEditor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: '<p>Header target</p>',
+  });
+  pageChromeEditor.commands.setTextSelection(
+    textRange(pageChromeEditor, 'Header target'),
+  );
+  expect(pasteDocumentFormatting(pageChromeEditor)).toBe(true);
+  expect(pageChromeEditor.getAttributes('strike')).toMatchObject({
+    strikeStyle: 'double',
+  });
+  expect(pageChromeEditor.getHTML()).toContain(
+    'data-office-strike-style="double"',
+  );
+  pageChromeEditor.destroy();
+
+  expect(editor.commands.undo()).toBe(true);
+  editor.commands.setTextSelection(textRange(editor, 'Target'));
+  expect(editor.isActive('italic')).toBe(true);
+  expect(editor.isActive('strike')).toBe(false);
+});
+
 test('keeps a required list paragraph when the copied block type is a heading', () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

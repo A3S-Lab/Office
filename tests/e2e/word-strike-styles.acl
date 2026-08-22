@@ -1,0 +1,110 @@
+suite "office-word-strike-styles" {
+    version = 1
+
+    scenario "preserve-native-single-and-double-strike" {
+        name = "Preserve native Writer single and double strikethrough"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        click "focus-title" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-title-start" {
+            key = "Home"
+        }
+
+        press "select-title" {
+            key = "Shift+End"
+        }
+
+        expect "strike-has-no-invented-shortcut" {
+            visible = css("[aria-label='字体'] button[aria-label='删除线']:not([aria-keyshortcuts])")
+        }
+
+        click "open-strike-menu" {
+            target = role("button", "更多删除线")
+        }
+
+        expect "strike-menu-visible" {
+            visible = css("[role='menu'][aria-label='删除线样式']")
+        }
+
+        expect "none-style-focused" {
+            visible = css("[role='menu'][aria-label='删除线样式'] [role='menuitemradio'][aria-label='无删除线']:focus")
+        }
+
+        click "apply-double-strike" {
+            target = role("menuitemradio", "双删除线")
+        }
+
+        expect "double-strike-active" {
+            visible = css("[aria-label='字体'] button[aria-label='删除线'][aria-pressed='true'][title='删除线（双删除线）']")
+        }
+
+        expect "double-strike-metadata-visible" {
+            visible = css(".work-document-editable .ProseMirror h1 s[data-office-strike-style='double'][style*='text-decoration-style: double']")
+        }
+
+        press "unowned-shortcut-does-not-mutate" {
+            key = "Control+Shift+s"
+        }
+
+        expect "double-strike-survives-unowned-shortcut" {
+            visible = css(".work-document-editable .ProseMirror h1 s[data-office-strike-style='double']")
+        }
+
+        click "toggle-strike-off" {
+            target = role("button", "删除线")
+        }
+
+        expect "explicit-none-is-preserved" {
+            visible = css(".work-document-editable .ProseMirror h1 s[data-office-strike-style='none'][style*='text-decoration-line: none']")
+        }
+
+        press "undo-strike-toggle" {
+            key = "Control+z"
+        }
+
+        expect "double-strike-restored" {
+            visible = css(".work-document-editable .ProseMirror h1 s[data-office-strike-style='double']")
+        }
+
+        accessibility "strike-accessibility" {
+            path = "evidence/strike-accessibility.json"
+            interactive = true
+        }
+
+        console "strike-console" {
+            path = "diagnostics/strike-console.json"
+            clear = false
+        }
+
+        page_errors "strike-page-errors" {
+            path = "diagnostics/strike-page-errors.json"
+            clear = false
+        }
+    }
+}

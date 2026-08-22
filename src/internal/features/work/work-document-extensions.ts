@@ -42,6 +42,7 @@ import { DocumentPageBreak } from './work-document-page-break';
 import { DocumentParagraphFormatting } from './work-document-paragraph-formatting';
 import { DocumentParagraphIdentity } from './work-document-paragraph-identity';
 import { DocumentSection } from './work-document-section-node';
+import { DocumentStrike } from './work-document-strike';
 import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
 import { DocumentUnderline } from './work-document-underline';
@@ -105,6 +106,7 @@ export function createWorkDocumentExtensions(
         openOnClick: false,
       },
       underline: false,
+      strike: false,
       bulletList: false,
       orderedList: false,
       trailingNode: {
@@ -134,6 +136,7 @@ export function createWorkDocumentExtensions(
     DocumentNoteReference,
     DocumentNote,
     DocumentUnderline,
+    DocumentStrike,
     DocumentCharacterFormatting,
     DocumentSubscript,
     DocumentSuperscript,

@@ -200,7 +200,7 @@ describe('DOCX paragraph styles', () => {
       bold: false,
       italic: false,
       underline: { style: 'none' },
-      strike: false,
+      strike: { style: 'none' },
       fontFamily: 'Arial',
       wordLineHeightFactor: 1.15,
       fontSize: 12,

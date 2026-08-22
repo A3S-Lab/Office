@@ -190,6 +190,11 @@ export const documentCommandCatalog = {
     label: '删除线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
+  doubleStrike: {
+    id: 'font.doubleStrike',
+    label: '双删除线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
   allCaps: {
     id: 'font.allCaps',
     label: '全部大写',

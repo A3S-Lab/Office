@@ -148,6 +148,48 @@ describe('document change commands', () => {
     editor.destroy();
   });
 
+  test('tracks, rejects, and accepts native strike styles without flattening them', () => {
+    let sequence = 0;
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+        createChange: () => ({
+          id: `formatting-strike-${++sequence}`,
+          author: 'Reviewer',
+          date: '2026-08-22T12:05:00.000Z',
+        }),
+      }),
+      content:
+        '<section data-document-section="true"><p><s data-office-strike-style="double">Tracked strike</s></p></section>',
+    });
+    editor.commands.setTextSelection(textRange(editor, 'Tracked strike'));
+
+    expect(editor.commands.setDocumentStrike('single')).toBe(true);
+    expect(editor.getAttributes('strike')).toMatchObject({
+      strikeStyle: 'single',
+    });
+    expect(editor.getHTML()).toContain(
+      'data-change-before="[{&quot;type&quot;:&quot;strike&quot;,&quot;attrs&quot;:{&quot;strikeStyle&quot;:&quot;double&quot;}}]"',
+    );
+    expect(editor.commands.rejectDocumentChange('formatting-strike-1')).toBe(
+      true,
+    );
+    expect(editor.getAttributes('strike')).toMatchObject({
+      strikeStyle: 'double',
+    });
+
+    expect(editor.commands.setDocumentStrike('none')).toBe(true);
+    expect(editor.commands.acceptDocumentChange('formatting-strike-2')).toBe(
+      true,
+    );
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([]);
+    expect(editor.getAttributes('strike')).toMatchObject({
+      strikeStyle: 'none',
+    });
+    expect(editor.getHTML()).toContain('data-office-strike-style="none"');
+    editor.destroy();
+  });
+
   test('keeps accepted formatting and groups revision metadata into one undo step', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions({

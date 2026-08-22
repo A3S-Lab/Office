@@ -16,7 +16,6 @@ import {
   PilcrowRight,
   Replace,
   Search,
-  Strikethrough,
   Subscript as SubscriptIcon,
   Superscript as SuperscriptIcon,
 } from 'lucide-react';
@@ -48,6 +47,7 @@ import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 import { DocumentListGallery } from './document-list-gallery';
 import { DocumentStyleGallery } from './document-style-gallery';
 import { DocumentTextCaseRibbon } from './document-text-case-ribbon';
+import { DocumentStrikeRibbon } from './document-strike-ribbon';
 import { DocumentUnderlineRibbon } from './document-underline-ribbon';
 
 const documentLineHeightOptions = [
@@ -165,13 +165,7 @@ export function DocumentHomeRibbon({
               <Italic size={16} />
             </ToolbarButton>
             <DocumentUnderlineRibbon editor={editor} />
-            <ToolbarButton
-              label="删除线"
-              active={editor.isActive('strike')}
-              onClick={() => editor.chain().focus().toggleStrike().run()}
-            >
-              <Strikethrough size={16} />
-            </ToolbarButton>
+            <DocumentStrikeRibbon editor={editor} />
             <DocumentTextCaseRibbon editor={editor} />
             <ToolbarButton
               label="下标"
