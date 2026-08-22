@@ -4,6 +4,7 @@ import {
   type DocumentCharacterFormatMark,
 } from './work-document-format-changes';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
+import { normalizeDocumentUnderlineStyle } from './work-document-underline';
 import { parseDocxThemeReference } from './work-docx-theme-reference';
 import { descendants, directChildren, parseXml } from './work-ooxml-package';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
@@ -276,16 +277,13 @@ function appendFormattingProperties(
     'italic',
     'iCs',
   );
-  if (byType.has('underline')) {
-    appendValuedProperty(
-      document,
-      properties,
-      namespace,
-      prefix,
-      'u',
-      'single',
-    );
-  }
+  appendUnderlineProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('underline'),
+  );
   appendBooleanProperty(
     document,
     properties,
@@ -347,6 +345,30 @@ function appendFontProperties(
     setWordAttribute(fonts, namespace, prefix, name, family);
   }
   properties.append(fonts);
+}
+
+function appendUnderlineProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  if (!mark) return;
+  const style =
+    normalizeDocumentUnderlineStyle(mark.attrs?.underlineStyle) ?? 'single';
+  const color = normalizedHex(mark.attrs?.underlineColor);
+  const theme = themeReference(mark.attrs?.underlineThemeColor);
+  const underline = wordElement(document, namespace, prefix, 'u');
+  setWordAttribute(underline, namespace, prefix, 'val', style);
+  const resolved = color ?? normalizedHex(theme?.resolved);
+  if (resolved) {
+    setWordAttribute(underline, namespace, prefix, 'color', resolved);
+  }
+  if (theme) {
+    setThemeAttributes(underline, namespace, prefix, theme, 'themeColor');
+  }
+  properties.append(underline);
 }
 
 function appendBooleanProperty(

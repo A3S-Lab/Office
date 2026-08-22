@@ -48,6 +48,16 @@ test('defines the WPS Writer shortcut contract in one catalog', () => {
     aria: 'Control+Shift+K Meta+Shift+K',
     editor: ['Mod-Shift-k'],
   });
+  expect(getDocumentCommandDefinition('doubleUnderline').shortcut).toEqual({
+    label: 'Cmd/Ctrl+Shift+D',
+    aria: 'Control+Shift+D Meta+Shift+D',
+    editor: ['Mod-Shift-d'],
+  });
+  expect(getDocumentCommandDefinition('wordsUnderline').shortcut).toEqual({
+    label: 'Cmd/Ctrl+Shift+W',
+    aria: 'Control+Shift+W Meta+Shift+W',
+    editor: ['Mod-Shift-w'],
+  });
   expect(getDocumentCommandDefinition('growFont').shortcut?.editor).toEqual([
     'Mod-Shift-.',
     'Mod-]',

@@ -11,7 +11,12 @@ export interface DocxThemeColorReference {
   shade?: string;
 }
 
-type DocxThemePatchKind = 'color' | 'fill' | 'border' | 'shadingColor';
+type DocxThemePatchKind =
+  | 'color'
+  | 'fill'
+  | 'border'
+  | 'shadingColor'
+  | 'underline';
 
 interface DocxThemePatch {
   kind: DocxThemePatchKind;
@@ -150,6 +155,17 @@ function themePatchTargets(localName: string): Array<{
       {
         kind: 'color',
         directAttribute: 'val',
+        themeAttribute: 'themeColor',
+        tintAttribute: 'themeTint',
+        shadeAttribute: 'themeShade',
+      },
+    ];
+  }
+  if (localName === 'u') {
+    return [
+      {
+        kind: 'underline',
+        directAttribute: 'color',
         themeAttribute: 'themeColor',
         tintAttribute: 'themeTint',
         shadeAttribute: 'themeShade',

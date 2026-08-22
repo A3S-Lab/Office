@@ -73,6 +73,12 @@ test('executes WPS alignment and format-copy shortcuts in page chrome', () => {
   });
   expect(editor.getAttributes('textStyle').textCase).toBe('all-caps');
   fireEvent.keyDown(editor.view.dom, {
+    key: 'd',
+    ctrlKey: true,
+    shiftKey: true,
+  });
+  expect(editor.getAttributes('underline').underlineStyle).toBe('double');
+  fireEvent.keyDown(editor.view.dom, {
     key: 'c',
     ctrlKey: true,
     shiftKey: true,
@@ -84,11 +90,17 @@ test('executes WPS alignment and format-copy shortcuts in page chrome', () => {
     ctrlKey: true,
     shiftKey: true,
   });
-  expect(editor.getHTML()).toContain('<strong>Target</strong>');
-  expect(editor.getHTML()).not.toContain('<em>Target</em>');
+  expect(editor.isActive('bold')).toBe(true);
+  expect(editor.isActive('italic')).toBe(false);
   expect(editor.getHTML()).toContain('data-office-text-case="all-caps"');
+  expect(editor.getAttributes('underline')).toMatchObject({
+    underlineStyle: 'double',
+  });
   expect(sanitizeDocumentPageChromeHtml(editor.getHTML())).toContain(
     'data-office-text-case="all-caps"',
+  );
+  expect(sanitizeDocumentPageChromeHtml(editor.getHTML())).toContain(
+    'data-office-underline-style="double"',
   );
 
   editor.destroy();
@@ -127,7 +139,7 @@ test('applies typed page-chrome commands to a TipTap document', () => {
   expect(html).toContain('color: #175cd3');
   expect(html).toContain('href="https://a3s.dev/office"');
   expect(html).toContain('<strong>');
-  expect(html).toContain('<u>');
+  expect(html).toContain('data-office-underline-style="single"');
 
   expect(editor.commands.setDocumentPageChromeLink('javascript:alert(1)')).toBe(
     false,

@@ -325,6 +325,12 @@ revisions, page chrome, Undo, and exact `w:caps` / `w:smallCaps` DOCX reopen.
 The source text remains semantic; paragraphs containing a case-shaping effect
 use browser-authoritative line measurement because transformed glyphs cannot
 yet be mapped safely onto the layout kernel's source UTF-16 offsets.
+Writer underline formatting now uses one typed mark for all 18 native `w:u`
+values, direct RGB or theme/tint/shade color identity, and explicit `none`.
+The Home ribbon, selection toolbar, page chrome, Format Painter, formatting
+revisions, Undo, export, and reopen retain that state. CSS renders bounded
+browser projections without changing Worker/WASM layout eligibility, and the
+standard single, double, and words-only shortcuts share the same commands.
 Header and footer surfaces use the same Traditional Office alignment and format-copy commands,
 falling back to their compatible paragraph schema when body heading formats are
 pasted. Undo and redo use the quick-access row, while double-clicking the active

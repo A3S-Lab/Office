@@ -215,6 +215,22 @@ and the complete [A3S Boot backend](./collaboration-server.mdx#update-authorizat
 In the Playground, choose **体验格式修订**, open **审阅**, then
 **查看修订（2）** to review the Formatting card.
 
+## Native underline formatting
+
+Writer authors and reopens all 18 native WordprocessingML underline values:
+`none`, `single`, `words`, `double`, `thick`, `dotted`, `dottedHeavy`, `dash`,
+`dashedHeavy`, `dashLong`, `dashLongHeavy`, `dotDash`, `dashDotHeavy`,
+`dotDotDash`, `dashDotDotHeavy`, `wave`, `wavyHeavy`, and `wavyDouble`.
+The Home ribbon, selection toolbar, and header/footer surface share an
+accessible split control. Underline color supports Automatic Color, direct RGB,
+and preserved theme/tint/shade identity.
+
+`Cmd/Ctrl+U` disables any active underline style or enables `single` from the
+off state. `Cmd/Ctrl+Shift+D` toggles `double`, and `Cmd/Ctrl+Shift+W` toggles
+words-only underline. Format Painter, tracked character-format changes, Undo,
+DOCX export, and reopen preserve the exact typed state, including explicit
+`none` used to override inherited formatting.
+
 ## Paragraph-formatting revisions
 
 Tracked paragraph commands now create a separate `paragraph-formatting`

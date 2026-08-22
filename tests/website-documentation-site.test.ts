@@ -140,6 +140,52 @@ test('keeps the five-editor README capability comparison complete', async () => 
   ).toHaveLength(5);
 });
 
+test('documents the complete native Writer underline contract', async () => {
+  const [readme, roadmap, product, english, chinese] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/document.mdx'),
+      'utf8',
+    ),
+  ]);
+
+  expect(readme).toContain('all 18 native DOCX underline values');
+  expect(roadmap).toContain('all 18 native `w:u` values');
+  expect(product).toContain('The thirty-ninth milestone');
+  for (const document of [english, chinese]) {
+    for (const style of [
+      'none',
+      'single',
+      'words',
+      'double',
+      'thick',
+      'dotted',
+      'dottedHeavy',
+      'dash',
+      'dashedHeavy',
+      'dashLong',
+      'dashLongHeavy',
+      'dotDash',
+      'dashDotHeavy',
+      'dotDotDash',
+      'dashDotDotHeavy',
+      'wave',
+      'wavyHeavy',
+      'wavyDouble',
+    ]) {
+      expect(document).toContain(`\`${style}\``);
+    }
+    expect(document).toContain('Cmd/Ctrl+Shift+D');
+    expect(document).toContain('Cmd/Ctrl+Shift+W');
+  }
+});
+
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
     '0.26.0',

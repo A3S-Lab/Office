@@ -32,6 +32,243 @@
   gap: 2px;
 }
 
+.work-document-underline-control,
+.work-document-underline-split-root {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+}
+
+.work-document-underline-control {
+  gap: 2px;
+}
+
+.work-document-underline-split-root {
+  height: 29px;
+  border-radius: 6px;
+}
+
+.work-office-ribbon
+  .work-office-toolbar
+  .work-document-underline-split-root
+  > button {
+  height: 29px;
+  padding: 0;
+  border-radius: 0;
+}
+
+.work-office-ribbon
+  .work-office-toolbar
+  .work-document-underline-split-root
+  > .work-document-underline-primary {
+  width: 27px;
+  min-width: 27px;
+  border-radius: 6px 0 0 6px;
+}
+
+.work-office-ribbon
+  .work-office-toolbar
+  .work-document-underline-split-root
+  > .work-document-underline-disclosure {
+  width: 14px;
+  min-width: 14px;
+  border-left: 1px solid color-mix(in srgb, var(--a3s-line) 72%, transparent);
+  border-radius: 0 6px 6px 0;
+}
+
+.work-document-underline-disclosure svg {
+  transition: transform 120ms ease;
+}
+
+.work-document-underline-disclosure[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.work-document-underline-primary:focus-visible,
+.work-document-underline-disclosure:focus-visible {
+  outline: 0;
+  box-shadow: inset 0 0 0 1px var(--work-office-accent);
+}
+
+.work-document-underline-color {
+  width: 25px;
+  height: 29px;
+  flex: 0 0 25px;
+}
+
+.work-document-underline-color .work-office-color-trigger {
+  width: 25px;
+  min-width: 25px;
+  height: 29px;
+  padding: 0;
+}
+
+.work-document-underline-menu {
+  --work-office-menu-accent: var(--work-office-accent);
+
+  width: min(520px, calc(100vw - 24px));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.work-document-underline-menu > button {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.work-document-underline-menu > button[aria-checked="true"] {
+  background: color-mix(
+    in srgb,
+    var(--work-office-menu-accent) 10%,
+    transparent
+  );
+}
+
+.work-document-underline-menu > button[aria-checked="true"]::after {
+  grid-column: 3;
+  color: var(--work-office-menu-accent);
+  content: "✓";
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.work-document-underline-menu > button[aria-checked="true"] > kbd:last-child {
+  display: none;
+}
+
+.work-document-underline-glyph {
+  position: relative;
+  display: grid;
+  width: 32px;
+  height: 22px;
+  place-items: center;
+  color: var(--work-office-menu-accent);
+  font-size: 11px;
+  line-height: 17px;
+}
+
+.work-document-underline-glyph > span {
+  text-decoration-line: underline;
+  text-underline-offset: 2px;
+}
+
+.work-document-underline-glyph[data-underline-style="none"] {
+  opacity: 0.45;
+}
+
+.work-document-underline-glyph[data-underline-style="none"] > span {
+  text-decoration: none;
+}
+
+.work-document-underline-glyph[data-underline-style="none"]::after {
+  position: absolute;
+  width: 25px;
+  height: 1px;
+  background: currentcolor;
+  content: "";
+  transform: rotate(-32deg);
+}
+
+.work-document-underline-glyph[data-underline-style="double"] > span,
+.work-document-underline-glyph[data-underline-style="wavyDouble"] > span {
+  text-decoration-style: double;
+}
+
+.work-document-underline-glyph[data-underline-style="dotted"] > span,
+.work-document-underline-glyph[data-underline-style="dottedHeavy"] > span {
+  text-decoration-style: dotted;
+}
+
+.work-document-underline-glyph[data-underline-style="dash"] > span,
+.work-document-underline-glyph[data-underline-style="dashedHeavy"] > span,
+.work-document-underline-glyph[data-underline-style="dashLong"] > span,
+.work-document-underline-glyph[data-underline-style="dashLongHeavy"] > span,
+.work-document-underline-glyph[data-underline-style="dotDash"] > span,
+.work-document-underline-glyph[data-underline-style="dashDotHeavy"] > span,
+.work-document-underline-glyph[data-underline-style="dotDotDash"] > span,
+.work-document-underline-glyph[data-underline-style="dashDotDotHeavy"] > span {
+  text-decoration-style: dashed;
+}
+
+.work-document-underline-glyph[data-underline-style="wave"] > span,
+.work-document-underline-glyph[data-underline-style="wavyHeavy"] > span,
+.work-document-underline-glyph[data-underline-style="wavyDouble"] > span {
+  text-decoration-style: wavy;
+}
+
+.work-document-underline-glyph[data-underline-style="thick"] > span,
+.work-document-underline-glyph[data-underline-style="dottedHeavy"] > span,
+.work-document-underline-glyph[data-underline-style="dashedHeavy"] > span,
+.work-document-underline-glyph[data-underline-style="dashLongHeavy"] > span,
+.work-document-underline-glyph[data-underline-style="dashDotHeavy"] > span,
+.work-document-underline-glyph[data-underline-style="dashDotDotHeavy"] > span,
+.work-document-underline-glyph[data-underline-style="wavyHeavy"] > span {
+  text-decoration-thickness: 2px;
+}
+
+.work-document-ribbon
+  .work-document-font-actions
+  .work-document-underline-split-root {
+  height: 24px;
+}
+
+.work-document-ribbon
+  .work-document-font-actions
+  .work-document-underline-split-root
+  > button {
+  height: 24px;
+}
+
+.work-document-ribbon
+  .work-document-font-actions
+  .work-document-underline-split-root
+  > .work-document-underline-primary {
+  width: 23px;
+  min-width: 23px;
+}
+
+.work-document-ribbon
+  .work-document-font-actions
+  .work-document-underline-split-root
+  > .work-document-underline-disclosure {
+  width: 12px;
+  min-width: 12px;
+}
+
+.work-document-selection-toolbar > .work-document-underline-control {
+  height: 28px;
+  gap: 0;
+}
+
+.work-document-selection-toolbar .work-document-underline-split-root,
+.work-document-selection-toolbar .work-document-underline-split-root > button {
+  height: 28px;
+}
+
+.work-document-selection-toolbar
+  .work-document-underline-split-root
+  > .work-document-underline-primary {
+  width: 26px;
+  min-width: 26px;
+  padding: 0;
+  border-radius: 5px 0 0 5px;
+}
+
+.work-document-selection-toolbar
+  .work-document-underline-split-root
+  > .work-document-underline-disclosure {
+  width: 12px;
+  min-width: 12px;
+  padding: 0;
+  border-left: 1px solid var(--a3s-line);
+  border-radius: 0 5px 5px 0;
+}
+
+@media (max-width: 640px) {
+  .work-document-underline-menu {
+    width: min(300px, calc(100vw - 16px));
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .work-document-ribbon
   .work-document-font-tools
   .work-office-select

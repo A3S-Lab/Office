@@ -54,6 +54,16 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
   );
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚斜体' }));
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚下划线' }));
+  fireEvent.click(screen.getByRole('button', { name: '更多页眉页脚下划线' }));
+  const underlineMenu = await screen.findByRole('menu', {
+    name: '页眉页脚下划线样式',
+  });
+  fireEvent.click(
+    within(underlineMenu).getByRole('menuitemradio', {
+      name: '双下划线',
+    }),
+  );
+  expect(editor.getAttributes('underline').underlineStyle).toBe('double');
   for (const label of [
     '页眉页脚左对齐',
     '页眉页脚居中',
@@ -68,7 +78,7 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
   await waitFor(() => {
     expect(editor.getHTML()).toContain('<strong>');
     expect(editor.getHTML()).toContain('<em>');
-    expect(editor.getHTML()).toContain('<u>');
+    expect(editor.getHTML()).toContain('data-office-underline-style="double"');
     expect(editor.getHTML()).toContain('text-align: justify');
     expect(editor.getHTML()).toContain('color: #0070c0');
     expect(editor.getHTML()).toContain('<sup>');

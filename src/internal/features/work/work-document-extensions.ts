@@ -3,7 +3,6 @@ import Color from '@tiptap/extension-color';
 import { TableKit } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
 import FontSize from '@tiptap/extension-text-style/font-size';
-import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
 import { DocumentBookmarkBoundary } from './work-document-bookmarks';
 import {
@@ -45,6 +44,7 @@ import { DocumentParagraphIdentity } from './work-document-paragraph-identity';
 import { DocumentSection } from './work-document-section-node';
 import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
+import { DocumentUnderline } from './work-document-underline';
 import {
   DocumentTableCell,
   DocumentTableFormatting,
@@ -133,7 +133,7 @@ export function createWorkDocumentExtensions(
     commentExtension,
     DocumentNoteReference,
     DocumentNote,
-    Underline,
+    DocumentUnderline,
     DocumentCharacterFormatting,
     DocumentSubscript,
     DocumentSuperscript,

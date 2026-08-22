@@ -25,6 +25,8 @@ import {
   createDocxTableStyleResolver,
 } from './work-docx-table-styles';
 import { createDocxThemeResolver } from './work-docx-theme';
+import { documentUnderlineDomAttributes } from './work-document-underline';
+import { importedDocxUnderline } from './work-docx-underline';
 import {
   xmlAttributeLocalName,
   xmlAttributeNamespace,
@@ -255,6 +257,7 @@ async function paragraphHtml(
         field,
         archive,
         relationships,
+        theme,
       );
       const relationship = relationships.get(attribute(child, 'r:id') ?? '');
       const anchor = attribute(child, 'anchor');
@@ -270,11 +273,23 @@ async function paragraphHtml(
     if (child.localName === 'fldSimple') {
       const instruction = attribute(child, 'instr') ?? '';
       if (!/\bPAGE\b/i.test(instruction)) {
-        html += await containerRunsHtml(child, field, archive, relationships);
+        html += await containerRunsHtml(
+          child,
+          field,
+          archive,
+          relationships,
+          theme,
+        );
       }
       continue;
     }
-    html += await containerRunsHtml(child, field, archive, relationships);
+    html += await containerRunsHtml(
+      child,
+      field,
+      archive,
+      relationships,
+      theme,
+    );
   }
   const identityAttributes = paragraphIdentityAttributes(paragraph);
   const defaultCollapsed = properties
@@ -322,16 +337,23 @@ async function containerRunsHtml(
   field: FieldState,
   archive: OoxmlPackage,
   relationships: Relationships,
+  theme?: ReturnType<typeof createDocxThemeResolver>,
 ): Promise<string> {
   if (container.localName === 'r')
-    return runHtml(container, field, archive, relationships);
+    return runHtml(container, field, archive, relationships, theme);
   let html = '';
   for (const child of directChildren(container)) {
     if (isDocxEquationLikeRoot(child)) {
       html += docxEquationHtml(child);
       continue;
     }
-    html += await containerRunsHtml(child, field, archive, relationships);
+    html += await containerRunsHtml(
+      child,
+      field,
+      archive,
+      relationships,
+      theme,
+    );
   }
   return html;
 }
@@ -341,6 +363,7 @@ async function runHtml(
   field: FieldState,
   archive: OoxmlPackage,
   relationships: Relationships,
+  theme?: ReturnType<typeof createDocxThemeResolver>,
 ): Promise<string> {
   let content = '';
   for (const child of directChildren(run)) {
@@ -372,8 +395,12 @@ async function runHtml(
   if (enabledElement(directChild(properties ?? run, 'i')))
     content = `<em>${content}</em>`;
   const underline = directChild(properties ?? run, 'u');
-  if (underline && attribute(underline, 'val') !== 'none')
-    content = `<u>${content}</u>`;
+  if (underline) {
+    const attributes = documentUnderlineDomAttributes(
+      importedDocxUnderline(underline, theme),
+    );
+    content = `<u${htmlAttributes(attributes)}>${content}</u>`;
+  }
   if (
     enabledElement(directChild(properties ?? run, 'strike')) ||
     enabledElement(directChild(properties ?? run, 'dstrike'))
@@ -547,6 +574,12 @@ function enabledElement(element: Element | undefined): boolean {
   if (!element) return false;
   const value = attribute(element, 'val')?.toLowerCase();
   return value !== '0' && value !== 'false' && value !== 'off';
+}
+
+function htmlAttributes(attributes: Record<string, string>): string {
+  return Object.entries(attributes)
+    .map(([name, value]) => ` ${name}="${escapeHtml(value)}"`)
+    .join('');
 }
 
 function escapeHtml(value: string): string {

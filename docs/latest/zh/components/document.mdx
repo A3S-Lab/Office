@@ -105,6 +105,20 @@ A3S Boot 参考服务还会在持久化和广播之前，通过 Yrs 重复执行
 [A3S Boot 后端](./collaboration-server.mdx#更新授权)。在 Playground 中依次点击
 **体验格式修订**、**审阅**、**查看修订（2）**，即可审核“格式”卡。
 
+## 原生下划线格式
+
+Writer 可以创作并重新打开全部 18 种原生 WordprocessingML 下划线值：`none`、`single`、
+`words`、`double`、`thick`、`dotted`、`dottedHeavy`、`dash`、
+`dashedHeavy`、`dashLong`、`dashLongHeavy`、`dotDash`、`dashDotHeavy`、
+`dotDotDash`、`dashDotDotHeavy`、`wave`、`wavyHeavy` 和 `wavyDouble`。
+开始功能区、选区工具栏与页眉页脚共用一个可访问的拆分控件；下划线颜色支持自动颜色、
+直接 RGB，以及保留的 theme/tint/shade 身份。
+
+`Cmd/Ctrl+U` 会关闭任意已启用样式，或从关闭状态启用 `single`；
+`Cmd/Ctrl+Shift+D` 切换 `double`，`Cmd/Ctrl+Shift+W` 切换仅字下划线。
+格式刷、字符格式修订、撤销、DOCX 导出与重开都会保留准确的类型化状态，包括用于覆盖
+继承格式的显式 `none`。
+
 ## 段落格式修订
 
 开启修订后，段落命令会给每个受影响的段落或标题创建独立的

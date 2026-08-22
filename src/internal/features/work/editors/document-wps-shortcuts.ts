@@ -57,6 +57,14 @@ export function runDocumentWpsShortcut(
   }
 
   if (event.shiftKey) {
+    if (key === 'd') {
+      editor.commands.toggleDocumentUnderlineStyle('double');
+      return true;
+    }
+    if (key === 'w') {
+      editor.commands.toggleDocumentUnderlineStyle('words');
+      return true;
+    }
     if (key === 'a') {
       editor.commands.toggleDocumentTextCase('all-caps');
       return true;

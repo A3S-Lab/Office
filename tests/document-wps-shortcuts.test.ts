@@ -69,6 +69,24 @@ test('executes WPS Writer font, paragraph, and style shortcuts', () => {
   ).toBe(true);
   expect(editor.getAttributes('textStyle').textCase).toBe('small-caps');
   expect(editor.getHTML()).toContain('data-office-text-case="small-caps"');
+
+  expect(
+    runDocumentWpsShortcut(
+      editor,
+      shortcut({ key: 'd', shiftKey: true }),
+      callbacks,
+    ),
+  ).toBe(true);
+  expect(editor.getAttributes('underline').underlineStyle).toBe('double');
+
+  expect(
+    runDocumentWpsShortcut(
+      editor,
+      shortcut({ key: 'w', shiftKey: true }),
+      callbacks,
+    ),
+  ).toBe(true);
+  expect(editor.getAttributes('underline').underlineStyle).toBe('words');
 });
 
 test('executes scoped WPS Writer review shortcuts and ignores unrelated keys', () => {

@@ -10,9 +10,18 @@ import {
   applyImportedDocxRunFormattingMarkers,
   markDocxRunFormatting,
 } from '../src/internal/features/work/work-docx-run-formatting-import';
+import { createDocxBlob } from '../src/internal/features/work/work-docx-export';
 import { analyzeDocxCompatibility } from '../src/internal/features/work/work-office-diagnostics';
-import { parseXml } from '../src/internal/features/work/work-ooxml-package';
+import {
+  attribute,
+  descendants,
+  parseXml,
+} from '../src/internal/features/work/work-ooxml-package';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import {
+  documentUnderlineDomAttributes,
+  workDocumentUnderlineStyles,
+} from '../src/internal/features/work/work-document-underline';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -36,6 +45,227 @@ function themeXml(body: string): Document {
 }
 
 describe('DOCX run formatting', () => {
+  test('imports every native underline style and semantic underline color', () => {
+    const document = wordXml(
+      `<w:p>${workDocumentUnderlineStyles
+        .map(
+          (style) =>
+            `<w:r><w:rPr><w:u w:val="${style}"/></w:rPr><w:t>${style}</w:t></w:r>`,
+        )
+        .join(
+          '',
+        )}<w:r><w:rPr><w:u w:val="wave" w:color="A2B9E2" w:themeColor="accent1" w:themeTint="80"/></w:rPr><w:t>Themed wave</w:t></w:r></w:p>`,
+    );
+    const theme = themeXml(`
+      <a:themeElements>
+        <a:clrScheme name="Office">
+          <a:accent1><a:srgbClr val="4472C4"/></a:accent1>
+        </a:clrScheme>
+      </a:themeElements>
+    `);
+
+    const markers = markDocxRunFormatting(document, undefined, theme);
+    expect(
+      markers.runs
+        .slice(0, workDocumentUnderlineStyles.length)
+        .map(({ formatting }) => formatting.underline?.style),
+    ).toEqual(workDocumentUnderlineStyles);
+    expect(markers.runs.at(-1)?.formatting.underline).toEqual({
+      style: 'wave',
+      color: '#a2b9e2',
+      themeColor: {
+        theme: 'accent1',
+        resolved: '#a2b9e2',
+        tint: '80',
+      },
+    });
+
+    const html = new DOMParser().parseFromString(
+      `<p>${markers.runs
+        .map(
+          ({ startMarker, endMarker }, index) =>
+            `${startMarker}${index === markers.runs.length - 1 ? 'Themed wave' : workDocumentUnderlineStyles[index]}${endMarker}`,
+        )
+        .join('')}</p>`,
+      'text/html',
+    );
+    applyImportedDocxRunFormattingMarkers(html, markers);
+    const underlines = [...html.querySelectorAll<HTMLElement>('u')];
+    expect(
+      underlines
+        .slice(0, workDocumentUnderlineStyles.length)
+        .map((element) => element.dataset.officeUnderlineStyle),
+    ).toEqual(workDocumentUnderlineStyles);
+    expect(underlines[0]?.style.textDecorationLine).toBe('none');
+    expect(underlines[3]?.style.textDecorationStyle).toBe('double');
+    expect(underlines.at(-1)?.dataset.officeUnderlineThemeColor).toContain(
+      'accent1',
+    );
+  });
+
+  test('exports and reopens native underline styles in body and page chrome', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const body = workDocumentUnderlineStyles
+      .map((style) => {
+        const element = document.createElement('u');
+        for (const [name, value] of Object.entries(
+          documentUnderlineDomAttributes({
+            style,
+            ...(style === 'wave' ? { color: '#c00000' } : {}),
+          }),
+        )) {
+          element.setAttribute(name, value);
+        }
+        element.textContent = style;
+        return element.outerHTML;
+      })
+      .join(' ');
+    const headerUnderline = document.createElement('u');
+    for (const [name, value] of Object.entries(
+      documentUnderlineDomAttributes({
+        style: 'wavyDouble',
+        color: '#4472c4',
+      }),
+    )) {
+      headerUnderline.setAttribute(name, value);
+    }
+    headerUnderline.textContent = 'Header underline';
+    artifact.content.html = `<p>${body}</p>`;
+    artifact.content.pageChrome = {
+      differentFirstPage: false,
+      differentOddEvenPages: false,
+      default: {
+        headerHtml: `<p>${headerUnderline.outerHTML}</p>`,
+        footerHtml: '',
+        showPageNumber: false,
+      },
+      first: { headerHtml: '', footerHtml: '', showPageNumber: false },
+      even: { headerHtml: '', footerHtml: '', showPageNumber: false },
+    };
+
+    const blob = await createDocxBlob(artifact.content);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const documentXml = parseXml(
+      (await archive.file('word/document.xml')?.async('text')) ?? '',
+    );
+    const values = Array.from(documentXml.getElementsByTagName('*'))
+      .filter((element) => element.localName === 'u')
+      .map((element) => attribute(element, 'val'));
+    expect(values).toEqual(workDocumentUnderlineStyles);
+    expect(
+      attribute(
+        Array.from(documentXml.getElementsByTagName('*')).find(
+          (element) =>
+            element.localName === 'u' && attribute(element, 'val') === 'wave',
+        ) ?? documentXml.documentElement,
+        'color',
+      ),
+    ).toBe('C00000');
+    const headerPath = Object.keys(archive.files).find((path) =>
+      /^word\/header\d*\.xml$/i.test(path),
+    );
+    if (!headerPath) {
+      throw new Error('Expected a generated header part.');
+    }
+    const headerXml = headerPath
+      ? ((await archive.file(headerPath)?.async('text')) ?? '')
+      : '';
+    expect(headerXml).toMatch(
+      /<w:u\b[^>]*w:val="wavyDouble"[^>]*w:color="4472C4"/,
+    );
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'native-underlines.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    for (const style of workDocumentUnderlineStyles) {
+      expect(reopened.content.html).toContain(
+        `data-office-underline-style="${style}"`,
+      );
+    }
+    expect(reopened.content.pageChrome?.default.headerHtml).toContain(
+      'data-office-underline-style="wavyDouble"',
+    );
+    expect(reopened.content.pageChrome?.default.headerHtml).toContain(
+      'data-office-underline-color="#4472c4"',
+    );
+  });
+
+  test('preserves semantic underline theme color until a direct color edit', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const underline = document.createElement('u');
+    for (const [name, value] of Object.entries(
+      documentUnderlineDomAttributes({
+        style: 'wave',
+        color: '#a2b9e2',
+        themeColor: {
+          theme: 'accent1',
+          resolved: '#a2b9e2',
+          tint: '80',
+        },
+      }),
+    )) {
+      underline.setAttribute(name, value);
+    }
+    underline.textContent = 'Themed underline';
+    artifact.content.html = `<p>${underline.outerHTML}</p>`;
+
+    const blob = await createDocxBlob(artifact.content);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = parseXml(
+      (await archive.file('word/document.xml')?.async('text')) ?? '',
+    );
+    const exported = descendants(xml, 'u').find(
+      (element) => attribute(element, 'val') === 'wave',
+    );
+    if (!exported) throw new Error('Expected an exported underline.');
+    expect(attribute(exported, 'color')).toBe('A2B9E2');
+    expect(attribute(exported, 'themeColor')).toBe('accent1');
+    expect(attribute(exported, 'themeTint')).toBe('80');
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'themed-underline.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain(
+      'data-office-underline-theme-color',
+    );
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: reopened.content.html,
+    });
+    editor.commands.selectAll();
+    expect(editor.commands.setDocumentUnderlineColor('#123456')).toBe(true);
+    expect(editor.getAttributes('underline')).toMatchObject({
+      underlineColor: '#123456',
+      underlineThemeColor: null,
+    });
+    artifact.content.html = editor.getHTML();
+    editor.destroy();
+
+    const edited = await createDocxBlob(artifact.content);
+    const editedArchive = await JSZip.loadAsync(await edited.arrayBuffer());
+    const editedXml = parseXml(
+      (await editedArchive.file('word/document.xml')?.async('text')) ?? '',
+    );
+    const editedUnderline = descendants(editedXml, 'u').find(
+      (element) => attribute(element, 'val') === 'wave',
+    );
+    if (!editedUnderline) throw new Error('Expected an edited underline.');
+    expect(attribute(editedUnderline, 'color')).toBe('123456');
+    expect(attribute(editedUnderline, 'themeColor')).toBeNull();
+  });
+
   test('resolves document, paragraph, character, and direct run properties', () => {
     const document = wordXml(`
       <w:p>
@@ -77,7 +307,7 @@ describe('DOCX run formatting', () => {
     expect(markers.runs[0]?.formatting).toEqual({
       bold: false,
       italic: false,
-      underline: false,
+      underline: { style: 'none' },
       strike: false,
       fontFamily: 'Arial, SimSun',
       wordLineHeightFactor: 1.15,
@@ -276,7 +506,7 @@ describe('DOCX run formatting', () => {
       author: 'Ada Reviewer',
       date: '2026-08-17T14:30:00.000Z',
       before:
-        '[{"type":"italic"},{"type":"textStyle","attrs":{"color":"#336699","fontSize":"12pt","textCase":"small-caps"}}]',
+        '[{"type":"italic"},{"type":"underline","attrs":{"underlineStyle":"none"}},{"type":"textStyle","attrs":{"color":"#336699","fontSize":"12pt","textCase":"small-caps"}}]',
     });
     const html = new DOMParser().parseFromString(
       `<p>${marker.startMarker}Changed format${marker.endMarker}</p>`,
@@ -292,6 +522,55 @@ describe('DOCX run formatting', () => {
     expect(change?.dataset.changeAuthor).toBe('Ada Reviewer');
     expect(change?.dataset.changeBefore).toBe(marker.change.before);
     expect(change?.querySelector('strong')?.textContent).toBe('Changed format');
+  });
+
+  test('exports and reopens native underline formatting revisions', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const before =
+      '[{"type":"underline","attrs":{"underlineColor":"#4472c4","underlineStyle":"double"}}]';
+    const underline = document.createElement('u');
+    for (const [name, value] of Object.entries(
+      documentUnderlineDomAttributes({ style: 'wave', color: '#c00000' }),
+    )) {
+      underline.setAttribute(name, value);
+    }
+    underline.textContent = 'Changed underline';
+    artifact.content.html = `<p><span data-document-change="true" data-change-kind="formatting" data-change-before='${before}' data-change-id="formatting-underline" data-change-author="Ada Reviewer" data-change-date="2026-08-22T12:00:00.000Z">${underline.outerHTML}</span></p>`;
+    artifact.content.trackChanges = true;
+
+    const blob = await createDocxBlob(artifact.content);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = parseXml(
+      (await archive.file('word/document.xml')?.async('text')) ?? '',
+    );
+    const underlineProperties = descendants(xml, 'u').map((element) => ({
+      color: attribute(element, 'color'),
+      style: attribute(element, 'val'),
+    }));
+    expect(underlineProperties).toContainEqual({
+      color: 'C00000',
+      style: 'wave',
+    });
+    expect(underlineProperties).toContainEqual({
+      color: '4472C4',
+      style: 'double',
+    });
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'underline-revision.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain('data-change-kind="formatting"');
+    expect(reopened.content.html).toContain(
+      'data-office-underline-style="wave"',
+    );
+    expect(reopened.content.html).toContain('underlineStyle');
+    expect(reopened.content.html).toContain('double');
   });
 
   test('reports supported character-formatting revisions without a structural warning', async () => {
@@ -636,7 +915,7 @@ describe('DOCX run formatting', () => {
     expect(markers.runs[0]?.formatting).toEqual({
       bold: false,
       italic: false,
-      underline: false,
+      underline: { style: 'none' },
       strike: false,
       fontFamily: 'Aptos',
       wordLineHeightFactor: 1.15,

@@ -19,7 +19,6 @@ import {
   Strikethrough,
   Subscript as SubscriptIcon,
   Superscript as SuperscriptIcon,
-  Underline as UnderlineIcon,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useSyncExternalStore } from 'react';
 import {
@@ -49,6 +48,7 @@ import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 import { DocumentListGallery } from './document-list-gallery';
 import { DocumentStyleGallery } from './document-style-gallery';
 import { DocumentTextCaseRibbon } from './document-text-case-ribbon';
+import { DocumentUnderlineRibbon } from './document-underline-ribbon';
 
 const documentLineHeightOptions = [
   { value: 'default', label: '默认行距' },
@@ -164,14 +164,7 @@ export function DocumentHomeRibbon({
             >
               <Italic size={16} />
             </ToolbarButton>
-            <ToolbarButton
-              label="下划线"
-              {...commandShortcut('underline')}
-              active={editor.isActive('underline')}
-              onClick={() => editor.chain().focus().toggleUnderline().run()}
-            >
-              <UnderlineIcon size={16} />
-            </ToolbarButton>
+            <DocumentUnderlineRibbon editor={editor} />
             <ToolbarButton
               label="删除线"
               active={editor.isActive('strike')}

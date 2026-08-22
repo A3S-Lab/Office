@@ -134,6 +134,52 @@ test('switches superscript and subscript without stacking both marks', () => {
   expect(editor.getHTML()).not.toContain('<sup>power</sup>');
 });
 
+test('authors every native underline style and color from an accessible split control', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Native underline</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Native underline'));
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const underline = screen.getByRole('button', { name: '下划线' });
+  expect(underline).toHaveAttribute('aria-keyshortcuts', 'Control+U Meta+U');
+  fireEvent.click(screen.getByRole('button', { name: '更多下划线' }));
+  const menu = await screen.findByRole('menu', { name: '下划线样式' });
+  expect(within(menu).getAllByRole('menuitemradio')).toHaveLength(18);
+  expect(
+    within(menu).getByRole('menuitemradio', { name: '双下划线' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+Shift+D Meta+Shift+D');
+  expect(
+    within(menu).getByRole('menuitemradio', { name: '仅字下划线' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+Shift+W Meta+Shift+W');
+  fireEvent.click(
+    within(menu).getByRole('menuitemradio', { name: '粗波浪线' }),
+  );
+
+  expect(editor.getAttributes('underline').underlineStyle).toBe('wavyHeavy');
+  expect(editor.getHTML()).toContain('text-decoration-style: wavy');
+  expect(underline).toHaveAttribute('aria-pressed', 'true');
+
+  fireEvent.click(screen.getByRole('button', { name: '下划线颜色' }));
+  fireEvent.click(await screen.findByRole('option', { name: '颜色 #c00000' }));
+  await waitFor(() =>
+    expect(editor.getAttributes('underline').underlineColor).toBe('#c00000'),
+  );
+  expect(editor.getHTML()).toContain('text-decoration-color: #c00000');
+
+  fireEvent.click(underline);
+  expect(editor.getAttributes('underline').underlineStyle).toBe('none');
+  expect(editor.getHTML()).toContain('text-decoration-line: none');
+  expect(underline).toHaveAttribute('aria-pressed', 'false');
+});
+
 test('applies italic formatting without replacing the selected text', () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

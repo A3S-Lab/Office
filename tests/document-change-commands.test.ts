@@ -104,6 +104,50 @@ describe('document change commands', () => {
     editor.destroy();
   });
 
+  test('tracks and restores native underline attributes without flattening them', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+        createChange: () => ({
+          id: 'formatting-underline',
+          author: 'Reviewer',
+          date: '2026-08-22T12:00:00.000Z',
+        }),
+      }),
+      content:
+        '<section data-document-section="true"><p><u data-office-underline-style="double" data-office-underline-color="#4472c4">Tracked underline</u></p></section>',
+    });
+    editor.commands.setTextSelection(textRange(editor, 'Tracked underline'));
+
+    expect(
+      editor.commands.setDocumentUnderline('wave', { color: '#c00000' }),
+    ).toBe(true);
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([
+      expect.objectContaining({
+        id: 'formatting-underline',
+        kind: 'formatting',
+        text: 'Tracked underline',
+      }),
+    ]);
+    expect(editor.getAttributes('underline')).toMatchObject({
+      underlineColor: '#c00000',
+      underlineStyle: 'wave',
+    });
+    expect(editor.getHTML()).toContain(
+      'data-change-before="[{&quot;type&quot;:&quot;underline&quot;,&quot;attrs&quot;:{&quot;underlineColor&quot;:&quot;#4472c4&quot;,&quot;underlineStyle&quot;:&quot;double&quot;}}]"',
+    );
+
+    expect(editor.commands.rejectDocumentChange('formatting-underline')).toBe(
+      true,
+    );
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([]);
+    expect(editor.getAttributes('underline')).toMatchObject({
+      underlineColor: '#4472c4',
+      underlineStyle: 'double',
+    });
+    editor.destroy();
+  });
+
   test('keeps accepted formatting and groups revision metadata into one undo step', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions({

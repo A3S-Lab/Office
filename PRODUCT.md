@@ -419,6 +419,17 @@ through Worker/WASM shaping. Focused Rstest, desktop Playwright, and the
 local-only A3S Test shortcut suite cover mutual exclusion, native round trips,
 Undo, accessibility, and empty browser diagnostics without changing Actions or
 Pages.
+The thirty-ninth milestone completes Writer's native underline model. One typed
+mark preserves all 18 WordprocessingML values, direct RGB or theme/tint/shade
+color identity, and an explicit `none` reset across body text, page chrome,
+Format Painter, formatting revisions, Undo, DOCX export, and reopen. Accessible
+split controls expose the complete style family and Automatic Color, while
+`Cmd/Ctrl+U`, `Cmd/Ctrl+Shift+D`, and `Cmd/Ctrl+Shift+W` cover the common single,
+double, and words-only workflows. Browser CSS provides bounded visual
+projections without flattening the native metadata. Underline remains a paint
+effect, so the change does not exclude otherwise eligible paragraphs from the
+Worker/WASM layout path. Focused and full Rstest, formatting, lint, typecheck,
+and the production package build form the release evidence.
 
 ## Product Rules
 

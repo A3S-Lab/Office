@@ -29,11 +29,16 @@ import {
   documentTextCaseFromWordFlags,
   type WorkDocumentTextCase,
 } from './work-document-text-case';
+import {
+  documentUnderlineDomAttributes,
+  type WorkDocumentUnderlineFormatting,
+} from './work-document-underline';
+import { importedDocxUnderline } from './work-docx-underline';
 
 export interface ImportedDocxRunFormatting {
   bold?: boolean;
   italic?: boolean;
-  underline?: boolean;
+  underline?: WorkDocumentUnderlineFormatting;
   strike?: boolean;
   subscript?: boolean;
   superscript?: boolean;
@@ -192,7 +197,7 @@ function resolvedRunFormatting(
   let complexBold: boolean | undefined;
   let italic: boolean | undefined;
   let complexItalic: boolean | undefined;
-  let underline: boolean | undefined;
+  let underline: WorkDocumentUnderlineFormatting | undefined;
   let strike: boolean | undefined;
   let subscript: boolean | undefined;
   let superscript: boolean | undefined;
@@ -214,7 +219,10 @@ function resolvedRunFormatting(
       complexItalic,
       onOffProperty(properties, 'iCs'),
     );
-    underline = overriddenBoolean(underline, underlineProperty(properties));
+    underline = overriddenValue(
+      underline,
+      underlineProperty(properties, theme),
+    );
     strike = overriddenBoolean(strike, onOffProperty(properties, 'strike'));
     strike = overriddenBoolean(strike, onOffProperty(properties, 'dstrike'));
     allCaps = overriddenBoolean(allCaps, onOffProperty(properties, 'caps'));
@@ -380,7 +388,7 @@ function resolvedRunFormatting(
       ? { italic: resolvedItalic ?? false }
       : {}),
     ...(underline !== undefined || hasRunPropertySource
-      ? { underline: underline ?? false }
+      ? { underline: underline ?? { style: 'none' } }
       : {}),
     ...(strike !== undefined || hasRunPropertySource
       ? { strike: strike ?? false }
@@ -430,9 +438,11 @@ function formattingMarkup(
   const span = document.createElement('span');
   if (formatting.bold === false) span.style.fontWeight = 'normal';
   if (formatting.italic === false) span.style.fontStyle = 'normal';
+  const underlineEnabled =
+    formatting.underline !== undefined && formatting.underline.style !== 'none';
   if (
-    (formatting.underline === false || formatting.strike === false) &&
-    !formatting.underline &&
+    (formatting.underline?.style === 'none' || formatting.strike === false) &&
+    !underlineEnabled &&
     !formatting.strike
   ) {
     span.style.textDecorationLine = 'none';
@@ -459,22 +469,41 @@ function formattingMarkup(
     applyDocumentTextCaseStyle(span, formatting.textCase);
   }
   const html = span.outerHTML;
-  const tags = [
-    ...(formatting.bold ? ['strong'] : []),
-    ...(formatting.italic ? ['em'] : []),
-    ...(formatting.underline ? ['u'] : []),
-    ...(formatting.strike ? ['s'] : []),
-    ...(formatting.subscript ? ['sub'] : []),
-    ...(formatting.superscript ? ['sup'] : []),
+  const wrappers = [
+    ...(formatting.bold ? [{ start: '<strong>', end: '</strong>' }] : []),
+    ...(formatting.italic ? [{ start: '<em>', end: '</em>' }] : []),
+    ...(formatting.underline
+      ? [underlineFormattingWrapper(document, formatting.underline)]
+      : []),
+    ...(formatting.strike ? [{ start: '<s>', end: '</s>' }] : []),
+    ...(formatting.subscript ? [{ start: '<sub>', end: '</sub>' }] : []),
+    ...(formatting.superscript ? [{ start: '<sup>', end: '</sup>' }] : []),
   ];
   return {
-    start: `${html.slice(0, html.indexOf('>') + 1)}${tags
-      .map((tag) => `<${tag}>`)
+    start: `${html.slice(0, html.indexOf('>') + 1)}${wrappers
+      .map((wrapper) => wrapper.start)
       .join('')}`,
-    end: `${[...tags]
+    end: `${[...wrappers]
       .reverse()
-      .map((tag) => `</${tag}>`)
+      .map((wrapper) => wrapper.end)
       .join('')}</span>`,
+  };
+}
+
+function underlineFormattingWrapper(
+  document: Document,
+  formatting: WorkDocumentUnderlineFormatting,
+): { start: string; end: string } {
+  const underline = document.createElement('u');
+  for (const [name, value] of Object.entries(
+    documentUnderlineDomAttributes(formatting),
+  )) {
+    underline.setAttribute(name, value);
+  }
+  const html = underline.outerHTML;
+  return {
+    start: html.slice(0, html.indexOf('>') + 1),
+    end: '</u>',
   };
 }
 
@@ -629,6 +658,13 @@ function overriddenBoolean(
   return next === undefined ? current : next;
 }
 
+function overriddenValue<T>(
+  current: T | undefined,
+  next: T | undefined,
+): T | undefined {
+  return next === undefined ? current : next;
+}
+
 function onOffProperty(
   properties: Element,
   propertyName: string,
@@ -639,13 +675,13 @@ function onOffProperty(
   return value !== '0' && value !== 'false' && value !== 'off';
 }
 
-function underlineProperty(properties: Element): boolean | undefined {
+function underlineProperty(
+  properties: Element,
+  theme: DocxThemeResolver,
+): WorkDocumentUnderlineFormatting | undefined {
   const element = directChild(properties, 'u');
   if (!element) return undefined;
-  const value = wordAttribute(element, 'val')?.trim().toLowerCase();
-  return (
-    value !== '0' && value !== 'false' && value !== 'off' && value !== 'none'
-  );
+  return importedDocxUnderline(element, theme);
 }
 
 function directRunText(run: Element): string {

@@ -27,6 +27,13 @@ import {
   documentTextCaseCss,
   normalizeDocumentTextCase,
 } from './work-document-text-case';
+import {
+  DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE,
+  DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
+  DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE,
+  documentUnderlineDomAttributes,
+  documentUnderlineFormattingFromElement,
+} from './work-document-underline';
 import type {
   WorkDocumentPageChrome,
   WorkDocumentPageChromeContent,
@@ -392,6 +399,11 @@ function sanitizeAttributes(element: Element, tag: string) {
           element.getAttribute(DOCUMENT_TEXT_CASE_ATTRIBUTE),
         )
       : null;
+  const underline =
+    tag === 'u' ? documentUnderlineFormattingFromElement(element) : null;
+  const underlineAttributes = underline
+    ? documentUnderlineDomAttributes(underline)
+    : {};
   const paragraphShading =
     tag === 'p' ? parseDocumentParagraphShadingElement(element) : null;
   const shadingAttributes =
@@ -404,10 +416,14 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute('style');
   element.removeAttribute(PARAGRAPH_BORDERS_ATTRIBUTE);
   element.removeAttribute(PARAGRAPH_SHADING_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE);
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
     color ? `color: ${color}` : '',
     textCase ? documentTextCaseCss(textCase) : '',
+    underlineAttributes.style ?? '',
     borderAttributes.style ?? '',
     shadingAttributes.style ?? '',
   ].filter(Boolean);
@@ -438,6 +454,11 @@ function sanitizeAttributes(element: Element, tag: string) {
     normalizeParagraphDefaultCollapsedAttribute(element);
   }
   if (tag === 'tr') normalizeTableRowIdentityAttributes(element);
+  if (tag === 'u') {
+    for (const [name, value] of Object.entries(underlineAttributes)) {
+      if (name !== 'style') element.setAttribute(name, value);
+    }
+  }
   if (tag === 'span' && textCase) {
     element.setAttribute(DOCUMENT_TEXT_CASE_ATTRIBUTE, textCase);
   } else {
@@ -481,6 +502,13 @@ function sanitizeAttributes(element: Element, tag: string) {
                     'rowspan',
                     'style',
                     ...(tag === 'span' ? [DOCUMENT_TEXT_CASE_ATTRIBUTE] : []),
+                    ...(tag === 'u'
+                      ? [
+                          DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
+                          DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE,
+                          DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE,
+                        ]
+                      : []),
                   ]);
   for (const attribute of Array.from(element.attributes)) {
     if (!allowed.has(attribute.name.toLowerCase()))

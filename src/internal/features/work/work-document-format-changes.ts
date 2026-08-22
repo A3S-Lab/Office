@@ -4,6 +4,15 @@ import {
   normalizeDocumentTextCase,
   type WorkDocumentTextCase,
 } from './work-document-text-case';
+import {
+  normalizeDocumentUnderlineColor,
+  normalizeDocumentUnderlineStyle,
+  type WorkDocumentUnderlineFormatting,
+} from './work-document-underline';
+import {
+  parseDocxThemeReference,
+  serializeDocxThemeReference,
+} from './work-docx-theme-reference';
 
 export const DOCUMENT_CHARACTER_FORMAT_MARKS = [
   'bold',
@@ -38,7 +47,11 @@ const ALLOWED_ATTRIBUTES: Readonly<
 > = {
   bold: new Set(),
   italic: new Set(),
-  underline: new Set(),
+  underline: new Set([
+    'underlineColor',
+    'underlineStyle',
+    'underlineThemeColor',
+  ]),
   strike: new Set(),
   subscript: new Set(),
   superscript: new Set(),
@@ -138,7 +151,7 @@ export function restoreDocumentCharacterFormatting(
 export function importedDocumentCharacterFormatting(formatting: {
   bold?: boolean;
   italic?: boolean;
-  underline?: boolean;
+  underline?: WorkDocumentUnderlineFormatting;
   strike?: boolean;
   subscript?: boolean;
   superscript?: boolean;
@@ -156,12 +169,23 @@ export function importedDocumentCharacterFormatting(formatting: {
   for (const name of [
     'bold',
     'italic',
-    'underline',
     'strike',
     'subscript',
     'superscript',
   ] as const) {
     if (formatting[name]) marks.push({ type: name });
+  }
+  if (formatting.underline) {
+    marks.push({
+      type: 'underline',
+      attrs: compactAttributes({
+        underlineColor: formatting.underline.color,
+        underlineStyle: formatting.underline.style,
+        underlineThemeColor: serializeDocxThemeReference(
+          formatting.underline.themeColor ?? null,
+        ),
+      }),
+    });
   }
   const textStyle = compactAttributes({
     color: formatting.color,
@@ -213,7 +237,13 @@ function normalizeCharacterFormatMark(
       ) {
         return null;
       }
-      attrs[key] = candidate;
+      const normalized = normalizeCharacterFormatStringAttribute(
+        type,
+        key,
+        candidate,
+      );
+      if (!normalized) return null;
+      attrs[key] = normalized;
       continue;
     }
     if (typeof candidate === 'boolean') {
@@ -234,6 +264,24 @@ function normalizeCharacterFormatMark(
     type,
     ...(normalizedAttributes ? { attrs: normalizedAttributes } : {}),
   };
+}
+
+function normalizeCharacterFormatStringAttribute(
+  type: DocumentCharacterFormatMarkName,
+  key: string,
+  value: string,
+): string | null {
+  if (type !== 'underline') return value;
+  if (key === 'underlineStyle') {
+    return normalizeDocumentUnderlineStyle(value);
+  }
+  if (key === 'underlineColor') {
+    return normalizeDocumentUnderlineColor(value);
+  }
+  if (key === 'underlineThemeColor') {
+    return serializeDocxThemeReference(parseDocxThemeReference(value)) ?? null;
+  }
+  return null;
 }
 
 function compareCharacterFormatMarks(

@@ -3,7 +3,6 @@ import Color from '@tiptap/extension-color';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TableKit } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
-import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import {
@@ -39,6 +38,12 @@ import {
 import { DocumentParagraphFormatting } from '../work-document-paragraph-formatting';
 import { DocumentParagraphIdentity } from '../work-document-paragraph-identity';
 import { DocumentTableRowIdentity } from '../work-document-table-row-identity';
+import {
+  DocumentUnderline,
+  documentUnderlineColor,
+  documentUnderlineStyle,
+  type WorkDocumentUnderlineStyle,
+} from '../work-document-underline';
 import { DocumentPageChromeWpsShortcuts } from './document-page-chrome-wps-shortcuts';
 import {
   OfficeColorPicker,
@@ -64,6 +69,8 @@ export interface DocumentPageChromeEditorState {
   subscript: boolean;
   superscript: boolean;
   underline: boolean;
+  underlineColor: string | null;
+  underlineStyle: WorkDocumentUnderlineStyle;
 }
 
 export interface DocumentPageChromeRichTextEditorProps {
@@ -394,7 +401,7 @@ export function createDocumentPageChromeEditorExtensions(
     DocumentEquation,
     DocumentTextStyle,
     Color,
-    Underline,
+    DocumentUnderline,
     DocumentCharacterFormatting,
     DocumentSubscript,
     DocumentSuperscript,
@@ -416,6 +423,7 @@ export function documentPageChromeEditorState(
     unknown
   >;
   const link = editor.getAttributes('link') as Record<string, unknown>;
+  const underlineStyle = documentUnderlineStyle(editor);
   return {
     alignment: editor.isActive('paragraph', { textAlign: 'center' })
       ? 'center'
@@ -435,7 +443,9 @@ export function documentPageChromeEditorState(
     link: typeof link.href === 'string' ? link.href : null,
     subscript: editor.isActive('subscript'),
     superscript: editor.isActive('superscript'),
-    underline: editor.isActive('underline'),
+    underline: underlineStyle !== 'none',
+    underlineColor: documentUnderlineColor(editor),
+    underlineStyle,
   };
 }
 

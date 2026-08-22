@@ -200,7 +200,7 @@ describe('DOCX table style import', () => {
       bold: true,
       italic: true,
       strike: true,
-      underline: true,
+      underline: { style: 'single' },
       color: '#ffffff',
     });
     expect(markers.runs[1]?.formatting).toMatchObject({
@@ -273,7 +273,7 @@ describe('DOCX table style import', () => {
       color: '#123456',
       italic: false,
       strike: false,
-      underline: false,
+      underline: { style: 'none' },
     });
   });
 

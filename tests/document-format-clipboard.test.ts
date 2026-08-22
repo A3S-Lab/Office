@@ -84,6 +84,33 @@ test('applies copied character formatting to text typed at a collapsed cursor', 
   });
 });
 
+test('copies native underline style and color as one formatting mark', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content:
+      '<p><u data-office-underline-style="wavyDouble" data-office-underline-color="#4472c4">Source</u> and <em>Target</em></p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Source'));
+  expect(copyDocumentFormatting(editor)).toBe(true);
+
+  editor.commands.setTextSelection(textRange(editor, 'Target'));
+  expect(pasteDocumentFormatting(editor)).toBe(true);
+  expect(editor.getAttributes('underline')).toMatchObject({
+    underlineColor: '#4472c4',
+    underlineStyle: 'wavyDouble',
+  });
+  expect(editor.isActive('italic')).toBe(false);
+  expect(editor.getHTML()).toContain(
+    'data-office-underline-style="wavyDouble"',
+  );
+  expect(editor.getHTML()).toContain('data-office-underline-color="#4472c4"');
+
+  expect(editor.commands.undo()).toBe(true);
+  editor.commands.setTextSelection(textRange(editor, 'Target'));
+  expect(editor.isActive('italic')).toBe(true);
+  expect(editor.isActive('underline')).toBe(false);
+});
+
 test('keeps a required list paragraph when the copied block type is a heading', () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

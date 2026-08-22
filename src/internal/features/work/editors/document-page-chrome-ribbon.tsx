@@ -14,7 +14,6 @@ import {
   Redo2,
   Subscript as SubscriptIcon,
   Superscript as SuperscriptIcon,
-  Underline,
   Undo2,
   X,
 } from 'lucide-react';
@@ -39,6 +38,7 @@ import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
+import { DocumentUnderlineRibbon } from './document-underline-ribbon';
 
 export type DocumentPageChromeEditingPart = 'footer' | 'header';
 
@@ -176,15 +176,13 @@ export function DocumentPageChromeRibbon({
         >
           <Italic size={16} />
         </PageChromeRibbonButton>
-        <PageChromeRibbonButton
+        <DocumentUnderlineRibbon
+          editor={editor}
           label="页眉页脚下划线"
-          shortcut="Cmd/Ctrl+U"
-          ariaKeyShortcuts="Control+U Meta+U"
-          active={state.underline}
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-        >
-          <Underline size={16} />
-        </PageChromeRibbonButton>
+          menuLabel="页眉页脚下划线样式"
+          colorLabel="页眉页脚下划线颜色"
+          className="work-document-page-chrome-underline"
+        />
         <PageChromeRibbonButton
           label="页眉页脚下标"
           {...pageChromeCommandShortcut('subscript')}

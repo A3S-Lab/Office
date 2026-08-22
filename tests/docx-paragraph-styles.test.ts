@@ -199,7 +199,7 @@ describe('DOCX paragraph styles', () => {
     expect(prepared.runFormattingMarkers.runs[0]?.formatting).toEqual({
       bold: false,
       italic: false,
-      underline: false,
+      underline: { style: 'none' },
       strike: false,
       fontFamily: 'Arial',
       wordLineHeightFactor: 1.15,

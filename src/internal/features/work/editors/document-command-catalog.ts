@@ -1,4 +1,5 @@
 import { documentTextCaseKeyboardShortcuts } from '../work-document-text-case';
+import { documentUnderlineKeyboardShortcuts } from '../work-document-underline';
 
 export const documentRibbonTabs = [
   { id: 'home', label: '开始' },
@@ -162,6 +163,26 @@ export const documentCommandCatalog = {
       label: 'Cmd/Ctrl+U',
       aria: 'Control+U Meta+U',
       editor: ['Mod-u'],
+    },
+  },
+  doubleUnderline: {
+    id: 'font.doubleUnderline',
+    label: '双下划线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+D',
+      aria: 'Control+Shift+D Meta+Shift+D',
+      editor: [documentUnderlineKeyboardShortcuts.double],
+    },
+  },
+  wordsUnderline: {
+    id: 'font.wordsUnderline',
+    label: '仅字下划线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+W',
+      aria: 'Control+Shift+W Meta+Shift+W',
+      editor: [documentUnderlineKeyboardShortcuts.words],
     },
   },
   strike: {

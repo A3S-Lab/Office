@@ -117,6 +117,10 @@ import {
 } from './work-docx-theme-reference';
 import { preserveDocxSourcePackage } from './work-ooxml-package-preservation';
 import { normalizeDocumentTextCase } from './work-document-text-case';
+import {
+  documentUnderlineFormattingFromElement,
+  type WorkDocumentUnderlineFormatting,
+} from './work-document-underline';
 import type {
   WorkDocumentComment,
   WorkDocumentContent,
@@ -730,11 +734,16 @@ async function inlineRuns(
       node.dataset.officeTextCase,
     );
     const textCaseOptions = docxTextCaseRunOptions(explicitTextCase, inherited);
+    const underline = docxUnderlineRunOptions(
+      node,
+      inherited.underline,
+      noteContext.themePatches,
+    );
     const style: IRunOptions = {
       ...inherited,
       bold: inherited.bold || tag === 'strong' || tag === 'b',
       italics: inherited.italics || tag === 'em' || tag === 'i',
-      underline: inherited.underline || tag === 'u' ? {} : undefined,
+      underline,
       strike: inherited.strike || tag === 's' || tag === 'strike',
       subScript: inherited.subScript || tag === 'sub',
       superScript: inherited.superScript || tag === 'sup',
@@ -810,6 +819,34 @@ async function inlineRuns(
   for (const node of root.childNodes)
     runs.push(...(await visit(node, inheritedDirection)));
   return runs;
+}
+
+function docxUnderlineRunOptions(
+  element: HTMLElement,
+  inherited: IRunOptions['underline'],
+  themePatches: DocxThemePatchCollector,
+): IRunOptions['underline'] {
+  const formatting = documentUnderlineFormattingFromElement(element);
+  if (!formatting) return inherited;
+  const color = docxUnderlineColor(formatting, themePatches);
+  return {
+    type: formatting.style,
+    ...(color ? { color } : {}),
+  };
+}
+
+function docxUnderlineColor(
+  formatting: WorkDocumentUnderlineFormatting,
+  themePatches: DocxThemePatchCollector,
+): string | undefined {
+  const direct = formatting.color ? cssColorToHex(formatting.color) : undefined;
+  return (
+    themePatches.marker(
+      'underline',
+      formatting.themeColor ?? null,
+      direct ? `#${direct}` : null,
+    ) ?? direct
+  );
 }
 
 function docxTextCaseRunOptions(

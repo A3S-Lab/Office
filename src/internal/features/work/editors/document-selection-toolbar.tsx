@@ -8,7 +8,6 @@ import {
   Italic,
   MessageSquarePlus,
   Strikethrough,
-  Underline as UnderlineIcon,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { officeOverlayPortalRoot } from '../../../design-system/primitives/overlay/portal-root';
@@ -20,6 +19,7 @@ import {
   documentFontSizeValue,
 } from './document-formatting-options';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
+import { DocumentUnderlineRibbon } from './document-underline-ribbon';
 
 const bubbleMenuOptions = {
   strategy: 'fixed' as const,
@@ -150,13 +150,12 @@ export function DocumentSelectionToolbar({
           >
             <Italic size={15} />
           </SelectionToolbarButton>
-          <SelectionToolbarButton
-            label="下划线"
-            active={editor.isActive('underline')}
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-          >
-            <UnderlineIcon size={15} />
-          </SelectionToolbarButton>
+          <DocumentUnderlineRibbon
+            editor={editor}
+            menuLabel="快捷下划线样式"
+            showColor={false}
+            className="work-document-selection-underline"
+          />
           <SelectionToolbarButton
             label="删除线"
             active={editor.isActive('strike')}
