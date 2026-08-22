@@ -1107,6 +1107,20 @@ active. Malformed coordinates, invalid values, formula cells, UTF-16 surrogate
 splits, and results beyond 32,767 characters or 512 runs fail closed. Rich-text
 insertion and editing outside these font attributes remain future work.
 
+The thirty-third slice closes direct native rich-text insertion and deletion
+through the formula bar and F2 in-cell editor. A pure bounded reconciliation
+model derives one contiguous replacement from the previous controlled text,
+inherits the replaced or immediately preceding run for inserted characters,
+and preserves unaffected run boundaries, font styles, and theme, indexed,
+automatic, or tint color identities. Authenticated incremental cell operations
+project only exact coordinates. A non-structural callback without a cell
+operation may restore source runs only when its text is exactly unchanged;
+structural batches never infer by old coordinates. Formula-bar and F2 commits
+publish one controlled revision and one Undo record, while text-stable focus
+callbacks publish no revision. UTF-16 validity, 32,767-character, and 512-run
+bounds remain fail closed. Formatted paste and simultaneous disjoint edits
+remain open work.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

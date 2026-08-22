@@ -108,6 +108,7 @@ export function useSpreadsheetAutoFilter({
     keyboardInvokerRef.current = trigger;
     restoreInvokerFocusRef.current = true;
     trigger.click();
+    enhanceSpreadsheetAutoFilterSurface(container, activeSheet, trigger);
     focusSpreadsheetAutoFilterMenu(container);
     return true;
   }, [canvasRef]);
@@ -168,6 +169,13 @@ export function useSpreadsheetAutoFilter({
         keyboardInvokerRef.current = trigger;
         restoreInvokerFocusRef.current = true;
         trigger.click();
+        enhanceSpreadsheetAutoFilterSurface(
+          container,
+          contentRef.current.sheets.find(
+            (candidate) => candidate.id === sheetIdRef.current,
+          ),
+          trigger,
+        );
         focusSpreadsheetAutoFilterMenu(container);
         return;
       }
@@ -177,6 +185,15 @@ export function useSpreadsheetAutoFilter({
         event.preventDefault();
         event.stopPropagation();
         menu.querySelector<HTMLElement>('.button-default')?.click();
+        if (!menu.isConnected && restoreInvokerFocusRef.current) {
+          const invoker = keyboardInvokerRef.current;
+          invoker?.setAttribute('aria-expanded', 'false');
+          requestAnimationFrame(() => {
+            if (invoker?.isConnected) invoker.focus({ preventScroll: true });
+          });
+          menuWasOpenRef.current = false;
+          restoreInvokerFocusRef.current = false;
+        }
         return;
       }
       const target = event.target;

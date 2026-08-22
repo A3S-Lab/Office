@@ -137,10 +137,13 @@ export function EditorWorkspace({
   const spreadsheetRichTextFixture =
     e2eFixture === SPREADSHEET_RICH_TEXT_FIXTURE &&
     artifact.content.type === 'spreadsheet';
-  const spreadsheetRichTextRuns =
+  const spreadsheetRichTextCell =
     spreadsheetRichTextFixture && artifact.content.type === 'spreadsheet'
-      ? richTextRunSummary(artifact.content.sheets[0]?.data?.[0]?.[0]?.ct?.s)
-      : { bold: '', count: 0, text: '' };
+      ? artifact.content.sheets[0]?.data?.[0]?.[0]
+      : undefined;
+  const spreadsheetRichTextRuns = spreadsheetRichTextCell
+    ? richTextRunSummary(spreadsheetRichTextCell.ct?.s)
+    : { bold: '', colors: '', count: 0, origins: '', text: '' };
   const loadPdf = useCallback(() => readSourceBlob(artifact), [artifact]);
   const controlledReviewFixture = e2eFixture === 'word-review-conflict';
   const controlledReviewFixtureReady =
@@ -377,7 +380,14 @@ export function EditorWorkspace({
                   data-revision={artifact.revision}
                   data-run-count={spreadsheetRichTextRuns.count}
                   data-run-bold={spreadsheetRichTextRuns.bold}
+                  data-run-colors={spreadsheetRichTextRuns.colors}
+                  data-run-origins={spreadsheetRichTextRuns.origins}
                   data-run-text={spreadsheetRichTextRuns.text}
+                  data-cell-text={
+                    typeof spreadsheetRichTextCell?.v === 'string'
+                      ? spreadsheetRichTextCell.v
+                      : ''
+                  }
                   aria-live="polite"
                 >
                   原生富文本 · {spreadsheetRichTextRuns.count} 个文字片段 · 修订{' '}
@@ -1455,10 +1465,14 @@ function assistantWelcomeCopy(kind: OfficeArtifact['kind']): {
 
 function richTextRunSummary(source: unknown): {
   bold: string;
+  colors: string;
   count: number;
+  origins: string;
   text: string;
 } {
-  if (!Array.isArray(source)) return { bold: '', count: 0, text: '' };
+  if (!Array.isArray(source)) {
+    return { bold: '', colors: '', count: 0, origins: '', text: '' };
+  }
   const runs = source.flatMap((candidate) => {
     if (
       !candidate ||
@@ -1472,15 +1486,35 @@ function richTextRunSummary(source: unknown): {
     return [
       {
         bold: Number('bl' in candidate ? candidate.bl : 0),
+        color:
+          'fc' in candidate && typeof candidate.fc === 'string'
+            ? candidate.fc
+            : 'none',
+        origin: richTextRunColorOrigin(candidate),
         v: candidate.v,
       },
     ];
   });
   return {
     bold: runs.map((run) => (run.bold === 1 ? 1 : 0)).join(','),
+    colors: runs.map((run) => run.color).join(','),
     count: runs.length,
+    origins: runs.map((run) => run.origin).join(','),
     text: runs.map((run) => run.v).join(''),
   };
+}
+
+function richTextRunColorOrigin(candidate: Record<string, unknown>): string {
+  const origin = candidate.a3sXlsxColorOrigin;
+  if (!origin || typeof origin !== 'object' || Array.isArray(origin)) {
+    return 'none';
+  }
+  return 'kind' in origin &&
+    (origin.kind === 'theme' ||
+      origin.kind === 'indexed' ||
+      origin.kind === 'automatic')
+    ? origin.kind
+    : 'none';
 }
 
 function clampAssistantWidth(width: number): number {

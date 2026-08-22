@@ -1223,7 +1223,7 @@ test('documents focused Spreadsheet font-dialog shortcuts in 0.24.0', async () =
   }
 });
 
-test('documents native and partial-run Spreadsheet rich-text cells', async () => {
+test('documents native, partial-run, and direct-edit Spreadsheet rich text', async () => {
   for (const version of ['latest', '0.25.0']) {
     const [english, chinese] = await Promise.all([
       readFile(
@@ -1254,6 +1254,10 @@ test('documents native and partial-run Spreadsheet rich-text cells', async () =>
         'Home ribbon applies font',
         'bold, italic, underline, or strikethrough',
         'invalid UTF-16 surrogate boundaries',
+        'formula bar or the F2',
+        'one controlled revision',
+        'one Undo record',
+        'Formatted rich-text paste',
       ]) {
         expect(english).toContain(evidence);
       }
@@ -1277,6 +1281,10 @@ test('documents native and partial-run Spreadsheet rich-text cells', async () =>
         '选中非空文字',
         '字体、字号、颜色、粗体、斜体、下划线与删除线',
         'UTF-16 代理对',
+        '公式栏或 F2',
+        '一次受控修订',
+        '一条撤销记录',
+        '带格式富文本粘贴',
       ]) {
         expect(chinese).toContain(evidence);
       }
@@ -1284,6 +1292,41 @@ test('documents native and partial-run Spreadsheet rich-text cells', async () =>
       expect(chinese).toContain('局部片段创作');
     }
   }
+});
+
+test('publishes slice 33 rich-text reconciliation architecture', async () => {
+  const [englishRoadmap, chineseRoadmap, architecture, readme] =
+    await Promise.all([
+      readFile(
+        path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          documentationRoot,
+          'latest/en/browser-editor-architecture.md',
+        ),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    ]);
+
+  expect(englishRoadmap).toContain('The thirty-third slice');
+  expect(englishRoadmap).toMatch(/text-stable focus\s+callbacks/);
+  expect(chineseRoadmap).toContain('第三十三个 Spreadsheet 纵向切片');
+  expect(chineseRoadmap).toMatch(/文字未变化的聚焦\s*回调/);
+  expect(architecture).toContain(
+    'Native XLSX rich-text editing is reconciled at the controlled Fortune boundary',
+  );
+  expect(architecture).toContain(
+    'Authenticated `data[row][column]` operations',
+  );
+  expect(readme).toContain('direct formula-bar/F2 insertion or deletion');
+  expect(readme).toContain('Traditional Office baseline');
 });
 
 test('publishes reproducible 100k Document performance evidence', async () => {

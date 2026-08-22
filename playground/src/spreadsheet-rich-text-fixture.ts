@@ -20,6 +20,12 @@ export function createSpreadsheetRichTextArtifact(): OfficeArtifact {
         s: [
           {
             v: 'Native ',
+            a3sXlsxColorOrigin: {
+              baseColor: '#2f6fed',
+              index: 4,
+              kind: 'theme',
+              renderedColor: '#2f6fed',
+            },
             bl: 1,
             fc: '#2f6fed',
             ff: 'Aptos Display',
@@ -27,12 +33,28 @@ export function createSpreadsheetRichTextArtifact(): OfficeArtifact {
           },
           {
             v: 'rich ',
+            a3sXlsxColorOrigin: {
+              baseColor: '#159469',
+              index: 10,
+              kind: 'indexed',
+              renderedColor: '#159469',
+            },
             fc: '#159469',
             ff: 'Georgia',
             fs: 12,
             it: 1,
           },
-          { v: 'text', cl: 1, fc: '#a04896', un: 2 },
+          {
+            v: 'text',
+            a3sXlsxColorOrigin: {
+              baseColor: '#000000',
+              kind: 'automatic',
+              renderedColor: '#000000',
+            },
+            cl: 1,
+            fc: '#000000',
+            un: 2,
+          },
         ],
       },
     },

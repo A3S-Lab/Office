@@ -174,4 +174,116 @@ suite "office-spreadsheet-rich-text" {
             clear = false
         }
     }
+
+    scenario "edit-native-rich-text-in-formula-bar" {
+        name = "Insert and delete native Spreadsheet rich text in the formula bar"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-rich-text-edit-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-rich-text"
+        }
+
+        wait "rich-text-edit-ready" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='1'][data-run-count='3'][data-run-origins='theme,indexed,automatic'][data-run-text='Native rich text']")
+        }
+
+        focus "focus-rich-text-formula-bar" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "move-edit-to-start" {
+            key = "Home"
+        }
+
+        press "move-edit-right-1" {
+            key = "ArrowRight"
+        }
+
+        press "move-edit-right-2" {
+            key = "ArrowRight"
+        }
+
+        press "move-edit-right-3" {
+            key = "ArrowRight"
+        }
+
+        type "insert-inside-theme-run" {
+            target = css(".fortune-fx-input")
+            value = "X"
+        }
+
+        expect "draft-does-not-publish-early" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='1'][data-run-text='Native rich text']")
+        }
+
+        press "commit-rich-text-insertion" {
+            key = "Enter"
+        }
+
+        expect "insertion-keeps-native-runs-and-origins" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='2'][data-run-count='3'][data-run-bold='1,0,0'][data-run-origins='theme,indexed,automatic'][data-run-text='NatXive rich text'][data-cell-text='NatXive rich text']")
+        }
+
+        press "return-to-edited-rich-text-cell" {
+            key = "ArrowUp"
+        }
+
+        focus "refocus-rich-text-formula-bar" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "move-delete-to-end" {
+            key = "End"
+        }
+
+        press "delete-automatic-run-character" {
+            key = "Backspace"
+        }
+
+        expect "delete-draft-does-not-publish-early" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='2'][data-run-text='NatXive rich text']")
+        }
+
+        press "commit-rich-text-deletion" {
+            key = "Enter"
+        }
+
+        expect "deletion-keeps-native-runs-and-origins" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='3'][data-run-count='3'][data-run-origins='theme,indexed,automatic'][data-run-text='NatXive rich tex'][data-cell-text='NatXive rich tex']")
+        }
+
+        press "undo-rich-text-deletion" {
+            key = "Control+z"
+        }
+
+        expect "one-undo-restores-the-prior-rich-text-value" {
+            visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='4'][data-run-count='3'][data-run-origins='theme,indexed,automatic'][data-run-text='NatXive rich text']")
+        }
+
+        screenshot "spreadsheet-rich-text-edit" {
+            path = "screenshots/spreadsheet-rich-text-edit.png"
+        }
+
+        accessibility "spreadsheet-rich-text-edit-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "spreadsheet-rich-text-edit-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-rich-text-edit-page-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
 }

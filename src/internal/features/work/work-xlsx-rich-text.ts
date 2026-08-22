@@ -4,7 +4,6 @@ import {
   spreadsheetUnderlineCellValue,
   spreadsheetUnderlineCellValueFromXlsx,
   spreadsheetUnderlineStyle,
-  type SpreadsheetUnderlineCellValue,
   type SpreadsheetUnderlineStyle,
 } from './work-spreadsheet-underline';
 import {
@@ -19,7 +18,6 @@ import {
   readXlsxSemanticColorOrigin,
   xlsxSemanticColorMatchesValue,
   type XlsxCellStyleOrigin,
-  type XlsxSemanticColorOrigin,
   type XlsxSemanticPalette,
 } from './work-xlsx-cell-style-origin';
 import { activeXlsxSemanticColorOrigin } from './work-xlsx-cell-style-values';
@@ -30,27 +28,29 @@ import {
   type XlsxColorResolver,
 } from './work-xlsx-colors';
 import { decodeXlsxCellAddress, xlsxCellAddress } from './work-xlsx-worksheet';
+import {
+  MAX_XLSX_RICH_TEXT_CELL_CHARACTERS,
+  MAX_XLSX_RICH_TEXT_CELLS,
+  MAX_XLSX_RICH_TEXT_FONT_NAME_CHARACTERS,
+  MAX_XLSX_RICH_TEXT_FONT_SIZE,
+  MAX_XLSX_RICH_TEXT_RUNS,
+  MAX_XLSX_RICH_TEXT_RUNS_PER_CELL,
+  normalizeXlsxRichTextCell,
+  normalizeXlsxRichTextColor,
+  type NormalizedXlsxRichTextCell,
+  type XlsxRichTextRun,
+  validXlsxRichText,
+} from './work-xlsx-rich-text-model';
 
-export const MAX_XLSX_RICH_TEXT_CELL_CHARACTERS = 32_767;
-export const MAX_XLSX_RICH_TEXT_RUNS_PER_CELL = 512;
-export const MAX_XLSX_RICH_TEXT_CELLS = 10_000;
-export const MAX_XLSX_RICH_TEXT_RUNS = 100_000;
+export {
+  MAX_XLSX_RICH_TEXT_CELL_CHARACTERS,
+  MAX_XLSX_RICH_TEXT_CELLS,
+  MAX_XLSX_RICH_TEXT_RUNS,
+  MAX_XLSX_RICH_TEXT_RUNS_PER_CELL,
+  type XlsxRichTextRun,
+} from './work-xlsx-rich-text-model';
 
 const MAX_XLSX_SHARED_RICH_TEXT_ITEMS = 10_000;
-const MAX_XLSX_FONT_NAME_CHARACTERS = 128;
-const MAX_XLSX_FONT_SIZE = 409;
-
-export interface XlsxRichTextRun {
-  a3sXlsxColorOrigin?: XlsxSemanticColorOrigin;
-  bl?: 0 | 1;
-  cl?: 0 | 1;
-  fc?: string;
-  ff?: string;
-  fs?: number;
-  it?: 0 | 1;
-  un?: SpreadsheetUnderlineCellValue;
-  v: string;
-}
 
 export interface XlsxRichTextCell {
   column: number;
@@ -81,11 +81,6 @@ interface SpreadsheetRichTextFontPatch {
   italic?: boolean;
   strike?: boolean;
   underline?: SpreadsheetUnderlineStyle;
-}
-
-interface NormalizedRichTextCell {
-  runs: XlsxRichTextRun[];
-  text: string;
 }
 
 export function createXlsxRichTextReadContext(
@@ -178,7 +173,9 @@ export function patchSpreadsheetRichTextFontRuns(
     !source.length ||
     source.some(
       (run) =>
-        !isRecord(run) || typeof run.v !== 'string' || !validXmlText(run.v),
+        !isRecord(run) ||
+        typeof run.v !== 'string' ||
+        !validXlsxRichText(run.v),
     )
   ) {
     return cell;
@@ -186,7 +183,7 @@ export function patchSpreadsheetRichTextFontRuns(
   const normalizedColor =
     patch.fontColor === undefined
       ? undefined
-      : normalizedColorValue(patch.fontColor);
+      : normalizeXlsxRichTextColor(patch.fontColor);
   const runs = source.map((run) => {
     const next = { ...run } as Record<string, unknown>;
     if (patch.fontFamily !== undefined) next.ff = patch.fontFamily.trim();
@@ -207,13 +204,13 @@ export function patchSpreadsheetRichTextFontRuns(
 }
 
 export function xlsxRichTextCellText(cell: Cell): string | null {
-  return normalizeRichTextCell(cell)?.text ?? null;
+  return normalizeXlsxRichTextCell(cell)?.text ?? null;
 }
 
 export function sheetHasXlsxRichTextCells(sheet: Sheet): boolean {
   for (const [, row] of sparseArrayEntries(sheet.data)) {
     for (const [, cell] of sparseArrayEntries(row)) {
-      if (cell && normalizeRichTextCell(cell)) return true;
+      if (cell && normalizeXlsxRichTextCell(cell)) return true;
     }
   }
   return false;
@@ -224,7 +221,7 @@ export function xlsxRichTextStyleOrigins(sheet: Sheet): XlsxCellStyleOrigin[] {
   for (const [, row] of sparseArrayEntries(sheet.data)) {
     for (const [, cell] of sparseArrayEntries(row)) {
       if (!cell) continue;
-      for (const run of normalizeRichTextCell(cell)?.runs ?? []) {
+      for (const run of normalizeXlsxRichTextCell(cell)?.runs ?? []) {
         const fontColor = normalizeXlsxSemanticColorOrigin(
           run.a3sXlsxColorOrigin,
         );
@@ -258,7 +255,7 @@ export function writeXlsxRichTextCells(
     for (const [column, cell] of sparseArrayEntries(values)) {
       if (remainingCells <= 0 || remainingRuns <= 0) return;
       if (!cell) continue;
-      const richText = normalizeRichTextCell(cell);
+      const richText = normalizeXlsxRichTextCell(cell);
       if (!richText || richText.runs.length > remainingRuns) continue;
       const element = elements.get(xlsxCellAddress(row, column));
       if (!element) continue;
@@ -322,7 +319,7 @@ function readRichTextRuns(
     characterCount += value.length;
     if (
       characterCount > MAX_XLSX_RICH_TEXT_CELL_CHARACTERS ||
-      !validXmlText(value)
+      !validXlsxRichText(value)
     ) {
       return null;
     }
@@ -342,7 +339,7 @@ function readRichTextRun(
   const font =
     directChild(properties, 'rFont') ?? directChild(properties, 'name');
   const fontName = attribute(font ?? properties, 'val')?.trim();
-  if (fontName && fontName.length <= MAX_XLSX_FONT_NAME_CHARACTERS) {
+  if (fontName && fontName.length <= MAX_XLSX_RICH_TEXT_FONT_NAME_CHARACTERS) {
     run.ff = fontName;
   }
   if (xlsxToggleEnabled(directChild(properties, 'b'))) run.bl = 1;
@@ -351,7 +348,9 @@ function readRichTextRun(
   const size = finiteNumber(
     attribute(directChild(properties, 'sz') ?? properties, 'val'),
   );
-  if (size !== null && size >= 1 && size <= MAX_XLSX_FONT_SIZE) run.fs = size;
+  if (size !== null && size >= 1 && size <= MAX_XLSX_RICH_TEXT_FONT_SIZE) {
+    run.fs = size;
+  }
   const underline = directChild(properties, 'u');
   if (underline) {
     const value = spreadsheetUnderlineCellValueFromXlsx(
@@ -367,81 +366,9 @@ function readRichTextRun(
   return run;
 }
 
-function normalizeRichTextCell(cell: Cell): NormalizedRichTextCell | null {
-  if (cell.f || cell.ct?.t !== 'inlineStr' || !Array.isArray(cell.ct.s)) {
-    return null;
-  }
-  if (
-    !cell.ct.s.length ||
-    cell.ct.s.length > MAX_XLSX_RICH_TEXT_RUNS_PER_CELL
-  ) {
-    return null;
-  }
-  const runs: XlsxRichTextRun[] = [];
-  let characterCount = 0;
-  for (const candidate of cell.ct.s) {
-    const run = normalizeRichTextRun(candidate);
-    if (!run) return null;
-    if (!run.v) continue;
-    characterCount += run.v.length;
-    if (characterCount > MAX_XLSX_RICH_TEXT_CELL_CHARACTERS) return null;
-    runs.push(run);
-  }
-  const text = runs.map((run) => run.v).join('');
-  return runs.length && text ? { runs, text } : null;
-}
-
-function normalizeRichTextRun(value: unknown): XlsxRichTextRun | null {
-  if (
-    !isRecord(value) ||
-    typeof value.v !== 'string' ||
-    !validXmlText(value.v)
-  ) {
-    return null;
-  }
-  const run: XlsxRichTextRun = { v: value.v };
-  if (Number(value.bl) === 1) run.bl = 1;
-  else if (Number(value.bl) === 0 && value.bl !== undefined) run.bl = 0;
-  if (Number(value.it) === 1) run.it = 1;
-  else if (Number(value.it) === 0 && value.it !== undefined) run.it = 0;
-  if (Number(value.cl) === 1) run.cl = 1;
-  else if (Number(value.cl) === 0 && value.cl !== undefined) run.cl = 0;
-  if (
-    typeof value.ff === 'string' &&
-    value.ff.trim() &&
-    value.ff.trim().length <= MAX_XLSX_FONT_NAME_CHARACTERS
-  ) {
-    run.ff = value.ff.trim();
-  }
-  if (
-    typeof value.fs === 'number' &&
-    Number.isFinite(value.fs) &&
-    value.fs >= 1 &&
-    value.fs <= MAX_XLSX_FONT_SIZE
-  ) {
-    run.fs = value.fs;
-  }
-  const color = normalizedColorValue(value.fc);
-  if (color) run.fc = color;
-  const underline = Number(value.un);
-  if (
-    Number.isSafeInteger(underline) &&
-    underline >= 0 &&
-    underline <= 4 &&
-    value.un !== undefined
-  ) {
-    run.un = underline as SpreadsheetUnderlineCellValue;
-  }
-  const colorOrigin = normalizeXlsxSemanticColorOrigin(
-    value.a3sXlsxColorOrigin,
-  );
-  if (colorOrigin) run.a3sXlsxColorOrigin = colorOrigin;
-  return run;
-}
-
 function writeRichTextCell(
   element: Element,
-  richText: NormalizedRichTextCell,
+  richText: NormalizedXlsxRichTextCell,
   semanticPalette: XlsxSemanticPalette | undefined,
 ): void {
   for (const child of directChildren(element)) {
@@ -533,11 +460,6 @@ function fontPatchHasValues(patch: SpreadsheetRichTextFontPatch): boolean {
   );
 }
 
-function normalizedColorValue(value: unknown): string | null {
-  const rgb = xlsxRgbColor(value);
-  return rgb ? `#${rgb.slice(-6).toLowerCase()}` : null;
-}
-
 function xlsxToggleEnabled(element: Element | undefined): boolean {
   if (!element) return false;
   const value = attribute(element, 'val')?.trim().toLowerCase();
@@ -556,33 +478,6 @@ function nonNegativeInteger(value: string | null | undefined): number | null {
   }
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) ? parsed : null;
-}
-
-function validXmlText(value: string): boolean {
-  for (let index = 0; index < value.length; index += 1) {
-    const code = value.charCodeAt(index);
-    if (
-      code === 0x09 ||
-      code === 0x0a ||
-      code === 0x0d ||
-      (code >= 0x20 && code <= 0xd7ff) ||
-      (code >= 0xe000 && code <= 0xfffd)
-    ) {
-      continue;
-    }
-    if (
-      code >= 0xd800 &&
-      code <= 0xdbff &&
-      index + 1 < value.length &&
-      value.charCodeAt(index + 1) >= 0xdc00 &&
-      value.charCodeAt(index + 1) <= 0xdfff
-    ) {
-      index += 1;
-      continue;
-    }
-    return false;
-  }
-  return true;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

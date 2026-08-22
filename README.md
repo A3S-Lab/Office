@@ -124,7 +124,7 @@ baseline rather than one specific release.
 | Capability | A3S Office today | Traditional Office baseline |
 | --- | --- | --- |
 | Cells, sheets, navigation, and history | **Supported** — multiple sheets, sparse editing, search, clipboard, four-direction fill, exact formula/value copy from above, and undo/redo | Mature grid workflows across desktop and web |
-| Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, static date/time entry, contrast-safe font preview, native XLSX rich-text runs, and selected-text font formatting | Rich-text insertion workflows, themes, locale formats, and advanced style effects |
+| Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, static date/time entry, contrast-safe font preview, native XLSX rich-text runs, selected-text font formatting, and direct formula-bar/F2 insertion or deletion with inherited runs | Broader multi-edit and formatted-paste rich-text authoring, themes, locale formats, and advanced style effects |
 | Ribbon and shortcuts | **Partial** — common Office-style Home/Data/View commands, grid-scoped shortcuts, and focused Font-dialog aliases | Larger command catalog and platform-specific accelerators |
 | Formulas and recalculation | **Partial** — dependency-aware calculation and common formula paths | Wider functions, arrays, volatile semantics, and calculation parity |
 | Tables, pivots, charts, and rules | **Partial** — native tables, pivots, charts, conditional formatting, and validation | Calculated columns, slicers, pivot charts, advanced rules, and analysis |

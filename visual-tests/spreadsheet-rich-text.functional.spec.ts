@@ -17,6 +17,10 @@ test('Spreadsheet renders native rich text and formats every run through one con
   await expect(status).toHaveAttribute('data-revision', '1');
   await expect(status).toHaveAttribute('data-run-count', '3');
   await expect(status).toHaveAttribute('data-run-bold', '1,0,0');
+  await expect(status).toHaveAttribute(
+    'data-run-origins',
+    'theme,indexed,automatic',
+  );
   await expect(status).toHaveAttribute('data-run-text', 'Native rich text');
 
   await page.keyboard.press('Control+Shift+F');
@@ -28,6 +32,10 @@ test('Spreadsheet renders native rich text and formats every run through one con
   await expect(status).toHaveAttribute('data-revision', '2');
   await expect(status).toHaveAttribute('data-run-count', '3');
   await expect(status).toHaveAttribute('data-run-bold', '1,1,1');
+  await expect(status).toHaveAttribute(
+    'data-run-origins',
+    'theme,indexed,automatic',
+  );
   await expect(status).toHaveAttribute('data-run-text', 'Native rich text');
   await expect(grid).toBeFocused();
   await page.screenshot({
@@ -88,10 +96,120 @@ test('Spreadsheet formats only selected rich text and restores the formula-bar s
   await expect(status).toHaveAttribute('data-revision', '2');
   await expect(status).toHaveAttribute('data-run-count', '4');
   await expect(status).toHaveAttribute('data-run-bold', '1,1,0,0');
+  await expect(status).toHaveAttribute(
+    'data-run-origins',
+    'theme,indexed,indexed,automatic',
+  );
   await expect(status).toHaveAttribute('data-run-text', 'Native rich text');
   await expect(formulaBar).toBeFocused();
   expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(
     'rich',
+  );
+  expect(browserErrors).toEqual([]);
+});
+
+test('Spreadsheet formula-bar insertion and deletion preserve native rich-text runs', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await page.goto('/?e2e=spreadsheet-rich-text');
+
+  const status = page.getByTestId('spreadsheet-rich-text-status');
+  const formulaBar = page.locator('.fortune-fx-input');
+  await expect(formulaBar).toHaveText('Native rich text');
+  await formulaBar.focus();
+  await formulaBar.press('Home');
+  await formulaBar.press('ArrowRight');
+  await formulaBar.press('ArrowRight');
+  await formulaBar.press('ArrowRight');
+  await page.keyboard.insertText('X');
+
+  await expect(formulaBar).toHaveText('NatXive rich text');
+  await expect(status).toHaveAttribute('data-revision', '1');
+  await formulaBar.press('Enter');
+  await expect(status).toHaveAttribute('data-revision', '2');
+  await expect(status).toHaveAttribute('data-run-count', '3');
+  await expect(status).toHaveAttribute('data-run-text', 'NatXive rich text');
+  await expect(status).toHaveAttribute('data-cell-text', 'NatXive rich text');
+  await expect(status).toHaveAttribute(
+    'data-run-origins',
+    'theme,indexed,automatic',
+  );
+
+  await page.keyboard.press('ArrowUp');
+  await expect(formulaBar).toHaveText('NatXive rich text');
+  await formulaBar.focus();
+  await formulaBar.press('End');
+  await formulaBar.press('Backspace');
+  await expect(formulaBar).toHaveText('NatXive rich tex');
+  await expect(status).toHaveAttribute('data-revision', '2');
+  await formulaBar.press('Enter');
+
+  await expect(status).toHaveAttribute('data-revision', '3');
+  await expect(status).toHaveAttribute('data-run-count', '3');
+  await expect(status).toHaveAttribute('data-run-text', 'NatXive rich tex');
+  await expect(status).toHaveAttribute('data-cell-text', 'NatXive rich tex');
+  await expect(status).toHaveAttribute(
+    'data-run-origins',
+    'theme,indexed,automatic',
+  );
+
+  await page.keyboard.press('Control+z');
+  await expect(status).toHaveAttribute('data-revision', '4');
+  await expect(status).toHaveAttribute('data-run-text', 'NatXive rich text');
+  await expect(status).toHaveAttribute(
+    'data-run-origins',
+    'theme,indexed,automatic',
+  );
+  expect(browserErrors).toEqual([]);
+});
+
+test('Spreadsheet in-cell insertion and deletion retain rich-text semantics', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await page.goto('/?e2e=spreadsheet-rich-text');
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const cellEditor = page.locator('.luckysheet-cell-input');
+  const status = page.getByTestId('spreadsheet-rich-text-status');
+  await expect(grid).toBeFocused();
+  await page.keyboard.press('F2');
+  await expect(cellEditor).toHaveText('Native rich text');
+  await page.keyboard.insertText('!');
+  await expect(cellEditor).toHaveText('Native rich text!');
+  await expect(status).toHaveAttribute('data-revision', '1');
+  await page.keyboard.press('Enter');
+
+  await expect(status).toHaveAttribute('data-revision', '2');
+  await expect(status).toHaveAttribute('data-run-count', '3');
+  await expect(status).toHaveAttribute('data-run-text', 'Native rich text!');
+  await expect(status).toHaveAttribute(
+    'data-run-origins',
+    'theme,indexed,automatic',
+  );
+
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('F2');
+  await page.keyboard.press('Backspace');
+  await expect(cellEditor).toHaveText('Native rich text');
+  await expect(status).toHaveAttribute('data-revision', '2');
+  await page.keyboard.press('Enter');
+
+  await expect(status).toHaveAttribute('data-revision', '3');
+  await expect(status).toHaveAttribute('data-run-count', '3');
+  await expect(status).toHaveAttribute('data-run-text', 'Native rich text');
+  await expect(status).toHaveAttribute(
+    'data-run-origins',
+    'theme,indexed,automatic',
   );
   expect(browserErrors).toEqual([]);
 });

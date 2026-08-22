@@ -319,6 +319,17 @@ materialization. Fortune row/column operations are reconciled back into table
 ranges, column identities, filter offsets, and canonical header cells, while
 merge and worksheet AutoFilter commands reject intersecting ownership.
 
+Native XLSX rich-text editing is reconciled at the controlled Fortune boundary,
+not inside the rendering engine. A pure model normalizes at most 512 runs and
+32,767 UTF-16 code units, derives one contiguous replacement, uses binary run
+lookup for inherited styles, and coalesces only semantically identical adjacent
+runs. Authenticated `data[row][column]` operations permit text changes at exact
+coordinates. In the full-projection compatibility path, a non-structural batch
+without a cell coordinate may restore prior runs only when the visible text is
+exactly unchanged; structural operations disable coordinate inference. This
+keeps formula-bar and F2 commits to one host revision and one Undo record while
+discarding Fortune focus callbacks that merely flatten or strip run metadata.
+
 The table is a fidelity statement, not a marketing capability list. The
 current Document path shapes text-flow paragraphs in Rust/WASM when every
 explicit CSS family resolves to an exact registered face. Each run may carry up

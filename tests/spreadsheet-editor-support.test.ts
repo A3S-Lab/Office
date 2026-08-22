@@ -10,8 +10,8 @@ import {
 import {
   freezeImportedSpreadsheetCell,
   registerImportedSpreadsheetMatrix,
-  spreadsheetMatrixProfile,
   SPREADSHEET_SHOWN_COMMENT_CELLS_PROPERTY,
+  spreadsheetMatrixProfile,
 } from '../src/internal/features/work/work-spreadsheet-matrix-profile';
 import { spreadsheetProtectionKey } from '../src/internal/features/work/work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
@@ -352,6 +352,249 @@ test('preserves consecutive controlled edits through incremental operations', ()
     fortuneReady: true,
     populatedCellCount: 2,
   });
+});
+
+test('reconstructs formula-bar rich text through the unregistered matrix fallback', () => {
+  const colorOrigin = {
+    baseColor: '#4472c4',
+    index: 4,
+    kind: 'theme',
+    renderedColor: '#4472c4',
+  } as const;
+  const source = {
+    data: [
+      [
+        {
+          ct: {
+            fa: 'General',
+            t: 'inlineStr',
+            s: [
+              {
+                a3sXlsxColorOrigin: colorOrigin,
+                bl: 1,
+                fc: '#4472c4',
+                v: 'Native ',
+              },
+              { it: 1, v: 'rich text' },
+            ],
+          },
+          v: 'Native rich text',
+        },
+      ],
+    ],
+    id: 'sheet-rich-text',
+    name: 'Rich text',
+  };
+  const changed = [
+    {
+      ...source,
+      data: [[{ ct: { fa: 'General', t: 'g' }, v: 'NatXive rich text' }]],
+    },
+  ];
+
+  const controlled = spreadsheetSheetsFromFortune(
+    changed,
+    [source],
+    [
+      {
+        id: 'sheet-rich-text',
+        op: 'replace',
+        path: ['data', 0, 0],
+        value: changed[0]?.data?.[0]?.[0],
+      },
+    ],
+  );
+
+  expect(controlled[0]?.data?.[0]?.[0]).toMatchObject({
+    ct: {
+      t: 'inlineStr',
+      s: [
+        {
+          a3sXlsxColorOrigin: colorOrigin,
+          bl: 1,
+          fc: '#4472c4',
+          v: 'NatXive ',
+        },
+        { it: 1, v: 'rich text' },
+      ],
+    },
+    v: 'NatXive rich text',
+  });
+});
+
+test('restores text-stable rich text when Fortune omits cell operations', () => {
+  const colorOrigin = {
+    baseColor: '#4472c4',
+    index: 4,
+    kind: 'theme',
+    renderedColor: '#4472c4',
+  } as const;
+  const source = {
+    data: [
+      [
+        {
+          ct: {
+            fa: 'General',
+            t: 'inlineStr',
+            s: [
+              {
+                a3sXlsxColorOrigin: colorOrigin,
+                bl: 1,
+                fc: '#4472c4',
+                v: 'Native ',
+              },
+              { it: 1, v: 'rich text' },
+            ],
+          },
+          v: 'Native rich text',
+        },
+      ],
+    ],
+    id: 'sheet-rich-text',
+    name: 'Rich text',
+  };
+  const changed = [
+    {
+      ...source,
+      data: [[{ ct: { fa: 'General', t: 'g' }, v: 'Native rich text' }]],
+    },
+  ];
+
+  const controlled = spreadsheetSheetsFromFortune(changed, [source], []);
+
+  expect(controlled[0]?.data?.[0]?.[0]).toEqual(source.data[0]?.[0]);
+  expect(
+    sameSpreadsheetHistoryContent(
+      { sheets: [source], type: 'spreadsheet' },
+      { sheets: controlled, type: 'spreadsheet' },
+    ),
+  ).toBe(true);
+});
+
+test('does not infer changed rich text when Fortune omits cell operations', () => {
+  const source = {
+    data: [
+      [
+        {
+          ct: { t: 'inlineStr', s: [{ bl: 1, v: 'Source' }] },
+          v: 'Source',
+        },
+      ],
+    ],
+    id: 'sheet-rich-text',
+    name: 'Rich text',
+  };
+  const changed = [{ ...source, data: [[{ v: 'Changed' }]] }];
+
+  expect(
+    spreadsheetSheetsFromFortune(changed, [source], [])[0]?.data?.[0]?.[0],
+  ).toEqual({ v: 'Changed' });
+});
+
+test('restores rich-text semantic metadata through authenticated cell operations', () => {
+  const colorOrigin = {
+    baseColor: '#4472c4',
+    index: 4,
+    kind: 'theme',
+    renderedColor: '#4472c4',
+  } as const;
+  const sourceCell = freezeImportedSpreadsheetCell({
+    ct: {
+      t: 'inlineStr',
+      s: [
+        {
+          a3sXlsxColorOrigin: colorOrigin,
+          fc: '#4472c4',
+          v: 'Blue',
+        },
+      ],
+    },
+    v: 'Blue',
+  });
+  const data = [[sourceCell]];
+  registerImportedSpreadsheetMatrix(data, {
+    columnCount: 1,
+    formulaCells: [],
+    fortuneReady: true,
+    populatedCellCount: 1,
+    protectionCellKey: '',
+    rowCount: 1,
+    shownCommentCells: [],
+  });
+  const source = { data, id: 'sheet-rich-text', name: 'Rich text' };
+  const changed = produce([source], (draft) => {
+    const cell = draft[0]?.data?.[0]?.[0];
+    if (!cell) throw new Error('Expected the rich-text cell.');
+    delete cell.v;
+    cell.ct = {
+      t: 'inlineStr',
+      s: [{ fc: '#4472c4', v: 'BluXe' }],
+    };
+  });
+
+  const controlled = spreadsheetSheetsFromFortune(
+    changed,
+    [source],
+    [
+      {
+        id: 'sheet-rich-text',
+        op: 'replace',
+        path: ['data', 0, 0],
+        value: changed[0]?.data?.[0]?.[0],
+      },
+    ],
+  );
+
+  expect(controlled[0]?.data?.[0]?.[0]).toMatchObject({
+    ct: {
+      t: 'inlineStr',
+      s: [
+        {
+          a3sXlsxColorOrigin: colorOrigin,
+          fc: '#4472c4',
+          v: 'BluXe',
+        },
+      ],
+    },
+    v: 'BluXe',
+  });
+});
+
+test('does not infer rich text across a structural operation batch', () => {
+  const source = {
+    data: [
+      [
+        {
+          ct: { t: 'inlineStr', s: [{ bl: 1, v: 'Source' }] },
+          v: 'Source',
+        },
+      ],
+    ],
+    id: 'sheet-rich-text',
+    name: 'Rich text',
+  };
+  const changed = [{ ...source, data: [[{ v: 'Moved' }]] }];
+
+  const controlled = spreadsheetSheetsFromFortune(
+    changed,
+    [source],
+    [
+      {
+        id: 'sheet-rich-text',
+        op: 'insertRowCol',
+        path: [],
+        value: {
+          count: 1,
+          direction: 'rightbottom',
+          id: 'sheet-rich-text',
+          index: 0,
+          type: 'row',
+        },
+      },
+    ],
+  );
+
+  expect(controlled[0]?.data?.[0]?.[0]).toEqual({ v: 'Moved' });
 });
 
 test('falls back to full reconciliation for structural operation batches', () => {

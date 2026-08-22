@@ -712,11 +712,17 @@ function SpreadsheetEditorSurface({
         contentRef.current,
         withCharts.sheets,
       );
+      const isHistoryNoop = sameSpreadsheetHistoryContent(
+        contentRef.current,
+        next,
+      );
       contentRef.current = next;
       acceptWorkbookContent(next);
       calculation.synchronizeWorkbook(next, operations);
       if (matchesRenderedWorkbook && onDerivedChange) onDerivedChange(next);
-      else spreadsheetCommandsRef.current?.setSpreadsheetContent(next);
+      else if (!isHistoryNoop) {
+        spreadsheetCommandsRef.current?.setSpreadsheetContent(next);
+      }
     },
     [
       acceptWorkbookContent,

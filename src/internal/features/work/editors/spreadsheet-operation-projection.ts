@@ -2,10 +2,11 @@ import type { Cell, CellMatrix, Op } from '@fortune-sheet/core';
 import {
   freezeImportedSpreadsheetCell,
   registerDerivedSpreadsheetMatrix,
-  spreadsheetMatrixProfile,
   type SpreadsheetMatrixCellChange,
+  spreadsheetMatrixProfile,
 } from '../work-spreadsheet-matrix-profile';
 import type { WorkSpreadsheetContent } from '../work-types';
+import { reconcileSpreadsheetRichTextCellEdit } from '../work-xlsx-rich-text-edit';
 
 export const MAXIMUM_INCREMENTAL_SPREADSHEET_OPERATIONS = 10_000;
 
@@ -14,36 +15,28 @@ export interface SpreadsheetOperationProjection {
   sheets: WorkSpreadsheetContent['sheets'];
 }
 
-/**
- * Reconciles a bounded Fortune operation batch against authenticated
- * controlled matrices. Only the outer matrix and affected rows/cells are
- * copied; structural or incomplete batches return null for the full-scan
- * compatibility path.
- */
-export function projectSpreadsheetSheetsFromFortuneOperations(
-  sheets: WorkSpreadsheetContent['sheets'],
-  sourceSheets: WorkSpreadsheetContent['sheets'],
+export interface SpreadsheetCellOperationCoordinate {
+  column: number;
+  row: number;
+}
+
+export function spreadsheetCellOperationKey(
+  row: number,
+  column: number,
+): string {
+  return `${row}:${column}`;
+}
+
+export function spreadsheetCellOperationCoordinates(
   operations: readonly Op[],
-): SpreadsheetOperationProjection | null {
-  if (
-    operations.length === 0 ||
-    operations.length > MAXIMUM_INCREMENTAL_SPREADSHEET_OPERATIONS ||
-    sheets.length !== sourceSheets.length
-  ) {
+): Map<string, Map<string, SpreadsheetCellOperationCoordinate>> | null {
+  if (operations.length > MAXIMUM_INCREMENTAL_SPREADSHEET_OPERATIONS) {
     return null;
   }
-
-  const changedSheets = spreadsheetSheetsById(sheets);
-  const controlledSheets = spreadsheetSheetsById(sourceSheets);
-  if (!changedSheets || !controlledSheets) return null;
-  if (
-    changedSheets.size !== sheets.length ||
-    controlledSheets.size !== sourceSheets.length
-  ) {
-    return null;
-  }
-
-  const coordinatesBySheet = new Map<string, Map<string, CellCoordinate>>();
+  const coordinatesBySheet = new Map<
+    string,
+    Map<string, SpreadsheetCellOperationCoordinate>
+  >();
   for (const operation of operations) {
     if (
       operation.op === 'insertRowCol' ||
@@ -51,13 +44,10 @@ export function projectSpreadsheetSheetsFromFortuneOperations(
       operation.op === 'addSheet' ||
       operation.op === 'deleteSheet' ||
       operation.path.length === 0 ||
-      !operation.id ||
-      !changedSheets.has(operation.id) ||
-      !controlledSheets.has(operation.id)
+      !operation.id
     ) {
       return null;
     }
-
     const root = operation.path[0];
     if (root === 'id' || root === 'celldata') return null;
     if (root !== 'data') continue;
@@ -72,7 +62,46 @@ export function projectSpreadsheetSheetsFromFortuneOperations(
     }
     const coordinates = coordinatesBySheet.get(operation.id) ?? new Map();
     coordinatesBySheet.set(operation.id, coordinates);
-    coordinates.set(`${row}:${column}`, { column, row });
+    coordinates.set(spreadsheetCellOperationKey(row, column), { column, row });
+  }
+  return coordinatesBySheet;
+}
+
+/**
+ * Reconciles a bounded Fortune operation batch against authenticated
+ * controlled matrices. Only the outer matrix and affected rows/cells are
+ * copied; structural or incomplete batches return null for the full-scan
+ * compatibility path.
+ */
+export function projectSpreadsheetSheetsFromFortuneOperations(
+  sheets: WorkSpreadsheetContent['sheets'],
+  sourceSheets: WorkSpreadsheetContent['sheets'],
+  operations: readonly Op[],
+): SpreadsheetOperationProjection | null {
+  if (operations.length === 0 || sheets.length !== sourceSheets.length) {
+    return null;
+  }
+
+  const changedSheets = spreadsheetSheetsById(sheets);
+  const controlledSheets = spreadsheetSheetsById(sourceSheets);
+  if (!changedSheets || !controlledSheets) return null;
+  if (
+    changedSheets.size !== sheets.length ||
+    controlledSheets.size !== sourceSheets.length
+  ) {
+    return null;
+  }
+
+  const coordinatesBySheet = spreadsheetCellOperationCoordinates(operations);
+  if (!coordinatesBySheet) return null;
+  for (const operation of operations) {
+    if (
+      !operation.id ||
+      !changedSheets.has(operation.id) ||
+      !controlledSheets.has(operation.id)
+    ) {
+      return null;
+    }
   }
 
   let affectedCellCount = 0;
@@ -114,15 +143,10 @@ export function projectSpreadsheetSheetsFromFortuneOperations(
   return { affectedCellCount, sheets: projectedSheets };
 }
 
-interface CellCoordinate {
-  column: number;
-  row: number;
-}
-
 function projectSpreadsheetMatrixCells(
   changed: WorkSpreadsheetContent['sheets'][number],
   source: WorkSpreadsheetContent['sheets'][number],
-  coordinates: Iterable<CellCoordinate>,
+  coordinates: Iterable<SpreadsheetCellOperationCoordinate>,
 ): { affectedCellCount: number; data: CellMatrix } | null {
   if (!changed.data || !source.data) return null;
   const data = source.data.slice();
@@ -141,7 +165,7 @@ function projectSpreadsheetMatrixCells(
     const nextCell =
       currentCell == null
         ? currentCell
-        : cloneControlledSpreadsheetCell(currentCell);
+        : cloneControlledSpreadsheetCell(currentCell, sourceRow?.[column]);
     let nextRow = mutableRows.get(row);
     if (!nextRow) {
       nextRow = sourceRow?.slice() ?? [];
@@ -169,8 +193,13 @@ function projectSpreadsheetMatrixCells(
   return { affectedCellCount: profileChanges.length, data };
 }
 
-function cloneControlledSpreadsheetCell(cell: Cell): Cell {
-  return freezeImportedSpreadsheetCell(structuredClone(cell));
+function cloneControlledSpreadsheetCell(
+  cell: Cell,
+  previous: Cell | null | undefined,
+): Cell {
+  return freezeImportedSpreadsheetCell(
+    structuredClone(reconcileSpreadsheetRichTextCellEdit(previous, cell)),
+  );
 }
 
 function spreadsheetSheetsById(

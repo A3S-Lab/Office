@@ -802,13 +802,26 @@ origins are emitted as their native palette reference; an edited run color
 falls back to explicit RGB rather than exporting stale theme or indexed
 metadata.
 
+Direct text insertion and deletion committed through the formula bar or the F2
+in-cell editor pass through the same bounded source-run reconciliation. A plain
+formula-bar value is rebuilt from the previous native runs; an F2 value is also
+rebuilt when Fortune drops source style or color metadata. Inserted text
+inherits the replaced run or the immediately preceding run, while unaffected
+runs keep their boundaries, font properties, and theme, indexed, automatic, or
+tint identities. Each commit publishes exactly one controlled revision and one
+Undo record. Exact cell-operation coordinates authenticate text changes.
+Operation-free text-stable callbacks may only restore the previous controlled
+runs, and structural row, column, or sheet operations never infer rich text
+from an old coordinate.
+
 Rich-text parsing is bounded before materialization: one cell may contain at
 most 32,767 characters and 512 runs, one import may materialize at most 10,000
 rich-text cells and 100,000 runs, and malformed or oversized candidates do not
 enter the rich-run model. Partial formatting also rejects collapsed selections,
 invalid UTF-16 surrogate boundaries, formula cells, and any result beyond the
-per-cell run limit. Rich-text insertion and editing outside the supported font
-attributes remain outside the public Spreadsheet surface.
+per-cell run limit. Direct editing accepts one contiguous text replacement per
+commit. Formatted rich-text paste, simultaneous disjoint edits, and non-font
+run objects remain outside the public Spreadsheet surface.
 
 Focused import/export/reopen and formatting tests protect shared and inline
 strings, semantic colors, exact whitespace, immutable updates, and number-format

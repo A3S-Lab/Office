@@ -6,13 +6,20 @@ import {
   spreadsheetMatrixProfile,
 } from '../work-spreadsheet-matrix-profile';
 import type { WorkSpreadsheetContent } from '../work-types';
+import {
+  reconcileSpreadsheetRichTextCellEdit,
+  restoreSpreadsheetRichTextCellRuns,
+  sameSpreadsheetRichTextCellText,
+} from '../work-xlsx-rich-text-edit';
 import { officeFontFamilies } from './office-font-families';
 import type { OfficeSelectOption } from './office-select';
+import { spreadsheetFontSizes } from './spreadsheet-font-size';
 import {
   MAXIMUM_INCREMENTAL_SPREADSHEET_OPERATIONS,
   projectSpreadsheetSheetsFromFortuneOperations,
+  spreadsheetCellOperationCoordinates,
+  spreadsheetCellOperationKey,
 } from './spreadsheet-operation-projection';
-import { spreadsheetFontSizes } from './spreadsheet-font-size';
 import { reconcileSpreadsheetTablesAfterFortune } from './spreadsheet-table-reconciliation';
 
 export interface SpreadsheetSelectionSummary {
@@ -366,12 +373,33 @@ export function spreadsheetSheetsFromFortune(
     );
   }
 
+  const operationCoordinatesBySheet =
+    spreadsheetCellOperationCoordinates(operations);
   const projected = sheets.map((sheet, index) => {
     const source =
       (sheet.id
         ? sourceSheets.find((candidate) => candidate.id === sheet.id)
         : undefined) ?? sourceSheets[index];
-    const cells = spreadsheetPopulatedCellData(sheet);
+    const operationCoordinates = sheet.id
+      ? operationCoordinatesBySheet?.get(sheet.id)
+      : undefined;
+    const cells = spreadsheetPopulatedCellData(sheet).map((entry) => {
+      if (!source || !entry.v) {
+        return entry;
+      }
+      const previous = spreadsheetCellAt(source, entry.r, entry.c);
+      const exactCellOperation = operationCoordinates?.has(
+        spreadsheetCellOperationKey(entry.r, entry.c),
+      );
+      const textStableNonStructuralCallback =
+        operationCoordinatesBySheet !== null &&
+        sameSpreadsheetRichTextCellText(previous, entry.v);
+      if (!exactCellOperation && !textStableNonStructuralCallback) return entry;
+      const reconciled = exactCellOperation
+        ? reconcileSpreadsheetRichTextCellEdit(previous, entry.v)
+        : restoreSpreadsheetRichTextCellRuns(previous, entry.v);
+      return reconciled === entry.v ? entry : { ...entry, v: reconciled };
+    });
     const { celldata: _cellData, data: _data, ...metadata } = sheet;
     const useMatrix = source
       ? source.data !== undefined
