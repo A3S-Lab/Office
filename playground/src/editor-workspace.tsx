@@ -58,6 +58,7 @@ import {
 import type { NoticeTone } from './playground-types';
 import { SPREADSHEET_DATE_TIME_FIXTURE } from './spreadsheet-date-time-fixture';
 import { SPREADSHEET_COPY_FROM_ABOVE_FIXTURE } from './spreadsheet-copy-from-above-fixture';
+import { SPREADSHEET_PATTERN_FILL_FIXTURE } from './spreadsheet-pattern-fill-fixture';
 import { SPREADSHEET_RICH_TEXT_FIXTURE } from './spreadsheet-rich-text-fixture';
 import {
   type PlaygroundPresentationElementStage,
@@ -126,6 +127,9 @@ export function EditorWorkspace({
   ).length;
   const spreadsheetDateTimeFixture =
     e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE &&
+    artifact.content.type === 'spreadsheet';
+  const spreadsheetPatternFillFixture =
+    e2eFixture === SPREADSHEET_PATTERN_FILL_FIXTURE &&
     artifact.content.type === 'spreadsheet';
   const spreadsheetCopyFromAboveFixture =
     e2eFixture === SPREADSHEET_COPY_FROM_ABOVE_FIXTURE &&
@@ -360,6 +364,17 @@ export function EditorWorkspace({
                   aria-live="polite"
                 >
                   日期与时间快捷输入 · 修订 {artifact.revision}
+                </output>
+              )}
+              {spreadsheetPatternFillFixture && (
+                <output
+                  className="playground-sparse-fixture-status"
+                  data-testid="spreadsheet-pattern-fill-status"
+                  data-pattern-count="17"
+                  data-revision={artifact.revision}
+                  aria-live="polite"
+                >
+                  原生 XLSX 图案填充 · 17 种样式 · 修订 {artifact.revision}
                 </output>
               )}
               {spreadsheetCopyFromAboveFixture && (

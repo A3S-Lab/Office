@@ -2,6 +2,7 @@ import type { Cell, Selection, Sheet } from '@fortune-sheet/core';
 import type { SpreadsheetGridSize } from '../spreadsheet-sparse';
 import type { SpreadsheetTextOrientationId } from '../work-spreadsheet-text-orientation';
 import type { WorkSpreadsheetContent } from '../work-types';
+import { XLSX_PATTERN_FILL_CELL_KEY } from '../work-xlsx-pattern-fill';
 import {
   createOfficeEditorExtension,
   type OfficeEditorCanCommands,
@@ -798,15 +799,23 @@ function formatCells(
   }
   if (!context.workbook || !context.targetSheetId) return false;
   if (attribute === 'ct' && !isSpreadsheetCellTypeFormat(value)) return false;
+  const range = spreadsheetLiveCommandRange(context);
+  const options = { id: context.targetSheetId };
   try {
-    context.workbook.setCellFormatByRange(
-      attribute,
-      value,
-      spreadsheetLiveCommandRange(context),
-      {
-        id: context.targetSheetId,
-      },
-    );
+    if (attribute === 'bg') {
+      context.workbook.batchCallApis([
+        {
+          name: 'setCellFormatByRange',
+          args: [attribute, value, range, options],
+        },
+        {
+          name: 'setCellFormatByRange',
+          args: [XLSX_PATTERN_FILL_CELL_KEY, undefined, range, options],
+        },
+      ]);
+      return true;
+    }
+    context.workbook.setCellFormatByRange(attribute, value, range, options);
     return true;
   } catch {
     return false;

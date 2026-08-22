@@ -20,6 +20,10 @@ import {
   resolveXlsxColor,
   type XlsxColorResolver,
 } from './work-xlsx-colors';
+import {
+  readXlsxPatternFill,
+  type XlsxPatternFill,
+} from './work-xlsx-pattern-fill';
 import { spreadsheetUnderlineCellValueFromXlsx } from './work-spreadsheet-underline';
 import {
   spreadsheetTextOrientationCellStyle,
@@ -54,6 +58,7 @@ export interface XlsxDirectCellStyle {
   border?: XlsxCellBorder;
   column: number;
   origin?: XlsxCellStyleOrigin;
+  patternFill?: XlsxPatternFill;
   row: number;
   style: Partial<Cell>;
 }
@@ -90,9 +95,18 @@ export function readXlsxDirectCellStyles(
     if (!coordinate || !xf) return [];
     const style = readDirectCellStyle(xf, fonts, fills, colors);
     const border = readDirectCellBorder(xf, borders, colors);
+    const patternFill = readDirectCellPatternFill(xf, fills, colors);
     const origin = readDirectCellStyleOrigin(xf, fonts, fills, borders, colors);
-    return Object.keys(style).length || border
-      ? [{ ...coordinate, border, origin, style }]
+    return Object.keys(style).length || border || patternFill
+      ? [
+          {
+            ...coordinate,
+            border,
+            origin,
+            ...(patternFill ? { patternFill } : {}),
+            style,
+          },
+        ]
       : [];
   });
 }
@@ -253,9 +267,27 @@ function readDirectFillStyle(
   colors: XlsxColorResolver,
 ): void {
   const pattern = directChild(fill, 'patternFill');
-  if (!pattern || attribute(pattern, 'patternType') !== 'solid') return;
-  const color = resolveXlsxColor(directChild(pattern, 'fgColor'), colors);
-  if (color) style.bg = color;
+  if (!pattern) return;
+  if (attribute(pattern, 'patternType') === 'solid') {
+    const color = resolveXlsxColor(directChild(pattern, 'fgColor'), colors);
+    if (color) style.bg = color;
+    return;
+  }
+  const patternFill = readXlsxPatternFill(pattern, colors);
+  if (patternFill) style.bg = patternFill.backgroundColor;
+}
+
+function readDirectCellPatternFill(
+  xf: Element,
+  fills: Element[],
+  colors: XlsxColorResolver,
+): XlsxPatternFill | undefined {
+  const fillId = nonNegativeInteger(attribute(xf, 'fillId')) ?? 0;
+  const fill = fills[fillId];
+  if (!fill || (fillId === 0 && !booleanAttribute(xf, 'applyFill'))) {
+    return undefined;
+  }
+  return readXlsxPatternFill(directChild(fill, 'patternFill'), colors);
 }
 
 function readDirectAlignmentStyle(

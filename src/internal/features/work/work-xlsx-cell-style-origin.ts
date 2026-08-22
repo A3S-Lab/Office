@@ -214,9 +214,9 @@ export function xlsxSemanticColorOriginSupported(
 export function prepareXlsxSemanticPalette(
   styles: Document,
   theme: Document | null,
-  origins: Iterable<XlsxCellStyleOrigin>,
+  colors: Iterable<XlsxSemanticColorOrigin>,
 ): PreparedXlsxSemanticPalette {
-  const candidates = semanticPaletteCandidates(origins);
+  const candidates = semanticPaletteCandidates(colors);
   const supportedTheme = new Map<number, string>();
   let themeChanged = false;
   const scheme = theme ? firstDescendant(theme, 'clrScheme') : undefined;
@@ -277,24 +277,22 @@ export function prepareXlsxSemanticPalette(
 }
 
 function semanticPaletteCandidates(
-  origins: Iterable<XlsxCellStyleOrigin>,
+  colors: Iterable<XlsxSemanticColorOrigin>,
 ): XlsxSemanticPalette {
   const theme = new Map<number, string>();
   const indexed = new Map<number, string>();
   const themeConflicts = new Set<number>();
   const indexedConflicts = new Set<number>();
-  for (const origin of origins) {
-    for (const color of xlsxCellStyleOriginColors(origin)) {
-      if (color.kind === 'automatic') continue;
-      const target = color.kind === 'theme' ? theme : indexed;
-      const conflicts =
-        color.kind === 'theme' ? themeConflicts : indexedConflicts;
-      const current = target.get(color.index);
-      if (current && current.toLowerCase() !== color.baseColor.toLowerCase()) {
-        conflicts.add(color.index);
-      } else if (!current) {
-        target.set(color.index, color.baseColor);
-      }
+  for (const color of colors) {
+    if (color.kind === 'automatic') continue;
+    const target = color.kind === 'theme' ? theme : indexed;
+    const conflicts =
+      color.kind === 'theme' ? themeConflicts : indexedConflicts;
+    const current = target.get(color.index);
+    if (current && current.toLowerCase() !== color.baseColor.toLowerCase()) {
+      conflicts.add(color.index);
+    } else if (!current) {
+      target.set(color.index, color.baseColor);
     }
   }
   for (const index of themeConflicts) theme.delete(index);
@@ -302,7 +300,7 @@ function semanticPaletteCandidates(
   return { indexed, theme };
 }
 
-function xlsxCellStyleOriginColors(
+export function xlsxCellStyleOriginSemanticColors(
   origin: XlsxCellStyleOrigin,
 ): XlsxSemanticColorOrigin[] {
   return [

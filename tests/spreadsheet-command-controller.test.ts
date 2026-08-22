@@ -17,6 +17,7 @@ import {
   type SpreadsheetWorkbookCommandPort,
 } from '../src/internal/features/work/editors/spreadsheet-command-controller';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
+import { XLSX_PATTERN_FILL_CELL_KEY } from '../src/internal/features/work/work-xlsx-pattern-fill';
 
 describe('spreadsheet command controller', () => {
   test('owns controlled workbook replacement in the document extension', () => {
@@ -96,13 +97,28 @@ describe('spreadsheet command controller', () => {
     expect(editor.commands.toggleCellFormat('it')).toBe(true);
     expect(calls).toEqual([{ attribute: 'bl', value: 1 }]);
     expect(toggles).toEqual(['it']);
-    expect(fixture.workbook.formats).toEqual([
-      {
-        attribute: 'bg',
-        range: { row: [0, 1], column: [0, 2] },
-        sheetId: 'sheet-1',
-        value: '#fff2cc',
-      },
+    expect(fixture.workbook.formats).toEqual([]);
+    expect(fixture.workbook.clearBatches).toEqual([
+      [
+        {
+          name: 'setCellFormatByRange',
+          args: [
+            'bg',
+            '#fff2cc',
+            { row: [0, 1], column: [0, 2] },
+            { id: 'sheet-1' },
+          ],
+        },
+        {
+          name: 'setCellFormatByRange',
+          args: [
+            XLSX_PATTERN_FILL_CELL_KEY,
+            undefined,
+            { row: [0, 1], column: [0, 2] },
+            { id: 'sheet-1' },
+          ],
+        },
+      ],
     ]);
   });
 

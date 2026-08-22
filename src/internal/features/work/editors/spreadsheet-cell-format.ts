@@ -35,6 +35,7 @@ import {
 } from './spreadsheet-cell-range';
 import { spreadsheetNumberFormatValue } from './spreadsheet-number-format';
 import { patchSpreadsheetRichTextFontRuns } from '../work-xlsx-rich-text';
+import { deleteXlsxPatternFill } from '../work-xlsx-pattern-fill';
 
 export const MAX_SPREADSHEET_CELL_FORMAT_CELLS = 10_000;
 
@@ -386,6 +387,7 @@ function formatCell(
   }
   if (patch.strike !== undefined) next.cl = patch.strike ? 1 : 0;
   if (patch.fillColor !== undefined) {
+    deleteXlsxPatternFill(next);
     if (patch.fillColor === null) delete next.bg;
     else next.bg = normalizeColor(patch.fillColor) ?? patch.fillColor;
   }

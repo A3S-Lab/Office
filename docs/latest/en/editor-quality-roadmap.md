@@ -1139,6 +1139,20 @@ desktop and compact real-clipboard Playwright, and four local-only A3S Test
 1.0.0 scenarios cover the path with clean diagnostics. Simultaneous disjoint
 edits and non-font inline objects remain open work.
 
+The thirty-fifth slice preserves all 17 native non-solid OOXML pattern fills.
+A dedicated cell field carries the exact pattern type, rendered foreground and
+background colors, and validated theme, indexed, automatic, or tint origins;
+Fortune `bg` remains the background projection and invalidates stale metadata
+after an explicit color change. A visible-cell Canvas hook paints the base and
+procedural overlay behind text, with conditional and table fills taking
+precedence and no hidden-cell raster work. Format Painter, Paste Special
+Formats, unrelated formatting, Yjs transport, export, and reopen preserve the
+field. New Fill, No Fill, Clear Formats, and built-in Cell Styles remove it.
+Malformed colors fail closed, and semantic palette conflicts export literal
+RGB. Focused Rstest, desktop/compact Canvas pixel evidence, and the local-only
+A3S Test 1.0.0 gallery gate cover every pattern identity with clean browser
+diagnostics; GitHub Actions and Pages do not install or invoke A3S Test.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

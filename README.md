@@ -124,7 +124,7 @@ baseline rather than one specific release.
 | Capability | A3S Office today | Traditional Office baseline |
 | --- | --- | --- |
 | Cells, sheets, navigation, and history | **Supported** — multiple sheets, sparse editing, search, clipboard, four-direction fill, exact formula/value copy from above, and undo/redo | Mature grid workflows across desktop and web |
-| Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, static date/time entry, contrast-safe font preview, native XLSX rich-text runs, selected-text font formatting, direct formula-bar/F2 insertion or deletion, and bounded authenticated formatted-HTML paste | Disjoint multi-edit rich-text authoring, themes, locale formats, and advanced style effects |
+| Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, all 17 native non-solid OOXML pattern fills, static date/time entry, contrast-safe font preview, native XLSX rich-text runs, selected-text font formatting, direct formula-bar/F2 insertion or deletion, and bounded authenticated formatted-HTML paste | Disjoint multi-edit rich-text authoring, broader themes, locale formats, gradients, and advanced style effects |
 | Ribbon and shortcuts | **Partial** — common Office-style Home/Data/View commands, grid-scoped shortcuts, and focused Font-dialog aliases | Larger command catalog and platform-specific accelerators |
 | Formulas and recalculation | **Partial** — dependency-aware calculation and common formula paths | Wider functions, arrays, volatile semantics, and calculation parity |
 | Tables, pivots, charts, and rules | **Partial** — native tables, pivots, charts, conditional formatting, and validation | Calculated columns, slicers, pivot charts, advanced rules, and analysis |
@@ -576,6 +576,15 @@ only that row. Data-validation regions remain compact in
 Protection ranges, passwordless editable ranges, and conditional formatting
 also remain compact and round-trip through native XLSX records without
 allocating every covered cell.
+
+Native XLSX pattern fills retain all 17 non-solid OOXML pattern identities plus
+their foreground and background RGB, theme, indexed, automatic, and tint color
+origins. Canvas draws them only for visible cells, behind text and below table
+or conditional-format fills. Format Painter, Paste Special Formats, unrelated
+formatting, Yjs collaboration, export, and reopen preserve the metadata; a new
+solid fill, No Fill, Clear Formats, or built-in Cell Style intentionally clears
+it. Malformed patterns fail closed, and semantic palette conflicts export
+literal RGB instead of a false theme or indexed reference.
 
 Worksheet Tables/ListObjects live in `sheet.tables` as semantic records with
 stable IDs, workbook-unique names, zero-based ranges, ordered columns, filters,

@@ -4,6 +4,7 @@ import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
 } from '../work-types';
+import { deleteXlsxPatternFill } from '../work-xlsx-pattern-fill';
 import {
   canSetSpreadsheetCellBorders,
   type SpreadsheetCellBorderFormat,
@@ -343,10 +344,12 @@ export function applySpreadsheetCellStyle(
       column <= normalizedRange.column[1];
       column += 1
     ) {
-      values[column] = {
+      const cell = {
         ...(values[column] ?? {}),
         ...definition.format,
       };
+      deleteXlsxPatternFill(cell);
+      values[column] = cell;
     }
   }
 

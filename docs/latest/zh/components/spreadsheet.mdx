@@ -376,21 +376,52 @@ Spreadsheet 命令焦点还给工作表网格。
 桌面/紧凑模式的按下状态都走同一条类型化格式命令路径。
 
 导入的 XLSX 直接颜色会在 Fortune 可见 RGB 旁保留经过校验的语义来源。保留范围明确限制
-为字体颜色、实心填充前景色和可见边框线颜色；记录内容包括 theme、indexed 或 automatic
-身份、来源调色板颜色、渲染颜色与有效 tint。该嵌套元数据与其他单元格字段一起通过扁平
-JSON/Yjs 单元格传输，不会因实时协作而丢失。
+为字体颜色、实心填充前景色、原生图案填充的前景色与背景色，以及可见边框线颜色；记录内容
+包括 theme、indexed 或 automatic 身份、来源调色板颜色、渲染颜色与有效 tint。该嵌套
+元数据与其他单元格字段一起通过扁平 JSON/Yjs 单元格传输，不会因实时协作而丢失。
 
 导出只会在当前可见 RGB 仍与导入渲染值相同，且调色板槽位可以无冲突重建时复用语义来源。
 因此只修改“加粗”仍可保留 `<color theme="4" tint="0.5">`、
 `<fgColor indexed="0">` 或 `<color auto="1">`。若用户修改了可见颜色、两个导入来源对
-同一调色板槽位提出不同颜色，或颜色来自尚未支持的图案、渐变或差异格式，导出会使用显式
-RGB，不会写出错误的语义引用。
+同一调色板槽位提出不同颜色，或颜色来自尚未支持的渐变或差异格式，导出会使用显式 RGB，
+不会写出错误的语义引用。
 
 聚焦 Rstest 使用真实 XLSX 完成导入、无关编辑、导出、重新打开、XML 身份与渲染 RGB
 往返。`tests/e2e/spreadsheet-font-colors-shortcuts.acl` 使用 A3S Test 1.0.0、standalone
 agent-browser 0.26.0、可访问性与空控制台/页面错误证据验证两种功能区密度。该套件只作为
 本地发布门禁；GitHub Actions 与 Pages 使用等价的桌面/紧凑 Playwright 测试，不安装也
 不调用 A3S Test。
+
+## 原生 XLSX 图案填充
+
+Spreadsheet 会保留完整的 OOXML 非实心 `patternType` 集合：
+
+| 类型 | 原生图案名称 |
+| --- | --- |
+| 深色线条与网格 | `darkDown`、`darkHorizontal`、`darkUp`、`darkVertical`、`darkGrid`、`darkTrellis` |
+| 浅色线条与网格 | `lightDown`、`lightHorizontal`、`lightUp`、`lightVertical`、`lightGrid`、`lightTrellis` |
+| 密度图案 | `gray0625`、`gray125`、`lightGray`、`mediumGray`、`darkGray` |
+
+每个导入单元格只保存一个经过校验的 `a3sXlsxPatternFill` 值，其中包含准确图案类型、渲染后的
+前景色与背景色，以及可选的 theme、indexed、automatic 或 tint 来源。Fortune `bg` 仍是普通
+背景色投影。只有该投影继续匹配导入背景色时，图案元数据才生效，因此过期元数据不会覆盖用户
+明确选择的新颜色。
+
+工作表外观按条件格式填充、Table 样式、原生图案填充、普通单元格背景的顺序决定。Canvas
+钩子只拦截 Fortune 对每个可见单元格的第一次背景绘制，在文字下方绘制背景与裁剪后的过程式
+图案，并立即恢复上下文；隐藏或视口外单元格不会产生绘制工作。
+
+格式刷和“选择性粘贴格式”会复制图案字段；无关的字体、框线、对齐、值、公式或数字格式修改
+会保留它，Yjs 实时协作则把它作为原生单元格属性传输。选择新填充、“无填充”、“清除格式”
+或内置单元格样式会在同一次受控更新中移除图案。导出会写回准确原生图案，并且只在渲染颜色与
+调色板槽位仍一致时复用前景色和背景色的语义身份；发生冲突时回退为显式 RGB。缺失颜色元素
+采用 OOXML 的黑白默认值，已出现但非法的颜色则安全失败。
+
+在 Playground 打开 `?e2e=spreadsheet-pattern-fill` 可查看全部 17 种图案。聚焦 Rstest 覆盖
+导入、Canvas 顺序、格式刷、选择性粘贴、Yjs、调色板冲突，以及导入、编辑、导出、重开保真度。
+`visual-tests/spreadsheet-pattern-fill.functional.spec.ts` 提供桌面与紧凑 Canvas 像素证据。
+确定性的 `tests/e2e/spreadsheet-pattern-fill.acl` 通过本地 A3S Test 1.0.0 门禁采集截图、
+可访问性、控制台和页面错误；GitHub Actions 与 Pages 不安装也不调用 A3S Test。
 
 ## 文字方向与行列显隐
 

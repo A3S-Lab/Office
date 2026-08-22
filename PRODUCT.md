@@ -364,6 +364,19 @@ become native inline strings after the same proof. Clipboard HTML is discarded
 after parsing and capped at 256,000 characters; mismatched, malformed,
 structural, or oversized input falls back to inherited or plain text without
 authorizing styles.
+The thirty-fifth milestone preserves every native non-solid OOXML Spreadsheet
+pattern fill. A dedicated cell field carries the exact pattern identity,
+rendered foreground/background colors, and validated theme, indexed,
+automatic, or tint origins while Fortune `bg` remains the background-color
+projection. The visible-cell Canvas hook paints the base and procedural overlay
+behind text without rasterizing hidden cells; conditional and table fills stay
+authoritative. Format Painter, Paste Special Formats, unrelated formatting,
+Yjs transport, export, and reopen retain the metadata, while an explicit fill,
+No Fill, Clear Formats, or built-in Cell Style clears it. Unsupported or
+malformed metadata fails closed, and conflicting semantic palettes export
+literal RGB. Focused Rstest, desktop/compact Canvas evidence, and a local-only
+A3S Test 1.0.0 gallery gate cover all 17 pattern identities without adding A3S
+Test to GitHub Actions or Pages.
 
 ## Product Rules
 

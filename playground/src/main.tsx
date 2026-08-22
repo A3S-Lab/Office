@@ -67,6 +67,11 @@ import {
   SPREADSHEET_PASTE_SPECIAL_FIXTURE,
 } from './spreadsheet-paste-special-fixture';
 import {
+  createSpreadsheetPatternFillArtifact,
+  SPREADSHEET_PATTERN_FILL_ARTIFACT_ID,
+  SPREADSHEET_PATTERN_FILL_FIXTURE,
+} from './spreadsheet-pattern-fill-fixture';
+import {
   createSpreadsheetRichTextArtifact,
   SPREADSHEET_RICH_TEXT_ARTIFACT_ID,
   SPREADSHEET_RICH_TEXT_FIXTURE,
@@ -113,9 +118,11 @@ function Playground() {
                 ? SPREADSHEET_COPY_FROM_ABOVE_ARTIFACT_ID
                 : e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE
                   ? SPREADSHEET_DATE_TIME_ARTIFACT_ID
-                  : e2eFixture === SPREADSHEET_RICH_TEXT_FIXTURE
-                    ? SPREADSHEET_RICH_TEXT_ARTIFACT_ID
-                    : null,
+                  : e2eFixture === SPREADSHEET_PATTERN_FILL_FIXTURE
+                    ? SPREADSHEET_PATTERN_FILL_ARTIFACT_ID
+                    : e2eFixture === SPREADSHEET_RICH_TEXT_FIXTURE
+                      ? SPREADSHEET_RICH_TEXT_ARTIFACT_ID
+                      : null,
   );
   const [collaborationDemoArtifactId, setCollaborationDemoArtifactId] =
     useState<string | null>(null);
@@ -633,6 +640,9 @@ function createInitialArtifacts(e2eFixture: string | null): OfficeArtifact[] {
   }
   if (e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE) {
     return [createSpreadsheetDateTimeArtifact(), ...artifacts];
+  }
+  if (e2eFixture === SPREADSHEET_PATTERN_FILL_FIXTURE) {
+    return [createSpreadsheetPatternFillArtifact(), ...artifacts];
   }
   if (e2eFixture === SPREADSHEET_RICH_TEXT_FIXTURE) {
     return [createSpreadsheetRichTextArtifact(), ...artifacts];

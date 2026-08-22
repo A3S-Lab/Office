@@ -1,4 +1,5 @@
 import type { Cell } from '@fortune-sheet/core';
+import { XLSX_PATTERN_FILL_CELL_KEY } from '../work-xlsx-pattern-fill';
 
 export const spreadsheetCellFormatAttributes = [
   'bl',
@@ -14,7 +15,8 @@ export const spreadsheetCellFormatAttributes = [
   'tr',
   'ct',
   'bg',
-] as const satisfies readonly (keyof Cell)[];
+  XLSX_PATTERN_FILL_CELL_KEY,
+] as const;
 
 export type SpreadsheetCellFormatAttribute =
   (typeof spreadsheetCellFormatAttributes)[number];
@@ -160,11 +162,12 @@ function spreadsheetCellFormatSnapshot(
   cell: Cell | null,
 ): SpreadsheetCellFormatSnapshot {
   const snapshot = {} as SpreadsheetCellFormatSnapshot;
+  const source = cell as (Cell & Record<string, unknown>) | null;
   for (const attribute of spreadsheetCellFormatAttributes) {
     snapshot[attribute] =
       attribute === 'ct'
         ? spreadsheetNumberFormatSnapshot(cell?.ct)
-        : cloneSpreadsheetFormatValue(cell?.[attribute]);
+        : cloneSpreadsheetFormatValue(source?.[attribute]);
   }
   return snapshot;
 }

@@ -1,0 +1,89 @@
+suite "office-spreadsheet-pattern-fill" {
+    version = 1
+
+    scenario "render-pattern-gallery-at-desktop-width" {
+        name = "Render all native XLSX pattern fills at desktop width"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-pattern-gallery" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-pattern-fill"
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "all-patterns-are-declared" {
+            visible = css("[data-testid='spreadsheet-pattern-fill-status'][data-pattern-count='17'][data-revision='1']")
+        }
+
+        expect "pattern-status-is-visible" {
+            text = "原生 XLSX 图案填充 · 17 种样式"
+        }
+
+        screenshot "desktop-pattern-gallery" {
+            path = "screenshots/spreadsheet-pattern-fill-desktop.png"
+        }
+
+        accessibility "desktop-pattern-accessibility" {
+            path = "evidence/spreadsheet-pattern-fill-desktop.json"
+            interactive = true
+        }
+
+        console "desktop-pattern-console" {
+            path = "diagnostics/spreadsheet-pattern-fill-desktop-console.json"
+            clear = false
+        }
+
+        page_errors "desktop-pattern-page-errors" {
+            path = "diagnostics/spreadsheet-pattern-fill-desktop-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "render-pattern-gallery-at-compact-width" {
+        name = "Render all native XLSX pattern fills at compact width"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-compact-pattern-gallery" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-pattern-fill"
+        }
+
+        wait "compact-spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        screenshot "compact-pattern-gallery" {
+            path = "screenshots/spreadsheet-pattern-fill-compact.png"
+        }
+
+        accessibility "compact-pattern-accessibility" {
+            path = "evidence/spreadsheet-pattern-fill-compact.json"
+            interactive = true
+        }
+
+        console "compact-pattern-console" {
+            path = "diagnostics/spreadsheet-pattern-fill-compact-console.json"
+            clear = false
+        }
+
+        page_errors "compact-pattern-page-errors" {
+            path = "diagnostics/spreadsheet-pattern-fill-compact-page-errors.json"
+            clear = false
+        }
+    }
+}

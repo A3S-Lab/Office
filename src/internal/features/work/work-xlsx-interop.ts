@@ -34,8 +34,13 @@ import {
 import {
   prepareXlsxSemanticPalette,
   xlsxCellStyleOrigin,
-  type XlsxCellStyleOrigin,
+  xlsxCellStyleOriginSemanticColors,
+  type XlsxSemanticColorOrigin,
 } from './work-xlsx-cell-style-origin';
+import {
+  activeXlsxPatternFill,
+  xlsxPatternFillSemanticColors,
+} from './work-xlsx-pattern-fill';
 import {
   type FortuneConditionalFormatRule,
   readXlsxConditionalFormats,
@@ -260,7 +265,7 @@ export async function patchXlsxSheetFeatures(
     ? prepareXlsxSemanticPalette(
         styles,
         theme,
-        spreadsheetXlsxStyleOrigins(content),
+        spreadsheetXlsxSemanticColors(content),
       )
     : undefined;
   const differentialFormats = styles
@@ -340,20 +345,25 @@ export async function patchXlsxSheetFeatures(
   return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
 }
 
-function spreadsheetXlsxStyleOrigins(
+function spreadsheetXlsxSemanticColors(
   content: WorkSpreadsheetContent,
-): XlsxCellStyleOrigin[] {
-  const origins: XlsxCellStyleOrigin[] = [];
+): XlsxSemanticColorOrigin[] {
+  const colors: XlsxSemanticColorOrigin[] = [];
   for (const sheet of content.sheets) {
     for (const [, row] of sparseArrayEntries(sheet.data)) {
       for (const [, cell] of sparseArrayEntries(row)) {
         const origin = xlsxCellStyleOrigin(cell);
-        if (origin) origins.push(origin);
+        if (origin) colors.push(...xlsxCellStyleOriginSemanticColors(origin));
+        colors.push(
+          ...xlsxPatternFillSemanticColors(activeXlsxPatternFill(cell)),
+        );
       }
     }
-    origins.push(...xlsxRichTextStyleOrigins(sheet));
+    for (const origin of xlsxRichTextStyleOrigins(sheet)) {
+      colors.push(...xlsxCellStyleOriginSemanticColors(origin));
+    }
   }
-  return origins;
+  return colors;
 }
 
 async function readWorksheetParts(

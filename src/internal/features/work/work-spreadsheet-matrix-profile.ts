@@ -1,6 +1,7 @@
 import type { Cell, CellMatrix } from '@fortune-sheet/core';
 import { sameSpreadsheetHistoryValue } from './spreadsheet-history-value';
 import { sparseArrayIndexes } from './spreadsheet-sparse';
+import { XLSX_PATTERN_FILL_CELL_KEY } from './work-xlsx-pattern-fill';
 
 export const SPREADSHEET_SHOWN_COMMENT_CELLS_PROPERTY =
   '__a3sShownCommentCells';
@@ -45,6 +46,15 @@ const spreadsheetMatrixProfiles = new WeakMap<
  * freezing or cloning every populated cell during editor initialization.
  */
 export function freezeImportedSpreadsheetCell(cell: Cell): Cell {
+  const patternFill = (cell as unknown as Record<string, unknown>)[
+    XLSX_PATTERN_FILL_CELL_KEY
+  ];
+  if (patternFill && typeof patternFill === 'object') {
+    const record = patternFill as Record<string, unknown>;
+    freezeObject(record.foregroundColorOrigin);
+    freezeObject(record.backgroundColorOrigin);
+  }
+  freezeObject(patternFill);
   freezeObject(cell.mc);
   freezeObject(cell.ct?.s);
   freezeObject(cell.ct);

@@ -39,6 +39,10 @@ import {
   createXlsxColorResolver,
   type XlsxColorResolver,
 } from './work-xlsx-colors';
+import {
+  activeXlsxPatternFill,
+  type XlsxPatternFill,
+} from './work-xlsx-pattern-fill';
 
 const fontChildOrder = [
   'name',
@@ -162,7 +166,12 @@ export class XlsxDirectCellStyleWriter {
     );
     const origin = xlsxCellStyleOrigin(cell);
     const fontId = this.fontId(baseFontId, cell, origin?.fontColor);
-    const fillId = this.fillId(baseFillId, cell, origin?.fillColor);
+    const fillId = this.fillId(
+      baseFillId,
+      cell,
+      origin?.fillColor,
+      activeXlsxPatternFill(cell),
+    );
     const borderId = this.borderId(baseBorderId, border, origin?.borderColors);
     const alignment = directXlsxAlignment(cell);
     const alignmentChanged = Boolean(
@@ -303,34 +312,65 @@ export class XlsxDirectCellStyleWriter {
     baseFillId: number,
     cell: Cell,
     colorOrigin?: XlsxSemanticColorOrigin,
+    patternFill?: XlsxPatternFill,
   ): number {
-    if (cell.bg === undefined) return baseFillId;
-    const color = xlsxRgbColor(cell.bg);
-    if (!color) return baseFillId;
+    if (!patternFill && cell.bg === undefined) return baseFillId;
+    const solidColor = patternFill ? null : xlsxRgbColor(cell.bg);
+    if (!patternFill && !solidColor) return baseFillId;
     const fills = directChildren(this.fills, 'fill');
     const baseIndex = fills[baseFillId] ? baseFillId : 0;
     const basePattern = directChild(fills[baseIndex], 'patternFill');
-    const semanticColor = activeXlsxSemanticColorOrigin(
-      colorOrigin,
-      color,
+    const foregroundColor = patternFill?.foregroundColor ?? solidColor!;
+    const backgroundColor = patternFill?.backgroundColor;
+    const patternType = patternFill?.patternType ?? 'solid';
+    const foregroundOrigin = activeXlsxSemanticColorOrigin(
+      patternFill?.foregroundColorOrigin ?? colorOrigin,
+      foregroundColor,
       this.semanticPalette,
     );
+    const backgroundOrigin = patternFill
+      ? activeXlsxSemanticColorOrigin(
+          patternFill.backgroundColorOrigin,
+          patternFill.backgroundColor,
+          this.semanticPalette,
+        )
+      : undefined;
     if (
-      attribute(basePattern ?? fills[baseIndex], 'patternType') === 'solid' &&
-      (semanticColor
+      attribute(basePattern ?? fills[baseIndex], 'patternType') ===
+        patternType &&
+      (foregroundOrigin
         ? xlsxColorElementMatchesOrigin(
             directChild(basePattern ?? fills[baseIndex], 'fgColor'),
-            semanticColor,
+            foregroundOrigin,
           )
         : xlsxColorMatches(
             directChild(basePattern ?? fills[baseIndex], 'fgColor'),
-            color,
+            foregroundColor,
             this.colors,
-          ))
+            '#000000',
+          )) &&
+      (!patternFill ||
+        (backgroundOrigin
+          ? xlsxColorElementMatchesOrigin(
+              directChild(basePattern ?? fills[baseIndex], 'bgColor'),
+              backgroundOrigin,
+            )
+          : xlsxColorMatches(
+              directChild(basePattern ?? fills[baseIndex], 'bgColor'),
+              backgroundColor!,
+              this.colors,
+              '#ffffff',
+            )))
     ) {
       return baseIndex;
     }
-    const key = `${color}:${xlsxSemanticColorOriginKey(semanticColor)}`;
+    const key = [
+      patternType,
+      foregroundColor,
+      xlsxSemanticColorOriginKey(foregroundOrigin),
+      backgroundColor ?? '',
+      xlsxSemanticColorOriginKey(backgroundOrigin),
+    ].join(':');
     const cached = this.generatedFills.get(key);
     if (cached !== undefined) return cached;
     const fill = this.styles.createElementNS(
@@ -341,18 +381,23 @@ export class XlsxDirectCellStyleWriter {
       this.styles.documentElement.namespaceURI,
       'patternFill',
     );
-    pattern.setAttribute('patternType', 'solid');
-    const foreground = this.styles.createElementNS(
-      this.styles.documentElement.namespaceURI,
+    pattern.setAttribute('patternType', patternType);
+    const foreground = this.fillColorElement(
       'fgColor',
+      foregroundColor,
+      foregroundOrigin,
     );
-    foreground.setAttribute('rgb', color);
-    if (semanticColor) applyXlsxSemanticColorOrigin(foreground, semanticColor);
-    const background = this.styles.createElementNS(
-      this.styles.documentElement.namespaceURI,
-      'bgColor',
-    );
-    background.setAttribute('indexed', '64');
+    const background = patternFill
+      ? this.fillColorElement(
+          'bgColor',
+          patternFill.backgroundColor,
+          backgroundOrigin,
+        )
+      : this.styles.createElementNS(
+          this.styles.documentElement.namespaceURI,
+          'bgColor',
+        );
+    if (!patternFill) background.setAttribute('indexed', '64');
     pattern.append(foreground, background);
     fill.append(pattern);
     const index = directChildren(this.fills, 'fill').length;
@@ -361,6 +406,21 @@ export class XlsxDirectCellStyleWriter {
     this.changed = true;
     this.updateCounts();
     return index;
+  }
+
+  private fillColorElement(
+    name: 'bgColor' | 'fgColor',
+    color: string,
+    origin?: XlsxSemanticColorOrigin,
+  ): Element {
+    const element = this.styles.createElementNS(
+      this.styles.documentElement.namespaceURI,
+      name,
+    );
+    const rgb = xlsxRgbColor(color);
+    if (rgb) element.setAttribute('rgb', rgb);
+    if (origin) applyXlsxSemanticColorOrigin(element, origin);
+    return element;
   }
 
   private borderId(

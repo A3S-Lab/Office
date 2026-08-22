@@ -1,4 +1,5 @@
 import type { Cell } from '@fortune-sheet/core';
+import { XLSX_PATTERN_FILL_CELL_KEY } from '../work-xlsx-pattern-fill';
 import type {
   SpreadsheetClipboardCell,
   SpreadsheetPasteContent,
@@ -14,7 +15,10 @@ export type SpreadsheetPasteCellResult =
   | null
   | typeof spreadsheetPasteCellInvalid;
 
-type MutableCell = Cell & { hi?: number };
+type MutableCell = Cell & {
+  hi?: number;
+  [XLSX_PATTERN_FILL_CELL_KEY]?: unknown;
+};
 type UnknownRecord = Record<string, unknown>;
 
 const spreadsheetCellContentKeys = [
@@ -39,7 +43,8 @@ const spreadsheetCellFormatKeys = [
   'un',
   'tr',
   'rt',
-] as const satisfies readonly (keyof Cell)[];
+  XLSX_PATTERN_FILL_CELL_KEY,
+] as const satisfies readonly (keyof MutableCell)[];
 
 export function pasteSpreadsheetSpecialCell({
   source,
@@ -279,9 +284,10 @@ function replaceCellFormatting(
   target: MutableCell,
   source: Cell | null | undefined,
 ): void {
+  const sourceCell = source as MutableCell | null | undefined;
   for (const key of spreadsheetCellFormatKeys) {
-    if (source?.[key] === undefined) delete target[key];
-    else target[key] = cloneValue(source[key]) as never;
+    if (sourceCell?.[key] === undefined) delete target[key];
+    else target[key] = cloneValue(sourceCell[key]) as never;
   }
   const inline = Array.isArray(target.ct?.s)
     ? structuredClone(target.ct.s)
@@ -357,8 +363,9 @@ function spreadsheetLiteralCellValue(
 
 function spreadsheetCellHasFormatting(cell: Cell | null | undefined): boolean {
   if (!cell) return false;
+  const formattedCell = cell as MutableCell;
   return Boolean(
-    spreadsheetCellFormatKeys.some((key) => cell[key] !== undefined) ||
+    spreadsheetCellFormatKeys.some((key) => formattedCell[key] !== undefined) ||
       cell.lo !== undefined ||
       (cell as MutableCell).hi !== undefined ||
       cell.ct?.fa !== undefined ||
