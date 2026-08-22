@@ -11,6 +11,11 @@ import {
   type XlsxDirectCellStyleWriter,
 } from './work-xlsx-cell-style-writer';
 import {
+  readXlsxSemanticColorOrigin,
+  type XlsxBorderColorOrigins,
+  type XlsxCellStyleOrigin,
+} from './work-xlsx-cell-style-origin';
+import {
   createXlsxColorResolver,
   resolveXlsxColor,
   type XlsxColorResolver,
@@ -48,6 +53,7 @@ const xlsxCellBorderStyles = new Set<XlsxCellBorderStyle>([
 export interface XlsxDirectCellStyle {
   border?: XlsxCellBorder;
   column: number;
+  origin?: XlsxCellStyleOrigin;
   row: number;
   style: Partial<Cell>;
 }
@@ -84,8 +90,9 @@ export function readXlsxDirectCellStyles(
     if (!coordinate || !xf) return [];
     const style = readDirectCellStyle(xf, fonts, fills, colors);
     const border = readDirectCellBorder(xf, borders, colors);
+    const origin = readDirectCellStyleOrigin(xf, fonts, fills, borders, colors);
     return Object.keys(style).length || border
-      ? [{ ...coordinate, border, style }]
+      ? [{ ...coordinate, border, origin, style }]
       : [];
   });
 }
@@ -151,6 +158,66 @@ function readDirectCellStyle(
   const alignment = directChild(xf, 'alignment');
   if (alignment) readDirectAlignmentStyle(style, alignment);
   return style;
+}
+
+function readDirectCellStyleOrigin(
+  xf: Element,
+  fonts: Element[],
+  fills: Element[],
+  borders: Element[],
+  colors: XlsxColorResolver,
+): XlsxCellStyleOrigin | undefined {
+  const fontId = nonNegativeInteger(attribute(xf, 'fontId')) ?? 0;
+  const font = fonts[fontId];
+  const fontColor =
+    font && (fontId !== 0 || booleanAttribute(xf, 'applyFont'))
+      ? readXlsxSemanticColorOrigin(directChild(font, 'color'), colors)
+      : undefined;
+
+  const fillId = nonNegativeInteger(attribute(xf, 'fillId')) ?? 0;
+  const fill = fills[fillId];
+  const pattern = fill ? directChild(fill, 'patternFill') : undefined;
+  const fillColor =
+    pattern &&
+    attribute(pattern, 'patternType') === 'solid' &&
+    (fillId !== 0 || booleanAttribute(xf, 'applyFill'))
+      ? readXlsxSemanticColorOrigin(directChild(pattern, 'fgColor'), colors)
+      : undefined;
+
+  const borderId = nonNegativeInteger(attribute(xf, 'borderId')) ?? 0;
+  const border = borders[borderId];
+  const borderColors: XlsxBorderColorOrigins = {};
+  if (border && (borderId !== 0 || booleanAttribute(xf, 'applyBorder'))) {
+    for (const side of [
+      'bottom',
+      'diagonal',
+      'left',
+      'right',
+      'top',
+    ] as const) {
+      const line = directChild(border, side);
+      const lineStyle = line ? attribute(line, 'style') : null;
+      if (
+        !line ||
+        !lineStyle ||
+        !xlsxCellBorderStyles.has(lineStyle as XlsxCellBorderStyle)
+      )
+        continue;
+      const color = readXlsxSemanticColorOrigin(
+        directChild(line, 'color'),
+        colors,
+      );
+      if (color) borderColors[side] = color;
+    }
+  }
+
+  if (!fontColor && !fillColor && !Object.keys(borderColors).length)
+    return undefined;
+  return {
+    ...(fontColor ? { fontColor } : {}),
+    ...(fillColor ? { fillColor } : {}),
+    ...(Object.keys(borderColors).length ? { borderColors } : {}),
+  };
 }
 
 function readDirectFontStyle(

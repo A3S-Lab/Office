@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -88,6 +88,7 @@
     "playground:typecheck": "tsc --noEmit -p playground/tsconfig.json",
     "playground:visual": "playwright test --config playwright.config.ts",
     "playground:visual:spreadsheet-data-validation": "playwright test visual-tests/spreadsheet-data-validation.functional.spec.ts --config playwright.config.ts",
+    "playground:visual:spreadsheet-font-colors-shortcuts": "playwright test visual-tests/spreadsheet-font-colors-shortcuts.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-hyperlink": "playwright test visual-tests/spreadsheet-hyperlink.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-ribbon": "playwright test visual-tests/spreadsheet-ribbon.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-underline": "playwright test visual-tests/spreadsheet-underline.functional.spec.ts --config playwright.config.ts",
@@ -136,6 +137,8 @@
     "test:e2e:spreadsheet-ribbon:check": "a3s-test check tests/e2e/spreadsheet-ribbon-alignment.acl --json",
     "test:e2e:spreadsheet-orientation-visibility": "a3s-test run tests/e2e/spreadsheet-ribbon-orientation-visibility.acl --json",
     "test:e2e:spreadsheet-orientation-visibility:check": "a3s-test check tests/e2e/spreadsheet-ribbon-orientation-visibility.acl --json",
+    "test:e2e:spreadsheet-font-colors-shortcuts": "a3s-test run tests/e2e/spreadsheet-font-colors-shortcuts.acl --json",
+    "test:e2e:spreadsheet-font-colors-shortcuts:check": "a3s-test check tests/e2e/spreadsheet-font-colors-shortcuts.acl --json",
     "test:e2e:spreadsheet-cell-style": "a3s-test run tests/e2e/spreadsheet-cell-style.acl --json",
     "test:e2e:spreadsheet-cell-style:check": "a3s-test check tests/e2e/spreadsheet-cell-style.acl --json",
     "test:e2e:spreadsheet-font-size-border-shortcuts": "a3s-test run tests/e2e/spreadsheet-font-size-border-shortcuts.acl --json",

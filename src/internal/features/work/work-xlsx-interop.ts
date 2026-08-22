@@ -1,5 +1,6 @@
 import type { Sheet } from '@fortune-sheet/core';
 import JSZip from 'jszip';
+import { sparseArrayEntries } from './spreadsheet-sparse';
 import {
   attribute,
   directChild,
@@ -29,6 +30,11 @@ import {
   writeXlsxDirectCellStyles,
   XlsxDirectCellStyleWriter,
 } from './work-xlsx-cell-styles';
+import {
+  prepareXlsxSemanticPalette,
+  xlsxCellStyleOrigin,
+  type XlsxCellStyleOrigin,
+} from './work-xlsx-cell-style-origin';
 import {
   type FortuneConditionalFormatRule,
   readXlsxConditionalFormats,
@@ -202,11 +208,21 @@ export async function patchXlsxSheetFeatures(
   const styles = archive.has('xl/styles.xml')
     ? await archive.xml('xl/styles.xml')
     : null;
+  const theme = archive.has('xl/theme/theme1.xml')
+    ? await archive.xml('xl/theme/theme1.xml')
+    : null;
+  const semanticPalette = styles
+    ? prepareXlsxSemanticPalette(
+        styles,
+        theme,
+        spreadsheetXlsxStyleOrigins(content),
+      )
+    : undefined;
   const differentialFormats = styles
     ? new XlsxDifferentialFormatWriter(styles)
     : undefined;
   const directCellStyles = styles
-    ? new XlsxDirectCellStyleWriter(styles)
+    ? new XlsxDirectCellStyleWriter(styles, theme, semanticPalette?.palette)
     : undefined;
   const cellProtection = styles
     ? new XlsxCellProtectionWriter(styles)
@@ -262,12 +278,34 @@ export async function patchXlsxSheetFeatures(
     styles &&
     (differentialFormats?.changed ||
       directCellStyles?.changed ||
-      cellProtection?.changed)
+      cellProtection?.changed ||
+      semanticPalette?.stylesChanged)
   ) {
     zip.file('xl/styles.xml', new XMLSerializer().serializeToString(styles));
   }
+  if (theme && semanticPalette?.themeChanged) {
+    zip.file(
+      'xl/theme/theme1.xml',
+      new XMLSerializer().serializeToString(theme),
+    );
+  }
 
   return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
+}
+
+function spreadsheetXlsxStyleOrigins(
+  content: WorkSpreadsheetContent,
+): XlsxCellStyleOrigin[] {
+  const origins: XlsxCellStyleOrigin[] = [];
+  for (const sheet of content.sheets) {
+    for (const [, row] of sparseArrayEntries(sheet.data)) {
+      for (const [, cell] of sparseArrayEntries(row)) {
+        const origin = xlsxCellStyleOrigin(cell);
+        if (origin) origins.push(origin);
+      }
+    }
+  }
+  return origins;
 }
 
 async function readWorksheetParts(

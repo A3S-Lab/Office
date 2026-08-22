@@ -4,6 +4,28 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.20.0 - 2026-08-22
+
+- Added WPS/Excel `Ctrl+2`, `Ctrl+3`, and `Ctrl+4` aliases for Spreadsheet
+  Bold, Italic, and Underline. The shared command catalog now owns visible
+  shortcut copy, `aria-keyshortcuts`, editor keymaps, and the typed formatting
+  path across desktop and compact Ribbon layouts.
+- Added Automatic Color and No Fill actions to the Spreadsheet font and fill
+  palettes. They remove direct Fortune `fc` and `bg` properties instead of
+  writing replacement RGB values, preserve one-step Undo, and return the live
+  command path to the worksheet grid.
+- Preserved imported XLSX theme, indexed, automatic, and tint identity for
+  direct font, solid-fill, and border colors across unrelated style edits,
+  Yjs collaboration transport, export, and reopen. Export reconstructs the
+  referenced palette slots only while rendered RGB and source palettes agree;
+  changed values or conflicting slots degrade safely to explicit RGB.
+- Added focused Rstest and real XLSX import/edit/export/reopen coverage,
+  desktop and compact Playwright regression, and a local A3S Test 1.0.0 suite
+  with empty console and page-error evidence. GitHub Actions and Pages continue
+  to exclude A3S Test.
+- Kept the documentation version picker inside the viewport with bounded
+  scrolling as the frozen release list grows.
+
 ## 0.19.0 - 2026-08-22
 
 - Added a keyboard-accessible WPS Spreadsheet Text Orientation menu with

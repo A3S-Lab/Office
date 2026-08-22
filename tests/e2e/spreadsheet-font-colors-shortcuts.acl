@@ -1,0 +1,293 @@
+suite "office-spreadsheet-font-colors-shortcuts" {
+    version = 1
+
+    scenario "desktop-font-colors-and-wps-shortcuts" {
+        name = "Reset direct spreadsheet colors and use WPS font aliases on desktop"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-font-colors-shortcuts-desktop"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "bold-alias-metadata" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-keyshortcuts='Control+B Meta+B Control+2']")
+        }
+
+        expect "italic-alias-metadata" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='斜体'][aria-keyshortcuts='Control+I Meta+I Control+3']")
+        }
+
+        expect "underline-alias-metadata" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='下划线'][aria-keyshortcuts='Control+U Meta+U Control+4']")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "create-worksheet" {
+            key = "Shift+F11"
+        }
+
+        press "toggle-bold-alias" {
+            key = "Control+2"
+        }
+
+        expect "bold-alias-applied" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='true']")
+        }
+
+        press "toggle-italic-alias" {
+            key = "Control+3"
+        }
+
+        expect "italic-alias-applied" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='斜体'][aria-pressed='true']")
+        }
+
+        press "toggle-underline-alias" {
+            key = "Control+4"
+        }
+
+        expect "underline-alias-applied" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='下划线'][aria-pressed='true']")
+        }
+
+        click "open-text-color" {
+            target = role("button", "文字颜色")
+        }
+
+        expect "automatic-color-action-visible" {
+            visible = css("[role='dialog'][aria-label='文字颜色'] .work-office-color-reset[data-kind='automatic']")
+        }
+
+        click "choose-red-text" {
+            target = role("option", "颜色 #ff0000")
+        }
+
+        click "reopen-text-color" {
+            target = role("button", "文字颜色")
+        }
+
+        expect "red-text-selected" {
+            visible = css("[role='dialog'][aria-label='文字颜色'] [role='option'][aria-label='颜色 #ff0000'][aria-selected='true']")
+        }
+
+        click "reset-automatic-color" {
+            target = role("button", "自动颜色")
+        }
+
+        expect "text-reset-returned-to-grid" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        click "verify-text-reset" {
+            target = role("button", "文字颜色")
+        }
+
+        expect "red-text-no-longer-selected" {
+            visible = css("[role='dialog'][aria-label='文字颜色'] [role='option'][aria-label='颜色 #ff0000'][aria-selected='false']")
+        }
+
+        press "close-text-color" {
+            key = "Escape"
+        }
+
+        click "open-fill-color" {
+            target = role("button", "填充颜色")
+        }
+
+        expect "no-fill-action-visible" {
+            visible = css("[role='dialog'][aria-label='填充颜色'] .work-office-color-reset[data-kind='none']")
+        }
+
+        click "choose-yellow-fill" {
+            target = role("option", "颜色 #ffff00")
+        }
+
+        click "reopen-fill-color" {
+            target = role("button", "填充颜色")
+        }
+
+        expect "yellow-fill-selected" {
+            visible = css("[role='dialog'][aria-label='填充颜色'] [role='option'][aria-label='颜色 #ffff00'][aria-selected='true']")
+        }
+
+        click "reset-no-fill" {
+            target = role("button", "无填充")
+        }
+
+        expect "fill-reset-returned-to-grid" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        click "verify-fill-reset" {
+            target = role("button", "填充颜色")
+        }
+
+        expect "yellow-fill-no-longer-selected" {
+            visible = css("[role='dialog'][aria-label='填充颜色'] [role='option'][aria-label='颜色 #ffff00'][aria-selected='false']")
+        }
+
+        accessibility "desktop-accessibility" {
+            path = "evidence/desktop-accessibility.json"
+            interactive = true
+        }
+
+        console "desktop-console" {
+            path = "diagnostics/desktop-console.json"
+            clear = false
+        }
+
+        page_errors "desktop-page-errors" {
+            path = "diagnostics/desktop-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "compact-font-colors-and-wps-shortcuts" {
+        name = "Keep spreadsheet color resets and WPS font aliases usable in compact ribbon"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-font-colors-shortcuts-compact"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "compact-font-group-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-group[aria-label='字体'][data-priority='high']")
+        }
+
+        expect "compact-color-actions-visible" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='文字颜色']")
+        }
+
+        expect "compact-fill-actions-visible" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='填充颜色']")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "create-worksheet" {
+            key = "Shift+F11"
+        }
+
+        press "toggle-bold-alias" {
+            key = "Control+2"
+        }
+
+        press "toggle-italic-alias" {
+            key = "Control+3"
+        }
+
+        press "toggle-underline-alias" {
+            key = "Control+4"
+        }
+
+        expect "compact-font-aliases-applied" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='下划线'][aria-keyshortcuts='Control+U Meta+U Control+4'][aria-pressed='true']")
+        }
+
+        click "open-text-color" {
+            target = role("button", "文字颜色")
+        }
+
+        click "choose-red-text" {
+            target = role("option", "颜色 #ff0000")
+        }
+
+        click "reopen-text-color" {
+            target = role("button", "文字颜色")
+        }
+
+        click "reset-automatic-color" {
+            target = role("button", "自动颜色")
+        }
+
+        expect "compact-text-reset-returned-to-grid" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        click "open-fill-color" {
+            target = role("button", "填充颜色")
+        }
+
+        click "choose-yellow-fill" {
+            target = role("option", "颜色 #ffff00")
+        }
+
+        click "reopen-fill-color" {
+            target = role("button", "填充颜色")
+        }
+
+        click "reset-no-fill" {
+            target = role("button", "无填充")
+        }
+
+        expect "compact-fill-reset-returned-to-grid" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        click "show-compact-fill-menu" {
+            target = role("button", "填充颜色")
+        }
+
+        expect "compact-no-fill-visible" {
+            visible = css("[role='dialog'][aria-label='填充颜色'] .work-office-color-reset[data-kind='none']")
+        }
+
+        accessibility "compact-accessibility" {
+            path = "evidence/compact-accessibility.json"
+            interactive = true
+        }
+
+        console "compact-console" {
+            path = "diagnostics/compact-console.json"
+            clear = false
+        }
+
+        page_errors "compact-page-errors" {
+            path = "diagnostics/compact-page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -249,6 +249,18 @@ grid-scoped `Cmd/Ctrl+9`, `Cmd/Ctrl+0`, `Cmd/Ctrl+Shift+9`, and
 before allocation at 10,000 rows or 1,000 columns and never captures host
 inputs, active editing, popovers, modal controls, read-only views, or repeated
 keydown events.
+The twenty-sixth milestone completes the common WPS direct-color reset and
+font-emphasis alias path. Home and Font adds Automatic Color for text and No
+Fill for cell backgrounds; each action removes the direct Fortune `fc` or `bg`
+property instead of replacing it with a hard-coded RGB value. Grid-scoped
+`Ctrl+2`, `Ctrl+3`, and `Ctrl+4` join the existing Bold, Italic, and Underline
+commands, with one catalog owning visible copy, `aria-keyshortcuts`, and the
+editor keymap across desktop and compact layouts. Imported direct XLSX font,
+solid-fill, and border colors retain theme, indexed, automatic, and tint origin
+metadata across unrelated cell-style edits and Yjs transport. Export rebuilds
+matching source palette slots and emits semantic references only while their
+rendered RGB is unchanged; edited values or conflicting palette identities
+fall back to explicit RGB instead of exporting a misleading reference.
 
 ## Product Rules
 

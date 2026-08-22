@@ -114,9 +114,9 @@ export const spreadsheetCommandCatalog = {
     label: '加粗',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
-      label: 'Cmd/Ctrl+B',
-      aria: 'Control+B Meta+B',
-      editor: ['Mod-b'],
+      label: 'Cmd/Ctrl+B 或 Ctrl+2',
+      aria: 'Control+B Meta+B Control+2',
+      editor: ['Mod-b', 'Control-2'],
     },
   },
   italic: {
@@ -124,9 +124,9 @@ export const spreadsheetCommandCatalog = {
     label: '斜体',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
-      label: 'Cmd/Ctrl+I',
-      aria: 'Control+I Meta+I',
-      editor: ['Mod-i'],
+      label: 'Cmd/Ctrl+I 或 Ctrl+3',
+      aria: 'Control+I Meta+I Control+3',
+      editor: ['Mod-i', 'Control-3'],
     },
   },
   underline: {
@@ -134,9 +134,9 @@ export const spreadsheetCommandCatalog = {
     label: '下划线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
-      label: 'Cmd/Ctrl+U',
-      aria: 'Control+U Meta+U',
-      editor: ['Mod-u'],
+      label: 'Cmd/Ctrl+U 或 Ctrl+4',
+      aria: 'Control+U Meta+U Control+4',
+      editor: ['Mod-u', 'Control-4'],
     },
   },
   strike: {

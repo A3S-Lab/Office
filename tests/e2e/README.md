@@ -237,6 +237,20 @@ the desktop/compact screenshots and Canvas pixel comparisons because the pinned
 standalone adapter's CDP screenshot command is not a reliable bounded gate.
 The suite remains local-only and is not referenced by GitHub Actions.
 
+The WPS Spreadsheet direct-color resets and font-emphasis aliases have a
+focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-font-colors-shortcuts:check
+bun run test:e2e:spreadsheet-font-colors-shortcuts
+```
+
+It covers Automatic Color, No Fill, `Ctrl+2`, `Ctrl+3`, and `Ctrl+4`, exact
+shortcut metadata, real pressed-state changes, final worksheet-grid focus,
+both desktop and compact Ribbon densities, accessibility, and clean browser
+diagnostics. The suite runs only through the local A3S Test release gate;
+GitHub Actions keeps the equivalent Rstest and Playwright coverage.
+
 The native Spreadsheet Table lifecycle has a focused local gate:
 
 ```bash

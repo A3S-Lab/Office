@@ -410,6 +410,49 @@
   padding: 8px;
 }
 
+.work-office-color-reset {
+  display: flex;
+  width: 100%;
+  min-height: 30px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  padding: 4px 6px 7px;
+  border: 0;
+  border-bottom: 1px solid var(--a3s-line);
+  outline: 0;
+  background: transparent;
+  color: var(--a3s-ink);
+  font: inherit;
+  font-size: 10px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.work-office-color-reset:hover,
+.work-office-color-reset:focus-visible {
+  background: var(--a3s-panel-soft);
+  color: var(--work-office-control-accent, var(--a3s-blue));
+}
+
+.work-office-color-reset-swatch {
+  display: grid;
+  width: 19px;
+  height: 16px;
+  flex: 0 0 19px;
+  place-items: center;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 3px;
+  background: var(--a3s-panel);
+  color: var(--a3s-red);
+}
+
+.work-office-color-reset[data-kind="automatic"]
+  .work-office-color-reset-swatch {
+  background: #111827;
+  box-shadow: inset 0 0 0 2px var(--a3s-panel);
+}
+
 .work-office-color-palette {
   display: grid;
   gap: 6px;
@@ -550,6 +593,20 @@
 
   .work-office-color-palette {
     gap: 7px;
+  }
+
+  .work-office-color-reset {
+    min-height: 44px;
+    margin-bottom: 8px;
+    padding: 8px 9px 9px;
+    border-radius: 7px 7px 0 0;
+    font-size: 11px;
+  }
+
+  .work-office-color-reset-swatch {
+    width: 24px;
+    height: 20px;
+    flex-basis: 24px;
   }
 
   .work-office-color-section-title {

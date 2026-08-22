@@ -1,4 +1,4 @@
-import { Check, ChevronDown } from 'lucide-react';
+import { Ban, Check, ChevronDown } from 'lucide-react';
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -85,6 +85,7 @@ export function OfficeColorPicker({
   disabled = false,
   compact = false,
   className = '',
+  resetAction,
   triggerLabel,
   triggerIcon,
 }: {
@@ -94,6 +95,11 @@ export function OfficeColorPicker({
   disabled?: boolean;
   compact?: boolean;
   className?: string;
+  resetAction?: {
+    kind: 'automatic' | 'none';
+    label: string;
+    onSelect: () => void;
+  };
   triggerLabel?: string;
   triggerIcon?: ReactNode;
 }) {
@@ -215,6 +221,25 @@ export function OfficeColorPicker({
     >
       {(close) => (
         <>
+          {resetAction ? (
+            <button
+              type="button"
+              className="work-office-color-reset"
+              data-kind={resetAction.kind}
+              onClick={() => {
+                close();
+                resetAction.onSelect();
+              }}
+            >
+              <span
+                className="work-office-color-reset-swatch"
+                aria-hidden="true"
+              >
+                {resetAction.kind === 'none' ? <Ban size={13} /> : null}
+              </span>
+              <span>{resetAction.label}</span>
+            </button>
+          ) : null}
           <div
             className="work-office-color-palette"
             role="listbox"

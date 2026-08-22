@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@rstest/core';
+import JSZip from 'jszip';
 import {
   applySpreadsheetCellStyle,
   canApplySpreadsheetCellStyle,
@@ -13,8 +14,17 @@ import {
 } from '../src/internal/features/work/work-file-io';
 import { createWorkArtifact } from '../src/internal/features/work/work-templates';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
-import { parseXml } from '../src/internal/features/work/work-ooxml-package';
-import { readXlsxDirectCellStyles } from '../src/internal/features/work/work-xlsx-cell-styles';
+import {
+  attribute,
+  descendants,
+  directChild,
+  directChildren,
+  parseXml,
+} from '../src/internal/features/work/work-ooxml-package';
+import {
+  readXlsxDirectCellStyles,
+  XlsxDirectCellStyleWriter,
+} from '../src/internal/features/work/work-xlsx-cell-styles';
 
 describe('spreadsheet cell styles', () => {
   test('owns the common WPS built-in style catalog', () => {
@@ -289,6 +299,29 @@ describe('spreadsheet cell styles', () => {
           top: { color: '#cc3300', style: 'medium' },
         },
         column: 0,
+        origin: {
+          borderColors: {
+            top: {
+              baseColor: '#cc3300',
+              index: 5,
+              kind: 'theme',
+              renderedColor: '#cc3300',
+            },
+          },
+          fillColor: {
+            baseColor: '#102030',
+            index: 0,
+            kind: 'indexed',
+            renderedColor: '#102030',
+          },
+          fontColor: {
+            baseColor: '#336699',
+            index: 4,
+            kind: 'theme',
+            renderedColor: '#8cb3d9',
+            tint: 0.5,
+          },
+        },
         row: 0,
         style: {
           bg: '#102030',
@@ -296,6 +329,117 @@ describe('spreadsheet cell styles', () => {
         },
       },
     ]);
+  });
+
+  test('keeps semantic XLSX colors when their rendered appearance is unchanged', () => {
+    const { styles, theme } = semanticColorDocuments();
+    const writer = new XlsxDirectCellStyleWriter(styles, theme);
+
+    expect(
+      writer.styleId(
+        1,
+        { bg: '#102030', fc: '#8cb3d9' },
+        { top: { color: '#cc3300', style: 'medium' } },
+      ),
+    ).toBe(1);
+    expect(writer.changed).toBe(false);
+
+    const serialized = new XMLSerializer().serializeToString(styles);
+    expect(serialized).toContain('<color theme="4" tint="0.5"/>');
+    expect(serialized).toContain('<fgColor indexed="0"/>');
+    expect(serialized).toContain('<color theme="5"/>');
+  });
+
+  test('retains semantic colors while writing an unrelated font change', () => {
+    const { styles, theme } = semanticColorDocuments();
+    const writer = new XlsxDirectCellStyleWriter(styles, theme);
+
+    const styleId = writer.styleId(
+      1,
+      { bg: '#102030', bl: 1, fc: '#8cb3d9' },
+      { top: { color: '#cc3300', style: 'medium' } },
+    );
+    expect(styleId).toBe(2);
+
+    const cellXfs = directChild(styles.documentElement, 'cellXfs');
+    const generated = directChildren(cellXfs ?? styles.documentElement, 'xf')[
+      styleId
+    ];
+    const fontId = Number(generated?.getAttribute('fontId'));
+    const fonts = directChild(styles.documentElement, 'fonts');
+    const font = directChildren(fonts ?? styles.documentElement, 'font')[
+      fontId
+    ];
+    const color = font ? directChild(font, 'color') : undefined;
+    expect(color?.getAttribute('theme')).toBe('4');
+    expect(color?.getAttribute('tint')).toBe('0.5');
+    expect(font ? directChild(font, 'b') : undefined).toBeDefined();
+  });
+
+  test('round-trips semantic XLSX colors after an unrelated edit', async () => {
+    const imported = await importWorkFile(await semanticColorWorkbookFile());
+    if (imported.content.type !== 'spreadsheet')
+      throw new Error('Expected an imported spreadsheet.');
+    const sheet = imported.content.sheets[0];
+    const cell = sheet?.data?.[0]?.[0];
+    if (!sheet || !cell) throw new Error('Expected the styled source cell.');
+    sheet.data = [[{ ...cell, bl: 1 }]];
+
+    const blob = await createWorkArtifactBlob(imported);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const stylesSource = await archive.file('xl/styles.xml')?.async('text');
+    const themeSource = await archive
+      .file('xl/theme/theme1.xml')
+      ?.async('text');
+    if (!stylesSource || !themeSource)
+      throw new Error('Expected native XLSX style and theme parts.');
+    const styles = parseXml(stylesSource, 'xl/styles.xml');
+    const theme = parseXml(themeSource, 'xl/theme/theme1.xml');
+
+    expect(
+      descendants(styles, 'font').some((font) => {
+        const color = directChild(font, 'color');
+        return (
+          Boolean(directChild(font, 'b')) &&
+          attribute(color ?? font, 'theme') === '4' &&
+          attribute(color ?? font, 'tint') === '0.5'
+        );
+      }),
+    ).toBe(true);
+    expect(
+      descendants(styles, 'fgColor').some(
+        (color) => attribute(color, 'indexed') === '0',
+      ),
+    ).toBe(true);
+    expect(
+      descendants(styles, 'top').some((top) => {
+        const color = directChild(top, 'color');
+        return (
+          attribute(top, 'style') === 'medium' &&
+          attribute(color ?? top, 'theme') === '5'
+        );
+      }),
+    ).toBe(true);
+    expect(
+      attribute(
+        directChild(
+          descendants(theme, 'clrScheme')[0] ?? theme.documentElement,
+          'accent1',
+        )?.firstElementChild ?? theme.documentElement,
+        'val',
+      ),
+    ).toBe('336699');
+
+    const reopened = await importWorkFile(
+      new File([blob], 'semantic-colors-round-trip.xlsx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'spreadsheet')
+      throw new Error('Expected a reopened spreadsheet.');
+    expect(reopened.content.sheets[0]?.data?.[0]?.[0]).toMatchObject({
+      bg: '#102030',
+      bl: 1,
+      fc: '#8cb3d9',
+    });
   });
 
   test('preserves every native XLSX underline variant for Fortune rendering', () => {
@@ -501,6 +645,63 @@ describe('spreadsheet cell styles', () => {
     ]);
   });
 });
+
+function semanticColorDocuments(): { styles: Document; theme: Document } {
+  return {
+    styles: parseXml(
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font/><font><color theme="4" tint="0.5"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor indexed="0"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top style="medium"><color theme="5"/></top><bottom/><diagonal/></border></borders><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1"/></cellXfs><colors><indexedColors><rgbColor rgb="FF102030"/></indexedColors></colors></styleSheet>',
+      'xl/styles.xml',
+    ),
+    theme: parseXml(
+      '<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:themeElements><a:clrScheme name="WPS"><a:accent1><a:srgbClr val="336699"/></a:accent1><a:accent2><a:srgbClr val="CC3300"/></a:accent2></a:clrScheme></a:themeElements></a:theme>',
+      'xl/theme/theme1.xml',
+    ),
+  };
+}
+
+async function semanticColorWorkbookFile(): Promise<File> {
+  const XLSX = await import('xlsx');
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.aoa_to_sheet([[1]]),
+    'Semantic colors',
+  );
+  const archive = await JSZip.loadAsync(
+    XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer,
+  );
+  const { styles } = semanticColorDocuments();
+  const worksheetSource = await archive
+    .file('xl/worksheets/sheet1.xml')
+    ?.async('text');
+  const themeSource = await archive.file('xl/theme/theme1.xml')?.async('text');
+  if (!worksheetSource || !themeSource)
+    throw new Error('Expected generated worksheet and theme parts.');
+  const worksheet = parseXml(worksheetSource, 'xl/worksheets/sheet1.xml');
+  descendants(worksheet, 'c')[0]?.setAttribute('s', '1');
+  archive.file(
+    'xl/worksheets/sheet1.xml',
+    new XMLSerializer().serializeToString(worksheet),
+  );
+  archive.file('xl/styles.xml', new XMLSerializer().serializeToString(styles));
+  const theme = parseXml(themeSource, 'xl/theme/theme1.xml');
+  const scheme = descendants(theme, 'clrScheme')[0];
+  const accent1 = scheme ? directChild(scheme, 'accent1') : undefined;
+  const accent2 = scheme ? directChild(scheme, 'accent2') : undefined;
+  accent1?.firstElementChild?.setAttribute('val', '336699');
+  accent2?.firstElementChild?.setAttribute('val', 'CC3300');
+  archive.file(
+    'xl/theme/theme1.xml',
+    new XMLSerializer().serializeToString(theme),
+  );
+  return new File(
+    [await archive.generateAsync({ type: 'arraybuffer' })],
+    'semantic-colors.xlsx',
+    {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    },
+  );
+}
 
 function workbook(): WorkSpreadsheetContent {
   return {

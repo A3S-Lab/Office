@@ -294,6 +294,63 @@ describe('spreadsheet command controller', () => {
     expect(blocked.defaultPrevented).toBe(false);
   });
 
+  test('routes Ctrl+2, Ctrl+3, and Ctrl+4 through the shared font commands', () => {
+    const fixture = commandFixture();
+    fixture.context.toolbarCell = { bl: 0, it: 0, un: 0 };
+    const editor = spreadsheetEditor(fixture.context);
+    const shortcuts = [
+      ['Digit2', '2'],
+      ['Digit3', '3'],
+      ['Digit4', '4'],
+    ].map(
+      ([code, key]) =>
+        new KeyboardEvent('keydown', {
+          cancelable: true,
+          code,
+          ctrlKey: true,
+          key,
+        }),
+    );
+
+    expect(shortcuts.map((event) => editor.handleKeyDown(event))).toEqual([
+      true,
+      true,
+      true,
+    ]);
+    expect(shortcuts.every((event) => event.defaultPrevented)).toBe(true);
+    expect(fixture.workbook.formats).toEqual([
+      {
+        attribute: 'bl',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: 1,
+      },
+      {
+        attribute: 'it',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: 1,
+      },
+      {
+        attribute: 'un',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: 1,
+      },
+    ]);
+
+    const input = document.createElement('input');
+    const blocked = new KeyboardEvent('keydown', {
+      cancelable: true,
+      code: 'Digit2',
+      ctrlKey: true,
+      key: '2',
+    });
+    Object.defineProperty(blocked, 'target', { value: input });
+    expect(editor.handleKeyDown(blocked)).toBe(false);
+    expect(blocked.defaultPrevented).toBe(false);
+  });
+
   test('owns WPS outline and clear-border shortcuts on the active grid', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [{ row: [0, 1], column: [0, 2] }];

@@ -563,7 +563,10 @@ interaction model.
   per-cell mixed-size stepping, native rectangle compaction, a 10,000-cell
   bound, and one-step Undo, a WPS-style Underline split control with single,
   double, single-accounting, and double-accounting styles, exact Format Cells
-  and XLSX round trips, and active-style-aware `Cmd/Ctrl+U` toggling, a
+  and XLSX round trips, active-style-aware `Cmd/Ctrl+U` toggling, and WPS
+  `Ctrl+2`, `Ctrl+3`, and `Ctrl+4` aliases for Bold, Italic, and Underline;
+  Automatic Color and No Fill remove direct text and background colors instead
+  of hard-coding replacements, a
   keyboard-accessible WPS Text Orientation menu with horizontal, both 45-degree
   angles, stacked vertical, rotate-up, and rotate-down choices, exact Fortune
   `rt` / `tr='3'` and OOXML 0–180 / 255 round trips, a 10,000-cell guard, and
@@ -613,8 +616,10 @@ interaction model.
   keyboard navigation, a 10,000-cell bound, blank-cell styling, per-cell border
   semantics, current-style recognition without private markers, one-step
   history, and direct XLSX font, fill, alignment, wrap, rotation, border, and
-  number-format XF round trips with theme, indexed, and tint colors normalized
-  to stable RGB,
+  number-format XF round trips; imported theme, indexed, automatic, and tint
+  identities for direct font, solid-fill, and border colors survive unrelated
+  edits and Yjs transport when the rendered RGB and palette slot still agree,
+  while changed or conflicting colors safely export as explicit RGB,
   a View and Window Freeze Panes menu for current-cell, top-row, first-column,
   and unfreeze patterns with XLSX round trips, and visible F9 workbook
   recalculation,
@@ -1528,6 +1533,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.20.0 documentation](https://a3s-lab.github.io/Office/docs/0.20.0/)
 - [A3S Office 0.19.0 documentation](https://a3s-lab.github.io/Office/docs/0.19.0/)
 - [A3S Office 0.18.0 documentation](https://a3s-lab.github.io/Office/docs/0.18.0/)
 - [A3S Office 0.17.0 documentation](https://a3s-lab.github.io/Office/docs/0.17.0/)

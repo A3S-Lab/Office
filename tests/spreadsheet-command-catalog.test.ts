@@ -46,6 +46,21 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     group: 'clipboard',
     tab: 'home',
   });
+  expect(spreadsheetCommandCatalog.bold.shortcut).toEqual({
+    aria: 'Control+B Meta+B Control+2',
+    editor: ['Mod-b', 'Control-2'],
+    label: 'Cmd/Ctrl+B 或 Ctrl+2',
+  });
+  expect(spreadsheetCommandCatalog.italic.shortcut).toEqual({
+    aria: 'Control+I Meta+I Control+3',
+    editor: ['Mod-i', 'Control-3'],
+    label: 'Cmd/Ctrl+I 或 Ctrl+3',
+  });
+  expect(spreadsheetCommandCatalog.underline.shortcut).toEqual({
+    aria: 'Control+U Meta+U Control+4',
+    editor: ['Mod-u', 'Control-4'],
+    label: 'Cmd/Ctrl+U 或 Ctrl+4',
+  });
   expect(spreadsheetCommandCatalog.strike.location).toEqual({
     area: 'ribbon',
     group: 'font',

@@ -29,6 +29,7 @@ import type {
 } from './work-types';
 import { xlsxWorksheetChartsToSheet } from './work-xlsx-charts';
 import { fortuneBorderInfoFromXlsxCells } from './work-xlsx-cell-borders';
+import { withXlsxCellStyleOrigin } from './work-xlsx-cell-style-origin';
 import { importXlsxDefinedNames } from './work-xlsx-defined-names';
 import {
   createSpreadsheetFormulaMetadata,
@@ -280,15 +281,18 @@ export async function importWorkSpreadsheetFile(
         directCellStyles.delete(spreadsheetCellKey(row, column));
         data[row] ??= [];
         data[row][column] = freezeImportedSpreadsheetCell(
-          fortuneCellFromXlsx(
-            source,
-            row,
-            column,
-            id,
-            hyperlink,
-            comment,
-            XLSX,
-            directCellStyle?.style,
+          withXlsxCellStyleOrigin(
+            fortuneCellFromXlsx(
+              source,
+              row,
+              column,
+              id,
+              hyperlink,
+              comment,
+              XLSX,
+              directCellStyle?.style,
+            ),
+            directCellStyle?.origin,
           ),
         );
         if (source.f) formulaCells.push({ column, row });
@@ -308,15 +312,20 @@ export async function importWorkSpreadsheetFile(
         sheetProgressStart + sheetProgressSize * 0.95,
       );
     }
-    for (const { column, row, style } of directCellStyles.values()) {
+    for (const { column, origin, row, style } of directCellStyles.values()) {
       rowCount = Math.max(rowCount, row + 1);
       columnCount = Math.max(columnCount, column + 1);
       data[row] ??= [];
       const existing = data[row][column];
-      data[row][column] = freezeImportedSpreadsheetCell({
-        ...(existing ?? {}),
-        ...style,
-      });
+      data[row][column] = freezeImportedSpreadsheetCell(
+        withXlsxCellStyleOrigin(
+          {
+            ...(existing ?? {}),
+            ...style,
+          },
+          origin,
+        ),
+      );
       if (!existing) entryIndex += 1;
     }
     populatedCellCount += entryIndex;

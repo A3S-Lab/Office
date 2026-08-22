@@ -48,7 +48,21 @@ export function createSpreadsheetKeyboardShortcutExtension(): OfficeEditorExtens
           commands.selectCellRange,
           'all',
         ),
-      'Mod-b': ({ can, commands, context }, event) =>
+      [spreadsheetCommandCatalog.bold.shortcut.editor[0]]: (
+        { can, commands, context },
+        event,
+      ) =>
+        runSpreadsheetCellFormatShortcut(
+          event,
+          context,
+          can.setCellFormat,
+          commands.setCellFormat,
+          'bl',
+        ),
+      [spreadsheetCommandCatalog.bold.shortcut.editor[1]]: (
+        { can, commands, context },
+        event,
+      ) =>
         runSpreadsheetCellFormatShortcut(
           event,
           context,
@@ -69,7 +83,21 @@ export function createSpreadsheetKeyboardShortcutExtension(): OfficeEditorExtens
           commands.fillSelectedCells,
           'down',
         ),
-      'Mod-i': ({ can, commands, context }, event) =>
+      [spreadsheetCommandCatalog.italic.shortcut.editor[0]]: (
+        { can, commands, context },
+        event,
+      ) =>
+        runSpreadsheetCellFormatShortcut(
+          event,
+          context,
+          can.setCellFormat,
+          commands.setCellFormat,
+          'it',
+        ),
+      [spreadsheetCommandCatalog.italic.shortcut.editor[1]]: (
+        { can, commands, context },
+        event,
+      ) =>
         runSpreadsheetCellFormatShortcut(
           event,
           context,
@@ -105,7 +133,21 @@ export function createSpreadsheetKeyboardShortcutExtension(): OfficeEditorExtens
           can.cutSelection,
           commands.cutSelection,
         ),
-      'Mod-u': ({ can, commands, context }, event) =>
+      [spreadsheetCommandCatalog.underline.shortcut.editor[0]]: (
+        { can, commands, context },
+        event,
+      ) =>
+        runSpreadsheetCellFormatShortcut(
+          event,
+          context,
+          can.setCellFormat,
+          commands.setCellFormat,
+          'un',
+        ),
+      [spreadsheetCommandCatalog.underline.shortcut.editor[1]]: (
+        { can, commands, context },
+        event,
+      ) =>
         runSpreadsheetCellFormatShortcut(
           event,
           context,

@@ -121,3 +121,29 @@ test('discards an unapplied custom color when the palette is reopened', async ()
     screen.getByRole('textbox', { name: '自定义颜色值' }),
   ).not.toHaveAttribute('aria-invalid');
 });
+
+test('runs an optional reset action and restores focus to the trigger', () => {
+  const selected: string[] = [];
+  const resets: string[] = [];
+  render(
+    <OfficeColorPicker
+      ariaLabel="填充颜色"
+      value="#fff2cc"
+      onValueChange={(value) => selected.push(value)}
+      resetAction={{
+        kind: 'none',
+        label: '无填充',
+        onSelect: () => resets.push('none'),
+      }}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '填充颜色' });
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole('button', { name: '无填充' }));
+
+  expect(resets).toEqual(['none']);
+  expect(selected).toEqual([]);
+  expect(screen.queryByRole('dialog', { name: '填充颜色' })).toBeNull();
+  expect(trigger).toHaveFocus();
+});

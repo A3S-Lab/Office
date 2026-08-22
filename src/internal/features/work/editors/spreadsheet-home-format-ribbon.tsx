@@ -206,6 +206,11 @@ export function SpreadsheetFontRibbonGroup({
         value={textColor}
         disabled={!can.setCellFormat('fc', textColor)}
         onValueChange={(value) => commands.setCellFormat('fc', value)}
+        resetAction={{
+          kind: 'automatic',
+          label: '自动颜色',
+          onSelect: () => commands.setCellFormat('fc', undefined),
+        }}
       />
       <OfficeColorPicker
         compact
@@ -214,6 +219,11 @@ export function SpreadsheetFontRibbonGroup({
         value={fillColor}
         disabled={!can.setCellFormat('bg', fillColor)}
         onValueChange={(value) => commands.setCellFormat('bg', value)}
+        resetAction={{
+          kind: 'none',
+          label: '无填充',
+          onSelect: () => commands.setCellFormat('bg', undefined),
+        }}
       />
       <SpreadsheetBorderRibbon can={can} commands={commands} />
     </WorkOfficeRibbonGroup>

@@ -632,17 +632,56 @@ test('routes WPS font, underline styles, vertical alignment, and wrapping throug
   );
   expect(screen.getByRole('button', { name: '加粗' })).toHaveAttribute(
     'aria-keyshortcuts',
-    'Control+B Meta+B',
+    'Control+B Meta+B Control+2',
   );
   expect(screen.getByRole('button', { name: '斜体' })).toHaveAttribute(
     'aria-keyshortcuts',
-    'Control+I Meta+I',
+    'Control+I Meta+I Control+3',
   );
-  expect(underline).toHaveAttribute('aria-keyshortcuts', 'Control+U Meta+U');
+  expect(underline).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+U Meta+U Control+4',
+  );
   expect(screen.getByRole('button', { name: '删除线' })).toHaveAttribute(
     'aria-keyshortcuts',
     'Control+5 Meta+5',
   );
+});
+
+test('removes direct font and fill colors from the WPS color menus', () => {
+  const formats: Array<{ attribute: string; value: unknown }> = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands((attribute, value) => {
+        formats.push({ attribute, value });
+        return true;
+      })}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      findOpen={false}
+      panel={null}
+      toolbarCell={{ bg: '#fff2cc', fc: '#1155cc' }}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const textColor = screen.getByRole('button', { name: '文字颜色' });
+  fireEvent.click(textColor);
+  fireEvent.click(screen.getByRole('button', { name: '自动颜色' }));
+  expect(textColor).toHaveFocus();
+
+  const fillColor = screen.getByRole('button', { name: '填充颜色' });
+  fireEvent.click(fillColor);
+  fireEvent.click(screen.getByRole('button', { name: '无填充' }));
+  expect(fillColor).toHaveFocus();
+
+  expect(formats).toEqual([
+    { attribute: 'fc', value: undefined },
+    { attribute: 'bg', value: undefined },
+  ]);
 });
 
 test('omits empty resource counts from spreadsheet ribbon actions', () => {

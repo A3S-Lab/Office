@@ -28,7 +28,7 @@ test('Spreadsheet preserves advanced underline styles across ribbon, dialog, sho
   await expect(underline).toHaveAttribute('aria-pressed', 'false');
   await expect(underline).toHaveAttribute(
     'aria-keyshortcuts',
-    'Control+U Meta+U',
+    'Control+U Meta+U Control+4',
   );
   await moreUnderline.click();
   const menu = page.getByRole('menu', { name: '下划线样式' });
@@ -50,7 +50,7 @@ test('Spreadsheet preserves advanced underline styles across ribbon, dialog, sho
   await expect(underline).toHaveAttribute('aria-pressed', 'true');
   await expect(underline).toHaveAttribute(
     'title',
-    '下划线（双会计用下划线；Cmd/Ctrl+U）',
+    '下划线（双会计用下划线；Cmd/Ctrl+U 或 Ctrl+4）',
   );
 
   await page.keyboard.press('Control+1');
@@ -68,7 +68,7 @@ test('Spreadsheet preserves advanced underline styles across ribbon, dialog, sho
   await expect(grid).toBeFocused();
   await expect(underline).toHaveAttribute(
     'title',
-    '下划线（单会计用下划线；Cmd/Ctrl+U）',
+    '下划线（单会计用下划线；Cmd/Ctrl+U 或 Ctrl+4）',
   );
   await page.screenshot({
     path: testInfo.outputPath('spreadsheet-accounting-underline.png'),
@@ -79,12 +79,12 @@ test('Spreadsheet preserves advanced underline styles across ribbon, dialog, sho
   await expect(underline).toHaveAttribute('aria-pressed', 'false');
   await expect(underline).toHaveAttribute(
     'title',
-    '下划线（无下划线；Cmd/Ctrl+U）',
+    '下划线（无下划线；Cmd/Ctrl+U 或 Ctrl+4）',
   );
   await page.keyboard.press('Control+z');
   await expect(underline).toHaveAttribute(
     'title',
-    '下划线（单会计用下划线；Cmd/Ctrl+U）',
+    '下划线（单会计用下划线；Cmd/Ctrl+U 或 Ctrl+4）',
   );
   expect(browserErrors).toEqual([]);
 });

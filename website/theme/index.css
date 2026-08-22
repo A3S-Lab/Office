@@ -1,3 +1,10 @@
+.rp-nav__others > .rp-nav-menu__item > .rp-hover-group {
+  max-height: calc(100vh - var(--rp-nav-height) - 16px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+}
+
 .rp-doc:has(.docs-home) {
   max-width: none;
 }
