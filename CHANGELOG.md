@@ -4,6 +4,24 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.24.0 - 2026-08-22
+
+- Added editor-scoped Spreadsheet `Cmd/Ctrl+Shift+F` and
+  `Cmd/Ctrl+Shift+P` aliases. Both reuse the existing Format Cells command and
+  captured selection, open the Font tab, and focus font family or font size
+  respectively. The controls expose catalog-owned `aria-keyshortcuts`, and
+  Escape restores the exact worksheet grid node.
+- Kept host inputs, the formula bar, active cell editing, composing or repeated
+  events, and existing dialogs outside shortcut ownership. Runtime validation
+  rejects malformed or contradictory tab/focus routes before creating a
+  dialog, without introducing another formatting model or Apply path.
+- Made the native-style font preview readable for white and other light text by
+  preserving the requested text color while choosing a dark or light neutral
+  canvas from relative luminance. Focused Rstest, desktop/compact Playwright,
+  and a local-only A3S Test 1.0.0 ACL cover routing, initial focus, contrast,
+  focus restoration, accessibility, and empty browser diagnostics. GitHub
+  Actions and Pages do not install or invoke A3S Test.
+
 ## 0.23.0 - 2026-08-22
 
 - Added grid-scoped Spreadsheet `Ctrl+'` to copy the exact formula text from

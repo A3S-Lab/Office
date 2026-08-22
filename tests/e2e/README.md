@@ -298,6 +298,20 @@ Playwright keep the same workflow under the browser release gate. The A3S Test
 1.0.0 suite remains local-only and is never installed or invoked by GitHub
 Actions or Pages.
 
+The Spreadsheet font-dialog shortcuts have a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-font-dialog-shortcuts:check
+bun run test:e2e:spreadsheet-font-dialog-shortcuts
+```
+
+It covers `Cmd/Ctrl+Shift+F` opening the Font tab on the font-family control,
+`Cmd/Ctrl+Shift+P` opening the same tab on font size, catalog-backed
+`aria-keyshortcuts`, exact grid-focus restoration, accessibility, screenshot
+evidence, and clean browser diagnostics. Desktop and compact Playwright use
+the same public Playground path. The A3S Test 1.0.0 suite remains local-only;
+GitHub Actions and Pages do not install or invoke it.
+
 The native Spreadsheet Table lifecycle has a focused local gate:
 
 ```bash

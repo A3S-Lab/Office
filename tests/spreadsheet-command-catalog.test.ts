@@ -176,6 +176,26 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     editor: ['Mod-1'],
     label: 'Cmd/Ctrl+1',
   });
+  expect(spreadsheetCommandCatalog.formatCellsFont).toMatchObject({
+    id: 'font.formatCellsFont',
+    label: '设置字体格式',
+    location: { area: 'ribbon', group: 'font', tab: 'home' },
+    shortcut: {
+      aria: 'Control+Shift+F Meta+Shift+F',
+      editor: ['Mod-Shift-f'],
+      label: 'Cmd/Ctrl+Shift+F',
+    },
+  });
+  expect(spreadsheetCommandCatalog.formatCellsFontSize).toMatchObject({
+    id: 'font.formatCellsFontSize',
+    label: '设置字号格式',
+    location: { area: 'ribbon', group: 'font', tab: 'home' },
+    shortcut: {
+      aria: 'Control+Shift+P Meta+Shift+P',
+      editor: ['Mod-Shift-p'],
+      label: 'Cmd/Ctrl+Shift+P',
+    },
+  });
   for (const command of [
     spreadsheetCommandCatalog.borderTop,
     spreadsheetCommandCatalog.borderBottom,

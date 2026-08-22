@@ -294,6 +294,26 @@ export const spreadsheetCommandCatalog = {
       editor: ['Mod-1'],
     },
   },
+  formatCellsFont: {
+    id: 'font.formatCellsFont',
+    label: '设置字体格式',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+F',
+      aria: 'Control+Shift+F Meta+Shift+F',
+      editor: ['Mod-Shift-f'],
+    },
+  },
+  formatCellsFontSize: {
+    id: 'font.formatCellsFontSize',
+    label: '设置字号格式',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+P',
+      aria: 'Control+Shift+P Meta+Shift+P',
+      editor: ['Mod-Shift-p'],
+    },
+  },
   borderTop: {
     id: 'font.borderTop',
     label: '上框线',

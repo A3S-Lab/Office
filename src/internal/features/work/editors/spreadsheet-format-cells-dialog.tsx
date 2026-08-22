@@ -11,15 +11,21 @@ import {
   type SpreadsheetFormatCellsTabId,
   type SpreadsheetFormatCellsTouched,
 } from './spreadsheet-format-cells-dialog-model';
+import {
+  defaultSpreadsheetFormatCellsOpenIntent,
+  type SpreadsheetFormatCellsOpenIntent,
+} from './spreadsheet-format-cells-intent';
 
 export function SpreadsheetFormatCellsDialog({
   source,
   restoreFocusTarget,
+  openIntent = defaultSpreadsheetFormatCellsOpenIntent,
   onApply,
   onClose,
 }: {
   source: SpreadsheetFormatCellsDialogSource;
   restoreFocusTarget: () => HTMLElement | null;
+  openIntent?: SpreadsheetFormatCellsOpenIntent;
   onApply: (patch: SpreadsheetCellFormatPatch) => boolean;
   onClose: () => void;
 }) {
@@ -27,8 +33,9 @@ export function SpreadsheetFormatCellsDialog({
     createSpreadsheetFormatCellsDraft(source),
   );
   const [touched, setTouched] = useState<SpreadsheetFormatCellsTouched>({});
-  const [activeTab, setActiveTab] =
-    useState<SpreadsheetFormatCellsTabId>('number');
+  const [activeTab, setActiveTab] = useState<SpreadsheetFormatCellsTabId>(
+    openIntent.tab,
+  );
   const formId = useId();
   const idBase = `spreadsheet-format-cells-${useId().replaceAll(':', '')}`;
   const errors = spreadsheetFormatCellsDraftErrors(draft);
@@ -91,6 +98,9 @@ export function SpreadsheetFormatCellsDialog({
           draft={draft}
           errors={errors}
           touched={touched}
+          initialFocus={
+            openIntent.tab === 'font' ? openIntent.focus : undefined
+          }
           setDraft={setDraft}
           touch={(field) =>
             setTouched((current) => ({ ...current, [field]: true }))

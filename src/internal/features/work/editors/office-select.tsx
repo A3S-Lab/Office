@@ -27,6 +27,8 @@ export function OfficeSelect<T extends string>({
   disabled = false,
   placeholder = '请选择',
   className = '',
+  ariaKeyShortcuts,
+  initialFocus = false,
 }: {
   ariaLabel: string;
   value: T;
@@ -35,6 +37,8 @@ export function OfficeSelect<T extends string>({
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  ariaKeyShortcuts?: string;
+  initialFocus?: boolean;
 }) {
   const reactId = useId().replaceAll(':', '');
   const [open, setOpen] = useState(false);
@@ -88,6 +92,8 @@ export function OfficeSelect<T extends string>({
           {...triggerProps}
           role="combobox"
           aria-expanded={popoverOpen}
+          aria-keyshortcuts={ariaKeyShortcuts}
+          data-autofocus={initialFocus ? 'true' : undefined}
           onClick={(event) => {
             if (!popoverOpen) {
               const next = nearestEnabledOption(

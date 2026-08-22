@@ -304,6 +304,18 @@ array, dynamic-array, data-table, external, and malformed-formula cases fail
 closed at the appropriate formula or target boundary. Host inputs, the formula
 bar, active cell editing, popovers, dialogs, composing events, and repeated
 keydown remain outside shortcut ownership.
+The thirtieth milestone completes the common keyboard entry into Spreadsheet
+font formatting. `Cmd/Ctrl+Shift+F` opens the existing Format Cells dialog on
+the Font tab with the font-family control focused, while
+`Cmd/Ctrl+Shift+P` focuses font size. Both aliases route through the same typed
+`openFormatCells` command, captured selection snapshot, modal focus scope, and
+catalog metadata as `Cmd/Ctrl+1`; no secondary font state or alternate Apply
+path is introduced. Malformed routes fail closed, host inputs, the formula bar,
+cell editing, composing or repeated events, and existing dialogs retain native
+keys, and Escape restores the exact grid node. The font preview preserves the
+requested text color while selecting a dark or light canvas from relative
+luminance so white and other light fonts remain readable without falsifying
+their style.
 
 ## Product Rules
 

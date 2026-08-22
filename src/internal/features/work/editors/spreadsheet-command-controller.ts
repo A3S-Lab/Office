@@ -17,6 +17,7 @@ import {
 import type { SpreadsheetCellBorderFormat } from './spreadsheet-cell-border';
 import { createSpreadsheetCellBorderExtension } from './spreadsheet-cell-border-command';
 import type { SpreadsheetCellFormatRequest } from './spreadsheet-cell-format';
+import type { SpreadsheetFormatCellsOpenIntent } from './spreadsheet-format-cells-intent';
 import { createSpreadsheetCellFormatExtension } from './spreadsheet-cell-format-command';
 import type { SpreadsheetCellRange } from './spreadsheet-cell-range';
 import type { SpreadsheetCellStyleChoice } from './spreadsheet-cell-style';
@@ -217,6 +218,7 @@ export interface SpreadsheetFormatCellsOpenRequest {
   range: SpreadsheetCellRange;
   activeCell: { row: number; column: number };
   cells: (Cell | null)[][];
+  intent: SpreadsheetFormatCellsOpenIntent;
 }
 
 export interface SpreadsheetFormatCellsCommandPort {
@@ -293,7 +295,7 @@ export interface SpreadsheetEditorCommands {
   openAutoFilterMenu: () => boolean;
   openDataValidation: () => boolean;
   openFind: () => boolean;
-  openFormatCells: () => boolean;
+  openFormatCells: (intent?: SpreadsheetFormatCellsOpenIntent) => boolean;
   openGoTo: () => boolean;
   openHyperlink: () => boolean;
   openPasteSpecial: () => boolean;

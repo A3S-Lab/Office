@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -90,6 +90,7 @@
     "playground:visual:spreadsheet-data-validation": "playwright test visual-tests/spreadsheet-data-validation.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-date-time": "playwright test visual-tests/spreadsheet-date-time.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-copy-from-above": "playwright test visual-tests/spreadsheet-copy-from-above.functional.spec.ts --config playwright.config.ts",
+    "playground:visual:spreadsheet-font-dialog-shortcuts": "playwright test visual-tests/spreadsheet-font-dialog-shortcuts.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-diagonal-borders": "playwright test visual-tests/spreadsheet-diagonal-borders.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-font-colors-shortcuts": "playwright test visual-tests/spreadsheet-font-colors-shortcuts.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-hyperlink": "playwright test visual-tests/spreadsheet-hyperlink.functional.spec.ts --config playwright.config.ts",
@@ -166,6 +167,8 @@
     "test:e2e:spreadsheet-date-time:check": "a3s-test check tests/e2e/spreadsheet-date-time.acl --json",
     "test:e2e:spreadsheet-copy-from-above": "A3S_TEST_SUITE=tests/e2e/spreadsheet-copy-from-above.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:spreadsheet-copy-from-above:check": "a3s-test check tests/e2e/spreadsheet-copy-from-above.acl --json",
+    "test:e2e:spreadsheet-font-dialog-shortcuts": "A3S_TEST_SUITE=tests/e2e/spreadsheet-font-dialog-shortcuts.acl bash scripts/run-a3s-test-web-gate.sh",
+    "test:e2e:spreadsheet-font-dialog-shortcuts:check": "a3s-test check tests/e2e/spreadsheet-font-dialog-shortcuts.acl --json",
     "test:e2e:spreadsheet-hyperlink": "a3s-test run tests/e2e/spreadsheet-hyperlink.acl --json",
     "test:e2e:spreadsheet-hyperlink:check": "a3s-test check tests/e2e/spreadsheet-hyperlink.acl --json",
     "test:e2e:spreadsheet-maximum-sparse": "a3s-test run tests/e2e/spreadsheet-maximum-sparse.acl --json",

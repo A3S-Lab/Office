@@ -125,6 +125,7 @@ suites=(
   "tests/e2e/spreadsheet-font-colors-shortcuts.acl"
   "tests/e2e/spreadsheet-date-time.acl"
   "tests/e2e/spreadsheet-copy-from-above.acl"
+  "tests/e2e/spreadsheet-font-dialog-shortcuts.acl"
   "tests/e2e/spreadsheet-table.acl"
   "tests/e2e/spreadsheet-data-validation.acl"
   "tests/e2e/spreadsheet-hyperlink.acl"

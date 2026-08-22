@@ -13,6 +13,8 @@ import type {
   SpreadsheetFormatCellsTabId,
   SpreadsheetFormatCellsTouched,
 } from './spreadsheet-format-cells-dialog-model';
+import type { SpreadsheetFormatCellsInitialFocus } from './spreadsheet-format-cells-intent';
+import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import {
   spreadsheetFontFamilyOptions,
   spreadsheetFontSizeOptions,
@@ -41,6 +43,7 @@ interface PanelProps {
   draft: SpreadsheetFormatCellsDraft;
   errors: SpreadsheetFormatCellsDraftErrors;
   touched: SpreadsheetFormatCellsTouched;
+  initialFocus?: SpreadsheetFormatCellsInitialFocus;
   setDraft: Dispatch<SetStateAction<SpreadsheetFormatCellsDraft>>;
   touch: (field: keyof SpreadsheetCellFormatPatch) => void;
 }
@@ -260,6 +263,7 @@ function FontPanel({
   draft,
   errors,
   touched,
+  initialFocus,
   setDraft,
   touch,
 }: PanelProps) {
@@ -275,6 +279,10 @@ function FontPanel({
       <Field label="字体">
         <OfficeSelect
           ariaLabel="单元格字体"
+          ariaKeyShortcuts={
+            spreadsheetCommandCatalog.formatCellsFont.shortcut.aria
+          }
+          initialFocus={initialFocus === 'fontFamily'}
           value={familyMixed ? MIXED_VALUE : draft.fontFamily}
           options={withMixedOption(
             spreadsheetFontFamilyOptions(draft.fontFamily),
@@ -290,6 +298,10 @@ function FontPanel({
       <Field label="字号">
         <OfficeSelect
           ariaLabel="单元格字号"
+          ariaKeyShortcuts={
+            spreadsheetCommandCatalog.formatCellsFontSize.shortcut.aria
+          }
+          initialFocus={initialFocus === 'fontSize'}
           value={sizeMixed ? MIXED_VALUE : String(draft.fontSize)}
           options={withMixedOption(
             spreadsheetFontSizeOptions(draft.fontSize),
@@ -348,6 +360,7 @@ function FontPanel({
       <div
         className="work-spreadsheet-format-cells-font-preview"
         style={{
+          backgroundColor: spreadsheetFontPreviewBackground(draft.fontColor),
           color: draft.fontColor,
           fontFamily: draft.fontFamily,
           fontSize: `${Math.max(10, draft.fontSize)}px`,
@@ -375,6 +388,22 @@ function FontPanel({
       </div>
     </div>
   );
+}
+
+function spreadsheetFontPreviewBackground(color: string): string {
+  const match = /^#([0-9a-f]{6})$/i.exec(color.trim());
+  if (!match?.[1]) return '#f4f6f8';
+  const channels = [0, 2, 4].map((offset) =>
+    Number.parseInt(match[1].slice(offset, offset + 2), 16),
+  );
+  const [red = 0, green = 0, blue = 0] = channels.map((channel) => {
+    const component = channel / 255;
+    return component <= 0.04045
+      ? component / 12.92
+      : ((component + 0.055) / 1.055) ** 2.4;
+  });
+  const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  return luminance >= 0.55 ? '#172033' : '#f4f6f8';
 }
 
 function BorderPanel({ source, draft, touched, setDraft, touch }: PanelProps) {

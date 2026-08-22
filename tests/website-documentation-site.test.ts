@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.24.0' ||
     version === '0.23.0' ||
     version === '0.22.0' ||
     version === '0.21.0' ||
@@ -47,6 +48,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.24.0',
     '0.23.0',
     '0.22.0',
     '0.21.0',
@@ -136,6 +138,7 @@ test('keeps the five-editor README capability comparison complete', async () => 
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.24.0',
     '0.23.0',
     '0.22.0',
     '0.21.0',
@@ -198,6 +201,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.24.0',
     '0.23.0',
     '0.22.0',
     '0.21.0',
@@ -1169,6 +1173,45 @@ test('documents exact Spreadsheet copy from above in 0.23.0', async () => {
       '目标自己的',
       '一次撤销',
       'spreadsheet-copy-from-above.acl',
+      'A3S Test 1.0.0',
+    ]) {
+      expect(chinese).toContain(evidence);
+    }
+  }
+});
+
+test('documents focused Spreadsheet font-dialog shortcuts in 0.24.0', async () => {
+  for (const version of ['latest', '0.24.0']) {
+    const [english, chinese] = await Promise.all([
+      readFile(
+        path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, version, 'zh/components/spreadsheet.mdx'),
+        'utf8',
+      ),
+    ]);
+
+    for (const evidence of [
+      '## Format Cells',
+      '`Cmd/Ctrl+Shift+F`',
+      '`Cmd/Ctrl+Shift+P`',
+      'font-family',
+      'control focused',
+      'relative luminance',
+      'spreadsheet-font-dialog-shortcuts.acl',
+      'A3S Test 1.0.0',
+    ]) {
+      expect(english).toContain(evidence);
+    }
+    for (const evidence of [
+      '## 设置单元格格式与字体快捷键',
+      '`Cmd/Ctrl+Shift+F`',
+      '`Cmd/Ctrl+Shift+P`',
+      '字体下拉框',
+      '相对亮度',
+      'spreadsheet-font-dialog-shortcuts.acl',
       'A3S Test 1.0.0',
     ]) {
       expect(chinese).toContain(evidence);

@@ -1,5 +1,11 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { useRef, useState } from 'react';
 import { SpreadsheetFormatCellsDialog } from '../src/internal/features/work/editors/spreadsheet-format-cells-dialog';
 import {
@@ -129,6 +135,55 @@ test('explains an imported font size that blocks Apply', () => {
     '字号需为 1–409 之间的数字。',
   );
   expect(screen.getByRole('button', { name: '应用' })).toBeDisabled();
+});
+
+test('opens the Font tab on the shortcut-specific family or size control', async () => {
+  const lightFontSource = mixedSource();
+  lightFontSource.fields.fontColor = {
+    value: '#FFFFFF',
+    mixed: false,
+  };
+  const first = render(
+    <SpreadsheetFormatCellsDialog
+      source={lightFontSource}
+      openIntent={{ tab: 'font', focus: 'fontFamily' }}
+      restoreFocusTarget={() => null}
+      onApply={() => true}
+      onClose={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('tab', { name: '字体' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  const family = screen.getByRole('combobox', { name: '单元格字体' });
+  expect(family).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+F Meta+Shift+F',
+  );
+  expect(screen.getByText('A3S Office 字体预览')).toHaveStyle({
+    backgroundColor: '#172033',
+    color: '#FFFFFF',
+  });
+  await waitFor(() => expect(family).toHaveFocus());
+  first.unmount();
+
+  render(
+    <SpreadsheetFormatCellsDialog
+      source={mixedSource()}
+      openIntent={{ tab: 'font', focus: 'fontSize' }}
+      restoreFocusTarget={() => null}
+      onApply={() => true}
+      onClose={() => undefined}
+    />,
+  );
+  const size = screen.getByRole('combobox', { name: '单元格字号' });
+  expect(size).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+P Meta+Shift+P',
+  );
+  await waitFor(() => expect(size).toHaveFocus());
 });
 
 function FormatCellsHarness({

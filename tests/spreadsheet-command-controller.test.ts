@@ -464,6 +464,7 @@ describe('spreadsheet command controller', () => {
         range: { row: [2, 2], column: [3, 4] },
         activeCell: { row: 2, column: 4 },
         cells: [[{ v: 'A3S' }, null]],
+        intent: { tab: 'number' },
       },
     ]);
     expect(fixture.changes).toEqual([]);
@@ -482,7 +483,7 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
-  test('owns Cmd/Ctrl+1 only on the spreadsheet editing surface', () => {
+  test('routes Format Cells shortcuts to number, font, and font-size focus', () => {
     const fixture = commandFixture();
     fixture.workbook.cells = [[{ v: 'A3S' }]];
     fixture.workbook.selection = [{ row: [0, 0], column: [0, 0] }];
@@ -495,7 +496,36 @@ describe('spreadsheet command controller', () => {
 
     expect(editor.handleKeyDown(gridShortcut)).toBe(true);
     expect(gridShortcut.defaultPrevented).toBe(true);
-    expect(fixture.formatCells.requests).toHaveLength(1);
+    expect(fixture.formatCells.requests.at(-1)?.intent).toEqual({
+      tab: 'number',
+    });
+
+    const fontShortcut = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      shiftKey: true,
+      key: 'F',
+    });
+    expect(editor.handleKeyDown(fontShortcut)).toBe(true);
+    expect(fontShortcut.defaultPrevented).toBe(true);
+    expect(fixture.formatCells.requests.at(-1)?.intent).toEqual({
+      tab: 'font',
+      focus: 'fontFamily',
+    });
+
+    const fontSizeShortcut = new KeyboardEvent('keydown', {
+      cancelable: true,
+      metaKey: true,
+      shiftKey: true,
+      key: 'P',
+    });
+    expect(editor.handleKeyDown(fontSizeShortcut)).toBe(true);
+    expect(fontSizeShortcut.defaultPrevented).toBe(true);
+    expect(fixture.formatCells.requests.at(-1)?.intent).toEqual({
+      tab: 'font',
+      focus: 'fontSize',
+    });
+    expect(fixture.formatCells.requests).toHaveLength(3);
 
     const input = document.createElement('input');
     document.body.append(input);
@@ -512,7 +542,7 @@ describe('spreadsheet command controller', () => {
       }),
     );
     expect(inputHandled).toBe(false);
-    expect(fixture.formatCells.requests).toHaveLength(1);
+    expect(fixture.formatCells.requests).toHaveLength(3);
     input.remove();
 
     const dialog = document.createElement('div');
@@ -528,7 +558,7 @@ describe('spreadsheet command controller', () => {
     });
     Object.defineProperty(modalShortcut, 'target', { value: dialogButton });
     expect(editor.handleKeyDown(modalShortcut)).toBe(false);
-    expect(fixture.formatCells.requests).toHaveLength(1);
+    expect(fixture.formatCells.requests).toHaveLength(3);
     dialog.remove();
 
     editor.updateContext({ ...fixture.context, editable: false });
@@ -538,6 +568,12 @@ describe('spreadsheet command controller', () => {
       key: '1',
     });
     expect(editor.handleKeyDown(readOnlyShortcut)).toBe(false);
+    expect(
+      editor.commands.openFormatCells({
+        tab: 'font',
+        focus: 'invalid',
+      } as never),
+    ).toBe(false);
   });
 
   test('opens, applies, and removes hyperlinks through typed commands', () => {

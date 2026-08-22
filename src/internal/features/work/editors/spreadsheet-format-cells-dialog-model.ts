@@ -23,17 +23,10 @@ import {
   spreadsheetCellRangeArea,
 } from './spreadsheet-cell-range';
 
-export const spreadsheetFormatCellsTabs = [
-  { id: 'number', label: '数字' },
-  { id: 'alignment', label: '对齐' },
-  { id: 'font', label: '字体' },
-  { id: 'border', label: '边框' },
-  { id: 'fill', label: '填充' },
-  { id: 'protection', label: '保护' },
-] as const;
-
-export type SpreadsheetFormatCellsTabId =
-  (typeof spreadsheetFormatCellsTabs)[number]['id'];
+export {
+  spreadsheetFormatCellsTabs,
+  type SpreadsheetFormatCellsTabId,
+} from './spreadsheet-format-cells-intent';
 
 export interface SpreadsheetFormatCellsField<T> {
   value: T;

@@ -320,8 +320,10 @@ function SpreadsheetEditorSurface({
   );
   const [contextMenu, setContextMenu] =
     useState<SpreadsheetContextMenuState | null>(null);
-  const [formatCellsSource, setFormatCellsSource] =
-    useState<SpreadsheetFormatCellsDialogSource | null>(null);
+  const [formatCellsDialog, setFormatCellsDialog] = useState<{
+    source: SpreadsheetFormatCellsDialogSource;
+    intent: SpreadsheetFormatCellsOpenRequest['intent'];
+  } | null>(null);
   const formatCellsInvokerRef = useRef<HTMLElement | null>(null);
   const formatCellsSelectionRef = useRef<SpreadsheetSelectionState | null>(
     null,
@@ -512,7 +514,7 @@ function SpreadsheetEditorSurface({
     panelTriggerRef.current = null;
     setPanel(null);
     setContextMenu(null);
-    setFormatCellsSource(null);
+    setFormatCellsDialog(null);
     formatCellsInvokerRef.current = null;
     formatCellsSelectionRef.current = null;
     formatCellsApplyingRef.current = false;
@@ -934,7 +936,7 @@ function SpreadsheetEditorSurface({
           column_focus: request.activeCell.column,
         },
       };
-      setFormatCellsSource(source);
+      setFormatCellsDialog({ source, intent: request.intent });
       return true;
     },
     [],
@@ -943,7 +945,7 @@ function SpreadsheetEditorSurface({
     const invoker = formatCellsInvokerRef.current;
     const canvas = spreadsheetCanvasRef.current;
     const openedFromGrid = Boolean(invoker && canvas?.contains(invoker));
-    setFormatCellsSource(null);
+    setFormatCellsDialog(null);
     requestAnimationFrame(() => {
       if (openedFromGrid || !invoker?.isConnected) {
         focusSpreadsheetGrid(canvas, { focusOrigin: invoker });
@@ -1121,7 +1123,7 @@ function SpreadsheetEditorSurface({
       },
       formatPainter,
       formatCells: {
-        canOpen: !preview && formatCellsSource === null,
+        canOpen: !preview && formatCellsDialog === null,
         open: openSpreadsheetFormatCells,
       },
       hyperlink: spreadsheetHyperlink.commandPort,
@@ -1709,9 +1711,10 @@ function SpreadsheetEditorSurface({
           }
         />
       )}
-      {formatCellsSource && (
+      {formatCellsDialog && (
         <SpreadsheetFormatCellsDialog
-          source={formatCellsSource}
+          source={formatCellsDialog.source}
+          openIntent={formatCellsDialog.intent}
           restoreFocusTarget={() =>
             formatCellsInvokerRef.current?.isConnected
               ? formatCellsInvokerRef.current
@@ -1722,8 +1725,8 @@ function SpreadsheetEditorSurface({
             let handled = false;
             try {
               handled = spreadsheetCommands.applyCellFormat({
-                sheetId: formatCellsSource.sheetId,
-                range: formatCellsSource.range,
+                sheetId: formatCellsDialog.source.sheetId,
+                range: formatCellsDialog.source.range,
                 patch,
               });
             } finally {

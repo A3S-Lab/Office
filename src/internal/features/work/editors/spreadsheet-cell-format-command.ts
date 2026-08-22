@@ -9,11 +9,16 @@ import {
   normalizeSpreadsheetCellRange,
   spreadsheetCellRangeArea,
 } from './spreadsheet-cell-range';
+import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
   SpreadsheetCommandContext,
   SpreadsheetEditorCommands,
   SpreadsheetFormatCellsOpenRequest,
 } from './spreadsheet-command-controller';
+import {
+  normalizeSpreadsheetFormatCellsOpenIntent,
+  type SpreadsheetFormatCellsOpenIntent,
+} from './spreadsheet-format-cells-intent';
 import {
   isSpreadsheetNativeTextUndoTarget,
   spreadsheetSingleRange,
@@ -45,9 +50,33 @@ export function createSpreadsheetCellFormatExtension(): OfficeEditorExtension<
       },
     }),
     addKeyboardShortcuts: () => ({
-      'Mod-1': ({ can, commands }, event) =>
+      [spreadsheetCommandCatalog.formatCells.shortcut.editor[0]]: (
+        { can, commands },
+        event,
+      ) =>
         runSpreadsheetFormatCellsShortcut(
           event,
+          undefined,
+          can.openFormatCells,
+          commands.openFormatCells,
+        ),
+      [spreadsheetCommandCatalog.formatCellsFont.shortcut.editor[0]]: (
+        { can, commands },
+        event,
+      ) =>
+        runSpreadsheetFormatCellsShortcut(
+          event,
+          { tab: 'font', focus: 'fontFamily' },
+          can.openFormatCells,
+          commands.openFormatCells,
+        ),
+      [spreadsheetCommandCatalog.formatCellsFontSize.shortcut.editor[0]]: (
+        { can, commands },
+        event,
+      ) =>
+        runSpreadsheetFormatCellsShortcut(
+          event,
+          { tab: 'font', focus: 'fontSize' },
           can.openFormatCells,
           commands.openFormatCells,
         ),
@@ -57,7 +86,9 @@ export function createSpreadsheetCellFormatExtension(): OfficeEditorExtension<
 
 function canOpenSpreadsheetFormatCells(
   context: SpreadsheetCommandContext,
+  intent?: SpreadsheetFormatCellsOpenIntent,
 ): boolean {
+  if (!normalizeSpreadsheetFormatCellsOpenIntent(intent)) return false;
   if (
     !context.editable ||
     !context.formatCells.canOpen ||
@@ -76,8 +107,14 @@ function canOpenSpreadsheetFormatCells(
 
 function openSpreadsheetFormatCells(
   context: SpreadsheetCommandContext,
+  intent?: SpreadsheetFormatCellsOpenIntent,
 ): boolean {
-  if (!canOpenSpreadsheetFormatCells(context) || !context.workbook) {
+  const normalizedIntent = normalizeSpreadsheetFormatCellsOpenIntent(intent);
+  if (
+    !normalizedIntent ||
+    !canOpenSpreadsheetFormatCells(context, normalizedIntent) ||
+    !context.workbook
+  ) {
     return false;
   }
   const selection =
@@ -94,6 +131,7 @@ function openSpreadsheetFormatCells(
       column: clampFocus(selection.column_focus, range.column),
     },
     cells: [],
+    intent: normalizedIntent,
   };
   try {
     request.cells = context.workbook.getCellsByRange(range, {
@@ -126,18 +164,20 @@ function liveSpreadsheetFormatCellsRange(context: SpreadsheetCommandContext) {
 
 function runSpreadsheetFormatCellsShortcut(
   event: KeyboardEvent,
+  intent: SpreadsheetFormatCellsOpenIntent | undefined,
   canExecute: SpreadsheetEditorCommands['openFormatCells'],
   execute: SpreadsheetEditorCommands['openFormatCells'],
 ): boolean {
   if (
     event.repeat ||
+    event.isComposing ||
     isOfficeShortcutBlocked(event.target) ||
     isSpreadsheetNativeTextUndoTarget(event.target) ||
-    !canExecute()
+    !canExecute(intent)
   ) {
     return false;
   }
-  return execute();
+  return execute(intent);
 }
 
 function clampFocus(value: unknown, range: readonly number[]): number {
