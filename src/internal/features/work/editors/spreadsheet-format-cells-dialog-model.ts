@@ -5,6 +5,8 @@ import {
   type SpreadsheetUnderlineStyle,
 } from '../work-spreadsheet-underline';
 import { spreadsheetVisibleTextRotationFromCell } from '../work-spreadsheet-text-orientation';
+import type { XlsxGradientFill } from '../work-xlsx-gradient-fill';
+import type { XlsxPatternFill } from '../work-xlsx-pattern-fill';
 import {
   spreadsheetCellBordersAt,
   type SpreadsheetCellBorderFormat,
@@ -17,6 +19,11 @@ import {
   type SpreadsheetHorizontalAlignment,
   type SpreadsheetVerticalAlignment,
 } from './spreadsheet-cell-format';
+import {
+  normalizeSpreadsheetCellFillFormat,
+  spreadsheetCellFillFormat,
+  type SpreadsheetCellFillFormat,
+} from './spreadsheet-cell-fill-format';
 import {
   normalizeSpreadsheetCellRange,
   type SpreadsheetCellRange,
@@ -46,7 +53,7 @@ export interface SpreadsheetFormatCellsFields {
   italic: SpreadsheetFormatCellsField<boolean>;
   underline: SpreadsheetFormatCellsField<SpreadsheetUnderlineStyle>;
   strike: SpreadsheetFormatCellsField<boolean>;
-  fillColor: SpreadsheetFormatCellsField<string | null>;
+  fill: SpreadsheetFormatCellsField<SpreadsheetCellFillFormat>;
   borders: SpreadsheetFormatCellsField<readonly SpreadsheetCellBorderFormat[]>;
   locked: SpreadsheetFormatCellsField<boolean>;
   hidden: SpreadsheetFormatCellsField<boolean>;
@@ -72,7 +79,7 @@ export interface SpreadsheetFormatCellsDraft {
   italic: boolean;
   underline: SpreadsheetUnderlineStyle;
   strike: boolean;
-  fillColor: string | null;
+  fill: SpreadsheetFormatCellsFillDraft;
   borders: SpreadsheetCellBorderFormat[];
   borderColor: string;
   borderStyle: SpreadsheetCellBorderStyle;
@@ -80,11 +87,19 @@ export interface SpreadsheetFormatCellsDraft {
   hidden: boolean;
 }
 
+export interface SpreadsheetFormatCellsFillDraft {
+  gradient: XlsxGradientFill;
+  mode: SpreadsheetCellFillFormat['kind'];
+  pattern: XlsxPatternFill;
+  solidColor: string;
+}
+
 export type SpreadsheetFormatCellsTouched = Partial<
   Record<keyof SpreadsheetCellFormatPatch, true>
 >;
 
 export interface SpreadsheetFormatCellsDraftErrors {
+  fill?: string;
   numberFormat?: string;
   fontSize?: string;
   rotation?: string;
@@ -163,11 +178,7 @@ export function createSpreadsheetFormatCellsDialogSource(
       italic: values((cell) => Number(cell?.it) === 1),
       underline: values((cell) => spreadsheetUnderlineStyle(cell?.un)),
       strike: values((cell) => Number(cell?.cl) === 1),
-      fillColor: values((cell) =>
-        typeof cell?.bg === 'string' && cell.bg.trim()
-          ? normalizedColor(cell.bg, null)
-          : null,
-      ),
+      fill: values((cell) => spreadsheetCellFillFormat(cell)),
       borders: {
         value: borders,
         mixed: spreadsheetCellRangeArea(range) > 1,
@@ -201,7 +212,7 @@ export function createSpreadsheetFormatCellsDraft(
     italic: source.fields.italic.value,
     underline: source.fields.underline.value,
     strike: source.fields.strike.value,
-    fillColor: source.fields.fillColor.value,
+    fill: createSpreadsheetFormatCellsFillDraft(source.fields.fill.value),
     borders,
     borderColor: borders[0]?.color ?? '#172033',
     borderStyle: borders[0]?.style ?? 'thin',
@@ -260,8 +271,8 @@ export function spreadsheetFormatCellsPatch(
     patch.underline = draft.underline;
   if (shouldEmit(source.fields.strike, draft.strike, touched.strike))
     patch.strike = draft.strike;
-  if (shouldEmit(source.fields.fillColor, draft.fillColor, touched.fillColor))
-    patch.fillColor = draft.fillColor;
+  const fill = spreadsheetFormatCellsActiveFill(draft);
+  if (shouldEmit(source.fields.fill, fill, touched.fill)) patch.fill = fill;
   if (shouldEmit(source.fields.borders, draft.borders, touched.borders))
     patch.borders = draft.borders.map((format) => ({ ...format }));
   if (shouldEmit(source.fields.locked, draft.locked, touched.locked))
@@ -294,7 +305,26 @@ export function spreadsheetFormatCellsDraftErrors(
   ) {
     errors.rotation = '文字旋转角度需为 -90–90 之间的整数。';
   }
+  if (
+    !normalizeSpreadsheetCellFillFormat(spreadsheetFormatCellsActiveFill(draft))
+  ) {
+    errors.fill =
+      '请检查填充设置。渐变色标需按位置从小到大排列，位置和路径边界需保持在 0%–100%。';
+  }
   return errors;
+}
+
+export function spreadsheetFormatCellsActiveFill(
+  draft: SpreadsheetFormatCellsDraft,
+): SpreadsheetCellFillFormat {
+  if (draft.fill.mode === 'none') return { kind: 'none' };
+  if (draft.fill.mode === 'solid') {
+    return { color: draft.fill.solidColor, kind: 'solid' };
+  }
+  if (draft.fill.mode === 'pattern') {
+    return { kind: 'pattern', value: draft.fill.pattern };
+  }
+  return { kind: 'gradient', value: draft.fill.gradient };
 }
 
 function shouldEmit<T>(
@@ -305,6 +335,46 @@ function shouldEmit<T>(
   return Boolean(
     touched && (source.mixed || !sameDialogValue(source.value, value)),
   );
+}
+
+function createSpreadsheetFormatCellsFillDraft(
+  source: SpreadsheetCellFillFormat,
+): SpreadsheetFormatCellsFillDraft {
+  const fill = normalizeSpreadsheetCellFillFormat(source) ?? { kind: 'none' };
+  const solidColor = spreadsheetFillFallbackColor(fill);
+  return {
+    gradient:
+      fill.kind === 'gradient'
+        ? fill.value
+        : {
+            degree: 0,
+            stops: [
+              { color: solidColor, position: 0 },
+              {
+                color: solidColor === '#ffffff' ? '#4472c4' : '#ffffff',
+                position: 1,
+              },
+            ],
+            type: 'linear',
+          },
+    mode: fill.kind,
+    pattern:
+      fill.kind === 'pattern'
+        ? fill.value
+        : {
+            backgroundColor: solidColor,
+            foregroundColor: solidColor === '#ffffff' ? '#4472c4' : '#ffffff',
+            patternType: 'lightGrid',
+          },
+    solidColor,
+  };
+}
+
+function spreadsheetFillFallbackColor(fill: SpreadsheetCellFillFormat): string {
+  if (fill.kind === 'solid') return fill.color;
+  if (fill.kind === 'pattern') return fill.value.backgroundColor;
+  if (fill.kind === 'gradient') return fill.value.stops[0]?.color ?? '#ffffff';
+  return '#ffffff';
 }
 
 function horizontalAlignment(

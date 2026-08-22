@@ -124,7 +124,7 @@ baseline rather than one specific release.
 | Capability | A3S Office today | Traditional Office baseline |
 | --- | --- | --- |
 | Cells, sheets, navigation, and history | **Supported** — multiple sheets, sparse editing, search, clipboard, four-direction fill, exact formula/value copy from above, and undo/redo | Mature grid workflows across desktop and web |
-| Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, all 17 native non-solid OOXML pattern fills, native linear/path XLSX gradients, static date/time entry, contrast-safe font preview, native XLSX rich-text runs, selected-text font formatting, direct formula-bar/F2 insertion or deletion, and bounded authenticated formatted-HTML paste | Disjoint multi-edit rich-text authoring, broader themes, locale formats, gradient authoring, and advanced style effects |
+| Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, all 17 native non-solid OOXML pattern fills, native linear/path XLSX gradients, and one Format Cells surface that authors none, solid, pattern, or gradient fills with exact geometry and 2–256 ordered stops; static date/time entry, contrast-safe font preview, native XLSX rich-text runs, selected-text font formatting, direct formula-bar/F2 insertion or deletion, and bounded authenticated formatted-HTML paste | Disjoint multi-edit rich-text authoring, broader themes, locale formats, and advanced style effects |
 | Ribbon and shortcuts | **Partial** — common Office-style Home/Data/View commands, grid-scoped shortcuts, and focused Font-dialog aliases | Larger command catalog and platform-specific accelerators |
 | Formulas and recalculation | **Partial** — dependency-aware calculation and common formula paths | Wider functions, arrays, volatile semantics, and calculation parity |
 | Tables, pivots, charts, and rules | **Partial** — native tables, pivots, charts, conditional formatting, and validation | Calculated columns, slicers, pivot charts, advanced rules, and analysis |
@@ -586,6 +586,12 @@ solid fill, No Fill, Clear Formats, or built-in Cell Style intentionally clears
 it. Malformed patterns fail closed, and semantic palette conflicts export
 literal RGB instead of a false theme or indexed reference.
 
+Format Cells now authors every native pattern through one typed fill model.
+Users can switch between none, solid, all 17 pattern types, and gradients while
+retaining inactive drafts, preview the exact Canvas result, and edit pattern
+foreground/background colors. Apply publishes one controlled workbook update
+and one Undo record; export and reopen retain the authored native pattern.
+
 Native XLSX gradient fills retain linear angles, path inner-rectangle geometry,
 two through 256 ordered stops, and each stop's RGB, theme, indexed, automatic,
 or tint identity. Fortune projects the first stop into `bg`; metadata remains
@@ -595,6 +601,13 @@ off-viewport cells do no work and rendering stays bounded. Format Painter,
 Paste Special Formats, unrelated edits, Yjs collaboration, export, and reopen
 preserve the fill. Explicit fills and format resets clear it, malformed input
 fails closed, and semantic palette conflicts fall back to literal RGB.
+
+The same Format Cells Fill tab authors linear or path gradients without a
+second style state. It exposes exact angle or inner-rectangle geometry, 2–256
+ordered stops, midpoint insertion with interpolated color, stop removal and
+editing, mixed-selection safeguards, and a live native Canvas preview. Invalid
+stop order or path geometry blocks Apply before mutation; an accepted Apply
+remains one controlled update and one Undo record.
 
 Worksheet Tables/ListObjects live in `sheet.tables` as semantic records with
 stable IDs, workbook-unique names, zero-based ranges, ordered columns, filters,

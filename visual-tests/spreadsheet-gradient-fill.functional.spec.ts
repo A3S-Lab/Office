@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 
 const gradientColors = [
   '#1d4ed8',
@@ -29,6 +29,7 @@ for (const viewport of [
     await expect(grid).toBeVisible();
     await expect(grid).toBeFocused();
     await expect(status).toHaveAttribute('data-gradient-count', '6');
+    await expect(status).toHaveAttribute('data-authoring', 'format-cells');
     await expect(status).toHaveAttribute('data-revision', '1');
 
     await expect
@@ -47,8 +48,90 @@ for (const viewport of [
       ),
       animations: 'disabled',
     });
+
+    await grid.focus();
+    await page.keyboard.press('Control+1');
+    const dialog = page.getByRole('dialog', { name: '设置单元格格式' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('tab', { name: '填充' }).click();
+    await expect(dialog.getByRole('radio', { name: '渐变' })).toBeChecked();
+    await expect(
+      dialog.getByRole('combobox', { name: '渐变类型' }),
+    ).toContainText('线性');
+    await expect(
+      dialog.getByRole('textbox', { name: '线性渐变角度' }),
+    ).toHaveValue('0');
+
+    await dialog.getByRole('combobox', { name: '渐变类型' }).click();
+    await page
+      .getByRole('listbox', { name: '渐变类型' })
+      .getByRole('option', { name: '路径' })
+      .click();
+    await dialog.getByRole('button', { name: '添加色标' }).click();
+    await dialog.getByRole('textbox', { name: '路径渐变左边界' }).fill('20');
+    await expect(
+      dialog.getByRole('button', { name: /色标 \d+ 颜色/ }),
+    ).toHaveCount(3);
+    await expectDialogInsideViewport(page, dialog);
+    await page.screenshot({
+      path: testInfo.outputPath(
+        `spreadsheet-gradient-authoring-${viewport.name}.png`,
+      ),
+      animations: 'disabled',
+    });
+    await dialog.getByRole('button', { name: '应用' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(grid).toBeFocused();
+
+    await page.keyboard.press('Control+1');
+    const reopened = page.getByRole('dialog', { name: '设置单元格格式' });
+    await reopened.getByRole('tab', { name: '填充' }).click();
+    await expect(
+      reopened.getByRole('combobox', { name: '渐变类型' }),
+    ).toContainText('路径');
+    await expect(
+      reopened.getByRole('textbox', { name: '路径渐变左边界' }),
+    ).toHaveValue('20');
+    await expect(
+      reopened.getByRole('button', { name: /色标 \d+ 颜色/ }),
+    ).toHaveCount(3);
+    await page.keyboard.press('Escape');
+    await expect(reopened).toHaveCount(0);
+    await expect(grid).toBeFocused();
+
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Control+1');
+    const restored = page.getByRole('dialog', { name: '设置单元格格式' });
+    await restored.getByRole('tab', { name: '填充' }).click();
+    await expect(
+      restored.getByRole('combobox', { name: '渐变类型' }),
+    ).toContainText('线性');
+    await expect(
+      restored.getByRole('button', { name: /色标 \d+ 颜色/ }),
+    ).toHaveCount(2);
+    await page.keyboard.press('Escape');
+    await expect(restored).toHaveCount(0);
+    await expect(grid).toBeFocused();
     expect(browserErrors).toEqual([]);
   });
+}
+
+async function expectDialogInsideViewport(
+  page: Page,
+  dialog: Locator,
+): Promise<void> {
+  const bounds = await dialog.boundingBox();
+  const viewport = page.viewportSize();
+  expect(bounds).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(bounds?.x ?? -1).toBeGreaterThanOrEqual(0);
+  expect(bounds?.y ?? -1).toBeGreaterThanOrEqual(0);
+  expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(
+    viewport?.width ?? 0,
+  );
+  expect((bounds?.y ?? 0) + (bounds?.height ?? 0)).toBeLessThanOrEqual(
+    viewport?.height ?? 0,
+  );
 }
 
 async function spreadsheetCanvasColorSamples(

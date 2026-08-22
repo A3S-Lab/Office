@@ -566,13 +566,20 @@ palette slots still agree; a conflict falls back to literal RGB. Missing color
 elements use OOXML's black/white defaults, while present but malformed colors
 fail closed.
 
+The Format Cells Fill tab authors the same native model. It offers None, Solid,
+and all 17 Pattern choices, editable foreground/background colors, and an exact
+Canvas preview. Switching to another fill family keeps the inactive pattern
+draft until the dialog closes. Apply emits one controlled workbook update and
+one Undo record; export and reopen retain the authored `patternType` and colors.
+
 Open `?e2e=spreadsheet-pattern-fill` in the Playground to inspect all 17
-patterns. Focused Rstest covers import, Canvas ordering, Format Painter, Paste
+patterns and edit the selected cell through Format Cells. Focused Rstest covers
+import, Canvas ordering, Format Painter, Paste
 Special, Yjs, palette conflicts, and import-edit-export-reopen fidelity.
 `visual-tests/spreadsheet-pattern-fill.functional.spec.ts` adds desktop and
-compact Canvas pixel evidence. The deterministic
-`tests/e2e/spreadsheet-pattern-fill.acl` suite captures screenshots,
-accessibility, console, and page errors through the local A3S Test 1.0.0 gate;
+compact Canvas pixel evidence plus edit, Apply, reopen, and Undo coverage. The deterministic
+`tests/e2e/spreadsheet-pattern-fill.acl` suite captures accessibility, console,
+and page errors through the local A3S Test 1.0.0 gate;
 GitHub Actions and Pages do not install or invoke A3S Test.
 
 ## Native XLSX gradient fills
@@ -608,14 +615,24 @@ conflicts use literal RGB. Unknown types, malformed colors, descending or
 out-of-range stops, invalid path edges, ambiguous fill children, and more than
 256 stops fail closed.
 
+The Format Cells Fill tab authors both gradient families. Linear mode exposes
+the exact angle; Path mode exposes all four inner-rectangle edges. Users can
+add, remove, recolor, and reposition two through 256 ordered stops, and a new
+stop is inserted into the largest interval with an interpolated color. A live
+Canvas preview uses the production renderer. Descending positions or crossed
+path edges mark the draft invalid and disable Apply before any workbook
+mutation. Inactive pattern, solid, and gradient drafts survive mode switches.
+
 Open `?e2e=spreadsheet-gradient-fill` in the Playground for linear 0°, 45°,
-90°, and 135° examples plus two path gradients. Focused Rstest covers import,
+90°, and 135° examples plus two path gradients, then use Format Cells to edit
+the focused example. Focused Rstest covers import,
 Canvas ordering, edit propagation, collaboration, palette conflicts, and
 import-edit-export-reopen fidelity.
 `visual-tests/spreadsheet-gradient-fill.functional.spec.ts` supplies desktop
-and compact Canvas pixel evidence. The deterministic
-`tests/e2e/spreadsheet-gradient-fill.acl` suite captures screenshots,
-accessibility, console, and page errors through the local A3S Test 1.0.0 gate;
+and compact Canvas pixel evidence plus authoring, responsive containment,
+Apply, reopen, and Undo coverage. The deterministic
+`tests/e2e/spreadsheet-gradient-fill.acl` suite captures accessibility, console,
+and page errors through the local A3S Test 1.0.0 gate;
 GitHub Actions and Pages do not install or invoke A3S Test.
 
 ## Text orientation and row/column visibility

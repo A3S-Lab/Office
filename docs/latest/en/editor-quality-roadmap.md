@@ -1170,6 +1170,18 @@ conflicts emit literal RGB instead of false semantic references. Focused
 Rstest, desktop/compact Canvas pixel evidence, and a local-only A3S Test 1.0.0
 gallery gate cover the path without adding A3S Test to Actions or Pages.
 
+The thirty-seventh slice adds native fill authoring to the shared Format Cells
+dialog. One typed union covers None, Solid, all 17 Pattern choices, and Linear
+or Path Gradient. Pattern colors, exact gradient geometry, and two through 256
+ordered stops are editable with the production Canvas preview; midpoint stop
+insertion interpolates neighboring colors. Mode switches retain inactive
+drafts, mixed selections require an explicit edit, and invalid stop order or
+path geometry blocks Apply. One Apply remains one controlled update and one
+Undo record, while authored pattern and gradient records survive XLSX export
+and reopen. Focused Rstest, desktop/compact Playwright, and local-only A3S Test
+1.0.0 cover edit, Apply, reopen, Undo, containment, accessibility, and clean
+browser diagnostics without adding A3S Test to Actions or Pages.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

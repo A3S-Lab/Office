@@ -27,6 +27,7 @@ for (const viewport of [
     await expect(grid).toBeVisible();
     await expect(grid).toBeFocused();
     await expect(status).toHaveAttribute('data-pattern-count', '17');
+    await expect(status).toHaveAttribute('data-authoring', 'format-cells');
     await expect(status).toHaveAttribute('data-revision', '1');
 
     await expect
@@ -45,6 +46,53 @@ for (const viewport of [
       ),
       animations: 'disabled',
     });
+
+    await grid.focus();
+    await page.keyboard.press('Control+1');
+    const dialog = page.getByRole('dialog', { name: '设置单元格格式' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('tab', { name: '填充' }).click();
+    await expect(dialog.getByRole('radio', { name: '图案' })).toBeChecked();
+    const patternType = dialog.getByRole('combobox', {
+      name: '填充图案样式',
+    });
+    await expect(patternType).toContainText('深色下斜线');
+    await patternType.click();
+    await page
+      .getByRole('listbox', { name: '填充图案样式' })
+      .getByRole('option', { name: '深色菱形网格' })
+      .click();
+    await expect(patternType).toContainText('深色菱形网格');
+    await page.screenshot({
+      path: testInfo.outputPath(
+        `spreadsheet-pattern-authoring-${viewport.name}.png`,
+      ),
+      animations: 'disabled',
+    });
+    await dialog.getByRole('button', { name: '应用' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(grid).toBeFocused();
+
+    await page.keyboard.press('Control+1');
+    const reopened = page.getByRole('dialog', { name: '设置单元格格式' });
+    await reopened.getByRole('tab', { name: '填充' }).click();
+    await expect(
+      reopened.getByRole('combobox', { name: '填充图案样式' }),
+    ).toContainText('深色菱形网格');
+    await page.keyboard.press('Escape');
+    await expect(reopened).toHaveCount(0);
+    await expect(grid).toBeFocused();
+
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Control+1');
+    const restored = page.getByRole('dialog', { name: '设置单元格格式' });
+    await restored.getByRole('tab', { name: '填充' }).click();
+    await expect(
+      restored.getByRole('combobox', { name: '填充图案样式' }),
+    ).toContainText('深色下斜线');
+    await page.keyboard.press('Escape');
+    await expect(restored).toHaveCount(0);
+    await expect(grid).toBeFocused();
     expect(browserErrors).toEqual([]);
   });
 }

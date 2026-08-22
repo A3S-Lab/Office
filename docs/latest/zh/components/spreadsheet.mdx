@@ -417,11 +417,18 @@ Spreadsheet 会保留完整的 OOXML 非实心 `patternType` 集合：
 调色板槽位仍一致时复用前景色和背景色的语义身份；发生冲突时回退为显式 RGB。缺失颜色元素
 采用 OOXML 的黑白默认值，已出现但非法的颜色则安全失败。
 
-在 Playground 打开 `?e2e=spreadsheet-pattern-fill` 可查看全部 17 种图案。聚焦 Rstest 覆盖
+“设置单元格格式”的填充页会直接编辑同一套原生模型。它提供无填充、纯色与全部 17 种图案，
+可修改前景色和背景色，并使用生产 Canvas 渲染器显示准确预览。切换到其他填充类型时，未激活的
+图案草稿会保留到对话框关闭。应用只产生一次受控工作簿更新和一条撤销记录；导出与重新打开会
+保留用户创作的 `patternType` 和颜色。
+
+在 Playground 打开 `?e2e=spreadsheet-pattern-fill` 可查看全部 17 种图案，并可通过“设置单元格
+格式”编辑当前单元格。聚焦 Rstest 覆盖
 导入、Canvas 顺序、格式刷、选择性粘贴、Yjs、调色板冲突，以及导入、编辑、导出、重开保真度。
-`visual-tests/spreadsheet-pattern-fill.functional.spec.ts` 提供桌面与紧凑 Canvas 像素证据。
-确定性的 `tests/e2e/spreadsheet-pattern-fill.acl` 通过本地 A3S Test 1.0.0 门禁采集截图、
-可访问性、控制台和页面错误；GitHub Actions 与 Pages 不安装也不调用 A3S Test。
+`visual-tests/spreadsheet-pattern-fill.functional.spec.ts` 提供桌面与紧凑 Canvas 像素证据，以及
+编辑、应用、重开与撤销流程。
+确定性的 `tests/e2e/spreadsheet-pattern-fill.acl` 通过本地 A3S Test 1.0.0 门禁采集可访问性、
+控制台和页面错误；GitHub Actions 与 Pages 不安装也不调用 A3S Test。
 
 ## 原生 XLSX 渐变填充
 
@@ -447,11 +454,18 @@ Spreadsheet 会保留两类 OOXML 渐变，不会把它们扁平化成实心颜�
 后的调色板一致时复用语义颜色身份；冲突时使用显式 RGB。未知类型、非法颜色、倒序或越界色标、
 非法路径边界、存在歧义的填充子节点，以及超过 256 个色标都会安全失败。
 
+“设置单元格格式”的填充页可以创作两类渐变。线性模式暴露精确角度，路径模式暴露四条内矩形
+边界；用户可在 2 到 256 个有序色标之间添加、删除、改色与调整位置。新增色标会插入最大间隔，
+颜色由相邻色标插值得到，实时预览复用生产 Canvas 渲染器。倒序位置或交叉路径边界会把草稿标记
+为非法，并在修改工作簿前禁用“应用”。切换填充类型不会丢失未激活的纯色、图案或渐变草稿。
+
 在 Playground 打开 `?e2e=spreadsheet-gradient-fill` 可查看 0°、45°、90°、135° 线性渐变和
-两个路径渐变。聚焦 Rstest 覆盖导入、Canvas 顺序、编辑传播、协作、调色板冲突，以及导入、编辑、
+两个路径渐变，并可通过“设置单元格格式”编辑当前示例。聚焦 Rstest 覆盖导入、Canvas 顺序、
+编辑传播、协作、调色板冲突，以及导入、编辑、
 导出、重开保真度。`visual-tests/spreadsheet-gradient-fill.functional.spec.ts` 提供桌面与紧凑
-Canvas 像素证据。确定性的 `tests/e2e/spreadsheet-gradient-fill.acl` 通过本地 A3S Test 1.0.0
-门禁采集截图、可访问性、控制台和页面错误；GitHub Actions 与 Pages 不安装也不调用 A3S Test。
+Canvas 像素证据，以及创作、响应式边界、应用、重开和撤销流程。确定性的
+`tests/e2e/spreadsheet-gradient-fill.acl` 通过本地 A3S Test 1.0.0
+门禁采集可访问性、控制台和页面错误；GitHub Actions 与 Pages 不安装也不调用 A3S Test。
 
 ## 文字方向与行列显隐
 

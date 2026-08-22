@@ -14,6 +14,7 @@ import type {
   SpreadsheetFormatCellsTouched,
 } from './spreadsheet-format-cells-dialog-model';
 import type { SpreadsheetFormatCellsInitialFocus } from './spreadsheet-format-cells-intent';
+import { SpreadsheetFormatCellsFillPanel } from './spreadsheet-format-cells-fill-panel';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import {
   spreadsheetFontFamilyOptions,
@@ -119,7 +120,9 @@ export function SpreadsheetFormatCellsPanel(props: PanelProps) {
       {props.activeTab === 'alignment' && <AlignmentPanel {...props} />}
       {props.activeTab === 'font' && <FontPanel {...props} />}
       {props.activeTab === 'border' && <BorderPanel {...props} />}
-      {props.activeTab === 'fill' && <FillPanel {...props} />}
+      {props.activeTab === 'fill' && (
+        <SpreadsheetFormatCellsFillPanel {...props} />
+      )}
       {props.activeTab === 'protection' && <ProtectionPanel {...props} />}
     </section>
   );
@@ -523,40 +526,6 @@ function BorderPreview({ draft }: { draft: SpreadsheetFormatCellsDraft }) {
         />
       )}
       <strong>文本</strong>
-    </div>
-  );
-}
-
-function FillPanel({ source, draft, touched, setDraft, touch }: PanelProps) {
-  return (
-    <div className="work-spreadsheet-format-cells-fill">
-      <Field label="背景色">
-        <OfficeColorPicker
-          ariaLabel="单元格填充颜色"
-          value={draft.fillColor ?? '#ffffff'}
-          onValueChange={(fillColor) => {
-            touch('fillColor');
-            setDraft((current) => ({ ...current, fillColor }));
-          }}
-        />
-      </Field>
-      <Button
-        size="compact"
-        tone="quiet"
-        onClick={() => {
-          touch('fillColor');
-          setDraft((current) => ({ ...current, fillColor: null }));
-        }}
-      >
-        无填充
-      </Button>
-      <div
-        className={`work-spreadsheet-format-cells-fill-preview${draft.fillColor ? '' : ' empty'}`}
-        style={{ backgroundColor: draft.fillColor ?? undefined }}
-      >
-        {draft.fillColor ? draft.fillColor.toUpperCase() : '无填充'}
-      </div>
-      {source.fields.fillColor.mixed && !touched.fillColor && <MixedHint />}
     </div>
   );
 }

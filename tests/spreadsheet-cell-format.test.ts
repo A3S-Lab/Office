@@ -6,6 +6,15 @@ import {
 } from '../src/internal/features/work/editors/spreadsheet-cell-format';
 import { setSpreadsheetCellBordersPerCell } from '../src/internal/features/work/editors/spreadsheet-cell-border-per-cell';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
+import {
+  activeXlsxGradientFill,
+  xlsxGradientFill,
+} from '../src/internal/features/work/work-xlsx-gradient-fill';
+import {
+  activeXlsxPatternFill,
+  withXlsxPatternFill,
+  xlsxPatternFill,
+} from '../src/internal/features/work/work-xlsx-pattern-fill';
 
 describe('spreadsheet cell format', () => {
   test('applies mixed format families to matrix cells without losing content', () => {
@@ -62,7 +71,7 @@ describe('spreadsheet cell format', () => {
         italic: true,
         underline: 'doubleAccounting',
         strike: true,
-        fillColor: '#fff2cc',
+        fill: { color: '#fff2cc', kind: 'solid' },
         borders: [
           { target: 'top', color: '#172033', style: 'medium' },
           { target: 'diagonalDown', color: '#d84b4f', style: 'dashed' },
@@ -276,7 +285,7 @@ describe('spreadsheet cell format', () => {
       sheetId: 'sheet-1',
       range: { row: [0, 0], column: [0, 0] },
       patch: {
-        fillColor: '#d9ead3',
+        fill: { color: '#d9ead3', kind: 'solid' },
         horizontalAlignment: 'center',
         numberFormat: '@',
       },
@@ -308,7 +317,7 @@ describe('spreadsheet cell format', () => {
     const next = applySpreadsheetCellFormat(content, {
       sheetId: 'sheet-1',
       range: { row: [1, 1], column: [1, 2] },
-      patch: { fillColor: '#d9ead3', bold: true },
+      patch: { fill: { color: '#d9ead3', kind: 'solid' }, bold: true },
     });
 
     expect(next).not.toBeNull();
@@ -342,11 +351,99 @@ describe('spreadsheet cell format', () => {
     const next = applySpreadsheetCellFormat(content, {
       sheetId: 'sheet-1',
       range: { row: [1, 1], column: [1, 1] },
-      patch: { fillColor: null, horizontalAlignment: 'general' },
+      patch: { fill: { kind: 'none' }, horizontalAlignment: 'general' },
     });
 
     expect(next?.sheets[0]?.celldata).toEqual(content.sheets[0]?.celldata);
     expect(next?.sheets[0]).not.toHaveProperty('data');
+  });
+
+  test('switches native none, solid, pattern, and gradient fills without stale metadata', () => {
+    const pattern = {
+      backgroundColor: '#ffffff',
+      foregroundColor: '#4472c4',
+      patternType: 'darkGrid' as const,
+    };
+    const content = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sheet 1',
+          data: [
+            [
+              withXlsxPatternFill(
+                { bg: '#ffffff', v: 'Fill transitions' },
+                pattern,
+              ),
+            ],
+          ],
+        },
+      ],
+    } satisfies WorkSpreadsheetContent;
+    const range = { row: [0, 0], column: [0, 0] } as const;
+    const gradient = {
+      bottom: 0.8,
+      left: 0.2,
+      right: 0.8,
+      stops: [
+        { color: '#b42318', position: 0 },
+        { color: '#fff2cc', position: 0.4 },
+        { color: '#ffffff', position: 1 },
+      ],
+      top: 0.1,
+      type: 'path' as const,
+    };
+
+    const withGradient = applySpreadsheetCellFormat(content, {
+      sheetId: 'sheet-1',
+      range,
+      patch: { fill: { kind: 'gradient', value: gradient } },
+    });
+    const gradientCell = withGradient?.sheets[0]?.data?.[0]?.[0];
+    expect(gradientCell?.bg).toBe('#b42318');
+    expect(activeXlsxGradientFill(gradientCell)).toEqual(gradient);
+    expect(xlsxPatternFill(gradientCell)).toBeUndefined();
+
+    const withPattern = withGradient
+      ? applySpreadsheetCellFormat(withGradient, {
+          sheetId: 'sheet-1',
+          range,
+          patch: { fill: { kind: 'pattern', value: pattern } },
+        })
+      : null;
+    const patternCell = withPattern?.sheets[0]?.data?.[0]?.[0];
+    expect(patternCell?.bg).toBe('#ffffff');
+    expect(activeXlsxPatternFill(patternCell)).toEqual(pattern);
+    expect(xlsxGradientFill(patternCell)).toBeUndefined();
+
+    const solid = withPattern
+      ? applySpreadsheetCellFormat(withPattern, {
+          sheetId: 'sheet-1',
+          range,
+          patch: { fill: { color: '#abc', kind: 'solid' } },
+        })
+      : null;
+    const solidCell = solid?.sheets[0]?.data?.[0]?.[0];
+    expect(solidCell?.bg).toBe('#aabbcc');
+    expect(xlsxPatternFill(solidCell)).toBeUndefined();
+    expect(xlsxGradientFill(solidCell)).toBeUndefined();
+
+    const none = solid
+      ? applySpreadsheetCellFormat(solid, {
+          sheetId: 'sheet-1',
+          range,
+          patch: { fill: { kind: 'none' } },
+        })
+      : null;
+    const noneCell = none?.sheets[0]?.data?.[0]?.[0];
+    expect(noneCell?.v).toBe('Fill transitions');
+    expect(noneCell?.bg).toBeUndefined();
+    expect(xlsxPatternFill(noneCell)).toBeUndefined();
+    expect(xlsxGradientFill(noneCell)).toBeUndefined();
+    expect(content.sheets[0]?.data?.[0]?.[0]).toEqual(
+      withXlsxPatternFill({ bg: '#ffffff', v: 'Fill transitions' }, pattern),
+    );
   });
 
   test('keeps untouched mixed protection values while compacting the target', () => {
@@ -442,6 +539,22 @@ describe('spreadsheet cell format', () => {
         sheetId: 'sheet-1',
         range: { row: [0, 0], column: [0, 0] },
         patch: { fontSize: 0 },
+      }),
+    ).toBe(false);
+    expect(
+      canApplySpreadsheetCellFormat(content, {
+        sheetId: 'sheet-1',
+        range: { row: [0, 0], column: [0, 0] },
+        patch: {
+          fill: {
+            kind: 'gradient',
+            value: {
+              degree: 45,
+              stops: [{ color: '#4472c4', position: 0 }],
+              type: 'linear',
+            },
+          },
+        },
       }),
     ).toBe(false);
   });

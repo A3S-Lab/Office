@@ -6,6 +6,7 @@ import {
   createOfficeCollaborationSession,
   createOfficeSpreadsheetCollaborationBinding,
   initializeOfficeSpreadsheetCollaboration,
+  type OfficeArtifact,
 } from '../src/core';
 import { applySpreadsheetCellFormat } from '../src/internal/features/work/editors/spreadsheet-cell-format';
 import {
@@ -203,7 +204,7 @@ describe('native XLSX pattern fills', () => {
       ? applySpreadsheetCellFormat(bold, {
           sheetId: 'sheet-1',
           range: { row: [0, 0], column: [0, 0] },
-          patch: { fillColor: '#ff0000' },
+          patch: { fill: { color: '#ff0000', kind: 'solid' } },
         })
       : null;
     const solidCell = solid?.sheets[0]?.data?.[0]?.[0];
@@ -312,6 +313,53 @@ describe('native XLSX pattern fills', () => {
       foregroundColorOrigin: { kind: 'theme', index: 4, tint: 0.25 },
       backgroundColorOrigin: { kind: 'indexed', index: 2 },
     });
+  });
+
+  test('round-trips an authored native pattern from the typed cell-format patch', async () => {
+    const fill = {
+      backgroundColor: '#fff2cc',
+      foregroundColor: '#b42318',
+      patternType: 'darkTrellis' as const,
+    };
+    const content = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Authored pattern',
+          data: [[{ v: 'Pattern' }]],
+        },
+      ],
+    } satisfies WorkSpreadsheetContent;
+    const authored = applySpreadsheetCellFormat(content, {
+      sheetId: 'sheet-1',
+      range: { row: [0, 0], column: [0, 0] },
+      patch: { fill: { kind: 'pattern', value: fill } },
+    });
+    if (!authored) throw new Error('Expected the pattern to apply.');
+    const now = Date.now();
+    const artifact: OfficeArtifact = {
+      id: 'authored-pattern',
+      kind: 'spreadsheet',
+      title: 'Authored pattern',
+      favorite: false,
+      createdAt: now,
+      updatedAt: now,
+      lastOpenedAt: now,
+      revision: 1,
+      content: authored,
+    };
+
+    const blob = await createWorkArtifactBlob(artifact);
+    const reopened = await importWorkFile(
+      new File([blob], 'authored-pattern.xlsx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'spreadsheet') {
+      throw new Error('Expected a reopened Spreadsheet artifact.');
+    }
+    expect(
+      activeXlsxPatternFill(reopened.content.sheets[0]?.data?.[0]?.[0]),
+    ).toEqual(fill);
   });
 
   test('falls back to literal colors when semantic palette identities conflict', () => {

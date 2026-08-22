@@ -14,6 +14,7 @@ import {
 } from '../src/internal/features/work/editors/spreadsheet-format-cells-dialog-model';
 import type { SpreadsheetCellFormatPatch } from '../src/internal/features/work/editors/spreadsheet-cell-format';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
+import { withXlsxGradientFill } from '../src/internal/features/work/work-xlsx-gradient-fill';
 
 test('applies explicitly touched settings from every Format Cells tab', () => {
   const patches: SpreadsheetCellFormatPatch[] = [];
@@ -56,7 +57,7 @@ test('applies explicitly touched settings from every Format Cells tab', () => {
   fireEvent.click(screen.getByRole('button', { name: '斜上框线' }));
 
   fireEvent.click(screen.getByRole('tab', { name: '填充' }));
-  fireEvent.click(screen.getByRole('button', { name: '无填充' }));
+  fireEvent.click(screen.getByRole('radio', { name: '无填充' }));
 
   fireEvent.click(screen.getByRole('tab', { name: '保护' }));
   fireEvent.click(screen.getByRole('checkbox', { name: '隐藏公式' }));
@@ -73,7 +74,7 @@ test('applies explicitly touched settings from every Format Cells tab', () => {
         { target: 'diagonalDown', color: '#172033', style: 'thin' },
         { target: 'diagonalUp', color: '#172033', style: 'thin' },
       ],
-      fillColor: null,
+      fill: { kind: 'none' },
       hidden: true,
     },
   ]);
@@ -186,6 +187,152 @@ test('opens the Font tab on the shortcut-specific family or size control', async
   await waitFor(() => expect(size).toHaveFocus());
 });
 
+test('authors a multi-stop linear gradient as one typed Fill patch', () => {
+  const patches: SpreadsheetCellFormatPatch[] = [];
+  render(
+    <SpreadsheetFormatCellsDialog
+      source={mixedSource()}
+      openIntent={{ tab: 'fill' }}
+      restoreFocusTarget={() => null}
+      onApply={(patch) => {
+        patches.push(patch);
+        return true;
+      }}
+      onClose={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('radio', { name: '渐变' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '线性渐变角度' }), {
+    target: { value: '45' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '添加色标' }));
+  expect(screen.getAllByRole('button', { name: /色标 \d+ 颜色/ })).toHaveLength(
+    3,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+
+  expect(patches).toEqual([
+    {
+      fill: {
+        kind: 'gradient',
+        value: {
+          degree: 45,
+          stops: [
+            { color: '#fff2cc', position: 0 },
+            { color: '#fff9e6', position: 0.5 },
+            { color: '#ffffff', position: 1 },
+          ],
+          type: 'linear',
+        },
+      },
+    },
+  ]);
+});
+
+test('edits imported path geometry and invalidates only the changed stop color origin', () => {
+  const patches: SpreadsheetCellFormatPatch[] = [];
+  render(
+    <SpreadsheetFormatCellsDialog
+      source={gradientSource()}
+      openIntent={{ tab: 'fill' }}
+      restoreFocusTarget={() => null}
+      onApply={(patch) => {
+        patches.push(patch);
+        return true;
+      }}
+      onClose={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('radio', { name: '渐变' })).toBeChecked();
+  expect(screen.getByRole('combobox', { name: '渐变类型' })).toHaveTextContent(
+    '路径',
+  );
+  fireEvent.change(screen.getByRole('textbox', { name: '路径渐变左边界' }), {
+    target: { value: '20' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '色标 1 颜色' }));
+  fireEvent.click(screen.getByRole('option', { name: '颜色 #6d9eeb' }));
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+
+  expect(patches).toEqual([
+    {
+      fill: {
+        kind: 'gradient',
+        value: {
+          bottom: 0.8,
+          left: 0.2,
+          right: 0.75,
+          stops: [
+            { color: '#6d9eeb', position: 0 },
+            {
+              color: '#ffffff',
+              colorOrigin: {
+                baseColor: '#ffffff',
+                index: 1,
+                kind: 'theme',
+                renderedColor: '#ffffff',
+              },
+              position: 1,
+            },
+          ],
+          top: 0.2,
+          type: 'path',
+        },
+      },
+    },
+  ]);
+});
+
+test('authors a native pattern and blocks crossed path geometry', () => {
+  const patches: SpreadsheetCellFormatPatch[] = [];
+  const first = render(
+    <SpreadsheetFormatCellsDialog
+      source={mixedSource()}
+      openIntent={{ tab: 'fill' }}
+      restoreFocusTarget={() => null}
+      onApply={(patch) => {
+        patches.push(patch);
+        return true;
+      }}
+      onClose={() => undefined}
+    />,
+  );
+  fireEvent.click(screen.getByRole('radio', { name: '图案' }));
+  fireEvent.click(screen.getByRole('combobox', { name: '填充图案样式' }));
+  fireEvent.click(screen.getByRole('option', { name: '深色网格' }));
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+  expect(patches).toEqual([
+    {
+      fill: {
+        kind: 'pattern',
+        value: {
+          backgroundColor: '#fff2cc',
+          foregroundColor: '#ffffff',
+          patternType: 'darkGrid',
+        },
+      },
+    },
+  ]);
+  first.unmount();
+
+  render(
+    <SpreadsheetFormatCellsDialog
+      source={gradientSource()}
+      openIntent={{ tab: 'fill' }}
+      restoreFocusTarget={() => null}
+      onApply={() => true}
+      onClose={() => undefined}
+    />,
+  );
+  fireEvent.change(screen.getByRole('textbox', { name: '路径渐变左边界' }), {
+    target: { value: '90' },
+  });
+  expect(screen.getByRole('alert')).toHaveTextContent('请检查填充设置');
+  expect(screen.getByRole('button', { name: '应用' })).toBeDisabled();
+});
+
 function FormatCellsHarness({
   source,
 }: {
@@ -250,5 +397,56 @@ function mixedSource(): SpreadsheetFormatCellsDialogSource {
     { row: 0, column: 0 },
   );
   if (!source) throw new Error('Expected a Format Cells source.');
+  return source;
+}
+
+function gradientSource(): SpreadsheetFormatCellsDialogSource {
+  const themeStart = {
+    baseColor: '#4472c4',
+    index: 4,
+    kind: 'theme',
+    renderedColor: '#4472c4',
+  } as const;
+  const themeEnd = {
+    baseColor: '#ffffff',
+    index: 1,
+    kind: 'theme',
+    renderedColor: '#ffffff',
+  } as const;
+  const content = {
+    type: 'spreadsheet',
+    sheets: [
+      {
+        id: 'sheet-1',
+        name: 'Sheet 1',
+        data: [
+          [
+            withXlsxGradientFill(
+              { bg: '#4472c4', v: 'Gradient' },
+              {
+                bottom: 0.8,
+                left: 0.25,
+                right: 0.75,
+                stops: [
+                  { color: '#4472c4', colorOrigin: themeStart, position: 0 },
+                  { color: '#ffffff', colorOrigin: themeEnd, position: 1 },
+                ],
+                top: 0.2,
+                type: 'path',
+              },
+            ),
+          ],
+        ],
+      },
+    ],
+  } satisfies WorkSpreadsheetContent;
+  const source = createSpreadsheetFormatCellsDialogSource(
+    content,
+    'sheet-1',
+    { row: [0, 0], column: [0, 0] },
+    content.sheets[0]?.data ?? [],
+    { row: 0, column: 0 },
+  );
+  if (!source) throw new Error('Expected a gradient Format Cells source.');
   return source;
 }

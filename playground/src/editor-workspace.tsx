@@ -374,22 +374,26 @@ export function EditorWorkspace({
                 <output
                   className="playground-sparse-fixture-status"
                   data-testid="spreadsheet-pattern-fill-status"
+                  data-authoring="format-cells"
                   data-pattern-count="17"
                   data-revision={artifact.revision}
                   aria-live="polite"
                 >
-                  原生 XLSX 图案填充 · 17 种样式 · 修订 {artifact.revision}
+                  原生 XLSX 图案填充 · 17 种样式 · 可编辑 · 修订{' '}
+                  {artifact.revision}
                 </output>
               )}
               {spreadsheetGradientFillFixture && (
                 <output
                   className="playground-sparse-fixture-status"
                   data-testid="spreadsheet-gradient-fill-status"
+                  data-authoring="format-cells"
                   data-gradient-count="6"
                   data-revision={artifact.revision}
                   aria-live="polite"
                 >
-                  原生 XLSX 渐变填充 · 6 个示例 · 修订 {artifact.revision}
+                  原生 XLSX 渐变填充 · 6 个示例 · 可编辑 · 修订{' '}
+                  {artifact.revision}
                 </output>
               )}
               {spreadsheetCopyFromAboveFixture && (

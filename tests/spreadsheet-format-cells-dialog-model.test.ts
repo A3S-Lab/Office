@@ -2,10 +2,12 @@ import { describe, expect, test } from '@rstest/core';
 import {
   createSpreadsheetFormatCellsDialogSource,
   createSpreadsheetFormatCellsDraft,
+  spreadsheetFormatCellsActiveFill,
   spreadsheetFormatCellsDraftErrors,
   spreadsheetFormatCellsPatch,
 } from '../src/internal/features/work/editors/spreadsheet-format-cells-dialog-model';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
+import { withXlsxGradientFill } from '../src/internal/features/work/work-xlsx-gradient-fill';
 
 describe('spreadsheet format cells dialog model', () => {
   test('describes mixed cells without emitting untouched fields', () => {
@@ -49,7 +51,7 @@ describe('spreadsheet format cells dialog model', () => {
     expect(source.fields.numberFormat.mixed).toBe(true);
     expect(source.fields.horizontalAlignment.mixed).toBe(true);
     expect(source.fields.bold.mixed).toBe(true);
-    expect(source.fields.fillColor.mixed).toBe(true);
+    expect(source.fields.fill.mixed).toBe(true);
     expect(draft.numberFormat).toBe('#,##0');
     expect(
       spreadsheetFormatCellsPatch(source, draft, {
@@ -191,5 +193,108 @@ describe('spreadsheet format cells dialog model', () => {
     );
 
     expect(source?.fields.rotation).toEqual({ mixed: false, value: -30 });
+  });
+
+  test('preserves an imported gradient until Fill is explicitly edited', () => {
+    const gradient = {
+      degree: 90.5,
+      stops: [
+        {
+          color: '#4472c4',
+          colorOrigin: {
+            baseColor: '#4472c4',
+            index: 4,
+            kind: 'theme',
+            renderedColor: '#4472c4',
+          } as const,
+          position: 0,
+        },
+        { color: '#ffffff', position: 1 },
+      ],
+      type: 'linear' as const,
+    };
+    const content = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sheet 1',
+          data: [[withXlsxGradientFill({ bg: '#4472c4', v: 'A' }, gradient)]],
+        },
+      ],
+    } satisfies WorkSpreadsheetContent;
+    const source = createSpreadsheetFormatCellsDialogSource(
+      content,
+      'sheet-1',
+      { row: [0, 0], column: [0, 0] },
+      content.sheets[0]?.data ?? [],
+      { row: 0, column: 0 },
+    );
+    if (!source) throw new Error('Expected a format-cells dialog source.');
+    const draft = createSpreadsheetFormatCellsDraft(source);
+
+    expect(source.fields.fill).toEqual({
+      mixed: false,
+      value: { kind: 'gradient', value: gradient },
+    });
+    expect(draft.fill.mode).toBe('gradient');
+    expect(spreadsheetFormatCellsPatch(source, draft, {})).toEqual({});
+    expect(spreadsheetFormatCellsActiveFill(draft)).toEqual({
+      kind: 'gradient',
+      value: gradient,
+    });
+
+    const edited = {
+      ...draft,
+      fill: {
+        ...draft.fill,
+        gradient: { ...gradient, degree: 45 },
+      },
+    };
+    expect(spreadsheetFormatCellsPatch(source, edited, { fill: true })).toEqual(
+      {
+        fill: {
+          kind: 'gradient',
+          value: { ...gradient, degree: 45 },
+        },
+      },
+    );
+  });
+
+  test('rejects crossed path geometry and out-of-order gradient stops', () => {
+    const content = {
+      type: 'spreadsheet',
+      sheets: [{ id: 'sheet-1', name: 'Sheet 1', data: [[{ v: 1 }]] }],
+    } satisfies WorkSpreadsheetContent;
+    const source = createSpreadsheetFormatCellsDialogSource(
+      content,
+      'sheet-1',
+      { row: [0, 0], column: [0, 0] },
+      content.sheets[0]?.data ?? [],
+      { row: 0, column: 0 },
+    );
+    if (!source) throw new Error('Expected a format-cells dialog source.');
+    const draft = createSpreadsheetFormatCellsDraft(source);
+
+    expect(
+      spreadsheetFormatCellsDraftErrors({
+        ...draft,
+        fill: {
+          ...draft.fill,
+          mode: 'gradient',
+          gradient: {
+            bottom: 0.4,
+            left: 0.8,
+            right: 0.2,
+            stops: [
+              { color: '#4472c4', position: 0.7 },
+              { color: '#ffffff', position: 0.3 },
+            ],
+            top: 0.6,
+            type: 'path',
+          },
+        },
+      }).fill,
+    ).toContain('请检查填充设置');
   });
 });

@@ -6,6 +6,7 @@ import {
   createOfficeCollaborationSession,
   createOfficeSpreadsheetCollaborationBinding,
   initializeOfficeSpreadsheetCollaboration,
+  type OfficeArtifact,
 } from '../src/core';
 import { applySpreadsheetCellFormat } from '../src/internal/features/work/editors/spreadsheet-cell-format';
 import {
@@ -250,7 +251,7 @@ describe('native XLSX gradient fills', () => {
       ? applySpreadsheetCellFormat(bold, {
           sheetId: 'sheet-1',
           range: { row: [0, 0], column: [0, 0] },
-          patch: { fillColor: '#ff0000' },
+          patch: { fill: { color: '#ff0000', kind: 'solid' } },
         })
       : null;
     const solidCell = solid?.sheets[0]?.data?.[0]?.[0];
@@ -441,6 +442,79 @@ describe('native XLSX gradient fills', () => {
       { color: 'FF445566', position: '0.4' },
       { color: 'FFFFFFFF', position: '1' },
     ]);
+  });
+
+  test('round-trips authored linear and path gradients from typed cell-format patches', async () => {
+    const linear = {
+      degree: 315.25,
+      stops: [
+        { color: '#1d4ed8', position: 0 },
+        { color: '#67e8f9', position: 0.35 },
+        { color: '#ffffff', position: 1 },
+      ],
+      type: 'linear' as const,
+    };
+    const path = {
+      bottom: 0.9,
+      left: 0.15,
+      right: 0.85,
+      stops: [
+        { color: '#b42318', position: 0 },
+        { color: '#fff2cc', position: 0.55 },
+        { color: '#ffffff', position: 1 },
+      ],
+      top: 0.1,
+      type: 'path' as const,
+    };
+    const content = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Authored gradients',
+          data: [[{ v: 'Linear' }, { v: 'Path' }]],
+        },
+      ],
+    } satisfies WorkSpreadsheetContent;
+    const withLinear = applySpreadsheetCellFormat(content, {
+      sheetId: 'sheet-1',
+      range: { row: [0, 0], column: [0, 0] },
+      patch: { fill: { kind: 'gradient', value: linear } },
+    });
+    const authored = withLinear
+      ? applySpreadsheetCellFormat(withLinear, {
+          sheetId: 'sheet-1',
+          range: { row: [0, 0], column: [1, 1] },
+          patch: { fill: { kind: 'gradient', value: path } },
+        })
+      : null;
+    if (!authored) throw new Error('Expected authored gradients to apply.');
+    const now = Date.now();
+    const artifact: OfficeArtifact = {
+      id: 'authored-gradients',
+      kind: 'spreadsheet',
+      title: 'Authored gradients',
+      favorite: false,
+      createdAt: now,
+      updatedAt: now,
+      lastOpenedAt: now,
+      revision: 1,
+      content: authored,
+    };
+
+    const blob = await createWorkArtifactBlob(artifact);
+    const reopened = await importWorkFile(
+      new File([blob], 'authored-gradients.xlsx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'spreadsheet') {
+      throw new Error('Expected a reopened Spreadsheet artifact.');
+    }
+    expect(
+      activeXlsxGradientFill(reopened.content.sheets[0]?.data?.[0]?.[0]),
+    ).toEqual(linear);
+    expect(
+      activeXlsxGradientFill(reopened.content.sheets[0]?.data?.[0]?.[1]),
+    ).toEqual(path);
   });
 
   test('falls back to literal stop colors when semantic palette identities conflict', () => {

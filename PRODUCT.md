@@ -390,6 +390,21 @@ No Fill, Clear Formats, and built-in Cell Styles clear it. Invalid geometry,
 colors, order, type, or stop budgets fail closed; palette conflicts emit
 literal RGB. Focused Rstest, desktop/compact Playwright, and a local-only A3S
 Test 1.0.0 gallery gate cover the slice without changing Actions or Pages.
+The thirty-seventh milestone turns preserved native fills into one complete
+Format Cells authoring surface. A typed fill union covers none, solid, every
+native OOXML pattern, and linear or path gradients without introducing a
+parallel style state. Pattern foreground/background colors and gradient angle,
+inner-rectangle geometry, and two through 256 ordered stops are editable with
+an exact Canvas preview; midpoint insertion interpolates the neighboring
+colors. Switching modes retains inactive drafts, mixed selections remain
+untouched until an explicit fill edit, and invalid geometry or stop order
+blocks Apply. Editing one semantic color invalidates only that color origin,
+while untouched native identities remain exportable. One Apply still produces
+one controlled workbook update and one Undo record, and authored patterns and
+gradients survive XLSX export and reopen. Focused Rstest, desktop/compact
+Playwright authoring flows, and local-only A3S Test 1.0.0 suites cover Apply,
+reopen, Undo, responsive containment, accessibility, and empty browser
+diagnostics without adding A3S Test to Actions or Pages.
 
 ## Product Rules
 

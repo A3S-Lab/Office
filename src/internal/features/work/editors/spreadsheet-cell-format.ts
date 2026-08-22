@@ -35,7 +35,11 @@ import {
 } from './spreadsheet-cell-range';
 import { spreadsheetNumberFormatValue } from './spreadsheet-number-format';
 import { patchSpreadsheetRichTextFontRuns } from '../work-xlsx-rich-text';
-import { deleteXlsxNativeFills } from '../work-xlsx-native-fill';
+import {
+  normalizeSpreadsheetCellFillFormat,
+  type SpreadsheetCellFillFormat,
+  withSpreadsheetCellFillFormat,
+} from './spreadsheet-cell-fill-format';
 
 export const MAX_SPREADSHEET_CELL_FORMAT_CELLS = 10_000;
 
@@ -60,7 +64,7 @@ export interface SpreadsheetCellFormatPatch {
   italic?: boolean;
   underline?: SpreadsheetUnderlineStyle;
   strike?: boolean;
-  fillColor?: string | null;
+  fill?: SpreadsheetCellFillFormat;
   borders?: readonly SpreadsheetCellBorderFormat[];
   locked?: boolean;
   hidden?: boolean;
@@ -91,7 +95,7 @@ const patchKeys = new Set<keyof SpreadsheetCellFormatPatch>([
   'italic',
   'underline',
   'strike',
-  'fillColor',
+  'fill',
   'borders',
   'locked',
   'hidden',
@@ -142,9 +146,8 @@ export function canApplySpreadsheetCellFormat(
         patch.fontSize < 1 ||
         patch.fontSize > 409)) ||
     (patch.fontColor !== undefined && !normalizeColor(patch.fontColor)) ||
-    (patch.fillColor !== undefined &&
-      patch.fillColor !== null &&
-      !normalizeColor(patch.fillColor)) ||
+    (patch.fill !== undefined &&
+      !normalizeSpreadsheetCellFillFormat(patch.fill)) ||
     !validOptionalBoolean(patch.bold) ||
     !validOptionalBoolean(patch.italic) ||
     (patch.underline !== undefined &&
@@ -340,7 +343,7 @@ function formatCell(
   source: Cell | null | undefined,
   patch: SpreadsheetCellFormatPatch,
 ): Cell | null {
-  const next = { ...(source ?? {}) } as ProtectionCell;
+  let next = { ...(source ?? {}) } as ProtectionCell;
   const writable = next as unknown as Record<string, unknown>;
   if (patch.numberFormat !== undefined) {
     const format = spreadsheetNumberFormatValue(
@@ -386,10 +389,9 @@ function formatCell(
     next.un = spreadsheetUnderlineCellValue(patch.underline);
   }
   if (patch.strike !== undefined) next.cl = patch.strike ? 1 : 0;
-  if (patch.fillColor !== undefined) {
-    deleteXlsxNativeFills(next);
-    if (patch.fillColor === null) delete next.bg;
-    else next.bg = normalizeColor(patch.fillColor) ?? patch.fillColor;
+  if (patch.fill !== undefined) {
+    const filled = withSpreadsheetCellFillFormat(next, patch.fill);
+    if (filled) next = filled as ProtectionCell;
   }
   if (patch.locked !== undefined || patch.hidden !== undefined) {
     delete next.lo;

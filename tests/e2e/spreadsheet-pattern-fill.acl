@@ -21,15 +21,83 @@ suite "office-spreadsheet-pattern-fill" {
         }
 
         expect "all-patterns-are-declared" {
-            visible = css("[data-testid='spreadsheet-pattern-fill-status'][data-pattern-count='17'][data-revision='1']")
+            visible = css("[data-testid='spreadsheet-pattern-fill-status'][data-authoring='format-cells'][data-pattern-count='17'][data-revision='1']")
         }
 
         expect "pattern-status-is-visible" {
             text = "原生 XLSX 图案填充 · 17 种样式"
         }
 
-        screenshot "desktop-pattern-gallery" {
-            path = "screenshots/spreadsheet-pattern-fill-desktop.png"
+        focus "focus-pattern-cell" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "open-pattern-format-cells" {
+            key = "Control+1"
+        }
+
+        click "open-pattern-fill-tab" {
+            target = role("tab", "填充")
+        }
+
+        expect "imported-pattern-is-editable" {
+            visible = css(".work-spreadsheet-format-cells-dialog input[type='radio'][value='pattern']:checked")
+        }
+
+        click "open-pattern-type" {
+            target = role("combobox", "填充图案样式")
+        }
+
+        click "choose-dark-trellis-pattern" {
+            target = role("option", "深色菱形网格")
+        }
+
+        expect "authored-pattern-draft-is-visible" {
+            text = "深色菱形网格"
+        }
+
+        click "apply-authored-pattern" {
+            target = role("button", "应用")
+        }
+
+        focus "focus-grid-after-pattern-apply" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "reopen-authored-pattern" {
+            key = "Control+1"
+        }
+
+        click "reopen-authored-pattern-fill-tab" {
+            target = role("tab", "填充")
+        }
+
+        expect "authored-pattern-persists" {
+            text = "深色菱形网格"
+        }
+
+        press "close-authored-pattern" {
+            key = "Escape"
+        }
+
+        focus "focus-grid-before-pattern-undo" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "undo-authored-pattern" {
+            key = "Control+z"
+        }
+
+        press "inspect-pattern-undo" {
+            key = "Control+1"
+        }
+
+        click "inspect-pattern-undo-fill-tab" {
+            target = role("tab", "填充")
+        }
+
+        expect "undo-restores-imported-pattern" {
+            text = "深色下斜线"
         }
 
         accessibility "desktop-pattern-accessibility" {
@@ -67,8 +135,20 @@ suite "office-spreadsheet-pattern-fill" {
             visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
         }
 
-        screenshot "compact-pattern-gallery" {
-            path = "screenshots/spreadsheet-pattern-fill-compact.png"
+        focus "focus-compact-pattern-cell" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "open-compact-pattern-format-cells" {
+            key = "Control+1"
+        }
+
+        click "open-compact-pattern-fill-tab" {
+            target = role("tab", "填充")
+        }
+
+        expect "compact-imported-pattern-is-editable" {
+            visible = css(".work-spreadsheet-format-cells-dialog input[type='radio'][value='pattern']:checked")
         }
 
         accessibility "compact-pattern-accessibility" {

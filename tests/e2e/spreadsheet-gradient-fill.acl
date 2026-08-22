@@ -21,15 +21,92 @@ suite "office-spreadsheet-gradient-fill" {
         }
 
         expect "all-gradients-are-declared" {
-            visible = css("[data-testid='spreadsheet-gradient-fill-status'][data-gradient-count='6'][data-revision='1']")
+            visible = css("[data-testid='spreadsheet-gradient-fill-status'][data-authoring='format-cells'][data-gradient-count='6'][data-revision='1']")
         }
 
         expect "gradient-status-is-visible" {
             text = "原生 XLSX 渐变填充 · 6 个示例"
         }
 
-        screenshot "desktop-gradient-gallery" {
-            path = "screenshots/spreadsheet-gradient-fill-desktop.png"
+        focus "focus-gradient-cell" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "open-gradient-format-cells" {
+            key = "Control+1"
+        }
+
+        click "open-gradient-fill-tab" {
+            target = role("tab", "填充")
+        }
+
+        expect "imported-gradient-is-editable" {
+            visible = css(".work-spreadsheet-format-cells-dialog input[type='radio'][value='gradient']:checked")
+        }
+
+        click "open-gradient-type" {
+            target = role("combobox", "渐变类型")
+        }
+
+        click "choose-path-gradient" {
+            target = role("option", "路径")
+        }
+
+        click "add-authored-gradient-stop" {
+            target = role("button", "添加色标")
+        }
+
+        fill "set-authored-path-left" {
+            target = css("input[aria-label='路径渐变左边界']")
+            value = "20"
+        }
+
+        expect "path-gradient-draft-has-three-stops" {
+            visible = css(".work-spreadsheet-format-cells-gradient-controls[data-gradient-type='path'] .work-spreadsheet-format-cells-gradient-stops[data-stop-count='3']")
+        }
+
+        click "apply-authored-path-gradient" {
+            target = role("button", "应用")
+        }
+
+        focus "focus-grid-after-gradient-apply" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "reopen-authored-gradient" {
+            key = "Control+1"
+        }
+
+        click "reopen-authored-gradient-fill-tab" {
+            target = role("tab", "填充")
+        }
+
+        expect "authored-path-gradient-persists" {
+            visible = css(".work-spreadsheet-format-cells-gradient-controls[data-gradient-type='path'] .work-spreadsheet-format-cells-gradient-stops[data-stop-count='3']")
+        }
+
+        press "close-authored-gradient" {
+            key = "Escape"
+        }
+
+        focus "focus-grid-before-gradient-undo" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "undo-authored-gradient" {
+            key = "Control+z"
+        }
+
+        press "inspect-gradient-undo" {
+            key = "Control+1"
+        }
+
+        click "inspect-gradient-undo-fill-tab" {
+            target = role("tab", "填充")
+        }
+
+        expect "undo-restores-imported-linear-gradient" {
+            visible = css(".work-spreadsheet-format-cells-gradient-controls[data-gradient-type='linear'] .work-spreadsheet-format-cells-gradient-stops[data-stop-count='2']")
         }
 
         accessibility "desktop-gradient-accessibility" {
@@ -67,8 +144,20 @@ suite "office-spreadsheet-gradient-fill" {
             visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
         }
 
-        screenshot "compact-gradient-gallery" {
-            path = "screenshots/spreadsheet-gradient-fill-compact.png"
+        focus "focus-compact-gradient-cell" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "open-compact-gradient-format-cells" {
+            key = "Control+1"
+        }
+
+        click "open-compact-gradient-fill-tab" {
+            target = role("tab", "填充")
+        }
+
+        expect "compact-imported-gradient-is-editable" {
+            visible = css(".work-spreadsheet-format-cells-dialog input[type='radio'][value='gradient']:checked")
         }
 
         accessibility "compact-gradient-accessibility" {

@@ -532,7 +532,10 @@ describe('spreadsheet command controller', () => {
       editor.commands.applyCellFormat({
         sheetId: 'sheet-1',
         range: { row: [2, 2], column: [3, 4] },
-        patch: { bold: true, fillColor: '#fff2cc' },
+        patch: {
+          bold: true,
+          fill: { color: '#fff2cc', kind: 'solid' },
+        },
       }),
     ).toBe(true);
     expect(fixture.changes).toHaveLength(1);
