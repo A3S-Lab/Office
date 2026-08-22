@@ -36,6 +36,31 @@ test('Word formatting controls apply computed styles and preview their fonts', a
   await expect(italic).toHaveCSS('font-style', 'italic');
   await expect(editor).toContainText(selectedText);
 
+  await ribbon.getByRole('button', { name: '大小写效果' }).click();
+  const textCaseMenu = page.getByRole('menu', { name: '大小写效果' });
+  await expect(textCaseMenu).toBeVisible();
+  await expectWithinViewport(textCaseMenu);
+  await expect(
+    textCaseMenu.getByRole('menuitemradio', { name: '全部大写' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+Shift+A Meta+Shift+A');
+  await textCaseMenu.getByRole('menuitemradio', { name: '小型大写' }).click();
+  const smallCaps = editor
+    .locator('[data-office-text-case="small-caps"]')
+    .filter({ hasText: selectedText });
+  await expect(smallCaps).toHaveCount(1);
+  await expect(smallCaps).toHaveCSS('font-variant-caps', 'small-caps');
+  await expect(smallCaps).toHaveCSS('text-transform', 'none');
+
+  await page.keyboard.press('Control+Shift+a');
+  const allCaps = editor
+    .locator('[data-office-text-case="all-caps"]')
+    .filter({ hasText: selectedText });
+  await expect(allCaps).toHaveCount(1);
+  await expect(allCaps).toHaveCSS('text-transform', 'uppercase');
+  await expect(allCaps).toHaveCSS('font-variant-caps', 'normal');
+  await page.keyboard.press('Control+z');
+  await expect(smallCaps).toHaveCount(1);
+
   await ribbon.getByRole('combobox', { name: '字体' }).click();
   const fontMenu = page.getByRole('listbox', { name: '字体' });
   await expect(fontMenu).toBeVisible();

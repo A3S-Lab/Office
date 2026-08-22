@@ -428,6 +428,10 @@ function documentTextLayoutRunStyle(
   const direction = style.direction === 'rtl' ? 'rtl' : 'ltr';
   const whiteSpace =
     style.whiteSpace === 'break-spaces' ? 'breakSpaces' : 'normal';
+  // CSS casing can shape a glyph stream that no longer has a one-to-one UTF-16
+  // mapping to the semantic text, while small caps also changes run metrics.
+  // Keep browser line measurement authoritative until the kernel protocol can
+  // carry the transformed text and an exact source-offset map.
   if (
     direction !== paragraphStyle.direction ||
     whiteSpace !== paragraphStyle.whiteSpace ||

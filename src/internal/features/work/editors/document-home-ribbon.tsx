@@ -48,6 +48,7 @@ import {
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 import { DocumentListGallery } from './document-list-gallery';
 import { DocumentStyleGallery } from './document-style-gallery';
+import { DocumentTextCaseRibbon } from './document-text-case-ribbon';
 
 const documentLineHeightOptions = [
   { value: 'default', label: '默认行距' },
@@ -178,6 +179,7 @@ export function DocumentHomeRibbon({
             >
               <Strikethrough size={16} />
             </ToolbarButton>
+            <DocumentTextCaseRibbon editor={editor} />
             <ToolbarButton
               label="下标"
               {...commandShortcut('subscript')}

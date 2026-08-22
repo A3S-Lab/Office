@@ -66,6 +66,29 @@ describe('document formatting', () => {
     editor.destroy();
   });
 
+  test('keeps native text-case effects mutually exclusive and undoable', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: '<p>Mixed Case</p>',
+    });
+    editor.commands.selectAll();
+
+    expect(editor.commands.keyboardShortcut('Mod-Shift-a')).toBe(true);
+    expect(editor.getAttributes('textStyle').textCase).toBe('all-caps');
+    expect(editor.getHTML()).toContain('text-transform: uppercase');
+
+    expect(editor.commands.keyboardShortcut('Mod-Shift-k')).toBe(true);
+    expect(editor.getAttributes('textStyle').textCase).toBe('small-caps');
+    expect(editor.getHTML()).toContain('font-variant-caps: small-caps');
+    expect(editor.getHTML()).not.toContain('text-transform: uppercase');
+
+    expect(editor.commands.undo()).toBe(true);
+    expect(editor.getAttributes('textStyle').textCase).toBe('all-caps');
+    expect(editor.commands.keyboardShortcut('Mod-Shift-a')).toBe(true);
+    expect(editor.getAttributes('textStyle').textCase).toBe('none');
+    editor.destroy();
+  });
+
   test('keeps superscript and subscript editable across a DOCX round trip', async () => {
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document')

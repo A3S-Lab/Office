@@ -5,6 +5,12 @@ import {
   parseDocxThemeReference,
   serializeDocxThemeReference,
 } from './work-docx-theme-reference';
+import {
+  DOCUMENT_TEXT_CASE_ATTRIBUTE,
+  documentTextCaseCss,
+  normalizeDocumentTextCase,
+  type WorkDocumentTextCase,
+} from './work-document-text-case';
 
 export const DOCUMENT_WORD_DEFAULT_SINGLE_LINE_HEIGHT = 1.15;
 
@@ -31,6 +37,7 @@ declare module '@tiptap/extension-text-style' {
     wordLineHeightFactor?: number | null;
     wordSnapToGrid?: boolean | null;
     themeColor?: string | null;
+    textCase?: WorkDocumentTextCase | null;
   }
 }
 
@@ -89,6 +96,20 @@ export const DocumentTextStyle = TextStyle.extend({
         },
       },
       themeColor: themeReferenceAttribute('officeThemeColor'),
+      textCase: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentTextCase(element.dataset.officeTextCase),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const textCase = normalizeDocumentTextCase(attributes.textCase);
+          return textCase
+            ? {
+                [DOCUMENT_TEXT_CASE_ATTRIBUTE]: textCase,
+                style: documentTextCaseCss(textCase),
+              }
+            : {};
+        },
+      },
     };
   },
 });

@@ -135,6 +135,33 @@ describe('document mixed-run text layout', () => {
     }
   });
 
+  test('keeps case-transforming runs on the browser measurement path', () => {
+    const effects = [
+      'text-transform: uppercase',
+      'font-variant-caps: small-caps',
+    ];
+
+    for (const effect of effects) {
+      const paragraph = document.createElement('p');
+      applyTextMetrics(paragraph, 14, 21);
+      paragraph.innerHTML = `<span style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; ${effect}">Mixed Case</span>`;
+      document.body.append(paragraph);
+
+      try {
+        expect(
+          collectDocumentTextLayoutRuns(
+            paragraph,
+            paragraph.textContent ?? '',
+            [layoutFont],
+            new Set([layoutFont.id]),
+          ),
+        ).toBeNull();
+      } finally {
+        paragraph.remove();
+      }
+    }
+  });
+
   test('falls back when a visible run does not have an exact registered face', () => {
     const paragraph = document.createElement('p');
     applyTextMetrics(paragraph, 14, 21);

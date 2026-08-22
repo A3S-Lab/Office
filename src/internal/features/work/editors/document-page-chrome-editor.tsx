@@ -3,7 +3,6 @@ import Color from '@tiptap/extension-color';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TableKit } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
-import { TextStyle } from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -24,9 +23,11 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  DocumentCharacterFormatting,
   DocumentSubscript,
   DocumentSuperscript,
 } from '../work-document-character-formatting';
+import { DocumentTextStyle } from '../work-document-word-line-metrics';
 import { DocumentEquation } from '../work-document-equations';
 import { DocumentImage } from '../work-document-image-layout';
 import { DOCUMENT_LINK_VALIDATION_MESSAGE } from '../work-document-links';
@@ -391,9 +392,10 @@ export function createDocumentPageChromeEditorExtensions(
     }),
     DocumentImage.configure({ allowBase64: true, inline: true }),
     DocumentEquation,
-    TextStyle,
+    DocumentTextStyle,
     Color,
     Underline,
+    DocumentCharacterFormatting,
     DocumentSubscript,
     DocumentSuperscript,
     DocumentPageChromeCommands,

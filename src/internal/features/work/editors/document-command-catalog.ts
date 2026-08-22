@@ -1,3 +1,5 @@
+import { documentTextCaseKeyboardShortcuts } from '../work-document-text-case';
+
 export const documentRibbonTabs = [
   { id: 'home', label: '开始' },
   { id: 'insert', label: '插入' },
@@ -166,6 +168,26 @@ export const documentCommandCatalog = {
     id: 'font.strike',
     label: '删除线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  allCaps: {
+    id: 'font.allCaps',
+    label: '全部大写',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+A',
+      aria: 'Control+Shift+A Meta+Shift+A',
+      editor: [documentTextCaseKeyboardShortcuts.allCaps],
+    },
+  },
+  smallCaps: {
+    id: 'font.smallCaps',
+    label: '小型大写',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+K',
+      aria: 'Control+Shift+K Meta+Shift+K',
+      editor: [documentTextCaseKeyboardShortcuts.smallCaps],
+    },
   },
   subscript: {
     id: 'font.subscript',

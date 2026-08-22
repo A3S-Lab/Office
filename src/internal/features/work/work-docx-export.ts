@@ -116,6 +116,7 @@ import {
   patchDocxThemeReferences,
 } from './work-docx-theme-reference';
 import { preserveDocxSourcePackage } from './work-ooxml-package-preservation';
+import { normalizeDocumentTextCase } from './work-document-text-case';
 import type {
   WorkDocumentComment,
   WorkDocumentContent,
@@ -725,6 +726,10 @@ async function inlineRuns(
       parseDocxThemeReference(node.dataset.officeThemeFill),
       resolvedShading?.fill ? `#${resolvedShading.fill}` : null,
     );
+    const explicitTextCase = normalizeDocumentTextCase(
+      node.dataset.officeTextCase,
+    );
+    const textCaseOptions = docxTextCaseRunOptions(explicitTextCase, inherited);
     const style: IRunOptions = {
       ...inherited,
       bold: inherited.bold || tag === 'strong' || tag === 'b',
@@ -741,6 +746,7 @@ async function inlineRuns(
         dataBoolean(node.dataset.officeWordSnapToGrid) ?? inherited.snapToGrid,
       rightToLeft:
         direction === undefined ? inherited.rightToLeft : direction === 'rtl',
+      ...textCaseOptions,
     };
     if (tag === 'br') {
       return [new docx.TextRun({ ...style, break: 1 })];
@@ -804,6 +810,29 @@ async function inlineRuns(
   for (const node of root.childNodes)
     runs.push(...(await visit(node, inheritedDirection)));
   return runs;
+}
+
+function docxTextCaseRunOptions(
+  explicitTextCase: ReturnType<typeof normalizeDocumentTextCase>,
+  inherited: IRunOptions,
+): Pick<IRunOptions, 'allCaps' | 'smallCaps'> {
+  if (explicitTextCase === null) {
+    if (inherited.smallCaps !== undefined) {
+      return { allCaps: undefined, smallCaps: inherited.smallCaps };
+    }
+    return inherited.allCaps === undefined
+      ? {}
+      : { allCaps: inherited.allCaps, smallCaps: undefined };
+  }
+  if (explicitTextCase === 'all-caps') {
+    return { allCaps: true, smallCaps: undefined };
+  }
+  if (explicitTextCase === 'small-caps') {
+    return { allCaps: undefined, smallCaps: true };
+  }
+  return inherited.smallCaps
+    ? { allCaps: undefined, smallCaps: false }
+    : { allCaps: false, smallCaps: undefined };
 }
 
 function docxTextRevision(

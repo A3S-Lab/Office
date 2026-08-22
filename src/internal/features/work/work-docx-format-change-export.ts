@@ -295,6 +295,13 @@ function appendFormattingProperties(
     'strike',
     'strike',
   );
+  appendTextCaseProperties(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
   appendColorProperty(
     document,
     properties,
@@ -367,6 +374,31 @@ function appendValuedProperty(
   const element = wordElement(document, namespace, prefix, property);
   setWordAttribute(element, namespace, prefix, 'val', value);
   properties.append(element);
+}
+
+function appendTextCaseProperties(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const textCase = mark?.attrs?.textCase;
+  if (textCase === 'all-caps') {
+    properties.append(wordElement(document, namespace, prefix, 'caps'));
+  } else if (textCase === 'small-caps') {
+    properties.append(wordElement(document, namespace, prefix, 'smallCaps'));
+  } else if (textCase === 'none') {
+    appendValuedProperty(document, properties, namespace, prefix, 'caps', '0');
+    appendValuedProperty(
+      document,
+      properties,
+      namespace,
+      prefix,
+      'smallCaps',
+      '0',
+    );
+  }
 }
 
 function appendColorProperty(

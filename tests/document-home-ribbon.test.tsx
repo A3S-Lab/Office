@@ -280,6 +280,8 @@ test('wires every direct character-format action to the TipTap selection', () =>
   fireEvent.click(within(font).getByRole('button', { name: '文字颜色' }));
   fireEvent.click(screen.getByRole('option', { name: '颜色 #0070c0' }));
   fireEvent.click(within(font).getByRole('button', { name: '突出显示' }));
+  fireEvent.click(within(font).getByRole('button', { name: '大小写效果' }));
+  fireEvent.click(screen.getByRole('menuitemradio', { name: '小型大写' }));
 
   expect(textMarkNames(editor, 'Format this')).toEqual(
     new Set([
@@ -295,10 +297,12 @@ test('wires every direct character-format action to the TipTap selection', () =>
     color: '#0070c0',
     fontFamily: 'Arial, sans-serif',
     fontSize: '14pt',
+    textCase: 'small-caps',
   });
   expect(editor.getHTML()).toContain('font-family: Arial, sans-serif');
   expect(editor.getHTML()).toContain('font-size: 14pt');
   expect(editor.getHTML()).toContain('color: #0070c0');
+  expect(editor.getHTML()).toContain('data-office-text-case="small-caps"');
 
   fireEvent.click(within(font).getByRole('button', { name: '清除格式' }));
   expect(textMarkNames(editor, 'Format this')).toEqual(new Set());

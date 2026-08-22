@@ -1,5 +1,9 @@
 import type { Mark, MarkType, Schema } from '@tiptap/pm/model';
 import type { Transaction } from '@tiptap/pm/state';
+import {
+  normalizeDocumentTextCase,
+  type WorkDocumentTextCase,
+} from './work-document-text-case';
 
 export const DOCUMENT_CHARACTER_FORMAT_MARKS = [
   'bold',
@@ -43,6 +47,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'fontFamily',
     'fontSize',
     'themeColor',
+    'textCase',
     'wordLineHeightFactor',
     'wordSnapToGrid',
   ]),
@@ -145,6 +150,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   backgroundColor?: string;
   themeColor?: string;
   themeFill?: string;
+  textCase?: WorkDocumentTextCase;
 }): string {
   const marks: DocumentCharacterFormatMark[] = [];
   for (const name of [
@@ -165,6 +171,7 @@ export function importedDocumentCharacterFormatting(formatting: {
         ? undefined
         : `${formatting.fontSize}pt`,
     themeColor: formatting.themeColor,
+    textCase: formatting.textCase,
     wordLineHeightFactor: formatting.wordLineHeightFactor,
     wordSnapToGrid: formatting.wordSnapToGrid,
   });
@@ -193,6 +200,13 @@ function normalizeCharacterFormatMark(
       continue;
     }
     if (typeof candidate === 'string') {
+      if (
+        type === 'textStyle' &&
+        key === 'textCase' &&
+        !normalizeDocumentTextCase(candidate)
+      ) {
+        return null;
+      }
       if (
         !candidate.length ||
         candidate.length > MAX_CHARACTER_FORMAT_ATTRIBUTE_LENGTH

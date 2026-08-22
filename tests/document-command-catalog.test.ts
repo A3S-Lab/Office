@@ -36,6 +36,18 @@ test('keeps Writer command ids and WPS locations unique', () => {
 });
 
 test('defines the WPS Writer shortcut contract in one catalog', () => {
+  expect('allCaps' in documentCommandCatalog).toBe(true);
+  expect('smallCaps' in documentCommandCatalog).toBe(true);
+  expect(getDocumentCommandDefinition('allCaps').shortcut).toEqual({
+    label: 'Cmd/Ctrl+Shift+A',
+    aria: 'Control+Shift+A Meta+Shift+A',
+    editor: ['Mod-Shift-a'],
+  });
+  expect(getDocumentCommandDefinition('smallCaps').shortcut).toEqual({
+    label: 'Cmd/Ctrl+Shift+K',
+    aria: 'Control+Shift+K Meta+Shift+K',
+    editor: ['Mod-Shift-k'],
+  });
   expect(getDocumentCommandDefinition('growFont').shortcut?.editor).toEqual([
     'Mod-Shift-.',
     'Mod-]',

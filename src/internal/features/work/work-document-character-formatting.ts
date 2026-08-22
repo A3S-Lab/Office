@@ -1,15 +1,57 @@
-import type { Editor } from '@tiptap/core';
+import { Extension, type Editor } from '@tiptap/core';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
+import {
+  documentTextCaseKeyboardShortcuts,
+  normalizeDocumentTextCase,
+  type WorkDocumentTextCase,
+} from './work-document-text-case';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     documentCharacterFormatting: {
       toggleDocumentSubscript: () => ReturnType;
       toggleDocumentSuperscript: () => ReturnType;
+      setDocumentTextCase: (textCase: WorkDocumentTextCase) => ReturnType;
+      toggleDocumentTextCase: (
+        textCase: Exclude<WorkDocumentTextCase, 'none'>,
+      ) => ReturnType;
     };
   }
 }
+
+export const DocumentCharacterFormatting = Extension.create({
+  name: 'documentCharacterFormatting',
+
+  addCommands() {
+    return {
+      setDocumentTextCase:
+        (textCase: WorkDocumentTextCase) =>
+        ({ chain }) =>
+          chain().focus().setMark('textStyle', { textCase }).run(),
+      toggleDocumentTextCase:
+        (textCase: Exclude<WorkDocumentTextCase, 'none'>) =>
+        ({ commands, editor }) => {
+          const current =
+            normalizeDocumentTextCase(
+              editor.getAttributes('textStyle').textCase,
+            ) ?? 'none';
+          return commands.setDocumentTextCase(
+            current === textCase ? 'none' : textCase,
+          );
+        },
+    };
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      [documentTextCaseKeyboardShortcuts.allCaps]: () =>
+        this.editor.commands.toggleDocumentTextCase('all-caps'),
+      [documentTextCaseKeyboardShortcuts.smallCaps]: () =>
+        this.editor.commands.toggleDocumentTextCase('small-caps'),
+    };
+  },
+});
 
 export const DocumentSubscript = Subscript.extend({
   excludes: 'superscript',

@@ -24,6 +24,11 @@ import {
 } from './work-docx-theme-reference';
 import { importedDocumentCharacterFormatting } from './work-document-format-changes';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
+import {
+  applyDocumentTextCaseStyle,
+  documentTextCaseFromWordFlags,
+  type WorkDocumentTextCase,
+} from './work-document-text-case';
 
 export interface ImportedDocxRunFormatting {
   bold?: boolean;
@@ -40,6 +45,7 @@ export interface ImportedDocxRunFormatting {
   backgroundColor?: string;
   themeColor?: DocxThemeColorReference;
   themeFill?: DocxThemeColorReference;
+  textCase?: WorkDocumentTextCase;
 }
 
 export interface ImportedDocxRunFormattingMarker {
@@ -72,6 +78,8 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'u',
   'strike',
   'dstrike',
+  'caps',
+  'smallCaps',
   'rFonts',
   'sz',
   'szCs',
@@ -192,6 +200,8 @@ function resolvedRunFormatting(
   let complexScriptFormatting: boolean | undefined;
   let rightToLeft: boolean | undefined;
   let fontHint: DocxFontSlot | undefined;
+  let allCaps: boolean | undefined;
+  let smallCaps: boolean | undefined;
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
@@ -207,6 +217,11 @@ function resolvedRunFormatting(
     underline = overriddenBoolean(underline, underlineProperty(properties));
     strike = overriddenBoolean(strike, onOffProperty(properties, 'strike'));
     strike = overriddenBoolean(strike, onOffProperty(properties, 'dstrike'));
+    allCaps = overriddenBoolean(allCaps, onOffProperty(properties, 'caps'));
+    smallCaps = overriddenBoolean(
+      smallCaps,
+      onOffProperty(properties, 'smallCaps'),
+    );
     const verticalAlign = directChild(properties, 'vertAlign');
     if (verticalAlign) {
       const value = wordAttribute(verticalAlign, 'val')?.trim().toLowerCase();
@@ -356,6 +371,7 @@ function resolvedRunFormatting(
     );
   }
   const hasRunPropertySource = propertySources.length > 0;
+  const textCase = documentTextCaseFromWordFlags(allCaps, smallCaps);
   return {
     ...(resolvedBold !== undefined || hasRunPropertySource
       ? { bold: resolvedBold ?? false }
@@ -383,6 +399,7 @@ function resolvedRunFormatting(
     ...(backgroundColor ? { backgroundColor } : {}),
     ...(themeColor ? { themeColor } : {}),
     ...(themeFill ? { themeFill } : {}),
+    ...(textCase ? { textCase } : {}),
   };
 }
 
@@ -438,6 +455,9 @@ function formattingMarkup(
     span.style.backgroundColor = formatting.backgroundColor;
   const themeFill = serializeDocxThemeReference(formatting.themeFill ?? null);
   if (themeFill) span.dataset.officeThemeFill = themeFill;
+  if (formatting.textCase) {
+    applyDocumentTextCaseStyle(span, formatting.textCase);
+  }
   const html = span.outerHTML;
   const tags = [
     ...(formatting.bold ? ['strong'] : []),
@@ -490,6 +510,7 @@ function importedRunFormattingChange(
       themeFill: serializeDocxThemeReference(
         beforeFormatting.themeFill ?? null,
       ),
+      textCase: beforeFormatting.textCase,
     }),
   };
 }

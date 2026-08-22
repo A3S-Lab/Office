@@ -66,7 +66,7 @@ collaboration transport, and AI providers.
 
 | Capability | A3S Office status | Main gap or boundary | Priority |
 | --- | --- | --- | --- |
-| Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported** | Long-tail Word style/effect properties can normalize | Maintain / P0 fidelity |
+| Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported**, including mutually exclusive native `w:caps` / `w:smallCaps`, standard shortcuts, page chrome, formatting revisions, and exact DOCX reopen | Long-tail Word style and typography effects can still normalize | Maintain / P0 fidelity |
 | Bullets, numbering, nesting, restarts, RTL lists | **Supported** for common editable structures | Exotic numbering pictures and some inherited list metadata remain compatibility work | P1 |
 | Page size, orientation, columns, section/page breaks | **Supported** per section | Browser line breaking and pagination are not yet desktop-engine exact | P0 |
 | Page margins (`w:pgMar`, `mirrorMargins`, `gutterAtTop`, `rtlGutter`) | **Supported** on current `main`: all seven native twip values, signed top/bottom overlap semantics, strict universal measures, header/footer distances, top/left/right gutters, facing-page swaps, multi-section inheritance, diagnostics, editing, PDF preview, and exact DOCX export | The continuous editing surface projects the first-page horizontal origin; physical-page PDF preview is authoritative for facing-page placement | Maintain / P0 regression gate |
@@ -181,6 +181,12 @@ a phase exits only when its evidence is complete.
   `w:pPrChange`, browser/Yrs convergence, malformed-input diagnostics, and
   Playground A3S Test coverage as permanent gates. Expand next to numbering,
   section, table, row, cell, and move revisions.
+- Treat native all-caps and small-caps as a completed character-effect slice:
+  retain one mutually exclusive typed state, semantic source text, standard
+  shortcuts, body/header/footer parity, formatting revision and Format Painter
+  support, exact `w:caps` / `w:smallCaps` import-export-reopen, and
+  browser-authoritative measurement for case-shaped paragraphs as permanent
+  gates.
 - Make unsupported semantics explicit in compatibility reports; never attach
   relationship-bound or namespace-spoofed data to a regenerated identity.
 - Move browser document PDF output toward searchable text, vector content, and

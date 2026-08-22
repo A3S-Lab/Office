@@ -405,6 +405,20 @@ gradients survive XLSX export and reopen. Focused Rstest, desktop/compact
 Playwright authoring flows, and local-only A3S Test 1.0.0 suites cover Apply,
 reopen, Undo, responsive containment, accessibility, and empty browser
 diagnostics without adding A3S Test to Actions or Pages.
+The thirty-eighth milestone returns to Writer with native all-caps and
+small-caps character effects. One typed `none | all-caps | small-caps` state
+keeps the effects mutually exclusive across the Home ribbon, body and page
+chrome editors, Format Painter, formatting-revision snapshots, Undo, and the
+standard `Cmd/Ctrl+Shift+A` and `Cmd/Ctrl+Shift+K` shortcuts. Semantic text is
+never rewritten: CSS renders the effect, while DOCX import, export, reopen, and
+`w:rPrChange` use native `w:caps` or `w:smallCaps` properties and explicit
+resets. Paragraphs containing either effect deliberately use browser line
+measurement because uppercase conversion can change the UTF-16 glyph stream
+and small caps changes font metrics; eligible unaffected paragraphs continue
+through Worker/WASM shaping. Focused Rstest, desktop Playwright, and the
+local-only A3S Test shortcut suite cover mutual exclusion, native round trips,
+Undo, accessibility, and empty browser diagnostics without changing Actions or
+Pages.
 
 ## Product Rules
 

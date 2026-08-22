@@ -67,6 +67,12 @@ test('executes WPS alignment and format-copy shortcuts in page chrome', () => {
   fireEvent.keyDown(editor.view.dom, { key: 'e', ctrlKey: true });
   expect(editor.getAttributes('paragraph').textAlign).toBe('center');
   fireEvent.keyDown(editor.view.dom, {
+    key: 'a',
+    ctrlKey: true,
+    shiftKey: true,
+  });
+  expect(editor.getAttributes('textStyle').textCase).toBe('all-caps');
+  fireEvent.keyDown(editor.view.dom, {
     key: 'c',
     ctrlKey: true,
     shiftKey: true,
@@ -80,6 +86,10 @@ test('executes WPS alignment and format-copy shortcuts in page chrome', () => {
   });
   expect(editor.getHTML()).toContain('<strong>Target</strong>');
   expect(editor.getHTML()).not.toContain('<em>Target</em>');
+  expect(editor.getHTML()).toContain('data-office-text-case="all-caps"');
+  expect(sanitizeDocumentPageChromeHtml(editor.getHTML())).toContain(
+    'data-office-text-case="all-caps"',
+  );
 
   editor.destroy();
   clearDocumentFormatClipboard();

@@ -16,6 +16,7 @@ import {
   type WorkDocumentChangeKind,
 } from './work-document-changes';
 import {
+  DocumentCharacterFormatting,
   DocumentSubscript,
   DocumentSuperscript,
 } from './work-document-character-formatting';
@@ -133,6 +134,7 @@ export function createWorkDocumentExtensions(
     DocumentNoteReference,
     DocumentNote,
     Underline,
+    DocumentCharacterFormatting,
     DocumentSubscript,
     DocumentSuperscript,
     DocumentImage.configure({

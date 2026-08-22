@@ -72,6 +72,34 @@ suite "office-word-wps-shortcuts" {
             visible = css(".work-document-editable .ProseMirror h1:has(em) ~ h1:has(em)")
         }
 
+        expect "text-case-shortcuts-described" {
+            visible = css("[aria-label='字体'] button[aria-label='大小写效果']")
+        }
+
+        press "apply-all-caps" {
+            key = "Control+Shift+a"
+        }
+
+        expect "all-caps-rendered" {
+            visible = css(".work-document-editable .ProseMirror h1 ~ h1 span[data-office-text-case='all-caps'][style*='text-transform: uppercase']")
+        }
+
+        press "apply-small-caps" {
+            key = "Control+Shift+k"
+        }
+
+        expect "small-caps-rendered" {
+            visible = css(".work-document-editable .ProseMirror h1 ~ h1 span[data-office-text-case='small-caps'][style*='font-variant-caps: small-caps']")
+        }
+
+        press "undo-small-caps" {
+            key = "Control+z"
+        }
+
+        expect "all-caps-restored" {
+            visible = css(".work-document-editable .ProseMirror h1 ~ h1 span[data-office-text-case='all-caps']")
+        }
+
         click "focus-first-paragraph" {
             target = css(".work-document-editable .ProseMirror p")
         }

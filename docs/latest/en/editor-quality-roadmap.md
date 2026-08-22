@@ -319,6 +319,12 @@ modal surfaces retain their native keyboard behavior. Traditional Office copy-fo
 paste-format shortcuts share a permission-free local formatting clipboard with
 the one-shot format painter; applying it keeps links and review marks intact
 and commits direct character and paragraph formatting in one transaction.
+Writer's native All caps and Small caps effects now share one mutually exclusive
+typed state across the ribbon, standard shortcuts, Format Painter, formatting
+revisions, page chrome, Undo, and exact `w:caps` / `w:smallCaps` DOCX reopen.
+The source text remains semantic; paragraphs containing a case-shaping effect
+use browser-authoritative line measurement because transformed glyphs cannot
+yet be mapped safely onto the layout kernel's source UTF-16 offsets.
 Header and footer surfaces use the same Traditional Office alignment and format-copy commands,
 falling back to their compatible paragraph schema when body heading formats are
 pasted. Undo and redo use the quick-access row, while double-clicking the active

@@ -22,6 +22,11 @@ import {
   DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
   normalizeDocumentTableRowIdentity,
 } from './work-document-table-row-identity';
+import {
+  DOCUMENT_TEXT_CASE_ATTRIBUTE,
+  documentTextCaseCss,
+  normalizeDocumentTextCase,
+} from './work-document-text-case';
 import type {
   WorkDocumentPageChrome,
   WorkDocumentPageChromeContent,
@@ -381,6 +386,12 @@ function sanitizeAttributes(element: Element, tag: string) {
     ? element.style.textAlign
     : '';
   const color = element.style.color;
+  const textCase =
+    tag === 'span'
+      ? normalizeDocumentTextCase(
+          element.getAttribute(DOCUMENT_TEXT_CASE_ATTRIBUTE),
+        )
+      : null;
   const paragraphShading =
     tag === 'p' ? parseDocumentParagraphShadingElement(element) : null;
   const shadingAttributes =
@@ -396,6 +407,7 @@ function sanitizeAttributes(element: Element, tag: string) {
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
     color ? `color: ${color}` : '',
+    textCase ? documentTextCaseCss(textCase) : '',
     borderAttributes.style ?? '',
     shadingAttributes.style ?? '',
   ].filter(Boolean);
@@ -426,6 +438,11 @@ function sanitizeAttributes(element: Element, tag: string) {
     normalizeParagraphDefaultCollapsedAttribute(element);
   }
   if (tag === 'tr') normalizeTableRowIdentityAttributes(element);
+  if (tag === 'span' && textCase) {
+    element.setAttribute(DOCUMENT_TEXT_CASE_ATTRIBUTE, textCase);
+  } else {
+    element.removeAttribute(DOCUMENT_TEXT_CASE_ATTRIBUTE);
+  }
   if (direction === 'ltr' || direction === 'rtl')
     element.setAttribute('dir', direction);
   else element.removeAttribute('dir');
@@ -458,7 +475,13 @@ function sanitizeAttributes(element: Element, tag: string) {
                 ])
               : tag === 'tr'
                 ? new Set(['dir', 'style', ...TABLE_ROW_IDENTITY_ATTRIBUTES])
-                : new Set(['colspan', 'dir', 'rowspan', 'style']);
+                : new Set([
+                    'colspan',
+                    'dir',
+                    'rowspan',
+                    'style',
+                    ...(tag === 'span' ? [DOCUMENT_TEXT_CASE_ATTRIBUTE] : []),
+                  ]);
   for (const attribute of Array.from(element.attributes)) {
     if (!allowed.has(attribute.name.toLowerCase()))
       element.removeAttribute(attribute.name);

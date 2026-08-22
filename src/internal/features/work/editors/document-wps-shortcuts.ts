@@ -57,6 +57,14 @@ export function runDocumentWpsShortcut(
   }
 
   if (event.shiftKey) {
+    if (key === 'a') {
+      editor.commands.toggleDocumentTextCase('all-caps');
+      return true;
+    }
+    if (key === 'k') {
+      editor.commands.toggleDocumentTextCase('small-caps');
+      return true;
+    }
     if (key === 'g') {
       callbacks.onOpenWordCount();
       return true;

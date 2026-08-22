@@ -138,6 +138,25 @@ compatibility importer and are not covered by these 100,000-unit figures.
 | `comments` | `WorkDocumentComment[]` | Comment threads, replies, and resolved state. |
 | `bibliography` | `WorkDocumentBibliography` | Citation style and source records. |
 
+## Native text-case effects
+
+The Home ribbon's **Text case effects** menu applies Normal, All caps, or Small
+caps as one mutually exclusive character-format state. `Cmd/Ctrl+Shift+A`
+toggles All caps and `Cmd/Ctrl+Shift+K` toggles Small caps. The same TipTap
+commands, metadata, and Undo path are used by body text, headers, footers,
+Format Painter, and character-formatting revisions.
+
+The editor keeps the semantic source text unchanged. CSS renders All caps with
+`text-transform: uppercase` and Small caps with `font-variant-caps: small-caps`.
+DOCX import, export, and reopen preserve native `w:caps` and `w:smallCaps`
+properties, including explicit resets and prior values inside `w:rPrChange`.
+
+A paragraph containing either effect intentionally uses browser line
+measurement. Uppercase conversion can change the rendered glyph count relative
+to the source UTF-16 offsets, and small caps changes font metrics. Keeping the
+browser authoritative for those paragraphs avoids inaccurate pagination; other
+eligible paragraphs continue through Worker/WASM shaping.
+
 ## Real-time review mode
 
 Pass an initialized Document collaboration session with `mode: 'comment'` and
@@ -171,9 +190,9 @@ for the complete browser/backend contract and the current native CLI/MCP limit.
 With tracked changes enabled, applying direct character formatting to existing
 text creates one `formatting` revision. The bounded model covers bold, italic,
 underline, strike, subscript, superscript, font family, font size, text color,
-highlight, and Word grid state. Formatting applied to text that is still a
-pending insertion remains part of that insertion instead of creating a nested
-revision.
+highlight, all-caps and small-caps effects, and Word grid state. Formatting
+applied to text that is still a pending insertion remains part of that insertion
+instead of creating a nested revision.
 
 The revision stores the exact prior direct marks while the selected text renders
 with the new marks. Accept removes only the revision wrapper and keeps the new

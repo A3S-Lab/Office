@@ -125,6 +125,131 @@ describe('DOCX run formatting', () => {
     expect(html.body.textContent).not.toContain('__A3S_');
   });
 
+  test('imports mutually exclusive native all-caps and small-caps effects', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:r><w:rPr><w:caps/></w:rPr><w:t>All caps</w:t></w:r>
+        <w:r><w:rPr><w:smallCaps/></w:rPr><w:t>Small caps</w:t></w:r>
+        <w:r><w:rPr><w:caps w:val="0"/><w:smallCaps w:val="0"/></w:rPr><w:t>Normal</w:t></w:r>
+      </w:p>
+    `);
+
+    const markers = markDocxRunFormatting(document);
+    expect(markers.runs.map(({ formatting }) => formatting)).toEqual([
+      expect.objectContaining({ textCase: 'all-caps' }),
+      expect.objectContaining({ textCase: 'small-caps' }),
+      expect.objectContaining({ textCase: 'none' }),
+    ]);
+    const html = new DOMParser().parseFromString(
+      `<p>${markers.runs
+        .map(
+          ({ startMarker, endMarker }, index) =>
+            `${startMarker}${['All caps', 'Small caps', 'Normal'][index]}${endMarker}`,
+        )
+        .join('')}</p>`,
+      'text/html',
+    );
+    applyImportedDocxRunFormattingMarkers(html, markers);
+
+    const spans = [...html.querySelectorAll<HTMLElement>('p > span')];
+    expect(spans.map((span) => span.dataset.officeTextCase)).toEqual([
+      'all-caps',
+      'small-caps',
+      'none',
+    ]);
+    expect(spans[0]?.style.textTransform).toBe('uppercase');
+    expect(spans[1]?.style.fontVariantCaps).toBe('small-caps');
+    expect(spans[2]?.style.textTransform).toBe('none');
+    expect(spans[2]?.style.fontVariantCaps).toBe('normal');
+  });
+
+  test('exports and reopens native text-case effects', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html =
+      '<section data-document-section="true"><p><span data-office-text-case="all-caps" style="text-transform: uppercase;">All caps</span> <span data-office-text-case="small-caps" style="font-variant-caps: small-caps;">Small caps</span></p></section>';
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(xml).toMatch(/<w:caps\/?\s*>/);
+    expect(xml).toMatch(/<w:smallCaps\/?\s*>/);
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'text-case.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain('data-office-text-case="all-caps"');
+    expect(reopened.content.html).toContain(
+      'data-office-text-case="small-caps"',
+    );
+  });
+
+  test('exports nested text-case overrides without an inherited competing flag', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      '<span data-office-text-case="small-caps" style="font-variant-caps: small-caps;">',
+      'Outer ',
+      '<span data-office-text-case="all-caps" style="text-transform: uppercase;">All override</span>',
+      ' <span data-office-text-case="none" style="text-transform: none; font-variant-caps: normal;">Normal override</span>',
+      '</span>',
+      '</p></section>',
+    ].join('');
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = parseXml(
+      (await archive.file('word/document.xml')?.async('text')) ?? '',
+    );
+    const propertiesFor = (text: string): Element | null => {
+      const textElement = Array.from(xml.getElementsByTagName('*')).find(
+        (element) => element.localName === 't' && element.textContent === text,
+      );
+      const run = textElement?.parentElement;
+      return (
+        Array.from(run?.children ?? []).find(
+          (element) =>
+            element.namespaceURI === WORD_NAMESPACE &&
+            element.localName === 'rPr',
+        ) ?? null
+      );
+    };
+
+    const allCaps = propertiesFor('All override');
+    expect(allCaps).not.toBeNull();
+    expect(
+      Array.from(allCaps?.getElementsByTagName('*') ?? []).filter(
+        (element) => element.localName === 'caps',
+      ),
+    ).toHaveLength(1);
+    expect(
+      Array.from(allCaps?.getElementsByTagName('*') ?? []).filter(
+        (element) => element.localName === 'smallCaps',
+      ),
+    ).toHaveLength(0);
+
+    const normal = propertiesFor('Normal override');
+    expect(normal).not.toBeNull();
+    expect(
+      Array.from(normal?.getElementsByTagName('*') ?? []).filter(
+        (element) => element.localName === 'smallCaps',
+      ),
+    ).toHaveLength(1);
+    expect(
+      Array.from(normal?.getElementsByTagName('*') ?? []).filter(
+        (element) => element.localName === 'caps',
+      ),
+    ).toHaveLength(0);
+  });
+
   test('imports a bounded native run-property revision as reviewable formatting', () => {
     const document = wordXml(`
       <w:p><w:r>
@@ -133,6 +258,7 @@ describe('DOCX run formatting', () => {
           <w:rPrChange w:id="7" w:author="Ada Reviewer" w:date="2026-08-17T14:30:00Z">
             <w:rPr>
               <w:i/>
+              <w:smallCaps/>
               <w:sz w:val="24"/>
               <w:color w:val="336699"/>
             </w:rPr>
@@ -150,7 +276,7 @@ describe('DOCX run formatting', () => {
       author: 'Ada Reviewer',
       date: '2026-08-17T14:30:00.000Z',
       before:
-        '[{"type":"italic"},{"type":"textStyle","attrs":{"color":"#336699","fontSize":"12pt"}}]',
+        '[{"type":"italic"},{"type":"textStyle","attrs":{"color":"#336699","fontSize":"12pt","textCase":"small-caps"}}]',
     });
     const html = new DOMParser().parseFromString(
       `<p>${marker.startMarker}Changed format${marker.endMarker}</p>`,
@@ -254,7 +380,7 @@ describe('DOCX run formatting', () => {
       throw new Error('Expected a document artifact.');
     }
     const before =
-      '[{"type":"italic"},{"type":"textStyle","attrs":{"color":"#336699","fontSize":"12pt"}}]';
+      '[{"type":"italic"},{"type":"textStyle","attrs":{"color":"#336699","fontSize":"12pt","textCase":"small-caps"}}]';
     artifact.content.html = `<section data-document-section="true"><p><span data-document-change="true" data-change-kind="formatting" data-change-before='${before}' data-change-id="formatting-7" data-change-author="Ada Reviewer" data-change-date="2026-08-17T14:30:00.000Z"><strong>Changed format</strong></span></p></section>`;
     artifact.content.trackChanges = true;
 
@@ -266,7 +392,7 @@ describe('DOCX run formatting', () => {
       /<w:rPrChange\b[^>]*w:id="1"[^>]*w:author="Ada Reviewer"[^>]*w:date="2026-08-17T14:30:00.000Z"/,
     );
     expect(xml).toMatch(
-      /<w:rPrChange\b[^>]*>[\s\S]*?<w:rPr>[\s\S]*?<w:i\/>[\s\S]*?<w:color\b[^>]*w:val="336699"[\s\S]*?<w:sz\b[^>]*w:val="24"[\s\S]*?<\/w:rPr>[\s\S]*?<\/w:rPrChange>/,
+      /<w:rPrChange\b[^>]*>[\s\S]*?<w:rPr>[\s\S]*?<w:i\/>[\s\S]*?<w:smallCaps\/>[\s\S]*?<w:color\b[^>]*w:val="336699"[\s\S]*?<w:sz\b[^>]*w:val="24"[\s\S]*?<\/w:rPr>[\s\S]*?<\/w:rPrChange>/,
     );
 
     const reopened = await importOfficeFile(
