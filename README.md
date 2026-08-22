@@ -1347,6 +1347,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.26.0 documentation](https://a3s-lab.github.io/Office/docs/0.26.0/)
 - [A3S Office 0.25.0 documentation](https://a3s-lab.github.io/Office/docs/0.25.0/)
 - [A3S Office 0.24.0 documentation](https://a3s-lab.github.io/Office/docs/0.24.0/)
 - [A3S Office 0.23.0 documentation](https://a3s-lab.github.io/Office/docs/0.23.0/)

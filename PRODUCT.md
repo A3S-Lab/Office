@@ -342,8 +342,28 @@ unchanged semantic color origins remain eligible for exact XLSX export. Direct
 ribbon actions restore the selected text when the editor remains active. The
 model rejects malformed coordinates, invalid values, UTF-16 surrogate splits,
 formula cells, and results beyond 32,767 characters or 512 runs. One immutable
-controlled update preserves host history and collaboration ownership. Rich-text
-insertion and editing beyond the supported font attributes remain later work.
+controlled update preserves host history and collaboration ownership.
+The thirty-third milestone preserves native rich-text runs through direct
+formula-bar and F2 insertion or deletion. The controlled source runs are the
+only formatting authority: an exact cell operation must authenticate the
+coordinate and emitted text before one contiguous replacement can inherit the
+replaced or preceding run. Untouched boundaries and theme, indexed, automatic,
+or tint color identities remain stable; structural operations and text-stable
+focus callbacks cannot infer an edit. One commit remains one controlled host
+revision and one Undo record, with the existing UTF-16, 32,767-character, and
+512-run limits enforced before publication.
+The thirty-fourth milestone adds authenticated formatted rich-text paste to
+formula-bar and F2 selections. A paste event stages one bounded, one-shot
+authority over the exact worksheet object, coordinate, controlled source text,
+UTF-16 selection, plain clipboard text, and sanitized font runs. Projection
+consumes it only when an authenticated cell operation emits the predicted
+replacement. Untouched source runs keep their native semantic identities;
+pasted font family, size, explicit RGB color, bold, italic, strikethrough, and
+underline apply only inside the inserted range. Eligible plain and empty cells
+become native inline strings after the same proof. Clipboard HTML is discarded
+after parsing and capped at 256,000 characters; mismatched, malformed,
+structural, or oversized input falls back to inherited or plain text without
+authorizing styles.
 
 ## Product Rules
 

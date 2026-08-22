@@ -4,16 +4,29 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.26.0 - 2026-08-22
+
 - Added bounded Spreadsheet partial-run formatting while editing a cell or the
-  formula bar. A non-collapsed text selection now accepts font family, size,
-  color, bold, italic, strikethrough, and underline commands from the Home
-  ribbon, converts plain strings to native inline-string runs when needed, and
-  restores the text selection after direct ribbon actions.
-- Kept partial formatting on the controlled workbook path so one command
-  produces one immutable content update and remains available to host history
-  and collaboration. Run splitting rejects invalid UTF-16 boundaries and the
-  existing 32,767-character and 512-run limits still fail closed; unchanged
-  semantic color origins remain available for exact XLSX export.
+  formula bar. A non-collapsed text selection accepts font family, size, color,
+  bold, italic, strikethrough, and underline commands from the Home ribbon,
+  converts plain strings to native inline-string runs when needed, and restores
+  the text selection after direct ribbon actions.
+- Preserved native XLSX rich-text runs through direct formula-bar and F2
+  insertion or deletion. Exact authenticated cell operations reconcile one
+  contiguous replacement against the controlled source, retain untouched run
+  boundaries and semantic colors, and keep one host revision and one Undo
+  record.
+- Added authenticated formatted HTML paste for formula-bar and F2 selections.
+  The one-shot authority binds the exact worksheet, coordinate, controlled
+  source, UTF-16 selection, plain clipboard text, and sanitized supported font
+  runs. Plain and empty cells may become native inline strings only after the
+  emitted replacement matches that proof.
+- Kept every authoring path fail closed at 32,767 characters and 512 result
+  runs; formatted clipboard HTML is additionally capped at 256,000 characters.
+  Focused Rstest, desktop and compact real-clipboard Playwright, and four
+  local-only A3S Test 1.0.0 scenarios cover formatting, direct editing, paste,
+  one-step Undo, accessibility, and empty console/page-error diagnostics.
+  GitHub Actions and Pages do not install or invoke A3S Test.
 
 ## 0.25.0 - 2026-08-22
 

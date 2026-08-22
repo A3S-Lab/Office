@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.26.0' ||
     version === '0.25.0' ||
     version === '0.24.0' ||
     version === '0.23.0' ||
@@ -49,6 +50,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.26.0',
     '0.25.0',
     '0.24.0',
     '0.23.0',
@@ -140,6 +142,7 @@ test('keeps the five-editor README capability comparison complete', async () => 
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.26.0',
     '0.25.0',
     '0.24.0',
     '0.23.0',
@@ -204,6 +207,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.26.0',
     '0.25.0',
     '0.24.0',
     '0.23.0',
@@ -1223,8 +1227,8 @@ test('documents focused Spreadsheet font-dialog shortcuts in 0.24.0', async () =
   }
 });
 
-test('documents native, partial-run, and direct-edit Spreadsheet rich text', async () => {
-  for (const version of ['latest', '0.25.0']) {
+test('documents native Spreadsheet rich-text authoring through formatted paste', async () => {
+  for (const version of ['latest', '0.26.0', '0.25.0']) {
     const [english, chinese] = await Promise.all([
       readFile(
         path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
@@ -1248,7 +1252,7 @@ test('documents native, partial-run, and direct-edit Spreadsheet rich text', asy
     ]) {
       expect(english).toContain(evidence);
     }
-    if (version === 'latest') {
+    if (version !== '0.25.0') {
       for (const evidence of [
         'non-collapsed text selection',
         'Home ribbon applies font',
@@ -1276,7 +1280,7 @@ test('documents native, partial-run, and direct-edit Spreadsheet rich text', asy
     ]) {
       expect(chinese).toContain(evidence);
     }
-    if (version === 'latest') {
+    if (version !== '0.25.0') {
       for (const evidence of [
         '选中非空文字',
         '字体、字号、颜色、粗体、斜体、下划线与删除线',
