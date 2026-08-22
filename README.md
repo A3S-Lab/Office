@@ -22,11 +22,11 @@
   <a href="https://a3s-lab.github.io/Office/">Playground</a> ·
   <a href="https://a3s-lab.github.io/Office/docs/">Documentation</a> ·
   <a href="#quick-start">Quick start</a> ·
-  <a href="#five-format-native-surfaces">Editors</a> ·
+  <a href="#editor-capability-comparison">Editors</a> ·
   <a href="#real-time-collaboration">Collaboration</a> ·
   <a href="#native-automation">Automation</a> ·
   <a href="#architecture">Architecture</a> ·
-  <a href="ROADMAP.md">WPS gap roadmap</a> ·
+  <a href="ROADMAP.md">Capability roadmap</a> ·
   <a href="COLLABORATION_ROADMAP.md">Collaboration roadmap</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
@@ -95,6 +95,86 @@ The images below are committed visual-regression baselines from the real
     </td>
   </tr>
 </table>
+
+## Editor capability comparison
+
+The tables below compare capability families, not button counts or visual
+similarity. **Supported** means the editable path has deterministic tests or
+native round-trip evidence. **Partial** means a useful path exists with a
+documented fidelity boundary. **Gap** means no product-grade editable path
+exists yet. Traditional Office availability varies by application, platform,
+edition, and subscription; its column describes the conventional suite
+baseline rather than one specific release.
+
+### Document
+
+| Capability | A3S Office today | Traditional Office baseline |
+| --- | --- | --- |
+| Text, paragraphs, lists, and styles | **Supported** — structured editing, formatting, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style catalog |
+| Page layout and rendering | **Partial** — sections, margins, page size, columns, headers/footers, fields, and live pagination | Desktop-grade pagination, print layout, and vector output |
+| Tables, pictures, and equations | **Partial** — rich table geometry, floating pictures, crop/wrap, and structured OMML | Broader drawings, text boxes, charts, WordArt, and SmartArt |
+| Comments, revisions, and collaboration | **Partial** — comments, suggestions, text/format revisions, decisions, Yjs presence, and host relay contracts | Full revision families plus integrated sharing and review services |
+| References and document generation | **Partial** — bookmarks, links, captions, cross-references, citations, notes, and common fields | TOC/index authoring, mail merge, compare/combine, and broader fields |
+| Ribbon and shortcuts | **Supported** — responsive Office-style ribbon and editor-scoped daily-writing shortcuts | Complete desktop shortcut and contextual-tool surface |
+| Very large documents | **Supported with boundaries** — bounded 100,000-block plain-document windows and measured edit/navigation budgets | Native-engine virtualization with device-dependent limits |
+| DOCX and PDF fidelity | **Partial** — source-aware DOCX preservation and live-layout raster PDF export | Broader legacy/OOXML compatibility and searchable vector PDF output |
+
+### Spreadsheet
+
+| Capability | A3S Office today | Traditional Office baseline |
+| --- | --- | --- |
+| Cells, sheets, navigation, and history | **Supported** — multiple sheets, sparse editing, search, clipboard, fill, and undo/redo | Mature grid workflows across desktop and web |
+| Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, and static date/time entry | Broader themes, locale formats, rich text, and advanced style effects |
+| Ribbon and shortcuts | **Partial** — common Office-style Home/Data/View commands and grid-scoped shortcuts | Larger command catalog and platform-specific accelerators |
+| Formulas and recalculation | **Partial** — dependency-aware calculation and common formula paths | Wider functions, arrays, volatile semantics, and calculation parity |
+| Tables, pivots, charts, and rules | **Partial** — native tables, pivots, charts, conditional formatting, and validation | Calculated columns, slicers, pivot charts, advanced rules, and analysis |
+| Large worksheets | **Supported with boundaries** — maximum-dimension sparse import/editing and viewport-bounded Canvas painting | Highly optimized native grid with hardware-dependent limits |
+| Files and printing | **Partial** — XLS/XLSX/ODS/CSV import, XLSX export, and PDF output | Broader round trips, external data, print fidelity, and legacy conversion |
+| External data, macros, and specialist analysis | **Gap** — active macros are never executed; bounded models are still needed for data connections and solver-like tools | Established data, macro/add-in, scenario, and optimization ecosystems |
+
+### Presentation
+
+| Capability | A3S Office today | Traditional Office baseline |
+| --- | --- | --- |
+| Slide and object editing | **Supported** — slide lifecycle, scene editing, multi-selection, grouping, transforms, and guides | Mature slide and drawing workflows |
+| Text, shapes, tables, charts, and images | **Partial** — typed editable objects with native import/export paths | Broader shapes, connectors, effects, SmartArt, and embedded chart editing |
+| Masters and layouts | **Partial** — import/export inheritance with editable common paths | Full visual master, layout, and placeholder authoring |
+| Transitions and timings | **Partial** — fade, push, wipe, split, cut, and click/automatic advance | Broader transition catalog and timing controls |
+| Animations and media | **Gap** — no production animation timeline, trigger model, audio, video, or recording path | Object animation, motion paths, media editing, and recording |
+| Slideshow and presenter workflows | **Supported** — current/beginning start, keyboard playback, notes, timer, and responsive presenter view | Rehearsal, recording, ink/laser, and richer multi-display controls |
+| Review and collaboration | **Partial** — comments, shared presence, remote object locations, and host transport | Threads, assignments, mentions, and integrated cloud review |
+| PPTX, print, PDF, and video | **Partial** — PPTX round trip plus slide/notes/handout PDF models; no video export | Broader print controls, vector fidelity, media preservation, and video export |
+
+### PDF
+
+| Capability | A3S Office today | Traditional Office baseline |
+| --- | --- | --- |
+| Rendering and navigation | **Supported** — PDFium pages, thumbnails, zoom, keyboard navigation, and bounded long-file windows | Mature desktop/web viewing and navigation |
+| Search and text evidence | **Supported with boundaries** — browser search and bounded native text-layer evidence | Broader tagged-PDF reading order and accessibility extraction |
+| Annotations, forms, and save | **Supported** — common annotations, appearance controls, form filling, history, and save | Broader stamps, measurements, form authoring, scripts, and signatures |
+| Existing text, image, and object editing | **Gap** — no safe production content-stream editing path | Direct text/object editing with font and layout recovery |
+| Page organization | **Gap** — insert, delete, rotate, reorder, extract, merge, and split are not yet editable | Complete page organization workflows |
+| Compression, conversion, and OCR | **Gap / host boundary** — provider contracts are required for authoritative conversion and OCR | Integrated optimization, conversion, and scanned-document recognition |
+| Signatures, protection, and redaction | **Gap / host boundary** — trusted identity and destructive-content guarantees are required | E-signing, certificate validation, encryption, sanitization, and true redaction |
+| AI and real-time collaboration | **Host-owned** — typed page/text evidence, Yjs review records, presence, and provider-neutral ports | Typically bundled with account, storage, and model services |
+
+### Markdown
+
+Markdown is an A3S Office differentiator rather than a parity target.
+
+| Capability | A3S Office today | Traditional Office baseline |
+| --- | --- | --- |
+| Source and visual editing | **Supported** — GFM source, visual mode, synchronized split preview, and source-native history | No standard first-class Markdown editor |
+| Tables, tasks, links, images, and code | **Supported** — format-native Markdown structures in both editing modes | Usually represented through rich-document conversion or plain text |
+| Responsive UI and shortcuts | **Supported** — desktop split view, phone single-surface modes, and editor-scoped formatting | Depends on a text editor, add-in, or conversion workflow |
+| Collaboration | **Supported** — Yjs content, Awareness presence, remote selections, and host-owned transport | Usually available only after conversion into a cloud document format |
+| Import, export, and automation | **Supported** — direct Markdown round trip plus typed browser, CLI, MCP, and agent mutations | No shared native Markdown automation contract |
+
+Document and Markdown accept public TipTap Extensions. Spreadsheet,
+Presentation, and PDF expose stable host ports rather than private command
+contexts. Editor engines and large runtime assets load only when their surface
+is requested. The complete gap inventory and exit evidence live in the
+[capability roadmap](ROADMAP.md).
 
 ## Why A3S Office
 
@@ -396,274 +476,6 @@ into the PDF; searchable text and vector output remain future fidelity work.
 
 Copyable React, Vue, and Web Component examples live in the
 [component documentation](https://a3s-lab.github.io/Office/docs/components/).
-
-## Five format-native surfaces
-
-Each surface keeps a canonical model that matches its file format and user
-interaction model.
-
-- **Document** — Pagination, sections, focused page-setup tabs, clean page
-  margins with on-demand header/footer editing, outline navigation with
-  contextual full-text results, keyboard-operated live physical-page raster
-  thumbnails with viewport-bounded capture, and shared virtualized
-  long-document windows for page buttons, heading rows, full-text results, and
-  tracked-revision and anchored-comment review that preserve native scroll
-  distance, sparse current/selection/draft pins, and Home/End reachability;
-  a WPS-familiar command catalog, quick-access undo and redo, a priority-aware
-  adaptive and persistently collapsible ribbon whose tabs can temporarily
-  expose commands; WPS-oriented Insert groups and direct Page Layout presets
-  for margins, orientation, paper size, and columns, with matching advanced
-  Page Setup destinations; WPS-oriented References, Review, and View groups,
-  direct tracked-change navigation and decisions, contextual object tabs, and
-  viewport-calculated 100%, one-page, and page-width zoom; an actionable status
-  bar with live word-count details, WPS `Ctrl+Shift+G`, keyboard-traversable
-  view and zoom controls, and compact Web prioritization; editor-scoped WPS
-  formatting, paragraph, style, and review shortcuts, plus a permission-free
-  formatting clipboard and one-shot format painter shared with compatible
-  header and footer formatting, paragraph styles and phone-sized
-  paragraph-spacing and pagination controls
-  with touch targets and exact invoker-focus restoration; stable compact-ribbon
-  edge paging and viewport-bounded list galleries with touch-sized numbering
-  actions, selection-preserving bullet and numbering commands, and explicit
-  Escape-to-invoker focus restoration;
-  grouped bundled, common system, monospace, imported, and host-provided font
-  choices with live typeface previews, independent table layout algorithms,
-  auto, percentage, or pixel preferred widths, left/center/right placement,
-  indentation, table-level cell margins, cell-level margin overrides, and
-  rendered column measurements for autofit tables. One Table Properties dialog
-  presents table, row, column, and cell tabs. It combines preferred width,
-  placement, and indent with selected-row height and pagination, current-column
-  width, and selected-cell vertical alignment and margins. The complete draft
-  commits in one TipTap transaction and one undo record while untouched imported
-  measurements and partial margin inheritance retain their exact source values.
-  Cancel and Escape discard the draft and restore the exact ribbon invoker;
-  compact layouts keep tabs, numeric steppers, and footer actions touch-sized. A
-  contextual Picture Properties workflow combines centimeter width and height,
-  a per-image aspect-ratio lock, inline/square/top-and-bottom wrapping,
-  alignment, text distance, and alternative text. It commits only changed
-  fields in one TipTap history entry, preserves untouched imported dimensions
-  exactly, and retains the image selection and invoker focus after apply,
-  cancel, or Escape on desktop and phone layouts. A
-  reusable table-border pen with all, outside, inside, and individual-edge
-  targets, per-edge DOCX border preservation, and bounded `basedOn` table-style
-  inheritance with whole-table, banded row or column, first/last row or column,
-  and corner-cell formatting. Conditional fills, borders, bold, italic,
-  underline, strikethrough, fonts, and text colors are materialized before
-  direct table, cell, paragraph, and run formatting. Conditional paragraph
-  alignment, direction, indents, spacing and line rules, pagination rules, and
-  tab stops use the same precedence chain. Paragraph shading follows document
-  defaults, based-on paragraph styles, conditional table styles, and direct
-  formatting in that order. The complete Word `w:shd` pattern set, independent
-  foreground/background colors, `auto`, `nil` resets, and independently tinted
-  or shaded theme references remain structured through body and page-chrome
-  HTML; browser previews use bounded CSS masks while DOCX export restores the
-  native pattern and both theme channels. Preview follows Word's tint-over-shade
-  precedence when both transforms occur on one theme channel while retaining
-  both attributes for export. Malformed, duplicated,
-  namespace-spoofed, relationship-bound, or unresolved theme values fail closed
-  instead of inheriting stale shading. Theme tint and shade values resolve for
-  table borders and cell fills across edit, preview, and RGB-stable export.
-  Paragraph borders use the same precedence chain and retain the complete
-  `w:pBdr` model: schema-ordered `top`, `left`, `bottom`, `right`, `between`,
-  and facing-page `bar` edges; all 197 line and art styles; direct, automatic,
-  and theme colors; eighth-point or point widths; spacing; shadow; and frame.
-  Physical edges remain editable CSS, while art, between-paragraph, and
-  facing-page behavior uses a bounded browser approximation; DOCX export
-  restores the exact native edge set and attributes. Direct CSS edits replace
-  only the edited edge's theme binding, strict and transitional namespaces are
-  accepted, and malformed order, duplicates, spoofed namespaces, unsafe
-  attributes, invalid measures, and unresolved themes fail closed.
-  Splittable table rows that exceed a full physical page
-  continue at paragraph boundaries with repeated heading rows on every page,
-  viewport-safe comment drafting and focus-preserving citation drafts, tracked
-  changes, notes,
-  pointer- and Shift+F10-accessible host-defined selection menus, and shared
-  edit/preview/PDF typography and page-chrome placement. Editing, read-only
-  preview, and browser PDF export share one live pagination result. Tail edits
-  reuse the stable physical-page prefix, including resolved first/odd/even
-  headers, footers, page numbers, and navigation descriptors. Browser DOM
-  measurement runs in bounded 32 ms slices and yields only between top-level
-  blocks; document edits abort stale passes before a snapshot is committed, so
-  long repagination work does not monopolize the browser event loop.
-  Real DOCX fixtures provide deterministic A3S Test evidence for inherited
-  table styling across edit and preview, a centered 62.5% table with table and
-  cell margin overrides, all four Table Properties tabs at 390 px, exact
-  preservation of untouched cell-margin edges, a complete 390 px Picture
-  Properties flow, and a 120-paragraph row across three physical pages through
-  the final table content and following paragraph.
-  A direct-formatting A4 fixture also runs through a real WPS Writer PDF export
-  and a page-only browser comparison. Its automatic line spacing, paragraph
-  gaps, centered fixed table, row heights, borders, fills, and cell margins
-  stay within the checked one-pixel layout-landmark budget while preserving
-  the original OOXML line multiples for DOCX export.
-  Separate 30-row common-font, 36-row CJK-font, 18-row document-grid, and
-  30-row multilingual-script matrices now gate text-band positions against
-  WPS. DOCX import selects the Word `ascii`, `hAnsi`, `eastAsia`, or `cs` font
-  slot from the run script, including complex-script bold, italic, size, and
-  RTL overrides. The browser keeps the measured per-font automatic-line
-  advance, while DOCX round trips retain the section `docGrid` type and line
-  pitch and each run's `snapToGrid` override.
-  _DOCX import/export; PDF export._
-- **Markdown** — GFM source, visual editing, synchronized and resizable split
-  preview, source-native undo/redo with typing coalescing and selection restore,
-  source-aware ribbon formatting and shortcuts, empty-source guidance, task
-  lists, tables, links, images, code, a flat reading surface with a comfortable
-  line length, and keyboard-accessible host-defined selection menus across both
-  editing surfaces. At phone widths, Source and Preview each use the complete
-  workspace instead of being compressed into two stacked panes. _Markdown
-  import/export._
-- **Spreadsheet** — Multiple sheets, formulas, dependency-aware recalculation,
-  live selection statistics, an A3S-owned worksheet bar with lifecycle and
-  color controls, safe deletion confirmation, in-place rename validation, a
-  grid-aligned single-row responsive workbook footer that keeps the active
-  worksheet and its actions visible across window and phone-width changes,
-  selection-preserving undo/redo, deterministic Arrow, Enter, Tab, Home,
-  PageUp/PageDown, row, column, and all-cells selection shortcuts, Cmd/Ctrl
-  formatting through root-scoped capture before vendor grid listeners, an
-  WPS-style Home and Editing Find and Select menu whose editor-owned
-  `Cmd/Ctrl+F` search finds displayed values, raw values, formulas, and sparse
-  cells without opening browser Find, plus view-only `Ctrl+G` and `F5` Go To
-  for direct, quoted cross-sheet, and named ranges without content updates,
-  Undo records, or sparse materialization, with a viewport-safe phone Find
-  layout, touch-sized controls, bounded validation, and exact focus restoration,
-  desktop workbook task panes that become focus-contained phone dialogs with
-  an inert workbook background and exact ribbon-invoker restoration,
-  a WPS-familiar command catalog and tab order, quick-access Undo and Redo,
-  a priority-aware adaptive and collapsible ribbon with temporary tab
-  expansion, an executable Home clipboard group whose Paste, Cut, and Copy
-  commands share the permission-resilient local fallback with their WPS
-  shortcuts, a WPS-style Paste split command with quick All, Values, Formulas,
-  and Formatting actions plus `Cmd/Ctrl+Alt+V` Paste Special for ten content
-  modes, arithmetic operations, Skip blanks, Transpose, translated formula
-  references, rich same-editor styles/comments/validation/merges/column widths,
-  bounded TSV fallback, one-step Undo, and fail-closed protected or unsafe
-  targets, an Insert and Links Hyperlink command with grid-scoped `Cmd/Ctrl+K`,
-  accessible Web page, cell-range, and worksheet targets, explicit Edit and
-  Remove, immutable dense/sparse updates, content/style/comment preservation,
-  exact focus restoration, one-step Undo, and fail-closed unsafe, hidden,
-  protected, pivot, or out-of-bounds targets, a Data and Data Tools Validation
-  command for lists, whole numbers, decimals, dates, and text length across
-  multiple ranges, compact rule writes and removal, input messages,
-  invalid-input blocking, 1900/1904-aware XLSX date round trips, exact focus
-  restoration, one-step Undo, and fail-closed protected, merged, pivot,
-  read-only, invalid, out-of-bounds, or over-10,000-cell targets, native
-  Spreadsheet Tables/ListObjects through Insert and grid-scoped `Cmd/Ctrl+T`,
-  bounded current-region or explicit-range creation, canonical unique headers,
-  a contextual Table Design ribbon with editable names, 60 OOXML
-  Light/Medium/Dark styles, first/last-column emphasis and row/column stripes,
-  visible-range Canvas styling, sparse-safe Convert to Range, row/column
-  reconciliation, native XLSX table parts and supported filters, one-step Undo,
-  browser/Yjs record convergence, and fail-closed overlap, merge, AutoFilter,
-  protection, pivot, invalid, or over-100,000-cell targets, a WPS-style
-  Format Painter with
-  single-use and double-click locked
-  sessions, cross-sheet range-pattern tiling, Escape cancellation, and native
-  style-only writes, Home and Font Grow/Shrink Font commands with
-  `Cmd/Ctrl+Shift+.` / `Cmd/Ctrl+]` and `Cmd/Ctrl+Shift+,` / `Cmd/Ctrl+[` aliases,
-  per-cell mixed-size stepping, native rectangle compaction, a 10,000-cell
-  bound, and one-step Undo, a WPS-style Underline split control with single,
-  double, single-accounting, and double-accounting styles, exact Format Cells
-  and XLSX round trips, active-style-aware `Cmd/Ctrl+U` toggling, and WPS
-  `Ctrl+2`, `Ctrl+3`, and `Ctrl+4` aliases for Bold, Italic, and Underline;
-  Automatic Color and No Fill remove direct text and background colors instead
-  of hard-coding replacements, a
-  keyboard-accessible WPS Text Orientation menu with horizontal, both 45-degree
-  angles, stacked vertical, rotate-up, and rotate-down choices, exact Fortune
-  `rt` / `tr='3'` and OOXML 0–180 / 255 round trips, a 10,000-cell guard, and
-  one-batch Undo, plus a cell-border split control with side, all,
-  outside, inside, horizontal, vertical, clear, independent diagonal-down and
-  diagonal-up targets, crossed-border composition, ten native line styles,
-  exact color selection, compact overlapping range writes, exact OOXML
-  direction preservation through Paste Special, Yjs, XLSX export, and reopen,
-  `Cmd/Ctrl+Shift+&` Outside Borders and `Cmd/Ctrl+Shift+_` Clear Borders,
-  single-update undo, and grid-focus restoration, Conditional Formatting under
-  Home and Styles, executable
-  sorting plus WPS-style AutoFilter under Data, finite current-region discovery,
-  `Cmd/Ctrl+Shift+L` toggling, an `Alt+ArrowDown` keyboard filter menu,
-  a Home and Cells Rows and Columns menu for inserting above, below, left, or
-  right, deleting selected rows or columns, and hiding or unhiding rows and
-  columns through the shared structure command port, including grid-scoped
-  `Cmd/Ctrl+9`, `Cmd/Ctrl+0`, `Cmd/Ctrl+Shift+9`, and `Cmd/Ctrl+Shift+0`
-  shortcuts with 10,000-row and 1,000-column allocation guards, a Home and
-  Alignment Merge and Center split control with
-  Merge Cells, Merge Across, Unmerge Cells, Unmerge and Fill, and the WPS
-  `Ctrl+M` shortcut through one controlled native workbook batch,
-  a Home and Editing Clear menu for independently removing content, formats,
-  comments, hyperlinks, or all cell state while preserving merge geometry,
-  with Delete and Backspace mapped to Clear Contents,
-  a Home and Editing Fill menu for Down, Right, Up, and Left with native
-  relative-formula and style propagation, WPS `Cmd/Ctrl+D` and `Cmd/Ctrl+R`
-  shortcuts, one-step history, protected-range preflight, a 50,000-target-cell
-  guard, and sparse-row-safe execution,
-  a WPS AutoSum split command before Fill with Sum, Average, Count, Maximum,
-  and Minimum, the editor-scoped `Alt+=` Sum shortcut, contiguous source
-  inference above or left of a blank target, multi-formula totals rows and
-  columns, target-style preservation, merged/protected/read-only/pivot and
-  overwrite preflight, a 1,000-formula bound, sparse-safe native batches, and
-  one-step history,
-  Home and Number presets for General, Number, CNY Currency, Accounting,
-  Percentage, Short Date, Time, Scientific, Fraction, and Text, including the
-  seven standard `Cmd/Ctrl+Shift` format shortcuts, exact XLSX format-code
-  round trips, value/formula preservation, and one-step history, plus
-  10,000-cell-bounded Increase/Decrease Decimal commands that retain every
-  cell's format family across mixed selections and commit one native batch,
-  a WPS-style Format Cells dialog under Home and Number with the editor-scoped
-  `Cmd/Ctrl+1` shortcut, functional Number, Alignment, Font, Border, Fill, and
-  Protection tabs, untouched mixed-value preservation, custom native number
-  codes, compact protection ranges, dense/sparse representation retention,
-  bounded blank-cell materialization, one controlled update and one Undo
-  record per Apply, and exact launcher or remounted-grid focus restoration,
-  a Home and Styles gallery with 17 WPS built-in cell styles grouped as Common,
-  Data and Model, and Titles and Totals, true native previews, two-dimensional
-  keyboard navigation, a 10,000-cell bound, blank-cell styling, per-cell border
-  semantics, current-style recognition without private markers, one-step
-  history, and direct XLSX font, fill, alignment, wrap, rotation, border, and
-  number-format XF round trips; imported theme, indexed, automatic, and tint
-  identities for direct font, solid-fill, and border colors survive unrelated
-  edits and Yjs transport when the rendered RGB and palette slot still agree,
-  while changed or conflicting colors safely export as explicit RGB,
-  a View and Window Freeze Panes menu for current-cell, top-row, first-column,
-  and unfreeze patterns with XLSX round trips, and visible F9 workbook
-  recalculation,
-  Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
-  preview,
-  one shared cell/worksheet context-menu surface with executable shortcut
-  hints that becomes a touch-sized, scrollable bottom action sheet on phones,
-  keyboard-operated cells and sheet tabs, direct type-to-edit,
-  permission-resilient multi-cell cut/copy/paste, clear, F2 editing, and
-  focus-safe Escape behavior, direct
-  font-family, vertical-alignment, text-wrap, number-format, and decimal
-  controls, charts, validation, protection, comments, and print settings.
-  _XLSX, XLS, ODS, and CSV import; XLSX and PDF export._
-- **Presentation** — Typed slide scene graph, multi-selection, groups, object
-  transforms, keyboard-accessible table-size insertion, Shift+F10-accessible
-  native slide and object context actions, guides, comments, transitions,
-  editor-scoped formatting and clipboard shortcuts that restore the selected
-  object, a docked desktop chart inspector that becomes a focus-contained modal
-  surface whenever it overlays the canvas, docked desktop comment review that
-  becomes a readable, touch-sized, focus-contained full-editor modal on phones
-  with dirty-draft cancellation and exact invoker restoration, a dismissible
-  phone slide navigator, a top-aligned phone canvas with a priority-aware status
-  bar, one-step slideshow from the beginning or current slide,
-  keyboard-complete playback, and a responsive presenter view with one
-  navigation strip, current/next context, speaker notes, and a session timer.
-  _PPTX import/export; PDF export._
-- **PDF** — PDFium rendering, navigation, search, form filling, annotations,
-  annotation color, opacity, compatible stroke-width controls, history,
-  a scrollable page-thumbnail rail with current-page synchronization and
-  focus-synchronized Arrow/Home/End navigation, a 32-thumbnail hard window,
-  cancellation of stale PDFium bitmap tasks, bounded main-page rendering for
-  long files, and a dismissible page drawer whose phone trigger stays in the
-  page controls instead of covering PDF content,
-  focus-safe page and search drafts, responsive search-result, navigation, and
-  zoom controls, editor-scoped shortcuts, and a keyboard-operated overflow menu
-  that retains secondary annotation tools and appearance settings on phones.
-  _PDF open/save._
-
-Document and Markdown accept public TipTap Extensions. Spreadsheet,
-Presentation, and PDF expose stable host ports rather than their internal
-command contexts. Editor engines and large runtime assets load only when that
-surface is requested.
 
 ## Controlled by design
 
@@ -1495,10 +1307,10 @@ minor release may still include breaking model changes. Required migrations
 will be called out in the [changelog](CHANGELOG.md).
 
 The project targets predictable browser editing and file preservation, not
-pixel parity with every Microsoft Office or WPS feature. Unsupported OOXML
-semantics and fidelity gaps remain explicit compatibility boundaries instead
-of being silently approximated. Track product depth and release evidence in
-the [editor quality roadmap](docs/latest/en/editor-quality-roadmap.md).
+pixel parity with every Traditional Office feature. Unsupported OOXML semantics
+and fidelity gaps remain explicit compatibility boundaries instead of being
+silently approximated. Track product depth and release evidence in the
+[editor quality roadmap](docs/latest/en/editor-quality-roadmap.md).
 
 ## Development
 
@@ -1535,6 +1347,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.22.0 documentation](https://a3s-lab.github.io/Office/docs/0.22.0/)
 - [A3S Office 0.21.0 documentation](https://a3s-lab.github.io/Office/docs/0.21.0/)
 - [A3S Office 0.20.0 documentation](https://a3s-lab.github.io/Office/docs/0.20.0/)
 - [A3S Office 0.19.0 documentation](https://a3s-lab.github.io/Office/docs/0.19.0/)

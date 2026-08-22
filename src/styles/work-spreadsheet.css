@@ -158,6 +158,52 @@
   flex-basis: 94px;
 }
 
+.work-spreadsheet-number-format-stack {
+  display: flex;
+  width: 94px;
+  height: 51px;
+  flex: 0 0 94px;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.work-spreadsheet-number-format-stack > .work-spreadsheet-ribbon-menu-root {
+  width: 94px;
+  min-width: 0;
+}
+
+.work-office-ribbon
+  .work-office-toolbar
+  .work-spreadsheet-number-format-stack
+  .work-spreadsheet-date-time-trigger.with-label {
+  width: 94px;
+  min-width: 94px;
+  height: 21px;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 0 6px;
+}
+
+.work-office-ribbon
+  .work-office-toolbar
+  .work-spreadsheet-number-format-stack
+  .work-spreadsheet-date-time-trigger.with-label
+  > svg {
+  width: 14px;
+  height: 14px;
+}
+
+.work-office-ribbon
+  .work-office-toolbar
+  .work-spreadsheet-number-format-stack
+  .work-spreadsheet-date-time-trigger.with-label
+  > span {
+  max-width: 66px;
+  font-size: 9px;
+  line-height: 11px;
+}
+
 .work-spreadsheet-workbook-panel {
   position: relative;
   z-index: 8;

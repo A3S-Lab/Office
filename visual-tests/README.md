@@ -29,13 +29,14 @@ Review the ten changed PNG files for the current platform before accepting an
 update. A baseline update is not a substitute for checking keyboard access,
 responsive behavior, or editor-specific functional tests.
 
-## WPS Writer page-layout parity
+## Traditional Office Writer page-layout parity
 
-The deterministic WPS layout contract is separate from the ordinary UI
-snapshots. It generates `word-wps-layout.docx`, exports a one-page PDF through
-the locally installed WPS Writer automation server, captures the A3S and WPS
-pages at 794 by 1123 CSS pixels, and compares both semantic landmarks and
-bounded pixel differences. It never updates a golden from the A3S output.
+The deterministic Traditional Office layout contract is separate from the
+ordinary UI snapshots. It generates a fixed DOCX fixture, exports a one-page
+PDF through the locally installed reference Writer automation server, captures
+the A3S and Traditional Office pages at 794 by 1123 CSS pixels, and compares
+both semantic landmarks and bounded pixel differences. It never updates a
+golden from the A3S output.
 
 On Windows, build and serve the Playground, set a Chromium executable when a
 Playwright-managed browser is unavailable, then run:
@@ -44,11 +45,11 @@ Playwright-managed browser is unavailable, then run:
 $env:A3S_OFFICE_VISUAL_CHROMIUM_EXECUTABLE = 'C:\path\to\chrome.exe'
 bun run playground:build
 bun run playground:preview
-bun run test:wps-layout
+bun run test:office-layout
 ```
 
-The result bundle is written below `.a3s-test/wps-layout-parity/` and includes
-the WPS version and hashes, both page PNGs, browser layout evidence, and the
+The result bundle is written below `.a3s-test/` and includes the reference
+Office version and hashes, both page PNGs, browser layout evidence, and the
 comparison report. The gate requires a one-page A4 result, no browser errors,
 at most a one-pixel landmark delta, no more than a 2% thresholded pixel
 difference, and mean absolute channel error no greater than 1.0.

@@ -1,16 +1,17 @@
 # A3S Office Product Direction
 
 A3S Office is a browser-first editing component for teams that need familiar
-office workflows inside their own products. It should let an experienced WPS
-user find routine commands, predict keyboard behavior, and move between files
-without relearning the editor shell.
+office workflows inside their own products. It should let an experienced
+Traditional Office user find routine commands, predict keyboard behavior, and
+move between files without relearning the editor shell.
 
-## WPS Alignment Contract
+## Traditional Office Alignment Contract
 
 Alignment targets information architecture and operating habits before visual
 similarity. A3S Office uses its own product identity and implementation while
 matching the command locations, tab order, shortcut expectations, disclosure
-patterns, focus behavior, and responsive priorities that make WPS familiar.
+patterns, focus behavior, and responsive priorities that make Traditional
+Office familiar.
 
 The delivery order is:
 
@@ -20,21 +21,22 @@ The delivery order is:
 
 Writer establishes the shared interaction baseline: a quick-access row,
 priority-aware and collapsible ribbon, temporary tab expansion, stable command
-metadata, WPS-oriented shortcuts, contextual tools, and a useful status bar.
+metadata, Office-oriented shortcuts, contextual tools, and a useful status bar.
 Each later editor adopts that baseline only where it matches the editor's own
 file model and workflows.
 
 ## Current Spreadsheet Milestone
 
 Spreadsheet is the next vertical track after the Writer shell baseline. Its
-first milestone keeps the WPS tab sequence, moves Undo and Redo into quick
-access, places Conditional Formatting under Home and Styles, exposes real sort
+first milestone keeps the Traditional Office tab sequence, moves Undo and Redo
+into quick access, places Conditional Formatting under Home and Styles, exposes
+real sort
 commands under Data, and makes workbook recalculation discoverable and
 executable through F9. The shared ribbon must remain adaptive, persistently
 collapsible, and temporarily expandable without moving the workbook surface.
 The second milestone makes the existing permission-resilient Paste, Cut, and
 Copy behavior discoverable in the Home clipboard group and routes both ribbon
-clicks and WPS shortcuts through the same typed command port.
+clicks and Traditional Office shortcuts through the same typed command port.
 The third milestone adds Format Painter beside those clipboard commands. A
 single click applies the captured native cell-format pattern once, a double
 click locks it across repeated or cross-sheet targets, and another click or
@@ -49,18 +51,19 @@ provide a complete keyboard path. Empty data, merged ranges, and pivot sheets
 fail without mutating the workbook, and filter ranges plus filtered row state
 survive controlled updates and XLSX round trips.
 The fifth milestone adds Freeze Panes under View and Window. The current-cell
-command freezes rows above and columns left of the selection, matching the WPS
-workflow, while dedicated presets freeze the top row or first column and an
+command freezes rows above and columns left of the selection, matching the
+Traditional Office workflow, while dedicated presets freeze the top row or
+first column and an
 active worksheet exposes Unfreeze Panes. One controlled update retains the
 selection, the menu supports Arrow, Home, End, Enter, and Escape with exact
 grid-focus restoration, and the boundary survives XLSX export and reopen.
 The sixth milestone makes the existing row and column structure commands
-discoverable under Home and Cells through one WPS-familiar Rows and Columns
+discoverable under Home and Cells through one Office-familiar Rows and Columns
 menu. Users can insert selected rows above or below, insert selected columns to
 the left or right, and delete selected rows or columns. Each item derives its
 availability from the live selection, uses the shared typed command port, and
 returns focus to the grid for uninterrupted keyboard editing.
-The seventh milestone moves cell merging into the WPS-familiar Home and
+The seventh milestone moves cell merging into the Office-familiar Home and
 Alignment group. The split control keeps Merge and Center as the primary
 action, while its menu exposes Merge and Center, Merge Cells, Merge Across,
 Unmerge Cells, and Unmerge and Fill. `Ctrl+M` follows the same typed command
@@ -78,12 +81,13 @@ The ninth milestone establishes the maximum-dimension sparse workbook contract.
 A sheet retains 1,048,576 logical rows and 16,384 logical columns without
 allocating its empty range, while navigation, editing, formatting, filtering,
 statistics, collaboration, import, and export visit only materialized cells.
-The tenth milestone completes the first missing WPS font-emphasis path by
-placing Strikethrough in Home and Font. The ribbon button and `Cmd/Ctrl+5`
+The tenth milestone completes the first missing Traditional Office
+font-emphasis path by placing Strikethrough in Home and Font. The ribbon button
+and `Cmd/Ctrl+5`
 share the existing typed cell-format command, preserve grid focus, produce one
 undoable controlled update, and expose the active native `cl` style without a
 second formatting model.
-The eleventh milestone adds a WPS-familiar cell-border split control to Home
+The eleventh milestone adds an Office-familiar cell-border split control to Home
 and Font. It supports top, bottom, left, right, no, all, outside, inside,
 horizontal, vertical, and diagonal borders with ten native line styles and an
 exact color input. One immutable A3S-owned command compacts overlapping native
@@ -92,14 +96,16 @@ and returns focus to the grid. Diagonal writes stay bounded to 4,096 cells and
 undo through the shared workbook history.
 The twelfth milestone adds Fill under Home and Editing. Fill Down, Right, Up,
 and Left copy the appropriate selection edge through Fortune's native formula
-and style semantics; `Cmd/Ctrl+D` and `Cmd/Ctrl+R` provide the WPS fast paths.
+and style semantics; `Cmd/Ctrl+D` and `Cmd/Ctrl+R` provide the Traditional
+Office fast paths.
 One editable, unmerged, unprotected, non-pivot range may fill at most 50,000
 target cells. The adapter materializes only missing row arrays inside that
 range before calling Fortune and restores the original sparse shape if the
 native command fails. A successful fill remains one undoable operation and
 returns focus to the workbook grid.
-The thirteenth milestone completes the common WPS number-format path under Home
-and Number. General, Number, CNY Currency, Accounting, Percentage, Short Date,
+The thirteenth milestone completes the common Traditional Office number-format
+path under Home and Number. General, Number, CNY Currency, Accounting,
+Percentage, Short Date,
 Time, Scientific, Fraction, and Text are explicit native presets instead of
 collapsing into Custom. The format picker, direct Currency and Percentage
 buttons, and the seven standard `Cmd/Ctrl+Shift` formatting shortcuts share one
@@ -108,7 +114,7 @@ Fortune value type, preserves values and formulas, creates one undo record, and
 round-trips its exact XLSX format code. Imported combined date-time and other
 unmodeled codes remain visible as disabled Custom state rather than being
 silently rewritten.
-The fourteenth milestone adds the WPS-familiar Cell Styles gallery under Home
+The fourteenth milestone adds the Office-familiar Cell Styles gallery under Home
 and Styles. Its 17 built-in choices are grouped as Common, Data and Model, and
 Titles and Totals, with a faithful visual preview and two-dimensional keyboard
 navigation. One command applies native Fortune font, fill, emphasis, and
@@ -126,7 +132,7 @@ of inheriting the focused cell's code. Identical results compact into native
 rectangles, one command emits one workbook batch and one Undo record, and date,
 time, fraction, text, and unknown custom formats remain untouched. A 10,000-cell
 bound prevents blank maximum-size ranges from becoming dense.
-The sixteenth milestone adds the complete WPS-style Format Cells workflow under
+The sixteenth milestone adds the complete Office-style Format Cells workflow under
 Home and Number with the editor-scoped `Cmd/Ctrl+1` shortcut. Number, Alignment,
 Font, Border, Fill, and Protection share one dialog that preserves untouched
 mixed values, captures its exact source range, retains dense or sparse worksheet
@@ -134,8 +140,9 @@ representation, and publishes one controlled update and one Undo record. The
 general command accepts at most 10,000 cells and diagonal borders retain their
 stricter 4,096-cell bound; host inputs, formula or cell editing, and modal
 controls keep their native shortcut behavior.
-The seventeenth milestone adds the WPS AutoSum split command before Fill under
-Home and Editing. Sum is the primary action and `Alt+=` fast path; the menu adds
+The seventeenth milestone adds the Traditional Office AutoSum split command
+before Fill under Home and Editing. Sum is the primary action and `Alt+=` fast
+path; the menu adds
 Average, Count, Maximum, and Minimum with complete Arrow, Home, End, Enter, and
 Escape behavior. One blank target infers the nearest contiguous numeric or
 formula block above before looking left, while an explicit totals row or column
@@ -145,7 +152,7 @@ inactive, or pivot targets, caps one gesture at 1,000 formula cells, keeps spars
 worksheets sparse, and commits one native batch, one controlled update, and one
 Undo record.
 The eighteenth milestone replaces the standalone Home and Editing Find button
-with the WPS-style Find and Select menu. Find retains `Cmd/Ctrl+F`; Go To adds
+with the Office-style Find and Select menu. Find retains `Cmd/Ctrl+F`; Go To adds
 `Ctrl+G` and `F5` for direct A1 cells, continuous ranges, quoted cross-sheet
 references, and worksheet- or workbook-scoped names. Invalid, ambiguous,
 hidden, multi-area, unsupported, and out-of-bounds targets fail inside the
@@ -153,7 +160,7 @@ shared dialog. Successful navigation activates the target sheet, selects and
 scrolls to the focused cell, and restores grid focus without publishing
 `onChange`, adding Undo history, or materializing sparse cells. Host inputs,
 formula or cell editing, popovers, and modal controls retain their native keys.
-The nineteenth milestone adds the WPS-style Paste split command and Paste
+The nineteenth milestone adds the Office-style Paste split command and Paste
 Special dialog to Home and Clipboard. Quick commands cover All, Values,
 Formulas, and Formatting; `Cmd/Ctrl+Alt+V` opens ten content modes plus Add,
 Subtract, Multiply, Divide, Skip blanks, and Transpose. A same-editor rich
@@ -213,8 +220,8 @@ creation claims and field-local conflict handling, so independent design edits
 from two browser clients converge. Structured-reference calculation,
 calculated columns, complete totals-row authoring, slicers, and external/query
 tables remain explicit compatibility gaps.
-The twenty-third milestone completes the frequent WPS font-size and border
-keyboard path under Home and Font. Grow Font owns `Cmd/Ctrl+Shift+.` and
+The twenty-third milestone completes the frequent Traditional Office font-size
+and border keyboard path under Home and Font. Grow Font owns `Cmd/Ctrl+Shift+.` and
 `Cmd/Ctrl+]`; Shrink Font owns `Cmd/Ctrl+Shift+,` and `Cmd/Ctrl+[`; Outside
 Borders owns `Cmd/Ctrl+Shift+&`; and Clear Borders owns
 `Cmd/Ctrl+Shift+_`. Mixed-size selections advance each cell through the shared
@@ -226,7 +233,7 @@ buttons, border-menu hints, and `aria-keyshortcuts` expose the same catalog
 metadata on desktop and compact Web. Grid ownership excludes host inputs,
 formula or cell editing, and modal controls.
 The twenty-fourth milestone preserves the complete native Spreadsheet
-underline family. Home and Font exposes a WPS-style split control for none,
+underline family. Home and Font exposes an Office-style split control for none,
 single, double, single-accounting, and double-accounting underline; Format
 Cells uses the same typed states and retains untouched mixed selections.
 `Cmd/Ctrl+U` turns every active variant off instead of downgrading an advanced
@@ -236,8 +243,9 @@ round-trip the exact OOXML `u` value, including an omitted value as single.
 Every ribbon, dialog, or shortcut intent emits one controlled update and one
 Undo record, restores grid focus, and keeps host inputs, the formula bar,
 active cell editing, and modal controls outside editor shortcut ownership.
-The twenty-fifth milestone completes the common WPS text-orientation and
-row/column visibility path. Home and Alignment exposes Horizontal, Angle
+The twenty-fifth milestone completes the common Traditional Office
+text-orientation and row/column visibility path. Home and Alignment exposes
+Horizontal, Angle
 Counterclockwise, Angle Clockwise, Vertical, Rotate Up, and Rotate Down through
 one keyboard-accessible radio menu. Numeric rotation uses Fortune `rt`, stacked
 vertical text uses `tr='3'`, and native XLSX import/export maps the complete
@@ -249,8 +257,8 @@ grid-scoped `Cmd/Ctrl+9`, `Cmd/Ctrl+0`, `Cmd/Ctrl+Shift+9`, and
 before allocation at 10,000 rows or 1,000 columns and never captures host
 inputs, active editing, popovers, modal controls, read-only views, or repeated
 keydown events.
-The twenty-sixth milestone completes the common WPS direct-color reset and
-font-emphasis alias path. Home and Font adds Automatic Color for text and No
+The twenty-sixth milestone completes the common Traditional Office direct-color
+reset and font-emphasis alias path. Home and Font adds Automatic Color for text and No
 Fill for cell backgrounds; each action removes the direct Fortune `fc` or `bg`
 property instead of replacing it with a hard-coded RGB value. Grid-scoped
 `Ctrl+2`, `Ctrl+3`, and `Ctrl+4` join the existing Bold, Italic, and Underline
@@ -272,6 +280,18 @@ cell slash records; ordered native slash and no-border ranges can still
 override earlier metadata. Each command remains limited to 4,096 cells, reads
 existing directions in one indexed pass, emits one controlled update and one
 Undo record, and preserves legacy Fortune `border-slash` as diagonal-down.
+The twenty-eighth milestone adds static current-date and current-time entry to
+Home and Number through one discoverable Date and Time menu. Grid-scoped
+`Ctrl+;` writes the user's local calendar day as a normalized Excel 1900
+serial with `yyyy-MM-dd`; Control-only `Ctrl+Shift+;` writes local hour and
+minute as a day fraction with `hh:mm`, dropping seconds and milliseconds. Each
+intent targets only the active cell while retaining a broader selection,
+replaces an old formula through Fortune's value API, preserves unrelated
+styles, and sends the value plus native `ct` format through one workbook batch
+and one Undo record. Read-only, inactive, locked, protected, merged, pivot, and
+out-of-XLSX-bounds targets fail before mutation. Host inputs, formula or cell
+editing, modals, composing events, repeated keydown, and Meta-only gestures
+remain outside shortcut ownership.
 
 ## Product Rules
 

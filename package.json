@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -88,6 +88,7 @@
     "playground:typecheck": "tsc --noEmit -p playground/tsconfig.json",
     "playground:visual": "playwright test --config playwright.config.ts",
     "playground:visual:spreadsheet-data-validation": "playwright test visual-tests/spreadsheet-data-validation.functional.spec.ts --config playwright.config.ts",
+    "playground:visual:spreadsheet-date-time": "playwright test visual-tests/spreadsheet-date-time.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-diagonal-borders": "playwright test visual-tests/spreadsheet-diagonal-borders.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-font-colors-shortcuts": "playwright test visual-tests/spreadsheet-font-colors-shortcuts.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-hyperlink": "playwright test visual-tests/spreadsheet-hyperlink.functional.spec.ts --config playwright.config.ts",
@@ -160,6 +161,8 @@
     "test:e2e:spreadsheet-data-validation:check": "a3s-test check tests/e2e/spreadsheet-data-validation.acl --json",
     "test:e2e:spreadsheet-diagonal-borders": "a3s-test run tests/e2e/spreadsheet-diagonal-borders.acl --json",
     "test:e2e:spreadsheet-diagonal-borders:check": "a3s-test check tests/e2e/spreadsheet-diagonal-borders.acl --json",
+    "test:e2e:spreadsheet-date-time": "a3s-test run tests/e2e/spreadsheet-date-time.acl --json",
+    "test:e2e:spreadsheet-date-time:check": "a3s-test check tests/e2e/spreadsheet-date-time.acl --json",
     "test:e2e:spreadsheet-hyperlink": "a3s-test run tests/e2e/spreadsheet-hyperlink.acl --json",
     "test:e2e:spreadsheet-hyperlink:check": "a3s-test check tests/e2e/spreadsheet-hyperlink.acl --json",
     "test:e2e:spreadsheet-maximum-sparse": "a3s-test run tests/e2e/spreadsheet-maximum-sparse.acl --json",
@@ -179,6 +182,7 @@
     "test:e2e:writer-status": "a3s-test run tests/e2e/word-status-bar.acl --json",
     "test:e2e:writer-status:check": "a3s-test check tests/e2e/word-status-bar.acl --json",
     "test:wps-layout": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-wps-layout-parity.ps1",
+    "test:office-layout": "bun run test:wps-layout",
     "test:watch": "rstest --watch",
     "typecheck": "tsc --noEmit"
   },

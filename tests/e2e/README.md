@@ -135,7 +135,7 @@ sparse blank-row safety, and ownership of `Cmd/Ctrl+D` and `Cmd/Ctrl+R` without
 turning the latter into a browser refresh. This suite remains local-only and is
 not referenced by a GitHub Actions workflow.
 
-The WPS Find and Select / Go To workflow has a focused local gate:
+The Traditional Office Find and Select / Go To workflow has a focused local gate:
 
 ```bash
 bun run test:e2e:spreadsheet-go-to:check
@@ -147,7 +147,7 @@ direct and named cross-sheet ranges, validation, exact focus restoration, and
 the view-only contract that leaves content and Undo unchanged. It is local-only
 and is not referenced by a GitHub Actions workflow.
 
-The WPS Spreadsheet hyperlink workflow has a focused local gate:
+The Traditional Office Spreadsheet hyperlink workflow has a focused local gate:
 
 ```bash
 bun run test:e2e:spreadsheet-hyperlink:check
@@ -160,7 +160,7 @@ Insert/Edit/Remove dialog semantics, exact ribbon and grid focus restoration,
 and one-step Undo. The suite runs only through the local A3S Test release gate
 and is not referenced by GitHub Actions.
 
-The WPS Spreadsheet data-validation workflow has a focused local gate:
+The Traditional Office Spreadsheet data-validation workflow has a focused local gate:
 
 ```bash
 bun run test:e2e:spreadsheet-data-validation:check
@@ -172,7 +172,7 @@ messages, compact Apply and Remove, exact focus restoration, and one-step Undo.
 The suite runs only through the local A3S Test release gate and is not
 referenced by GitHub Actions.
 
-The WPS Spreadsheet Paste Special workflow has a focused local gate:
+The Traditional Office Spreadsheet Paste Special workflow has a focused local gate:
 
 ```bash
 bun run test:e2e:spreadsheet-paste-special:check
@@ -184,7 +184,7 @@ It covers the rich same-editor clipboard, the Paste split menu,
 grid-focus restoration, and one-step Undo. The suite runs only through the
 local A3S Test release gate and is not referenced by GitHub Actions.
 
-The WPS built-in Cell Styles gallery has a focused local gate:
+The Traditional Office built-in Cell Styles gallery has a focused local gate:
 
 ```bash
 bun run test:e2e:spreadsheet-cell-style:check
@@ -196,7 +196,7 @@ focus, native styling of populated and blank cells, one-step Undo, and clean
 browser diagnostics. The equivalent Playwright regression remains the browser
 coverage used by GitHub Actions.
 
-The WPS Spreadsheet font-size and border shortcuts have a focused local gate:
+The Traditional Office Spreadsheet font-size and border shortcuts have a focused local gate:
 
 ```bash
 bun run test:e2e:spreadsheet-font-size-border-shortcuts:check
@@ -209,7 +209,7 @@ one-step Undo, accessibility, and clean browser diagnostics. The suite runs
 only through the local A3S Test release gate; GitHub Actions keeps the
 equivalent Rstest and desktop/compact Playwright coverage.
 
-The WPS Spreadsheet independent diagonal-border workflow has a focused local
+The Traditional Office Spreadsheet independent diagonal-border workflow has a focused local
 gate:
 
 ```bash
@@ -225,7 +225,7 @@ standalone agent-browser 0.26.0, Web protocol revision 15, and the existing
 Playwright Chromium. GitHub Actions and Pages run the equivalent Rstest and
 desktop/compact Playwright coverage and never install or invoke A3S Test.
 
-The WPS Spreadsheet underline styles have a focused local gate:
+The Traditional Office Spreadsheet underline styles have a focused local gate:
 
 ```bash
 bun run test:e2e:spreadsheet-underline-styles:check
@@ -238,7 +238,7 @@ layout, accessibility, screenshot evidence, and clean browser diagnostics.
 The suite runs only through the local A3S Test release gate; GitHub Actions
 keeps the equivalent Rstest and desktop/compact Playwright coverage.
 
-The WPS Spreadsheet text-orientation and row/column visibility workflow has a
+The Traditional Office Spreadsheet text-orientation and row/column visibility workflow has a
 focused local gate:
 
 ```bash
@@ -253,7 +253,7 @@ the desktop/compact screenshots and Canvas pixel comparisons because the pinned
 standalone adapter's CDP screenshot command is not a reliable bounded gate.
 The suite remains local-only and is not referenced by GitHub Actions.
 
-The WPS Spreadsheet direct-color resets and font-emphasis aliases have a
+The Traditional Office Spreadsheet direct-color resets and font-emphasis aliases have a
 focused local gate:
 
 ```bash
@@ -266,6 +266,22 @@ shortcut metadata, real pressed-state changes, final worksheet-grid focus,
 both desktop and compact Ribbon densities, accessibility, and clean browser
 diagnostics. The suite runs only through the local A3S Test release gate;
 GitHub Actions keeps the equivalent Rstest and Playwright coverage.
+
+The Traditional Office Spreadsheet static date and time workflow has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-date-time:check
+bun run test:e2e:spreadsheet-date-time
+```
+
+It covers the grid-scoped `Ctrl+;` date shortcut, the discoverable Date and
+Time menu, `Ctrl+Shift+;` metadata, local date/time number formats, one
+controlled update per insertion, one-step Undo, compact Ribbon focus,
+accessibility, and clean browser diagnostics. The Playground fixture reports
+revision evidence without freezing a real user's local clock. The suite runs
+only through the local A3S Test 1.0.0 release gate; GitHub Actions and Pages
+use equivalent Rstest and Playwright coverage and never install or invoke A3S
+Test.
 
 The native Spreadsheet Table lifecycle has a focused local gate:
 
@@ -291,7 +307,7 @@ bun run test:e2e:collaboration-presentation-elements
 The suites cover focused Word page-color, a desktop Writer quick-access and
 adaptive, collapsible-ribbon workflow covering comfortable, priority-compacted,
 persistent collapsed, and temporary tab states without document layout
-movement, plus executable WPS formatting and review shortcuts scoped to the
+movement, plus executable Traditional Office formatting and review shortcuts scoped to the
 document, including permission-free format copy and paste, accessibility,
 console, and page-error evidence;
 the complete phone Page Setup flow
@@ -362,7 +378,7 @@ the phone body-field workflow covering physical PAGE and NUMPAGES results,
 F9 refresh, one-action undo and redo, phone ribbon overflow, accessibility,
 and browser diagnostics;
 the Spreadsheet ribbon workflow with command-catalogued native strikethrough
-and its WPS `Cmd/Ctrl+5` shortcut, plus colored cell-border selection, focus
+and its Traditional Office `Cmd/Ctrl+5` shortcut, plus colored cell-border selection, focus
 restoration, and undo through the local-only ACL gate; the phone
 worksheet-rename workflow and
 viewport-safe, touch-sized Find controls,

@@ -37,6 +37,11 @@ import {
 } from './playground-import-progress';
 import type { NoticeTone, PlaygroundNotice } from './playground-types';
 import {
+  createSpreadsheetDateTimeArtifact,
+  SPREADSHEET_DATE_TIME_ARTIFACT_ID,
+  SPREADSHEET_DATE_TIME_FIXTURE,
+} from './spreadsheet-date-time-fixture';
+import {
   createSpreadsheetDataValidationArtifact,
   SPREADSHEET_DATA_VALIDATION_ARTIFACT_ID,
   SPREADSHEET_DATA_VALIDATION_FIXTURE,
@@ -94,7 +99,9 @@ function Playground() {
             ? SPREADSHEET_HYPERLINK_ARTIFACT_ID
             : e2eFixture === SPREADSHEET_PASTE_SPECIAL_FIXTURE
               ? SPREADSHEET_PASTE_SPECIAL_ARTIFACT_ID
-              : null,
+              : e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE
+                ? SPREADSHEET_DATE_TIME_ARTIFACT_ID
+                : null,
   );
   const [collaborationDemoArtifactId, setCollaborationDemoArtifactId] =
     useState<string | null>(null);
@@ -606,6 +613,9 @@ function createInitialArtifacts(e2eFixture: string | null): OfficeArtifact[] {
   }
   if (e2eFixture === SPREADSHEET_PASTE_SPECIAL_FIXTURE) {
     return [createSpreadsheetPasteSpecialArtifact(), ...artifacts];
+  }
+  if (e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE) {
+    return [createSpreadsheetDateTimeArtifact(), ...artifacts];
   }
   return artifacts;
 }

@@ -97,7 +97,7 @@ Home 与 End 导航，并在选择后精确把焦点还给触发按钮。首列�
 XLSX 导入导出保留原生 table part、工作表关系、content type、名称/显示名称、区域、列、
 标题/汇总标记、60 个内置样式及支持的值、自定义、Top 与动态筛选条件。结构化引用计算、
 计算列、完整汇总行创作、切片器、外部/查询表格和高级集成仍是明确边界，不能据此宣称完整
-Excel 或 WPS 表格对齐。
+Excel 或 传统 Office 表格对齐。
 
 Rstest 覆盖模型、结构协调、命令、弹窗、功能区、Canvas、协作与 XLSX；Playwright 覆盖
 桌面和紧凑视觉流程。`tests/e2e/spreadsheet-table.acl` 只作为本地发布门，使用
@@ -145,7 +145,7 @@ const sheet = {
 `luckysheet_conditionformat_save[].cellrange` 紧凑区域，并且只计算已填充单元格。导入与
 导出会把这些区域保留为原生 XLSX `sqref`、工作表保护和条件格式记录。
 
-## WPS 常用数字格式
+## 传统 Office 常用数字格式
 
 开始选项卡的数字组提供常规、数字、人民币货币、会计专用、百分比、短日期、时间、
 科学计数、分数和文本格式，并支持七组标准 `Cmd/Ctrl+Shift` 快捷键。预设只修改
@@ -159,7 +159,7 @@ Fortune 原生的 `cell.ct.fa` 与 `cell.ct.t`，不会改写值、公式、批�
 ## 字号步进与框线快捷键
 
 开始选项卡的字体组提供可见的“增大字号”和“减小字号”按钮，并在工作表网格获得焦点时
-支持以下 WPS 常用快捷键：
+支持以下 传统 Office 常用快捷键：
 
 | 操作 | 快捷键 |
 | --- | --- |
@@ -183,7 +183,7 @@ Rstest 与桌面/紧凑 Playwright 是浏览器门禁；确定性的
 
 ## 高级下划线样式
 
-开始选项卡的字体组把下划线做成 WPS 风格的拆分控件。主按钮切换当前单元格或选区，
+开始选项卡的字体组把下划线做成 传统 Office 风格的拆分控件。主按钮切换当前单元格或选区，
 “更多下划线”菜单与“设置单元格格式”的字体页共用五种原生状态：
 
 | 样式 | Fortune `un` | XLSX 字体值 |
@@ -206,7 +206,7 @@ Playwright 覆盖浏览器和 XLSX 路径；确定性的
 `tests/e2e/spreadsheet-underline-styles.acl` 仅作为本地 A3S Test 1.0.0 门禁，采集截图、
 可访问性、控制台和页面错误证据。GitHub Actions 与 Pages 不安装也不调用 A3S Test。
 
-## 直接颜色重置、WPS 字体快捷键与 XLSX 颜色身份
+## 直接颜色重置、传统 Office 字体快捷键与 XLSX 颜色身份
 
 开始选项卡的字体组现在提供两种无法用直接 RGB 色块表达的“未设置”状态。“自动颜色”会
 删除 Fortune `fc`，让工作簿字体样式决定可见文字颜色；“无填充”会删除 Fortune `bg`，
@@ -214,9 +214,9 @@ Playwright 覆盖浏览器和 XLSX 路径；确定性的
 现有类型化单元格格式命令，只产生一次受控更新和一条撤销记录，关闭颜色面板后把最终
 Spreadsheet 命令焦点还给工作表网格。
 
-同一命令目录还统一管理常用 WPS/Excel 字体强调快捷键：
+同一命令目录还统一管理常用 传统 Office/Excel 字体强调快捷键：
 
-| 操作 | 主快捷键 | WPS 别名 | Fortune 直接字段 |
+| 操作 | 主快捷键 | 传统 Office 别名 | Fortune 直接字段 |
 | --- | --- | --- | --- |
 | 加粗 | `Cmd/Ctrl+B` | `Ctrl+2` | `bl` |
 | 斜体 | `Cmd/Ctrl+I` | `Ctrl+3` | `it` |
@@ -245,7 +245,7 @@ agent-browser 0.26.0、可访问性与空控制台/页面错误证据验证两�
 
 ## 文字方向与行列显隐
 
-开始选项卡的对齐组通过一个支持键盘的 `menuitemradio` 菜单提供六种 WPS 常用文字方向。
+开始选项卡的对齐组通过一个支持键盘的 `menuitemradio` 菜单提供六种 传统 Office 常用文字方向。
 浏览器模型把数值旋转写入 Fortune `rt`；只有逐字堆叠的竖排文字使用 Fortune `tr='3'`。
 
 | 选项 | 可见角度 | Fortune 样式 | XLSX `textRotation` |

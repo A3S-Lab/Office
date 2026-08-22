@@ -4,6 +4,24 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.22.0 - 2026-08-22
+
+- Added static Traditional Office/Excel Spreadsheet current-date (`Ctrl+;`) and
+  current-time (`Ctrl+Shift+;`) entry through a discoverable Home and Number
+  menu. Date uses
+  the local calendar day and normalized Excel 1900 serial; time uses local
+  hour and minute and discards seconds and milliseconds.
+- Kept each gesture scoped to the active cell while preserving a broader
+  selection. One Fortune batch writes the scalar through the native value API,
+  applies only the `yyyy-MM-dd` or `hh:mm` number format, clears an old formula,
+  preserves unrelated styles, and creates one Undo record. Read-only,
+  inactive, protected, locked, merged, pivot, and out-of-bounds targets fail
+  before mutation.
+- Added a dedicated Playground workbook with revision evidence, focused Rstest
+  and Ribbon coverage, desktop/compact Playwright with a fixed local clock, and
+  a local-only A3S Test 1.0.0 ACL with accessibility and clean browser
+  diagnostics. GitHub Actions and Pages do not install or invoke A3S Test.
+
 ## 0.21.0 - 2026-08-22
 
 - Preserved OOXML Spreadsheet `diagonalDown` and `diagonalUp` borders as
@@ -22,8 +40,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## 0.20.0 - 2026-08-22
 
-- Added WPS/Excel `Ctrl+2`, `Ctrl+3`, and `Ctrl+4` aliases for Spreadsheet
-  Bold, Italic, and Underline. The shared command catalog now owns visible
+- Added Traditional Office/Excel `Ctrl+2`, `Ctrl+3`, and `Ctrl+4` aliases for
+  Spreadsheet Bold, Italic, and Underline. The shared command catalog now owns visible
   shortcut copy, `aria-keyshortcuts`, editor keymaps, and the typed formatting
   path across desktop and compact Ribbon layouts.
 - Added Automatic Color and No Fill actions to the Spreadsheet font and fill
@@ -44,7 +62,7 @@ All notable changes to A3S Office will be documented in this file.
 
 ## 0.19.0 - 2026-08-22
 
-- Added a keyboard-accessible WPS Spreadsheet Text Orientation menu with
+- Added a keyboard-accessible Traditional Office Spreadsheet Text Orientation menu with
   horizontal, counterclockwise, clockwise, stacked vertical, rotate-up, and
   rotate-down choices. Fortune `rt` and `tr='3'` now round-trip the complete
   native XLSX 0–180 and 255 mapping without reversing negative angles.
@@ -63,7 +81,7 @@ All notable changes to A3S Office will be documented in this file.
 
 ## 0.18.0 - 2026-08-22
 
-- Added WPS-style Spreadsheet advanced underline formatting with a split Home
+- Added Office-style Spreadsheet advanced underline formatting with a split Home
   and Font control for none, single, double, single-accounting, and
   double-accounting styles. Format Cells preserves mixed selections and exposes
   the same five states; `Cmd/Ctrl+U` turns any active underline variant off and
@@ -77,7 +95,7 @@ All notable changes to A3S Office will be documented in this file.
 
 ## 0.17.0 - 2026-08-22
 
-- Added WPS-style Spreadsheet Grow Font and Shrink Font commands to Home and
+- Added Office-style Spreadsheet Grow Font and Shrink Font commands to Home and
   Font with `Cmd/Ctrl+Shift+.` / `Cmd/Ctrl+]` and
   `Cmd/Ctrl+Shift+,` / `Cmd/Ctrl+[` aliases. Mixed selections step each cell
   independently through the shared 9–72 point scale, compact equal results
@@ -111,7 +129,7 @@ All notable changes to A3S Office will be documented in this file.
 
 ## 0.15.0 - 2026-08-21
 
-- Added WPS-style Spreadsheet Data Validation under Data and Data Tools for
+- Added Office-style Spreadsheet Data Validation under Data and Data Tools for
   lists, whole numbers, decimals, dates, and text length across one or more
   selected ranges. The accessible dialog supports input messages, explicit
   invalid-input blocking, compact Apply and Remove, exact focus restoration,
@@ -122,7 +140,7 @@ All notable changes to A3S Office will be documented in this file.
   date systems before stable `DATE(...)` export. Focused Rstest, desktop and
   compact Playwright, and a local-only A3S Test 1.0.0 regression cover the
   workflow; GitHub Actions does not install or invoke A3S Test.
-- Added WPS-style Spreadsheet Insert/Edit Hyperlink under Insert and Links,
+- Added Office-style Spreadsheet Insert/Edit Hyperlink under Insert and Links,
   including the grid-scoped `Cmd/Ctrl+K` shortcut and accessible Web page,
   cell-range, and worksheet targets. One immutable controlled update preserves
   dense or sparse storage, cell values, formulas, formatting, comments, and
@@ -135,7 +153,7 @@ All notable changes to A3S Office will be documented in this file.
 
 ## 0.14.0 - 2026-08-21
 
-- Added WPS-style Spreadsheet Paste Special with a split Paste command,
+- Added Office-style Spreadsheet Paste Special with a split Paste command,
   `Cmd/Ctrl+Alt+V`, ten content modes, four arithmetic operations, Skip
   blanks, and Transpose. Same-editor copies retain formulas, native styles,
   comments, validation, protection, hyperlinks, borders, merges, and column
@@ -144,36 +162,40 @@ All notable changes to A3S Office will be documented in this file.
   update and Undo record, and unsafe merge, pivot, protection, bounds,
   unsupported-formula, and divide-by-zero cases fail before mutation.
 - Replaced Spreadsheet's standalone Home Find action with a keyboard-accessible
-  WPS Find and Select menu. Find retains `Cmd/Ctrl+F`; Go To adds `Ctrl+G` and
+  Traditional Office Find and Select menu. Find retains `Cmd/Ctrl+F`; Go To
+  adds `Ctrl+G` and
   `F5` for bounded direct, quoted cross-sheet, and named ranges while keeping
   host inputs and editing surfaces untouched. Navigation changes only the live
   worksheet view and selection, so sparse data, controlled content, and Undo
   history remain unchanged.
-- Added the WPS Spreadsheet AutoSum split command before Fill with Sum,
-  Average, Count, Maximum, and Minimum plus the editor-scoped `Alt+=` Sum
+- Added the Traditional Office Spreadsheet AutoSum split command before Fill
+  with Sum, Average, Count, Maximum, and Minimum plus the editor-scoped `Alt+=` Sum
   shortcut. It infers contiguous sources above or left, supports multi-formula
   totals rows and columns, preserves target styles and sparse worksheets,
   rejects unsafe targets, and commits one bounded native batch and Undo record.
-- Added the complete WPS-style Format Cells dialog under Home and Number with
+- Added the complete Office-style Format Cells dialog under Home and Number with
   Number, Alignment, Font, Border, Fill, and Protection tabs and the
   editor-scoped `Cmd/Ctrl+1` shortcut. Mixed values, dense/sparse representation,
   one controlled update, one-step Undo, and exact focus restoration are
   preserved across the bounded workflow.
-- Made Spreadsheet Increase Decimal and Decrease Decimal first-class WPS Home
-  and Number commands. Mixed selections now retain each cell's currency,
+- Made Spreadsheet Increase Decimal and Decrease Decimal first-class
+  Traditional Office Home and Number commands. Mixed selections now retain each
+  cell's currency,
   accounting, percentage, number, or scientific format family, compact equal
   results into one bounded native batch, and leave date, time, fraction, text,
   and unknown custom formats unchanged.
 
 ## 0.13.1 - 2026-08-20
 
-- Added explicit WPS Spreadsheet presets for General, Number, CNY Currency,
-  Accounting, Percentage, Short Date, Time, Scientific, Fraction, and Text,
+- Added explicit Traditional Office Spreadsheet presets for General, Number,
+  CNY Currency, Accounting, Percentage, Short Date, Time, Scientific, Fraction,
+  and Text,
   plus the seven standard `Cmd/Ctrl+Shift` formatting shortcuts. Each command
   preserves values and formulas, creates one Undo entry, and retains its exact
   XLSX number-format code.
-- Added 17 grouped WPS built-in Spreadsheet cell styles with native previews,
-  two-dimensional keyboard navigation, current-style recognition, bounded
+- Added 17 grouped Traditional Office built-in Spreadsheet cell styles with
+  native previews, two-dimensional keyboard navigation, current-style
+  recognition, bounded
   blank-cell application, per-cell border semantics, and one-step Undo. Direct
   XLSX font, fill, alignment, wrapping, rotation, border, and number-format XF
   state now round-trips, including RGB normalization for theme, indexed, and
@@ -201,7 +223,7 @@ All notable changes to A3S Office will be documented in this file.
   repeated edits. The documentation shell now follows the A3S navigation and
   code-rendering system, and every editor uses a centered accessible loading
   state with reduced-motion support.
-- Added WPS-aligned Spreadsheet single strikethrough, native cell-border
+- Added Office-aligned Spreadsheet single strikethrough, native cell-border
   presets and styles, and Fill Down, Right, Up, and Left. Fill preserves native
   relative-formula, series, style, Undo/Redo, sparse-matrix, protection,
   merge, pivot, read-only, and browser-shortcut semantics, with a
@@ -1002,7 +1024,7 @@ All notable changes to A3S Office will be documented in this file.
 - Added conditional table-style support for paragraph contextual spacing and
   outline levels across style precedence, controlled editor attributes, format
   copy and clearing, and DOCX export.
-- Added a Spreadsheet command catalog and adopted the shared WPS-oriented
+- Added a Spreadsheet command catalog and adopted the shared Office-oriented
   quick-access, adaptive, and collapsible ribbon. Conditional Formatting now
   lives under Home and Styles, Data exposes executable ascending and descending
   sort commands, and workbook recalculation is visible and executable with F9.
@@ -1010,17 +1032,18 @@ All notable changes to A3S Office will be documented in this file.
   Playwright regression, and a schema-validated deterministic A3S Test workflow
   for the aligned Spreadsheet ribbon.
 - Added executable Paste, Cut, and Copy commands to the Spreadsheet Home
-  clipboard group. Ribbon clicks and WPS `Cmd/Ctrl+V`, `Cmd/Ctrl+X`, and
+  clipboard group. Ribbon clicks and Traditional Office `Cmd/Ctrl+V`,
+  `Cmd/Ctrl+X`, and
   `Cmd/Ctrl+C` shortcuts now share one typed command port, permission-resilient
   browser/local clipboard fallback, and grid-focus restoration.
-- Added a WPS-style Spreadsheet Format Painter to the Home clipboard group.
+- Added an Office-style Spreadsheet Format Painter to the Home clipboard group.
   Single-click one-shot and double-click locked sessions copy native cell-style
   patterns across ranges and sheets without changing values, formulas,
   comments, links, or merges; another click or Escape exits cleanly.
 - Added bounded format capture and target guards, duplicate-target suppression,
   one controlled workbook batch per application, accessible pressed/live
   state, and desktop plus compact Web regression coverage.
-- Added WPS-style Spreadsheet AutoFilter under Data and Sort and Filter.
+- Added Office-style Spreadsheet AutoFilter under Data and Sort and Filter.
   `Cmd/Ctrl+Shift+L` toggles filtering, `Alt+ArrowDown` opens the selected
   header menu, and arrows, Space, Enter, and Escape operate it without leaving
   the grid.
@@ -1028,7 +1051,7 @@ All notable changes to A3S Office will be documented in this file.
   explicit-range filtering, safe empty/merge/pivot rejection, controlled
   selection and hidden-row preservation, accessible vendor filter controls,
   XLSX round-trip coverage, and desktop plus compact Web regression.
-- Added WPS-style Spreadsheet Freeze Panes under View and Window. The current
+- Added Office-style Spreadsheet Freeze Panes under View and Window. The current
   cell freezes the rows above and columns to its left, with separate top-row,
   first-column, and unfreeze commands behind one controlled workbook update.
 - Added Arrow, Home, End, Enter, and Escape menu operation, pressed and live
@@ -1036,22 +1059,23 @@ All notable changes to A3S Office will be documented in this file.
   desktop plus compact Web regression. Delayed grid-focus recovery now yields
   to deliberate pointer and Tab navigation so repeated ribbon actions remain
   usable immediately after a controlled workbook remount.
-- Added a WPS-familiar Rows and Columns menu to Spreadsheet Home and Cells.
+- Added an Office-familiar Rows and Columns menu to Spreadsheet Home and Cells.
   The existing typed workbook commands now expose row insertion above or below,
   column insertion left or right, and selected-row or selected-column deletion
   without duplicating the structure-editing model.
 - Added independent command availability, Arrow/Home/End/Enter/Escape menu
   behavior, exact grid-focus restoration, desktop and compact Web workflow
   regression, and schema-validated deterministic A3S Test coverage.
-- Added a WPS-familiar Merge and Center split control to Spreadsheet Home and
+- Added an Office-familiar Merge and Center split control to Spreadsheet Home and
   Alignment. Its menu executes Merge and Center, Merge Cells, Merge Across,
   Unmerge Cells, and Unmerge and Fill, while `Ctrl+M` shares the primary path.
 - Kept every merge intent within one controlled Fortune workbook batch, used
   the native merge model for availability and unmerge ranges, restored grid or
   invoker focus exactly, and added focused, XLSX round-trip, desktop, and
   compact Web regression coverage.
-- Added the WPS Clear menu to Spreadsheet Home and Editing with Clear All,
-  Clear Formats, Clear Contents, Clear Comments, and Clear Hyperlinks. Delete
+- Added the Traditional Office Clear menu to Spreadsheet Home and Editing with
+  Clear All, Clear Formats, Clear Contents, Clear Comments, and Clear
+  Hyperlinks. Delete
   and Backspace now share the typed Clear Contents path.
 - Preserved content, formats, comments, hyperlinks, and merge geometry according
   to each Clear mode, including bounded range subtraction for borders,
@@ -1060,23 +1084,25 @@ All notable changes to A3S Office will be documented in this file.
 
 ## 0.3.0 - 2026-08-07
 
-- Added a Writer command catalog for stable ribbon grouping and WPS-compatible
+- Added a Writer command catalog for stable ribbon grouping and Office-compatible
   shortcut metadata, moved undo and redo into a compact quick-access toolbar,
   added persistent plus temporary ribbon collapse behavior, and made lower
   priority groups compact before the ribbon falls back to horizontal paging.
-- Aligned Writer superscript and subscript with the WPS `Ctrl+Shift+=` and
-  `Ctrl+=` shortcuts and added deterministic desktop browser coverage for the
+- Aligned Writer superscript and subscript with the Traditional Office
+  `Ctrl+Shift+=` and `Ctrl+=` shortcuts and added deterministic desktop browser
+  coverage for the
   expanded, collapsed, and temporary ribbon states.
-- Made the displayed WPS Writer shortcuts executable inside the document for
-  font sizing, paragraph alignment and line spacing, heading styles, spelling,
+- Made the displayed Traditional Office Writer shortcuts executable inside the
+  document for font sizing, paragraph alignment and line spacing, heading
+  styles, spelling,
   field refresh, comments, and track changes without capturing host inputs.
-- Added a permission-free Writer formatting clipboard with WPS
+- Added a permission-free Writer formatting clipboard with Traditional Office
   `Ctrl+Shift+C` / `Ctrl+Shift+V`, a one-shot format painter, semantic-mark
   preservation, and single-transaction formatting paste.
-- Extended WPS alignment and format-copy shortcuts into page headers and
-  footers, corrected their superscript and subscript shortcut descriptions,
+- Extended Traditional Office alignment and format-copy shortcuts into page
+  headers and footers, corrected their superscript and subscript shortcut descriptions,
   and added schema-safe body-format projection for page-chrome editors.
-- Reordered the Writer Insert ribbon into WPS-familiar Pages, Table,
+- Reordered the Writer Insert ribbon into Office-familiar Pages, Table,
   Illustrations, Links, Header and Footer, and Text groups, with page-number
   visibility beside header and footer commands.
 - Added direct Writer Page Layout presets for margins, orientation, paper size,
@@ -1084,15 +1110,17 @@ All notable changes to A3S Office will be documented in this file.
   routed to the matching Page Setup tab. Deterministic browser coverage proves
   live landscape and two-column rendering, Escape close, accessibility, and
   empty console and page-error diagnostics.
-- Aligned Writer References, Review, and View grouping with WPS terminology and
-  order, added direct previous/next plus accept/reject revision commands, and
+- Aligned Writer References, Review, and View grouping with Traditional Office
+  terminology and order, added direct previous/next plus accept/reject revision
+  commands, and
   marked Picture, Table, and Header and Footer tabs as contextual tools.
-- Replaced arbitrary Writer zoom presets with WPS-style 100%, One Page, and Page
+- Replaced arbitrary Writer zoom presets with Office-style 100%, One Page, and Page
   Width commands. Fit zoom is calculated from the live page and editor viewport;
   deterministic browser coverage resolves two tracked changes, verifies both
   fit modes, and captures accessible, error-free evidence.
 - Made Writer's status-bar word count actionable with live page, word,
-  character, and paragraph details plus the WPS `Ctrl+Shift+G` shortcut. The
+  character, and paragraph details plus the Traditional Office `Ctrl+Shift+G`
+  shortcut. The
   labelled view-and-zoom toolbar supports arrow-key traversal, while compact
   Web layouts retain page and zoom controls before lower-priority status items.
 
@@ -1102,28 +1130,33 @@ All notable changes to A3S Office will be documented in this file.
   from each run's actual text while preserving `bCs`, `iCs`, `szCs`, `cs`,
   `rtl`, and font-hint behavior for multilingual DOCX content.
 - Added a deterministic 30-row Latin, Chinese, Arabic, Hebrew, and mixed-format
-  fixture with A3S Test coverage and a real WPS Writer PDF layout gate.
-- Added a calibrated Chromium native-PDF fallback for WPS reference captures
+  fixture with A3S Test coverage and a real Traditional Office Writer PDF layout
+  gate.
+- Added a calibrated Chromium native-PDF fallback for Traditional Office
+  reference captures
   when the embedded PDF renderer cannot initialize the exported document.
 
 ## 0.2.1 - 2026-08-06
 
-- Matched WPS Writer automatic line layout across common Latin and Chinese
-  system fonts with measured per-font advances while retaining the original
+- Matched Traditional Office Writer automatic line layout across common Latin
+  and Chinese system fonts with measured per-font advances while retaining the original
   OOXML line-spacing multiple as the DOCX round-trip authority.
 - Preserved section-level Word document-grid type and line pitch plus run-level
   `snapToGrid` overrides across DOCX import and export, and stopped exporting a
   generated document grid when the source document does not define one.
 - Added deterministic 30-row common-font, 36-row CJK-font, and 18-row document-
-  grid fixtures with A3S Test browser coverage and real WPS PDF layout gates.
+  grid fixtures with A3S Test browser coverage and real Traditional Office PDF
+  layout gates.
 
 ## 0.2.0 - 2026-08-06
 
-- Added a real WPS Writer page-layout gate that exports a deterministic A4 DOCX
-  through WPS, captures normalized A3S and WPS pages, and rejects page-size,
+- Added a real Traditional Office Writer page-layout gate that exports a
+  deterministic A4 DOCX through Traditional Office, captures normalized A3S and
+  Traditional Office pages, and rejects page-size,
   semantic-landmark, browser-error, or bounded pixel regressions.
-- Matched WPS automatic Word line spacing without changing the original OOXML
-  multiple used for DOCX export, removed editor-only spacing around imported
+- Matched Traditional Office automatic Word line spacing without changing the
+  original OOXML multiple used for DOCX export, removed editor-only spacing
+  around imported
   tables, and removed the transparent paginated-page border from content
   geometry.
 - Reworked the default Markdown split view into a flat writing-and-reading

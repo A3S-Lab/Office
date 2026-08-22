@@ -50,7 +50,7 @@ suite "office-spreadsheet-underline-styles" {
         }
 
         expect "underline-shortcut-visible" {
-            visible = css(".work-spreadsheet-ribbon button[aria-label='下划线'][aria-keyshortcuts='Control+U Meta+U'][aria-pressed='false']")
+            visible = css(".work-spreadsheet-ribbon button[aria-label='下划线'][aria-keyshortcuts='Control+U Meta+U Control+4'][aria-pressed='false']")
         }
 
         click "open-underline-menu" {
@@ -70,7 +70,7 @@ suite "office-spreadsheet-underline-styles" {
         }
 
         expect "double-accounting-active" {
-            visible = css(".work-spreadsheet-ribbon button[aria-label='下划线'][aria-pressed='true'][title='下划线（双会计用下划线；Cmd/Ctrl+U）']")
+            visible = css(".work-spreadsheet-ribbon button[aria-label='下划线'][aria-pressed='true'][title='下划线（双会计用下划线；Cmd/Ctrl+U 或 Ctrl+4）']")
         }
 
         screenshot "double-accounting-underline" {
@@ -86,7 +86,7 @@ suite "office-spreadsheet-underline-styles" {
         }
 
         expect "underline-disabled" {
-            visible = css(".work-spreadsheet-ribbon button[aria-label='下划线'][aria-pressed='false'][title='下划线（无下划线；Cmd/Ctrl+U）']")
+            visible = css(".work-spreadsheet-ribbon button[aria-label='下划线'][aria-pressed='false'][title='下划线（无下划线；Cmd/Ctrl+U 或 Ctrl+4）']")
         }
 
         press "undo-toggle" {
@@ -94,7 +94,7 @@ suite "office-spreadsheet-underline-styles" {
         }
 
         expect "double-accounting-restored" {
-            visible = css(".work-spreadsheet-ribbon button[aria-label='下划线'][aria-pressed='true'][title='下划线（双会计用下划线；Cmd/Ctrl+U）']")
+            visible = css(".work-spreadsheet-ribbon button[aria-label='下划线'][aria-pressed='true'][title='下划线（双会计用下划线；Cmd/Ctrl+U 或 Ctrl+4）']")
         }
 
         accessibility "underline-accessibility" {

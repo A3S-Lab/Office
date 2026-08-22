@@ -32,6 +32,10 @@ import {
   type SpreadsheetFontSizeDirection,
 } from './spreadsheet-font-size-command';
 import { createSpreadsheetDataValidationExtension } from './spreadsheet-data-validation-command';
+import {
+  createSpreadsheetDateTimeExtension,
+  type SpreadsheetDateTimeKind,
+} from './spreadsheet-date-time-command';
 import type {
   SpreadsheetDataValidationRequest,
   SpreadsheetDataValidationTarget,
@@ -276,6 +280,7 @@ export interface SpreadsheetEditorCommands {
     axis: SpreadsheetStructureAxis,
     position: SpreadsheetStructureInsertPosition,
   ) => boolean;
+  insertCurrentDateTime: (kind: SpreadsheetDateTimeKind) => boolean;
   mergeSelectedCells: (command: SpreadsheetCellMergeCommand) => boolean;
   moveSheet: (
     sheetId: string,
@@ -381,6 +386,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     createSpreadsheetCellBorderExtension(),
     createSpreadsheetCellStyleExtension(),
     createSpreadsheetNumberFormatExtension(),
+    createSpreadsheetDateTimeExtension(),
     createSpreadsheetNavigationExtension(),
     createSpreadsheetDataValidationExtension(),
     createSpreadsheetHyperlinkExtension(),

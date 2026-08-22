@@ -94,6 +94,8 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     spreadsheetCommandCatalog.numberFormatText,
     spreadsheetCommandCatalog.decreaseDecimalPlaces,
     spreadsheetCommandCatalog.increaseDecimalPlaces,
+    spreadsheetCommandCatalog.insertCurrentDate,
+    spreadsheetCommandCatalog.insertCurrentTime,
   ]) {
     expect(command.location).toEqual({
       area: 'ribbon',
@@ -145,6 +147,16 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     aria: 'Control+Shift+^ Meta+Shift+^',
     editor: ['Mod-Shift-^'],
     label: 'Cmd/Ctrl+Shift+^',
+  });
+  expect(spreadsheetCommandCatalog.insertCurrentDate.shortcut).toEqual({
+    aria: 'Control+;',
+    editor: ['Control-;'],
+    label: 'Ctrl+;',
+  });
+  expect(spreadsheetCommandCatalog.insertCurrentTime.shortcut).toEqual({
+    aria: 'Control+Shift+;',
+    editor: ['Control-Shift-;'],
+    label: 'Ctrl+Shift+;',
   });
   expect(spreadsheetCommandCatalog.decreaseDecimalPlaces).toMatchObject({
     id: 'number.decreaseDecimalPlaces',

@@ -55,6 +55,7 @@ import {
   usePlaygroundPdfCollaborationFixture,
 } from './pdf-collaboration-fixture';
 import type { NoticeTone } from './playground-types';
+import { SPREADSHEET_DATE_TIME_FIXTURE } from './spreadsheet-date-time-fixture';
 import {
   type PlaygroundPresentationElementStage,
   usePlaygroundPresentationCollaborationFixture,
@@ -120,6 +121,9 @@ export function EditorWorkspace({
   const maximumSparseMaterializedRows = Object.keys(
     maximumSparseSheet?.data ?? [],
   ).length;
+  const spreadsheetDateTimeFixture =
+    e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE &&
+    artifact.content.type === 'spreadsheet';
   const loadPdf = useCallback(() => readSourceBlob(artifact), [artifact]);
   const controlledReviewFixture = e2eFixture === 'word-review-conflict';
   const controlledReviewFixtureReady =
@@ -315,6 +319,16 @@ export function EditorWorkspace({
                 >
                   1,048,576 行 × 16,384 列 · {maximumSparseMaterializedRows}{' '}
                   个实体行 · 修订 {artifact.revision}
+                </output>
+              )}
+              {spreadsheetDateTimeFixture && (
+                <output
+                  className="playground-sparse-fixture-status"
+                  data-testid="spreadsheet-date-time-status"
+                  data-revision={artifact.revision}
+                  aria-live="polite"
+                >
+                  日期与时间快捷输入 · 修订 {artifact.revision}
                 </output>
               )}
               {collaborationDemo && (

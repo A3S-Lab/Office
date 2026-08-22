@@ -38,17 +38,17 @@ model:
    and compacts low-priority, then normal-priority groups before exposing group
    paging. It can remain collapsed; activating a tab temporarily overlays that
    tab's commands without moving the document, and an outside pointer action
-   returns to the compact row. Writer routes its catalogued WPS font-size,
+   returns to the compact row. Writer routes its catalogued Traditional Office font-size,
    alignment, line-spacing, heading, spelling, field-refresh, comment, and
    track-changes shortcuts only while the document surface owns the event. The
-   status route uses the same catalog for WPS word count, opening live page,
+   status route uses the same catalog for Traditional Office word count, opening live page,
    word, character, and paragraph details from either `Ctrl+Shift+G` or the
-   visible count. Its local formatting clipboard powers WPS copy-format and
+   visible count. Its local formatting clipboard powers Traditional Office copy-format and
    paste-format shortcuts
    plus a one-shot format painter without requiring browser clipboard access;
    paste replaces only direct character and paragraph formatting, preserving
    links, comments, and revision semantics in one document transaction.
-   Header and footer TipTap surfaces register the same WPS alignment and
+   Header and footer TipTap surfaces register the same Traditional Office alignment and
    copy-format shortcuts. Cross-surface paste retains compatible marks and
    paragraph attributes while falling back from unsupported heading nodes.
    Writer orders Insert commands as Pages, Table, Illustrations, Links, Header
@@ -96,11 +96,11 @@ model:
    page metrics and scroll viewport. Picture, Table, and Header and Footer tabs
    carry explicit contextual semantics and disappear with their selection. The
    Spreadsheet shell now uses the same responsive ribbon contract with its own
-   command catalog and workbook semantics. It keeps the WPS tab order, places
+   command catalog and workbook semantics. It keeps the Traditional Office tab order, places
    Conditional Formatting under Home and Styles, exposes real sorting under
    Data, and owns F9 workbook recalculation in the root-scoped keyboard
    controller. Paste, Cut, and Copy live in the first Home group; both button
-   clicks and WPS shortcuts cross one clipboard command port before using the
+   clicks and Traditional Office shortcuts cross one clipboard command port before using the
    permission-resilient browser/local clipboard implementation. Format Painter
    uses a dedicated format-pattern model and React session hook behind another
    typed command port. It captures owned native style attributes only, expands
@@ -116,7 +116,7 @@ model:
    `Alt+ArrowDown`. The Fortune adapter only exposes the header trigger and
    value menu, adding dialog, checkbox, focus-restoration, and keyboard
    semantics without making vendor DOM text the command contract. Freeze Panes
-   also stays controlled: a pure model translates the current WPS cell into
+   also stays controlled: a pure model translates the current Traditional Office cell into
    rows above and columns left or applies top-row and first-column presets, a
    typed View command performs one immutable workbook update, and the native
    Fortune/XLSX frozen-pane model remains the render and serialization
@@ -280,7 +280,7 @@ focus restoration.
 | --- | --- | --- | --- |
 | Document | One TipTap/ProseMirror body tree retained across editing and read-only preview, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, one typography and page-chrome baseline across editing, preview, and PDF surfaces, a persistent typed heading-navigation pane with active-selection tracking, filtering and collapsible keyboard traversal, host-owned selected-text menus with full document context and range-mapped async commands, responsive and keyboard-operated paragraph-style and list galleries, typed bullet and numbering commands with restart/continue/start controls, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/tight/through/top-and-bottom/no-wrap image layout and floating-image drawing layers, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across CSS-matched registered text runs; the same live result remains mounted in read-only preview and is consumed by bounded browser PDF capture, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object geometry and non-image drawing layers, complex table flow, searchable/vector PDF output, and loss-preserving OOXML package state |
 | Markdown | TipTap visual editing with a resizable source-and-preview split view by default, source-aware ribbon formatting and shortcuts, bounded source-native history with coalesced typing and selection restoration, host-defined selection menus across both editing surfaces, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, keyboard-adjustable pane sizing, a flat measure-bounded reading surface, optional visual or source-only views, and a full-workspace Source/Preview switch on phones | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
-| Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, a WPS-oriented command catalog and tab order, quick-access Undo and Redo, a priority-aware adaptive and collapsible ribbon with temporary tab expansion, Home and Styles Conditional Formatting, Home and Cells row/column insertion and deletion through the shared typed structure commands, Home and Alignment Merge and Center plus Merge Cells, Merge Across, Unmerge Cells, and Unmerge and Fill through one native-model-backed controlled batch per intent and the WPS `Ctrl+M` shortcut, Home and Editing Clear All, Formats, Contents, Comments, and Hyperlinks with Delete/Backspace mapped to content-only clearing and merge geometry retained, Data sorting and AutoFilter with bounded current-region discovery, controlled filter state, WPS toggle and header-menu shortcuts, and accessible vendor menu semantics, View and Window Freeze Panes with WPS current-cell, top-row, first-column, and unfreeze patterns backed by controlled state and native XLSX frozen panes, Formulas and F9 workbook recalculation, an executable Home clipboard group with permission-resilient Paste, Cut, and Copy plus a WPS-style one-shot and locked Format Painter for bounded cross-sheet native-style patterns, shared grid/formula/footer visual tokens and one spreadsheet accent across selection, sheet tabs, menus, and zoom, an A3S-owned accessible single-row workbook footer for creation, activation, rename, duplicate, color, hide, reorder, delete, selection status, and zoom, a resize-observed worksheet viewport that keeps the active tab and its touch action visible across desktop, compact, and phone-width changes, one cell/worksheet context-menu surface whose displayed accelerators remain executable while the menu owns focus, Arrow/Home/End tab navigation plus Shift+F10 and native context-menu access, typed editing and calculation command ports, A3S-owned deterministic Arrow, Enter, Tab, Home, PageUp/PageDown, extended-selection, row, column, and all-cells keyboard commands, selection-preserving focus restoration across controlled workbook remounts and F2/Escape editing transitions, Cmd/Ctrl formatting, undo/redo, clear, a permission-resilient editor-local clipboard fallback, Shift+F11 sheet creation, and Ctrl/Cmd+PageUp/PageDown sheet-navigation shortcuts, direct font-family, horizontal/vertical-alignment, text-wrap, general/number/percent, and decimal-place controls backed by native cell-style keys, live count/sum/average selection summaries, operation-driven sparse-workbook projection, guarded controlled-value remounts that reject stale engine callbacks, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving replacement projection off the main thread, broader Excel formula semantics, A3S-owned custom number-format evaluation, and print layout |
+| Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, an Office-oriented command catalog and tab order, quick-access Undo and Redo, a priority-aware adaptive and collapsible ribbon with temporary tab expansion, Home and Styles Conditional Formatting, Home and Cells row/column insertion and deletion through the shared typed structure commands, Home and Alignment Merge and Center plus Merge Cells, Merge Across, Unmerge Cells, and Unmerge and Fill through one native-model-backed controlled batch per intent and the Traditional Office `Ctrl+M` shortcut, Home and Editing Clear All, Formats, Contents, Comments, and Hyperlinks with Delete/Backspace mapped to content-only clearing and merge geometry retained, Data sorting and AutoFilter with bounded current-region discovery, controlled filter state, Traditional Office toggle and header-menu shortcuts, and accessible vendor menu semantics, View and Window Freeze Panes with Traditional Office current-cell, top-row, first-column, and unfreeze patterns backed by controlled state and native XLSX frozen panes, Formulas and F9 workbook recalculation, an executable Home clipboard group with permission-resilient Paste, Cut, and Copy plus an Office-style one-shot and locked Format Painter for bounded cross-sheet native-style patterns, shared grid/formula/footer visual tokens and one spreadsheet accent across selection, sheet tabs, menus, and zoom, an A3S-owned accessible single-row workbook footer for creation, activation, rename, duplicate, color, hide, reorder, delete, selection status, and zoom, a resize-observed worksheet viewport that keeps the active tab and its touch action visible across desktop, compact, and phone-width changes, one cell/worksheet context-menu surface whose displayed accelerators remain executable while the menu owns focus, Arrow/Home/End tab navigation plus Shift+F10 and native context-menu access, typed editing and calculation command ports, A3S-owned deterministic Arrow, Enter, Tab, Home, PageUp/PageDown, extended-selection, row, column, and all-cells keyboard commands, selection-preserving focus restoration across controlled workbook remounts and F2/Escape editing transitions, Cmd/Ctrl formatting, undo/redo, clear, a permission-resilient editor-local clipboard fallback, Shift+F11 sheet creation, and Ctrl/Cmd+PageUp/PageDown sheet-navigation shortcuts, direct font-family, horizontal/vertical-alignment, text-wrap, general/number/percent, and decimal-place controls backed by native cell-style keys, live count/sum/average selection summaries, operation-driven sparse-workbook projection, guarded controlled-value remounts that reject stale engine callbacks, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving replacement projection off the main thread, broader Excel formula semantics, A3S-owned custom number-format evaluation, and print layout |
 | Presentation | Scene canvas with ordered typed multi-selection, persistent nested browser groups, native PPTX group-node export, exact keyboard-accessible table-dimension insertion, native slide/object context actions with optional AI actions, a separate object/content editing state, one on-demand TipTap instance, collective move/scale/nudge/clipboard/delete/layer commands, selection-bound alignment and distribution, typed group/ungroup commands, one typed dispatcher for ribbon commands, editor-scoped shortcuts with post-command selection focus, direct beginning/current-slide playback with fullscreen fallback, frame-coalesced transactional move/resize previews that commit once on pointer release, two-level thumbnail node and scene windowing, and a phone stage that top-aligns the primary canvas while retaining one readable slide indicator beside view and zoom controls | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object-set snapping with typed visual guides and a JavaScript fallback | Arbitrary rotated or reflected PPTX group transforms, connectors, theme resolution, text fitting, kernel-owned thumbnail layout, and slide serialization |
 | PDF | PDFium-backed page rendering with an A3S-owned responsive toolbar, a scrollable page-thumbnail rail with active-page synchronization and bounded bitmap/DOM windowing, a focus-contained phone page drawer, and typed capability controllers for navigation, zoom, search, basic annotations, annotation color, opacity, compatible stroke-width defaults and selection updates, history, and save; page and search drafts cancel without accidental commands, shortcuts remain scoped to the PDF root, and compact widths retain page status while exposing search-result traversal, navigation, zoom, and history through the keyboard-operated overflow menu | PDFium WebAssembly | Forms, redaction review, page organization, and reopen fixtures |
 
@@ -500,7 +500,7 @@ The current browser-kernel slice collects contiguous geometry-affecting text
 runs from eligible paragraphs. Each run carries an ordered registered font
 stack, size, line height, letter spacing, ligature, and kerning behavior. Font
 families and normal/italic styles remain exact; numeric weights follow the CSS
-Fonts matching order so WPS-style values such as 680 or 730 select a registered
+Fonts matching order so Office-style values such as 680 or 730 select a registered
 700 face. When a family has only one normal-style weight, the same face
 provides deterministic metrics for browser-synthesized bold text. The kernel
 selects a face for each grapheme, joins adjacent selections that use the same
@@ -681,13 +681,13 @@ numbering settings. Reversed lists, per-item `value` overrides, native Word
 list-identity continuation, arbitrary multilevel templates, and loss-preserving
 custom numbering formats remain later fidelity gates.
 
-The declared direct-formatting layout slice now has a real WPS Writer reference
+The declared direct-formatting layout slice now has a real Traditional Office Writer reference
 gate. Its deterministic A4 fixture uses installed Arial runs, explicit OOXML
 paragraph spacing, a fixed centered table, direct cell fills and borders, and
 physical cell margins. Automatic `w:line` values retain their original OOXML
-multiples for export while the browser applies the measured WPS single-line
+multiples for export while the browser applies the measured Traditional Office single-line
 font metric; imported tables no longer receive editor-only block margins. The
-Windows parity workflow exports the same fixture through WPS, captures both
+Windows parity workflow exports the same fixture through Traditional Office, captures both
 794 by 1123 CSS-pixel pages, and rejects page-size, landmark, or bounded pixel
 differences. Language-complete font substitution, variable font axes, the
 remaining character and table style properties, non-image floating-object
@@ -1004,7 +1004,7 @@ Migration to browser-native OOXML is staged:
    editing surfaces.
 
 Each stage needs compatibility fixtures, deterministic layout goldens, large
-document performance budgets, and real Microsoft Office and WPS
+document performance budgets, and real Microsoft Office and Traditional Office
 interoperability evidence before it can be described as fidelity-complete.
 
 ## Delivery roadmap
@@ -1048,7 +1048,7 @@ bundle regression.
 
 Exit criteria: deterministic layout goldens for the supported feature set;
 incremental reflow does not rebuild unaffected pages; DOCX fixtures round-trip
-through Microsoft Word and WPS without losing unsupported package parts.
+through Microsoft Word and Traditional Office without losing unsupported package parts.
 
 ### Stage 3: spreadsheet calculation and virtualization
 
@@ -1148,7 +1148,7 @@ performance gate.
 Exit criteria: object drag and resize stay interactive on complex slides;
 partial rich-text formatting survives PPTX round trips; masters, layouts,
 themes, tables, charts, links, and notes have compatibility fixtures for
-PowerPoint and WPS.
+PowerPoint and Traditional Office.
 
 ### Stage 5: PDF product surface
 
@@ -1189,7 +1189,7 @@ page window rather than the complete file.
   CLI, MCP server, and Skill.
 
 Exit criteria: import-edit-export fixtures show semantic and package-level
-round-trip evidence in Microsoft Office and WPS; unsupported content is
+round-trip evidence in Microsoft Office and Traditional Office; unsupported content is
 retained or rejected explicitly, never silently discarded.
 
 ## Performance gates

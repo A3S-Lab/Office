@@ -264,6 +264,26 @@ export const spreadsheetCommandCatalog = {
     label: '增加小数位',
     location: { area: 'ribbon', tab: 'home', group: 'number' },
   },
+  insertCurrentDate: {
+    id: 'number.insertCurrentDate',
+    label: '插入当前日期',
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+    shortcut: {
+      label: 'Ctrl+;',
+      aria: 'Control+;',
+      editor: ['Control-;'],
+    },
+  },
+  insertCurrentTime: {
+    id: 'number.insertCurrentTime',
+    label: '插入当前时间',
+    location: { area: 'ribbon', tab: 'home', group: 'number' },
+    shortcut: {
+      label: 'Ctrl+Shift+;',
+      aria: 'Control+Shift+;',
+      editor: ['Control-Shift-;'],
+    },
+  },
   formatCells: {
     id: 'number.formatCells',
     label: '设置单元格格式',

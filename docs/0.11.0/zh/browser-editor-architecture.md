@@ -189,7 +189,7 @@ Spreadsheet、Presentation 与 PDF 目前通过 `fileActions`、`onAgentRequest`
 
 当前架构已经覆盖五类编辑器的公共组件、受控模型、按需加载和主要文件流程，但仍需继续
 提高 DOCX 字体替代、段落与分页、复杂表格、浮动对象、母版继承、公式兼容性和可搜索
-矢量 PDF 等能力。对 WPS / Word 的视觉一致性必须用真实 OOXML 文件、固定字体与
+矢量 PDF 等能力。对 传统 Office / Word 的视觉一致性必须用真实 OOXML 文件、固定字体与
 逐页截图证据验证，不能只用简单 HTML 示例判断。
 
 需要逐模块实现清单、协议字段和性能门槛时，请切换到

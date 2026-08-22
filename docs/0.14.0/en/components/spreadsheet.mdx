@@ -58,7 +58,7 @@ worksheet can round-trip without becoming a dense matrix.
 
 ## Find and Go To
 
-Home and Editing exposes one WPS-style Find and Select menu. Find keeps the
+Home and Editing exposes one Office-style Find and Select menu. Find keeps the
 editor-owned `Cmd/Ctrl+F` workflow for displayed values, raw values, formulas,
 and materialized sparse cells. Go To opens from the same menu, `Ctrl+G`, or
 `F5`. These shortcuts are owned only while the live workbook grid has focus;
@@ -83,7 +83,7 @@ the equivalent A3S Test ACL remains local-only.
 
 ## Paste Special and the rich clipboard
 
-Home and Clipboard exposes Paste as a WPS-style split command. The primary
+Home and Clipboard exposes Paste as an Office-style split command. The primary
 button pastes All. The disclosure menu provides quick All, Values, Formulas,
 and Formatting actions plus Paste Special. Press `Cmd/Ctrl+Alt+V` while the
 workbook grid has focus to open the same dialog. Host inputs, the formula bar,
@@ -186,7 +186,7 @@ command runtime modules from internal package paths.
 
 ## Built-in cell styles
 
-Home and Styles exposes 17 WPS-familiar built-in choices. The gallery renders
+Home and Styles exposes 17 Office-familiar built-in choices. The gallery renders
 the actual font, foreground, fill, and emphasis for every choice instead of a
 generic swatch. It uses semantic groups and `menuitemradio` state; Home and End
 move to the first or last choice, Left and Right move between adjacent choices,
@@ -239,7 +239,7 @@ changing merge geometry.
 
 ## AutoSum and aggregate totals
 
-Home and Editing exposes a WPS-style split command before Fill. The primary
+Home and Editing exposes an Office-style split command before Fill. The primary
 button inserts `SUM` and advertises the editor-scoped `Alt+=` shortcut. Its
 keyboard-operated menu inserts `SUM`, `AVERAGE`, `COUNT`, `MAX`, or `MIN` and
 supports Arrow, Home, End, Enter, and Escape navigation with exact focus
@@ -293,7 +293,7 @@ call throws, the adapter restores the original array holes, length, and absent
 
 ## Common number formats
 
-Home and Number exposes the common WPS format set as native Fortune cell-format
+Home and Number exposes the common Traditional Office format set as native Fortune cell-format
 codes. Applying a preset changes only `cell.ct.fa` and `cell.ct.t`; it does not
 rewrite `v`, `f`, comments, links, or merge geometry. One selection-level intent
 creates one controlled workbook update and one Undo record.

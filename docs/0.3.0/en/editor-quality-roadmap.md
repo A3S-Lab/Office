@@ -19,7 +19,7 @@ made release-ready.
    layout, styles, tables, media, review, and long-document behavior together.
 3. Native files are the acceptance test. A feature is not complete until its
    supported semantics survive import, edit, export, and reopen in Microsoft
-   Office and WPS.
+   Office and Traditional Office.
 4. Controlled state stays predictable. One user intent emits one host update
    and one undo record. External content replacement must not corrupt
    selection, history, or editor state.
@@ -82,12 +82,12 @@ New ribbon commands wait unless they are required by the current slice.
 - Preserve unsupported package parts and attributes instead of regenerating
   them from visible HTML.
 - Build small, reviewable fixtures for every supported semantic and include
-  documents produced by both Microsoft Word and WPS.
+  documents produced by both Microsoft Word and Traditional Office.
 - Report unsupported or normalized content explicitly before export.
 
 Exit evidence:
 
-- Import-edit-export-reopen passes in Word and WPS for the declared fixture
+- Import-edit-export-reopen passes in Word and Traditional Office for the declared fixture
   matrix.
 - Unedited supported files retain package relationships and unsupported parts.
 - A failed conversion does not overwrite the source file or emit a
@@ -118,7 +118,7 @@ preserving direct document commits and exact trigger-focus restoration. A
 deterministic phone workflow proves both semantic changes and captures
 accessibility, console, and page-error evidence.
 
-The Writer Insert ribbon now follows the WPS Pages, Table, Illustrations,
+The Writer Insert ribbon now follows the Traditional Office Pages, Table, Illustrations,
 Links, Header and Footer, and Text sequence, including page-number visibility
 with the other page-chrome commands. Page Layout exposes direct normal, narrow,
 moderate, wide, orientation, paper-size, and one-to-three-column presets. Custom
@@ -127,7 +127,7 @@ deterministic desktop workflow proves live landscape and two-column rendering,
 advanced-tab routing, Escape close, accessibility output, and empty browser
 diagnostics.
 
-References, Review, and View now follow the WPS-oriented information sequence
+References, Review, and View now follow the Office-oriented information sequence
 without advertising an unimplemented table-of-contents command. Review adds
 direct previous/next and accept/reject commands backed by live revision ranges;
 resolving a change selects the next available revision and collapses to a safe
@@ -139,7 +139,7 @@ workflow records two changes, navigates and resolves them, exercises both fit
 modes, and saves accessibility plus empty console and page-error evidence.
 
 Writer's status bar now exposes its word count as a real command instead of a
-passive label. Clicking it or pressing the WPS `Ctrl+Shift+G` shortcut opens
+passive label. Clicking it or pressing the Traditional Office `Ctrl+Shift+G` shortcut opens
 live page, word, character-with-and-without-spaces, and paragraph statistics,
 then restores the invoking status control or document caret. The labelled view
 and zoom toolbar supports arrow-key traversal. At compact Web widths, status
@@ -168,17 +168,17 @@ from bounded batches. The three browser rendering paths therefore share one
 page-layout result; searchable text and vector PDF output remain separate
 fidelity work.
 
-A deterministic WPS Writer layout gate now covers the first declared native
+A deterministic Traditional Office Writer layout gate now covers the first declared native
 page-parity slice. The fixture uses an A4 page, installed Arial runs, explicit
 automatic paragraph spacing, a fixed centered table, direct fills and borders,
-and physical cell margins. WPS exports the reference PDF through its desktop
+and physical cell margins. Traditional Office exports the reference PDF through its desktop
 automation API; the browser captures both page surfaces at 794 by 1123 CSS
 pixels. The comparison requires one physical page, matching title/body/table
 landmarks within one pixel, no more than a 2% thresholded pixel difference,
 and a mean absolute channel error no greater than 1.0. The current measured
 result is a one-pixel maximum landmark delta, a 1.4612% thresholded difference,
 and 0.7308 mean absolute error. Original OOXML line multiples remain the DOCX
-round-trip authority instead of being replaced by the browser-only WPS metric.
+round-trip authority instead of being replaced by the browser-only Traditional Office metric.
 
 Four focused matrices now extend that gate beyond Arial and table geometry.
 The common-font matrix contains 30 rows across Arial, Times New Roman, Calibri,
@@ -186,11 +186,11 @@ Segoe UI, and Microsoft YaHei at two sizes and two automatic spacing multiples.
 The CJK matrix contains 36 Latin and Chinese rows across Microsoft YaHei,
 SimSun, SimHei, FangSong, KaiTi, and DengXian. The explicit document-grid matrix
 contains 18 rows across three fonts and two sizes. Browser layout uses the
-measured WPS per-font advance without changing the source OOXML spacing
+measured Traditional Office per-font advance without changing the source OOXML spacing
 multiple. DOCX import and export also retain each section's `docGrid` type and
 line pitch and each run's `snapToGrid` override. The deterministic browser
 suite requires one page, exact semantic metric markers, and empty console and
-page-error diagnostics; the WPS comparison rejects a text-band top drift above
+page-error diagnostics; the Traditional Office comparison rejects a text-band top drift above
 three pixels or a consecutive-band advance drift above four pixels. The current
 maximum top/advance deltas are 3/1 pixels for common fonts, 2/2 pixels for CJK
 fonts, and 1/1 pixels for the document grid.
@@ -198,10 +198,10 @@ fonts, and 1/1 pixels for the document grid.
 The fourth matrix adds 30 Latin, CJK, Arabic, Hebrew, and mixed-formatting rows
 at two sizes. DOCX import now chooses the Word `ascii`, `hAnsi`, `eastAsia`, or
 `cs` font slot from the run text and honors `bCs`, `iCs`, `szCs`, `cs`, `rtl`,
-and `rFonts` hints before calculating the WPS line-height factor. The same
+and `rFonts` hints before calculating the Traditional Office line-height factor. The same
 fixture proves paragraph RTL direction, complex-script emphasis, mixed-run
 bold and italic formatting, one-page pagination, and empty browser diagnostics.
-Its real WPS 12.1 reference has 30 matching text bands with a three-pixel
+Its real Traditional Office 12.1 reference has 30 matching text bands with a three-pixel
 maximum top delta and a three-pixel maximum consecutive-band advance delta.
 
 Exit evidence:
@@ -226,15 +226,15 @@ Current implementation evidence includes the responsive paragraph-style
 gallery and a typed list slice with disc/circle/square bullets, five common
 ordered formats, restart/continue/start commands, keyboard-operated galleries,
 single-transaction undo behavior, and DOCX round trips for the declared list
-styles. Writer now has one command catalog for stable WPS-oriented tab and
-group placement plus shortcut metadata. Its displayed WPS font-size,
+styles. Writer now has one command catalog for stable Office-oriented tab and
+group placement plus shortcut metadata. Its displayed Traditional Office font-size,
 alignment, line-spacing, heading, spelling, field-refresh, comment, and
 track-changes shortcuts execute inside the document while host text inputs and
-modal surfaces retain their native keyboard behavior. WPS copy-format and
+modal surfaces retain their native keyboard behavior. Traditional Office copy-format and
 paste-format shortcuts share a permission-free local formatting clipboard with
 the one-shot format painter; applying it keeps links and review marks intact
 and commits direct character and paragraph formatting in one transaction.
-Header and footer surfaces use the same WPS alignment and format-copy commands,
+Header and footer surfaces use the same Traditional Office alignment and format-copy commands,
 falling back to their compatible paragraph schema when body heading formats are
 pasted. Undo and redo use the quick-access row, while double-clicking the active
 tab persistently collapses the ribbon; tab activation temporarily overlays
@@ -358,7 +358,7 @@ missing-reference transition.
 
 Exit evidence:
 
-- Relationship-bearing objects reopen with working targets in Word and WPS.
+- Relationship-bearing objects reopen with working targets in Word and Traditional Office.
 - Object layout has deterministic fixtures at page and section boundaries.
 
 ### 5. Review and Long-Document Quality
@@ -508,7 +508,7 @@ pass visual and deterministic E2E regression.
 
 Exit evidence: render cost depends on the viewport, recalculation depends on
 the dirty dependency graph, and the compatibility fixture matrix passes in
-Excel and WPS.
+Excel and Traditional Office.
 
 ## Priority 4: Presentation
 
@@ -540,7 +540,7 @@ Excel and WPS.
   thumbnail work behind Worker/WASM contracts.
 
 Exit evidence: complex slides stay interactive, supported objects preserve
-their semantics through PowerPoint and WPS round trips, and one gesture creates
+their semantics through PowerPoint and Traditional Office round trips, and one gesture creates
 one controlled update.
 
 ## Priority 5: PDF
@@ -623,7 +623,7 @@ same pull request.
 1. Keep the shared quality gates green while finishing the current Word
    vertical slice.
 2. Close that slice with unit, interaction, visual, performance, and
-   Word/WPS round-trip evidence.
+   Word/Traditional Office round-trip evidence.
 3. Update public types and Playground documentation only after the contract is
    stable.
 4. Move to the next Word slice. Do not start a lower-priority editor milestone

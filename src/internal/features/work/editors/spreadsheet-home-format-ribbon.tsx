@@ -24,6 +24,7 @@ import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
+import { SpreadsheetDateTimeMenu } from './spreadsheet-date-time-ribbon';
 import {
   spreadsheetFontFamilyOptions,
   spreadsheetFontSizeOptions,
@@ -249,23 +250,26 @@ export function SpreadsheetNumberRibbonGroup({
 
   return (
     <WorkOfficeRibbonGroup label="数字" priority="high">
-      <OfficeSelect
-        className="work-spreadsheet-number-format"
-        ariaLabel="数字格式"
-        value={numberFormatPreset}
-        disabled={!can.setCellFormat('ct', currentNumberFormatValue)}
-        options={spreadsheetNumberFormatOptions}
-        onValueChange={(preset) => {
-          if (preset === 'custom') return;
-          commands.setCellFormat(
-            'ct',
-            spreadsheetNumberFormatValue(
-              spreadsheetNumberFormatCode(preset),
-              toolbarCell,
-            ),
-          );
-        }}
-      />
+      <div className="work-spreadsheet-number-format-stack">
+        <OfficeSelect
+          className="work-spreadsheet-number-format"
+          ariaLabel="数字格式"
+          value={numberFormatPreset}
+          disabled={!can.setCellFormat('ct', currentNumberFormatValue)}
+          options={spreadsheetNumberFormatOptions}
+          onValueChange={(preset) => {
+            if (preset === 'custom') return;
+            commands.setCellFormat(
+              'ct',
+              spreadsheetNumberFormatValue(
+                spreadsheetNumberFormatCode(preset),
+                toolbarCell,
+              ),
+            );
+          }}
+        />
+        <SpreadsheetDateTimeMenu can={can} commands={commands} />
+      </div>
       <WorkOfficeRibbonButton
         label={`${currencyDefinition.label}格式`}
         title={`${currencyDefinition.label}格式（${currencyDefinition.shortcut.label}）`}

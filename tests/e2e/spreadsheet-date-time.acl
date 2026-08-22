@@ -1,0 +1,106 @@
+suite "office-spreadsheet-date-time" {
+    version = 1
+
+    scenario "insert-static-date-and-time" {
+        name = "Insert and undo static WPS Spreadsheet date and time values"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-date-time-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-date-time"
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "fixture-starts-at-first-revision" {
+            visible = css("[data-testid='spreadsheet-date-time-status'][data-revision='1']")
+        }
+
+        expect "date-time-menu-is-discoverable" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='日期和时间'][title='插入当前日期或时间（Ctrl+; / Ctrl+Shift+;）']")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "insert-current-date" {
+            key = "Control+;"
+        }
+
+        expect "date-is-one-controlled-update" {
+            visible = css("[data-testid='spreadsheet-date-time-status'][data-revision='2']")
+        }
+
+        expect "date-format-is-active" {
+            text = "短日期"
+        }
+
+        press "select-time-target" {
+            key = "ArrowDown"
+        }
+
+        click "open-date-time-menu" {
+            target = role("button", "日期和时间")
+        }
+
+        expect "both-shortcuts-are-declared" {
+            visible = css("[role='menu'][aria-label='插入日期和时间'] [role='menuitem'][aria-keyshortcuts='Control+;'] + [role='menuitem'][aria-keyshortcuts='Control+Shift+;']")
+        }
+
+        click "insert-current-time" {
+            target = role("menuitem", "插入当前时间")
+        }
+
+        expect "time-is-one-controlled-update" {
+            visible = css("[data-testid='spreadsheet-date-time-status'][data-revision='3']")
+        }
+
+        expect "time-format-is-active" {
+            text = "时间"
+        }
+
+        expect "menu-command-restores-grid-focus" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "undo-time-value-and-format" {
+            key = "Control+z"
+        }
+
+        expect "undo-is-one-controlled-update" {
+            visible = css("[data-testid='spreadsheet-date-time-status'][data-revision='4']")
+        }
+
+        expect "time-target-is-restored" {
+            text = "等待输入"
+        }
+
+        screenshot "spreadsheet-date-time" {
+            path = "screenshots/spreadsheet-date-time.png"
+        }
+
+        accessibility "spreadsheet-date-time-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

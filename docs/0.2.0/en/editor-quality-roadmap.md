@@ -19,7 +19,7 @@ made release-ready.
    layout, styles, tables, media, review, and long-document behavior together.
 3. Native files are the acceptance test. A feature is not complete until its
    supported semantics survive import, edit, export, and reopen in Microsoft
-   Office and WPS.
+   Office and Traditional Office.
 4. Controlled state stays predictable. One user intent emits one host update
    and one undo record. External content replacement must not corrupt
    selection, history, or editor state.
@@ -82,12 +82,12 @@ New ribbon commands wait unless they are required by the current slice.
 - Preserve unsupported package parts and attributes instead of regenerating
   them from visible HTML.
 - Build small, reviewable fixtures for every supported semantic and include
-  documents produced by both Microsoft Word and WPS.
+  documents produced by both Microsoft Word and Traditional Office.
 - Report unsupported or normalized content explicitly before export.
 
 Exit evidence:
 
-- Import-edit-export-reopen passes in Word and WPS for the declared fixture
+- Import-edit-export-reopen passes in Word and Traditional Office for the declared fixture
   matrix.
 - Unedited supported files retain package relationships and unsupported parts.
 - A failed conversion does not overwrite the source file or emit a
@@ -137,17 +137,17 @@ from bounded batches. The three browser rendering paths therefore share one
 page-layout result; searchable text and vector PDF output remain separate
 fidelity work.
 
-A deterministic WPS Writer layout gate now covers the first declared native
+A deterministic Traditional Office Writer layout gate now covers the first declared native
 page-parity slice. The fixture uses an A4 page, installed Arial runs, explicit
 automatic paragraph spacing, a fixed centered table, direct fills and borders,
-and physical cell margins. WPS exports the reference PDF through its desktop
+and physical cell margins. Traditional Office exports the reference PDF through its desktop
 automation API; the browser captures both page surfaces at 794 by 1123 CSS
 pixels. The comparison requires one physical page, matching title/body/table
 landmarks within one pixel, no more than a 2% thresholded pixel difference,
 and a mean absolute channel error no greater than 1.0. The current measured
 result is a one-pixel maximum landmark delta, a 1.4612% thresholded difference,
 and 0.7308 mean absolute error. Original OOXML line multiples remain the DOCX
-round-trip authority instead of being replaced by the browser-only WPS metric.
+round-trip authority instead of being replaced by the browser-only Traditional Office metric.
 
 Exit evidence:
 
@@ -285,7 +285,7 @@ missing-reference transition.
 
 Exit evidence:
 
-- Relationship-bearing objects reopen with working targets in Word and WPS.
+- Relationship-bearing objects reopen with working targets in Word and Traditional Office.
 - Object layout has deterministic fixtures at page and section boundaries.
 
 ### 5. Review and Long-Document Quality
@@ -435,7 +435,7 @@ pass visual and deterministic E2E regression.
 
 Exit evidence: render cost depends on the viewport, recalculation depends on
 the dirty dependency graph, and the compatibility fixture matrix passes in
-Excel and WPS.
+Excel and Traditional Office.
 
 ## Priority 4: Presentation
 
@@ -467,7 +467,7 @@ Excel and WPS.
   thumbnail work behind Worker/WASM contracts.
 
 Exit evidence: complex slides stay interactive, supported objects preserve
-their semantics through PowerPoint and WPS round trips, and one gesture creates
+their semantics through PowerPoint and Traditional Office round trips, and one gesture creates
 one controlled update.
 
 ## Priority 5: PDF
@@ -550,7 +550,7 @@ same pull request.
 1. Keep the shared quality gates green while finishing the current Word
    vertical slice.
 2. Close that slice with unit, interaction, visual, performance, and
-   Word/WPS round-trip evidence.
+   Word/Traditional Office round-trip evidence.
 3. Update public types and Playground documentation only after the contract is
    stable.
 4. Move to the next Word slice. Do not start a lower-priority editor milestone

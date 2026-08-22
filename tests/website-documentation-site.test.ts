@@ -1,4 +1,4 @@
-import { access, readFile } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@rstest/core';
 import {
@@ -10,10 +10,12 @@ import {
 } from '../website/documentation-site';
 
 const documentationRoot = path.resolve(import.meta.dirname, '../docs');
+const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.22.0' ||
     version === '0.21.0' ||
     version === '0.20.0' ||
     version === '0.19.0' ||
@@ -44,6 +46,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.22.0',
     '0.21.0',
     '0.20.0',
     '0.19.0',
@@ -87,8 +90,51 @@ test('keeps every public route available in every language and version', async (
   }
 });
 
+test('keeps public documentation on the neutral Traditional Office baseline', async () => {
+  const versionedDocumentation = (
+    await readdir(documentationRoot, { recursive: true })
+  )
+    .filter((file) => file.endsWith('.md') || file.endsWith('.mdx'))
+    .map((file) => path.join(documentationRoot, file));
+  const repositoryDocumentation = [
+    'CHANGELOG.md',
+    'COLLABORATION_ROADMAP.md',
+    'PRODUCT.md',
+    'README.md',
+    'ROADMAP.md',
+    'tests/e2e/README.md',
+    'visual-tests/README.md',
+  ].map((file) => path.join(repositoryRoot, file));
+
+  for (const file of [...repositoryDocumentation, ...versionedDocumentation]) {
+    const contents = await readFile(file, 'utf8');
+    expect(contents).not.toMatch(/\bwps\b/i);
+  }
+});
+
+test('keeps the five-editor README capability comparison complete', async () => {
+  const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
+
+  for (const editor of [
+    'Document',
+    'Spreadsheet',
+    'Presentation',
+    'PDF',
+    'Markdown',
+  ]) {
+    expect(readme).toContain(`### ${editor}`);
+  }
+
+  expect(
+    readme.match(
+      /\| Capability \| A3S Office today \| Traditional Office baseline \|/g,
+    ),
+  ).toHaveLength(5);
+});
+
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.22.0',
     '0.21.0',
     '0.20.0',
     '0.19.0',
@@ -149,6 +195,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.22.0',
     '0.21.0',
     '0.20.0',
     '0.19.0',
@@ -586,7 +633,7 @@ test('documents maximum sparse spreadsheets and cancellable imports in 0.12.0', 
   }
 });
 
-test('documents WPS four-direction cell fill in 0.13.0', async () => {
+test('documents Traditional Office four-direction cell fill in 0.13.0', async () => {
   for (const version of [
     'latest',
     '0.21.0',
@@ -619,7 +666,7 @@ test('documents WPS four-direction cell fill in 0.13.0', async () => {
   }
 });
 
-test('documents WPS number formats and cell styles in 0.13.1', async () => {
+test('documents Traditional Office number formats and cell styles in 0.13.1', async () => {
   for (const version of [
     'latest',
     '0.21.0',
@@ -641,7 +688,7 @@ test('documents WPS number formats and cell styles in 0.13.1', async () => {
       'CNY Currency',
       'Scientific',
       'Fraction',
-      '17 WPS-familiar built-in choices',
+      '17 Office-familiar built-in choices',
       '10,000 cells',
       'theme, indexed, automatic, and valid tint colors',
     ]) {
@@ -650,7 +697,7 @@ test('documents WPS number formats and cell styles in 0.13.1', async () => {
   }
 });
 
-test('documents WPS Paste Special and its bounded rich clipboard in 0.14.0', async () => {
+test('documents Traditional Office Paste Special and its bounded rich clipboard in 0.14.0', async () => {
   for (const version of [
     'latest',
     '0.21.0',
@@ -682,7 +729,7 @@ test('documents WPS Paste Special and its bounded rich clipboard in 0.14.0', asy
   }
 });
 
-test('documents WPS hyperlinks and immutable workbook updates in 0.15.0', async () => {
+test('documents Traditional Office hyperlinks and immutable workbook updates in 0.15.0', async () => {
   for (const version of [
     'latest',
     '0.21.0',
@@ -713,7 +760,7 @@ test('documents WPS hyperlinks and immutable workbook updates in 0.15.0', async 
   }
 });
 
-test('documents WPS data validation and native XLSX semantics in 0.15.0', async () => {
+test('documents Traditional Office data validation and native XLSX semantics in 0.15.0', async () => {
   for (const version of [
     'latest',
     '0.21.0',
@@ -823,7 +870,7 @@ test('documents native Spreadsheet Tables, collaboration, and performance bounda
   }
 });
 
-test('documents WPS font-size and border shortcuts in 0.17.0', async () => {
+test('documents Traditional Office font-size and border shortcuts in 0.17.0', async () => {
   for (const version of [
     'latest',
     '0.21.0',
@@ -955,7 +1002,7 @@ test('documents text orientation and bounded row/column visibility in 0.19.0', a
   }
 });
 
-test('documents direct color resets, WPS font aliases, and XLSX color identity in 0.20.0', async () => {
+test('documents direct color resets, Traditional Office font aliases, and XLSX color identity in 0.20.0', async () => {
   for (const version of ['latest', '0.21.0', '0.20.0']) {
     const [english, chinese] = await Promise.all([
       readFile(
@@ -969,7 +1016,7 @@ test('documents direct color resets, WPS font aliases, and XLSX color identity i
     ]);
 
     for (const evidence of [
-      '## Direct color resets, WPS font aliases, and XLSX color identity',
+      '## Direct color resets, Traditional Office font aliases, and XLSX color identity',
       'Automatic Color',
       'No Fill',
       '`Ctrl+2`',
@@ -984,7 +1031,7 @@ test('documents direct color resets, WPS font aliases, and XLSX color identity i
       expect(english).toContain(evidence);
     }
     for (const evidence of [
-      '## 直接颜色重置、WPS 字体快捷键与 XLSX 颜色身份',
+      '## 直接颜色重置、传统 Office 字体快捷键与 XLSX 颜色身份',
       '自动颜色',
       '无填充',
       '`Ctrl+2`',
@@ -1036,6 +1083,48 @@ test('documents independent Spreadsheet diagonal borders in 0.21.0', async () =>
       '`diagonalUp`',
       '4,096',
       'spreadsheet-diagonal-borders.acl',
+      'A3S Test 1.0.0',
+    ]) {
+      expect(chinese).toContain(evidence);
+    }
+  }
+});
+
+test('documents static Spreadsheet date and time entry in 0.22.0', async () => {
+  for (const version of ['latest', '0.22.0']) {
+    const [english, chinese] = await Promise.all([
+      readFile(
+        path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, version, 'zh/components/spreadsheet.mdx'),
+        'utf8',
+      ),
+    ]);
+
+    for (const evidence of [
+      '### Static current date and time',
+      '`Ctrl+;`',
+      '`Ctrl+Shift+;`',
+      '`yyyy-MM-dd`',
+      '`hh:mm`',
+      'Only the active cell',
+      'one Undo',
+      'spreadsheet-date-time.acl',
+      'A3S Test 1.0.0',
+    ]) {
+      expect(english).toContain(evidence);
+    }
+    for (const evidence of [
+      '### 静态当前日期与时间',
+      '`Ctrl+;`',
+      '`Ctrl+Shift+;`',
+      '`yyyy-MM-dd`',
+      '`hh:mm`',
+      '活动单元格',
+      '一次撤销',
+      'spreadsheet-date-time.acl',
       'A3S Test 1.0.0',
     ]) {
       expect(chinese).toContain(evidence);

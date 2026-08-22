@@ -1910,6 +1910,9 @@ export function spreadsheetCommandsWithGridFocus(
     insertSelectedStructure: afterSuccessfulCommand(
       commands.insertSelectedStructure,
     ),
+    insertCurrentDateTime: afterSuccessfulCommand(
+      commands.insertCurrentDateTime,
+    ),
     mergeSelectedCells: afterSuccessfulCommand(commands.mergeSelectedCells),
     openPasteSpecial: afterSuccessfulCommand(commands.openPasteSpecial),
     pasteSelection: afterSuccessfulCommand(commands.pasteSelection),

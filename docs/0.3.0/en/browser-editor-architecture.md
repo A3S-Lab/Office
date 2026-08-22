@@ -38,17 +38,17 @@ model:
    and compacts low-priority, then normal-priority groups before exposing group
    paging. It can remain collapsed; activating a tab temporarily overlays that
    tab's commands without moving the document, and an outside pointer action
-   returns to the compact row. Writer routes its catalogued WPS font-size,
+   returns to the compact row. Writer routes its catalogued Traditional Office font-size,
    alignment, line-spacing, heading, spelling, field-refresh, comment, and
    track-changes shortcuts only while the document surface owns the event. The
-   status route uses the same catalog for WPS word count, opening live page,
+   status route uses the same catalog for Traditional Office word count, opening live page,
    word, character, and paragraph details from either `Ctrl+Shift+G` or the
-   visible count. Its local formatting clipboard powers WPS copy-format and
+   visible count. Its local formatting clipboard powers Traditional Office copy-format and
    paste-format shortcuts
    plus a one-shot format painter without requiring browser clipboard access;
    paste replaces only direct character and paragraph formatting, preserving
    links, comments, and revision semantics in one document transaction.
-   Header and footer TipTap surfaces register the same WPS alignment and
+   Header and footer TipTap surfaces register the same Traditional Office alignment and
    copy-format shortcuts. Cross-surface paste retains compatible marks and
    paragraph attributes while falling back from unsupported heading nodes.
    Writer orders Insert commands as Pages, Table, Illustrations, Links, Header
@@ -405,7 +405,7 @@ The current browser-kernel slice collects contiguous geometry-affecting text
 runs from eligible paragraphs. Each run carries an ordered registered font
 stack, size, line height, letter spacing, ligature, and kerning behavior. Font
 families and normal/italic styles remain exact; numeric weights follow the CSS
-Fonts matching order so WPS-style values such as 680 or 730 select a registered
+Fonts matching order so Office-style values such as 680 or 730 select a registered
 700 face. When a family has only one normal-style weight, the same face
 provides deterministic metrics for browser-synthesized bold text. The kernel
 selects a face for each grapheme, joins adjacent selections that use the same
@@ -558,13 +558,13 @@ numbering settings. Reversed lists, per-item `value` overrides, native Word
 list-identity continuation, arbitrary multilevel templates, and loss-preserving
 custom numbering formats remain later fidelity gates.
 
-The declared direct-formatting layout slice now has a real WPS Writer reference
+The declared direct-formatting layout slice now has a real Traditional Office Writer reference
 gate. Its deterministic A4 fixture uses installed Arial runs, explicit OOXML
 paragraph spacing, a fixed centered table, direct cell fills and borders, and
 physical cell margins. Automatic `w:line` values retain their original OOXML
-multiples for export while the browser applies the measured WPS single-line
+multiples for export while the browser applies the measured Traditional Office single-line
 font metric; imported tables no longer receive editor-only block margins. The
-Windows parity workflow exports the same fixture through WPS, captures both
+Windows parity workflow exports the same fixture through Traditional Office, captures both
 794 by 1123 CSS-pixel pages, and rejects page-size, landmark, or bounded pixel
 differences. Language-complete font substitution, variable font axes, the
 remaining character and table style properties, arbitrary floating-object
@@ -797,7 +797,7 @@ Migration to browser-native OOXML is staged:
    editing surfaces.
 
 Each stage needs compatibility fixtures, deterministic layout goldens, large
-document performance budgets, and real Microsoft Office and WPS
+document performance budgets, and real Microsoft Office and Traditional Office
 interoperability evidence before it can be described as fidelity-complete.
 
 ## Delivery roadmap
@@ -841,7 +841,7 @@ bundle regression.
 
 Exit criteria: deterministic layout goldens for the supported feature set;
 incremental reflow does not rebuild unaffected pages; DOCX fixtures round-trip
-through Microsoft Word and WPS without losing unsupported package parts.
+through Microsoft Word and Traditional Office without losing unsupported package parts.
 
 ### Stage 3: spreadsheet calculation and virtualization
 
@@ -941,7 +941,7 @@ performance gate.
 Exit criteria: object drag and resize stay interactive on complex slides;
 partial rich-text formatting survives PPTX round trips; masters, layouts,
 themes, tables, charts, links, and notes have compatibility fixtures for
-PowerPoint and WPS.
+PowerPoint and Traditional Office.
 
 ### Stage 5: PDF product surface
 
@@ -982,7 +982,7 @@ page window rather than the complete file.
   CLI, MCP server, and Skill.
 
 Exit criteria: import-edit-export fixtures show semantic and package-level
-round-trip evidence in Microsoft Office and WPS; unsupported content is
+round-trip evidence in Microsoft Office and Traditional Office; unsupported content is
 retained or rejected explicitly, never silently discarded.
 
 ## Performance gates

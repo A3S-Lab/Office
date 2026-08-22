@@ -123,6 +123,7 @@ suites=(
   "tests/e2e/spreadsheet-underline-styles.acl"
   "tests/e2e/spreadsheet-ribbon-orientation-visibility.acl"
   "tests/e2e/spreadsheet-font-colors-shortcuts.acl"
+  "tests/e2e/spreadsheet-date-time.acl"
   "tests/e2e/spreadsheet-table.acl"
   "tests/e2e/spreadsheet-data-validation.acl"
   "tests/e2e/spreadsheet-hyperlink.acl"

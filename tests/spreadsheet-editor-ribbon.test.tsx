@@ -1319,6 +1319,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     fillSelectedCells: () => true,
     hideSheet: () => true,
     insertSelectedStructure: () => true,
+    insertCurrentDateTime: () => true,
     mergeSelectedCells: () => true,
     moveSheet: () => true,
     moveSelection: () => true,
@@ -1380,6 +1381,7 @@ function spreadsheetCommands(
       | 'deleteSelectedStructure'
       | 'fillSelectedCells'
       | 'insertSelectedStructure'
+      | 'insertCurrentDateTime'
       | 'mergeSelectedCells'
       | 'openFind'
       | 'openDataValidation'
@@ -1422,6 +1424,7 @@ function spreadsheetCommands(
     fillSelectedCells: overrides.fillSelectedCells ?? (() => true),
     hideSheet: () => true,
     insertSelectedStructure: overrides.insertSelectedStructure ?? (() => true),
+    insertCurrentDateTime: overrides.insertCurrentDateTime ?? (() => true),
     mergeSelectedCells: overrides.mergeSelectedCells ?? (() => true),
     moveSheet: () => true,
     moveSelection: () => true,

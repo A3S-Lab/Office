@@ -2,7 +2,7 @@
 
 This roadmap defines one versioned collaboration protocol for every A3S Office
 editor and for native CLI/coding-agent clients. It complements `ROADMAP.md`,
-which tracks editor capability parity with WPS.
+which tracks editor capability parity with Traditional Office.
 
 ## Design invariants
 
