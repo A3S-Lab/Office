@@ -3,6 +3,11 @@ import type {
   WorkSpreadsheetSheet,
 } from '../work-types';
 import {
+  spreadsheetCellValueWithDiagonalBorder,
+  spreadsheetDiagonalBorderFromCellValue,
+  type WorkSpreadsheetDiagonalBorder,
+} from '../work-spreadsheet-diagonal-borders';
+import {
   normalizeSpreadsheetCellRange,
   parseSpreadsheetCellRange,
   type SpreadsheetCellRange,
@@ -24,7 +29,8 @@ export const spreadsheetCellBorderTargets = [
   'inside',
   'horizontal',
   'vertical',
-  'diagonal',
+  'diagonalDown',
+  'diagonalUp',
 ] as const;
 
 export type SpreadsheetCellBorderTarget =
@@ -59,10 +65,16 @@ export interface SpreadsheetResolvedCellBorderLine {
 
 export interface SpreadsheetResolvedCellBorders {
   bottom?: SpreadsheetResolvedCellBorderLine;
-  diagonal?: SpreadsheetResolvedCellBorderLine;
+  diagonalDown?: SpreadsheetResolvedCellBorderLine;
+  diagonalUp?: SpreadsheetResolvedCellBorderLine;
   left?: SpreadsheetResolvedCellBorderLine;
   right?: SpreadsheetResolvedCellBorderLine;
   top?: SpreadsheetResolvedCellBorderLine;
+}
+
+export interface SpreadsheetRenderableDiagonalBorders {
+  down?: SpreadsheetResolvedCellBorderLine;
+  up?: SpreadsheetResolvedCellBorderLine;
 }
 
 export const MAX_SPREADSHEET_DIAGONAL_BORDER_CELLS = 4_096;
@@ -82,6 +94,11 @@ type SpreadsheetNativeBorderType =
 
 type UnknownRecord = Record<string, unknown>;
 
+interface SpreadsheetDiagonalBorderDirections {
+  down: boolean;
+  up: boolean;
+}
+
 const spreadsheetNativeBorderTypes = new Set<SpreadsheetNativeBorderType>([
   'border-top',
   'border-bottom',
@@ -96,8 +113,13 @@ const spreadsheetNativeBorderTypes = new Set<SpreadsheetNativeBorderType>([
   'border-slash',
 ]);
 
-const spreadsheetNativeBorderTypeByTarget: Record<
+type SpreadsheetRangeBorderTarget = Exclude<
   SpreadsheetCellBorderTarget,
+  'diagonalDown' | 'diagonalUp'
+>;
+
+const spreadsheetNativeBorderTypeByTarget: Record<
+  SpreadsheetRangeBorderTarget,
   SpreadsheetNativeBorderType
 > = {
   top: 'border-top',
@@ -110,7 +132,6 @@ const spreadsheetNativeBorderTypeByTarget: Record<
   inside: 'border-inside',
   horizontal: 'border-horizontal',
   vertical: 'border-vertical',
-  diagonal: 'border-slash',
 };
 
 const spreadsheetNativeBorderStyleByName: Record<
@@ -146,7 +167,7 @@ export function canSetSpreadsheetCellBorders(
     content.sheets.some((sheet) => sheet.id === sheetId) &&
       normalizedRange &&
       normalizeSpreadsheetBorderFormat(format) &&
-      (format.target !== 'diagonal' ||
+      (!isSpreadsheetDiagonalBorderTarget(format.target) ||
         spreadsheetCellRangeArea(normalizedRange) <=
           MAX_SPREADSHEET_DIAGONAL_BORDER_CELLS) &&
       spreadsheetBorderInfoIsWritable(
@@ -170,18 +191,37 @@ export function setSpreadsheetCellBorders(
     !normalizedRange ||
     !normalizedFormat ||
     !spreadsheetBorderInfoIsWritable(sheet) ||
-    (normalizedFormat.target === 'diagonal' &&
+    (isSpreadsheetDiagonalBorderTarget(normalizedFormat.target) &&
       spreadsheetCellRangeArea(normalizedRange) >
         MAX_SPREADSHEET_DIAGONAL_BORDER_CELLS)
   ) {
     return null;
   }
 
-  const borderType =
-    spreadsheetNativeBorderTypeByTarget[normalizedFormat.target];
   const source = Array.isArray(sheet.config?.borderInfo)
     ? (sheet.config.borderInfo as unknown[])
     : [];
+  if (isSpreadsheetDiagonalBorderTarget(normalizedFormat.target)) {
+    const borderInfo = [
+      ...compactSpreadsheetBorderInfo(source, normalizedRange, 'border-slash'),
+      ...spreadsheetDiagonalBorderRecords(
+        sheet,
+        normalizedRange,
+        normalizedFormat.target,
+        normalizedFormat.color,
+        spreadsheetNativeBorderStyleByName[normalizedFormat.style],
+      ),
+    ];
+    return contentWithSpreadsheetBorderInfo(
+      content,
+      sheetIndex,
+      sheet,
+      borderInfo,
+    );
+  }
+
+  const borderType =
+    spreadsheetNativeBorderTypeByTarget[normalizedFormat.target];
   const compacted = compactSpreadsheetBorderInfo(
     source,
     normalizedRange,
@@ -196,18 +236,12 @@ export function setSpreadsheetCellBorders(
       spreadsheetNativeBorderStyleByName[normalizedFormat.style],
     ),
   ];
-  const nextSheet: WorkSpreadsheetSheet = {
-    ...sheet,
-    config: {
-      ...sheet.config,
-      borderInfo: borderInfo as NonNullable<
-        WorkSpreadsheetSheet['config']
-      >['borderInfo'],
-    },
-  };
-  const sheets = [...content.sheets];
-  sheets[sheetIndex] = nextSheet;
-  return { ...content, sheets };
+  return contentWithSpreadsheetBorderInfo(
+    content,
+    sheetIndex,
+    sheet,
+    borderInfo,
+  );
 }
 
 export function spreadsheetCellBordersAt(
@@ -233,7 +267,7 @@ export function spreadsheetCellBordersAt(
       applyResolvedCellBorderLine(borders, 'right', candidate.value.r);
       applyResolvedCellBorderLine(borders, 'top', candidate.value.t);
       applyResolvedCellBorderLine(borders, 'bottom', candidate.value.b);
-      applyResolvedCellBorderLine(borders, 'diagonal', candidate.value.s);
+      applyResolvedCellDiagonalBorders(borders, candidate.value);
       continue;
     }
     if (
@@ -258,6 +292,81 @@ export function spreadsheetCellBordersAt(
     }
   }
   return borders;
+}
+
+export function spreadsheetRenderableDiagonalBorders(
+  sheet: WorkSpreadsheetSheet,
+): ReadonlyMap<string, SpreadsheetRenderableDiagonalBorders> {
+  const borders = new Map<
+    string,
+    {
+      border: SpreadsheetRenderableDiagonalBorders;
+      column: number;
+      row: number;
+    }
+  >();
+  const source = Array.isArray(sheet.config?.borderInfo)
+    ? (sheet.config.borderInfo as unknown[])
+    : [];
+  for (const candidate of source) {
+    if (!isRecord(candidate)) continue;
+    if (candidate.rangeType === 'cell') {
+      if (!isRecord(candidate.value)) continue;
+      const row = finiteSpreadsheetBorderIndex(candidate.value.row_index);
+      const column = finiteSpreadsheetBorderIndex(candidate.value.col_index);
+      if (row === null || column === null) continue;
+      const key = `${row}_${column}`;
+      const diagonal = spreadsheetDiagonalBorderFromCellValue(candidate.value);
+      if (diagonal === undefined) continue;
+      if (!diagonal) {
+        borders.delete(key);
+        continue;
+      }
+      const line = resolvedCellBorderLine(diagonal.line);
+      if (!line) {
+        borders.delete(key);
+        continue;
+      }
+      borders.set(key, {
+        border: {
+          ...(diagonal.down ? { down: line } : {}),
+          ...(diagonal.up ? { up: line } : {}),
+        },
+        column,
+        row,
+      });
+      continue;
+    }
+    if (
+      candidate.rangeType !== 'range' ||
+      (candidate.borderType !== 'border-none' &&
+        candidate.borderType !== 'border-slash') ||
+      !Array.isArray(candidate.range)
+    ) {
+      continue;
+    }
+    const line = resolvedRangeBorderLine(candidate);
+    for (const rangeCandidate of candidate.range) {
+      const range = parseSpreadsheetCellRange(rangeCandidate);
+      if (!range) continue;
+      for (const [key, entry] of borders) {
+        if (!spreadsheetCellRangeContains(range, entry.row, entry.column)) {
+          continue;
+        }
+        if (candidate.borderType === 'border-none' || !entry.border.up) {
+          borders.delete(key);
+          continue;
+        }
+        borders.set(key, {
+          ...entry,
+          border: { up: line ?? entry.border.up },
+        });
+      }
+    }
+  }
+  return new Map(
+    [...borders].map(([key, entry]) => [key, entry.border] as const),
+  );
 }
 
 export function normalizeSpreadsheetBorderFormat(
@@ -300,14 +409,22 @@ function compactSpreadsheetBorderInfo(
   return formats.flatMap((format) => {
     if (!isRecord(format)) return [format];
     if (format.rangeType === 'cell') {
-      if (!supersedesAll || !isRecord(format.value)) return [format];
+      if (!isRecord(format.value)) return [format];
       const row = finiteSpreadsheetBorderIndex(format.value.row_index);
       const column = finiteSpreadsheetBorderIndex(format.value.col_index);
-      return row !== null &&
+      const selected =
+        row !== null &&
         column !== null &&
-        spreadsheetCellRangeContains(range, row, column)
-        ? []
-        : [format];
+        spreadsheetCellRangeContains(range, row, column);
+      if (!selected) return [format];
+      if (supersedesAll) return [];
+      if (appliedType !== 'border-slash') return [format];
+      const value = spreadsheetCellValueWithDiagonalBorder(format.value, null);
+      return Object.keys(value).some(
+        (key) => key !== 'row_index' && key !== 'col_index',
+      )
+        ? [{ ...format, value }]
+        : [];
     }
     if (
       format.rangeType !== 'range' ||
@@ -321,7 +438,8 @@ function compactSpreadsheetBorderInfo(
       const parsed = parseSpreadsheetCellRange(candidate);
       if (!parsed) return [candidate];
       if (format.borderType === 'border-slash') {
-        return spreadsheetCellRangesIntersect(parsed, range) ? [] : [candidate];
+        if (!spreadsheetCellRangesIntersect(parsed, range)) return [candidate];
+        return spreadsheetCellRangeArea(parsed) === 1 ? [] : [candidate];
       }
       return subtractSpreadsheetCellRange(parsed, range);
     });
@@ -335,38 +453,151 @@ function spreadsheetNativeBorderRecords(
   color: string,
   style: string,
 ): UnknownRecord[] {
-  if (borderType !== 'border-slash') {
-    return [
-      {
-        rangeType: 'range',
-        borderType,
-        color,
-        style,
-        range: [range],
-      },
-    ];
-  }
+  return [
+    {
+      rangeType: 'range',
+      borderType,
+      color,
+      style,
+      range: [range],
+    },
+  ];
+}
 
+function spreadsheetDiagonalBorderRecords(
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetCellRange,
+  target: 'diagonalDown' | 'diagonalUp',
+  color: string,
+  style: string,
+): UnknownRecord[] {
   const records: UnknownRecord[] = [];
+  const existing = spreadsheetDiagonalBorderDirectionsInRange(sheet, range);
   for (let row = range.row[0]; row <= range.row[1]; row += 1) {
     for (let column = range.column[0]; column <= range.column[1]; column += 1) {
+      const current = existing.get(`${row}_${column}`);
+      const border: WorkSpreadsheetDiagonalBorder = {
+        down: target === 'diagonalDown' || Boolean(current?.down),
+        line: { color, style },
+        up: target === 'diagonalUp' || Boolean(current?.up),
+      };
       records.push({
-        rangeType: 'range',
-        borderType,
-        color,
-        style,
-        range: [
-          {
-            row: [row, row],
-            column: [column, column],
-            row_focus: row,
-            column_focus: column,
-          },
-        ],
+        rangeType: 'cell',
+        value: spreadsheetCellValueWithDiagonalBorder(
+          { col_index: column, row_index: row },
+          border,
+        ),
       });
     }
   }
   return records;
+}
+
+function spreadsheetDiagonalBorderDirectionsInRange(
+  sheet: WorkSpreadsheetSheet,
+  selection: SpreadsheetCellRange,
+): ReadonlyMap<string, SpreadsheetDiagonalBorderDirections> {
+  const directions = new Map<string, SpreadsheetDiagonalBorderDirections>();
+  const source = Array.isArray(sheet.config?.borderInfo)
+    ? (sheet.config.borderInfo as unknown[])
+    : [];
+  for (const candidate of source) {
+    if (!isRecord(candidate)) continue;
+    if (candidate.rangeType === 'cell') {
+      if (!isRecord(candidate.value)) continue;
+      const row = finiteSpreadsheetBorderIndex(candidate.value.row_index);
+      const column = finiteSpreadsheetBorderIndex(candidate.value.col_index);
+      if (
+        row === null ||
+        column === null ||
+        !spreadsheetCellRangeContains(selection, row, column)
+      ) {
+        continue;
+      }
+      const diagonal = spreadsheetDiagonalBorderFromCellValue(candidate.value);
+      if (diagonal === undefined) continue;
+      const line = diagonal && resolvedCellBorderLine(diagonal.line);
+      setSpreadsheetDiagonalDirections(
+        directions,
+        row,
+        column,
+        Boolean(line && diagonal?.down),
+        Boolean(line && diagonal?.up),
+      );
+      continue;
+    }
+    if (
+      candidate.rangeType !== 'range' ||
+      (candidate.borderType !== 'border-none' &&
+        candidate.borderType !== 'border-slash') ||
+      !Array.isArray(candidate.range)
+    ) {
+      continue;
+    }
+    const line = resolvedRangeBorderLine(candidate);
+    for (const rangeCandidate of candidate.range) {
+      const range = parseSpreadsheetCellRange(rangeCandidate);
+      if (!range || !spreadsheetCellRangesIntersect(range, selection)) {
+        continue;
+      }
+      const startRow = Math.max(range.row[0], selection.row[0]);
+      const endRow = Math.min(range.row[1], selection.row[1]);
+      const startColumn = Math.max(range.column[0], selection.column[0]);
+      const endColumn = Math.min(range.column[1], selection.column[1]);
+      for (let row = startRow; row <= endRow; row += 1) {
+        for (let column = startColumn; column <= endColumn; column += 1) {
+          if (candidate.borderType === 'border-none') {
+            directions.delete(`${row}_${column}`);
+            continue;
+          }
+          const current = directions.get(`${row}_${column}`);
+          setSpreadsheetDiagonalDirections(
+            directions,
+            row,
+            column,
+            Boolean(line),
+            Boolean(current?.up),
+          );
+        }
+      }
+    }
+  }
+  return directions;
+}
+
+function setSpreadsheetDiagonalDirections(
+  directions: Map<string, SpreadsheetDiagonalBorderDirections>,
+  row: number,
+  column: number,
+  down: boolean,
+  up: boolean,
+): void {
+  const key = `${row}_${column}`;
+  if (!down && !up) {
+    directions.delete(key);
+    return;
+  }
+  directions.set(key, { down, up });
+}
+
+function contentWithSpreadsheetBorderInfo(
+  content: WorkSpreadsheetContent,
+  sheetIndex: number,
+  sheet: WorkSpreadsheetSheet,
+  borderInfo: unknown[],
+): WorkSpreadsheetContent {
+  const nextSheet: WorkSpreadsheetSheet = {
+    ...sheet,
+    config: {
+      ...sheet.config,
+      borderInfo: borderInfo as NonNullable<
+        WorkSpreadsheetSheet['config']
+      >['borderInfo'],
+    },
+  };
+  const sheets = [...content.sheets];
+  sheets[sheetIndex] = nextSheet;
+  return { ...content, sheets };
 }
 
 function applyResolvedCellBorderLine(
@@ -385,6 +616,33 @@ function applyResolvedCellBorderLine(
       : null;
   const style = typeof value.style === 'string' ? value.style : null;
   if (color && style) borders[side] = { color, style };
+}
+
+function applyResolvedCellDiagonalBorders(
+  borders: SpreadsheetResolvedCellBorders,
+  value: UnknownRecord,
+): void {
+  const diagonal = spreadsheetDiagonalBorderFromCellValue(value);
+  if (diagonal === undefined) return;
+  delete borders.diagonalDown;
+  delete borders.diagonalUp;
+  if (!diagonal) return;
+  const line = resolvedCellBorderLine(diagonal.line);
+  if (!line) return;
+  if (diagonal.down) borders.diagonalDown = line;
+  if (diagonal.up) borders.diagonalUp = line;
+}
+
+function resolvedCellBorderLine(
+  value: unknown,
+): SpreadsheetResolvedCellBorderLine | null {
+  if (!isRecord(value)) return null;
+  const color =
+    typeof value.color === 'string'
+      ? normalizeSpreadsheetBorderColor(value.color)
+      : null;
+  const style = typeof value.style === 'string' ? value.style : null;
+  return color && style ? { color, style } : null;
 }
 
 function resolvedRangeBorderLine(
@@ -432,7 +690,8 @@ function applyResolvedRangeBorder(
       delete borders.bottom;
       delete borders.left;
       delete borders.right;
-      delete borders.diagonal;
+      delete borders.diagonalDown;
+      delete borders.diagonalUp;
       break;
     case 'border-all':
       set('top');
@@ -461,9 +720,20 @@ function applyResolvedRangeBorder(
       if (!onRight) set('right');
       break;
     case 'border-slash':
-      set('diagonal');
+      if (line) {
+        borders.diagonalDown = line;
+        if (borders.diagonalUp) borders.diagonalUp = line;
+      } else {
+        delete borders.diagonalDown;
+      }
       break;
   }
+}
+
+function isSpreadsheetDiagonalBorderTarget(
+  target: SpreadsheetCellBorderTarget,
+): target is 'diagonalDown' | 'diagonalUp' {
+  return target === 'diagonalDown' || target === 'diagonalUp';
 }
 
 function isSpreadsheetNativeBorderType(

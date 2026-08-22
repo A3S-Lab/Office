@@ -209,6 +209,22 @@ one-step Undo, accessibility, and clean browser diagnostics. The suite runs
 only through the local A3S Test release gate; GitHub Actions keeps the
 equivalent Rstest and desktop/compact Playwright coverage.
 
+The WPS Spreadsheet independent diagonal-border workflow has a focused local
+gate:
+
+```bash
+bun run test:e2e:spreadsheet-diagonal-borders:check
+bun run test:e2e:spreadsheet-diagonal-borders
+```
+
+It covers Ribbon diagonal-down, Format Cells diagonal-up, crossed borders,
+persistence, Undo, compact Ribbon layout, screenshot and accessibility
+evidence, and empty console and page-error diagnostics. The suite uses the
+pinned local A3S Test 1.0.0,
+standalone agent-browser 0.26.0, Web protocol revision 15, and the existing
+Playwright Chromium. GitHub Actions and Pages run the equivalent Rstest and
+desktop/compact Playwright coverage and never install or invoke A3S Test.
+
 The WPS Spreadsheet underline styles have a focused local gate:
 
 ```bash

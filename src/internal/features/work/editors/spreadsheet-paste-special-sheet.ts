@@ -3,6 +3,7 @@ import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
 } from '../work-types';
+import { spreadsheetCellValueWithDiagonalBorder } from '../work-spreadsheet-diagonal-borders';
 import { setSpreadsheetCellBorders } from './spreadsheet-cell-border';
 import {
   type SpreadsheetCellRange,
@@ -88,20 +89,28 @@ export function applySpreadsheetPasteBorders(
       transpose,
     ).cell;
     const value: UnknownRecord = { row_index: row, col_index: column };
-    const sides: Array<
-      [keyof typeof source.borders, 'l' | 'r' | 't' | 'b' | 's']
-    > = [
+    const sides: Array<[keyof typeof source.borders, 'l' | 'r' | 't' | 'b']> = [
       ['left', 'l'],
       ['right', 'r'],
       ['top', 't'],
       ['bottom', 'b'],
-      ['diagonal', 's'],
     ];
     for (const [side, key] of sides) {
       const line = source.borders[side];
       if (line) value[key] = structuredClone(line);
     }
-    return Object.keys(value).length > 2 ? [{ rangeType: 'cell', value }] : [];
+    const diagonal =
+      source.borders.diagonalUp ?? source.borders.diagonalDown ?? null;
+    const withDiagonal = diagonal
+      ? spreadsheetCellValueWithDiagonalBorder(value, {
+          down: Boolean(source.borders.diagonalDown),
+          line: structuredClone(diagonal),
+          up: Boolean(source.borders.diagonalUp),
+        })
+      : value;
+    return Object.keys(withDiagonal).length > 2
+      ? [{ rangeType: 'cell', value: withDiagonal }]
+      : [];
   });
   const borderInfo = [
     ...(Array.isArray(sheet.config?.borderInfo)

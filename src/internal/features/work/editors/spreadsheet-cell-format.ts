@@ -159,11 +159,20 @@ export function canApplySpreadsheetCellFormat(
       normalized.some(
         (format) =>
           !format ||
-          !['top', 'bottom', 'left', 'right', 'all', 'diagonal'].includes(
-            format.target,
-          ),
+          ![
+            'top',
+            'bottom',
+            'left',
+            'right',
+            'all',
+            'diagonalDown',
+            'diagonalUp',
+          ].includes(format.target),
       ) ||
-      (normalized.some((format) => format?.target === 'diagonal') &&
+      (normalized.some(
+        (format) =>
+          format?.target === 'diagonalDown' || format?.target === 'diagonalUp',
+      ) &&
         spreadsheetCellRangeArea(range) > MAX_SPREADSHEET_DIAGONAL_BORDER_CELLS)
     ) {
       return false;

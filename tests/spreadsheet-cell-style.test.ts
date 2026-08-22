@@ -9,6 +9,11 @@ import {
   spreadsheetCellStylePresetIds,
 } from '../src/internal/features/work/editors/spreadsheet-cell-style';
 import {
+  setSpreadsheetCellBorders,
+  spreadsheetCellBordersAt,
+} from '../src/internal/features/work/editors/spreadsheet-cell-border';
+import { applySpreadsheetCellFormat } from '../src/internal/features/work/editors/spreadsheet-cell-format';
+import {
   createWorkArtifactBlob,
   importWorkFile,
 } from '../src/internal/features/work/work-file-io';
@@ -643,6 +648,98 @@ describe('spreadsheet cell styles', () => {
         },
       },
     ]);
+  });
+
+  test('round-trips diagonal-down, diagonal-up, and crossed borders after unrelated edits', async () => {
+    const artifact = createWorkArtifact('blank-spreadsheet');
+    if (artifact.content.type !== 'spreadsheet')
+      throw new Error('Expected a blank spreadsheet.');
+    const sheet = artifact.content.sheets[0];
+    if (!sheet) throw new Error('Expected a worksheet.');
+    sheet.data = [[{ v: 'Down' }, { v: 'Up' }, { v: 'Both' }]];
+
+    let content: WorkSpreadsheetContent = artifact.content;
+    const applyBorder = (
+      column: number,
+      target: 'diagonalDown' | 'diagonalUp',
+    ) => {
+      const next = setSpreadsheetCellBorders(
+        content,
+        sheet.id,
+        { row: [0, 0], column: [column, column] },
+        { target, color: '#2463eb', style: 'medium-dash-dot' },
+      );
+      if (!next) throw new Error(`Expected ${target} to apply.`);
+      content = next;
+    };
+    applyBorder(0, 'diagonalDown');
+    applyBorder(1, 'diagonalUp');
+    applyBorder(2, 'diagonalDown');
+    applyBorder(2, 'diagonalUp');
+    artifact.content = content;
+
+    const firstBlob = await createWorkArtifactBlob(artifact);
+    const firstImport = await importWorkFile(
+      new File([firstBlob], 'diagonal-borders.xlsx', { type: firstBlob.type }),
+    );
+    if (firstImport.content.type !== 'spreadsheet')
+      throw new Error('Expected an imported spreadsheet.');
+    const edited = applySpreadsheetCellFormat(firstImport.content, {
+      sheetId: firstImport.content.sheets[0]?.id ?? '',
+      range: { row: [0, 0], column: [0, 2] },
+      patch: { bold: true },
+    });
+    if (!edited) throw new Error('Expected the unrelated edit to apply.');
+    artifact.content = edited;
+
+    const secondBlob = await createWorkArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await secondBlob.arrayBuffer());
+    const stylesSource = await archive.file('xl/styles.xml')?.async('text');
+    if (!stylesSource) throw new Error('Expected native XLSX styles.');
+    const styles = parseXml(stylesSource, 'xl/styles.xml');
+    const diagonals = descendants(styles, 'border').flatMap((border) => {
+      const line = directChild(border, 'diagonal');
+      return line && attribute(line, 'style') === 'mediumDashDot'
+        ? [
+            {
+              down: attribute(border, 'diagonalDown'),
+              up: attribute(border, 'diagonalUp'),
+            },
+          ]
+        : [];
+    });
+    expect(diagonals).toEqual(
+      expect.arrayContaining([
+        { down: '1', up: null },
+        { down: null, up: '1' },
+        { down: '1', up: '1' },
+      ]),
+    );
+
+    const reopened = await importWorkFile(
+      new File([secondBlob], 'diagonal-borders-reopened.xlsx', {
+        type: secondBlob.type,
+      }),
+    );
+    if (reopened.content.type !== 'spreadsheet')
+      throw new Error('Expected a reopened spreadsheet.');
+    const reopenedSheet = reopened.content.sheets[0];
+    expect(spreadsheetCellBordersAt(reopenedSheet, 0, 0)).toMatchObject({
+      diagonalDown: { color: '#2463eb', style: '10' },
+    });
+    expect(spreadsheetCellBordersAt(reopenedSheet, 0, 0)).not.toHaveProperty(
+      'diagonalUp',
+    );
+    expect(spreadsheetCellBordersAt(reopenedSheet, 0, 1)).toMatchObject({
+      diagonalUp: { color: '#2463eb', style: '10' },
+    });
+    expect(spreadsheetCellBordersAt(reopenedSheet, 0, 1)).not.toHaveProperty(
+      'diagonalDown',
+    );
+    expect(spreadsheetCellBordersAt(reopenedSheet, 0, 2)).toMatchObject({
+      diagonalDown: { color: '#2463eb', style: '10' },
+      diagonalUp: { color: '#2463eb', style: '10' },
+    });
   });
 });
 

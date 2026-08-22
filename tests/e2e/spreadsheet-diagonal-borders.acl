@@ -1,0 +1,228 @@
+suite "office-spreadsheet-diagonal-borders" {
+    version = 1
+
+    scenario "edit-both-diagonal-directions" {
+        name = "Edit and undo both Spreadsheet diagonal border directions"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-diagonal-borders"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "create-worksheet" {
+            key = "Shift+F11"
+        }
+
+        expect "new-worksheet-selected" {
+            text = "A1"
+        }
+
+        click "open-border-menu" {
+            target = role("button", "更多框线")
+        }
+
+        expect "both-directions-available" {
+            visible = css("[role='menu'][aria-label='框线位置'] [role='menuitemradio'][aria-label='斜下框线'] + [role='menuitemradio'][aria-label='斜上框线']")
+        }
+
+        click "apply-diagonal-down" {
+            target = role("menuitemradio", "斜下框线")
+        }
+
+        expect "diagonal-down-is-primary-command" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='斜下框线']")
+        }
+
+        focus "return-to-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "open-format-cells" {
+            key = "Control+1"
+        }
+
+        expect "format-cells-visible" {
+            visible = css(".work-spreadsheet-format-cells-dialog")
+        }
+
+        click "open-border-tab" {
+            target = role("tab", "边框")
+        }
+
+        expect "only-diagonal-down-active" {
+            visible = css(".work-spreadsheet-format-cells-dialog button[aria-label='斜下框线'][aria-pressed='true'] ~ button[aria-label='斜上框线'][aria-pressed='false']")
+        }
+
+        click "add-diagonal-up" {
+            target = role("button", "斜上框线")
+        }
+
+        expect "both-directions-active-in-draft" {
+            visible = css(".work-spreadsheet-format-cells-dialog button[aria-label='斜下框线'][aria-pressed='true'] ~ button[aria-label='斜上框线'][aria-pressed='true']")
+        }
+
+        click "apply-crossed-borders" {
+            target = role("button", "应用")
+        }
+
+        focus "return-to-grid-after-apply" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        screenshot "crossed-diagonal-borders" {
+            path = "screenshots/crossed-diagonal-borders.png"
+        }
+
+        press "reopen-format-cells" {
+            key = "Control+1"
+        }
+
+        click "reopen-border-tab" {
+            target = role("tab", "边框")
+        }
+
+        expect "both-directions-persisted" {
+            visible = css(".work-spreadsheet-format-cells-dialog button[aria-label='斜下框线'][aria-pressed='true'] ~ button[aria-label='斜上框线'][aria-pressed='true']")
+        }
+
+        press "close-format-cells" {
+            key = "Escape"
+        }
+
+        focus "return-to-grid-before-undo" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "undo-diagonal-up" {
+            key = "Control+z"
+        }
+
+        press "inspect-undo" {
+            key = "Control+1"
+        }
+
+        click "inspect-undo-border-tab" {
+            target = role("tab", "边框")
+        }
+
+        expect "undo-restores-diagonal-down-only" {
+            visible = css(".work-spreadsheet-format-cells-dialog button[aria-label='斜下框线'][aria-pressed='true'] ~ button[aria-label='斜上框线'][aria-pressed='false']")
+        }
+
+        accessibility "diagonal-border-accessibility" {
+            path = "evidence/diagonal-border-accessibility.json"
+            interactive = true
+        }
+
+        console "diagonal-border-console" {
+            path = "diagnostics/diagonal-border-console.json"
+            clear = false
+        }
+
+        page_errors "diagonal-border-page-errors" {
+            path = "diagnostics/diagonal-border-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "use-diagonal-up-at-compact-width" {
+        name = "Use the diagonal-up border at compact Spreadsheet width"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-compact-playground" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-diagonal-borders-compact"
+        }
+
+        wait "compact-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-compact-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "compact-spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-compact-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "create-compact-worksheet" {
+            key = "Shift+F11"
+        }
+
+        click "open-compact-border-menu" {
+            target = role("button", "更多框线")
+        }
+
+        expect "compact-diagonal-up-visible" {
+            visible = css("[role='menu'][aria-label='框线位置'] [role='menuitemradio'][aria-label='斜上框线']")
+        }
+
+        click "apply-compact-diagonal-up" {
+            target = role("menuitemradio", "斜上框线")
+        }
+
+        expect "compact-diagonal-up-is-primary-command" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='斜上框线']")
+        }
+
+        focus "return-to-compact-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "inspect-compact-format" {
+            key = "Control+1"
+        }
+
+        click "inspect-compact-border-tab" {
+            target = role("tab", "边框")
+        }
+
+        expect "compact-diagonal-up-persisted" {
+            visible = css(".work-spreadsheet-format-cells-dialog button[aria-label='斜下框线'][aria-pressed='false'] ~ button[aria-label='斜上框线'][aria-pressed='true']")
+        }
+
+        console "compact-diagonal-border-console" {
+            path = "diagnostics/compact-diagonal-border-console.json"
+            clear = false
+        }
+
+        page_errors "compact-diagonal-border-page-errors" {
+            path = "diagnostics/compact-diagonal-border-page-errors.json"
+            clear = false
+        }
+    }
+}

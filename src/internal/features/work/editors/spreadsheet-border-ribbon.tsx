@@ -42,7 +42,8 @@ const spreadsheetBorderTargetOptions: readonly {
     | (typeof spreadsheetCommandCatalog)['borderInside']
     | (typeof spreadsheetCommandCatalog)['borderHorizontal']
     | (typeof spreadsheetCommandCatalog)['borderVertical']
-    | (typeof spreadsheetCommandCatalog)['borderDiagonal'];
+    | (typeof spreadsheetCommandCatalog)['borderDiagonalDown']
+    | (typeof spreadsheetCommandCatalog)['borderDiagonalUp'];
 }[] = [
   { target: 'top', definition: spreadsheetCommandCatalog.borderTop },
   { target: 'bottom', definition: spreadsheetCommandCatalog.borderBottom },
@@ -61,8 +62,12 @@ const spreadsheetBorderTargetOptions: readonly {
     definition: spreadsheetCommandCatalog.borderVertical,
   },
   {
-    target: 'diagonal',
-    definition: spreadsheetCommandCatalog.borderDiagonal,
+    target: 'diagonalDown',
+    definition: spreadsheetCommandCatalog.borderDiagonalDown,
+  },
+  {
+    target: 'diagonalUp',
+    definition: spreadsheetCommandCatalog.borderDiagonalUp,
   },
 ];
 

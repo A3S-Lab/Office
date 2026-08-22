@@ -51,8 +51,11 @@ test('supports keyboard border selection with persistent line and color settings
   const dialog = screen.getByRole('dialog', { name: '框线设置' });
   const menu = within(dialog).getByRole('menu', { name: '框线位置' });
   const top = within(menu).getByRole('menuitemradio', { name: '上框线' });
-  const diagonal = within(menu).getByRole('menuitemradio', {
-    name: '斜线框线',
+  const diagonalDown = within(menu).getByRole('menuitemradio', {
+    name: '斜下框线',
+  });
+  const diagonalUp = within(menu).getByRole('menuitemradio', {
+    name: '斜上框线',
   });
   await waitFor(() => expect(top).toHaveFocus());
   const all = within(menu).getByRole('menuitemradio', { name: '所有框线' });
@@ -75,7 +78,9 @@ test('supports keyboard border selection with persistent line and color settings
   expect(outside.querySelector('kbd')).toHaveTextContent('Cmd/Ctrl+Shift+&');
 
   fireEvent.keyDown(menu, { key: 'End' });
-  expect(diagonal).toHaveFocus();
+  expect(diagonalUp).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'ArrowUp' });
+  expect(diagonalDown).toHaveFocus();
   fireEvent.keyDown(menu, { key: 'Home' });
   expect(top).toHaveFocus();
 
@@ -111,7 +116,8 @@ test('supports keyboard border selection with persistent line and color settings
 
 test('disables only border targets rejected by the command capability', () => {
   const can = borderCan();
-  can.setSelectedCellBorders = (format) => format.target !== 'diagonal';
+  can.setSelectedCellBorders = (format) =>
+    format.target !== 'diagonalDown' && format.target !== 'diagonalUp';
   render(
     <SpreadsheetBorderRibbon can={can} commands={borderCommands(() => true)} />,
   );
@@ -122,7 +128,10 @@ test('disables only border targets rejected by the command capability', () => {
     within(menu).getByRole('menuitemradio', { name: '所有框线' }),
   ).toBeEnabled();
   expect(
-    within(menu).getByRole('menuitemradio', { name: '斜线框线' }),
+    within(menu).getByRole('menuitemradio', { name: '斜下框线' }),
+  ).toBeDisabled();
+  expect(
+    within(menu).getByRole('menuitemradio', { name: '斜上框线' }),
   ).toBeDisabled();
 });
 

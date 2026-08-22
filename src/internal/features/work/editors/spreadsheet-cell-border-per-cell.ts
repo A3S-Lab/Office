@@ -2,7 +2,9 @@ import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
 } from '../work-types';
+import { spreadsheetCellValueWithDiagonalBorder } from '../work-spreadsheet-diagonal-borders';
 import {
+  MAX_SPREADSHEET_DIAGONAL_BORDER_CELLS,
   normalizeSpreadsheetBorderFormat,
   setSpreadsheetCellBorders,
   type SpreadsheetCellBorderFormat,
@@ -26,17 +28,30 @@ export function setSpreadsheetCellBordersPerCell(
 ): WorkSpreadsheetContent | null {
   const normalizedRange = normalizeSpreadsheetCellRange(range);
   const normalizedFormats = formats.map(normalizeSpreadsheetBorderFormat);
+  const area = normalizedRange
+    ? spreadsheetCellRangeArea(normalizedRange)
+    : Number.POSITIVE_INFINITY;
   if (
     !normalizedRange ||
-    spreadsheetCellRangeArea(normalizedRange) >
-      MAX_SPREADSHEET_PER_CELL_BORDER_CELLS ||
+    area > MAX_SPREADSHEET_PER_CELL_BORDER_CELLS ||
     normalizedFormats.some(
       (format) =>
         !format ||
-        !['top', 'bottom', 'left', 'right', 'all', 'diagonal'].includes(
-          format.target,
-        ),
-    )
+        ![
+          'top',
+          'bottom',
+          'left',
+          'right',
+          'all',
+          'diagonalDown',
+          'diagonalUp',
+        ].includes(format.target),
+    ) ||
+    (area > MAX_SPREADSHEET_DIAGONAL_BORDER_CELLS &&
+      normalizedFormats.some(
+        (format) =>
+          format?.target === 'diagonalDown' || format?.target === 'diagonalUp',
+      ))
   ) {
     return null;
   }
@@ -63,6 +78,9 @@ export function setSpreadsheetCellBordersPerCell(
       column += 1
     ) {
       const value: UnknownRecord = { row_index: row, col_index: column };
+      let diagonalDown = false;
+      let diagonalUp = false;
+      let diagonalLine: { color: string; style: string } | null = null;
       for (const format of normalizedFormats) {
         if (!format) continue;
         const line = {
@@ -75,9 +93,26 @@ export function setSpreadsheetCellBordersPerCell(
         if (format.target === 'all' || format.target === 'top') value.t = line;
         if (format.target === 'all' || format.target === 'bottom')
           value.b = line;
-        if (format.target === 'diagonal') value.s = line;
+        if (format.target === 'diagonalDown') {
+          diagonalDown = true;
+          diagonalLine = line;
+        }
+        if (format.target === 'diagonalUp') {
+          diagonalUp = true;
+          diagonalLine = line;
+        }
       }
-      records.push({ rangeType: 'cell', value });
+      records.push({
+        rangeType: 'cell',
+        value:
+          diagonalLine && (diagonalDown || diagonalUp)
+            ? spreadsheetCellValueWithDiagonalBorder(value, {
+                down: diagonalDown,
+                line: diagonalLine,
+                up: diagonalUp,
+              })
+            : value,
+      });
     }
   }
 

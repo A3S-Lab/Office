@@ -335,19 +335,19 @@ function borderFormatsAt(
   column: number,
 ): SpreadsheetCellBorderFormat[] {
   const resolved = spreadsheetCellBordersAt(sheet, row, column);
-  return (['top', 'bottom', 'left', 'right', 'diagonal'] as const).flatMap(
-    (target) => {
-      const line = resolved[target];
-      if (!line) return [];
-      return [
-        {
-          target,
-          color: normalizedColor(line.color, '#172033') ?? '#172033',
-          style: borderStyle(line.style),
-        },
-      ];
-    },
-  );
+  return (
+    ['top', 'bottom', 'left', 'right', 'diagonalDown', 'diagonalUp'] as const
+  ).flatMap((target) => {
+    const line = resolved[target];
+    if (!line) return [];
+    return [
+      {
+        target,
+        color: normalizedColor(line.color, '#172033') ?? '#172033',
+        style: borderStyle(line.style),
+      },
+    ];
+  });
 }
 
 function borderStyle(value: string): SpreadsheetCellBorderStyle {

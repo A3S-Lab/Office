@@ -48,7 +48,10 @@ test('Spreadsheet Format Cells applies six tabs and undoes once at every layout'
   await bold.click();
 
   await dialog.getByRole('tab', { name: '边框' }).click();
-  const bottomBorder = dialog.getByRole('button', { name: '下框线' });
+  const bottomBorder = dialog.getByRole('button', {
+    name: '下框线',
+    exact: true,
+  });
   const initialBottomBorder =
     (await bottomBorder.getAttribute('aria-pressed')) === 'true';
   await bottomBorder.click();
@@ -92,10 +95,9 @@ test('Spreadsheet Format Cells applies six tabs and undoes once at every layout'
     !initialBold,
   );
   await applied.getByRole('tab', { name: '边框' }).click();
-  await expect(applied.getByRole('button', { name: '下框线' })).toHaveAttribute(
-    'aria-pressed',
-    String(!initialBottomBorder),
-  );
+  await expect(
+    applied.getByRole('button', { name: '下框线', exact: true }),
+  ).toHaveAttribute('aria-pressed', String(!initialBottomBorder));
   await applied.getByRole('tab', { name: '填充' }).click();
   await expect(
     applied.getByRole('button', { name: '单元格填充颜色' }),
@@ -130,7 +132,7 @@ test('Spreadsheet Format Cells applies six tabs and undoes once at every layout'
   );
   await restored.getByRole('tab', { name: '边框' }).click();
   await expect(
-    restored.getByRole('button', { name: '下框线' }),
+    restored.getByRole('button', { name: '下框线', exact: true }),
   ).toHaveAttribute('aria-pressed', String(initialBottomBorder));
   await restored.getByRole('tab', { name: '填充' }).click();
   await expect(

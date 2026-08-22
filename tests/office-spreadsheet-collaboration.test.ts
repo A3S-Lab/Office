@@ -229,6 +229,61 @@ test('merges formula, style, note, config, and metadata edits by object field', 
   });
 });
 
+test('preserves directional diagonal borders across unrelated collaboration edits', () => {
+  const { first, firstDocument, second, secondDocument } = connectedPair(
+    'spreadsheet-diagonal-border',
+  );
+  const firstBinding = createOfficeSpreadsheetCollaborationBinding(first);
+  const secondBinding = createOfficeSpreadsheetCollaborationBinding(second);
+  const firstBefore = firstBinding.content();
+  const stale = secondBinding.content();
+  const line = { color: '#2463eb', style: '10' };
+
+  firstBinding.replace(
+    firstBefore,
+    updateInputSheet(firstBefore, (sheet) => ({
+      ...sheet,
+      config: {
+        ...sheet.config,
+        borderInfo: [
+          ...(sheet.config?.borderInfo ?? []),
+          {
+            rangeType: 'cell',
+            value: {
+              row_index: 1,
+              col_index: 1,
+              s: line,
+              a3sDiagonal: { down: true, line, up: true },
+            },
+          },
+        ],
+      },
+    })),
+  );
+  secondBinding.replace(
+    stale,
+    updateInputCell(stale, 1, 0, (cell) => ({
+      ...cell,
+      v: 12,
+      m: '12',
+    })),
+  );
+  exchangeUpdates(firstDocument, secondDocument);
+
+  const converged = firstBinding.content();
+  expect(secondBinding.content()).toEqual(converged);
+  expect(converged.sheets[0].config?.borderInfo).toContainEqual({
+    rangeType: 'cell',
+    value: {
+      row_index: 1,
+      col_index: 1,
+      s: line,
+      a3sDiagonal: { down: true, line, up: true },
+    },
+  });
+  expect(converged.sheets[0].data?.[1]?.[0]).toMatchObject({ v: 12 });
+});
+
 test('syncs native table records and merges independent design edits', () => {
   const { first, firstDocument, second, secondDocument } = connectedPair(
     'spreadsheet-table-convergence',

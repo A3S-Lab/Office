@@ -404,7 +404,10 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
     name: '外侧框线',
   });
   await expect(
-    borderMenu.getByRole('menuitemradio', { name: '上框线' }),
+    borderMenu.getByRole('menuitemradio', {
+      name: '上框线',
+      exact: true,
+    }),
   ).toBeFocused();
   await expect(noBorder).toHaveAttribute(
     'aria-keyshortcuts',
@@ -441,7 +444,10 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
   ).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(
-    borderMenu.getByRole('menuitemradio', { name: '上框线' }),
+    borderMenu.getByRole('menuitemradio', {
+      name: '上框线',
+      exact: true,
+    }),
   ).toBeFocused();
   for (let index = 0; index < 6; index += 1) {
     await page.keyboard.press('ArrowDown');

@@ -4,6 +4,22 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.21.0 - 2026-08-22
+
+- Preserved OOXML Spreadsheet `diagonalDown` and `diagonalUp` borders as
+  independent directions across import, Ribbon and Format Cells editing,
+  Paste Special, built-in style resolution, Yjs collaboration, XLSX export,
+  and reopen. Crossed borders render both directions through the visible-cell
+  Canvas hook, legacy Fortune `border-slash` records remain diagonal-down, and
+  later native slash or no-border ranges retain their ordered override
+  semantics after external workbook ingestion.
+- Kept diagonal-border writes bounded to 4,096 cells and replaced repeated
+  maximum-range border scans with one indexed pass. Focused model, Canvas,
+  XLSX, collaboration, desktop/compact Playwright, and local-only A3S Test
+  1.0.0 regressions cover editing, Undo/Redo, row insertion, rendering, clean
+  browser diagnostics, and exact round trips; GitHub Actions and Pages do not
+  install or invoke A3S Test.
+
 ## 0.20.0 - 2026-08-22
 
 - Added WPS/Excel `Ctrl+2`, `Ctrl+3`, and `Ctrl+4` aliases for Spreadsheet

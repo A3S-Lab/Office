@@ -99,7 +99,8 @@ const borderTargets = [
   { target: 'bottom', label: '下框线' },
   { target: 'left', label: '左框线' },
   { target: 'right', label: '右框线' },
-  { target: 'diagonal', label: '对角线' },
+  { target: 'diagonalDown', label: '斜下框线' },
+  { target: 'diagonalUp', label: '斜上框线' },
 ] as const;
 
 export function SpreadsheetFormatCellsPanel(props: PanelProps) {
@@ -480,8 +481,17 @@ function BorderPreview({ draft }: { draft: SpreadsheetFormatCellsDraft }) {
       <span className="bottom" style={{ borderBottom: line('bottom') }} />
       <span className="left" style={{ borderLeft: line('left') }} />
       <span className="right" style={{ borderRight: line('right') }} />
-      {line('diagonal') && (
-        <span className="diagonal" style={{ borderTop: line('diagonal') }} />
+      {line('diagonalDown') && (
+        <span
+          className="diagonal-down"
+          style={{ borderTop: line('diagonalDown') }}
+        />
+      )}
+      {line('diagonalUp') && (
+        <span
+          className="diagonal-up"
+          style={{ borderTop: line('diagonalUp') }}
+        />
       )}
       <strong>文本</strong>
     </div>

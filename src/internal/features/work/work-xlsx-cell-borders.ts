@@ -1,5 +1,9 @@
 import type { Sheet } from '@fortune-sheet/core';
 import { sparseArrayEntries } from './spreadsheet-sparse';
+import {
+  spreadsheetCellValueWithDiagonalBorder,
+  spreadsheetDiagonalBorderFromCellValue,
+} from './work-spreadsheet-diagonal-borders';
 
 export type XlsxCellBorderStyle =
   | 'dashDot'
@@ -123,8 +127,23 @@ export function fortuneBorderInfoFromXlsxCells(
     setFortuneBorderLine(value, 'r', border.right);
     setFortuneBorderLine(value, 't', border.top);
     setFortuneBorderLine(value, 'b', border.bottom);
-    if (border.diagonal) {
-      setFortuneBorderLine(value, 's', border.diagonal);
+    if (
+      border.diagonal &&
+      (border.diagonalDown === true || border.diagonalUp === true)
+    ) {
+      const line = fortuneBorderLine(border.diagonal);
+      if (line) {
+        return [
+          {
+            rangeType: 'cell',
+            value: spreadsheetCellValueWithDiagonalBorder(value, {
+              down: border.diagonalDown === true,
+              line,
+              up: border.diagonalUp === true,
+            }),
+          },
+        ];
+      }
     }
     return Object.keys(value).length > 2 ? [{ rangeType: 'cell', value }] : [];
   });
@@ -187,11 +206,20 @@ function applySpreadsheetCellBorderRecord(
   applyCellLine(border, 'right', record.value.r);
   applyCellLine(border, 'top', record.value.t);
   applyCellLine(border, 'bottom', record.value.b);
-  const diagonal = xlsxCellBorderLineFromFortune(record.value.s);
+  const diagonal = spreadsheetDiagonalBorderFromCellValue(record.value);
   if (diagonal !== undefined) {
-    border.diagonal = diagonal;
-    border.diagonalUp = diagonal !== null;
-    border.diagonalDown = false;
+    if (!diagonal) {
+      border.diagonal = null;
+      border.diagonalDown = false;
+      border.diagonalUp = false;
+    } else {
+      const line = xlsxCellBorderLineFromFortune(diagonal.line);
+      if (line !== undefined) {
+        border.diagonal = line;
+        border.diagonalDown = line !== null && diagonal.down;
+        border.diagonalUp = line !== null && diagonal.up;
+      }
+    }
   }
   borders.set(key, border);
 }
@@ -267,9 +295,10 @@ function applySpreadsheetRangeBorder(
       if (!onRight) border.right = line;
       break;
     case 'border-slash':
-      border.diagonal = line;
-      border.diagonalUp = line !== null;
-      border.diagonalDown = false;
+      border.diagonalDown = line !== null;
+      border.diagonalUp = border.diagonalUp === true;
+      if (line) border.diagonal = line;
+      else if (!border.diagonalUp) border.diagonal = null;
       break;
     default:
       return;
@@ -323,6 +352,13 @@ function setFortuneBorderLine(
     color: normalizeRgbColor(line.color) ?? '#000000',
     style: fortuneBorderStyle(line.style),
   };
+}
+
+function fortuneBorderLine(
+  line: XlsxCellBorderLine,
+): { color: string; style: string } | null {
+  const color = normalizeRgbColor(line.color);
+  return color ? { color, style: fortuneBorderStyle(line.style) } : null;
 }
 
 function normalizeRgbColor(value: unknown): string | null {

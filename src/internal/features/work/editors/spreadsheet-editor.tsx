@@ -40,6 +40,10 @@ import {
   drawSpreadsheetCommentMarker,
   drawSpreadsheetConditionalDataBar,
 } from '../work-spreadsheet-conditional-canvas';
+import {
+  drawSpreadsheetDiagonalDownBorder,
+  drawSpreadsheetDiagonalUpBorder,
+} from '../work-spreadsheet-diagonal-border-canvas';
 import { spreadsheetConditionalFormatStyles } from '../work-spreadsheet-conditional-format';
 import { drawSpreadsheetConditionalIcon } from '../work-spreadsheet-conditional-icons';
 import { spreadsheetMatrixProfile } from '../work-spreadsheet-matrix-profile';
@@ -55,7 +59,10 @@ import { useOfficeCollaborationLocationNavigator } from './office-collaboration-
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { useOfficeDialog } from './office-dialog';
 import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
-import { spreadsheetCellBordersAt } from './spreadsheet-cell-border';
+import {
+  spreadsheetCellBordersAt,
+  spreadsheetRenderableDiagonalBorders,
+} from './spreadsheet-cell-border';
 import { useSpreadsheetCollaborationPresenceProjection } from './spreadsheet-collaboration-presence';
 import {
   createSpreadsheetEditorExtensions,
@@ -438,6 +445,19 @@ function SpreadsheetEditorSurface({
   );
   const tableStylesBySheetRef = useRef(tableStylesBySheet);
   tableStylesBySheetRef.current = tableStylesBySheet;
+  const diagonalBordersBySheet = useMemo(
+    () =>
+      new Map(
+        materializedContent.sheets.flatMap((sheet) =>
+          sheet.id
+            ? [[sheet.id, spreadsheetRenderableDiagonalBorders(sheet)] as const]
+            : [],
+        ),
+      ),
+    [materializedContent.sheets],
+  );
+  const diagonalBordersBySheetRef = useRef(diagonalBordersBySheet);
+  diagonalBordersBySheetRef.current = diagonalBordersBySheet;
   useEffect(() => {
     setPreviewActiveSheetId(preview ? contentActiveSheetId : null);
   }, [contentActiveSheetId, preview]);
@@ -594,6 +614,15 @@ function SpreadsheetEditorSurface({
           }
         } finally {
           finishSpreadsheetTableCellRender(cell, cellInfo, tableStyle, context);
+          const diagonal = diagonalBordersBySheetRef.current
+            .get(activeSheetIdRef.current)
+            ?.get(`${cellInfo.row}_${cellInfo.column}`);
+          if (diagonal?.down) {
+            drawSpreadsheetDiagonalDownBorder(context, cellInfo, diagonal.down);
+          }
+          if (diagonal?.up) {
+            drawSpreadsheetDiagonalUpBorder(context, cellInfo, diagonal.up);
+          }
         }
       },
     }),

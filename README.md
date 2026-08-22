@@ -571,8 +571,10 @@ interaction model.
   angles, stacked vertical, rotate-up, and rotate-down choices, exact Fortune
   `rt` / `tr='3'` and OOXML 0–180 / 255 round trips, a 10,000-cell guard, and
   one-batch Undo, plus a cell-border split control with side, all,
-  outside, inside, horizontal, vertical, clear, and diagonal targets, ten
-  native line styles, exact color selection, compact overlapping range writes,
+  outside, inside, horizontal, vertical, clear, independent diagonal-down and
+  diagonal-up targets, crossed-border composition, ten native line styles,
+  exact color selection, compact overlapping range writes, exact OOXML
+  direction preservation through Paste Special, Yjs, XLSX export, and reopen,
   `Cmd/Ctrl+Shift+&` Outside Borders and `Cmd/Ctrl+Shift+_` Clear Borders,
   single-update undo, and grid-focus restoration, Conditional Formatting under
   Home and Styles, executable
@@ -1533,6 +1535,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.21.0 documentation](https://a3s-lab.github.io/Office/docs/0.21.0/)
 - [A3S Office 0.20.0 documentation](https://a3s-lab.github.io/Office/docs/0.20.0/)
 - [A3S Office 0.19.0 documentation](https://a3s-lab.github.io/Office/docs/0.19.0/)
 - [A3S Office 0.18.0 documentation](https://a3s-lab.github.io/Office/docs/0.18.0/)

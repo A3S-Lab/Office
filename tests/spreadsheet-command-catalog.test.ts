@@ -175,7 +175,8 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     spreadsheetCommandCatalog.borderInside,
     spreadsheetCommandCatalog.borderHorizontal,
     spreadsheetCommandCatalog.borderVertical,
-    spreadsheetCommandCatalog.borderDiagonal,
+    spreadsheetCommandCatalog.borderDiagonalDown,
+    spreadsheetCommandCatalog.borderDiagonalUp,
   ]) {
     expect(command.location).toEqual({
       area: 'ribbon',

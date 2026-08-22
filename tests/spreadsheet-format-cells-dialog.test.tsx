@@ -46,6 +46,8 @@ test('applies explicitly touched settings from every Format Cells tab', () => {
 
   fireEvent.click(screen.getByRole('tab', { name: '边框' }));
   fireEvent.click(screen.getByRole('button', { name: '上框线' }));
+  fireEvent.click(screen.getByRole('button', { name: '斜下框线' }));
+  fireEvent.click(screen.getByRole('button', { name: '斜上框线' }));
 
   fireEvent.click(screen.getByRole('tab', { name: '填充' }));
   fireEvent.click(screen.getByRole('button', { name: '无填充' }));
@@ -60,7 +62,11 @@ test('applies explicitly touched settings from every Format Cells tab', () => {
       wrapText: true,
       bold: false,
       underline: 'double',
-      borders: [{ target: 'top', color: '#172033', style: 'thin' }],
+      borders: [
+        { target: 'top', color: '#172033', style: 'thin' },
+        { target: 'diagonalDown', color: '#172033', style: 'thin' },
+        { target: 'diagonalUp', color: '#172033', style: 'thin' },
+      ],
       fillColor: null,
       hidden: true,
     },

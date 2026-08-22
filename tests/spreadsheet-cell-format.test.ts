@@ -4,6 +4,7 @@ import {
   canApplySpreadsheetCellFormat,
   MAX_SPREADSHEET_CELL_FORMAT_CELLS,
 } from '../src/internal/features/work/editors/spreadsheet-cell-format';
+import { setSpreadsheetCellBordersPerCell } from '../src/internal/features/work/editors/spreadsheet-cell-border-per-cell';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 
 describe('spreadsheet cell format', () => {
@@ -64,7 +65,8 @@ describe('spreadsheet cell format', () => {
         fillColor: '#fff2cc',
         borders: [
           { target: 'top', color: '#172033', style: 'medium' },
-          { target: 'diagonal', color: '#d84b4f', style: 'dashed' },
+          { target: 'diagonalDown', color: '#d84b4f', style: 'dashed' },
+          { target: 'diagonalUp', color: '#d84b4f', style: 'dashed' },
         ],
         locked: false,
         hidden: true,
@@ -300,13 +302,21 @@ describe('spreadsheet cell format', () => {
       sheetId: 'sheet-1',
       range: { row: [0, 4_096], column: [0, 0] },
       patch: {
-        borders: [{ target: 'diagonal', color: '#172033', style: 'thin' }],
+        borders: [{ target: 'diagonalDown', color: '#172033', style: 'thin' }],
       },
     } as const;
 
     expect(canApplySpreadsheetCellFormat(content, oversized)).toBe(false);
     expect(applySpreadsheetCellFormat(content, oversized)).toBeNull();
     expect(canApplySpreadsheetCellFormat(content, diagonal)).toBe(false);
+    expect(
+      setSpreadsheetCellBordersPerCell(
+        content,
+        'sheet-1',
+        diagonal.range,
+        diagonal.patch.borders,
+      ),
+    ).toBeNull();
     expect(
       canApplySpreadsheetCellFormat(content, {
         sheetId: 'sheet-1',

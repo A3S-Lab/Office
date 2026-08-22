@@ -1223,12 +1223,22 @@
 }
 
 .work-spreadsheet-border-glyph[data-border-target="none"]::before,
-.work-spreadsheet-border-glyph[data-border-target="diagonal"]::before {
+.work-spreadsheet-border-glyph[data-border-target="diagonal-up"]::before,
+.work-spreadsheet-border-glyph[data-border-target="diagonalUp"]::before {
   top: 7px;
   right: -1px;
   left: -1px;
   border-top: 1px solid currentcolor;
   transform: rotate(-45deg);
+}
+
+.work-spreadsheet-border-glyph[data-border-target="diagonal-down"]::before,
+.work-spreadsheet-border-glyph[data-border-target="diagonalDown"]::before {
+  top: 7px;
+  right: -1px;
+  left: -1px;
+  border-top: 1px solid currentcolor;
+  transform: rotate(45deg);
 }
 
 .work-spreadsheet-border-glyph[data-border-target="none"]::after {

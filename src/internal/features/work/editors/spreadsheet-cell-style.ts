@@ -437,9 +437,12 @@ function sameCellStyleBorders(
     if (format.target === 'all' || format.target === 'bottom') {
       expected.bottom = line;
     }
-    if (format.target === 'diagonal') expected.diagonal = line;
+    if (format.target === 'diagonalDown') expected.diagonalDown = line;
+    if (format.target === 'diagonalUp') expected.diagonalUp = line;
   }
-  return (['top', 'bottom', 'left', 'right', 'diagonal'] as const).every(
+  return (
+    ['top', 'bottom', 'left', 'right', 'diagonalDown', 'diagonalUp'] as const
+  ).every(
     (side) =>
       actual[side]?.color === expected[side]?.color &&
       actual[side]?.style === expected[side]?.style,

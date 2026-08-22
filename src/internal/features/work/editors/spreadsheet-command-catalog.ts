@@ -334,9 +334,14 @@ export const spreadsheetCommandCatalog = {
     label: '内部竖框线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
-  borderDiagonal: {
-    id: 'font.borderDiagonal',
-    label: '斜线框线',
+  borderDiagonalDown: {
+    id: 'font.borderDiagonalDown',
+    label: '斜下框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  borderDiagonalUp: {
+    id: 'font.borderDiagonalUp',
+    label: '斜上框线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   textOrientationHorizontal: {

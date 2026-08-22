@@ -261,6 +261,17 @@ metadata across unrelated cell-style edits and Yjs transport. Export rebuilds
 matching source palette slots and emits semantic references only while their
 rendered RGB is unchanged; edited values or conflicting palette identities
 fall back to explicit RGB instead of exporting a misleading reference.
+The twenty-seventh milestone preserves both native OOXML diagonal-border
+directions independently. Home and Font exposes Diagonal Down and Diagonal Up
+as separate catalogued commands, Format Cells can compose a crossed border,
+and Paste Special, built-in styles, Yjs collaboration, row insertion, XLSX
+export, and reopen retain the exact `diagonalDown` and `diagonalUp` flags with
+their shared native line. A3S paints the canonical per-cell metadata only for
+visible Canvas cells because Fortune renders range slashes but not imported
+cell slash records; ordered native slash and no-border ranges can still
+override earlier metadata. Each command remains limited to 4,096 cells, reads
+existing directions in one indexed pass, emits one controlled update and one
+Undo record, and preserves legacy Fortune `border-slash` as diagonal-down.
 
 ## Product Rules
 
