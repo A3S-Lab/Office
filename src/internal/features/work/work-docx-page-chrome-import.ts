@@ -11,6 +11,8 @@ import { resolveDocxKerningThresholdHalfPoints } from './work-docx-kerning';
 import { resolveDocxEmphasisMark } from './work-docx-emphasis';
 import { resolveDocxHiddenText } from './work-docx-hidden-text';
 import { documentHiddenTextDomAttributes } from './work-document-hidden-text';
+import { documentLegacyTextEffectsDomAttributes } from './work-document-legacy-text-effects';
+import { resolveDocxLegacyTextEffects } from './work-docx-legacy-text-effects';
 import { documentParagraphBordersDomAttributes } from './work-document-paragraph-borders';
 import {
   documentPageChromeLegacyFields,
@@ -473,6 +475,12 @@ async function runHtml(
   if (hiddenText !== undefined) {
     content = `<span${htmlAttributes(
       documentHiddenTextDomAttributes(hiddenText),
+    )}>${content}</span>`;
+  }
+  const legacyTextEffects = resolveDocxLegacyTextEffects(propertySources);
+  if (legacyTextEffects) {
+    content = `<span${htmlAttributes(
+      documentLegacyTextEffectsDomAttributes(legacyTextEffects),
     )}>${content}</span>`;
   }
   const characterSpacing = docxCharacterSpacingTwipsFromProperties(

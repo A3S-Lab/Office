@@ -139,6 +139,7 @@ suites=(
   "tests/e2e/word-paragraph-formatting-revision.acl"
   "tests/e2e/word-emphasis.acl"
   "tests/e2e/word-hidden-text.acl"
+  "tests/e2e/word-legacy-text-effects.acl"
   "tests/e2e/word-kerning.acl"
   "tests/e2e/word-character-scale.acl"
   "tests/e2e/word-character-position.acl"

@@ -26,6 +26,10 @@ test('validates exact native scale, spacing, kerning, emphasis, and position ran
     kerningThreshold: { mixed: false, value: null },
     emphasisMark: { mixed: false, value: null },
     hiddenText: { mixed: false, value: null },
+    legacyTextOutline: { mixed: false, value: null },
+    legacyTextShadow: { mixed: false, value: null },
+    legacyTextEmboss: { mixed: false, value: null },
+    legacyTextImprint: { mixed: false, value: null },
     latinFont: { mixed: false, value: null },
     eastAsiaFont: { mixed: false, value: null },
     complexScriptFont: { mixed: false, value: null },
@@ -331,6 +335,77 @@ test('applies scale, spacing, kerning, emphasis, position, and hidden text to th
   expect(editor.getAttributes('textStyle').emphasisMark).toBe('circle');
   expect(editor.getAttributes('textStyle').hiddenText).toBe(false);
   await waitFor(() => expect(editor?.view.dom).toHaveFocus());
+});
+
+test('keeps legacy effects independently mixed and clears conflicts in one transaction', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content:
+      '<p><span data-office-legacy-text-outline="true" data-office-legacy-text-shadow="false" data-office-legacy-text-emboss="false" data-office-legacy-text-imprint="false">Outline</span><span data-office-legacy-text-outline="false" data-office-legacy-text-shadow="true" data-office-legacy-text-emboss="false" data-office-legacy-text-imprint="false">Shadow</span></p>',
+  });
+  document.body.append(editor.view.dom);
+  editor.commands.selectAll();
+  const selection = {
+    from: editor.state.selection.from,
+    to: editor.state.selection.to,
+  };
+  const source = documentFontDialogSource(editor);
+  expect(source.legacyTextOutline).toEqual({ mixed: true, value: null });
+  expect(source.legacyTextShadow).toEqual({ mixed: true, value: null });
+  expect(source.legacyTextEmboss).toEqual({ mixed: false, value: false });
+  expect(source.legacyTextImprint).toEqual({ mixed: false, value: false });
+
+  render(
+    <FontDialogHarness editor={editor} selection={selection} source={source} />,
+  );
+  expect(screen.getByRole('checkbox', { name: '空心' })).toHaveAttribute(
+    'aria-checked',
+    'mixed',
+  );
+  expect(screen.getByRole('checkbox', { name: '阴影' })).toHaveAttribute(
+    'aria-checked',
+    'mixed',
+  );
+
+  fireEvent.click(screen.getByRole('checkbox', { name: '阳文' }));
+  expect(screen.getByRole('checkbox', { name: '空心' })).not.toBeChecked();
+  expect(screen.getByRole('checkbox', { name: '阴影' })).not.toBeChecked();
+  expect(screen.getByRole('checkbox', { name: '阳文' })).toBeChecked();
+  expect(screen.getByRole('checkbox', { name: '阴文' })).not.toBeChecked();
+  expect(
+    screen
+      .getByLabelText('字符高级格式预览')
+      .querySelector('output > span')
+      ?.getAttribute('style'),
+  ).toContain('text-shadow');
+
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '字体高级设置' })).toBeNull(),
+  );
+  editor.commands.setTextSelection(selection);
+  expect(editor.getAttributes('textStyle')).toMatchObject({
+    legacyTextOutline: false,
+    legacyTextShadow: false,
+    legacyTextEmboss: true,
+    legacyTextImprint: false,
+  });
+
+  expect(editor.commands.undo()).toBe(true);
+  editor.commands.setTextSelection(textRange(editor, 'Outline'));
+  expect(editor.getAttributes('textStyle')).toMatchObject({
+    legacyTextOutline: true,
+    legacyTextShadow: false,
+    legacyTextEmboss: false,
+    legacyTextImprint: false,
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Shadow'));
+  expect(editor.getAttributes('textStyle')).toMatchObject({
+    legacyTextOutline: false,
+    legacyTextShadow: true,
+    legacyTextEmboss: false,
+    legacyTextImprint: false,
+  });
 });
 
 test('clears direct kerning from the saved selection and restores it with one undo', async () => {

@@ -2,6 +2,7 @@ import { type CSSProperties, type FormEvent, useId, useState } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import { documentScriptFontSegments } from '../work-document-script-fonts';
+import { documentLegacyTextEffectsCss } from '../work-document-legacy-text-effects';
 import {
   documentKerningIsEffective,
   DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS,
@@ -83,6 +84,12 @@ export function DocumentFontDialog({
   const [kerningTouched, setKerningTouched] = useState(false);
   const [emphasisTouched, setEmphasisTouched] = useState(false);
   const [hiddenTextTouched, setHiddenTextTouched] = useState(false);
+  const [legacyTextOutlineTouched, setLegacyTextOutlineTouched] =
+    useState(false);
+  const [legacyTextShadowTouched, setLegacyTextShadowTouched] = useState(false);
+  const [legacyTextEmbossTouched, setLegacyTextEmbossTouched] = useState(false);
+  const [legacyTextImprintTouched, setLegacyTextImprintTouched] =
+    useState(false);
   const [latinFontTouched, setLatinFontTouched] = useState(false);
   const [eastAsiaFontTouched, setEastAsiaFontTouched] = useState(false);
   const [complexScriptFontTouched, setComplexScriptFontTouched] =
@@ -97,6 +104,10 @@ export function DocumentFontDialog({
     eastAsiaFont: eastAsiaFontTouched,
     emphasisMark: emphasisTouched,
     hiddenText: hiddenTextTouched,
+    legacyTextOutline: legacyTextOutlineTouched,
+    legacyTextShadow: legacyTextShadowTouched,
+    legacyTextEmboss: legacyTextEmbossTouched,
+    legacyTextImprint: legacyTextImprintTouched,
     kerning: kerningTouched,
     latinFont: latinFontTouched,
   });
@@ -106,6 +117,12 @@ export function DocumentFontDialog({
   const previewPosition = previewCharacterPosition(draft);
   const previewKerning = previewDocumentKerning(draft, source.fontSize);
   const previewEmphasis = previewDocumentEmphasis(draft.emphasisMark);
+  const previewLegacyTextEffects = documentLegacyTextEffectsCss({
+    outline: draft.legacyTextOutline,
+    shadow: draft.legacyTextShadow,
+    emboss: draft.legacyTextEmboss,
+    imprint: draft.legacyTextImprint,
+  });
 
   const submit = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
@@ -193,7 +210,7 @@ export function DocumentFontDialog({
           )}
         </fieldset>
         <fieldset className="work-document-font-dialog-spacing">
-          <legend>字符缩放、间距、字距调整、位置、着重号与隐藏文字</legend>
+          <legend>字符缩放、间距、字距调整、位置与文字效果</legend>
           <div className="work-document-font-dialog-field">
             <span>缩放</span>
             <span className="work-document-font-dialog-measure">
@@ -357,6 +374,119 @@ export function DocumentFontDialog({
               隐藏文字
             </OfficeCheckbox>
           </div>
+          <fieldset
+            className="work-document-font-dialog-legacy-effects"
+            aria-label="文字效果"
+          >
+            <OfficeCheckbox
+              ariaLabel="空心"
+              checked={draft.legacyTextOutline}
+              indeterminate={
+                source.legacyTextOutline.mixed && !legacyTextOutlineTouched
+              }
+              onCheckedChange={(legacyTextOutline) => {
+                setDraft((current) =>
+                  legacyTextOutline
+                    ? {
+                        ...current,
+                        legacyTextOutline,
+                        legacyTextEmboss: false,
+                        legacyTextImprint: false,
+                      }
+                    : { ...current, legacyTextOutline },
+                );
+                setLegacyTextOutlineTouched(true);
+                if (legacyTextOutline) {
+                  setLegacyTextEmbossTouched(true);
+                  setLegacyTextImprintTouched(true);
+                }
+              }}
+            >
+              空心
+            </OfficeCheckbox>
+            <OfficeCheckbox
+              ariaLabel="阴影"
+              checked={draft.legacyTextShadow}
+              indeterminate={
+                source.legacyTextShadow.mixed && !legacyTextShadowTouched
+              }
+              onCheckedChange={(legacyTextShadow) => {
+                setDraft((current) =>
+                  legacyTextShadow
+                    ? {
+                        ...current,
+                        legacyTextShadow,
+                        legacyTextEmboss: false,
+                        legacyTextImprint: false,
+                      }
+                    : { ...current, legacyTextShadow },
+                );
+                setLegacyTextShadowTouched(true);
+                if (legacyTextShadow) {
+                  setLegacyTextEmbossTouched(true);
+                  setLegacyTextImprintTouched(true);
+                }
+              }}
+            >
+              阴影
+            </OfficeCheckbox>
+            <OfficeCheckbox
+              ariaLabel="阳文"
+              checked={draft.legacyTextEmboss}
+              indeterminate={
+                source.legacyTextEmboss.mixed && !legacyTextEmbossTouched
+              }
+              onCheckedChange={(legacyTextEmboss) => {
+                setDraft((current) =>
+                  legacyTextEmboss
+                    ? {
+                        ...current,
+                        legacyTextOutline: false,
+                        legacyTextShadow: false,
+                        legacyTextEmboss,
+                        legacyTextImprint: false,
+                      }
+                    : { ...current, legacyTextEmboss },
+                );
+                setLegacyTextEmbossTouched(true);
+                if (legacyTextEmboss) {
+                  setLegacyTextOutlineTouched(true);
+                  setLegacyTextShadowTouched(true);
+                  setLegacyTextImprintTouched(true);
+                }
+              }}
+            >
+              阳文
+            </OfficeCheckbox>
+            <OfficeCheckbox
+              ariaLabel="阴文"
+              checked={draft.legacyTextImprint}
+              indeterminate={
+                source.legacyTextImprint.mixed && !legacyTextImprintTouched
+              }
+              onCheckedChange={(legacyTextImprint) => {
+                setDraft((current) =>
+                  legacyTextImprint
+                    ? {
+                        ...current,
+                        legacyTextOutline: false,
+                        legacyTextShadow: false,
+                        legacyTextEmboss: false,
+                        legacyTextImprint,
+                      }
+                    : { ...current, legacyTextImprint },
+                );
+                setLegacyTextImprintTouched(true);
+                if (legacyTextImprint) {
+                  setLegacyTextOutlineTouched(true);
+                  setLegacyTextShadowTouched(true);
+                  setLegacyTextEmbossTouched(true);
+                }
+              }}
+            >
+              阴文
+            </OfficeCheckbox>
+          </fieldset>
           {source.characterScale.mixed && !characterScaleTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
               当前选区包含多种字符缩放比例。输入缩放比例后才会统一修改。
@@ -387,12 +517,24 @@ export function DocumentFontDialog({
               当前选区同时包含隐藏和可见文字。勾选或取消后才会统一修改。
             </p>
           )}
+          {((source.legacyTextOutline.mixed && !legacyTextOutlineTouched) ||
+            (source.legacyTextShadow.mixed && !legacyTextShadowTouched) ||
+            (source.legacyTextEmboss.mixed && !legacyTextEmbossTouched) ||
+            (source.legacyTextImprint.mixed && !legacyTextImprintTouched)) && (
+            <p className="work-document-font-dialog-mixed" role="status">
+              当前选区包含不同的空心、阴影、阳文或阴文设置。勾选或取消对应选项后才会统一修改。
+            </p>
+          )}
           {(characterScaleTouched ||
             characterSpacingTouched ||
             characterPositionTouched ||
             kerningTouched ||
             emphasisTouched ||
-            hiddenTextTouched) &&
+            hiddenTextTouched ||
+            legacyTextOutlineTouched ||
+            legacyTextShadowTouched ||
+            legacyTextEmbossTouched ||
+            legacyTextImprintTouched) &&
             error && (
               <p className="work-document-font-dialog-error" role="alert">
                 {error}
@@ -417,6 +559,7 @@ export function DocumentFontDialog({
               style={{
                 verticalAlign: `${previewPosition}pt`,
                 ...previewEmphasis,
+                ...previewLegacyTextEffects,
                 ...(draft.hiddenText
                   ? {
                       textDecorationColor: 'currentColor',
@@ -560,6 +703,6 @@ function previewScriptFontFamily(
 
 function fontDialogDescription(source: DocumentFontDialogSource): string {
   return source.selectedCharacters
-    ? `分别设置当前选中内容的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、着重号和隐藏文字（${source.selectedCharacters} 个字符）。`
-    : '分别设置当前位置后续输入文字的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、着重号和隐藏文字。';
+    ? `分别设置当前选中内容的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、着重号、隐藏文字、空心、阴影、阳文和阴文（${source.selectedCharacters} 个字符）。`
+    : '分别设置当前位置后续输入文字的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、着重号、隐藏文字、空心、阴影、阳文和阴文。';
 }

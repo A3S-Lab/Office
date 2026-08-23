@@ -299,6 +299,39 @@ describe('document mixed-run text layout', () => {
     }
   });
 
+  test('keeps paint-only legacy effects on the deterministic kernel path', () => {
+    for (const effect of [
+      'data-office-legacy-text-outline="true" style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; -webkit-text-fill-color: transparent; -webkit-text-stroke: 0.045em currentColor"',
+      'data-office-legacy-text-shadow="true" style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; text-shadow: 0.08em 0.08em 0 currentColor"',
+      'data-office-legacy-text-emboss="true" style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; text-shadow: -0.045em -0.045em white, 0.045em 0.045em black"',
+      'data-office-legacy-text-imprint="true" style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; text-shadow: 0.045em 0.045em white, -0.045em -0.045em black"',
+    ]) {
+      const paragraph = document.createElement('p');
+      applyTextMetrics(paragraph, 14, 21);
+      paragraph.innerHTML = `<span ${effect}>Paint effect</span>`;
+      document.body.append(paragraph);
+
+      try {
+        expect(
+          collectDocumentTextLayoutRuns(
+            paragraph,
+            paragraph.textContent ?? '',
+            [layoutFont],
+            new Set([layoutFont.id]),
+          ),
+        ).toEqual([
+          expect.objectContaining({
+            startUtf16: 0,
+            endUtf16: 12,
+            fontId: layoutFont.id,
+          }),
+        ]);
+      } finally {
+        paragraph.remove();
+      }
+    }
+  });
+
   test('keeps a host-visible emphasis override on browser measurement', () => {
     const paragraph = document.createElement('p');
     applyTextMetrics(paragraph, 14, 21);

@@ -24,6 +24,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     accent: '#536de2',
   },
   {
+    id: 'text-effects',
+    kind: 'document',
+    name: '文字效果',
+    description: '空心、阴影、阳文与阴文',
+    accent: '#6b5bd2',
+  },
+  {
     id: 'blank-markdown',
     kind: 'markdown',
     name: '空白 Markdown',
@@ -88,6 +95,7 @@ export function createWorkId(prefix: string): string {
 function initialTitle(templateId: string, kind: WorkArtifactKind): string {
   const titles: Record<string, string> = {
     'project-brief': '新项目方案',
+    'text-effects': '文字效果示例',
     'quarterly-plan': '季度执行计划',
     'strategy-deck': '业务策略汇报',
   };
@@ -115,6 +123,23 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
         '<ol><li><p>方案确认</p></li><li><p>执行与评审</p></li><li><p>交付与复盘</p></li></ol>',
         '<h2>风险与决策</h2>',
         '<p>记录尚未解决的问题、依赖和决策负责人。</p>',
+      ].join(''),
+    };
+  }
+  if (templateId === 'text-effects') {
+    return {
+      type: 'document',
+      pageSize: 'a4',
+      html: [
+        '<h1>原生文字效果</h1>',
+        '<p>选择下面任一示例并打开字体高级设置，可以组合空心与阴影，或在互斥的阳文和阴文之间切换。</p>',
+        '<h2>可组合效果</h2>',
+        '<p><span data-office-legacy-text-outline="true" data-office-legacy-text-shadow="true">空心 + 阴影</span></p>',
+        '<p><span data-office-legacy-text-outline="true">空心</span></p>',
+        '<p><span data-office-legacy-text-shadow="true">阴影</span></p>',
+        '<h2>互斥效果</h2>',
+        '<p><span data-office-legacy-text-emboss="true">阳文</span></p>',
+        '<p><span data-office-legacy-text-imprint="true">阴文</span></p>',
       ].join(''),
     };
   }

@@ -4,6 +4,32 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.28.0 - 2026-08-24
+
+- Added native Writer outline, shadow, emboss, and imprint as four independent
+  nullable TextStyle properties backed by exact `w:outline`, `w:shadow`,
+  `w:emboss`, and `w:imprint` values. Missing values inherit, explicit false
+  values remain direct resets, outline plus shadow stays valid, and emboss or
+  imprint conflicts fail closed.
+- Extended the shared `Cmd/Ctrl+D` Advanced Font Settings dialog with four
+  independently mixed controls. Enabling an exclusive effect clears every
+  conflicting effect in the same TipTap transaction, so Apply, Format Painter,
+  tracked formatting, accept/reject, and Undo preserve one user intent.
+- Preserved the four effects across document defaults, paragraph and character
+  styles, body text, headers, footers, footnotes, endnotes, strict and
+  transitional DOCX import, exact export/reopen, and prior formatting inside
+  `w:rPrChange`. A shared run-property order and collision-safe nested style
+  markers keep hidden text and native effects composable without orphaned
+  export markers.
+- Added strict diagnostics for duplicated, misplaced, namespace-spoofed,
+  text-bearing, child-bearing, extra-attribute, unknown, and conflicting effect
+  properties. CSS and PDF use bounded paint projections, while these
+  paint-only effects retain Worker/WASM layout eligibility.
+- Added the interactive Playground **文字效果** template, desktop and compact
+  Playwright coverage, focused unit and DOCX diagnostics tests, and a local-only
+  A3S Test 1.0.0 ACL using standalone agent-browser 0.26.0 protocol revision
+  15. GitHub Actions and Pages do not install or invoke A3S Test.
+
 ## 0.27.0 - 2026-08-24
 
 - Added native Writer hidden text as an inherited, hidden, or explicit-visible

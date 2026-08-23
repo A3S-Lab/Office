@@ -10,6 +10,10 @@ import {
 import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
 import { normalizeDocumentHiddenText } from './work-document-hidden-text';
 import {
+  documentLegacyTextEffectsConflict,
+  normalizeDocumentLegacyTextEffect,
+} from './work-document-legacy-text-effects';
+import {
   normalizeDocumentTextCase,
   type WorkDocumentTextCase,
 } from './work-document-text-case';
@@ -86,6 +90,10 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'emphasisMark',
     'kerningThresholdHalfPoints',
     'hiddenText',
+    'legacyTextOutline',
+    'legacyTextShadow',
+    'legacyTextEmboss',
+    'legacyTextImprint',
     'scriptFonts',
     'scriptFontSlot',
     'themeColor',
@@ -193,6 +201,10 @@ export function importedDocumentCharacterFormatting(formatting: {
   kerningThresholdHalfPoints?: number;
   emphasisMark?: WorkDocumentEmphasisMark;
   hiddenText?: boolean;
+  legacyTextOutline?: boolean;
+  legacyTextShadow?: boolean;
+  legacyTextEmboss?: boolean;
+  legacyTextImprint?: boolean;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
   fontSize?: number;
@@ -231,6 +243,10 @@ export function importedDocumentCharacterFormatting(formatting: {
     kerningThresholdHalfPoints: formatting.kerningThresholdHalfPoints,
     emphasisMark: formatting.emphasisMark,
     hiddenText: formatting.hiddenText,
+    legacyTextOutline: formatting.legacyTextOutline,
+    legacyTextShadow: formatting.legacyTextShadow,
+    legacyTextEmboss: formatting.legacyTextEmboss,
+    legacyTextImprint: formatting.legacyTextImprint,
     color: formatting.color,
     fontFamily: formatting.fontFamily,
     scriptFonts:
@@ -305,6 +321,20 @@ function normalizeCharacterFormatMark(
       attrs[key] = hiddenText;
       continue;
     }
+    if (
+      type === 'textStyle' &&
+      [
+        'legacyTextOutline',
+        'legacyTextShadow',
+        'legacyTextEmboss',
+        'legacyTextImprint',
+      ].includes(key)
+    ) {
+      const effect = normalizeDocumentLegacyTextEffect(candidate);
+      if (effect === null) return null;
+      attrs[key] = effect;
+      continue;
+    }
     if (type === 'textStyle' && key === 'scriptFonts') {
       const fonts =
         typeof candidate === 'string'
@@ -351,6 +381,29 @@ function normalizeCharacterFormatMark(
       attrs[key] = candidate;
       continue;
     }
+    return null;
+  }
+  if (
+    type === 'textStyle' &&
+    documentLegacyTextEffectsConflict({
+      outline:
+        typeof attrs.legacyTextOutline === 'boolean'
+          ? attrs.legacyTextOutline
+          : undefined,
+      shadow:
+        typeof attrs.legacyTextShadow === 'boolean'
+          ? attrs.legacyTextShadow
+          : undefined,
+      emboss:
+        typeof attrs.legacyTextEmboss === 'boolean'
+          ? attrs.legacyTextEmboss
+          : undefined,
+      imprint:
+        typeof attrs.legacyTextImprint === 'boolean'
+          ? attrs.legacyTextImprint
+          : undefined,
+    })
+  ) {
     return null;
   }
   const keys = Object.keys(attrs).sort();

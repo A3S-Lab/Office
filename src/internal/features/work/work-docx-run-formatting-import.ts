@@ -32,6 +32,11 @@ import { resolveDocxKerningThresholdHalfPoints } from './work-docx-kerning';
 import { resolveDocxEmphasisMark } from './work-docx-emphasis';
 import { resolveDocxHiddenText } from './work-docx-hidden-text';
 import { documentHiddenTextDomAttributes } from './work-document-hidden-text';
+import {
+  documentLegacyTextEffectsDomAttributes,
+  type WorkDocumentLegacyTextEffects,
+} from './work-document-legacy-text-effects';
+import { resolveDocxLegacyTextEffects } from './work-docx-legacy-text-effects';
 import { documentWordLineHeightFactor } from './work-document-word-line-metrics';
 import {
   type DocxThemeColorReference,
@@ -84,6 +89,10 @@ export interface ImportedDocxRunFormatting {
   kerningThresholdHalfPoints?: number;
   emphasisMark?: WorkDocumentEmphasisMark;
   hiddenText?: boolean;
+  legacyTextOutline?: boolean;
+  legacyTextShadow?: boolean;
+  legacyTextEmboss?: boolean;
+  legacyTextImprint?: boolean;
   fontFamily?: string;
   scriptFonts?: WorkDocumentScriptFonts;
   scriptFontSlot?: WorkDocumentScriptFontSlot;
@@ -133,6 +142,10 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'u',
   'strike',
   'dstrike',
+  'outline',
+  'shadow',
+  'emboss',
+  'imprint',
   'caps',
   'smallCaps',
   'vanish',
@@ -342,6 +355,7 @@ function resolvedRunFormatting(
     resolveDocxKerningThresholdHalfPoints(propertySources);
   const emphasisMark = resolveDocxEmphasisMark(propertySources);
   const hiddenText = resolveDocxHiddenText(propertySources);
+  const legacyTextEffects = resolveDocxLegacyTextEffects(propertySources);
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
@@ -523,6 +537,18 @@ function resolvedRunFormatting(
       : {}),
     ...(emphasisMark !== undefined ? { emphasisMark } : {}),
     ...(hiddenText !== undefined ? { hiddenText } : {}),
+    ...(legacyTextEffects?.outline !== undefined
+      ? { legacyTextOutline: legacyTextEffects.outline }
+      : {}),
+    ...(legacyTextEffects?.shadow !== undefined
+      ? { legacyTextShadow: legacyTextEffects.shadow }
+      : {}),
+    ...(legacyTextEffects?.emboss !== undefined
+      ? { legacyTextEmboss: legacyTextEffects.emboss }
+      : {}),
+    ...(legacyTextEffects?.imprint !== undefined
+      ? { legacyTextImprint: legacyTextEffects.imprint }
+      : {}),
     ...(fontFamily
       ? {
           fontFamily,
@@ -645,6 +671,25 @@ function formattingMarkup(
       span.setAttribute(name, value);
     }
   }
+  const legacyTextEffects: WorkDocumentLegacyTextEffects = {
+    ...(formatting.legacyTextOutline !== undefined
+      ? { outline: formatting.legacyTextOutline }
+      : {}),
+    ...(formatting.legacyTextShadow !== undefined
+      ? { shadow: formatting.legacyTextShadow }
+      : {}),
+    ...(formatting.legacyTextEmboss !== undefined
+      ? { emboss: formatting.legacyTextEmboss }
+      : {}),
+    ...(formatting.legacyTextImprint !== undefined
+      ? { imprint: formatting.legacyTextImprint }
+      : {}),
+  };
+  for (const [name, value] of Object.entries(
+    documentLegacyTextEffectsDomAttributes(legacyTextEffects),
+  )) {
+    span.setAttribute(name, value);
+  }
   if (formatting.wordLineHeightFactor !== undefined) {
     const factor = formatLineHeightFactor(formatting.wordLineHeightFactor);
     span.dataset.officeWordLineHeightFactor = factor;
@@ -760,6 +805,10 @@ function importedRunFormattingChange(
       scriptFonts: beforeFormatting.scriptFonts,
       scriptFontSlot: beforeFormatting.scriptFontSlot,
       textCase: beforeFormatting.textCase,
+      legacyTextOutline: beforeFormatting.legacyTextOutline,
+      legacyTextShadow: beforeFormatting.legacyTextShadow,
+      legacyTextEmboss: beforeFormatting.legacyTextEmboss,
+      legacyTextImprint: beforeFormatting.legacyTextImprint,
     }),
   };
 }

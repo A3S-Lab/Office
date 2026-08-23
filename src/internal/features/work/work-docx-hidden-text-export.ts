@@ -5,6 +5,7 @@ import {
   xmlAttributeLocalName,
   xmlAttributeNamespace,
 } from './work-docx-settings-xml';
+import { DOCX_RUN_PROPERTY_RANK } from './work-docx-run-property-order';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 
 export interface DocxHiddenTextPatch {
@@ -15,51 +16,7 @@ export interface DocxHiddenTextPatch {
 
 const HIDDEN_TEXT_PART_PATTERN =
   /^word\/(?:document|header\d*|footer\d*|footnotes|endnotes|comments)\.xml$/i;
-const WORD_RUN_PROPERTY_ORDER = [
-  'rStyle',
-  'rFonts',
-  'b',
-  'bCs',
-  'i',
-  'iCs',
-  'caps',
-  'smallCaps',
-  'strike',
-  'dstrike',
-  'outline',
-  'shadow',
-  'emboss',
-  'imprint',
-  'noProof',
-  'snapToGrid',
-  'vanish',
-  'webHidden',
-  'color',
-  'spacing',
-  'w',
-  'kern',
-  'position',
-  'sz',
-  'szCs',
-  'highlight',
-  'u',
-  'effect',
-  'bdr',
-  'shd',
-  'fitText',
-  'vertAlign',
-  'rtl',
-  'cs',
-  'em',
-  'lang',
-  'eastAsianLayout',
-  'specVanish',
-  'rPrChange',
-] as const;
-const WORD_RUN_PROPERTY_RANK = new Map<string, number>(
-  WORD_RUN_PROPERTY_ORDER.map((name, index) => [name, index]),
-);
-const VANISH_RANK = WORD_RUN_PROPERTY_RANK.get('vanish') ?? 0;
+const VANISH_RANK = DOCX_RUN_PROPERTY_RANK.get('vanish') ?? 0;
 
 export class DocxHiddenTextPatchCollector {
   readonly patches: DocxHiddenTextPatch[] = [];
@@ -92,6 +49,10 @@ export class DocxHiddenTextPatchCollector {
     this.patchesByMarker.set(marker, patch);
     this.markersByValueAndStyle.set(key, marker);
     return marker;
+  }
+
+  lookup(marker: string | undefined): DocxHiddenTextPatch | undefined {
+    return marker ? this.patchesByMarker.get(marker) : undefined;
   }
 
   private originalStyle(style: string | undefined): string | undefined {
@@ -188,7 +149,7 @@ function insertHiddenTextProperty(
       return true;
     }
     return (
-      (WORD_RUN_PROPERTY_RANK.get(child.localName) ?? Infinity) > VANISH_RANK
+      (DOCX_RUN_PROPERTY_RANK.get(child.localName) ?? Infinity) > VANISH_RANK
     );
   });
   properties.insertBefore(vanish, next ?? null);

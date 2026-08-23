@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.28.0' ||
     version === '0.27.0' ||
     version === '0.26.0' ||
     version === '0.25.0' ||
@@ -51,6 +52,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.28.0',
     '0.27.0',
     '0.26.0',
     '0.25.0',
@@ -238,6 +240,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.28.0',
     '0.27.0',
     '0.26.0',
     '0.25.0',
@@ -304,6 +307,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.28.0',
     '0.27.0',
     '0.26.0',
     '0.25.0',
@@ -622,7 +626,7 @@ test('documents collaborative character-formatting revisions', async () => {
 });
 
 test('documents native Writer character spacing in both current locales', async () => {
-  for (const version of ['latest', '0.27.0']) {
+  for (const version of ['latest', '0.28.0', '0.27.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const source = await readFile(
         path.join(documentationRoot, version, lang, 'components/document.mdx'),
@@ -636,7 +640,7 @@ test('documents native Writer character spacing in both current locales', async 
 });
 
 test('documents native Writer kerning thresholds in both current locales', async () => {
-  for (const version of ['latest', '0.27.0']) {
+  for (const version of ['latest', '0.28.0', '0.27.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const source = await readFile(
         path.join(documentationRoot, version, lang, 'components/document.mdx'),
@@ -669,7 +673,7 @@ test('documents all native Writer emphasis marks in both current locales', async
   expect(roadmap).toContain('all five native `w:em` emphasis values');
   expect(product).toContain('The forty-first milestone');
 
-  for (const version of ['latest', '0.27.0']) {
+  for (const version of ['latest', '0.28.0', '0.27.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const component = await readFile(
         path.join(documentationRoot, version, lang, 'components/document.mdx'),
@@ -726,7 +730,7 @@ test('documents native Writer hidden text in both current locales', async () => 
     'Native hidden text is resolved before layout',
   );
 
-  for (const version of ['latest', '0.27.0']) {
+  for (const version of ['latest', '0.28.0', '0.27.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const component = await readFile(
         path.join(documentationRoot, version, lang, 'components/document.mdx'),
@@ -747,6 +751,64 @@ test('documents native Writer hidden text in both current locales', async () => 
   for (const roadmapSource of [englishRoadmap, chineseRoadmap]) {
     expect(roadmapSource).toContain('w:vanish');
     expect(roadmapSource).toContain('Cmd/Ctrl+Shift+H');
+    expect(roadmapSource).toContain('Worker/WASM');
+  }
+});
+
+test('documents native Writer outline, shadow, emboss, and imprint effects', async () => {
+  const [
+    readme,
+    roadmap,
+    product,
+    englishRoadmap,
+    chineseRoadmap,
+    architecture,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
+      'utf8',
+    ),
+  ]);
+
+  expect(readme).toContain('native outline/shadow/emboss/imprint effects');
+  expect(roadmap).toContain('independent native `w:outline`');
+  expect(product).toContain('The forty-third milestone');
+  expect(architecture).toContain('collision-safe nested `w:rStyle` markers');
+
+  for (const version of ['latest', '0.28.0']) {
+    for (const { lang } of DOCUMENTATION_LOCALES) {
+      const component = await readFile(
+        path.join(documentationRoot, version, lang, 'components/document.mdx'),
+        'utf8',
+      );
+      for (const evidence of [
+        'w:outline',
+        'w:shadow',
+        'w:emboss',
+        'w:imprint',
+        'Cmd/Ctrl+D',
+        'data-office-legacy-text-outline',
+        'Worker/WASM',
+        'w:rPrChange',
+      ]) {
+        expect(component).toContain(evidence);
+      }
+    }
+  }
+  for (const roadmapSource of [englishRoadmap, chineseRoadmap]) {
+    expect(roadmapSource).toContain('w:outline');
+    expect(roadmapSource).toContain('w:imprint');
     expect(roadmapSource).toContain('Worker/WASM');
   }
 });
@@ -1456,7 +1518,7 @@ test('documents focused Spreadsheet font-dialog shortcuts in 0.24.0', async () =
 });
 
 test('documents native Spreadsheet rich-text authoring through formatted paste', async () => {
-  for (const version of ['latest', '0.27.0', '0.26.0', '0.25.0']) {
+  for (const version of ['latest', '0.28.0', '0.27.0', '0.26.0', '0.25.0']) {
     const [english, chinese] = await Promise.all([
       readFile(
         path.join(documentationRoot, version, 'en/components/spreadsheet.mdx'),

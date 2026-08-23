@@ -1,0 +1,134 @@
+suite "office-word-legacy-text-effects" {
+    version = 1
+
+    scenario "resolve-native-text-effect-conflicts-and-undo" {
+        name = "Resolve native Writer text-effect conflicts and undo once"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-text-effects-template" {
+            target = role("button", "文字效果 空心、阴影、阳文与阴文")
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "outline-shadow-sample-visible" {
+            visible = css(".work-document-editable span[data-office-legacy-text-outline='true'][data-office-legacy-text-shadow='true']")
+        }
+
+        expect "emboss-sample-visible" {
+            visible = css(".work-document-editable span[data-office-legacy-text-emboss='true']")
+        }
+
+        expect "imprint-sample-visible" {
+            visible = css(".work-document-editable span[data-office-legacy-text-imprint='true']")
+        }
+
+        click "focus-outline-shadow-sample" {
+            target = css(".work-document-editable span[data-office-legacy-text-outline='true'][data-office-legacy-text-shadow='true']")
+        }
+
+        press "move-to-sample-start" {
+            key = "Home"
+        }
+
+        press "select-sample" {
+            key = "Shift+End"
+        }
+
+        expect "sample-selection-visible" {
+            visible = css(".work-document-selection-toolbar[role='toolbar']")
+        }
+
+        press "open-font-dialog" {
+            key = "Control+d"
+        }
+
+        wait "font-dialog-visible" {
+            visible = css(".work-document-font-dialog[role='dialog']")
+        }
+
+        expect "outline-enabled" {
+            visible = css(".work-document-font-dialog-legacy-effects .work-office-checkbox.checked:has(input[aria-label='空心'])")
+        }
+
+        expect "shadow-enabled" {
+            visible = css(".work-document-font-dialog-legacy-effects .work-office-checkbox.checked:has(input[aria-label='阴影'])")
+        }
+
+        click "enable-emboss" {
+            target = css(".work-document-font-dialog-legacy-effects .work-office-checkbox:has(input[aria-label='阳文'])")
+        }
+
+        expect "emboss-enabled" {
+            visible = css(".work-document-font-dialog-legacy-effects .work-office-checkbox.checked:has(input[aria-label='阳文'])")
+        }
+
+        expect "outline-cleared" {
+            visible = css(".work-document-font-dialog-legacy-effects .work-office-checkbox:not(.checked):has(input[aria-label='空心'])")
+        }
+
+        expect "shadow-cleared" {
+            visible = css(".work-document-font-dialog-legacy-effects .work-office-checkbox:not(.checked):has(input[aria-label='阴影'])")
+        }
+
+        expect "emboss-preview-visible" {
+            visible = css(".work-document-font-dialog [aria-label='字符高级格式预览'] output > span[style*='text-shadow']")
+        }
+
+        click "apply-emboss" {
+            target = role("button", "应用")
+        }
+
+        expect "conflict-safe-native-values-applied" {
+            visible = css(".work-document-editable span[data-office-legacy-text-outline='false'][data-office-legacy-text-shadow='false'][data-office-legacy-text-emboss='true'][data-office-legacy-text-imprint='false']")
+        }
+
+        expect "worker-wasm-layout-retained" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-text-engine='wasm']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-effect-transaction" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restores-outline-shadow" {
+            visible = css(".work-document-editable span[data-office-legacy-text-outline='true'][data-office-legacy-text-shadow='true']")
+        }
+
+        accessibility "text-effects-accessibility" {
+            path = "evidence/text-effects-accessibility.json"
+            interactive = true
+        }
+
+        console "text-effects-console" {
+            path = "diagnostics/text-effects-console.json"
+            clear = false
+        }
+
+        page_errors "text-effects-page-errors" {
+            path = "diagnostics/text-effects-page-errors.json"
+            clear = false
+        }
+    }
+}

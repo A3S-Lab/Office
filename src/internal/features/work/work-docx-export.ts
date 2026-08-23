@@ -12,6 +12,15 @@ import { documentCharacterSpacingTwipsFromElement } from './work-document-charac
 import { documentEmphasisMarkFromElement } from './work-document-emphasis';
 import { documentKerningThresholdHalfPointsFromElement } from './work-document-kerning';
 import { documentHiddenTextFromElement } from './work-document-hidden-text';
+import {
+  DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
+  DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
+  DOCUMENT_LEGACY_TEXT_OUTLINE_ATTRIBUTE,
+  DOCUMENT_LEGACY_TEXT_SHADOW_ATTRIBUTE,
+  documentLegacyTextEffectsConflict,
+  documentLegacyTextEffectsFromElement,
+  type WorkDocumentLegacyTextEffects,
+} from './work-document-legacy-text-effects';
 import { normalizeDocumentHref } from './work-document-links';
 import {
   collectDocumentNotes,
@@ -56,6 +65,10 @@ import {
   DocxHiddenTextPatchCollector,
   patchDocxHiddenText,
 } from './work-docx-hidden-text-export';
+import {
+  DocxLegacyTextEffectsPatchCollector,
+  patchDocxLegacyTextEffects,
+} from './work-docx-legacy-text-effects-export';
 import {
   DocxEquationPatchCollector,
   patchDocxEquations,
@@ -182,6 +195,8 @@ interface DocxNoteContext extends DocxListExportContext {
   formattingChangePatches: DocxRunFormattingChangePatchCollector;
   runFontPatches: DocxRunFontsPatchCollector;
   hiddenTextPatches: DocxHiddenTextPatchCollector;
+  legacyTextEffectsPatches: DocxLegacyTextEffectsPatchCollector;
+  usedNativeTextEffectMarkers: Set<string>;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
   hasExplicitZeroCharacterSpacing: boolean;
   hasExplicitZeroKerningThreshold: boolean;
@@ -192,6 +207,12 @@ interface DocxTextRevision {
   id: number;
   author: string;
   date: string;
+}
+
+interface DocxNativeTextEffectState {
+  baseStyle?: string;
+  hiddenText?: boolean;
+  legacyTextEffects: WorkDocumentLegacyTextEffects;
 }
 
 export async function createDocxBlob(
@@ -248,6 +269,10 @@ export async function createDocxBlob(
     hiddenTextPatches: new DocxHiddenTextPatchCollector(
       JSON.stringify(normalizedContent),
     ),
+    legacyTextEffectsPatches: new DocxLegacyTextEffectsPatchCollector(
+      JSON.stringify(normalizedContent),
+    ),
+    usedNativeTextEffectMarkers: new Set(),
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
     hasExplicitZeroCharacterSpacing: false,
@@ -329,10 +354,18 @@ export async function createDocxBlob(
   );
   const hiddenTextPatched = await patchDocxHiddenText(
     runFontsPatched,
-    noteContext.hiddenTextPatches.patches,
+    noteContext.hiddenTextPatches.patches.filter((patch) =>
+      noteContext.usedNativeTextEffectMarkers.has(patch.marker),
+    ),
+  );
+  const legacyTextEffectsPatched = await patchDocxLegacyTextEffects(
+    hiddenTextPatched,
+    noteContext.legacyTextEffectsPatches.patches.filter((patch) =>
+      noteContext.usedNativeTextEffectMarkers.has(patch.marker),
+    ),
   );
   const formattingChangesPatched = await patchDocxRunFormattingChanges(
-    hiddenTextPatched,
+    legacyTextEffectsPatched,
     noteContext.formattingChangePatches.patches,
   );
   const noteImageRelationshipsPatched = await patchDocxNoteImageRelationships(
@@ -412,6 +445,66 @@ export async function createDocxBlob(
   return new Blob([preserved], {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   });
+}
+
+function docxNativeTextEffectState(
+  style: string | undefined,
+  context: DocxNoteContext,
+): DocxNativeTextEffectState {
+  let current = style;
+  let hiddenText: boolean | undefined;
+  const legacyTextEffects: WorkDocumentLegacyTextEffects = {};
+  const seen = new Set<string>();
+  while (current && !seen.has(current)) {
+    seen.add(current);
+    const hiddenPatch = context.hiddenTextPatches.lookup(current);
+    if (hiddenPatch) {
+      hiddenText ??= hiddenPatch.value;
+      current = hiddenPatch.style;
+      continue;
+    }
+    const legacyPatch = context.legacyTextEffectsPatches.lookup(current);
+    if (legacyPatch) {
+      for (const [name, value] of Object.entries(legacyPatch.effects)) {
+        const effect = name as keyof WorkDocumentLegacyTextEffects;
+        if (legacyTextEffects[effect] === undefined) {
+          legacyTextEffects[effect] = value;
+        }
+      }
+      current = legacyPatch.style;
+      continue;
+    }
+    break;
+  }
+  return {
+    ...(current ? { baseStyle: current } : {}),
+    ...(hiddenText !== undefined ? { hiddenText } : {}),
+    legacyTextEffects,
+  };
+}
+
+function markDocxNativeTextEffectStyleUsed(
+  style: string | undefined,
+  context: DocxNoteContext,
+): void {
+  let current = style;
+  const seen = new Set<string>();
+  while (current && !seen.has(current)) {
+    seen.add(current);
+    const hiddenPatch = context.hiddenTextPatches.lookup(current);
+    if (hiddenPatch) {
+      context.usedNativeTextEffectMarkers.add(current);
+      current = hiddenPatch.style;
+      continue;
+    }
+    const legacyPatch = context.legacyTextEffectsPatches.lookup(current);
+    if (legacyPatch) {
+      context.usedNativeTextEffectMarkers.add(current);
+      current = legacyPatch.style;
+      continue;
+    }
+    break;
+  }
 }
 
 function sectionProperties(
@@ -708,6 +801,7 @@ async function inlineRuns(
   ): Promise<ParagraphChild[]> => {
     if (node.nodeType === Node.TEXT_NODE) {
       if (!node.textContent) return [];
+      markDocxNativeTextEffectStyleUsed(inherited.style, noteContext);
       if (revision?.kind === 'insertion') {
         return [
           new docx.InsertedTextRun({
@@ -801,6 +895,20 @@ async function inlineRuns(
       documentKerningThresholdHalfPointsFromElement(node);
     const explicitEmphasisMark = documentEmphasisMarkFromElement(node);
     const explicitHiddenText = documentHiddenTextFromElement(node);
+    const hasExplicitLegacyTextEffects =
+      tag === 'span' &&
+      [
+        DOCUMENT_LEGACY_TEXT_OUTLINE_ATTRIBUTE,
+        DOCUMENT_LEGACY_TEXT_SHADOW_ATTRIBUTE,
+        DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
+        DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
+      ].some((attribute) => node.hasAttribute(attribute));
+    const explicitLegacyTextEffects = hasExplicitLegacyTextEffects
+      ? documentLegacyTextEffectsFromElement(node)
+      : {};
+    if (hasExplicitLegacyTextEffects && !explicitLegacyTextEffects) {
+      throw new Error('Document contains invalid legacy text effects.');
+    }
     const explicitCharacterPosition =
       documentCharacterPositionHalfPointsFromElement(node);
     if (explicitCharacterSpacing === 0) {
@@ -832,13 +940,37 @@ async function inlineRuns(
         ? inherited.emphasisMark
         : docxEmphasisMarkRunOptions(explicitEmphasisMark);
     const textCaseOptions = docxTextCaseRunOptions(explicitTextCase, inherited);
-    const hiddenTextStyle =
+    const inheritedNativeTextEffects = docxNativeTextEffectState(
+      inherited.style,
+      noteContext,
+    );
+    const legacyTextEffects = {
+      ...inheritedNativeTextEffects.legacyTextEffects,
+      ...(explicitLegacyTextEffects ?? {}),
+    };
+    if (documentLegacyTextEffectsConflict(legacyTextEffects)) {
+      throw new Error('Document contains conflicting legacy text effects.');
+    }
+    const hiddenText =
       explicitHiddenText === null
-        ? inherited.style
-        : noteContext.hiddenTextPatches.marker(
-            explicitHiddenText,
-            inherited.style,
-          );
+        ? inheritedNativeTextEffects.hiddenText
+        : explicitHiddenText;
+    let nativeTextEffectStyle = inherited.style;
+    if (hasExplicitLegacyTextEffects || explicitHiddenText !== null) {
+      nativeTextEffectStyle = inheritedNativeTextEffects.baseStyle;
+      if (Object.keys(legacyTextEffects).length) {
+        nativeTextEffectStyle = noteContext.legacyTextEffectsPatches.marker(
+          legacyTextEffects,
+          nativeTextEffectStyle,
+        );
+      }
+      if (hiddenText !== undefined) {
+        nativeTextEffectStyle = noteContext.hiddenTextPatches.marker(
+          hiddenText,
+          nativeTextEffectStyle,
+        );
+      }
+    }
     const underline = docxUnderlineRunOptions(
       node,
       inherited.underline,
@@ -852,7 +984,7 @@ async function inlineRuns(
     );
     const style: IRunOptions = {
       ...inherited,
-      style: hiddenTextStyle,
+      style: nativeTextEffectStyle,
       bold: inherited.bold || tag === 'strong' || tag === 'b',
       italics: inherited.italics || tag === 'em' || tag === 'i',
       underline,
@@ -877,6 +1009,7 @@ async function inlineRuns(
       ...textCaseOptions,
     };
     if (tag === 'br') {
+      markDocxNativeTextEffectStyleUsed(style.style, noteContext);
       return [new docx.TextRun({ ...style, break: 1 })];
     }
     if (tag === 'img')

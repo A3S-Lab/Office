@@ -26,6 +26,12 @@ import {
   type WorkDocumentEmphasisMark,
 } from '../work-document-emphasis';
 import { normalizeDocumentHiddenText } from '../work-document-hidden-text';
+import {
+  documentLegacyTextEffectsConflict,
+  documentLegacyTextEffectsFromTextStyleAttributes,
+  normalizeDocumentLegacyTextEffect,
+  type WorkDocumentLegacyTextEffects,
+} from '../work-document-legacy-text-effects';
 import type { WorkDocumentScriptFontPatch } from '../work-document-script-fonts';
 import {
   addDocumentScriptFontValues,
@@ -82,6 +88,10 @@ export interface DocumentFontDialogSource {
     mixed: boolean;
     value: boolean | null;
   };
+  legacyTextOutline: { mixed: boolean; value: boolean | null };
+  legacyTextShadow: { mixed: boolean; value: boolean | null };
+  legacyTextEmboss: { mixed: boolean; value: boolean | null };
+  legacyTextImprint: { mixed: boolean; value: boolean | null };
   latinFont: DocumentFontFamilySource;
   eastAsiaFont: DocumentFontFamilySource;
   complexScriptFont: DocumentFontFamilySource;
@@ -102,6 +112,10 @@ export interface DocumentFontDialogDraft {
   kerningThresholdPoints: string;
   emphasisMark: DocumentEmphasisMarkMode;
   hiddenText: boolean;
+  legacyTextOutline: boolean;
+  legacyTextShadow: boolean;
+  legacyTextEmboss: boolean;
+  legacyTextImprint: boolean;
   latinFont: string;
   eastAsiaFont: string;
   complexScriptFont: string;
@@ -115,6 +129,10 @@ export interface DocumentFontDialogPatch
   kerningThresholdHalfPoints?: number | null;
   emphasisMark?: WorkDocumentEmphasisMark | null;
   hiddenText?: boolean;
+  legacyTextOutline?: boolean;
+  legacyTextShadow?: boolean;
+  legacyTextEmboss?: boolean;
+  legacyTextImprint?: boolean;
 }
 
 export interface DocumentFontDialogTouched {
@@ -125,6 +143,10 @@ export interface DocumentFontDialogTouched {
   eastAsiaFont: boolean;
   emphasisMark: boolean;
   hiddenText: boolean;
+  legacyTextOutline: boolean;
+  legacyTextShadow: boolean;
+  legacyTextEmboss: boolean;
+  legacyTextImprint: boolean;
   kerning: boolean;
   latinFont: boolean;
 }
@@ -139,6 +161,10 @@ export function documentFontDialogSource(
   const kerningValues = new Map<string, number | null>();
   const emphasisValues = new Map<string, WorkDocumentEmphasisMark | null>();
   const hiddenTextValues = new Map<string, boolean | null>();
+  const legacyTextOutlineValues = new Map<string, boolean | null>();
+  const legacyTextShadowValues = new Map<string, boolean | null>();
+  const legacyTextEmbossValues = new Map<string, boolean | null>();
+  const legacyTextImprintValues = new Map<string, boolean | null>();
   const latinFontValues = new Map<string, string | null>();
   const eastAsiaFontValues = new Map<string, string | null>();
   const complexScriptFontValues = new Map<string, string | null>();
@@ -149,6 +175,22 @@ export function documentFontDialogSource(
     addKerningValue(kerningValues, attributes.kerningThresholdHalfPoints);
     addEmphasisValue(emphasisValues, attributes.emphasisMark);
     addHiddenTextValue(hiddenTextValues, attributes.hiddenText);
+    addLegacyTextEffectValue(
+      legacyTextOutlineValues,
+      attributes.legacyTextOutline,
+    );
+    addLegacyTextEffectValue(
+      legacyTextShadowValues,
+      attributes.legacyTextShadow,
+    );
+    addLegacyTextEffectValue(
+      legacyTextEmbossValues,
+      attributes.legacyTextEmboss,
+    );
+    addLegacyTextEffectValue(
+      legacyTextImprintValues,
+      attributes.legacyTextImprint,
+    );
     addDocumentScriptFontValues(
       latinFontValues,
       eastAsiaFontValues,
@@ -180,6 +222,10 @@ export function documentFontDialogSource(
     !kerningValues.size ||
     !emphasisValues.size ||
     !hiddenTextValues.size ||
+    !legacyTextOutlineValues.size ||
+    !legacyTextShadowValues.size ||
+    !legacyTextEmbossValues.size ||
+    !legacyTextImprintValues.size ||
     !latinFontValues.size ||
     !eastAsiaFontValues.size ||
     !complexScriptFontValues.size
@@ -192,6 +238,10 @@ export function documentFontDialogSource(
   const kerningThreshold = selectedValue(kerningValues);
   const emphasisMark = selectedValue(emphasisValues);
   const hiddenText = selectedValue(hiddenTextValues);
+  const legacyTextOutline = selectedValue(legacyTextOutlineValues);
+  const legacyTextShadow = selectedValue(legacyTextShadowValues);
+  const legacyTextEmboss = selectedValue(legacyTextEmbossValues);
+  const legacyTextImprint = selectedValue(legacyTextImprintValues);
   const latinFont = selectedValue(latinFontValues);
   const eastAsiaFont = selectedValue(eastAsiaFontValues);
   const complexScriptFont = selectedValue(complexScriptFontValues);
@@ -209,6 +259,10 @@ export function documentFontDialogSource(
     kerningThreshold,
     emphasisMark,
     hiddenText,
+    legacyTextOutline,
+    legacyTextShadow,
+    legacyTextEmboss,
+    legacyTextImprint,
     latinFont,
     eastAsiaFont,
     complexScriptFont,
@@ -266,6 +320,10 @@ export function createDocumentFontDialogDraft(
       ? 'mixed'
       : (source.emphasisMark.value ?? 'inherit'),
     hiddenText: source.hiddenText.value ?? false,
+    legacyTextOutline: source.legacyTextOutline.value ?? false,
+    legacyTextShadow: source.legacyTextShadow.value ?? false,
+    legacyTextEmboss: source.legacyTextEmboss.value ?? false,
+    legacyTextImprint: source.legacyTextImprint.value ?? false,
     latinFont: documentFontFamilyDraftValue(source.latinFont),
     eastAsiaFont: documentFontFamilyDraftValue(source.eastAsiaFont),
     complexScriptFont: documentFontFamilyDraftValue(source.complexScriptFont),
@@ -378,6 +436,34 @@ export function documentFontDialogPatch(
   ) {
     patch.hiddenText = draft.hiddenText;
   }
+  appendLegacyTextEffectPatch(
+    patch,
+    'legacyTextOutline',
+    source.legacyTextOutline,
+    draft.legacyTextOutline,
+    touched.legacyTextOutline,
+  );
+  appendLegacyTextEffectPatch(
+    patch,
+    'legacyTextShadow',
+    source.legacyTextShadow,
+    draft.legacyTextShadow,
+    touched.legacyTextShadow,
+  );
+  appendLegacyTextEffectPatch(
+    patch,
+    'legacyTextEmboss',
+    source.legacyTextEmboss,
+    draft.legacyTextEmboss,
+    touched.legacyTextEmboss,
+  );
+  appendLegacyTextEffectPatch(
+    patch,
+    'legacyTextImprint',
+    source.legacyTextImprint,
+    draft.legacyTextImprint,
+    touched.legacyTextImprint,
+  );
   appendDocumentFontDialogScriptFontPatch(
     patch,
     'latinFont',
@@ -413,6 +499,15 @@ export function applyDocumentFontDialogPatch(
   const hasKerning = patch.kerningThresholdHalfPoints !== undefined;
   const hasEmphasis = patch.emphasisMark !== undefined;
   const hasHiddenText = patch.hiddenText !== undefined;
+  const hasLegacyTextOutline = patch.legacyTextOutline !== undefined;
+  const hasLegacyTextShadow = patch.legacyTextShadow !== undefined;
+  const hasLegacyTextEmboss = patch.legacyTextEmboss !== undefined;
+  const hasLegacyTextImprint = patch.legacyTextImprint !== undefined;
+  const hasLegacyTextEffects =
+    hasLegacyTextOutline ||
+    hasLegacyTextShadow ||
+    hasLegacyTextEmboss ||
+    hasLegacyTextImprint;
   const scriptFontPatch: WorkDocumentScriptFontPatch = {
     ...(patch.latinFont !== undefined ? { latin: patch.latinFont } : {}),
     ...(patch.eastAsiaFont !== undefined
@@ -453,6 +548,7 @@ export function applyDocumentFontDialogPatch(
       !hasKerning &&
       !hasEmphasis &&
       !hasHiddenText &&
+      !hasLegacyTextEffects &&
       !hasScriptFonts) ||
     (hasScale && scale === null) ||
     (hasPosition && position === null) ||
@@ -462,11 +558,21 @@ export function applyDocumentFontDialogPatch(
       kerningThreshold === null) ||
     (hasEmphasis && patch.emphasisMark !== null && emphasisMark === null) ||
     (hasHiddenText && typeof patch.hiddenText !== 'boolean') ||
+    (hasLegacyTextOutline &&
+      normalizeDocumentLegacyTextEffect(patch.legacyTextOutline) === null) ||
+    (hasLegacyTextShadow &&
+      normalizeDocumentLegacyTextEffect(patch.legacyTextShadow) === null) ||
+    (hasLegacyTextEmboss &&
+      normalizeDocumentLegacyTextEffect(patch.legacyTextEmboss) === null) ||
+    (hasLegacyTextImprint &&
+      normalizeDocumentLegacyTextEffect(patch.legacyTextImprint) === null) ||
     !Number.isSafeInteger(selection.from) ||
     !Number.isSafeInteger(selection.to) ||
     selection.from < 0 ||
     selection.to < selection.from ||
-    selection.to > maximum
+    selection.to > maximum ||
+    (hasLegacyTextEffects &&
+      !documentFontDialogLegacyTextEffectsAreSafe(editor, selection, patch))
   ) {
     return false;
   }
@@ -479,6 +585,18 @@ export function applyDocumentFontDialogPatch(
   }
   if (hasEmphasis) attributes.emphasisMark = emphasisMark;
   if (hasHiddenText) attributes.hiddenText = patch.hiddenText ?? false;
+  if (hasLegacyTextOutline) {
+    attributes.legacyTextOutline = patch.legacyTextOutline ?? false;
+  }
+  if (hasLegacyTextShadow) {
+    attributes.legacyTextShadow = patch.legacyTextShadow ?? false;
+  }
+  if (hasLegacyTextEmboss) {
+    attributes.legacyTextEmboss = patch.legacyTextEmboss ?? false;
+  }
+  if (hasLegacyTextImprint) {
+    attributes.legacyTextImprint = patch.legacyTextImprint ?? false;
+  }
   if (hasScriptFonts) {
     return applyDocumentScriptFontPatch(
       editor,
@@ -503,6 +621,62 @@ function addScaleValue(
 ): void {
   const scale = normalizeDocumentCharacterScalePercent(value);
   values.set(scale === null ? 'inherited' : String(scale), scale);
+}
+
+function documentFontDialogLegacyTextEffectsAreSafe(
+  editor: Editor,
+  selection: { from: number; to: number },
+  patch: DocumentFontDialogPatch,
+): boolean {
+  const patchEffects: WorkDocumentLegacyTextEffects = {
+    ...(patch.legacyTextOutline !== undefined
+      ? { outline: patch.legacyTextOutline }
+      : {}),
+    ...(patch.legacyTextShadow !== undefined
+      ? { shadow: patch.legacyTextShadow }
+      : {}),
+    ...(patch.legacyTextEmboss !== undefined
+      ? { emboss: patch.legacyTextEmboss }
+      : {}),
+    ...(patch.legacyTextImprint !== undefined
+      ? { imprint: patch.legacyTextImprint }
+      : {}),
+  };
+  const attributesAreSafe = (attributes: Record<string, unknown>) => {
+    const current =
+      documentLegacyTextEffectsFromTextStyleAttributes(attributes);
+    return (
+      current !== null &&
+      !documentLegacyTextEffectsConflict({ ...current, ...patchEffects })
+    );
+  };
+  if (selection.from === selection.to) {
+    return attributesAreSafe(editor.getAttributes('textStyle'));
+  }
+  let sawText = false;
+  let safe = true;
+  editor.state.doc.nodesBetween(
+    selection.from,
+    selection.to,
+    (node, position) => {
+      if (
+        !safe ||
+        !node.isText ||
+        position >= selection.to ||
+        position + node.nodeSize <= selection.from
+      ) {
+        return;
+      }
+      sawText = true;
+      const textStyle = node.marks.find(
+        (mark) => mark.type.name === 'textStyle',
+      );
+      safe = attributesAreSafe(textStyle?.attrs ?? {});
+    },
+  );
+  return (
+    safe && (sawText || attributesAreSafe(editor.getAttributes('textStyle')))
+  );
 }
 
 function addPositionValue(
@@ -546,6 +720,32 @@ function addHiddenTextValue(
     hiddenText === null ? 'inherited' : String(hiddenText),
     hiddenText,
   );
+}
+
+type DocumentFontDialogLegacyTextEffectPatchName =
+  | 'legacyTextOutline'
+  | 'legacyTextShadow'
+  | 'legacyTextEmboss'
+  | 'legacyTextImprint';
+
+function appendLegacyTextEffectPatch(
+  patch: DocumentFontDialogPatch,
+  name: DocumentFontDialogLegacyTextEffectPatchName,
+  source: { mixed: boolean; value: boolean | null },
+  value: boolean,
+  touched: boolean,
+): void {
+  if (touched && (source.mixed || source.value !== value)) {
+    patch[name] = value;
+  }
+}
+
+function addLegacyTextEffectValue(
+  values: Map<string, boolean | null>,
+  value: unknown,
+): void {
+  const effect = normalizeDocumentLegacyTextEffect(value);
+  values.set(effect === null ? 'inherited' : String(effect), effect);
 }
 
 function characterSpacingTwipsFromDraft(

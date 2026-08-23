@@ -31,6 +31,14 @@ import {
   DOCUMENT_HIDDEN_TEXT_ATTRIBUTE,
   documentHiddenTextFromElement,
 } from './work-document-hidden-text';
+import {
+  DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
+  DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
+  DOCUMENT_LEGACY_TEXT_OUTLINE_ATTRIBUTE,
+  DOCUMENT_LEGACY_TEXT_SHADOW_ATTRIBUTE,
+  documentLegacyTextEffectsDomAttributes,
+  documentLegacyTextEffectsFromElement,
+} from './work-document-legacy-text-effects';
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import {
   DOCUMENT_PARAGRAPH_BORDERS_ATTRIBUTE,
@@ -493,6 +501,10 @@ function sanitizeAttributes(element: Element, tag: string) {
   const emphasisAttributes = documentEmphasisMarkDomAttributes(emphasisMark);
   const hiddenText =
     tag === 'span' ? documentHiddenTextFromElement(element) : null;
+  const legacyTextEffects =
+    tag === 'span' ? (documentLegacyTextEffectsFromElement(element) ?? {}) : {};
+  const legacyTextEffectAttributes =
+    documentLegacyTextEffectsDomAttributes(legacyTextEffects);
   const underline =
     tag === 'u' ? documentUnderlineFormattingFromElement(element) : null;
   const underlineAttributes = underline
@@ -525,6 +537,10 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_EMPHASIS_MARK_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_HIDDEN_TEXT_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_LEGACY_TEXT_OUTLINE_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_LEGACY_TEXT_SHADOW_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_SCRIPT_FONTS_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE);
   const styles = [
@@ -615,6 +631,11 @@ function sanitizeAttributes(element: Element, tag: string) {
   if (tag === 'span' && hiddenText !== null) {
     element.setAttribute(DOCUMENT_HIDDEN_TEXT_ATTRIBUTE, String(hiddenText));
   }
+  if (tag === 'span') {
+    for (const [name, value] of Object.entries(legacyTextEffectAttributes)) {
+      element.setAttribute(name, value);
+    }
+  }
   if (tag === 'span' && scriptFonts) {
     for (const [name, value] of Object.entries(scriptFontAttributes)) {
       if (name !== 'style') element.setAttribute(name, value);
@@ -666,6 +687,10 @@ function sanitizeAttributes(element: Element, tag: string) {
                           DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
                           DOCUMENT_EMPHASIS_MARK_ATTRIBUTE,
                           DOCUMENT_HIDDEN_TEXT_ATTRIBUTE,
+                          DOCUMENT_LEGACY_TEXT_OUTLINE_ATTRIBUTE,
+                          DOCUMENT_LEGACY_TEXT_SHADOW_ATTRIBUTE,
+                          DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
+                          DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
                           DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
                           DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,
                         ]

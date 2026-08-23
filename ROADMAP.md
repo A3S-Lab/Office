@@ -66,7 +66,7 @@ collaboration transport, and AI providers.
 
 | Capability | A3S Office status | Main gap or boundary | Priority |
 | --- | --- | --- | --- |
-| Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported**, including independent native `w:rFonts` ASCII, high ANSI, East Asian, and complex-script slots with exact direct/theme identity, mixed-run segmentation, one script-aware `Cmd/Ctrl+D` dialog, and one-step Undo; mutually exclusive native `w:caps` / `w:smallCaps`; signed native `w:spacing` and `w:position` with explicit zero; all five native `w:em` emphasis values with explicit `none` and direct-format clearing; native `w:vanish` hidden text with explicit visible resets, the standard `Cmd/Ctrl+Shift+H` shortcut, and an editing-only dotted reveal view; all 18 native `w:u` values with direct or theme color identity and explicit resets; independent native `w:strike` / `w:dstrike` state with explicit resets; standard shortcuts where Traditional Office defines them; page chrome; formatting revisions; and exact DOCX reopen | Long-tail Word style and typography effects outside the declared typed models can still normalize | Maintain / P0 fidelity |
+| Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported**, including independent native `w:rFonts` ASCII, high ANSI, East Asian, and complex-script slots with exact direct/theme identity, mixed-run segmentation, one script-aware `Cmd/Ctrl+D` dialog, and one-step Undo; mutually exclusive native `w:caps` / `w:smallCaps`; signed native `w:spacing` and `w:position` with explicit zero; all five native `w:em` emphasis values with explicit `none` and direct-format clearing; native `w:vanish` hidden text with explicit visible resets, the standard `Cmd/Ctrl+Shift+H` shortcut, and an editing-only dotted reveal view; independent native `w:outline`, `w:shadow`, `w:emboss`, and `w:imprint` effects with explicit false resets and conflict-safe authoring; all 18 native `w:u` values with direct or theme color identity and explicit resets; independent native `w:strike` / `w:dstrike` state with explicit resets; standard shortcuts where Traditional Office defines them; page chrome; formatting revisions; and exact DOCX reopen | Long-tail Word style and typography effects outside the declared typed models can still normalize | Maintain / P0 fidelity |
 | Bullets, numbering, nesting, restarts, RTL lists | **Supported** for common editable structures | Exotic numbering pictures and some inherited list metadata remain compatibility work | P1 |
 | Page size, orientation, columns, section/page breaks | **Supported** per section | Browser line breaking and pagination are not yet desktop-engine exact | P0 |
 | Page margins (`w:pgMar`, `mirrorMargins`, `gutterAtTop`, `rtlGutter`) | **Supported** on current `main`: all seven native twip values, signed top/bottom overlap semantics, strict universal measures, header/footer distances, top/left/right gutters, facing-page swaps, multi-section inheritance, diagnostics, editing, PDF preview, and exact DOCX export | The continuous editing surface projects the first-page horizontal origin; physical-page PDF preview is authoritative for facing-page placement | Maintain / P0 regression gate |
@@ -236,6 +236,15 @@ a phase exits only when its evidence is complete.
   permanent gates. Preview and PDF output must always suppress hidden text,
   unchanged comment XML remains source-preserved, and affected paragraphs stay
   on browser-authoritative measurement.
+- Treat native outline, shadow, emboss, and imprint as a completed typography
+  slice: retain independent inherited, enabled, and explicit-false states;
+  permit outline plus shadow; reject or atomically clear conflicts involving
+  emboss or imprint; preserve every editable Word story, style inheritance,
+  Format Painter, formatting revisions, one-step Undo, strict/transitional and
+  malformed-input handling, diagnostics, exact DOCX export/reopen, and the
+  shared `Cmd/Ctrl+D` dialog as permanent gates. Keep the CSS and PDF
+  projections bounded and paint-only so eligible paragraphs remain on
+  Worker/WASM layout. Do not invent a dedicated shortcut.
 - Treat native character baseline position as a completed typography slice:
   retain signed `w:position` values from -3,168 through 3,168 half-points,
   explicit zero, mixed-selection safety, the shared `Cmd/Ctrl+D` dialog,

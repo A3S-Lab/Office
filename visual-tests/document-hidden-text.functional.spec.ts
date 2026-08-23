@@ -32,7 +32,7 @@ test('Writer authors, reveals, toggles, and undoes native hidden text', async ({
   await expect(dialog).toBeVisible();
   await expect(
     dialog.getByRole('group', {
-      name: '字符缩放、间距、字距调整、位置、着重号与隐藏文字',
+      name: '字符缩放、间距、字距调整、位置与文字效果',
     }),
   ).toBeVisible();
   const hiddenTextCheckbox = dialog.getByRole('checkbox', {

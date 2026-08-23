@@ -6,6 +6,12 @@ import { normalizeDocumentEmphasisMark } from './work-document-emphasis';
 import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
 import { normalizeDocumentHiddenText } from './work-document-hidden-text';
 import {
+  DOCUMENT_LEGACY_TEXT_EFFECT_NAMES,
+  documentLegacyTextEffectsConflict,
+  normalizeDocumentLegacyTextEffect,
+  type WorkDocumentLegacyTextEffects,
+} from './work-document-legacy-text-effects';
+import {
   parseDocumentCharacterFormatting,
   type DocumentCharacterFormatMark,
 } from './work-document-format-changes';
@@ -285,12 +291,12 @@ function appendFormattingProperties(
     'italic',
     'iCs',
   );
-  appendUnderlineProperty(
+  appendTextCaseProperties(
     document,
     properties,
     namespace,
     prefix,
-    byType.get('underline'),
+    byType.get('textStyle'),
   );
   appendStrikeProperties(
     document,
@@ -299,7 +305,14 @@ function appendFormattingProperties(
     prefix,
     byType.get('strike'),
   );
-  appendTextCaseProperties(
+  appendLegacyTextEffectsProperties(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
+  appendSnapToGridProperty(
     document,
     properties,
     namespace,
@@ -362,12 +375,12 @@ function appendFormattingProperties(
     prefix,
     byType.get('highlight'),
   );
-  appendSnapToGridProperty(
+  appendUnderlineProperty(
     document,
     properties,
     namespace,
     prefix,
-    byType.get('textStyle'),
+    byType.get('underline'),
   );
   appendVerticalAlignProperty(document, properties, namespace, prefix, byType);
   appendEmphasisMarkProperty(
@@ -377,6 +390,38 @@ function appendFormattingProperties(
     prefix,
     byType.get('textStyle'),
   );
+}
+
+function appendLegacyTextEffectsProperties(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const effects: WorkDocumentLegacyTextEffects = {};
+  const attributes = [
+    ['outline', 'legacyTextOutline'],
+    ['shadow', 'legacyTextShadow'],
+    ['emboss', 'legacyTextEmboss'],
+    ['imprint', 'legacyTextImprint'],
+  ] as const;
+  for (const [effect, attribute] of attributes) {
+    const value = normalizeDocumentLegacyTextEffect(mark?.attrs?.[attribute]);
+    if (value !== null) effects[effect] = value;
+  }
+  if (documentLegacyTextEffectsConflict(effects)) {
+    throw new Error('Document contains conflicting legacy text effects.');
+  }
+  for (const name of DOCUMENT_LEGACY_TEXT_EFFECT_NAMES) {
+    const value = effects[name];
+    if (value === undefined) continue;
+    if (value) {
+      properties.append(wordElement(document, namespace, prefix, name));
+    } else {
+      appendValuedProperty(document, properties, namespace, prefix, name, '0');
+    }
+  }
 }
 
 function appendHiddenTextProperty(

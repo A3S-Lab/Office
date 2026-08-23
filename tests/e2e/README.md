@@ -150,6 +150,24 @@ console/page-error diagnostics. Preview and PDF output stay suppressed. The
 suite uses the latest pinned local A3S Test release gate and is not referenced
 by GitHub Actions.
 
+The Writer native outline, shadow, emboss, and imprint workflow has a focused
+local gate:
+
+```bash
+bun run test:e2e:writer-legacy-text-effects:check
+bun run test:e2e:writer-legacy-text-effects
+```
+
+It opens the public **文字效果** Playground template, proves the valid
+outline-shadow pair plus standalone emboss and imprint samples, selects real
+document text, and opens the shared `Cmd/Ctrl+D` dialog. Enabling emboss must
+clear outline, shadow, and imprint in the same transaction; Apply must retain
+Worker/WASM layout eligibility, restore editor focus, and Undo must restore the
+original pair in one step. The suite captures accessibility and empty
+console/page-error diagnostics through pinned local A3S Test 1.0.0,
+agent-browser 0.26.0, and protocol revision 15. GitHub Actions and Pages do not
+install or invoke A3S Test; desktop and 390 px Playwright own the visual proof.
+
 The Writer native character-scale workflow has a focused local gate:
 
 ```bash

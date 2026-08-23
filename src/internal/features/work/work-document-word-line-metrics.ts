@@ -33,6 +33,17 @@ import {
   documentHiddenTextFromElement,
 } from './work-document-hidden-text';
 import {
+  DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
+  DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
+  DOCUMENT_LEGACY_TEXT_OUTLINE_ATTRIBUTE,
+  DOCUMENT_LEGACY_TEXT_SHADOW_ATTRIBUTE,
+  documentLegacyTextEffectFromElement,
+  documentLegacyTextEffectsDomAttributes,
+  documentLegacyTextStyleAttributeName,
+  normalizeDocumentLegacyTextEffect,
+  type WorkDocumentLegacyTextEffectName,
+} from './work-document-legacy-text-effects';
+import {
   parseDocxThemeReference,
   serializeDocxThemeReference,
 } from './work-docx-theme-reference';
@@ -78,6 +89,10 @@ declare module '@tiptap/extension-text-style' {
     characterSpacingTwips?: number | null;
     emphasisMark?: WorkDocumentEmphasisMark | null;
     hiddenText?: boolean | null;
+    legacyTextOutline?: boolean | null;
+    legacyTextShadow?: boolean | null;
+    legacyTextEmboss?: boolean | null;
+    legacyTextImprint?: boolean | null;
     kerningThresholdHalfPoints?: number | null;
     scriptFonts?: string | null;
     scriptFontSlot?: WorkDocumentScriptFontSlot | null;
@@ -116,6 +131,15 @@ export const DocumentTextStyle = TextStyle.extend({
         tag: `span[${DOCUMENT_HIDDEN_TEXT_ATTRIBUTE}]`,
         consuming: false,
       },
+      ...[
+        DOCUMENT_LEGACY_TEXT_OUTLINE_ATTRIBUTE,
+        DOCUMENT_LEGACY_TEXT_SHADOW_ATTRIBUTE,
+        DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
+        DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
+      ].map((attribute) => ({
+        tag: `span[${attribute}]`,
+        consuming: false,
+      })),
     ];
   },
   addCommands() {
@@ -196,6 +220,10 @@ export const DocumentTextStyle = TextStyle.extend({
         renderHTML: (attributes: Record<string, unknown>) =>
           documentHiddenTextDomAttributes(attributes.hiddenText),
       },
+      legacyTextOutline: legacyTextEffectAttribute('outline'),
+      legacyTextShadow: legacyTextEffectAttribute('shadow'),
+      legacyTextEmboss: legacyTextEffectAttribute('emboss'),
+      legacyTextImprint: legacyTextEffectAttribute('imprint'),
       kerningThresholdHalfPoints: {
         default: null,
         parseHTML: (element: HTMLElement) =>
@@ -280,6 +308,22 @@ export const DocumentTextStyle = TextStyle.extend({
     };
   },
 });
+
+function legacyTextEffectAttribute(effect: WorkDocumentLegacyTextEffectName) {
+  return {
+    default: null,
+    parseHTML: (element: HTMLElement) =>
+      documentLegacyTextEffectFromElement(element, effect),
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const value = normalizeDocumentLegacyTextEffect(
+        attributes[documentLegacyTextStyleAttributeName(effect)],
+      );
+      return value === null
+        ? {}
+        : documentLegacyTextEffectsDomAttributes({ [effect]: value });
+    },
+  };
+}
 
 function documentTextStyleAttributesAreEmpty(
   attributes: Record<string, unknown>,

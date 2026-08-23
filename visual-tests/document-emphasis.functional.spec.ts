@@ -31,7 +31,7 @@ test('Writer authors and explicitly clears a native emphasis mark in the respons
   await expect(dialog).toBeVisible();
   await expect(
     dialog.getByRole('group', {
-      name: '字符缩放、间距、字距调整、位置、着重号与隐藏文字',
+      name: '字符缩放、间距、字距调整、位置与文字效果',
     }),
   ).toBeVisible();
   await dialog.getByRole('combobox', { name: '着重号' }).click();

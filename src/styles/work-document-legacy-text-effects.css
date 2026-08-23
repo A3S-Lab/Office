@@ -1,0 +1,27 @@
+[data-office-legacy-text-outline="true"] {
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0.045em currentColor;
+  paint-order: stroke fill;
+}
+
+[data-office-legacy-text-shadow="true"] {
+  text-shadow: 0.08em 0.08em 0 currentColor;
+}
+
+[data-office-legacy-text-emboss="true"] {
+  -webkit-text-fill-color: currentColor;
+  -webkit-text-stroke: 0 transparent;
+  paint-order: normal;
+  text-shadow:
+    -0.045em -0.045em 0 rgb(255 255 255 / 90%),
+    0.045em 0.045em 0 rgb(0 0 0 / 52%);
+}
+
+[data-office-legacy-text-imprint="true"] {
+  -webkit-text-fill-color: currentColor;
+  -webkit-text-stroke: 0 transparent;
+  paint-order: normal;
+  text-shadow:
+    0.045em 0.045em 0 rgb(255 255 255 / 90%),
+    -0.045em -0.045em 0 rgb(0 0 0 / 52%);
+}

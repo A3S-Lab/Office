@@ -53,3 +53,20 @@ Office version and hashes, both page PNGs, browser layout evidence, and the
 comparison report. The gate requires a one-page A4 result, no browser errors,
 at most a one-pixel landmark delta, no more than a 2% thresholded pixel
 difference, and mean absolute channel error no greater than 1.0.
+
+## Focused Writer text-effect contract
+
+The native outline, shadow, emboss, and imprint functional test opens the
+public **文字效果** template, checks the four real CSS projections, and selects
+the valid outline-shadow pair. It then verifies independently checked advanced
+font controls, conflict-safe emboss authoring, live preview, one-step Undo,
+focus restoration, and retained Worker/WASM layout eligibility at desktop and
+390 px widths:
+
+```bash
+bun run playground:visual:document-legacy-text-effects
+```
+
+This Playwright test owns visual evidence. The companion A3S Test ACL remains a
+local semantic and diagnostics gate and is intentionally absent from GitHub
+Actions and Pages.

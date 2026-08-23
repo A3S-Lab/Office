@@ -477,6 +477,23 @@ not presented as rich comment editing. Focused Rstest, desktop/compact
 Playwright, and the local-only pinned A3S Test suite cover authoring, reveal,
 shortcut, Undo, accessibility, and empty browser diagnostics without changing
 Actions or Pages.
+The forty-third milestone adds Writer's native outline, shadow, emboss, and
+imprint effects as four nullable TextStyle properties. Missing direct values
+inherit, enabled values map to exact `w:outline`, `w:shadow`, `w:emboss`, or
+`w:imprint` leaves, and explicit false values remain native resets. Outline and
+shadow may coexist; enabling emboss or imprint clears every conflicting effect
+inside the same advanced-font transaction and one Undo record. Document
+defaults, paragraph and character styles, body text, page chrome, notes,
+Format Painter, tracked formatting revisions, accept or reject decisions,
+strict/transitional DOCX import, exact export, and reopen share the model. A
+canonical run-property order plus collision-safe nested export markers retain
+both hidden text and original character-style identity. Malformed, duplicated,
+misplaced, namespace-spoofed, child- or text-bearing, extra-attribute, unknown,
+and conflicting input fails closed. Bounded CSS and PDF projections remain
+paint-only so eligible paragraphs stay on Worker/WASM layout. Focused Rstest,
+desktop/compact Playwright, and the local-only pinned A3S Test 1.0.0 suite cover
+the public Playground template, conflict-safe authoring, Undo, accessibility,
+and empty browser diagnostics without adding A3S Test to Actions or Pages.
 
 ## Product Rules
 

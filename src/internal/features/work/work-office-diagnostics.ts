@@ -6,6 +6,7 @@ import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
 import { diagnoseDocxEmphasisMarks } from './work-docx-emphasis-diagnostics';
 import { diagnoseDocxHiddenText } from './work-docx-hidden-text-diagnostics';
 import { diagnoseDocxKerning } from './work-docx-kerning-diagnostics';
+import { diagnoseDocxLegacyTextEffects } from './work-docx-legacy-text-effects-diagnostics';
 import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
 import { diagnoseDocxPageBorders } from './work-docx-page-borders-diagnostics';
 import { diagnoseDocxPageChrome } from './work-docx-page-chrome-diagnostics';
@@ -219,6 +220,7 @@ export async function analyzeDocxCompatibility(
       issues.push(...(await diagnoseDocxKerning(archive, document)));
       issues.push(...(await diagnoseDocxEmphasisMarks(archive, document)));
       issues.push(...(await diagnoseDocxHiddenText(archive, document)));
+      issues.push(...(await diagnoseDocxLegacyTextEffects(archive, document)));
       issues.push(...(await diagnoseDocxRunFonts(archive, document)));
     }
     issues.push(...(await diagnoseDocxPageChrome(archive)));
@@ -323,7 +325,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.formatting',
             'Character-formatting revisions',
-            `${supportedRunFormattingRevisionCount} bounded character-formatting revision(s) preserve author, date, current formatting, and prior bold, italic, underline, strike, subscript, superscript, font, size, color, highlight, character scale, spacing, kerning threshold, emphasis mark, baseline position, and grid state. They remain reviewable in Work and round-trip as native w:rPrChange records.`,
+            `${supportedRunFormattingRevisionCount} bounded character-formatting revision(s) preserve author, date, current formatting, and prior bold, italic, underline, strike, text case, hidden text, outline, shadow, emboss, imprint, subscript, superscript, font, size, color, highlight, character scale, spacing, kerning threshold, emphasis mark, baseline position, and grid state. They remain reviewable in Work and round-trip as native w:rPrChange records.`,
             'info',
           ),
         );
