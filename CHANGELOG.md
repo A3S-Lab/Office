@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added native Writer character baseline position as a signed `w:position`
+  value with explicit zero, exact strict measures, inherited style resolution,
+  and body/header/footer DOCX import, export, and reopen. Numeric CSS
+  `vertical-align` projects the effect while subscript or superscript keeps
+  native precedence.
+- Extended the shared `Cmd/Ctrl+D` advanced font dialog with Normal, Raised,
+  and Lowered position modes, independent mixed-selection handling, live
+  preview, half-point validation, captured-selection restoration, and one
+  transaction when spacing and position change together. Format Painter,
+  tracked formatting, reject restoration, and native `w:rPrChange` retain the
+  exact value.
+- Added fail-closed namespace, duplicate, malformed, and range coverage plus
+  focused Rstest, desktop/compact Playwright, and a local-only A3S Test 1.0.0
+  ACL. GitHub Actions and Pages do not install or invoke A3S Test.
+
 ## 0.26.0 - 2026-08-22
 
 - Added bounded Spreadsheet partial-run formatting while editing a cell or the

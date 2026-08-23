@@ -17,7 +17,9 @@ import {
   resolveDocxTableStyleResolver,
 } from './work-docx-table-styles';
 import { attribute, descendants, directChild } from './work-ooxml-package';
+import { documentCharacterPositionDomAttributes } from './work-document-character-position';
 import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
+import { docxCharacterPositionHalfPointsFromProperties } from './work-docx-character-position';
 import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
 import { documentWordLineHeightFactor } from './work-document-word-line-metrics';
 import {
@@ -52,6 +54,7 @@ export interface ImportedDocxRunFormatting {
   strike?: WorkDocumentStrikeFormatting;
   subscript?: boolean;
   superscript?: boolean;
+  characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
   fontFamily?: string;
   wordLineHeightFactor?: number;
@@ -97,6 +100,7 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'caps',
   'smallCaps',
   'spacing',
+  'position',
   'rFonts',
   'sz',
   'szCs',
@@ -220,6 +224,7 @@ function resolvedRunFormatting(
   let fontHint: DocxFontSlot | undefined;
   let allCaps: boolean | undefined;
   let smallCaps: boolean | undefined;
+  let characterPositionHalfPoints: number | undefined;
   let characterSpacingTwips: number | undefined;
 
   for (const properties of propertySources) {
@@ -248,6 +253,10 @@ function resolvedRunFormatting(
     characterSpacingTwips = overriddenValue(
       characterSpacingTwips,
       docxCharacterSpacingTwipsFromProperties(properties),
+    );
+    characterPositionHalfPoints = overriddenValue(
+      characterPositionHalfPoints,
+      docxCharacterPositionHalfPointsFromProperties(properties),
     );
     const verticalAlign = directChild(properties, 'vertAlign');
     if (verticalAlign) {
@@ -417,6 +426,9 @@ function resolvedRunFormatting(
     ...(resolvedStrike ? { strike: resolvedStrike } : {}),
     ...(subscript !== undefined ? { subscript } : {}),
     ...(superscript !== undefined ? { superscript } : {}),
+    ...(characterPositionHalfPoints !== undefined
+      ? { characterPositionHalfPoints }
+      : {}),
     ...(characterSpacingTwips !== undefined ? { characterSpacingTwips } : {}),
     ...(fontFamily
       ? {
@@ -477,6 +489,16 @@ function formattingMarkup(
   if (formatting.characterSpacingTwips !== undefined) {
     for (const [name, value] of Object.entries(
       documentCharacterSpacingDomAttributes(formatting.characterSpacingTwips),
+    )) {
+      if (name === 'style') span.style.cssText += `; ${value}`;
+      else span.setAttribute(name, value);
+    }
+  }
+  if (formatting.characterPositionHalfPoints !== undefined) {
+    for (const [name, value] of Object.entries(
+      documentCharacterPositionDomAttributes(
+        formatting.characterPositionHalfPoints,
+      ),
     )) {
       if (name === 'style') span.style.cssText += `; ${value}`;
       else span.setAttribute(name, value);

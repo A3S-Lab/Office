@@ -313,7 +313,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.formatting',
             'Character-formatting revisions',
-            `${supportedRunFormattingRevisionCount} bounded character-formatting revision(s) preserve author, date, current formatting, and prior bold, italic, underline, strike, subscript, superscript, font, size, color, highlight, character spacing, and grid state. They remain reviewable in Work and round-trip as native w:rPrChange records.`,
+            `${supportedRunFormattingRevisionCount} bounded character-formatting revision(s) preserve author, date, current formatting, and prior bold, italic, underline, strike, subscript, superscript, font, size, color, highlight, character spacing, baseline position, and grid state. They remain reviewable in Work and round-trip as native w:rPrChange records.`,
             'info',
           ),
         );

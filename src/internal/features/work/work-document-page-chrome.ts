@@ -3,6 +3,11 @@ import {
   documentEquationFromElement,
 } from './work-document-equations';
 import {
+  DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
+  documentCharacterPositionDomAttributes,
+  documentCharacterPositionHalfPointsFromElement,
+} from './work-document-character-position';
+import {
   DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
   documentCharacterSpacingDomAttributes,
   documentCharacterSpacingTwipsFromElement,
@@ -411,6 +416,12 @@ function sanitizeAttributes(element: Element, tag: string) {
       : null;
   const characterSpacing =
     tag === 'span' ? documentCharacterSpacingTwipsFromElement(element) : null;
+  const characterPosition =
+    tag === 'span'
+      ? documentCharacterPositionHalfPointsFromElement(element)
+      : null;
+  const characterPositionAttributes =
+    documentCharacterPositionDomAttributes(characterPosition);
   const characterSpacingAttributes =
     documentCharacterSpacingDomAttributes(characterSpacing);
   const underline =
@@ -439,11 +450,13 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_STRIKE_STYLE_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_CHARACTER_POSITION_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_CHARACTER_SPACING_ATTRIBUTE);
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
     color ? `color: ${color}` : '',
     textCase ? documentTextCaseCss(textCase) : '',
+    characterPositionAttributes.style ?? '',
     characterSpacingAttributes.style ?? '',
     underlineAttributes.style ?? '',
     strikeAttributes.style ?? '',
@@ -498,6 +511,12 @@ function sanitizeAttributes(element: Element, tag: string) {
       String(characterSpacing),
     );
   }
+  if (tag === 'span' && characterPosition !== null) {
+    element.setAttribute(
+      DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
+      String(characterPosition),
+    );
+  }
   if (direction === 'ltr' || direction === 'rtl')
     element.setAttribute('dir', direction);
   else element.removeAttribute('dir');
@@ -538,6 +557,7 @@ function sanitizeAttributes(element: Element, tag: string) {
                     ...(tag === 'span'
                       ? [
                           DOCUMENT_TEXT_CASE_ATTRIBUTE,
+                          DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
                           DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
                         ]
                       : []),

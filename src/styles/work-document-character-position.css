@@ -1,0 +1,10 @@
+[data-office-character-position-half-points] {
+  vertical-align: var(--work-document-character-position);
+}
+
+sub [data-office-character-position-half-points],
+sup [data-office-character-position-half-points],
+[data-office-character-position-half-points]:has(sub),
+[data-office-character-position-half-points]:has(sup) {
+  vertical-align: baseline;
+}

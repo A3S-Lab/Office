@@ -54,6 +54,24 @@ test('retains only normalized native strikethrough metadata in page chrome', () 
   expect(fallback).toContain('data-office-strike-style="single"');
 });
 
+test('retains only normalized character position in page chrome', () => {
+  const normalized = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-character-position-half-points="-3" style="--work-document-character-position: 100pt" data-untrusted="drop">Header</span></p>',
+  );
+  expect(normalized).toContain(
+    'data-office-character-position-half-points="-3"',
+  );
+  expect(normalized).toContain('--work-document-character-position: -1.5pt');
+  expect(normalized).not.toContain('100pt');
+  expect(normalized).not.toContain('data-untrusted');
+
+  const invalid = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-character-position-half-points="3169" style="--work-document-character-position: 2pt">Header</span></p>',
+  );
+  expect(invalid).not.toContain('data-office-character-position');
+  expect(invalid).not.toContain('--work-document-character-position');
+});
+
 test('keeps native page-chrome identities through edits', () => {
   const editor = new Editor({
     extensions: createDocumentPageChromeEditorExtensions(),

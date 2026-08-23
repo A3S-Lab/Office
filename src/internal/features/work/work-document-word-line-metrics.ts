@@ -7,6 +7,11 @@ import {
   normalizeDocumentCharacterSpacingTwips,
 } from './work-document-character-spacing';
 import {
+  documentCharacterPositionDomAttributes,
+  documentCharacterPositionHalfPointsFromElement,
+  normalizeDocumentCharacterPositionHalfPoints,
+} from './work-document-character-position';
+import {
   parseDocxThemeReference,
   serializeDocxThemeReference,
 } from './work-docx-theme-reference';
@@ -39,6 +44,7 @@ const DOCUMENT_WORD_LINE_HEIGHT_FACTORS = new Map<string, number>([
 
 declare module '@tiptap/extension-text-style' {
   interface TextStyleAttributes {
+    characterPositionHalfPoints?: number | null;
     characterSpacingTwips?: number | null;
     wordLineHeightFactor?: number | null;
     wordSnapToGrid?: boolean | null;
@@ -70,6 +76,17 @@ export function normalizedDocumentWordLineHeightFactor(
 export const DocumentTextStyle = TextStyle.extend({
   addAttributes() {
     return {
+      characterPositionHalfPoints: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          documentCharacterPositionHalfPointsFromElement(element),
+        renderHTML: (attributes: Record<string, unknown>) =>
+          documentCharacterPositionDomAttributes(
+            normalizeDocumentCharacterPositionHalfPoints(
+              attributes.characterPositionHalfPoints,
+            ),
+          ),
+      },
       characterSpacingTwips: {
         default: null,
         parseHTML: (element: HTMLElement) =>

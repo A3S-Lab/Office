@@ -163,6 +163,28 @@ describe('document mixed-run text layout', () => {
     }
   });
 
+  test('keeps raised and lowered character positions on browser measurement', () => {
+    for (const verticalAlign of ['2px', '-1.5px']) {
+      const paragraph = document.createElement('p');
+      applyTextMetrics(paragraph, 14, 21);
+      paragraph.innerHTML = `<span style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; vertical-align: ${verticalAlign}">Positioned text</span>`;
+      document.body.append(paragraph);
+
+      try {
+        expect(
+          collectDocumentTextLayoutRuns(
+            paragraph,
+            paragraph.textContent ?? '',
+            [layoutFont],
+            new Set([layoutFont.id]),
+          ),
+        ).toBeNull();
+      } finally {
+        paragraph.remove();
+      }
+    }
+  });
+
   test('keeps case-transforming runs on the browser measurement path', () => {
     const effects = [
       'text-transform: uppercase',

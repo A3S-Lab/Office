@@ -1,5 +1,6 @@
 import type { Mark, MarkType, Schema } from '@tiptap/pm/model';
 import type { Transaction } from '@tiptap/pm/state';
+import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-character-position';
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
 import {
   normalizeDocumentTextCase,
@@ -61,6 +62,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
   subscript: new Set(),
   superscript: new Set(),
   textStyle: new Set([
+    'characterPositionHalfPoints',
     'characterSpacingTwips',
     'color',
     'fontFamily',
@@ -162,6 +164,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   subscript?: boolean;
   superscript?: boolean;
   fontFamily?: string;
+  characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
@@ -195,6 +198,7 @@ export function importedDocumentCharacterFormatting(formatting: {
     });
   }
   const textStyle = compactAttributes({
+    characterPositionHalfPoints: formatting.characterPositionHalfPoints,
     characterSpacingTwips: formatting.characterSpacingTwips,
     color: formatting.color,
     fontFamily: formatting.fontFamily,
@@ -235,6 +239,12 @@ function normalizeCharacterFormatMark(
       const spacing = normalizeDocumentCharacterSpacingTwips(candidate);
       if (spacing === null) return null;
       attrs[key] = spacing;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'characterPositionHalfPoints') {
+      const position = normalizeDocumentCharacterPositionHalfPoints(candidate);
+      if (position === null) return null;
+      attrs[key] = position;
       continue;
     }
     if (typeof candidate === 'string') {

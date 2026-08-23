@@ -20,6 +20,7 @@ afterEach(() => {
 
 test('validates the exact native character-spacing range', () => {
   const draft = createDocumentFontDialogDraft({
+    characterPosition: { mixed: false, value: null },
     characterSpacing: { mixed: false, value: null },
     fontFamily: null,
     fontSize: null,
@@ -54,17 +55,53 @@ test('validates the exact native character-spacing range', () => {
       characterSpacingPoints: '1584.01',
     }),
   ).not.toBeNull();
+  expect(
+    documentFontDialogDraftError({
+      ...draft,
+      characterPositionMode: 'raised',
+      characterPositionPoints: '0.4',
+    }),
+  ).not.toBeNull();
+  expect(
+    documentFontDialogDraftError({
+      ...draft,
+      characterPositionMode: 'raised',
+      characterPositionPoints: '0.5',
+    }),
+  ).toBeNull();
+  expect(
+    documentFontDialogDraftError({
+      ...draft,
+      characterPositionMode: 'lowered',
+      characterPositionPoints: '1.25',
+    }),
+  ).not.toBeNull();
+  expect(
+    documentFontDialogDraftError({
+      ...draft,
+      characterPositionMode: 'lowered',
+      characterPositionPoints: '1584',
+    }),
+  ).toBeNull();
+  expect(
+    documentFontDialogDraftError({
+      ...draft,
+      characterPositionMode: 'lowered',
+      characterPositionPoints: '1584.5',
+    }),
+  ).not.toBeNull();
 });
 
-test('leaves mixed character spacing untouched until the user chooses a mode', async () => {
+test('keeps independently mixed spacing and position untouched until each mode is chosen', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),
     content:
-      '<p><span data-office-character-spacing-twips="20" style="letter-spacing: 1pt">Wide</span> <span data-office-character-spacing-twips="-20" style="letter-spacing: -1pt">Tight</span></p>',
+      '<p><span data-office-character-position-half-points="2" data-office-character-spacing-twips="20" style="--work-document-character-position: 1pt; letter-spacing: 1pt">Wide</span> <span data-office-character-position-half-points="-2" data-office-character-spacing-twips="-20" style="--work-document-character-position: -1pt; letter-spacing: -1pt">Tight</span></p>',
   });
   editor.commands.selectAll();
   const source = documentFontDialogSource(editor);
   expect(source.characterSpacing).toEqual({ mixed: true, value: null });
+  expect(source.characterPosition).toEqual({ mixed: true, value: null });
   const patches: unknown[] = [];
 
   render(
@@ -83,6 +120,9 @@ test('leaves mixed character spacing untouched until the user chooses a mode', a
   expect(screen.getByText(/当前选区包含多种字符间距/)).toHaveTextContent(
     '当前选区包含多种字符间距',
   );
+  expect(screen.getByText(/当前选区包含多种字符位置/)).toHaveTextContent(
+    '当前选区包含多种字符位置',
+  );
 
   fireEvent.click(screen.getByRole('combobox', { name: '字符间距' }));
   fireEvent.click(await screen.findByRole('option', { name: '加宽' }));
@@ -93,11 +133,11 @@ test('leaves mixed character spacing untouched until the user chooses a mode', a
   expect(patches).toEqual([{ characterSpacingTwips: 50 }]);
 });
 
-test('restores the saved selection and applies explicit normal spacing in one undo step', async () => {
+test('applies spacing and position to the saved selection in one undo step', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),
     content:
-      '<p><span data-office-character-spacing-twips="40" style="letter-spacing: 2pt">Selected text</span> remains</p>',
+      '<p><span data-office-character-position-half-points="4" data-office-character-spacing-twips="40" style="--work-document-character-position: 2pt; letter-spacing: 2pt">Selected text</span> remains</p>',
   });
   document.body.append(editor.view.dom);
   const selection = textRange(editor, 'Selected text');
@@ -111,6 +151,20 @@ test('restores the saved selection and applies explicit normal spacing in one un
 
   fireEvent.click(screen.getByRole('combobox', { name: '字符间距' }));
   fireEvent.click(await screen.findByRole('option', { name: '标准' }));
+  fireEvent.click(screen.getByRole('combobox', { name: '字符位置' }));
+  fireEvent.click(await screen.findByRole('option', { name: '降低' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '位置值（磅）' }), {
+    target: { value: '1.5' },
+  });
+  const preview = screen.getByLabelText('字符间距和位置预览');
+  await waitFor(() => {
+    expect(preview.querySelector('output')?.getAttribute('style')).toContain(
+      'letter-spacing: 0pt',
+    );
+    expect(
+      preview.querySelector('output > span')?.getAttribute('style'),
+    ).toContain('vertical-align: -1.5pt');
+  });
   fireEvent.click(screen.getByRole('button', { name: '应用' }));
 
   await waitFor(() =>
@@ -123,11 +177,18 @@ test('restores the saved selection and applies explicit normal spacing in one un
     head: selection.to,
   });
   expect(editor.getAttributes('textStyle').characterSpacingTwips).toBe(0);
+  expect(editor.getAttributes('textStyle').characterPositionHalfPoints).toBe(
+    -3,
+  );
   expect(editor.getHTML()).toContain('data-office-character-spacing-twips="0"');
+  expect(editor.getHTML()).toContain(
+    'data-office-character-position-half-points="-3"',
+  );
 
   expect(editor.commands.undo()).toBe(true);
   editor.commands.setTextSelection(selection);
   expect(editor.getAttributes('textStyle').characterSpacingTwips).toBe(40);
+  expect(editor.getAttributes('textStyle').characterPositionHalfPoints).toBe(4);
   await waitFor(() => expect(editor?.view.dom).toHaveFocus());
 });
 

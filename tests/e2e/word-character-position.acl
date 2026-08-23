@@ -1,0 +1,116 @@
+suite "office-word-character-position" {
+    version = 1
+
+    scenario "author-native-character-position" {
+        name = "Author native Writer character position from the font dialog"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        click "focus-title" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-title-start" {
+            key = "Home"
+        }
+
+        press "select-title" {
+            key = "Shift+End"
+        }
+
+        press "open-font-dialog" {
+            key = "Control+d"
+        }
+
+        expect "font-dialog-visible" {
+            visible = css(".work-document-font-dialog[role='dialog']")
+        }
+
+        click "open-character-spacing-modes" {
+            target = role("combobox", "字符间距")
+        }
+
+        click "choose-expanded-spacing" {
+            target = role("option", "加宽")
+        }
+
+        fill "set-character-spacing" {
+            target = css(".work-document-font-dialog [aria-label='间距值（磅）']")
+            value = "2"
+        }
+
+        click "open-character-position-modes" {
+            target = role("combobox", "字符位置")
+        }
+
+        click "choose-raised-position" {
+            target = role("option", "提升")
+        }
+
+        fill "set-raised-position" {
+            target = css(".work-document-font-dialog [aria-label='位置值（磅）']")
+            value = "1.5"
+        }
+
+        expect "live-position-preview" {
+            visible = css(".work-document-font-dialog [aria-label='字符间距和位置预览'] output > span[style*='vertical-align: 1.5pt']")
+        }
+
+        click "apply-character-formatting" {
+            target = role("button", "应用")
+        }
+
+        expect "native-position-and-spacing-applied" {
+            visible = css(".work-document-editable .ProseMirror h1 span[data-office-character-position-half-points='3'][data-office-character-spacing-twips='40'][style*='--work-document-character-position: 1.5pt'][style*='letter-spacing: 2pt']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-both-character-properties" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restored-title" {
+            visible = css(".work-document-editable .ProseMirror h1:not(:has(span[data-office-character-position-half-points], span[data-office-character-spacing-twips]))")
+        }
+
+        accessibility "character-position-accessibility" {
+            path = "evidence/character-position-accessibility.json"
+            interactive = true
+        }
+
+        console "character-position-console" {
+            path = "diagnostics/character-position-console.json"
+            clear = false
+        }
+
+        page_errors "character-position-page-errors" {
+            path = "diagnostics/character-position-page-errors.json"
+            clear = false
+        }
+    }
+}

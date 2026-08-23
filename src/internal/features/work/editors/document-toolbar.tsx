@@ -1026,7 +1026,18 @@ export function DocumentToolbar({
               patch,
             )
           }
-          onClose={() => setFontDialogRequest(null)}
+          onClose={() => {
+            const { editor: dialogEditor, selection } = fontDialogRequest;
+            setFontDialogRequest(null);
+            requestAnimationFrame(() => {
+              if (dialogEditor.isDestroyed) return;
+              dialogEditor
+                .chain()
+                .setTextSelection(selection)
+                .focus(null, { scrollIntoView: false })
+                .run();
+            });
+          }}
         />
       )}
       {officeDialog.dialog}

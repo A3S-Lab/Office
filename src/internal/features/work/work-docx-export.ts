@@ -6,6 +6,7 @@ import type {
 } from 'docx';
 import { normalizeDocumentBookmarkReferencesHtml } from './work-document-bookmark-references';
 import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
+import { documentCharacterPositionHalfPointsFromElement } from './work-document-character-position';
 import { documentCharacterSpacingTwipsFromElement } from './work-document-character-spacing';
 import { normalizeDocumentHref } from './work-document-links';
 import {
@@ -35,6 +36,7 @@ import {
 import { docxSectionColumns } from './work-docx-column-export';
 import { createDocxCommentRecords } from './work-docx-comment-export';
 import { patchDocxCommentMetadata } from './work-docx-comment-metadata';
+import { docxCharacterPositionValue } from './work-docx-character-position';
 import {
   docxCharacterSpacingValue,
   patchDocxExplicitZeroCharacterSpacing,
@@ -750,6 +752,8 @@ async function inlineRuns(
     );
     const explicitCharacterSpacing =
       documentCharacterSpacingTwipsFromElement(node);
+    const explicitCharacterPosition =
+      documentCharacterPositionHalfPointsFromElement(node);
     if (explicitCharacterSpacing === 0) {
       noteContext.hasExplicitZeroCharacterSpacing = true;
     }
@@ -757,6 +761,12 @@ async function inlineRuns(
       explicitCharacterSpacing === null
         ? inherited.characterSpacing
         : docxCharacterSpacingValue(explicitCharacterSpacing);
+    const position =
+      explicitCharacterPosition === null
+        ? inherited.position
+        : (docxCharacterPositionValue(
+            explicitCharacterPosition,
+          ) as IRunOptions['position']);
     const textCaseOptions = docxTextCaseRunOptions(explicitTextCase, inherited);
     const underline = docxUnderlineRunOptions(
       node,
@@ -776,6 +786,7 @@ async function inlineRuns(
       font: cssFontFamily(node.style.fontFamily) ?? inherited.font,
       size: cssFontSize(node.style.fontSize) ?? inherited.size,
       characterSpacing,
+      position,
       shading: themeFillMarker ? { fill: themeFillMarker } : resolvedShading,
       snapToGrid:
         dataBoolean(node.dataset.officeWordSnapToGrid) ?? inherited.snapToGrid,

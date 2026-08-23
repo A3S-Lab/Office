@@ -175,6 +175,32 @@ inside `w:rPrChange` retain the exact signed value. The DOM stores
 without rewriting text. Eligible paragraphs remain on the Worker/WASM layout
 path because the kernel applies the same linear advance adjustment.
 
+## Native character baseline position
+
+The same **Advanced Font Settings** dialog stores Normal, Raised, or Lowered
+text as one signed native `w:position` value from -3,168 through 3,168
+half-points. One half-point equals 0.5 point, so the numeric field accepts an
+exact 0.5–1,584 point magnitude. Position and spacing track mixed selections
+independently; changing both and choosing Apply still creates one transaction
+and one Undo record.
+
+Body text, headers, footers, Format Painter, tracked character formatting, and
+prior values inside `w:rPrChange` share the same TipTap attribute. Explicit
+zero remains distinct from inheritance. Transitional DOCX accepts signed
+integers, while strict DOCX also accepts universal measures that convert to an
+exact half-point. Malformed, duplicated, out-of-range, or namespace-spoofed
+properties fail closed. Export and reopen write the exact native value,
+including `w:position w:val="0"`.
+
+The DOM stores `data-office-character-position-half-points` and exposes the
+exact point value through `--work-document-character-position`; CSS applies it
+as numeric `vertical-align`. Native subscript or superscript takes visual
+precedence when `w:position` and `w:vertAlign` coexist, and removing that mark
+reveals the retained baseline offset again. Positioned paragraphs deliberately
+use browser line measurement until the Worker/WASM text-layout protocol can
+carry per-run baseline offsets; other eligible paragraphs remain on the
+deterministic kernel path.
+
 ## Real-time review mode
 
 Pass an initialized Document collaboration session with `mode: 'comment'` and
@@ -208,8 +234,9 @@ for the complete browser/backend contract and the current native CLI/MCP limit.
 With tracked changes enabled, applying direct character formatting to existing
 text creates one `formatting` revision. The bounded model covers bold, italic,
 underline, strike, subscript, superscript, font family, font size, text color,
-highlight, character spacing, all-caps and small-caps effects, and Word grid state. Formatting
-applied to text that is still a pending insertion remains part of that insertion
+highlight, character spacing, baseline position, all-caps and small-caps
+effects, and Word grid state. Formatting applied to text that is still a
+pending insertion remains part of that insertion
 instead of creating a nested revision.
 
 The revision stores the exact prior direct marks while the selected text renders

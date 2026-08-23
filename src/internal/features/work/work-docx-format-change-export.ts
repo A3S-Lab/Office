@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-character-position';
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
 import {
   parseDocumentCharacterFormatting,
@@ -314,6 +315,13 @@ function appendFormattingProperties(
     prefix,
     byType.get('textStyle'),
   );
+  appendCharacterPositionProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
   appendFontSizeProperties(
     document,
     properties,
@@ -336,6 +344,27 @@ function appendFormattingProperties(
     byType.get('textStyle'),
   );
   appendVerticalAlignProperty(document, properties, namespace, prefix, byType);
+}
+
+function appendCharacterPositionProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const position = normalizeDocumentCharacterPositionHalfPoints(
+    mark?.attrs?.characterPositionHalfPoints,
+  );
+  if (position === null) return;
+  appendValuedProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    'position',
+    String(position),
+  );
 }
 
 function appendCharacterSpacingProperty(

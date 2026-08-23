@@ -332,6 +332,16 @@ exact selection restoration, live preview, validation, and one-step Undo.
 Format Painter, formatting revisions, body/header/footer import, export, and
 reopen retain the native value. CSS remains a paint projection while the same
 advance adjustment stays eligible for Worker/WASM layout.
+Writer character baseline position now uses one signed `w:position` value from
+-3,168 to 3,168 half-points, including explicit zero. The same advanced font
+dialog exposes Normal, Raised, and Lowered modes while tracking mixed spacing
+and position independently; changing both still produces one transaction and
+one Undo record. Body and page chrome, Format Painter, formatting revisions,
+strict/transitional DOCX import, export, and reopen retain the exact value.
+CSS projects the offset with numeric `vertical-align`, gives native subscript
+or superscript precedence when both properties coexist, and deliberately keeps
+positioned paragraphs on browser-authoritative measurement until the text
+layout protocol carries per-run baseline offsets.
 Writer underline formatting now uses one typed mark for all 18 native `w:u`
 values, direct RGB or theme/tint/shade color identity, and explicit `none`.
 The Home ribbon, selection toolbar, page chrome, Format Painter, formatting

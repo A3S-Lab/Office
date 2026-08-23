@@ -116,6 +116,13 @@ bun run test:e2e:writer-character-spacing:check
 bun run test:e2e:writer-character-spacing
 ```
 
+The Writer native character-position workflow has a focused local gate:
+
+```bash
+bun run test:e2e:writer-character-position:check
+bun run test:e2e:writer-character-position
+```
+
 The native Spreadsheet cell lifecycle has a focused gate:
 
 ```bash
@@ -498,6 +505,13 @@ expanded spacing, restores editor focus, and proves one-step Undo together with
 accessibility and clean browser diagnostics. Desktop and compact Playwright
 cover the same public path. The A3S Test suite remains local-only and is not
 referenced by GitHub Actions or Pages.
+The Writer native character-position workflow uses the same advanced font
+dialog to change exact spacing and raised position in one Apply action, proves
+both native DOM attributes, focus restoration, and one-step Undo, then captures
+accessibility and clean browser diagnostics. Desktop and compact Playwright
+cover the live preview and responsive controls on the same public path. The
+A3S Test suite remains local-only and is not referenced by GitHub Actions or
+Pages.
 The native Spreadsheet collaboration workflow applies the Rust CLI's real Yjs
 updates to an initialized browser workbook, verifies the visible A2 value and
 formula change, then covers sparse cell creation and exact deletion with

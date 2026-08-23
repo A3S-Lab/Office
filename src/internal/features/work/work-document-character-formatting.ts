@@ -1,6 +1,7 @@
 import { Extension, type Editor } from '@tiptap/core';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
+import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-character-position';
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
 import {
   documentTextCaseKeyboardShortcuts,
@@ -16,6 +17,9 @@ declare module '@tiptap/core' {
       setDocumentCharacterSpacing: (
         characterSpacingTwips: number,
       ) => ReturnType;
+      setDocumentCharacterPosition: (
+        characterPositionHalfPoints: number,
+      ) => ReturnType;
       setDocumentTextCase: (textCase: WorkDocumentTextCase) => ReturnType;
       toggleDocumentTextCase: (
         textCase: Exclude<WorkDocumentTextCase, 'none'>,
@@ -29,6 +33,18 @@ export const DocumentCharacterFormatting = Extension.create({
 
   addCommands() {
     return {
+      setDocumentCharacterPosition:
+        (characterPositionHalfPoints: number) =>
+        ({ commands }) => {
+          const position = normalizeDocumentCharacterPositionHalfPoints(
+            characterPositionHalfPoints,
+          );
+          return position === null
+            ? false
+            : commands.setMark('textStyle', {
+                characterPositionHalfPoints: position,
+              });
+        },
       setDocumentCharacterSpacing:
         (characterSpacingTwips: number) =>
         ({ commands }) => {
