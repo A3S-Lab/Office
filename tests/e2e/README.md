@@ -136,6 +136,20 @@ Undo, accessibility evidence, and empty console/page-error diagnostics. The
 suite uses A3S Test only through the local release gate and is not referenced by
 GitHub Actions.
 
+The Writer native hidden-text workflow has a focused local gate:
+
+```bash
+bun run test:e2e:writer-hidden-text:check
+bun run test:e2e:writer-hidden-text
+```
+
+It covers `Cmd/Ctrl+D` authoring, the mixed-safe hidden-text checkbox, dotted
+preview, hidden-by-default editing, the View-tab reveal command, the standard
+`Cmd/Ctrl+Shift+H` toggle, one-step Undo, accessibility evidence, and empty
+console/page-error diagnostics. Preview and PDF output stay suppressed. The
+suite uses the latest pinned local A3S Test release gate and is not referenced
+by GitHub Actions.
+
 The Writer native character-scale workflow has a focused local gate:
 
 ```bash

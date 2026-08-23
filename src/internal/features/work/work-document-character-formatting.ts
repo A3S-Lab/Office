@@ -10,6 +10,10 @@ import {
 } from './work-document-emphasis';
 import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
 import {
+  documentHiddenTextKeyboardShortcut,
+  normalizeDocumentHiddenText,
+} from './work-document-hidden-text';
+import {
   documentTextCaseKeyboardShortcuts,
   normalizeDocumentTextCase,
   type WorkDocumentTextCase,
@@ -35,6 +39,9 @@ declare module '@tiptap/core' {
         emphasisMark: WorkDocumentEmphasisMark,
       ) => ReturnType;
       unsetDocumentEmphasisMark: () => ReturnType;
+      setDocumentHiddenText: (hiddenText: boolean) => ReturnType;
+      unsetDocumentHiddenText: () => ReturnType;
+      toggleDocumentHiddenText: () => ReturnType;
       setDocumentTextCase: (textCase: WorkDocumentTextCase) => ReturnType;
       toggleDocumentTextCase: (
         textCase: Exclude<WorkDocumentTextCase, 'none'>,
@@ -118,6 +125,29 @@ export const DocumentCharacterFormatting = Extension.create({
             .setMark('textStyle', { emphasisMark: null })
             .removeEmptyTextStyle()
             .run(),
+      setDocumentHiddenText:
+        (hiddenText: boolean) =>
+        ({ commands }) =>
+          typeof hiddenText === 'boolean'
+            ? commands.setMark('textStyle', { hiddenText })
+            : false,
+      unsetDocumentHiddenText:
+        () =>
+        ({ chain }) =>
+          chain()
+            .setMark('textStyle', { hiddenText: null })
+            .removeEmptyTextStyle()
+            .run(),
+      toggleDocumentHiddenText:
+        () =>
+        ({ commands, editor }) =>
+          commands.setDocumentHiddenText(
+            !(
+              normalizeDocumentHiddenText(
+                editor.getAttributes('textStyle').hiddenText,
+              ) ?? false
+            ),
+          ),
       setDocumentTextCase:
         (textCase: WorkDocumentTextCase) =>
         ({ chain }) =>
@@ -142,6 +172,8 @@ export const DocumentCharacterFormatting = Extension.create({
         this.editor.commands.toggleDocumentTextCase('all-caps'),
       [documentTextCaseKeyboardShortcuts.smallCaps]: () =>
         this.editor.commands.toggleDocumentTextCase('small-caps'),
+      [documentHiddenTextKeyboardShortcut]: () =>
+        this.editor.commands.toggleDocumentHiddenText(),
     };
   },
 });

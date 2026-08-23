@@ -11,6 +11,7 @@ import { documentCharacterPositionHalfPointsFromElement } from './work-document-
 import { documentCharacterSpacingTwipsFromElement } from './work-document-character-spacing';
 import { documentEmphasisMarkFromElement } from './work-document-emphasis';
 import { documentKerningThresholdHalfPointsFromElement } from './work-document-kerning';
+import { documentHiddenTextFromElement } from './work-document-hidden-text';
 import { normalizeDocumentHref } from './work-document-links';
 import {
   collectDocumentNotes,
@@ -51,6 +52,10 @@ import {
 } from './work-docx-kerning';
 import { docxEmphasisMarkRunOptions } from './work-docx-emphasis';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
+import {
+  DocxHiddenTextPatchCollector,
+  patchDocxHiddenText,
+} from './work-docx-hidden-text-export';
 import {
   DocxEquationPatchCollector,
   patchDocxEquations,
@@ -176,6 +181,7 @@ interface DocxNoteContext extends DocxListExportContext {
   equationPatches: DocxEquationPatchCollector;
   formattingChangePatches: DocxRunFormattingChangePatchCollector;
   runFontPatches: DocxRunFontsPatchCollector;
+  hiddenTextPatches: DocxHiddenTextPatchCollector;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
   hasExplicitZeroCharacterSpacing: boolean;
   hasExplicitZeroKerningThreshold: boolean;
@@ -237,6 +243,9 @@ export async function createDocxBlob(
     ),
     formattingChangePatches: new DocxRunFormattingChangePatchCollector(),
     runFontPatches: new DocxRunFontsPatchCollector(
+      JSON.stringify(normalizedContent),
+    ),
+    hiddenTextPatches: new DocxHiddenTextPatchCollector(
       JSON.stringify(normalizedContent),
     ),
     paragraphFormattingChangePatches:
@@ -318,8 +327,12 @@ export async function createDocxBlob(
     kerningPatched,
     noteContext.runFontPatches.patches,
   );
-  const formattingChangesPatched = await patchDocxRunFormattingChanges(
+  const hiddenTextPatched = await patchDocxHiddenText(
     runFontsPatched,
+    noteContext.hiddenTextPatches.patches,
+  );
+  const formattingChangesPatched = await patchDocxRunFormattingChanges(
+    hiddenTextPatched,
     noteContext.formattingChangePatches.patches,
   );
   const noteImageRelationshipsPatched = await patchDocxNoteImageRelationships(
@@ -787,6 +800,7 @@ async function inlineRuns(
     const explicitKerningThreshold =
       documentKerningThresholdHalfPointsFromElement(node);
     const explicitEmphasisMark = documentEmphasisMarkFromElement(node);
+    const explicitHiddenText = documentHiddenTextFromElement(node);
     const explicitCharacterPosition =
       documentCharacterPositionHalfPointsFromElement(node);
     if (explicitCharacterSpacing === 0) {
@@ -818,6 +832,13 @@ async function inlineRuns(
         ? inherited.emphasisMark
         : docxEmphasisMarkRunOptions(explicitEmphasisMark);
     const textCaseOptions = docxTextCaseRunOptions(explicitTextCase, inherited);
+    const hiddenTextStyle =
+      explicitHiddenText === null
+        ? inherited.style
+        : noteContext.hiddenTextPatches.marker(
+            explicitHiddenText,
+            inherited.style,
+          );
     const underline = docxUnderlineRunOptions(
       node,
       inherited.underline,
@@ -831,6 +852,7 @@ async function inlineRuns(
     );
     const style: IRunOptions = {
       ...inherited,
+      style: hiddenTextStyle,
       bold: inherited.bold || tag === 'strong' || tag === 'b',
       italics: inherited.italics || tag === 'em' || tag === 'i',
       underline,

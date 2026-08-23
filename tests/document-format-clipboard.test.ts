@@ -57,6 +57,7 @@ test('copies character and paragraph formatting without replacing semantic marks
     characterPositionHalfPoints: 4,
     characterSpacingTwips: 30,
     emphasisMark: 'underDot',
+    hiddenText: true,
     kerningThresholdHalfPoints: 24,
     color: '#0070c0',
     fontFamily: 'Arial, sans-serif',
@@ -92,6 +93,7 @@ test('applies copied character formatting to text typed at a collapsed cursor', 
     characterPositionHalfPoints: 4,
     characterSpacingTwips: 30,
     emphasisMark: 'underDot',
+    hiddenText: true,
     kerningThresholdHalfPoints: 24,
     color: '#0070c0',
     fontFamily: 'Arial, sans-serif',
@@ -274,6 +276,7 @@ test('applies compatible body formatting when the target omits heading nodes', (
     characterPositionHalfPoints: 4,
     characterSpacingTwips: 30,
     emphasisMark: 'underDot',
+    hiddenText: true,
     kerningThresholdHalfPoints: 24,
   });
 
@@ -311,7 +314,7 @@ function createEditor(): Editor {
     extensions: createWorkDocumentExtensions(),
     content: [
       `<h2 data-office-paragraph-borders='{"bottom":{"style":"double","color":{"value":"#4472c4"},"size":12}}' data-office-paragraph-shading='{"pattern":"pct20","color":{"value":"#112233"},"fill":{"value":"#ddeeff"}}' style="text-align: center; line-height: 1.5; border-bottom: 2px double #4472c4; background-color: #ddeeff">`,
-      '<strong><span data-office-character-scale-percent="80" data-office-character-position-half-points="4" data-office-character-spacing-twips="30" data-office-kerning-threshold-half-points="24" data-office-emphasis-mark="underDot" style="font-stretch: 80%; --work-document-character-position: 2pt; color: #0070c0; font-family: Arial, sans-serif; font-size: 14pt; letter-spacing: 1.5pt; font-kerning: normal; text-emphasis-style: filled dot; text-emphasis-position: under right">Source</span></strong>',
+      '<strong><span data-office-character-scale-percent="80" data-office-character-position-half-points="4" data-office-character-spacing-twips="30" data-office-kerning-threshold-half-points="24" data-office-emphasis-mark="underDot" data-office-hidden-text="true" style="font-stretch: 80%; --work-document-character-position: 2pt; color: #0070c0; font-family: Arial, sans-serif; font-size: 14pt; letter-spacing: 1.5pt; font-kerning: normal; text-emphasis-style: filled dot; text-emphasis-position: under right">Source</span></strong>',
       '</h2>',
       '<p><a href="https://a3s.dev"><em>Target</em></a></p>',
     ].join(''),

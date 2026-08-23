@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
+import { DOCUMENT_HIDDEN_TEXT_ATTRIBUTE } from './work-document-hidden-text';
 import type {
   OfficeKernelTextLayoutParagraph,
   OfficeKernelTextLayoutRun,
@@ -329,6 +330,12 @@ export function collectDocumentTextLayoutRuns(
   loadedFontIds: ReadonlySet<string>,
   paragraphStyle = documentTextParagraphStyle(getComputedStyle(element)),
 ): OfficeKernelTextLayoutRun[] | null {
+  if (
+    element.matches(`[${DOCUMENT_HIDDEN_TEXT_ATTRIBUTE}="true"]`) ||
+    element.querySelector(`[${DOCUMENT_HIDDEN_TEXT_ATTRIBUTE}="true"]`)
+  ) {
+    return null;
+  }
   if (!paragraphStyle) return null;
   const tokens = documentTextLayoutDomTokens(element);
   if (!tokens) return null;

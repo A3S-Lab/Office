@@ -8,6 +8,7 @@ import {
   type WorkDocumentEmphasisMark,
 } from './work-document-emphasis';
 import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
+import { normalizeDocumentHiddenText } from './work-document-hidden-text';
 import {
   normalizeDocumentTextCase,
   type WorkDocumentTextCase,
@@ -84,6 +85,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'fontSize',
     'emphasisMark',
     'kerningThresholdHalfPoints',
+    'hiddenText',
     'scriptFonts',
     'scriptFontSlot',
     'themeColor',
@@ -190,6 +192,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   characterSpacingTwips?: number;
   kerningThresholdHalfPoints?: number;
   emphasisMark?: WorkDocumentEmphasisMark;
+  hiddenText?: boolean;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
   fontSize?: number;
@@ -227,6 +230,7 @@ export function importedDocumentCharacterFormatting(formatting: {
     characterSpacingTwips: formatting.characterSpacingTwips,
     kerningThresholdHalfPoints: formatting.kerningThresholdHalfPoints,
     emphasisMark: formatting.emphasisMark,
+    hiddenText: formatting.hiddenText,
     color: formatting.color,
     fontFamily: formatting.fontFamily,
     scriptFonts:
@@ -293,6 +297,12 @@ function normalizeCharacterFormatMark(
       const emphasisMark = normalizeDocumentEmphasisMark(candidate);
       if (emphasisMark === null) return null;
       attrs[key] = emphasisMark;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'hiddenText') {
+      const hiddenText = normalizeDocumentHiddenText(candidate);
+      if (hiddenText === null) return null;
+      attrs[key] = hiddenText;
       continue;
     }
     if (type === 'textStyle' && key === 'scriptFonts') {

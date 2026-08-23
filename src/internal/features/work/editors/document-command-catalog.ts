@@ -1,3 +1,4 @@
+import { documentHiddenTextKeyboardShortcut } from '../work-document-hidden-text';
 import { documentTextCaseKeyboardShortcuts } from '../work-document-text-case';
 import { documentUnderlineKeyboardShortcuts } from '../work-document-underline';
 
@@ -250,6 +251,16 @@ export const documentCommandCatalog = {
     label: '突出显示',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
+  hiddenText: {
+    id: 'font.hiddenText',
+    label: '隐藏文字',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+H',
+      aria: 'Control+Shift+H Meta+Shift+H',
+      editor: [documentHiddenTextKeyboardShortcut],
+    },
+  },
   clearFormatting: {
     id: 'font.clearFormatting',
     label: '清除格式',
@@ -435,6 +446,11 @@ export const documentCommandCatalog = {
   navigationPane: {
     id: 'view.navigationPane',
     label: '导航窗格',
+    location: { area: 'ribbon', tab: 'view', group: 'show' },
+  },
+  showHiddenText: {
+    id: 'view.showHiddenText',
+    label: '显示隐藏文字',
     location: { area: 'ribbon', tab: 'view', group: 'show' },
   },
   wordCount: {

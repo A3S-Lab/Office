@@ -58,6 +58,10 @@ export function runDocumentWpsShortcut(
   }
 
   if (event.shiftKey) {
+    if (key === 'h') {
+      editor.commands.toggleDocumentHiddenText();
+      return true;
+    }
     if (key === 'd') {
       editor.commands.toggleDocumentUnderlineStyle('double');
       return true;

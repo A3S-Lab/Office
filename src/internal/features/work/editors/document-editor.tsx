@@ -404,6 +404,7 @@ function DocumentEditorSurface({
     taskPane === 'find' || taskPane === 'replace' ? taskPane : null;
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
   const [viewMode, setViewMode] = useState<DocumentViewMode>('page');
+  const [showHiddenText, setShowHiddenText] = useState(false);
   const [showRulers, setShowRulers] = useState(false);
   const [zoom, setZoom] = useState(90);
   const [selectionMenu, setSelectionMenu] =
@@ -1345,7 +1346,7 @@ function DocumentEditorSurface({
 
   return (
     <section
-      className={`work-document-editor${preview ? ' preview' : ''}`}
+      className={`work-document-editor${preview ? ' preview' : ''}${!preview && showHiddenText ? ' show-hidden-text' : ''}`}
       data-collaboration-mode={collaboration?.mode}
       data-work-pdf-artifact={artifactId}
       data-work-pdf-surface={artifactId ? 'live' : undefined}
@@ -1389,6 +1390,7 @@ function DocumentEditorSurface({
           navigationOpen={navigationOpen}
           pageColor={documentPageColor(currentContent.pageColor)}
           showPageNumbers={visibleChrome.showPageNumber}
+          showHiddenText={showHiddenText}
           showRulers={showRulers}
           spellcheckEnabled={spellcheckEnabled}
           viewMode={viewMode}
@@ -1404,6 +1406,10 @@ function DocumentEditorSurface({
           onLayoutChange={updateToolbarLayout}
           onOpenLayout={openLayoutPanel}
           onToggleNavigation={() => void toggleTaskPane('navigation')}
+          onToggleHiddenText={() => {
+            setShowHiddenText((value) => !value);
+            restoreDocumentBodyFocus();
+          }}
           onToggleRulers={() => {
             setShowRulers((value) => !value);
             restoreDocumentBodyFocus();

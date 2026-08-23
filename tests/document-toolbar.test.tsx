@@ -26,6 +26,7 @@ interface ToolbarCalls {
   captions: string[];
   fields: string[];
   files: string[];
+  hiddenText: number;
   notes: string[];
   pageColors: string[];
   pageChromeParts: string[];
@@ -589,6 +590,24 @@ test('disables document zoom buttons at the supported boundaries', () => {
   expect(screen.getByRole('button', { name: '放大文档' })).toBeDisabled();
 });
 
+test('exposes the shared hidden-text display toggle in the View ribbon', () => {
+  editor = createEditor();
+  const calls = createCalls();
+  const view = render(toolbar(editor, calls));
+  fireEvent.click(screen.getByRole('tab', { name: '视图' }));
+
+  const toggle = screen.getByRole('button', { name: '显示隐藏文字' });
+  expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  fireEvent.click(toggle);
+  expect(calls.hiddenText).toBe(1);
+
+  view.rerender(toolbar(editor, calls, 100, false, null, true));
+  expect(screen.getByRole('button', { name: '显示隐藏文字' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+});
+
 test('can start with the ribbon panel collapsed without disabling editing tools', () => {
   editor = createEditor();
   render(toolbar(editor, createCalls(), 100, true));
@@ -614,6 +633,7 @@ function toolbar(
   zoom = 100,
   defaultRibbonCollapsed = false,
   currentPageChromeEditor: Editor | null = null,
+  showHiddenText = false,
 ) {
   return (
     <DocumentToolbar
@@ -631,6 +651,7 @@ function toolbar(
       navigationOpen={false}
       pageColor="#ffffff"
       showPageNumbers={false}
+      showHiddenText={showHiddenText}
       showRulers={false}
       spellcheckEnabled
       viewMode="page"
@@ -655,6 +676,9 @@ function toolbar(
       onOpenLayout={() => undefined}
       onToggleNavigation={() => {
         calls.navigation += 1;
+      }}
+      onToggleHiddenText={() => {
+        calls.hiddenText += 1;
       }}
       onTogglePageNumbers={() => {
         calls.pageNumbers += 1;
@@ -715,6 +739,7 @@ function createCalls(): ToolbarCalls {
     captions: [],
     fields: [],
     files: [],
+    hiddenText: 0,
     notes: [],
     pageColors: [],
     pageChromeParts: [],

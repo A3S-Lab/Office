@@ -110,7 +110,7 @@ baseline rather than one specific release.
 
 | Capability | A3S Office today | Traditional Office baseline |
 | --- | --- | --- |
-| Text, paragraphs, lists, and styles | **Supported** — structured editing, independent native ASCII, high ANSI, East Asian, and complex-script font slots with direct/theme identity, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing, half-point kerning thresholds, all five native East Asian emphasis marks, and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
+| Text, paragraphs, lists, and styles | **Supported** — structured editing, independent native ASCII, high ANSI, East Asian, and complex-script font slots with direct/theme identity, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing, half-point kerning thresholds, all five native East Asian emphasis marks, native hidden text with explicit visible resets, and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
 | Page layout and rendering | **Partial** — sections, margins, page size, columns, headers/footers, fields, and live pagination | Desktop-grade pagination, print layout, and vector output |
 | Tables, pictures, and equations | **Partial** — rich table geometry, floating pictures, crop/wrap, and structured OMML | Broader drawings, text boxes, charts, WordArt, and SmartArt |
 | Comments, revisions, and collaboration | **Partial** — comments, suggestions, text/format revisions, decisions, Yjs presence, and host relay contracts | Full revision families plus integrated sharing and review services |
@@ -705,6 +705,19 @@ typed value. The DOM projects it through `data-office-emphasis-mark` and CSS
 `text-emphasis-*`; paragraphs with visible marks use browser-authoritative line
 measurement so their out-of-line glyph extents are not approximated by the
 Worker/WASM shaper. No dedicated shortcut is invented.
+
+Native Writer hidden text retains three distinct states: inherited formatting,
+native `w:vanish`, and an explicit `w:vanish w:val="0"` visible reset. The
+shared `Cmd/Ctrl+D` dialog preserves mixed selections until the checkbox is
+edited, while the standard `Cmd/Ctrl+Shift+H` command toggles the same typed
+mark and produces one Undo record. Body text, page chrome, footnotes, endnotes,
+Format Painter, formatting revisions, strict/transitional style inheritance,
+exact DOCX export, and reopen retain the value. Hidden text is suppressed by
+default; the View ribbon can reveal it only on editable Writer surfaces with a
+dotted underline. Read-only preview and detached PDF capture always suppress
+it. Unchanged comment XML remains source-preserved without claiming rich
+comment-text editing, and affected paragraphs use browser-authoritative line
+measurement so invisible glyphs never distort Worker/WASM pagination.
 
 Supported native OMML equations now survive as bounded structured objects in
 the document body, headers, footers, footnotes, and endnotes. Inline and display
@@ -1406,6 +1419,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.27.0 documentation](https://a3s-lab.github.io/Office/docs/0.27.0/)
 - [A3S Office 0.26.0 documentation](https://a3s-lab.github.io/Office/docs/0.26.0/)
 - [A3S Office 0.25.0 documentation](https://a3s-lab.github.io/Office/docs/0.25.0/)
 - [A3S Office 0.24.0 documentation](https://a3s-lab.github.io/Office/docs/0.24.0/)

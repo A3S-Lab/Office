@@ -31,7 +31,7 @@ test('Writer authors and clears a native kerning threshold in the responsive fon
   await expect(dialog).toBeVisible();
   await expect(
     dialog.getByRole('group', {
-      name: '字符缩放、间距、字距调整、位置与着重号',
+      name: '字符缩放、间距、字距调整、位置、着重号与隐藏文字',
     }),
   ).toBeVisible();
   const kerning = dialog.getByRole('checkbox', {

@@ -27,6 +27,10 @@ import {
   documentKerningDomAttributes,
   documentKerningThresholdHalfPointsFromElement,
 } from './work-document-kerning';
+import {
+  DOCUMENT_HIDDEN_TEXT_ATTRIBUTE,
+  documentHiddenTextFromElement,
+} from './work-document-hidden-text';
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import {
   DOCUMENT_PARAGRAPH_BORDERS_ATTRIBUTE,
@@ -487,6 +491,8 @@ function sanitizeAttributes(element: Element, tag: string) {
   const emphasisMark =
     tag === 'span' ? documentEmphasisMarkFromElement(element) : null;
   const emphasisAttributes = documentEmphasisMarkDomAttributes(emphasisMark);
+  const hiddenText =
+    tag === 'span' ? documentHiddenTextFromElement(element) : null;
   const underline =
     tag === 'u' ? documentUnderlineFormattingFromElement(element) : null;
   const underlineAttributes = underline
@@ -518,6 +524,7 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_CHARACTER_SPACING_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_EMPHASIS_MARK_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_HIDDEN_TEXT_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_SCRIPT_FONTS_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE);
   const styles = [
@@ -605,6 +612,9 @@ function sanitizeAttributes(element: Element, tag: string) {
   if (tag === 'span' && emphasisMark !== null) {
     element.setAttribute(DOCUMENT_EMPHASIS_MARK_ATTRIBUTE, emphasisMark);
   }
+  if (tag === 'span' && hiddenText !== null) {
+    element.setAttribute(DOCUMENT_HIDDEN_TEXT_ATTRIBUTE, String(hiddenText));
+  }
   if (tag === 'span' && scriptFonts) {
     for (const [name, value] of Object.entries(scriptFontAttributes)) {
       if (name !== 'style') element.setAttribute(name, value);
@@ -655,6 +665,7 @@ function sanitizeAttributes(element: Element, tag: string) {
                           DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
                           DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
                           DOCUMENT_EMPHASIS_MARK_ATTRIBUTE,
+                          DOCUMENT_HIDDEN_TEXT_ATTRIBUTE,
                           DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
                           DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,
                         ]

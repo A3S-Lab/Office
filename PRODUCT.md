@@ -460,6 +460,23 @@ text line, while a computed explicit none remains eligible for Worker/WASM
 layout. Malformed or namespace-spoofed properties fail closed. Focused Rstest,
 desktop/compact Playwright, and a local-only A3S Test 1.0.0 suite form the
 release evidence without adding A3S Test to Actions or Pages.
+The forty-second milestone adds Writer's native hidden-text model. One
+three-state TextStyle attribute distinguishes inheritance, native `w:vanish`,
+and an explicit `w:vanish w:val="0"` reset. The shared `Cmd/Ctrl+D` dialog keeps
+mixed selections untouched until the semantic checkbox changes, while the
+standard `Cmd/Ctrl+Shift+H` shortcut toggles the same command and remains one
+Undo step. Body text, page chrome, notes, inherited styles, Format Painter,
+tracked formatting revisions, strict/transitional DOCX import, exact export,
+and reopen retain the state; temporary export markers restore the original
+character style instead of replacing its identity. Hidden text is suppressed
+by default and in every read-only preview or PDF snapshot. The View ribbon
+reveals it only in editable Writer surfaces with a dotted underline. Malformed,
+duplicated, child- or text-bearing, extra-attribute, and namespace-spoofed
+properties fail closed; unchanged comment XML is only source-preserved and is
+not presented as rich comment editing. Focused Rstest, desktop/compact
+Playwright, and the local-only pinned A3S Test suite cover authoring, reveal,
+shortcut, Undo, accessibility, and empty browser diagnostics without changing
+Actions or Pages.
 
 ## Product Rules
 

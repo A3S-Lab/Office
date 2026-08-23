@@ -52,8 +52,8 @@ suite "office-word-character-spacing" {
             visible = css(".work-document-font-dialog[role='dialog']")
         }
 
-        expect "character-spacing-focused" {
-            visible = css(".work-document-font-dialog [role='combobox'][aria-label='字符间距']:focus")
+        expect "latin-font-focused" {
+            visible = css(".work-document-font-dialog [role='combobox'][aria-label='拉丁文字字体']:focus")
         }
 
         click "open-character-spacing-modes" {

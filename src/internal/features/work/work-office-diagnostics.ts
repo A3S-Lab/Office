@@ -4,6 +4,7 @@ import { diagnoseDocxCaptions } from './work-docx-caption-diagnostics';
 import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
 import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
 import { diagnoseDocxEmphasisMarks } from './work-docx-emphasis-diagnostics';
+import { diagnoseDocxHiddenText } from './work-docx-hidden-text-diagnostics';
 import { diagnoseDocxKerning } from './work-docx-kerning-diagnostics';
 import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
 import { diagnoseDocxPageBorders } from './work-docx-page-borders-diagnostics';
@@ -217,6 +218,7 @@ export async function analyzeDocxCompatibility(
     if (document) {
       issues.push(...(await diagnoseDocxKerning(archive, document)));
       issues.push(...(await diagnoseDocxEmphasisMarks(archive, document)));
+      issues.push(...(await diagnoseDocxHiddenText(archive, document)));
       issues.push(...(await diagnoseDocxRunFonts(archive, document)));
     }
     issues.push(...(await diagnoseDocxPageChrome(archive)));

@@ -30,6 +30,11 @@ test('keeps Writer command ids and WPS locations unique', () => {
     tab: 'view',
     group: 'show',
   });
+  expect(getDocumentCommandDefinition('showHiddenText').location).toEqual({
+    area: 'ribbon',
+    tab: 'view',
+    group: 'show',
+  });
   expect(getDocumentCommandDefinition('wordCount').location).toEqual({
     area: 'status',
   });
@@ -62,6 +67,11 @@ test('defines the WPS Writer shortcut contract in one catalog', () => {
     label: 'Cmd/Ctrl+Shift+W',
     aria: 'Control+Shift+W Meta+Shift+W',
     editor: ['Mod-Shift-w'],
+  });
+  expect(getDocumentCommandDefinition('hiddenText').shortcut).toEqual({
+    label: 'Cmd/Ctrl+Shift+H',
+    aria: 'Control+Shift+H Meta+Shift+H',
+    editor: ['Mod-Shift-h'],
   });
   expect(getDocumentCommandDefinition('strike').shortcut).toBeUndefined();
   expect(getDocumentCommandDefinition('doubleStrike')).toMatchObject({

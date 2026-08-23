@@ -28,6 +28,11 @@ import {
   normalizeDocumentKerningThresholdHalfPoints,
 } from './work-document-kerning';
 import {
+  DOCUMENT_HIDDEN_TEXT_ATTRIBUTE,
+  documentHiddenTextDomAttributes,
+  documentHiddenTextFromElement,
+} from './work-document-hidden-text';
+import {
   parseDocxThemeReference,
   serializeDocxThemeReference,
 } from './work-docx-theme-reference';
@@ -72,6 +77,7 @@ declare module '@tiptap/extension-text-style' {
     characterPositionHalfPoints?: number | null;
     characterSpacingTwips?: number | null;
     emphasisMark?: WorkDocumentEmphasisMark | null;
+    hiddenText?: boolean | null;
     kerningThresholdHalfPoints?: number | null;
     scriptFonts?: string | null;
     scriptFontSlot?: WorkDocumentScriptFontSlot | null;
@@ -103,6 +109,15 @@ export function normalizedDocumentWordLineHeightFactor(
 }
 
 export const DocumentTextStyle = TextStyle.extend({
+  parseHTML() {
+    return [
+      ...(this.parent?.() ?? []),
+      {
+        tag: `span[${DOCUMENT_HIDDEN_TEXT_ATTRIBUTE}]`,
+        consuming: false,
+      },
+    ];
+  },
   addCommands() {
     return {
       ...(this.parent?.() ?? {}),
@@ -173,6 +188,13 @@ export const DocumentTextStyle = TextStyle.extend({
           documentEmphasisMarkDomAttributes(
             normalizeDocumentEmphasisMark(attributes.emphasisMark),
           ),
+      },
+      hiddenText: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          documentHiddenTextFromElement(element),
+        renderHTML: (attributes: Record<string, unknown>) =>
+          documentHiddenTextDomAttributes(attributes.hiddenText),
       },
       kerningThresholdHalfPoints: {
         default: null,
@@ -268,6 +290,9 @@ function documentTextStyleAttributesAreEmpty(
 }
 
 export const DocumentHighlight = Highlight.extend({
+  addKeyboardShortcuts() {
+    return {};
+  },
   addAttributes() {
     return {
       ...this.parent?.(),

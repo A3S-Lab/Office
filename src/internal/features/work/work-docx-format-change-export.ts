@@ -4,6 +4,7 @@ import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-ch
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
 import { normalizeDocumentEmphasisMark } from './work-document-emphasis';
 import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
+import { normalizeDocumentHiddenText } from './work-document-hidden-text';
 import {
   parseDocumentCharacterFormatting,
   type DocumentCharacterFormatMark,
@@ -305,6 +306,13 @@ function appendFormattingProperties(
     prefix,
     byType.get('textStyle'),
   );
+  appendHiddenTextProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
   appendColorProperty(
     document,
     properties,
@@ -369,6 +377,29 @@ function appendFormattingProperties(
     prefix,
     byType.get('textStyle'),
   );
+}
+
+function appendHiddenTextProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const hiddenText = normalizeDocumentHiddenText(mark?.attrs?.hiddenText);
+  if (hiddenText === null) return;
+  if (hiddenText) {
+    properties.append(wordElement(document, namespace, prefix, 'vanish'));
+  } else {
+    appendValuedProperty(
+      document,
+      properties,
+      namespace,
+      prefix,
+      'vanish',
+      '0',
+    );
+  }
 }
 
 function appendEmphasisMarkProperty(

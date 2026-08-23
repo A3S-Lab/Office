@@ -180,6 +180,24 @@ test('retains only canonical native emphasis marks in page chrome', () => {
   expect(invalid).not.toContain('text-emphasis');
 });
 
+test('retains only canonical hidden-text states in page chrome', () => {
+  const hidden = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-hidden-text="true" data-untrusted="drop">Hidden header</span></p>',
+  );
+  expect(hidden).toContain('data-office-hidden-text="true"');
+  expect(hidden).not.toContain('data-untrusted');
+
+  const visibleReset = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-hidden-text="false">Visible reset</span></p>',
+  );
+  expect(visibleReset).toContain('data-office-hidden-text="false"');
+
+  const invalid = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-hidden-text="TRUE">Untrusted hidden state</span></p>',
+  );
+  expect(invalid).not.toContain('data-office-hidden-text');
+});
+
 test('keeps native page-chrome identities through edits', () => {
   const editor = new Editor({
     extensions: createDocumentPageChromeEditorExtensions(),
@@ -196,13 +214,20 @@ test('keeps native page-chrome identities through edits', () => {
   editor.destroy();
 });
 
-test('executes WPS alignment and format-copy shortcuts in page chrome', () => {
+test('executes WPS alignment, hidden-text, and format-copy shortcuts in page chrome', () => {
   clearDocumentFormatClipboard();
   const editor = new Editor({
     extensions: createDocumentPageChromeEditorExtensions(),
     content: '<p><strong>Source</strong> and <em>Target</em></p>',
   });
   editor.commands.setTextSelection(textRange(editor, 'Source'));
+
+  fireEvent.keyDown(editor.view.dom, {
+    key: 'h',
+    ctrlKey: true,
+    shiftKey: true,
+  });
+  expect(editor.getAttributes('textStyle').hiddenText).toBe(true);
 
   fireEvent.keyDown(editor.view.dom, { key: 'e', ctrlKey: true });
   expect(editor.getAttributes('paragraph').textAlign).toBe('center');
@@ -240,6 +265,7 @@ test('executes WPS alignment and format-copy shortcuts in page chrome', () => {
   expect(editor.isActive('bold')).toBe(true);
   expect(editor.isActive('italic')).toBe(false);
   expect(editor.getHTML()).toContain('data-office-text-case="all-caps"');
+  expect(editor.getHTML()).toContain('data-office-hidden-text="true"');
   expect(editor.getAttributes('underline')).toMatchObject({
     underlineStyle: 'double',
   });
@@ -248,6 +274,9 @@ test('executes WPS alignment and format-copy shortcuts in page chrome', () => {
   );
   expect(sanitizeDocumentPageChromeHtml(editor.getHTML())).toContain(
     'data-office-underline-style="double"',
+  );
+  expect(sanitizeDocumentPageChromeHtml(editor.getHTML())).toContain(
+    'data-office-hidden-text="true"',
   );
 
   editor.destroy();

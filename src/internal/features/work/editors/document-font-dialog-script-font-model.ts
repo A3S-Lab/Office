@@ -85,7 +85,7 @@ export function addDocumentScriptFontValues(
 export function applyDocumentScriptFontPatch(
   editor: Editor,
   selection: { from: number; to: number },
-  scalarPatch: Readonly<Record<string, number | string | null>>,
+  scalarPatch: Readonly<Record<string, boolean | number | string | null>>,
   scriptFontPatch: WorkDocumentScriptFontPatch,
 ): boolean {
   if (!validScriptFontPatch(scriptFontPatch)) return false;
@@ -183,7 +183,7 @@ export function applyDocumentScriptFontPatch(
 
 function patchedTextStyleAttributes(
   current: Mark | undefined,
-  scalarPatch: Readonly<Record<string, number | string | null>>,
+  scalarPatch: Readonly<Record<string, boolean | number | string | null>>,
   scriptFontPatch: WorkDocumentScriptFontPatch,
   slot: WorkDocumentScriptFontSlot,
   currentFonts = parseDocumentScriptFonts(current?.attrs.scriptFonts),

@@ -219,6 +219,31 @@ describe('document mixed-run text layout', () => {
     }
   });
 
+  test('keeps paragraphs containing hidden text on browser-authoritative measurement', () => {
+    for (const html of [
+      '<span data-office-hidden-text="true">Hidden paragraph</span>',
+      'Visible <span data-office-hidden-text="true">hidden run</span>',
+    ]) {
+      const paragraph = document.createElement('p');
+      applyTextMetrics(paragraph, 14, 21);
+      paragraph.innerHTML = html;
+      document.body.append(paragraph);
+
+      try {
+        expect(
+          collectDocumentTextLayoutRuns(
+            paragraph,
+            paragraph.textContent ?? '',
+            [layoutFont],
+            new Set([layoutFont.id]),
+          ),
+        ).toBeNull();
+      } finally {
+        paragraph.remove();
+      }
+    }
+  });
+
   test('keeps visible emphasis-mark extents on browser measurement', () => {
     for (const emphasis of ['filled dot', 'open circle', '","']) {
       const paragraph = document.createElement('p');

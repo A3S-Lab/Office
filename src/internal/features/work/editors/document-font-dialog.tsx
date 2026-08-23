@@ -82,24 +82,24 @@ export function DocumentFontDialog({
     useState(false);
   const [kerningTouched, setKerningTouched] = useState(false);
   const [emphasisTouched, setEmphasisTouched] = useState(false);
+  const [hiddenTextTouched, setHiddenTextTouched] = useState(false);
   const [latinFontTouched, setLatinFontTouched] = useState(false);
   const [eastAsiaFontTouched, setEastAsiaFontTouched] = useState(false);
   const [complexScriptFontTouched, setComplexScriptFontTouched] =
     useState(false);
   const formId = useId();
   const error = documentFontDialogDraftError(draft);
-  const patch = documentFontDialogPatch(
-    source,
-    draft,
-    characterScaleTouched,
-    characterSpacingTouched,
-    characterPositionTouched,
-    kerningTouched,
-    emphasisTouched,
-    latinFontTouched,
-    eastAsiaFontTouched,
-    complexScriptFontTouched,
-  );
+  const patch = documentFontDialogPatch(source, draft, {
+    characterPosition: characterPositionTouched,
+    characterScale: characterScaleTouched,
+    characterSpacing: characterSpacingTouched,
+    complexScriptFont: complexScriptFontTouched,
+    eastAsiaFont: eastAsiaFontTouched,
+    emphasisMark: emphasisTouched,
+    hiddenText: hiddenTextTouched,
+    kerning: kerningTouched,
+    latinFont: latinFontTouched,
+  });
   const hasChanges = Object.keys(patch).length > 0;
   const previewScale = previewCharacterScale(draft);
   const previewSpacing = previewCharacterSpacing(draft);
@@ -193,7 +193,7 @@ export function DocumentFontDialog({
           )}
         </fieldset>
         <fieldset className="work-document-font-dialog-spacing">
-          <legend>字符缩放、间距、字距调整、位置与着重号</legend>
+          <legend>字符缩放、间距、字距调整、位置、着重号与隐藏文字</legend>
           <div className="work-document-font-dialog-field">
             <span>缩放</span>
             <span className="work-document-font-dialog-measure">
@@ -344,6 +344,19 @@ export function DocumentFontDialog({
               }}
             />
           </div>
+          <div className="work-document-font-dialog-field work-document-font-dialog-hidden-text">
+            <OfficeCheckbox
+              ariaLabel="隐藏文字"
+              checked={draft.hiddenText}
+              indeterminate={source.hiddenText.mixed && !hiddenTextTouched}
+              onCheckedChange={(hiddenText) => {
+                setDraft((current) => ({ ...current, hiddenText }));
+                setHiddenTextTouched(true);
+              }}
+            >
+              隐藏文字
+            </OfficeCheckbox>
+          </div>
           {source.characterScale.mixed && !characterScaleTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
               当前选区包含多种字符缩放比例。输入缩放比例后才会统一修改。
@@ -369,11 +382,17 @@ export function DocumentFontDialog({
               当前选区包含不同的着重号。选择一种设置后才会统一修改。
             </p>
           )}
+          {source.hiddenText.mixed && !hiddenTextTouched && (
+            <p className="work-document-font-dialog-mixed" role="status">
+              当前选区同时包含隐藏和可见文字。勾选或取消后才会统一修改。
+            </p>
+          )}
           {(characterScaleTouched ||
             characterSpacingTouched ||
             characterPositionTouched ||
             kerningTouched ||
-            emphasisTouched) &&
+            emphasisTouched ||
+            hiddenTextTouched) &&
             error && (
               <p className="work-document-font-dialog-error" role="alert">
                 {error}
@@ -398,6 +417,14 @@ export function DocumentFontDialog({
               style={{
                 verticalAlign: `${previewPosition}pt`,
                 ...previewEmphasis,
+                ...(draft.hiddenText
+                  ? {
+                      textDecorationColor: 'currentColor',
+                      textDecorationLine: 'underline',
+                      textDecorationStyle: 'dotted',
+                      textUnderlineOffset: '0.18em',
+                    }
+                  : {}),
               }}
             >
               {documentScriptFontSegments(source.previewText).map(
@@ -533,6 +560,6 @@ function previewScriptFontFamily(
 
 function fontDialogDescription(source: DocumentFontDialogSource): string {
   return source.selectedCharacters
-    ? `分别设置当前选中内容的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置和着重号（${source.selectedCharacters} 个字符）。`
-    : '分别设置当前位置后续输入文字的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置和着重号。';
+    ? `分别设置当前选中内容的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、着重号和隐藏文字（${source.selectedCharacters} 个字符）。`
+    : '分别设置当前位置后续输入文字的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、着重号和隐藏文字。';
 }

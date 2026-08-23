@@ -11,6 +11,7 @@ import {
   FileText,
   Globe2,
   Hash,
+  Eye,
   Image as ImageIcon,
   Link2,
   ListChecks,
@@ -122,6 +123,7 @@ interface DocumentToolbarProps {
   navigationOpen: boolean;
   pageColor: string;
   showPageNumbers: boolean;
+  showHiddenText: boolean;
   showRulers: boolean;
   spellcheckEnabled: boolean;
   viewMode: DocumentViewMode;
@@ -138,6 +140,7 @@ interface DocumentToolbarProps {
   onOpenLayout: (target: DocumentLayoutPanelTab) => void;
   onToggleNavigation: () => void;
   onTogglePageNumbers: () => void;
+  onToggleHiddenText: () => void;
   onToggleRulers: () => void;
   onPageColorChange: (color: string) => void;
   onToggleSpellcheck: () => void;
@@ -188,6 +191,7 @@ export function DocumentToolbar({
   navigationOpen,
   pageColor,
   showPageNumbers,
+  showHiddenText,
   showRulers,
   spellcheckEnabled,
   viewMode,
@@ -204,6 +208,7 @@ export function DocumentToolbar({
   onOpenLayout,
   onToggleNavigation,
   onTogglePageNumbers,
+  onToggleHiddenText,
   onToggleRulers,
   onPageColorChange,
   onToggleSpellcheck,
@@ -947,6 +952,15 @@ export function DocumentToolbar({
                   onClick={onToggleNavigation}
                 >
                   <PanelLeftOpen size={19} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label="显示隐藏文字"
+                  displayLabel
+                  active={showHiddenText}
+                  title="显示或隐藏以隐藏文字格式标记的内容"
+                  onClick={onToggleHiddenText}
+                >
+                  <Eye size={19} />
                 </ToolbarButton>
               </RibbonGroup>
               <RibbonGroup label={`缩放 ${zoom}%`} priority="low">

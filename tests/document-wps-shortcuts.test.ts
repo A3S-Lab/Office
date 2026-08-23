@@ -73,6 +73,29 @@ test('executes WPS Writer font, paragraph, and style shortcuts', () => {
   expect(
     runDocumentWpsShortcut(
       editor,
+      shortcut({ key: 'h', shiftKey: true }),
+      callbacks,
+    ),
+  ).toBe(true);
+  expect(editor.getAttributes('textStyle').hiddenText).toBe(true);
+
+  expect(
+    runDocumentWpsShortcut(
+      editor,
+      shortcut({
+        ctrlKey: false,
+        key: 'h',
+        metaKey: true,
+        shiftKey: true,
+      }),
+      callbacks,
+    ),
+  ).toBe(true);
+  expect(editor.getAttributes('textStyle').hiddenText).toBe(false);
+
+  expect(
+    runDocumentWpsShortcut(
+      editor,
       shortcut({ key: 'd', shiftKey: true }),
       callbacks,
     ),

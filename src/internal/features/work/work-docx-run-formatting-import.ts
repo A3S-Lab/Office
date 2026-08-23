@@ -30,6 +30,8 @@ import { docxCharacterPositionHalfPointsFromProperties } from './work-docx-chara
 import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
 import { resolveDocxKerningThresholdHalfPoints } from './work-docx-kerning';
 import { resolveDocxEmphasisMark } from './work-docx-emphasis';
+import { resolveDocxHiddenText } from './work-docx-hidden-text';
+import { documentHiddenTextDomAttributes } from './work-document-hidden-text';
 import { documentWordLineHeightFactor } from './work-document-word-line-metrics';
 import {
   type DocxThemeColorReference,
@@ -81,6 +83,7 @@ export interface ImportedDocxRunFormatting {
   characterSpacingTwips?: number;
   kerningThresholdHalfPoints?: number;
   emphasisMark?: WorkDocumentEmphasisMark;
+  hiddenText?: boolean;
   fontFamily?: string;
   scriptFonts?: WorkDocumentScriptFonts;
   scriptFontSlot?: WorkDocumentScriptFontSlot;
@@ -132,6 +135,7 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'dstrike',
   'caps',
   'smallCaps',
+  'vanish',
   'spacing',
   'w',
   'kern',
@@ -337,6 +341,7 @@ function resolvedRunFormatting(
   const kerningThresholdHalfPoints =
     resolveDocxKerningThresholdHalfPoints(propertySources);
   const emphasisMark = resolveDocxEmphasisMark(propertySources);
+  const hiddenText = resolveDocxHiddenText(propertySources);
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
@@ -517,6 +522,7 @@ function resolvedRunFormatting(
       ? { kerningThresholdHalfPoints }
       : {}),
     ...(emphasisMark !== undefined ? { emphasisMark } : {}),
+    ...(hiddenText !== undefined ? { hiddenText } : {}),
     ...(fontFamily
       ? {
           fontFamily,
@@ -630,6 +636,13 @@ function formattingMarkup(
     )) {
       if (name === 'style') span.style.cssText += `; ${value}`;
       else span.setAttribute(name, value);
+    }
+  }
+  if (formatting.hiddenText !== undefined) {
+    for (const [name, value] of Object.entries(
+      documentHiddenTextDomAttributes(formatting.hiddenText),
+    )) {
+      span.setAttribute(name, value);
     }
   }
   if (formatting.wordLineHeightFactor !== undefined) {

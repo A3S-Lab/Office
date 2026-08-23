@@ -4,6 +4,48 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.27.0 - 2026-08-24
+
+- Added native Writer hidden text as an inherited, hidden, or explicit-visible
+  model backed by exact `w:vanish` style resolution. Body text, headers,
+  footers, footnotes, endnotes, Format Painter, formatting revisions, DOCX
+  export/reopen, and untouched source-preserved comment XML retain their
+  original semantics.
+- Added hidden-text authoring to the shared `Cmd/Ctrl+D` dialog and the standard
+  `Cmd/Ctrl+Shift+H` route for both Control and Meta platforms. Editable Writer
+  surfaces can reveal hidden text with a dotted underline, while default view,
+  read-only preview, and PDF capture always suppress it. One intent remains one
+  transaction and one Undo record.
+- Preserved the four independent WordprocessingML `w:rFonts` slots for ASCII,
+  high ANSI, East Asian, and complex-script text, including direct and theme
+  identities, style inheritance, mixed-script segmentation, page chrome,
+  notes, Format Painter, formatting revisions, and exact DOCX reopen.
+- Expanded the advanced font dialog with independently mixed Latin, East Asian,
+  and complex-script font controls. Browser-resolved fallback families stay
+  separate from native source identity so font substitution cannot rewrite an
+  untouched theme reference.
+- Added signed native Writer character spacing through `w:spacing`, including
+  inherited and explicit-zero states, bounded half-point authoring, live
+  preview, browser/Worker layout eligibility, formatting revisions, and one
+  combined advanced-font transaction.
+- Preserved all 18 native DOCX underline values with direct or theme color
+  identity and explicit resets, plus independent native single and double
+  strikethrough. Ribbon controls, standard shortcuts, clipboard, Format
+  Painter, review decisions, and DOCX round trips share the typed models.
+- Added mutually exclusive native Writer all-caps and small-caps effects with
+  semantic source text, body and page-chrome rendering, formatting revisions,
+  Format Painter, one-step Undo, and standard Traditional Office shortcuts.
+- Preserved all 17 non-solid OOXML Spreadsheet pattern fills and native linear
+  or path gradients, including theme, indexed, automatic, tint, angle, path
+  geometry, and 2 through 256 ordered stops. Format Cells can author none,
+  solid, pattern, or gradient fills through one controlled update, while the
+  grid paints only the visible Canvas range.
+- Added strict/transitional namespace, malformed-input, duplicate, spoofing,
+  range, and compatibility diagnostics across the new native models. Full
+  TypeScript and Rust suites, 394 Playwright cases, production and bundle
+  builds, and the local-only pinned A3S Test 1.0.0 Web gate cover the release;
+  GitHub Actions and Pages do not install or invoke A3S Test.
+
 - Added native Writer East Asian emphasis marks as one closed model for all five
   `w:em` values: `none`, `dot`, `comma`, `circle`, and `underDot`. Missing direct
   formatting inherits, while explicit `none` remains distinct from clearing the

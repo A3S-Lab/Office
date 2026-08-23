@@ -42,6 +42,12 @@
   font-weight: 650;
 }
 
+.work-document-font-dialog-hidden-text {
+  align-self: end;
+  min-height: 32px;
+  justify-content: start;
+}
+
 .work-document-font-dialog-field > .work-office-select,
 .work-document-font-dialog-field .work-office-number-field,
 .work-document-font-dialog-field button[role="combobox"] {

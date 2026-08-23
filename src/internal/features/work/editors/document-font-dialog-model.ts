@@ -25,6 +25,7 @@ import {
   normalizeDocumentEmphasisMark,
   type WorkDocumentEmphasisMark,
 } from '../work-document-emphasis';
+import { normalizeDocumentHiddenText } from '../work-document-hidden-text';
 import type { WorkDocumentScriptFontPatch } from '../work-document-script-fonts';
 import {
   addDocumentScriptFontValues,
@@ -77,6 +78,10 @@ export interface DocumentFontDialogSource {
     mixed: boolean;
     value: WorkDocumentEmphasisMark | null;
   };
+  hiddenText: {
+    mixed: boolean;
+    value: boolean | null;
+  };
   latinFont: DocumentFontFamilySource;
   eastAsiaFont: DocumentFontFamilySource;
   complexScriptFont: DocumentFontFamilySource;
@@ -96,6 +101,7 @@ export interface DocumentFontDialogDraft {
   kerningEnabled: boolean;
   kerningThresholdPoints: string;
   emphasisMark: DocumentEmphasisMarkMode;
+  hiddenText: boolean;
   latinFont: string;
   eastAsiaFont: string;
   complexScriptFont: string;
@@ -108,6 +114,19 @@ export interface DocumentFontDialogPatch
   characterSpacingTwips?: number;
   kerningThresholdHalfPoints?: number | null;
   emphasisMark?: WorkDocumentEmphasisMark | null;
+  hiddenText?: boolean;
+}
+
+export interface DocumentFontDialogTouched {
+  characterPosition: boolean;
+  characterScale: boolean;
+  characterSpacing: boolean;
+  complexScriptFont: boolean;
+  eastAsiaFont: boolean;
+  emphasisMark: boolean;
+  hiddenText: boolean;
+  kerning: boolean;
+  latinFont: boolean;
 }
 
 export function documentFontDialogSource(
@@ -119,6 +138,7 @@ export function documentFontDialogSource(
   const spacingValues = new Map<string, number | null>();
   const kerningValues = new Map<string, number | null>();
   const emphasisValues = new Map<string, WorkDocumentEmphasisMark | null>();
+  const hiddenTextValues = new Map<string, boolean | null>();
   const latinFontValues = new Map<string, string | null>();
   const eastAsiaFontValues = new Map<string, string | null>();
   const complexScriptFontValues = new Map<string, string | null>();
@@ -128,6 +148,7 @@ export function documentFontDialogSource(
     addSpacingValue(spacingValues, attributes.characterSpacingTwips);
     addKerningValue(kerningValues, attributes.kerningThresholdHalfPoints);
     addEmphasisValue(emphasisValues, attributes.emphasisMark);
+    addHiddenTextValue(hiddenTextValues, attributes.hiddenText);
     addDocumentScriptFontValues(
       latinFontValues,
       eastAsiaFontValues,
@@ -158,6 +179,7 @@ export function documentFontDialogSource(
     !positionValues.size ||
     !kerningValues.size ||
     !emphasisValues.size ||
+    !hiddenTextValues.size ||
     !latinFontValues.size ||
     !eastAsiaFontValues.size ||
     !complexScriptFontValues.size
@@ -169,6 +191,7 @@ export function documentFontDialogSource(
   const characterSpacing = selectedValue(spacingValues);
   const kerningThreshold = selectedValue(kerningValues);
   const emphasisMark = selectedValue(emphasisValues);
+  const hiddenText = selectedValue(hiddenTextValues);
   const latinFont = selectedValue(latinFontValues);
   const eastAsiaFont = selectedValue(eastAsiaFontValues);
   const complexScriptFont = selectedValue(complexScriptFontValues);
@@ -185,6 +208,7 @@ export function documentFontDialogSource(
     characterSpacing,
     kerningThreshold,
     emphasisMark,
+    hiddenText,
     latinFont,
     eastAsiaFont,
     complexScriptFont,
@@ -241,6 +265,7 @@ export function createDocumentFontDialogDraft(
     emphasisMark: source.emphasisMark.mixed
       ? 'mixed'
       : (source.emphasisMark.value ?? 'inherit'),
+    hiddenText: source.hiddenText.value ?? false,
     latinFont: documentFontFamilyDraftValue(source.latinFont),
     eastAsiaFont: documentFontFamilyDraftValue(source.eastAsiaFont),
     complexScriptFont: documentFontFamilyDraftValue(source.complexScriptFont),
@@ -282,17 +307,10 @@ export function documentFontDialogDraftError(
 export function documentFontDialogPatch(
   source: DocumentFontDialogSource,
   draft: DocumentFontDialogDraft,
-  characterScaleTouched: boolean,
-  characterSpacingTouched: boolean,
-  characterPositionTouched: boolean,
-  kerningTouched: boolean,
-  emphasisTouched: boolean,
-  latinFontTouched: boolean,
-  eastAsiaFontTouched: boolean,
-  complexScriptFontTouched: boolean,
+  touched: DocumentFontDialogTouched,
 ): DocumentFontDialogPatch {
   const patch: DocumentFontDialogPatch = {};
-  if (characterScaleTouched && draft.characterScaleMode !== 'mixed') {
+  if (touched.characterScale && draft.characterScaleMode !== 'mixed') {
     const scale = characterScalePercentFromDraft(draft);
     if (
       scale !== null &&
@@ -301,7 +319,7 @@ export function documentFontDialogPatch(
       patch.characterScalePercent = scale;
     }
   }
-  if (characterSpacingTouched && draft.characterSpacingMode !== 'mixed') {
+  if (touched.characterSpacing && draft.characterSpacingMode !== 'mixed') {
     const spacing = characterSpacingTwipsFromDraft(draft);
     if (
       spacing !== null &&
@@ -311,7 +329,7 @@ export function documentFontDialogPatch(
       patch.characterSpacingTwips = spacing;
     }
   }
-  if (characterPositionTouched && draft.characterPositionMode !== 'mixed') {
+  if (touched.characterPosition && draft.characterPositionMode !== 'mixed') {
     const position = characterPositionHalfPointsFromDraft(draft);
     if (
       position !== null &&
@@ -321,7 +339,7 @@ export function documentFontDialogPatch(
       patch.characterPositionHalfPoints = position;
     }
   }
-  if (kerningTouched) {
+  if (touched.kerning) {
     if (!draft.kerningEnabled) {
       if (
         source.kerningThreshold.mixed ||
@@ -340,7 +358,7 @@ export function documentFontDialogPatch(
       }
     }
   }
-  if (emphasisTouched && draft.emphasisMark !== 'mixed') {
+  if (touched.emphasisMark && draft.emphasisMark !== 'mixed') {
     const emphasisMark =
       draft.emphasisMark === 'inherit'
         ? null
@@ -354,26 +372,32 @@ export function documentFontDialogPatch(
       }
     }
   }
+  if (
+    touched.hiddenText &&
+    (source.hiddenText.mixed || source.hiddenText.value !== draft.hiddenText)
+  ) {
+    patch.hiddenText = draft.hiddenText;
+  }
   appendDocumentFontDialogScriptFontPatch(
     patch,
     'latinFont',
     source.latinFont,
     draft.latinFont,
-    latinFontTouched,
+    touched.latinFont,
   );
   appendDocumentFontDialogScriptFontPatch(
     patch,
     'eastAsiaFont',
     source.eastAsiaFont,
     draft.eastAsiaFont,
-    eastAsiaFontTouched,
+    touched.eastAsiaFont,
   );
   appendDocumentFontDialogScriptFontPatch(
     patch,
     'complexScriptFont',
     source.complexScriptFont,
     draft.complexScriptFont,
-    complexScriptFontTouched,
+    touched.complexScriptFont,
   );
   return patch;
 }
@@ -388,6 +412,7 @@ export function applyDocumentFontDialogPatch(
   const hasSpacing = patch.characterSpacingTwips !== undefined;
   const hasKerning = patch.kerningThresholdHalfPoints !== undefined;
   const hasEmphasis = patch.emphasisMark !== undefined;
+  const hasHiddenText = patch.hiddenText !== undefined;
   const scriptFontPatch: WorkDocumentScriptFontPatch = {
     ...(patch.latinFont !== undefined ? { latin: patch.latinFont } : {}),
     ...(patch.eastAsiaFont !== undefined
@@ -427,6 +452,7 @@ export function applyDocumentFontDialogPatch(
       !hasSpacing &&
       !hasKerning &&
       !hasEmphasis &&
+      !hasHiddenText &&
       !hasScriptFonts) ||
     (hasScale && scale === null) ||
     (hasPosition && position === null) ||
@@ -435,6 +461,7 @@ export function applyDocumentFontDialogPatch(
       patch.kerningThresholdHalfPoints !== null &&
       kerningThreshold === null) ||
     (hasEmphasis && patch.emphasisMark !== null && emphasisMark === null) ||
+    (hasHiddenText && typeof patch.hiddenText !== 'boolean') ||
     !Number.isSafeInteger(selection.from) ||
     !Number.isSafeInteger(selection.to) ||
     selection.from < 0 ||
@@ -443,7 +470,7 @@ export function applyDocumentFontDialogPatch(
   ) {
     return false;
   }
-  const attributes: Record<string, number | string | null> = {};
+  const attributes: Record<string, boolean | number | string | null> = {};
   if (scale !== null) attributes.characterScalePercent = scale;
   if (position !== null) attributes.characterPositionHalfPoints = position;
   if (spacing !== null) attributes.characterSpacingTwips = spacing;
@@ -451,6 +478,7 @@ export function applyDocumentFontDialogPatch(
     attributes.kerningThresholdHalfPoints = kerningThreshold;
   }
   if (hasEmphasis) attributes.emphasisMark = emphasisMark;
+  if (hasHiddenText) attributes.hiddenText = patch.hiddenText ?? false;
   if (hasScriptFonts) {
     return applyDocumentScriptFontPatch(
       editor,
@@ -507,6 +535,17 @@ function addEmphasisValue(
 ): void {
   const emphasisMark = normalizeDocumentEmphasisMark(value);
   values.set(emphasisMark === null ? 'inherited' : emphasisMark, emphasisMark);
+}
+
+function addHiddenTextValue(
+  values: Map<string, boolean | null>,
+  value: unknown,
+): void {
+  const hiddenText = normalizeDocumentHiddenText(value);
+  values.set(
+    hiddenText === null ? 'inherited' : String(hiddenText),
+    hiddenText,
+  );
 }
 
 function characterSpacingTwipsFromDraft(

@@ -1,0 +1,138 @@
+suite "office-word-hidden-text" {
+    version = 1
+
+    scenario "author-reveal-toggle-and-undo-native-hidden-text" {
+        name = "Author, reveal, toggle, and undo native Writer hidden text"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        click "focus-title" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-title-start" {
+            key = "Home"
+        }
+
+        press "select-title" {
+            key = "Shift+End"
+        }
+
+        press "open-font-dialog" {
+            key = "Control+d"
+        }
+
+        wait "font-dialog-visible" {
+            visible = css(".work-document-font-dialog[role='dialog']")
+        }
+
+        expect "hidden-text-control-visible" {
+            visible = css(".work-document-font-dialog-hidden-text .work-office-checkbox")
+        }
+
+        click "enable-hidden-text" {
+            target = css(".work-document-font-dialog-hidden-text .work-office-checkbox:has(input[aria-label='隐藏文字'])")
+        }
+
+        expect "dotted-hidden-text-preview" {
+            visible = css(".work-document-font-dialog [aria-label='字符高级格式预览'] output > span[style*='text-decoration-line: underline'][style*='text-decoration-style: dotted']")
+        }
+
+        click "apply-hidden-text" {
+            target = role("button", "应用")
+        }
+
+        expect "hidden-text-default-view-off" {
+            visible = css(".work-document-editor:not(.show-hidden-text)")
+        }
+
+        expect "editor-focus-restored-after-apply" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        click "open-view-tab" {
+            target = role("tab", "视图")
+        }
+
+        click "show-hidden-text" {
+            target = role("button", "显示隐藏文字")
+        }
+
+        expect "native-hidden-text-revealed" {
+            visible = css(".work-document-editor.show-hidden-text .work-document-editable .ProseMirror h1 span[data-office-hidden-text='true']")
+        }
+
+        expect "show-hidden-text-command-active" {
+            visible = css("button[aria-label='显示隐藏文字'][aria-pressed='true']")
+        }
+
+        expect "editor-focus-restored-after-view-toggle" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        click "refocus-revealed-title" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-revealed-title-start" {
+            key = "Home"
+        }
+
+        press "reselect-revealed-title" {
+            key = "Shift+End"
+        }
+
+        press "toggle-explicit-visible-reset" {
+            key = "Control+Shift+h"
+        }
+
+        expect "native-visible-reset-applied" {
+            visible = css(".work-document-editable .ProseMirror h1 span[data-office-hidden-text='false']")
+        }
+
+        press "undo-visible-reset" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restores-hidden-text" {
+            visible = css(".work-document-editor.show-hidden-text .work-document-editable .ProseMirror h1 span[data-office-hidden-text='true']")
+        }
+
+        accessibility "hidden-text-accessibility" {
+            path = "evidence/hidden-text-accessibility.json"
+            interactive = true
+        }
+
+        console "hidden-text-console" {
+            path = "diagnostics/hidden-text-console.json"
+            clear = false
+        }
+
+        page_errors "hidden-text-page-errors" {
+            path = "diagnostics/hidden-text-page-errors.json"
+            clear = false
+        }
+    }
+}

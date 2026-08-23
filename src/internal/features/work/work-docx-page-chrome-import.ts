@@ -9,6 +9,8 @@ import { docxCharacterPositionHalfPointsFromProperties } from './work-docx-chara
 import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
 import { resolveDocxKerningThresholdHalfPoints } from './work-docx-kerning';
 import { resolveDocxEmphasisMark } from './work-docx-emphasis';
+import { resolveDocxHiddenText } from './work-docx-hidden-text';
+import { documentHiddenTextDomAttributes } from './work-document-hidden-text';
 import { documentParagraphBordersDomAttributes } from './work-document-paragraph-borders';
 import {
   documentPageChromeLegacyFields,
@@ -465,6 +467,12 @@ async function runHtml(
   if (emphasisMark !== undefined) {
     content = `<span${htmlAttributes(
       documentEmphasisMarkDomAttributes(emphasisMark),
+    )}>${content}</span>`;
+  }
+  const hiddenText = resolveDocxHiddenText(propertySources);
+  if (hiddenText !== undefined) {
+    content = `<span${htmlAttributes(
+      documentHiddenTextDomAttributes(hiddenText),
     )}>${content}</span>`;
   }
   const characterSpacing = docxCharacterSpacingTwipsFromProperties(

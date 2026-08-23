@@ -25,6 +25,7 @@ test('validates exact native scale, spacing, kerning, emphasis, and position ran
     characterSpacing: { mixed: false, value: null },
     kerningThreshold: { mixed: false, value: null },
     emphasisMark: { mixed: false, value: null },
+    hiddenText: { mixed: false, value: null },
     latinFont: { mixed: false, value: null },
     eastAsiaFont: { mixed: false, value: null },
     complexScriptFont: { mixed: false, value: null },
@@ -163,11 +164,11 @@ test('validates exact native scale, spacing, kerning, emphasis, and position ran
   ).not.toBeNull();
 });
 
-test('keeps independently mixed scale, spacing, kerning, emphasis, and position untouched until edited', async () => {
+test('keeps independently mixed scale, spacing, kerning, emphasis, position, and hidden text untouched until edited', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),
     content:
-      '<p><span data-office-character-scale-percent="80" data-office-character-position-half-points="2" data-office-character-spacing-twips="20" data-office-kerning-threshold-half-points="24" data-office-emphasis-mark="dot" style="font-stretch: 80%; --work-document-character-position: 1pt; letter-spacing: 1pt; font-kerning: none; text-emphasis-style: filled dot; text-emphasis-position: over right">Wide</span> <span data-office-character-scale-percent="125" data-office-character-position-half-points="-2" data-office-character-spacing-twips="-20" data-office-kerning-threshold-half-points="0" data-office-emphasis-mark="underDot" style="font-stretch: 125%; --work-document-character-position: -1pt; letter-spacing: -1pt; font-kerning: normal; text-emphasis-style: filled dot; text-emphasis-position: under right">Tight</span></p>',
+      '<p><span data-office-character-scale-percent="80" data-office-character-position-half-points="2" data-office-character-spacing-twips="20" data-office-kerning-threshold-half-points="24" data-office-emphasis-mark="dot" data-office-hidden-text="true" style="font-stretch: 80%; --work-document-character-position: 1pt; letter-spacing: 1pt; font-kerning: none; text-emphasis-style: filled dot; text-emphasis-position: over right">Wide</span> <span data-office-character-scale-percent="125" data-office-character-position-half-points="-2" data-office-character-spacing-twips="-20" data-office-kerning-threshold-half-points="0" data-office-emphasis-mark="underDot" data-office-hidden-text="false" style="font-stretch: 125%; --work-document-character-position: -1pt; letter-spacing: -1pt; font-kerning: normal; text-emphasis-style: filled dot; text-emphasis-position: under right">Tight</span></p>',
   });
   editor.commands.selectAll();
   const source = documentFontDialogSource(editor);
@@ -176,6 +177,7 @@ test('keeps independently mixed scale, spacing, kerning, emphasis, and position 
   expect(source.characterPosition).toEqual({ mixed: true, value: null });
   expect(source.kerningThreshold).toEqual({ mixed: true, value: null });
   expect(source.emphasisMark).toEqual({ mixed: true, value: null });
+  expect(source.hiddenText).toEqual({ mixed: true, value: null });
   const patches: unknown[] = [];
 
   render(
@@ -217,6 +219,13 @@ test('keeps independently mixed scale, spacing, kerning, emphasis, and position 
   expect(screen.getByRole('combobox', { name: '着重号' })).toHaveTextContent(
     '混合（保持不变）',
   );
+  expect(screen.getByRole('checkbox', { name: '隐藏文字' })).toHaveAttribute(
+    'aria-checked',
+    'mixed',
+  );
+  expect(screen.getByText(/同时包含隐藏和可见文字/)).toHaveTextContent(
+    '当前选区同时包含隐藏和可见文字',
+  );
 
   fireEvent.click(screen.getByRole('combobox', { name: '字符间距' }));
   fireEvent.click(await screen.findByRole('option', { name: '加宽' }));
@@ -227,11 +236,11 @@ test('keeps independently mixed scale, spacing, kerning, emphasis, and position 
   expect(patches).toEqual([{ characterSpacingTwips: 50 }]);
 });
 
-test('applies scale, spacing, kerning, emphasis, and position to the saved selection in one undo step', async () => {
+test('applies scale, spacing, kerning, emphasis, position, and hidden text to the saved selection in one undo step', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),
     content:
-      '<p><span data-office-character-scale-percent="125" data-office-character-position-half-points="4" data-office-character-spacing-twips="40" data-office-kerning-threshold-half-points="24" data-office-emphasis-mark="circle" style="font-stretch: 125%; --work-document-character-position: 2pt; letter-spacing: 2pt; font-kerning: none; text-emphasis-style: open circle; text-emphasis-position: over right">Selected text</span> remains</p>',
+      '<p><span data-office-character-scale-percent="125" data-office-character-position-half-points="4" data-office-character-spacing-twips="40" data-office-kerning-threshold-half-points="24" data-office-emphasis-mark="circle" data-office-hidden-text="false" style="font-stretch: 125%; --work-document-character-position: 2pt; letter-spacing: 2pt; font-kerning: none; text-emphasis-style: open circle; text-emphasis-position: over right">Selected text</span> remains</p>',
   });
   document.body.append(editor.view.dom);
   const selection = textRange(editor, 'Selected text');
@@ -259,6 +268,7 @@ test('applies scale, spacing, kerning, emphasis, and position to the saved selec
   );
   fireEvent.click(screen.getByRole('combobox', { name: '着重号' }));
   fireEvent.click(await screen.findByRole('option', { name: '下方圆点' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '隐藏文字' }));
   const preview = screen.getByLabelText('字符高级格式预览');
   await waitFor(() => {
     expect(preview.querySelector('output')?.getAttribute('style')).toContain(
@@ -276,6 +286,9 @@ test('applies scale, spacing, kerning, emphasis, and position to the saved selec
     expect(
       preview.querySelector('output > span')?.getAttribute('style'),
     ).toContain('text-emphasis-position: under right');
+    expect(
+      preview.querySelector('output > span')?.getAttribute('style'),
+    ).toContain('text-decoration-style: dotted');
   });
   fireEvent.click(screen.getByRole('button', { name: '应用' }));
 
@@ -295,6 +308,7 @@ test('applies scale, spacing, kerning, emphasis, and position to the saved selec
   );
   expect(editor.getAttributes('textStyle').kerningThresholdHalfPoints).toBe(0);
   expect(editor.getAttributes('textStyle').emphasisMark).toBe('underDot');
+  expect(editor.getAttributes('textStyle').hiddenText).toBe(true);
   expect(editor.getHTML()).toContain('data-office-character-spacing-twips="0"');
   expect(editor.getHTML()).toContain(
     'data-office-character-scale-percent="80"',
@@ -306,6 +320,7 @@ test('applies scale, spacing, kerning, emphasis, and position to the saved selec
     'data-office-kerning-threshold-half-points="0"',
   );
   expect(editor.getHTML()).toContain('data-office-emphasis-mark="underDot"');
+  expect(editor.getHTML()).toContain('data-office-hidden-text="true"');
 
   expect(editor.commands.undo()).toBe(true);
   editor.commands.setTextSelection(selection);
@@ -314,6 +329,7 @@ test('applies scale, spacing, kerning, emphasis, and position to the saved selec
   expect(editor.getAttributes('textStyle').characterPositionHalfPoints).toBe(4);
   expect(editor.getAttributes('textStyle').kerningThresholdHalfPoints).toBe(24);
   expect(editor.getAttributes('textStyle').emphasisMark).toBe('circle');
+  expect(editor.getAttributes('textStyle').hiddenText).toBe(false);
   await waitFor(() => expect(editor?.view.dom).toHaveFocus());
 });
 
