@@ -123,6 +123,19 @@ bun run test:e2e:writer-kerning:check
 bun run test:e2e:writer-kerning
 ```
 
+The Writer native East Asian emphasis-mark workflow has a focused local gate:
+
+```bash
+bun run test:e2e:writer-emphasis:check
+bun run test:e2e:writer-emphasis
+```
+
+It covers `Cmd/Ctrl+D`, the semantic emphasis selector, live circle and explicit
+none previews, native DOM projection, exact editor-focus restoration, one-step
+Undo, accessibility evidence, and empty console/page-error diagnostics. The
+suite uses A3S Test only through the local release gate and is not referenced by
+GitHub Actions.
+
 The Writer native character-scale workflow has a focused local gate:
 
 ```bash

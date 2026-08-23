@@ -110,7 +110,7 @@ baseline rather than one specific release.
 
 | Capability | A3S Office today | Traditional Office baseline |
 | --- | --- | --- |
-| Text, paragraphs, lists, and styles | **Supported** — structured editing, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing, half-point kerning thresholds, and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
+| Text, paragraphs, lists, and styles | **Supported** — structured editing, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing, half-point kerning thresholds, all five native East Asian emphasis marks, and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
 | Page layout and rendering | **Partial** — sections, margins, page size, columns, headers/footers, fields, and live pagination | Desktop-grade pagination, print layout, and vector output |
 | Tables, pictures, and equations | **Partial** — rich table geometry, floating pictures, crop/wrap, and structured OMML | Broader drawings, text boxes, charts, WordArt, and SmartArt |
 | Comments, revisions, and collaboration | **Partial** — comments, suggestions, text/format revisions, decisions, Yjs presence, and host relay contracts | Full revision families plus integrated sharing and review services |
@@ -678,6 +678,19 @@ allocates collision-free relationship IDs, and validates each media payload.
 Changed, duplicate, namespace-spoofed, relationship-bound, or semantic drawing
 branches stay disconnected; generated geometry and media remain authoritative,
 while legacy VML, shapes, and SmartArt normalize.
+
+Native Writer text also authors and reopens all five WordprocessingML `w:em`
+values: `none`, `dot`, `comma`, `circle`, and `underDot`. The shared
+`Cmd/Ctrl+D` advanced font dialog keeps mixed selections untouched until an
+explicit choice, distinguishes removing direct formatting from writing an
+explicit `none` inheritance reset, restores focus and selection, and commits
+with the other character settings in one transaction and one Undo record. Body
+text, headers, footers, footnotes, endnotes, inherited styles, Format Painter,
+formatting revisions, strict/transitional import, export, and reopen retain the
+typed value. The DOM projects it through `data-office-emphasis-mark` and CSS
+`text-emphasis-*`; paragraphs with visible marks use browser-authoritative line
+measurement so their out-of-line glyph extents are not approximated by the
+Worker/WASM shaper. No dedicated shortcut is invented.
 
 Supported native OMML equations now survive as bounded structured objects in
 the document body, headers, footers, footnotes, and endnotes. Inline and display

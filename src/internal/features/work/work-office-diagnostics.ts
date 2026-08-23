@@ -3,6 +3,7 @@ import { diagnoseDocxBookmarksAndLinks } from './work-docx-bookmark-diagnostics'
 import { diagnoseDocxCaptions } from './work-docx-caption-diagnostics';
 import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
 import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
+import { diagnoseDocxEmphasisMarks } from './work-docx-emphasis-diagnostics';
 import { diagnoseDocxKerning } from './work-docx-kerning-diagnostics';
 import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
 import { diagnoseDocxPageBorders } from './work-docx-page-borders-diagnostics';
@@ -214,6 +215,7 @@ export async function analyzeDocxCompatibility(
     issues.push(...(await diagnoseDocxEquations(archive, document)));
     if (document) {
       issues.push(...(await diagnoseDocxKerning(archive, document)));
+      issues.push(...(await diagnoseDocxEmphasisMarks(archive, document)));
     }
     issues.push(...(await diagnoseDocxPageChrome(archive)));
     if (archive.paths('word/embeddings/').length) {
@@ -317,7 +319,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.formatting',
             'Character-formatting revisions',
-            `${supportedRunFormattingRevisionCount} bounded character-formatting revision(s) preserve author, date, current formatting, and prior bold, italic, underline, strike, subscript, superscript, font, size, color, highlight, character scale, spacing, kerning threshold, baseline position, and grid state. They remain reviewable in Work and round-trip as native w:rPrChange records.`,
+            `${supportedRunFormattingRevisionCount} bounded character-formatting revision(s) preserve author, date, current formatting, and prior bold, italic, underline, strike, subscript, superscript, font, size, color, highlight, character scale, spacing, kerning threshold, emphasis mark, baseline position, and grid state. They remain reviewable in Work and round-trip as native w:rPrChange records.`,
             'info',
           ),
         );

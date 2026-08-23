@@ -4,6 +4,10 @@ import Superscript from '@tiptap/extension-superscript';
 import { normalizeDocumentCharacterScalePercent } from './work-document-character-scale';
 import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-character-position';
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
+import {
+  normalizeDocumentEmphasisMark,
+  type WorkDocumentEmphasisMark,
+} from './work-document-emphasis';
 import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
 import {
   documentTextCaseKeyboardShortcuts,
@@ -27,6 +31,10 @@ declare module '@tiptap/core' {
         kerningThresholdHalfPoints: number,
       ) => ReturnType;
       unsetDocumentKerningThreshold: () => ReturnType;
+      setDocumentEmphasisMark: (
+        emphasisMark: WorkDocumentEmphasisMark,
+      ) => ReturnType;
+      unsetDocumentEmphasisMark: () => ReturnType;
       setDocumentTextCase: (textCase: WorkDocumentTextCase) => ReturnType;
       toggleDocumentTextCase: (
         textCase: Exclude<WorkDocumentTextCase, 'none'>,
@@ -93,6 +101,21 @@ export const DocumentCharacterFormatting = Extension.create({
         ({ chain }) =>
           chain()
             .setMark('textStyle', { kerningThresholdHalfPoints: null })
+            .removeEmptyTextStyle()
+            .run(),
+      setDocumentEmphasisMark:
+        (emphasisMark: WorkDocumentEmphasisMark) =>
+        ({ commands }) => {
+          const mark = normalizeDocumentEmphasisMark(emphasisMark);
+          return mark === null
+            ? false
+            : commands.setMark('textStyle', { emphasisMark: mark });
+        },
+      unsetDocumentEmphasisMark:
+        () =>
+        ({ chain }) =>
+          chain()
+            .setMark('textStyle', { emphasisMark: null })
             .removeEmptyTextStyle()
             .run(),
       setDocumentTextCase:

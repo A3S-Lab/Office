@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('Writer authors and clears a native kerning threshold in the responsive font dialog', async ({
+test('Writer authors and explicitly clears a native emphasis mark in the responsive font dialog', async ({
   page,
 }, testInfo) => {
   const browserErrors: string[] = [];
@@ -22,7 +22,7 @@ test('Writer authors and clears a native kerning threshold in the responsive fon
 
   const editor = page.getByRole('textbox', { name: '文档正文' });
   await expect(editor).toHaveAttribute('data-pagination-state', 'ready');
-  await editor.fill('Native kerning threshold');
+  await editor.fill('Native emphasis mark');
   await editor.click();
   await page.keyboard.press(`${modifier}+a`);
   await page.keyboard.press(`${modifier}+d`);
@@ -34,65 +34,70 @@ test('Writer authors and clears a native kerning threshold in the responsive fon
       name: '字符缩放、间距、字距调整、位置与着重号',
     }),
   ).toBeVisible();
-  const kerning = dialog.getByRole('checkbox', {
-    name: '为字号达到以下值的字体调整字距',
-  });
-  const threshold = dialog.getByRole('textbox', {
-    name: '字距调整阈值（磅）',
-  });
-  await expect(kerning).not.toBeChecked();
-  await expect(threshold).toBeDisabled();
-  await kerning.click();
-  await expect(kerning).toBeChecked();
-  await expect(threshold).toBeEnabled();
-  await threshold.fill('10');
-  await expect(
-    dialog.getByLabel('字符高级格式预览').locator('output'),
-  ).toHaveAttribute('style', /font-kerning:\s*normal/);
+  await dialog.getByRole('combobox', { name: '着重号' }).click();
+  await page.getByRole('option', { name: '上方圆圈', exact: true }).click();
+
+  const preview = dialog
+    .getByLabel('字符高级格式预览')
+    .locator('output > span');
+  await expect(preview).toHaveAttribute(
+    'style',
+    /text-emphasis-style:\s*open circle/,
+  );
+  await expect(preview).toHaveAttribute(
+    'style',
+    /text-emphasis-position:\s*over right/,
+  );
   await expect(dialog.getByRole('button', { name: '应用' })).toBeEnabled();
   await page.screenshot({
     path: testInfo.outputPath(
-      `writer-kerning-dialog-${testInfo.project.name}.png`,
+      `writer-emphasis-dialog-${testInfo.project.name}.png`,
     ),
     animations: 'disabled',
   });
   await dialog.getByRole('button', { name: '应用' }).click();
 
-  const kerned = editor.locator(
-    'span[data-office-kerning-threshold-half-points="20"]',
+  const emphasized = editor.locator('span[data-office-emphasis-mark="circle"]');
+  await expect(emphasized).toHaveText('Native emphasis mark');
+  await expect(emphasized).toHaveAttribute(
+    'style',
+    /text-emphasis-style:\s*open circle/,
   );
-  await expect(kerned).toHaveText('Native kerning threshold');
-  await expect(kerned).toHaveAttribute('style', /font-kerning:\s*normal/);
   await expect
     .poll(() =>
-      kerned.evaluate((element) => getComputedStyle(element).fontKerning),
+      emphasized.evaluate((element) =>
+        getComputedStyle(element)
+          .getPropertyValue('text-emphasis-style')
+          .trim(),
+      ),
     )
-    .toBe('normal');
+    .toBe('open circle');
   await expect(editor).toBeFocused();
   await expect
     .poll(() => page.evaluate(() => window.getSelection()?.toString()))
-    .toBe('Native kerning threshold');
+    .toBe('Native emphasis mark');
 
   await page.keyboard.press(`${modifier}+d`);
   dialog = page.getByRole('dialog', { name: '字体高级设置' });
   await expect(dialog).toBeVisible();
-  const enabledKerning = dialog.getByRole('checkbox', {
-    name: '为字号达到以下值的字体调整字距',
-  });
-  await expect(enabledKerning).toBeChecked();
-  await enabledKerning.click();
+  await dialog.getByRole('combobox', { name: '着重号' }).click();
+  await page.getByRole('option', { name: '无', exact: true }).click();
   await expect(
-    dialog.getByRole('textbox', { name: '字距调整阈值（磅）' }),
-  ).toBeDisabled();
-  await expect(
-    dialog.getByLabel('字符高级格式预览').locator('output'),
-  ).toHaveAttribute('style', /font-kerning:\s*none/);
+    dialog.getByLabel('字符高级格式预览').locator('output > span'),
+  ).toHaveAttribute('style', /text-emphasis-style:\s*none/);
   await dialog.getByRole('button', { name: '应用' }).click();
-  await expect(kerned).toHaveCount(0);
+
+  const explicitNone = editor.locator('span[data-office-emphasis-mark="none"]');
+  await expect(emphasized).toHaveCount(0);
+  await expect(explicitNone).toHaveText('Native emphasis mark');
+  await expect(explicitNone).toHaveAttribute(
+    'style',
+    /text-emphasis-style:\s*none/,
+  );
   await expect(editor).toBeFocused();
 
   await page.keyboard.press(`${modifier}+z`);
-  await expect(kerned).toHaveText('Native kerning threshold');
-  await expect(kerned).toHaveAttribute('style', /font-kerning:\s*normal/);
+  await expect(explicitNone).toHaveCount(0);
+  await expect(emphasized).toHaveText('Native emphasis mark');
   expect(browserErrors).toEqual([]);
 });

@@ -18,6 +18,11 @@ import {
   documentCharacterSpacingTwipsFromElement,
 } from './work-document-character-spacing';
 import {
+  DOCUMENT_EMPHASIS_MARK_ATTRIBUTE,
+  documentEmphasisMarkDomAttributes,
+  documentEmphasisMarkFromElement,
+} from './work-document-emphasis';
+import {
   DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
   documentKerningDomAttributes,
   documentKerningThresholdHalfPointsFromElement,
@@ -450,6 +455,9 @@ function sanitizeAttributes(element: Element, tag: string) {
     kerningThreshold,
     fontSize,
   );
+  const emphasisMark =
+    tag === 'span' ? documentEmphasisMarkFromElement(element) : null;
+  const emphasisAttributes = documentEmphasisMarkDomAttributes(emphasisMark);
   const underline =
     tag === 'u' ? documentUnderlineFormattingFromElement(element) : null;
   const underlineAttributes = underline
@@ -480,6 +488,7 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_CHARACTER_POSITION_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_CHARACTER_SPACING_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_EMPHASIS_MARK_ATTRIBUTE);
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
     color ? `color: ${color}` : '',
@@ -489,6 +498,7 @@ function sanitizeAttributes(element: Element, tag: string) {
     characterPositionAttributes.style ?? '',
     characterSpacingAttributes.style ?? '',
     kerningAttributes.style ?? '',
+    emphasisAttributes.style ?? '',
     underlineAttributes.style ?? '',
     strikeAttributes.style ?? '',
     borderAttributes.style ?? '',
@@ -560,6 +570,9 @@ function sanitizeAttributes(element: Element, tag: string) {
       String(kerningThreshold),
     );
   }
+  if (tag === 'span' && emphasisMark !== null) {
+    element.setAttribute(DOCUMENT_EMPHASIS_MARK_ATTRIBUTE, emphasisMark);
+  }
   if (direction === 'ltr' || direction === 'rtl')
     element.setAttribute('dir', direction);
   else element.removeAttribute('dir');
@@ -604,6 +617,7 @@ function sanitizeAttributes(element: Element, tag: string) {
                           DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
                           DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
                           DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
+                          DOCUMENT_EMPHASIS_MARK_ATTRIBUTE,
                         ]
                       : []),
                     ...(tag === 'u'

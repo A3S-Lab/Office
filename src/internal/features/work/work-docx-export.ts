@@ -9,6 +9,7 @@ import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
 import { documentCharacterScalePercentFromElement } from './work-document-character-scale';
 import { documentCharacterPositionHalfPointsFromElement } from './work-document-character-position';
 import { documentCharacterSpacingTwipsFromElement } from './work-document-character-spacing';
+import { documentEmphasisMarkFromElement } from './work-document-emphasis';
 import { documentKerningThresholdHalfPointsFromElement } from './work-document-kerning';
 import { normalizeDocumentHref } from './work-document-links';
 import {
@@ -48,6 +49,7 @@ import {
   docxKerningThresholdValue,
   patchDocxExplicitZeroKerningThresholds,
 } from './work-docx-kerning';
+import { docxEmphasisMarkRunOptions } from './work-docx-emphasis';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import {
   DocxEquationPatchCollector,
@@ -768,6 +770,7 @@ async function inlineRuns(
       documentCharacterScalePercentFromElement(node);
     const explicitKerningThreshold =
       documentKerningThresholdHalfPointsFromElement(node);
+    const explicitEmphasisMark = documentEmphasisMarkFromElement(node);
     const explicitCharacterPosition =
       documentCharacterPositionHalfPointsFromElement(node);
     if (explicitCharacterSpacing === 0) {
@@ -794,6 +797,10 @@ async function inlineRuns(
         : (docxCharacterPositionValue(
             explicitCharacterPosition,
           ) as IRunOptions['position']);
+    const emphasisMark =
+      explicitEmphasisMark === null
+        ? inherited.emphasisMark
+        : docxEmphasisMarkRunOptions(explicitEmphasisMark);
     const textCaseOptions = docxTextCaseRunOptions(explicitTextCase, inherited);
     const underline = docxUnderlineRunOptions(
       node,
@@ -816,6 +823,7 @@ async function inlineRuns(
       scale,
       kern,
       position,
+      emphasisMark,
       shading: themeFillMarker ? { fill: themeFillMarker } : resolvedShading,
       snapToGrid:
         dataBoolean(node.dataset.officeWordSnapToGrid) ?? inherited.snapToGrid,

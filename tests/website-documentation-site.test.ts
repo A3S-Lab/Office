@@ -642,6 +642,47 @@ test('documents native Writer kerning thresholds in both current locales', async
   }
 });
 
+test('documents all native Writer emphasis marks in both current locales', async () => {
+  const [readme, roadmap, product, englishRoadmap, chineseRoadmap] =
+    await Promise.all([
+      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+      readFile(
+        path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+        'utf8',
+      ),
+    ]);
+  expect(readme).toContain('all five native East Asian emphasis marks');
+  expect(roadmap).toContain('all five native `w:em` emphasis values');
+  expect(product).toContain('The forty-first milestone');
+
+  for (const { lang } of DOCUMENTATION_LOCALES) {
+    const component = await readFile(
+      path.join(documentationRoot, 'latest', lang, 'components/document.mdx'),
+      'utf8',
+    );
+    for (const mark of ['none', 'dot', 'comma', 'circle', 'underDot']) {
+      expect(component).toContain(`\`${mark}\``);
+    }
+    expect(component).toContain('w:em');
+    expect(component).toContain('Cmd/Ctrl+D');
+    expect(component).toContain('data-office-emphasis-mark');
+    expect(component).toContain('text-emphasis-style');
+    expect(component).toContain('Worker/WASM');
+    expect(component).toContain('w:rPrChange');
+  }
+  for (const roadmapSource of [englishRoadmap, chineseRoadmap]) {
+    expect(roadmapSource).toContain('w:em');
+    expect(roadmapSource).toContain('underDot');
+    expect(roadmapSource).toContain('Worker/WASM');
+  }
+});
+
 test('documents collaborative paragraph-formatting revisions', async () => {
   for (const version of [
     'latest',

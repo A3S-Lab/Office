@@ -351,6 +351,18 @@ Every editable Word story, inherited styles, Format Painter, formatting
 revisions, strict/transitional import, export, and reopen retain the value.
 CSS, preview/PDF, and Worker/WASM layout share the same effective state;
 malformed or namespace-spoofed properties fail closed. No shortcut is invented.
+Writer East Asian emphasis now retains one closed native `w:em` state for
+`none`, `dot`, `comma`, `circle`, and `underDot`. Missing direct formatting
+inherits, while explicit `none` suppresses inherited emphasis without being
+conflated with Follow style. The shared advanced font dialog tracks emphasis
+independently from scale, spacing, kerning, and position and commits every
+touched property through one transaction and one Undo record. Every editable
+Word story, inherited styles, Format Painter, formatting revisions,
+strict/transitional DOCX import, export, and reopen retain the typed value.
+Canonical CSS projects the visible marks; those paragraphs use
+browser-authoritative line measurement for their out-of-line glyph extents,
+while a computed explicit none remains eligible for Worker/WASM layout.
+Malformed or namespace-spoofed properties fail closed. No shortcut is invented.
 Writer character baseline position now uses one signed `w:position` value from
 -3,168 to 3,168 half-points, including explicit zero. The same advanced font
 dialog exposes Normal, Raised, and Lowered modes while tracking mixed scale,

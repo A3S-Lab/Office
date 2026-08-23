@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import { normalizeDocumentCharacterScalePercent } from './work-document-character-scale';
 import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-character-position';
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
+import { normalizeDocumentEmphasisMark } from './work-document-emphasis';
 import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
 import {
   parseDocumentCharacterFormatting,
@@ -360,6 +361,32 @@ function appendFormattingProperties(
     byType.get('textStyle'),
   );
   appendVerticalAlignProperty(document, properties, namespace, prefix, byType);
+  appendEmphasisMarkProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
+}
+
+function appendEmphasisMarkProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const emphasisMark = normalizeDocumentEmphasisMark(mark?.attrs?.emphasisMark);
+  if (emphasisMark === null) return;
+  appendValuedProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    'em',
+    emphasisMark,
+  );
 }
 
 function appendCharacterScaleProperty(

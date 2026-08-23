@@ -219,6 +219,82 @@ describe('document mixed-run text layout', () => {
     }
   });
 
+  test('keeps visible emphasis-mark extents on browser measurement', () => {
+    for (const emphasis of ['filled dot', 'open circle', '","']) {
+      const paragraph = document.createElement('p');
+      applyTextMetrics(paragraph, 14, 21);
+      const mark =
+        emphasis === 'open circle'
+          ? 'circle'
+          : emphasis === '","'
+            ? 'comma'
+            : 'dot';
+      paragraph.innerHTML = `<span data-office-emphasis-mark="${mark}" style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; text-emphasis-style: ${emphasis}; text-emphasis-position: over right">Emphasized text</span>`;
+      document.body.append(paragraph);
+
+      try {
+        expect(
+          collectDocumentTextLayoutRuns(
+            paragraph,
+            paragraph.textContent ?? '',
+            [layoutFont],
+            new Set([layoutFont.id]),
+          ),
+        ).toBeNull();
+      } finally {
+        paragraph.remove();
+      }
+    }
+  });
+
+  test('keeps explicit none emphasis on the deterministic kernel path', () => {
+    const paragraph = document.createElement('p');
+    applyTextMetrics(paragraph, 14, 21);
+    paragraph.innerHTML =
+      '<span data-office-emphasis-mark="none" style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; text-emphasis-style: none">Plain text</span>';
+    document.body.append(paragraph);
+
+    try {
+      expect(
+        collectDocumentTextLayoutRuns(
+          paragraph,
+          paragraph.textContent ?? '',
+          [layoutFont],
+          new Set([layoutFont.id]),
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          startUtf16: 0,
+          endUtf16: 10,
+          fontId: layoutFont.id,
+        }),
+      ]);
+    } finally {
+      paragraph.remove();
+    }
+  });
+
+  test('keeps a host-visible emphasis override on browser measurement', () => {
+    const paragraph = document.createElement('p');
+    applyTextMetrics(paragraph, 14, 21);
+    paragraph.innerHTML =
+      '<span data-office-emphasis-mark="none" style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; text-emphasis-style: filled dot">Host override</span>';
+    document.body.append(paragraph);
+
+    try {
+      expect(
+        collectDocumentTextLayoutRuns(
+          paragraph,
+          paragraph.textContent ?? '',
+          [layoutFont],
+          new Set([layoutFont.id]),
+        ),
+      ).toBeNull();
+    } finally {
+      paragraph.remove();
+    }
+  });
+
   test('keeps non-default character scale on browser measurement', () => {
     for (const fontStretch of ['80%', '125%']) {
       const paragraph = document.createElement('p');

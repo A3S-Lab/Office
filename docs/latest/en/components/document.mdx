@@ -210,8 +210,8 @@ property continues through the style hierarchy, while a document with no
 
 The shared `Cmd/Ctrl+D` **Advanced Font Settings** dialog provides a Kerning
 checkbox and an exact 0–1,638.5 point field in 0.5-point increments. New direct
-formatting starts at 12 points. Scale, spacing, kerning, and baseline position
-track mixed selections independently and commit together through one
+formatting starts at 12 points. Scale, spacing, kerning, emphasis mark, and
+baseline position track mixed selections independently and commit together through one
 transaction. Clearing the checkbox removes only direct kerning; Apply restores
 the captured selection and creates one Undo record. Pair kerning has no
 separate standard shortcut, so Writer does not claim one.
@@ -229,6 +229,38 @@ effective state as CSS `font-kerning: normal` or `none`. Editing, preview, and
 PDF surfaces start with kerning disabled and share that projection. The same
 effective boolean reaches the Worker/WASM text-layout path, so pagination and
 paint do not disagree about pair advances.
+
+## Native East Asian emphasis marks
+
+Writer stores emphasis as one closed native `w:em` state: `none`, `dot`,
+`comma`, `circle`, or `underDot`. A missing direct property continues through
+the run, character-style, paragraph-style, and document-default hierarchy.
+Explicit `none` is different from removing direct formatting: it intentionally
+suppresses an inherited mark.
+
+The shared `Cmd/Ctrl+D` **Advanced Font Settings** dialog offers Follow style,
+None, Dot above, Comma above, Circle above, and Dot below. Emphasis, scale,
+spacing, kerning, and baseline position keep independent mixed-selection state.
+Choosing Follow style removes only the direct property; choosing None writes the
+native reset. Apply restores the captured selection and focus and commits every
+touched character property through one transaction and one Undo record. There
+is no separate standard Writer shortcut, so the command catalog does not claim
+one.
+
+Body text, headers, footers, footnotes, endnotes, inherited styles, Format
+Painter, tracked character formatting, reject restoration, strict or
+transitional DOCX import/export/reopen, and prior formatting inside
+`w:rPrChange` retain the exact value. Missing values, unknown tokens, duplicate
+or nested elements, text-bearing leaves, extra attributes, and namespace
+spoofing fail closed and appear in compatibility diagnostics.
+
+The DOM stores `data-office-emphasis-mark`. CSS `text-emphasis-style` and
+`text-emphasis-position` project a filled dot, literal comma, or open circle
+above the text, or a filled dot below it. Paragraphs with a visible mark use
+browser-authoritative line measurement so glyphs outside the normal line box
+are included. An explicit none stays on the Worker/WASM path only when the final
+computed standard and WebKit emphasis styles are both absent or `none`, so a
+host CSS override cannot create a pagination disagreement.
 
 ## Native character baseline position
 
@@ -289,7 +321,7 @@ for the complete browser/backend contract and the current native CLI/MCP limit.
 With tracked changes enabled, applying direct character formatting to existing
 text creates one `formatting` revision. The bounded model covers bold, italic,
 underline, strike, subscript, superscript, font family, font size, text color,
-highlight, character scale, spacing, kerning threshold, baseline position,
+highlight, character scale, spacing, kerning threshold, emphasis mark, baseline position,
 all-caps and small-caps effects, and Word grid state. Formatting applied to text that is still a
 pending insertion remains part of that insertion
 instead of creating a nested revision.

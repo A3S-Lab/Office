@@ -4,6 +4,23 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added native Writer East Asian emphasis marks as one closed model for all five
+  `w:em` values: `none`, `dot`, `comma`, `circle`, and `underDot`. Missing direct
+  formatting inherits, while explicit `none` remains distinct from clearing the
+  direct property. Body text, headers, footers, footnotes, endnotes, styles,
+  Format Painter, formatting revisions, DOCX export/reopen, and prior
+  `w:rPrChange` values retain the exact state.
+- Extended the shared `Cmd/Ctrl+D` advanced font dialog with an independently
+  mixed Emphasis mark setting, Follow style and explicit None choices, live CSS
+  preview, captured-selection and focus restoration, and one atomic transaction
+  with the other advanced character properties. No dedicated shortcut is
+  claimed.
+- Added strict/transitional namespace, duplicate, nested, text-bearing,
+  extra-attribute, unknown-value, and spoofing diagnostics; visible emphasis
+  marks now use browser-authoritative line measurement while computed explicit
+  none remains eligible for Worker/WASM layout. Focused Rstest,
+  desktop/compact Playwright, and a local-only A3S Test 1.0.0 ACL cover the
+  workflow without adding A3S Test to Actions or Pages.
 - Added native Writer pair kerning as an exact `w:kern` threshold from 0
   through 3,277 half-points. Zero enables kerning for every font size, positive
   values apply when effective `w:sz` meets or exceeds the threshold, missing

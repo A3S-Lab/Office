@@ -6,6 +6,10 @@ import type {
 } from '../../kernel/office-kernel-protocol';
 import type { WorkDocumentLayoutFont } from './work-document-fonts';
 import {
+  DOCUMENT_EMPHASIS_MARK_ATTRIBUTE,
+  normalizeDocumentEmphasisMark,
+} from './work-document-emphasis';
+import {
   normalizeDocumentImageLayout,
   wrapsBesideImage,
 } from './work-document-image-layout';
@@ -337,6 +341,7 @@ export function collectDocumentTextLayoutRuns(
       fonts,
       loadedFontIds,
       paragraphStyle,
+      token.styleElement,
       token.styleElement === element,
     );
     if (!runStyle) return null;
@@ -423,6 +428,7 @@ function documentTextLayoutRunStyle(
   fonts: readonly WorkDocumentLayoutFont[],
   loadedFontIds: ReadonlySet<string>,
   paragraphStyle: DocumentTextParagraphStyle,
+  element: HTMLElement,
   paragraphRoot: boolean,
 ): DocumentTextLayoutRunStyle | null {
   const direction = style.direction === 'rtl' ? 'rtl' : 'ltr';
@@ -447,6 +453,7 @@ function documentTextLayoutRunStyle(
     !cssValueIs(style.fontVariantNumeric, 'normal') ||
     !cssValueIs(style.fontVariantPosition, 'normal') ||
     !cssValueIs(style.fontStretch, 'normal', '100%') ||
+    !documentTextEmphasisAllowsKernel(style, element) ||
     !cssValueIs(style.verticalAlign, 'baseline') ||
     (!cssValueIs(style.unicodeBidi, 'normal') &&
       !(paragraphRoot && style.unicodeBidi === 'isolate'))
@@ -601,6 +608,28 @@ function documentTextLayoutRunStyleKey(
 
 function cssValueIs(value: string, ...supported: string[]): boolean {
   return !value || supported.includes(value);
+}
+
+function documentTextEmphasisAllowsKernel(
+  style: CSSStyleDeclaration,
+  element: HTMLElement,
+): boolean {
+  for (
+    let current: HTMLElement | null = element;
+    current;
+    current = current.parentElement
+  ) {
+    if (!current.hasAttribute(DOCUMENT_EMPHASIS_MARK_ATTRIBUTE)) continue;
+    const emphasisMark = normalizeDocumentEmphasisMark(
+      current.getAttribute(DOCUMENT_EMPHASIS_MARK_ATTRIBUTE),
+    );
+    if (emphasisMark === null) continue;
+    if (emphasisMark !== 'none') return false;
+    break;
+  }
+  const standard = style.getPropertyValue('text-emphasis-style').trim();
+  const webkit = style.getPropertyValue('-webkit-text-emphasis-style').trim();
+  return (!standard || standard === 'none') && (!webkit || webkit === 'none');
 }
 
 function cssLigatures(style: CSSStyleDeclaration): boolean | null {

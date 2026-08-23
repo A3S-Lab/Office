@@ -21,6 +21,10 @@ import {
   documentKerningThresholdPoints,
   normalizeDocumentKerningThresholdHalfPoints,
 } from '../work-document-kerning';
+import {
+  normalizeDocumentEmphasisMark,
+  type WorkDocumentEmphasisMark,
+} from '../work-document-emphasis';
 
 export type DocumentCharacterSpacingMode =
   | 'condensed'
@@ -35,6 +39,11 @@ export type DocumentCharacterPositionMode =
   | 'raised';
 
 export type DocumentCharacterScaleMode = 'mixed' | 'value';
+
+export type DocumentEmphasisMarkMode =
+  | 'inherit'
+  | 'mixed'
+  | WorkDocumentEmphasisMark;
 
 export interface DocumentFontDialogSource {
   characterScale: {
@@ -53,6 +62,10 @@ export interface DocumentFontDialogSource {
     mixed: boolean;
     value: number | null;
   };
+  emphasisMark: {
+    mixed: boolean;
+    value: WorkDocumentEmphasisMark | null;
+  };
   fontFamily: string | null;
   fontSize: string | null;
   previewText: string;
@@ -68,6 +81,7 @@ export interface DocumentFontDialogDraft {
   characterSpacingPoints: string;
   kerningEnabled: boolean;
   kerningThresholdPoints: string;
+  emphasisMark: DocumentEmphasisMarkMode;
 }
 
 export interface DocumentFontDialogPatch {
@@ -75,6 +89,7 @@ export interface DocumentFontDialogPatch {
   characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
   kerningThresholdHalfPoints?: number | null;
+  emphasisMark?: WorkDocumentEmphasisMark | null;
 }
 
 export function documentFontDialogSource(
@@ -85,11 +100,13 @@ export function documentFontDialogSource(
   const positionValues = new Map<string, number | null>();
   const spacingValues = new Map<string, number | null>();
   const kerningValues = new Map<string, number | null>();
+  const emphasisValues = new Map<string, WorkDocumentEmphasisMark | null>();
   const addValues = (attributes: Record<string, unknown>) => {
     addScaleValue(scaleValues, attributes.characterScalePercent);
     addPositionValue(positionValues, attributes.characterPositionHalfPoints);
     addSpacingValue(spacingValues, attributes.characterSpacingTwips);
     addKerningValue(kerningValues, attributes.kerningThresholdHalfPoints);
+    addEmphasisValue(emphasisValues, attributes.emphasisMark);
   };
   if (selection.empty) {
     addValues(editor.getAttributes('textStyle'));
@@ -112,7 +129,8 @@ export function documentFontDialogSource(
     !scaleValues.size ||
     !spacingValues.size ||
     !positionValues.size ||
-    !kerningValues.size
+    !kerningValues.size ||
+    !emphasisValues.size
   ) {
     addValues(editor.getAttributes('textStyle'));
   }
@@ -120,6 +138,7 @@ export function documentFontDialogSource(
   const characterPosition = selectedValue(positionValues);
   const characterSpacing = selectedValue(spacingValues);
   const kerningThreshold = selectedValue(kerningValues);
+  const emphasisMark = selectedValue(emphasisValues);
   const textStyle = editor.getAttributes('textStyle');
   const selectedText = selection.empty
     ? ''
@@ -132,6 +151,7 @@ export function documentFontDialogSource(
     characterPosition,
     characterSpacing,
     kerningThreshold,
+    emphasisMark,
     fontFamily:
       typeof textStyle.fontFamily === 'string' && textStyle.fontFamily.trim()
         ? textStyle.fontFamily
@@ -182,6 +202,9 @@ export function createDocumentFontDialogDraft(
       documentKerningThresholdPoints(kerningThreshold) ??
         DOCUMENT_KERNING_DEFAULT_THRESHOLD_HALF_POINTS / 2,
     ),
+    emphasisMark: source.emphasisMark.mixed
+      ? 'mixed'
+      : (source.emphasisMark.value ?? 'inherit'),
   };
 }
 
@@ -224,6 +247,7 @@ export function documentFontDialogPatch(
   characterSpacingTouched: boolean,
   characterPositionTouched: boolean,
   kerningTouched: boolean,
+  emphasisTouched: boolean,
 ): DocumentFontDialogPatch {
   const patch: DocumentFontDialogPatch = {};
   if (characterScaleTouched && draft.characterScaleMode !== 'mixed') {
@@ -274,6 +298,20 @@ export function documentFontDialogPatch(
       }
     }
   }
+  if (emphasisTouched && draft.emphasisMark !== 'mixed') {
+    const emphasisMark =
+      draft.emphasisMark === 'inherit'
+        ? null
+        : normalizeDocumentEmphasisMark(draft.emphasisMark);
+    if (emphasisMark !== null || draft.emphasisMark === 'inherit') {
+      if (
+        source.emphasisMark.mixed ||
+        source.emphasisMark.value !== emphasisMark
+      ) {
+        patch.emphasisMark = emphasisMark;
+      }
+    }
+  }
   return patch;
 }
 
@@ -286,6 +324,7 @@ export function applyDocumentFontDialogPatch(
   const hasPosition = patch.characterPositionHalfPoints !== undefined;
   const hasSpacing = patch.characterSpacingTwips !== undefined;
   const hasKerning = patch.kerningThresholdHalfPoints !== undefined;
+  const hasEmphasis = patch.emphasisMark !== undefined;
   const scale = hasScale
     ? normalizeDocumentCharacterScalePercent(patch.characterScalePercent)
     : null;
@@ -303,16 +342,21 @@ export function applyDocumentFontDialogPatch(
           patch.kerningThresholdHalfPoints,
         )
       : null;
+  const emphasisMark =
+    hasEmphasis && patch.emphasisMark !== null
+      ? normalizeDocumentEmphasisMark(patch.emphasisMark)
+      : null;
   const maximum = editor.state.doc.content.size;
   if (
     editor.isDestroyed ||
-    (!hasScale && !hasPosition && !hasSpacing && !hasKerning) ||
+    (!hasScale && !hasPosition && !hasSpacing && !hasKerning && !hasEmphasis) ||
     (hasScale && scale === null) ||
     (hasPosition && position === null) ||
     (hasSpacing && spacing === null) ||
     (hasKerning &&
       patch.kerningThresholdHalfPoints !== null &&
       kerningThreshold === null) ||
+    (hasEmphasis && patch.emphasisMark !== null && emphasisMark === null) ||
     !Number.isSafeInteger(selection.from) ||
     !Number.isSafeInteger(selection.to) ||
     selection.from < 0 ||
@@ -321,13 +365,14 @@ export function applyDocumentFontDialogPatch(
   ) {
     return false;
   }
-  const attributes: Record<string, number | null> = {};
+  const attributes: Record<string, number | string | null> = {};
   if (scale !== null) attributes.characterScalePercent = scale;
   if (position !== null) attributes.characterPositionHalfPoints = position;
   if (spacing !== null) attributes.characterSpacingTwips = spacing;
   if (hasKerning) {
     attributes.kerningThresholdHalfPoints = kerningThreshold;
   }
+  if (hasEmphasis) attributes.emphasisMark = emphasisMark;
   return editor
     .chain()
     .setTextSelection(selection)
@@ -368,6 +413,14 @@ function addKerningValue(
 ): void {
   const threshold = normalizeDocumentKerningThresholdHalfPoints(value);
   values.set(threshold === null ? 'inherited' : String(threshold), threshold);
+}
+
+function addEmphasisValue(
+  values: Map<string, WorkDocumentEmphasisMark | null>,
+  value: unknown,
+): void {
+  const emphasisMark = normalizeDocumentEmphasisMark(value);
+  values.set(emphasisMark === null ? 'inherited' : emphasisMark, emphasisMark);
 }
 
 function characterSpacingTwipsFromDraft(
@@ -432,9 +485,9 @@ function kerningThresholdHalfPointsFromDraft(
   return normalizeDocumentKerningThresholdHalfPoints(halfPoints);
 }
 
-function selectedValue(values: Map<string, number | null>): {
+function selectedValue<T>(values: Map<string, T | null>): {
   mixed: boolean;
-  value: number | null;
+  value: T | null;
 } {
   const mixed = values.size > 1;
   return {

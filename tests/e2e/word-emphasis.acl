@@ -1,0 +1,138 @@
+suite "office-word-emphasis" {
+    version = 1
+
+    scenario "author-and-explicitly-clear-native-emphasis" {
+        name = "Author and explicitly clear a native Writer emphasis mark"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "font-dialog-shortcut-described" {
+            visible = css("[aria-label='字体'] button[aria-label='字体高级设置'][aria-keyshortcuts='Control+D Meta+D']")
+        }
+
+        click "focus-title" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-title-start" {
+            key = "Home"
+        }
+
+        press "select-title" {
+            key = "Shift+End"
+        }
+
+        press "open-font-dialog" {
+            key = "Control+d"
+        }
+
+        wait "font-dialog-visible" {
+            visible = css(".work-document-font-dialog[role='dialog']")
+        }
+
+        expect "emphasis-control-visible" {
+            visible = css(".work-document-font-dialog [role='combobox'][aria-label='着重号']")
+        }
+
+        click "open-emphasis-options" {
+            target = role("combobox", "着重号")
+        }
+
+        click "choose-circle" {
+            target = role("option", "上方圆圈")
+        }
+
+        expect "circle-preview" {
+            visible = css(".work-document-font-dialog [aria-label='字符高级格式预览'] output > span[style*='open circle'][style*='over right']")
+        }
+
+        click "apply-circle" {
+            target = role("button", "应用")
+        }
+
+        expect "native-circle-applied" {
+            visible = css(".work-document-editable .ProseMirror h1 span[data-office-emphasis-mark='circle'][style*='open circle'][style*='over right']")
+        }
+
+        expect "editor-focus-restored-after-circle" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "reopen-font-dialog" {
+            key = "Control+d"
+        }
+
+        wait "font-dialog-reopened" {
+            visible = css(".work-document-font-dialog[role='dialog']")
+        }
+
+        click "reopen-emphasis-options" {
+            target = role("combobox", "着重号")
+        }
+
+        click "choose-explicit-none" {
+            target = role("option", "无")
+        }
+
+        expect "none-preview" {
+            visible = css(".work-document-font-dialog [aria-label='字符高级格式预览'] output > span[style*='text-emphasis-style'][style*='none']")
+        }
+
+        click "apply-explicit-none" {
+            target = role("button", "应用")
+        }
+
+        expect "native-explicit-none-applied" {
+            visible = css(".work-document-editable .ProseMirror h1 span[data-office-emphasis-mark='none'][style*='text-emphasis-style'][style*='none']")
+        }
+
+        expect "editor-focus-restored-after-none" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-explicit-none" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restores-circle" {
+            visible = css(".work-document-editable .ProseMirror h1 span[data-office-emphasis-mark='circle'][style*='open circle'][style*='over right']")
+        }
+
+        accessibility "emphasis-accessibility" {
+            path = "evidence/emphasis-accessibility.json"
+            interactive = true
+        }
+
+        console "emphasis-console" {
+            path = "diagnostics/emphasis-console.json"
+            clear = false
+        }
+
+        page_errors "emphasis-page-errors" {
+            path = "diagnostics/emphasis-page-errors.json"
+            clear = false
+        }
+    }
+}

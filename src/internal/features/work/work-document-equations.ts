@@ -1,6 +1,11 @@
 import { type CommandProps, mergeAttributes, Node } from '@tiptap/core';
 import type { DOMOutputSpec } from '@tiptap/pm/model';
 import { normalizeDocumentCharacterScalePercent } from './work-document-character-scale';
+import {
+  documentEmphasisMarkCss,
+  normalizeDocumentEmphasisMark,
+  type WorkDocumentEmphasisMark,
+} from './work-document-emphasis';
 import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
 
 export type WorkDocumentEquationDisplay = 'inline' | 'block';
@@ -601,12 +606,7 @@ export type WorkDocumentEquationWordVerticalAlignment =
   | 'superscript'
   | 'subscript';
 
-export type WorkDocumentEquationWordEmphasisMark =
-  | 'none'
-  | 'dot'
-  | 'comma'
-  | 'circle'
-  | 'underDot';
+export type WorkDocumentEquationWordEmphasisMark = WorkDocumentEmphasisMark;
 
 export interface WorkDocumentEquationWordLanguages {
   latin?: string;
@@ -1228,13 +1228,6 @@ const WORD_VERTICAL_ALIGNMENTS =
     'superscript',
     'subscript',
   ]);
-const WORD_EMPHASIS_MARKS = new Set<WorkDocumentEquationWordEmphasisMark>([
-  'none',
-  'dot',
-  'comma',
-  'circle',
-  'underDot',
-]);
 const WORD_COMBINE_BRACKETS = new Set<WorkDocumentEquationWordCombineBrackets>([
   'none',
   'round',
@@ -3718,11 +3711,7 @@ function normalizeEquationWordRunProperties(
   const emphasisMark =
     source.emphasisMark === undefined
       ? undefined
-      : WORD_EMPHASIS_MARKS.has(
-            source.emphasisMark as WorkDocumentEquationWordEmphasisMark,
-          )
-        ? (source.emphasisMark as WorkDocumentEquationWordEmphasisMark)
-        : null;
+      : normalizeDocumentEmphasisMark(source.emphasisMark);
   const languages =
     source.languages === undefined
       ? undefined
@@ -5435,16 +5424,7 @@ function wordRunVerticalAlignmentStyles(
 function wordRunEmphasisMarkStyles(
   emphasisMark: WorkDocumentEquationWordEmphasisMark | undefined,
 ): string {
-  if (!emphasisMark) return '';
-  if (emphasisMark === 'none') return 'text-emphasis-style:none';
-  const style =
-    emphasisMark === 'comma'
-      ? cssString(',')
-      : emphasisMark === 'circle'
-        ? 'open circle'
-        : 'filled dot';
-  const position = emphasisMark === 'underDot' ? 'under right' : 'over right';
-  return `text-emphasis-style:${style};text-emphasis-position:${position}`;
+  return documentEmphasisMarkCss(emphasisMark);
 }
 
 function wordRunCaseStyles(

@@ -70,7 +70,7 @@ test('keeps a local formatting publication until the controlled host acknowledge
       applyDocumentFontDialogPatch(
         editor as Editor,
         { from: selection.from, to: selection.to },
-        { characterScalePercent: 80 },
+        { characterScalePercent: 80, emphasisMark: 'circle' },
       ),
     ).toBe(true);
     // Closing the real font dialog restores its saved selection. That local
@@ -88,7 +88,9 @@ test('keeps a local formatting publication until the controlled host acknowledge
     }),
   );
   expect(
-    surface.querySelector('span[data-office-character-scale-percent="80"]'),
+    surface.querySelector(
+      'span[data-office-character-scale-percent="80"][data-office-emphasis-mark="circle"]',
+    ),
   ).toHaveTextContent('Controlled formatting');
 
   const acknowledged = published;
@@ -102,7 +104,9 @@ test('keeps a local formatting publication until the controlled host acknowledge
 
   await waitFor(() =>
     expect(
-      surface.querySelector('span[data-office-character-scale-percent="80"]'),
+      surface.querySelector(
+        'span[data-office-character-scale-percent="80"][data-office-emphasis-mark="circle"]',
+      ),
     ).toHaveTextContent('Controlled formatting'),
   );
   expect(publicationCount).toBe(1);

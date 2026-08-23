@@ -20,11 +20,16 @@ import { attribute, descendants, directChild } from './work-ooxml-package';
 import { documentCharacterScaleDomAttributes } from './work-document-character-scale';
 import { documentCharacterPositionDomAttributes } from './work-document-character-position';
 import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
+import {
+  documentEmphasisMarkDomAttributes,
+  type WorkDocumentEmphasisMark,
+} from './work-document-emphasis';
 import { documentKerningDomAttributes } from './work-document-kerning';
 import { docxCharacterScalePercentFromProperties } from './work-docx-character-scale';
 import { docxCharacterPositionHalfPointsFromProperties } from './work-docx-character-position';
 import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
 import { resolveDocxKerningThresholdHalfPoints } from './work-docx-kerning';
+import { resolveDocxEmphasisMark } from './work-docx-emphasis';
 import { documentWordLineHeightFactor } from './work-document-word-line-metrics';
 import {
   type DocxThemeColorReference,
@@ -62,6 +67,7 @@ export interface ImportedDocxRunFormatting {
   characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
   kerningThresholdHalfPoints?: number;
+  emphasisMark?: WorkDocumentEmphasisMark;
   fontFamily?: string;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
@@ -124,6 +130,7 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'snapToGrid',
   'cs',
   'rtl',
+  'em',
   'vertAlign',
 ]);
 
@@ -286,6 +293,7 @@ function resolvedRunFormatting(
   let characterSpacingTwips: number | undefined;
   const kerningThresholdHalfPoints =
     resolveDocxKerningThresholdHalfPoints(propertySources);
+  const emphasisMark = resolveDocxEmphasisMark(propertySources);
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
@@ -498,6 +506,7 @@ function resolvedRunFormatting(
     ...(kerningThresholdHalfPoints !== undefined
       ? { kerningThresholdHalfPoints }
       : {}),
+    ...(emphasisMark !== undefined ? { emphasisMark } : {}),
     ...(fontFamily
       ? {
           fontFamily,
@@ -586,6 +595,14 @@ function formattingMarkup(
       documentCharacterPositionDomAttributes(
         formatting.characterPositionHalfPoints,
       ),
+    )) {
+      if (name === 'style') span.style.cssText += `; ${value}`;
+      else span.setAttribute(name, value);
+    }
+  }
+  if (formatting.emphasisMark !== undefined) {
+    for (const [name, value] of Object.entries(
+      documentEmphasisMarkDomAttributes(formatting.emphasisMark),
     )) {
       if (name === 'style') span.style.cssText += `; ${value}`;
       else span.setAttribute(name, value);

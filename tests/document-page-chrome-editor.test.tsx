@@ -123,6 +123,30 @@ test('retains canonical font-size-aware kerning thresholds in page chrome', () =
   expect(invalid).toContain('font-size: 12pt');
 });
 
+test('retains only canonical native emphasis marks in page chrome', () => {
+  const normalized = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-emphasis-mark="underDot" style="text-emphasis-style: open circle; text-emphasis-position: over right" data-untrusted="drop">Header</span></p>',
+  );
+  expect(normalized).toContain('data-office-emphasis-mark="underDot"');
+  expect(normalized).toContain('text-emphasis-style:filled dot');
+  expect(normalized).toContain('text-emphasis-position:under right');
+  expect(normalized).not.toContain('open circle');
+  expect(normalized).not.toContain('data-untrusted');
+
+  const explicitNone = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-emphasis-mark="none" style="text-emphasis-style: filled dot">Header</span></p>',
+  );
+  expect(explicitNone).toContain('data-office-emphasis-mark="none"');
+  expect(explicitNone).toContain('text-emphasis-style:none');
+  expect(explicitNone).not.toContain('filled dot');
+
+  const invalid = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-emphasis-mark="Dot" style="text-emphasis-style: filled dot">Header</span></p>',
+  );
+  expect(invalid).not.toContain('data-office-emphasis-mark');
+  expect(invalid).not.toContain('text-emphasis');
+});
+
 test('keeps native page-chrome identities through edits', () => {
   const editor = new Editor({
     extensions: createDocumentPageChromeEditorExtensions(),

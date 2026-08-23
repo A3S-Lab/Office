@@ -72,6 +72,7 @@ import {
   type WorkDocumentEquationWordVerticalAlignment,
 } from './work-document-equations';
 import { DOCUMENT_CHARACTER_SCALE_MAX_PERCENT } from './work-document-character-scale';
+import { normalizeDocumentEmphasisMark } from './work-document-emphasis';
 import { DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS } from './work-document-kerning';
 import {
   closestDocxEquationLikeRoot,
@@ -645,13 +646,6 @@ const WORD_VERTICAL_ALIGNMENTS =
     'superscript',
     'subscript',
   ]);
-const WORD_EMPHASIS_MARKS = new Set<WorkDocumentEquationWordEmphasisMark>([
-  'none',
-  'dot',
-  'comma',
-  'circle',
-  'underDot',
-]);
 const WORD_COMBINE_BRACKETS = new Set<WorkDocumentEquationWordCombineBrackets>([
   'none',
   'round',
@@ -2004,10 +1998,7 @@ function parseWordEmphasisMark(
   if (!element) return undefined;
   const attributes = wordLeafAttributes(element, new Set(['val']));
   const value = attributes?.get('val')?.trim();
-  return attributes?.size === 1 &&
-    WORD_EMPHASIS_MARKS.has(value as WorkDocumentEquationWordEmphasisMark)
-    ? (value as WorkDocumentEquationWordEmphasisMark)
-    : null;
+  return attributes?.size === 1 ? normalizeDocumentEmphasisMark(value) : null;
 }
 
 function parseWordLanguages(

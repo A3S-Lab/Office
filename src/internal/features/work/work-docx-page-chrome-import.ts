@@ -2,11 +2,13 @@ import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import { documentCharacterScaleDomAttributes } from './work-document-character-scale';
 import { documentCharacterPositionDomAttributes } from './work-document-character-position';
 import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
+import { documentEmphasisMarkDomAttributes } from './work-document-emphasis';
 import { documentKerningDomAttributes } from './work-document-kerning';
 import { docxCharacterScalePercentFromProperties } from './work-docx-character-scale';
 import { docxCharacterPositionHalfPointsFromProperties } from './work-docx-character-position';
 import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
 import { resolveDocxKerningThresholdHalfPoints } from './work-docx-kerning';
+import { resolveDocxEmphasisMark } from './work-docx-emphasis';
 import { documentParagraphBordersDomAttributes } from './work-document-paragraph-borders';
 import {
   documentPageChromeLegacyFields,
@@ -457,6 +459,12 @@ async function runHtml(
   if (characterPosition !== undefined) {
     content = `<span${htmlAttributes(
       documentCharacterPositionDomAttributes(characterPosition),
+    )}>${content}</span>`;
+  }
+  const emphasisMark = resolveDocxEmphasisMark(propertySources);
+  if (emphasisMark !== undefined) {
+    content = `<span${htmlAttributes(
+      documentEmphasisMarkDomAttributes(emphasisMark),
     )}>${content}</span>`;
   }
   const characterSpacing = docxCharacterSpacingTwipsFromProperties(

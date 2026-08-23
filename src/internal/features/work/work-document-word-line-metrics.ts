@@ -17,6 +17,12 @@ import {
   normalizeDocumentCharacterPositionHalfPoints,
 } from './work-document-character-position';
 import {
+  documentEmphasisMarkDomAttributes,
+  documentEmphasisMarkFromElement,
+  normalizeDocumentEmphasisMark,
+  type WorkDocumentEmphasisMark,
+} from './work-document-emphasis';
+import {
   documentKerningDomAttributes,
   documentKerningThresholdHalfPointsFromElement,
   normalizeDocumentKerningThresholdHalfPoints,
@@ -57,6 +63,7 @@ declare module '@tiptap/extension-text-style' {
     characterScalePercent?: number | null;
     characterPositionHalfPoints?: number | null;
     characterSpacingTwips?: number | null;
+    emphasisMark?: WorkDocumentEmphasisMark | null;
     kerningThresholdHalfPoints?: number | null;
     wordLineHeightFactor?: number | null;
     wordSnapToGrid?: boolean | null;
@@ -146,6 +153,15 @@ export const DocumentTextStyle = TextStyle.extend({
             normalizeDocumentCharacterSpacingTwips(
               attributes.characterSpacingTwips,
             ),
+          ),
+      },
+      emphasisMark: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          documentEmphasisMarkFromElement(element),
+        renderHTML: (attributes: Record<string, unknown>) =>
+          documentEmphasisMarkDomAttributes(
+            normalizeDocumentEmphasisMark(attributes.emphasisMark),
           ),
       },
       kerningThresholdHalfPoints: {

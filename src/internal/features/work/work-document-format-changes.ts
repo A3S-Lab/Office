@@ -3,6 +3,10 @@ import type { Transaction } from '@tiptap/pm/state';
 import { normalizeDocumentCharacterScalePercent } from './work-document-character-scale';
 import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-character-position';
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
+import {
+  normalizeDocumentEmphasisMark,
+  type WorkDocumentEmphasisMark,
+} from './work-document-emphasis';
 import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
 import {
   normalizeDocumentTextCase,
@@ -70,6 +74,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'color',
     'fontFamily',
     'fontSize',
+    'emphasisMark',
     'kerningThresholdHalfPoints',
     'themeColor',
     'textCase',
@@ -172,6 +177,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
   kerningThresholdHalfPoints?: number;
+  emphasisMark?: WorkDocumentEmphasisMark;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
   fontSize?: number;
@@ -208,6 +214,7 @@ export function importedDocumentCharacterFormatting(formatting: {
     characterPositionHalfPoints: formatting.characterPositionHalfPoints,
     characterSpacingTwips: formatting.characterSpacingTwips,
     kerningThresholdHalfPoints: formatting.kerningThresholdHalfPoints,
+    emphasisMark: formatting.emphasisMark,
     color: formatting.color,
     fontFamily: formatting.fontFamily,
     fontSize:
@@ -265,6 +272,12 @@ function normalizeCharacterFormatMark(
       const threshold = normalizeDocumentKerningThresholdHalfPoints(candidate);
       if (threshold === null) return null;
       attrs[key] = threshold;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'emphasisMark') {
+      const emphasisMark = normalizeDocumentEmphasisMark(candidate);
+      if (emphasisMark === null) return null;
+      attrs[key] = emphasisMark;
       continue;
     }
     if (typeof candidate === 'string') {

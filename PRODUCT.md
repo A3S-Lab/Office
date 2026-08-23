@@ -444,6 +444,22 @@ Strikethrough remains paint-only, so eligible paragraphs retain Worker/WASM
 layout. Focused Rstest, Playwright, local-only A3S Test, formatting, lint,
 typecheck, and production builds form the release evidence without adding A3S
 Test to Actions or Pages.
+The forty-first milestone adds Writer's native East Asian emphasis-mark model.
+One closed `none | dot | comma | circle | underDot` state preserves all five
+`w:em` values, including an explicit `none` that overrides inherited formatting
+without conflating it with removal of the direct property. The shared
+`Cmd/Ctrl+D` advanced font dialog keeps mixed selections independent, offers
+Follow style and every native value, restores the captured selection and focus,
+and commits with the other character properties through one transaction and one
+Undo record. Body text, headers, footers, footnotes, endnotes, inherited styles,
+Format Painter, tracked formatting revisions, strict/transitional DOCX import,
+export, and reopen share the same typed model. Canonical DOM attributes project
+the four visible states through CSS; those paragraphs deliberately use
+browser-authoritative line measurement because the marks extend outside the
+text line, while a computed explicit none remains eligible for Worker/WASM
+layout. Malformed or namespace-spoofed properties fail closed. Focused Rstest,
+desktop/compact Playwright, and a local-only A3S Test 1.0.0 suite form the
+release evidence without adding A3S Test to Actions or Pages.
 
 ## Product Rules
 

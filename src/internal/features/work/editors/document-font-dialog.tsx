@@ -1,4 +1,4 @@
-import { type FormEvent, useId, useState } from 'react';
+import { type CSSProperties, type FormEvent, useId, useState } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
 import {
   documentKerningIsEffective,
@@ -15,6 +15,7 @@ import {
   documentFontDialogPatch,
   type DocumentCharacterPositionMode,
   type DocumentCharacterSpacingMode,
+  type DocumentEmphasisMarkMode,
   type DocumentFontDialogPatch,
   type DocumentFontDialogSource,
 } from './document-font-dialog-model';
@@ -41,6 +42,20 @@ const characterPositionModes: ReadonlyArray<{
   { value: 'lowered', label: '降低' },
 ];
 
+const emphasisMarkModes: ReadonlyArray<{
+  value: DocumentEmphasisMarkMode;
+  label: string;
+  disabled?: boolean;
+}> = [
+  { value: 'mixed', label: '混合（保持不变）', disabled: true },
+  { value: 'inherit', label: '跟随样式' },
+  { value: 'none', label: '无' },
+  { value: 'dot', label: '上方圆点' },
+  { value: 'comma', label: '上方逗号' },
+  { value: 'circle', label: '上方圆圈' },
+  { value: 'underDot', label: '下方圆点' },
+];
+
 export function DocumentFontDialog({
   source,
   restoreFocusTarget,
@@ -60,6 +75,7 @@ export function DocumentFontDialog({
   const [characterPositionTouched, setCharacterPositionTouched] =
     useState(false);
   const [kerningTouched, setKerningTouched] = useState(false);
+  const [emphasisTouched, setEmphasisTouched] = useState(false);
   const formId = useId();
   const error = documentFontDialogDraftError(draft);
   const patch = documentFontDialogPatch(
@@ -69,12 +85,14 @@ export function DocumentFontDialog({
     characterSpacingTouched,
     characterPositionTouched,
     kerningTouched,
+    emphasisTouched,
   );
   const hasChanges = Object.keys(patch).length > 0;
   const previewScale = previewCharacterScale(draft);
   const previewSpacing = previewCharacterSpacing(draft);
   const previewPosition = previewCharacterPosition(draft);
   const previewKerning = previewDocumentKerning(draft, source.fontSize);
+  const previewEmphasis = previewDocumentEmphasis(draft.emphasisMark);
 
   const submit = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
@@ -107,7 +125,7 @@ export function DocumentFontDialog({
     >
       <form id={formId} onSubmit={submit}>
         <fieldset className="work-document-font-dialog-spacing">
-          <legend>字符缩放、间距、字距调整与位置</legend>
+          <legend>字符缩放、间距、字距调整、位置与着重号</legend>
           <div className="work-document-font-dialog-field">
             <span>缩放</span>
             <span className="work-document-font-dialog-measure">
@@ -247,6 +265,18 @@ export function DocumentFontDialog({
               <span aria-hidden="true">磅</span>
             </span>
           </div>
+          <div className="work-document-font-dialog-field">
+            <span>着重号</span>
+            <OfficeSelect
+              ariaLabel="着重号"
+              value={draft.emphasisMark}
+              options={emphasisMarkModes}
+              onValueChange={(emphasisMark) => {
+                setDraft((current) => ({ ...current, emphasisMark }));
+                setEmphasisTouched(true);
+              }}
+            />
+          </div>
           {source.characterScale.mixed && !characterScaleTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
               当前选区包含多种字符缩放比例。输入缩放比例后才会统一修改。
@@ -267,10 +297,16 @@ export function DocumentFontDialog({
               当前选区包含不同的字距调整设置。勾选或取消后才会统一修改。
             </p>
           )}
+          {source.emphasisMark.mixed && !emphasisTouched && (
+            <p className="work-document-font-dialog-mixed" role="status">
+              当前选区包含不同的着重号。选择一种设置后才会统一修改。
+            </p>
+          )}
           {(characterScaleTouched ||
             characterSpacingTouched ||
             characterPositionTouched ||
-            kerningTouched) &&
+            kerningTouched ||
+            emphasisTouched) &&
             error && (
               <p className="work-document-font-dialog-error" role="alert">
                 {error}
@@ -291,7 +327,12 @@ export function DocumentFontDialog({
               letterSpacing: `${previewSpacing}pt`,
             }}
           >
-            <span style={{ verticalAlign: `${previewPosition}pt` }}>
+            <span
+              style={{
+                verticalAlign: `${previewPosition}pt`,
+                ...previewEmphasis,
+              }}
+            >
               {source.previewText}
             </span>
           </output>
@@ -347,8 +388,42 @@ function previewDocumentKerning(
   return documentKerningIsEffective(points * 2, fontSize) ? 'normal' : 'none';
 }
 
+function previewDocumentEmphasis(
+  emphasisMark: DocumentEmphasisMarkMode,
+): Pick<
+  CSSProperties,
+  | 'textEmphasisPosition'
+  | 'textEmphasisStyle'
+  | 'WebkitTextEmphasisPosition'
+  | 'WebkitTextEmphasisStyle'
+> {
+  if (
+    emphasisMark === 'inherit' ||
+    emphasisMark === 'mixed' ||
+    emphasisMark === 'none'
+  ) {
+    return {
+      textEmphasisStyle: 'none',
+      WebkitTextEmphasisStyle: 'none',
+    };
+  }
+  const style =
+    emphasisMark === 'comma'
+      ? '","'
+      : emphasisMark === 'circle'
+        ? 'open circle'
+        : 'filled dot';
+  const position = emphasisMark === 'underDot' ? 'under right' : 'over right';
+  return {
+    textEmphasisStyle: style,
+    textEmphasisPosition: position,
+    WebkitTextEmphasisStyle: style,
+    WebkitTextEmphasisPosition: position,
+  };
+}
+
 function fontDialogDescription(source: DocumentFontDialogSource): string {
   return source.selectedCharacters
-    ? `精确设置当前选中内容的原生字符缩放、间距、字距调整阈值和位置（${source.selectedCharacters} 个字符）。`
-    : '设置当前位置后续输入文字的原生字符缩放、间距、字距调整阈值和位置。';
+    ? `精确设置当前选中内容的原生字符缩放、间距、字距调整阈值、位置和着重号（${source.selectedCharacters} 个字符）。`
+    : '设置当前位置后续输入文字的原生字符缩放、间距、字距调整阈值、位置和着重号。';
 }

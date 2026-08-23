@@ -137,6 +137,7 @@ suites=(
   "tests/e2e/collaboration-document-suggestions.acl"
   "tests/e2e/word-formatting-revision.acl"
   "tests/e2e/word-paragraph-formatting-revision.acl"
+  "tests/e2e/word-emphasis.acl"
   "tests/e2e/word-kerning.acl"
   "tests/e2e/word-character-scale.acl"
   "tests/e2e/word-character-position.acl"
