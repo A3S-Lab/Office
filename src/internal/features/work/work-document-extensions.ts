@@ -42,6 +42,7 @@ import { DocumentPageBreak } from './work-document-page-break';
 import { DocumentParagraphFormatting } from './work-document-paragraph-formatting';
 import { DocumentParagraphIdentity } from './work-document-paragraph-identity';
 import { DocumentSection } from './work-document-section-node';
+import { DocumentScriptFontFormatting } from './work-document-script-font-extension';
 import { DocumentStrike } from './work-document-strike';
 import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
@@ -166,6 +167,7 @@ export function createWorkDocumentExtensions(
     DocumentTableFormatting,
     DocumentTableSizing,
     DocumentTextStyle,
+    DocumentScriptFontFormatting,
     DocumentFontFamily,
     FontSize,
     Color,

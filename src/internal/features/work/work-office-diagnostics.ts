@@ -14,6 +14,7 @@ import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diag
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import { isSupportedDocxParagraphFormattingChange } from './work-docx-paragraph-format-change-import';
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
+import { diagnoseDocxRunFonts } from './work-docx-run-fonts-diagnostics';
 import { isSupportedDocxRunFormattingChange } from './work-docx-run-formatting-import';
 import {
   attribute,
@@ -216,6 +217,7 @@ export async function analyzeDocxCompatibility(
     if (document) {
       issues.push(...(await diagnoseDocxKerning(archive, document)));
       issues.push(...(await diagnoseDocxEmphasisMarks(archive, document)));
+      issues.push(...(await diagnoseDocxRunFonts(archive, document)));
     }
     issues.push(...(await diagnoseDocxPageChrome(archive)));
     if (archive.paths('word/embeddings/').length) {

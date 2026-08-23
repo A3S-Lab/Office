@@ -3,6 +3,7 @@ import Color from '@tiptap/extension-color';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TableKit } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
+import FontSize from '@tiptap/extension-text-style/font-size';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import {
@@ -27,7 +28,11 @@ import {
   DocumentSubscript,
   DocumentSuperscript,
 } from '../work-document-character-formatting';
-import { DocumentTextStyle } from '../work-document-word-line-metrics';
+import {
+  DocumentFontFamily,
+  DocumentTextStyle,
+} from '../work-document-word-line-metrics';
+import { DocumentScriptFontFormatting } from '../work-document-script-font-extension';
 import { DocumentEquation } from '../work-document-equations';
 import { DocumentImage } from '../work-document-image-layout';
 import { DOCUMENT_LINK_VALIDATION_MESSAGE } from '../work-document-links';
@@ -416,6 +421,9 @@ export function createDocumentPageChromeEditorExtensions(
     DocumentImage.configure({ allowBase64: true, inline: true }),
     DocumentEquation,
     DocumentTextStyle,
+    DocumentScriptFontFormatting,
+    DocumentFontFamily,
+    FontSize,
     Color,
     DocumentUnderline,
     DocumentStrike,

@@ -1,5 +1,5 @@
 .work-document-font-dialog {
-  width: min(560px, 100%);
+  width: min(680px, 100%);
 }
 
 .work-document-font-dialog form {
@@ -7,9 +7,9 @@
   gap: 18px;
 }
 
+.work-document-font-dialog-script-fonts,
 .work-document-font-dialog-spacing {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px 18px;
   margin: 0;
   padding: 15px 16px 17px;
@@ -17,6 +17,15 @@
   border-radius: 10px;
 }
 
+.work-document-font-dialog-script-fonts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.work-document-font-dialog-spacing {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.work-document-font-dialog-script-fonts > legend,
 .work-document-font-dialog-spacing > legend {
   padding: 0 5px;
   color: var(--a3s-ink);
@@ -98,6 +107,7 @@
 }
 
 @media (max-width: 620px) {
+  .work-document-font-dialog-script-fonts,
   .work-document-font-dialog-spacing {
     grid-template-columns: minmax(0, 1fr);
   }

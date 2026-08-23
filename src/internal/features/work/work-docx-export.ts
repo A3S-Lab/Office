@@ -132,6 +132,14 @@ import {
   patchDocxThemeReferences,
 } from './work-docx-theme-reference';
 import { preserveDocxSourcePackage } from './work-ooxml-package-preservation';
+import {
+  documentScriptFontsFromElement,
+  documentScriptFontSlotFromElement,
+} from './work-document-script-fonts';
+import {
+  DocxRunFontsPatchCollector,
+  patchDocxRunFonts,
+} from './work-docx-run-fonts-export';
 import { normalizeDocumentTextCase } from './work-document-text-case';
 import {
   DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
@@ -167,6 +175,7 @@ interface DocxNoteContext extends DocxListExportContext {
   paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
   equationPatches: DocxEquationPatchCollector;
   formattingChangePatches: DocxRunFormattingChangePatchCollector;
+  runFontPatches: DocxRunFontsPatchCollector;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
   hasExplicitZeroCharacterSpacing: boolean;
   hasExplicitZeroKerningThreshold: boolean;
@@ -227,6 +236,9 @@ export async function createDocxBlob(
       JSON.stringify(normalizedContent),
     ),
     formattingChangePatches: new DocxRunFormattingChangePatchCollector(),
+    runFontPatches: new DocxRunFontsPatchCollector(
+      JSON.stringify(normalizedContent),
+    ),
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
     hasExplicitZeroCharacterSpacing: false,
@@ -302,8 +314,12 @@ export async function createDocxBlob(
   const kerningPatched = noteContext.hasExplicitZeroKerningThreshold
     ? await patchDocxExplicitZeroKerningThresholds(characterSpacingPatched)
     : characterSpacingPatched;
-  const formattingChangesPatched = await patchDocxRunFormattingChanges(
+  const runFontsPatched = await patchDocxRunFonts(
     kerningPatched,
+    noteContext.runFontPatches.patches,
+  );
+  const formattingChangesPatched = await patchDocxRunFormattingChanges(
+    runFontsPatched,
     noteContext.formattingChangePatches.patches,
   );
   const noteImageRelationshipsPatched = await patchDocxNoteImageRelationships(
@@ -808,6 +824,11 @@ async function inlineRuns(
       noteContext.themePatches,
     );
     const strike = docxStrikeRunOptions(node, inherited);
+    const scriptFontMarker = noteContext.runFontPatches.marker(
+      documentScriptFontsFromElement(node),
+      documentScriptFontSlotFromElement(node),
+      node.style.fontFamily,
+    );
     const style: IRunOptions = {
       ...inherited,
       bold: inherited.bold || tag === 'strong' || tag === 'b',
@@ -817,7 +838,9 @@ async function inlineRuns(
       subScript: inherited.subScript || tag === 'sub',
       superScript: inherited.superScript || tag === 'sup',
       color: themeColorMarker ?? resolvedColor,
-      font: cssFontFamily(node.style.fontFamily) ?? inherited.font,
+      font: scriptFontMarker
+        ? { ascii: scriptFontMarker }
+        : (cssFontFamily(node.style.fontFamily) ?? inherited.font),
       size: cssFontSize(node.style.fontSize) ?? inherited.size,
       characterSpacing,
       scale,

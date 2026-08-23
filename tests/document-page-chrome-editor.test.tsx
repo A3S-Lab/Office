@@ -15,6 +15,12 @@ import {
 } from '../src/internal/features/work/editors/document-page-chrome-editor';
 import { clearDocumentFormatClipboard } from '../src/internal/features/work/editors/document-format-clipboard';
 import { sanitizeDocumentPageChromeHtml } from '../src/internal/features/work/work-document-page-chrome';
+import {
+  DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
+  DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,
+  parseDocumentScriptFonts,
+  serializeDocumentScriptFonts,
+} from '../src/internal/features/work/work-document-script-fonts';
 
 const pixelPng =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC' +
@@ -121,6 +127,33 @@ test('retains canonical font-size-aware kerning thresholds in page chrome', () =
   expect(invalid).not.toContain('data-office-kerning-threshold');
   expect(invalid).not.toContain('font-kerning');
   expect(invalid).toContain('font-size: 12pt');
+});
+
+test('retains safe CSS font fallbacks separately from native page-chrome identity', () => {
+  const scriptFonts = serializeDocumentScriptFonts({
+    ascii: { name: 'Arial', resolved: 'Arial' },
+  });
+  if (!scriptFonts) throw new Error('Expected valid script-font metadata.');
+  const source = document.createElement('span');
+  source.textContent = 'Header';
+  source.setAttribute(DOCUMENT_SCRIPT_FONTS_ATTRIBUTE, scriptFonts);
+  source.setAttribute(DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE, 'ascii');
+  source.style.fontFamily = 'Arial, sans-serif';
+
+  const normalized = sanitizeDocumentPageChromeHtml(
+    `<p>${source.outerHTML}</p>`,
+  );
+  const parsed = new DOMParser().parseFromString(normalized, 'text/html');
+  const span = parsed.querySelector<HTMLElement>('span');
+  expect(span?.style.fontFamily).toBe('Arial, sans-serif');
+  expect(span?.getAttribute(DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE)).toBe('ascii');
+  expect(
+    parseDocumentScriptFonts(
+      span?.getAttribute(DOCUMENT_SCRIPT_FONTS_ATTRIBUTE),
+    ),
+  ).toEqual({
+    ascii: { name: 'Arial', resolved: 'Arial' },
+  });
 });
 
 test('retains only canonical native emphasis marks in page chrome', () => {

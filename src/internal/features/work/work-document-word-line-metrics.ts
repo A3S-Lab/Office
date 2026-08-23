@@ -37,6 +37,14 @@ import {
   normalizeDocumentTextCase,
   type WorkDocumentTextCase,
 } from './work-document-text-case';
+import {
+  documentScriptFontsDomAttributes,
+  documentScriptFontsForAllText,
+  normalizeDocumentScriptFontSlot,
+  parseDocumentScriptFonts,
+  serializeDocumentScriptFonts,
+  type WorkDocumentScriptFontSlot,
+} from './work-document-script-fonts';
 
 export const DOCUMENT_WORD_DEFAULT_SINGLE_LINE_HEIGHT = 1.15;
 
@@ -65,6 +73,8 @@ declare module '@tiptap/extension-text-style' {
     characterSpacingTwips?: number | null;
     emphasisMark?: WorkDocumentEmphasisMark | null;
     kerningThresholdHalfPoints?: number | null;
+    scriptFonts?: string | null;
+    scriptFontSlot?: WorkDocumentScriptFontSlot | null;
     wordLineHeightFactor?: number | null;
     wordSnapToGrid?: boolean | null;
     themeColor?: string | null;
@@ -176,6 +186,29 @@ export const DocumentTextStyle = TextStyle.extend({
             attributes.fontSize,
           ),
       },
+      scriptFonts: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          serializeDocumentScriptFonts(
+            parseDocumentScriptFonts(element.dataset.officeScriptFonts),
+          ),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const domAttributes = documentScriptFontsDomAttributes(
+            typeof attributes.scriptFonts === 'string'
+              ? parseDocumentScriptFonts(attributes.scriptFonts)
+              : attributes.scriptFonts,
+            attributes.scriptFontSlot,
+          );
+          delete domAttributes.style;
+          return domAttributes;
+        },
+      },
+      scriptFontSlot: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentScriptFontSlot(element.dataset.officeScriptFontSlot),
+        renderHTML: () => ({}),
+      },
       wordLineHeightFactor: {
         default: null,
         parseHTML: (element: HTMLElement) =>
@@ -255,19 +288,27 @@ export const DocumentFontFamily = FontFamily.extend({
     return {
       setFontFamily:
         (fontFamily: string) =>
-        ({ chain }) =>
-          chain()
+        ({ chain }) => {
+          const scriptFonts = serializeDocumentScriptFonts(
+            documentScriptFontsForAllText(fontFamily),
+          );
+          return chain()
             .setMark('textStyle', {
               fontFamily,
+              scriptFonts,
+              scriptFontSlot: null,
               wordLineHeightFactor: documentWordLineHeightFactor(fontFamily),
             })
-            .run(),
+            .run();
+        },
       unsetFontFamily:
         () =>
         ({ chain }) =>
           chain()
             .setMark('textStyle', {
               fontFamily: null,
+              scriptFonts: null,
+              scriptFontSlot: null,
               wordLineHeightFactor: null,
             })
             .removeEmptyTextStyle()

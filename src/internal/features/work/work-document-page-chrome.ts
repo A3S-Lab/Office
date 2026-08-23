@@ -53,6 +53,17 @@ import {
   normalizeDocumentTextCase,
 } from './work-document-text-case';
 import {
+  cssDocumentFontFamily,
+  DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
+  DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,
+  documentFontNameFromCssFamily,
+  documentScriptFontFamilyForRendering,
+  documentScriptFontsFromElement,
+  documentScriptFontsDomAttributes,
+  documentScriptFontSlotFromElement,
+  documentScriptFontSlotFromHint,
+} from './work-document-script-fonts';
+import {
   DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE,
   DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
   DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE,
@@ -423,6 +434,24 @@ function sanitizeAttributes(element: Element, tag: string) {
     ? element.style.textAlign
     : '';
   const color = element.style.color;
+  const scriptFonts =
+    tag === 'span' ? documentScriptFontsFromElement(element) : null;
+  const scriptFontSlot =
+    tag === 'span' ? documentScriptFontSlotFromElement(element) : null;
+  const scriptFontAttributes = scriptFonts
+    ? documentScriptFontsDomAttributes(scriptFonts, scriptFontSlot)
+    : {};
+  const fontFamily =
+    (scriptFonts
+      ? documentScriptFontFamilyForRendering(
+          scriptFonts,
+          scriptFontSlot ?? documentScriptFontSlotFromHint(scriptFonts.hint),
+          element.style.fontFamily,
+        )
+      : null) ??
+    cssDocumentFontFamily(
+      documentFontNameFromCssFamily(element.style.fontFamily),
+    );
   const fontSize =
     tag === 'span'
       ? normalizedPageChromeFontSize(element.style.fontSize)
@@ -489,9 +518,12 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_CHARACTER_SPACING_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_EMPHASIS_MARK_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_SCRIPT_FONTS_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE);
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
     color ? `color: ${color}` : '',
+    fontFamily ? `font-family: ${fontFamily}` : '',
     fontSize ? `font-size: ${fontSize}` : '',
     textCase ? documentTextCaseCss(textCase) : '',
     characterScaleAttributes.style ?? '',
@@ -573,6 +605,11 @@ function sanitizeAttributes(element: Element, tag: string) {
   if (tag === 'span' && emphasisMark !== null) {
     element.setAttribute(DOCUMENT_EMPHASIS_MARK_ATTRIBUTE, emphasisMark);
   }
+  if (tag === 'span' && scriptFonts) {
+    for (const [name, value] of Object.entries(scriptFontAttributes)) {
+      if (name !== 'style') element.setAttribute(name, value);
+    }
+  }
   if (direction === 'ltr' || direction === 'rtl')
     element.setAttribute('dir', direction);
   else element.removeAttribute('dir');
@@ -618,6 +655,8 @@ function sanitizeAttributes(element: Element, tag: string) {
                           DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
                           DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
                           DOCUMENT_EMPHASIS_MARK_ATTRIBUTE,
+                          DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
+                          DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,
                         ]
                       : []),
                     ...(tag === 'u'

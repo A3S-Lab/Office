@@ -142,6 +142,7 @@ suites=(
   "tests/e2e/word-character-scale.acl"
   "tests/e2e/word-character-position.acl"
   "tests/e2e/word-character-spacing.acl"
+  "tests/e2e/word-script-fonts.acl"
   "tests/e2e/word-strike-styles.acl"
 )
 

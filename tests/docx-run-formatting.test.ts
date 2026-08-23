@@ -493,6 +493,12 @@ describe('DOCX run formatting', () => {
       underline: { style: 'none' },
       strike: { style: 'none' },
       fontFamily: 'Arial, SimSun',
+      scriptFonts: {
+        ascii: { name: 'Arial', resolved: 'Arial' },
+        highAnsi: { name: 'Arial', resolved: 'Arial' },
+        eastAsia: { name: 'SimSun', resolved: 'SimSun' },
+      },
+      scriptFontSlot: 'ascii',
       wordLineHeightFactor: 1.15,
       wordSnapToGrid: false,
       fontSize: 14,
@@ -1074,6 +1080,74 @@ describe('DOCX run formatting', () => {
         fontFamily: 'Arial, Calibri, "Segoe UI", "Microsoft YaHei"',
         wordLineHeightFactor: 1.15,
       }),
+    ]);
+  });
+
+  test('splits one mixed-script Word run into exact browser font spans', () => {
+    const document = wordXml(`
+      <w:p><w:r>
+        <w:rPr>
+          <w:rFonts
+            w:ascii="Segoe UI"
+            w:hAnsi="Calibri"
+            w:eastAsia="Microsoft YaHei"
+            w:cs="Arial"
+          />
+        </w:rPr>
+        <w:t>Aé中文اختبار</w:t>
+      </w:r></w:p>
+    `);
+
+    const markers = markDocxRunFormatting(document);
+    expect(
+      markers.runs.map(({ formatting }) => formatting.scriptFontSlot),
+    ).toEqual(['ascii', 'highAnsi', 'eastAsia', 'complexScript']);
+    expect(markers.runs.map(({ formatting }) => formatting.fontFamily)).toEqual(
+      [
+        '"Segoe UI", Calibri, "Microsoft YaHei", Arial',
+        'Calibri, "Segoe UI", "Microsoft YaHei", Arial',
+        '"Microsoft YaHei", Calibri, "Segoe UI", Arial',
+        'Arial, Calibri, "Segoe UI", "Microsoft YaHei"',
+      ],
+    );
+
+    const segmentText = ['A', 'é', '中文', 'اختبار'];
+    const html = new DOMParser().parseFromString(
+      `<p>${markers.runs
+        .map(
+          ({ startMarker, endMarker }, index) =>
+            `${startMarker}${segmentText[index]}${endMarker}`,
+        )
+        .join('')}</p>`,
+      'text/html',
+    );
+    applyImportedDocxRunFormattingMarkers(html, markers);
+
+    expect(html.body.textContent).toBe(segmentText.join(''));
+    expect(
+      Array.from(
+        html.querySelectorAll<HTMLElement>('[data-office-script-font-slot]'),
+      ).map((element) => ({
+        family: element.style.fontFamily,
+        slot: element.dataset.officeScriptFontSlot,
+      })),
+    ).toEqual([
+      {
+        family: '"Segoe UI", Calibri, "Microsoft YaHei", Arial',
+        slot: 'ascii',
+      },
+      {
+        family: 'Calibri, "Segoe UI", "Microsoft YaHei", Arial',
+        slot: 'highAnsi',
+      },
+      {
+        family: '"Microsoft YaHei", Calibri, "Segoe UI", Arial',
+        slot: 'eastAsia',
+      },
+      {
+        family: 'Arial, Calibri, "Segoe UI", "Microsoft YaHei"',
+        slot: 'complexScript',
+      },
     ]);
   });
 

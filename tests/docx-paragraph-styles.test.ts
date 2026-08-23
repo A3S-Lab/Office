@@ -202,6 +202,10 @@ describe('DOCX paragraph styles', () => {
       underline: { style: 'none' },
       strike: { style: 'none' },
       fontFamily: 'Arial',
+      scriptFonts: {
+        ascii: { name: 'Arial', resolved: 'Arial' },
+      },
+      scriptFontSlot: 'ascii',
       wordLineHeightFactor: 1.15,
       fontSize: 12,
     });

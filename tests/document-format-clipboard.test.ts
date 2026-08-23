@@ -7,6 +7,11 @@ import {
   pasteDocumentFormatting,
 } from '../src/internal/features/work/editors/document-format-clipboard';
 import { createDocumentPageChromeEditorExtensions } from '../src/internal/features/work/editors/document-page-chrome-editor';
+import {
+  documentScriptFontsDomAttributes,
+  normalizeDocumentScriptFonts,
+  parseDocumentScriptFonts,
+} from '../src/internal/features/work/work-document-script-fonts';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 let editor: Editor | null = null;
@@ -157,6 +162,60 @@ test('copies native double strike as one formatting mark across body and page ch
   editor.commands.setTextSelection(textRange(editor, 'Target'));
   expect(editor.isActive('italic')).toBe(true);
   expect(editor.isActive('strike')).toBe(false);
+});
+
+test('copies native script fonts and resegments the target in one undo step', () => {
+  const scriptFonts = normalizeDocumentScriptFonts({
+    ascii: { name: 'Project Latin', resolved: 'Project Latin' },
+    highAnsi: { name: 'Project ANSI', resolved: 'Project ANSI' },
+    eastAsia: { name: 'Project East', resolved: 'Project East' },
+    complexScript: { name: 'Project Complex', resolved: 'Project Complex' },
+  });
+  if (!scriptFonts) throw new Error('Expected valid script fonts.');
+  const source = document.createElement('span');
+  for (const [name, value] of Object.entries(
+    documentScriptFontsDomAttributes(scriptFonts, 'ascii'),
+  )) {
+    source.setAttribute(name, value);
+  }
+  source.textContent = 'Source';
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: `<p>${source.outerHTML} and <em>Aé中文ع</em></p>`,
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Source'));
+  expect(copyDocumentFormatting(editor)).toBe(true);
+
+  const targetRange = textRange(editor, 'Aé中文ع');
+  editor.commands.setTextSelection(targetRange);
+  expect(pasteDocumentFormatting(editor)).toBe(true);
+
+  const html = new DOMParser().parseFromString(editor.getHTML(), 'text/html');
+  const target = Array.from(
+    html.querySelectorAll<HTMLElement>('[data-office-script-font-slot]'),
+  ).filter((element) => element.textContent !== 'Source');
+  expect(
+    target.map((element) => ({
+      family: element.style.fontFamily.split(',')[0]?.replaceAll('"', ''),
+      slot: element.dataset.officeScriptFontSlot,
+      text: element.textContent,
+    })),
+  ).toEqual([
+    { family: 'Project Latin', slot: 'ascii', text: 'A' },
+    { family: 'Project ANSI', slot: 'highAnsi', text: 'é' },
+    { family: 'Project East', slot: 'eastAsia', text: '中文' },
+    { family: 'Project Complex', slot: 'complexScript', text: 'ع' },
+  ]);
+  for (const element of target) {
+    expect(parseDocumentScriptFonts(element.dataset.officeScriptFonts)).toEqual(
+      scriptFonts,
+    );
+  }
+
+  expect(editor.commands.undo()).toBe(true);
+  editor.commands.setTextSelection(targetRange);
+  expect(editor.isActive('italic')).toBe(true);
+  expect(editor.getHTML().match(/data-office-script-fonts/g)).toHaveLength(1);
 });
 
 test('keeps a required list paragraph when the copied block type is a heading', () => {

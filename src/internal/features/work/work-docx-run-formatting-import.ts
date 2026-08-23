@@ -55,6 +55,19 @@ import {
   importedDocxStrikeFlags,
   resolvedDocxStrikeFormatting,
 } from './work-docx-strike';
+import {
+  documentScriptFontFallbackSlots,
+  documentScriptFontFamily,
+  documentScriptFontSegments,
+  documentScriptFontsDomAttributes,
+  type WorkDocumentScriptFontSlot,
+  type WorkDocumentScriptFonts,
+} from './work-document-script-fonts';
+import { resolveDocxRunFonts } from './work-docx-run-fonts';
+import {
+  directDocxRunText,
+  markSegmentedDocxRunFormatting,
+} from './work-docx-run-script-font-import';
 
 export interface ImportedDocxRunFormatting {
   bold?: boolean;
@@ -69,6 +82,8 @@ export interface ImportedDocxRunFormatting {
   kerningThresholdHalfPoints?: number;
   emphasisMark?: WorkDocumentEmphasisMark;
   fontFamily?: string;
+  scriptFonts?: WorkDocumentScriptFonts;
+  scriptFontSlot?: WorkDocumentScriptFontSlot;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
   fontSize?: number;
@@ -134,15 +149,6 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'vertAlign',
 ]);
 
-type DocxFontSlot = 'ascii' | 'hAnsi' | 'eastAsia' | 'complex';
-
-interface DocxRunFonts {
-  ascii?: string;
-  hAnsi?: string;
-  eastAsia?: string;
-  complex?: string;
-}
-
 export function markDocxRunFormatting(
   document: Document,
   styleSource?: DocxParagraphStyleSource,
@@ -183,30 +189,64 @@ export function markDocxRunFormattingIntoState(
   const theme = resolveDocxThemeResolver(themeSource);
   const tableStyles = resolveDocxTableStyleResolver(tableStyleSource);
   for (const run of descendants(document, 'r')) {
-    const runText = directRunText(run);
+    const runText = directDocxRunText(run);
     if (!runText) continue;
     const paragraph = closestAncestor(run, 'p');
     if (!paragraph) continue;
     const paragraphProperties = directChild(paragraph, 'pPr');
     const runProperties = directChild(run, 'rPr');
-    const formatting = resolvedRunFormatting(
-      docxRunPropertySources(
-        paragraphProperties,
-        runProperties,
-        styles,
-        docxTableRunPropertySources(run, tableStyles),
-      ),
-      theme,
-      runText,
-    );
-    const change = importedRunFormattingChange(
-      runProperties,
+    const contextualProperties = docxTableRunPropertySources(run, tableStyles);
+    const propertySources = docxRunPropertySources(
       paragraphProperties,
+      runProperties,
       styles,
-      docxTableRunPropertySources(run, tableStyles),
-      theme,
-      runText,
+      contextualProperties,
     );
+    const scriptFonts = resolveDocxRunFonts(propertySources, theme);
+    const forceComplexScript = propertySourcesUseComplexScript(propertySources);
+    const scriptSegments = documentScriptFontSegments(
+      runText,
+      scriptFonts?.hint,
+      forceComplexScript,
+    );
+    const formattingFor = (
+      text: string,
+      scriptFontSlot: WorkDocumentScriptFontSlot | undefined,
+    ) =>
+      resolvedRunFormatting(
+        propertySources,
+        theme,
+        text,
+        scriptFontSlot,
+        scriptFonts,
+      );
+    const changeFor = (
+      text: string,
+      scriptFontSlot: WorkDocumentScriptFontSlot | undefined,
+    ) =>
+      importedRunFormattingChange(
+        runProperties,
+        paragraphProperties,
+        styles,
+        contextualProperties,
+        theme,
+        text,
+        scriptFontSlot,
+      );
+    if (scriptSegments.length > 1) {
+      markSegmentedDocxRunFormatting(
+        run,
+        state,
+        scriptSegments,
+        formattingFor,
+        changeFor,
+        () => nextRunFormattingMarkers(state),
+      );
+      continue;
+    }
+    const scriptFontSlot = scriptSegments[0]?.slot;
+    const formatting = formattingFor(runText, scriptFontSlot);
+    const change = changeFor(runText, scriptFontSlot);
     if (!Object.keys(formatting).length && !change) continue;
     const { startMarker, endMarker } = nextRunFormattingMarkers(state);
     insertRunMarkers(document, run, runProperties, startMarker, endMarker);
@@ -265,8 +305,12 @@ function resolvedRunFormatting(
   propertySources: readonly Element[],
   theme: DocxThemeResolver,
   runText: string,
+  requestedFontSlot?: WorkDocumentScriptFontSlot,
+  resolvedScriptFonts: WorkDocumentScriptFonts | null = resolveDocxRunFonts(
+    propertySources,
+    theme,
+  ),
 ): ImportedDocxRunFormatting {
-  const fonts: DocxRunFonts = {};
   let fontSize: number | undefined;
   let complexFontSize: number | undefined;
   let color: string | undefined;
@@ -285,7 +329,6 @@ function resolvedRunFormatting(
   let snapToGrid: boolean | undefined;
   let complexScriptFormatting: boolean | undefined;
   let rightToLeft: boolean | undefined;
-  let fontHint: DocxFontSlot | undefined;
   let allCaps: boolean | undefined;
   let smallCaps: boolean | undefined;
   let characterScalePercent: number | undefined;
@@ -352,31 +395,6 @@ function resolvedRunFormatting(
       rightToLeft,
       onOffProperty(properties, 'rtl'),
     );
-
-    const runFonts = directChild(properties, 'rFonts');
-    if (runFonts) {
-      fontHint = resolvedFontHint(runFonts) ?? fontHint;
-      assignFont(
-        fonts,
-        'ascii',
-        resolvedFont(runFonts, 'ascii', 'asciiTheme', theme),
-      );
-      assignFont(
-        fonts,
-        'hAnsi',
-        resolvedFont(runFonts, 'hAnsi', 'hAnsiTheme', theme),
-      );
-      assignFont(
-        fonts,
-        'eastAsia',
-        resolvedFont(runFonts, 'eastAsia', 'eastAsiaTheme', theme),
-      );
-      assignFont(
-        fonts,
-        'complex',
-        resolvedFont(runFonts, 'cs', 'cstheme', theme),
-      );
-    }
 
     const size = numericAttribute(directChild(properties, 'sz'), 'val');
     if (size !== undefined && size > 0) fontSize = Math.min(512, size / 2);
@@ -454,9 +472,12 @@ function resolvedRunFormatting(
 
   const fontSlot =
     complexScriptFormatting === true || rightToLeft === true
-      ? 'complex'
-      : docxFontSlotForText(runText, fontHint);
-  const usesComplexFormatting = fontSlot === 'complex';
+      ? 'complexScript'
+      : (requestedFontSlot ??
+        documentScriptFontSegments(runText, resolvedScriptFonts?.hint)[0]
+          ?.slot ??
+        'ascii');
+  const usesComplexFormatting = fontSlot === 'complexScript';
   const resolvedBold = usesComplexFormatting ? (complexBold ?? bold) : bold;
   const resolvedItalic = usesComplexFormatting
     ? (complexItalic ?? italic)
@@ -464,20 +485,9 @@ function resolvedRunFormatting(
   const resolvedFontSize = usesComplexFormatting
     ? (complexFontSize ?? fontSize)
     : fontSize;
-  let fontFamily = uniqueFonts(orderedFonts(fonts, fontSlot));
-  if (!fontFamily) {
-    fontFamily = uniqueFonts(
-      orderedFonts(
-        {
-          ascii: docxThemeFont(theme, 'minorAscii'),
-          hAnsi: docxThemeFont(theme, 'minorHAnsi'),
-          eastAsia: docxThemeFont(theme, 'minorEastAsia'),
-          complex: docxThemeFont(theme, 'minorBidi'),
-        },
-        fontSlot,
-      ),
-    );
-  }
+  const fontFamily =
+    documentScriptFontFamily(resolvedScriptFonts, fontSlot) ??
+    defaultThemeFontFamily(theme, fontSlot);
   const hasRunPropertySource = propertySources.length > 0;
   const resolvedStrike = resolvedDocxStrikeFormatting(
     strike,
@@ -512,6 +522,9 @@ function resolvedRunFormatting(
           fontFamily,
           wordLineHeightFactor: documentWordLineHeightFactor(fontFamily),
         }
+      : {}),
+    ...(resolvedScriptFonts
+      ? { scriptFonts: resolvedScriptFonts, scriptFontSlot: fontSlot }
       : {}),
     ...(resolvedFontSize !== undefined ? { fontSize: resolvedFontSize } : {}),
     ...(snapToGrid !== undefined ? { wordSnapToGrid: snapToGrid } : {}),
@@ -563,6 +576,17 @@ function formattingMarkup(
     span.style.textDecorationLine = 'none';
   }
   if (formatting.fontFamily) span.style.fontFamily = formatting.fontFamily;
+  if (formatting.scriptFonts) {
+    for (const [name, value] of Object.entries(
+      documentScriptFontsDomAttributes(
+        formatting.scriptFonts,
+        formatting.scriptFontSlot,
+      ),
+    )) {
+      if (name === 'style') span.style.cssText += `; ${value}`;
+      else span.setAttribute(name, value);
+    }
+  }
   if (formatting.characterSpacingTwips !== undefined) {
     for (const [name, value] of Object.entries(
       documentCharacterSpacingDomAttributes(formatting.characterSpacingTwips),
@@ -693,6 +717,7 @@ function importedRunFormattingChange(
   contextualProperties: readonly Element[],
   theme: DocxThemeResolver,
   runText: string,
+  requestedFontSlot?: WorkDocumentScriptFontSlot,
 ): ImportedDocxRunFormattingChange | undefined {
   const parsed = supportedRunFormattingChange(runProperties);
   if (!parsed) return undefined;
@@ -705,6 +730,7 @@ function importedRunFormattingChange(
     ),
     theme,
     runText,
+    requestedFontSlot,
   );
   return {
     id: `docx-format-change-${parsed.id}`,
@@ -718,6 +744,8 @@ function importedRunFormattingChange(
       themeFill: serializeDocxThemeReference(
         beforeFormatting.themeFill ?? null,
       ),
+      scriptFonts: beforeFormatting.scriptFonts,
+      scriptFontSlot: beforeFormatting.scriptFontSlot,
       textCase: beforeFormatting.textCase,
     }),
   };
@@ -844,6 +872,24 @@ function overriddenValue<T>(
   return next === undefined ? current : next;
 }
 
+function propertySourcesUseComplexScript(
+  propertySources: readonly Element[],
+): boolean {
+  let complexScript: boolean | undefined;
+  let rightToLeft: boolean | undefined;
+  for (const properties of propertySources) {
+    complexScript = overriddenBoolean(
+      complexScript,
+      onOffProperty(properties, 'cs'),
+    );
+    rightToLeft = overriddenBoolean(
+      rightToLeft,
+      onOffProperty(properties, 'rtl'),
+    );
+  }
+  return complexScript === true || rightToLeft === true;
+}
+
 function onOffProperty(
   properties: Element,
   propertyName: string,
@@ -863,13 +909,6 @@ function underlineProperty(
   return importedDocxUnderline(element, theme);
 }
 
-function directRunText(run: Element): string {
-  return Array.from(run.children)
-    .filter((child) => child.localName === 't' || child.localName === 'delText')
-    .map((child) => child.textContent ?? '')
-    .join('');
-}
-
 function closestAncestor(element: Element, localName: string): Element | null {
   let current = element.parentElement;
   while (current) {
@@ -879,93 +918,19 @@ function closestAncestor(element: Element, localName: string): Element | null {
   return null;
 }
 
-function assignFont(
-  fonts: DocxRunFonts,
-  key: DocxFontSlot,
-  value: string | null,
-): void {
-  const normalized = value?.trim();
-  if (normalized) fonts[key] = normalized;
-}
-
-function resolvedFontHint(element: Element): DocxFontSlot | undefined {
-  const hint = wordAttribute(element, 'hint')?.trim().toLowerCase();
-  if (hint === 'eastasia') return 'eastAsia';
-  if (hint === 'cs') return 'complex';
-  if (hint === 'default') return 'ascii';
-  return undefined;
-}
-
-function orderedFonts(
-  fonts: DocxRunFonts,
-  preferred: DocxFontSlot,
-): Array<string | undefined> {
-  const order: Record<DocxFontSlot, readonly DocxFontSlot[]> = {
-    ascii: ['ascii', 'hAnsi', 'eastAsia', 'complex'],
-    hAnsi: ['hAnsi', 'ascii', 'eastAsia', 'complex'],
-    eastAsia: ['eastAsia', 'hAnsi', 'ascii', 'complex'],
-    complex: ['complex', 'hAnsi', 'ascii', 'eastAsia'],
-  };
-  return order[preferred].map((slot) => fonts[slot]);
-}
-
-function docxFontSlotForText(
-  text: string,
-  hint: DocxFontSlot | undefined,
-): DocxFontSlot {
-  for (const character of text) {
-    const codePoint = character.codePointAt(0);
-    if (codePoint === undefined || isNeutralCodePoint(codePoint)) continue;
-    if (isComplexScriptCodePoint(codePoint)) return 'complex';
-    if (isEastAsianCodePoint(codePoint)) return 'eastAsia';
-    return codePoint <= 0x7f ? 'ascii' : 'hAnsi';
-  }
-  return hint ?? 'ascii';
-}
-
-function isNeutralCodePoint(codePoint: number): boolean {
-  return (
-    codePoint <= 0x20 ||
-    (codePoint <= 0x7f &&
-      !(
-        (codePoint >= 0x41 && codePoint <= 0x5a) ||
-        (codePoint >= 0x61 && codePoint <= 0x7a)
-      )) ||
-    (codePoint >= 0x300 && codePoint <= 0x36f) ||
-    (codePoint >= 0x2000 && codePoint <= 0x206f)
-  );
-}
-
-function isComplexScriptCodePoint(codePoint: number): boolean {
-  return (
-    (codePoint >= 0x0590 && codePoint <= 0x08ff) ||
-    (codePoint >= 0xfb1d && codePoint <= 0xfdff) ||
-    (codePoint >= 0xfe70 && codePoint <= 0xfeff) ||
-    (codePoint >= 0x1ee00 && codePoint <= 0x1eeff)
-  );
-}
-
-function isEastAsianCodePoint(codePoint: number): boolean {
-  return (
-    (codePoint >= 0x1100 && codePoint <= 0x11ff) ||
-    (codePoint >= 0x2e80 && codePoint <= 0xa4cf) ||
-    (codePoint >= 0xac00 && codePoint <= 0xd7af) ||
-    (codePoint >= 0xf900 && codePoint <= 0xfaff) ||
-    (codePoint >= 0xfe10 && codePoint <= 0xfe6f) ||
-    (codePoint >= 0xff00 && codePoint <= 0xffef) ||
-    (codePoint >= 0x20000 && codePoint <= 0x323af)
-  );
-}
-
-function resolvedFont(
-  element: Element,
-  explicitName: string,
-  themeName: string,
+function defaultThemeFontFamily(
   theme: DocxThemeResolver,
-): string | null {
-  const explicit = wordAttribute(element, explicitName);
-  if (explicit?.trim()) return explicit;
-  return docxThemeFont(theme, wordAttribute(element, themeName)) ?? null;
+  preferred: WorkDocumentScriptFontSlot,
+): string | undefined {
+  const fonts: Record<WorkDocumentScriptFontSlot, string | undefined> = {
+    ascii: docxThemeFont(theme, 'minorAscii'),
+    highAnsi: docxThemeFont(theme, 'minorHAnsi'),
+    eastAsia: docxThemeFont(theme, 'minorEastAsia'),
+    complexScript: docxThemeFont(theme, 'minorBidi'),
+  };
+  return uniqueFonts(
+    documentScriptFontFallbackSlots(preferred).map((slot) => fonts[slot]),
+  );
 }
 
 function uniqueFonts(values: Array<string | undefined>): string | undefined {

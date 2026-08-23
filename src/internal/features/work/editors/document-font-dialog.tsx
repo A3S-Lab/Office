@@ -1,5 +1,7 @@
 import { type CSSProperties, type FormEvent, useId, useState } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
+import type { WorkDocumentLayoutFont } from '../work-document-fonts';
+import { documentScriptFontSegments } from '../work-document-script-fonts';
 import {
   documentKerningIsEffective,
   DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS,
@@ -19,6 +21,8 @@ import {
   type DocumentFontDialogPatch,
   type DocumentFontDialogSource,
 } from './document-font-dialog-model';
+import { documentFontFamilyOptionsForValue } from './document-formatting-options';
+import type { OfficeSelectOption } from './office-select';
 
 const characterSpacingModes: ReadonlyArray<{
   value: DocumentCharacterSpacingMode;
@@ -58,11 +62,13 @@ const emphasisMarkModes: ReadonlyArray<{
 
 export function DocumentFontDialog({
   source,
+  layoutFonts = [],
   restoreFocusTarget,
   onApply,
   onClose,
 }: {
   source: DocumentFontDialogSource;
+  layoutFonts?: readonly WorkDocumentLayoutFont[];
   restoreFocusTarget: () => HTMLElement | null;
   onApply: (patch: DocumentFontDialogPatch) => boolean;
   onClose: () => void;
@@ -76,6 +82,10 @@ export function DocumentFontDialog({
     useState(false);
   const [kerningTouched, setKerningTouched] = useState(false);
   const [emphasisTouched, setEmphasisTouched] = useState(false);
+  const [latinFontTouched, setLatinFontTouched] = useState(false);
+  const [eastAsiaFontTouched, setEastAsiaFontTouched] = useState(false);
+  const [complexScriptFontTouched, setComplexScriptFontTouched] =
+    useState(false);
   const formId = useId();
   const error = documentFontDialogDraftError(draft);
   const patch = documentFontDialogPatch(
@@ -86,6 +96,9 @@ export function DocumentFontDialog({
     characterPositionTouched,
     kerningTouched,
     emphasisTouched,
+    latinFontTouched,
+    eastAsiaFontTouched,
+    complexScriptFontTouched,
   );
   const hasChanges = Object.keys(patch).length > 0;
   const previewScale = previewCharacterScale(draft);
@@ -124,6 +137,61 @@ export function DocumentFontDialog({
       }
     >
       <form id={formId} onSubmit={submit}>
+        <fieldset className="work-document-font-dialog-script-fonts">
+          <legend>按文字系统设置字体</legend>
+          <div className="work-document-font-dialog-field">
+            <span>拉丁文字</span>
+            <OfficeSelect
+              ariaLabel="拉丁文字字体"
+              initialFocus
+              value={draft.latinFont}
+              options={scriptFontOptions(draft.latinFont, layoutFonts)}
+              onValueChange={(latinFont) => {
+                setDraft((current) => ({ ...current, latinFont }));
+                setLatinFontTouched(true);
+              }}
+            />
+          </div>
+          <div className="work-document-font-dialog-field">
+            <span>东亚文字</span>
+            <OfficeSelect
+              ariaLabel="东亚文字字体"
+              value={draft.eastAsiaFont}
+              options={scriptFontOptions(draft.eastAsiaFont, layoutFonts)}
+              onValueChange={(eastAsiaFont) => {
+                setDraft((current) => ({ ...current, eastAsiaFont }));
+                setEastAsiaFontTouched(true);
+              }}
+            />
+          </div>
+          <div className="work-document-font-dialog-field">
+            <span>复杂文字</span>
+            <OfficeSelect
+              ariaLabel="复杂文字字体"
+              value={draft.complexScriptFont}
+              options={scriptFontOptions(draft.complexScriptFont, layoutFonts)}
+              onValueChange={(complexScriptFont) => {
+                setDraft((current) => ({ ...current, complexScriptFont }));
+                setComplexScriptFontTouched(true);
+              }}
+            />
+          </div>
+          {source.latinFont.mixed && !latinFontTouched && (
+            <p className="work-document-font-dialog-mixed" role="status">
+              当前选区包含不同的拉丁文字字体。选择字体后才会统一修改。
+            </p>
+          )}
+          {source.eastAsiaFont.mixed && !eastAsiaFontTouched && (
+            <p className="work-document-font-dialog-mixed" role="status">
+              当前选区包含不同的东亚文字字体。选择字体后才会统一修改。
+            </p>
+          )}
+          {source.complexScriptFont.mixed && !complexScriptFontTouched && (
+            <p className="work-document-font-dialog-mixed" role="status">
+              当前选区包含不同的复杂文字字体。选择字体后才会统一修改。
+            </p>
+          )}
+        </fieldset>
         <fieldset className="work-document-font-dialog-spacing">
           <legend>字符缩放、间距、字距调整、位置与着重号</legend>
           <div className="work-document-font-dialog-field">
@@ -155,7 +223,6 @@ export function DocumentFontDialog({
             <span>间距</span>
             <OfficeSelect
               ariaLabel="字符间距"
-              initialFocus
               value={draft.characterSpacingMode}
               options={characterSpacingModes}
               onValueChange={(characterSpacingMode) => {
@@ -333,7 +400,25 @@ export function DocumentFontDialog({
                 ...previewEmphasis,
               }}
             >
-              {source.previewText}
+              {documentScriptFontSegments(source.previewText).map(
+                ({ from, to, slot }) => (
+                  <span
+                    key={`${from}-${slot}`}
+                    style={{
+                      fontFamily: previewScriptFontFamily(
+                        slot === 'eastAsia'
+                          ? draft.eastAsiaFont
+                          : slot === 'complexScript'
+                            ? draft.complexScriptFont
+                            : draft.latinFont,
+                        source.fontFamily,
+                      ),
+                    }}
+                  >
+                    {source.previewText.slice(from, to)}
+                  </span>
+                ),
+              )}
             </span>
           </output>
         </section>
@@ -422,8 +507,32 @@ function previewDocumentEmphasis(
   };
 }
 
+function scriptFontOptions(
+  value: string,
+  layoutFonts: readonly WorkDocumentLayoutFont[],
+): readonly OfficeSelectOption[] {
+  const catalogValue =
+    value === 'mixed' || value === 'inherit' ? 'default' : value;
+  return [
+    { value: 'mixed', label: '混合（保持不变）', disabled: true },
+    { value: 'inherit', label: '跟随样式' },
+    ...documentFontFamilyOptionsForValue(catalogValue, layoutFonts).filter(
+      (option) => option.value !== 'default',
+    ),
+  ];
+}
+
+function previewScriptFontFamily(
+  value: string,
+  fallback: string | null,
+): string | undefined {
+  return value === 'mixed' || value === 'inherit'
+    ? (fallback ?? undefined)
+    : value;
+}
+
 function fontDialogDescription(source: DocumentFontDialogSource): string {
   return source.selectedCharacters
-    ? `精确设置当前选中内容的原生字符缩放、间距、字距调整阈值、位置和着重号（${source.selectedCharacters} 个字符）。`
-    : '设置当前位置后续输入文字的原生字符缩放、间距、字距调整阈值、位置和着重号。';
+    ? `分别设置当前选中内容的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置和着重号（${source.selectedCharacters} 个字符）。`
+    : '分别设置当前位置后续输入文字的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置和着重号。';
 }

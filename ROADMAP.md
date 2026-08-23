@@ -1,6 +1,6 @@
 # A3S Office / Traditional Office Capability Gap Roadmap
 
-Last reviewed: 2026-08-23
+Last reviewed: 2026-08-24
 
 This roadmap compares the current `main` branch of A3S Office with the public
 capability surface of Traditional Office. It is a prioritization tool, not a
@@ -66,13 +66,13 @@ collaboration transport, and AI providers.
 
 | Capability | A3S Office status | Main gap or boundary | Priority |
 | --- | --- | --- | --- |
-| Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported**, including mutually exclusive native `w:caps` / `w:smallCaps`; signed native `w:spacing` and `w:position` with one advanced font dialog and explicit zero; all five native `w:em` emphasis values with explicit `none` and direct-format clearing; all 18 native `w:u` values with direct or theme color identity and explicit resets; independent native `w:strike` / `w:dstrike` state with explicit resets; standard shortcuts where Traditional Office defines them; page chrome; formatting revisions; and exact DOCX reopen | Long-tail Word style and typography effects outside the declared typed models can still normalize | Maintain / P0 fidelity |
+| Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported**, including independent native `w:rFonts` ASCII, high ANSI, East Asian, and complex-script slots with exact direct/theme identity, mixed-run segmentation, one script-aware `Cmd/Ctrl+D` dialog, and one-step Undo; mutually exclusive native `w:caps` / `w:smallCaps`; signed native `w:spacing` and `w:position` with explicit zero; all five native `w:em` emphasis values with explicit `none` and direct-format clearing; all 18 native `w:u` values with direct or theme color identity and explicit resets; independent native `w:strike` / `w:dstrike` state with explicit resets; standard shortcuts where Traditional Office defines them; page chrome; formatting revisions; and exact DOCX reopen | Long-tail Word style and typography effects outside the declared typed models can still normalize | Maintain / P0 fidelity |
 | Bullets, numbering, nesting, restarts, RTL lists | **Supported** for common editable structures | Exotic numbering pictures and some inherited list metadata remain compatibility work | P1 |
 | Page size, orientation, columns, section/page breaks | **Supported** per section | Browser line breaking and pagination are not yet desktop-engine exact | P0 |
 | Page margins (`w:pgMar`, `mirrorMargins`, `gutterAtTop`, `rtlGutter`) | **Supported** on current `main`: all seven native twip values, signed top/bottom overlap semantics, strict universal measures, header/footer distances, top/left/right gutters, facing-page swaps, multi-section inheritance, diagnostics, editing, PDF preview, and exact DOCX export | The continuous editing surface projects the first-page horizontal origin; physical-page PDF preview is authoritative for facing-page placement | Maintain / P0 regression gate |
 | Headers, footers, first/even/default variants, page numbers | **Supported** | Complex fields and application-specific placement settings remain partial | P0 |
 | Page borders (`w:pgBorders`) | **Supported** on current `main`: four ordered edges, 197 styles, theme/direct colors, page/text offsets, first/not-first display, front/back order, strict namespaces, diagnostics, exact DOCX export | Art borders and document-wide compatibility modifiers use bounded browser approximations | Maintain / P0 regression gate |
-| Document grid and script-aware typography | **Supported** for section grid, run snap overrides, bundled/host/imported font choices, and Traditional Office layout fixtures | Font substitution and exact shaping can still alter pagination | P0 |
+| Document grid and script-aware typography | **Supported** for section grid, run snap overrides, bundled/host/imported font choices, four native script-font slots, theme/style inheritance, mixed-script spans, and Traditional Office layout fixtures | Font substitution, missing glyphs, and browser shaping can still alter pagination | P0 |
 | Tables, merges, sizing, margins, styles, row pagination, nested tables | **Partial**, with broad editable geometry and style inheritance | Full Word border conflict rules, every conditional property, floating tables, formulas, and advanced table tools are incomplete | P0/P1 |
 | Inline and floating pictures, crop, wrap contour, layer, identity, alt text | **Partial**, with strong DrawingML picture support | Broad shapes, connectors, text boxes, WordArt, SmartArt, charts, and unsupported drawings normalize | P0 safe preservation; P1 editable drawings |
 | OMML equations | **Partial**, with a large bounded structured model and strict/transitional import/export | Unbounded or unsupported OMML branches remain atomic/unsupported rather than fully editable | P0 no-clobber; P2 coverage |
@@ -187,6 +187,16 @@ a phase exits only when its evidence is complete.
   support, exact `w:caps` / `w:smallCaps` import-export-reopen, and
   browser-authoritative measurement for case-shaped paragraphs as permanent
   gates.
+- Treat native script-specific fonts as a completed typography slice: retain
+  independent `ascii`, `hAnsi`, `eastAsia`, and `cs` slots; exact direct and
+  theme identities; style inheritance; bounded mixed-script segmentation;
+  Latin, East Asian, and complex-text mixed states in the shared `Cmd/Ctrl+D`
+  dialog; Follow style; all-text Home font intent; body/page-chrome/note parity;
+  Format Painter; formatting revisions; one-step Undo; strict/transitional and
+  malformed-input rejection; diagnostics; and a real
+  import-edit-export-reopen DOCX cycle as permanent gates. Keep browser-resolved
+  families separate from native source identity so substitution cannot rewrite
+  untouched theme references.
 - Treat native character spacing as a completed typography slice: retain signed
   `w:spacing` values from -31,680 through 31,680 twips, explicit zero, mixed
   selection safety, `Cmd/Ctrl+D`, body/header/footer parity, Format Painter,

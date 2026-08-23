@@ -325,6 +325,17 @@ revisions, page chrome, Undo, and exact `w:caps` / `w:smallCaps` DOCX reopen.
 The source text remains semantic; paragraphs containing a case-shaping effect
 use browser-authoritative line measurement because transformed glyphs cannot
 yet be mapped safely onto the layout kernel's source UTF-16 offsets.
+Writer native fonts now retain independent `ascii`, `hAnsi`, `eastAsia`, and
+`cs` slots with exact direct and theme identities plus a separate resolved
+browser family. Mixed-script runs become bounded TextStyle spans, and the
+shared `Cmd/Ctrl+D` dialog exposes independent Latin, East Asian, and
+complex-text mixed states, Follow style, a segmented preview, and one-step Undo
+with every other advanced character property. Body and page chrome, notes,
+Format Painter, formatting revisions, strict/transitional import, diagnostics,
+exact export, and reopen share the same typed model. A real DOCX cycle proves
+paragraph- and character-style inheritance, theme resolution, independent slot
+editing, native `w:rFonts` output, and reopen; a local-only A3S Test gate covers
+the keyboard workflow, semantic controls, preview, focus restoration, and Undo.
 Writer character spacing now uses one signed `w:spacing` value from -31,680 to
 31,680 twips, including explicit zero. `Cmd/Ctrl+D` and the Home or page-chrome
 ribbon open one accessible advanced font dialog with mixed-selection safety,

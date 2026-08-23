@@ -25,6 +25,14 @@ import {
   parseDocxThemeReference,
   serializeDocxThemeReference,
 } from './work-docx-theme-reference';
+import {
+  normalizeDocumentScriptFontSlot,
+  normalizeDocumentScriptFonts,
+  parseDocumentScriptFonts,
+  serializeDocumentScriptFonts,
+  type WorkDocumentScriptFontSlot,
+  type WorkDocumentScriptFonts,
+} from './work-document-script-fonts';
 
 export const DOCUMENT_CHARACTER_FORMAT_MARKS = [
   'bold',
@@ -51,7 +59,7 @@ const CHARACTER_FORMAT_MARK_NAMES = new Set<string>(
 const CHARACTER_FORMAT_MARK_ORDER = new Map<string, number>(
   DOCUMENT_CHARACTER_FORMAT_MARKS.map((name, index) => [name, index]),
 );
-const MAX_CHARACTER_FORMAT_SNAPSHOT_BYTES = 4_096;
+const MAX_CHARACTER_FORMAT_SNAPSHOT_BYTES = 8_192;
 const MAX_CHARACTER_FORMAT_ATTRIBUTE_LENGTH = 512;
 
 const ALLOWED_ATTRIBUTES: Readonly<
@@ -76,6 +84,8 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'fontSize',
     'emphasisMark',
     'kerningThresholdHalfPoints',
+    'scriptFonts',
+    'scriptFontSlot',
     'themeColor',
     'textCase',
     'wordLineHeightFactor',
@@ -173,6 +183,8 @@ export function importedDocumentCharacterFormatting(formatting: {
   subscript?: boolean;
   superscript?: boolean;
   fontFamily?: string;
+  scriptFonts?: WorkDocumentScriptFonts;
+  scriptFontSlot?: WorkDocumentScriptFontSlot;
   characterScalePercent?: number;
   characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
@@ -217,6 +229,9 @@ export function importedDocumentCharacterFormatting(formatting: {
     emphasisMark: formatting.emphasisMark,
     color: formatting.color,
     fontFamily: formatting.fontFamily,
+    scriptFonts:
+      serializeDocumentScriptFonts(formatting.scriptFonts) ?? undefined,
+    scriptFontSlot: formatting.scriptFontSlot,
     fontSize:
       formatting.fontSize === undefined
         ? undefined
@@ -278,6 +293,23 @@ function normalizeCharacterFormatMark(
       const emphasisMark = normalizeDocumentEmphasisMark(candidate);
       if (emphasisMark === null) return null;
       attrs[key] = emphasisMark;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'scriptFonts') {
+      const fonts =
+        typeof candidate === 'string'
+          ? serializeDocumentScriptFonts(parseDocumentScriptFonts(candidate))
+          : serializeDocumentScriptFonts(
+              normalizeDocumentScriptFonts(candidate),
+            );
+      if (!fonts) return null;
+      attrs[key] = fonts;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'scriptFontSlot') {
+      const slot = normalizeDocumentScriptFontSlot(candidate);
+      if (!slot) return null;
+      attrs[key] = slot;
       continue;
     }
     if (typeof candidate === 'string') {
@@ -366,6 +398,7 @@ function compactAttributes(
     (entry): entry is [string, boolean | number | string] =>
       entry[1] !== undefined,
   );
+  entries.sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0));
   return entries.length ? Object.fromEntries(entries) : undefined;
 }
 

@@ -25,8 +25,10 @@ test('Writer authors native character spacing through the focused font dialog', 
 
   let dialog = page.getByRole('dialog', { name: '字体高级设置' });
   await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole('combobox', { name: '拉丁文字字体' }),
+  ).toBeFocused();
   const spacing = dialog.getByRole('combobox', { name: '字符间距' });
-  await expect(spacing).toBeFocused();
   await spacing.click();
   await page.getByRole('option', { name: '加宽' }).click();
   await dialog.getByRole('textbox', { name: '间距值（磅）' }).fill('2');

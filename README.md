@@ -110,7 +110,7 @@ baseline rather than one specific release.
 
 | Capability | A3S Office today | Traditional Office baseline |
 | --- | --- | --- |
-| Text, paragraphs, lists, and styles | **Supported** — structured editing, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing, half-point kerning thresholds, all five native East Asian emphasis marks, and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
+| Text, paragraphs, lists, and styles | **Supported** — structured editing, independent native ASCII, high ANSI, East Asian, and complex-script font slots with direct/theme identity, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing, half-point kerning thresholds, all five native East Asian emphasis marks, and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
 | Page layout and rendering | **Partial** — sections, margins, page size, columns, headers/footers, fields, and live pagination | Desktop-grade pagination, print layout, and vector output |
 | Tables, pictures, and equations | **Partial** — rich table geometry, floating pictures, crop/wrap, and structured OMML | Broader drawings, text boxes, charts, WordArt, and SmartArt |
 | Comments, revisions, and collaboration | **Partial** — comments, suggestions, text/format revisions, decisions, Yjs presence, and host relay contracts | Full revision families plus integrated sharing and review services |
@@ -678,6 +678,20 @@ allocates collision-free relationship IDs, and validates each media payload.
 Changed, duplicate, namespace-spoofed, relationship-bound, or semantic drawing
 branches stay disconnected; generated geometry and media remain authoritative,
 while legacy VML, shapes, and SmartArt normalize.
+
+Native Writer fonts retain the four independent WordprocessingML `w:rFonts`
+slots: `ascii`, `hAnsi`, `eastAsia`, and `cs`, together with their theme
+references and script hint. Mixed-script runs become bounded semantic spans so
+Latin, high ANSI, East Asian, and complex-script text each use the correct
+resolved browser family without rewriting the native source identity. The
+shared `Cmd/Ctrl+D` dialog exposes separate Latin, East Asian, and complex-text
+font controls, preserves untouched mixed selections, supports Follow style,
+uses one transaction and Undo record for combined character changes, and
+renders a script-aware preview. The Home font menu intentionally applies one
+all-text choice to all four slots. Body text, page chrome, notes, formatting
+revisions, strict/transitional import, exact export, and reopen share the typed
+model; malformed, duplicate, oversized, child-bearing, text-bearing, unknown,
+or namespace-spoofed `w:rFonts` data fails closed and is diagnosed.
 
 Native Writer text also authors and reopens all five WordprocessingML `w:em`
 values: `none`, `dot`, `comma`, `circle`, and `underDot`. The shared

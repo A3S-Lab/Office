@@ -1,0 +1,130 @@
+suite "office-word-script-fonts" {
+    version = 1
+
+    scenario "author-independent-writer-script-fonts" {
+        name = "Author independent Latin, East Asian, and complex-script Writer fonts"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "font-dialog-shortcut-described" {
+            visible = css("[aria-label='字体'] button[aria-label='字体高级设置'][aria-keyshortcuts='Control+D Meta+D']")
+        }
+
+        click "focus-title" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-title-start" {
+            key = "Home"
+        }
+
+        press "select-title" {
+            key = "Shift+End"
+        }
+
+        press "open-font-dialog" {
+            key = "Control+d"
+        }
+
+        wait "font-dialog-visible" {
+            visible = css(".work-document-font-dialog[role='dialog']")
+        }
+
+        expect "three-script-font-controls" {
+            visible = css(".work-document-font-dialog [role='combobox'][aria-label='拉丁文字字体']")
+        }
+
+        expect "east-asian-font-control" {
+            visible = css(".work-document-font-dialog [role='combobox'][aria-label='东亚文字字体']")
+        }
+
+        expect "complex-script-font-control" {
+            visible = css(".work-document-font-dialog [role='combobox'][aria-label='复杂文字字体']")
+        }
+
+        click "open-latin-fonts" {
+            target = role("combobox", "拉丁文字字体")
+        }
+
+        click "choose-latin-font" {
+            target = role("option", "Times New Roman")
+        }
+
+        click "open-east-asian-fonts" {
+            target = role("combobox", "东亚文字字体")
+        }
+
+        click "choose-east-asian-font" {
+            target = role("option", "思源黑体")
+        }
+
+        click "open-complex-script-fonts" {
+            target = role("combobox", "复杂文字字体")
+        }
+
+        click "choose-complex-script-font" {
+            target = role("option", "Noto Naskh Arabic")
+        }
+
+        expect "east-asian-live-preview" {
+            visible = css(".work-document-font-dialog [aria-label='字符高级格式预览'] output span[style*='A3S Office Noto Sans Hans']")
+        }
+
+        click "apply-script-fonts" {
+            target = role("button", "应用")
+        }
+
+        expect "independent-native-font-slots-applied" {
+            visible = css(".work-document-editable .ProseMirror h1 span[data-office-script-font-slot='eastAsia'][data-office-script-fonts*='Times New Roman'][data-office-script-fonts*='A3S Office Noto Sans Hans'][data-office-script-fonts*='A3S Office Noto Naskh Arabic']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-script-fonts" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restored-title" {
+            visible = css(".work-document-editable .ProseMirror h1:not(:has(span[data-office-script-fonts]))")
+        }
+
+        accessibility "script-fonts-accessibility" {
+            path = "evidence/script-fonts-accessibility.json"
+            interactive = true
+        }
+
+        console "script-fonts-console" {
+            path = "diagnostics/script-fonts-console.json"
+            clear = false
+        }
+
+        page_errors "script-fonts-page-errors" {
+            path = "diagnostics/script-fonts-page-errors.json"
+            clear = false
+        }
+    }
+}

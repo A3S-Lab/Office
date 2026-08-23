@@ -157,6 +157,36 @@ to the source UTF-16 offsets, and small caps changes font metrics. Keeping the
 browser authoritative for those paragraphs avoids inaccurate pagination; other
 eligible paragraphs continue through Worker/WASM shaping.
 
+## Native script-specific fonts
+
+Writer retains the four independent WordprocessingML `w:rFonts` slots:
+`ascii`, `hAnsi`, `eastAsia`, and `cs`. Each slot keeps its exact direct family,
+optional theme reference, and separately resolved browser family; `w:hint`
+remains native metadata. Style inheritance resolves the effective set without
+rewriting untouched direct or theme identity. A mixed-script run is divided
+into bounded TextStyle spans for Latin ASCII, high ANSI, East Asian, and
+complex-script text, while neutral punctuation stays with the surrounding
+script.
+
+`Cmd/Ctrl+D` or the Home ribbon opens **Advanced Font Settings** with separate
+Latin, East Asian, and complex-text controls. The Latin control intentionally
+updates both `ascii` and `hAnsi`; the Home font picker intentionally expresses
+an all-text choice and updates all four slots. Each control has independent
+mixed-selection state and Follow style. A script-aware preview uses the
+selected family for each text segment. Applying any combination of fonts,
+scale, spacing, kerning, emphasis, or position restores the captured selection
+and creates one transaction and one Undo record.
+
+Body text, headers, footers, footnotes, endnotes, Format Painter, formatting
+revisions, strict/transitional DOCX import, exact export, and reopen share the
+same typed representation. Unchanged theme references survive an edit to a
+different slot. Duplicate or misplaced elements, extra or spoofed attributes,
+child-bearing or text-bearing leaves, unknown values, and font names longer
+than 127 characters fail closed and appear in compatibility diagnostics. The
+DOM stores validated JSON in `data-office-script-fonts` and the active segment
+in `data-office-script-font-slot`; CSS uses only the resolved family, so browser
+font substitution does not mutate native file identity.
+
 ## Native character spacing
 
 Writer keeps character spacing as one signed native `w:spacing` value from

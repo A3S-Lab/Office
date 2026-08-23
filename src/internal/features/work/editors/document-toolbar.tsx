@@ -1014,6 +1014,7 @@ export function DocumentToolbar({
       {fontDialogRequest && (
         <DocumentFontDialog
           source={fontDialogRequest.source}
+          layoutFonts={layoutFonts}
           restoreFocusTarget={() =>
             fontDialogRequest.editor.isDestroyed
               ? null

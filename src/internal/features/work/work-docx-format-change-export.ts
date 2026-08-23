@@ -11,6 +11,7 @@ import {
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import { normalizeDocumentUnderlineStyle } from './work-document-underline';
 import { normalizeDocumentStrikeStyle } from './work-document-strike';
+import { parseDocumentScriptFonts } from './work-document-script-fonts';
 import { parseDocxThemeReference } from './work-docx-theme-reference';
 import { descendants, directChildren, parseXml } from './work-ooxml-package';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
@@ -480,6 +481,29 @@ function appendFontProperties(
   prefix: string,
   mark: DocumentCharacterFormatMark | undefined,
 ): void {
+  const scriptFonts = parseDocumentScriptFonts(
+    typeof mark?.attrs?.scriptFonts === 'string'
+      ? mark.attrs.scriptFonts
+      : undefined,
+  );
+  if (scriptFonts) {
+    const fonts = wordElement(document, namespace, prefix, 'rFonts');
+    for (const [name, value] of [
+      ['ascii', scriptFonts.ascii?.name],
+      ['hAnsi', scriptFonts.highAnsi?.name],
+      ['eastAsia', scriptFonts.eastAsia?.name],
+      ['cs', scriptFonts.complexScript?.name],
+      ['asciiTheme', scriptFonts.ascii?.theme],
+      ['hAnsiTheme', scriptFonts.highAnsi?.theme],
+      ['eastAsiaTheme', scriptFonts.eastAsia?.theme],
+      ['cstheme', scriptFonts.complexScript?.theme],
+      ['hint', scriptFonts.hint],
+    ] as const) {
+      if (value) setWordAttribute(fonts, namespace, prefix, name, value);
+    }
+    properties.append(fonts);
+    return;
+  }
   const family = firstFontFamily(mark?.attrs?.fontFamily);
   if (!family) return;
   const fonts = wordElement(document, namespace, prefix, 'rFonts');
