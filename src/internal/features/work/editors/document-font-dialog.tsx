@@ -1,6 +1,14 @@
 import { type FormEvent, useId, useState } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
-import { OfficeNumberField, OfficeSelect } from './office-controls';
+import {
+  documentKerningIsEffective,
+  DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS,
+} from '../work-document-kerning';
+import {
+  OfficeCheckbox,
+  OfficeNumberField,
+  OfficeSelect,
+} from './office-controls';
 import {
   createDocumentFontDialogDraft,
   documentFontDialogDraftError,
@@ -51,6 +59,7 @@ export function DocumentFontDialog({
   const [characterSpacingTouched, setCharacterSpacingTouched] = useState(false);
   const [characterPositionTouched, setCharacterPositionTouched] =
     useState(false);
+  const [kerningTouched, setKerningTouched] = useState(false);
   const formId = useId();
   const error = documentFontDialogDraftError(draft);
   const patch = documentFontDialogPatch(
@@ -59,11 +68,13 @@ export function DocumentFontDialog({
     characterScaleTouched,
     characterSpacingTouched,
     characterPositionTouched,
+    kerningTouched,
   );
   const hasChanges = Object.keys(patch).length > 0;
   const previewScale = previewCharacterScale(draft);
   const previewSpacing = previewCharacterSpacing(draft);
   const previewPosition = previewCharacterPosition(draft);
+  const previewKerning = previewDocumentKerning(draft, source.fontSize);
 
   const submit = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
@@ -96,7 +107,7 @@ export function DocumentFontDialog({
     >
       <form id={formId} onSubmit={submit}>
         <fieldset className="work-document-font-dialog-spacing">
-          <legend>字符缩放、间距与位置</legend>
+          <legend>字符缩放、间距、字距调整与位置</legend>
           <div className="work-document-font-dialog-field">
             <span>缩放</span>
             <span className="work-document-font-dialog-measure">
@@ -164,6 +175,39 @@ export function DocumentFontDialog({
             </span>
           </div>
           <div className="work-document-font-dialog-field">
+            <OfficeCheckbox
+              ariaLabel="为字号达到以下值的字体调整字距"
+              checked={draft.kerningEnabled}
+              indeterminate={source.kerningThreshold.mixed && !kerningTouched}
+              onCheckedChange={(kerningEnabled) => {
+                setDraft((current) => ({ ...current, kerningEnabled }));
+                setKerningTouched(true);
+              }}
+            >
+              为字号达到以下值的字体调整字距
+            </OfficeCheckbox>
+            <span className="work-document-font-dialog-measure">
+              <OfficeNumberField
+                ariaLabel="字距调整阈值（磅）"
+                value={draft.kerningThresholdPoints}
+                min={0}
+                max={DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS / 2}
+                step={0.5}
+                disabled={!draft.kerningEnabled}
+                validationInvalid={Boolean(error)}
+                onValueChange={(kerningThresholdPoints) => {
+                  setDraft((current) => ({
+                    ...current,
+                    kerningEnabled: true,
+                    kerningThresholdPoints,
+                  }));
+                  setKerningTouched(true);
+                }}
+              />
+              <span aria-hidden="true">磅</span>
+            </span>
+          </div>
+          <div className="work-document-font-dialog-field">
             <span>位置</span>
             <OfficeSelect
               ariaLabel="字符位置"
@@ -218,9 +262,15 @@ export function DocumentFontDialog({
               当前选区包含多种字符位置。选择一种位置后才会统一修改。
             </p>
           )}
+          {source.kerningThreshold.mixed && !kerningTouched && (
+            <p className="work-document-font-dialog-mixed" role="status">
+              当前选区包含不同的字距调整设置。勾选或取消后才会统一修改。
+            </p>
+          )}
           {(characterScaleTouched ||
             characterSpacingTouched ||
-            characterPositionTouched) &&
+            characterPositionTouched ||
+            kerningTouched) &&
             error && (
               <p className="work-document-font-dialog-error" role="alert">
                 {error}
@@ -237,6 +287,7 @@ export function DocumentFontDialog({
               fontFamily: source.fontFamily ?? undefined,
               fontSize: source.fontSize ?? undefined,
               fontStretch: `${previewScale}%`,
+              fontKerning: previewKerning,
               letterSpacing: `${previewSpacing}pt`,
             }}
           >
@@ -286,8 +337,18 @@ function previewCharacterSpacing(
   return draft.characterSpacingMode === 'condensed' ? -points : points;
 }
 
+function previewDocumentKerning(
+  draft: ReturnType<typeof createDocumentFontDialogDraft>,
+  fontSize: string | null,
+): 'none' | 'normal' {
+  if (!draft.kerningEnabled) return 'none';
+  const points = Number(draft.kerningThresholdPoints);
+  if (!Number.isFinite(points)) return 'none';
+  return documentKerningIsEffective(points * 2, fontSize) ? 'normal' : 'none';
+}
+
 function fontDialogDescription(source: DocumentFontDialogSource): string {
   return source.selectedCharacters
-    ? `精确设置当前选中内容的原生字符缩放、间距和位置（${source.selectedCharacters} 个字符）。`
-    : '设置当前位置后续输入文字的原生字符缩放、间距和位置。';
+    ? `精确设置当前选中内容的原生字符缩放、间距、字距调整阈值和位置（${source.selectedCharacters} 个字符）。`
+    : '设置当前位置后续输入文字的原生字符缩放、间距、字距调整阈值和位置。';
 }

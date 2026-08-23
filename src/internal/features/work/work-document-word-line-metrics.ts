@@ -17,6 +17,11 @@ import {
   normalizeDocumentCharacterPositionHalfPoints,
 } from './work-document-character-position';
 import {
+  documentKerningDomAttributes,
+  documentKerningThresholdHalfPointsFromElement,
+  normalizeDocumentKerningThresholdHalfPoints,
+} from './work-document-kerning';
+import {
   parseDocxThemeReference,
   serializeDocxThemeReference,
 } from './work-docx-theme-reference';
@@ -52,6 +57,7 @@ declare module '@tiptap/extension-text-style' {
     characterScalePercent?: number | null;
     characterPositionHalfPoints?: number | null;
     characterSpacingTwips?: number | null;
+    kerningThresholdHalfPoints?: number | null;
     wordLineHeightFactor?: number | null;
     wordSnapToGrid?: boolean | null;
     themeColor?: string | null;
@@ -80,6 +86,33 @@ export function normalizedDocumentWordLineHeightFactor(
 }
 
 export const DocumentTextStyle = TextStyle.extend({
+  addCommands() {
+    return {
+      ...(this.parent?.() ?? {}),
+      removeEmptyTextStyle:
+        () =>
+        ({ tr }) => {
+          const { from, to } = tr.selection;
+          tr.doc.nodesBetween(from, to, (node, position) => {
+            if (!node.isText) return true;
+            const mark = node.marks.find(
+              (candidate) =>
+                candidate.type === this.type &&
+                documentTextStyleAttributesAreEmpty(candidate.attrs),
+            );
+            if (mark) {
+              tr.removeMark(
+                Math.max(position, from),
+                Math.min(position + node.nodeSize, to),
+                mark,
+              );
+            }
+            return false;
+          });
+          return true;
+        },
+    };
+  },
   addAttributes() {
     return {
       characterScalePercent: {
@@ -113,6 +146,18 @@ export const DocumentTextStyle = TextStyle.extend({
             normalizeDocumentCharacterSpacingTwips(
               attributes.characterSpacingTwips,
             ),
+          ),
+      },
+      kerningThresholdHalfPoints: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          documentKerningThresholdHalfPointsFromElement(element),
+        renderHTML: (attributes: Record<string, unknown>) =>
+          documentKerningDomAttributes(
+            normalizeDocumentKerningThresholdHalfPoints(
+              attributes.kerningThresholdHalfPoints,
+            ),
+            attributes.fontSize,
           ),
       },
       wordLineHeightFactor: {
@@ -164,6 +209,14 @@ export const DocumentTextStyle = TextStyle.extend({
     };
   },
 });
+
+function documentTextStyleAttributesAreEmpty(
+  attributes: Record<string, unknown>,
+): boolean {
+  return Object.values(attributes).every(
+    (value) => value === null || value === undefined || value === '',
+  );
+}
 
 export const DocumentHighlight = Highlight.extend({
   addAttributes() {

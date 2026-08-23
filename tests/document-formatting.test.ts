@@ -49,6 +49,61 @@ function createEditor(content = '<p>A3S Office</p>'): Editor {
 }
 
 describe('document formatting', () => {
+  test('keeps explicit zero text styles and removes only truly empty marks inside sections', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content:
+        '<section data-document-section="true"><p>Explicit zero formatting</p></section>',
+    });
+    editor.commands.setTextSelection(
+      textRange(editor, 'Explicit zero formatting'),
+    );
+
+    expect(
+      editor
+        .chain()
+        .setMark('textStyle', {
+          characterPositionHalfPoints: 0,
+          characterSpacingTwips: 0,
+          kerningThresholdHalfPoints: 0,
+          wordSnapToGrid: false,
+        })
+        .removeEmptyTextStyle()
+        .run(),
+    ).toBe(true);
+    expect(editor.getAttributes('textStyle')).toMatchObject({
+      characterPositionHalfPoints: 0,
+      characterSpacingTwips: 0,
+      kerningThresholdHalfPoints: 0,
+      wordSnapToGrid: false,
+    });
+    expect(editor.getHTML()).toContain(
+      'data-office-character-spacing-twips="0"',
+    );
+    expect(editor.getHTML()).toContain(
+      'data-office-character-position-half-points="0"',
+    );
+    expect(editor.getHTML()).toContain(
+      'data-office-kerning-threshold-half-points="0"',
+    );
+    expect(editor.getHTML()).toContain('data-office-word-snap-to-grid="false"');
+
+    expect(
+      editor
+        .chain()
+        .setMark('textStyle', {
+          characterPositionHalfPoints: null,
+          characterSpacingTwips: null,
+          kerningThresholdHalfPoints: null,
+          wordSnapToGrid: null,
+        })
+        .removeEmptyTextStyle()
+        .run(),
+    ).toBe(true);
+    expect(editor.getHTML()).not.toContain('<span');
+    editor.destroy();
+  });
+
   test('uses keyboard shortcuts without stacking vertical-position marks', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions(),

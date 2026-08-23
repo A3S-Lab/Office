@@ -17,6 +17,11 @@ import {
   documentCharacterSpacingDomAttributes,
   documentCharacterSpacingTwipsFromElement,
 } from './work-document-character-spacing';
+import {
+  DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
+  documentKerningDomAttributes,
+  documentKerningThresholdHalfPointsFromElement,
+} from './work-document-kerning';
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import {
   DOCUMENT_PARAGRAPH_BORDERS_ATTRIBUTE,
@@ -413,6 +418,10 @@ function sanitizeAttributes(element: Element, tag: string) {
     ? element.style.textAlign
     : '';
   const color = element.style.color;
+  const fontSize =
+    tag === 'span'
+      ? normalizedPageChromeFontSize(element.style.fontSize)
+      : null;
   const textCase =
     tag === 'span'
       ? normalizeDocumentTextCase(
@@ -433,6 +442,14 @@ function sanitizeAttributes(element: Element, tag: string) {
     documentCharacterPositionDomAttributes(characterPosition);
   const characterSpacingAttributes =
     documentCharacterSpacingDomAttributes(characterSpacing);
+  const kerningThreshold =
+    tag === 'span'
+      ? documentKerningThresholdHalfPointsFromElement(element)
+      : null;
+  const kerningAttributes = documentKerningDomAttributes(
+    kerningThreshold,
+    fontSize,
+  );
   const underline =
     tag === 'u' ? documentUnderlineFormattingFromElement(element) : null;
   const underlineAttributes = underline
@@ -462,13 +479,16 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_CHARACTER_SCALE_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_CHARACTER_POSITION_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_CHARACTER_SPACING_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE);
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
     color ? `color: ${color}` : '',
+    fontSize ? `font-size: ${fontSize}` : '',
     textCase ? documentTextCaseCss(textCase) : '',
     characterScaleAttributes.style ?? '',
     characterPositionAttributes.style ?? '',
     characterSpacingAttributes.style ?? '',
+    kerningAttributes.style ?? '',
     underlineAttributes.style ?? '',
     strikeAttributes.style ?? '',
     borderAttributes.style ?? '',
@@ -534,6 +554,12 @@ function sanitizeAttributes(element: Element, tag: string) {
       String(characterPosition),
     );
   }
+  if (tag === 'span' && kerningThreshold !== null) {
+    element.setAttribute(
+      DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
+      String(kerningThreshold),
+    );
+  }
   if (direction === 'ltr' || direction === 'rtl')
     element.setAttribute('dir', direction);
   else element.removeAttribute('dir');
@@ -577,6 +603,7 @@ function sanitizeAttributes(element: Element, tag: string) {
                           DOCUMENT_CHARACTER_SCALE_ATTRIBUTE,
                           DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
                           DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
+                          DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
                         ]
                       : []),
                     ...(tag === 'u'
@@ -594,6 +621,22 @@ function sanitizeAttributes(element: Element, tag: string) {
     if (!allowed.has(attribute.name.toLowerCase()))
       element.removeAttribute(attribute.name);
   }
+}
+
+function normalizedPageChromeFontSize(value: string): string | null {
+  const match = /^(\d+(?:\.\d*)?|\.\d+)(pt|px)$/iu.exec(value.trim());
+  if (!match) return null;
+  const amount = Number(match[1]);
+  const points = match[2]?.toLowerCase() === 'px' ? amount * 0.75 : amount;
+  if (
+    !Number.isFinite(points) ||
+    points <= 0 ||
+    points > 512 ||
+    !Number.isSafeInteger(points * 2)
+  ) {
+    return null;
+  }
+  return `${Number(points.toFixed(1))}pt`;
 }
 
 function normalizeTableRowIdentityAttributes(element: HTMLElement): void {

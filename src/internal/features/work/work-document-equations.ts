@@ -1,6 +1,7 @@
 import { type CommandProps, mergeAttributes, Node } from '@tiptap/core';
 import type { DOMOutputSpec } from '@tiptap/pm/model';
 import { normalizeDocumentCharacterScalePercent } from './work-document-character-scale';
+import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
 
 export type WorkDocumentEquationDisplay = 'inline' | 'block';
 export type WorkDocumentEquationJustification =
@@ -1245,7 +1246,6 @@ const MAX_EQUATION_WORD_FONT_LENGTH = 127;
 const MAX_EQUATION_LANGUAGE_LENGTH = 85;
 const MAX_EQUATION_FONT_SIZE = 512;
 const MAX_EQUATION_CHARACTER_SPACING_TWIPS = 31_680;
-const MAX_EQUATION_KERNING_THRESHOLD_HALF_POINTS = 3_277;
 const MIN_EQUATION_WORD_LINE_BORDER_EIGHTH_POINTS = 2;
 const MAX_EQUATION_WORD_LINE_BORDER_EIGHTH_POINTS = 96;
 const MAX_EQUATION_WORD_BORDER_SPACING_POINTS = 31;
@@ -3804,11 +3804,11 @@ function normalizeEquationWordRunProperties(
   const kerningThresholdHalfPoints =
     source.kerningThresholdHalfPoints === undefined
       ? undefined
-      : normalizeEquationInteger(
-          source.kerningThresholdHalfPoints,
-          0,
-          MAX_EQUATION_KERNING_THRESHOLD_HALF_POINTS,
-        );
+      : typeof source.kerningThresholdHalfPoints === 'number'
+        ? normalizeDocumentKerningThresholdHalfPoints(
+            source.kerningThresholdHalfPoints,
+          )
+        : null;
   const positionHalfPoints =
     source.positionHalfPoints === undefined
       ? undefined

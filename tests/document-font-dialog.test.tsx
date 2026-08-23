@@ -18,11 +18,12 @@ afterEach(() => {
   editor = null;
 });
 
-test('validates exact native character scale, spacing, and position ranges', () => {
+test('validates exact native scale, spacing, kerning, and position ranges', () => {
   const draft = createDocumentFontDialogDraft({
     characterScale: { mixed: false, value: null },
     characterPosition: { mixed: false, value: null },
     characterSpacing: { mixed: false, value: null },
+    kerningThreshold: { mixed: false, value: null },
     fontFamily: null,
     fontSize: null,
     previewText: 'A3S Office',
@@ -121,19 +122,55 @@ test('validates exact native character scale, spacing, and position ranges', () 
       characterPositionPoints: '1584.5',
     }),
   ).not.toBeNull();
+  expect(
+    documentFontDialogDraftError({
+      ...draft,
+      kerningEnabled: true,
+      kerningThresholdPoints: '-0.5',
+    }),
+  ).not.toBeNull();
+  expect(
+    documentFontDialogDraftError({
+      ...draft,
+      kerningEnabled: true,
+      kerningThresholdPoints: '0',
+    }),
+  ).toBeNull();
+  expect(
+    documentFontDialogDraftError({
+      ...draft,
+      kerningEnabled: true,
+      kerningThresholdPoints: '1638.5',
+    }),
+  ).toBeNull();
+  expect(
+    documentFontDialogDraftError({
+      ...draft,
+      kerningEnabled: true,
+      kerningThresholdPoints: '1639',
+    }),
+  ).not.toBeNull();
+  expect(
+    documentFontDialogDraftError({
+      ...draft,
+      kerningEnabled: true,
+      kerningThresholdPoints: '12.25',
+    }),
+  ).not.toBeNull();
 });
 
-test('keeps independently mixed scale, spacing, and position untouched until edited', async () => {
+test('keeps independently mixed scale, spacing, kerning, and position untouched until edited', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),
     content:
-      '<p><span data-office-character-scale-percent="80" data-office-character-position-half-points="2" data-office-character-spacing-twips="20" style="font-stretch: 80%; --work-document-character-position: 1pt; letter-spacing: 1pt">Wide</span> <span data-office-character-scale-percent="125" data-office-character-position-half-points="-2" data-office-character-spacing-twips="-20" style="font-stretch: 125%; --work-document-character-position: -1pt; letter-spacing: -1pt">Tight</span></p>',
+      '<p><span data-office-character-scale-percent="80" data-office-character-position-half-points="2" data-office-character-spacing-twips="20" data-office-kerning-threshold-half-points="24" style="font-stretch: 80%; --work-document-character-position: 1pt; letter-spacing: 1pt; font-kerning: none">Wide</span> <span data-office-character-scale-percent="125" data-office-character-position-half-points="-2" data-office-character-spacing-twips="-20" data-office-kerning-threshold-half-points="0" style="font-stretch: 125%; --work-document-character-position: -1pt; letter-spacing: -1pt; font-kerning: normal">Tight</span></p>',
   });
   editor.commands.selectAll();
   const source = documentFontDialogSource(editor);
   expect(source.characterScale).toEqual({ mixed: true, value: null });
   expect(source.characterSpacing).toEqual({ mixed: true, value: null });
   expect(source.characterPosition).toEqual({ mixed: true, value: null });
+  expect(source.kerningThreshold).toEqual({ mixed: true, value: null });
   const patches: unknown[] = [];
 
   render(
@@ -161,6 +198,14 @@ test('keeps independently mixed scale, spacing, and position untouched until edi
   expect(screen.getByText(/当前选区包含多种字符位置/)).toHaveTextContent(
     '当前选区包含多种字符位置',
   );
+  expect(screen.getByText(/当前选区包含不同的字距调整设置/)).toHaveTextContent(
+    '当前选区包含不同的字距调整设置',
+  );
+  expect(
+    screen.getByRole('checkbox', {
+      name: '为字号达到以下值的字体调整字距',
+    }),
+  ).toHaveAttribute('aria-checked', 'mixed');
 
   fireEvent.click(screen.getByRole('combobox', { name: '字符间距' }));
   fireEvent.click(await screen.findByRole('option', { name: '加宽' }));
@@ -171,11 +216,11 @@ test('keeps independently mixed scale, spacing, and position untouched until edi
   expect(patches).toEqual([{ characterSpacingTwips: 50 }]);
 });
 
-test('applies scale, spacing, and position to the saved selection in one undo step', async () => {
+test('applies scale, spacing, kerning, and position to the saved selection in one undo step', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),
     content:
-      '<p><span data-office-character-scale-percent="125" data-office-character-position-half-points="4" data-office-character-spacing-twips="40" style="font-stretch: 125%; --work-document-character-position: 2pt; letter-spacing: 2pt">Selected text</span> remains</p>',
+      '<p><span data-office-character-scale-percent="125" data-office-character-position-half-points="4" data-office-character-spacing-twips="40" data-office-kerning-threshold-half-points="24" style="font-stretch: 125%; --work-document-character-position: 2pt; letter-spacing: 2pt; font-kerning: none">Selected text</span> remains</p>',
   });
   document.body.append(editor.view.dom);
   const selection = textRange(editor, 'Selected text');
@@ -197,6 +242,10 @@ test('applies scale, spacing, and position to the saved selection in one undo st
   fireEvent.change(screen.getByRole('textbox', { name: '位置值（磅）' }), {
     target: { value: '1.5' },
   });
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '字距调整阈值（磅）' }),
+    { target: { value: '0' } },
+  );
   const preview = screen.getByLabelText('字符高级格式预览');
   await waitFor(() => {
     expect(preview.querySelector('output')?.getAttribute('style')).toContain(
@@ -204,6 +253,9 @@ test('applies scale, spacing, and position to the saved selection in one undo st
     );
     expect(preview.querySelector('output')?.getAttribute('style')).toContain(
       'letter-spacing: 0pt',
+    );
+    expect(preview.querySelector('output')?.getAttribute('style')).toContain(
+      'font-kerning: normal',
     );
     expect(
       preview.querySelector('output > span')?.getAttribute('style'),
@@ -225,6 +277,7 @@ test('applies scale, spacing, and position to the saved selection in one undo st
   expect(editor.getAttributes('textStyle').characterPositionHalfPoints).toBe(
     -3,
   );
+  expect(editor.getAttributes('textStyle').kerningThresholdHalfPoints).toBe(0);
   expect(editor.getHTML()).toContain('data-office-character-spacing-twips="0"');
   expect(editor.getHTML()).toContain(
     'data-office-character-scale-percent="80"',
@@ -232,12 +285,68 @@ test('applies scale, spacing, and position to the saved selection in one undo st
   expect(editor.getHTML()).toContain(
     'data-office-character-position-half-points="-3"',
   );
+  expect(editor.getHTML()).toContain(
+    'data-office-kerning-threshold-half-points="0"',
+  );
 
   expect(editor.commands.undo()).toBe(true);
   editor.commands.setTextSelection(selection);
   expect(editor.getAttributes('textStyle').characterScalePercent).toBe(125);
   expect(editor.getAttributes('textStyle').characterSpacingTwips).toBe(40);
   expect(editor.getAttributes('textStyle').characterPositionHalfPoints).toBe(4);
+  expect(editor.getAttributes('textStyle').kerningThresholdHalfPoints).toBe(24);
+  await waitFor(() => expect(editor?.view.dom).toHaveFocus());
+});
+
+test('clears direct kerning from the saved selection and restores it with one undo', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content:
+      '<p><span data-office-kerning-threshold-half-points="24" style="font-kerning: none">Direct kerning</span> remains</p>',
+  });
+  document.body.append(editor.view.dom);
+  const selection = textRange(editor, 'Direct kerning');
+  editor.commands.setTextSelection(selection);
+  const source = documentFontDialogSource(editor);
+
+  render(
+    <FontDialogHarness editor={editor} selection={selection} source={source} />,
+  );
+
+  const kerning = screen.getByRole('checkbox', {
+    name: '为字号达到以下值的字体调整字距',
+  });
+  expect(kerning).toBeChecked();
+  fireEvent.click(kerning);
+  expect(
+    screen.getByRole('textbox', { name: '字距调整阈值（磅）' }),
+  ).toBeDisabled();
+  expect(
+    screen
+      .getByLabelText('字符高级格式预览')
+      .querySelector('output')
+      ?.getAttribute('style'),
+  ).toContain('font-kerning: none');
+
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '字体高级设置' })).toBeNull(),
+  );
+
+  editor.commands.setTextSelection(selection);
+  expect(
+    editor.getAttributes('textStyle').kerningThresholdHalfPoints,
+  ).toBeUndefined();
+  expect(editor.getHTML()).not.toContain(
+    'data-office-kerning-threshold-half-points',
+  );
+
+  expect(editor.commands.undo()).toBe(true);
+  editor.commands.setTextSelection(selection);
+  expect(editor.getAttributes('textStyle').kerningThresholdHalfPoints).toBe(24);
+  expect(editor.getHTML()).toContain(
+    'data-office-kerning-threshold-half-points="24"',
+  );
   await waitFor(() => expect(editor?.view.dom).toHaveFocus());
 });
 

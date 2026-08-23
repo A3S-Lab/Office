@@ -4,6 +4,7 @@ import Superscript from '@tiptap/extension-superscript';
 import { normalizeDocumentCharacterScalePercent } from './work-document-character-scale';
 import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-character-position';
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
+import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
 import {
   documentTextCaseKeyboardShortcuts,
   normalizeDocumentTextCase,
@@ -22,6 +23,10 @@ declare module '@tiptap/core' {
       setDocumentCharacterPosition: (
         characterPositionHalfPoints: number,
       ) => ReturnType;
+      setDocumentKerningThreshold: (
+        kerningThresholdHalfPoints: number,
+      ) => ReturnType;
+      unsetDocumentKerningThreshold: () => ReturnType;
       setDocumentTextCase: (textCase: WorkDocumentTextCase) => ReturnType;
       toggleDocumentTextCase: (
         textCase: Exclude<WorkDocumentTextCase, 'none'>,
@@ -71,6 +76,25 @@ export const DocumentCharacterFormatting = Extension.create({
                 characterSpacingTwips: spacing,
               });
         },
+      setDocumentKerningThreshold:
+        (kerningThresholdHalfPoints: number) =>
+        ({ commands }) => {
+          const threshold = normalizeDocumentKerningThresholdHalfPoints(
+            kerningThresholdHalfPoints,
+          );
+          return threshold === null
+            ? false
+            : commands.setMark('textStyle', {
+                kerningThresholdHalfPoints: threshold,
+              });
+        },
+      unsetDocumentKerningThreshold:
+        () =>
+        ({ chain }) =>
+          chain()
+            .setMark('textStyle', { kerningThresholdHalfPoints: null })
+            .removeEmptyTextStyle()
+            .run(),
       setDocumentTextCase:
         (textCase: WorkDocumentTextCase) =>
         ({ chain }) =>

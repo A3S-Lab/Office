@@ -72,6 +72,7 @@ import {
   type WorkDocumentEquationWordVerticalAlignment,
 } from './work-document-equations';
 import { DOCUMENT_CHARACTER_SCALE_MAX_PERCENT } from './work-document-character-scale';
+import { DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS } from './work-document-kerning';
 import {
   closestDocxEquationLikeRoot,
   docxEquationPlacement,
@@ -675,7 +676,6 @@ const MAX_WORD_FONT_NAME_LENGTH = 127;
 const MAX_WORD_LANGUAGE_LENGTH = 85;
 const MAX_WORD_HALF_POINT_SIZE = 1_024;
 const MAX_WORD_CHARACTER_SPACING_TWIPS = 31_680;
-const MAX_WORD_KERNING_THRESHOLD_HALF_POINTS = 3_277;
 const MIN_WORD_LINE_BORDER_EIGHTH_POINTS = 2;
 const MAX_WORD_LINE_BORDER_EIGHTH_POINTS = 96;
 const MAX_WORD_BORDER_SPACING_POINTS = 31;
@@ -1287,7 +1287,7 @@ function parseWordRunProperties(
   const kerningThresholdHalfPoints = parseWordRequiredInteger(
     children.get('kern'),
     0,
-    MAX_WORD_KERNING_THRESHOLD_HALF_POINTS,
+    DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS,
   );
   const positionHalfPoints = parseWordPosition(children.get('position'));
   const fontSize = parseWordHalfPointSize(children.get('sz'));

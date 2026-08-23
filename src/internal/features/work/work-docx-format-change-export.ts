@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import { normalizeDocumentCharacterScalePercent } from './work-document-character-scale';
 import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-character-position';
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
+import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
 import {
   parseDocumentCharacterFormatting,
   type DocumentCharacterFormatMark,
@@ -323,6 +324,13 @@ function appendFormattingProperties(
     prefix,
     byType.get('textStyle'),
   );
+  appendKerningThresholdProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
   appendCharacterPositionProperty(
     document,
     properties,
@@ -372,6 +380,27 @@ function appendCharacterScaleProperty(
     prefix,
     'w',
     String(scale),
+  );
+}
+
+function appendKerningThresholdProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const threshold = normalizeDocumentKerningThresholdHalfPoints(
+    mark?.attrs?.kerningThresholdHalfPoints,
+  );
+  if (threshold === null) return;
+  appendValuedProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    'kern',
+    String(threshold),
   );
 }
 

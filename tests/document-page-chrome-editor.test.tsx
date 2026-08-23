@@ -96,6 +96,33 @@ test('retains only normalized character scale in page chrome', () => {
   expect(invalid).not.toContain('font-stretch');
 });
 
+test('retains canonical font-size-aware kerning thresholds in page chrome', () => {
+  const effective = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-kerning-threshold-half-points="24" style="font-size: 12pt; font-kerning: none" data-untrusted="drop">Header</span></p>',
+  );
+  expect(effective).toContain('data-office-kerning-threshold-half-points="24"');
+  expect(effective).toContain('font-size: 12pt');
+  expect(effective).toContain('font-kerning: normal');
+  expect(effective).not.toContain('data-untrusted');
+
+  const belowThreshold = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-kerning-threshold-half-points="25" style="font-size: 12pt; font-kerning: normal">Header</span></p>',
+  );
+  expect(belowThreshold).toContain('font-kerning: none');
+
+  const explicitZero = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-kerning-threshold-half-points="0" style="font-size: 8pt; font-kerning: none">Header</span></p>',
+  );
+  expect(explicitZero).toContain('font-kerning: normal');
+
+  const invalid = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-kerning-threshold-half-points="3278" style="font-size: 12pt; font-kerning: normal">Header</span></p>',
+  );
+  expect(invalid).not.toContain('data-office-kerning-threshold');
+  expect(invalid).not.toContain('font-kerning');
+  expect(invalid).toContain('font-size: 12pt');
+});
+
 test('keeps native page-chrome identities through edits', () => {
   const editor = new Editor({
     extensions: createDocumentPageChromeEditorExtensions(),

@@ -116,6 +116,13 @@ bun run test:e2e:writer-character-spacing:check
 bun run test:e2e:writer-character-spacing
 ```
 
+The Writer native kerning workflow has a focused local gate:
+
+```bash
+bun run test:e2e:writer-kerning:check
+bun run test:e2e:writer-kerning
+```
+
 The Writer native character-scale workflow has a focused local gate:
 
 ```bash
@@ -512,6 +519,12 @@ expanded spacing, restores editor focus, and proves one-step Undo together with
 accessibility and clean browser diagnostics. Desktop and compact Playwright
 cover the same public path. The A3S Test suite remains local-only and is not
 referenced by GitHub Actions or Pages.
+The Writer native kerning workflow uses the same `Cmd/Ctrl+D` dialog to author
+an exact effective threshold, verifies native DOM metadata and focus recovery,
+then clears only direct kerning and proves one-step Undo restoration. The
+focused A3S Test suite captures accessibility, console, and page-error evidence
+locally; desktop and 390 px Playwright capture the responsive dialog and verify
+the same workflow. It is not referenced by GitHub Actions or Pages.
 The Writer native character-position workflow uses the same advanced font
 dialog to change exact spacing and raised position in one Apply action, proves
 both native DOM attributes, focus restoration, and one-step Undo, then captures

@@ -542,7 +542,6 @@ function DocumentEditorSurface({
           retainedCommentIds,
         ),
       };
-      appliedSourceKeyRef.current = `model:${model.revision}:${model.htmlFingerprint}`;
       if (!collaborationBindingRef.current) {
         contentRef.current = next;
         onChangeRef.current(next);

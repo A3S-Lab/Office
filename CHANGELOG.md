@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added native Writer pair kerning as an exact `w:kern` threshold from 0
+  through 3,277 half-points. Zero enables kerning for every font size, positive
+  values apply when effective `w:sz` meets or exceeds the threshold, missing
+  values inherit, and an entirely absent hierarchy remains disabled. Body,
+  headers, footers, footnotes, endnotes, styles, Format Painter, formatting
+  revisions, DOCX export/reopen, and prior `w:rPrChange` values retain it.
+- Extended the shared `Cmd/Ctrl+D` advanced font dialog with an independently
+  mixed Kerning setting, exact 0.5-point validation, a 12-point authoring
+  default, effective live preview, explicit direct-format clearing, captured
+  selection restoration, and one-step Undo. No dedicated shortcut is claimed.
+- Added collision-safe cross-story run-format import, strict namespace and
+  malformed-input diagnostics, exact explicit-zero package patching, effective
+  Worker/WASM layout state, responsive Playwright coverage, and a local-only
+  A3S Test 1.0.0 ACL. GitHub Actions and Pages do not install or invoke A3S
+  Test.
 - Added native Writer horizontal character scaling as an exact `w:w` integer
   from 1% through 600%. Missing values still inherit, explicit 100% remains a
   direct reset, and an empty `<w:w/>` imports as the native 100% default.

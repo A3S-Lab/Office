@@ -341,6 +341,16 @@ Format Painter, formatting revisions, strict/transitional DOCX import, export,
 and reopen retain the exact value. CSS projects `font-stretch`; non-default
 scale stays on browser-authoritative measurement until the Worker/WASM protocol
 can carry exact per-run horizontal scaling. No dedicated shortcut is invented.
+Writer pair kerning now retains one native `w:kern` threshold from 0 through
+3,277 half-points. Explicit zero applies to every font size, positive values
+activate at effective `w:sz >= w:kern`, missing values inherit, and complete
+absence stays disabled. The shared advanced font dialog keeps kerning mixed
+state independent from scale, spacing, and position, supports direct clearing,
+and commits the combined draft through one transaction and one Undo record.
+Every editable Word story, inherited styles, Format Painter, formatting
+revisions, strict/transitional import, export, and reopen retain the value.
+CSS, preview/PDF, and Worker/WASM layout share the same effective state;
+malformed or namespace-spoofed properties fail closed. No shortcut is invented.
 Writer character baseline position now uses one signed `w:position` value from
 -3,168 to 3,168 half-points, including explicit zero. The same advanced font
 dialog exposes Normal, Raised, and Lowered modes while tracking mixed scale,

@@ -629,6 +629,19 @@ test('documents native Writer character spacing in both current locales', async 
   }
 });
 
+test('documents native Writer kerning thresholds in both current locales', async () => {
+  for (const { lang } of DOCUMENTATION_LOCALES) {
+    const source = await readFile(
+      path.join(documentationRoot, 'latest', lang, 'components/document.mdx'),
+      'utf8',
+    );
+    expect(source).toContain('w:kern');
+    expect(source).toContain('Cmd/Ctrl+D');
+    expect(source).toContain('font-kerning');
+    expect(source).toContain('Worker/WASM');
+  }
+});
+
 test('documents collaborative paragraph-formatting revisions', async () => {
   for (const version of [
     'latest',

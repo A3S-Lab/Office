@@ -163,6 +163,40 @@ describe('document mixed-run text layout', () => {
     }
   });
 
+  test('passes effective kerning state through the Worker and WASM layout path', () => {
+    const paragraph = document.createElement('p');
+    applyTextMetrics(paragraph, 14, 21);
+    paragraph.innerHTML = [
+      '<span style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; font-kerning: normal">Kerned</span>',
+      '<span style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; font-kerning: none">Plain</span>',
+    ].join('');
+    document.body.append(paragraph);
+
+    try {
+      expect(
+        collectDocumentTextLayoutRuns(
+          paragraph,
+          paragraph.textContent ?? '',
+          [layoutFont],
+          new Set([layoutFont.id]),
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          startUtf16: 0,
+          endUtf16: 6,
+          kerning: true,
+        }),
+        expect.objectContaining({
+          startUtf16: 6,
+          endUtf16: 11,
+          kerning: false,
+        }),
+      ]);
+    } finally {
+      paragraph.remove();
+    }
+  });
+
   test('keeps raised and lowered character positions on browser measurement', () => {
     for (const verticalAlign of ['2px', '-1.5px']) {
       const paragraph = document.createElement('p');

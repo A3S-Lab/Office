@@ -20,9 +20,11 @@ import { attribute, descendants, directChild } from './work-ooxml-package';
 import { documentCharacterScaleDomAttributes } from './work-document-character-scale';
 import { documentCharacterPositionDomAttributes } from './work-document-character-position';
 import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
+import { documentKerningDomAttributes } from './work-document-kerning';
 import { docxCharacterScalePercentFromProperties } from './work-docx-character-scale';
 import { docxCharacterPositionHalfPointsFromProperties } from './work-docx-character-position';
 import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
+import { resolveDocxKerningThresholdHalfPoints } from './work-docx-kerning';
 import { documentWordLineHeightFactor } from './work-document-word-line-metrics';
 import {
   type DocxThemeColorReference,
@@ -59,6 +61,7 @@ export interface ImportedDocxRunFormatting {
   characterScalePercent?: number;
   characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
+  kerningThresholdHalfPoints?: number;
   fontFamily?: string;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
@@ -88,6 +91,12 @@ export interface ImportedDocxRunFormattingMarkers {
   runs: ImportedDocxRunFormattingMarker[];
 }
 
+export interface ImportedDocxRunFormattingMarkerState {
+  markers: ImportedDocxRunFormattingMarkers;
+  nextMarker: number;
+  occupiedText: string;
+}
+
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
@@ -104,6 +113,7 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'smallCaps',
   'spacing',
   'w',
+  'kern',
   'position',
   'rFonts',
   'sz',
@@ -132,13 +142,42 @@ export function markDocxRunFormatting(
   themeSource?: DocxThemeSource,
   tableStyleSource?: DocxTableStyleSource,
 ): ImportedDocxRunFormattingMarkers {
-  const runs: ImportedDocxRunFormattingMarker[] = [];
+  const state = createImportedDocxRunFormattingMarkerState([document]);
+  markDocxRunFormattingIntoState(
+    document,
+    state,
+    styleSource,
+    themeSource,
+    tableStyleSource,
+  );
+  return state.markers;
+}
+
+export function createImportedDocxRunFormattingMarkerState(
+  documents: readonly Document[],
+): ImportedDocxRunFormattingMarkerState {
+  return {
+    markers: { runs: [] },
+    nextMarker: 1,
+    occupiedText: documents
+      .map((document) => document.documentElement.textContent ?? '')
+      .join(''),
+  };
+}
+
+export function markDocxRunFormattingIntoState(
+  document: Document,
+  state: ImportedDocxRunFormattingMarkerState,
+  styleSource?: DocxParagraphStyleSource,
+  themeSource?: DocxThemeSource,
+  tableStyleSource?: DocxTableStyleSource,
+): void {
   const styles = resolveDocxParagraphStyleResolver(styleSource);
   const theme = resolveDocxThemeResolver(themeSource);
   const tableStyles = resolveDocxTableStyleResolver(tableStyleSource);
   for (const run of descendants(document, 'r')) {
     const runText = directRunText(run);
-    if (!runText || runText.includes('__A3S_')) continue;
+    if (!runText) continue;
     const paragraph = closestAncestor(run, 'p');
     if (!paragraph) continue;
     const paragraphProperties = directChild(paragraph, 'pPr');
@@ -162,18 +201,15 @@ export function markDocxRunFormatting(
       runText,
     );
     if (!Object.keys(formatting).length && !change) continue;
-    const index = runs.length + 1;
-    const startMarker = `__A3S_WORK_RUN_START_${index}__`;
-    const endMarker = `__A3S_WORK_RUN_END_${index}__`;
+    const { startMarker, endMarker } = nextRunFormattingMarkers(state);
     insertRunMarkers(document, run, runProperties, startMarker, endMarker);
-    runs.push({
+    state.markers.runs.push({
       startMarker,
       endMarker,
       formatting,
       ...(change ? { change } : {}),
     });
   }
-  return { runs };
 }
 
 export function applyImportedDocxRunFormattingMarkers(
@@ -191,8 +227,25 @@ export function applyImportedDocxRunFormattingMarkers(
   }
   document.body.innerHTML = document.body.innerHTML.replace(
     RUN_FORMATTING_MARKER_PATTERN,
-    (marker) => replacements.get(marker) ?? '',
+    (marker) => replacements.get(marker) ?? marker,
   );
+}
+
+function nextRunFormattingMarkers(
+  state: ImportedDocxRunFormattingMarkerState,
+): { startMarker: string; endMarker: string } {
+  while (true) {
+    const index = state.nextMarker;
+    state.nextMarker += 1;
+    const startMarker = `__A3S_WORK_RUN_START_${index}__`;
+    const endMarker = `__A3S_WORK_RUN_END_${index}__`;
+    if (
+      !state.occupiedText.includes(startMarker) &&
+      !state.occupiedText.includes(endMarker)
+    ) {
+      return { startMarker, endMarker };
+    }
+  }
 }
 
 export function hasImportedDocxRunFormattingMarkers(
@@ -231,6 +284,8 @@ function resolvedRunFormatting(
   let characterScalePercent: number | undefined;
   let characterPositionHalfPoints: number | undefined;
   let characterSpacingTwips: number | undefined;
+  const kerningThresholdHalfPoints =
+    resolveDocxKerningThresholdHalfPoints(propertySources);
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
@@ -440,6 +495,9 @@ function resolvedRunFormatting(
       ? { characterPositionHalfPoints }
       : {}),
     ...(characterSpacingTwips !== undefined ? { characterSpacingTwips } : {}),
+    ...(kerningThresholdHalfPoints !== undefined
+      ? { kerningThresholdHalfPoints }
+      : {}),
     ...(fontFamily
       ? {
           fontFamily,
@@ -507,6 +565,17 @@ function formattingMarkup(
   if (formatting.characterScalePercent !== undefined) {
     for (const [name, value] of Object.entries(
       documentCharacterScaleDomAttributes(formatting.characterScalePercent),
+    )) {
+      if (name === 'style') span.style.cssText += `; ${value}`;
+      else span.setAttribute(name, value);
+    }
+  }
+  if (formatting.kerningThresholdHalfPoints !== undefined) {
+    for (const [name, value] of Object.entries(
+      documentKerningDomAttributes(
+        formatting.kerningThresholdHalfPoints,
+        formatting.fontSize,
+      ),
     )) {
       if (name === 'style') span.style.cssText += `; ${value}`;
       else span.setAttribute(name, value);

@@ -2,9 +2,11 @@ import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import { documentCharacterScaleDomAttributes } from './work-document-character-scale';
 import { documentCharacterPositionDomAttributes } from './work-document-character-position';
 import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
+import { documentKerningDomAttributes } from './work-document-kerning';
 import { docxCharacterScalePercentFromProperties } from './work-docx-character-scale';
 import { docxCharacterPositionHalfPointsFromProperties } from './work-docx-character-position';
 import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
+import { resolveDocxKerningThresholdHalfPoints } from './work-docx-kerning';
 import { documentParagraphBordersDomAttributes } from './work-document-paragraph-borders';
 import {
   documentPageChromeLegacyFields,
@@ -23,22 +25,27 @@ import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-defaul
 import {
   type DocxParagraphStyleResolver,
   createDocxParagraphStyleResolver,
+  docxRunPropertySources,
 } from './work-docx-paragraph-styles';
 import { resolveDocxParagraphBordersForParagraph } from './work-docx-paragraph-borders-import';
 import { parseDirectDocxParagraphShading } from './work-docx-paragraph-shading-import';
 import {
   type DocxTableStyleResolver,
   createDocxTableStyleResolver,
+  docxTableRunPropertySources,
 } from './work-docx-table-styles';
 import { createDocxThemeResolver } from './work-docx-theme';
 import { documentUnderlineDomAttributes } from './work-document-underline';
 import { importedDocxUnderline } from './work-docx-underline';
 import { documentStrikeDomAttributes } from './work-document-strike';
 import { importedDocxStrike } from './work-docx-strike';
+import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
+  XMLNS_NAMESPACE,
   xmlAttributeLocalName,
   xmlAttributeNamespace,
 } from './work-docx-settings-xml';
+import { parseBoundedDocxInteger } from './work-docx-twips';
 import {
   attribute,
   bytesToDataUrl,
@@ -58,6 +65,15 @@ import type {
 } from './work-types';
 
 type Relationships = Map<string, OoxmlRelationship>;
+interface PageChromeRunContext {
+  archive: OoxmlPackage;
+  relationships: Relationships;
+  theme: ReturnType<typeof createDocxThemeResolver>;
+  paragraphProperties: Element | undefined;
+  paragraphStyles: DocxParagraphStyleResolver;
+  tableStyles: DocxTableStyleResolver;
+}
+
 interface ImportedPageChromePart {
   html: string;
   showPageNumber: boolean;
@@ -227,11 +243,19 @@ async function paragraphHtml(
   paragraph: Element,
   archive: OoxmlPackage,
   relationships: Relationships,
-  theme?: ReturnType<typeof createDocxThemeResolver>,
-  paragraphStyles?: DocxParagraphStyleResolver,
-  tableStyles?: DocxTableStyleResolver,
+  theme: ReturnType<typeof createDocxThemeResolver>,
+  paragraphStyles: DocxParagraphStyleResolver,
+  tableStyles: DocxTableStyleResolver,
 ): Promise<string> {
   const properties = directChild(paragraph, 'pPr');
+  const runContext: PageChromeRunContext = {
+    archive,
+    relationships,
+    theme,
+    paragraphProperties: properties,
+    paragraphStyles,
+    tableStyles,
+  };
   const alignmentValue = attribute(
     firstDescendant(properties, 'jc') ?? paragraph,
     'val',
@@ -260,13 +284,7 @@ async function paragraphHtml(
       continue;
     }
     if (child.localName === 'hyperlink') {
-      const content = await containerRunsHtml(
-        child,
-        field,
-        archive,
-        relationships,
-        theme,
-      );
+      const content = await containerRunsHtml(child, field, runContext);
       const relationship = relationships.get(attribute(child, 'r:id') ?? '');
       const anchor = attribute(child, 'anchor');
       const href =
@@ -281,23 +299,11 @@ async function paragraphHtml(
     if (child.localName === 'fldSimple') {
       const instruction = attribute(child, 'instr') ?? '';
       if (!/\bPAGE\b/i.test(instruction)) {
-        html += await containerRunsHtml(
-          child,
-          field,
-          archive,
-          relationships,
-          theme,
-        );
+        html += await containerRunsHtml(child, field, runContext);
       }
       continue;
     }
-    html += await containerRunsHtml(
-      child,
-      field,
-      archive,
-      relationships,
-      theme,
-    );
+    html += await containerRunsHtml(child, field, runContext);
   }
   const identityAttributes = paragraphIdentityAttributes(paragraph);
   const defaultCollapsed = properties
@@ -343,25 +349,16 @@ function paragraphIdentityAttributes(paragraph: Element): string {
 async function containerRunsHtml(
   container: Element,
   field: FieldState,
-  archive: OoxmlPackage,
-  relationships: Relationships,
-  theme?: ReturnType<typeof createDocxThemeResolver>,
+  context: PageChromeRunContext,
 ): Promise<string> {
-  if (container.localName === 'r')
-    return runHtml(container, field, archive, relationships, theme);
+  if (container.localName === 'r') return runHtml(container, field, context);
   let html = '';
   for (const child of directChildren(container)) {
     if (isDocxEquationLikeRoot(child)) {
       html += docxEquationHtml(child);
       continue;
     }
-    html += await containerRunsHtml(
-      child,
-      field,
-      archive,
-      relationships,
-      theme,
-    );
+    html += await containerRunsHtml(child, field, context);
   }
   return html;
 }
@@ -369,9 +366,7 @@ async function containerRunsHtml(
 async function runHtml(
   run: Element,
   field: FieldState,
-  archive: OoxmlPackage,
-  relationships: Relationships,
-  theme?: ReturnType<typeof createDocxThemeResolver>,
+  context: PageChromeRunContext,
 ): Promise<string> {
   let content = '';
   for (const child of directChildren(run)) {
@@ -393,11 +388,21 @@ async function runHtml(
     if (child.localName === 'tab') content += '&#9;';
     if (child.localName === 'br' || child.localName === 'cr') content += '<br>';
     if (child.localName === 'drawing')
-      content += await drawingHtml(child, archive, relationships);
+      content += await drawingHtml(
+        child,
+        context.archive,
+        context.relationships,
+      );
   }
   if (!content) return '';
 
   const properties = directChild(run, 'rPr');
+  const propertySources = docxRunPropertySources(
+    context.paragraphProperties,
+    properties,
+    context.paragraphStyles,
+    docxTableRunPropertySources(run, context.tableStyles),
+  );
   if (enabledElement(directChild(properties ?? run, 'b')))
     content = `<strong>${content}</strong>`;
   if (enabledElement(directChild(properties ?? run, 'i')))
@@ -405,7 +410,7 @@ async function runHtml(
   const underline = directChild(properties ?? run, 'u');
   if (underline) {
     const attributes = documentUnderlineDomAttributes(
-      importedDocxUnderline(underline, theme),
+      importedDocxUnderline(underline, context.theme),
     );
     content = `<u${htmlAttributes(attributes)}>${content}</u>`;
   }
@@ -428,6 +433,23 @@ async function runHtml(
     content = `<span${htmlAttributes(
       documentCharacterScaleDomAttributes(characterScale),
     )}>${content}</span>`;
+  }
+  const fontSize = resolveDocxPageChromeFontSizePoints(propertySources);
+  const kerningThreshold =
+    resolveDocxKerningThresholdHalfPoints(propertySources);
+  if (fontSize !== undefined || kerningThreshold !== undefined) {
+    const attributes =
+      kerningThreshold === undefined
+        ? {}
+        : documentKerningDomAttributes(kerningThreshold, fontSize);
+    const styles = [
+      fontSize === undefined ? '' : `font-size: ${formatNumber(fontSize)}pt`,
+      attributes.style ?? '',
+    ].filter(Boolean);
+    content = `<span${htmlAttributes({
+      ...attributes,
+      ...(styles.length ? { style: styles.join('; ') } : {}),
+    })}>${content}</span>`;
   }
   const characterPosition = docxCharacterPositionHalfPointsFromProperties(
     properties ?? run,
@@ -544,9 +566,9 @@ async function tableHtml(
   table: Element,
   archive: OoxmlPackage,
   relationships: Relationships,
-  theme?: ReturnType<typeof createDocxThemeResolver>,
-  paragraphStyles?: DocxParagraphStyleResolver,
-  tableStyles?: DocxTableStyleResolver,
+  theme: ReturnType<typeof createDocxThemeResolver>,
+  paragraphStyles: DocxParagraphStyleResolver,
+  tableStyles: DocxTableStyleResolver,
 ): Promise<string> {
   const rows: string[] = [];
   for (const row of directChildren(table, 'tr')) {
@@ -606,6 +628,64 @@ function enabledElement(element: Element | undefined): boolean {
   if (!element) return false;
   const value = attribute(element, 'val')?.toLowerCase();
   return value !== '0' && value !== 'false' && value !== 'off';
+}
+
+function resolveDocxPageChromeFontSizePoints(
+  propertySources: readonly Element[],
+): number | undefined {
+  let fontSize: number | undefined;
+  for (const properties of propertySources) {
+    const candidate = docxPageChromeFontSizePointsFromProperties(properties);
+    if (candidate !== undefined) fontSize = candidate;
+  }
+  return fontSize;
+}
+
+function docxPageChromeFontSizePointsFromProperties(
+  properties: Element,
+): number | undefined {
+  const localMatches = directChildren(properties, 'sz');
+  const nativeMatches = localMatches.filter((element) =>
+    DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? ''),
+  );
+  if (localMatches.length !== 1 || nativeMatches.length !== 1) return undefined;
+  const size = nativeMatches[0];
+  if (
+    directChildren(size).length ||
+    Array.from(size.childNodes).some(
+      (node) =>
+        (node.nodeType === Node.TEXT_NODE ||
+          node.nodeType === Node.CDATA_SECTION_NODE) &&
+        Boolean(node.textContent?.trim()),
+    )
+  ) {
+    return undefined;
+  }
+  const attributes = Array.from(size.attributes).filter(
+    (attribute) =>
+      xmlAttributeNamespace(size, attribute) !== XMLNS_NAMESPACE &&
+      attribute.name !== 'xmlns' &&
+      !attribute.name.startsWith('xmlns:'),
+  );
+  if (
+    attributes.length !== 1 ||
+    xmlAttributeLocalName(attributes[0]) !== 'val' ||
+    !DOCX_WORDPROCESSING_NAMESPACES.has(
+      xmlAttributeNamespace(size, attributes[0]) ?? '',
+    )
+  ) {
+    return undefined;
+  }
+  const halfPoints = parseBoundedDocxInteger(attributes[0].value.trim(), {
+    minimum: 1,
+    maximum: 1_024,
+    signed: false,
+  });
+  return halfPoints === null ? undefined : halfPoints / 2;
+}
+
+function formatNumber(value: number): string {
+  return Number(value.toFixed(2)).toString();
 }
 
 function htmlAttributes(attributes: Record<string, string>): string {

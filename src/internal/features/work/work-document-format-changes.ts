@@ -3,6 +3,7 @@ import type { Transaction } from '@tiptap/pm/state';
 import { normalizeDocumentCharacterScalePercent } from './work-document-character-scale';
 import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-character-position';
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
+import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
 import {
   normalizeDocumentTextCase,
   type WorkDocumentTextCase,
@@ -69,6 +70,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'color',
     'fontFamily',
     'fontSize',
+    'kerningThresholdHalfPoints',
     'themeColor',
     'textCase',
     'wordLineHeightFactor',
@@ -169,6 +171,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   characterScalePercent?: number;
   characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
+  kerningThresholdHalfPoints?: number;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
   fontSize?: number;
@@ -204,6 +207,7 @@ export function importedDocumentCharacterFormatting(formatting: {
     characterScalePercent: formatting.characterScalePercent,
     characterPositionHalfPoints: formatting.characterPositionHalfPoints,
     characterSpacingTwips: formatting.characterSpacingTwips,
+    kerningThresholdHalfPoints: formatting.kerningThresholdHalfPoints,
     color: formatting.color,
     fontFamily: formatting.fontFamily,
     fontSize:
@@ -255,6 +259,12 @@ function normalizeCharacterFormatMark(
       const scale = normalizeDocumentCharacterScalePercent(candidate);
       if (scale === null) return null;
       attrs[key] = scale;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'kerningThresholdHalfPoints') {
+      const threshold = normalizeDocumentKerningThresholdHalfPoints(candidate);
+      if (threshold === null) return null;
+      attrs[key] = threshold;
       continue;
     }
     if (typeof candidate === 'string') {

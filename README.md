@@ -110,7 +110,7 @@ baseline rather than one specific release.
 
 | Capability | A3S Office today | Traditional Office baseline |
 | --- | --- | --- |
-| Text, paragraphs, lists, and styles | **Supported** — structured editing, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
+| Text, paragraphs, lists, and styles | **Supported** — structured editing, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing, half-point kerning thresholds, and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
 | Page layout and rendering | **Partial** — sections, margins, page size, columns, headers/footers, fields, and live pagination | Desktop-grade pagination, print layout, and vector output |
 | Tables, pictures, and equations | **Partial** — rich table geometry, floating pictures, crop/wrap, and structured OMML | Broader drawings, text boxes, charts, WordArt, and SmartArt |
 | Comments, revisions, and collaboration | **Partial** — comments, suggestions, text/format revisions, decisions, Yjs presence, and host relay contracts | Full revision families plus integrated sharing and review services |

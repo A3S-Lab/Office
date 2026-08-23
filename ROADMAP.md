@@ -200,6 +200,15 @@ a phase exits only when its evidence is complete.
   strict/transitional namespace and malformed-input rejection, exact DOCX
   export/reopen, and browser-authoritative measurement for non-default scale as
   permanent gates. Do not invent a dedicated shortcut.
+- Treat native pair kerning as a completed typography slice: retain exact
+  `w:kern` thresholds from 0 through 3,277 half-points, explicit zero for all
+  font sizes, style inheritance, and disabled behavior when the property is
+  absent throughout the hierarchy. Keep effective `w:sz >= w:kern` rendering,
+  independent mixed-selection safety, direct-format clearing, all editable
+  Word stories, Format Painter, formatting revisions, one-step Undo, strict
+  namespace and malformed-input rejection, exact DOCX export/reopen,
+  diagnostics, and Worker/WASM effective-state parity as permanent gates. Use
+  the shared `Cmd/Ctrl+D` dialog rather than inventing a dedicated shortcut.
 - Treat native character baseline position as a completed typography slice:
   retain signed `w:position` values from -3,168 through 3,168 half-points,
   explicit zero, mixed-selection safety, the shared `Cmd/Ctrl+D` dialog,

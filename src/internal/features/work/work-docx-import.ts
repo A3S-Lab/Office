@@ -148,9 +148,10 @@ import {
 import { createDocxParagraphStyleResolver } from './work-docx-paragraph-styles';
 import {
   applyImportedDocxRunFormattingMarkers,
+  createImportedDocxRunFormattingMarkerState,
   hasImportedDocxRunFormattingMarkers,
   type ImportedDocxRunFormattingMarkers,
-  markDocxRunFormatting,
+  markDocxRunFormattingIntoState,
 } from './work-docx-run-formatting-import';
 import {
   applyImportedDocxParagraphTabStopMarkers,
@@ -365,12 +366,27 @@ export async function prepareDocxImport(
     theme,
     tableStyles,
   );
-  const runFormattingMarkers = markDocxRunFormatting(
+  const runFormattingMarkerState = createImportedDocxRunFormattingMarkerState([
     document,
+    ...equationMarkers.parts.map((part) => part.document),
+  ]);
+  markDocxRunFormattingIntoState(
+    document,
+    runFormattingMarkerState,
     paragraphStyles,
     theme,
     tableStyles,
   );
+  for (const part of equationMarkers.parts) {
+    markDocxRunFormattingIntoState(
+      part.document,
+      runFormattingMarkerState,
+      paragraphStyles,
+      theme,
+      tableStyles,
+    );
+  }
+  const runFormattingMarkers = runFormattingMarkerState.markers;
   const paragraphFormattingChangeMarkers = markDocxParagraphFormattingChanges(
     document,
     paragraphStyles,

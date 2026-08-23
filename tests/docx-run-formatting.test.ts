@@ -50,6 +50,51 @@ function themeXml(body: string): Document {
 }
 
 describe('DOCX run formatting', () => {
+  test('keeps source marker-like text while assigning collision-free formatting markers', () => {
+    const sourceStart = '__A3S_WORK_RUN_START_1__';
+    const sourceEnd = '__A3S_WORK_RUN_END_1__';
+    const document = wordXml(`
+      <w:p>
+        <w:r><w:rPr><w:kern w:val="30"/></w:rPr><w:t>${sourceStart}</w:t></w:r>
+        <w:r><w:rPr><w:kern w:val="24"/></w:rPr><w:t>Kerned</w:t></w:r>
+        <w:r><w:rPr><w:kern w:val="0"/></w:rPr><w:t>${sourceEnd}</w:t></w:r>
+      </w:p>
+    `);
+
+    const markers = markDocxRunFormatting(document);
+    expect(markers.runs).toHaveLength(3);
+    expect(markers.runs[0]?.startMarker).toBe('__A3S_WORK_RUN_START_2__');
+    const [sourceStartFormatting, kerningFormatting, sourceEndFormatting] =
+      markers.runs;
+    if (!sourceStartFormatting || !kerningFormatting || !sourceEndFormatting) {
+      throw new Error('Expected collision-free run-formatting markers.');
+    }
+    const html = new DOMParser().parseFromString(
+      `<p>${sourceStartFormatting.startMarker}${sourceStart}${sourceStartFormatting.endMarker}${kerningFormatting.startMarker}Kerned${kerningFormatting.endMarker}${sourceEndFormatting.startMarker}${sourceEnd}${sourceEndFormatting.endMarker}</p>`,
+      'text/html',
+    );
+
+    applyImportedDocxRunFormattingMarkers(html, markers);
+
+    expect(html.body.textContent).toBe(`${sourceStart}Kerned${sourceEnd}`);
+    expect(
+      Array.from(
+        html.querySelectorAll(
+          'span[data-office-kerning-threshold-half-points]',
+        ),
+      ).map((element) => ({
+        text: element.textContent,
+        threshold: element.getAttribute(
+          'data-office-kerning-threshold-half-points',
+        ),
+      })),
+    ).toEqual([
+      { text: sourceStart, threshold: '30' },
+      { text: 'Kerned', threshold: '24' },
+      { text: sourceEnd, threshold: '0' },
+    ]);
+  });
+
   test('resolves native single and double strike flags without flattening inheritance', () => {
     const document = wordXml(`
       <w:p>

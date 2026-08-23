@@ -138,6 +138,7 @@
   isolation: isolate;
   color: #20232b;
   font-family: var(--work-document-render-font-family);
+  font-kerning: none;
   font-size: var(--work-document-render-font-size);
   line-height: var(--work-document-render-line-height);
   overflow-wrap: break-word;
@@ -177,6 +178,7 @@
   justify-content: center;
   color: #7a8395;
   font-family: var(--work-document-render-font-family);
+  font-kerning: none;
   font-size: var(--work-document-render-font-size);
   line-height: var(--work-document-render-line-height);
   white-space: pre-wrap;

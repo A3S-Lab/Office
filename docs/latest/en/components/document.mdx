@@ -199,6 +199,37 @@ all retain the exact value. The DOM stores
 the Worker/WASM text-layout protocol carries exact horizontal run scaling;
 other eligible paragraphs remain on the deterministic kernel path.
 
+## Native pair kerning
+
+Writer stores pair kerning as one native `w:kern` threshold from 0 through
+3,277 half-points. A positive value enables kerning when the effective `w:sz`
+font size is greater than or equal to that threshold; 24 therefore means 12
+points. An explicit zero enables kerning at every font size. A missing direct
+property continues through the style hierarchy, while a document with no
+`w:kern` anywhere keeps kerning disabled.
+
+The shared `Cmd/Ctrl+D` **Advanced Font Settings** dialog provides a Kerning
+checkbox and an exact 0–1,638.5 point field in 0.5-point increments. New direct
+formatting starts at 12 points. Scale, spacing, kerning, and baseline position
+track mixed selections independently and commit together through one
+transaction. Clearing the checkbox removes only direct kerning; Apply restores
+the captured selection and creates one Undo record. Pair kerning has no
+separate standard shortcut, so Writer does not claim one.
+
+Body text, headers, footers, footnotes, endnotes, inherited styles, Format
+Painter, tracked formatting, reject restoration, DOCX import/export/reopen,
+and prior formatting inside `w:rPrChange` retain exact half-points. Strict and
+transitional documents reject missing values, duplicate or nested elements,
+text-bearing properties, extra attributes, fractions, negative or out-of-range
+values, and namespace spoofing. Compatibility diagnostics report valid and
+rejected properties separately.
+
+The DOM stores `data-office-kerning-threshold-half-points` and projects the
+effective state as CSS `font-kerning: normal` or `none`. Editing, preview, and
+PDF surfaces start with kerning disabled and share that projection. The same
+effective boolean reaches the Worker/WASM text-layout path, so pagination and
+paint do not disagree about pair advances.
+
 ## Native character baseline position
 
 The same **Advanced Font Settings** dialog stores Normal, Raised, or Lowered
@@ -258,8 +289,8 @@ for the complete browser/backend contract and the current native CLI/MCP limit.
 With tracked changes enabled, applying direct character formatting to existing
 text creates one `formatting` revision. The bounded model covers bold, italic,
 underline, strike, subscript, superscript, font family, font size, text color,
-highlight, character scale, spacing, baseline position, all-caps and small-caps
-effects, and Word grid state. Formatting applied to text that is still a
+highlight, character scale, spacing, kerning threshold, baseline position,
+all-caps and small-caps effects, and Word grid state. Formatting applied to text that is still a
 pending insertion remains part of that insertion
 instead of creating a nested revision.
 

@@ -15,6 +15,12 @@ import {
   documentCharacterSpacingPoints,
   normalizeDocumentCharacterSpacingTwips,
 } from '../work-document-character-spacing';
+import {
+  DOCUMENT_KERNING_DEFAULT_THRESHOLD_HALF_POINTS,
+  DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS,
+  documentKerningThresholdPoints,
+  normalizeDocumentKerningThresholdHalfPoints,
+} from '../work-document-kerning';
 
 export type DocumentCharacterSpacingMode =
   | 'condensed'
@@ -43,6 +49,10 @@ export interface DocumentFontDialogSource {
     mixed: boolean;
     value: number | null;
   };
+  kerningThreshold: {
+    mixed: boolean;
+    value: number | null;
+  };
   fontFamily: string | null;
   fontSize: string | null;
   previewText: string;
@@ -56,12 +66,15 @@ export interface DocumentFontDialogDraft {
   characterPositionPoints: string;
   characterSpacingMode: DocumentCharacterSpacingMode;
   characterSpacingPoints: string;
+  kerningEnabled: boolean;
+  kerningThresholdPoints: string;
 }
 
 export interface DocumentFontDialogPatch {
   characterScalePercent?: number;
   characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
+  kerningThresholdHalfPoints?: number | null;
 }
 
 export function documentFontDialogSource(
@@ -71,10 +84,12 @@ export function documentFontDialogSource(
   const scaleValues = new Map<string, number | null>();
   const positionValues = new Map<string, number | null>();
   const spacingValues = new Map<string, number | null>();
+  const kerningValues = new Map<string, number | null>();
   const addValues = (attributes: Record<string, unknown>) => {
     addScaleValue(scaleValues, attributes.characterScalePercent);
     addPositionValue(positionValues, attributes.characterPositionHalfPoints);
     addSpacingValue(spacingValues, attributes.characterSpacingTwips);
+    addKerningValue(kerningValues, attributes.kerningThresholdHalfPoints);
   };
   if (selection.empty) {
     addValues(editor.getAttributes('textStyle'));
@@ -93,12 +108,18 @@ export function documentFontDialogSource(
       addValues(textStyle?.attrs ?? {});
     });
   }
-  if (!scaleValues.size || !spacingValues.size || !positionValues.size) {
+  if (
+    !scaleValues.size ||
+    !spacingValues.size ||
+    !positionValues.size ||
+    !kerningValues.size
+  ) {
     addValues(editor.getAttributes('textStyle'));
   }
   const characterScale = selectedValue(scaleValues);
   const characterPosition = selectedValue(positionValues);
   const characterSpacing = selectedValue(spacingValues);
+  const kerningThreshold = selectedValue(kerningValues);
   const textStyle = editor.getAttributes('textStyle');
   const selectedText = selection.empty
     ? ''
@@ -110,6 +131,7 @@ export function documentFontDialogSource(
     characterScale,
     characterPosition,
     characterSpacing,
+    kerningThreshold,
     fontFamily:
       typeof textStyle.fontFamily === 'string' && textStyle.fontFamily.trim()
         ? textStyle.fontFamily
@@ -133,6 +155,7 @@ export function createDocumentFontDialogDraft(
   const positionPoints = Math.abs(
     documentCharacterPositionPoints(position) ?? 1,
   );
+  const kerningThreshold = source.kerningThreshold.value;
   return {
     characterScaleMode: source.characterScale.mixed ? 'mixed' : 'value',
     characterScalePercent: source.characterScale.mixed
@@ -154,6 +177,11 @@ export function createDocumentFontDialogDraft(
           ? 'expanded'
           : 'normal',
     characterSpacingPoints: formatPoints(spacingPoints || 1),
+    kerningEnabled: !source.kerningThreshold.mixed && kerningThreshold !== null,
+    kerningThresholdPoints: formatPoints(
+      documentKerningThresholdPoints(kerningThreshold) ??
+        DOCUMENT_KERNING_DEFAULT_THRESHOLD_HALF_POINTS / 2,
+    ),
   };
 }
 
@@ -180,6 +208,12 @@ export function documentFontDialogDraftError(
   ) {
     return `请输入 0.5 至 ${DOCUMENT_CHARACTER_POSITION_MAX_HALF_POINTS / 2} 磅、以 0.5 磅递增的位置值。`;
   }
+  if (
+    draft.kerningEnabled &&
+    kerningThresholdHalfPointsFromDraft(draft) === null
+  ) {
+    return `请输入 0 至 ${DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS / 2} 磅、以 0.5 磅递增的字距调整阈值。`;
+  }
   return null;
 }
 
@@ -189,6 +223,7 @@ export function documentFontDialogPatch(
   characterScaleTouched: boolean,
   characterSpacingTouched: boolean,
   characterPositionTouched: boolean,
+  kerningTouched: boolean,
 ): DocumentFontDialogPatch {
   const patch: DocumentFontDialogPatch = {};
   if (characterScaleTouched && draft.characterScaleMode !== 'mixed') {
@@ -220,6 +255,25 @@ export function documentFontDialogPatch(
       patch.characterPositionHalfPoints = position;
     }
   }
+  if (kerningTouched) {
+    if (!draft.kerningEnabled) {
+      if (
+        source.kerningThreshold.mixed ||
+        source.kerningThreshold.value !== null
+      ) {
+        patch.kerningThresholdHalfPoints = null;
+      }
+    } else {
+      const threshold = kerningThresholdHalfPointsFromDraft(draft);
+      if (
+        threshold !== null &&
+        (source.kerningThreshold.mixed ||
+          source.kerningThreshold.value !== threshold)
+      ) {
+        patch.kerningThresholdHalfPoints = threshold;
+      }
+    }
+  }
   return patch;
 }
 
@@ -231,6 +285,7 @@ export function applyDocumentFontDialogPatch(
   const hasScale = patch.characterScalePercent !== undefined;
   const hasPosition = patch.characterPositionHalfPoints !== undefined;
   const hasSpacing = patch.characterSpacingTwips !== undefined;
+  const hasKerning = patch.kerningThresholdHalfPoints !== undefined;
   const scale = hasScale
     ? normalizeDocumentCharacterScalePercent(patch.characterScalePercent)
     : null;
@@ -242,13 +297,22 @@ export function applyDocumentFontDialogPatch(
   const spacing = hasSpacing
     ? normalizeDocumentCharacterSpacingTwips(patch.characterSpacingTwips)
     : null;
+  const kerningThreshold =
+    hasKerning && patch.kerningThresholdHalfPoints !== null
+      ? normalizeDocumentKerningThresholdHalfPoints(
+          patch.kerningThresholdHalfPoints,
+        )
+      : null;
   const maximum = editor.state.doc.content.size;
   if (
     editor.isDestroyed ||
-    (!hasScale && !hasPosition && !hasSpacing) ||
+    (!hasScale && !hasPosition && !hasSpacing && !hasKerning) ||
     (hasScale && scale === null) ||
     (hasPosition && position === null) ||
     (hasSpacing && spacing === null) ||
+    (hasKerning &&
+      patch.kerningThresholdHalfPoints !== null &&
+      kerningThreshold === null) ||
     !Number.isSafeInteger(selection.from) ||
     !Number.isSafeInteger(selection.to) ||
     selection.from < 0 ||
@@ -257,14 +321,18 @@ export function applyDocumentFontDialogPatch(
   ) {
     return false;
   }
-  const attributes: Record<string, number> = {};
+  const attributes: Record<string, number | null> = {};
   if (scale !== null) attributes.characterScalePercent = scale;
   if (position !== null) attributes.characterPositionHalfPoints = position;
   if (spacing !== null) attributes.characterSpacingTwips = spacing;
+  if (hasKerning) {
+    attributes.kerningThresholdHalfPoints = kerningThreshold;
+  }
   return editor
     .chain()
     .setTextSelection(selection)
     .setMark('textStyle', attributes)
+    .removeEmptyTextStyle()
     .focus()
     .scrollIntoView()
     .run();
@@ -292,6 +360,14 @@ function addSpacingValue(
 ): void {
   const spacing = normalizeDocumentCharacterSpacingTwips(value);
   values.set(spacing === null ? 'inherited' : String(spacing), spacing);
+}
+
+function addKerningValue(
+  values: Map<string, number | null>,
+  value: unknown,
+): void {
+  const threshold = normalizeDocumentKerningThresholdHalfPoints(value);
+  values.set(threshold === null ? 'inherited' : String(threshold), threshold);
 }
 
 function characterSpacingTwipsFromDraft(
@@ -337,6 +413,23 @@ function characterPositionHalfPointsFromDraft(
   return normalizeDocumentCharacterPositionHalfPoints(
     draft.characterPositionMode === 'lowered' ? -magnitude : magnitude,
   );
+}
+
+function kerningThresholdHalfPointsFromDraft(
+  draft: DocumentFontDialogDraft,
+): number | null {
+  if (!draft.kerningEnabled) return null;
+  const points = Number(draft.kerningThresholdPoints);
+  const halfPoints = points * 2;
+  if (
+    !Number.isFinite(points) ||
+    points < 0 ||
+    points > DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS / 2 ||
+    !Number.isSafeInteger(halfPoints)
+  ) {
+    return null;
+  }
+  return normalizeDocumentKerningThresholdHalfPoints(halfPoints);
 }
 
 function selectedValue(values: Map<string, number | null>): {

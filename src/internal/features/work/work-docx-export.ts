@@ -9,6 +9,7 @@ import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
 import { documentCharacterScalePercentFromElement } from './work-document-character-scale';
 import { documentCharacterPositionHalfPointsFromElement } from './work-document-character-position';
 import { documentCharacterSpacingTwipsFromElement } from './work-document-character-spacing';
+import { documentKerningThresholdHalfPointsFromElement } from './work-document-kerning';
 import { normalizeDocumentHref } from './work-document-links';
 import {
   collectDocumentNotes,
@@ -43,6 +44,10 @@ import {
   docxCharacterSpacingValue,
   patchDocxExplicitZeroCharacterSpacing,
 } from './work-docx-character-spacing';
+import {
+  docxKerningThresholdValue,
+  patchDocxExplicitZeroKerningThresholds,
+} from './work-docx-kerning';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import {
   DocxEquationPatchCollector,
@@ -162,6 +167,7 @@ interface DocxNoteContext extends DocxListExportContext {
   formattingChangePatches: DocxRunFormattingChangePatchCollector;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
   hasExplicitZeroCharacterSpacing: boolean;
+  hasExplicitZeroKerningThreshold: boolean;
 }
 
 interface DocxTextRevision {
@@ -222,6 +228,7 @@ export async function createDocxBlob(
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
     hasExplicitZeroCharacterSpacing: false,
+    hasExplicitZeroKerningThreshold: false,
   };
   const commentRecords = createDocxCommentRecords(
     commentThreads,
@@ -290,8 +297,11 @@ export async function createDocxBlob(
   const characterSpacingPatched = noteContext.hasExplicitZeroCharacterSpacing
     ? await patchDocxExplicitZeroCharacterSpacing(await packed.arrayBuffer())
     : await packed.arrayBuffer();
+  const kerningPatched = noteContext.hasExplicitZeroKerningThreshold
+    ? await patchDocxExplicitZeroKerningThresholds(characterSpacingPatched)
+    : characterSpacingPatched;
   const formattingChangesPatched = await patchDocxRunFormattingChanges(
-    characterSpacingPatched,
+    kerningPatched,
     noteContext.formattingChangePatches.patches,
   );
   const noteImageRelationshipsPatched = await patchDocxNoteImageRelationships(
@@ -756,10 +766,15 @@ async function inlineRuns(
       documentCharacterSpacingTwipsFromElement(node);
     const explicitCharacterScale =
       documentCharacterScalePercentFromElement(node);
+    const explicitKerningThreshold =
+      documentKerningThresholdHalfPointsFromElement(node);
     const explicitCharacterPosition =
       documentCharacterPositionHalfPointsFromElement(node);
     if (explicitCharacterSpacing === 0) {
       noteContext.hasExplicitZeroCharacterSpacing = true;
+    }
+    if (explicitKerningThreshold === 0) {
+      noteContext.hasExplicitZeroKerningThreshold = true;
     }
     const characterSpacing =
       explicitCharacterSpacing === null
@@ -769,6 +784,10 @@ async function inlineRuns(
       explicitCharacterScale === null
         ? inherited.scale
         : docxCharacterScaleValue(explicitCharacterScale);
+    const kern =
+      explicitKerningThreshold === null
+        ? inherited.kern
+        : docxKerningThresholdValue(explicitKerningThreshold);
     const position =
       explicitCharacterPosition === null
         ? inherited.position
@@ -795,6 +814,7 @@ async function inlineRuns(
       size: cssFontSize(node.style.fontSize) ?? inherited.size,
       characterSpacing,
       scale,
+      kern,
       position,
       shading: themeFillMarker ? { fill: themeFillMarker } : resolvedShading,
       snapToGrid:
