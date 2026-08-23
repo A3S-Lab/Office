@@ -1,6 +1,7 @@
 import { Extension, type Editor } from '@tiptap/core';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
+import { normalizeDocumentCharacterScalePercent } from './work-document-character-scale';
 import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-character-position';
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
 import {
@@ -12,6 +13,7 @@ import {
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     documentCharacterFormatting: {
+      setDocumentCharacterScale: (characterScalePercent: number) => ReturnType;
       toggleDocumentSubscript: () => ReturnType;
       toggleDocumentSuperscript: () => ReturnType;
       setDocumentCharacterSpacing: (
@@ -33,6 +35,18 @@ export const DocumentCharacterFormatting = Extension.create({
 
   addCommands() {
     return {
+      setDocumentCharacterScale:
+        (characterScalePercent: number) =>
+        ({ commands }) => {
+          const scale = normalizeDocumentCharacterScalePercent(
+            characterScalePercent,
+          );
+          return scale === null
+            ? false
+            : commands.setMark('textStyle', {
+                characterScalePercent: scale,
+              });
+        },
       setDocumentCharacterPosition:
         (characterPositionHalfPoints: number) =>
         ({ commands }) => {

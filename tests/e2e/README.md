@@ -116,6 +116,13 @@ bun run test:e2e:writer-character-spacing:check
 bun run test:e2e:writer-character-spacing
 ```
 
+The Writer native character-scale workflow has a focused local gate:
+
+```bash
+bun run test:e2e:writer-character-scale:check
+bun run test:e2e:writer-character-scale
+```
+
 The Writer native character-position workflow has a focused local gate:
 
 ```bash
@@ -512,6 +519,12 @@ accessibility and clean browser diagnostics. Desktop and compact Playwright
 cover the live preview and responsive controls on the same public path. The
 A3S Test suite remains local-only and is not referenced by GitHub Actions or
 Pages.
+The Writer native character-scale workflow authors an exact `1..600` integer
+percentage through the same accessible dialog, combines scale, spacing, and
+position in one transaction, verifies the live preview and native DOM metadata,
+then proves selection focus and one-step Undo. The focused A3S Test suite also
+captures accessibility, console, and page-error evidence locally; it is not
+referenced by GitHub Actions or Pages.
 The native Spreadsheet collaboration workflow applies the Rust CLI's real Yjs
 updates to an initialized browser workbook, verifies the visible A2 value and
 formula change, then covers sparse cell creation and exact deletion with

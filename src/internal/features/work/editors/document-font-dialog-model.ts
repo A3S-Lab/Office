@@ -1,5 +1,11 @@
 import type { Editor } from '@tiptap/core';
 import {
+  DOCUMENT_CHARACTER_SCALE_DEFAULT_PERCENT,
+  DOCUMENT_CHARACTER_SCALE_MAX_PERCENT,
+  DOCUMENT_CHARACTER_SCALE_MIN_PERCENT,
+  normalizeDocumentCharacterScalePercent,
+} from '../work-document-character-scale';
+import {
   DOCUMENT_CHARACTER_POSITION_MAX_HALF_POINTS,
   documentCharacterPositionPoints,
   normalizeDocumentCharacterPositionHalfPoints,
@@ -22,7 +28,13 @@ export type DocumentCharacterPositionMode =
   | 'normal'
   | 'raised';
 
+export type DocumentCharacterScaleMode = 'mixed' | 'value';
+
 export interface DocumentFontDialogSource {
+  characterScale: {
+    mixed: boolean;
+    value: number | null;
+  };
   characterPosition: {
     mixed: boolean;
     value: number | null;
@@ -38,6 +50,8 @@ export interface DocumentFontDialogSource {
 }
 
 export interface DocumentFontDialogDraft {
+  characterScaleMode: DocumentCharacterScaleMode;
+  characterScalePercent: string;
   characterPositionMode: DocumentCharacterPositionMode;
   characterPositionPoints: string;
   characterSpacingMode: DocumentCharacterSpacingMode;
@@ -45,6 +59,7 @@ export interface DocumentFontDialogDraft {
 }
 
 export interface DocumentFontDialogPatch {
+  characterScalePercent?: number;
   characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
 }
@@ -53,9 +68,11 @@ export function documentFontDialogSource(
   editor: Editor,
 ): DocumentFontDialogSource {
   const { doc, selection } = editor.state;
+  const scaleValues = new Map<string, number | null>();
   const positionValues = new Map<string, number | null>();
   const spacingValues = new Map<string, number | null>();
   const addValues = (attributes: Record<string, unknown>) => {
+    addScaleValue(scaleValues, attributes.characterScalePercent);
     addPositionValue(positionValues, attributes.characterPositionHalfPoints);
     addSpacingValue(spacingValues, attributes.characterSpacingTwips);
   };
@@ -76,9 +93,10 @@ export function documentFontDialogSource(
       addValues(textStyle?.attrs ?? {});
     });
   }
-  if (!spacingValues.size || !positionValues.size) {
+  if (!scaleValues.size || !spacingValues.size || !positionValues.size) {
     addValues(editor.getAttributes('textStyle'));
   }
+  const characterScale = selectedValue(scaleValues);
   const characterPosition = selectedValue(positionValues);
   const characterSpacing = selectedValue(spacingValues);
   const textStyle = editor.getAttributes('textStyle');
@@ -89,6 +107,7 @@ export function documentFontDialogSource(
         .replace(/\s+/g, ' ')
         .trim();
   return {
+    characterScale,
     characterPosition,
     characterSpacing,
     fontFamily:
@@ -107,6 +126,7 @@ export function documentFontDialogSource(
 export function createDocumentFontDialogDraft(
   source: DocumentFontDialogSource,
 ): DocumentFontDialogDraft {
+  const scale = source.characterScale.value;
   const spacing = source.characterSpacing.value;
   const spacingPoints = Math.abs(documentCharacterSpacingPoints(spacing) ?? 1);
   const position = source.characterPosition.value;
@@ -114,6 +134,10 @@ export function createDocumentFontDialogDraft(
     documentCharacterPositionPoints(position) ?? 1,
   );
   return {
+    characterScaleMode: source.characterScale.mixed ? 'mixed' : 'value',
+    characterScalePercent: source.characterScale.mixed
+      ? ''
+      : String(scale ?? DOCUMENT_CHARACTER_SCALE_DEFAULT_PERCENT),
     characterPositionMode: source.characterPosition.mixed
       ? 'mixed'
       : position !== null && position < 0
@@ -137,6 +161,12 @@ export function documentFontDialogDraftError(
   draft: DocumentFontDialogDraft,
 ): string | null {
   if (
+    draft.characterScaleMode !== 'mixed' &&
+    characterScalePercentFromDraft(draft) === null
+  ) {
+    return `请输入 ${DOCUMENT_CHARACTER_SCALE_MIN_PERCENT} 至 ${DOCUMENT_CHARACTER_SCALE_MAX_PERCENT} 的整数缩放比例。`;
+  }
+  if (
     draft.characterSpacingMode !== 'mixed' &&
     draft.characterSpacingMode !== 'normal' &&
     characterSpacingTwipsFromDraft(draft) === null
@@ -156,10 +186,20 @@ export function documentFontDialogDraftError(
 export function documentFontDialogPatch(
   source: DocumentFontDialogSource,
   draft: DocumentFontDialogDraft,
+  characterScaleTouched: boolean,
   characterSpacingTouched: boolean,
   characterPositionTouched: boolean,
 ): DocumentFontDialogPatch {
   const patch: DocumentFontDialogPatch = {};
+  if (characterScaleTouched && draft.characterScaleMode !== 'mixed') {
+    const scale = characterScalePercentFromDraft(draft);
+    if (
+      scale !== null &&
+      (source.characterScale.mixed || source.characterScale.value !== scale)
+    ) {
+      patch.characterScalePercent = scale;
+    }
+  }
   if (characterSpacingTouched && draft.characterSpacingMode !== 'mixed') {
     const spacing = characterSpacingTwipsFromDraft(draft);
     if (
@@ -188,8 +228,12 @@ export function applyDocumentFontDialogPatch(
   selection: { from: number; to: number },
   patch: DocumentFontDialogPatch,
 ): boolean {
+  const hasScale = patch.characterScalePercent !== undefined;
   const hasPosition = patch.characterPositionHalfPoints !== undefined;
   const hasSpacing = patch.characterSpacingTwips !== undefined;
+  const scale = hasScale
+    ? normalizeDocumentCharacterScalePercent(patch.characterScalePercent)
+    : null;
   const position = hasPosition
     ? normalizeDocumentCharacterPositionHalfPoints(
         patch.characterPositionHalfPoints,
@@ -201,7 +245,8 @@ export function applyDocumentFontDialogPatch(
   const maximum = editor.state.doc.content.size;
   if (
     editor.isDestroyed ||
-    (!hasPosition && !hasSpacing) ||
+    (!hasScale && !hasPosition && !hasSpacing) ||
+    (hasScale && scale === null) ||
     (hasPosition && position === null) ||
     (hasSpacing && spacing === null) ||
     !Number.isSafeInteger(selection.from) ||
@@ -213,6 +258,7 @@ export function applyDocumentFontDialogPatch(
     return false;
   }
   const attributes: Record<string, number> = {};
+  if (scale !== null) attributes.characterScalePercent = scale;
   if (position !== null) attributes.characterPositionHalfPoints = position;
   if (spacing !== null) attributes.characterSpacingTwips = spacing;
   return editor
@@ -222,6 +268,14 @@ export function applyDocumentFontDialogPatch(
     .focus()
     .scrollIntoView()
     .run();
+}
+
+function addScaleValue(
+  values: Map<string, number | null>,
+  value: unknown,
+): void {
+  const scale = normalizeDocumentCharacterScalePercent(value);
+  values.set(scale === null ? 'inherited' : String(scale), scale);
 }
 
 function addPositionValue(
@@ -255,6 +309,13 @@ function characterSpacingTwipsFromDraft(
   return normalizeDocumentCharacterSpacingTwips(
     draft.characterSpacingMode === 'condensed' ? -magnitude : magnitude,
   );
+}
+
+function characterScalePercentFromDraft(
+  draft: DocumentFontDialogDraft,
+): number | null {
+  if (draft.characterScaleMode === 'mixed') return null;
+  return normalizeDocumentCharacterScalePercent(draft.characterScalePercent);
 }
 
 function characterPositionHalfPointsFromDraft(

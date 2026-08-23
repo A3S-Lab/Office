@@ -3,6 +3,11 @@ import {
   documentEquationFromElement,
 } from './work-document-equations';
 import {
+  DOCUMENT_CHARACTER_SCALE_ATTRIBUTE,
+  documentCharacterScaleDomAttributes,
+  documentCharacterScalePercentFromElement,
+} from './work-document-character-scale';
+import {
   DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
   documentCharacterPositionDomAttributes,
   documentCharacterPositionHalfPointsFromElement,
@@ -416,6 +421,10 @@ function sanitizeAttributes(element: Element, tag: string) {
       : null;
   const characterSpacing =
     tag === 'span' ? documentCharacterSpacingTwipsFromElement(element) : null;
+  const characterScale =
+    tag === 'span' ? documentCharacterScalePercentFromElement(element) : null;
+  const characterScaleAttributes =
+    documentCharacterScaleDomAttributes(characterScale);
   const characterPosition =
     tag === 'span'
       ? documentCharacterPositionHalfPointsFromElement(element)
@@ -450,12 +459,14 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_STRIKE_STYLE_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_CHARACTER_SCALE_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_CHARACTER_POSITION_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_CHARACTER_SPACING_ATTRIBUTE);
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
     color ? `color: ${color}` : '',
     textCase ? documentTextCaseCss(textCase) : '',
+    characterScaleAttributes.style ?? '',
     characterPositionAttributes.style ?? '',
     characterSpacingAttributes.style ?? '',
     underlineAttributes.style ?? '',
@@ -511,6 +522,12 @@ function sanitizeAttributes(element: Element, tag: string) {
       String(characterSpacing),
     );
   }
+  if (tag === 'span' && characterScale !== null) {
+    element.setAttribute(
+      DOCUMENT_CHARACTER_SCALE_ATTRIBUTE,
+      String(characterScale),
+    );
+  }
   if (tag === 'span' && characterPosition !== null) {
     element.setAttribute(
       DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
@@ -557,6 +574,7 @@ function sanitizeAttributes(element: Element, tag: string) {
                     ...(tag === 'span'
                       ? [
                           DOCUMENT_TEXT_CASE_ATTRIBUTE,
+                          DOCUMENT_CHARACTER_SCALE_ATTRIBUTE,
                           DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
                           DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
                         ]

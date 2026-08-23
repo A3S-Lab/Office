@@ -29,7 +29,7 @@ test('Writer authors native character position through the font dialog', async (
   await page.getByRole('option', { name: '提升' }).click();
   await dialog.getByRole('textbox', { name: '位置值（磅）' }).fill('2');
   await expect(
-    dialog.getByLabel('字符间距和位置预览').locator('output > span'),
+    dialog.getByLabel('字符高级格式预览').locator('output > span'),
   ).toHaveAttribute('style', /vertical-align:\s*2pt/);
   await page.screenshot({
     path: testInfo.outputPath('writer-character-position-dialog.png'),

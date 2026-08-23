@@ -185,6 +185,28 @@ describe('document mixed-run text layout', () => {
     }
   });
 
+  test('keeps non-default character scale on browser measurement', () => {
+    for (const fontStretch of ['80%', '125%']) {
+      const paragraph = document.createElement('p');
+      applyTextMetrics(paragraph, 14, 21);
+      paragraph.innerHTML = `<span style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; font-stretch: ${fontStretch}">Scaled text</span>`;
+      document.body.append(paragraph);
+
+      try {
+        expect(
+          collectDocumentTextLayoutRuns(
+            paragraph,
+            paragraph.textContent ?? '',
+            [layoutFont],
+            new Set([layoutFont.id]),
+          ),
+        ).toBeNull();
+      } finally {
+        paragraph.remove();
+      }
+    }
+  });
+
   test('keeps case-transforming runs on the browser measurement path', () => {
     const effects = [
       'text-transform: uppercase',

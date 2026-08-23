@@ -1,5 +1,6 @@
 import type { Mark, MarkType, Schema } from '@tiptap/pm/model';
 import type { Transaction } from '@tiptap/pm/state';
+import { normalizeDocumentCharacterScalePercent } from './work-document-character-scale';
 import { normalizeDocumentCharacterPositionHalfPoints } from './work-document-character-position';
 import { normalizeDocumentCharacterSpacingTwips } from './work-document-character-spacing';
 import {
@@ -62,6 +63,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
   subscript: new Set(),
   superscript: new Set(),
   textStyle: new Set([
+    'characterScalePercent',
     'characterPositionHalfPoints',
     'characterSpacingTwips',
     'color',
@@ -164,6 +166,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   subscript?: boolean;
   superscript?: boolean;
   fontFamily?: string;
+  characterScalePercent?: number;
   characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
   wordLineHeightFactor?: number;
@@ -198,6 +201,7 @@ export function importedDocumentCharacterFormatting(formatting: {
     });
   }
   const textStyle = compactAttributes({
+    characterScalePercent: formatting.characterScalePercent,
     characterPositionHalfPoints: formatting.characterPositionHalfPoints,
     characterSpacingTwips: formatting.characterSpacingTwips,
     color: formatting.color,
@@ -245,6 +249,12 @@ function normalizeCharacterFormatMark(
       const position = normalizeDocumentCharacterPositionHalfPoints(candidate);
       if (position === null) return null;
       attrs[key] = position;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'characterScalePercent') {
+      const scale = normalizeDocumentCharacterScalePercent(candidate);
+      if (scale === null) return null;
+      attrs[key] = scale;
       continue;
     }
     if (typeof candidate === 'string') {

@@ -175,14 +175,38 @@ inside `w:rPrChange` retain the exact signed value. The DOM stores
 without rewriting text. Eligible paragraphs remain on the Worker/WASM layout
 path because the kernel applies the same linear advance adjustment.
 
+## Native horizontal character scale
+
+Writer stores horizontal character scale as one native `w:w` integer from 1%
+through 600%. A missing property still inherits, an explicit 100% remains a
+direct reset, and an empty `<w:w/>` uses the native 100% default. Strict and
+transitional WordprocessingML use the same bounded integer model; malformed,
+fractional, duplicated, child-bearing, out-of-range, or namespace-spoofed
+properties fail closed.
+
+`Cmd/Ctrl+D` or the Home ribbon opens **Advanced Font Settings**, where the
+Scale field accepts the exact integer range. Scale, spacing, and baseline
+position track mixed selections independently. Editing any combination and
+choosing Apply restores the captured selection and creates one transaction and
+one Undo record. Character scale has no separate standard shortcut, so Writer
+does not claim one.
+
+Body text, headers, footers, Format Painter, tracked formatting, reject
+restoration, DOCX import/export/reopen, and old formatting inside `w:rPrChange`
+all retain the exact value. The DOM stores
+`data-office-character-scale-percent` and projects it through CSS
+`font-stretch`. Non-100% runs deliberately use browser line measurement until
+the Worker/WASM text-layout protocol carries exact horizontal run scaling;
+other eligible paragraphs remain on the deterministic kernel path.
+
 ## Native character baseline position
 
 The same **Advanced Font Settings** dialog stores Normal, Raised, or Lowered
 text as one signed native `w:position` value from -3,168 through 3,168
 half-points. One half-point equals 0.5 point, so the numeric field accepts an
-exact 0.5–1,584 point magnitude. Position and spacing track mixed selections
-independently; changing both and choosing Apply still creates one transaction
-and one Undo record.
+exact 0.5–1,584 point magnitude. Scale, position, and spacing track mixed
+selections independently; changing all three and choosing Apply still creates
+one transaction and one Undo record.
 
 Body text, headers, footers, Format Painter, tracked character formatting, and
 prior values inside `w:rPrChange` share the same TipTap attribute. Explicit
@@ -234,7 +258,7 @@ for the complete browser/backend contract and the current native CLI/MCP limit.
 With tracked changes enabled, applying direct character formatting to existing
 text creates one `formatting` revision. The bounded model covers bold, italic,
 underline, strike, subscript, superscript, font family, font size, text color,
-highlight, character spacing, baseline position, all-caps and small-caps
+highlight, character scale, spacing, baseline position, all-caps and small-caps
 effects, and Word grid state. Formatting applied to text that is still a
 pending insertion remains part of that insertion
 instead of creating a nested revision.

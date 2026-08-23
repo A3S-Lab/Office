@@ -72,6 +72,30 @@ test('retains only normalized character position in page chrome', () => {
   expect(invalid).not.toContain('--work-document-character-position');
 });
 
+test('retains only normalized character scale in page chrome', () => {
+  const normalized = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-character-scale-percent="80" style="font-stretch: 125%" data-untrusted="drop">Header</span></p>',
+  );
+  expect(normalized).toContain('data-office-character-scale-percent="80"');
+  expect(normalized).toContain('font-stretch: 80%');
+  expect(normalized).not.toContain('125%');
+  expect(normalized).not.toContain('data-untrusted');
+
+  const explicitDefault = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-character-scale-percent="100">Header</span></p>',
+  );
+  expect(explicitDefault).toContain(
+    'data-office-character-scale-percent="100"',
+  );
+  expect(explicitDefault).toContain('font-stretch: 100%');
+
+  const invalid = sanitizeDocumentPageChromeHtml(
+    '<p><span data-office-character-scale-percent="601" style="font-stretch: 80%">Header</span></p>',
+  );
+  expect(invalid).not.toContain('data-office-character-scale');
+  expect(invalid).not.toContain('font-stretch');
+});
+
 test('keeps native page-chrome identities through edits', () => {
   const editor = new Editor({
     extensions: createDocumentPageChromeEditorExtensions(),

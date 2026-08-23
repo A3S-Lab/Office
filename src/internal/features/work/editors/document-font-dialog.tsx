@@ -47,6 +47,7 @@ export function DocumentFontDialog({
   const [draft, setDraft] = useState(() =>
     createDocumentFontDialogDraft(source),
   );
+  const [characterScaleTouched, setCharacterScaleTouched] = useState(false);
   const [characterSpacingTouched, setCharacterSpacingTouched] = useState(false);
   const [characterPositionTouched, setCharacterPositionTouched] =
     useState(false);
@@ -55,10 +56,12 @@ export function DocumentFontDialog({
   const patch = documentFontDialogPatch(
     source,
     draft,
+    characterScaleTouched,
     characterSpacingTouched,
     characterPositionTouched,
   );
   const hasChanges = Object.keys(patch).length > 0;
+  const previewScale = previewCharacterScale(draft);
   const previewSpacing = previewCharacterSpacing(draft);
   const previewPosition = previewCharacterPosition(draft);
 
@@ -93,7 +96,32 @@ export function DocumentFontDialog({
     >
       <form id={formId} onSubmit={submit}>
         <fieldset className="work-document-font-dialog-spacing">
-          <legend>字符间距与位置</legend>
+          <legend>字符缩放、间距与位置</legend>
+          <div className="work-document-font-dialog-field">
+            <span>缩放</span>
+            <span className="work-document-font-dialog-measure">
+              <OfficeNumberField
+                ariaLabel="字符缩放比例（%）"
+                value={draft.characterScalePercent}
+                min={1}
+                max={600}
+                step={1}
+                placeholder={
+                  draft.characterScaleMode === 'mixed' ? '混合' : undefined
+                }
+                validationInvalid={Boolean(error)}
+                onValueChange={(characterScalePercent) => {
+                  setDraft((current) => ({
+                    ...current,
+                    characterScaleMode: 'value',
+                    characterScalePercent,
+                  }));
+                  setCharacterScaleTouched(true);
+                }}
+              />
+              <span aria-hidden="true">%</span>
+            </span>
+          </div>
           <div className="work-document-font-dialog-field">
             <span>间距</span>
             <OfficeSelect
@@ -175,6 +203,11 @@ export function DocumentFontDialog({
               <span aria-hidden="true">磅</span>
             </span>
           </div>
+          {source.characterScale.mixed && !characterScaleTouched && (
+            <p className="work-document-font-dialog-mixed" role="status">
+              当前选区包含多种字符缩放比例。输入缩放比例后才会统一修改。
+            </p>
+          )}
           {source.characterSpacing.mixed && !characterSpacingTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
               当前选区包含多种字符间距。选择一种间距后才会统一修改。
@@ -185,21 +218,25 @@ export function DocumentFontDialog({
               当前选区包含多种字符位置。选择一种位置后才会统一修改。
             </p>
           )}
-          {(characterSpacingTouched || characterPositionTouched) && error && (
-            <p className="work-document-font-dialog-error" role="alert">
-              {error}
-            </p>
-          )}
+          {(characterScaleTouched ||
+            characterSpacingTouched ||
+            characterPositionTouched) &&
+            error && (
+              <p className="work-document-font-dialog-error" role="alert">
+                {error}
+              </p>
+            )}
         </fieldset>
         <section
           className="work-document-font-dialog-preview"
-          aria-label="字符间距和位置预览"
+          aria-label="字符高级格式预览"
         >
           <span>预览</span>
           <output
             style={{
               fontFamily: source.fontFamily ?? undefined,
               fontSize: source.fontSize ?? undefined,
+              fontStretch: `${previewScale}%`,
               letterSpacing: `${previewSpacing}pt`,
             }}
           >
@@ -211,6 +248,14 @@ export function DocumentFontDialog({
       </form>
     </Dialog>
   );
+}
+
+function previewCharacterScale(
+  draft: ReturnType<typeof createDocumentFontDialogDraft>,
+): number {
+  if (draft.characterScaleMode === 'mixed') return 100;
+  const percent = Number(draft.characterScalePercent);
+  return Number.isFinite(percent) ? percent : 100;
 }
 
 function previewCharacterPosition(
@@ -243,6 +288,6 @@ function previewCharacterSpacing(
 
 function fontDialogDescription(source: DocumentFontDialogSource): string {
   return source.selectedCharacters
-    ? `精确设置当前选中内容的原生字符间距和位置（${source.selectedCharacters} 个字符）。`
-    : '设置当前位置后续输入文字的原生字符间距和位置。';
+    ? `精确设置当前选中内容的原生字符缩放、间距和位置（${source.selectedCharacters} 个字符）。`
+    : '设置当前位置后续输入文字的原生字符缩放、间距和位置。';
 }

@@ -192,6 +192,14 @@ a phase exits only when its evidence is complete.
   selection safety, `Cmd/Ctrl+D`, body/header/footer parity, Format Painter,
   formatting revisions, one-step Undo, strict-namespace import, exact DOCX
   export/reopen, and Worker/WASM layout eligibility as permanent gates.
+- Treat native character horizontal scaling as a completed typography slice:
+  retain exact `w:w` integers from 1 through 600 percent, empty-element 100
+  percent defaults, explicit 100 percent resets, independent mixed-selection
+  safety in the shared `Cmd/Ctrl+D` dialog, body/header/footer parity, Format
+  Painter, formatting revisions, one-step Undo with spacing and position,
+  strict/transitional namespace and malformed-input rejection, exact DOCX
+  export/reopen, and browser-authoritative measurement for non-default scale as
+  permanent gates. Do not invent a dedicated shortcut.
 - Treat native character baseline position as a completed typography slice:
   retain signed `w:position` values from -3,168 through 3,168 half-points,
   explicit zero, mixed-selection safety, the shared `Cmd/Ctrl+D` dialog,

@@ -332,11 +332,20 @@ exact selection restoration, live preview, validation, and one-step Undo.
 Format Painter, formatting revisions, body/header/footer import, export, and
 reopen retain the native value. CSS remains a paint projection while the same
 advance adjustment stays eligible for Worker/WASM layout.
+Writer horizontal character scale now uses one native `w:w` integer from 1%
+through 600%. Missing values inherit, explicit 100% remains a direct reset, and
+an empty element resolves to the native 100% default. The shared advanced font
+dialog tracks scale, spacing, and position independently and commits any
+combination through one transaction and one Undo record. Body and page chrome,
+Format Painter, formatting revisions, strict/transitional DOCX import, export,
+and reopen retain the exact value. CSS projects `font-stretch`; non-default
+scale stays on browser-authoritative measurement until the Worker/WASM protocol
+can carry exact per-run horizontal scaling. No dedicated shortcut is invented.
 Writer character baseline position now uses one signed `w:position` value from
 -3,168 to 3,168 half-points, including explicit zero. The same advanced font
-dialog exposes Normal, Raised, and Lowered modes while tracking mixed spacing
-and position independently; changing both still produces one transaction and
-one Undo record. Body and page chrome, Format Painter, formatting revisions,
+dialog exposes Normal, Raised, and Lowered modes while tracking mixed scale,
+spacing, and position independently; changing all three still produces one
+transaction and one Undo record. Body and page chrome, Format Painter, formatting revisions,
 strict/transitional DOCX import, export, and reopen retain the exact value.
 CSS projects the offset with numeric `vertical-align`, gives native subscript
 or superscript precedence when both properties coexist, and deliberately keeps

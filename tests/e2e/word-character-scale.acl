@@ -1,8 +1,8 @@
-suite "office-word-character-position" {
+suite "office-word-character-scale" {
     version = 1
 
-    scenario "author-native-character-position" {
-        name = "Author native Writer character position from the font dialog"
+    scenario "author-native-character-scale" {
+        name = "Author native Writer character scale with advanced formatting"
         surface = "web"
         timeout_ms = 120000
 
@@ -44,8 +44,13 @@ suite "office-word-character-position" {
             key = "Control+d"
         }
 
-        expect "font-dialog-visible" {
+        wait "font-dialog-visible" {
             visible = css(".work-document-font-dialog[role='dialog']")
+        }
+
+        fill "set-character-scale" {
+            target = css(".work-document-font-dialog [aria-label='字符缩放比例（%）']")
+            value = "80"
         }
 
         click "open-character-spacing-modes" {
@@ -74,42 +79,42 @@ suite "office-word-character-position" {
             value = "1.5"
         }
 
-        expect "live-position-preview" {
-            visible = css(".work-document-font-dialog [aria-label='字符高级格式预览'] output > span[style*='vertical-align: 1.5pt']")
+        expect "live-advanced-preview" {
+            visible = css(".work-document-font-dialog [aria-label='字符高级格式预览'] output[style*='font-stretch: 80%'] > span[style*='vertical-align: 1.5pt']")
         }
 
         click "apply-character-formatting" {
             target = role("button", "应用")
         }
 
-        expect "native-position-and-spacing-applied" {
-            visible = css(".work-document-editable .ProseMirror h1 span[data-office-character-position-half-points='3'][data-office-character-spacing-twips='40'][style*='--work-document-character-position: 1.5pt'][style*='letter-spacing: 2pt']")
+        expect "native-scale-spacing-and-position-applied" {
+            visible = css(".work-document-editable .ProseMirror h1 span[data-office-character-scale-percent='80'][data-office-character-position-half-points='3'][data-office-character-spacing-twips='40'][style*='font-stretch: 80%'][style*='--work-document-character-position: 1.5pt'][style*='letter-spacing: 2pt']")
         }
 
         expect "editor-focus-restored" {
             visible = css(".work-document-editable .ProseMirror:focus")
         }
 
-        press "undo-both-character-properties" {
+        press "undo-all-character-properties" {
             key = "Control+z"
         }
 
         expect "single-step-undo-restored-title" {
-            visible = css(".work-document-editable .ProseMirror h1:not(:has(span[data-office-character-position-half-points], span[data-office-character-spacing-twips]))")
+            visible = css(".work-document-editable .ProseMirror h1:not(:has(span[data-office-character-scale-percent], span[data-office-character-position-half-points], span[data-office-character-spacing-twips]))")
         }
 
-        accessibility "character-position-accessibility" {
-            path = "evidence/character-position-accessibility.json"
+        accessibility "character-scale-accessibility" {
+            path = "evidence/character-scale-accessibility.json"
             interactive = true
         }
 
-        console "character-position-console" {
-            path = "diagnostics/character-position-console.json"
+        console "character-scale-console" {
+            path = "diagnostics/character-scale-console.json"
             clear = false
         }
 
-        page_errors "character-position-page-errors" {
-            path = "diagnostics/character-position-page-errors.json"
+        page_errors "character-scale-page-errors" {
+            path = "diagnostics/character-scale-page-errors.json"
             clear = false
         }
     }

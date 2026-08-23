@@ -1,6 +1,8 @@
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
+import { documentCharacterScaleDomAttributes } from './work-document-character-scale';
 import { documentCharacterPositionDomAttributes } from './work-document-character-position';
 import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
+import { docxCharacterScalePercentFromProperties } from './work-docx-character-scale';
 import { docxCharacterPositionHalfPointsFromProperties } from './work-docx-character-position';
 import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
 import { documentParagraphBordersDomAttributes } from './work-document-paragraph-borders';
@@ -419,6 +421,14 @@ async function runHtml(
   );
   if (verticalAlign === 'superscript') content = `<sup>${content}</sup>`;
   if (verticalAlign === 'subscript') content = `<sub>${content}</sub>`;
+  const characterScale = docxCharacterScalePercentFromProperties(
+    properties ?? run,
+  );
+  if (characterScale !== undefined) {
+    content = `<span${htmlAttributes(
+      documentCharacterScaleDomAttributes(characterScale),
+    )}>${content}</span>`;
+  }
   const characterPosition = docxCharacterPositionHalfPointsFromProperties(
     properties ?? run,
   );

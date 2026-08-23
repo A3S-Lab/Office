@@ -4,6 +4,20 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added native Writer horizontal character scaling as an exact `w:w` integer
+  from 1% through 600%. Missing values still inherit, explicit 100% remains a
+  direct reset, and an empty `<w:w/>` imports as the native 100% default.
+  Body text, headers, footers, styles, Format Painter, tracked formatting,
+  reject restoration, DOCX export/reopen, and `w:rPrChange` retain the value.
+- Extended the shared `Cmd/Ctrl+D` advanced font dialog with an exact Scale
+  field, independent mixed-selection state, validation and live `font-stretch`
+  preview. Scale, spacing, and baseline position commit through one TipTap
+  transaction and one Undo record; no dedicated character-scale shortcut is
+  claimed.
+- Added fail-closed namespace, duplicate, child-content, malformed, fractional,
+  and range coverage, browser-measurement fallback evidence, responsive
+  Playwright coverage, and a local-only A3S Test 1.0.0 ACL. GitHub Actions and
+  Pages do not install or invoke A3S Test.
 - Added native Writer character baseline position as a signed `w:position`
   value with explicit zero, exact strict measures, inherited style resolution,
   and body/header/footer DOCX import, export, and reopen. Numeric CSS
