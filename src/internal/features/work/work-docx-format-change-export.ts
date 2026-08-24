@@ -22,6 +22,10 @@ import { parseDocumentScriptFonts } from './work-document-script-fonts';
 import { parseDocxThemeReference } from './work-docx-theme-reference';
 import { parseDocumentRunBorder } from './work-document-run-border';
 import { parseDocumentRunShading } from './work-document-run-shading';
+import {
+  normalizeDocumentNoProof,
+  parseDocumentProofingLanguages,
+} from './work-document-proofing';
 import { setDocxRunShadingAttributes } from './work-docx-run-shading-export';
 import {
   documentHighlightForCssColor,
@@ -319,6 +323,13 @@ function appendFormattingProperties(
     prefix,
     byType.get('textStyle'),
   );
+  appendNoProofProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
   appendSnapToGridProperty(
     document,
     properties,
@@ -412,6 +423,66 @@ function appendFormattingProperties(
     prefix,
     byType.get('textStyle'),
   );
+  appendProofingLanguagesProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
+}
+
+function appendNoProofProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const noProof = normalizeDocumentNoProof(mark?.attrs?.noProof);
+  if (noProof === null) return;
+  if (noProof) {
+    properties.append(wordElement(document, namespace, prefix, 'noProof'));
+  } else {
+    appendValuedProperty(
+      document,
+      properties,
+      namespace,
+      prefix,
+      'noProof',
+      '0',
+    );
+  }
+}
+
+function appendProofingLanguagesProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const languages = parseDocumentProofingLanguages(
+    mark?.attrs?.proofingLanguages,
+  );
+  if (!languages) return;
+  const element = wordElement(document, namespace, prefix, 'lang');
+  if (languages.latin) {
+    setWordAttribute(element, namespace, prefix, 'val', languages.latin);
+  }
+  if (languages.eastAsia) {
+    setWordAttribute(
+      element,
+      namespace,
+      prefix,
+      'eastAsia',
+      languages.eastAsia,
+    );
+  }
+  if (languages.bidi) {
+    setWordAttribute(element, namespace, prefix, 'bidi', languages.bidi);
+  }
+  properties.append(element);
 }
 
 function appendRunBorderProperty(

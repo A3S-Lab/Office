@@ -429,6 +429,19 @@ geometry, so eligible content remains on Worker/WASM layout. Focused Rstest and
 the public **字符底纹** Playground template cover the semantic authoring and
 round-trip path; browser ACL coverage remains local-only and is never added to
 Actions or Pages.
+Writer proofing languages now retain independent native `w:lang` Latin,
+East Asian, and bidi slots plus explicit `w:noProof` true or false state.
+Document defaults, inherited styles, every editable Word story, formatting
+revisions, strict/transitional import, diagnostics, exact export, and reopen
+share the closed model. Review and page-chrome editing use one accessible
+mixed-safe dialog with bounded BCP 47 input, per-slot Follow style, exact focus
+restoration, one transaction, and one Undo record. Canonical DOM language and
+proofing attributes remain separate from the browser-wide spellcheck switch;
+validated effective language tags also reach Worker/WASM RustyBuzz shaping.
+Focused Rstest, desktop/compact Playwright, and the local-only A3S Test gate
+cover the public **校对语言** Playground template without adding A3S Test to
+Actions or Pages. Bundled dictionaries, grammar, and translation remain a
+host/provider boundary.
 Writer character baseline position now uses one signed `w:position` value from
 -3,168 to 3,168 half-points, including explicit zero. The same advanced font
 dialog exposes Normal, Raised, and Lowered modes while tracking mixed scale,

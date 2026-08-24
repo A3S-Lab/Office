@@ -37,6 +37,7 @@ import {
   documentRunBorderIsVisible,
   parseDocumentRunBorder,
 } from './work-document-run-border';
+import { normalizeDocumentLanguageTag } from './work-document-proofing';
 
 const MAX_DOCUMENT_TEXT_LAYOUT_PARAGRAPHS = 16_384;
 const MAX_DOCUMENT_TEXT_LAYOUT_RUNS = 16_384;
@@ -323,6 +324,7 @@ interface DocumentTextLayoutRunStyle {
   fallbackFontIds?: string[];
   fontSize: number;
   lineHeight: number;
+  language?: string;
   letterSpacing: number;
   ligatures: boolean;
   kerning: boolean;
@@ -522,6 +524,8 @@ function documentTextLayoutRunStyle(
       ? 0
       : finitePixels(style.letterSpacing);
   if (letterSpacing < -100 || letterSpacing > 100) return null;
+  const language = documentTextLayoutLanguage(element);
+  if (language === null) return null;
   return {
     fontId: font.id,
     ...(fallbackFonts.length
@@ -529,6 +533,7 @@ function documentTextLayoutRunStyle(
       : {}),
     fontSize,
     lineHeight,
+    ...(language ? { language } : {}),
     letterSpacing,
     ligatures,
     kerning,
@@ -604,7 +609,11 @@ function documentTextLayoutRunStyleKey(
     Partial<
       Pick<
         OfficeKernelTextLayoutRun,
-        'fallbackFontIds' | 'kerning' | 'letterSpacing' | 'ligatures'
+        | 'fallbackFontIds'
+        | 'kerning'
+        | 'language'
+        | 'letterSpacing'
+        | 'ligatures'
       >
     >,
 ): string {
@@ -613,10 +622,27 @@ function documentTextLayoutRunStyleKey(
     (style.fallbackFontIds ?? []).join('\u0002'),
     style.fontSize,
     style.lineHeight,
+    style.language ?? '',
     style.letterSpacing ?? 0,
     style.ligatures ?? true,
     style.kerning ?? true,
   ].join('\u0000');
+}
+
+function documentTextLayoutLanguage(
+  element: HTMLElement,
+): string | null | undefined {
+  for (
+    let current: HTMLElement | null = element;
+    current;
+    current = current.parentElement
+  ) {
+    if (!current.hasAttribute('lang')) continue;
+    const source = current.getAttribute('lang') ?? '';
+    if (!source) return undefined;
+    return normalizeDocumentLanguageTag(source);
+  }
+  return undefined;
 }
 
 function cssValueIs(value: string, ...supported: string[]): boolean {

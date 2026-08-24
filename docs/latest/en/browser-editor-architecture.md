@@ -737,6 +737,24 @@ Export allocates a collision-checked temporary fill only on generated text
 runs, patches it to the exact `w:shd` attributes across editable stories, and
 then writes exact prior values into `w:rPrChange`.
 
+Native proofing metadata follows a separate semantic TextStyle path. A closed
+`w:lang` model retains Latin `w:val`, East Asian `w:eastAsia`, and bidi `w:bidi` slots
+plus explicit `w:noProof` true or false state across style resolution and every
+editable story. The canonical DOM mark uses bounded JSON in
+`data-office-proofing-languages` and an explicit Boolean in
+`data-office-no-proof`; derived `lang` and `spellcheck` attributes are display
+and browser-proofing projections, not replacement source state. Duplicate,
+misplaced, nested, text-bearing, extra-attribute, namespace-spoofed, invalid-tag,
+or invalid on/off leaves fail closed and emit compatibility diagnostics.
+
+The text-layout collector resolves the effective inherited `lang` for each DOM
+run, validates the same bounded tag grammar, and includes it in the run-style
+coalescing key. The optional protocol field is backward compatible: missing
+language keeps existing shaping, while a valid value is validated again in
+Rust and set on the RustyBuzz `UnicodeBuffer` before segment-property guessing
+and shaping. This makes language-sensitive glyph selection deterministic
+without coupling pagination to a browser dictionary or host grammar service.
+
 Tables, images, code blocks, and other complex content use explicit
 format-specific measurement. Top-level tables are row flows; eligible rows can
 additionally expose synchronized direct-cell block fragments. Ordered and bullet

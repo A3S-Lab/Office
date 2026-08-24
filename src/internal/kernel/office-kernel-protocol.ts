@@ -198,6 +198,7 @@ export interface OfficeKernelTextLayoutRun {
   fallbackFontIds?: string[];
   fontSize: number;
   lineHeight: number;
+  language?: string;
   letterSpacing?: number;
   ligatures?: boolean;
   kerning?: boolean;

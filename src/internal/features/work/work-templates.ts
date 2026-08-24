@@ -17,6 +17,8 @@ import {
   type DocumentRunShading,
   documentRunShadingDomAttributes,
 } from './work-document-run-shading';
+import { documentProofingDomAttributes } from './work-document-proofing';
+import type { WorkDocumentScriptFontSlot } from './work-document-script-fonts';
 
 export const WORK_TEMPLATES: WorkTemplate[] = [
   {
@@ -53,6 +55,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     name: '字符底纹',
     description: '原生图案、前景色、背景色与显式重置',
     accent: '#70ad47',
+  },
+  {
+    id: 'proofing-languages',
+    kind: 'document',
+    name: '校对语言',
+    description: '拉丁、东亚、双向文字与校对排除',
+    accent: '#2f6fed',
   },
   {
     id: 'blank-markdown',
@@ -122,6 +131,7 @@ function initialTitle(templateId: string, kind: WorkArtifactKind): string {
     'text-effects': '文字效果示例',
     'run-borders': '字符边框示例',
     'run-shading': '字符底纹示例',
+    'proofing-languages': '校对语言示例',
     'quarterly-plan': '季度执行计划',
     'strategy-deck': '业务策略汇报',
   };
@@ -202,6 +212,28 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
       ].join(''),
     };
   }
+  if (templateId === 'proofing-languages') {
+    const languages = {
+      latin: 'en-US',
+      eastAsia: 'zh-CN',
+      bidi: 'ar-SA',
+    } as const;
+    return {
+      type: 'document',
+      pageSize: 'a4',
+      html: [
+        '<h1>原生校对语言</h1>',
+        '<p>在“审阅”选项卡中打开“设置校对语言”，可以独立编辑拉丁、东亚和双向文字语言，并决定文字是否参与拼写与语法检查。</p>',
+        '<h2>按文字系统设置</h2>',
+        `<p>${proofingLanguageTemplateSpan(languages, false, 'ascii', 'English proofing language')}</p>`,
+        `<p>${proofingLanguageTemplateSpan(languages, false, 'eastAsia', '简体中文校对语言')}</p>`,
+        `<p dir="rtl">${proofingLanguageTemplateSpan(languages, false, 'complexScript', 'لغة التدقيق العربية')}</p>`,
+        '<h2>校对行为</h2>',
+        `<p>${proofingLanguageTemplateSpan({ latin: 'en-GB' }, false, 'ascii', 'This text participates in proofing.')}</p>`,
+        `<p>${proofingLanguageTemplateSpan({ latin: 'x-none' }, true, 'ascii', 'A3S-API-v2: this product identifier is excluded from proofing.')}</p>`,
+      ].join(''),
+    };
+  }
   if (templateId === 'quarterly-plan') {
     return { type: 'spreadsheet', sheets: quarterlyPlanSheets() };
   }
@@ -238,6 +270,18 @@ function runShadingTemplateSpan(
 ): string {
   const attributes = documentRunShadingDomAttributes(shading);
   return `<span ${DOCUMENT_RUN_SHADING_ATTRIBUTE}='${attributes[DOCUMENT_RUN_SHADING_ATTRIBUTE]}' style="${attributes.style}">${text}</span>`;
+}
+
+function proofingLanguageTemplateSpan(
+  languages: Record<string, string>,
+  noProof: boolean,
+  slot: WorkDocumentScriptFontSlot,
+  text: string,
+): string {
+  const attributes = documentProofingDomAttributes(languages, noProof, slot);
+  return `<span ${Object.entries(attributes)
+    .map(([name, value]) => `${name}='${value}'`)
+    .join(' ')}>${text}</span>`;
 }
 
 function blankSheet(): Sheet {

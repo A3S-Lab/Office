@@ -4,6 +4,20 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added native Writer proofing languages with independent Latin `w:val`, East
+  Asian `w:eastAsia`, and bidi `w:bidi` slots plus explicit `w:noProof` true or
+  false state. Document defaults, inherited styles, body text, page chrome,
+  notes, formatting revisions, strict/transitional DOCX import, exact export,
+  and reopen share one bounded model and fail-closed compatibility diagnostics.
+- Added an accessible **设置校对语言** dialog to Review and page-chrome editing.
+  Mixed selections preserve untouched slots, each language supports Follow
+  style or a validated BCP 47 tag, proofing inclusion/exclusion remains
+  independent, and Apply produces one transaction and one Undo record.
+- Added the public Playground **校对语言** template and passed effective
+  language tags through Worker text-layout runs into validated Rust/WASM
+  RustyBuzz shaping buffers. Browser spellcheck remains a browser/host
+  capability; this change does not claim bundled dictionaries or grammar.
+
 ## 0.29.0 - 2026-08-24
 
 - Added native Writer character borders as one typed `w:bdr` model with all 25

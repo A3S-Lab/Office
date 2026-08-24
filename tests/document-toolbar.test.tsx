@@ -278,6 +278,42 @@ test('wires every References, Review, and View action without silent buttons', (
   expect(calls.zoomFits).toEqual(['page', 'width']);
 });
 
+test('opens the proofing-language dialog from Review and applies one native formatting transaction', async () => {
+  editor = createEditor();
+  render(toolbar(editor, createCalls()));
+  const selection = textRange(editor, 'Toolbar text');
+  editor.commands.setTextSelection(selection);
+
+  fireEvent.click(screen.getByRole('tab', { name: '审阅' }));
+  fireEvent.click(screen.getByRole('button', { name: '设置校对语言' }));
+  const dialog = await screen.findByRole('dialog', {
+    name: '设置校对语言',
+  });
+  fireEvent.change(
+    within(dialog).getByRole('combobox', { name: '拉丁文字校对语言' }),
+    { target: { value: 'en-US' } },
+  );
+  fireEvent.click(within(dialog).getByRole('combobox', { name: '校对行为' }));
+  fireEvent.click(screen.getByRole('option', { name: '不检查拼写或语法' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: '应用' }));
+
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '设置校对语言' })).toBeNull(),
+  );
+  editor.commands.setTextSelection(selection);
+  expect(editor.getAttributes('textStyle')).toMatchObject({
+    noProof: true,
+    proofingLanguages: '{"latin":"en-US"}',
+  });
+  expect(editor.view.dom).toHaveFocus();
+
+  expect(editor.commands.undo()).toBe(true);
+  editor.commands.setTextSelection(selection);
+  expect(editor.getAttributes('textStyle').proofingLanguages).toBeUndefined();
+  expect(editor.getAttributes('textStyle').noProof).toBeUndefined();
+  expect(editor.commands.undo()).toBe(false);
+});
+
 test('navigates, accepts, and rejects tracked changes from the Review ribbon', () => {
   editor = createEditorWithChanges();
   const changes = collectDocumentChanges(editor.state.doc);
@@ -494,7 +530,9 @@ test('routes the advanced font shortcut to the active page-chrome editor', async
   root.className = 'work-document-editor';
   root.append(editor.view.dom, pageChromeEditor.view.dom);
   document.body.append(root);
-  render(toolbar(editor, createCalls(), 100, false, pageChromeEditor));
+  const view = render(
+    toolbar(editor, createCalls(), 100, false, pageChromeEditor),
+  );
   pageChromeEditor.commands.setTextSelection(
     textRange(pageChromeEditor, 'Header spacing'),
   );
@@ -517,6 +555,49 @@ test('routes the advanced font shortcut to the active page-chrome editor', async
   expect(
     pageChromeEditor.getAttributes('textStyle').characterSpacingTwips,
   ).toBe(-15);
+  view.unmount();
+  pageChromeEditor.destroy();
+});
+
+test('uses the same proofing-language contract in the active page-chrome editor', async () => {
+  editor = createEditor();
+  const pageChromeEditor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: '<p>Header language</p>',
+  });
+  const root = document.createElement('section');
+  root.className = 'work-document-editor';
+  root.append(editor.view.dom, pageChromeEditor.view.dom);
+  document.body.append(root);
+  const view = render(
+    toolbar(editor, createCalls(), 100, false, pageChromeEditor),
+  );
+  const selection = textRange(pageChromeEditor, 'Header language');
+  pageChromeEditor.commands.setTextSelection(selection);
+
+  fireEvent.click(
+    await screen.findByRole('button', { name: '页眉页脚校对语言' }),
+  );
+  const dialog = await screen.findByRole('dialog', {
+    name: '设置校对语言',
+  });
+  fireEvent.change(
+    within(dialog).getByRole('combobox', { name: '东亚文字校对语言' }),
+    { target: { value: 'zh-CN' } },
+  );
+  fireEvent.click(within(dialog).getByRole('button', { name: '应用' }));
+
+  await waitFor(() =>
+    expect(pageChromeEditor.getHTML()).toContain(
+      'data-office-proofing-languages',
+    ),
+  );
+  pageChromeEditor.commands.setTextSelection(selection);
+  expect(pageChromeEditor.getAttributes('textStyle').proofingLanguages).toBe(
+    '{"eastAsia":"zh-CN"}',
+  );
+  expect(pageChromeEditor.commands.undo()).toBe(true);
+  view.unmount();
   pageChromeEditor.destroy();
 });
 

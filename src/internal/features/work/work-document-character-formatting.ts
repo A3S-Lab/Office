@@ -30,6 +30,12 @@ import {
   normalizeDocumentRunShading,
   serializeDocumentRunShading,
 } from './work-document-run-shading';
+import {
+  normalizeDocumentNoProof,
+  normalizeDocumentProofingLanguages,
+  serializeDocumentProofingLanguages,
+  type WorkDocumentProofingLanguages,
+} from './work-document-proofing';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -63,6 +69,12 @@ declare module '@tiptap/core' {
       toggleDocumentRunBorder: () => ReturnType;
       setDocumentRunShading: (shading: DocumentRunShading) => ReturnType;
       unsetDocumentRunShading: () => ReturnType;
+      setDocumentProofingLanguages: (
+        languages: WorkDocumentProofingLanguages,
+      ) => ReturnType;
+      unsetDocumentProofingLanguages: () => ReturnType;
+      setDocumentNoProof: (noProof: boolean) => ReturnType;
+      unsetDocumentNoProof: () => ReturnType;
     };
   }
 }
@@ -229,6 +241,40 @@ export const DocumentCharacterFormatting = Extension.create({
         ({ chain }) =>
           chain()
             .setMark('textStyle', { runShading: null })
+            .removeEmptyTextStyle()
+            .run(),
+      setDocumentProofingLanguages:
+        (languages: WorkDocumentProofingLanguages) =>
+        ({ commands }) => {
+          const serialized = serializeDocumentProofingLanguages(
+            normalizeDocumentProofingLanguages(languages),
+          );
+          return serialized
+            ? commands.setMark('textStyle', {
+                proofingLanguages: serialized,
+              })
+            : false;
+        },
+      unsetDocumentProofingLanguages:
+        () =>
+        ({ chain }) =>
+          chain()
+            .setMark('textStyle', { proofingLanguages: null })
+            .removeEmptyTextStyle()
+            .run(),
+      setDocumentNoProof:
+        (noProof: boolean) =>
+        ({ commands }) => {
+          const normalized = normalizeDocumentNoProof(noProof);
+          return normalized === null
+            ? false
+            : commands.setMark('textStyle', { noProof: normalized });
+        },
+      unsetDocumentNoProof:
+        () =>
+        ({ chain }) =>
+          chain()
+            .setMark('textStyle', { noProof: null })
             .removeEmptyTextStyle()
             .run(),
     };

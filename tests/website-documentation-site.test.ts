@@ -146,6 +146,69 @@ test('keeps the five-editor README capability comparison complete', async () => 
   ).toHaveLength(5);
 });
 
+test('publishes native Writer proofing languages in README, docs, roadmap, and Playground guidance', async () => {
+  const [
+    readme,
+    changelog,
+    roadmap,
+    english,
+    chinese,
+    englishRoadmap,
+    chineseRoadmap,
+    englishArchitecture,
+    chineseArchitecture,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/browser-editor-architecture.md'),
+      'utf8',
+    ),
+  ]);
+
+  expect(readme).toContain('Native Writer proofing languages');
+  expect(readme).toContain('data-office-proofing-languages');
+  expect(readme).toContain("Playground's **校对语言** template");
+  expect(changelog).toContain('**设置校对语言**');
+  expect(changelog).toContain('RustyBuzz');
+  expect(roadmap).toContain('independent native `w:lang`');
+  expect(english).toContain('## Native proofing languages');
+  expect(chinese).toContain('## 原生校对语言');
+  for (const document of [
+    english,
+    chinese,
+    englishRoadmap,
+    chineseRoadmap,
+    englishArchitecture,
+    chineseArchitecture,
+  ]) {
+    expect(document).toContain('`w:lang`');
+    expect(document).toContain('`w:noProof`');
+    expect(document).toContain('RustyBuzz');
+  }
+});
+
 test('documents the complete native Writer underline contract', async () => {
   const [readme, roadmap, product, english, chinese] = await Promise.all([
     readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),

@@ -50,6 +50,12 @@ import {
   normalizeDocumentHighlight,
   type WorkDocumentHighlight,
 } from './work-document-highlight';
+import {
+  normalizeDocumentNoProof,
+  parseDocumentProofingLanguages,
+  serializeDocumentProofingLanguages,
+  type WorkDocumentProofingLanguages,
+} from './work-document-proofing';
 
 export const DOCUMENT_CHARACTER_FORMAT_MARKS = [
   'bold',
@@ -108,6 +114,8 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'legacyTextImprint',
     'runBorder',
     'runShading',
+    'proofingLanguages',
+    'noProof',
     'scriptFonts',
     'scriptFontSlot',
     'themeColor',
@@ -221,6 +229,8 @@ export function importedDocumentCharacterFormatting(formatting: {
   legacyTextImprint?: boolean;
   runBorder?: string;
   runShading?: string;
+  proofingLanguages?: WorkDocumentProofingLanguages;
+  noProof?: boolean;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
   fontSize?: number;
@@ -266,6 +276,10 @@ export function importedDocumentCharacterFormatting(formatting: {
     legacyTextImprint: formatting.legacyTextImprint,
     runBorder: formatting.runBorder,
     runShading: formatting.runShading,
+    proofingLanguages:
+      serializeDocumentProofingLanguages(formatting.proofingLanguages) ??
+      undefined,
+    noProof: formatting.noProof,
     color: formatting.color,
     fontFamily: formatting.fontFamily,
     scriptFonts:
@@ -386,6 +400,20 @@ function normalizeCharacterFormatMark(
       );
       if (!shading) return null;
       attrs[key] = shading;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'proofingLanguages') {
+      const languages = serializeDocumentProofingLanguages(
+        parseDocumentProofingLanguages(candidate),
+      );
+      if (!languages) return null;
+      attrs[key] = languages;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'noProof') {
+      const noProof = normalizeDocumentNoProof(candidate);
+      if (noProof === null) return null;
+      attrs[key] = noProof;
       continue;
     }
     if (type === 'highlight' && key === 'nativeHighlight') {

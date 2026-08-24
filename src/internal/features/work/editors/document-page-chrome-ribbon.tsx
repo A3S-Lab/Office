@@ -9,6 +9,7 @@ import {
   Image as ImageIcon,
   Italic,
   Link2,
+  Languages,
   PanelBottom,
   PanelTop,
   Redo2,
@@ -50,6 +51,7 @@ export function DocumentPageChromeRibbon({
   onEditingPartChange,
   onTogglePageNumber,
   onOpenFontDialog,
+  onOpenProofingDialog,
   onClose,
 }: {
   editor: Editor;
@@ -58,6 +60,7 @@ export function DocumentPageChromeRibbon({
   onEditingPartChange: (part: DocumentPageChromeEditingPart) => void;
   onTogglePageNumber: () => void;
   onOpenFontDialog?: () => void;
+  onOpenProofingDialog?: () => void;
   onClose: () => void;
 }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -230,6 +233,14 @@ export function DocumentPageChromeRibbon({
             editor.chain().focus().setColor(color).run()
           }
         />
+        {onOpenProofingDialog && (
+          <PageChromeRibbonButton
+            label="页眉页脚校对语言"
+            onClick={onOpenProofingDialog}
+          >
+            <Languages size={16} />
+          </PageChromeRibbonButton>
+        )}
       </WorkOfficeRibbonGroup>
       <WorkOfficeRibbonGroup label="对齐">
         {(['left', 'center', 'right', 'justify'] as const).map((alignment) => (

@@ -93,6 +93,11 @@ import {
   documentHighlightFromDocxValue,
   type WorkDocumentHighlight,
 } from './work-document-highlight';
+import {
+  documentProofingDomAttributes,
+  type WorkDocumentProofingLanguages,
+} from './work-document-proofing';
+import { resolveDocxProofing } from './work-docx-proofing';
 
 export interface ImportedDocxRunFormatting {
   bold?: boolean;
@@ -125,6 +130,8 @@ export interface ImportedDocxRunFormatting {
   textCase?: WorkDocumentTextCase;
   runBorder?: DocumentRunBorder;
   runShading?: DocumentRunShading;
+  proofingLanguages?: WorkDocumentProofingLanguages;
+  noProof?: boolean;
 }
 
 export interface ImportedDocxRunFormattingMarker {
@@ -167,6 +174,7 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'shadow',
   'emboss',
   'imprint',
+  'noProof',
   'caps',
   'smallCaps',
   'vanish',
@@ -184,6 +192,7 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'cs',
   'rtl',
   'em',
+  'lang',
   'vertAlign',
   'bdr',
 ]);
@@ -381,6 +390,7 @@ function resolvedRunFormatting(
   const legacyTextEffects = resolveDocxLegacyTextEffects(propertySources);
   const runBorder = resolveDocxRunBorder(propertySources, theme).border;
   const runShading = resolveDocxRunShading(propertySources, theme).shading;
+  const proofing = resolveDocxProofing(propertySources);
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
@@ -569,6 +579,8 @@ function resolvedRunFormatting(
     ...(textCase ? { textCase } : {}),
     ...(runBorder ? { runBorder } : {}),
     ...(runShading ? { runShading } : {}),
+    ...(proofing.languages ? { proofingLanguages: proofing.languages } : {}),
+    ...(proofing.noProof !== undefined ? { noProof: proofing.noProof } : {}),
   };
 }
 
@@ -689,6 +701,20 @@ function formattingMarkup(
     )) {
       if (name === 'style') span.style.cssText += `; ${value}`;
       else span.setAttribute(name, value);
+    }
+  }
+  if (
+    formatting.proofingLanguages !== undefined ||
+    formatting.noProof !== undefined
+  ) {
+    for (const [name, value] of Object.entries(
+      documentProofingDomAttributes(
+        formatting.proofingLanguages,
+        formatting.noProof,
+        formatting.scriptFontSlot,
+      ),
+    )) {
+      span.setAttribute(name, value);
     }
   }
   const legacyTextEffects: WorkDocumentLegacyTextEffects = {

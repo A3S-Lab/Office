@@ -706,6 +706,7 @@ function textLayoutRequest(): OfficeKernelTextLayoutRequest {
             fontId: 'noto-sans-hans-regular',
             fontSize: 14,
             lineHeight: 21,
+            language: 'zh-CN',
             letterSpacing: 0,
             ligatures: false,
             kerning: true,

@@ -1,0 +1,202 @@
+suite "office-word-proofing-languages" {
+    version = 1
+
+    scenario "author-native-proofing-languages" {
+        name = "Author independent Writer proofing languages and undo"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-proofing-language-template" {
+            target = role("button", "校对语言 拉丁、东亚、双向文字与校对排除")
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "three-native-language-slots-visible" {
+            visible = css(".work-document-editable span[data-office-proofing-languages*='en-US'][data-office-proofing-languages*='zh-CN'][data-office-proofing-languages*='ar-SA']")
+        }
+
+        expect "proofing-exclusion-visible" {
+            visible = css(".work-document-editable span[data-office-no-proof='true'][spellcheck='false']")
+        }
+
+        click "focus-latin-sample" {
+            target = css(".work-document-editable span[data-office-proofing-languages*='en-US'][lang='en-US']")
+        }
+
+        press "move-to-sample-start" {
+            key = "Home"
+        }
+
+        press "select-sample" {
+            key = "Shift+End"
+        }
+
+        expect "sample-selection-visible" {
+            visible = css(".work-document-selection-toolbar[role='toolbar']")
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-proofing-language-dialog" {
+            target = role("button", "设置校对语言")
+        }
+
+        wait "proofing-dialog-visible" {
+            visible = css(".work-document-proofing-dialog[role='dialog']")
+        }
+
+        expect "three-language-controls-visible" {
+            visible = css(".work-document-proofing-dialog [aria-label='拉丁文字校对语言'][value='en-US']")
+        }
+
+        expect "east-asian-language-visible" {
+            visible = css(".work-document-proofing-dialog [aria-label='东亚文字校对语言'][value='zh-CN']")
+        }
+
+        expect "bidi-language-visible" {
+            visible = css(".work-document-proofing-dialog [aria-label='双向文字校对语言'][value='ar-SA']")
+        }
+
+        fill "change-latin-language" {
+            target = css("#work-document-proofing-latin")
+            value = "fr-FR"
+        }
+
+        click "open-proofing-behavior" {
+            target = role("combobox", "校对行为")
+        }
+
+        click "exclude-from-proofing" {
+            target = role("option", "不检查拼写或语法")
+        }
+
+        click "apply-proofing-languages" {
+            target = role("button", "应用")
+        }
+
+        expect "native-proofing-state-applied" {
+            visible = css(".work-document-editable span[data-office-proofing-languages*='fr-FR'][data-office-proofing-languages*='zh-CN'][data-office-proofing-languages*='ar-SA'][data-office-no-proof='true'][lang='fr-FR'][spellcheck='false']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-proofing-transaction" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restores-proofing-state" {
+            visible = css(".work-document-editable span[data-office-proofing-languages*='en-US'][data-office-proofing-languages*='zh-CN'][data-office-proofing-languages*='ar-SA'][data-office-no-proof='false'][lang='en-US']")
+        }
+
+        accessibility "proofing-language-accessibility" {
+            path = "evidence/proofing-language-accessibility.json"
+            interactive = true
+        }
+
+        console "proofing-language-console" {
+            path = "diagnostics/proofing-language-console.json"
+            clear = false
+        }
+
+        page_errors "proofing-language-page-errors" {
+            path = "diagnostics/proofing-language-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "open-proofing-languages-on-phone" {
+        name = "Open the Writer proofing-language dialog on a phone viewport"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-proofing-language-template" {
+            target = role("button", "校对语言 拉丁、东亚、双向文字与校对排除")
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        click "focus-latin-sample" {
+            target = css(".work-document-editable span[data-office-proofing-languages*='en-US'][lang='en-US']")
+        }
+
+        press "move-to-sample-start" {
+            key = "Home"
+        }
+
+        press "select-sample" {
+            key = "Shift+End"
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-proofing-language-dialog" {
+            target = role("button", "设置校对语言")
+        }
+
+        wait "responsive-dialog-visible" {
+            visible = css(".work-document-proofing-dialog[role='dialog']")
+        }
+
+        expect "phone-language-fields-visible" {
+            visible = css(".work-document-proofing-dialog [aria-label='双向文字校对语言'][value='ar-SA']")
+        }
+
+        expect "phone-proofing-behavior-visible" {
+            visible = css(".work-document-proofing-dialog [role='combobox'][aria-label='校对行为']")
+        }
+
+        accessibility "phone-proofing-language-accessibility" {
+            path = "evidence/phone-proofing-language-accessibility.json"
+            interactive = true
+        }
+
+        console "phone-proofing-language-console" {
+            path = "diagnostics/phone-proofing-language-console.json"
+            clear = false
+        }
+
+        page_errors "phone-proofing-language-page-errors" {
+            path = "diagnostics/phone-proofing-language-page-errors.json"
+            clear = false
+        }
+    }
+}

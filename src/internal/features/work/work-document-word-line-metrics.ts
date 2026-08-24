@@ -80,6 +80,14 @@ import {
   serializeDocumentScriptFonts,
   type WorkDocumentScriptFontSlot,
 } from './work-document-script-fonts';
+import {
+  DOCUMENT_NO_PROOF_ATTRIBUTE,
+  DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE,
+  documentProofingDomAttributes,
+  normalizeDocumentNoProof,
+  parseDocumentProofingLanguages,
+  serializeDocumentProofingLanguages,
+} from './work-document-proofing';
 
 export const DOCUMENT_WORD_DEFAULT_SINGLE_LINE_HEIGHT = 1.15;
 
@@ -114,6 +122,8 @@ declare module '@tiptap/extension-text-style' {
     legacyTextImprint?: boolean | null;
     runBorder?: string | null;
     runShading?: string | null;
+    proofingLanguages?: string | null;
+    noProof?: boolean | null;
     kerningThresholdHalfPoints?: number | null;
     scriptFonts?: string | null;
     scriptFontSlot?: WorkDocumentScriptFontSlot | null;
@@ -167,6 +177,14 @@ export const DocumentTextStyle = TextStyle.extend({
       },
       {
         tag: `span[${DOCUMENT_RUN_SHADING_ATTRIBUTE}]`,
+        consuming: false,
+      },
+      {
+        tag: `span[${DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE}]`,
+        consuming: false,
+      },
+      {
+        tag: `span[${DOCUMENT_NO_PROOF_ATTRIBUTE}]`,
         consuming: false,
       },
     ];
@@ -272,6 +290,34 @@ export const DocumentTextStyle = TextStyle.extend({
         renderHTML: (attributes: Record<string, unknown>) =>
           documentRunShadingDomAttributes(
             parseDocumentRunShading(attributes.runShading),
+          ),
+      },
+      proofingLanguages: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          serializeDocumentProofingLanguages(
+            parseDocumentProofingLanguages(
+              element.getAttribute(DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE),
+            ),
+          ) ?? null,
+        renderHTML: (attributes: Record<string, unknown>) =>
+          documentProofingDomAttributes(
+            parseDocumentProofingLanguages(attributes.proofingLanguages),
+            attributes.noProof,
+            normalizeDocumentScriptFontSlot(attributes.scriptFontSlot),
+          ),
+      },
+      noProof: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentNoProof(
+            element.getAttribute(DOCUMENT_NO_PROOF_ATTRIBUTE),
+          ),
+        renderHTML: (attributes: Record<string, unknown>) =>
+          documentProofingDomAttributes(
+            parseDocumentProofingLanguages(attributes.proofingLanguages),
+            attributes.noProof,
+            normalizeDocumentScriptFontSlot(attributes.scriptFontSlot),
           ),
       },
       kerningThresholdHalfPoints: {

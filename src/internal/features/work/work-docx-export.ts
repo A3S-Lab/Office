@@ -155,6 +155,13 @@ import {
   documentScriptFontSlotFromElement,
 } from './work-document-script-fonts';
 import {
+  DOCUMENT_NO_PROOF_ATTRIBUTE,
+  DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE,
+  documentNoProofFromElement,
+  documentProofingLanguagesFromElement,
+} from './work-document-proofing';
+import { documentProofingLanguageDocxOptions } from './work-docx-proofing';
+import {
   DocxRunFontsPatchCollector,
   patchDocxRunFonts,
 } from './work-docx-run-fonts-export';
@@ -990,6 +997,23 @@ async function inlineRuns(
       documentKerningThresholdHalfPointsFromElement(node);
     const explicitEmphasisMark = documentEmphasisMarkFromElement(node);
     const explicitHiddenText = documentHiddenTextFromElement(node);
+    const hasExplicitProofingLanguages =
+      tag === 'span' &&
+      node.hasAttribute(DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE);
+    const explicitProofingLanguages = hasExplicitProofingLanguages
+      ? documentProofingLanguagesFromElement(node)
+      : null;
+    if (hasExplicitProofingLanguages && !explicitProofingLanguages) {
+      throw new Error('Document contains invalid proofing languages.');
+    }
+    const hasExplicitNoProof =
+      tag === 'span' && node.hasAttribute(DOCUMENT_NO_PROOF_ATTRIBUTE);
+    const explicitNoProof = hasExplicitNoProof
+      ? documentNoProofFromElement(node)
+      : null;
+    if (hasExplicitNoProof && explicitNoProof === null) {
+      throw new Error('Document contains invalid proofing state.');
+    }
     const hasExplicitLegacyTextEffects =
       tag === 'span' &&
       [
@@ -1093,6 +1117,12 @@ async function inlineRuns(
           noteContext.runBorderPatches,
         ).border
       : inherited.border;
+    const language = hasExplicitProofingLanguages
+      ? documentProofingLanguageDocxOptions(explicitProofingLanguages)
+      : inherited.language;
+    const noProof = hasExplicitNoProof
+      ? (explicitNoProof ?? false)
+      : inherited.noProof;
     const style: IRunOptions = {
       ...inherited,
       style: nativeTextEffectStyle,
@@ -1112,6 +1142,8 @@ async function inlineRuns(
       kern,
       position,
       emphasisMark,
+      language,
+      noProof,
       border: runBorder,
       shading: themeFillMarker ? { fill: themeFillMarker } : resolvedShading,
       highlight: hasHighlightSemantics

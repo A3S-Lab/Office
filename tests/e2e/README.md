@@ -183,6 +183,22 @@ and the suite captures accessibility plus empty console/page-error evidence.
 A3S Test remains a pinned local release gate and is not installed or invoked by
 GitHub Actions or Pages.
 
+The Writer native proofing-language workflow has a focused local gate:
+
+```bash
+bun run test:e2e:writer-proofing-languages:check
+bun run test:e2e:writer-proofing-languages
+```
+
+It opens the public **校对语言** Playground template, verifies independent
+Latin, East Asian, and bidi language slots plus explicit proofing exclusion,
+authors a mixed-safe language and proofing-state patch from Review, restores
+editor focus, and proves one-step Undo. A second scenario keeps the same dialog
+semantically usable at 390 px. The suite captures accessibility and empty
+console/page-error diagnostics through the pinned local A3S Test gate; GitHub
+Actions and Pages use the corresponding desktop and 390 px Playwright flow and
+never install or invoke A3S Test.
+
 The Writer native character-scale workflow has a focused local gate:
 
 ```bash

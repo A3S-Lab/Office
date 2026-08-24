@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use rustybuzz::ttf_parser::Tag;
-use rustybuzz::{shape, Direction, Face, Feature, UnicodeBuffer};
+use rustybuzz::{shape, Direction, Face, Feature, Language, UnicodeBuffer};
 use serde::{Deserialize, Serialize};
 use unicode_bidi::{BidiInfo, Level};
 use unicode_linebreak::{linebreaks, BreakOpportunity};
@@ -18,6 +18,7 @@ use validation::{validate_identifier, validate_text_layout_request};
 use validation::{validate_text_layout_runs, validate_text_tab_layout};
 
 const MAX_FONT_ID_BYTES: usize = 128;
+const MAX_LANGUAGE_TAG_BYTES: usize = 85;
 const MAX_PARAGRAPH_ID_BYTES: usize = 256;
 const MAX_TEXT_LAYOUT_PARAGRAPHS: usize = 1_024;
 const MAX_TEXT_LAYOUT_RUNS: usize = 16_384;
@@ -86,6 +87,8 @@ pub struct TextLayoutRun {
     pub font_id: String,
     #[serde(default)]
     pub fallback_font_ids: Vec<String>,
+    #[serde(default)]
+    pub language: Option<String>,
     pub font_size: f64,
     pub line_height: f64,
     #[serde(default)]
@@ -743,13 +746,7 @@ fn shape_run(
             missing_glyph_count: 0,
         };
     }
-    let mut buffer = UnicodeBuffer::new();
-    buffer.push_str(text);
-    match direction {
-        TextDirection::Auto => buffer.guess_segment_properties(),
-        TextDirection::Ltr => buffer.set_direction(Direction::LeftToRight),
-        TextDirection::Rtl => buffer.set_direction(Direction::RightToLeft),
-    }
+    let buffer = text_shape_buffer(run, direction, text);
     let mut features = Vec::new();
     if !run.ligatures {
         features.extend(
@@ -785,6 +782,24 @@ fn shape_run(
         fallback_glyph_count: 0,
         missing_glyph_count,
     }
+}
+
+fn text_shape_buffer(run: &TextLayoutRun, direction: TextDirection, text: &str) -> UnicodeBuffer {
+    let mut buffer = UnicodeBuffer::new();
+    buffer.push_str(text);
+    if let Some(language) = run
+        .language
+        .as_deref()
+        .and_then(|value| value.parse::<Language>().ok())
+    {
+        buffer.set_language(language);
+    }
+    match direction {
+        TextDirection::Auto => buffer.guess_segment_properties(),
+        TextDirection::Ltr => buffer.set_direction(Direction::LeftToRight),
+        TextDirection::Rtl => buffer.set_direction(Direction::RightToLeft),
+    }
+    buffer
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

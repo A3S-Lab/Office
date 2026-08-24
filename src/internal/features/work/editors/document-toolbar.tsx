@@ -15,6 +15,7 @@ import {
   Image as ImageIcon,
   Link2,
   ListChecks,
+  Languages,
   MessageSquarePlus,
   MessagesSquare,
   PanelBottomOpen,
@@ -60,6 +61,12 @@ import {
   getDocumentCommandDefinition,
 } from './document-command-catalog';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
+import { DocumentProofingDialog } from './document-proofing-dialog';
+import {
+  applyDocumentProofingDialogPatch,
+  documentProofingDialogSource,
+  type DocumentProofingDialogSource,
+} from './document-proofing-dialog-model';
 import { DocumentHomeRibbon } from './document-home-ribbon';
 import { DocumentFontDialog } from './document-font-dialog';
 import {
@@ -104,6 +111,12 @@ interface DocumentFontDialogRequest {
   editor: Editor;
   selection: { from: number; to: number };
   source: DocumentFontDialogSource;
+}
+
+interface DocumentProofingDialogRequest {
+  editor: Editor;
+  selection: { from: number; to: number };
+  source: DocumentProofingDialogSource;
 }
 
 interface DocumentToolbarProps {
@@ -246,6 +259,8 @@ export function DocumentToolbar({
   );
   const [fontDialogRequest, setFontDialogRequest] =
     useState<DocumentFontDialogRequest | null>(null);
+  const [proofingDialogRequest, setProofingDialogRequest] =
+    useState<DocumentProofingDialogRequest | null>(null);
   const officeDialog = useOfficeDialog();
   const prompt = officeDialog.prompt;
   const imageSelected = editor.isActive('image');
@@ -280,6 +295,15 @@ export function DocumentToolbar({
       editor: target,
       selection: { from, to },
       source: documentFontDialogSource(target),
+    });
+  }, []);
+  const openProofingDialog = useCallback((target: Editor) => {
+    if (target.isDestroyed) return;
+    const { from, to } = target.state.selection;
+    setProofingDialogRequest({
+      editor: target,
+      selection: { from, to },
+      source: documentProofingDialogSource(target),
     });
   }, []);
   const ribbonTabs = reviewOnly
@@ -811,6 +835,13 @@ export function DocumentToolbar({
                   >
                     <CheckCheck size={19} />
                   </ToolbarButton>
+                  <ToolbarButton
+                    label="设置校对语言"
+                    displayLabel
+                    onClick={() => openProofingDialog(editor)}
+                  >
+                    <Languages size={19} />
+                  </ToolbarButton>
                 </RibbonGroup>
               )}
               {!suggestionOnly && (
@@ -1020,6 +1051,9 @@ export function DocumentToolbar({
                 onEditingPartChange={onPageChromeEditingPartChange}
                 onTogglePageNumber={onTogglePageChromePageNumber}
                 onOpenFontDialog={() => openFontDialog(pageChromeEditor)}
+                onOpenProofingDialog={() =>
+                  openProofingDialog(pageChromeEditor)
+                }
                 onClose={onClosePageChrome}
               />
             ) : null,
@@ -1044,6 +1078,35 @@ export function DocumentToolbar({
           onClose={() => {
             const { editor: dialogEditor, selection } = fontDialogRequest;
             setFontDialogRequest(null);
+            requestAnimationFrame(() => {
+              if (dialogEditor.isDestroyed) return;
+              dialogEditor
+                .chain()
+                .setTextSelection(selection)
+                .focus(null, { scrollIntoView: false })
+                .run();
+            });
+          }}
+        />
+      )}
+      {proofingDialogRequest && (
+        <DocumentProofingDialog
+          source={proofingDialogRequest.source}
+          restoreFocusTarget={() =>
+            proofingDialogRequest.editor.isDestroyed
+              ? null
+              : proofingDialogRequest.editor.view.dom
+          }
+          onApply={(patch) =>
+            applyDocumentProofingDialogPatch(
+              proofingDialogRequest.editor,
+              proofingDialogRequest.selection,
+              patch,
+            )
+          }
+          onClose={() => {
+            const { editor: dialogEditor, selection } = proofingDialogRequest;
+            setProofingDialogRequest(null);
             requestAnimationFrame(() => {
               if (dialogEditor.isDestroyed) return;
               dialogEditor

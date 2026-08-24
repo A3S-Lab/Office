@@ -1,0 +1,108 @@
+.work-document-proofing-dialog {
+  width: min(640px, 100%);
+}
+
+.work-document-proofing-dialog form {
+  display: grid;
+  gap: 16px;
+}
+
+.work-document-proofing-dialog fieldset {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 15px 16px 17px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 10px;
+}
+
+.work-document-proofing-dialog legend {
+  padding: 0 5px;
+  color: var(--a3s-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.work-document-proofing-dialog-language {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  gap: 6px;
+}
+
+.work-document-proofing-dialog-language > label,
+.work-document-proofing-dialog-state-label {
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.work-document-proofing-dialog-language > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.work-document-proofing-dialog-language .work-office-text-field {
+  min-width: 0;
+  width: 100%;
+}
+
+.work-document-proofing-dialog-language .ds-button {
+  padding-inline: 9px;
+  white-space: nowrap;
+}
+
+.work-document-proofing-dialog-language > p,
+.work-document-proofing-dialog-state > p,
+.work-document-proofing-dialog-help,
+.work-document-proofing-dialog-error {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.work-document-proofing-dialog-language > p,
+.work-document-proofing-dialog-state > p,
+.work-document-proofing-dialog-help {
+  color: var(--a3s-muted);
+}
+
+.work-document-proofing-dialog-state {
+  display: grid;
+  grid-template-columns: minmax(110px, auto) minmax(220px, 1fr);
+  align-items: center;
+  gap: 8px 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 10px;
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-proofing-dialog-state > p {
+  grid-column: 1 / -1;
+}
+
+.work-document-proofing-dialog-state .work-office-select,
+.work-document-proofing-dialog-state button[role="combobox"] {
+  width: 100%;
+}
+
+.work-document-proofing-dialog-help code {
+  color: var(--a3s-ink);
+}
+
+.work-document-proofing-dialog-error {
+  color: var(--a3s-red);
+}
+
+@media (max-width: 620px) {
+  .work-document-proofing-dialog fieldset {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-document-proofing-dialog-state {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

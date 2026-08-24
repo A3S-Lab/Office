@@ -56,6 +56,13 @@ import {
   parseDocumentRunShadingElement,
 } from './work-document-run-shading';
 import {
+  DOCUMENT_NO_PROOF_ATTRIBUTE,
+  DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE,
+  documentNoProofFromElement,
+  documentProofingDomAttributes,
+  documentProofingLanguagesFromElement,
+} from './work-document-proofing';
+import {
   DOCUMENT_HIGHLIGHT_ATTRIBUTE,
   documentHighlightDomAttributes,
   documentHighlightFromElement,
@@ -516,6 +523,14 @@ function sanitizeAttributes(element: Element, tag: string) {
   const emphasisAttributes = documentEmphasisMarkDomAttributes(emphasisMark);
   const hiddenText =
     tag === 'span' ? documentHiddenTextFromElement(element) : null;
+  const proofingLanguages =
+    tag === 'span' ? documentProofingLanguagesFromElement(element) : null;
+  const noProof = tag === 'span' ? documentNoProofFromElement(element) : null;
+  const proofingAttributes = documentProofingDomAttributes(
+    proofingLanguages,
+    noProof,
+    scriptFontSlot,
+  );
   const legacyTextEffects =
     tag === 'span' ? (documentLegacyTextEffectsFromElement(element) ?? {}) : {};
   const legacyTextEffectAttributes =
@@ -569,6 +584,10 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_RUN_BORDER_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_RUN_SHADING_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_NO_PROOF_ATTRIBUTE);
+  element.removeAttribute('lang');
+  element.removeAttribute('spellcheck');
   element.removeAttribute(DOCUMENT_HIGHLIGHT_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_SCRIPT_FONTS_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE);
@@ -680,6 +699,9 @@ function sanitizeAttributes(element: Element, tag: string) {
         serializedRunShading,
       );
     }
+    for (const [name, value] of Object.entries(proofingAttributes)) {
+      element.setAttribute(name, value);
+    }
     const nativeHighlight = highlightAttributes[DOCUMENT_HIGHLIGHT_ATTRIBUTE];
     if (nativeHighlight) {
       element.setAttribute(DOCUMENT_HIGHLIGHT_ATTRIBUTE, nativeHighlight);
@@ -742,6 +764,10 @@ function sanitizeAttributes(element: Element, tag: string) {
                           DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
                           DOCUMENT_RUN_BORDER_ATTRIBUTE,
                           DOCUMENT_RUN_SHADING_ATTRIBUTE,
+                          DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE,
+                          DOCUMENT_NO_PROOF_ATTRIBUTE,
+                          'lang',
+                          'spellcheck',
                           DOCUMENT_HIGHLIGHT_ATTRIBUTE,
                           DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
                           DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,

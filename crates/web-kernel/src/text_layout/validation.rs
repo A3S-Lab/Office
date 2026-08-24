@@ -120,6 +120,17 @@ pub(super) fn validate_text_layout_runs(
                 ));
             }
         }
+        if let Some(language) = run.language.as_deref() {
+            if !is_valid_language_tag(language) {
+                return Err(KernelError::invalid(
+                    "office.kernel.text_language_invalid",
+                    format!(
+                        "Text layout run {index} in paragraph '{}' contains an invalid language tag.",
+                        paragraph.id
+                    ),
+                ));
+            }
+        }
         validate_positive_extent("fontSize", run.font_size, MAX_FONT_SIZE)?;
         validate_positive_extent("lineHeight", run.line_height, MAX_LINE_HEIGHT)?;
         if !run.letter_spacing.is_finite()
@@ -159,6 +170,14 @@ pub(super) fn validate_text_layout_runs(
         ));
     }
     Ok(())
+}
+
+fn is_valid_language_tag(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= MAX_LANGUAGE_TAG_BYTES
+        && value.split('-').all(|part| {
+            (1..=8).contains(&part.len()) && part.bytes().all(|byte| byte.is_ascii_alphanumeric())
+        })
 }
 
 pub(super) fn validate_text_tab_layout(paragraph: &TextLayoutParagraph) -> Result<(), KernelError> {

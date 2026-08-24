@@ -245,6 +245,50 @@ describe('document mixed-run text layout', () => {
     }
   });
 
+  test('passes validated inherited language tags through independent layout runs', () => {
+    const paragraph = document.createElement('p');
+    applyTextMetrics(paragraph, 14, 21);
+    paragraph.innerHTML = [
+      '<span lang="en-US" style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal">Office</span>',
+      '<span lang="zh-CN" style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal">文档</span>',
+    ].join('');
+    document.body.append(paragraph);
+
+    try {
+      expect(
+        collectDocumentTextLayoutRuns(
+          paragraph,
+          paragraph.textContent ?? '',
+          [layoutFont],
+          new Set([layoutFont.id]),
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          startUtf16: 0,
+          endUtf16: 6,
+          language: 'en-US',
+        }),
+        expect.objectContaining({
+          startUtf16: 6,
+          endUtf16: 8,
+          language: 'zh-CN',
+        }),
+      ]);
+
+      paragraph.querySelector('span:last-child')?.setAttribute('lang', 'zh_CN');
+      expect(
+        collectDocumentTextLayoutRuns(
+          paragraph,
+          paragraph.textContent ?? '',
+          [layoutFont],
+          new Set([layoutFont.id]),
+        ),
+      ).toBeNull();
+    } finally {
+      paragraph.remove();
+    }
+  });
+
   test('keeps raised and lowered character positions on browser measurement', () => {
     for (const verticalAlign of ['2px', '-1.5px']) {
       const paragraph = document.createElement('p');

@@ -16,6 +16,7 @@ import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diag
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import { isSupportedDocxParagraphFormattingChange } from './work-docx-paragraph-format-change-import';
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
+import { diagnoseDocxProofing } from './work-docx-proofing-diagnostics';
 import { diagnoseDocxRunFonts } from './work-docx-run-fonts-diagnostics';
 import { diagnoseDocxRunBorders } from './work-docx-run-border-diagnostics';
 import { diagnoseDocxRunShading } from './work-docx-run-shading-diagnostics';
@@ -225,6 +226,7 @@ export async function analyzeDocxCompatibility(
       issues.push(...(await diagnoseDocxLegacyTextEffects(archive, document)));
       issues.push(...(await diagnoseDocxRunBorders(archive, document)));
       issues.push(...(await diagnoseDocxRunShading(archive, document)));
+      issues.push(...(await diagnoseDocxProofing(archive, document)));
       issues.push(...(await diagnoseDocxRunFonts(archive, document)));
     }
     issues.push(...(await diagnoseDocxPageChrome(archive)));
@@ -329,7 +331,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.formatting',
             'Character-formatting revisions',
-            `${supportedRunFormattingRevisionCount} bounded character-formatting revision(s) preserve author, date, current formatting, and prior bold, italic, underline, strike, text case, hidden text, outline, shadow, emboss, imprint, subscript, superscript, font, size, color, highlight, character scale, spacing, kerning threshold, emphasis mark, baseline position, and grid state. They remain reviewable in Work and round-trip as native w:rPrChange records.`,
+            `${supportedRunFormattingRevisionCount} bounded character-formatting revision(s) preserve author, date, current formatting, and prior bold, italic, underline, strike, text case, hidden text, outline, shadow, emboss, imprint, subscript, superscript, font, size, color, highlight, character borders, character shading, character scale, spacing, kerning threshold, emphasis mark, baseline position, grid state, proofing languages, and explicit proofing state. They remain reviewable in Work and round-trip as native w:rPrChange records.`,
             'info',
           ),
         );

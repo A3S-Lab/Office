@@ -110,7 +110,7 @@ baseline rather than one specific release.
 
 | Capability | A3S Office today | Traditional Office baseline |
 | --- | --- | --- |
-| Text, paragraphs, lists, and styles | **Supported** — structured editing, independent native ASCII, high ANSI, East Asian, and complex-script font slots with direct/theme identity, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing, half-point kerning thresholds, all five native East Asian emphasis marks, native hidden text with explicit visible resets, native character borders with 25 visible line styles plus `nil` and `none`, direct or theme color, width, spacing, shadow, and frame semantics, four independent native outline/shadow/emboss/imprint effects with conflict-safe authoring, and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
+| Text, paragraphs, lists, and styles | **Supported** — structured editing, independent native ASCII, high ANSI, East Asian, and complex-script font slots with direct/theme identity, independent Latin/East Asian/bidi proofing-language slots and explicit proofing inclusion/exclusion, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing, half-point kerning thresholds, all five native East Asian emphasis marks, native hidden text with explicit visible resets, native character borders with 25 visible line styles plus `nil` and `none`, direct or theme color, width, spacing, shadow, and frame semantics, four independent native outline/shadow/emboss/imprint effects with conflict-safe authoring, and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
 | Page layout and rendering | **Partial** — sections, margins, page size, columns, headers/footers, fields, and live pagination | Desktop-grade pagination, print layout, and vector output |
 | Tables, pictures, and equations | **Partial** — rich table geometry, floating pictures, crop/wrap, and structured OMML | Broader drawings, text boxes, charts, WordArt, and SmartArt |
 | Comments, revisions, and collaboration | **Partial** — comments, suggestions, text/format revisions, decisions, Yjs presence, and host relay contracts | Full revision families plus integrated sharing and review services |
@@ -773,6 +773,27 @@ line geometry, so eligible content stays on the Worker/WASM path. Native
 `w:highlight` remains independent and takes display precedence without
 clobbering shading. The Playground's **字符底纹** template demonstrates the
 complete flow.
+
+Native Writer proofing languages retain the three independent WordprocessingML
+`w:lang` slots: Latin `w:val`, East Asian `w:eastAsia`, and bidi `w:bidi`.
+Native `w:noProof` remains an independent three-state property: inherited,
+explicitly checked with `w:val="false"`, or excluded from proofing. The Review
+ribbon's **设置校对语言** dialog accepts bounded BCP 47 language tags, keeps
+untouched mixed slots unchanged, exposes Follow style for each slot, and applies
+the touched language and proofing-state fields through one transaction and one
+Undo record. The same contract is available while editing headers and footers.
+
+Document defaults, paragraph and character styles, body text, headers,
+footers, footnotes, endnotes, formatting revisions, strict/transitional DOCX
+import, exact export, and reopen share the closed model. Malformed, duplicated,
+misplaced, namespace-spoofed, nested, text-bearing, extra-attribute, invalid-tag,
+or invalid on/off input fails closed and appears in compatibility diagnostics.
+The DOM stores canonical JSON in `data-office-proofing-languages`, stores an
+explicit Boolean in `data-office-no-proof`, and projects the effective `lang`
+and `spellcheck` attributes without claiming a bundled dictionary or grammar
+service. Valid effective languages also reach the Worker/WASM text-layout run
+and RustyBuzz shaping buffer. The Playground's **校对语言** template demonstrates
+Latin, East Asian, bidi, explicitly checked, and excluded states.
 
 Supported native OMML equations now survive as bounded structured objects in
 the document body, headers, footers, footnotes, and endnotes. Inline and display

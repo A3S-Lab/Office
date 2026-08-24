@@ -431,6 +431,40 @@ separate mark and takes visual precedence without deleting the underlying
 shading semantics. Open the Playground's **字符底纹** template to edit the
 complete model and verify one-step Undo.
 
+## Native proofing languages
+
+Writer retains the three independent native `w:lang` slots: Latin `w:val`,
+East Asian `w:eastAsia`, and bidi `w:bidi`. Native `w:noProof` remains a
+separate three-state value. Removing the direct value follows the current
+style, `false` explicitly includes text in proofing, and `true` excludes it.
+The model does not flatten those states into the document-wide browser
+spellcheck switch.
+
+Review exposes **设置校对语言** beside Spelling Check. Its accessible dialog
+accepts bounded BCP 47 tags, reports mixed values independently, leaves every
+untouched slot unchanged, and offers Follow style for each language and for the
+proofing state. Apply restores the captured selection and focus and commits all
+touched fields through one TipTap transaction and one Undo record. Header and
+footer editing invokes the same model.
+
+Document defaults, paragraph and character styles, body text, headers,
+footers, footnotes, endnotes, tracked character formatting, rejection restore,
+strict or transitional DOCX import/export/reopen, and prior formatting inside
+`w:rPrChange` preserve the exact slots and explicit state. Malformed,
+duplicated, misplaced, nested, text-bearing, extra-attribute,
+namespace-spoofed, invalid-tag, and invalid on/off input fails closed and is
+reported by compatibility diagnostics.
+
+The DOM stores canonical language JSON in
+`data-office-proofing-languages`, stores explicit state in
+`data-office-no-proof="true|false"`, and projects the effective `lang` and
+`spellcheck` attributes. Valid effective languages also travel with each
+Worker text-layout run and are set on the RustyBuzz buffer before Rust/WASM
+shaping. This preserves language-sensitive shaping without claiming bundled
+spelling dictionaries, grammar, or translation. Open the Playground's
+**校对语言** template to inspect Latin, East Asian, bidi, explicitly checked,
+and excluded examples.
+
 ## Native character baseline position
 
 The same **Advanced Font Settings** dialog stores Normal, Raised, or Lowered

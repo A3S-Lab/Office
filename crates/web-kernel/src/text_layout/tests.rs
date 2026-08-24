@@ -112,6 +112,7 @@ fn rejects_duplicate_paragraph_ids() {
             end_utf16: 3,
             font_id: "font".into(),
             fallback_font_ids: Vec::new(),
+            language: None,
             font_size: 14.0,
             line_height: 21.0,
             letter_spacing: 0.0,
@@ -158,6 +159,7 @@ fn rejects_gaps_between_text_runs() {
                     end_utf16: 3,
                     font_id: "regular".into(),
                     fallback_font_ids: Vec::new(),
+                    language: None,
                     font_size: 14.0,
                     line_height: 21.0,
                     letter_spacing: 0.0,
@@ -169,6 +171,7 @@ fn rejects_gaps_between_text_runs() {
                     end_utf16: 6,
                     font_id: "regular".into(),
                     fallback_font_ids: Vec::new(),
+                    language: None,
                     font_size: 18.0,
                     line_height: 27.0,
                     letter_spacing: 0.0,
@@ -209,6 +212,7 @@ fn rejects_utf16_offsets_inside_a_surrogate_pair() {
                     end_utf16: 2,
                     font_id: "regular".into(),
                     fallback_font_ids: Vec::new(),
+                    language: None,
                     font_size: 14.0,
                     line_height: 21.0,
                     letter_spacing: 0.0,
@@ -220,6 +224,7 @@ fn rejects_utf16_offsets_inside_a_surrogate_pair() {
                     end_utf16: 4,
                     font_id: "regular".into(),
                     fallback_font_ids: Vec::new(),
+                    language: None,
                     font_size: 14.0,
                     line_height: 21.0,
                     letter_spacing: 0.0,
@@ -253,6 +258,7 @@ fn rejects_duplicate_primary_and_fallback_font_ids() {
             end_utf16: 3,
             font_id: "regular".into(),
             fallback_font_ids: vec!["cjk".into(), "regular".into()],
+            language: None,
             font_size: 14.0,
             line_height: 21.0,
             letter_spacing: 0.0,
@@ -271,6 +277,45 @@ fn rejects_duplicate_primary_and_fallback_font_ids() {
             .expect_err("duplicate fallback font")
             .code,
         "office.kernel.text_fallback_font_invalid"
+    );
+}
+
+#[test]
+fn validates_optional_text_run_language_tags() {
+    let mut paragraph = TextLayoutParagraph {
+        id: "language".into(),
+        text: "A3S".into(),
+        runs: vec![TextLayoutRun {
+            start_utf16: 0,
+            end_utf16: 3,
+            font_id: "regular".into(),
+            fallback_font_ids: Vec::new(),
+            language: Some("zh-Hans-CN".into()),
+            font_size: 14.0,
+            line_height: 21.0,
+            letter_spacing: 0.0,
+            ligatures: true,
+            kerning: true,
+        }],
+        max_width: 100.0,
+        first_line_max_width: None,
+        direction: TextDirection::Ltr,
+        white_space: TextWhiteSpace::Normal,
+        tab_layout: None,
+    };
+
+    validate_text_layout_runs(&paragraph).expect("valid language tag");
+    let buffer = text_shape_buffer(&paragraph.runs[0], TextDirection::Auto, "文档");
+    assert_eq!(
+        buffer.language().as_ref().map(Language::as_str),
+        Some("zh-hans-cn")
+    );
+    paragraph.runs[0].language = Some("zh_CN".into());
+    assert_eq!(
+        validate_text_layout_runs(&paragraph)
+            .expect_err("invalid language tag")
+            .code,
+        "office.kernel.text_language_invalid"
     );
 }
 
@@ -360,6 +405,7 @@ fn requires_layout_metadata_for_structured_tabs() {
             end_utf16: 3,
             font_id: "font".into(),
             fallback_font_ids: Vec::new(),
+            language: None,
             font_size: 14.0,
             line_height: 21.0,
             letter_spacing: 0.0,

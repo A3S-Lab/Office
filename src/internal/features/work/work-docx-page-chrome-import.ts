@@ -1,4 +1,5 @@
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
+import { documentScriptFontSegments } from './work-document-script-fonts';
 import { documentCharacterScaleDomAttributes } from './work-document-character-scale';
 import { documentCharacterPositionDomAttributes } from './work-document-character-position';
 import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
@@ -17,6 +18,8 @@ import { documentRunBorderDomAttributes } from './work-document-run-border';
 import { resolveDocxRunBorder } from './work-docx-run-border';
 import { documentRunShadingDomAttributes } from './work-document-run-shading';
 import { resolveDocxRunShading } from './work-docx-run-shading';
+import { documentProofingDomAttributes } from './work-document-proofing';
+import { resolveDocxProofing } from './work-docx-proofing';
 import {
   documentHighlightDomAttributes,
   documentHighlightFromDocxValue,
@@ -484,6 +487,16 @@ async function runHtml(
   if (hiddenText !== undefined) {
     content = `<span${htmlAttributes(
       documentHiddenTextDomAttributes(hiddenText),
+    )}>${content}</span>`;
+  }
+  const proofing = resolveDocxProofing(propertySources);
+  if (proofing.languages || proofing.noProof !== undefined) {
+    content = `<span${htmlAttributes(
+      documentProofingDomAttributes(
+        proofing.languages,
+        proofing.noProof,
+        documentScriptFontSegments(run.textContent ?? '')[0]?.slot,
+      ),
     )}>${content}</span>`;
   }
   const legacyTextEffects = resolveDocxLegacyTextEffects(propertySources);
