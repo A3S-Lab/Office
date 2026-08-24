@@ -64,6 +64,21 @@ bun run test:e2e:collaboration-playground:check
 bun run test:e2e:collaboration-playground
 ```
 
+The release-facing README, documentation hero, and Playground capability strip
+share one focused discoverability gate:
+
+```bash
+bun run test:e2e:latest-capabilities:check
+bun run test:e2e:latest-capabilities
+```
+
+It opens character shading, proofing languages, and Spreadsheet data validation
+from the first-class Playground strip, follows the documentation-home link to
+the full settings reference, repeats the public discovery check at 390 px, and
+captures accessibility plus empty console/page-error diagnostics. A hidden
+`?e2e=` fixture or a deep documentation paragraph alone cannot satisfy this
+gate.
+
 Run the focused suites against the built static preview through
 `scripts/run-a3s-test-web-gate.sh` before a release. The local gate performs
 admission first, owns the preview lifecycle, and fails when captured console or

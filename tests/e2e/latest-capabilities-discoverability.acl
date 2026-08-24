@@ -1,0 +1,174 @@
+suite "latest-capabilities-discoverability" {
+    version = 1
+
+    scenario "open-latest-playground-capabilities" {
+        name = "Open every latest capability from the public Playground strip"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground-home" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "latest-capability-strip-is-visible" {
+            visible = css(".playground-latest-capabilities[aria-labelledby='playground-latest-capabilities-title']")
+        }
+
+        expect "character-shading-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：字符底纹']")
+        }
+
+        expect "proofing-language-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：校对语言']")
+        }
+
+        expect "data-validation-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：数据验证']")
+        }
+
+        click "open-character-shading" {
+            target = role("button", "打开最新能力：字符底纹")
+        }
+
+        wait "character-shading-document-is-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "character-shading-title-is-visible" {
+            visible = css("input[aria-label='文件名'][value='字符底纹示例']")
+        }
+
+        navigate "return-to-playground-home-after-shading" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-proofing-languages" {
+            target = role("button", "打开最新能力：校对语言")
+        }
+
+        wait "proofing-language-document-is-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "proofing-language-title-is-visible" {
+            visible = css("input[aria-label='文件名'][value='校对语言示例']")
+        }
+
+        navigate "return-to-playground-home-after-proofing" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-data-validation" {
+            target = role("button", "打开最新能力：数据验证")
+        }
+
+        wait "data-validation-workbook-is-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "data-validation-title-is-visible" {
+            visible = css("input[aria-label='文件名'][value='数据验证示例']")
+        }
+
+        accessibility "latest-capability-accessibility" {
+            path = "evidence/latest-capabilities.json"
+            interactive = true
+        }
+
+        console "latest-capability-console" {
+            path = "diagnostics/latest-capability-console.json"
+            clear = false
+        }
+
+        page_errors "latest-capability-errors" {
+            path = "diagnostics/latest-capability-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "follow-latest-documentation-links" {
+        name = "Follow latest capability links from the documentation hero"
+        surface = "web"
+        timeout_ms = 90000
+
+        viewport "documentation-desktop" {
+            width = 1440
+            height = 900
+            scale = 1
+        }
+
+        navigate "open-documentation-home" {
+            url = "http://127.0.0.1:4175/docs/"
+        }
+
+        expect "latest-documentation-links-are-visible" {
+            visible = css("main .docs-home-hero__latest[aria-label='main 分支最新能力']")
+        }
+
+        expect "latest-documentation-covers-writer" {
+            visible = css("main .docs-home-hero__latest a[href*='components/document.html#']")
+        }
+
+        click "open-data-validation-documentation" {
+            target = css("main .docs-home-hero__latest a[href*='components/spreadsheet.html#']")
+        }
+
+        wait "data-validation-documentation-is-open" {
+            text = "输入信息与错误警告设置"
+        }
+
+        expect "data-validation-settings-are-documented" {
+            visible = css("main h3#输入信息与错误警告设置")
+        }
+
+        console "latest-documentation-console" {
+            path = "diagnostics/latest-documentation-console.json"
+            clear = false
+        }
+
+        page_errors "latest-documentation-errors" {
+            path = "diagnostics/latest-documentation-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "find-latest-capabilities-on-phone" {
+        name = "Find the latest capability strip on a phone"
+        surface = "web"
+        timeout_ms = 90000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-phone-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "phone-latest-capability-strip-is-visible" {
+            visible = css(".playground-latest-capabilities")
+        }
+
+        expect "phone-data-validation-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：数据验证']")
+        }
+
+        console "phone-latest-capability-console" {
+            path = "diagnostics/phone-latest-capability-console.json"
+            clear = false
+        }
+
+        page_errors "phone-latest-capability-errors" {
+            path = "diagnostics/phone-latest-capability-errors.json"
+            clear = false
+        }
+    }
+}

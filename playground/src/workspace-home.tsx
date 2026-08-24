@@ -7,10 +7,13 @@ import {
   ArrowRight,
   FileDiff,
   FilePlus2,
+  Languages,
+  ListChecks,
   PanelLeftOpen,
   Pencil,
   Search,
   ServerCog,
+  Sparkles,
   Upload,
   UsersRound,
 } from 'lucide-react';
@@ -22,6 +25,14 @@ import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
 const templateCellIds = Array.from(
   { length: 20 },
   (_, index) => `cell-${index + 1}`,
+);
+const latestTemplateIds = new Set([
+  'run-shading',
+  'proofing-languages',
+  'data-validation',
+]);
+const latestTemplates = officeTemplates.filter((template) =>
+  latestTemplateIds.has(template.id),
 );
 
 export function WorkspaceHome({
@@ -102,6 +113,45 @@ export function WorkspaceHome({
           </button>
         </div>
       </header>
+
+      <section
+        className="playground-latest-capabilities"
+        aria-labelledby="playground-latest-capabilities-title"
+      >
+        <div className="playground-latest-capabilities-heading">
+          <span>
+            <Sparkles size={13} aria-hidden="true" />
+            main 已部署
+          </span>
+          <h2 id="playground-latest-capabilities-title">最新能力</h2>
+          <p>从这里直接打开近期新增的可编辑模板。</p>
+        </div>
+        <div className="playground-latest-capability-list">
+          {latestTemplates.map((template) => (
+            <button
+              type="button"
+              className={`playground-latest-capability ${template.kind}`}
+              aria-label={`打开最新能力：${template.name}`}
+              key={template.id}
+              onFocus={() => warmPlaygroundEditor(template.kind)}
+              onClick={() => onCreate(template.id)}
+              onPointerEnter={() => warmPlaygroundEditor(template.kind)}
+            >
+              <span className="playground-latest-capability-icon">
+                <LatestCapabilityIcon templateId={template.id} />
+              </span>
+              <span className="playground-latest-capability-copy">
+                <small>
+                  {template.kind === 'document' ? 'Writer' : 'Spreadsheet'}
+                </small>
+                <strong>{template.name}</strong>
+                <span>{template.description}</span>
+              </span>
+              <ArrowRight size={14} aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+      </section>
 
       <section
         className="playground-collaboration-overview"
@@ -265,6 +315,16 @@ export function WorkspaceHome({
       </section>
     </section>
   );
+}
+
+function LatestCapabilityIcon({ templateId }: { templateId: string }) {
+  if (templateId === 'proofing-languages') {
+    return <Languages size={16} aria-hidden="true" />;
+  }
+  if (templateId === 'data-validation') {
+    return <ListChecks size={16} aria-hidden="true" />;
+  }
+  return <Sparkles size={16} aria-hidden="true" />;
 }
 
 function TemplateCard({

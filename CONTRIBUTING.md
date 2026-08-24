@@ -48,6 +48,23 @@ bun run playground:build
 - `integrations/a3s-use/` contains the external A3S Use capability manifest.
 - `scripts/package-a3s-use-extension.sh` creates an installable A3S Use package.
 
+## Public feature completion
+
+A user-facing editor capability is complete only when all applicable surfaces
+ship in the same change:
+
+1. Add a concise, discoverable README entry instead of relying only on a long
+   capability table or changelog item.
+2. Update both `docs/latest/en/` and `docs/latest/zh/`, and link the capability
+   from the documentation home while it is part of the current `main` release
+   window.
+3. Add a normal Playground template or another user-facing workflow. A hidden
+   `?e2e=` fixture does not count as product discovery.
+4. Cover the public entry with a component test and the local A3S Test Web
+   gate. A3S Test remains outside GitHub Actions and Pages.
+5. Verify the entry is visible and operable at desktop and compact viewport
+   sizes before publishing Pages.
+
 ## Pull requests
 
 Describe the user-facing problem, the chosen behavior, and the validation that

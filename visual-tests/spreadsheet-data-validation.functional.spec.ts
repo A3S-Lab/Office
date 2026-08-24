@@ -11,11 +11,13 @@ test('Spreadsheet data validation is discoverable from the public Playground', a
 
   await page.goto('/');
   await expect(page.getByRole('heading', { name: '我的文档' })).toBeVisible();
-  await page
-    .getByRole('button', {
-      name: '数据验证 下拉列表、输入提示与错误警告',
-    })
-    .click();
+  const latestCapabilities = page.getByRole('region', { name: '最新能力' });
+  const dataValidationEntry = latestCapabilities.getByRole('button', {
+    name: '打开最新能力：数据验证',
+  });
+  await expect(latestCapabilities).toBeInViewport();
+  await expect(dataValidationEntry).toBeInViewport();
+  await dataValidationEntry.click();
   await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
   await expect(page.getByRole('textbox', { name: '文件名' })).toHaveValue(
     '数据验证示例',

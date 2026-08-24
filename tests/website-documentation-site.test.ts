@@ -146,6 +146,29 @@ test('keeps the five-editor README capability comparison complete', async () => 
   ).toHaveLength(5);
 });
 
+test('makes the latest main capabilities discoverable from README and both documentation homes', async () => {
+  const [readme, englishHome, chineseHome] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, 'latest/zh/index.mdx'), 'utf8'),
+  ]);
+
+  expect(readme).toContain('## Latest on `main`');
+  expect(readme).toContain('Latest capabilities → 字符底纹');
+  expect(readme).toContain('Latest capabilities → 校对语言');
+  expect(readme).toContain('Latest capabilities → 数据验证');
+
+  expect(englishHome).toContain('aria-label="Latest capabilities on main"');
+  expect(englishHome).toContain('Character shading');
+  expect(englishHome).toContain('Proofing languages');
+  expect(englishHome).toContain('Data validation');
+
+  expect(chineseHome).toContain('aria-label="main 分支最新能力"');
+  expect(chineseHome).toContain('原生字符底纹');
+  expect(chineseHome).toContain('原生校对语言');
+  expect(chineseHome).toContain('spreadsheet.html#数据验证');
+});
+
 test('publishes native Writer proofing languages in README, docs, roadmap, and Playground guidance', async () => {
   const [
     readme,

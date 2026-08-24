@@ -44,6 +44,141 @@
   gap: 9px;
 }
 
+.playground-latest-capabilities {
+  display: grid;
+  width: 100%;
+  max-width: 1480px;
+  grid-template-columns: minmax(180px, 0.42fr) minmax(0, 1.58fr);
+  align-items: center;
+  gap: 18px;
+  margin: 0 auto 16px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--a3s-blue) 18%, var(--a3s-line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--a3s-blue) 3%, var(--a3s-panel));
+}
+
+.playground-latest-capabilities-heading {
+  min-width: 0;
+}
+
+.playground-latest-capabilities-heading > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--a3s-blue);
+  font-size: 9px;
+  font-weight: 720;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.playground-latest-capabilities-heading h2 {
+  margin: 4px 0 0;
+  color: var(--a3s-ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.playground-latest-capabilities-heading p {
+  margin: 3px 0 0;
+  color: var(--a3s-faint);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.playground-latest-capability-list {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.playground-latest-capability {
+  display: grid;
+  min-width: 0;
+  min-height: 66px;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 9px;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.playground-latest-capability:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--a3s-blue) 34%, var(--a3s-line));
+  background: var(--a3s-panel-soft);
+}
+
+.playground-latest-capability:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 42%, transparent);
+  outline-offset: 2px;
+}
+
+.playground-latest-capability > svg {
+  color: var(--a3s-faint);
+}
+
+.playground-latest-capability-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--a3s-blue) 9%, var(--a3s-panel));
+  color: var(--a3s-blue);
+}
+
+.playground-latest-capability.spreadsheet .playground-latest-capability-icon {
+  background: color-mix(in srgb, var(--a3s-green) 10%, var(--a3s-panel));
+  color: var(--a3s-green);
+}
+
+.playground-latest-capability-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.playground-latest-capability-copy small,
+.playground-latest-capability-copy strong,
+.playground-latest-capability-copy > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playground-latest-capability-copy small {
+  color: var(--a3s-faint);
+  font-size: 8px;
+  font-weight: 680;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.playground-latest-capability-copy strong {
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.playground-latest-capability-copy > span {
+  margin-top: 1px;
+  color: var(--a3s-faint);
+  font-size: 8px;
+}
+
 .playground-collaboration-overview {
   display: grid;
   width: 100%;
@@ -1331,6 +1466,26 @@
     flex: 1;
   }
 
+  .playground-latest-capabilities {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 11px;
+  }
+
+  .playground-latest-capabilities-heading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0 9px;
+  }
+
+  .playground-latest-capabilities-heading > span {
+    grid-column: 1 / -1;
+  }
+
+  .playground-latest-capabilities-heading p {
+    margin: 0;
+  }
+
   .playground-collaboration-overview {
     grid-template-columns: auto minmax(0, 1fr);
   }
@@ -1453,6 +1608,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .playground-latest-capability-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .work-editor-identity {
     min-width: 0;
   }
@@ -1494,6 +1653,14 @@
     grid-column: 1;
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .playground-latest-capabilities-heading {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .playground-latest-capabilities-heading p {
+    margin-top: 3px;
   }
 
   .playground-template-grid,

@@ -54,6 +54,22 @@ workflows, and a separate Rust automation plane.
 - **Automate deterministically** through the native CLI, standard MCP server,
   or packaged Office Skill.
 
+## Latest on `main`
+
+The current Pages deployment exposes these post-`0.29.0` capabilities as
+normal user-facing Playground templates, with matching implementation detail in
+the versioned documentation:
+
+| Editor | Latest capability | Public entry |
+| --- | --- | --- |
+| Writer | Native character shading with exact `w:shd` patterns, foreground/background color identity, explicit resets, authoring, and DOCX reopen | Playground **Latest capabilities → 字符底纹** · [Document reference](docs/latest/en/components/document.mdx#native-character-shading) |
+| Writer | Independent Latin, East Asian, and bidi proofing languages plus explicit `w:noProof` inclusion/exclusion | Playground **Latest capabilities → 校对语言** · [Document reference](docs/latest/en/components/document.mdx#native-proofing-languages) |
+| Spreadsheet | Complete common Data Validation input, blank/dropdown, and Stop/Warning/Information error settings with native XLSX round trips | Playground **Latest capabilities → 数据验证** · [Spreadsheet reference](docs/latest/en/components/spreadsheet.mdx#data-validation) |
+
+The same three entries remain available under **新建**. The highlighted strip
+exists so a capability is discoverable from the first Playground viewport
+instead of only through a deep documentation section or an `?e2e=` fixture.
+
 ## See it working
 
 The images below are committed visual-regression baselines from the real

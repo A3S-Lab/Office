@@ -2,6 +2,45 @@ import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { SiteSidebar } from '../playground/src/site-sidebar';
+import { WorkspaceHome } from '../playground/src/workspace-home';
+
+test('publishes the latest main capabilities as first-class Playground entries', () => {
+  const createdTemplates: string[] = [];
+
+  render(
+    <WorkspaceHome
+      artifacts={[]}
+      collaborationDocsUrl="/docs/components/collaboration-server.html"
+      sidebarOpen
+      onOpenSidebar={() => undefined}
+      onCreate={(templateId) => createdTemplates.push(templateId)}
+      onOpen={() => undefined}
+      onImport={() => undefined}
+      onOpenCollaborationDemo={() => undefined}
+      onOpenSuggestionDemo={() => undefined}
+      onOpenFormattingReviewDemo={() => undefined}
+      onOpenPdf={() => undefined}
+    />,
+  );
+
+  const latest = screen.getByRole('region', { name: '最新能力' });
+  expect(
+    within(latest).getByRole('button', {
+      name: '打开最新能力：字符底纹',
+    }),
+  ).toBeInTheDocument();
+  expect(
+    within(latest).getByRole('button', {
+      name: '打开最新能力：校对语言',
+    }),
+  ).toBeInTheDocument();
+  const dataValidation = within(latest).getByRole('button', {
+    name: '打开最新能力：数据验证',
+  });
+  fireEvent.click(dataValidation);
+
+  expect(createdTemplates).toEqual(['data-validation']);
+});
 
 test('keeps Markdown last in the quick-create list', () => {
   const createdTemplates: string[] = [];

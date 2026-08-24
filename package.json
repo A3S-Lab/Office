@@ -134,6 +134,8 @@
     "test:e2e:initial-focus:check": "a3s-test check tests/e2e/office-editor-initial-focus.acl --json",
     "test:e2e:docs": "a3s-test run tests/e2e/office-docs-navigation.acl --json",
     "test:e2e:docs:check": "a3s-test check tests/e2e/office-docs-navigation.acl --json",
+    "test:e2e:latest-capabilities": "A3S_TEST_SUITE=tests/e2e/latest-capabilities-discoverability.acl bash scripts/run-a3s-test-web-gate.sh",
+    "test:e2e:latest-capabilities:check": "a3s-test check tests/e2e/latest-capabilities-discoverability.acl --json",
     "test:e2e:collaboration-participants": "a3s-test run tests/e2e/collaboration-participants.acl --json",
     "test:e2e:collaboration-participants:check": "a3s-test check tests/e2e/collaboration-participants.acl --json",
     "test:e2e:collaboration-playground": "a3s-test run tests/e2e/collaboration-playground-entry.acl --json",

@@ -52,6 +52,18 @@ suite "office-docs-navigation" {
             text = "DocumentEditor"
         }
 
+        expect "latest-main-capabilities-are-prominent" {
+            visible = css("main .docs-home-hero__latest[aria-label='main 分支最新能力']")
+        }
+
+        expect "latest-writer-capabilities-are-linked" {
+            text = "字符底纹"
+        }
+
+        expect "latest-spreadsheet-capability-is-linked" {
+            visible = css("main .docs-home-hero__latest a[href*='components/spreadsheet.html#']")
+        }
+
         expect "workflow-navigation-is-visible" {
             visible = css("main .docs-home-flow")
         }

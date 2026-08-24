@@ -21,7 +21,7 @@ suite "office-word-proofing-languages" {
         }
 
         click "open-proofing-language-template" {
-            target = role("button", "校对语言 拉丁、东亚、双向文字与校对排除")
+            target = role("button", "打开最新能力：校对语言")
         }
 
         wait "document-loaded" {
@@ -145,7 +145,7 @@ suite "office-word-proofing-languages" {
         }
 
         click "open-proofing-language-template" {
-            target = role("button", "校对语言 拉丁、东亚、双向文字与校对排除")
+            target = role("button", "打开最新能力：校对语言")
         }
 
         wait "document-loaded" {

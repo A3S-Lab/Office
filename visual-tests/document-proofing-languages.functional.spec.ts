@@ -14,11 +14,13 @@ test('Writer authors native proofing languages in the responsive Review dialog',
   }
 
   await page.goto('/');
-  await page
-    .getByRole('button', {
-      name: '校对语言 拉丁、东亚、双向文字与校对排除',
-    })
-    .click();
+  const latestCapabilities = page.getByRole('region', { name: '最新能力' });
+  const proofingLanguageEntry = latestCapabilities.getByRole('button', {
+    name: '打开最新能力：校对语言',
+  });
+  await expect(latestCapabilities).toBeInViewport();
+  await expect(proofingLanguageEntry).toBeInViewport();
+  await proofingLanguageEntry.click();
 
   const editor = page.getByRole('textbox', { name: '文档正文' });
   await expect(editor).toHaveAttribute('data-pagination-state', 'ready');

@@ -4,6 +4,11 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Made the current post-`0.29.0` capability set discoverable from the first
+  Playground viewport and the documentation hero. Character shading, proofing
+  languages, and Spreadsheet data validation now share matching highlighted
+  entries, normal **新建** templates, README summaries, bilingual references,
+  and local-only A3S Test public-entry coverage.
 - Added complete common Spreadsheet data-validation input and error settings:
   ignore blank, in-cell dropdown-arrow visibility, input titles and messages,
   enabled error alerts, Stop/Warning/Information style, and custom error titles

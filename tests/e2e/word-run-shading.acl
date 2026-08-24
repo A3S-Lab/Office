@@ -21,7 +21,7 @@ suite "office-word-run-shading" {
         }
 
         click "open-run-shading-template" {
-            target = role("button", "字符底纹 原生图案、前景色、背景色与显式重置")
+            target = role("button", "打开最新能力：字符底纹")
         }
 
         wait "document-loaded" {
