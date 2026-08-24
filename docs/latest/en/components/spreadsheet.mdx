@@ -307,15 +307,41 @@ current grid node.
 | Date | `YYYY-MM-DD`, an integer Excel date serial, or `DATE(year,month,day)` |
 | Text length | Non-negative integer boundaries with between, comparison, and equality operators |
 
-The dialog can block invalid input and can show a 255-character input message
-when a validated cell is selected. A list range may qualify a visible worksheet
-name and must resolve to exactly one row or one column. Between and not-between
-rules require an ordered second boundary. Date values normalize to ISO inside
-the browser so Fortune compares calendar dates rather than millisecond-like
-serial strings. XLSX import honors the workbook's 1900 or 1904 date system;
-export writes normalized dates as native `DATE(...)` formulas. Imported XLSX
-`decimal` validation maps to Fortune's general numeric rule instead of its
-decimal-only vendor mode, so an integer is not rejected incorrectly.
+### Input and error settings
+
+The same dialog owns the complete common validation metadata instead of keeping
+a second file-only settings path:
+
+| Model field | Dialog behavior | Native XLSX field |
+| --- | --- | --- |
+| `allowBlank` | Ignore or validate an empty cell | `allowBlank` |
+| `showDropdownArrow` | Show or hide the in-cell list arrow | inverse of `showDropDown` |
+| `hintShow`, `hintTitle`, `hintValue` | Show a titled message when the validated cell is selected | `showInputMessage`, `promptTitle`, `prompt` |
+| `prohibitInput` | Enable the invalid-value alert | `showErrorMessage` |
+| `errorStyle` | Store `stop`, `warning`, or `information` | `errorStyle` |
+| `errorTitle`, `errorMessage` | Supply the authored alert copy | `errorTitle`, `error` |
+
+Titles are limited to 32 Unicode code points, the input message to 255, and the
+error message to 225. Turning either message off keeps its inactive title and
+body so re-enabling it does not erase the draft. Missing legacy A3S fields
+normalize to Ignore blank enabled, dropdown arrow visible, and Stop style.
+
+Compact rules are resolved directly by the mounted grid. It honors
+`allowBlank`, hides the arrow when `showDropdownArrow` is false, displays the
+authored input title and message, and uses the authored error title/message for
+invalid input. Fortune currently exposes one blocking browser alert path for
+every enabled error alert. Warning and Information therefore retain exact XLSX
+semantics for native reopen, while their distinct confirm-or-cancel desktop
+flows remain a documented browser boundary.
+
+A list range may qualify a visible worksheet name and must resolve to exactly
+one row or one column. Between and not-between rules require an ordered second
+boundary. Date values normalize to ISO inside the browser so Fortune compares
+calendar dates rather than millisecond-like serial strings. XLSX import honors
+the workbook's 1900 or 1904 date system; export writes normalized dates as
+native `DATE(...)` formulas. Imported XLSX `decimal` validation maps to
+Fortune's general numeric rule instead of its decimal-only vendor mode, so an
+integer is not rejected incorrectly.
 
 One gesture may cover multiple non-overlapping selections and at most 10,000
 cells in total. The command rejects malformed or out-of-bounds ranges,
@@ -324,6 +350,9 @@ merged cells, pivot output, and read-only views before mutation. Accepted rules
 remain compact in `dataValidationRanges`; selected direct rules are removed,
 compact rules are split only around the edited regions, and unrelated rules or
 malformed vendor records remain unchanged. Blank cells are never materialized.
+From the public Playground home page, choose **新建 → 数据验证**. The template
+provides list, date, and priority examples with input messages and Stop,
+Warning, and Information metadata; it is not hidden behind an E2E query.
 
 Focused model, XLSX, command, dialog, editor-history, ribbon, desktop, and
 compact regressions cover the workflow. The deterministic

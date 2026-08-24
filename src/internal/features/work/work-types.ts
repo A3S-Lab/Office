@@ -273,6 +273,11 @@ export interface WorkSpreadsheetCellRange {
   column: [number, number];
 }
 
+export type WorkSpreadsheetDataValidationErrorStyle =
+  | 'information'
+  | 'stop'
+  | 'warning';
+
 export interface WorkSpreadsheetDataValidationItem {
   type: string;
   type2: string;
@@ -281,8 +286,16 @@ export interface WorkSpreadsheetDataValidationItem {
   value2: string;
   validity: string;
   remote: boolean;
+  /** Defaults to true for legacy A3S artifacts. */
+  allowBlank?: boolean;
+  /** Product semantic; OOXML stores the inverse in `showDropDown`. */
+  showDropdownArrow?: boolean;
   prohibitInput: boolean;
+  errorStyle?: WorkSpreadsheetDataValidationErrorStyle;
+  errorTitle?: string;
+  errorMessage?: string;
   hintShow: boolean;
+  hintTitle?: string;
   hintValue: string;
   checked?: boolean;
 }

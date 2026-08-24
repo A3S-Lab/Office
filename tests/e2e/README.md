@@ -271,10 +271,12 @@ bun run test:e2e:spreadsheet-data-validation:check
 bun run test:e2e:spreadsheet-data-validation
 ```
 
-It covers multiple captured ranges, invalid and valid list sources, input
-messages, compact Apply and Remove, exact focus restoration, and one-step Undo.
-The suite runs only through the local A3S Test release gate and is not
-referenced by GitHub Actions.
+It first opens the public Playground **新建 → 数据验证** template and verifies
+that its list, input-message, blank, dropdown, and error-alert metadata is
+actually reachable by users. It then covers multiple captured ranges, invalid
+and valid list sources, complete input/error settings, compact Apply and Remove,
+exact focus restoration, and one-step Undo. The suite runs only through the
+local A3S Test release gate and is not referenced by GitHub Actions.
 
 The Traditional Office Spreadsheet Paste Special workflow has a focused local gate:
 

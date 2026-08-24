@@ -178,7 +178,7 @@
     "test:e2e:spreadsheet-gradient-fill:check": "a3s-test check tests/e2e/spreadsheet-gradient-fill.acl --json",
     "test:e2e:spreadsheet-go-to": "a3s-test run tests/e2e/spreadsheet-go-to.acl --json",
     "test:e2e:spreadsheet-go-to:check": "a3s-test check tests/e2e/spreadsheet-go-to.acl --json",
-    "test:e2e:spreadsheet-data-validation": "a3s-test run tests/e2e/spreadsheet-data-validation.acl --json",
+    "test:e2e:spreadsheet-data-validation": "A3S_TEST_SUITE=tests/e2e/spreadsheet-data-validation.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:spreadsheet-data-validation:check": "a3s-test check tests/e2e/spreadsheet-data-validation.acl --json",
     "test:e2e:spreadsheet-diagonal-borders": "a3s-test run tests/e2e/spreadsheet-diagonal-borders.acl --json",
     "test:e2e:spreadsheet-diagonal-borders:check": "a3s-test check tests/e2e/spreadsheet-diagonal-borders.acl --json",

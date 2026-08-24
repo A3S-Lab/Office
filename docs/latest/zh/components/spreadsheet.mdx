@@ -104,6 +104,52 @@ Rstest 覆盖模型、结构协调、命令、弹窗、功能区、Canvas、协�
 A3S Test 1.0.0、standalone agent-browser 0.26.0、Web 协议 15 和已有 Playwright
 Chromium。GitHub Actions 与 Pages 不安装也不调用 A3S Test。
 
+## 数据验证
+
+“数据 → 数据工具 → 数据验证”会在弹窗打开时捕获活动工作表、焦点单元格与全部实时选区。
+取消或 Escape 不发布修改；应用与全部清除分别只发布一次受控工作簿值、创建一条撤销记录，
+并在受控重挂载后保留全部选区、把焦点还给原功能区按钮或网格节点。
+
+| 规则 | 接受的边界或来源 |
+| --- | --- |
+| 序列 | 最多 255 个字符的逗号分隔值、单行/单列连续区域，或工作表/工作簿名称 |
+| 整数 | 整数边界，以及介于、比较和相等运算符 |
+| 小数 | 数字边界，以及介于、比较和相等运算符；整数也是有效小数输入 |
+| 日期 | `YYYY-MM-DD`、整数 Excel 日期序号或 `DATE(year,month,day)` |
+| 文本长度 | 非负整数边界，以及介于、比较和相等运算符 |
+
+### 输入信息与错误警告设置
+
+同一弹窗维护完整的常用验证元数据，不另设只服务于文件导出的隐藏路径：
+
+| 模型字段 | 弹窗行为 | 原生 XLSX 字段 |
+| --- | --- | --- |
+| `allowBlank` | 忽略空值，或对空单元格执行验证 | `allowBlank` |
+| `showDropdownArrow` | 显示或隐藏单元格内序列箭头 | `showDropDown` 的反向语义 |
+| `hintShow`、`hintTitle`、`hintValue` | 选中受验证单元格时显示带标题的输入信息 | `showInputMessage`、`promptTitle`、`prompt` |
+| `prohibitInput` | 启用无效值错误警告 | `showErrorMessage` |
+| `errorStyle` | 保存 `stop`、`warning` 或 `information` | `errorStyle` |
+| `errorTitle`、`errorMessage` | 提供自定义错误标题与正文 | `errorTitle`、`error` |
+
+标题最多 32 个 Unicode 码点，输入信息最多 255 个，错误消息最多 225 个。关闭输入信息或
+错误警告不会删除未显示的标题与正文，再次启用时仍可继续编辑。旧 A3S 内容缺少这些字段时，
+会规范为忽略空值、显示下拉箭头与停止样式。
+
+挂载后的网格会直接解析紧凑规则，不展开空白单元格。它会执行 `allowBlank`、按
+`showDropdownArrow` 隐藏箭头、显示自定义输入标题与信息，并在无效输入时使用自定义错误
+标题与消息。Fortune 当前只提供一条阻止式浏览器错误弹窗路径，因此“警告”和“信息”会精确
+保存在 XLSX 并可由原生应用重开，但浏览器尚未分别复刻桌面套件的确认或取消分支。
+
+一次操作可以覆盖多个互不重叠的选区，总计最多 10,000 个单元格。非法或越界区域、二维
+序列来源、非法或倒序边界、保护或合并单元格、数据透视表输出和只读视图都会在修改前失败。
+日期在浏览器内规范为 ISO，导出时写为原生 `DATE(...)` 公式；导入会识别工作簿的 1900 或
+1904 日期系统。在公开 Playground 首页选择 **新建 → 数据验证**，即可打开包含序列、日期、
+优先级，以及停止、警告、信息三种文件语义的模板；它不是隐藏的 E2E 查询夹具。
+
+聚焦模型、XLSX、命令、弹窗、历史、功能区与桌面/紧凑 Playwright 回归覆盖该流程。
+`tests/e2e/spreadsheet-data-validation.acl` 只在本地通过 A3S Test 运行；GitHub Actions 与
+Pages 不安装也不调用 A3S Test。
+
 ## 紧凑的数据验证、保护与条件格式
 
 大范围数据验证保存在 `sheet.dataValidationRanges` 中，区域使用从零开始、包含端点的
@@ -126,8 +172,14 @@ const sheet = {
         value2: '',
         validity: '',
         remote: false,
+        allowBlank: true,
+        showDropdownArrow: true,
         prohibitInput: true,
+        errorStyle: 'stop',
+        errorTitle: 'Invalid state',
+        errorMessage: 'Choose Ready or Blocked.',
         hintShow: true,
+        hintTitle: 'Workflow state',
         hintValue: 'Choose a workflow state.',
       },
     },

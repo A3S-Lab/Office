@@ -5,6 +5,8 @@ import type {
   WorkArtifactKind,
   WorkPresentationContent,
   WorkSlide,
+  WorkSpreadsheetDataValidationItem,
+  WorkSpreadsheetSheet,
   WorkTemplate,
 } from './work-types';
 import {
@@ -85,6 +87,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     accent: '#168f72',
   },
   {
+    id: 'data-validation',
+    kind: 'spreadsheet',
+    name: '数据验证',
+    description: '下拉列表、输入提示与错误警告',
+    accent: '#13795b',
+  },
+  {
     id: 'blank-presentation',
     kind: 'presentation',
     name: '空白演示',
@@ -133,6 +142,7 @@ function initialTitle(templateId: string, kind: WorkArtifactKind): string {
     'run-shading': '字符底纹示例',
     'proofing-languages': '校对语言示例',
     'quarterly-plan': '季度执行计划',
+    'data-validation': '数据验证示例',
     'strategy-deck': '业务策略汇报',
   };
   if (titles[templateId]) return titles[templateId];
@@ -236,6 +246,9 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
   }
   if (templateId === 'quarterly-plan') {
     return { type: 'spreadsheet', sheets: quarterlyPlanSheets() };
+  }
+  if (templateId === 'data-validation') {
+    return { type: 'spreadsheet', sheets: dataValidationTemplateSheets() };
   }
   if (templateId === 'strategy-deck') {
     return strategyPresentation();
@@ -351,6 +364,143 @@ function quarterlyPlanSheets(): Sheet[] {
       },
     },
   ];
+}
+
+function dataValidationTemplateSheets(): WorkSpreadsheetSheet[] {
+  const inputs = emptyMatrix(24, 8);
+  ['Task', 'State', 'Due date', 'Priority', 'Owner'].forEach(
+    (value, column) => {
+      inputs[0][column] = headerCell(value);
+    },
+  );
+  const rows: Array<[string, string, string, number, string]> = [
+    ['Confirm requirements', 'Ready', '2026-09-05', 2, 'Avery'],
+    ['Review integration', 'In review', '2026-09-12', 3, 'Morgan'],
+    ['Resolve blockers', 'Blocked', '2026-09-18', 5, 'Riley'],
+    ['Publish preview', 'Ready', '2026-09-24', 1, 'Jordan'],
+    ['Ship release', 'In review', '2026-09-30', 4, 'Taylor'],
+  ];
+  rows.forEach((row, rowIndex) => {
+    row.forEach((value, columnIndex) => {
+      inputs[rowIndex + 1][columnIndex] = styledCell(value, {
+        bg: rowIndex % 2 ? '#f4faf7' : '#ffffff',
+      });
+    });
+  });
+
+  return [
+    {
+      id: createWorkId('sheet'),
+      name: 'Inputs',
+      status: 1,
+      order: 0,
+      row: 24,
+      column: 8,
+      data: inputs,
+      dataValidationRanges: [
+        {
+          ranges: [{ row: [1, 5], column: [1, 1] }],
+          item: dataValidationTemplateItem({
+            type: 'dropdown',
+            rangeTxt: 'B2:B6',
+            value1: "'Lists'!A1:A3",
+            allowBlank: false,
+            showDropdownArrow: true,
+            errorStyle: 'stop',
+            errorTitle: 'Invalid state',
+            errorMessage: 'Choose a state from the list.',
+            hintShow: true,
+            hintTitle: 'Workflow state',
+            hintValue: 'Choose Ready, Blocked, or In review.',
+          }),
+        },
+        {
+          ranges: [{ row: [1, 5], column: [2, 2] }],
+          item: dataValidationTemplateItem({
+            type: 'date',
+            type2: 'between',
+            rangeTxt: 'C2:C6',
+            value1: '2026-01-01',
+            value2: '2026-12-31',
+            errorStyle: 'information',
+            errorTitle: 'Date outside 2026',
+            errorMessage: 'Enter a date in calendar year 2026.',
+            hintShow: true,
+            hintTitle: 'Due date',
+            hintValue: 'Use a date between 2026-01-01 and 2026-12-31.',
+          }),
+        },
+        {
+          ranges: [{ row: [1, 5], column: [3, 3] }],
+          item: dataValidationTemplateItem({
+            type: 'number_integer',
+            type2: 'between',
+            rangeTxt: 'D2:D6',
+            value1: '1',
+            value2: '5',
+            allowBlank: false,
+            errorStyle: 'warning',
+            errorTitle: 'Priority outside range',
+            errorMessage: 'Enter a whole number from 1 through 5.',
+            hintShow: true,
+            hintTitle: 'Priority',
+            hintValue: '1 is highest priority; 5 is lowest.',
+          }),
+        },
+      ],
+      luckysheet_select_save: [
+        {
+          row: [1, 5],
+          column: [1, 1],
+          row_focus: 1,
+          column_focus: 1,
+        },
+      ],
+      config: {
+        columnlen: { 0: 190, 1: 110, 2: 118, 3: 84, 4: 104 },
+        rowlen: { 0: 30 },
+      },
+    },
+    {
+      id: createWorkId('sheet'),
+      name: 'Lists',
+      status: 0,
+      order: 1,
+      row: 12,
+      column: 3,
+      data: [
+        [styledCell('Ready')],
+        [styledCell('Blocked')],
+        [styledCell('In review')],
+      ],
+      config: { columnlen: { 0: 120 } },
+    },
+  ];
+}
+
+function dataValidationTemplateItem(
+  overrides: Partial<WorkSpreadsheetDataValidationItem>,
+): WorkSpreadsheetDataValidationItem {
+  return {
+    type: 'dropdown',
+    type2: '',
+    rangeTxt: '',
+    value1: '',
+    value2: '',
+    validity: '',
+    remote: false,
+    allowBlank: true,
+    showDropdownArrow: true,
+    prohibitInput: true,
+    errorStyle: 'stop',
+    errorTitle: '',
+    errorMessage: '',
+    hintShow: false,
+    hintTitle: '',
+    hintValue: '',
+    checked: false,
+    ...overrides,
+  };
 }
 
 function emptyMatrix(rows: number, columns: number): CellMatrix {

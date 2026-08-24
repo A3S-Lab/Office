@@ -12,7 +12,12 @@ import {
 } from './work-ooxml-package';
 import { sheetHasProtectionState } from './work-spreadsheet-protection';
 import {
+  boundedSpreadsheetDataValidationText,
+  normalizeSpreadsheetDataValidationErrorStyle,
   normalizeSpreadsheetDateValidationBoundary,
+  SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT,
+  SPREADSHEET_DATA_VALIDATION_HINT_LIMIT,
+  SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
   spreadsheetDateValidationFormula,
 } from './work-spreadsheet-data-validation';
 import type {
@@ -445,9 +450,30 @@ function parseDataValidations(
           : formula2,
       validity: '',
       remote: false,
+      allowBlank: booleanAttribute(element, 'allowBlank'),
+      showDropdownArrow:
+        type === 'dropdown' ? !booleanAttribute(element, 'showDropDown') : true,
       prohibitInput: booleanAttribute(element, 'showErrorMessage'),
+      errorStyle: normalizeSpreadsheetDataValidationErrorStyle(
+        attribute(element, 'errorStyle'),
+      ),
+      errorTitle: boundedSpreadsheetDataValidationText(
+        attribute(element, 'errorTitle'),
+        SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+      ),
+      errorMessage: boundedSpreadsheetDataValidationText(
+        attribute(element, 'error'),
+        SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT,
+      ),
       hintShow: booleanAttribute(element, 'showInputMessage'),
-      hintValue: attribute(element, 'prompt') ?? '',
+      hintTitle: boundedSpreadsheetDataValidationText(
+        attribute(element, 'promptTitle'),
+        SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+      ),
+      hintValue: boundedSpreadsheetDataValidationText(
+        attribute(element, 'prompt'),
+        SPREADSHEET_DATA_VALIDATION_HINT_LIMIT,
+      ),
       checked: false,
     };
     return [{ references, item }];
@@ -477,11 +503,44 @@ function writeDataValidations(
     const operator = xlsxValidationOperator(item.type2);
     if (operator && validationType !== 'list')
       element.setAttribute('operator', operator);
-    element.setAttribute('allowBlank', '1');
+    element.setAttribute('allowBlank', item.allowBlank ? '1' : '0');
+    if (validationType === 'list')
+      element.setAttribute('showDropDown', item.showDropdownArrow ? '0' : '1');
     element.setAttribute('showErrorMessage', item.prohibitInput ? '1' : '0');
+    element.setAttribute('errorStyle', item.errorStyle ?? 'stop');
+    if (item.errorTitle)
+      element.setAttribute(
+        'errorTitle',
+        boundedSpreadsheetDataValidationText(
+          item.errorTitle,
+          SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+        ),
+      );
+    if (item.errorMessage)
+      element.setAttribute(
+        'error',
+        boundedSpreadsheetDataValidationText(
+          item.errorMessage,
+          SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT,
+        ),
+      );
     element.setAttribute('showInputMessage', item.hintShow ? '1' : '0');
+    if (item.hintTitle)
+      element.setAttribute(
+        'promptTitle',
+        boundedSpreadsheetDataValidationText(
+          item.hintTitle,
+          SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+        ),
+      );
     if (item.hintValue)
-      element.setAttribute('prompt', item.hintValue.slice(0, 255));
+      element.setAttribute(
+        'prompt',
+        boundedSpreadsheetDataValidationText(
+          item.hintValue,
+          SPREADSHEET_DATA_VALIDATION_HINT_LIMIT,
+        ),
+      );
     element.setAttribute('sqref', references.join(' '));
     appendFormula(
       document,
@@ -564,8 +623,14 @@ function validationSignature(item: FortuneDataValidationItem): string {
     type2: item.type2,
     value1: item.value1,
     value2: item.value2,
+    allowBlank: item.allowBlank,
+    showDropdownArrow: item.showDropdownArrow,
     prohibitInput: item.prohibitInput,
+    errorStyle: item.errorStyle,
+    errorTitle: item.errorTitle,
+    errorMessage: item.errorMessage,
     hintShow: item.hintShow,
+    hintTitle: item.hintTitle,
     hintValue: item.hintValue,
   });
 }
@@ -586,9 +651,30 @@ function fortuneDataValidationItem(
       typeof item.value2 === 'string' ? item.value2 : String(item.value2 ?? ''),
     validity: typeof item.validity === 'string' ? item.validity : '',
     remote: Boolean(item.remote),
+    allowBlank: typeof item.allowBlank === 'boolean' ? item.allowBlank : true,
+    showDropdownArrow:
+      typeof item.showDropdownArrow === 'boolean'
+        ? item.showDropdownArrow
+        : true,
     prohibitInput: Boolean(item.prohibitInput),
+    errorStyle: normalizeSpreadsheetDataValidationErrorStyle(item.errorStyle),
+    errorTitle: boundedSpreadsheetDataValidationText(
+      item.errorTitle,
+      SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+    ),
+    errorMessage: boundedSpreadsheetDataValidationText(
+      item.errorMessage,
+      SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT,
+    ),
     hintShow: Boolean(item.hintShow),
-    hintValue: typeof item.hintValue === 'string' ? item.hintValue : '',
+    hintTitle: boundedSpreadsheetDataValidationText(
+      item.hintTitle,
+      SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+    ),
+    hintValue: boundedSpreadsheetDataValidationText(
+      item.hintValue,
+      SPREADSHEET_DATA_VALIDATION_HINT_LIMIT,
+    ),
     checked: Boolean(item.checked),
   };
 }

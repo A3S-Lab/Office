@@ -209,6 +209,49 @@ test('publishes native Writer proofing languages in README, docs, roadmap, and P
   }
 });
 
+test('publishes complete Spreadsheet data-validation settings in every public surface', async () => {
+  const [readme, changelog, roadmap, english, chinese, templates] =
+    await Promise.all([
+      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+      readFile(
+        path.join(documentationRoot, 'latest/en/components/spreadsheet.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, 'latest/zh/components/spreadsheet.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'src/internal/features/work/work-templates.ts',
+        ),
+        'utf8',
+      ),
+    ]);
+
+  expect(readme).toContain('Complete Spreadsheet data-validation settings');
+  expect(readme).toContain('**新建 → 数据验证**');
+  expect(readme).toContain('not an `?e2e=` fixture');
+  expect(changelog).toContain('input titles and messages');
+  expect(changelog).toContain('home-page **新建 → 数据验证**');
+  expect(roadmap).toContain('input and error-alert settings');
+  expect(english).toContain('### Input and error settings');
+  expect(english).toContain('**新建 → 数据验证**');
+  expect(chinese).toContain('## 数据验证');
+  expect(chinese).toContain('### 输入信息与错误警告设置');
+  expect(chinese).toContain('**新建 → 数据验证**');
+  expect(templates).toContain("id: 'data-validation'");
+  for (const document of [readme, english, chinese]) {
+    expect(document).toContain('`allowBlank`');
+    expect(document).toContain('`showDropdownArrow`');
+    expect(document).toContain('`errorStyle`');
+    expect(document).toContain('`hintTitle`');
+  }
+});
+
 test('documents the complete native Writer underline contract', async () => {
   const [readme, roadmap, product, english, chinese] = await Promise.all([
     readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),

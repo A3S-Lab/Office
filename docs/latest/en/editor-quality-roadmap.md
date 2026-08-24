@@ -1105,6 +1105,19 @@ dialog, history, ribbon, desktop, and compact coverage plus a deterministic
 local A3S Test 1.0.0 ACL protect the workflow; GitHub Actions and Pages do not
 install or invoke A3S Test.
 
+The follow-up completes common native input and error settings in the same
+dialog: Ignore blank, in-cell dropdown-arrow visibility, titled input messages,
+enabled error alerts, Stop/Warning/Information style, and custom error titles
+and messages. Hidden copy is retained, Unicode-aware 32/255/225 limits are
+bounded before persistence, and SpreadsheetML's inverted `showDropDown` is
+hidden behind the semantic `showDropdownArrow` field. Compact browser rules now
+honor blank policy, arrow visibility, and authored input/error copy; all fields
+round-trip through native XLSX and reopen. Fortune's single blocking browser
+alert remains the explicit boundary for the distinct Warning and Information
+confirmation flows. A visible Playground template, publication regression,
+expanded Playwright workflow, and local-only ACL keep implementation and public
+documentation synchronized.
+
 The twenty-second slice adds native Spreadsheet Tables/ListObjects through
 Insert and the grid-scoped `Cmd/Ctrl+T` shortcut. A single cell expands to its
 finite current region, an explicit multi-row selection remains exact, and one

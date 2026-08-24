@@ -120,6 +120,17 @@
   padding: 8px 10px;
 }
 
+.work-spreadsheet-data-validation-message-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.work-spreadsheet-data-validation-message-grid .ds-field.message {
+  grid-column: 1 / -1;
+}
+
 .work-spreadsheet-data-validation-dialog textarea {
   min-height: 70px;
   resize: vertical;
@@ -138,7 +149,8 @@
 @media (max-width: 560px) {
   .work-spreadsheet-data-validation-condition-grid,
   .work-spreadsheet-data-validation-values.two,
-  .work-spreadsheet-data-validation-behavior {
+  .work-spreadsheet-data-validation-behavior,
+  .work-spreadsheet-data-validation-message-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }

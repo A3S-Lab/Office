@@ -1,8 +1,87 @@
 suite "spreadsheet-data-validation" {
     version = 1
 
+    scenario "open-public-data-validation-template" {
+        name = "Open the public Spreadsheet data-validation template"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground-home" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-home-ready" {
+            text = "我的文档"
+        }
+
+        click "open-public-data-validation-template" {
+            target = role("button", "数据验证 下拉列表、输入提示与错误警告")
+        }
+
+        wait "public-template-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "public-template-title-visible" {
+            visible = css("input[aria-label='文件名'][value='数据验证示例']")
+        }
+
+        click "open-public-template-data-tab" {
+            target = role("tab", "数据")
+        }
+
+        click "open-public-template-validation-dialog" {
+            target = role("button", "数据验证")
+        }
+
+        expect "public-template-range-visible" {
+            text = "Inputs!B2:B6"
+        }
+
+        expect "public-template-list-source-visible" {
+            visible = css(".work-spreadsheet-data-validation-dialog input[aria-label='来源'][value=\"'Lists'!A1:A3\"]")
+        }
+
+        expect "public-template-input-settings-visible" {
+            visible = css(".work-spreadsheet-data-validation-dialog:has(input[aria-label='忽略空值']:not(:checked)):has(input[aria-label='在单元格内显示下拉箭头']:checked):has(input[aria-label='选中单元格时显示输入信息']:checked)")
+        }
+
+        expect "public-template-input-title-visible" {
+            visible = css(".work-spreadsheet-data-validation-dialog input[aria-label='输入信息标题'][value='Workflow state']")
+        }
+
+        expect "public-template-error-settings-visible" {
+            visible = css(".work-spreadsheet-data-validation-dialog:has(select[aria-label='错误警告样式'] option[value='stop']:checked):has(input[aria-label='错误警告标题'][value='Invalid state'])")
+        }
+
+        press "close-public-template-dialog" {
+            key = "Escape"
+        }
+
+        accessibility "public-template-accessibility" {
+            path = "evidence/public-template-accessibility.json"
+            interactive = true
+        }
+
+        console "public-template-console" {
+            path = "diagnostics/public-template-console.json"
+            clear = false
+        }
+
+        page_errors "public-template-page-errors" {
+            path = "diagnostics/public-template-page-errors.json"
+            clear = false
+        }
+    }
+
     scenario "apply-remove-and-undo-data-validation" {
-        name = "Apply, remove, and undo WPS spreadsheet data validation"
+        name = "Apply, remove, and undo Traditional Office spreadsheet data validation"
         surface = "web"
         timeout_ms = 120000
 
@@ -49,7 +128,7 @@ suite "spreadsheet-data-validation" {
         }
 
         fill "enter-invalid-list-range" {
-            target = css(".work-spreadsheet-data-validation-dialog input[autocapitalize='none']")
+            target = css(".work-spreadsheet-data-validation-dialog input[aria-label='来源']")
             value = "'Lists'!A1:B2"
         }
 
@@ -58,7 +137,7 @@ suite "spreadsheet-data-validation" {
         }
 
         fill "enter-valid-list-range" {
-            target = css(".work-spreadsheet-data-validation-dialog input[autocapitalize='none']")
+            target = css(".work-spreadsheet-data-validation-dialog input[aria-label='来源']")
             value = "'Lists'!A1:A3"
         }
 
@@ -66,9 +145,37 @@ suite "spreadsheet-data-validation" {
             target = css(".work-spreadsheet-data-validation-dialog .work-office-checkbox:has(input[aria-label='选中单元格时显示输入信息'])")
         }
 
+        fill "enter-input-title" {
+            target = css(".work-spreadsheet-data-validation-dialog input[aria-label='输入信息标题']")
+            value = "Workflow state"
+        }
+
         fill "enter-input-message" {
-            target = css(".work-spreadsheet-data-validation-dialog textarea")
+            target = css(".work-spreadsheet-data-validation-dialog textarea[aria-label='输入信息']")
             value = "Choose a workflow state."
+        }
+
+        click "require-nonblank-input" {
+            target = css(".work-spreadsheet-data-validation-dialog .work-office-checkbox:has(input[aria-label='忽略空值'])")
+        }
+
+        click "hide-dropdown-arrow" {
+            target = css(".work-spreadsheet-data-validation-dialog .work-office-checkbox:has(input[aria-label='在单元格内显示下拉箭头'])")
+        }
+
+        select "choose-warning-style" {
+            target = css(".work-spreadsheet-data-validation-dialog select[aria-label='错误警告样式']")
+            values = ["warning"]
+        }
+
+        fill "enter-error-title" {
+            target = css(".work-spreadsheet-data-validation-dialog input[aria-label='错误警告标题']")
+            value = "Invalid state"
+        }
+
+        fill "enter-error-message" {
+            target = css(".work-spreadsheet-data-validation-dialog textarea[aria-label='错误警告消息']")
+            value = "Choose Ready, Blocked, or In review."
         }
 
         click "apply-data-validation" {
@@ -85,6 +192,26 @@ suite "spreadsheet-data-validation" {
 
         expect "normalized-list-source-visible" {
             visible = css(".work-spreadsheet-data-validation-dialog input[value=\"'Lists'!A1:A3\"]")
+        }
+
+        expect "input-settings-reopen" {
+            visible = css(".work-spreadsheet-data-validation-dialog:has(input[aria-label='选中单元格时显示输入信息']:checked)")
+        }
+
+        expect "input-title-reopens" {
+            visible = css(".work-spreadsheet-data-validation-dialog input[aria-label='输入信息标题'][value='Workflow state']")
+        }
+
+        expect "error-style-reopens" {
+            visible = css(".work-spreadsheet-data-validation-dialog:has(select[aria-label='错误警告样式'] option[value='warning']:checked)")
+        }
+
+        expect "error-title-reopens" {
+            visible = css(".work-spreadsheet-data-validation-dialog input[aria-label='错误警告标题'][value='Invalid state']")
+        }
+
+        expect "blank-and-arrow-settings-reopen" {
+            visible = css(".work-spreadsheet-data-validation-dialog:has(input[aria-label='忽略空值']:not(:checked)):has(input[aria-label='在单元格内显示下拉箭头']:not(:checked))")
         }
 
         expect "remove-action-visible" {

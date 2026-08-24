@@ -1,5 +1,56 @@
 import { expect, test } from '@playwright/test';
 
+test('Spreadsheet data validation is discoverable from the public Playground', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: '我的文档' })).toBeVisible();
+  await page
+    .getByRole('button', {
+      name: '数据验证 下拉列表、输入提示与错误警告',
+    })
+    .click();
+  await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
+  await expect(page.getByRole('textbox', { name: '文件名' })).toHaveValue(
+    '数据验证示例',
+  );
+
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  await ribbon.getByRole('tab', { name: '数据' }).click();
+  await ribbon.getByRole('button', { name: '数据验证' }).click();
+
+  const dialog = page.getByRole('dialog', { name: '数据验证' });
+  await expect(dialog).toContainText('Inputs!B2:B6');
+  await expect(dialog.getByRole('textbox', { name: '来源' })).toHaveValue(
+    "'Lists'!A1:A3",
+  );
+  await expect(
+    dialog.getByRole('checkbox', { name: '忽略空值' }),
+  ).not.toBeChecked();
+  await expect(
+    dialog.getByRole('checkbox', { name: '在单元格内显示下拉箭头' }),
+  ).toBeChecked();
+  await expect(
+    dialog.getByRole('checkbox', { name: '选中单元格时显示输入信息' }),
+  ).toBeChecked();
+  await expect(
+    dialog.getByRole('textbox', { name: '输入信息标题' }),
+  ).toHaveValue('Workflow state');
+  await expect(
+    dialog.getByRole('combobox', { name: '错误警告样式' }),
+  ).toHaveValue('stop');
+  await expect(
+    dialog.getByRole('textbox', { name: '错误警告标题' }),
+  ).toHaveValue('Invalid state');
+  expect(browserErrors).toEqual([]);
+});
+
 test('Spreadsheet data validation stays atomic and accessible at every layout', async ({
   page,
 }, testInfo) => {
@@ -40,8 +91,24 @@ test('Spreadsheet data validation stays atomic and accessible at every layout', 
     .getByRole('checkbox', { name: '选中单元格时显示输入信息' })
     .click();
   await dialog
-    .getByRole('textbox', { name: '输入信息' })
+    .getByRole('textbox', { name: '输入信息标题' })
+    .fill('Workflow state');
+  await dialog
+    .getByRole('textbox', { name: '输入信息', exact: true })
     .fill('Choose a workflow state.');
+  await dialog.getByRole('checkbox', { name: '忽略空值' }).click();
+  await dialog
+    .getByRole('checkbox', { name: '在单元格内显示下拉箭头' })
+    .click();
+  await dialog
+    .getByRole('combobox', { name: '错误警告样式' })
+    .selectOption('warning');
+  await dialog
+    .getByRole('textbox', { name: '错误警告标题' })
+    .fill('Invalid state');
+  await dialog
+    .getByRole('textbox', { name: '错误警告消息' })
+    .fill('Choose Ready, Blocked, or In review.');
   await expect(dialog.getByRole('button', { name: '确定' })).toBeEnabled();
   await page.screenshot({
     path: testInfo.outputPath('spreadsheet-data-validation-dialog.png'),
@@ -57,6 +124,30 @@ test('Spreadsheet data validation stays atomic and accessible at every layout', 
   await expect(dialog.getByRole('textbox', { name: '来源' })).toHaveValue(
     "'Lists'!A1:A3",
   );
+  await expect(
+    dialog.getByRole('checkbox', { name: '忽略空值' }),
+  ).not.toBeChecked();
+  await expect(
+    dialog.getByRole('checkbox', { name: '在单元格内显示下拉箭头' }),
+  ).not.toBeChecked();
+  await expect(
+    dialog.getByRole('checkbox', { name: '选中单元格时显示输入信息' }),
+  ).toBeChecked();
+  await expect(
+    dialog.getByRole('textbox', { name: '输入信息标题' }),
+  ).toHaveValue('Workflow state');
+  await expect(
+    dialog.getByRole('textbox', { name: '输入信息', exact: true }),
+  ).toHaveValue('Choose a workflow state.');
+  await expect(
+    dialog.getByRole('combobox', { name: '错误警告样式' }),
+  ).toHaveValue('warning');
+  await expect(
+    dialog.getByRole('textbox', { name: '错误警告标题' }),
+  ).toHaveValue('Invalid state');
+  await expect(
+    dialog.getByRole('textbox', { name: '错误警告消息' }),
+  ).toHaveValue('Choose Ready, Blocked, or In review.');
   await expect(dialog.getByRole('button', { name: '全部清除' })).toBeVisible();
   await dialog.getByRole('button', { name: '全部清除' }).click();
   await expect(dialog).toHaveCount(0);

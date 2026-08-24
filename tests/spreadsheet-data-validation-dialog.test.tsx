@@ -33,7 +33,11 @@ test('applies an accessible dropdown rule to every selected range', () => {
     'dropdown',
   );
   expect(
-    screen.getByRole('checkbox', { name: '输入无效数据时阻止提交' }),
+    screen.getByRole('checkbox', { name: '输入无效数据时显示错误警告' }),
+  ).toBeChecked();
+  expect(screen.getByRole('checkbox', { name: '忽略空值' })).toBeChecked();
+  expect(
+    screen.getByRole('checkbox', { name: '在单元格内显示下拉箭头' }),
   ).toBeChecked();
   expect(screen.getByRole('button', { name: '确定' })).toBeDisabled();
 
@@ -48,8 +52,20 @@ test('applies an accessible dropdown rule to every selected range', () => {
   fireEvent.click(
     screen.getByRole('checkbox', { name: '选中单元格时显示输入信息' }),
   );
+  fireEvent.change(screen.getByRole('textbox', { name: '输入信息标题' }), {
+    target: { value: 'Workflow state' },
+  });
   fireEvent.change(screen.getByRole('textbox', { name: '输入信息' }), {
     target: { value: 'Choose a workflow state.' },
+  });
+  fireEvent.change(screen.getByRole('combobox', { name: '错误警告样式' }), {
+    target: { value: 'warning' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: '错误警告标题' }), {
+    target: { value: 'Invalid state' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: '错误警告消息' }), {
+    target: { value: 'Choose Ready or Blocked.' },
   });
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
 
@@ -59,8 +75,14 @@ test('applies an accessible dropdown rule to every selected range', () => {
       type2: '',
       value1: 'Ready,Blocked',
       value2: '',
+      allowBlank: true,
+      showDropdownArrow: true,
       prohibitInput: true,
+      errorStyle: 'warning',
+      errorTitle: 'Invalid state',
+      errorMessage: 'Choose Ready or Blocked.',
       hintShow: true,
+      hintTitle: 'Workflow state',
       hintValue: 'Choose a workflow state.',
     },
   ]);
@@ -170,8 +192,14 @@ function dialogSource(): SpreadsheetDataValidationDialogSource {
       type2: '',
       value1: '',
       value2: '',
+      allowBlank: true,
+      showDropdownArrow: true,
       prohibitInput: true,
+      errorStyle: 'stop',
+      errorTitle: '',
+      errorMessage: '',
       hintShow: false,
+      hintTitle: '',
       hintValue: '',
     },
   };

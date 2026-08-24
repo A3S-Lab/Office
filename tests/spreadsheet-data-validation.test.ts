@@ -1,3 +1,4 @@
+import { getFailureText, validateCellData } from '@fortune-sheet/core';
 import { describe, expect, test } from '@rstest/core';
 import {
   applySpreadsheetDataValidation,
@@ -6,6 +7,10 @@ import {
   removeSpreadsheetDataValidation,
   validateSpreadsheetDataValidationRequest,
 } from '../src/internal/features/work/editors/spreadsheet-data-validation';
+import {
+  createWorkArtifact,
+  WORK_TEMPLATES,
+} from '../src/internal/features/work/work-templates';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 
 describe('spreadsheet data validation', () => {
@@ -23,8 +28,14 @@ describe('spreadsheet data validation', () => {
         type2: '',
         value1: ' Ready, Blocked ',
         value2: '',
+        allowBlank: false,
+        showDropdownArrow: false,
         prohibitInput: true,
+        errorStyle: 'warning',
+        errorTitle: 'Invalid workflow state',
+        errorMessage: 'Choose Ready or Blocked.',
         hintShow: true,
+        hintTitle: 'Workflow state',
         hintValue: ' Choose a workflow state. ',
       },
     });
@@ -54,8 +65,14 @@ describe('spreadsheet data validation', () => {
           value2: '',
           validity: '',
           remote: false,
+          allowBlank: false,
+          showDropdownArrow: false,
           prohibitInput: true,
+          errorStyle: 'warning',
+          errorTitle: 'Invalid workflow state',
+          errorMessage: 'Choose Ready or Blocked.',
           hintShow: true,
+          hintTitle: 'Workflow state',
           hintValue: 'Choose a workflow state.',
           checked: false,
         },
@@ -81,8 +98,14 @@ describe('spreadsheet data validation', () => {
         type2: 'between',
         value1: ' 1 ',
         value2: '10',
+        allowBlank: true,
+        showDropdownArrow: true,
         prohibitInput: true,
+        errorStyle: 'stop',
+        errorTitle: '',
+        errorMessage: '',
         hintShow: false,
+        hintTitle: 'Hidden title',
         hintValue: 'ignored',
       },
     });
@@ -95,7 +118,8 @@ describe('spreadsheet data validation', () => {
         value1: '1',
         value2: '10',
         hintShow: false,
-        hintValue: '',
+        hintTitle: 'Hidden title',
+        hintValue: 'ignored',
       }),
     });
     expect(
@@ -218,6 +242,26 @@ describe('spreadsheet data validation', () => {
     ).toMatchObject({ ok: false, code: 'range-too-large' });
   });
 
+  test('enforces blank policy and custom error copy in the mounted grid engine', () => {
+    const rule = {
+      type: 'number_integer',
+      type2: 'between',
+      value1: '1',
+      value2: '5',
+      errorTitle: 'Priority outside range',
+      errorMessage: 'Enter a whole number from 1 through 5.',
+    };
+    expect(
+      validateCellData({} as never, { ...rule, allowBlank: true }, ''),
+    ).toBe(true);
+    expect(
+      validateCellData({} as never, { ...rule, allowBlank: false }, ''),
+    ).toBe(false);
+    expect(getFailureText({} as never, rule)).toBe(
+      'Priority outside range\nEnter a whole number from 1 through 5.',
+    );
+  });
+
   test('normalizes date formulas and Excel serials to stable ISO boundaries', () => {
     const content = validationContent();
     expect(
@@ -256,6 +300,50 @@ describe('spreadsheet data validation', () => {
       }),
     ).toMatchObject({ ok: false, code: 'invalid-date' });
   });
+
+  test('publishes a Playground template for complete input and error settings', () => {
+    expect(WORK_TEMPLATES).toContainEqual(
+      expect.objectContaining({
+        id: 'data-validation',
+        kind: 'spreadsheet',
+        name: '数据验证',
+      }),
+    );
+    const artifact = createWorkArtifact('data-validation');
+    expect(artifact.title).toBe('数据验证示例');
+    if (artifact.content.type !== 'spreadsheet') {
+      throw new Error(
+        'Expected the data-validation template to create a Spreadsheet.',
+      );
+    }
+    expect(artifact.content.sheets).toHaveLength(2);
+    expect(artifact.content.sheets[0]?.dataValidationRanges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ranges: [{ row: [1, 5], column: [1, 1] }],
+          item: expect.objectContaining({
+            type: 'dropdown',
+            allowBlank: false,
+            showDropdownArrow: true,
+            prohibitInput: true,
+            errorStyle: 'stop',
+            errorTitle: 'Invalid state',
+            errorMessage: 'Choose a state from the list.',
+            hintShow: true,
+            hintTitle: 'Workflow state',
+            hintValue: 'Choose Ready, Blocked, or In review.',
+          }),
+        }),
+        expect.objectContaining({
+          ranges: [{ row: [1, 5], column: [3, 3] }],
+          item: expect.objectContaining({
+            type: 'number_integer',
+            errorStyle: 'warning',
+          }),
+        }),
+      ]),
+    );
+  });
 });
 
 function dropdownValue(value1: string) {
@@ -264,8 +352,14 @@ function dropdownValue(value1: string) {
     type2: '' as const,
     value1,
     value2: '',
+    allowBlank: true,
+    showDropdownArrow: true,
     prohibitInput: true,
+    errorStyle: 'stop' as const,
+    errorTitle: '',
+    errorMessage: '',
     hintShow: false,
+    hintTitle: '',
     hintValue: '',
   };
 }

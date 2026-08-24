@@ -4,6 +4,23 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added complete common Spreadsheet data-validation input and error settings:
+  ignore blank, in-cell dropdown-arrow visibility, input titles and messages,
+  enabled error alerts, Stop/Warning/Information style, and custom error titles
+  and messages. Hidden message drafts remain intact, text limits count Unicode
+  code points, and Apply still publishes one controlled value and one Undo
+  record for all captured ranges.
+- Preserved `allowBlank`, inverted SpreadsheetML `showDropDown`,
+  `showErrorMessage`, `errorStyle`, `errorTitle`, `error`, `showInputMessage`,
+  `promptTitle`, and `prompt` through native XLSX import, export, and reopen.
+  Compact browser rules now honor blank policy, arrow visibility, and authored
+  input/error copy without materializing blank cells. Warning and Information
+  retain exact file semantics while the current browser grid keeps one shared
+  blocking alert path.
+- Added the public Playground home-page **新建 → 数据验证** template, expanded
+  desktop and compact Playwright coverage for both its public entry and the
+  editing workflow, and updated the local-only A3S Test regression, README,
+  roadmap, and bilingual Spreadsheet documentation.
 - Added native Writer proofing languages with independent Latin `w:val`, East
   Asian `w:eastAsia`, and bidi `w:bidi` slots plus explicit `w:noProof` true or
   false state. Document defaults, inherited styles, body text, page chrome,

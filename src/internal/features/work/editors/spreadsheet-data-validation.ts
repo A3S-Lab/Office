@@ -1,10 +1,18 @@
 import type {
   WorkSpreadsheetContent,
+  WorkSpreadsheetDataValidationErrorStyle,
   WorkSpreadsheetDataValidationItem,
   WorkSpreadsheetDataValidationRange,
   WorkSpreadsheetSheet,
 } from '../work-types';
-import { normalizeSpreadsheetDateValidationBoundary } from '../work-spreadsheet-data-validation';
+import {
+  boundedSpreadsheetDataValidationText,
+  normalizeSpreadsheetDataValidationErrorStyle,
+  normalizeSpreadsheetDateValidationBoundary,
+  SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT,
+  SPREADSHEET_DATA_VALIDATION_HINT_LIMIT,
+  SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+} from '../work-spreadsheet-data-validation';
 import { formatSpreadsheetCellRanges } from '../work-spreadsheet-ranges';
 import { canMutateSpreadsheetCellRanges } from './spreadsheet-cell-mutation-guard';
 import {
@@ -43,9 +51,15 @@ export type SpreadsheetDataValidationOperator =
   | 'laterThan';
 
 export interface SpreadsheetDataValidationDialogValue {
+  allowBlank: boolean;
+  errorMessage: string;
+  errorStyle: WorkSpreadsheetDataValidationErrorStyle;
+  errorTitle: string;
   hintShow: boolean;
+  hintTitle: string;
   hintValue: string;
   prohibitInput: boolean;
+  showDropdownArrow: boolean;
   type: SpreadsheetDataValidationType;
   type2: SpreadsheetDataValidationOperator | '';
   value1: string;
@@ -102,9 +116,15 @@ export type SpreadsheetDataValidationErrorCode =
 
 const defaultSpreadsheetDataValidationValue: SpreadsheetDataValidationDialogValue =
   {
+    allowBlank: true,
+    errorMessage: '',
+    errorStyle: 'stop',
+    errorTitle: '',
     hintShow: false,
+    hintTitle: '',
     hintValue: '',
     prohibitInput: true,
+    showDropdownArrow: true,
     type: 'dropdown',
     type2: '',
     value1: '',
@@ -346,9 +366,30 @@ function normalizeSpreadsheetDataValidationItem(
       value2: normalizedValues.value2,
       validity: '',
       remote: false,
+      allowBlank: Boolean(value.allowBlank),
+      showDropdownArrow:
+        value.type === 'dropdown' ? Boolean(value.showDropdownArrow) : true,
       prohibitInput: Boolean(value.prohibitInput),
+      errorStyle: normalizeSpreadsheetDataValidationErrorStyle(
+        value.errorStyle,
+      ),
+      errorTitle: boundedSpreadsheetDataValidationText(
+        value.errorTitle,
+        SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+      ),
+      errorMessage: boundedSpreadsheetDataValidationText(
+        value.errorMessage,
+        SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT,
+      ),
       hintShow: Boolean(value.hintShow),
-      hintValue: value.hintShow ? value.hintValue.trim().slice(0, 255) : '',
+      hintTitle: boundedSpreadsheetDataValidationText(
+        value.hintTitle,
+        SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+      ),
+      hintValue: boundedSpreadsheetDataValidationText(
+        value.hintValue,
+        SPREADSHEET_DATA_VALIDATION_HINT_LIMIT,
+      ),
       checked: false,
     },
   };
@@ -540,7 +581,13 @@ function spreadsheetDataValidationDialogValue(
           item.value2)
         : item.value2,
     prohibitInput: item.prohibitInput,
+    allowBlank: item.allowBlank ?? true,
+    showDropdownArrow: item.showDropdownArrow ?? true,
+    errorStyle: item.errorStyle ?? 'stop',
+    errorTitle: item.errorTitle ?? '',
+    errorMessage: item.errorMessage ?? '',
     hintShow: item.hintShow,
+    hintTitle: item.hintTitle ?? '',
     hintValue: item.hintValue,
   };
 }
@@ -575,9 +622,30 @@ function spreadsheetDataValidationItem(
         : String(value.value2 ?? ''),
     validity: typeof value.validity === 'string' ? value.validity : '',
     remote: Boolean(value.remote),
+    allowBlank: typeof value.allowBlank === 'boolean' ? value.allowBlank : true,
+    showDropdownArrow:
+      typeof value.showDropdownArrow === 'boolean'
+        ? value.showDropdownArrow
+        : true,
     prohibitInput: Boolean(value.prohibitInput),
+    errorStyle: normalizeSpreadsheetDataValidationErrorStyle(value.errorStyle),
+    errorTitle: boundedSpreadsheetDataValidationText(
+      value.errorTitle,
+      SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+    ),
+    errorMessage: boundedSpreadsheetDataValidationText(
+      value.errorMessage,
+      SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT,
+    ),
     hintShow: Boolean(value.hintShow),
-    hintValue: typeof value.hintValue === 'string' ? value.hintValue : '',
+    hintTitle: boundedSpreadsheetDataValidationText(
+      value.hintTitle,
+      SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+    ),
+    hintValue: boundedSpreadsheetDataValidationText(
+      value.hintValue,
+      SPREADSHEET_DATA_VALIDATION_HINT_LIMIT,
+    ),
     checked: Boolean(value.checked),
   };
 }
@@ -785,8 +853,14 @@ function spreadsheetDataValidationSignature(value: unknown): string {
         type2: item.type2,
         value1: item.value1,
         value2: item.value2,
+        allowBlank: item.allowBlank,
+        showDropdownArrow: item.showDropdownArrow,
         prohibitInput: item.prohibitInput,
+        errorStyle: item.errorStyle,
+        errorTitle: item.errorTitle,
+        errorMessage: item.errorMessage,
         hintShow: item.hintShow,
+        hintTitle: item.hintTitle,
         hintValue: item.hintValue,
       })
     : 'invalid';

@@ -1,7 +1,12 @@
-import { ListChecks, ShieldCheck } from 'lucide-react';
+import { Info, ListChecks, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { type FormEvent, useId, useState } from 'react';
 import { Button, Dialog, Field } from '../../../design-system/primitives';
 import { OfficeCheckbox } from './office-controls';
+import {
+  SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT,
+  SPREADSHEET_DATA_VALIDATION_HINT_LIMIT,
+  SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
+} from '../work-spreadsheet-data-validation';
 import {
   spreadsheetDataValidationOperators,
   type SpreadsheetDataValidationDialogSource,
@@ -185,6 +190,27 @@ export function SpreadsheetDataValidationDialog({
             )}
           </div>
 
+          <div className="work-spreadsheet-data-validation-behavior">
+            <OfficeCheckbox
+              ariaLabel="忽略空值"
+              checked={value.allowBlank}
+              onCheckedChange={(allowBlank) => update({ allowBlank })}
+            >
+              忽略空值
+            </OfficeCheckbox>
+            {value.type === 'dropdown' && (
+              <OfficeCheckbox
+                ariaLabel="在单元格内显示下拉箭头"
+                checked={value.showDropdownArrow}
+                onCheckedChange={(showDropdownArrow) =>
+                  update({ showDropdownArrow })
+                }
+              >
+                在单元格内显示下拉箭头
+              </OfficeCheckbox>
+            )}
+          </div>
+
           {value.type === 'dropdown' ? (
             <Field
               label="来源"
@@ -194,6 +220,7 @@ export function SpreadsheetDataValidationDialog({
             >
               <input
                 type="text"
+                aria-label="来源"
                 autoCapitalize="none"
                 spellCheck={false}
                 value={value.value1}
@@ -217,38 +244,110 @@ export function SpreadsheetDataValidationDialog({
           )}
         </section>
 
-        <section aria-labelledby={`${formId}-behavior`}>
-          <h3 id={`${formId}-behavior`}>输入行为</h3>
-          <div className="work-spreadsheet-data-validation-behavior">
-            <OfficeCheckbox
-              ariaLabel="输入无效数据时阻止提交"
-              checked={value.prohibitInput}
-              onCheckedChange={(prohibitInput) => update({ prohibitInput })}
-            >
-              输入无效数据时阻止提交
-            </OfficeCheckbox>
-            <OfficeCheckbox
-              ariaLabel="选中单元格时显示输入信息"
-              checked={value.hintShow}
-              onCheckedChange={(hintShow) => update({ hintShow })}
-            >
-              选中单元格时显示输入信息
-            </OfficeCheckbox>
+        <section aria-labelledby={`${formId}-input-message`}>
+          <div className="work-spreadsheet-data-validation-section-heading">
+            <Info size={16} aria-hidden="true" />
+            <h3 id={`${formId}-input-message`}>输入信息</h3>
           </div>
+          <OfficeCheckbox
+            ariaLabel="选中单元格时显示输入信息"
+            checked={value.hintShow}
+            onCheckedChange={(hintShow) => update({ hintShow })}
+          >
+            选中单元格时显示输入信息
+          </OfficeCheckbox>
           {value.hintShow && (
-            <Field
-              label="输入信息"
-              description="最多 255 个字符，将在用户选中受验证单元格时显示。"
-            >
-              <textarea
-                rows={3}
-                maxLength={255}
-                value={value.hintValue}
-                onChange={(event) =>
-                  update({ hintValue: event.currentTarget.value })
-                }
-              />
-            </Field>
+            <div className="work-spreadsheet-data-validation-message-grid">
+              <Field label="输入信息标题">
+                <input
+                  type="text"
+                  aria-label="输入信息标题"
+                  maxLength={SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT}
+                  value={value.hintTitle}
+                  onChange={(event) =>
+                    update({ hintTitle: event.currentTarget.value })
+                  }
+                />
+              </Field>
+              <Field
+                label="输入信息"
+                className="message"
+                description={`最多 ${SPREADSHEET_DATA_VALIDATION_HINT_LIMIT} 个字符，将在用户选中受验证单元格时显示。`}
+              >
+                <textarea
+                  aria-label="输入信息"
+                  rows={3}
+                  maxLength={SPREADSHEET_DATA_VALIDATION_HINT_LIMIT}
+                  value={value.hintValue}
+                  onChange={(event) =>
+                    update({ hintValue: event.currentTarget.value })
+                  }
+                />
+              </Field>
+            </div>
+          )}
+        </section>
+
+        <section aria-labelledby={`${formId}-error-alert`}>
+          <div className="work-spreadsheet-data-validation-section-heading">
+            <TriangleAlert size={16} aria-hidden="true" />
+            <h3 id={`${formId}-error-alert`}>错误警告</h3>
+          </div>
+          <OfficeCheckbox
+            ariaLabel="输入无效数据时显示错误警告"
+            checked={value.prohibitInput}
+            onCheckedChange={(prohibitInput) => update({ prohibitInput })}
+          >
+            输入无效数据时显示错误警告
+          </OfficeCheckbox>
+          {value.prohibitInput && (
+            <div className="work-spreadsheet-data-validation-message-grid">
+              <Field
+                label="错误警告样式"
+                description="三种样式会写入原生文件；当前浏览器网格统一阻止无效值。"
+              >
+                <select
+                  aria-label="错误警告样式"
+                  value={value.errorStyle}
+                  onChange={(event) =>
+                    update({
+                      errorStyle: event.currentTarget
+                        .value as SpreadsheetDataValidationDialogValue['errorStyle'],
+                    })
+                  }
+                >
+                  <option value="stop">停止</option>
+                  <option value="warning">警告</option>
+                  <option value="information">信息</option>
+                </select>
+              </Field>
+              <Field label="错误警告标题">
+                <input
+                  type="text"
+                  aria-label="错误警告标题"
+                  maxLength={SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT}
+                  value={value.errorTitle}
+                  onChange={(event) =>
+                    update({ errorTitle: event.currentTarget.value })
+                  }
+                />
+              </Field>
+              <Field
+                label="错误警告消息"
+                className="message"
+                description={`最多 ${SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT} 个字符。`}
+              >
+                <textarea
+                  aria-label="错误警告消息"
+                  rows={3}
+                  maxLength={SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT}
+                  value={value.errorMessage}
+                  onChange={(event) =>
+                    update({ errorMessage: event.currentTarget.value })
+                  }
+                />
+              </Field>
+            </div>
           )}
         </section>
 
@@ -355,8 +454,14 @@ function sameSpreadsheetDataValidationValue(
     left.type2 === right.type2 &&
     left.value1 === right.value1 &&
     left.value2 === right.value2 &&
+    left.allowBlank === right.allowBlank &&
+    left.showDropdownArrow === right.showDropdownArrow &&
     left.prohibitInput === right.prohibitInput &&
+    left.errorStyle === right.errorStyle &&
+    left.errorTitle === right.errorTitle &&
+    left.errorMessage === right.errorMessage &&
     left.hintShow === right.hintShow &&
+    left.hintTitle === right.hintTitle &&
     left.hintValue === right.hintValue
   );
 }

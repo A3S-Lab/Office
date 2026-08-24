@@ -1,4 +1,35 @@
+import type { WorkSpreadsheetDataValidationErrorStyle } from './work-types';
+
 const MILLISECONDS_PER_DAY = 86_400_000;
+
+export const SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT = 32;
+export const SPREADSHEET_DATA_VALIDATION_HINT_LIMIT = 255;
+export const SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT = 225;
+
+export const SPREADSHEET_DATA_VALIDATION_ERROR_STYLES = [
+  'stop',
+  'warning',
+  'information',
+] as const satisfies readonly WorkSpreadsheetDataValidationErrorStyle[];
+
+export function normalizeSpreadsheetDataValidationErrorStyle(
+  value: unknown,
+): WorkSpreadsheetDataValidationErrorStyle {
+  return SPREADSHEET_DATA_VALIDATION_ERROR_STYLES.includes(
+    value as WorkSpreadsheetDataValidationErrorStyle,
+  )
+    ? (value as WorkSpreadsheetDataValidationErrorStyle)
+    : 'stop';
+}
+
+export function boundedSpreadsheetDataValidationText(
+  value: unknown,
+  limit: number,
+): string {
+  if (typeof value !== 'string' || !Number.isSafeInteger(limit) || limit < 0)
+    return '';
+  return Array.from(value.trim()).slice(0, limit).join('');
+}
 
 export function normalizeSpreadsheetDateValidationBoundary(
   value: string,

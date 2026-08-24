@@ -127,7 +127,7 @@ baseline rather than one specific release.
 | Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, all 17 native non-solid OOXML pattern fills, native linear/path XLSX gradients, and one Format Cells surface that authors none, solid, pattern, or gradient fills with exact geometry and 2–256 ordered stops; static date/time entry, contrast-safe font preview, native XLSX rich-text runs, selected-text font formatting, direct formula-bar/F2 insertion or deletion, and bounded authenticated formatted-HTML paste | Disjoint multi-edit rich-text authoring, broader themes, locale formats, and advanced style effects |
 | Ribbon and shortcuts | **Partial** — common Office-style Home/Data/View commands, grid-scoped shortcuts, and focused Font-dialog aliases | Larger command catalog and platform-specific accelerators |
 | Formulas and recalculation | **Partial** — dependency-aware calculation and common formula paths | Wider functions, arrays, volatile semantics, and calculation parity |
-| Tables, pivots, charts, and rules | **Partial** — native tables, pivots, charts, conditional formatting, and validation | Calculated columns, slicers, pivot charts, advanced rules, and analysis |
+| Tables, pivots, charts, and rules | **Partial** — native tables, pivots, charts, conditional formatting, and common validation rules with complete input/error-setting authoring | Calculated columns, slicers, pivot charts, custom/dependent validation rules, advanced analysis, and broader browser alert flows |
 | Large worksheets | **Supported with boundaries** — maximum-dimension sparse import/editing and viewport-bounded Canvas painting | Highly optimized native grid with hardware-dependent limits |
 | Files and printing | **Partial** — XLS/XLSX/ODS/CSV import, XLSX export, and PDF output | Broader round trips, external data, print fidelity, and legacy conversion |
 | External data, macros, and specialist analysis | **Gap** — active macros are never executed; bounded models are still needed for data connections and solver-like tools | Established data, macro/add-in, scenario, and optimization ecosystems |
@@ -576,6 +576,34 @@ only that row. Data-validation regions remain compact in
 Protection ranges, passwordless editable ranges, and conditional formatting
 also remain compact and round-trip through native XLSX records without
 allocating every covered cell.
+
+### Complete Spreadsheet data-validation settings
+
+Data → Data Validation authors list, whole-number, decimal, date, and text-length
+rules across one or more selected ranges. The same dialog now owns the complete
+common input and error metadata: `allowBlank`, `showDropdownArrow`,
+`hintTitle`, `hintValue`, `prohibitInput`, `errorStyle`, `errorTitle`, and
+`errorMessage`. Titles are bounded to 32 Unicode code points, the input message
+to 255, and the error message to 225. Disabling a message keeps its text so a
+later re-enable does not discard the user's draft.
+
+The mounted grid reads compact rules without expanding blank cells, honors
+`allowBlank`, can hide the in-cell list arrow, shows the authored input title
+and message, and uses the authored error title and message when rejecting an
+invalid value. The current Fortune boundary still has one blocking browser
+alert path whenever error alerts are enabled. `stop`, `warning`, and
+`information` therefore round-trip as exact native file semantics, but the
+browser does not yet reproduce the separate warning/information confirmation
+branches of a desktop suite. Custom formulas and dependent lists also remain
+explicit gaps.
+
+XLSX import and export preserve `allowBlank`, `showErrorMessage`,
+`showInputMessage`, `errorStyle`, `errorTitle`, `error`, `promptTitle`, and
+`prompt`. The public `showDropdownArrow` name describes what users see, while
+SpreadsheetML stores the inverse in `showDropDown`. On the public Playground
+home page, choose **新建 → 数据验证** to inspect list, date, and priority
+examples with all three alert styles. This is a normal user-facing template,
+not an `?e2e=` fixture or a documentation-only example.
 
 Native XLSX pattern fills retain all 17 non-solid OOXML pattern identities plus
 their foreground and background RGB, theme, indexed, automatic, and tint color

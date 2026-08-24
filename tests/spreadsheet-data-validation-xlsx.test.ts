@@ -40,6 +40,22 @@ describe('spreadsheet data-validation XLSX interop', () => {
           value2: '2026-12-31',
         }),
       },
+      {
+        references: ['D1:D4'],
+        item: expect.objectContaining({
+          type: 'dropdown',
+          value1: 'Ready,Blocked',
+          allowBlank: false,
+          showDropdownArrow: false,
+          prohibitInput: true,
+          errorStyle: 'warning',
+          errorTitle: 'Invalid state',
+          errorMessage: 'Choose Ready or Blocked.',
+          hintShow: true,
+          hintTitle: 'Workflow state',
+          hintValue: 'Choose a state.',
+        }),
+      },
     ]);
   });
 
@@ -61,8 +77,14 @@ describe('spreadsheet data-validation XLSX interop', () => {
                 value2: '2026-12-31',
                 validity: '',
                 remote: false,
+                allowBlank: false,
+                showDropdownArrow: true,
                 prohibitInput: true,
+                errorStyle: 'information',
+                errorTitle: 'Date required',
+                errorMessage: 'Enter a date in 2026.',
                 hintShow: true,
+                hintTitle: '2026 date',
                 hintValue: 'Use a 2026 date.',
               },
             },
@@ -81,6 +103,14 @@ describe('spreadsheet data-validation XLSX interop', () => {
     expect(worksheet).toContain('type="date"');
     expect(worksheet).toContain('operator="between"');
     expect(worksheet).toContain('sqref="C1:C4"');
+    expect(worksheet).toContain('allowBlank="0"');
+    expect(worksheet).toContain('showErrorMessage="1"');
+    expect(worksheet).toContain('errorStyle="information"');
+    expect(worksheet).toContain('errorTitle="Date required"');
+    expect(worksheet).toContain('error="Enter a date in 2026."');
+    expect(worksheet).toContain('showInputMessage="1"');
+    expect(worksheet).toContain('promptTitle="2026 date"');
+    expect(worksheet).toContain('prompt="Use a 2026 date."');
     expect(worksheet).toContain('<formula1>DATE(2026,8,21)</formula1>');
     expect(worksheet).toContain('<formula2>DATE(2026,12,31)</formula2>');
   });
@@ -93,8 +123,14 @@ describe('spreadsheet data-validation XLSX interop', () => {
       value2: '',
       validity: '',
       remote: false,
+      allowBlank: true,
+      showDropdownArrow: true,
       prohibitInput: true,
+      errorStyle: 'stop' as const,
+      errorTitle: '',
+      errorMessage: '',
       hintShow: false,
+      hintTitle: '',
       hintValue: '',
     };
     const content: WorkSpreadsheetContent = {
@@ -177,8 +213,8 @@ async function validationWorkbook(): Promise<ArrayBuffer> {
     'xl/worksheets/sheet1.xml',
     [
       '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">',
-      '<dimension ref="A1:C4"/><sheetData/>',
-      '<dataValidations count="3">',
+      '<dimension ref="A1:D4"/><sheetData/>',
+      '<dataValidations count="4">',
       '<dataValidation type="decimal" operator="greaterThan" sqref="A1:A4">',
       '<formula1>1.5</formula1></dataValidation>',
       '<dataValidation type="date" operator="greaterThanOrEqual" sqref="B1:B4">',
@@ -186,6 +222,11 @@ async function validationWorkbook(): Promise<ArrayBuffer> {
       '<dataValidation type="date" operator="between" sqref="C1:C4">',
       '<formula1>DATE(2026,8,21)</formula1>',
       '<formula2>DATE(2026,12,31)</formula2></dataValidation>',
+      '<dataValidation type="list" allowBlank="0" showDropDown="1"',
+      ' showErrorMessage="1" errorStyle="warning" errorTitle="Invalid state"',
+      ' error="Choose Ready or Blocked." showInputMessage="1"',
+      ' promptTitle="Workflow state" prompt="Choose a state." sqref="D1:D4">',
+      '<formula1>"Ready,Blocked"</formula1></dataValidation>',
       '</dataValidations>',
       '</worksheet>',
     ].join(''),
