@@ -38,6 +38,10 @@ import {
   type WorkDocumentScriptFontSlot,
   type WorkDocumentScriptFonts,
 } from './work-document-script-fonts';
+import {
+  parseDocumentRunBorder,
+  serializeDocumentRunBorder,
+} from './work-document-run-border';
 
 export const DOCUMENT_CHARACTER_FORMAT_MARKS = [
   'bold',
@@ -94,6 +98,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'legacyTextShadow',
     'legacyTextEmboss',
     'legacyTextImprint',
+    'runBorder',
     'scriptFonts',
     'scriptFontSlot',
     'themeColor',
@@ -205,6 +210,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   legacyTextShadow?: boolean;
   legacyTextEmboss?: boolean;
   legacyTextImprint?: boolean;
+  runBorder?: string;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
   fontSize?: number;
@@ -247,6 +253,7 @@ export function importedDocumentCharacterFormatting(formatting: {
     legacyTextShadow: formatting.legacyTextShadow,
     legacyTextEmboss: formatting.legacyTextEmboss,
     legacyTextImprint: formatting.legacyTextImprint,
+    runBorder: formatting.runBorder,
     color: formatting.color,
     fontFamily: formatting.fontFamily,
     scriptFonts:
@@ -350,6 +357,14 @@ function normalizeCharacterFormatMark(
       const slot = normalizeDocumentScriptFontSlot(candidate);
       if (!slot) return null;
       attrs[key] = slot;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'runBorder') {
+      const border = serializeDocumentRunBorder(
+        parseDocumentRunBorder(candidate),
+      );
+      if (!border) return null;
+      attrs[key] = border;
       continue;
     }
     if (typeof candidate === 'string') {

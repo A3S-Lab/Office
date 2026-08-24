@@ -261,6 +261,11 @@ export const documentCommandCatalog = {
       editor: [documentHiddenTextKeyboardShortcut],
     },
   },
+  runBorder: {
+    id: 'font.runBorder',
+    label: '字符边框',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
   clearFormatting: {
     id: 'font.clearFormatting',
     label: '清除格式',

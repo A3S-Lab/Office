@@ -7,6 +7,11 @@ import type {
   WorkSlide,
   WorkTemplate,
 } from './work-types';
+import {
+  DOCUMENT_RUN_BORDER_ATTRIBUTE,
+  type DocumentRunBorder,
+  documentRunBorderDomAttributes,
+} from './work-document-run-border';
 
 export const WORK_TEMPLATES: WorkTemplate[] = [
   {
@@ -29,6 +34,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     name: '文字效果',
     description: '空心、阴影、阳文与阴文',
     accent: '#6b5bd2',
+  },
+  {
+    id: 'run-borders',
+    kind: 'document',
+    name: '字符边框',
+    description: '原生线型、颜色、宽度、间距与阴影',
+    accent: '#4472c4',
   },
   {
     id: 'blank-markdown',
@@ -96,6 +108,7 @@ function initialTitle(templateId: string, kind: WorkArtifactKind): string {
   const titles: Record<string, string> = {
     'project-brief': '新项目方案',
     'text-effects': '文字效果示例',
+    'run-borders': '字符边框示例',
     'quarterly-plan': '季度执行计划',
     'strategy-deck': '业务策略汇报',
   };
@@ -143,6 +156,22 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
       ].join(''),
     };
   }
+  if (templateId === 'run-borders') {
+    return {
+      type: 'document',
+      pageSize: 'a4',
+      html: [
+        '<h1>原生字符边框</h1>',
+        '<p>选择任一示例，可从开始选项卡直接开关边框，或在字体高级设置中编辑完整的原生线型、颜色、宽度、文字间距、阴影和框架属性。</p>',
+        '<h2>常用线型</h2>',
+        `<p>${runBorderTemplateSpan({ style: 'single', color: { value: '#4472c4' }, size: 4, space: 1 }, '单实线字符边框')}</p>`,
+        `<p>${runBorderTemplateSpan({ style: 'double', color: { value: '#c00000' }, size: 8, space: 2 }, '双线字符边框')}</p>`,
+        `<p>${runBorderTemplateSpan({ style: 'wave', color: { value: '#7030a0' }, size: 8, space: 2 }, '波浪字符边框')}</p>`,
+        '<h2>高级属性</h2>',
+        `<p>${runBorderTemplateSpan({ style: 'thinThickMediumGap', color: { value: '#0070c0' }, size: 16, space: 3, shadow: true, frame: true }, '阴影与框架字符边框')}</p>`,
+      ].join(''),
+    };
+  }
   if (templateId === 'quarterly-plan') {
     return { type: 'spreadsheet', sheets: quarterlyPlanSheets() };
   }
@@ -163,6 +192,14 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
     pageSize: 'a4',
     html: '<p></p>',
   };
+}
+
+function runBorderTemplateSpan(
+  border: DocumentRunBorder,
+  text: string,
+): string {
+  const attributes = documentRunBorderDomAttributes(border);
+  return `<span ${DOCUMENT_RUN_BORDER_ATTRIBUTE}='${attributes[DOCUMENT_RUN_BORDER_ATTRIBUTE]}' style="${attributes.style}">${text}</span>`;
 }
 
 function blankSheet(): Sheet {

@@ -10,6 +10,11 @@ import {
   documentFontDialogSource,
 } from '../src/internal/features/work/editors/document-font-dialog-model';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import {
+  DOCUMENT_RUN_BORDER_ATTRIBUTE,
+  documentRunBorderDomAttributes,
+  parseDocumentRunBorder,
+} from '../src/internal/features/work/work-document-run-border';
 
 let editor: Editor | null = null;
 
@@ -30,6 +35,7 @@ test('validates exact native scale, spacing, kerning, emphasis, and position ran
     legacyTextShadow: { mixed: false, value: null },
     legacyTextEmboss: { mixed: false, value: null },
     legacyTextImprint: { mixed: false, value: null },
+    runBorder: { mixed: false, value: null },
     latinFont: { mixed: false, value: null },
     eastAsiaFont: { mixed: false, value: null },
     complexScriptFont: { mixed: false, value: null },
@@ -406,6 +412,88 @@ test('keeps legacy effects independently mixed and clears conflicts in one trans
     legacyTextEmboss: false,
     legacyTextImprint: false,
   });
+});
+
+test('keeps mixed character borders untouched and applies every native option in one undo step', async () => {
+  const original = documentRunBorderDomAttributes({
+    style: 'single',
+    color: { value: '#c00000' },
+    size: 4,
+    space: 1,
+  });
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: `<p><span ${DOCUMENT_RUN_BORDER_ATTRIBUTE}='${original[DOCUMENT_RUN_BORDER_ATTRIBUTE]}' style="${original.style}">Bordered</span> Plain</p>`,
+  });
+  document.body.append(editor.view.dom);
+  editor.commands.selectAll();
+  const selection = {
+    from: editor.state.selection.from,
+    to: editor.state.selection.to,
+  };
+  const source = documentFontDialogSource(editor);
+  expect(source.runBorder).toEqual({ mixed: true, value: null });
+
+  render(
+    <FontDialogHarness editor={editor} selection={selection} source={source} />,
+  );
+  expect(screen.getByRole('button', { name: '应用' })).toBeDisabled();
+  expect(screen.getByText(/包含不同的字符边框/)).toBeInTheDocument();
+  expect(screen.getByRole('combobox', { name: '字符边框' })).toHaveTextContent(
+    '混合（保持不变）',
+  );
+
+  fireEvent.click(screen.getByRole('combobox', { name: '字符边框' }));
+  fireEvent.click(await screen.findByRole('option', { name: '边框' }));
+  fireEvent.click(screen.getByRole('combobox', { name: '字符边框线型' }));
+  fireEvent.click(await screen.findByRole('option', { name: '双波浪线' }));
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '字符边框宽度（磅）' }),
+    { target: { value: '1.5' } },
+  );
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '字符边框间距（磅）' }),
+    { target: { value: '3' } },
+  );
+  fireEvent.click(screen.getByRole('button', { name: '字符边框颜色' }));
+  fireEvent.click(await screen.findByRole('option', { name: '颜色 #0070c0' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '字符边框阴影' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '字符边框框架' }));
+
+  const preview = screen
+    .getByLabelText('字符高级格式预览')
+    .querySelector('output > span');
+  expect(preview?.getAttribute('style')).toContain(
+    'border: 2px double #0070c0',
+  );
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '字体高级设置' })).toBeNull(),
+  );
+
+  editor.commands.setTextSelection(selection);
+  expect(
+    parseDocumentRunBorder(editor.getAttributes('textStyle').runBorder),
+  ).toEqual({
+    style: 'doubleWave',
+    color: { value: '#0070c0' },
+    size: 12,
+    space: 3,
+    shadow: true,
+    frame: true,
+  });
+  expect(editor.commands.undo()).toBe(true);
+  editor.commands.setTextSelection(textRange(editor, 'Bordered'));
+  expect(
+    parseDocumentRunBorder(editor.getAttributes('textStyle').runBorder),
+  ).toEqual({
+    style: 'single',
+    color: { value: '#c00000' },
+    size: 4,
+    space: 1,
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Plain'));
+  expect(editor.getAttributes('textStyle').runBorder).toBeUndefined();
 });
 
 test('clears direct kerning from the saved selection and restores it with one undo', async () => {

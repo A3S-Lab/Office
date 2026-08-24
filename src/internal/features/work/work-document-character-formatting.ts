@@ -18,6 +18,13 @@ import {
   normalizeDocumentTextCase,
   type WorkDocumentTextCase,
 } from './work-document-text-case';
+import {
+  type DocumentRunBorder,
+  documentRunBorderIsVisible,
+  normalizeDocumentRunBorder,
+  parseDocumentRunBorder,
+  serializeDocumentRunBorder,
+} from './work-document-run-border';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -46,6 +53,9 @@ declare module '@tiptap/core' {
       toggleDocumentTextCase: (
         textCase: Exclude<WorkDocumentTextCase, 'none'>,
       ) => ReturnType;
+      setDocumentRunBorder: (border: DocumentRunBorder) => ReturnType;
+      unsetDocumentRunBorder: () => ReturnType;
+      toggleDocumentRunBorder: () => ReturnType;
     };
   }
 }
@@ -161,6 +171,40 @@ export const DocumentCharacterFormatting = Extension.create({
             ) ?? 'none';
           return commands.setDocumentTextCase(
             current === textCase ? 'none' : textCase,
+          );
+        },
+      setDocumentRunBorder:
+        (border: DocumentRunBorder) =>
+        ({ commands }) => {
+          const serialized = serializeDocumentRunBorder(
+            normalizeDocumentRunBorder(border),
+          );
+          return serialized
+            ? commands.setMark('textStyle', { runBorder: serialized })
+            : false;
+        },
+      unsetDocumentRunBorder:
+        () =>
+        ({ chain }) =>
+          chain()
+            .setMark('textStyle', { runBorder: null })
+            .removeEmptyTextStyle()
+            .run(),
+      toggleDocumentRunBorder:
+        () =>
+        ({ commands, editor }) => {
+          const current = parseDocumentRunBorder(
+            editor.getAttributes('textStyle').runBorder,
+          );
+          return commands.setDocumentRunBorder(
+            documentRunBorderIsVisible(current)
+              ? { style: 'nil' }
+              : {
+                  style: 'single',
+                  color: { value: 'auto' },
+                  size: 4,
+                  space: 1,
+                },
           );
         },
     };

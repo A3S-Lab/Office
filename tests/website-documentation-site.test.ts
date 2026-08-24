@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.29.0' ||
     version === '0.28.0' ||
     version === '0.27.0' ||
     version === '0.26.0' ||
@@ -52,6 +53,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.29.0',
     '0.28.0',
     '0.27.0',
     '0.26.0',
@@ -810,6 +812,52 @@ test('documents native Writer outline, shadow, emboss, and imprint effects', asy
     expect(roadmapSource).toContain('w:outline');
     expect(roadmapSource).toContain('w:imprint');
     expect(roadmapSource).toContain('Worker/WASM');
+  }
+});
+
+test('documents native Writer character borders in both current locales', async () => {
+  const [readme, roadmap, product, changelog, architecture] = await Promise.all(
+    [
+      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+      readFile(
+        path.join(
+          documentationRoot,
+          'latest/en/browser-editor-architecture.md',
+        ),
+        'utf8',
+      ),
+    ],
+  );
+
+  expect(readme).toContain('25 visible line styles plus `nil` and `none`');
+  expect(roadmap).toContain('native `w:bdr` character borders');
+  expect(product).toContain('The forty-fourth milestone');
+  expect(changelog).toContain('## 0.29.0 - 2026-08-24');
+  expect(architecture).toContain(
+    'Native character borders are resolved as one validated TextStyle value',
+  );
+
+  for (const version of ['latest', '0.29.0']) {
+    for (const { lang } of DOCUMENTATION_LOCALES) {
+      const component = await readFile(
+        path.join(documentationRoot, version, lang, 'components/document.mdx'),
+        'utf8',
+      );
+      for (const evidence of [
+        'w:bdr',
+        '`nil`',
+        '`none`',
+        'Cmd/Ctrl+D',
+        'data-office-run-border',
+        'Worker/WASM',
+        'w:rPrChange',
+      ]) {
+        expect(component).toContain(evidence);
+      }
+    }
   }
 });
 

@@ -16,6 +16,7 @@ import {
   PilcrowRight,
   Replace,
   Search,
+  Square,
   Subscript as SubscriptIcon,
   Superscript as SuperscriptIcon,
 } from 'lucide-react';
@@ -49,6 +50,10 @@ import { DocumentStyleGallery } from './document-style-gallery';
 import { DocumentTextCaseRibbon } from './document-text-case-ribbon';
 import { DocumentStrikeRibbon } from './document-strike-ribbon';
 import { DocumentUnderlineRibbon } from './document-underline-ribbon';
+import {
+  documentRunBorderIsVisible,
+  parseDocumentRunBorder,
+} from '../work-document-run-border';
 
 const documentLineHeightOptions = [
   { value: 'default', label: '默认行距' },
@@ -218,6 +223,17 @@ export function DocumentHomeRibbon({
               }
             >
               <Highlighter size={16} />
+            </ToolbarButton>
+            <ToolbarButton
+              label="字符边框"
+              active={documentRunBorderIsVisible(
+                parseDocumentRunBorder(
+                  editor.getAttributes('textStyle').runBorder,
+                ),
+              )}
+              onClick={() => editor.commands.toggleDocumentRunBorder()}
+            >
+              <Square size={16} />
             </ToolbarButton>
             <ToolbarButton
               label="清除格式"

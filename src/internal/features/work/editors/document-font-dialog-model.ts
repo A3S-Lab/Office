@@ -41,6 +41,20 @@ import {
   type DocumentFontDialogScriptFontPatch,
   type DocumentFontFamilySource,
 } from './document-font-dialog-script-font-model';
+import {
+  addDocumentFontDialogRunBorderValue,
+  createDocumentFontDialogRunBorderDraft,
+  documentFontDialogRunBorderDraftError,
+  documentFontDialogRunBorderPatch,
+  type DocumentFontDialogRunBorderDraft,
+  type DocumentFontDialogRunBorderPatch,
+  type DocumentFontDialogRunBorderSource,
+  selectedDocumentFontDialogRunBorderValue,
+} from './document-font-dialog-run-border-model';
+import {
+  normalizeDocumentRunBorder,
+  serializeDocumentRunBorder,
+} from '../work-document-run-border';
 
 export type { DocumentFontFamilySource } from './document-font-dialog-script-font-model';
 
@@ -92,6 +106,7 @@ export interface DocumentFontDialogSource {
   legacyTextShadow: { mixed: boolean; value: boolean | null };
   legacyTextEmboss: { mixed: boolean; value: boolean | null };
   legacyTextImprint: { mixed: boolean; value: boolean | null };
+  runBorder: DocumentFontDialogRunBorderSource;
   latinFont: DocumentFontFamilySource;
   eastAsiaFont: DocumentFontFamilySource;
   complexScriptFont: DocumentFontFamilySource;
@@ -101,7 +116,8 @@ export interface DocumentFontDialogSource {
   selectedCharacters: number;
 }
 
-export interface DocumentFontDialogDraft {
+export interface DocumentFontDialogDraft
+  extends DocumentFontDialogRunBorderDraft {
   characterScaleMode: DocumentCharacterScaleMode;
   characterScalePercent: string;
   characterPositionMode: DocumentCharacterPositionMode;
@@ -122,7 +138,8 @@ export interface DocumentFontDialogDraft {
 }
 
 export interface DocumentFontDialogPatch
-  extends DocumentFontDialogScriptFontPatch {
+  extends DocumentFontDialogScriptFontPatch,
+    DocumentFontDialogRunBorderPatch {
   characterScalePercent?: number;
   characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
@@ -147,6 +164,7 @@ export interface DocumentFontDialogTouched {
   legacyTextShadow: boolean;
   legacyTextEmboss: boolean;
   legacyTextImprint: boolean;
+  runBorder: boolean;
   kerning: boolean;
   latinFont: boolean;
 }
@@ -165,6 +183,10 @@ export function documentFontDialogSource(
   const legacyTextShadowValues = new Map<string, boolean | null>();
   const legacyTextEmbossValues = new Map<string, boolean | null>();
   const legacyTextImprintValues = new Map<string, boolean | null>();
+  const runBorderValues = new Map<
+    string,
+    DocumentFontDialogRunBorderSource['value']
+  >();
   const latinFontValues = new Map<string, string | null>();
   const eastAsiaFontValues = new Map<string, string | null>();
   const complexScriptFontValues = new Map<string, string | null>();
@@ -191,6 +213,7 @@ export function documentFontDialogSource(
       legacyTextImprintValues,
       attributes.legacyTextImprint,
     );
+    addDocumentFontDialogRunBorderValue(runBorderValues, attributes.runBorder);
     addDocumentScriptFontValues(
       latinFontValues,
       eastAsiaFontValues,
@@ -226,6 +249,7 @@ export function documentFontDialogSource(
     !legacyTextShadowValues.size ||
     !legacyTextEmbossValues.size ||
     !legacyTextImprintValues.size ||
+    !runBorderValues.size ||
     !latinFontValues.size ||
     !eastAsiaFontValues.size ||
     !complexScriptFontValues.size
@@ -242,6 +266,7 @@ export function documentFontDialogSource(
   const legacyTextShadow = selectedValue(legacyTextShadowValues);
   const legacyTextEmboss = selectedValue(legacyTextEmbossValues);
   const legacyTextImprint = selectedValue(legacyTextImprintValues);
+  const runBorder = selectedDocumentFontDialogRunBorderValue(runBorderValues);
   const latinFont = selectedValue(latinFontValues);
   const eastAsiaFont = selectedValue(eastAsiaFontValues);
   const complexScriptFont = selectedValue(complexScriptFontValues);
@@ -263,6 +288,7 @@ export function documentFontDialogSource(
     legacyTextShadow,
     legacyTextEmboss,
     legacyTextImprint,
+    runBorder,
     latinFont,
     eastAsiaFont,
     complexScriptFont,
@@ -324,6 +350,7 @@ export function createDocumentFontDialogDraft(
     legacyTextShadow: source.legacyTextShadow.value ?? false,
     legacyTextEmboss: source.legacyTextEmboss.value ?? false,
     legacyTextImprint: source.legacyTextImprint.value ?? false,
+    ...createDocumentFontDialogRunBorderDraft(source.runBorder),
     latinFont: documentFontFamilyDraftValue(source.latinFont),
     eastAsiaFont: documentFontFamilyDraftValue(source.eastAsiaFont),
     complexScriptFont: documentFontFamilyDraftValue(source.complexScriptFont),
@@ -333,6 +360,8 @@ export function createDocumentFontDialogDraft(
 export function documentFontDialogDraftError(
   draft: DocumentFontDialogDraft,
 ): string | null {
+  const runBorderError = documentFontDialogRunBorderDraftError(draft);
+  if (runBorderError) return runBorderError;
   if (
     draft.characterScaleMode !== 'mixed' &&
     characterScalePercentFromDraft(draft) === null
@@ -443,6 +472,14 @@ export function documentFontDialogPatch(
     draft.legacyTextOutline,
     touched.legacyTextOutline,
   );
+  Object.assign(
+    patch,
+    documentFontDialogRunBorderPatch(
+      source.runBorder,
+      draft,
+      touched.runBorder,
+    ),
+  );
   appendLegacyTextEffectPatch(
     patch,
     'legacyTextShadow',
@@ -503,6 +540,7 @@ export function applyDocumentFontDialogPatch(
   const hasLegacyTextShadow = patch.legacyTextShadow !== undefined;
   const hasLegacyTextEmboss = patch.legacyTextEmboss !== undefined;
   const hasLegacyTextImprint = patch.legacyTextImprint !== undefined;
+  const hasRunBorder = patch.runBorder !== undefined;
   const hasLegacyTextEffects =
     hasLegacyTextOutline ||
     hasLegacyTextShadow ||
@@ -539,6 +577,10 @@ export function applyDocumentFontDialogPatch(
     hasEmphasis && patch.emphasisMark !== null
       ? normalizeDocumentEmphasisMark(patch.emphasisMark)
       : null;
+  const runBorder =
+    hasRunBorder && patch.runBorder !== null
+      ? normalizeDocumentRunBorder(patch.runBorder)
+      : null;
   const maximum = editor.state.doc.content.size;
   if (
     editor.isDestroyed ||
@@ -549,6 +591,7 @@ export function applyDocumentFontDialogPatch(
       !hasEmphasis &&
       !hasHiddenText &&
       !hasLegacyTextEffects &&
+      !hasRunBorder &&
       !hasScriptFonts) ||
     (hasScale && scale === null) ||
     (hasPosition && position === null) ||
@@ -557,6 +600,7 @@ export function applyDocumentFontDialogPatch(
       patch.kerningThresholdHalfPoints !== null &&
       kerningThreshold === null) ||
     (hasEmphasis && patch.emphasisMark !== null && emphasisMark === null) ||
+    (hasRunBorder && patch.runBorder !== null && runBorder === null) ||
     (hasHiddenText && typeof patch.hiddenText !== 'boolean') ||
     (hasLegacyTextOutline &&
       normalizeDocumentLegacyTextEffect(patch.legacyTextOutline) === null) ||
@@ -596,6 +640,12 @@ export function applyDocumentFontDialogPatch(
   }
   if (hasLegacyTextImprint) {
     attributes.legacyTextImprint = patch.legacyTextImprint ?? false;
+  }
+  if (hasRunBorder) {
+    attributes.runBorder =
+      patch.runBorder === null
+        ? null
+        : (serializeDocumentRunBorder(runBorder) ?? null);
   }
   if (hasScriptFonts) {
     return applyDocumentScriptFontPatch(

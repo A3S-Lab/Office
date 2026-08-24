@@ -13,6 +13,8 @@ import { resolveDocxHiddenText } from './work-docx-hidden-text';
 import { documentHiddenTextDomAttributes } from './work-document-hidden-text';
 import { documentLegacyTextEffectsDomAttributes } from './work-document-legacy-text-effects';
 import { resolveDocxLegacyTextEffects } from './work-docx-legacy-text-effects';
+import { documentRunBorderDomAttributes } from './work-document-run-border';
+import { resolveDocxRunBorder } from './work-docx-run-border';
 import { documentParagraphBordersDomAttributes } from './work-document-paragraph-borders';
 import {
   documentPageChromeLegacyFields,
@@ -481,6 +483,12 @@ async function runHtml(
   if (legacyTextEffects) {
     content = `<span${htmlAttributes(
       documentLegacyTextEffectsDomAttributes(legacyTextEffects),
+    )}>${content}</span>`;
+  }
+  const runBorder = resolveDocxRunBorder(propertySources, context.theme).border;
+  if (runBorder) {
+    content = `<span${htmlAttributes(
+      documentRunBorderDomAttributes(runBorder),
     )}>${content}</span>`;
   }
   const characterSpacing = docxCharacterSpacingTwipsFromProperties(

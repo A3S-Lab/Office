@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.28.0",
+  "version": "0.29.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -90,6 +90,7 @@
     "playground:visual:document-emphasis": "playwright test visual-tests/document-emphasis.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-hidden-text": "playwright test visual-tests/document-hidden-text.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-legacy-text-effects": "playwright test visual-tests/document-legacy-text-effects.functional.spec.ts --config playwright.config.ts",
+    "playground:visual:document-run-border": "playwright test visual-tests/document-run-border.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-kerning": "playwright test visual-tests/document-kerning.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-character-scale": "playwright test visual-tests/document-character-scale.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-character-position": "playwright test visual-tests/document-character-position.functional.spec.ts --config playwright.config.ts",
@@ -201,6 +202,8 @@
     "test:e2e:writer-hidden-text:check": "a3s-test check tests/e2e/word-hidden-text.acl --json",
     "test:e2e:writer-legacy-text-effects": "A3S_TEST_SUITE=tests/e2e/word-legacy-text-effects.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:writer-legacy-text-effects:check": "a3s-test check tests/e2e/word-legacy-text-effects.acl --json",
+    "test:e2e:writer-run-border": "A3S_TEST_SUITE=tests/e2e/word-run-border.acl bash scripts/run-a3s-test-web-gate.sh",
+    "test:e2e:writer-run-border:check": "a3s-test check tests/e2e/word-run-border.acl --json",
     "test:e2e:writer-kerning": "A3S_TEST_SUITE=tests/e2e/word-kerning.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:writer-kerning:check": "a3s-test check tests/e2e/word-kerning.acl --json",
     "test:e2e:writer-character-scale": "A3S_TEST_SUITE=tests/e2e/word-character-scale.acl bash scripts/run-a3s-test-web-gate.sh",

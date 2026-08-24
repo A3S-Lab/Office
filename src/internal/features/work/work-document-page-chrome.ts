@@ -46,6 +46,11 @@ import {
   parseDocumentParagraphBordersElement,
 } from './work-document-paragraph-borders';
 import {
+  DOCUMENT_RUN_BORDER_ATTRIBUTE,
+  documentRunBorderDomAttributes,
+  parseDocumentRunBorderElement,
+} from './work-document-run-border';
+import {
   DOCUMENT_PARAGRAPH_ID_ATTRIBUTE,
   DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
   normalizeDocumentParagraphIdentity,
@@ -505,6 +510,9 @@ function sanitizeAttributes(element: Element, tag: string) {
     tag === 'span' ? (documentLegacyTextEffectsFromElement(element) ?? {}) : {};
   const legacyTextEffectAttributes =
     documentLegacyTextEffectsDomAttributes(legacyTextEffects);
+  const runBorder =
+    tag === 'span' ? parseDocumentRunBorderElement(element) : null;
+  const runBorderAttributes = documentRunBorderDomAttributes(runBorder);
   const underline =
     tag === 'u' ? documentUnderlineFormattingFromElement(element) : null;
   const underlineAttributes = underline
@@ -541,6 +549,7 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_LEGACY_TEXT_SHADOW_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_RUN_BORDER_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_SCRIPT_FONTS_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE);
   const styles = [
@@ -556,6 +565,7 @@ function sanitizeAttributes(element: Element, tag: string) {
     emphasisAttributes.style ?? '',
     underlineAttributes.style ?? '',
     strikeAttributes.style ?? '',
+    runBorderAttributes.style ?? '',
     borderAttributes.style ?? '',
     shadingAttributes.style ?? '',
   ].filter(Boolean);
@@ -635,6 +645,11 @@ function sanitizeAttributes(element: Element, tag: string) {
     for (const [name, value] of Object.entries(legacyTextEffectAttributes)) {
       element.setAttribute(name, value);
     }
+    const serializedRunBorder =
+      runBorderAttributes[DOCUMENT_RUN_BORDER_ATTRIBUTE];
+    if (serializedRunBorder) {
+      element.setAttribute(DOCUMENT_RUN_BORDER_ATTRIBUTE, serializedRunBorder);
+    }
   }
   if (tag === 'span' && scriptFonts) {
     for (const [name, value] of Object.entries(scriptFontAttributes)) {
@@ -691,6 +706,7 @@ function sanitizeAttributes(element: Element, tag: string) {
                           DOCUMENT_LEGACY_TEXT_SHADOW_ATTRIBUTE,
                           DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
                           DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
+                          DOCUMENT_RUN_BORDER_ATTRIBUTE,
                           DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
                           DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,
                         ]

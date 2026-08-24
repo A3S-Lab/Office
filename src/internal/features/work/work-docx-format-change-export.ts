@@ -20,6 +20,7 @@ import { normalizeDocumentUnderlineStyle } from './work-document-underline';
 import { normalizeDocumentStrikeStyle } from './work-document-strike';
 import { parseDocumentScriptFonts } from './work-document-script-fonts';
 import { parseDocxThemeReference } from './work-docx-theme-reference';
+import { parseDocumentRunBorder } from './work-document-run-border';
 import { descendants, directChildren, parseXml } from './work-ooxml-package';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 
@@ -382,6 +383,13 @@ function appendFormattingProperties(
     prefix,
     byType.get('underline'),
   );
+  appendRunBorderProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
   appendVerticalAlignProperty(document, properties, namespace, prefix, byType);
   appendEmphasisMarkProperty(
     document,
@@ -390,6 +398,82 @@ function appendFormattingProperties(
     prefix,
     byType.get('textStyle'),
   );
+}
+
+function appendRunBorderProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const border = parseDocumentRunBorder(mark?.attrs?.runBorder);
+  if (!border) return;
+  const element = wordElement(document, namespace, prefix, 'bdr');
+  setWordAttribute(element, namespace, prefix, 'val', border.style);
+  if (border.color) {
+    setWordAttribute(
+      element,
+      namespace,
+      prefix,
+      'color',
+      border.color.value === 'auto'
+        ? 'auto'
+        : border.color.value.slice(1).toUpperCase(),
+    );
+    if (border.color.theme) {
+      setWordAttribute(
+        element,
+        namespace,
+        prefix,
+        'themeColor',
+        border.color.theme.theme,
+      );
+      if (border.color.theme.tint) {
+        setWordAttribute(
+          element,
+          namespace,
+          prefix,
+          'themeTint',
+          border.color.theme.tint,
+        );
+      }
+      if (border.color.theme.shade) {
+        setWordAttribute(
+          element,
+          namespace,
+          prefix,
+          'themeShade',
+          border.color.theme.shade,
+        );
+      }
+    }
+  }
+  if (border.size !== undefined) {
+    setWordAttribute(element, namespace, prefix, 'sz', String(border.size));
+  }
+  if (border.space !== undefined) {
+    setWordAttribute(element, namespace, prefix, 'space', String(border.space));
+  }
+  if (border.shadow !== undefined) {
+    setWordAttribute(
+      element,
+      namespace,
+      prefix,
+      'shadow',
+      border.shadow ? '1' : '0',
+    );
+  }
+  if (border.frame !== undefined) {
+    setWordAttribute(
+      element,
+      namespace,
+      prefix,
+      'frame',
+      border.frame ? '1' : '0',
+    );
+  }
+  properties.append(element);
 }
 
 function appendLegacyTextEffectsProperties(

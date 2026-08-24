@@ -61,6 +61,33 @@
   background: var(--a3s-panel-soft);
 }
 
+.work-document-font-dialog-run-border {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 1px solid color-mix(in srgb, var(--a3s-line) 78%, transparent);
+  border-radius: 8px;
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-font-dialog-run-border > legend {
+  padding: 0 4px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.work-document-font-dialog-run-border-effects {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  min-height: 32px;
+}
+
 .work-document-font-dialog-field > .work-office-select,
 .work-document-font-dialog-field .work-office-number-field,
 .work-document-font-dialog-field button[role="combobox"] {
@@ -133,6 +160,10 @@
 
   .work-document-font-dialog-legacy-effects {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .work-document-font-dialog-run-border {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .work-document-font-dialog-preview {

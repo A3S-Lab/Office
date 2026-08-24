@@ -1,0 +1,128 @@
+suite "office-word-run-border" {
+    version = 1
+
+    scenario "author-native-character-border-and-undo" {
+        name = "Author and undo a native Writer character border"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-run-border-template" {
+            target = role("button", "字符边框 原生线型、颜色、宽度、间距与阴影")
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "native-border-sample-visible" {
+            visible = css(".work-document-editable span[data-office-run-border*='single'][style*='box-decoration-break: clone']")
+        }
+
+        click "focus-native-border-sample" {
+            target = css(".work-document-editable span[data-office-run-border*='single']")
+        }
+
+        press "move-to-sample-start" {
+            key = "Home"
+        }
+
+        press "select-sample" {
+            key = "Shift+End"
+        }
+
+        expect "sample-selection-visible" {
+            visible = css(".work-document-selection-toolbar[role='toolbar']")
+        }
+
+        press "open-font-dialog" {
+            key = "Control+d"
+        }
+
+        wait "font-dialog-visible" {
+            visible = css(".work-document-font-dialog[role='dialog']")
+        }
+
+        expect "run-border-controls-visible" {
+            visible = css(".work-document-font-dialog-run-border[aria-label='字符边框设置']")
+        }
+
+        click "open-border-style" {
+            target = role("combobox", "字符边框线型")
+        }
+
+        click "choose-double-wave" {
+            target = role("option", "双波浪线")
+        }
+
+        fill "set-border-width" {
+            target = css(".work-document-font-dialog-run-border input[aria-label='字符边框宽度（磅）']")
+            value = "1.5"
+        }
+
+        fill "set-border-spacing" {
+            target = css(".work-document-font-dialog-run-border input[aria-label='字符边框间距（磅）']")
+            value = "3"
+        }
+
+        click "enable-border-shadow" {
+            target = css(".work-document-font-dialog-run-border input[aria-label='字符边框阴影']")
+        }
+
+        click "enable-border-frame" {
+            target = css(".work-document-font-dialog-run-border input[aria-label='字符边框框架']")
+        }
+
+        expect "exact-border-preview-visible" {
+            visible = css(".work-document-font-dialog [aria-label='字符高级格式预览'] output > span[style*='border: 2px double'][style*='box-shadow']")
+        }
+
+        click "apply-character-border" {
+            target = role("button", "应用")
+        }
+
+        expect "native-border-applied" {
+            visible = css(".work-document-editable span[data-office-run-border*='doubleWave'][style*='border: 2px double'][style*='box-decoration-break: clone']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-border-transaction" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restores-original-border" {
+            visible = css(".work-document-editable span[data-office-run-border*='single']")
+        }
+
+        accessibility "run-border-accessibility" {
+            path = "evidence/run-border-accessibility.json"
+            interactive = true
+        }
+
+        console "run-border-console" {
+            path = "diagnostics/run-border-console.json"
+            clear = false
+        }
+
+        page_errors "run-border-page-errors" {
+            path = "diagnostics/run-border-page-errors.json"
+            clear = false
+        }
+    }
+}

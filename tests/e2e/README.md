@@ -168,6 +168,21 @@ console/page-error diagnostics through pinned local A3S Test 1.0.0,
 agent-browser 0.26.0, and protocol revision 15. GitHub Actions and Pages do not
 install or invoke A3S Test; desktop and 390 px Playwright own the visual proof.
 
+The Writer native character-border workflow has a focused local gate:
+
+```bash
+bun run test:e2e:writer-run-border:check
+bun run test:e2e:writer-run-border
+```
+
+It opens the public **字符边框** Playground template, selects a real native
+line-border sample, and uses the shared `Cmd/Ctrl+D` dialog to author a double
+wave border with exact eighth-point width, integer spacing, shadow, and frame
+semantics. Apply restores editor focus, one Undo restores the original border,
+and the suite captures accessibility plus empty console/page-error evidence.
+A3S Test remains a pinned local release gate and is not installed or invoked by
+GitHub Actions or Pages.
+
 The Writer native character-scale workflow has a focused local gate:
 
 ```bash

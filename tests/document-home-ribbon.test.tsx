@@ -204,6 +204,30 @@ test('applies italic formatting without replacing the selected text', () => {
   );
 });
 
+test('toggles a direct character border from Home without exposing a non-standard shortcut', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Border this text</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Border this'));
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const button = screen.getByRole('button', { name: '字符边框' });
+  expect(button).not.toHaveAttribute('aria-keyshortcuts');
+  fireEvent.click(button);
+  expect(button).toHaveAttribute('aria-pressed', 'true');
+  expect(editor.getHTML()).toContain('data-office-run-border');
+  fireEvent.click(button);
+  expect(button).toHaveAttribute('aria-pressed', 'false');
+  expect(editor.getHTML()).toContain('&quot;style&quot;:&quot;nil&quot;');
+});
+
 test('previews every font option with the font it applies', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

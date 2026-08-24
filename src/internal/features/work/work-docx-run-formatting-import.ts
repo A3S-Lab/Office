@@ -75,6 +75,12 @@ import {
   directDocxRunText,
   markSegmentedDocxRunFormatting,
 } from './work-docx-run-script-font-import';
+import {
+  type DocumentRunBorder,
+  documentRunBorderDomAttributes,
+  serializeDocumentRunBorder,
+} from './work-document-run-border';
+import { resolveDocxRunBorder } from './work-docx-run-border';
 
 export interface ImportedDocxRunFormatting {
   bold?: boolean;
@@ -104,6 +110,7 @@ export interface ImportedDocxRunFormatting {
   themeColor?: DocxThemeColorReference;
   themeFill?: DocxThemeColorReference;
   textCase?: WorkDocumentTextCase;
+  runBorder?: DocumentRunBorder;
 }
 
 export interface ImportedDocxRunFormattingMarker {
@@ -164,6 +171,7 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'rtl',
   'em',
   'vertAlign',
+  'bdr',
 ]);
 
 export function markDocxRunFormatting(
@@ -356,6 +364,7 @@ function resolvedRunFormatting(
   const emphasisMark = resolveDocxEmphasisMark(propertySources);
   const hiddenText = resolveDocxHiddenText(propertySources);
   const legacyTextEffects = resolveDocxLegacyTextEffects(propertySources);
+  const runBorder = resolveDocxRunBorder(propertySources, theme).border;
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
@@ -565,6 +574,7 @@ function resolvedRunFormatting(
     ...(themeColor ? { themeColor } : {}),
     ...(themeFill ? { themeFill } : {}),
     ...(textCase ? { textCase } : {}),
+    ...(runBorder ? { runBorder } : {}),
   };
 }
 
@@ -669,6 +679,14 @@ function formattingMarkup(
       documentHiddenTextDomAttributes(formatting.hiddenText),
     )) {
       span.setAttribute(name, value);
+    }
+  }
+  if (formatting.runBorder) {
+    for (const [name, value] of Object.entries(
+      documentRunBorderDomAttributes(formatting.runBorder),
+    )) {
+      if (name === 'style') span.style.cssText += `; ${value}`;
+      else span.setAttribute(name, value);
     }
   }
   const legacyTextEffects: WorkDocumentLegacyTextEffects = {
@@ -809,6 +827,7 @@ function importedRunFormattingChange(
       legacyTextShadow: beforeFormatting.legacyTextShadow,
       legacyTextEmboss: beforeFormatting.legacyTextEmboss,
       legacyTextImprint: beforeFormatting.legacyTextImprint,
+      runBorder: serializeDocumentRunBorder(beforeFormatting.runBorder),
     }),
   };
 }

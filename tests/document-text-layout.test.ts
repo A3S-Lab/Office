@@ -9,6 +9,10 @@ import {
 } from '../src/internal/features/work/work-document-pagination';
 import type { DocumentPaginationSnapshot } from '../src/internal/features/work/work-document-pagination';
 import type { OfficeKernelTextLayoutParagraph } from '../src/internal/kernel/office-kernel-protocol';
+import {
+  DOCUMENT_RUN_BORDER_ATTRIBUTE,
+  documentRunBorderDomAttributes,
+} from '../src/internal/features/work/work-document-run-border';
 
 const layoutFont: WorkDocumentLayoutFont = {
   id: 'layout-regular',
@@ -130,6 +134,50 @@ describe('document mixed-run text layout', () => {
           fontId: layoutFont.id,
         }),
       ]);
+    } finally {
+      paragraph.remove();
+    }
+  });
+
+  test('uses browser-authoritative measurement for visible character borders but keeps explicit resets on the kernel path', () => {
+    const paragraph = document.createElement('p');
+    const visible = documentRunBorderDomAttributes({
+      style: 'single',
+      color: { value: '#4472c4' },
+      size: 4,
+      space: 1,
+    });
+    applyTextMetrics(paragraph, 14, 21);
+    paragraph.innerHTML = `<span ${DOCUMENT_RUN_BORDER_ATTRIBUTE}='${visible[DOCUMENT_RUN_BORDER_ATTRIBUTE]}' style="font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; ${visible.style}">Bordered text</span>`;
+    document.body.append(paragraph);
+
+    try {
+      expect(
+        collectDocumentTextLayoutRuns(
+          paragraph,
+          paragraph.textContent ?? '',
+          [layoutFont],
+          new Set([layoutFont.id]),
+        ),
+      ).toBeNull();
+
+      const reset = documentRunBorderDomAttributes({ style: 'nil' });
+      const span = paragraph.querySelector('span');
+      span?.setAttribute(
+        DOCUMENT_RUN_BORDER_ATTRIBUTE,
+        reset[DOCUMENT_RUN_BORDER_ATTRIBUTE] ?? '',
+      );
+      if (span instanceof HTMLElement) {
+        span.style.cssText = `font-family: Test Layout Sans; font-size: 14px; line-height: 21px; unicode-bidi: normal; ${reset.style}`;
+      }
+      expect(
+        collectDocumentTextLayoutRuns(
+          paragraph,
+          paragraph.textContent ?? '',
+          [layoutFont],
+          new Set([layoutFont.id]),
+        ),
+      ).not.toBeNull();
     } finally {
       paragraph.remove();
     }

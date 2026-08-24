@@ -54,6 +54,13 @@ import {
   type WorkDocumentTextCase,
 } from './work-document-text-case';
 import {
+  DOCUMENT_RUN_BORDER_ATTRIBUTE,
+  documentRunBorderDomAttributes,
+  parseDocumentRunBorder,
+  parseDocumentRunBorderElement,
+  serializeDocumentRunBorder,
+} from './work-document-run-border';
+import {
   documentScriptFontsDomAttributes,
   documentScriptFontsForAllText,
   normalizeDocumentScriptFontSlot,
@@ -93,6 +100,7 @@ declare module '@tiptap/extension-text-style' {
     legacyTextShadow?: boolean | null;
     legacyTextEmboss?: boolean | null;
     legacyTextImprint?: boolean | null;
+    runBorder?: string | null;
     kerningThresholdHalfPoints?: number | null;
     scriptFonts?: string | null;
     scriptFontSlot?: WorkDocumentScriptFontSlot | null;
@@ -140,6 +148,10 @@ export const DocumentTextStyle = TextStyle.extend({
         tag: `span[${attribute}]`,
         consuming: false,
       })),
+      {
+        tag: `span[${DOCUMENT_RUN_BORDER_ATTRIBUTE}]`,
+        consuming: false,
+      },
     ];
   },
   addCommands() {
@@ -224,6 +236,16 @@ export const DocumentTextStyle = TextStyle.extend({
       legacyTextShadow: legacyTextEffectAttribute('shadow'),
       legacyTextEmboss: legacyTextEffectAttribute('emboss'),
       legacyTextImprint: legacyTextEffectAttribute('imprint'),
+      runBorder: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          serializeDocumentRunBorder(parseDocumentRunBorderElement(element)) ??
+          null,
+        renderHTML: (attributes: Record<string, unknown>) =>
+          documentRunBorderDomAttributes(
+            parseDocumentRunBorder(attributes.runBorder),
+          ),
+      },
       kerningThresholdHalfPoints: {
         default: null,
         parseHTML: (element: HTMLElement) =>

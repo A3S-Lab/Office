@@ -32,6 +32,11 @@ import {
   DEFAULT_DOCUMENT_TAB_INTERVAL_PX,
   normalizeDocumentTabStops,
 } from './work-document-tab-stops';
+import {
+  DOCUMENT_RUN_BORDER_ATTRIBUTE,
+  documentRunBorderIsVisible,
+  parseDocumentRunBorder,
+} from './work-document-run-border';
 
 const MAX_DOCUMENT_TEXT_LAYOUT_PARAGRAPHS = 16_384;
 const MAX_DOCUMENT_TEXT_LAYOUT_RUNS = 16_384;
@@ -461,6 +466,7 @@ function documentTextLayoutRunStyle(
     !cssValueIs(style.fontVariantPosition, 'normal') ||
     !cssValueIs(style.fontStretch, 'normal', '100%') ||
     !documentTextEmphasisAllowsKernel(style, element) ||
+    !documentRunBorderAllowsKernel(element) ||
     !cssValueIs(style.verticalAlign, 'baseline') ||
     (!cssValueIs(style.unicodeBidi, 'normal') &&
       !(paragraphRoot && style.unicodeBidi === 'isolate'))
@@ -637,6 +643,22 @@ function documentTextEmphasisAllowsKernel(
   const standard = style.getPropertyValue('text-emphasis-style').trim();
   const webkit = style.getPropertyValue('-webkit-text-emphasis-style').trim();
   return (!standard || standard === 'none') && (!webkit || webkit === 'none');
+}
+
+function documentRunBorderAllowsKernel(element: HTMLElement): boolean {
+  for (
+    let current: HTMLElement | null = element;
+    current;
+    current = current.parentElement
+  ) {
+    if (!current.hasAttribute(DOCUMENT_RUN_BORDER_ATTRIBUTE)) continue;
+    return !documentRunBorderIsVisible(
+      parseDocumentRunBorder(
+        current.getAttribute(DOCUMENT_RUN_BORDER_ATTRIBUTE),
+      ),
+    );
+  }
+  return true;
 }
 
 function cssLigatures(style: CSSStyleDeclaration): boolean | null {

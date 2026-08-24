@@ -70,10 +70,22 @@ test('Writer previews, resolves conflicts, and undoes native text effects', asyn
   const dialog = page.getByRole('dialog', { name: '字体高级设置' });
   await expect(dialog).toBeVisible();
   const effects = dialog.getByRole('group', { name: '文字效果' });
-  const outlineCheckbox = effects.getByRole('checkbox', { name: '空心' });
-  const shadowCheckbox = effects.getByRole('checkbox', { name: '阴影' });
-  const embossCheckbox = effects.getByRole('checkbox', { name: '阳文' });
-  const imprintCheckbox = effects.getByRole('checkbox', { name: '阴文' });
+  const outlineCheckbox = effects.getByRole('checkbox', {
+    name: '空心',
+    exact: true,
+  });
+  const shadowCheckbox = effects.getByRole('checkbox', {
+    name: '阴影',
+    exact: true,
+  });
+  const embossCheckbox = effects.getByRole('checkbox', {
+    name: '阳文',
+    exact: true,
+  });
+  const imprintCheckbox = effects.getByRole('checkbox', {
+    name: '阴文',
+    exact: true,
+  });
   await expect(outlineCheckbox).toBeChecked();
   await expect(shadowCheckbox).toBeChecked();
   await expect(embossCheckbox).not.toBeChecked();

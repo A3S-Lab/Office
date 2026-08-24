@@ -110,7 +110,7 @@ baseline rather than one specific release.
 
 | Capability | A3S Office today | Traditional Office baseline |
 | --- | --- | --- |
-| Text, paragraphs, lists, and styles | **Supported** — structured editing, independent native ASCII, high ANSI, East Asian, and complex-script font slots with direct/theme identity, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing, half-point kerning thresholds, all five native East Asian emphasis marks, native hidden text with explicit visible resets, four independent native outline/shadow/emboss/imprint effects with conflict-safe authoring, and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
+| Text, paragraphs, lists, and styles | **Supported** — structured editing, independent native ASCII, high ANSI, East Asian, and complex-script font slots with direct/theme identity, native all-caps and small-caps effects, exact DOCX character scale plus signed spacing, half-point kerning thresholds, all five native East Asian emphasis marks, native hidden text with explicit visible resets, native character borders with 25 visible line styles plus `nil` and `none`, direct or theme color, width, spacing, shadow, and frame semantics, four independent native outline/shadow/emboss/imprint effects with conflict-safe authoring, and baseline position in one advanced font dialog, all 18 native DOCX underline values with direct or theme color identity, independent native single/double strikethrough with explicit resets, formatting revisions, clipboard, format painter, and undo/redo | Mature authoring with a broader long-tail style and typography catalog |
 | Page layout and rendering | **Partial** — sections, margins, page size, columns, headers/footers, fields, and live pagination | Desktop-grade pagination, print layout, and vector output |
 | Tables, pictures, and equations | **Partial** — rich table geometry, floating pictures, crop/wrap, and structured OMML | Broader drawings, text boxes, charts, WordArt, and SmartArt |
 | Comments, revisions, and collaboration | **Partial** — comments, suggestions, text/format revisions, decisions, Yjs presence, and host relay contracts | Full revision families plus integrated sharing and review services |
@@ -731,6 +731,31 @@ revisions, strict/transitional import, exact export, and reopen share the same
 model. CSS provides bounded browser and PDF paint projections while eligible
 paragraphs remain on the Worker/WASM layout path. The Playground's **文字效果**
 template demonstrates all four effects and the conflict-safe transition.
+
+Native Writer character borders retain all 25 visible WordprocessingML
+`w:bdr` line styles plus explicit `nil` and `none` resets. The typed model keeps
+direct or theme colors with tint and shade, widths from 2 through 96
+eighth-points, text spacing from 0 through 31 points, and explicit shadow and
+frame flags. The Home Font group exposes a direct Character Border toggle, and
+the shared `Cmd/Ctrl+D` Advanced Font Settings dialog distinguishes mixed,
+Follow style, explicit no-border, and editable border states. Line style,
+color, width, spacing, shadow, and frame changes apply through one transaction
+and one Undo record; Format Painter uses the same mark. Traditional Office
+defines no dedicated shortcut for this command, so A3S Office does not invent
+one.
+
+Document defaults, paragraph and character styles, body text, headers,
+footers, footnotes, endnotes, formatting revisions, strict or transitional
+DOCX import, exact export, and reopen share the model. Malformed, duplicated,
+misplaced, namespace-spoofed, child- or text-bearing, extra-attribute,
+art-style, out-of-range, and unresolved-theme input fails closed. The DOM uses
+`data-office-run-border`; CSS renders every edge with bounded line-style,
+padding, shadow, and cloned-fragment projections. Visible character borders use
+browser-authoritative line measurement because border and padding alter inline
+geometry, while explicit `nil` and `none` remain eligible for Worker/WASM
+layout. Browser and PDF paint are bounded visual approximations; the OOXML
+semantics remain exact. The Playground's **字符边框** template exercises the
+complete authoring and one-step Undo path.
 
 Supported native OMML equations now survive as bounded structured objects in
 the document body, headers, footers, footnotes, and endnotes. Inline and display
@@ -1432,6 +1457,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.29.0 documentation](https://a3s-lab.github.io/Office/docs/0.29.0/)
 - [A3S Office 0.28.0 documentation](https://a3s-lab.github.io/Office/docs/0.28.0/)
 - [A3S Office 0.27.0 documentation](https://a3s-lab.github.io/Office/docs/0.27.0/)
 - [A3S Office 0.26.0 documentation](https://a3s-lab.github.io/Office/docs/0.26.0/)

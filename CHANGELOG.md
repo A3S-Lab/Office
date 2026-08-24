@@ -4,6 +4,33 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.29.0 - 2026-08-24
+
+- Added native Writer character borders as one typed `w:bdr` model with all 25
+  visible WordprocessingML line styles plus explicit `nil` and `none`, direct
+  or theme colors with tint/shade, widths from 2 through 96 eighth-points,
+  spacing from 0 through 31 points, and explicit shadow and frame flags.
+- Added a direct Character Border toggle to the Home Font group and complete
+  mixed-safe authoring to the shared `Cmd/Ctrl+D` Advanced Font Settings dialog.
+  Follow style, explicit no-border, line style, color, exact width, spacing,
+  shadow, and frame changes share one TipTap transaction and one Undo record
+  with every other touched character property; Format Painter uses the same
+  semantic mark and no non-standard shortcut is claimed.
+- Preserved character borders across document defaults, paragraph and character
+  styles, body text, headers, footers, footnotes, endnotes, formatting revisions,
+  strict and transitional DOCX import, exact export, and reopen. Prior
+  formatting inside `w:rPrChange` uses the same bounded parser and exporter.
+- Added fail-closed diagnostics for malformed, duplicated, misplaced,
+  namespace-spoofed, child- or text-bearing, extra-attribute, art-style,
+  out-of-range, and unresolved-theme border values. The DOM retains exact
+  semantics in `data-office-run-border`; visible borders use
+  browser-authoritative line measurement, explicit resets remain eligible for
+  Worker/WASM, and browser/PDF paint stays a bounded visual approximation.
+- Added the interactive Playground **字符边框** template, focused Rstest and
+  DOCX diagnostics coverage, desktop and compact Playwright coverage, and a
+  local-only A3S Test 1.0.0 ACL using standalone agent-browser 0.26.0 protocol
+  revision 15. GitHub Actions and Pages do not install or invoke A3S Test.
+
 ## 0.28.0 - 2026-08-24
 
 - Added native Writer outline, shadow, emboss, and imprint as four independent

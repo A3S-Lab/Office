@@ -494,6 +494,27 @@ paint-only so eligible paragraphs stay on Worker/WASM layout. Focused Rstest,
 desktop/compact Playwright, and the local-only pinned A3S Test 1.0.0 suite cover
 the public Playground template, conflict-safe authoring, Undo, accessibility,
 and empty browser diagnostics without adding A3S Test to Actions or Pages.
+The forty-fourth milestone adds Writer's native character-border model. One
+typed `w:bdr` value preserves all 25 visible WordprocessingML line styles plus
+explicit `nil` and `none`, direct or theme colors with tint and shade, widths
+from 2 through 96 eighth-points, text spacing from 0 through 31 points, and
+explicit shadow and frame flags. The Home Font group exposes a direct toggle;
+the shared advanced-font dialog keeps mixed selections untouched and separates
+Follow style, explicit no-border, and complete line-style, color, width,
+spacing, shadow, and frame authoring. Applying the draft with other character
+properties, Format Painter, and direct toggling remains one intent and one Undo
+record. Document defaults, paragraph and character styles, body text, page
+chrome, notes, tracked formatting revisions, strict/transitional DOCX import,
+exact export, and reopen share the bounded model. Malformed, duplicated,
+misplaced, namespace-spoofed, child- or text-bearing, extra-attribute,
+art-style, out-of-range, and unresolved-theme properties fail closed. Visible
+borders use browser-authoritative line measurement because CSS border and
+padding change inline geometry; explicit resets remain eligible for
+Worker/WASM and CSS/PDF line styles stay bounded visual approximations. No
+shortcut is invented. Focused Rstest, desktop/compact Playwright, and the
+local-only pinned A3S Test 1.0.0 suite cover the public Playground workflow,
+single-step Undo, accessibility, and empty browser diagnostics without adding
+A3S Test to Actions or Pages.
 
 ## Product Rules
 

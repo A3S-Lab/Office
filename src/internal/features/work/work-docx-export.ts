@@ -160,6 +160,15 @@ import {
 } from './work-docx-run-fonts-export';
 import { normalizeDocumentTextCase } from './work-document-text-case';
 import {
+  DOCUMENT_RUN_BORDER_ATTRIBUTE,
+  parseDocumentRunBorderElement,
+} from './work-document-run-border';
+import {
+  DocxRunBorderPatchCollector,
+  documentRunBorderDocxOptions,
+  patchDocxRunBorders,
+} from './work-docx-run-border-export';
+import {
   DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
   documentUnderlineFormattingFromElement,
   type WorkDocumentUnderlineFormatting,
@@ -196,6 +205,8 @@ interface DocxNoteContext extends DocxListExportContext {
   runFontPatches: DocxRunFontsPatchCollector;
   hiddenTextPatches: DocxHiddenTextPatchCollector;
   legacyTextEffectsPatches: DocxLegacyTextEffectsPatchCollector;
+  runBorderPatches: DocxRunBorderPatchCollector;
+  usedRunBorderMarkers: Set<string>;
   usedNativeTextEffectMarkers: Set<string>;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
   hasExplicitZeroCharacterSpacing: boolean;
@@ -272,6 +283,10 @@ export async function createDocxBlob(
     legacyTextEffectsPatches: new DocxLegacyTextEffectsPatchCollector(
       JSON.stringify(normalizedContent),
     ),
+    runBorderPatches: new DocxRunBorderPatchCollector(
+      JSON.stringify(normalizedContent),
+    ),
+    usedRunBorderMarkers: new Set(),
     usedNativeTextEffectMarkers: new Set(),
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
@@ -364,8 +379,14 @@ export async function createDocxBlob(
       noteContext.usedNativeTextEffectMarkers.has(patch.marker),
     ),
   );
-  const formattingChangesPatched = await patchDocxRunFormattingChanges(
+  const runBordersPatched = await patchDocxRunBorders(
     legacyTextEffectsPatched,
+    noteContext.runBorderPatches.patches.filter((patch) =>
+      noteContext.usedRunBorderMarkers.has(patch.marker),
+    ),
+  );
+  const formattingChangesPatched = await patchDocxRunFormattingChanges(
+    runBordersPatched,
     noteContext.formattingChangePatches.patches,
   );
   const noteImageRelationshipsPatched = await patchDocxNoteImageRelationships(
@@ -504,6 +525,16 @@ function markDocxNativeTextEffectStyleUsed(
       continue;
     }
     break;
+  }
+}
+
+function markDocxRunBorderUsed(
+  border: IRunOptions['border'],
+  context: DocxNoteContext,
+): void {
+  const marker = border?.color?.toUpperCase();
+  if (context.runBorderPatches.hasMarker(marker)) {
+    context.usedRunBorderMarkers.add(marker);
   }
 }
 
@@ -802,6 +833,7 @@ async function inlineRuns(
     if (node.nodeType === Node.TEXT_NODE) {
       if (!node.textContent) return [];
       markDocxNativeTextEffectStyleUsed(inherited.style, noteContext);
+      markDocxRunBorderUsed(inherited.border, noteContext);
       if (revision?.kind === 'insertion') {
         return [
           new docx.InsertedTextRun({
@@ -911,6 +943,16 @@ async function inlineRuns(
     }
     const explicitCharacterPosition =
       documentCharacterPositionHalfPointsFromElement(node);
+    const hasExplicitRunBorder =
+      tag === 'span' &&
+      (node.hasAttribute(DOCUMENT_RUN_BORDER_ATTRIBUTE) ||
+        Boolean(node.style.borderStyle));
+    const explicitRunBorder = hasExplicitRunBorder
+      ? parseDocumentRunBorderElement(node)
+      : null;
+    if (hasExplicitRunBorder && !explicitRunBorder) {
+      throw new Error('Document contains an invalid character border.');
+    }
     if (explicitCharacterSpacing === 0) {
       noteContext.hasExplicitZeroCharacterSpacing = true;
     }
@@ -982,6 +1024,12 @@ async function inlineRuns(
       documentScriptFontSlotFromElement(node),
       node.style.fontFamily,
     );
+    const runBorder = explicitRunBorder
+      ? documentRunBorderDocxOptions(
+          explicitRunBorder,
+          noteContext.runBorderPatches,
+        ).border
+      : inherited.border;
     const style: IRunOptions = {
       ...inherited,
       style: nativeTextEffectStyle,
@@ -1001,6 +1049,7 @@ async function inlineRuns(
       kern,
       position,
       emphasisMark,
+      border: runBorder,
       shading: themeFillMarker ? { fill: themeFillMarker } : resolvedShading,
       snapToGrid:
         dataBoolean(node.dataset.officeWordSnapToGrid) ?? inherited.snapToGrid,
@@ -1010,6 +1059,7 @@ async function inlineRuns(
     };
     if (tag === 'br') {
       markDocxNativeTextEffectStyleUsed(style.style, noteContext);
+      markDocxRunBorderUsed(style.border, noteContext);
       return [new docx.TextRun({ ...style, break: 1 })];
     }
     if (tag === 'img')
