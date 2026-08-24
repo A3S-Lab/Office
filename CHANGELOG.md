@@ -4,11 +4,45 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
-- Made the current post-`0.29.0` capability set discoverable from the first
+## 0.30.0 - 2026-08-24
+
+- Made the `0.30.0` capability set discoverable from the first
   Playground viewport and the documentation hero. Character shading, proofing
-  languages, and Spreadsheet data validation now share matching highlighted
-  entries, normal **新建** templates, README summaries, bilingual references,
-  and local-only A3S Test public-entry coverage.
+  languages, Writer Table of Contents, and Spreadsheet data validation now
+  share matching highlighted entries, normal **新建** templates, README
+  summaries, bilingual references, and local-only A3S Test public-entry
+  coverage.
+- Added typed native Writer character shading with every WordprocessingML
+  `w:shd` pattern, direct or automatic foreground/background colors,
+  independent theme channels with tint/shade, and explicit `nil` resets.
+  Advanced Font Settings, Format Painter, styles, page chrome, notes,
+  revisions, strict/transitional DOCX import, export, and reopen share the same
+  bounded model and fail-closed diagnostics.
+- Added a typed Writer Table of Contents block with heading and native outline
+  levels 1–9, hyperlinks, page-number visibility and alignment,
+  dot/dash/underline/no leaders, stable heading targets, bounded cached
+  entries, click navigation, selected-block customization, explicit all-TOC
+  refresh, and one transaction plus one Undo record per insert, update, or
+  refresh.
+- Reused the existing heading outline as the only heading source and the live
+  Worker/WASM field context resolver as the only page-number source. The
+  insert/update transaction assigns a native paragraph identity when an
+  included outline item does not already have one, so targets remain stable
+  after structural edits. The
+  References ribbon now exposes Insert or Customize and Update Table of
+  Contents without advertising a non-standard shortcut; its responsive dialog
+  restores the exact invoking focus target.
+- Added native DOCX Table of Contents export, import, and second-export
+  fidelity through a real `w:sdt` and `TOC` field, cached entries, stable
+  heading bookmarks, and exact dot, hyphen, underscore, or no-leader output.
+  Common heading, hyperlink, Web-view, outline-level, complete page-suppression,
+  and space-separator switches import as editable state; lossy style mappings,
+  partial ranges, malformed ranges, and unsupported separators remain explicit
+  compatibility boundaries. Repeated imported TOCs resolve the same headings
+  independently instead of consuming a document-wide target match.
+- Added the public Playground **可更新目录** template plus matching README,
+  roadmap, bilingual component/architecture documentation, focused Rstest,
+  DOCX diagnostics, and local-only A3S Test coverage.
 - Added complete common Spreadsheet data-validation input and error settings:
   ignore blank, in-cell dropdown-arrow visibility, input titles and messages,
   enabled error alerts, Stop/Warning/Information style, and custom error titles

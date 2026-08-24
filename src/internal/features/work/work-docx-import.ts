@@ -4,6 +4,7 @@ import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
 import { normalizeDocumentCaptionsHtml } from './work-document-captions';
 import { normalizeDocumentCitationsHtml } from './work-document-citations';
 import { normalizeDocumentFieldsHtml } from './work-document-fields';
+import { normalizeDocumentTableOfContentsHtml } from './work-document-table-of-contents';
 import { normalizeDocumentNotesHtml } from './work-document-notes';
 import {
   documentContentLayoutProperties,
@@ -53,6 +54,12 @@ import {
   type ImportedDocxFieldMarkers,
   markDocxBodyFields,
 } from './work-docx-field-import';
+import {
+  applyImportedDocxTableOfContentsMarkers,
+  hasImportedDocxTableOfContentsMarkers,
+  type ImportedDocxTableOfContentsMarkers,
+  markDocxTablesOfContents,
+} from './work-docx-table-of-contents-import';
 import {
   applyImportedDocxImageLayoutMarkers,
   createImportedDocxImageLayoutMarkerState,
@@ -208,6 +215,7 @@ export interface PreparedDocxImport {
   changeMarkers: ImportedDocxChangeMarkers;
   commentMarkers: ImportedDocxCommentMarkers;
   fieldMarkers: ImportedDocxFieldMarkers;
+  tableOfContentsMarkers: ImportedDocxTableOfContentsMarkers;
   equationMarkers: ImportedDocxEquationMarkers;
   citationMarkers: ImportedDocxCitationMarkers;
   listMarkers: ImportedDocxListMarkers;
@@ -254,6 +262,7 @@ export async function prepareDocxImport(
       changeMarkers: { changes: [] },
       commentMarkers: { comments: [], ranges: [] },
       fieldMarkers: { fields: [] },
+      tableOfContentsMarkers: { tables: [] },
       equationMarkers: { equations: [] },
       citationMarkers: { citations: [], bibliographies: [] },
       listMarkers: { lists: [] },
@@ -287,6 +296,7 @@ export async function prepareDocxImport(
 
   const document = await archive.xml('word/document.xml');
   const pageColor = importDocxPageColor(document);
+  const tableOfContentsMarkers = markDocxTablesOfContents(document);
   const paragraphIdentityMarkers = markDocxParagraphIdentities(document);
   const numbering = archive.has('word/numbering.xml')
     ? await archive.xml('word/numbering.xml')
@@ -416,6 +426,7 @@ export async function prepareDocxImport(
         hasImportedDocxCommentMarkers(commentMarkers) ||
         hasImportedDocxCitationMarkers(citationMarkers) ||
         hasImportedDocxFieldMarkers(fieldMarkers) ||
+        hasImportedDocxTableOfContentsMarkers(tableOfContentsMarkers) ||
         equationMarkers.changed ||
         hasImportedDocxListMarkers(listMarkers) ||
         hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
@@ -444,6 +455,7 @@ export async function prepareDocxImport(
       changeMarkers,
       commentMarkers,
       fieldMarkers,
+      tableOfContentsMarkers,
       equationMarkers: equationMarkers.markers,
       citationMarkers,
       listMarkers,
@@ -493,6 +505,7 @@ export async function prepareDocxImport(
       hasImportedDocxCommentMarkers(commentMarkers) ||
       hasImportedDocxCitationMarkers(citationMarkers) ||
       hasImportedDocxFieldMarkers(fieldMarkers) ||
+      hasImportedDocxTableOfContentsMarkers(tableOfContentsMarkers) ||
       equationMarkers.changed ||
       hasImportedDocxListMarkers(listMarkers) ||
       hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
@@ -521,6 +534,7 @@ export async function prepareDocxImport(
     changeMarkers,
     commentMarkers,
     fieldMarkers,
+    tableOfContentsMarkers,
     equationMarkers: equationMarkers.markers,
     citationMarkers,
     listMarkers,
@@ -555,6 +569,7 @@ export function applyDocxSectionsToHtml(
   changeMarkers: ImportedDocxChangeMarkers = { changes: [] },
   commentMarkers: ImportedDocxCommentMarkers = { comments: [], ranges: [] },
   fieldMarkers: ImportedDocxFieldMarkers = { fields: [] },
+  tableOfContentsMarkers: ImportedDocxTableOfContentsMarkers = { tables: [] },
   equationMarkers: ImportedDocxEquationMarkers = { equations: [] },
   citationMarkers: ImportedDocxCitationMarkers = {
     citations: [],
@@ -641,6 +656,7 @@ export function applyDocxSectionsToHtml(
   applyImportedDocxChangeMarkers(document, changeMarkers);
   applyImportedDocxCommentMarkers(document, commentMarkers);
   applyImportedDocxParagraphIdentityMarkers(document, paragraphIdentityMarkers);
+  applyImportedDocxTableOfContentsMarkers(document, tableOfContentsMarkers);
   const notes = extractMammothDocumentNotes(document);
   const sourceNodes = Array.from(document.body.childNodes);
   document.body.replaceChildren();
@@ -672,9 +688,11 @@ export function applyDocxSectionsToHtml(
   return normalizeDocumentBookmarkReferencesHtml(
     normalizeDocumentBookmarksHtml(
       normalizeDocumentCitationsHtml(
-        normalizeDocumentFieldsHtml(
-          normalizeDocumentCaptionsHtml(
-            normalizeDocumentNotesHtml(document.body.innerHTML),
+        normalizeDocumentTableOfContentsHtml(
+          normalizeDocumentFieldsHtml(
+            normalizeDocumentCaptionsHtml(
+              normalizeDocumentNotesHtml(document.body.innerHTML),
+            ),
           ),
         ),
         bibliography,

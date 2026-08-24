@@ -140,6 +140,11 @@ import {
 import { documentParagraphShadingDocxOptions } from './work-docx-paragraph-shading-export';
 import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
 import {
+  DocxTableOfContentsPatchCollector,
+  docxTableOfContents,
+  patchDocxTableOfContents,
+} from './work-docx-table-of-contents-export';
+import {
   documentTableCellSizingDocxOptions,
   documentTableRowSizingDocxOptions,
   documentTableSizingDocxOptions,
@@ -231,6 +236,7 @@ interface DocxNoteContext extends DocxListExportContext {
   usedRunShadingMarkers: Set<string>;
   usedNativeTextEffectMarkers: Set<string>;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
+  tableOfContentsPatches: DocxTableOfContentsPatchCollector;
   hasExplicitZeroCharacterSpacing: boolean;
   hasExplicitZeroKerningThreshold: boolean;
 }
@@ -316,6 +322,7 @@ export async function createDocxBlob(
     usedNativeTextEffectMarkers: new Set(),
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
+    tableOfContentsPatches: new DocxTableOfContentsPatchCollector(),
     hasExplicitZeroCharacterSpacing: false,
     hasExplicitZeroKerningThreshold: false,
   };
@@ -477,9 +484,13 @@ export async function createDocxBlob(
     paragraphDefaultCollapsedPatched,
     noteContext.paragraphIdentityPatches.patches,
   );
+  const tableOfContentsPatched = await patchDocxTableOfContents(
+    paragraphIdentityPatched,
+    noteContext.tableOfContentsPatches.patches,
+  );
   const paragraphFormattingChangesPatched =
     await patchDocxParagraphFormattingChanges(
-      paragraphIdentityPatched,
+      tableOfContentsPatched,
       noteContext.paragraphFormattingChangePatches.patches,
     );
   const equationPatched = await patchDocxEquations(
@@ -734,6 +745,11 @@ async function blockToFileChildren(
   if (element.hasAttribute('data-document-bibliography')) {
     return [
       docxBibliographyParagraph(element, docx, paragraphBidirectional(element)),
+    ];
+  }
+  if (element.hasAttribute('data-document-table-of-contents')) {
+    return [
+      docxTableOfContents(element, docx, noteContext.tableOfContentsPatches),
     ];
   }
   if (element.hasAttribute('data-document-caption')) {

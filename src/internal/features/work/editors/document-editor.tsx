@@ -1307,6 +1307,10 @@ function DocumentEditorSurface({
     documentInsert.refreshFields();
     restoreDocumentBodyFocus();
   };
+  const refreshDocumentTableOfContents = () => {
+    documentInsert.refreshTableOfContents();
+    restoreDocumentBodyFocus();
+  };
   const openSelectionContextMenu = (
     event: WorkspaceContextMenuEvent,
   ): boolean => {
@@ -1424,11 +1428,13 @@ function DocumentEditorSurface({
           onInsertNote={documentInsert.insertNote}
           onInsertCaption={documentInsert.insertCaption}
           onInsertCrossReference={documentInsert.insertCrossReference}
+          onOpenTableOfContents={documentInsert.openTableOfContents}
           citationsOpen={citationsOpen}
           citationSourceCount={currentContent.bibliography?.sources.length ?? 0}
           onToggleCitations={() => void toggleTaskPane('citations')}
           onInsertField={documentInsert.insertField}
           onRefreshFields={refreshDocumentFields}
+          onRefreshTableOfContents={refreshDocumentTableOfContents}
           canInsertComment={documentComments.canInsert}
           onInsertComment={() => void startCommentDraft()}
           commentsOpen={documentComments.open}

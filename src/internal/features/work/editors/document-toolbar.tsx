@@ -14,6 +14,7 @@ import {
   Eye,
   Image as ImageIcon,
   Link2,
+  ListTree,
   ListChecks,
   Languages,
   MessageSquarePlus,
@@ -51,6 +52,7 @@ import {
   normalizeDocumentHref,
 } from '../work-document-links';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
+import { documentHasTableOfContents } from '../work-document-table-of-contents-node';
 import type { WorkDocumentSectionLayout } from '../work-types';
 import {
   type DocumentRibbonTabId,
@@ -164,11 +166,13 @@ interface DocumentToolbarProps {
   onInsertNote: (kind: WorkDocumentNoteKind) => void;
   onInsertCaption: (kind: WorkDocumentCaptionKind) => void;
   onInsertCrossReference: () => void;
+  onOpenTableOfContents: () => void;
   citationsOpen: boolean;
   citationSourceCount: number;
   onToggleCitations: () => void;
   onInsertField: (kind: WorkDocumentFieldKind) => void;
   onRefreshFields: () => void;
+  onRefreshTableOfContents: () => void;
   canInsertComment: boolean;
   onInsertComment: () => void;
   commentsOpen: boolean;
@@ -232,11 +236,13 @@ export function DocumentToolbar({
   onInsertNote,
   onInsertCaption,
   onInsertCrossReference,
+  onOpenTableOfContents,
   citationsOpen,
   citationSourceCount,
   onToggleCitations,
   onInsertField,
   onRefreshFields,
+  onRefreshTableOfContents,
   canInsertComment,
   onInsertComment,
   commentsOpen,
@@ -267,6 +273,7 @@ export function DocumentToolbar({
   const tableSelected = editor.isActive('table');
   const activeBookmark = activeDocumentBookmark(editor);
   const hasRefreshableFields = documentHasRefreshableFields(editor);
+  const hasTableOfContents = documentHasTableOfContents(editor);
   const documentChanges = collectDocumentChanges(editor.state.doc);
   const previousChangeIndex = adjacentDocumentChangeIndex(
     documentChanges,
@@ -753,6 +760,28 @@ export function DocumentToolbar({
           ),
           references: reviewOnly ? null : (
             <>
+              <RibbonGroup label="目录" priority="high">
+                <ToolbarButton
+                  label="插入或自定义目录"
+                  displayLabel
+                  onClick={onOpenTableOfContents}
+                >
+                  <ListTree size={19} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label="更新目录"
+                  displayLabel
+                  disabled={!hasTableOfContents}
+                  title={
+                    hasTableOfContents
+                      ? '根据当前标题和页码更新目录'
+                      : '文档中没有可更新的目录'
+                  }
+                  onClick={onRefreshTableOfContents}
+                >
+                  <RefreshCw size={19} />
+                </ToolbarButton>
+              </RibbonGroup>
               <RibbonGroup label="脚注" priority="high">
                 <ToolbarButton
                   label="插入脚注"

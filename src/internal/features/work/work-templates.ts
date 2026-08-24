@@ -20,6 +20,7 @@ import {
   documentRunShadingDomAttributes,
 } from './work-document-run-shading';
 import { documentProofingDomAttributes } from './work-document-proofing';
+import { documentTableOfContentsHtml } from './work-document-table-of-contents';
 import type { WorkDocumentScriptFontSlot } from './work-document-script-fonts';
 
 export const WORK_TEMPLATES: WorkTemplate[] = [
@@ -36,6 +37,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     name: '项目方案',
     description: '目标、范围、里程碑与风险',
     accent: '#536de2',
+  },
+  {
+    id: 'table-of-contents',
+    kind: 'document',
+    name: '可更新目录',
+    description: '标题级别、超链接、页码、前导符与原生 DOCX 往返',
+    accent: '#315f9f',
   },
   {
     id: 'text-effects',
@@ -137,6 +145,7 @@ export function createWorkId(prefix: string): string {
 function initialTitle(templateId: string, kind: WorkArtifactKind): string {
   const titles: Record<string, string> = {
     'project-brief': '新项目方案',
+    'table-of-contents': '可更新目录示例',
     'text-effects': '文字效果示例',
     'run-borders': '字符边框示例',
     'run-shading': '字符底纹示例',
@@ -169,6 +178,52 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
         '<ol><li><p>方案确认</p></li><li><p>执行与评审</p></li><li><p>交付与复盘</p></li></ol>',
         '<h2>风险与决策</h2>',
         '<p>记录尚未解决的问题、依赖和决策负责人。</p>',
+      ].join(''),
+    };
+  }
+  if (templateId === 'table-of-contents') {
+    return {
+      type: 'document',
+      pageSize: 'a4',
+      html: [
+        documentTableOfContentsHtml({
+          id: 'playground-table-of-contents',
+          options: {
+            minLevel: 1,
+            maxLevel: 3,
+            hyperlinks: true,
+            showPageNumbers: true,
+            rightAlignPageNumbers: true,
+            leader: 'dot',
+          },
+          entries: [
+            {
+              targetId: 'heading-00001001',
+              title: '项目概述',
+              level: 1,
+              pageNumber: 1,
+            },
+            {
+              targetId: 'heading-00001002',
+              title: '目标与范围',
+              level: 2,
+              pageNumber: 1,
+            },
+            {
+              targetId: 'heading-00001003',
+              title: '实施计划',
+              level: 1,
+              pageNumber: 2,
+            },
+          ],
+        }),
+        '<h1 data-office-paragraph-id="00001001" data-office-paragraph-text-id="00002001">项目概述</h1>',
+        '<p>目录是一个可选择、不可直接改写的结构化块。请从“引用”选项卡自定义或更新它。</p>',
+        '<h2 data-office-paragraph-id="00001002" data-office-paragraph-text-id="00002002">目标与范围</h2>',
+        '<p>修改标题文字后，使用“更新目录”同步标题与当前分页页码。</p>',
+        '<hr class="work-page-break" data-page-break="true">',
+        '<h1 data-office-paragraph-id="00001003" data-office-paragraph-text-id="00002003">实施计划</h1>',
+        '<p>导出 DOCX 后仍保留原生 TOC 域、缓存目录项、超链接和前导符。</p>',
       ].join(''),
     };
   }

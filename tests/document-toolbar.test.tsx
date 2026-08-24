@@ -43,11 +43,13 @@ interface ToolbarCalls {
   pageChromePageNumbers: number;
   pageNumbers: number;
   refreshFields: number;
+  refreshTableOfContents: number;
   rulers: number;
   sections: number;
   spellcheck: number;
   toggleChanges: number;
   toggleCitations: number;
+  tableOfContents: number;
   trackChanges: number;
 }
 
@@ -196,6 +198,7 @@ test('orders References, Review, and View groups like WPS Writer', () => {
 
   fireEvent.click(screen.getByRole('tab', { name: '引用' }));
   expect(activeRibbonGroupLabels()).toEqual([
+    '目录',
     '脚注',
     '题注',
     '引文和书目',
@@ -212,10 +215,21 @@ test('orders References, Review, and View groups like WPS Writer', () => {
 test('wires every References, Review, and View action without silent buttons', () => {
   editor = createEditor();
   editor.commands.insertDocumentField('date');
+  editor.commands.insertDocumentTableOfContents();
   const calls = createCalls();
   render(toolbar(editor, calls));
 
   fireEvent.click(screen.getByRole('tab', { name: '引用' }));
+  const tableOfContents = screen.getByRole('button', {
+    name: '插入或自定义目录',
+  });
+  expect(tableOfContents).not.toHaveAttribute('aria-keyshortcuts');
+  fireEvent.click(tableOfContents);
+  const refreshTableOfContents = screen.getByRole('button', {
+    name: '更新目录',
+  });
+  expect(refreshTableOfContents).not.toHaveAttribute('aria-keyshortcuts');
+  fireEvent.click(refreshTableOfContents);
   for (const label of ['插入脚注', '插入尾注']) {
     fireEvent.click(screen.getByRole('button', { name: label }));
   }
@@ -234,6 +248,8 @@ test('wires every References, Review, and View action without silent buttons', (
   expect(calls.crossReferences).toBe(1);
   expect(calls.toggleCitations).toBe(1);
   expect(calls.refreshFields).toBe(1);
+  expect(calls.tableOfContents).toBe(1);
+  expect(calls.refreshTableOfContents).toBe(1);
 
   fireEvent.click(screen.getByRole('tab', { name: '审阅' }));
   expect(screen.getByRole('button', { name: '拼写检查' })).toHaveAttribute(
@@ -782,6 +798,9 @@ function toolbar(
       onInsertCrossReference={() => {
         calls.crossReferences += 1;
       }}
+      onOpenTableOfContents={() => {
+        calls.tableOfContents += 1;
+      }}
       citationsOpen={false}
       citationSourceCount={2}
       onToggleCitations={() => {
@@ -790,6 +809,9 @@ function toolbar(
       onInsertField={(kind) => calls.fields.push(kind)}
       onRefreshFields={() => {
         calls.refreshFields += 1;
+      }}
+      onRefreshTableOfContents={() => {
+        calls.refreshTableOfContents += 1;
       }}
       canInsertComment
       onInsertComment={() => {
@@ -837,11 +859,13 @@ function createCalls(): ToolbarCalls {
     pageChromePageNumbers: 0,
     pageNumbers: 0,
     refreshFields: 0,
+    refreshTableOfContents: 0,
     rulers: 0,
     sections: 0,
     spellcheck: 0,
     toggleChanges: 0,
     toggleCitations: 0,
+    tableOfContents: 0,
     trackChanges: 0,
   };
 }

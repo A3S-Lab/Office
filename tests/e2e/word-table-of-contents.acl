@@ -1,0 +1,246 @@
+suite "office-word-table-of-contents" {
+    version = 1
+
+    scenario "customize-refresh-and-undo-native-table-of-contents" {
+        name = "Customize, refresh, and undo a native Writer table of contents"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        expect "latest-table-of-contents-is-public" {
+            visible = css("button[aria-label='打开最新能力：可更新目录']")
+        }
+
+        click "open-table-of-contents-template" {
+            target = role("button", "打开最新能力：可更新目录")
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "typed-table-of-contents-is-visible" {
+            visible = css(".work-document-table-of-contents[data-toc-min-level='1'][data-toc-max-level='3'][data-toc-hyperlinks='true'][data-toc-show-page-numbers='true'][data-toc-right-align-page-numbers='true'][data-toc-leader='dot']")
+        }
+
+        expect "three-stable-heading-targets-are-visible" {
+            visible = css(".work-document-table-of-contents:has(li[data-toc-target='heading-00001001']):has(li[data-toc-target='heading-00001002']):has(li[data-toc-target='heading-00001003'])")
+        }
+
+        click "select-table-of-contents" {
+            target = css(".work-document-table-of-contents-header")
+        }
+
+        expect "table-of-contents-is-selected" {
+            visible = css(".work-document-table-of-contents.ProseMirror-selectednode")
+        }
+
+        click "open-references-tab" {
+            target = role("tab", "引用")
+        }
+
+        click "open-table-of-contents-dialog" {
+            target = role("button", "插入或自定义目录")
+        }
+
+        wait "customization-dialog-visible" {
+            visible = css(".work-document-table-of-contents-dialog[role='dialog']")
+        }
+
+        expect "level-range-starts-focused" {
+            visible = css(".work-document-table-of-contents-dialog [role='combobox'][aria-label='起始标题级别']:focus")
+        }
+
+        click "open-leader-options" {
+            target = role("combobox", "目录前导符")
+        }
+
+        click "select-dash-leader" {
+            target = role("option", "短横线（----）")
+        }
+
+        uncheck "disable-table-of-contents-hyperlinks" {
+            target = css(".work-document-table-of-contents-dialog input[aria-label='目录项使用超链接']")
+        }
+
+        expect "hyperlinks-are-disabled-before-apply" {
+            visible = css(".work-document-table-of-contents-dialog .work-office-checkbox:has(input[aria-label='目录项使用超链接'][aria-checked='false'])")
+        }
+
+        click "apply-table-of-contents-options" {
+            target = role("button", "应用")
+        }
+
+        expect "native-options-are-applied" {
+            visible = css(".work-document-table-of-contents[data-toc-leader='dash'][data-toc-hyperlinks='false'][data-toc-show-page-numbers='true'][data-toc-right-align-page-numbers='true']")
+        }
+
+        expect "editor-focus-is-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-customization" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restores-original-options" {
+            visible = css(".work-document-table-of-contents[data-toc-leader='dot'][data-toc-hyperlinks='true'] a[data-toc-target='heading-00001001']")
+        }
+
+        press "redo-customization" {
+            key = "Control+y"
+        }
+
+        expect "redo-restores-custom-options" {
+            visible = css(".work-document-table-of-contents[data-toc-leader='dash'][data-toc-hyperlinks='false']")
+        }
+
+        click "edit-second-heading" {
+            target = css(".work-document-editable h2[data-office-paragraph-id='00001002']")
+        }
+
+        press "move-to-heading-end" {
+            key = "End"
+        }
+
+        type "append-heading-title" {
+            target = css(".work-document-editable h2[data-office-paragraph-id='00001002']")
+            value = "（已更新）"
+        }
+
+        expect "heading-title-is-updated" {
+            text = "目标与范围（已更新）"
+        }
+
+        click "refresh-table-of-contents" {
+            target = role("button", "更新目录")
+        }
+
+        expect "refresh-rebuilds-title-and-preserves-options" {
+            visible = css(".work-document-table-of-contents[data-toc-leader='dash'][data-toc-hyperlinks='false'][data-toc-entries*='目标与范围（已更新）']")
+        }
+
+        press "undo-refresh" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restores-stale-cache-only" {
+            visible = css(".work-document-table-of-contents[data-toc-leader='dash'][data-toc-hyperlinks='false']:not([data-toc-entries*='目标与范围（已更新）'])")
+        }
+
+        expect "refresh-undo-keeps-heading-edit" {
+            text = "目标与范围（已更新）"
+        }
+
+        accessibility "table-of-contents-accessibility" {
+            path = "evidence/table-of-contents-accessibility.json"
+            interactive = true
+        }
+
+        console "table-of-contents-console" {
+            path = "diagnostics/table-of-contents-console.json"
+            clear = false
+        }
+
+        page_errors "table-of-contents-page-errors" {
+            path = "diagnostics/table-of-contents-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "open-table-of-contents-dialog-on-phone" {
+        name = "Open the Writer table-of-contents dialog on a phone viewport"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-table-of-contents-template" {
+            target = role("button", "打开最新能力：可更新目录")
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "phone-table-of-contents-is-typed" {
+            visible = css(".work-document-table-of-contents[data-toc-leader='dot'][data-toc-hyperlinks='true']")
+        }
+
+        click "select-table-of-contents" {
+            target = css(".work-document-table-of-contents-header")
+        }
+
+        click "open-references-tab" {
+            target = role("tab", "引用")
+        }
+
+        click "open-table-of-contents-dialog" {
+            target = role("button", "插入或自定义目录")
+        }
+
+        wait "responsive-dialog-visible" {
+            visible = css(".work-document-table-of-contents-dialog[role='dialog']")
+        }
+
+        expect "phone-dialog-starts-focused" {
+            visible = css(".work-document-table-of-contents-dialog [role='combobox'][aria-label='起始标题级别']:focus")
+        }
+
+        expect "phone-options-remain-visible" {
+            visible = css(".work-document-table-of-contents-dialog .work-office-checkbox:has(input[aria-label='页码右对齐'][aria-checked='true'])")
+        }
+
+        expect "phone-leader-control-remains-visible" {
+            visible = css(".work-document-table-of-contents-dialog [role='combobox'][aria-label='目录前导符']")
+        }
+
+        expect "phone-preview-remains-visible" {
+            visible = css(".work-document-table-of-contents-dialog [aria-label='目录预览']")
+        }
+
+        expect "phone-apply-action-remains-visible" {
+            visible = css(".work-document-table-of-contents-dialog > footer > button:last-child")
+        }
+
+        accessibility "phone-table-of-contents-accessibility" {
+            path = "evidence/phone-table-of-contents-accessibility.json"
+            interactive = true
+        }
+
+        console "phone-table-of-contents-console" {
+            path = "diagnostics/phone-table-of-contents-console.json"
+            clear = false
+        }
+
+        page_errors "phone-table-of-contents-page-errors" {
+            path = "diagnostics/phone-table-of-contents-page-errors.json"
+            clear = false
+        }
+    }
+}

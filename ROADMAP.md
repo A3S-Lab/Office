@@ -36,7 +36,7 @@ collaboration transport, and AI providers.
 | Surface | A3S Office today | Largest Traditional Office gaps | Direction |
 | --- | --- | --- | --- |
 | Shared shell | Five lazy browser surfaces, responsive ribbon and dialogs, keyboard/focus contracts, typed host ports | Bundled cloud workspace, live co-editing service, native desktop/mobile shells, large template marketplace | Keep services host-owned; deepen reusable integration protocols |
-| Writer | Strongest surface: structured editing, sections, tables, images, equations, comments, revisions, fields, notes, page chrome, source-backed DOCX | TOC/index authoring, complete revision types, broad DrawingML objects, mail merge, compare/merge, exact desktop pagination | Remains the first fidelity track |
+| Writer | Strongest surface: structured editing, sections, tables, images, equations, comments, revisions, fields, typed TOC authoring, notes, page chrome, source-backed DOCX | Index authoring, complete revision types, broad DrawingML objects, mail merge, compare/merge, exact desktop pagination | Remains the first fidelity track |
 | Spreadsheet | Workbook editing, formulas, recalculation, native Tables/ListObjects, charts, pivots, conditional formatting, validation, protection, comments, print setup | Broader formula and structured-reference parity, calculated table columns/totals, advanced pivots/slicers, external data, macros/add-ins, advanced analysis | Stabilize calculation and native workbook semantics before adding more UI |
 | Presentation | Editable scene graph, masters/layouts, text, shapes, images, tables, charts, groups, comments, transitions, slideshow/presenter view | Object animations, media, broad shape/SmartArt fidelity, full master authoring, richer views and video export | Build expressiveness on the typed scene graph |
 | PDF | PDFium rendering, search, forms, annotations, navigation, bounded long-file rendering, save | Native text/object editing, page organization, conversion, OCR, signatures, redaction, compression | Evolve from viewer/annotator into an optional PDF workbench |
@@ -79,7 +79,7 @@ collaboration transport, and AI providers.
 | Comments, replies, resolved state, anchors, modern IDs | **Supported** for editable review records and safe source preservation | Reactions, people sidecars, live presence, and server synchronization are absent/host-owned | P1 protocol |
 | Track changes review | **Partial**: body-text insertions/deletions plus bounded character- and paragraph-formatting revisions, native `w:rPrChange` and `w:pPrChange` round trips, navigation, accept/reject, immutable collaboration audit, and long-list virtualization | Moves plus numbering, section, table, row, and cell property revisions are not fully editable | P0 |
 | Bookmarks, links, captions, cross-references, citations, bibliography, footnotes/endnotes | **Partial**, with native identity and editable common paths | Wider field instructions, indexes, tables of authorities/figures, citation styles, and reference dialogs remain incomplete | P1 |
-| Table of contents and outline authoring | **Partial**: heading outline navigation exists | No Office-style insert/update TOC workflow with page-number refresh and style controls | P1 |
+| Table of contents and outline authoring | **Supported**: shared semantic-heading/native-outline model plus typed insert/customize/refresh, levels 1–9, hyperlinks, live page numbers, alignment, four leader styles, stable paragraph-identity targets, one-step Undo, and native DOCX `TOC` round trips | Custom style-to-level mappings, indexes, tables of figures, and deeper TOC style formatting remain open | Maintain / P1 fidelity |
 | Fields | **Partial**: PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, TIME, and safe REF paths | Broader Word field grammar, nested fields, switches, mail fields, and document properties are incomplete | P1/P2 |
 | Mail merge | **Gap** | No data-source mapping, recipient filtering, preview, or batch generation | P2 |
 | Compare/combine documents | **Gap** | No deterministic document diff/merge producing reviewable revisions | P1 |
@@ -275,8 +275,10 @@ pagination and export have deterministic structural and visual evidence.
 
 ### R1 — Writer daily-work parity (P0/P1)
 
-- Add insert/update Table of Contents with heading-level, hyperlink, leader,
-  page-number, and refresh semantics.
+The typed Table of Contents slice is complete: insert, selected-block
+customization, navigation, explicit refresh, native cached entries, and DOCX
+reopen all share the heading outline and pagination resolver.
+
 - Add document compare/combine that produces reviewable, deterministic
   revisions.
 - Add editable text boxes and a bounded DrawingML shape/connector model before

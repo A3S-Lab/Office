@@ -442,6 +442,16 @@ export const documentCommandCatalog = {
       editor: ['Mod-Shift-e'],
     },
   },
+  tableOfContents: {
+    id: 'references.tableOfContents',
+    label: '插入或自定义目录',
+    location: { area: 'ribbon', tab: 'references', group: 'tableOfContents' },
+  },
+  refreshTableOfContents: {
+    id: 'references.refreshTableOfContents',
+    label: '更新目录',
+    location: { area: 'ribbon', tab: 'references', group: 'tableOfContents' },
+  },
   refreshFields: {
     id: 'references.refreshFields',
     label: '更新域',

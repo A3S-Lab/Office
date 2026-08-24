@@ -49,20 +49,24 @@ export function docxFieldOccurrenceIsInlineEditable(
   );
 }
 
-export function hasInvalidDocxFieldStructure(root: ParentNode): boolean {
+export function hasInvalidDocxFieldStructure(
+  root: ParentNode,
+  ignore: (field: DocxFieldOccurrence) => boolean = () => false,
+): boolean {
   const parsed = parseDocxFields(root);
   return (
     parsed.hasUnmatchedEnd ||
     parsed.hasUnclosedBegin ||
     parsed.occurrences.some(
       (field) =>
-        (field.syntax !== 'orphan' &&
+        !ignore(field) &&
+        ((field.syntax !== 'orphan' &&
           (!field.complete ||
             field.nested ||
             field.containsNested ||
             !field.sameParagraph ||
             field.inDeletion)) ||
-        (field.syntax === 'orphan' && field.inDeletion),
+          (field.syntax === 'orphan' && field.inDeletion)),
     )
   );
 }

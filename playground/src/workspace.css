@@ -91,7 +91,7 @@
 .playground-latest-capability-list {
   display: grid;
   min-width: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -1469,6 +1469,10 @@
   .playground-latest-capabilities {
     grid-template-columns: minmax(0, 1fr);
     gap: 11px;
+  }
+
+  .playground-latest-capability-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .playground-latest-capabilities-heading {

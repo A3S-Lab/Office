@@ -56,17 +56,18 @@ workflows, and a separate Rust automation plane.
 
 ## Latest on `main`
 
-The current Pages deployment exposes these post-`0.29.0` capabilities as
-normal user-facing Playground templates, with matching implementation detail in
-the versioned documentation:
+The `0.30.0` release and current Pages deployment expose these capabilities as
+normal user-facing Playground templates, with matching implementation detail
+in the versioned documentation:
 
 | Editor | Latest capability | Public entry |
 | --- | --- | --- |
+| Writer | Insert, customize, navigate, and explicitly refresh a typed Table of Contents with heading and native outline levels 1–9, hyperlinks, page numbers, alignment, four leader styles, and native DOCX `TOC` round trips | Playground **Latest capabilities → 可更新目录** · [Document reference](docs/latest/en/components/document.mdx#native-table-of-contents) |
 | Writer | Native character shading with exact `w:shd` patterns, foreground/background color identity, explicit resets, authoring, and DOCX reopen | Playground **Latest capabilities → 字符底纹** · [Document reference](docs/latest/en/components/document.mdx#native-character-shading) |
 | Writer | Independent Latin, East Asian, and bidi proofing languages plus explicit `w:noProof` inclusion/exclusion | Playground **Latest capabilities → 校对语言** · [Document reference](docs/latest/en/components/document.mdx#native-proofing-languages) |
 | Spreadsheet | Complete common Data Validation input, blank/dropdown, and Stop/Warning/Information error settings with native XLSX round trips | Playground **Latest capabilities → 数据验证** · [Spreadsheet reference](docs/latest/en/components/spreadsheet.mdx#data-validation) |
 
-The same three entries remain available under **新建**. The highlighted strip
+The same four entries remain available under **新建**. The highlighted strip
 exists so a capability is discoverable from the first Playground viewport
 instead of only through a deep documentation section or an `?e2e=` fixture.
 
@@ -130,7 +131,7 @@ baseline rather than one specific release.
 | Page layout and rendering | **Partial** — sections, margins, page size, columns, headers/footers, fields, and live pagination | Desktop-grade pagination, print layout, and vector output |
 | Tables, pictures, and equations | **Partial** — rich table geometry, floating pictures, crop/wrap, and structured OMML | Broader drawings, text boxes, charts, WordArt, and SmartArt |
 | Comments, revisions, and collaboration | **Partial** — comments, suggestions, text/format revisions, decisions, Yjs presence, and host relay contracts | Full revision families plus integrated sharing and review services |
-| References and document generation | **Partial** — bookmarks, links, captions, cross-references, citations, notes, and common fields | TOC/index authoring, mail merge, compare/combine, and broader fields |
+| References and document generation | **Partial** — typed Table of Contents authoring and refresh, bookmarks, links, captions, cross-references, citations, notes, and common fields | Index authoring, mail merge, compare/combine, and broader fields |
 | Ribbon and shortcuts | **Supported** — responsive Office-style ribbon and editor-scoped daily-writing shortcuts | Complete desktop shortcut and contextual-tool surface |
 | Very large documents | **Supported with boundaries** — bounded 100,000-block plain-document windows and measured edit/navigation budgets | Native-engine virtualization with device-dependent limits |
 | DOCX and PDF fidelity | **Partial** — source-aware DOCX preservation and live-layout raster PDF export | Broader legacy/OOXML compatibility and searchable vector PDF output |
@@ -232,6 +233,19 @@ is requested. The complete gap inventory and exit evidence live in the
   undoable action. Safe inline DOCX fields round-trip natively, while nested,
   incomplete, cross-paragraph, deleted, or instructionless structures stay
   text and produce an explicit compatibility warning.
+  Writer Table of Contents blocks reuse the same heading outline and live
+  Worker/WASM page resolver instead of maintaining parallel heading or page
+  state. Insert, customize, and explicit refresh each commit one TipTap
+  transaction and one Undo record. Semantic headings and native outline-level
+  paragraphs cover levels 1–9; included items without a native paragraph
+  identity receive one in the same transaction so hyperlinks survive
+  structural edits. Page-number visibility and alignment,
+  dot/dash/underline/no leaders, and at most 512 cached entries remain typed in
+  the DOM. DOCX export writes a native `w:sdt`/`TOC` content control and live
+  field with cached entries; import accepts the common `\\o`, `\\h`, `\\z`,
+  `\\u`, full-range `\\n`, and space-separator `\\p` subset while diagnosing
+  lossy custom style mappings. The Playground's **可更新目录** template exposes
+  the complete flow.
 - **Framework choice** — React components, Vue 3 adapters, Custom Elements,
   and a framework-neutral Core API over the same engine.
 - **Responsive computation** — Lazy editor chunks, cancellable Workers,
@@ -1539,6 +1553,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.30.0 documentation](https://a3s-lab.github.io/Office/docs/0.30.0/)
 - [A3S Office 0.29.0 documentation](https://a3s-lab.github.io/Office/docs/0.29.0/)
 - [A3S Office 0.28.0 documentation](https://a3s-lab.github.io/Office/docs/0.28.0/)
 - [A3S Office 0.27.0 documentation](https://a3s-lab.github.io/Office/docs/0.27.0/)

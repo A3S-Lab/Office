@@ -57,7 +57,7 @@
 
 .docs-home-hero__latest {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
   gap: 6px;
   margin-top: 22px;
@@ -627,6 +627,7 @@
   }
 
   .docs-home-hero__latest {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
   }
 

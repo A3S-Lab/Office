@@ -9,6 +9,7 @@ import {
   serializeDocumentColumns,
 } from './work-document-columns';
 import { normalizeDocumentFieldsHtml } from './work-document-fields';
+import { normalizeDocumentTableOfContentsHtml } from './work-document-table-of-contents';
 import { clampDocumentMargin, documentMargins } from './work-document-layout';
 import { documentModelForHtml } from './work-document-model';
 import { normalizeDocumentNotesHtml } from './work-document-notes';
@@ -431,8 +432,10 @@ function normalizeDocumentSemanticHtml(
   return normalizeDocumentBookmarkReferencesHtml(
     normalizeDocumentBookmarksHtml(
       normalizeDocumentCitationsHtml(
-        normalizeDocumentFieldsHtml(
-          normalizeDocumentCaptionsHtml(normalizeDocumentNotesHtml(source)),
+        normalizeDocumentTableOfContentsHtml(
+          normalizeDocumentFieldsHtml(
+            normalizeDocumentCaptionsHtml(normalizeDocumentNotesHtml(source)),
+          ),
         ),
         bibliography,
       ),

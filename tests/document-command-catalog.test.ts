@@ -25,6 +25,18 @@ test('keeps Writer command ids and WPS locations unique', () => {
     tab: 'review',
     group: 'tracking',
   });
+  expect(getDocumentCommandDefinition('tableOfContents').location).toEqual({
+    area: 'ribbon',
+    tab: 'references',
+    group: 'tableOfContents',
+  });
+  expect(
+    getDocumentCommandDefinition('refreshTableOfContents').location,
+  ).toEqual({
+    area: 'ribbon',
+    tab: 'references',
+    group: 'tableOfContents',
+  });
   expect(getDocumentCommandDefinition('navigationPane').location).toEqual({
     area: 'ribbon',
     tab: 'view',
@@ -74,6 +86,12 @@ test('defines the WPS Writer shortcut contract in one catalog', () => {
     editor: ['Mod-Shift-h'],
   });
   expect(getDocumentCommandDefinition('strike').shortcut).toBeUndefined();
+  expect(
+    getDocumentCommandDefinition('tableOfContents').shortcut,
+  ).toBeUndefined();
+  expect(
+    getDocumentCommandDefinition('refreshTableOfContents').shortcut,
+  ).toBeUndefined();
   expect(getDocumentCommandDefinition('doubleStrike')).toMatchObject({
     id: 'font.doubleStrike',
     label: '双删除线',

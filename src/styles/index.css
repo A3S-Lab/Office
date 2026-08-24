@@ -21,6 +21,7 @@
 @import "./work-document-captions.css";
 @import "./work-document-citations.css";
 @import "./work-document-fields.css";
+@import "./work-document-table-of-contents.css";
 @import "./work-document-equations.css";
 @import "./work-document-task-panes.css";
 @import "./work-markdown.css";

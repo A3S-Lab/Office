@@ -1,4 +1,5 @@
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
+import { normalizeDocumentParagraphId } from './work-document-paragraph-identity';
 
 export interface WorkDocumentOutlineItem {
   id: string;
@@ -23,13 +24,16 @@ export function collectWorkDocumentOutline(
   const hierarchy: MutableWorkDocumentOutlineItem[] = [];
 
   document.descendants((node, position) => {
-    if (node.type.name !== 'heading') return;
-    const level = documentHeadingLevel(node.attrs.level);
+    const level = workDocumentOutlineLevel(node);
+    if (level === null) return;
     while ((hierarchy.at(-1)?.level ?? 0) >= level) hierarchy.pop();
     const parent = hierarchy.at(-1);
     const from = position + 1;
+    const paragraphId = normalizeDocumentParagraphId(node.attrs.paragraphId);
     const item: MutableWorkDocumentOutlineItem = {
-      id: `heading-${position}`,
+      id: paragraphId
+        ? `heading-${paragraphId.toLowerCase()}`
+        : `heading-${position}`,
       text: normalizedDocumentHeadingText(node.textContent),
       level,
       depth: hierarchy.length,
@@ -45,6 +49,21 @@ export function collectWorkDocumentOutline(
     ...item,
     hasChildren: (items[index + 1]?.depth ?? -1) > item.depth,
   }));
+}
+
+export function workDocumentOutlineLevel(node: ProseMirrorNode): number | null {
+  if (node.type.name === 'heading') {
+    return documentHeadingLevel(node.attrs.level);
+  }
+  if (node.type.name !== 'paragraph') return null;
+  const value = node.attrs.outlineLevel;
+  if (value === null || value === undefined || value === '') return null;
+  const outlineLevel = Number(value);
+  return Number.isInteger(outlineLevel) &&
+    outlineLevel >= 0 &&
+    outlineLevel <= 8
+    ? outlineLevel + 1
+    : null;
 }
 
 export function currentWorkDocumentOutlineItem(

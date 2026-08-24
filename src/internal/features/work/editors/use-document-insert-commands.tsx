@@ -22,9 +22,15 @@ import type {
   WorkDocumentFieldKind,
 } from '../work-document-fields';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
+import {
+  DEFAULT_DOCUMENT_TABLE_OF_CONTENTS_OPTIONS,
+  type WorkDocumentTableOfContentsOptions,
+} from '../work-document-table-of-contents';
+import { selectedDocumentTableOfContentsOptions } from '../work-document-table-of-contents-node';
 import type { WorkDocumentContent } from '../work-types';
 import { OfficeTextField, useOfficeDialog } from './office-controls';
 import { readOfficeFileAsDataUrl } from './office-file-data';
+import { DocumentTableOfContentsDialog } from './document-table-of-contents-dialog';
 
 type DocumentInsertDialog =
   | {
@@ -36,6 +42,11 @@ type DocumentInsertDialog =
       kind: 'crossReference';
       selectedKey: string;
       targets: WorkDocumentCrossReferenceTarget[];
+    }
+  | {
+      kind: 'tableOfContents';
+      editing: boolean;
+      options: WorkDocumentTableOfContentsOptions;
     };
 
 type WorkDocumentCrossReferenceTarget =
@@ -49,7 +60,9 @@ export interface DocumentInsertCommands {
   insertField: (kind: WorkDocumentFieldKind) => void;
   insertImage: (file: File) => Promise<void>;
   insertNote: (kind: WorkDocumentNoteKind) => boolean;
+  openTableOfContents: () => void;
   refreshFields: () => boolean;
+  refreshTableOfContents: () => boolean;
 }
 
 export function useDocumentInsertCommands({
@@ -171,12 +184,30 @@ export function useDocumentInsertCommands({
     [contentRef, editor, resolveFieldContext],
   );
 
+  const openTableOfContents = useCallback(() => {
+    if (!editor) return;
+    rememberInvoker();
+    const selected = selectedDocumentTableOfContentsOptions(editor);
+    setInsertDialog({
+      kind: 'tableOfContents',
+      editing: Boolean(selected),
+      options: selected ?? DEFAULT_DOCUMENT_TABLE_OF_CONTENTS_OPTIONS,
+    });
+  }, [editor, rememberInvoker]);
+
   const refreshFields = useCallback(
     () =>
       editor?.commands.refreshDocumentFields(contentRef.current, {
         resolveContext: resolveFieldContext ?? undefined,
       }) ?? false,
     [contentRef, editor, resolveFieldContext],
+  );
+  const refreshTableOfContents = useCallback(
+    () =>
+      editor?.commands.refreshDocumentTablesOfContents({
+        resolveContext: resolveFieldContext ?? undefined,
+      }) ?? false,
+    [editor, resolveFieldContext],
   );
   const submitCaption = () => {
     if (!editor || insertDialog?.kind !== 'caption') return;
@@ -204,6 +235,24 @@ export function useDocumentInsertCommands({
       .insertDocumentCrossReference(target)
       .run();
     if (!inserted) return;
+    invokerRef.current = editor.view.dom;
+    setInsertDialog(null);
+  };
+  const submitTableOfContents = () => {
+    if (!editor || insertDialog?.kind !== 'tableOfContents') return;
+    const buildOptions = {
+      resolveContext: resolveFieldContext ?? undefined,
+    };
+    const applied = insertDialog.editing
+      ? editor.commands.updateDocumentTableOfContents(
+          insertDialog.options,
+          buildOptions,
+        )
+      : editor.commands.insertDocumentTableOfContents(
+          insertDialog.options,
+          buildOptions,
+        );
+    if (!applied) return;
     invokerRef.current = editor.view.dom;
     setInsertDialog(null);
   };
@@ -357,6 +406,18 @@ export function useDocumentInsertCommands({
           </div>
         </Dialog>
       )}
+      {insertDialog?.kind === 'tableOfContents' && (
+        <DocumentTableOfContentsDialog
+          editing={insertDialog.editing}
+          options={insertDialog.options}
+          restoreFocusTarget={() => invokerRef.current}
+          onCancel={() => setInsertDialog(null)}
+          onOptionsChange={(options) =>
+            setInsertDialog({ ...insertDialog, options })
+          }
+          onSubmit={submitTableOfContents}
+        />
+      )}
     </Fragment>
   );
 
@@ -367,7 +428,9 @@ export function useDocumentInsertCommands({
     insertField,
     insertImage,
     insertNote,
+    openTableOfContents,
     refreshFields,
+    refreshTableOfContents,
   };
 }
 

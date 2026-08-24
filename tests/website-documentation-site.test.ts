@@ -53,6 +53,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.30.0',
     '0.29.0',
     '0.28.0',
     '0.27.0',
@@ -154,16 +155,19 @@ test('makes the latest main capabilities discoverable from README and both docum
   ]);
 
   expect(readme).toContain('## Latest on `main`');
+  expect(readme).toContain('Latest capabilities → 可更新目录');
   expect(readme).toContain('Latest capabilities → 字符底纹');
   expect(readme).toContain('Latest capabilities → 校对语言');
   expect(readme).toContain('Latest capabilities → 数据验证');
 
   expect(englishHome).toContain('aria-label="Latest capabilities on main"');
+  expect(englishHome).toContain('Table of contents');
   expect(englishHome).toContain('Character shading');
   expect(englishHome).toContain('Proofing languages');
   expect(englishHome).toContain('Data validation');
 
   expect(chineseHome).toContain('aria-label="main 分支最新能力"');
+  expect(chineseHome).toContain('document.html#原生可更新目录');
   expect(chineseHome).toContain('原生字符底纹');
   expect(chineseHome).toContain('原生校对语言');
   expect(chineseHome).toContain('spreadsheet.html#数据验证');
@@ -229,6 +233,50 @@ test('publishes native Writer proofing languages in README, docs, roadmap, and P
     expect(document).toContain('`w:lang`');
     expect(document).toContain('`w:noProof`');
     expect(document).toContain('RustyBuzz');
+  }
+});
+
+test('publishes Writer Table of Contents in README, docs, roadmap, and Playground guidance', async () => {
+  const [readme, changelog, roadmap, english, chinese, templates, playground] =
+    await Promise.all([
+      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+      readFile(
+        path.join(documentationRoot, 'latest/en/components/document.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, 'latest/zh/components/document.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'src/internal/features/work/work-templates.ts',
+        ),
+        'utf8',
+      ),
+      readFile(
+        path.join(repositoryRoot, 'playground/src/workspace-home.tsx'),
+        'utf8',
+      ),
+    ]);
+
+  expect(readme).toContain('Latest capabilities → 可更新目录');
+  expect(readme).toContain('native `w:sdt`/`TOC` content control');
+  expect(changelog).toContain('typed Writer Table of Contents block');
+  expect(roadmap).toContain(
+    '**Supported**: shared semantic-heading/native-outline model',
+  );
+  expect(english).toContain('## Native table of contents');
+  expect(chinese).toContain('## 原生可更新目录');
+  expect(templates).toContain("id: 'table-of-contents'");
+  expect(playground).toContain("'table-of-contents'");
+  for (const document of [readme, english, chinese]) {
+    expect(document).toContain('512');
+    expect(document).toContain('`w:sdt`');
+    expect(document).toContain('`TOC`');
   }
 });
 

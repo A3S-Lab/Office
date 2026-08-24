@@ -9,6 +9,7 @@ import {
   FilePlus2,
   Languages,
   ListChecks,
+  ListTree,
   PanelLeftOpen,
   Pencil,
   Search,
@@ -27,6 +28,7 @@ const templateCellIds = Array.from(
   (_, index) => `cell-${index + 1}`,
 );
 const latestTemplateIds = new Set([
+  'table-of-contents',
   'run-shading',
   'proofing-languages',
   'data-validation',
@@ -318,6 +320,9 @@ export function WorkspaceHome({
 }
 
 function LatestCapabilityIcon({ templateId }: { templateId: string }) {
+  if (templateId === 'table-of-contents') {
+    return <ListTree size={19} aria-hidden="true" />;
+  }
   if (templateId === 'proofing-languages') {
     return <Languages size={16} aria-hidden="true" />;
   }

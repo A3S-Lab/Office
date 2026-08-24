@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.29.0",
+  "version": "0.30.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -208,6 +208,8 @@
     "test:e2e:writer-legacy-text-effects:check": "a3s-test check tests/e2e/word-legacy-text-effects.acl --json",
     "test:e2e:writer-proofing-languages": "A3S_TEST_SUITE=tests/e2e/word-proofing-languages.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:writer-proofing-languages:check": "a3s-test check tests/e2e/word-proofing-languages.acl --json",
+    "test:e2e:writer-table-of-contents": "A3S_TEST_SUITE=tests/e2e/word-table-of-contents.acl bash scripts/run-a3s-test-web-gate.sh",
+    "test:e2e:writer-table-of-contents:check": "a3s-test check tests/e2e/word-table-of-contents.acl --json",
     "test:e2e:writer-run-border": "A3S_TEST_SUITE=tests/e2e/word-run-border.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:writer-run-border:check": "a3s-test check tests/e2e/word-run-border.acl --json",
     "test:e2e:writer-run-shading": "A3S_TEST_SUITE=tests/e2e/word-run-shading.acl bash scripts/run-a3s-test-web-gate.sh",

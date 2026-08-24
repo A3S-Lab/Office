@@ -1,5 +1,11 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { Editor } from '@tiptap/core';
 import { useRef } from 'react';
 import { useDocumentInsertCommands } from '../src/internal/features/work/editors/use-document-insert-commands';
@@ -98,6 +104,39 @@ test('offers a body bookmark as a cross-reference target', () => {
   }
 });
 
+test('inserts a configured table of contents and restores document focus', async () => {
+  const { editor, element } = createEditor();
+  editor.commands.setTextSelection(textRange(editor, 'Alpha').from);
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开目录' }));
+
+    const dialog = screen.getByRole('dialog', { name: '插入目录' });
+    expect(
+      within(dialog).getByRole('combobox', { name: '起始标题级别' }),
+    ).toHaveFocus();
+    fireEvent.click(
+      within(dialog).getByRole('combobox', { name: '目录前导符' }),
+    );
+    fireEvent.click(screen.getByRole('option', { name: '短横线（----）' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: '插入目录' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '插入目录' })).toBeNull(),
+    );
+    const html = editor.getHTML();
+    expect(html).toContain('data-document-table-of-contents="true"');
+    expect(html).toContain('data-toc-leader="dash"');
+    expect(html).toContain('Alpha heading');
+    expect(html).toContain('Beta heading');
+    expect(editor.view.dom).toHaveFocus();
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
 function InsertDialogHarness({ editor }: { editor: Editor }) {
   const contentRef = useRef<WorkDocumentContent>({
     type: 'document',
@@ -111,6 +150,9 @@ function InsertDialogHarness({ editor }: { editor: Editor }) {
       </button>
       <button type="button" onClick={commands.insertCrossReference}>
         打开交叉引用
+      </button>
+      <button type="button" onClick={commands.openTableOfContents}>
+        打开目录
       </button>
       {commands.dialog}
     </>
@@ -129,7 +171,7 @@ function createEditor(): {
       extensions: createWorkDocumentExtensions(),
       content: [
         '<section data-document-section="true" data-section-id="section-1">',
-        '<p>Alpha</p><p>Beta</p>',
+        '<p>Alpha</p><p>Beta</p><h1>Alpha heading</h1><h2>Beta heading</h2>',
         '</section>',
       ].join(''),
     }),

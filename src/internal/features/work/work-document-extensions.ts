@@ -46,6 +46,7 @@ import { DocumentScriptFontFormatting } from './work-document-script-font-extens
 import { DocumentStrike } from './work-document-strike';
 import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
+import { DocumentTableOfContents } from './work-document-table-of-contents-node';
 import { DocumentUnderline } from './work-document-underline';
 import {
   DocumentTableCell,
@@ -131,6 +132,7 @@ export function createWorkDocumentExtensions(
     DocumentCrossReference,
     citationExtension,
     DocumentBibliography,
+    DocumentTableOfContents,
     DocumentField,
     DocumentEquation,
     commentExtension,

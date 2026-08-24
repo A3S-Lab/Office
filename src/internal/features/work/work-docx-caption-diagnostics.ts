@@ -13,6 +13,7 @@ import {
 } from './work-docx-field-instructions';
 import { attribute, descendants } from './work-ooxml-package';
 import type { WorkCompatibilityIssue } from './work-types';
+import { supportedDocxTableOfContentsField } from './work-docx-table-of-contents-import';
 
 export interface DocxCaptionDiagnostics {
   issues: WorkCompatibilityIssue[];
@@ -23,6 +24,19 @@ export function diagnoseDocxCaptions(
   document: Document,
 ): DocxCaptionDiagnostics {
   const fields = docxFieldOccurrences(document);
+  const tableOfContentsFields = fields.filter(
+    supportedDocxTableOfContentsField,
+  );
+  const tableOfContentsContainers = new Set(
+    tableOfContentsFields.flatMap((field) => {
+      const container = closestAncestor(field.start, 'sdt');
+      return container ? [container] : [];
+    }),
+  );
+  const isTableOfContentsField = (field: DocxFieldOccurrence) => {
+    const container = closestAncestor(field.start, 'sdt');
+    return Boolean(container && tableOfContentsContainers.has(container));
+  };
   const sequences = fields.filter((field) =>
     docxCaptionSequenceKind(field.instruction),
   );
@@ -35,7 +49,7 @@ export function diagnoseDocxCaptions(
     docxFieldOccurrenceIsInlineEditable,
   );
   const hasUnsupportedFieldStructure =
-    hasInvalidDocxFieldStructure(document) ||
+    hasInvalidDocxFieldStructure(document, isTableOfContentsField) ||
     bodyFields.some((field) => !docxFieldOccurrenceIsInlineEditable(field));
   const bookmarkNames = new Set([
     ...captionBookmarkNames(sequences),
@@ -65,6 +79,17 @@ export function diagnoseDocxCaptions(
             } satisfies WorkCompatibilityIssue,
           ]
         : []),
+      ...(tableOfContentsFields.length
+        ? [
+            {
+              code: 'docx.tableOfContents',
+              feature: 'Table of contents',
+              message:
+                'Heading ranges, hyperlinks, page-number visibility and alignment, leader styles, cached entries, and refreshable native TOC fields remain editable and round-trip in DOCX output.',
+              severity: 'info',
+            } satisfies WorkCompatibilityIssue,
+          ]
+        : []),
       ...(hasUnsupportedFieldStructure
         ? [
             {
@@ -80,7 +105,9 @@ export function diagnoseDocxCaptions(
     hasUnsupportedFields:
       hasUnsupportedFieldStructure ||
       fields.some(
-        (field) => !isSupportedCaptionField(field.instruction, bookmarkNames),
+        (field) =>
+          !isTableOfContentsField(field) &&
+          !isSupportedCaptionField(field.instruction, bookmarkNames),
       ),
   };
 }

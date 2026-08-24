@@ -175,6 +175,7 @@ export async function importWorkDocumentFile(
           prepared.changeMarkers,
           prepared.commentMarkers,
           prepared.fieldMarkers,
+          prepared.tableOfContentsMarkers,
           prepared.equationMarkers,
           prepared.citationMarkers,
           prepared.listMarkers,
