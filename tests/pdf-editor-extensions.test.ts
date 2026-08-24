@@ -9,6 +9,7 @@ import {
   initialPdfViewerControllerState,
   type PdfViewerController,
 } from '../src/internal/features/work/editors/pdf-viewer-controller';
+import type { PdfPageOrganizationController } from '../src/internal/features/work/editors/use-pdf-page-organization';
 
 describe('PDF editor extensions', () => {
   test('composes navigation, search, zoom, annotation, and save commands', async () => {
@@ -27,6 +28,14 @@ describe('PDF editor extensions', () => {
     editor.commands.setAnnotationOpacity(0.5);
     editor.commands.setAnnotationStrokeWidth(4);
     editor.commands.deleteAnnotationSelection();
+    editor.commands.openPageOrganizer();
+    await editor.commands.rotatePages([1, 2], 90);
+    await editor.commands.insertBlankPage(3);
+    await editor.commands.deletePages([3]);
+    await editor.commands.reorderPages([4, 0, 1, 2, 3]);
+    await editor.commands.mergePages(2, new Blob(['pdf']));
+    await editor.commands.extractPages([0, 2]);
+    await editor.commands.splitPages([1, 3]);
     await editor.commands.save();
 
     expect(editor.extensionNames).toEqual([
@@ -36,6 +45,7 @@ describe('PDF editor extensions', () => {
       'pdfSearch',
       'pdfZoom',
       'pdfAnnotations',
+      'pdfPageOrganization',
       'pdfKeyboardShortcuts',
     ]);
     expect(calls).toEqual([
@@ -48,6 +58,14 @@ describe('PDF editor extensions', () => {
       'annotation:opacity:0.5',
       'annotation:stroke-width:4',
       'annotation:delete',
+      'pages:open',
+      'pages:rotate:1,2:90',
+      'pages:insert:3',
+      'pages:delete:3',
+      'pages:reorder:4,0,1,2,3',
+      'pages:merge:2:3',
+      'pages:extract:0,2',
+      'pages:split:1,3',
       'save',
     ]);
   });
@@ -67,6 +85,11 @@ describe('PDF editor extensions', () => {
     expect(editor.can().setAnnotationOpacity(0.5)).toBe(true);
     expect(editor.can().setAnnotationStrokeWidth(4)).toBe(true);
     expect(editor.can().save()).toBe(true);
+    expect(editor.can().openPageOrganizer()).toBe(true);
+    expect(editor.can().rotatePages([0], 90)).toBe(true);
+    expect(editor.can().deletePages([0])).toBe(true);
+    expect(editor.can().deletePages([0, 1, 2, 3, 4])).toBe(false);
+    expect(editor.can().splitPages([4])).toBe(false);
 
     editor.updateContext({
       ...context([]),
@@ -78,6 +101,7 @@ describe('PDF editor extensions', () => {
     expect(editor.can().nextPage()).toBe(false);
     expect(editor.can().zoomIn()).toBe(false);
     expect(editor.can().save()).toBe(false);
+    expect(editor.can().openPageOrganizer()).toBe(false);
   });
 
   test('keeps read-only PDF sessions free of edit, history, and save commands', () => {
@@ -94,6 +118,8 @@ describe('PDF editor extensions', () => {
     expect(editor.can().save()).toBe(false);
     expect(editor.can().selectAnnotationTool('highlight')).toBe(false);
     expect(editor.can().deleteAnnotationSelection()).toBe(false);
+    expect(editor.can().openPageOrganizer()).toBe(false);
+    expect(editor.can().rotatePages([0], 90)).toBe(false);
     expect(editor.can().nextPage()).toBe(true);
     expect(editor.can().zoomIn()).toBe(true);
     expect(editor.can().search('A3S')).toBe(true);
@@ -348,10 +374,50 @@ function context(calls: string[]): PdfEditorCommandContext {
       calls.push(`annotation:stroke-width:${strokeWidth}`),
     selectTool: (tool) => calls.push(`annotation:${tool ?? 'select'}`),
   };
+  const pages: PdfPageOrganizationController = {
+    state: {
+      available: true,
+      busy: false,
+      canRedo: false,
+      canUndo: false,
+      diagnostics: [],
+      error: null,
+      revision: 0,
+    },
+    dismissError: () => calls.push('pages:dismiss-error'),
+    exportPages: async (operation) => {
+      if (operation.kind === 'extract') {
+        calls.push(`pages:extract:${operation.pageIndexes.join(',')}`);
+      } else {
+        calls.push(`pages:split:${operation.splitAfterPageIndexes.join(',')}`);
+      }
+      return true;
+    },
+    mutate: async (mutation, source) => {
+      if (mutation.kind === 'rotate') {
+        calls.push(
+          `pages:rotate:${mutation.pageIndexes.join(',')}:${mutation.degrees}`,
+        );
+      } else if (mutation.kind === 'insert-blank') {
+        calls.push(`pages:insert:${mutation.index}`);
+      } else if (mutation.kind === 'delete') {
+        calls.push(`pages:delete:${mutation.pageIndexes.join(',')}`);
+      } else if (mutation.kind === 'reorder') {
+        calls.push(`pages:reorder:${mutation.pageOrder.join(',')}`);
+      } else {
+        calls.push(`pages:merge:${mutation.index}:${source?.size ?? 0}`);
+      }
+      return true;
+    },
+    redo: () => calls.push('pages:redo'),
+    undo: () => calls.push('pages:undo'),
+  };
   return {
     annotation,
     editable: true,
     focusSearch: () => calls.push('search:focus'),
+    openPageOrganizer: () => calls.push('pages:open'),
+    pages,
     save: {
       enabled: true,
       execute: async () => {

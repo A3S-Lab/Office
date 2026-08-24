@@ -93,6 +93,8 @@ export default defineConfig({
             './src/internal/features/work/work-spreadsheet-import.worker.ts',
           'work-spreadsheet-package-scan.worker':
             './src/internal/features/work/work-spreadsheet-package-scan.worker.ts',
+          'pdf-page-organization.worker':
+            './src/internal/features/work/editors/pdf-page-organization.worker.ts',
         },
       },
     },

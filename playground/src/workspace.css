@@ -145,6 +145,11 @@
   color: var(--a3s-green);
 }
 
+.playground-latest-capability.pdf .playground-latest-capability-icon {
+  background: color-mix(in srgb, #c84040 10%, var(--a3s-panel));
+  color: #b63737;
+}
+
 .playground-latest-capability-copy {
   display: flex;
   min-width: 0;

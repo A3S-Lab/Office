@@ -7,6 +7,7 @@ import {
   Ellipsis,
   GalleryVerticalEnd,
   Highlighter,
+  LayoutGrid,
   Loader2,
   Minus,
   MousePointer2,
@@ -77,6 +78,7 @@ export function PdfToolbar({
   can,
   commands,
   editable,
+  pageOrganizationAvailable,
   pageNavigation,
   saveAvailable,
   saveLabel,
@@ -88,6 +90,7 @@ export function PdfToolbar({
   can: PdfEditorCanCommands;
   commands: PdfEditorCommands;
   editable: boolean;
+  pageOrganizationAvailable?: boolean;
   pageNavigation?: PdfPageNavigationControl;
   saveAvailable?: boolean;
   saveLabel: string;
@@ -96,6 +99,7 @@ export function PdfToolbar({
   state: PdfViewerControllerState;
 }) {
   const showSave = saveAvailable ?? editable;
+  const showPageOrganization = pageOrganizationAvailable ?? editable;
   const [pageValue, setPageValue] = useState('');
   const [searchValue, setSearchValue] = useState('');
   const cancelPageBlurCommitRef = useRef(false);
@@ -189,6 +193,22 @@ export function PdfToolbar({
         </div>
       )}
 
+      {showPageOrganization && (
+        <div className="work-pdf-toolbar-group work-pdf-page-organization">
+          <Button
+            tone="secondary"
+            className="work-pdf-page-organizer-trigger"
+            data-pdf-page-organizer-trigger
+            aria-label="组织 PDF 页面"
+            disabled={!can.openPageOrganizer()}
+            onClick={commands.openPageOrganizer}
+          >
+            <LayoutGrid size={15} />
+            组织页面
+          </Button>
+        </div>
+      )}
+
       {editable && (
         <fieldset className="work-pdf-toolbar-group work-pdf-annotation">
           <legend className="sr-only">PDF 批注工具</legend>
@@ -276,6 +296,7 @@ export function PdfToolbar({
         can={can}
         commands={commands}
         editable={editable}
+        pageOrganizationAvailable={showPageOrganization}
         state={state}
       />
 
@@ -618,12 +639,14 @@ function PdfToolbarOverflow({
   can,
   commands,
   editable,
+  pageOrganizationAvailable,
   state,
 }: {
   annotationState: PdfAnnotationControllerState;
   can: PdfEditorCanCommands;
   commands: PdfEditorCommands;
   editable: boolean;
+  pageOrganizationAvailable: boolean;
   state: PdfViewerControllerState;
 }) {
   const hasOverflowTools =
@@ -804,6 +827,20 @@ function PdfToolbarOverflow({
                   onSelect={() => select(commands.redo)}
                 >
                   <Redo2 size={15} />
+                </PdfOverflowAction>
+              </fieldset>
+            )}
+            {pageOrganizationAvailable && (
+              <fieldset
+                className="work-pdf-overflow-group"
+                aria-label="页面组织"
+              >
+                <PdfOverflowAction
+                  label="组织页面"
+                  disabled={!can.openPageOrganizer()}
+                  onSelect={() => select(commands.openPageOrganizer)}
+                >
+                  <LayoutGrid size={15} />
                 </PdfOverflowAction>
               </fieldset>
             )}

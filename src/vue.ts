@@ -20,6 +20,7 @@ import type {
   OfficeCollaborationPresence,
   OfficeCollaborationSession,
   PdfCollaborationContent,
+  PdfPageOrganizationExport,
   PresentationContent,
   SpreadsheetContent,
 } from './core';
@@ -280,6 +281,11 @@ export const PdfViewer = defineComponent({
       type: Function as PropType<() => Promise<Blob>>,
     },
     onSave: Function as PropType<(pdf: Blob) => Promise<boolean>>,
+    onPageExport: Function as PropType<
+      (
+        files: readonly PdfPageOrganizationExport[],
+      ) => boolean | Promise<boolean>
+    >,
     saveLabel: String,
     selectedEvidenceRegionId: String,
     sourceKey: String,
@@ -308,6 +314,7 @@ export const PdfViewer = defineComponent({
         onEvidenceRegionSelect: (region) =>
           emit('evidenceRegionSelect', region),
         onPageChange: (pageNumber) => emit('pageChange', pageNumber),
+        onPageExport: props.onPageExport,
         onSave: props.onSave,
         saveLabel: props.saveLabel,
         selectedEvidenceRegionId: props.selectedEvidenceRegionId,

@@ -5,6 +5,13 @@ import type {
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import type { PdfViewerController } from './pdf-viewer-controller';
 import {
+  validatedPdfInsertionIndex,
+  validatedPdfPageIndexes,
+  validatedPdfPageOrder,
+  validatedPdfSplitBoundaries,
+} from './pdf-page-organization';
+import type { PdfPageOrganizationController } from './use-pdf-page-organization';
+import {
   createOfficeEditorExtension,
   type OfficeEditorCanCommands,
   type OfficeEditorExtension,
@@ -15,18 +22,29 @@ export interface PdfEditorCommands {
   deleteAnnotationSelection: () => void;
   fitPage: () => void;
   fitWidth: () => void;
+  deletePages: (pageIndexes: number[]) => Promise<boolean>;
+  extractPages: (pageIndexes: number[]) => Promise<boolean>;
   goToPage: (page: number) => void;
   nextPage: () => void;
   nextSearchResult: () => void;
+  insertBlankPage: (index: number) => Promise<boolean>;
+  mergePages: (index: number, source: Blob) => Promise<boolean>;
+  openPageOrganizer: () => void;
   previousPage: () => void;
   previousSearchResult: () => void;
   redo: () => void;
+  reorderPages: (pageOrder: number[]) => Promise<boolean>;
+  rotatePages: (
+    pageIndexes: number[],
+    degrees: 90 | 180 | 270,
+  ) => Promise<boolean>;
   save: () => Promise<void>;
   search: (query: string) => void;
   setAnnotationColor: (color: string) => void;
   setAnnotationOpacity: (opacity: number) => void;
   setAnnotationStrokeWidth: (strokeWidth: number) => void;
   selectAnnotationTool: (toolId: PdfAnnotationToolId | null) => void;
+  splitPages: (splitAfterPageIndexes: number[]) => Promise<boolean>;
   undo: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -38,6 +56,8 @@ export interface PdfEditorCommandContext {
   annotation: PdfAnnotationController;
   editable: boolean;
   focusSearch: () => void;
+  openPageOrganizer: () => void;
+  pages: PdfPageOrganizationController;
   save: {
     enabled: boolean;
     execute: () => Promise<void>;
@@ -204,6 +224,81 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
       }),
     }),
     createOfficeEditorExtension<PdfEditorCommandContext, PdfEditorCommands>({
+      name: 'pdfPageOrganization',
+      addCommands: () => ({
+        deletePages: {
+          canExecute: (context, pageIndexes) =>
+            canOrganizeSelectedPages(context, pageIndexes) &&
+            pageIndexes.length < context.viewer.state.totalPages,
+          execute: ({ pages }, pageIndexes) =>
+            pages.mutate({ kind: 'delete', pageIndexes }),
+        },
+        extractPages: {
+          canExecute: canOrganizeSelectedPages,
+          execute: ({ pages }, pageIndexes) =>
+            pages.exportPages({ kind: 'extract', pageIndexes }),
+        },
+        insertBlankPage: {
+          canExecute: (context, index) =>
+            canOrganizePages(context) &&
+            safelyValidate(() =>
+              validatedPdfInsertionIndex(
+                index,
+                context.viewer.state.totalPages,
+              ),
+            ),
+          execute: ({ pages }, index) =>
+            pages.mutate({ index, kind: 'insert-blank' }),
+        },
+        mergePages: {
+          canExecute: (context, index, source) =>
+            canOrganizePages(context) &&
+            source instanceof Blob &&
+            source.size > 0 &&
+            safelyValidate(() =>
+              validatedPdfInsertionIndex(
+                index,
+                context.viewer.state.totalPages,
+              ),
+            ),
+          execute: ({ pages }, index, source) =>
+            pages.mutate({ index, kind: 'merge' }, source),
+        },
+        openPageOrganizer: {
+          canExecute: canOrganizePages,
+          execute: ({ openPageOrganizer }) => openPageOrganizer(),
+        },
+        reorderPages: {
+          canExecute: (context, pageOrder) =>
+            canOrganizePages(context) &&
+            safelyValidate(() =>
+              validatedPdfPageOrder(pageOrder, context.viewer.state.totalPages),
+            ),
+          execute: ({ pages }, pageOrder) =>
+            pages.mutate({ kind: 'reorder', pageOrder }),
+        },
+        rotatePages: {
+          canExecute: (context, pageIndexes, degrees) =>
+            canOrganizeSelectedPages(context, pageIndexes) &&
+            (degrees === 90 || degrees === 180 || degrees === 270),
+          execute: ({ pages }, pageIndexes, degrees) =>
+            pages.mutate({ degrees, kind: 'rotate', pageIndexes }),
+        },
+        splitPages: {
+          canExecute: (context, splitAfterPageIndexes) =>
+            canOrganizePages(context) &&
+            safelyValidate(() =>
+              validatedPdfSplitBoundaries(
+                splitAfterPageIndexes,
+                context.viewer.state.totalPages,
+              ),
+            ),
+          execute: ({ pages }, splitAfterPageIndexes) =>
+            pages.exportPages({ kind: 'split', splitAfterPageIndexes }),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<PdfEditorCommandContext, PdfEditorCommands>({
       name: 'pdfKeyboardShortcuts',
       addKeyboardShortcuts: () => ({
         'Mod-s': ({ can, commands }, event) =>
@@ -320,6 +415,36 @@ function canSearch(viewer: PdfViewerController): boolean {
 
 function canZoom(viewer: PdfViewerController): boolean {
   return documentReady(viewer) && viewer.state.features.zoom;
+}
+
+function canOrganizePages(context: PdfEditorCommandContext): boolean {
+  return (
+    context.editable &&
+    documentReady(context.viewer) &&
+    context.pages.state.available &&
+    !context.pages.state.busy
+  );
+}
+
+function canOrganizeSelectedPages(
+  context: PdfEditorCommandContext,
+  pageIndexes: number[],
+): boolean {
+  return (
+    canOrganizePages(context) &&
+    safelyValidate(() =>
+      validatedPdfPageIndexes(pageIndexes, context.viewer.state.totalPages),
+    )
+  );
+}
+
+function safelyValidate(validate: () => unknown): boolean {
+  try {
+    validate();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function canSave({ editable, save, viewer }: PdfEditorCommandContext): boolean {

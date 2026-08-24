@@ -1,0 +1,157 @@
+suite "office-pdf-page-organization" {
+    version = 1
+
+    scenario "organize-and-export-pdf-pages" {
+        name = "Organize PDF pages through the public Playground"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        upload "open-primary-pdf" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/pdf-thumbnail-keyboard.pdf"]
+        }
+
+        wait "page-organizer-entry-is-ready" {
+            visible = css("button[aria-label='组织 PDF 页面']:not(:disabled)")
+        }
+
+        click "open-organizer-for-insert" {
+            target = role("button", "组织 PDF 页面")
+        }
+
+        expect "all-page-operations-are-discoverable" {
+            visible = css(".work-pdf-page-organizer-actions button[aria-label='在所选页后拆分']")
+        }
+
+        click "insert-blank-page" {
+            target = role("button", "插入空白页")
+        }
+
+        wait "blank-page-was-inserted" {
+            visible = css(".work-pdf-thumbnail-rail[data-pdf-page-count='5']")
+        }
+
+        click "open-overflow-for-undo" {
+            target = role("button", "更多 PDF 工具")
+        }
+
+        click "undo-insert" {
+            target = role("menuitem", "撤销")
+        }
+
+        wait "undo-restored-four-pages" {
+            visible = css(".work-pdf-thumbnail-rail[data-pdf-page-count='4']")
+        }
+
+        click "open-overflow-for-redo" {
+            target = role("button", "更多 PDF 工具")
+        }
+
+        click "redo-insert" {
+            target = role("menuitem", "重做")
+        }
+
+        wait "redo-restored-five-pages" {
+            visible = css(".work-pdf-thumbnail-rail[data-pdf-page-count='5']")
+        }
+
+        click "open-organizer-for-rotate" {
+            target = role("button", "组织 PDF 页面")
+        }
+
+        click "rotate-first-page" {
+            target = role("button", "向右旋转所选页")
+        }
+
+        wait "rotation-reopened-in-pdfium" {
+            visible = css("body:not(:has(.work-pdf-page-organizer-dialog)) .work-pdf-embed[data-ready='true']")
+        }
+
+        click "open-organizer-for-delete" {
+            target = role("button", "组织 PDF 页面")
+        }
+
+        click "select-blank-page" {
+            target = role("button", "选择第 2 页")
+        }
+
+        click "delete-blank-page" {
+            target = role("button", "删除所选页")
+        }
+
+        wait "delete-restored-four-pages" {
+            visible = css(".work-pdf-thumbnail-rail[data-pdf-page-count='4']")
+        }
+
+        click "open-organizer-for-reorder" {
+            target = role("button", "组织 PDF 页面")
+        }
+
+        click "reorder-first-page" {
+            target = role("button", "后移所选页")
+        }
+
+        wait "reordered-pdf-reopened" {
+            visible = css("body:not(:has(.work-pdf-page-organizer-dialog)) .work-pdf-thumbnail-rail[data-pdf-page-count='4']")
+        }
+
+        click "open-organizer-for-merge" {
+            target = role("button", "组织 PDF 页面")
+        }
+
+        upload "merge-another-pdf" {
+            target = css("input[aria-label='选择要合并的 PDF']")
+            paths = [".a3s-test/fixtures/pdf-thumbnail-keyboard.pdf"]
+        }
+
+        wait "merge-added-four-pages" {
+            visible = css(".work-pdf-thumbnail-rail[data-pdf-page-count='8']")
+        }
+
+        click "open-organizer-for-export" {
+            target = role("button", "组织 PDF 页面")
+        }
+
+        click "select-second-page-for-export" {
+            target = role("button", "选择第 2 页")
+        }
+
+        download "extract-selected-page" {
+            target = css(".work-pdf-page-organizer-actions button[aria-label='抽取所选页']")
+            path = "downloads/pdf-extracted.pdf"
+        }
+
+        expect "split-remains-available-after-export" {
+            visible = css(".work-pdf-page-organizer-actions button[aria-label='在所选页后拆分']:not(:disabled)")
+        }
+
+        screenshot "page-organization-dialog" {
+            path = "screenshots/pdf-page-organization.png"
+        }
+
+        accessibility "page-organization-semantics" {
+            path = "evidence/pdf-page-organization.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

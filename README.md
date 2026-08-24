@@ -56,7 +56,7 @@ workflows, and a separate Rust automation plane.
 
 ## Latest on `main`
 
-The `0.32.0` release plus the current `main` branch expose these capabilities
+The `0.33.0` release plus the current `main` branch expose these capabilities
 as normal user-facing Playground templates, with matching implementation
 detail in the documentation:
 
@@ -68,10 +68,13 @@ detail in the documentation:
 | Writer | Native character shading with exact `w:shd` patterns, foreground/background color identity, explicit resets, authoring, and DOCX reopen | Playground **Latest capabilities → 字符底纹** · [Document reference](docs/latest/en/components/document.mdx#native-character-shading) |
 | Writer | Independent Latin, East Asian, and bidi proofing languages plus explicit `w:noProof` inclusion/exclusion | Playground **Latest capabilities → 校对语言** · [Document reference](docs/latest/en/components/document.mdx#native-proofing-languages) |
 | Spreadsheet | Complete common Data Validation input, blank/dropdown, and Stop/Warning/Information error settings with native XLSX round trips | Playground **Latest capabilities → 数据验证** · [Spreadsheet reference](docs/latest/en/components/spreadsheet.mdx#data-validation) |
+| PDF | Insert, delete, rotate, reorder, extract, merge, and split pages through a dedicated Web Worker, with Blob-level Undo/Redo and independent binary reopen verification | Playground **Latest capabilities → 组织 PDF 页面** · [PDF reference](docs/latest/en/components/pdf.mdx#page-organization) |
 
-The same six entries remain available under **新建**. The highlighted strip
-exists so a capability is discoverable from the first Playground viewport
-instead of only through a deep documentation section or an `?e2e=` fixture.
+All seven entries are reachable from the first Playground viewport. The six
+content templates also remain under **新建**; **组织 PDF 页面** opens the normal
+PDF file workflow because page organization must operate on host-provided source
+bytes. The highlighted strip keeps each capability discoverable without a deep
+documentation section or an `?e2e=` fixture.
 
 ## See it working
 
@@ -108,9 +111,9 @@ The images below are committed visual-regression baselines from the real
     </td>
     <td width="50%" valign="top">
       <a href="visual-tests/__snapshots__/linux/desktop-1280/pdf.png">
-        <img src="visual-tests/__snapshots__/linux/desktop-1280/pdf.png" alt="A3S Office PDF editor with search, annotation, save, and download controls">
+        <img src="visual-tests/__snapshots__/linux/desktop-1280/pdf.png" alt="A3S Office PDF editor with search, annotation, page organization, save, and download controls">
       </a>
-      <br><sub><strong>PDF</strong> — PDFium rendering, forms, annotations, Yjs overlays, and save</sub>
+      <br><sub><strong>PDF</strong> — PDFium rendering, forms, annotations, page organization, Yjs overlays, and save</sub>
     </td>
   </tr>
 </table>
@@ -173,7 +176,7 @@ baseline rather than one specific release.
 | Search and text evidence | **Supported with boundaries** — browser search and bounded native text-layer evidence | Broader tagged-PDF reading order and accessibility extraction |
 | Annotations, forms, and save | **Supported** — common annotations, appearance controls, form filling, history, and save | Broader stamps, measurements, form authoring, scripts, and signatures |
 | Existing text, image, and object editing | **Gap** — no safe production content-stream editing path | Direct text/object editing with font and layout recovery |
-| Page organization | **Gap** — insert, delete, rotate, reorder, extract, merge, and split are not yet editable | Complete page organization workflows |
+| Page organization | **Supported with boundaries** — insert, delete, rotate, reorder, extract, merge, and split run in a dedicated Worker, replace one complete Blob per mutation, and participate in Undo/Redo | Broader document-level catalog preservation and signed/encrypted-file workflows |
 | Compression, conversion, and OCR | **Gap / host boundary** — provider contracts are required for authoritative conversion and OCR | Integrated optimization, conversion, and scanned-document recognition |
 | Signatures, protection, and redaction | **Gap / host boundary** — trusted identity and destructive-content guarantees are required | E-signing, certificate validation, encryption, sanitization, and true redaction |
 | AI and real-time collaboration | **Host-owned** — typed page/text evidence, Yjs review records, presence, and provider-neutral ports | Typically bundled with account, storage, and model services |
@@ -432,6 +435,51 @@ opening, and a later call retries it. The helper does not create a hidden
 viewer or pre-initialize the PDFium Worker. On the local reference machine it
 improved median shell mount by 41.6 ms but did not improve the viewer-ready
 median, so Worker initialization remains the measured boundary.
+
+### Organize and persist PDF pages
+
+Providing `onSave` enables the page organizer. Every insert, delete, rotate,
+reorder, or merge produces one replacement PDF `Blob` and one page-history
+record; extract and split return separate files without changing the source.
+Use `onPageExport` when the host should persist those derived files instead of
+letting the viewer download them:
+
+```tsx
+import type { PdfPageOrganizationExport } from '@a3s-lab/office/react';
+import { PdfViewer } from '@a3s-lab/office/react';
+
+async function persistPageExports(
+  files: readonly PdfPageOrganizationExport[],
+): Promise<boolean> {
+  await Promise.all(
+    files.map(({ fileName, pageCount, pdf }) =>
+      storage.put(fileName, pdf, { pageCount }),
+    ),
+  );
+  return true;
+}
+
+<PdfViewer
+  fileName="contract.pdf"
+  loadSource={() => storage.get('contract.pdf')}
+  onSave={async (pdf) => {
+    await storage.put('contract.pdf', pdf);
+    return true;
+  }}
+  onPageExport={persistPageExports}
+/>;
+```
+
+Page jobs load lazily in a dedicated Web Worker. The primary PDF is limited to
+256 MiB, a merged PDF to 128 MiB, and every result to 4,096 pages. Toolbar
+Undo/Redo consumes native annotation or form history first, then page history.
+Signed or encrypted PDFs fail closed; delete, reorder, and merge also reject
+forms, outlines, or tagged structures whose page references cannot be safely
+rewritten. Extract and split surface a diagnostic when document-level catalog
+objects are intentionally not copied. Page organization is unavailable while
+`collaboration` or `evidenceOverlay` is active because those modes identify an
+immutable source PDF. See the complete
+[PDF page-organization contract](docs/latest/en/components/pdf.mdx#page-organization).
 
 ### Persist a structured document snapshot
 
@@ -1547,6 +1595,9 @@ bun run lint
 bun run typecheck
 bun run test
 bun run build
+bun run test:e2e:pdf-page-organization:check
+bun run test:e2e:pdf-page-organization
+bun run playground:visual:pdf-page-organization
 bun run test:e2e:large-pdf:check
 bun run test:e2e:large-pdf
 bun run performance:pdf
@@ -1571,6 +1622,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.33.0 documentation](https://a3s-lab.github.io/Office/docs/0.33.0/)
 - [A3S Office 0.32.0 documentation](https://a3s-lab.github.io/Office/docs/0.32.0/)
 - [A3S Office 0.31.0 documentation](https://a3s-lab.github.io/Office/docs/0.31.0/)
 - [A3S Office 0.30.0 documentation](https://a3s-lab.github.io/Office/docs/0.30.0/)

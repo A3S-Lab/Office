@@ -38,7 +38,7 @@ export async function waitForPdfFixture(page: Page): Promise<void> {
     .toBe(true);
 }
 
-function createPdfFixture(pageCount: number): Buffer {
+export function createPdfFixture(pageCount: number): Buffer {
   const pdf = new jsPDF({
     compress: true,
     format: 'a4',

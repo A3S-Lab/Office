@@ -74,11 +74,23 @@ bun run test:e2e:latest-capabilities
 
 It opens the Writer table of contents, native document index, character
 shading, proofing languages, and Spreadsheet data validation from the
-first-class Playground strip, follows the documentation-home links to the full
-Writer and Spreadsheet references, repeats the public discovery check at 390
-px, and captures accessibility plus empty console/page-error diagnostics. A
-hidden `?e2e=` fixture or a deep documentation paragraph alone cannot satisfy
-this gate.
+first-class Playground strip; verifies the PDF page-organization entry; follows
+the documentation-home links to the full Writer, Spreadsheet, and PDF
+references; repeats the public discovery check at 390 px; and captures
+accessibility plus empty console/page-error diagnostics. A hidden `?e2e=`
+fixture or a deep documentation paragraph alone cannot satisfy this gate.
+
+The PDF page organizer has its own focused local gate:
+
+```bash
+bun run test:e2e:pdf-page-organization:check
+bun run test:e2e:pdf-page-organization
+```
+
+It inserts, undoes, redoes, rotates, deletes, reorders, merges, extracts, and
+checks split availability through the public PDF surface. The complementary
+Playwright suite performs real drag and drop, independently parses downloaded
+PDF bytes, and verifies save/reopen order, page counts, and rotations.
 
 Run the focused suites against the built static preview through
 `scripts/run-a3s-test-web-gate.sh` before a release. The local gate performs

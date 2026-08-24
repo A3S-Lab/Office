@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.32.0",
+  "version": "0.33.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -114,6 +114,7 @@
     "playground:visual:spreadsheet-rich-text": "playwright test visual-tests/spreadsheet-rich-text.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-underline": "playwright test visual-tests/spreadsheet-underline.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-table": "playwright test visual-tests/spreadsheet-table.functional.spec.ts --config playwright.config.ts",
+    "playground:visual:pdf-page-organization": "playwright test visual-tests/pdf-page-organization.functional.spec.ts --config playwright.config.ts",
     "playground:visual:update": "playwright test --config playwright.config.ts --update-snapshots",
     "performance:fixtures": "bun .a3s-test/performance/generate-fixtures.ts",
     "performance:large-document-edits": "bun .a3s-test/performance/generate-fixtures.ts --documents-only && bun .a3s-test/performance/benchmark-document-edit.ts http://127.0.0.1:4175/ 3",
@@ -130,6 +131,8 @@
     "test:e2e:large-documents:check": "a3s-test check tests/e2e/word-large-document-windowing.acl --json",
     "test:e2e:large-pdf": "bun .a3s-test/performance/generate-fixtures.ts --pdf-only && a3s-test run tests/e2e/pdf-large-windowing.acl --json",
     "test:e2e:large-pdf:check": "a3s-test check tests/e2e/pdf-large-windowing.acl --json",
+    "test:e2e:pdf-page-organization": "bun run test:e2e:fixtures && A3S_TEST_SUITE=tests/e2e/pdf-page-organization.acl bash scripts/run-a3s-test-web-gate.sh",
+    "test:e2e:pdf-page-organization:check": "a3s-test check tests/e2e/pdf-page-organization.acl --json",
     "test:e2e:large-presentation": "bun .a3s-test/performance/generate-fixtures.ts --presentations-only && a3s-test run tests/e2e/presentation-large-windowing.acl --json",
     "test:e2e:large-presentation:check": "a3s-test check tests/e2e/presentation-large-windowing.acl --json",
     "test:e2e:initial-focus": "a3s-test run tests/e2e/office-editor-initial-focus.acl --json",
@@ -284,6 +287,7 @@
     "jszip": "^3.10.1",
     "lucide-react": "^0.544.0",
     "mammoth": "^1.12.0",
+    "pdf-lib": "1.17.1",
     "pptxgenjs": "^4.0.1",
     "xlsx": "^0.18.5",
     "y-protocols": "1.0.7",

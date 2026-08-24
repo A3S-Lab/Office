@@ -202,6 +202,7 @@ export {
   type WorkPdfExportOptions as PdfExportOptions,
   workPdfPagesForExport as pdfPagesForExport,
 } from './internal/features/work/work-pdf-export';
+export type { PdfPageOrganizationExport } from './internal/features/work/editors/use-pdf-page-organization';
 export { defaultPptxRuntimeUrl } from './internal/features/work/work-presentation-file-io';
 export {
   forgetWorkSourceBlob as forgetSourceBlob,

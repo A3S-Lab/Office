@@ -1,0 +1,977 @@
+---
+title: DocumentEditor
+description: Document content, properties, events, selection menus, layout fonts, and extensions.
+---
+
+# DocumentEditor
+
+`DocumentEditor` is the paginated rich-text surface for DOCX-compatible
+documents, reports, and long-form content. TipTap owns the logical document and
+selection model; the A3S Office kernel owns deterministic pagination, shaping,
+and file semantics.
+
+Large-document DOM measurement is cooperative. The editor measures canonical
+top-level blocks in bounded 32 ms slices, yields between blocks, and aborts a
+stale pass when the controlled document changes. Only a complete pass updates
+the reusable pagination snapshot; Worker/WASM layout remains authoritative.
+
+## Large-document performance
+
+A3S Office keeps the canonical TipTap document and model positions intact while
+windowing the live ProseMirror tree, physical page sheets, and pagination
+widgets for eligible structurally plain DOCX imports. It does not replace the
+document with a presentation-only virtual list. Search, selection, editing,
+undo, export, and `Ctrl+Home` / `Ctrl+End` therefore continue to address the
+complete model even when most document DOM is not mounted.
+
+The reference measurements below were captured on 2026-08-19 on an Apple M2
+Pro with 16 GB of memory, Playwright 1.61.1, headless Chrome 149, and a
+1,440 × 1,000 viewport. Cold-open and scroll values are the median and complete
+range of three fresh browser processes. Controlled-edit values use five fresh
+processes. These figures describe the measured reference environment; they are
+not a cross-device service-level guarantee.
+
+### Cold open and pagination
+
+| Fixture | Editor visible | Pagination ready | Longest task before visible |
+| --- | ---: | ---: | ---: |
+| 100,000 text paragraphs, 4.50 million characters | 0.397 s (0.396–0.480) | 1.460 s (1.381–1.525), 3,125 pages | 131 ms (128–140) |
+| 100,000 table rows × 3 columns | 0.813 s (0.810–0.814) | 1.747 s (1.739–1.749), 2,381 pages | 96 ms (88–144) |
+
+`Editor visible` is the first frame containing editable document content.
+`Pagination ready` means the complete physical-page map is available; it does
+not mean every page sheet has been mounted. A Long Task is a browser main-thread
+task of at least 50 ms.
+
+### Scroll, retained state, and mounted work
+
+| Fixture | Continuous scroll | p95 frame interval | Scroll Long Tasks | Retained browser state |
+| --- | ---: | ---: | ---: | ---: |
+| 100,000 text paragraphs | 120.0 FPS in every run | 10.7 ms (10.2–10.8) | 0 in every run | 70.4 MiB; 2,867 median DOM nodes |
+| 100,000 table rows | 120.6 FPS (120.5–120.9) | 10.1 ms (9.9–10.4) | 0 in every run | 145.8 MiB; 3,106 DOM nodes |
+
+The scroll profile advances through the complete scroll range over 120
+`requestAnimationFrame` samples. FPS reflects the 120 Hz reference display, so
+p95 frame interval and Long Tasks are the more portable responsiveness
+indicators. Retained state is collected after an explicit diagnostic V8 garbage
+collection and includes the complete canonical model, not only mounted DOM.
+
+At readiness, the text fixture mounted 1 of 782 content chunks and 4 of 3,125
+page sheets. End navigation mounted 2 content chunks. The table fixture mounted
+4 of 6,250 row leaves and 4 of 2,381 page sheets at readiness; end navigation
+left 1 row leaf mounted. The complete table model remained available through
+196 outer geometry containers.
+
+### Controlled tail edits
+
+| Fixture | First edit wall / publish CPU | Second edit wall / publish CPU |
+| --- | ---: | ---: |
+| 100,000 text paragraphs | 70.3 ms (69.0–115.4) / 21.8 ms (20.0–54.7) | 53.9 ms (22.5–56.4) / 10.0 ms (9.4–16.8) |
+| 100,000 table rows × 3 columns | 102.3 ms (93.8–121.0) / 57.8 ms (53.5–70.1) | 85.1 ms (78.2–93.3) / 41.2 ms (36.9–45.7) |
+
+`Wall` starts at the browser `beforeinput` event and ends when the host-facing
+controlled publication count changes. `Publish CPU` covers construction of the
+complete `html` and `model` values. All 20 measured publications used the
+indexed `lazy-chunk` path, retained both edit markers at the exact final
+paragraph or row, and produced no browser, page, or console error.
+
+### Reproduce the measurements
+
+Build and start the production Playground in one terminal:
+
+```bash
+bun run playground:build
+bun run playground:preview
+```
+
+Run the benchmarks and deterministic a3s-test windowing gate in another:
+
+```bash
+bun run performance:large-documents
+bun run performance:large-document-edits
+bun run test:e2e:large-documents:check
+bun run test:e2e:large-documents
+```
+
+Each benchmark writes its raw JSON report under
+`.a3s-test/performance/results/`; fixtures and results are intentionally ignored
+by Git. See the
+[complete methodology and current boundaries](../browser-editor-architecture.md#current-100000-unit-evidence)
+for Worker phases, measurement definitions, spreadsheet comparison, and the
+rich-DOCX fallback. Documents with unsupported tags, relationships, tracked
+structures, drawings, or other rich features deliberately use the complete
+compatibility importer and are not covered by these 100,000-unit figures.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `content` | `DocumentContent` | Yes | — | Controlled document content. |
+| `onChange` | `(content: DocumentContent) => void` | Yes | — | Emits the complete next value. |
+| `collaboration` | `OfficeCollaborationSession` | No | none | Uses an initialized Yjs Document as the canonical value; `comment` enables review records, while authenticated `suggest` enables attributed text proposals without direct canonical edits. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Publishes local selection, projects remote carets/selections and roster navigation; requires the exact `collaboration` session. |
+| `artifactId` | `string` | No | — | Stable host ID used by live PDF export. |
+| `preview` | `boolean` | No | `false` | Read-only rendering with the same pagination surface. |
+| `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |
+| `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host file actions. |
+| `extensions` | `Extensions` | No | `[]` | Additional TipTap extensions with unique names. |
+| `kernelWasmUrl` | `string` | No | packaged kernel | Override the Office layout-kernel URL. |
+| `layoutFonts` | `readonly DocumentLayoutFont[]` | No | packaged fonts | Browser and shaping fonts shown in the font menu. |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | No | — | Sends a typed editor request to the host AI flow. |
+| `onReviewConflict` | `(event: DocumentReviewConflictEvent) => void` | No | — | Reports reviewed ranges changed by an authoritative controlled update. |
+| `getSelectionMenuItems` | `GetDocumentSelectionMenuItems` | No | built-in menu | Completely replaces the selected-text context menu. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+## Content contract
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `type` | `'document'` | Content discriminator. |
+| `html` | `string` | Compatibility representation saved with the structured model. |
+| `model` | `WorkDocumentModel` | Versioned TipTap document tree and precise editing source. |
+| `pageSize` | `'a4' \| 'letter'` | Default physical page size. Sections may override it. |
+| `pageColor` | `string` | Page color retained by DOCX and PDF export. |
+| `orientation`, `margins`, `columns` | document layout fields | Default layout before section overrides. |
+| `pageChrome` | `WorkDocumentPageChrome` | First, odd, and even headers, footers, and page numbers. |
+| `trackChanges` | `boolean` | Revision recording state. |
+| `changeDecisions` | `WorkDocumentChangeDecision[]` | Immutable shared accept/reject audit records for collaborative tracked changes. |
+| `comments` | `WorkDocumentComment[]` | Comment threads, replies, and resolved state. |
+| `bibliography` | `WorkDocumentBibliography` | Citation style and source records. |
+
+## Native text-case effects
+
+The Home ribbon's **Text case effects** menu applies Normal, All caps, or Small
+caps as one mutually exclusive character-format state. `Cmd/Ctrl+Shift+A`
+toggles All caps and `Cmd/Ctrl+Shift+K` toggles Small caps. The same TipTap
+commands, metadata, and Undo path are used by body text, headers, footers,
+Format Painter, and character-formatting revisions.
+
+The editor keeps the semantic source text unchanged. CSS renders All caps with
+`text-transform: uppercase` and Small caps with `font-variant-caps: small-caps`.
+DOCX import, export, and reopen preserve native `w:caps` and `w:smallCaps`
+properties, including explicit resets and prior values inside `w:rPrChange`.
+
+A paragraph containing either effect intentionally uses browser line
+measurement. Uppercase conversion can change the rendered glyph count relative
+to the source UTF-16 offsets, and small caps changes font metrics. Keeping the
+browser authoritative for those paragraphs avoids inaccurate pagination; other
+eligible paragraphs continue through Worker/WASM shaping.
+
+## Native script-specific fonts
+
+Writer retains the four independent WordprocessingML `w:rFonts` slots:
+`ascii`, `hAnsi`, `eastAsia`, and `cs`. Each slot keeps its exact direct family,
+optional theme reference, and separately resolved browser family; `w:hint`
+remains native metadata. Style inheritance resolves the effective set without
+rewriting untouched direct or theme identity. A mixed-script run is divided
+into bounded TextStyle spans for Latin ASCII, high ANSI, East Asian, and
+complex-script text, while neutral punctuation stays with the surrounding
+script.
+
+`Cmd/Ctrl+D` or the Home ribbon opens **Advanced Font Settings** with separate
+Latin, East Asian, and complex-text controls. The Latin control intentionally
+updates both `ascii` and `hAnsi`; the Home font picker intentionally expresses
+an all-text choice and updates all four slots. Each control has independent
+mixed-selection state and Follow style. A script-aware preview uses the
+selected family for each text segment. Applying any combination of fonts,
+scale, spacing, kerning, emphasis, hidden text, character border, outline,
+shadow, emboss, imprint, or position restores the captured selection and creates one
+transaction and one Undo record.
+
+Body text, headers, footers, footnotes, endnotes, Format Painter, formatting
+revisions, strict/transitional DOCX import, exact export, and reopen share the
+same typed representation. Unchanged theme references survive an edit to a
+different slot. Duplicate or misplaced elements, extra or spoofed attributes,
+child-bearing or text-bearing leaves, unknown values, and font names longer
+than 127 characters fail closed and appear in compatibility diagnostics. The
+DOM stores validated JSON in `data-office-script-fonts` and the active segment
+in `data-office-script-font-slot`; CSS uses only the resolved family, so browser
+font substitution does not mutate native file identity.
+
+## Native character spacing
+
+Writer keeps character spacing as one signed native `w:spacing` value from
+-31,680 through 31,680 twips, where 20 twips equal one point. `Cmd/Ctrl+D` or
+the Home ribbon opens **Advanced Font Settings** with Normal, Expanded, and
+Condensed modes plus an exact 0.05–1,584 point magnitude. A mixed selection is
+left unchanged until a mode is chosen. Apply restores the captured selection
+and creates one Undo record; Cancel and Escape leave the document unchanged and
+return focus to the editor.
+
+Body text and header/footer editors use the same TipTap command and preserve an
+explicit zero separately from inherited spacing. Format Painter, tracked
+character-format changes, Undo, DOCX import/export/reopen, and old formatting
+inside `w:rPrChange` retain the exact signed value. The DOM stores
+`data-office-character-spacing-twips`; CSS projects it as `letter-spacing`
+without rewriting text. Eligible paragraphs remain on the Worker/WASM layout
+path because the kernel applies the same linear advance adjustment.
+
+## Native horizontal character scale
+
+Writer stores horizontal character scale as one native `w:w` integer from 1%
+through 600%. A missing property still inherits, an explicit 100% remains a
+direct reset, and an empty `<w:w/>` uses the native 100% default. Strict and
+transitional WordprocessingML use the same bounded integer model; malformed,
+fractional, duplicated, child-bearing, out-of-range, or namespace-spoofed
+properties fail closed.
+
+`Cmd/Ctrl+D` or the Home ribbon opens **Advanced Font Settings**, where the
+Scale field accepts the exact integer range. Scale, spacing, and baseline
+position track mixed selections independently. Editing any combination and
+choosing Apply restores the captured selection and creates one transaction and
+one Undo record. Character scale has no separate standard shortcut, so Writer
+does not claim one.
+
+Body text, headers, footers, Format Painter, tracked formatting, reject
+restoration, DOCX import/export/reopen, and old formatting inside `w:rPrChange`
+all retain the exact value. The DOM stores
+`data-office-character-scale-percent` and projects it through CSS
+`font-stretch`. Non-100% runs deliberately use browser line measurement until
+the Worker/WASM text-layout protocol carries exact horizontal run scaling;
+other eligible paragraphs remain on the deterministic kernel path.
+
+## Native pair kerning
+
+Writer stores pair kerning as one native `w:kern` threshold from 0 through
+3,277 half-points. A positive value enables kerning when the effective `w:sz`
+font size is greater than or equal to that threshold; 24 therefore means 12
+points. An explicit zero enables kerning at every font size. A missing direct
+property continues through the style hierarchy, while a document with no
+`w:kern` anywhere keeps kerning disabled.
+
+The shared `Cmd/Ctrl+D` **Advanced Font Settings** dialog provides a Kerning
+checkbox and an exact 0–1,638.5 point field in 0.5-point increments. New direct
+formatting starts at 12 points. Scale, spacing, kerning, emphasis mark, and
+baseline position track mixed selections independently and commit together through one
+transaction. Clearing the checkbox removes only direct kerning; Apply restores
+the captured selection and creates one Undo record. Pair kerning has no
+separate standard shortcut, so Writer does not claim one.
+
+Body text, headers, footers, footnotes, endnotes, inherited styles, Format
+Painter, tracked formatting, reject restoration, DOCX import/export/reopen,
+and prior formatting inside `w:rPrChange` retain exact half-points. Strict and
+transitional documents reject missing values, duplicate or nested elements,
+text-bearing properties, extra attributes, fractions, negative or out-of-range
+values, and namespace spoofing. Compatibility diagnostics report valid and
+rejected properties separately.
+
+The DOM stores `data-office-kerning-threshold-half-points` and projects the
+effective state as CSS `font-kerning: normal` or `none`. Editing, preview, and
+PDF surfaces start with kerning disabled and share that projection. The same
+effective boolean reaches the Worker/WASM text-layout path, so pagination and
+paint do not disagree about pair advances.
+
+## Native East Asian emphasis marks
+
+Writer stores emphasis as one closed native `w:em` state: `none`, `dot`,
+`comma`, `circle`, or `underDot`. A missing direct property continues through
+the run, character-style, paragraph-style, and document-default hierarchy.
+Explicit `none` is different from removing direct formatting: it intentionally
+suppresses an inherited mark.
+
+The shared `Cmd/Ctrl+D` **Advanced Font Settings** dialog offers Follow style,
+None, Dot above, Comma above, Circle above, and Dot below. Emphasis, scale,
+spacing, kerning, and baseline position keep independent mixed-selection state.
+Choosing Follow style removes only the direct property; choosing None writes the
+native reset. Apply restores the captured selection and focus and commits every
+touched character property through one transaction and one Undo record. There
+is no separate standard Writer shortcut, so the command catalog does not claim
+one.
+
+Body text, headers, footers, footnotes, endnotes, inherited styles, Format
+Painter, tracked character formatting, reject restoration, strict or
+transitional DOCX import/export/reopen, and prior formatting inside
+`w:rPrChange` retain the exact value. Missing values, unknown tokens, duplicate
+or nested elements, text-bearing leaves, extra attributes, and namespace
+spoofing fail closed and appear in compatibility diagnostics.
+
+The DOM stores `data-office-emphasis-mark`. CSS `text-emphasis-style` and
+`text-emphasis-position` project a filled dot, literal comma, or open circle
+above the text, or a filled dot below it. Paragraphs with a visible mark use
+browser-authoritative line measurement so glyphs outside the normal line box
+are included. An explicit none stays on the Worker/WASM path only when the final
+computed standard and WebKit emphasis styles are both absent or `none`, so a
+host CSS override cannot create a pagination disagreement.
+
+## Native hidden text
+
+Writer stores hidden text as one three-state TextStyle property. Removing the
+direct property continues through run, character-style, paragraph-style, and
+document-default inheritance. `true` writes native `w:vanish`; `false` writes
+an explicit `w:vanish w:val="0"` reset so inherited hidden formatting stays
+visible after export and reopen.
+
+The shared `Cmd/Ctrl+D` **Advanced Font Settings** dialog keeps hidden text
+independent from scale, spacing, kerning, emphasis, and baseline position. A
+mixed selection remains untouched until the Hidden text checkbox is changed.
+Apply restores the captured selection and commits every touched property in one
+transaction and one Undo record. The standard `Cmd/Ctrl+Shift+H` shortcut
+toggles the same typed command; TipTap's conflicting Highlight binding is
+disabled.
+
+Body text, headers, footers, footnotes, endnotes, inherited styles, Format
+Painter, tracked formatting, reject restoration, strict/transitional DOCX
+import/export/reopen, and prior formatting inside `w:rPrChange` retain the exact
+state. Empty properties or exact lowercase `1`, `0`, `on`, `off`, `true`, and
+`false` values are accepted. Unknown casing or tokens, duplicates, children,
+text, extra attributes, misplaced elements, and namespace spoofing fail closed
+and appear in compatibility diagnostics. Unchanged comment XML remains
+source-preserved; this boundary is not a claim of rich comment-text editing.
+
+The DOM stores `data-office-hidden-text="true|false"`. Hidden text is suppressed
+by default. The View ribbon's **Show hidden text** command reveals it only on an
+editable Writer surface and adds the conventional dotted underline. Read-only
+preview and detached PDF capture always keep it suppressed. Paragraphs that
+contain hidden text use browser-authoritative line measurement so invisible
+glyphs cannot enter the Worker/WASM advance model.
+
+## Native outline, shadow, emboss, and imprint
+
+Writer stores four independent nullable TextStyle properties for native
+`w:outline`, `w:shadow`, `w:emboss`, and `w:imprint`. Removing a direct
+property continues through run, character-style, paragraph-style, and
+document-default inheritance. `true` writes the native enabled property and
+`false` writes an explicit `w:val="0"` reset, so inherited effects remain off
+after export and reopen.
+
+Outline and shadow may be enabled together. Emboss is mutually exclusive with
+outline, shadow, and imprint; imprint is mutually exclusive with outline,
+shadow, and emboss. The shared `Cmd/Ctrl+D` **Advanced Font Settings** dialog
+keeps all four mixed-selection states independent. Enabling an exclusive
+effect clears every conflicting checkbox and marks those clears as touched, so
+Apply commits the complete conflict-safe result through one transaction and
+one Undo record. There is no dedicated standard Writer shortcut for these four
+effects, so the command catalog does not invent one.
+
+Body text, headers, footers, footnotes, endnotes, document defaults, inherited
+styles, Format Painter, tracked character formatting, reject restoration,
+strict or transitional DOCX import/export/reopen, and prior formatting inside
+`w:rPrChange` retain the exact values. Empty properties and exact lowercase
+`1`, `0`, `on`, `off`, `true`, and `false` values are accepted. Unknown casing
+or tokens, duplicates, nested or text-bearing leaves, extra attributes,
+misplaced elements, namespace spoofing, and conflicting enabled sets fail
+closed and appear in compatibility diagnostics.
+
+The DOM stores `data-office-legacy-text-outline`,
+`data-office-legacy-text-shadow`, `data-office-legacy-text-emboss`, and
+`data-office-legacy-text-imprint` as explicit `true|false` values. CSS projects
+outline with a bounded stroke, shadow with a bounded offset, and emboss or
+imprint with opposite light/dark offsets. Browser and PDF output therefore
+provide a controlled visual approximation rather than claiming desktop-engine
+pixel identity. These effects change paint only, so otherwise eligible
+paragraphs remain on the Worker/WASM layout path. Open the Playground's
+**文字效果** template to inspect all four states and switch the valid
+outline-shadow pair to an exclusive effect.
+
+## Native character borders
+
+Writer stores character borders as one typed native `w:bdr` value. The model
+retains all 25 visible WordprocessingML line styles plus the explicit `nil` and
+`none` resets, direct or theme colors with tint and shade, widths from 2
+through 96 eighth-points, text spacing from 0 through 31 points, and explicit
+shadow and frame flags. Imported `nil` and `none` remain distinct even though
+both suppress paint.
+
+The Home Font group provides a direct Character Border toggle. The shared
+`Cmd/Ctrl+D` **Advanced Font Settings** dialog keeps mixed selections untouched
+until edited and distinguishes Follow style, explicit no-border, and an
+editable border. Line style, color, exact 0.25–12 point width in 0.125-point
+increments, integer spacing, shadow, and frame commit with every other touched
+character property through one transaction and one Undo record. Format Painter
+uses the same mark. There is no dedicated standard Writer shortcut, so the
+command catalog does not claim one.
+
+Document defaults, paragraph and character styles, body text, headers,
+footers, footnotes, endnotes, formatting revisions, strict or transitional
+DOCX import, exact export, and reopen preserve the semantic value. Malformed,
+duplicated, misplaced, namespace-spoofed, child- or text-bearing,
+extra-attribute, art-style, out-of-range, and unresolved-theme input fails
+closed and appears in compatibility diagnostics. Prior formatting inside
+`w:rPrChange` uses the same bounded parser and exporter.
+
+The DOM stores validated JSON in `data-office-run-border` and projects all
+four edges, spacing, shadow, and fragment cloning through CSS. Visible borders
+use browser-authoritative line measurement because border and padding change
+inline geometry. Explicit `nil` and `none` remain eligible for Worker/WASM
+layout. Browser and PDF paint are bounded visual approximations of line styles;
+the OOXML semantics remain exact. Open the Playground's **字符边框** template
+to exercise the complete authoring and one-step Undo flow.
+
+## Native character shading
+
+Writer stores character shading as one typed native `w:shd` value instead of
+flattening it into a browser background color. The model retains every
+WordprocessingML pattern, direct or automatic foreground and background
+colors, independent `themeColor` and `themeFill` references with tint and
+shade, and an explicit `nil` reset. A tint and shade can coexist on the same
+theme channel: browser paint follows native tint precedence while export keeps
+both attributes.
+
+The shared `Cmd/Ctrl+D` **Advanced Font Settings** dialog treats shading as an
+independently mixed property. It distinguishes Follow style, explicit no
+shading, and an editable value with pattern, foreground, and background
+controls. Theme identity survives while its resolved color remains unchanged;
+choosing a direct color intentionally replaces only that channel. The complete
+patch commits with the other touched font properties in one transaction and
+one Undo record, and Format Painter copies the same semantic TextStyle value.
+
+Document defaults, paragraph and character styles, conditional table styles,
+body text, headers, footers, footnotes, endnotes, formatting revisions, strict
+or transitional DOCX import, exact export, and reopen share the resolver.
+Malformed, duplicated, misplaced, namespace-spoofed, child- or text-bearing,
+extra-attribute, and unresolved-theme leaves fail closed to explicit `nil` and
+appear in compatibility diagnostics. Prior values inside `w:rPrChange` use the
+same bounded model.
+
+The DOM stores validated JSON in `data-office-run-shading`. CSS provides a
+bounded projection for solid, striped, crossed, thin-line, and percentage
+patterns with cloned inline fragments. Shading changes paint only, so eligible
+paragraphs stay on the Worker/WASM layout path. Native `w:highlight` remains a
+separate mark and takes visual precedence without deleting the underlying
+shading semantics. Open the Playground's **字符底纹** template to edit the
+complete model and verify one-step Undo.
+
+## Native proofing languages
+
+Writer retains the three independent native `w:lang` slots: Latin `w:val`,
+East Asian `w:eastAsia`, and bidi `w:bidi`. Native `w:noProof` remains a
+separate three-state value. Removing the direct value follows the current
+style, `false` explicitly includes text in proofing, and `true` excludes it.
+The model does not flatten those states into the document-wide browser
+spellcheck switch.
+
+Review exposes **设置校对语言** beside Spelling Check. Its accessible dialog
+accepts bounded BCP 47 tags, reports mixed values independently, leaves every
+untouched slot unchanged, and offers Follow style for each language and for the
+proofing state. Apply restores the captured selection and focus and commits all
+touched fields through one TipTap transaction and one Undo record. Header and
+footer editing invokes the same model.
+
+Document defaults, paragraph and character styles, body text, headers,
+footers, footnotes, endnotes, tracked character formatting, rejection restore,
+strict or transitional DOCX import/export/reopen, and prior formatting inside
+`w:rPrChange` preserve the exact slots and explicit state. Malformed,
+duplicated, misplaced, nested, text-bearing, extra-attribute,
+namespace-spoofed, invalid-tag, and invalid on/off input fails closed and is
+reported by compatibility diagnostics.
+
+The DOM stores canonical language JSON in
+`data-office-proofing-languages`, stores explicit state in
+`data-office-no-proof="true|false"`, and projects the effective `lang` and
+`spellcheck` attributes. Valid effective languages also travel with each
+Worker text-layout run and are set on the RustyBuzz buffer before Rust/WASM
+shaping. This preserves language-sensitive shaping without claiming bundled
+spelling dictionaries, grammar, or translation. Open the Playground's
+**校对语言** template to inspect Latin, East Asian, bidi, explicitly checked,
+and excluded examples.
+
+## Native character baseline position
+
+The same **Advanced Font Settings** dialog stores Normal, Raised, or Lowered
+text as one signed native `w:position` value from -3,168 through 3,168
+half-points. One half-point equals 0.5 point, so the numeric field accepts an
+exact 0.5–1,584 point magnitude. Scale, position, and spacing track mixed
+selections independently; changing all three and choosing Apply still creates
+one transaction and one Undo record.
+
+Body text, headers, footers, Format Painter, tracked character formatting, and
+prior values inside `w:rPrChange` share the same TipTap attribute. Explicit
+zero remains distinct from inheritance. Transitional DOCX accepts signed
+integers, while strict DOCX also accepts universal measures that convert to an
+exact half-point. Malformed, duplicated, out-of-range, or namespace-spoofed
+properties fail closed. Export and reopen write the exact native value,
+including `w:position w:val="0"`.
+
+The DOM stores `data-office-character-position-half-points` and exposes the
+exact point value through `--work-document-character-position`; CSS applies it
+as numeric `vertical-align`. Native subscript or superscript takes visual
+precedence when `w:position` and `w:vertAlign` coexist, and removing that mark
+reveals the retained baseline offset again. Positioned paragraphs deliberately
+use browser line measurement until the Worker/WASM text-layout protocol can
+carry per-run baseline offsets; other eligible paragraphs remain on the
+deterministic kernel path.
+
+## Real-time review mode
+
+Pass an initialized Document collaboration session with `mode: 'comment'` and
+an authenticated actor to enable selection comments without text editing. The
+reviewer can create a thread, reply, resolve or reopen, and delete only records
+owned by that actor. Threads, selection marks, attribution, and detached-anchor
+state persist in Yjs/Yrs; remote review changes stay out of local undo history.
+See [Real-time collaboration](./collaboration.mdx#review-a-document-in-comment-mode)
+for the browser, CLI/MCP, and A3S Boot authorization workflow.
+
+## Real-time suggestion mode
+
+Pass an initialized Document collaboration session with `mode: 'suggest'` and
+an authenticated actor to enable attributed insertion, deletion, and
+replacement proposals. The editor forces tracked text changes on, omits normal
+formatting/comment/final-decision controls, and permits the actor to withdraw
+only its own proposals. Canonical text, structure, non-suggestion formatting,
+options, comments, and another actor's proposals remain protected.
+
+An `edit` participant accepts or rejects proposals from the review panel. The
+visible change and one immutable `WorkDocumentChangeDecision` are committed in
+the same Yjs transaction. The record keeps proposal and decision actor/name/time
+attribution and appears in `content.changeDecisions`; a second conflicting
+decision fails closed. The A3S Boot reference service repeats the semantic
+authorization in Yrs before persistence and broadcast. See
+[Suggest changes to a Document](./collaboration.mdx#suggest-changes-to-a-document)
+for the complete browser/backend contract and the current native CLI/MCP limit.
+
+## Character-formatting revisions
+
+With tracked changes enabled, applying direct character formatting to existing
+text creates one `formatting` revision. The bounded model covers bold, italic,
+underline, strike, subscript, superscript, font family, font size, text color,
+highlight, character scale, spacing, kerning threshold, emphasis mark, hidden
+text, character border, outline, shadow, emboss, imprint, baseline position,
+all-caps and small-caps effects, and Word grid state. Formatting applied to text that is still a
+pending insertion remains part of that insertion
+instead of creating a nested revision.
+
+The revision stores the exact prior direct marks while the selected text renders
+with the new marks. Accept removes only the revision wrapper and keeps the new
+formatting. Reject restores the prior marks and removes the wrapper without
+changing any character. Both paths are single transactions, and clearing direct
+formatting never removes comment or revision marks.
+
+Supported strict or transitional DOCX `w:rPrChange` records import into the same
+review card with author, optional date, current formatting, and prior formatting.
+Export writes a native `w:rPrChange` again. Unsupported, malformed, duplicated,
+or namespace-spoofed run-property changes remain on the structural diagnostic
+path rather than being interpreted as editable state.
+
+In collaboration, the mark and an accept/reject audit record travel through the
+standard Yjs v1 update. Yrs validates the bounded formatting snapshot and reads
+`formatting` decision records, while authenticated `suggest` sessions must
+preserve existing formatting revisions and cannot create or rewrite them. See
+[Synchronize character-formatting revisions](./collaboration.mdx#synchronize-character-formatting-revisions)
+and the complete [A3S Boot backend](./collaboration-server.mdx#update-authorization).
+In the Playground, choose **体验格式修订**, open **审阅**, then
+**查看修订（2）** to review the Formatting card.
+
+## Native underline formatting
+
+Writer authors and reopens all 18 native WordprocessingML underline values:
+`none`, `single`, `words`, `double`, `thick`, `dotted`, `dottedHeavy`, `dash`,
+`dashedHeavy`, `dashLong`, `dashLongHeavy`, `dotDash`, `dashDotHeavy`,
+`dotDotDash`, `dashDotDotHeavy`, `wave`, `wavyHeavy`, and `wavyDouble`.
+The Home ribbon, selection toolbar, and header/footer surface share an
+accessible split control. Underline color supports Automatic Color, direct RGB,
+and preserved theme/tint/shade identity.
+
+`Cmd/Ctrl+U` disables any active underline style or enables `single` from the
+off state. `Cmd/Ctrl+Shift+D` toggles `double`, and `Cmd/Ctrl+Shift+W` toggles
+words-only underline. Format Painter, tracked character-format changes, Undo,
+DOCX export, and reopen preserve the exact typed state, including explicit
+`none` used to override inherited formatting.
+
+## Native strikethrough formatting
+
+Writer keeps strikethrough as one typed `none | single | double` mark. The
+Home ribbon, selection toolbar, and header/footer ribbon expose the same
+accessible split control, while the compact page-chrome toolbar provides a
+direct toggle. Body text, page chrome, Format Painter, tracked character-format
+changes, Undo, DOCX export, and reopen preserve the exact style, including an
+explicit `none` that overrides inherited formatting.
+
+DOCX import tracks `w:strike` and `w:dstrike` independently at every style and
+direct-format layer, then resolves double above single. Export writes both
+properties so switching from an inherited double strike to single, or clearing
+either inherited state, cannot revive stale formatting after reopen. CSS
+projects solid or double line-through without changing the text or excluding an
+otherwise eligible paragraph from Worker/WASM layout.
+
+Traditional Office does not define a direct Writer shortcut for this command,
+so the command catalog advertises none. The editor also disables TipTap's
+unrelated `Mod+Shift+S` binding; use the ribbon or selection toolbar instead.
+
+## Paragraph-formatting revisions
+
+Tracked paragraph commands now create a separate `paragraph-formatting`
+revision on each affected paragraph or heading. The bounded snapshot covers
+alignment, writing direction, left/right/first-line or hanging indentation,
+space before/after, line height and rule, keep-lines/keep-next/page-break/widow
+controls, contextual spacing, outline level, tab stops, borders, shading, and
+the default-collapsed flag. One multi-paragraph command shares a stable
+revision identity, and later formatting edits keep the original pre-change
+snapshot instead of rebasing the pending review.
+
+Accept keeps the current paragraph properties and removes only the review
+metadata. Reject restores the complete prior paragraph properties without
+changing text or inline marks. Either decision and the original formatting
+command form independent undo boundaries; a malformed or non-canonical prior
+snapshot fails closed instead of applying a partial restoration.
+
+Supported strict or transitional DOCX `w:pPrChange` records import as
+Paragraph Formatting cards with author, optional date, current properties, and
+the complete supported prior-property snapshot. Export emits native
+`w:pPrChange` again and removes every private transport marker. Duplicated,
+malformed, namespace-spoofed, or unsupported paragraph-property changes remain
+on the structural diagnostic path.
+
+The node metadata and immutable `changeKind: "paragraph-formatting"` decision
+record use the standard Yjs v1 document update. Yrs reads the decision kind,
+retains browser-created revisions across restart and duplicate/reordered
+delivery, and rejects `suggest` updates that create or rewrite paragraph review
+metadata. See
+[Synchronize paragraph-formatting revisions](./collaboration.mdx#synchronize-paragraph-formatting-revisions).
+The Playground's second review card is **段落格式**; rejecting it restores the
+original alignment, indentation, spacing, and line height while preserving the
+paragraph text and the separate character-formatting revision.
+
+## Document compare and combine
+
+The Review ribbon now exposes **比较文档** and **合并文档** as first-class
+Writer workflows. Compare treats the mounted controlled document as the
+original and imports a `.docx`, `.html`, `.htm`, or `.txt` file as the revised
+version. A deterministic section/block alignment and token diff generates the
+existing reviewable insertion, deletion, character-formatting, and
+paragraph-formatting revisions. The selected author is attached to every
+generated revision, the source name is bounded transaction metadata, the whole
+result publishes through one controlled `onChange`, and Undo restores the
+pre-comparison document in one step. After a successful comparison, the
+Changes pane opens automatically so each generated revision can be located,
+accepted, or rejected with the existing review commands.
+
+Combine is a different, fail-closed operation. The imported reviewed copy must
+already contain revisions, the current document must contain none, and rejecting
+every imported revision on an immutable snapshot must reproduce the current
+baseline exactly. The current bounded path admits inline insertion/deletion,
+character-formatting, and paragraph-formatting revisions while retaining the
+current paragraph identities. A missing revision set, malformed prior-format
+snapshot, baseline mismatch, or structural block revision leaves the current
+document untouched and returns a localized diagnostic.
+
+Comparison accepts at most 1,024 blocks in each version and 1,000,000 combined
+text characters. Block alignment and each inline diff allocate at most about
+1.1 million matrix cells. The two documents must have the same section count
+and page-layout attributes. Unchanged complex blocks may pass through, but a
+changed table, list, image, equation, content control, empty structural block,
+or other complex tree is never flattened into a misleading text diff. Existing
+revisions in either comparison input, unsupported review marks, and layout
+changes also fail closed.
+
+Generated inline revisions export as native `w:ins` and `w:del`, character
+format revisions as `w:rPrChange`, and paragraph-format revisions as
+`w:pPrChange`; export and reopen retain their author, date, text, and prior
+format snapshot. A browser-created inserted or deleted paragraph additionally
+uses block-container metadata so rejecting an inserted block or accepting a
+deleted block removes the whole container. That container identity does not yet
+map to a native paragraph-mark revision, so callers that need exact structural
+accept/reject semantics should resolve those block revisions before DOCX export.
+The run-level native revisions still survive reopen, and this boundary is
+reported rather than presented as complete structural comparison fidelity.
+
+Open the Playground's **文档比较** template, choose Review → **比较文档**,
+and import a revised file to exercise the public path. Focused component tests,
+DOCX reopen coverage, responsive Playwright, and the local-only
+`word-document-comparison.acl` A3S Test suite cover controlled publication,
+review decisions, focus restoration, accessibility, and empty browser
+diagnostics. A3S Test is not installed or invoked by Actions or Pages.
+
+## Controlled review conflicts
+
+An incoming controlled `content` value remains authoritative and is applied
+without adding an undo entry or echoing it through `onChange`. When the update
+targets the same `artifactId`, the editor compares comment anchors and tracked
+changes before and after replacement. Position-only movement and newly added
+review items are safe. Removed ranges, changed reviewed text, or a reused
+revision ID with a different insertion/deletion kind emit
+`onReviewConflict` and show an accessible warning.
+
+Removing a comment thread and its anchor together is treated as an intentional
+host deletion. Removing only the thread while its body anchor remains reports a
+`record-removed` conflict. If a host update removes only the anchor, the thread
+record is retained through later local edits until the host removes the record
+or restores its original anchor. Changing `artifactId` establishes a new
+document boundary and clears prior conflicts; hosts that switch documents
+should therefore provide stable artifact IDs.
+
+Each `DocumentReviewConflictEvent` contains the current `artifactId` and the
+newly detected conflicts. A conflict identifies its review `kind`, `id`,
+`reason`, and `previousText`, with `nextText` or `nextKind` when available.
+The same review identity emits once while unresolved and keeps its original
+recovery baseline even if later host updates change it again. Dismissal hides
+the warning but does not reinterpret or merge the authoritative host value.
+
+## Source-backed DOCX export
+
+`importOfficeFile` registers the original DOCX Blob against the imported
+artifact. `createArtifactBlob` regenerates the editable core document, then
+copies safe source-only OPC parts byte-for-byte and reconnects their content
+types and relationships. Generated document, style, numbering, header, footer,
+and settings semantics remain authoritative. In `word/settings.xml`, passive
+ignorable attributes and elements plus structurally valid, non-conflicting
+`mc:AlternateContent` blocks are merged from strict or transitional UTF-8 or
+UTF-16 sources. Relationship-bound and behavior-changing source settings are
+not restored. Passive, relationship-free extension trees at the roots and
+uniquely matched nodes of `word/styles.xml` and `word/numbering.xml` are also
+retained. Styles match by type plus style ID. Imported abstract-numbering,
+concrete-numbering, and level metadata follows regenerated IDs; duplicate,
+source-only, malformed, or ambiguous one-to-many mappings are dropped.
+Generated Word style and numbering semantics still win. Relationship-free
+passive extensions from non-OOXML ignorable namespaces also follow uniquely
+matched picture drawings in regenerated document, header, footer, footnote, and
+endnote parts. The match uses normalized anchor plus drawing-property IDs,
+which body, page-chrome, and note import retains in sanitized editable HTML.
+Native note pictures also retain layout, wrapping, crop, and layer metadata;
+export repairs missing note-part image relationships and validates every media
+target. Source-only, changed, duplicate, namespace-spoofed,
+relationship-bound, Microsoft/OOXML semantic, and ambiguous drawing branches
+are dropped; generated image geometry and media stay authoritative. Legacy
+VML, shapes, SmartArt, and drawing-bearing content-control wrappers normalize.
+Passive extensions also follow uniquely matched, unchanged paragraphs and their
+paragraph properties by native `w14:paraId` plus `w14:textId`. Both IDs survive
+sanitized body and page-chrome HTML. Text edits rotate `textId`, formatting-only
+edits and moves retain it, and copies or splits receive new paragraph IDs.
+Changed text versions, duplicate identities, relationship-bound content, and
+Microsoft/OOXML semantic branches are dropped; generated paragraph semantics
+stay authoritative. Stable tables retain equivalent passive extensions on the
+table, row, and cell scopes and their property nodes. Native row `w14:paraId`
+plus `w14:textId` survives body and page-chrome HTML; tables and cells derive
+conservative identities from directly owned row and paragraph IDs. Row content
+or structure changes rotate the version, copies receive independent IDs, and
+nested rows or cells remain isolated from outer-table export. Ambiguous,
+cross-kind, unsafe, or semantic branches are dropped while generated table
+geometry wins. Unsupported math, note/comment wrappers, and other inline markup
+may still normalize. Source font-table metadata and source-only internal
+obfuscated-font payloads survive with relationship IDs rewritten to the final
+package graph. External references, mismatched relationship or content types,
+duplicate identities, and generated-path collisions are disconnected. Native
+DOCX applications can use the retained embedded fonts, but browser editing,
+preview, and PDF output continue to use registered A3S fonts or substitution
+and may wrap text differently.
+
+Persist the source Blob with the artifact and call `registerSourceBlob` after a
+browser reload. Export fails explicitly when an artifact declares a source but
+that Blob is unavailable. Imported source metadata includes a SHA-256
+fingerprint, and export rejects a different Blob registered under the same
+artifact ID. Digital signatures are invalid after editing, and VBA, ActiveX,
+and custom-ribbon content is deliberately omitted from the macro-free DOCX
+output. Compatibility diagnostics report these boundaries before export.
+
+## DOCX text and grid fidelity
+
+Imported section layouts retain an optional `WorkDocumentGrid` with its OOXML
+grid type and point-based line pitch. Imported runs retain explicit
+`snapToGrid` values. Both properties survive editing and DOCX export; a
+gridless source remains gridless instead of receiving the document generator's
+default grid.
+
+For automatic Word line spacing, the browser combines the original paragraph
+multiple with a measured Traditional Office advance for the resolved run font. These render
+metrics are internal compatibility data: export continues to use the original
+OOXML paragraph multiple, so a browser-only calibration cannot rewrite the
+document's line-spacing semantics.
+
+Office 2013 `w15:collapsed` paragraph metadata round-trips through body and
+page-chrome HTML as `data-office-default-collapsed`. Import accepts only an
+empty leaf or the exact core Word `w:val` lexicals `true`, `on`, `1`, `false`,
+`off`, and `0`; an omitted value means true, while a malformed or duplicated
+direct value fails closed instead of inheriting stale state. Export emits
+canonical `1` or `0`, declares the Word 2012 namespace, and adds its prefix to
+`mc:Ignorable`. The browser deliberately keeps the content expanded and
+editable because this native property controls Word's initial document view,
+not content visibility or the editor's navigation-pane state.
+
+Paragraph shading round-trips as structured `data-office-paragraph-shading`
+metadata plus a browser preview. Import resolves `w:shd` through document
+defaults, based-on paragraph styles, conditional table styles, and direct
+formatting. It preserves every Word pattern mask, direct or automatic
+foreground/background colors, explicit `nil` resets, and independent
+`themeColor`/`themeFill` references with tint or shade. Export restores both
+theme channels and the native pattern. When tint and shade are both present on
+one channel, preview follows Word's tint precedence while export retains both
+attributes. A direct browser background edit keeps
+the pattern but intentionally replaces the edited theme-bound channel with
+direct RGB. Malformed, duplicated, namespace-spoofed, relationship-bound, or
+unresolved theme values fail closed rather than exposing inherited stale
+formatting. Direct page-chrome shading uses the same editor model and export
+path.
+
+Paragraph borders round-trip as structured `data-office-paragraph-borders`
+metadata plus a bounded CSS preview. Import applies document defaults,
+based-on paragraph styles, conditional table styles, and direct formatting in
+that order. The model retains schema-ordered `top`, `left`, `bottom`, `right`,
+`between`, and facing-page `bar` edges; all 197 Word line and art border styles;
+direct, automatic, or theme colors with tint and shade; native widths and
+spacing; shadow; and frame flags. Physical edges are directly editable in the
+browser. Art borders, between-paragraph grouping, and facing-page placement use
+an explicit preview approximation while export restores exact native `w:pBdr`
+children and attributes. A direct CSS change removes the theme reference only
+from the edited physical edge. Strict and transitional WordprocessingML are
+accepted; malformed ordering, duplicate containers or edges, namespace
+spoofing, relationship-bound attributes, invalid measures, and unresolved
+themes fail closed. Page-chrome paragraphs share the same edit and export
+model.
+
+## Native table of contents
+
+Writer represents a Table of Contents as a selectable, non-editable typed block
+instead of flattening generated rows into ordinary text. Insert and Customize
+in the References ribbon read the existing shared outline, accept semantic
+headings and native outline-level paragraphs across levels 1 through 9, and
+preserve hyperlinks, page-number visibility, right alignment, and dot, dash,
+underline, or no leader. Each insert or option change is one TipTap transaction
+and one Undo record. No shortcut is advertised because the conventional Writer
+surface does not define a separate direct shortcut for this command.
+
+Every entry stores a bounded title, level, page number, and stable target. An
+included outline item without a native paragraph identity receives one in the
+same insert/update transaction, so inserting the TOC cannot invalidate its own
+links and Undo restores both changes together. Page values come
+from the same live Worker/WASM pagination resolver used by PAGE fields. The
+explicit **Update Table of Contents** action recomputes every block from those
+two sources in one transaction, so changing a heading or pagination never
+creates a second heading or page-number model. A document stores at most 512
+cached entries per block; additional matches are reported as truncated rather
+than producing an unbounded node attribute.
+
+DOCX export emits a native `w:sdt` Table of Contents with a live `TOC` field,
+cached entries, internal heading bookmarks, and the selected leader semantics.
+Import and reopen preserve the common `TOC \\o "1-3" \\h \\z \\u` subset,
+complete-range page suppression, and the space separator used for non-right-
+aligned page numbers. Custom `\\t` style mappings, partial page ranges,
+malformed ranges, and separators that cannot be represented exactly are not
+silently approximated; compatibility diagnostics report them. Each imported
+TOC resolves cached rows independently, so multiple TOCs can target the same
+heading. Open the
+Playground's **可更新目录** template to edit, navigate, refresh, export, and
+reopen the complete path.
+
+## Native document index
+
+Writer keeps every marked index term as a selectable inline atom and keeps the
+generated index as a separate selectable, non-editable block. In References,
+**Mark Index Entry** captures selected text and can author a primary term,
+secondary term, cross-reference, or bold/italic page-number intent. **Insert or
+Customize Index** controls one through four columns, indented or run-in layout,
+page-number alignment, and dot, dash, underline, or no leader. The conventional
+Writer surface does not define separate direct shortcuts for these commands, so
+the command catalog does not invent any.
+
+The generated block sorts normalized terms, combines duplicate terms on the
+same page, and retains every stable marker target behind the merged page link.
+Clicking a page selects its source marker. Page values come from the same live
+Worker/WASM field resolver used by PAGE fields; a page break or reflow therefore
+does not create a second pagination model. Marking, editing, inserting,
+customizing, and explicitly refreshing every index each create one TipTap
+transaction and one Undo record. A document reads at most 2,048 markers and
+caches at most 512 generated rows; exceeding either limit produces an explicit
+truncated state instead of an unbounded node attribute.
+
+DOCX export emits native `w:fldSimple` `XE` entries and a real `w:sdt` content
+control containing a live `INDEX` field plus cached `Index1` and `Index2` rows.
+Primary and secondary terms, cross-references, bold/italic page runs, columns,
+run-in layout, alignment, and leader semantics survive export, import, reopen,
+and a second export. Import accepts the lossless common `XE \\b`, `\\i`, and
+`\\t` switches and the `INDEX \\c`, `\\e`, and `\\r` subset. Entry ranges,
+custom entry types, locale switches, malformed fields, and other unsupported
+switches stay on the explicit compatibility-diagnostic path rather than being
+silently approximated. Open the Playground's **原生索引** template to mark,
+navigate, refresh, export, and reopen the complete path.
+
+## Built-in navigation
+
+The View ribbon opens a persistent heading outline on wide layouts and a
+focus-contained drawer on compact layouts. Searching the pane scans body text
+as well as headings, groups each result under its current section, highlights
+all matches, and moves the editor selection without adding a history entry.
+Selecting a compact result closes the drawer before restoring the body focus
+and exact text range.
+
+The Pages view renders live physical-page thumbnails. Documents above 48 pages
+mount a window of at most 24 buttons plus the current and keyboard-roving pages
+when needed. Physical scroll spacers retain the document distance, and Home or
+End makes the first or last page reachable without mounting every page.
+
+Heading and full-text collections use the same window contract above 48 rows.
+They mount at most 32 contiguous rows, plus sparse active, selected, and
+keyboard-roving rows when those fall outside the window. Native scroll distance,
+global list positions, Arrow traversal, Home/End, and exact search selection are
+preserved. Long-distance result jumps use an instant programmatic scroll for the
+selection frame and then restore the editor's normal scroll style.
+
+## Built-in references
+
+The References ribbon inserts and refreshes typed tables of contents and native
+indexes, and inserts captions, cross-references, footnotes, endnotes, page
+fields, dates, and citations in the controlled TipTap document. Caption
+numbers are part of each caption's accessible name. Caption deletion and
+reordering update every linked cross-reference in the same transaction: valid
+targets are renumbered and a dangling field renders as `Missing reference`
+instead of retaining a stale number. Undo restores the caption and its linked
+field state together.
+
+## Built-in picture properties
+
+Selecting a body image opens the contextual Picture ribbon. Fast wrapping and
+alignment commands remain available, while **Picture Properties** edits width
+and height in centimeters, a per-image aspect-ratio lock, wrapping, alignment,
+text distance, and alternative text in one responsive dialog.
+
+Apply creates one undo entry and changes only fields edited by the user. An
+imported pixel dimension that was merely displayed as a rounded centimeter
+value therefore remains exact. Cancel or Escape leaves the document unchanged,
+keeps the image selected, and restores keyboard focus to the Picture Properties
+button.
+
+## Host-defined selection menu
+
+The menu factory receives an immutable selection snapshot with exact selected
+text, a structured fragment, adjacent context, complete plain text, synchronized
+HTML, and the current controlled content value. The callback also receives
+conflict-aware editing commands.
+
+```tsx
+import type {
+  DocumentContent,
+  GetDocumentSelectionMenuItems,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const getSelectionMenuItems: GetDocumentSelectionMenuItems = (snapshot) => [
+  {
+    id: 'rewrite',
+    label: 'Rewrite',
+    onSelect: async (context) => {
+      const replacement = await rewriteWithModel({
+        selection: snapshot.selection.text,
+        before: snapshot.selection.beforeText,
+        after: snapshot.selection.afterText,
+        document: snapshot.document.text,
+      });
+      context.commands.replaceText(replacement);
+    },
+  },
+];
+
+export function Editor(props: {
+  content: DocumentContent;
+  onChange: (content: DocumentContent) => void;
+}) {
+  return (
+    <DocumentEditor
+      {...props}
+      getSelectionMenuItems={getSelectionMenuItems}
+    />
+  );
+}
+```
+
+Return or await asynchronous work so the editor can map the original range
+through unrelated transactions. If the selected text itself changes, a later
+`replaceText` returns `stale-selection` instead of modifying unrelated content.
+For an open-ended action such as “Ask AI”, collect the user's question in the
+host UI before dispatching a request. The Playground demonstrates this with a
+focused question composer and keeps the attached document context collapsed
+after submission instead of filling the assistant with raw context.
+
+## Extensions
+
+`extensions` accepts TipTap extensions. Keep the array identity stable and use
+unique extension names. A custom Node or Mark also needs DOCX import/export
+semantics if it must survive a file round trip. See the
+[extension model](./extensions.mdx).

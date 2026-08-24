@@ -1,6 +1,6 @@
 # A3S Office / Traditional Office Capability Gap Roadmap
 
-Last reviewed: 2026-08-24
+Last reviewed: 2026-08-25
 
 This roadmap compares the current `main` branch of A3S Office with the public
 capability surface of Traditional Office. It is a prioritization tool, not a
@@ -39,7 +39,7 @@ collaboration transport, and AI providers.
 | Writer | Strongest surface: structured editing, sections, tables, images, equations, comments, revisions, deterministic bounded compare/combine, fields, typed TOC and native index authoring, notes, page chrome, source-backed DOCX | Complete revision types, broad DrawingML objects, mail merge, structural/object compare, tables of figures/authorities, exact desktop pagination | Remains the first fidelity track |
 | Spreadsheet | Workbook editing, formulas, recalculation, native Tables/ListObjects, charts, pivots, conditional formatting, validation, protection, comments, print setup | Broader formula and structured-reference parity, calculated table columns/totals, advanced pivots/slicers, external data, macros/add-ins, advanced analysis | Stabilize calculation and native workbook semantics before adding more UI |
 | Presentation | Editable scene graph, masters/layouts, text, shapes, images, tables, charts, groups, comments, transitions, slideshow/presenter view | Object animations, media, broad shape/SmartArt fidelity, full master authoring, richer views and video export | Build expressiveness on the typed scene graph |
-| PDF | PDFium rendering, search, forms, annotations, navigation, bounded long-file rendering, save | Native text/object editing, page organization, conversion, OCR, signatures, redaction, compression | Evolve from viewer/annotator into an optional PDF workbench |
+| PDF | PDFium rendering, search, forms, annotations, navigation, bounded long-file rendering, save, and Worker-backed insert/delete/rotate/reorder/extract/merge/split page organization | Native text/object editing, document-level catalog rewriting, conversion, OCR, signatures, redaction, compression | Evolve from viewer/annotator into an optional PDF workbench |
 | Markdown | GFM source, visual editing, split preview, tables, task lists, links, images, code | No direct Traditional Office equivalent | Maintain as an A3S differentiator |
 | Automation | Rust CLI, MCP server, Office Skill, bounded typed mutations | Office-style macro/add-in ecosystem | Prefer deterministic, auditable automation; do not execute Office macros |
 
@@ -142,7 +142,7 @@ collaboration transport, and AI providers.
 | Form filling | **Supported** for common interactive forms | Form creation, calculation scripts, signatures, XFA, and complex appearance regeneration are incomplete | P1/P2 |
 | Save edited annotations/forms | **Supported** | Full incremental-update/signature preservation requires stronger native guarantees | P0 |
 | Edit existing text, images, links, and objects | **Gap** | Needs font matching, content-stream editing, reflow policy, and safe fallback behavior | P1 |
-| Insert, delete, rotate, reorder, extract, merge, and split pages | **Gap** | No page-organization model or UI yet | P1 |
+| Insert, delete, rotate, reorder, extract, merge, and split pages | **Supported with boundaries** | Dedicated Worker and Blob-level Undo/Redo are implemented; signed/encrypted files fail closed, risky catalog structures constrain destructive mutations, and page-only exports intentionally omit document-level objects with diagnostics | Maintain / P1 catalog fidelity |
 | Compress and optimize | **Gap** | Requires bounded image/font/object optimization with quality controls | P2 |
 | Convert PDF to/from DOCX/XLSX/PPTX/images | **Gap** as a general product workflow | Document-to-PDF exists; reverse conversion needs authoritative layout/OCR providers | P2/provider-assisted |
 | OCR scanned documents | **Gap** | Should be an explicit provider interface with language, confidence, geometry, and privacy contracts | P1 provider boundary |
@@ -331,10 +331,14 @@ Exit criteria: a typical Traditional Office sales, training, or classroom deck
 retains its visual hierarchy and can be presented without losing
 animation/media intent.
 
-### R4 — PDF workbench (P1/P2)
+### R4 — PDF workbench (P1/P2, active)
 
-- Add page organization first: insert, delete, rotate, reorder, extract, merge,
-  and split with undo and save verification.
+- Treat page organization as the first completed PDF-workbench slice: retain
+  insert, delete, rotate, reorder, extract, merge, and split; one Blob
+  replacement and one Undo record per mutation; native-history-first toolbar
+  ordering; dedicated-Worker execution; 256 MiB primary, 128 MiB merge, and
+  4,096-page bounds; fail-closed signed/encrypted/risky-structure handling; and
+  PDFium plus independent-parser save/reopen evidence as permanent gates.
 - Add native text/image/link editing with strict font and content-stream
   fallbacks.
 - Add provider contracts for OCR and conversion; keep confidence and geometry

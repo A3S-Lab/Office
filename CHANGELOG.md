@@ -4,6 +4,29 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.33.0 - 2026-08-25
+
+- Added PDF page organization for inserting blank pages, deleting, rotating,
+  drag/drop or command-based reordering, extracting, merging another PDF, and
+  splitting. Desktop and compact layouts share one accessible dialog with
+  responsive overflow discovery and exact focus restoration.
+- Added a lazy dedicated Web Worker backed by `pdf-lib`. Each source mutation
+  replaces one complete PDF `Blob` and adds one page-history record; toolbar
+  Undo/Redo consumes native PDF annotation/form history before page history.
+  React, Core, Vue, and Web Components expose typed
+  `PdfPageOrganizationExport` values through `onPageExport` for host-owned
+  extract/split persistence.
+- Added 256 MiB primary-source, 128 MiB merge-source, and 4,096-result-page
+  limits plus fail-closed malformed, encrypted, signed, risky-catalog, invalid
+  rotation, and unsafe page-plan errors. Page-only exports report omitted
+  document-level catalog structures, and collaboration/evidence-overlay modes
+  keep page organization unavailable because their source identity is
+  immutable.
+- Added the public Playground **组织 PDF 页面** entry, README capability status,
+  bilingual API/architecture/quality documentation, binary Playwright reopen
+  verification, focused Rstest, and a deterministic local A3S Test 1.0.0 ACL.
+  GitHub Actions and Pages do not install or invoke A3S Test.
+
 ## 0.32.0 - 2026-08-25
 
 - Added deterministic Writer document comparison from DOCX, HTML, or TXT. The

@@ -32,12 +32,17 @@ import { useOfficeCollaborationLocationNavigator } from './office-collaboration-
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { PdfCollaborationPresenceLayer } from './pdf-collaboration-presence';
 import { PdfEvidenceOverlayLayer } from './pdf-evidence-overlay';
+import { PdfPageOrganizerDialog } from './pdf-page-organizer-dialog';
 import { PdfThumbnailRail } from './pdf-thumbnail-rail';
 import { type PdfSaveState, PdfToolbar } from './pdf-toolbar';
 import { usePdfViewerController } from './pdf-viewer-controller';
 import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
 import { useOfficeEditorRuntime } from './use-office-editor-runtime';
 import { useOfficeEditorWheelZoom } from './use-office-editor-wheel-zoom';
+import {
+  usePdfPageOrganization,
+  type PdfPageOrganizationExport,
+} from './use-pdf-page-organization';
 
 const PDFIUM_WASM_PATH = '/vendor/embedpdf/pdfium.wasm';
 // PDFium can take longer on its first WASM startup, especially after a fresh
@@ -65,6 +70,9 @@ export interface PdfViewerProps {
   onCollaborationChange?: (content: WorkPdfCollaborationContent) => void;
   onEvidenceRegionSelect?: (region: PdfEvidenceRegion) => void;
   onPageChange?: (pageNumber: number) => void;
+  onPageExport?: (
+    files: readonly PdfPageOrganizationExport[],
+  ) => boolean | Promise<boolean>;
   onSave?: (pdf: Blob) => Promise<boolean>;
   saveLabel?: string;
   selectedEvidenceRegionId?: string;
@@ -81,6 +89,7 @@ export function PdfViewer({
   onCollaborationChange,
   onEvidenceRegionSelect,
   onPageChange,
+  onPageExport,
   onSave,
   saveLabel = '保存',
   selectedEvidenceRegionId,
@@ -88,12 +97,15 @@ export function PdfViewer({
   wasmUrl,
   worker = true,
 }: PdfViewerProps) {
+  const [sourceBlob, setSourceBlob] = useState<Blob | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<PdfSaveState>('idle');
   const [retryCount, setRetryCount] = useState(0);
   const [registry, setRegistry] = useState<PluginRegistry | null>(null);
   const [, refreshCollaborationHistory] = useState(0);
+  const [hostSourceGeneration, setHostSourceGeneration] = useState(0);
+  const [pageOrganizerOpen, setPageOrganizerOpen] = useState(false);
   const [mobilePageNavigationOpen, setMobilePageNavigationOpen] =
     useState(false);
   const pdfRootRef = useRef<HTMLElement>(null);
@@ -104,6 +116,11 @@ export function PdfViewer({
   const collaborationProjectionRef = useRef<
     ReturnType<typeof createWorkPdfCollaborationProjection> | undefined
   >(undefined);
+  const editable = collaboration
+    ? collaboration.mode === 'edit'
+    : Boolean(onSave);
+  const pageOrganizationEnabled =
+    Boolean(onSave) && !collaboration && !evidenceOverlay;
   const collaborationHistory = collaboration
     ? {
         canRedo: collaborationProjectionRef.current?.binding.canRedo() ?? false,
@@ -113,14 +130,58 @@ export function PdfViewer({
       }
     : undefined;
   const controller = usePdfViewerController(registry, collaborationHistory);
+  const replacePageSource = useCallback((source: Blob) => {
+    setRegistry(null);
+    setSourceUrl(null);
+    setSourceBlob(
+      source.type === 'application/pdf'
+        ? source
+        : new Blob([source], { type: 'application/pdf' }),
+    );
+    setLoadError(null);
+    setSaveState('idle');
+    setMobilePageNavigationOpen(false);
+    setPageOrganizerOpen(false);
+  }, []);
+  const pageOrganization = usePdfPageOrganization({
+    enabled: pageOrganizationEnabled,
+    fileName,
+    onExport: onPageExport,
+    readCurrentSource: () => controller.saveAsCopy(),
+    replaceSource: replacePageSource,
+    resetKey: `${sourceKey ?? 'source'}:${retryCount}:${hostSourceGeneration}`,
+  });
+  const viewerController = useMemo(
+    () => ({
+      ...controller,
+      state: {
+        ...controller.state,
+        canRedo: controller.state.canRedo || pageOrganization.state.canRedo,
+        canUndo: controller.state.canUndo || pageOrganization.state.canUndo,
+        features: {
+          ...controller.state.features,
+          history:
+            controller.state.features.history ||
+            pageOrganization.state.available,
+        },
+      },
+      redo: () => {
+        if (controller.state.canRedo) controller.redo();
+        else pageOrganization.redo();
+      },
+      undo: () => {
+        if (controller.state.canUndo) controller.undo();
+        else pageOrganization.undo();
+      },
+    }),
+    [controller, pageOrganization],
+  );
   const annotation = usePdfAnnotationController(registry);
-  const viewerReady = controller.state.ready && controller.state.documentOpen;
+  const viewerReady =
+    viewerController.state.ready && viewerController.state.documentOpen;
   const mobilePageNavigationModal = usePdfMobilePageNavigationModal();
   const mobilePageNavigationModalOpen =
     mobilePageNavigationOpen && mobilePageNavigationModal;
-  const editable = collaboration
-    ? collaboration.mode === 'edit'
-    : Boolean(onSave);
   const collaborationRef = useRef(collaboration);
   if (collaborationRef.current !== collaboration) {
     throw new Error(
@@ -152,12 +213,13 @@ export function PdfViewer({
 
   useEffect(() => {
     let disposed = false;
-    let objectUrl: string | null = null;
     setRegistry(null);
     setSaveState('idle');
+    setSourceBlob(null);
     setSourceUrl(null);
     setLoadError(null);
     setMobilePageNavigationOpen(false);
+    setPageOrganizerOpen(false);
 
     void loadSource()
       .then(async (source) => {
@@ -166,12 +228,12 @@ export function PdfViewer({
           await assertPdfCollaborationBlob(collaboration, source);
         }
         if (disposed) return;
-        objectUrl = URL.createObjectURL(
+        setSourceBlob(
           source.type === 'application/pdf'
             ? source
             : new Blob([source], { type: 'application/pdf' }),
         );
-        setSourceUrl(objectUrl);
+        setHostSourceGeneration((value) => value + 1);
       })
       .catch((error: unknown) => {
         if (!disposed) setLoadError(pdfErrorMessage(error));
@@ -179,9 +241,18 @@ export function PdfViewer({
 
     return () => {
       disposed = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [collaboration, loadSource, retryCount, sourceKey]);
+
+  useEffect(() => {
+    if (!sourceBlob) {
+      setSourceUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(sourceBlob);
+    setSourceUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [sourceBlob]);
 
   useEffect(() => {
     if (controller.state.error) {
@@ -249,10 +320,10 @@ export function PdfViewer({
   }, [collaboration, onCollaborationChange]);
 
   useEffect(() => {
-    if (controller.state.currentPage > 0) {
-      onPageChange?.(controller.state.currentPage);
+    if (viewerController.state.currentPage > 0) {
+      onPageChange?.(viewerController.state.currentPage);
     }
-  }, [controller.state.currentPage, onPageChange]);
+  }, [onPageChange, viewerController.state.currentPage]);
 
   useEffect(() => {
     if (!sourceUrl || viewerReady || loadError) return;
@@ -282,23 +353,25 @@ export function PdfViewer({
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
       },
+      openPageOrganizer: () => setPageOrganizerOpen(true),
+      pages: pageOrganization,
       save: {
         enabled: Boolean(onSave) && saveState !== 'saving',
         execute: savePdf,
       },
-      viewer: controller,
+      viewer: viewerController,
     },
     pdfExtensions,
   );
   const pdfCommands = pdfEditor.commands;
   const selectedAnnotationLocation = annotation.getSelectionLocation();
   const pdfPresenceLocation =
-    viewerReady && controller.state.currentPage > 0
+    viewerReady && viewerController.state.currentPage > 0
       ? {
           kind: 'pdf' as const,
           pageIndex:
             selectedAnnotationLocation?.pageIndex ??
-            controller.state.currentPage - 1,
+            viewerController.state.currentPage - 1,
           ...(selectedAnnotationLocation
             ? { annotationId: selectedAnnotationLocation.annotationId }
             : {}),
@@ -311,11 +384,11 @@ export function PdfViewer({
       if (
         location?.kind !== 'pdf' ||
         !viewerReady ||
-        location.pageIndex >= controller.state.totalPages
+        location.pageIndex >= viewerController.state.totalPages
       ) {
         return false;
       }
-      controller.goToPage(location.pageIndex + 1);
+      viewerController.goToPage(location.pageIndex + 1);
       if (location.annotationId) {
         annotation.locateAnnotation(location.pageIndex, location.annotationId);
       }
@@ -326,7 +399,7 @@ export function PdfViewer({
       });
       return true;
     },
-    [annotation, controller, viewerReady],
+    [annotation, viewerController, viewerReady],
   );
   useOfficeCollaborationLocationNavigator(navigateToPdfParticipant);
   useOfficeEditorKeyboardShortcuts(pdfEditor, {
@@ -382,9 +455,10 @@ export function PdfViewer({
         can={pdfEditor.can()}
         commands={pdfCommands}
         editable={editable}
+        pageOrganizationAvailable={pageOrganization.state.available}
         saveAvailable={editable && Boolean(onSave)}
         pageNavigation={
-          viewerReady && registry && controller.state.totalPages > 0
+          viewerReady && registry && viewerController.state.totalPages > 0
             ? {
                 controlsId: mobilePageNavigationId,
                 expanded: mobilePageNavigationOpen,
@@ -396,25 +470,45 @@ export function PdfViewer({
         searchInputRef={searchInputRef}
         saveLabel={saveLabel}
         saveState={saveState}
-        state={controller.state}
+        state={viewerController.state}
       />
+      {pageOrganizerOpen &&
+        viewerReady &&
+        registry &&
+        viewerController.state.totalPages > 0 && (
+          <PdfPageOrganizerDialog
+            busy={pageOrganization.state.busy}
+            can={pdfEditor.can()}
+            commands={pdfCommands}
+            currentPage={viewerController.state.currentPage}
+            diagnostics={pageOrganization.state.diagnostics}
+            error={pageOrganization.state.error}
+            registry={registry}
+            restoreFocusTarget={() =>
+              pdfPageOrganizerRestoreFocusTarget(pdfRootRef.current)
+            }
+            totalPages={viewerController.state.totalPages}
+            onClose={() => setPageOrganizerOpen(false)}
+            onDismissError={pageOrganization.dismissError}
+          />
+        )}
       <div
         className="work-pdf-workspace"
         data-mobile-page-navigation={
           mobilePageNavigationOpen ? 'open' : 'closed'
         }
       >
-        {viewerReady && registry && controller.state.totalPages > 0 && (
+        {viewerReady && registry && viewerController.state.totalPages > 0 && (
           <PdfThumbnailRail
-            currentPage={controller.state.currentPage}
+            currentPage={viewerController.state.currentPage}
             mobileCloseButtonRef={mobilePageNavigationCloseRef}
             mobileNavigationId={mobilePageNavigationId}
             mobileNavigationModal={mobilePageNavigationModalOpen}
             registry={registry}
-            totalPages={controller.state.totalPages}
+            totalPages={viewerController.state.totalPages}
             onCloseMobileNavigation={closeMobilePageNavigation}
             onSelectPage={(page) => {
-              controller.goToPage(page);
+              viewerController.goToPage(page);
               if (mobilePageNavigationModalOpen) {
                 closeMobilePageNavigation();
               }
@@ -479,14 +573,14 @@ export function PdfViewer({
             }}
             onReady={setRegistry}
           />
-          {viewerReady && controller.state.currentPage > 0 && (
+          {viewerReady && viewerController.state.currentPage > 0 && (
             <PdfCollaborationPresenceLayer
-              pageIndex={controller.state.currentPage - 1}
+              pageIndex={viewerController.state.currentPage - 1}
             />
           )}
           {evidenceOverlay && registry && viewerReady && (
             <PdfEvidenceOverlayLayer
-              currentPage={controller.state.currentPage}
+              currentPage={viewerController.state.currentPage}
               evidenceOverlay={evidenceOverlay}
               onEvidenceRegionSelect={onEvidenceRegionSelect}
               registry={registry}
@@ -509,6 +603,18 @@ export function PdfViewer({
 function pdfErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
   return 'Unable to read this PDF file.';
+}
+
+function pdfPageOrganizerRestoreFocusTarget(
+  root: HTMLElement | null,
+): HTMLElement | null {
+  const directTrigger = root?.querySelector<HTMLElement>(
+    '[data-pdf-page-organizer-trigger]',
+  );
+  if (directTrigger && directTrigger.getClientRects().length > 0) {
+    return directTrigger;
+  }
+  return root?.querySelector<HTMLElement>('.work-pdf-overflow-trigger') ?? null;
 }
 
 async function assertPdfCollaborationBlob(

@@ -40,6 +40,7 @@ test('keeps PDF navigation, search, zoom, history, and save in one toolbar', () 
   );
 
   fireEvent.click(screen.getByRole('button', { name: '撤销' }));
+  fireEvent.click(screen.getByRole('button', { name: '组织 PDF 页面' }));
   fireEvent.click(screen.getByRole('button', { name: '高亮' }));
   fireEvent.click(screen.getByRole('button', { name: '下一页' }));
   fireEvent.change(screen.getByRole('textbox', { name: '页码' }), {
@@ -64,6 +65,7 @@ test('keeps PDF navigation, search, zoom, history, and save in one toolbar', () 
 
   expect(calls).toEqual([
     'undo',
+    'open-page-organizer',
     'annotation:highlight',
     'next-page',
     'page:7',
@@ -89,6 +91,7 @@ test('keeps collaboration editing controls without showing a host save port', ()
       can={createCanCommands(controller)}
       commands={createCommands(controller, annotation, calls)}
       editable
+      pageOrganizationAvailable={false}
       saveAvailable={false}
       saveLabel="淇濆瓨"
       saveState="idle"
@@ -100,6 +103,15 @@ test('keeps collaboration editing controls without showing a host save port', ()
   expect(screen.queryByRole('button', { name: '淇濆瓨' })).toBeNull();
   expect(screen.getByRole('button', { name: '撤销' })).not.toBeNull();
   expect(screen.getByRole('button', { name: '高亮' })).not.toBeNull();
+  expect(screen.queryByRole('button', { name: '组织 PDF 页面' })).toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
+  expect(
+    within(screen.getByRole('menu', { name: '更多 PDF 工具' })).queryByRole(
+      'menuitem',
+      { name: '组织页面' },
+    ),
+  ).toBeNull();
 });
 
 test('does not expose a save port while the PDF session is read-only', () => {
@@ -545,7 +557,9 @@ function createCanCommands(
   const ready = () => controller.state.ready && controller.state.documentOpen;
   return {
     clearSearch: ready,
+    deletePages: ready,
     deleteAnnotationSelection: () => false,
+    extractPages: ready,
     fitPage: ready,
     fitWidth: ready,
     goToPage: (page) =>
@@ -553,18 +567,24 @@ function createCanCommands(
       Number.isInteger(page) &&
       page >= 1 &&
       page <= controller.state.totalPages,
+    insertBlankPage: ready,
+    mergePages: ready,
     nextPage: () =>
       ready() && controller.state.currentPage < controller.state.totalPages,
     nextSearchResult: () => ready() && controller.state.search.total > 0,
+    openPageOrganizer: ready,
     previousPage: () => ready() && controller.state.currentPage > 1,
     previousSearchResult: () => ready() && controller.state.search.total > 0,
     redo: () => ready() && controller.state.canRedo,
+    reorderPages: ready,
+    rotatePages: ready,
     save: ready,
     search: ready,
     setAnnotationColor: ready,
     setAnnotationOpacity: ready,
     setAnnotationStrokeWidth: ready,
     selectAnnotationTool: ready,
+    splitPages: ready,
     undo: () => ready() && controller.state.canUndo,
     zoomIn: ready,
     zoomOut: ready,
@@ -578,15 +598,40 @@ function createCommands(
 ): PdfEditorCommands {
   return {
     clearSearch: controller.clearSearch,
+    deletePages: async (indexes) => {
+      calls.push(`delete-pages:${indexes.join(',')}`);
+      return true;
+    },
     deleteAnnotationSelection: annotation.deleteSelection,
+    extractPages: async (indexes) => {
+      calls.push(`extract-pages:${indexes.join(',')}`);
+      return true;
+    },
     fitPage: controller.fitPage,
     fitWidth: controller.fitWidth,
     goToPage: controller.goToPage,
+    insertBlankPage: async (index) => {
+      calls.push(`insert-page:${index}`);
+      return true;
+    },
+    mergePages: async (index) => {
+      calls.push(`merge-pages:${index}`);
+      return true;
+    },
     nextPage: controller.nextPage,
     nextSearchResult: controller.nextSearchResult,
+    openPageOrganizer: () => calls.push('open-page-organizer'),
     previousPage: controller.previousPage,
     previousSearchResult: controller.previousSearchResult,
     redo: controller.redo,
+    reorderPages: async (order) => {
+      calls.push(`reorder-pages:${order.join(',')}`);
+      return true;
+    },
+    rotatePages: async (indexes, degrees) => {
+      calls.push(`rotate-pages:${indexes.join(',')}:${degrees}`);
+      return true;
+    },
     save: async () => {
       calls.push('save');
     },
@@ -595,6 +640,10 @@ function createCommands(
     setAnnotationOpacity: annotation.setAnnotationOpacity,
     setAnnotationStrokeWidth: annotation.setAnnotationStrokeWidth,
     selectAnnotationTool: annotation.selectTool,
+    splitPages: async (indexes) => {
+      calls.push(`split-pages:${indexes.join(',')}`);
+      return true;
+    },
     undo: controller.undo,
     zoomIn: controller.zoomIn,
     zoomOut: controller.zoomOut,

@@ -531,6 +531,38 @@ The public Playground template, bilingual documentation, focused Rstest,
 responsive Playwright, and pinned local-only A3S Test suite form the release
 evidence without adding A3S Test to Actions or Pages.
 
+## Current PDF Milestone
+
+The first PDF-workbench milestone adds one page-organization surface for seven
+operations: insert a blank page, delete, rotate, reorder, extract, merge another
+PDF, and split. The operation engine and `pdf-lib` load lazily in a dedicated
+Web Worker instead of adding page-rewrite work to the rendering thread. Insert,
+delete, rotate, reorder, and merge replace the current PDF with one complete
+`Blob` and add exactly one page-history record. Extract and split leave the
+source unchanged and publish typed `PdfPageOrganizationExport` files through
+`onPageExport`, or download them when the host omits that callback. Toolbar
+Undo and Redo consume native PDF annotation/form history first, then the page
+history.
+
+The bounded contract accepts a primary PDF up to 256 MiB, a merge source up to
+128 MiB, and 1 through 4,096 pages in each result. Malformed and encrypted
+inputs fail closed. Any mutation rejects a signed source; delete, reorder, and
+merge additionally reject forms, outlines, or tagged structures whose page
+references cannot be rewritten safely. Extract and split may copy pages from
+those structures, but report that document-level outlines, forms, tags,
+attachments, scripts, and signatures are not copied. Page organization is
+hidden while a collaboration session or evidence overlay is active because
+both modes bind review state to an immutable source identity.
+
+Focused Rstest covers the planner, Worker protocol, controller, dialog, toolbar,
+and framework adapters. Desktop Playwright performs real drag-and-drop reorder,
+downloads and independently parses exports, saves the mutation, and verifies
+PDFium reopen; compact coverage verifies overflow discovery and exact focus
+restoration. The public Playground exposes **组织 PDF 页面**, both documentation
+languages describe the same API and limits, and the pinned A3S Test 1.0.0 ACL
+remains a local-only release gate. GitHub Actions and Pages do not install or
+invoke A3S Test.
+
 ## Product Rules
 
 - Do not add a visible command that has no executable behavior.

@@ -294,7 +294,7 @@ function PdfPageThumbnail({
   );
 }
 
-function usePdfThumbnailSource(
+export function usePdfThumbnailSource(
   registry: PluginRegistry,
   page: number,
 ): { sourceUrl: string | null; state: 'error' | 'loading' | 'ready' } {

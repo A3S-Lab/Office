@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.33.0' ||
     version === '0.32.0' ||
     version === '0.31.0' ||
     version === '0.30.0' ||
@@ -56,6 +57,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.33.0',
     '0.32.0',
     '0.31.0',
     '0.30.0',
@@ -166,6 +168,7 @@ test('makes the latest main capabilities discoverable from README and both docum
   expect(readme).toContain('Latest capabilities → 字符底纹');
   expect(readme).toContain('Latest capabilities → 校对语言');
   expect(readme).toContain('Latest capabilities → 数据验证');
+  expect(readme).toContain('Latest capabilities → 组织 PDF 页面');
 
   expect(englishHome).toContain('aria-label="Latest capabilities on main"');
   expect(englishHome).toContain('Document compare');
@@ -174,6 +177,7 @@ test('makes the latest main capabilities discoverable from README and both docum
   expect(englishHome).toContain('Character shading');
   expect(englishHome).toContain('Proofing languages');
   expect(englishHome).toContain('Data validation');
+  expect(englishHome).toContain('pdf.html#page-organization');
 
   expect(chineseHome).toContain('aria-label="main 分支最新能力"');
   expect(chineseHome).toContain('document.html#文档比较与合并');
@@ -182,6 +186,121 @@ test('makes the latest main capabilities discoverable from README and both docum
   expect(chineseHome).toContain('原生字符底纹');
   expect(chineseHome).toContain('原生校对语言');
   expect(chineseHome).toContain('spreadsheet.html#数据验证');
+  expect(chineseHome).toContain('pdf.html#页面组织');
+});
+
+test('publishes PDF page organization across README, docs, Playground, and release evidence', async () => {
+  const [
+    readme,
+    changelog,
+    roadmap,
+    product,
+    english,
+    chinese,
+    releaseEnglish,
+    releaseChinese,
+    englishHome,
+    chineseHome,
+    playground,
+    visualSpec,
+    aclSuite,
+    discoverabilityAcl,
+    e2eGuide,
+    packageManifest,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/pdf.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/pdf.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.33.0/en/components/pdf.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.33.0/zh/components/pdf.mdx'),
+      'utf8',
+    ),
+    readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, 'latest/zh/index.mdx'), 'utf8'),
+    readFile(
+      path.join(repositoryRoot, 'playground/src/workspace-home.tsx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/pdf-page-organization.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/pdf-page-organization.acl'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'tests/e2e/latest-capabilities-discoverability.acl',
+      ),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'tests/e2e/README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
+  ]);
+
+  expect(readme).toContain('Latest capabilities → 组织 PDF 页面');
+  expect(readme).toContain(
+    '| Page organization | **Supported with boundaries**',
+  );
+  expect(readme).toContain('PdfPageOrganizationExport');
+  expect(changelog).toContain('## 0.33.0 - 2026-08-25');
+  expect(roadmap).toContain(
+    '| Insert, delete, rotate, reorder, extract, merge, and split pages | **Supported with boundaries**',
+  );
+  expect(product).toContain('## Current PDF Milestone');
+
+  for (const document of [
+    readme,
+    english,
+    chinese,
+    releaseEnglish,
+    releaseChinese,
+  ]) {
+    expect(document).toContain('onPageExport');
+    expect(document).toContain('PdfPageOrganizationExport');
+    expect(document).toContain('256 MiB');
+    expect(document).toContain('128 MiB');
+    expect(document).toContain('4,096');
+  }
+  expect(english).toContain('## Page organization');
+  expect(english).toContain('dedicated Web Worker');
+  expect(english).toContain('native PDF history first');
+  expect(releaseEnglish).toContain('## Page organization');
+  expect(chinese).toContain('## 页面组织');
+  expect(chinese).toContain('独立 Web Worker');
+  expect(chinese).toContain('原生 PDF 历史优先');
+  expect(releaseChinese).toContain('## 页面组织');
+
+  expect(englishHome).toContain('pdf.html#page-organization');
+  expect(chineseHome).toContain('pdf.html#页面组织');
+  expect(playground).toContain("id: 'pdf-page-organization'");
+  expect(playground).toContain('组织 PDF 页面');
+  expect(visualSpec).toContain('PDF page organization mutates, exports, saves');
+  expect(aclSuite).toContain('suite "office-pdf-page-organization"');
+  expect(discoverabilityAcl).toContain('components/pdf.html#页面组织');
+  expect(e2eGuide).toContain('bun run test:e2e:pdf-page-organization');
+  expect(packageManifest).toContain(
+    '"playground:visual:pdf-page-organization"',
+  );
+  expect(packageManifest).toContain('"test:e2e:pdf-page-organization"');
 });
 
 test('publishes native Writer proofing languages in README, docs, roadmap, and Playground guidance', async () => {
@@ -627,6 +746,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.33.0',
     '0.32.0',
     '0.31.0',
     '0.28.0',
@@ -696,6 +816,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.33.0',
     '0.32.0',
     '0.31.0',
     '0.28.0',

@@ -11,6 +11,7 @@ import type {
   OfficeCollaborationPresence,
   OfficeCollaborationSession,
   PdfCollaborationContent,
+  PdfPageOrganizationExport,
   PresentationContent,
   SpreadsheetContent,
 } from './core';
@@ -403,6 +404,11 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
     | ((content: PdfCollaborationContent) => void)
     | undefined;
   #onSave: ((pdf: Blob) => Promise<boolean>) | undefined;
+  #onPageExport:
+    | ((
+        files: readonly PdfPageOrganizationExport[],
+      ) => boolean | Promise<boolean>)
+    | undefined;
 
   static get observedAttributes() {
     return [
@@ -465,6 +471,23 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
     this.requestRender();
   }
 
+  get onPageExport():
+    | ((
+        files: readonly PdfPageOrganizationExport[],
+      ) => boolean | Promise<boolean>)
+    | undefined {
+    return this.#onPageExport;
+  }
+
+  set onPageExport(value:
+    | ((
+        files: readonly PdfPageOrganizationExport[],
+      ) => boolean | Promise<boolean>)
+    | undefined,) {
+    this.#onPageExport = value;
+    this.requestRender();
+  }
+
   get selectedEvidenceRegionId(): string | undefined {
     return this.getAttribute('selected-evidence-region-id') ?? undefined;
   }
@@ -508,6 +531,7 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
         dispatchDetail(this, 'evidence-select', region),
       onPageChange: (pageNumber) =>
         dispatchDetail(this, 'page-change', pageNumber),
+      onPageExport: this.onPageExport,
       onSave: this.onSave,
       saveLabel: this.getAttribute('save-label') ?? undefined,
       selectedEvidenceRegionId: this.selectedEvidenceRegionId,

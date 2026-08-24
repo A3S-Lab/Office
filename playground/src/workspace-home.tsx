@@ -8,6 +8,7 @@ import {
   FileDiff,
   FilePlus2,
   Languages,
+  LayoutGrid,
   ListChecks,
   ListOrdered,
   ListTree,
@@ -36,9 +37,17 @@ const latestTemplateIds = new Set([
   'proofing-languages',
   'data-validation',
 ]);
-const latestTemplates = officeTemplates.filter((template) =>
-  latestTemplateIds.has(template.id),
-);
+const latestTemplates: Array<
+  Pick<OfficeTemplate, 'description' | 'id' | 'kind' | 'name'>
+> = [
+  {
+    id: 'pdf-page-organization',
+    kind: 'pdf',
+    name: '组织 PDF 页面',
+    description: '插入、删除、旋转、重排、抽取、合并与拆分',
+  },
+  ...officeTemplates.filter((template) => latestTemplateIds.has(template.id)),
+];
 
 export function WorkspaceHome({
   artifacts,
@@ -139,7 +148,11 @@ export function WorkspaceHome({
               aria-label={`打开最新能力：${template.name}`}
               key={template.id}
               onFocus={() => warmPlaygroundEditor(template.kind)}
-              onClick={() => onCreate(template.id)}
+              onClick={() =>
+                template.id === 'pdf-page-organization'
+                  ? onOpenPdf()
+                  : onCreate(template.id)
+              }
               onPointerEnter={() => warmPlaygroundEditor(template.kind)}
             >
               <span className="playground-latest-capability-icon">
@@ -147,7 +160,11 @@ export function WorkspaceHome({
               </span>
               <span className="playground-latest-capability-copy">
                 <small>
-                  {template.kind === 'document' ? 'Writer' : 'Spreadsheet'}
+                  {template.kind === 'document'
+                    ? 'Writer'
+                    : template.kind === 'spreadsheet'
+                      ? 'Spreadsheet'
+                      : 'PDF'}
                 </small>
                 <strong>{template.name}</strong>
                 <span>{template.description}</span>
@@ -323,6 +340,9 @@ export function WorkspaceHome({
 }
 
 function LatestCapabilityIcon({ templateId }: { templateId: string }) {
+  if (templateId === 'pdf-page-organization') {
+    return <LayoutGrid size={18} aria-hidden="true" />;
+  }
   if (templateId === 'document-comparison') {
     return <FileDiff size={18} aria-hidden="true" />;
   }
