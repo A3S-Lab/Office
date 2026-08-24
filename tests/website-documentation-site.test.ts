@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.32.0' ||
     version === '0.31.0' ||
     version === '0.30.0' ||
     version === '0.29.0' ||
@@ -55,6 +56,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.32.0',
     '0.31.0',
     '0.30.0',
     '0.29.0',
@@ -158,6 +160,7 @@ test('makes the latest main capabilities discoverable from README and both docum
   ]);
 
   expect(readme).toContain('## Latest on `main`');
+  expect(readme).toContain('Latest capabilities → 文档比较');
   expect(readme).toContain('Latest capabilities → 可更新目录');
   expect(readme).toContain('Latest capabilities → 原生索引');
   expect(readme).toContain('Latest capabilities → 字符底纹');
@@ -165,6 +168,7 @@ test('makes the latest main capabilities discoverable from README and both docum
   expect(readme).toContain('Latest capabilities → 数据验证');
 
   expect(englishHome).toContain('aria-label="Latest capabilities on main"');
+  expect(englishHome).toContain('Document compare');
   expect(englishHome).toContain('Table of contents');
   expect(englishHome).toContain('Document index');
   expect(englishHome).toContain('Character shading');
@@ -172,6 +176,7 @@ test('makes the latest main capabilities discoverable from README and both docum
   expect(englishHome).toContain('Data validation');
 
   expect(chineseHome).toContain('aria-label="main 分支最新能力"');
+  expect(chineseHome).toContain('document.html#文档比较与合并');
   expect(chineseHome).toContain('document.html#原生可更新目录');
   expect(chineseHome).toContain('document.html#原生文档索引');
   expect(chineseHome).toContain('原生字符底纹');
@@ -374,6 +379,115 @@ test('publishes native Writer indexes in README, docs, roadmap, and Playground g
   }
 });
 
+test('publishes Writer document compare and combine across every public surface', async () => {
+  const [
+    readme,
+    changelog,
+    roadmap,
+    product,
+    english,
+    chinese,
+    releaseEnglish,
+    releaseChinese,
+    englishArchitecture,
+    chineseArchitecture,
+    englishRoadmap,
+    chineseRoadmap,
+    e2eGuide,
+    templates,
+    playground,
+    packageManifest,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.32.0/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.32.0/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'tests/e2e/README.md'), 'utf8'),
+    readFile(
+      path.join(repositoryRoot, 'src/internal/features/work/work-templates.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'playground/src/workspace-home.tsx'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
+  ]);
+
+  expect(readme).toContain('Latest capabilities → 文档比较');
+  expect(readme).toContain('| Document compare and combine | **Partial**');
+  expect(changelog).toContain('deterministic Writer document comparison');
+  expect(roadmap).toContain('| Compare/combine documents | **Partial**');
+  expect(product).toContain('The forty-fifth milestone');
+  expect(english).toContain('## Document compare and combine');
+  expect(chinese).toContain('## 文档比较与合并');
+  expect(releaseEnglish).toContain('## Document compare and combine');
+  expect(releaseChinese).toContain('## 文档比较与合并');
+  expect(englishArchitecture).toContain(
+    'Document comparison is a pure planning boundary',
+  );
+  expect(chineseArchitecture).toContain(
+    '文档比较在编辑器事务之前形成纯规划边界',
+  );
+  expect(englishRoadmap).toContain(
+    'Writer document compare/combine now forms one completed bounded vertical slice',
+  );
+  expect(chineseRoadmap).toContain(
+    'Writer 文档比较与合并现在形成一个已完成的有界纵向切片',
+  );
+  expect(e2eGuide).toContain('bun run test:e2e:writer-document-comparison');
+  expect(templates).toContain("id: 'document-comparison'");
+  expect(playground).toContain("'document-comparison'");
+  expect(packageManifest).toContain('"playground:visual:document-comparison"');
+  expect(packageManifest).toContain('"test:e2e:writer-document-comparison"');
+
+  for (const document of [english, chinese, releaseEnglish, releaseChinese]) {
+    for (const evidence of [
+      '1,024',
+      '1,000,000',
+      '`w:ins`',
+      '`w:del`',
+      '`w:rPrChange`',
+      '`w:pPrChange`',
+      'word-document-comparison.acl',
+    ]) {
+      expect(document).toContain(evidence);
+    }
+  }
+});
+
 test('publishes complete Spreadsheet data-validation settings in every public surface', async () => {
   const [readme, changelog, roadmap, english, chinese, templates] =
     await Promise.all([
@@ -513,6 +627,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.32.0',
     '0.31.0',
     '0.28.0',
     '0.27.0',
@@ -581,6 +696,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.32.0',
     '0.31.0',
     '0.28.0',
     '0.27.0',

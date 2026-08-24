@@ -36,7 +36,7 @@ collaboration transport, and AI providers.
 | Surface | A3S Office today | Largest Traditional Office gaps | Direction |
 | --- | --- | --- | --- |
 | Shared shell | Five lazy browser surfaces, responsive ribbon and dialogs, keyboard/focus contracts, typed host ports | Bundled cloud workspace, live co-editing service, native desktop/mobile shells, large template marketplace | Keep services host-owned; deepen reusable integration protocols |
-| Writer | Strongest surface: structured editing, sections, tables, images, equations, comments, revisions, fields, typed TOC and native index authoring, notes, page chrome, source-backed DOCX | Complete revision types, broad DrawingML objects, mail merge, compare/merge, tables of figures/authorities, exact desktop pagination | Remains the first fidelity track |
+| Writer | Strongest surface: structured editing, sections, tables, images, equations, comments, revisions, deterministic bounded compare/combine, fields, typed TOC and native index authoring, notes, page chrome, source-backed DOCX | Complete revision types, broad DrawingML objects, mail merge, structural/object compare, tables of figures/authorities, exact desktop pagination | Remains the first fidelity track |
 | Spreadsheet | Workbook editing, formulas, recalculation, native Tables/ListObjects, charts, pivots, conditional formatting, validation, protection, comments, print setup | Broader formula and structured-reference parity, calculated table columns/totals, advanced pivots/slicers, external data, macros/add-ins, advanced analysis | Stabilize calculation and native workbook semantics before adding more UI |
 | Presentation | Editable scene graph, masters/layouts, text, shapes, images, tables, charts, groups, comments, transitions, slideshow/presenter view | Object animations, media, broad shape/SmartArt fidelity, full master authoring, richer views and video export | Build expressiveness on the typed scene graph |
 | PDF | PDFium rendering, search, forms, annotations, navigation, bounded long-file rendering, save | Native text/object editing, page organization, conversion, OCR, signatures, redaction, compression | Evolve from viewer/annotator into an optional PDF workbench |
@@ -83,7 +83,7 @@ collaboration transport, and AI providers.
 | Native index authoring | **Supported**: primary/secondary `XE` entries, cross-references, bold/italic page intent, stable marker targets, merged page numbers, typed insert/customize/refresh, 1–4 columns, indented/run-in layouts, four leader styles, one-step Undo, and native DOCX `XE`/`INDEX` round trips | Entry ranges, custom index types, letter-heading formats, authorities, and locale-specific collation controls remain open | Maintain / P1 fidelity |
 | Fields | **Partial**: PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, TIME, and safe REF paths | Broader Word field grammar, nested fields, switches, mail fields, and document properties are incomplete | P1/P2 |
 | Mail merge | **Gap** | No data-source mapping, recipient filtering, preview, or batch generation | P2 |
-| Compare/combine documents | **Gap** | No deterministic document diff/merge producing reviewable revisions | P1 |
+| Compare/combine documents | **Partial**: same-layout paragraphs/headings compare into deterministic insertion, deletion, character-formatting, and paragraph-formatting revisions; reviewed-copy combine requires an exact reject-all baseline match | Changed complex structures, native paragraph-mark revision fidelity, move ranges, layout changes, and multi-copy structural conflicts remain explicit fail-closed boundaries | P1 |
 | Content controls and forms | **Partial**: eligible static text controls can be preserved/reconstructed | Data binding, repeating sections, form controls, placeholders, and active behavior are intentionally limited | P1/P2 |
 | Spelling, grammar, language, translation | **Partial**: native Latin/East Asian/bidi `w:lang` metadata, explicit `w:noProof` authoring and round trips, browser spellcheck, and host actions | No suite-grade proofing dictionaries, grammar engine, or bundled translation service | Host/provider-owned; P2 adapter |
 | Find, navigation, physical thumbnails, long-document review | **Supported** with transferable Worker import, bounded auxiliary-pane virtualization, model-level text/table-row NodeView windows for eligible structurally plain large DOCX files, and model-boundary keyboard navigation | Rich-feature giant DOCX fallback paths still need the same bounded body rendering and broader performance fixtures | P0 |
@@ -286,8 +286,12 @@ selected-entry/block customization, explicit all-index refresh, bounded cached
 rows, and DOCX reopen all share one typed marker graph and the pagination field
 resolver.
 
-- Add document compare/combine that produces reviewable, deterministic
-  revisions.
+The bounded compare/combine slice is complete for same-layout paragraphs and
+headings. Compare imports DOCX, HTML, or TXT and produces reviewable text and
+format revisions; Combine admits a reviewed copy only when rejecting every
+imported revision exactly reconstructs the current baseline. Complex structural
+changes, native paragraph-mark revision fidelity, move ranges, and multi-copy
+conflicts remain follow-up work rather than silent approximations.
 - Add editable text boxes and a bounded DrawingML shape/connector model before
   expanding to WordArt, charts, and SmartArt.
 - Complete common field instructions and reference workflows.

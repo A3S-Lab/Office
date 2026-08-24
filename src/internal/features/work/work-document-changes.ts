@@ -6,6 +6,7 @@ import {
   Slice,
 } from '@tiptap/pm/model';
 import {
+  EditorState,
   Plugin,
   PluginKey,
   TextSelection,
@@ -61,6 +62,14 @@ interface ParagraphChangeSegment {
   from: number;
   to: number;
   before: string;
+}
+
+interface BlockChangeSegment {
+  id: string;
+  kind: 'insertion' | 'deletion';
+  position: number;
+  from: number;
+  to: number;
 }
 
 declare module '@tiptap/core' {
@@ -180,6 +189,11 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
             'before',
             'data-change-before',
           ),
+          blockChangeKind: blockChangeAttribute('kind'),
+          blockChangeId: blockChangeAttribute('id'),
+          blockChangeActorId: blockChangeAttribute('actorId'),
+          blockChangeAuthor: blockChangeAttribute('author'),
+          blockChangeDate: blockChangeAttribute('date'),
         },
       },
     ];
@@ -398,7 +412,39 @@ export function collectDocumentChanges(
   document: ProseMirrorNode,
 ): WorkDocumentChange[] {
   const changes = new Map<string, WorkDocumentChange>();
+  const blockChangeRanges = new Map<
+    string,
+    Array<{ from: number; to: number }>
+  >();
   document.descendants((node, position) => {
+    if (
+      (node.type.name === 'paragraph' || node.type.name === 'heading') &&
+      (node.attrs.blockChangeKind === 'insertion' ||
+        node.attrs.blockChangeKind === 'deletion')
+    ) {
+      const kind = node.attrs.blockChangeKind as 'insertion' | 'deletion';
+      const id =
+        stringAttribute(node.attrs.blockChangeId) ||
+        `block-change-at-${position}`;
+      const key = `${kind}:${id}`;
+      const from = position;
+      const to = position + node.nodeSize;
+      changes.set(key, {
+        id,
+        kind,
+        ...(stringAttribute(node.attrs.blockChangeActorId)
+          ? { actorId: stringAttribute(node.attrs.blockChangeActorId) }
+          : {}),
+        author: stringAttribute(node.attrs.blockChangeAuthor) || '未知审阅者',
+        date: stringAttribute(node.attrs.blockChangeDate),
+        from,
+        to,
+        text: node.textContent,
+      });
+      const ranges = blockChangeRanges.get(key) ?? [];
+      ranges.push({ from, to });
+      blockChangeRanges.set(key, ranges);
+    }
     if (
       (node.type.name === 'paragraph' || node.type.name === 'heading') &&
       node.attrs.paragraphChangeKind === 'paragraph-formatting'
@@ -436,6 +482,16 @@ export function collectDocumentChanges(
     const kind = changeKind(mark.attrs.kind);
     const id = stringAttribute(mark.attrs.id) || `change-at-${position}`;
     const key = `${kind}:${id}`;
+    if (
+      blockChangeRanges
+        .get(key)
+        ?.some(
+          (range) =>
+            position >= range.from && position + node.nodeSize <= range.to,
+        )
+    ) {
+      return;
+    }
     const current = changes.get(key);
     if (current) {
       current.from = Math.min(current.from, position);
@@ -461,8 +517,37 @@ export function collectDocumentChanges(
   );
 }
 
+/**
+ * Resolves every revision on an immutable document snapshot. A malformed
+ * formatting snapshot returns `null` instead of approximating the baseline.
+ */
+export function resolveAllDocumentChanges(
+  document: ProseMirrorNode,
+  decision: 'accept' | 'reject',
+): ProseMirrorNode | null {
+  if (!collectDocumentChanges(document).length) return document;
+  const type = document.type.schema.marks.documentChange;
+  if (!type) return null;
+  const state = EditorState.create({ doc: document });
+  const transaction = state.tr;
+  return resolveDocumentChangesTransaction(state, transaction, type, decision) >
+    0
+    ? transaction.doc
+    : null;
+}
+
 function resolveDocumentChangesCommand(
   { state, tr }: CommandProps,
+  type: ProseMirrorMark['type'],
+  decision: 'accept' | 'reject',
+  ids?: Set<string>,
+): number {
+  return resolveDocumentChangesTransaction(state, tr, type, decision, ids);
+}
+
+function resolveDocumentChangesTransaction(
+  state: CommandProps['state'],
+  tr: Transaction,
   type: ProseMirrorMark['type'],
   decision: 'accept' | 'reject',
   ids?: Set<string>,
@@ -473,7 +558,11 @@ function resolveDocumentChangesCommand(
   const paragraphSegments = paragraphChangeSegments(state.doc).filter(
     (segment) => !ids || ids.has(segment.id),
   );
-  if (!segments.length && !paragraphSegments.length) return 0;
+  const blockSegments = blockChangeSegments(state.doc).filter(
+    (segment) => !ids || ids.has(segment.id),
+  );
+  if (!segments.length && !paragraphSegments.length && !blockSegments.length)
+    return 0;
   if (
     paragraphSegments.some(
       (segment) => !parseDocumentParagraphFormatting(segment.before),
@@ -492,7 +581,17 @@ function resolveDocumentChangesCommand(
   const markRemovals: ChangeSegment[] = [];
   const contentDeletions: ChangeSegment[] = [];
   const formattingRejections: ChangeSegment[] = [];
+  const removedBlockIds = new Set(
+    blockSegments
+      .filter(
+        (segment) =>
+          (decision === 'accept' && segment.kind === 'deletion') ||
+          (decision === 'reject' && segment.kind === 'insertion'),
+      )
+      .map((segment) => segment.id),
+  );
   for (const segment of segments) {
+    if (removedBlockIds.has(segment.id)) continue;
     if (segment.kind === 'formatting') {
       markRemovals.push(segment);
       if (decision === 'reject') formattingRejections.push(segment);
@@ -526,6 +625,22 @@ function resolveDocumentChangesCommand(
     if (!attributes) return 0;
     tr.setNodeMarkup(segment.position, undefined, attributes);
   }
+  for (const segment of blockSegments) {
+    if (removedBlockIds.has(segment.id)) continue;
+    const position = tr.mapping.map(segment.position);
+    const node = tr.doc.nodeAt(position);
+    if (
+      !node ||
+      (node.type.name !== 'paragraph' && node.type.name !== 'heading')
+    ) {
+      return 0;
+    }
+    tr.setNodeMarkup(
+      position,
+      undefined,
+      clearDocumentBlockChangeAttributes(node.attrs),
+    );
+  }
   for (const segment of markRemovals) {
     tr.removeMark(segment.from, segment.to, type);
   }
@@ -534,9 +649,25 @@ function resolveDocumentChangesCommand(
   )) {
     tr.delete(segment.from, segment.to);
   }
+  for (const segment of blockSegments
+    .filter((candidate) => removedBlockIds.has(candidate.id))
+    .sort((left, right) => right.position - left.position)) {
+    const from = tr.mapping.map(segment.position);
+    const node = tr.doc.nodeAt(from);
+    if (
+      !node ||
+      (node.type.name !== 'paragraph' && node.type.name !== 'heading')
+    ) {
+      return 0;
+    }
+    tr.delete(from, from + node.nodeSize);
+  }
   return tr.docChanged
-    ? new Set([...segments, ...paragraphSegments].map((segment) => segment.id))
-        .size
+    ? new Set(
+        [...segments, ...paragraphSegments, ...blockSegments].map(
+          (segment) => segment.id,
+        ),
+      ).size
     : 0;
 }
 
@@ -660,6 +791,29 @@ function paragraphChangeSegments(
       from: position + 1,
       to: position + 1 + node.content.size,
       before: stringAttribute(node.attrs.paragraphChangeBefore),
+    });
+  });
+  return segments;
+}
+
+function blockChangeSegments(document: ProseMirrorNode): BlockChangeSegment[] {
+  const segments: BlockChangeSegment[] = [];
+  document.descendants((node, position) => {
+    if (
+      (node.type.name !== 'paragraph' && node.type.name !== 'heading') ||
+      (node.attrs.blockChangeKind !== 'insertion' &&
+        node.attrs.blockChangeKind !== 'deletion')
+    ) {
+      return;
+    }
+    segments.push({
+      id:
+        stringAttribute(node.attrs.blockChangeId) ||
+        `block-change-at-${position}`,
+      kind: node.attrs.blockChangeKind as 'insertion' | 'deletion',
+      position,
+      from: position + 1,
+      to: position + 1 + node.content.size,
     });
   });
   return segments;
@@ -798,6 +952,56 @@ function paragraphChangeAttribute(
       const value = stringAttribute(attributes[modelName]);
       return value ? { [htmlName]: value } : {};
     },
+  };
+}
+
+function blockChangeAttribute(
+  field: 'kind' | 'id' | 'actorId' | 'author' | 'date',
+) {
+  const modelName = `blockChange${field[0]?.toUpperCase() ?? ''}${field.slice(
+    1,
+  )}`;
+  const htmlName =
+    field === 'kind'
+      ? 'data-block-change-kind'
+      : `data-block-change-${field.replace('actorId', 'actor-id')}`;
+  return {
+    default: field === 'kind' ? null : '',
+    parseHTML: (element: HTMLElement) => {
+      if (element.getAttribute('data-document-block-change') !== 'true') {
+        return field === 'kind' ? null : '';
+      }
+      const value = element.getAttribute(htmlName) ?? '';
+      if (field === 'kind') {
+        return value === 'insertion' || value === 'deletion' ? value : null;
+      }
+      return value;
+    },
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const kind = attributes.blockChangeKind;
+      if (kind !== 'insertion' && kind !== 'deletion') return {};
+      if (field === 'kind') {
+        return {
+          'data-document-block-change': 'true',
+          'data-block-change-kind': kind,
+        };
+      }
+      const value = stringAttribute(attributes[modelName]);
+      return value ? { [htmlName]: value } : {};
+    },
+  };
+}
+
+function clearDocumentBlockChangeAttributes(
+  attributes: Record<string, unknown>,
+): Record<string, unknown> {
+  return {
+    ...attributes,
+    blockChangeKind: null,
+    blockChangeId: '',
+    blockChangeActorId: '',
+    blockChangeAuthor: '',
+    blockChangeDate: '',
   };
 }
 

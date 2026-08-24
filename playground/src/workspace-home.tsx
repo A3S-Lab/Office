@@ -29,6 +29,7 @@ const templateCellIds = Array.from(
   (_, index) => `cell-${index + 1}`,
 );
 const latestTemplateIds = new Set([
+  'document-comparison',
   'table-of-contents',
   'document-index',
   'run-shading',
@@ -322,6 +323,9 @@ export function WorkspaceHome({
 }
 
 function LatestCapabilityIcon({ templateId }: { templateId: string }) {
+  if (templateId === 'document-comparison') {
+    return <FileDiff size={18} aria-hidden="true" />;
+  }
   if (templateId === 'table-of-contents') {
     return <ListTree size={19} aria-hidden="true" />;
   }

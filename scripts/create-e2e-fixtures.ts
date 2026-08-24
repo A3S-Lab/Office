@@ -30,6 +30,10 @@ const fixtureDirectory = path.resolve(
 );
 const pdfPath = path.join(fixtureDirectory, 'pdf-thumbnail-keyboard.pdf');
 const picturePath = path.join(fixtureDirectory, 'word-picture.png');
+const documentComparisonPath = path.join(
+  fixtureDirectory,
+  'word-document-comparison-revised.html',
+);
 const longDocumentPath = path.join(
   fixtureDirectory,
   'word-page-navigation-120.docx',
@@ -76,6 +80,20 @@ const wpsScriptMatrixDocumentPath = path.join(
 );
 
 await mkdir(fixtureDirectory, { recursive: true });
+await Bun.write(
+  documentComparisonPath,
+  [
+    '<h1>发布审阅基线</h1>',
+    '<p><strong>基线版本：</strong>1.1</p>',
+    '<h2>比较步骤</h2>',
+    '<p>打开“审阅”，选择“比较文档”，再导入 DOCX、HTML 或 TXT 修订版本并生成修订。</p>',
+    '<h2>审阅范围</h2>',
+    '<p style="text-align: center">当前基线包含架构说明、协作协议与发布说明。</p>',
+    '<p>新增的发布摘要必须在交付前确认。</p>',
+    '<h2>决策要求</h2>',
+    '<p>发布前必须逐项接受或拒绝所有确定性修订。</p>',
+  ].join(''),
+);
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
 await Bun.write(longDocumentPath, await createLongWordNavigationFixture());
 await Bun.write(
@@ -115,6 +133,7 @@ await Bun.write(
 );
 
 console.log(`Created ${pdfPath}`);
+console.log(`Created ${documentComparisonPath}`);
 console.log(`Created ${longDocumentPath}`);
 console.log(`Created ${longRevisionDocumentPath}`);
 console.log(`Created ${longCommentDocumentPath}`);

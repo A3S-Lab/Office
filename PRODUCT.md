@@ -515,6 +515,21 @@ shortcut is invented. Focused Rstest, desktop/compact Playwright, and the
 local-only pinned A3S Test 1.0.0 suite cover the public Playground workflow,
 single-step Undo, accessibility, and empty browser diagnostics without adding
 A3S Test to Actions or Pages.
+The forty-fifth milestone adds bounded Writer document comparison and
+reviewed-copy combine. Review imports DOCX, HTML, or TXT against the current
+controlled document, deterministically aligns same-layout paragraphs and
+headings, and generates existing insertion, deletion, character-formatting,
+and paragraph-formatting revisions in one transaction and one Undo record.
+Combine accepts only a reviewed copy whose reject-all snapshot exactly
+reproduces the current baseline, then retains current paragraph and section
+identities. Changed complex structures, layout differences, unresolved current
+revisions, malformed review state, empty structural changes, and bounded matrix
+or content limits fail before mutation. Native `w:ins`, `w:del`,
+`w:rPrChange`, and `w:pPrChange` survive export and reopen; browser-owned
+block-container semantics remain an explicit native paragraph-mark boundary.
+The public Playground template, bilingual documentation, focused Rstest,
+responsive Playwright, and pinned local-only A3S Test suite form the release
+evidence without adding A3S Test to Actions or Pages.
 
 ## Product Rules
 

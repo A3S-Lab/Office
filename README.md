@@ -56,19 +56,20 @@ workflows, and a separate Rust automation plane.
 
 ## Latest on `main`
 
-The `0.31.0` release plus the current `main` branch expose these capabilities
+The `0.32.0` release plus the current `main` branch expose these capabilities
 as normal user-facing Playground templates, with matching implementation
 detail in the documentation:
 
 | Editor | Latest capability | Public entry |
 | --- | --- | --- |
+| Writer | Compare the current document with an imported DOCX, HTML, or TXT version and generate deterministic insertion, deletion, character-formatting, and paragraph-formatting revisions; combine a reviewed copy only after exact baseline verification | Playground **Latest capabilities → 文档比较** · [Document reference](docs/latest/en/components/document.mdx#document-compare-and-combine) |
 | Writer | Insert, customize, navigate, and explicitly refresh a typed Table of Contents with heading and native outline levels 1–9, hyperlinks, page numbers, alignment, four leader styles, and native DOCX `TOC` round trips | Playground **Latest capabilities → 可更新目录** · [Document reference](docs/latest/en/components/document.mdx#native-table-of-contents) |
 | Writer | Mark primary and secondary index terms, cross-references, and bold/italic page numbers; insert, navigate, customize, and refresh a bounded native index with editable DOCX `XE` and `INDEX` round trips | Playground **Latest capabilities → 原生索引** · [Document reference](docs/latest/en/components/document.mdx#native-document-index) |
 | Writer | Native character shading with exact `w:shd` patterns, foreground/background color identity, explicit resets, authoring, and DOCX reopen | Playground **Latest capabilities → 字符底纹** · [Document reference](docs/latest/en/components/document.mdx#native-character-shading) |
 | Writer | Independent Latin, East Asian, and bidi proofing languages plus explicit `w:noProof` inclusion/exclusion | Playground **Latest capabilities → 校对语言** · [Document reference](docs/latest/en/components/document.mdx#native-proofing-languages) |
 | Spreadsheet | Complete common Data Validation input, blank/dropdown, and Stop/Warning/Information error settings with native XLSX round trips | Playground **Latest capabilities → 数据验证** · [Spreadsheet reference](docs/latest/en/components/spreadsheet.mdx#data-validation) |
 
-The same five entries remain available under **新建**. The highlighted strip
+The same six entries remain available under **新建**. The highlighted strip
 exists so a capability is discoverable from the first Playground viewport
 instead of only through a deep documentation section or an `?e2e=` fixture.
 
@@ -132,7 +133,8 @@ baseline rather than one specific release.
 | Page layout and rendering | **Partial** — sections, margins, page size, columns, headers/footers, fields, and live pagination | Desktop-grade pagination, print layout, and vector output |
 | Tables, pictures, and equations | **Partial** — rich table geometry, floating pictures, crop/wrap, and structured OMML | Broader drawings, text boxes, charts, WordArt, and SmartArt |
 | Comments, revisions, and collaboration | **Partial** — comments, suggestions, text/format revisions, decisions, Yjs presence, and host relay contracts | Full revision families plus integrated sharing and review services |
-| References and document generation | **Partial** — typed Table of Contents and native index authoring/refresh, bookmarks, links, captions, cross-references, citations, notes, and common fields | Mail merge, compare/combine, tables of figures/authorities, and broader fields |
+| Document compare and combine | **Partial** — deterministic same-layout paragraph/heading comparison produces reviewable text, character-formatting, and paragraph-formatting revisions; reviewed-copy combine requires an exact reject-all baseline match | Mature structural, object, move-range, and multi-copy conflict handling |
+| References and document generation | **Partial** — typed Table of Contents and native index authoring/refresh, bookmarks, links, captions, cross-references, citations, notes, and common fields | Mail merge, tables of figures/authorities, and broader fields |
 | Ribbon and shortcuts | **Supported** — responsive Office-style ribbon and editor-scoped daily-writing shortcuts | Complete desktop shortcut and contextual-tool surface |
 | Very large documents | **Supported with boundaries** — bounded 100,000-block plain-document windows and measured edit/navigation budgets | Native-engine virtualization with device-dependent limits |
 | DOCX and PDF fidelity | **Partial** — source-aware DOCX preservation and live-layout raster PDF export | Broader legacy/OOXML compatibility and searchable vector PDF output |
@@ -1569,6 +1571,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.32.0 documentation](https://a3s-lab.github.io/Office/docs/0.32.0/)
 - [A3S Office 0.31.0 documentation](https://a3s-lab.github.io/Office/docs/0.31.0/)
 - [A3S Office 0.30.0 documentation](https://a3s-lab.github.io/Office/docs/0.30.0/)
 - [A3S Office 0.29.0 documentation](https://a3s-lab.github.io/Office/docs/0.29.0/)

@@ -136,6 +136,7 @@ import {
 } from './office-task-pane';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import { useDocumentComments } from './use-document-comments';
+import { useDocumentComparison } from './use-document-comparison';
 import { useDocumentInsertCommands } from './use-document-insert-commands';
 import { useDocumentLayoutFonts } from './use-document-layout-fonts';
 import { useDocumentPageChrome } from './use-document-page-chrome';
@@ -930,6 +931,15 @@ function DocumentEditorSurface({
     },
     [rememberTaskPaneInvoker, requestEditorViewChange, taskPane],
   );
+  const documentComparison = useDocumentComparison({
+    editor,
+    onApplied: () => {
+      if (editor && !editor.isDestroyed) {
+        taskPaneInvokerRef.current = editor.view.dom;
+      }
+      setTaskPane('changes');
+    },
+  });
   const startCommentDraft = useCallback(async () => {
     rememberTaskPaneInvoker();
     if (!(await requestEditorViewChange(null, false))) return;
@@ -1470,6 +1480,7 @@ function DocumentEditorSurface({
             restoreDocumentBodyFocus();
           }}
           onToggleChanges={() => void toggleTaskPane('changes')}
+          onOpenComparison={documentComparison.open}
           onDecideChange={(change, decision) =>
             decideDocumentChanges([change], decision)
           }
@@ -1953,6 +1964,7 @@ function DocumentEditorSurface({
         />
       )}
       {canEditDocument && documentInsert.dialog}
+      {canEditDocument && documentComparison.dialog}
       {!preview && taskPaneDialog.dialog}
       {!preview && statisticsOpen && (
         <DocumentStatisticsDialog

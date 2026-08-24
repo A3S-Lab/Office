@@ -1,0 +1,151 @@
+suite "word-document-comparison" {
+    version = 1
+
+    scenario "compare-imported-document" {
+        name = "Compare an imported Writer version and review the generated revisions"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-comparison-template" {
+            target = role("button", "打开最新能力：文档比较")
+        }
+
+        wait "writer-is-ready" {
+            text = "发布审阅基线"
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-comparison-dialog" {
+            target = role("button", "比较文档")
+        }
+
+        expect "comparison-dialog-is-visible" {
+            visible = css(".work-document-compare-dialog[role='dialog']")
+        }
+
+        upload "select-revised-version" {
+            target = css("input[aria-label='选择修订版本文件']")
+            paths = [".a3s-test/fixtures/word-document-comparison-revised.html"]
+        }
+
+        fill "attribute-comparison" {
+            target = css(".work-document-compare-dialog input[aria-label='比较结果修订者名称']")
+            value = "A3S Reviewer"
+        }
+
+        click "generate-reviewable-revisions" {
+            target = role("button", "生成比较结果")
+        }
+
+        expect "review-pane-is-open" {
+            visible = css("ol[aria-label='待处理修订'][data-document-change-count]")
+        }
+
+        expect "text-insertion-is-reviewable" {
+            visible = css(".work-document-editable ins[data-document-change='true']")
+        }
+
+        expect "text-deletion-is-reviewable" {
+            visible = css(".work-document-editable del[data-document-change='true']")
+        }
+
+        expect "paragraph-formatting-is-reviewable" {
+            visible = css(".work-document-editable [data-change-kind='paragraph-formatting']")
+        }
+
+        expect "inserted-block-is-reviewable" {
+            visible = css(".work-document-editable [data-document-block-change='true']")
+        }
+
+        click "accept-first-revision" {
+            target = css("button[aria-label='接受修订 1']")
+        }
+
+        expect "next-review-decision-remains-available" {
+            visible = css("button[aria-label='接受修订 1']")
+        }
+
+        accessibility "comparison-accessibility" {
+            path = "evidence/document-comparison.json"
+            interactive = true
+        }
+
+        console "comparison-console" {
+            path = "diagnostics/document-comparison-console.json"
+            clear = false
+        }
+
+        page_errors "comparison-errors" {
+            path = "diagnostics/document-comparison-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "open-comparison-on-phone" {
+        name = "Keep the Writer comparison dialog usable on a phone"
+        surface = "web"
+        timeout_ms = 90000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-phone-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-phone-comparison-template" {
+            target = role("button", "打开最新能力：文档比较")
+        }
+
+        wait "phone-writer-is-ready" {
+            text = "发布审阅基线"
+        }
+
+        click "open-phone-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-phone-comparison-dialog" {
+            target = role("button", "比较文档")
+        }
+
+        expect "phone-comparison-dialog-is-visible" {
+            visible = css(".work-document-compare-dialog[role='dialog']")
+        }
+
+        expect "phone-comparison-mode-is-visible" {
+            visible = css(".work-document-compare-mode")
+        }
+
+        accessibility "phone-comparison-accessibility" {
+            path = "evidence/document-comparison-phone.json"
+            interactive = true
+        }
+
+        console "phone-comparison-console" {
+            path = "diagnostics/document-comparison-phone-console.json"
+            clear = false
+        }
+
+        page_errors "phone-comparison-errors" {
+            path = "diagnostics/document-comparison-phone-errors.json"
+            clear = false
+        }
+    }
+}

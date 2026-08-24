@@ -4,6 +4,23 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.32.0 - 2026-08-25
+
+- Added deterministic Writer document comparison from DOCX, HTML, or TXT. The
+  current document remains the original, while the imported revision becomes
+  reviewable insertion, deletion, character-formatting, and paragraph-formatting
+  changes in one transaction and one Undo record.
+- Added fail-closed reviewed-copy combine with exact reject-all baseline
+  verification, deterministic identities, author attribution, bounded block,
+  text, and diff matrices, explicit layout/complex-structure diagnostics, and
+  no overwrite of unresolved current revisions.
+- Added the responsive Review **比较文档** and **合并文档** workflow, automatic
+  Changes-pane opening, controlled-value publication, focus restoration, native
+  DOCX text/format revision reopen coverage, and a public **文档比较** Playground
+  template with bilingual documentation, Playwright, and local-only A3S Test
+  coverage. Browser-owned inserted/deleted block-container metadata remains an
+  explicit native paragraph-mark fidelity boundary.
+
 ## 0.31.0 - 2026-08-25
 
 - Added native Writer index authoring with selectable primary and secondary

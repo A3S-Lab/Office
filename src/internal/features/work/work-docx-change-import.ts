@@ -126,35 +126,19 @@ function wrapMarkerRange(
   end: string,
   wrapper: HTMLElement,
 ): boolean {
-  const nodes = textNodes(root);
-  const startNode = nodes.find((node) => node.data.includes(start));
-  const endNode = nodes.find((node) => node.data.includes(end));
-  if (!startNode || !endNode) return false;
-  const startIndex = startNode.data.indexOf(start);
-  const endIndex = endNode.data.indexOf(end);
-  if (startNode === endNode && endIndex < startIndex) return false;
-  const range = root.ownerDocument.createRange();
-  range.setStart(startNode, startIndex);
-  range.setEnd(endNode, endIndex + end.length);
-  const content = range.extractContents();
-  removeMarkerText(content, start);
-  removeMarkerText(content, end);
-  wrapper.append(content);
-  range.insertNode(wrapper);
+  const html = root.innerHTML;
+  const startIndex = html.indexOf(start);
+  const endIndex = html.indexOf(end, startIndex + start.length);
+  if (startIndex < 0 || endIndex < 0) return false;
+  const closingTag = `</${wrapper.localName}>`;
+  const serializedWrapper = wrapper.outerHTML;
+  if (!serializedWrapper.endsWith(closingTag)) return false;
+  const openingTag = serializedWrapper.slice(0, -closingTag.length);
+  root.innerHTML = `${html.slice(0, startIndex)}${openingTag}${html.slice(
+    startIndex + start.length,
+    endIndex,
+  )}${closingTag}${html.slice(endIndex + end.length)}`;
   return true;
-}
-
-function removeMarkerText(root: ParentNode, marker: string): void {
-  for (const node of textNodes(root)) node.data = node.data.replace(marker, '');
-}
-
-function textNodes(root: ParentNode): Text[] {
-  const document = root.ownerDocument;
-  const walker = document?.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const nodes: Text[] = [];
-  if (!walker) return nodes;
-  while (walker.nextNode()) nodes.push(walker.currentNode as Text);
-  return nodes;
 }
 
 function closestRevision(element: Element | null): Element | null {

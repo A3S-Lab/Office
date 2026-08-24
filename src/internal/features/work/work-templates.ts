@@ -43,6 +43,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     accent: '#536de2',
   },
   {
+    id: 'document-comparison',
+    kind: 'document',
+    name: '文档比较',
+    description: '导入版本并生成可接受或拒绝的确定性修订',
+    accent: '#6a54b8',
+  },
+  {
     id: 'table-of-contents',
     kind: 'document',
     name: '可更新目录',
@@ -156,6 +163,7 @@ export function createWorkId(prefix: string): string {
 function initialTitle(templateId: string, kind: WorkArtifactKind): string {
   const titles: Record<string, string> = {
     'project-brief': '新项目方案',
+    'document-comparison': '文档比较示例',
     'table-of-contents': '可更新目录示例',
     'document-index': '原生索引示例',
     'text-effects': '文字效果示例',
@@ -190,6 +198,22 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
         '<ol><li><p>方案确认</p></li><li><p>执行与评审</p></li><li><p>交付与复盘</p></li></ol>',
         '<h2>风险与决策</h2>',
         '<p>记录尚未解决的问题、依赖和决策负责人。</p>',
+      ].join(''),
+    };
+  }
+  if (templateId === 'document-comparison') {
+    return {
+      type: 'document',
+      pageSize: 'a4',
+      html: [
+        '<h1>发布审阅基线</h1>',
+        '<p><strong>基线版本：</strong>1.0</p>',
+        '<h2>比较步骤</h2>',
+        '<p>打开“审阅”，选择“比较文档”，再导入 DOCX、HTML 或 TXT 修订版本。</p>',
+        '<h2>审阅范围</h2>',
+        '<p>当前基线包含架构说明与发布说明。</p>',
+        '<h2>决策要求</h2>',
+        '<p>发布前必须逐项接受或拒绝所有生成的修订。</p>',
       ].join(''),
     };
   }

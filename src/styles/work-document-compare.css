@@ -1,0 +1,200 @@
+.work-document-compare-dialog {
+  width: min(650px, 100%);
+}
+
+.work-document-compare-dialog form {
+  display: grid;
+  gap: 15px;
+}
+
+.work-document-compare-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-document-compare-mode > legend {
+  margin-bottom: 8px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.work-document-compare-mode > label {
+  position: relative;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.work-document-compare-mode input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.work-document-compare-mode label > span {
+  display: grid;
+  min-height: 94px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  gap: 4px 9px;
+  padding: 13px 14px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 10px;
+  background: var(--a3s-panel);
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+.work-document-compare-mode label:hover > span {
+  border-color: var(--a3s-line-strong);
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-compare-mode input:checked + span {
+  border-color: var(--a3s-accent);
+  background: color-mix(in srgb, var(--a3s-accent) 8%, var(--a3s-panel));
+}
+
+.work-document-compare-mode input:focus-visible + span {
+  outline: 2px solid var(--a3s-accent);
+  outline-offset: 2px;
+}
+
+.work-document-compare-mode svg {
+  grid-row: 1 / span 2;
+  color: var(--a3s-accent);
+}
+
+.work-document-compare-mode strong {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.work-document-compare-mode small {
+  color: var(--a3s-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.work-document-compare-file {
+  display: grid;
+  width: 100%;
+  min-height: 78px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1px dashed var(--a3s-line-strong);
+  border-radius: 10px;
+  outline: 0;
+  background: var(--a3s-panel-soft);
+  color: var(--a3s-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-document-compare-file:hover:not(:disabled) {
+  border-color: var(--a3s-accent);
+}
+
+.work-document-compare-file:focus-visible {
+  outline: 2px solid var(--a3s-accent);
+  outline-offset: 2px;
+}
+
+.work-document-compare-file:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.work-document-compare-file > svg {
+  color: var(--a3s-accent);
+}
+
+.work-document-compare-file > span,
+.work-document-compare-author {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.work-document-compare-file strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-document-compare-file small,
+.work-document-compare-author small {
+  color: var(--a3s-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.work-document-compare-author > span {
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.work-document-compare-author .work-office-text-field {
+  width: 100%;
+}
+
+.work-document-compare-boundary,
+.work-document-compare-status,
+.work-document-compare-errors {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.work-document-compare-boundary {
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-compare-boundary > strong,
+.work-document-compare-errors > strong {
+  font-size: 12px;
+}
+
+.work-document-compare-boundary > p {
+  margin: 3px 0 0;
+  color: var(--a3s-muted);
+}
+
+.work-document-compare-status {
+  border-color: color-mix(in srgb, var(--a3s-green) 42%, var(--a3s-line));
+  color: var(--a3s-green);
+}
+
+.work-document-compare-errors {
+  border-color: color-mix(in srgb, var(--a3s-red) 35%, var(--a3s-line));
+  background: color-mix(in srgb, var(--a3s-red) 5%, var(--a3s-panel));
+  color: var(--a3s-red);
+}
+
+.work-document-compare-errors ul {
+  margin: 5px 0 0;
+  padding-left: 18px;
+}
+
+@media (max-width: 560px) {
+  .work-document-compare-mode {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-document-compare-mode label > span {
+    min-height: 0;
+  }
+}

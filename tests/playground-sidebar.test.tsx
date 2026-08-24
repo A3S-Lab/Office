@@ -26,6 +26,11 @@ test('publishes the latest main capabilities as first-class Playground entries',
   const latest = screen.getByRole('region', { name: '最新能力' });
   expect(
     within(latest).getByRole('button', {
+      name: '打开最新能力：文档比较',
+    }),
+  ).toBeInTheDocument();
+  expect(
+    within(latest).getByRole('button', {
       name: '打开最新能力：可更新目录',
     }),
   ).toBeInTheDocument();

@@ -24,6 +24,7 @@ const toolbarLayout: WorkDocumentSectionLayout = {
 
 interface ToolbarCalls {
   captions: string[];
+  comparisons: string[];
   fields: string[];
   files: string[];
   hiddenText: number;
@@ -210,7 +211,13 @@ test('orders References, Review, and View groups like WPS Writer', () => {
   ]);
 
   fireEvent.click(screen.getByRole('tab', { name: '审阅' }));
-  expect(activeRibbonGroupLabels()).toEqual(['校对', '批注', '修订', '更改']);
+  expect(activeRibbonGroupLabels()).toEqual([
+    '校对',
+    '批注',
+    '修订',
+    '更改',
+    '比较',
+  ]);
 
   fireEvent.click(screen.getByRole('tab', { name: '视图' }));
   expect(activeRibbonGroupLabels()).toEqual(['文档视图', '显示', '缩放 100%']);
@@ -291,6 +298,8 @@ test('wires every References, Review, and View action without silent buttons', (
     '查看批注（3）',
     '修订模式',
     '查看修订（4）',
+    '比较文档',
+    '合并文档',
   ]) {
     fireEvent.click(screen.getByRole('button', { name: label }));
   }
@@ -299,6 +308,7 @@ test('wires every References, Review, and View action without silent buttons', (
   expect(calls.comments).toBe(1);
   expect(calls.trackChanges).toBe(1);
   expect(calls.toggleChanges).toBe(1);
+  expect(calls.comparisons).toEqual(['compare', 'combine']);
 
   fireEvent.click(screen.getByRole('tab', { name: '视图' }));
   fireEvent.click(screen.getByRole('button', { name: '标尺' }));
@@ -904,6 +914,7 @@ function toolbar(
       onToggleChanges={() => {
         calls.toggleChanges += 1;
       }}
+      onOpenComparison={(mode) => calls.comparisons.push(mode)}
       onOpenFindReplace={() => undefined}
     />
   );
@@ -912,6 +923,7 @@ function toolbar(
 function createCalls(): ToolbarCalls {
   return {
     captions: [],
+    comparisons: [],
     fields: [],
     files: [],
     hiddenText: 0,

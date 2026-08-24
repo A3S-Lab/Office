@@ -7,7 +7,9 @@ import {
   ChevronUp,
   FileDiff,
   FilePlus2,
+  FileStack,
   FileText,
+  GitCompareArrows,
   Globe2,
   Hash,
   Eye,
@@ -41,6 +43,7 @@ import {
   collectDocumentChanges,
   type WorkDocumentChange,
 } from '../work-document-changes';
+import type { DocumentComparisonMode } from '../work-document-compare';
 import type { WorkDocumentFieldKind } from '../work-document-fields';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
@@ -189,6 +192,7 @@ interface DocumentToolbarProps {
   ) => boolean | undefined | Promise<boolean | undefined>;
   onToggleTrackChanges: () => void;
   onToggleChanges: () => void;
+  onOpenComparison: (mode: DocumentComparisonMode) => void;
   onDecideChange?: (
     change: WorkDocumentChange,
     decision: 'accept' | 'reject',
@@ -260,6 +264,7 @@ export function DocumentToolbar({
   onRibbonTabChange,
   onToggleTrackChanges,
   onToggleChanges,
+  onOpenComparison,
   onDecideChange,
   onOpenWordCount,
   onOpenFindReplace,
@@ -896,6 +901,26 @@ export function DocumentToolbar({
                     </RibbonGroup>
                   )}
                 </>
+              )}
+              {!reviewOnly && !suggestionOnly && (
+                <RibbonGroup label="比较" priority="high">
+                  <ToolbarButton
+                    label="比较文档"
+                    displayLabel
+                    title="将另一个版本转换为可接受或拒绝的修订"
+                    onClick={() => onOpenComparison('compare')}
+                  >
+                    <GitCompareArrows size={19} />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label="合并文档"
+                    displayLabel
+                    title="合入与当前基线一致的带修订审阅副本"
+                    onClick={() => onOpenComparison('combine')}
+                  >
+                    <FileStack size={19} />
+                  </ToolbarButton>
+                </RibbonGroup>
               )}
             </>
           ),
