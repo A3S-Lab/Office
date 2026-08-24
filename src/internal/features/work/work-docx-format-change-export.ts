@@ -21,6 +21,12 @@ import { normalizeDocumentStrikeStyle } from './work-document-strike';
 import { parseDocumentScriptFonts } from './work-document-script-fonts';
 import { parseDocxThemeReference } from './work-docx-theme-reference';
 import { parseDocumentRunBorder } from './work-document-run-border';
+import { parseDocumentRunShading } from './work-document-run-shading';
+import { setDocxRunShadingAttributes } from './work-docx-run-shading-export';
+import {
+  documentHighlightForCssColor,
+  normalizeDocumentHighlight,
+} from './work-document-highlight';
 import { descendants, directChildren, parseXml } from './work-ooxml-package';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 
@@ -375,6 +381,7 @@ function appendFormattingProperties(
     namespace,
     prefix,
     byType.get('highlight'),
+    !parseDocumentRunShading(byType.get('textStyle')?.attrs?.runShading),
   );
   appendUnderlineProperty(
     document,
@@ -384,6 +391,13 @@ function appendFormattingProperties(
     byType.get('underline'),
   );
   appendRunBorderProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
+  appendRunShadingProperty(
     document,
     properties,
     namespace,
@@ -473,6 +487,20 @@ function appendRunBorderProperty(
       border.frame ? '1' : '0',
     );
   }
+  properties.append(element);
+}
+
+function appendRunShadingProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const shading = parseDocumentRunShading(mark?.attrs?.runShading);
+  if (!shading) return;
+  const element = wordElement(document, namespace, prefix, 'shd');
+  if (!setDocxRunShadingAttributes(document, element, shading)) return;
   properties.append(element);
 }
 
@@ -833,7 +861,23 @@ function appendHighlightProperty(
   namespace: string,
   prefix: string,
   mark: DocumentCharacterFormatMark | undefined,
+  allowFallbackShading: boolean,
 ): void {
+  const nativeHighlight =
+    normalizeDocumentHighlight(mark?.attrs?.nativeHighlight) ??
+    documentHighlightForCssColor(mark?.attrs?.color);
+  if (nativeHighlight) {
+    appendValuedProperty(
+      document,
+      properties,
+      namespace,
+      prefix,
+      'highlight',
+      nativeHighlight,
+    );
+    return;
+  }
+  if (!allowFallbackShading) return;
   const fill = normalizedHex(mark?.attrs?.color);
   const theme = themeReference(mark?.attrs?.themeFill);
   if (!fill && !theme) return;

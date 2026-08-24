@@ -12,6 +12,11 @@ import {
   type DocumentRunBorder,
   documentRunBorderDomAttributes,
 } from './work-document-run-border';
+import {
+  DOCUMENT_RUN_SHADING_ATTRIBUTE,
+  type DocumentRunShading,
+  documentRunShadingDomAttributes,
+} from './work-document-run-shading';
 
 export const WORK_TEMPLATES: WorkTemplate[] = [
   {
@@ -41,6 +46,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     name: '字符边框',
     description: '原生线型、颜色、宽度、间距与阴影',
     accent: '#4472c4',
+  },
+  {
+    id: 'run-shading',
+    kind: 'document',
+    name: '字符底纹',
+    description: '原生图案、前景色、背景色与显式重置',
+    accent: '#70ad47',
   },
   {
     id: 'blank-markdown',
@@ -109,6 +121,7 @@ function initialTitle(templateId: string, kind: WorkArtifactKind): string {
     'project-brief': '新项目方案',
     'text-effects': '文字效果示例',
     'run-borders': '字符边框示例',
+    'run-shading': '字符底纹示例',
     'quarterly-plan': '季度执行计划',
     'strategy-deck': '业务策略汇报',
   };
@@ -172,6 +185,23 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
       ].join(''),
     };
   }
+  if (templateId === 'run-shading') {
+    return {
+      type: 'document',
+      pageSize: 'a4',
+      html: [
+        '<h1>原生字符底纹</h1>',
+        '<p>选择任一示例并打开字体高级设置，可以编辑完整的原生图案、前景色、背景色，或写入显式无底纹重置。</p>',
+        '<h2>基本填充</h2>',
+        `<p>${runShadingTemplateSpan({ pattern: 'clear', fill: { value: '#fff2cc' } }, '清除图案使用背景色')}</p>`,
+        `<p>${runShadingTemplateSpan({ pattern: 'solid', color: { value: '#4472c4' } }, '实心图案使用前景色')}</p>`,
+        '<h2>图案与密度</h2>',
+        `<p>${runShadingTemplateSpan({ pattern: 'diagCross', color: { value: '#c00000' }, fill: { value: '#fce4d6' } }, '对角交叉字符底纹')}</p>`,
+        `<p>${runShadingTemplateSpan({ pattern: 'pct25', color: { value: '#4472c4' }, fill: { value: '#ddebf7' } }, '25% 字符底纹')}</p>`,
+        `<p>${runShadingTemplateSpan({ pattern: 'thinHorzStripe', color: { value: '#70ad47' }, fill: { value: '#e2f0d9' } }, '细水平条纹字符底纹')}</p>`,
+      ].join(''),
+    };
+  }
   if (templateId === 'quarterly-plan') {
     return { type: 'spreadsheet', sheets: quarterlyPlanSheets() };
   }
@@ -200,6 +230,14 @@ function runBorderTemplateSpan(
 ): string {
   const attributes = documentRunBorderDomAttributes(border);
   return `<span ${DOCUMENT_RUN_BORDER_ATTRIBUTE}='${attributes[DOCUMENT_RUN_BORDER_ATTRIBUTE]}' style="${attributes.style}">${text}</span>`;
+}
+
+function runShadingTemplateSpan(
+  shading: DocumentRunShading,
+  text: string,
+): string {
+  const attributes = documentRunShadingDomAttributes(shading);
+  return `<span ${DOCUMENT_RUN_SHADING_ATTRIBUTE}='${attributes[DOCUMENT_RUN_SHADING_ATTRIBUTE]}' style="${attributes.style}">${text}</span>`;
 }
 
 function blankSheet(): Sheet {

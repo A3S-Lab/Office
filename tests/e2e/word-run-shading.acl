@@ -1,0 +1,126 @@
+suite "office-word-run-shading" {
+    version = 1
+
+    scenario "author-native-character-shading-and-undo" {
+        name = "Author and undo native Writer character shading"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-run-shading-template" {
+            target = role("button", "字符底纹 原生图案、前景色、背景色与显式重置")
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "native-shading-sample-visible" {
+            visible = css(".work-document-editable span[data-office-run-shading*='pct25'][style*='background-image'][style*='box-decoration-break: clone']")
+        }
+
+        click "focus-native-shading-sample" {
+            target = css(".work-document-editable span[data-office-run-shading*='pct25']")
+        }
+
+        press "move-to-sample-start" {
+            key = "Home"
+        }
+
+        press "select-sample" {
+            key = "Shift+End"
+        }
+
+        expect "sample-selection-visible" {
+            visible = css(".work-document-selection-toolbar[role='toolbar']")
+        }
+
+        press "open-font-dialog" {
+            key = "Control+d"
+        }
+
+        wait "font-dialog-visible" {
+            visible = css(".work-document-font-dialog[role='dialog']")
+        }
+
+        expect "run-shading-controls-visible" {
+            visible = css(".work-document-font-dialog-run-shading[aria-label='字符底纹设置']")
+        }
+
+        click "open-shading-pattern" {
+            target = role("combobox", "字符底纹图案")
+        }
+
+        click "choose-diagonal-cross" {
+            target = text("对角交叉", true)
+        }
+
+        click "open-shading-foreground" {
+            target = role("button", "字符底纹前景色")
+        }
+
+        click "choose-shading-foreground" {
+            target = role("option", "颜色 #0070c0")
+        }
+
+        click "open-shading-background" {
+            target = role("button", "字符底纹背景色")
+        }
+
+        click "choose-shading-background" {
+            target = role("option", "颜色 #d9ead3")
+        }
+
+        expect "exact-shading-preview-visible" {
+            visible = css(".work-document-font-dialog [aria-label='字符高级格式预览'] output > span[style*='background-image']")
+        }
+
+        click "apply-character-shading" {
+            target = role("button", "应用")
+        }
+
+        expect "native-shading-applied" {
+            visible = css(".work-document-editable span[data-office-run-shading*='diagCross'][data-office-run-shading*='#0070c0'][data-office-run-shading*='#d9ead3'][style*='background-image'][style*='box-decoration-break: clone']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-shading-transaction" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restores-original-shading" {
+            visible = css(".work-document-editable span[data-office-run-shading*='pct25'][data-office-run-shading*='#4472c4'][data-office-run-shading*='#ddebf7']")
+        }
+
+        accessibility "run-shading-accessibility" {
+            path = "evidence/run-shading-accessibility.json"
+            interactive = true
+        }
+
+        console "run-shading-console" {
+            path = "diagnostics/run-shading-console.json"
+            clear = false
+        }
+
+        page_errors "run-shading-page-errors" {
+            path = "diagnostics/run-shading-page-errors.json"
+            clear = false
+        }
+    }
+}

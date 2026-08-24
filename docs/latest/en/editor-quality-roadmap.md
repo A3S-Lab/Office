@@ -415,6 +415,20 @@ browser/PDF line styles stay bounded visual approximations. Focused Rstest,
 desktop/compact Playwright, and the local-only pinned A3S Test 1.0.0 gate cover
 the public **字符边框** Playground template, single-step Undo, accessibility,
 and empty browser diagnostics without adding A3S Test to Actions or Pages.
+Writer character shading now retains one exact native `w:shd` value for every
+schema pattern, direct or automatic foreground/background colors, independent
+theme channels with tint/shade, and explicit `nil`. Document defaults,
+paragraph and character styles, conditional table styles, every editable Word
+story, formatting revisions, strict/transitional import, diagnostics, exact
+export, and reopen share the closed model. The advanced font dialog keeps mixed
+selections untouched and distinguishes Follow style, explicit no-shading, and
+editable pattern/color states; Format Painter and one-step Undo use the same
+TextStyle attribute. Native `w:highlight` remains independent and takes paint
+precedence without clobbering shading. CSS pattern projection changes no inline
+geometry, so eligible content remains on Worker/WASM layout. Focused Rstest and
+the public **字符底纹** Playground template cover the semantic authoring and
+round-trip path; browser ACL coverage remains local-only and is never added to
+Actions or Pages.
 Writer character baseline position now uses one signed `w:position` value from
 -3,168 to 3,168 half-points, including explicit zero. The same advanced font
 dialog exposes Normal, Raised, and Lowered modes while tracking mixed scale,

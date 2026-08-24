@@ -721,6 +721,22 @@ written. This keeps direct/style inheritance and prior `w:rPrChange` values
 exact while treating browser and PDF line-style paint as a bounded visual
 approximation.
 
+Native character shading follows a separate paint-only TextStyle path. The
+closed `w:shd` model accepts every schema pattern, independent direct,
+automatic, or resolved-theme foreground/background channels, tint and shade,
+and explicit `nil`. Property sources are resolved from document defaults,
+paragraph and character styles, conditional table styles, and direct run
+properties in native precedence order. Invalid direct leaves normalize to
+`nil`, so stale inherited paint cannot reappear.
+
+The canonical mark stores bounded JSON in `data-office-run-shading`; CSS
+projects solid, line, cross, and percentage masks with cloned fragments. These
+declarations do not alter advances, so shading remains Worker/WASM eligible.
+Native highlight is retained as an independent mark and paints above shading.
+Export allocates a collision-checked temporary fill only on generated text
+runs, patches it to the exact `w:shd` attributes across editable stories, and
+then writes exact prior values into `w:rPrChange`.
+
 Tables, images, code blocks, and other complex content use explicit
 format-specific measurement. Top-level tables are row flows; eligible rows can
 additionally expose synchronized direct-cell block fragments. Ordered and bullet

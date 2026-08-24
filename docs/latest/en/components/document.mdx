@@ -397,6 +397,40 @@ layout. Browser and PDF paint are bounded visual approximations of line styles;
 the OOXML semantics remain exact. Open the Playground's **字符边框** template
 to exercise the complete authoring and one-step Undo flow.
 
+## Native character shading
+
+Writer stores character shading as one typed native `w:shd` value instead of
+flattening it into a browser background color. The model retains every
+WordprocessingML pattern, direct or automatic foreground and background
+colors, independent `themeColor` and `themeFill` references with tint and
+shade, and an explicit `nil` reset. A tint and shade can coexist on the same
+theme channel: browser paint follows native tint precedence while export keeps
+both attributes.
+
+The shared `Cmd/Ctrl+D` **Advanced Font Settings** dialog treats shading as an
+independently mixed property. It distinguishes Follow style, explicit no
+shading, and an editable value with pattern, foreground, and background
+controls. Theme identity survives while its resolved color remains unchanged;
+choosing a direct color intentionally replaces only that channel. The complete
+patch commits with the other touched font properties in one transaction and
+one Undo record, and Format Painter copies the same semantic TextStyle value.
+
+Document defaults, paragraph and character styles, conditional table styles,
+body text, headers, footers, footnotes, endnotes, formatting revisions, strict
+or transitional DOCX import, exact export, and reopen share the resolver.
+Malformed, duplicated, misplaced, namespace-spoofed, child- or text-bearing,
+extra-attribute, and unresolved-theme leaves fail closed to explicit `nil` and
+appear in compatibility diagnostics. Prior values inside `w:rPrChange` use the
+same bounded model.
+
+The DOM stores validated JSON in `data-office-run-shading`. CSS provides a
+bounded projection for solid, striped, crossed, thin-line, and percentage
+patterns with cloned inline fragments. Shading changes paint only, so eligible
+paragraphs stay on the Worker/WASM layout path. Native `w:highlight` remains a
+separate mark and takes visual precedence without deleting the underlying
+shading semantics. Open the Playground's **字符底纹** template to edit the
+complete model and verify one-step Undo.
+
 ## Native character baseline position
 
 The same **Advanced Font Settings** dialog stores Normal, Raised, or Lowered

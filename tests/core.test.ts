@@ -210,7 +210,8 @@ describe('office core', () => {
     expect(xml).toContain('w:hAnsi="Arial"');
     expect(xml).toContain('<w:sz w:val="24"/>');
     expect(xml).toContain('<w:color w:val="336699"/>');
-    expect(xml).toContain('w:fill="FFFF00"');
+    expect(xml).toContain('<w:highlight w:val="yellow"/>');
+    expect(xml).not.toContain('<w:shd');
     expect(xml).toContain('<w:jc w:val="both"/>');
     expect(xml).toContain('<w:bidi/>');
     expect(xml).toContain('<w:rtl/>');

@@ -61,6 +61,18 @@ import {
   serializeDocumentRunBorder,
 } from './work-document-run-border';
 import {
+  DOCUMENT_RUN_SHADING_ATTRIBUTE,
+  documentRunShadingDomAttributes,
+  parseDocumentRunShading,
+  parseDocumentRunShadingElement,
+  serializeDocumentRunShading,
+} from './work-document-run-shading';
+import {
+  DOCUMENT_HIGHLIGHT_ATTRIBUTE,
+  documentHighlightForCssColor,
+  normalizeDocumentHighlight,
+} from './work-document-highlight';
+import {
   documentScriptFontsDomAttributes,
   documentScriptFontsForAllText,
   normalizeDocumentScriptFontSlot,
@@ -101,6 +113,7 @@ declare module '@tiptap/extension-text-style' {
     legacyTextEmboss?: boolean | null;
     legacyTextImprint?: boolean | null;
     runBorder?: string | null;
+    runShading?: string | null;
     kerningThresholdHalfPoints?: number | null;
     scriptFonts?: string | null;
     scriptFontSlot?: WorkDocumentScriptFontSlot | null;
@@ -150,6 +163,10 @@ export const DocumentTextStyle = TextStyle.extend({
       })),
       {
         tag: `span[${DOCUMENT_RUN_BORDER_ATTRIBUTE}]`,
+        consuming: false,
+      },
+      {
+        tag: `span[${DOCUMENT_RUN_SHADING_ATTRIBUTE}]`,
         consuming: false,
       },
     ];
@@ -244,6 +261,17 @@ export const DocumentTextStyle = TextStyle.extend({
         renderHTML: (attributes: Record<string, unknown>) =>
           documentRunBorderDomAttributes(
             parseDocumentRunBorder(attributes.runBorder),
+          ),
+      },
+      runShading: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          serializeDocumentRunShading(
+            parseDocumentRunShadingElement(element),
+          ) ?? null,
+        renderHTML: (attributes: Record<string, unknown>) =>
+          documentRunShadingDomAttributes(
+            parseDocumentRunShading(attributes.runShading),
           ),
       },
       kerningThresholdHalfPoints: {
@@ -360,16 +388,56 @@ export const DocumentHighlight = Highlight.extend({
     return {};
   },
   addAttributes() {
+    const parent = (this.parent?.() ?? {}) as Record<
+      string,
+      Record<string, unknown>
+    >;
     return {
-      ...this.parent?.(),
+      ...parent,
+      color: {
+        ...(parent.color ?? {}),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const color =
+            typeof attributes.color === 'string' ? attributes.color : null;
+          if (!color) return {};
+          const native =
+            normalizeDocumentHighlight(attributes.nativeHighlight) ??
+            documentHighlightForCssColor(color);
+          return {
+            'data-color': color,
+            ...(native ? { [DOCUMENT_HIGHLIGHT_ATTRIBUTE]: native } : {}),
+            style: `background-color: ${color}; color: inherit`,
+          };
+        },
+      },
+      nativeHighlight: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentHighlight(
+            element.getAttribute(DOCUMENT_HIGHLIGHT_ATTRIBUTE),
+          ),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const value = normalizeDocumentHighlight(attributes.nativeHighlight);
+          return value ? { [DOCUMENT_HIGHLIGHT_ATTRIBUTE]: value } : {};
+        },
+      },
       themeFill: themeReferenceAttribute('officeThemeFill'),
     };
   },
   parseHTML() {
+    const excludesRunShading = (element: HTMLElement) =>
+      element.hasAttribute(DOCUMENT_RUN_SHADING_ATTRIBUTE) &&
+      !element.hasAttribute(DOCUMENT_HIGHLIGHT_ATTRIBUTE)
+        ? false
+        : null;
     return [
       ...(this.parent?.() ?? []),
-      { tag: 'span[data-office-theme-fill]' },
-      { tag: 'span[style*="background-color"]' },
+      { tag: `span[${DOCUMENT_HIGHLIGHT_ATTRIBUTE}]` },
+      { tag: 'span[data-office-theme-fill]', getAttrs: excludesRunShading },
+      {
+        tag: 'span[style*="background-color"]',
+        getAttrs: excludesRunShading,
+      },
     ];
   },
 });

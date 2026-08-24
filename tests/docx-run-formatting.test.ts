@@ -504,6 +504,7 @@ describe('DOCX run formatting', () => {
       fontSize: 14,
       color: '#112233',
       backgroundColor: '#ffff00',
+      highlight: 'yellow',
     });
   });
 
@@ -970,16 +971,21 @@ describe('DOCX run formatting', () => {
     expect(markers.runs[0]?.formatting).toMatchObject({
       fontFamily: 'Aptos',
       color: '#a2b9e2',
-      backgroundColor: '#b25e25',
       themeColor: {
         theme: 'accent1',
         resolved: '#a2b9e2',
         tint: '80',
       },
-      themeFill: {
-        theme: 'accent2',
-        resolved: '#b25e25',
-        shade: 'BF',
+      runShading: {
+        pattern: 'clear',
+        fill: {
+          value: '#b25e25',
+          theme: {
+            theme: 'accent2',
+            resolved: '#b25e25',
+            shade: 'BF',
+          },
+        },
       },
     });
     const marker = markers.runs[0];
@@ -998,7 +1004,7 @@ describe('DOCX run formatting', () => {
     expect(html.querySelector('span')?.dataset.officeThemeColor).toContain(
       'accent1',
     );
-    expect(html.body.innerHTML).toContain('data-office-theme-fill');
+    expect(html.body.innerHTML).toContain('data-office-run-shading');
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document') {
       throw new Error('Expected a document artifact.');

@@ -42,6 +42,14 @@ import {
   parseDocumentRunBorder,
   serializeDocumentRunBorder,
 } from './work-document-run-border';
+import {
+  parseDocumentRunShading,
+  serializeDocumentRunShading,
+} from './work-document-run-shading';
+import {
+  normalizeDocumentHighlight,
+  type WorkDocumentHighlight,
+} from './work-document-highlight';
 
 export const DOCUMENT_CHARACTER_FORMAT_MARKS = [
   'bold',
@@ -99,6 +107,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'legacyTextEmboss',
     'legacyTextImprint',
     'runBorder',
+    'runShading',
     'scriptFonts',
     'scriptFontSlot',
     'themeColor',
@@ -106,7 +115,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'wordLineHeightFactor',
     'wordSnapToGrid',
   ]),
-  highlight: new Set(['color', 'themeFill']),
+  highlight: new Set(['color', 'nativeHighlight', 'themeFill']),
 };
 
 export function isDocumentCharacterFormatMark(value: string): boolean {
@@ -211,6 +220,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   legacyTextEmboss?: boolean;
   legacyTextImprint?: boolean;
   runBorder?: string;
+  runShading?: string;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
   fontSize?: number;
@@ -218,6 +228,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   backgroundColor?: string;
   themeColor?: string;
   themeFill?: string;
+  highlight?: WorkDocumentHighlight;
   textCase?: WorkDocumentTextCase;
 }): string {
   const marks: DocumentCharacterFormatMark[] = [];
@@ -254,6 +265,7 @@ export function importedDocumentCharacterFormatting(formatting: {
     legacyTextEmboss: formatting.legacyTextEmboss,
     legacyTextImprint: formatting.legacyTextImprint,
     runBorder: formatting.runBorder,
+    runShading: formatting.runShading,
     color: formatting.color,
     fontFamily: formatting.fontFamily,
     scriptFonts:
@@ -271,6 +283,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   if (textStyle) marks.push({ type: 'textStyle', attrs: textStyle });
   const highlight = compactAttributes({
     color: formatting.backgroundColor,
+    nativeHighlight: formatting.highlight,
     themeFill: formatting.themeFill,
   });
   if (highlight) marks.push({ type: 'highlight', attrs: highlight });
@@ -365,6 +378,20 @@ function normalizeCharacterFormatMark(
       );
       if (!border) return null;
       attrs[key] = border;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'runShading') {
+      const shading = serializeDocumentRunShading(
+        parseDocumentRunShading(candidate),
+      );
+      if (!shading) return null;
+      attrs[key] = shading;
+      continue;
+    }
+    if (type === 'highlight' && key === 'nativeHighlight') {
+      const highlight = normalizeDocumentHighlight(candidate);
+      if (!highlight) return null;
+      attrs[key] = highlight;
       continue;
     }
     if (typeof candidate === 'string') {

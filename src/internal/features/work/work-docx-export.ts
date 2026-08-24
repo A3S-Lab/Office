@@ -169,6 +169,19 @@ import {
   patchDocxRunBorders,
 } from './work-docx-run-border-export';
 import {
+  DOCUMENT_RUN_SHADING_ATTRIBUTE,
+  parseDocumentRunShadingElement,
+} from './work-document-run-shading';
+import {
+  DocxRunShadingPatchCollector,
+  documentRunShadingDocxOptions,
+  patchDocxRunShading,
+} from './work-docx-run-shading-export';
+import {
+  DOCUMENT_HIGHLIGHT_ATTRIBUTE,
+  documentHighlightFromElement,
+} from './work-document-highlight';
+import {
   DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
   documentUnderlineFormattingFromElement,
   type WorkDocumentUnderlineFormatting,
@@ -207,6 +220,8 @@ interface DocxNoteContext extends DocxListExportContext {
   legacyTextEffectsPatches: DocxLegacyTextEffectsPatchCollector;
   runBorderPatches: DocxRunBorderPatchCollector;
   usedRunBorderMarkers: Set<string>;
+  runShadingPatches: DocxRunShadingPatchCollector;
+  usedRunShadingMarkers: Set<string>;
   usedNativeTextEffectMarkers: Set<string>;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
   hasExplicitZeroCharacterSpacing: boolean;
@@ -287,6 +302,10 @@ export async function createDocxBlob(
       JSON.stringify(normalizedContent),
     ),
     usedRunBorderMarkers: new Set(),
+    runShadingPatches: new DocxRunShadingPatchCollector(
+      JSON.stringify(normalizedContent),
+    ),
+    usedRunShadingMarkers: new Set(),
     usedNativeTextEffectMarkers: new Set(),
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
@@ -385,8 +404,14 @@ export async function createDocxBlob(
       noteContext.usedRunBorderMarkers.has(patch.marker),
     ),
   );
-  const formattingChangesPatched = await patchDocxRunFormattingChanges(
+  const runShadingPatched = await patchDocxRunShading(
     runBordersPatched,
+    noteContext.runShadingPatches.patches.filter((patch) =>
+      noteContext.usedRunShadingMarkers.has(patch.marker),
+    ),
+  );
+  const formattingChangesPatched = await patchDocxRunFormattingChanges(
+    runShadingPatched,
     noteContext.formattingChangePatches.patches,
   );
   const noteImageRelationshipsPatched = await patchDocxNoteImageRelationships(
@@ -535,6 +560,16 @@ function markDocxRunBorderUsed(
   const marker = border?.color?.toUpperCase();
   if (context.runBorderPatches.hasMarker(marker)) {
     context.usedRunBorderMarkers.add(marker);
+  }
+}
+
+function markDocxRunShadingUsed(
+  shading: IRunOptions['shading'],
+  context: DocxNoteContext,
+): void {
+  const marker = shading?.fill?.toUpperCase();
+  if (context.runShadingPatches.hasMarker(marker)) {
+    context.usedRunShadingMarkers.add(marker);
   }
 }
 
@@ -834,6 +869,7 @@ async function inlineRuns(
       if (!node.textContent) return [];
       markDocxNativeTextEffectStyleUsed(inherited.style, noteContext);
       markDocxRunBorderUsed(inherited.border, noteContext);
+      markDocxRunShadingUsed(inherited.shading, noteContext);
       if (revision?.kind === 'insertion') {
         return [
           new docx.InsertedTextRun({
@@ -901,6 +937,22 @@ async function inlineRuns(
       ? nextDocxCommentBoundary(node.dataset.commentId, noteContext)
       : null;
     const backgroundColor = cssColorToHex(node.style.backgroundColor);
+    const hasExplicitRunShading =
+      tag === 'span' && node.hasAttribute(DOCUMENT_RUN_SHADING_ATTRIBUTE);
+    const explicitRunShading = hasExplicitRunShading
+      ? parseDocumentRunShadingElement(node)
+      : null;
+    if (hasExplicitRunShading && !explicitRunShading) {
+      throw new Error('Document contains invalid character shading.');
+    }
+    const hasHighlightSemantics =
+      node.hasAttribute(DOCUMENT_HIGHLIGHT_ATTRIBUTE) ||
+      node.hasAttribute('data-color') ||
+      tag === 'mark' ||
+      (Boolean(backgroundColor) && !hasExplicitRunShading);
+    const explicitHighlight = hasHighlightSemantics
+      ? documentHighlightFromElement(node)
+      : null;
     const direction = domDirection(node);
     const resolvedColor = cssColorToHex(node.style.color) ?? inherited.color;
     const themeColorMarker = noteContext.themePatches.marker(
@@ -908,14 +960,25 @@ async function inlineRuns(
       parseDocxThemeReference(node.dataset.officeThemeColor),
       resolvedColor ? `#${resolvedColor}` : null,
     );
-    const resolvedShading = backgroundColor
-      ? { fill: backgroundColor }
-      : inherited.shading;
-    const themeFillMarker = noteContext.themePatches.marker(
-      'fill',
-      parseDocxThemeReference(node.dataset.officeThemeFill),
-      resolvedShading?.fill ? `#${resolvedShading.fill}` : null,
-    );
+    const runShading = explicitRunShading
+      ? documentRunShadingDocxOptions(
+          explicitRunShading,
+          noteContext.runShadingPatches,
+        ).shading
+      : undefined;
+    const customHighlightFill =
+      hasHighlightSemantics && !explicitHighlight ? backgroundColor : null;
+    const resolvedShading =
+      runShading ??
+      (customHighlightFill ? { fill: customHighlightFill } : inherited.shading);
+    const themeFillMarker =
+      !runShading && customHighlightFill
+        ? noteContext.themePatches.marker(
+            'fill',
+            parseDocxThemeReference(node.dataset.officeThemeFill),
+            `#${customHighlightFill}`,
+          )
+        : null;
     const explicitTextCase = normalizeDocumentTextCase(
       node.dataset.officeTextCase,
     );
@@ -1051,6 +1114,9 @@ async function inlineRuns(
       emphasisMark,
       border: runBorder,
       shading: themeFillMarker ? { fill: themeFillMarker } : resolvedShading,
+      highlight: hasHighlightSemantics
+        ? (explicitHighlight ?? (customHighlightFill ? 'none' : undefined))
+        : inherited.highlight,
       snapToGrid:
         dataBoolean(node.dataset.officeWordSnapToGrid) ?? inherited.snapToGrid,
       rightToLeft:
@@ -1060,6 +1126,7 @@ async function inlineRuns(
     if (tag === 'br') {
       markDocxNativeTextEffectStyleUsed(style.style, noteContext);
       markDocxRunBorderUsed(style.border, noteContext);
+      markDocxRunShadingUsed(style.shading, noteContext);
       return [new docx.TextRun({ ...style, break: 1 })];
     }
     if (tag === 'img')

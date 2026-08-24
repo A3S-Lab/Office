@@ -30,6 +30,7 @@ import {
 } from '../work-document-character-formatting';
 import {
   DocumentFontFamily,
+  DocumentHighlight,
   DocumentTextStyle,
 } from '../work-document-word-line-metrics';
 import { DocumentScriptFontFormatting } from '../work-document-script-font-extension';
@@ -425,6 +426,7 @@ export function createDocumentPageChromeEditorExtensions(
     DocumentFontFamily,
     FontSize,
     Color,
+    DocumentHighlight.configure({ multicolor: true }),
     DocumentUnderline,
     DocumentStrike,
     DocumentCharacterFormatting,

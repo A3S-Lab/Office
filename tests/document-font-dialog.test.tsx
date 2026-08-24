@@ -15,6 +15,11 @@ import {
   documentRunBorderDomAttributes,
   parseDocumentRunBorder,
 } from '../src/internal/features/work/work-document-run-border';
+import {
+  DOCUMENT_RUN_SHADING_ATTRIBUTE,
+  documentRunShadingDomAttributes,
+  parseDocumentRunShading,
+} from '../src/internal/features/work/work-document-run-shading';
 
 let editor: Editor | null = null;
 
@@ -36,6 +41,7 @@ test('validates exact native scale, spacing, kerning, emphasis, and position ran
     legacyTextEmboss: { mixed: false, value: null },
     legacyTextImprint: { mixed: false, value: null },
     runBorder: { mixed: false, value: null },
+    runShading: { mixed: false, value: null },
     latinFont: { mixed: false, value: null },
     eastAsiaFont: { mixed: false, value: null },
     complexScriptFont: { mixed: false, value: null },
@@ -494,6 +500,72 @@ test('keeps mixed character borders untouched and applies every native option in
   });
   editor.commands.setTextSelection(textRange(editor, 'Plain'));
   expect(editor.getAttributes('textStyle').runBorder).toBeUndefined();
+});
+
+test('keeps mixed character shading untouched and applies pattern colors in one undo step', async () => {
+  const original = documentRunShadingDomAttributes({
+    pattern: 'pct25',
+    color: { value: '#c00000' },
+    fill: { value: '#fff2cc' },
+  });
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: `<p><span ${DOCUMENT_RUN_SHADING_ATTRIBUTE}='${original[DOCUMENT_RUN_SHADING_ATTRIBUTE]}' style="${original.style}">Shaded</span> Plain</p>`,
+  });
+  document.body.append(editor.view.dom);
+  editor.commands.selectAll();
+  const selection = {
+    from: editor.state.selection.from,
+    to: editor.state.selection.to,
+  };
+  const source = documentFontDialogSource(editor);
+  expect(source.runShading).toEqual({ mixed: true, value: null });
+
+  render(
+    <FontDialogHarness editor={editor} selection={selection} source={source} />,
+  );
+  expect(screen.getByText(/包含不同的字符底纹/)).toBeInTheDocument();
+  expect(screen.getByRole('combobox', { name: '字符底纹' })).toHaveTextContent(
+    '混合（保持不变）',
+  );
+
+  fireEvent.click(screen.getByRole('combobox', { name: '字符底纹' }));
+  fireEvent.click(await screen.findByRole('option', { name: '底纹' }));
+  fireEvent.click(screen.getByRole('combobox', { name: '字符底纹图案' }));
+  fireEvent.click(await screen.findByRole('option', { name: '对角交叉' }));
+  fireEvent.click(screen.getByRole('button', { name: '字符底纹前景色' }));
+  fireEvent.click(await screen.findByRole('option', { name: '颜色 #0070c0' }));
+  fireEvent.click(screen.getByRole('button', { name: '字符底纹背景色' }));
+  fireEvent.click(await screen.findByRole('option', { name: '颜色 #d9ead3' }));
+
+  const preview = screen
+    .getByLabelText('字符高级格式预览')
+    .querySelector('output > span');
+  expect(preview?.getAttribute('style')).toContain('background-image');
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '字体高级设置' })).toBeNull(),
+  );
+
+  editor.commands.setTextSelection(selection);
+  expect(
+    parseDocumentRunShading(editor.getAttributes('textStyle').runShading),
+  ).toEqual({
+    pattern: 'diagCross',
+    color: { value: '#0070c0' },
+    fill: { value: '#d9ead3' },
+  });
+  expect(editor.commands.undo()).toBe(true);
+  editor.commands.setTextSelection(textRange(editor, 'Shaded'));
+  expect(
+    parseDocumentRunShading(editor.getAttributes('textStyle').runShading),
+  ).toEqual({
+    pattern: 'pct25',
+    color: { value: '#c00000' },
+    fill: { value: '#fff2cc' },
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Plain'));
+  expect(editor.getAttributes('textStyle').runShading).toBeUndefined();
 });
 
 test('clears direct kerning from the saved selection and restores it with one undo', async () => {

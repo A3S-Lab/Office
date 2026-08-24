@@ -28,6 +28,8 @@ import {
   DocumentFontDialogRunBorderSection,
   documentFontDialogRunBorderPreviewStyle,
 } from './document-font-dialog-run-border-section';
+import { DocumentFontDialogRunShadingSection } from './document-font-dialog-run-shading-section';
+import { documentFontDialogRunShadingPreviewStyle } from './document-font-dialog-run-shading-model';
 
 const characterSpacingModes: ReadonlyArray<{
   value: DocumentCharacterSpacingMode;
@@ -95,6 +97,7 @@ export function DocumentFontDialog({
   const [legacyTextImprintTouched, setLegacyTextImprintTouched] =
     useState(false);
   const [runBorderTouched, setRunBorderTouched] = useState(false);
+  const [runShadingTouched, setRunShadingTouched] = useState(false);
   const [latinFontTouched, setLatinFontTouched] = useState(false);
   const [eastAsiaFontTouched, setEastAsiaFontTouched] = useState(false);
   const [complexScriptFontTouched, setComplexScriptFontTouched] =
@@ -114,6 +117,7 @@ export function DocumentFontDialog({
     legacyTextEmboss: legacyTextEmbossTouched,
     legacyTextImprint: legacyTextImprintTouched,
     runBorder: runBorderTouched,
+    runShading: runShadingTouched,
     kerning: kerningTouched,
     latinFont: latinFontTouched,
   });
@@ -131,6 +135,10 @@ export function DocumentFontDialog({
   });
   const previewRunBorder = documentFontDialogRunBorderPreviewStyle(
     source.runBorder,
+    draft,
+  );
+  const previewRunShading = documentFontDialogRunShadingPreviewStyle(
+    source.runShading,
     draft,
   );
 
@@ -506,6 +514,15 @@ export function DocumentFontDialog({
             }
             onTouched={() => setRunBorderTouched(true)}
           />
+          <DocumentFontDialogRunShadingSection
+            source={source.runShading}
+            draft={draft}
+            touched={runShadingTouched}
+            onDraftChange={(runShadingDraft) =>
+              setDraft((current) => ({ ...current, ...runShadingDraft }))
+            }
+            onTouched={() => setRunShadingTouched(true)}
+          />
           {source.characterScale.mixed && !characterScaleTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
               当前选区包含多种字符缩放比例。输入缩放比例后才会统一修改。
@@ -554,7 +571,8 @@ export function DocumentFontDialog({
             legacyTextShadowTouched ||
             legacyTextEmbossTouched ||
             legacyTextImprintTouched ||
-            runBorderTouched) &&
+            runBorderTouched ||
+            runShadingTouched) &&
             error && (
               <p className="work-document-font-dialog-error" role="alert">
                 {error}
@@ -580,6 +598,7 @@ export function DocumentFontDialog({
                 verticalAlign: `${previewPosition}pt`,
                 ...previewEmphasis,
                 ...previewLegacyTextEffects,
+                ...previewRunShading,
                 ...previewRunBorder,
                 ...(draft.hiddenText
                   ? {

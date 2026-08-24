@@ -25,6 +25,11 @@ import {
   parseDocumentRunBorder,
   serializeDocumentRunBorder,
 } from './work-document-run-border';
+import {
+  type DocumentRunShading,
+  normalizeDocumentRunShading,
+  serializeDocumentRunShading,
+} from './work-document-run-shading';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -56,6 +61,8 @@ declare module '@tiptap/core' {
       setDocumentRunBorder: (border: DocumentRunBorder) => ReturnType;
       unsetDocumentRunBorder: () => ReturnType;
       toggleDocumentRunBorder: () => ReturnType;
+      setDocumentRunShading: (shading: DocumentRunShading) => ReturnType;
+      unsetDocumentRunShading: () => ReturnType;
     };
   }
 }
@@ -207,6 +214,23 @@ export const DocumentCharacterFormatting = Extension.create({
                 },
           );
         },
+      setDocumentRunShading:
+        (shading: DocumentRunShading) =>
+        ({ commands }) => {
+          const serialized = serializeDocumentRunShading(
+            normalizeDocumentRunShading(shading),
+          );
+          return serialized
+            ? commands.setMark('textStyle', { runShading: serialized })
+            : false;
+        },
+      unsetDocumentRunShading:
+        () =>
+        ({ chain }) =>
+          chain()
+            .setMark('textStyle', { runShading: null })
+            .removeEmptyTextStyle()
+            .run(),
     };
   },
 

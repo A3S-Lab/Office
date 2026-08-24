@@ -81,6 +81,18 @@ import {
   serializeDocumentRunBorder,
 } from './work-document-run-border';
 import { resolveDocxRunBorder } from './work-docx-run-border';
+import {
+  type DocumentRunShading,
+  documentRunShadingDomAttributes,
+  serializeDocumentRunShading,
+} from './work-document-run-shading';
+import { resolveDocxRunShading } from './work-docx-run-shading';
+import {
+  documentHighlightCssColor,
+  documentHighlightDomAttributes,
+  documentHighlightFromDocxValue,
+  type WorkDocumentHighlight,
+} from './work-document-highlight';
 
 export interface ImportedDocxRunFormatting {
   bold?: boolean;
@@ -107,10 +119,12 @@ export interface ImportedDocxRunFormatting {
   fontSize?: number;
   color?: string;
   backgroundColor?: string;
+  highlight?: WorkDocumentHighlight;
   themeColor?: DocxThemeColorReference;
   themeFill?: DocxThemeColorReference;
   textCase?: WorkDocumentTextCase;
   runBorder?: DocumentRunBorder;
+  runShading?: DocumentRunShading;
 }
 
 export interface ImportedDocxRunFormattingMarker {
@@ -340,6 +354,7 @@ function resolvedRunFormatting(
   let complexFontSize: number | undefined;
   let color: string | undefined;
   let backgroundColor: string | undefined;
+  let highlightValue: WorkDocumentHighlight | undefined;
   let themeColor: DocxThemeColorReference | undefined;
   let themeFill: DocxThemeColorReference | undefined;
   let bold: boolean | undefined;
@@ -365,6 +380,7 @@ function resolvedRunFormatting(
   const hiddenText = resolveDocxHiddenText(propertySources);
   const legacyTextEffects = resolveDocxLegacyTextEffects(propertySources);
   const runBorder = resolveDocxRunBorder(propertySources, theme).border;
+  const runShading = resolveDocxRunShading(propertySources, theme).shading;
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
@@ -463,36 +479,12 @@ function resolvedRunFormatting(
 
     const highlight = directChild(properties, 'highlight');
     if (highlight) {
-      const value = wordAttribute(highlight, 'val')?.trim().toLowerCase();
+      const value = documentHighlightFromDocxValue(
+        wordAttribute(highlight, 'val'),
+      );
       if (value) {
-        backgroundColor = wordHighlightColor(value);
-        themeFill = undefined;
-      }
-    } else {
-      const shading = directChild(properties, 'shd');
-      const fill = shading ? wordAttribute(shading, 'fill')?.trim() : undefined;
-      const themed = shading
-        ? docxThemeColor(
-            theme,
-            wordAttribute(shading, 'themeFill'),
-            wordAttribute(shading, 'themeFillTint'),
-            wordAttribute(shading, 'themeFillShade'),
-          )
-        : undefined;
-      if (themed) {
-        backgroundColor = `#${themed}`;
-        themeFill = themeReference(
-          shading!,
-          'themeFill',
-          'themeFillTint',
-          'themeFillShade',
-          backgroundColor,
-        );
-      } else if (fill?.toLowerCase() === 'auto') {
-        backgroundColor = 'transparent';
-        themeFill = undefined;
-      } else if (fill && /^[0-9a-f]{6}$/i.test(fill)) {
-        backgroundColor = `#${fill.toLowerCase()}`;
+        highlightValue = value;
+        backgroundColor = documentHighlightCssColor(value) ?? 'transparent';
         themeFill = undefined;
       }
     }
@@ -571,10 +563,12 @@ function resolvedRunFormatting(
     ...(snapToGrid !== undefined ? { wordSnapToGrid: snapToGrid } : {}),
     ...(color ? { color } : {}),
     ...(backgroundColor ? { backgroundColor } : {}),
+    ...(highlightValue ? { highlight: highlightValue } : {}),
     ...(themeColor ? { themeColor } : {}),
     ...(themeFill ? { themeFill } : {}),
     ...(textCase ? { textCase } : {}),
     ...(runBorder ? { runBorder } : {}),
+    ...(runShading ? { runShading } : {}),
   };
 }
 
@@ -689,6 +683,14 @@ function formattingMarkup(
       else span.setAttribute(name, value);
     }
   }
+  if (formatting.runShading) {
+    for (const [name, value] of Object.entries(
+      documentRunShadingDomAttributes(formatting.runShading),
+    )) {
+      if (name === 'style') span.style.cssText += `; ${value}`;
+      else span.setAttribute(name, value);
+    }
+  }
   const legacyTextEffects: WorkDocumentLegacyTextEffects = {
     ...(formatting.legacyTextOutline !== undefined
       ? { outline: formatting.legacyTextOutline }
@@ -721,8 +723,16 @@ function formattingMarkup(
   if (formatting.color) span.style.color = formatting.color;
   const themeColor = serializeDocxThemeReference(formatting.themeColor ?? null);
   if (themeColor) span.dataset.officeThemeColor = themeColor;
-  if (formatting.backgroundColor)
+  if (formatting.highlight) {
+    for (const [name, value] of Object.entries(
+      documentHighlightDomAttributes(formatting.highlight),
+    )) {
+      if (name === 'style') span.style.cssText += `; ${value}`;
+      else span.setAttribute(name, value);
+    }
+  } else if (formatting.backgroundColor) {
     span.style.backgroundColor = formatting.backgroundColor;
+  }
   const themeFill = serializeDocxThemeReference(formatting.themeFill ?? null);
   if (themeFill) span.dataset.officeThemeFill = themeFill;
   if (formatting.textCase) {
@@ -828,6 +838,8 @@ function importedRunFormattingChange(
       legacyTextEmboss: beforeFormatting.legacyTextEmboss,
       legacyTextImprint: beforeFormatting.legacyTextImprint,
       runBorder: serializeDocumentRunBorder(beforeFormatting.runBorder),
+      runShading: serializeDocumentRunShading(beforeFormatting.runShading),
+      highlight: beforeFormatting.highlight,
     }),
   };
 }
@@ -1040,29 +1052,6 @@ function numericAttribute(
 
 function wordAttribute(element: Element, name: string): string | null {
   return attribute(element, name) ?? attribute(element, `w:${name}`);
-}
-
-function wordHighlightColor(value: string): string {
-  const colors: Record<string, string> = {
-    black: '#000000',
-    blue: '#0000ff',
-    cyan: '#00ffff',
-    darkblue: '#000080',
-    darkcyan: '#008080',
-    darkgray: '#808080',
-    darkgreen: '#008000',
-    darkmagenta: '#800080',
-    darkred: '#800000',
-    darkyellow: '#808000',
-    green: '#00ff00',
-    lightgray: '#c0c0c0',
-    magenta: '#ff00ff',
-    none: 'transparent',
-    red: '#ff0000',
-    white: '#ffffff',
-    yellow: '#ffff00',
-  };
-  return colors[value] ?? 'transparent';
 }
 
 function formatNumber(value: number): string {

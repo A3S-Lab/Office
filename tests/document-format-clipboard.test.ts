@@ -295,7 +295,7 @@ test('applies compatible body formatting when the target omits heading nodes', (
   pageChromeEditor.destroy();
 });
 
-test('filters unsupported body marks at a page-chrome cursor', () => {
+test('preserves supported body marks at a page-chrome cursor', () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),
     content: '<p><mark data-color="#fff2cc"><strong>Source</strong></mark></p>',
@@ -316,7 +316,10 @@ test('filters unsupported body marks at a page-chrome cursor', () => {
     textRange(pageChromeEditor, ' typed'),
   );
   expect(pageChromeEditor.isActive('bold')).toBe(true);
-  expect(pageChromeEditor.schema.marks.highlight).toBeUndefined();
+  expect(pageChromeEditor.isActive('highlight')).toBe(true);
+  expect(pageChromeEditor.getAttributes('highlight')).toMatchObject({
+    color: '#fff2cc',
+  });
 
   pageChromeEditor.destroy();
 });

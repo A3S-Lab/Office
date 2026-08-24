@@ -237,7 +237,7 @@ function serializedShadingColor(
   };
 }
 
-function documentParagraphShadingPresentation(
+export function documentParagraphShadingPresentation(
   shading: DocumentParagraphShading,
 ): {
   backgroundColor: string;
@@ -290,7 +290,7 @@ function shadingPercentage(
   return match?.[1] ? Number(match[1]) : null;
 }
 
-function paragraphShadingBackgroundUsesForeground(
+export function paragraphShadingBackgroundUsesForeground(
   shading: DocumentParagraphShading,
 ): boolean {
   if (shading.pattern === 'solid') return true;

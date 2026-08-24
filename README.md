@@ -757,6 +757,23 @@ layout. Browser and PDF paint are bounded visual approximations; the OOXML
 semantics remain exact. The Playground's **字符边框** template exercises the
 complete authoring and one-step Undo path.
 
+Native Writer character shading retains one exact `w:shd` value rather than a
+flattened CSS fill. The typed model preserves every WordprocessingML pattern,
+direct or automatic foreground/background colors, independent theme channels
+with tint and shade, and explicit `nil`. Document defaults, paragraph and
+character styles, conditional table styles, body, page chrome, notes,
+formatting revisions, strict/transitional import, exact export, and reopen use
+the same resolver. Invalid or spoofed leaves fail closed and are diagnosed.
+
+The shared `Cmd/Ctrl+D` Advanced Font Settings dialog distinguishes mixed,
+Follow style, explicit no-shading, and editable pattern/color states; changes
+commit with Format Painter and one-step Undo semantics. The DOM stores bounded
+JSON in `data-office-run-shading`, while CSS projects patterns without changing
+line geometry, so eligible content stays on the Worker/WASM path. Native
+`w:highlight` remains independent and takes display precedence without
+clobbering shading. The Playground's **字符底纹** template demonstrates the
+complete flow.
+
 Supported native OMML equations now survive as bounded structured objects in
 the document body, headers, footers, footnotes, and endnotes. Inline and display
 math, Unicode runs with literal/normal-text semantics, math script/style,

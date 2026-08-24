@@ -18,6 +18,7 @@ import { isSupportedDocxParagraphFormattingChange } from './work-docx-paragraph-
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { diagnoseDocxRunFonts } from './work-docx-run-fonts-diagnostics';
 import { diagnoseDocxRunBorders } from './work-docx-run-border-diagnostics';
+import { diagnoseDocxRunShading } from './work-docx-run-shading-diagnostics';
 import { isSupportedDocxRunFormattingChange } from './work-docx-run-formatting-import';
 import {
   attribute,
@@ -223,6 +224,7 @@ export async function analyzeDocxCompatibility(
       issues.push(...(await diagnoseDocxHiddenText(archive, document)));
       issues.push(...(await diagnoseDocxLegacyTextEffects(archive, document)));
       issues.push(...(await diagnoseDocxRunBorders(archive, document)));
+      issues.push(...(await diagnoseDocxRunShading(archive, document)));
       issues.push(...(await diagnoseDocxRunFonts(archive, document)));
     }
     issues.push(...(await diagnoseDocxPageChrome(archive)));

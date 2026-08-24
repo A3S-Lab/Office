@@ -51,6 +51,16 @@ import {
   parseDocumentRunBorderElement,
 } from './work-document-run-border';
 import {
+  DOCUMENT_RUN_SHADING_ATTRIBUTE,
+  documentRunShadingDomAttributes,
+  parseDocumentRunShadingElement,
+} from './work-document-run-shading';
+import {
+  DOCUMENT_HIGHLIGHT_ATTRIBUTE,
+  documentHighlightDomAttributes,
+  documentHighlightFromElement,
+} from './work-document-highlight';
+import {
   DOCUMENT_PARAGRAPH_ID_ATTRIBUTE,
   DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
   normalizeDocumentParagraphIdentity,
@@ -513,6 +523,14 @@ function sanitizeAttributes(element: Element, tag: string) {
   const runBorder =
     tag === 'span' ? parseDocumentRunBorderElement(element) : null;
   const runBorderAttributes = documentRunBorderDomAttributes(runBorder);
+  const runShading =
+    tag === 'span' ? parseDocumentRunShadingElement(element) : null;
+  const runShadingAttributes = documentRunShadingDomAttributes(runShading);
+  const highlight =
+    tag === 'span' && element.hasAttribute(DOCUMENT_HIGHLIGHT_ATTRIBUTE)
+      ? documentHighlightFromElement(element)
+      : null;
+  const highlightAttributes = documentHighlightDomAttributes(highlight);
   const underline =
     tag === 'u' ? documentUnderlineFormattingFromElement(element) : null;
   const underlineAttributes = underline
@@ -550,6 +568,8 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_RUN_BORDER_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_RUN_SHADING_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_HIGHLIGHT_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_SCRIPT_FONTS_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE);
   const styles = [
@@ -566,6 +586,8 @@ function sanitizeAttributes(element: Element, tag: string) {
     underlineAttributes.style ?? '',
     strikeAttributes.style ?? '',
     runBorderAttributes.style ?? '',
+    runShadingAttributes.style ?? '',
+    highlightAttributes.style ?? '',
     borderAttributes.style ?? '',
     shadingAttributes.style ?? '',
   ].filter(Boolean);
@@ -650,6 +672,18 @@ function sanitizeAttributes(element: Element, tag: string) {
     if (serializedRunBorder) {
       element.setAttribute(DOCUMENT_RUN_BORDER_ATTRIBUTE, serializedRunBorder);
     }
+    const serializedRunShading =
+      runShadingAttributes[DOCUMENT_RUN_SHADING_ATTRIBUTE];
+    if (serializedRunShading) {
+      element.setAttribute(
+        DOCUMENT_RUN_SHADING_ATTRIBUTE,
+        serializedRunShading,
+      );
+    }
+    const nativeHighlight = highlightAttributes[DOCUMENT_HIGHLIGHT_ATTRIBUTE];
+    if (nativeHighlight) {
+      element.setAttribute(DOCUMENT_HIGHLIGHT_ATTRIBUTE, nativeHighlight);
+    }
   }
   if (tag === 'span' && scriptFonts) {
     for (const [name, value] of Object.entries(scriptFontAttributes)) {
@@ -707,6 +741,8 @@ function sanitizeAttributes(element: Element, tag: string) {
                           DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
                           DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
                           DOCUMENT_RUN_BORDER_ATTRIBUTE,
+                          DOCUMENT_RUN_SHADING_ATTRIBUTE,
+                          DOCUMENT_HIGHLIGHT_ATTRIBUTE,
                           DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
                           DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,
                         ]

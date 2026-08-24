@@ -15,6 +15,13 @@ import { documentLegacyTextEffectsDomAttributes } from './work-document-legacy-t
 import { resolveDocxLegacyTextEffects } from './work-docx-legacy-text-effects';
 import { documentRunBorderDomAttributes } from './work-document-run-border';
 import { resolveDocxRunBorder } from './work-docx-run-border';
+import { documentRunShadingDomAttributes } from './work-document-run-shading';
+import { resolveDocxRunShading } from './work-docx-run-shading';
+import {
+  documentHighlightDomAttributes,
+  documentHighlightFromDocxValue,
+  type WorkDocumentHighlight,
+} from './work-document-highlight';
 import { documentParagraphBordersDomAttributes } from './work-document-paragraph-borders';
 import {
   documentPageChromeLegacyFields,
@@ -485,6 +492,21 @@ async function runHtml(
       documentLegacyTextEffectsDomAttributes(legacyTextEffects),
     )}>${content}</span>`;
   }
+  const highlight = resolvePageChromeHighlight(propertySources);
+  if (highlight) {
+    content = `<span${htmlAttributes(
+      documentHighlightDomAttributes(highlight),
+    )}>${content}</span>`;
+  }
+  const runShading = resolveDocxRunShading(
+    propertySources,
+    context.theme,
+  ).shading;
+  if (runShading) {
+    content = `<span${htmlAttributes(
+      documentRunShadingDomAttributes(runShading),
+    )}>${content}</span>`;
+  }
   const runBorder = resolveDocxRunBorder(propertySources, context.theme).border;
   if (runBorder) {
     content = `<span${htmlAttributes(
@@ -671,6 +693,18 @@ function resolveDocxPageChromeFontSizePoints(
     if (candidate !== undefined) fontSize = candidate;
   }
   return fontSize;
+}
+
+function resolvePageChromeHighlight(
+  propertySources: readonly Element[],
+): WorkDocumentHighlight | null {
+  let highlight: WorkDocumentHighlight | null = null;
+  for (const properties of propertySources) {
+    const element = directChild(properties, 'highlight');
+    if (!element) continue;
+    highlight = documentHighlightFromDocxValue(attribute(element, 'val'));
+  }
+  return highlight;
 }
 
 function docxPageChromeFontSizePointsFromProperties(
