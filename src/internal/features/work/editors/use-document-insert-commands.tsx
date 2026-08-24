@@ -21,6 +21,16 @@ import type {
   WorkDocumentFieldContextResolver,
   WorkDocumentFieldKind,
 } from '../work-document-fields';
+import {
+  DEFAULT_DOCUMENT_INDEX_OPTIONS,
+  type WorkDocumentIndexEntryDraft,
+  type WorkDocumentIndexOptions,
+} from '../work-document-index';
+import {
+  selectedDocumentIndexDraft,
+  selectedDocumentIndexEntry,
+  selectedDocumentIndexOptions,
+} from '../work-document-index-nodes';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
 import {
   DEFAULT_DOCUMENT_TABLE_OF_CONTENTS_OPTIONS,
@@ -31,6 +41,8 @@ import type { WorkDocumentContent } from '../work-types';
 import { OfficeTextField, useOfficeDialog } from './office-controls';
 import { readOfficeFileAsDataUrl } from './office-file-data';
 import { DocumentTableOfContentsDialog } from './document-table-of-contents-dialog';
+import { DocumentIndexDialog } from './document-index-dialog';
+import { DocumentIndexEntryDialog } from './document-index-entry-dialog';
 
 type DocumentInsertDialog =
   | {
@@ -47,6 +59,16 @@ type DocumentInsertDialog =
       kind: 'tableOfContents';
       editing: boolean;
       options: WorkDocumentTableOfContentsOptions;
+    }
+  | {
+      kind: 'indexEntry';
+      editing: boolean;
+      value: WorkDocumentIndexEntryDraft;
+    }
+  | {
+      kind: 'index';
+      editing: boolean;
+      options: WorkDocumentIndexOptions;
     };
 
 type WorkDocumentCrossReferenceTarget =
@@ -60,8 +82,11 @@ export interface DocumentInsertCommands {
   insertField: (kind: WorkDocumentFieldKind) => void;
   insertImage: (file: File) => Promise<void>;
   insertNote: (kind: WorkDocumentNoteKind) => boolean;
+  openIndexEntry: () => void;
+  openIndex: () => void;
   openTableOfContents: () => void;
   refreshFields: () => boolean;
+  refreshIndex: () => boolean;
   refreshTableOfContents: () => boolean;
 }
 
@@ -195,6 +220,35 @@ export function useDocumentInsertCommands({
     });
   }, [editor, rememberInvoker]);
 
+  const openIndexEntry = useCallback(() => {
+    if (!editor) return;
+    const value = selectedDocumentIndexDraft(editor);
+    if (!value) {
+      void officeDialog.notice({
+        title: '请选择索引文字',
+        description: '请先选择要标记的正文文字，或选中一个已有索引项。',
+      });
+      return;
+    }
+    rememberInvoker();
+    setInsertDialog({
+      kind: 'indexEntry',
+      editing: Boolean(selectedDocumentIndexEntry(editor)),
+      value,
+    });
+  }, [editor, officeDialog, rememberInvoker]);
+
+  const openIndex = useCallback(() => {
+    if (!editor) return;
+    rememberInvoker();
+    const selected = selectedDocumentIndexOptions(editor);
+    setInsertDialog({
+      kind: 'index',
+      editing: Boolean(selected),
+      options: selected ?? DEFAULT_DOCUMENT_INDEX_OPTIONS,
+    });
+  }, [editor, rememberInvoker]);
+
   const refreshFields = useCallback(
     () =>
       editor?.commands.refreshDocumentFields(contentRef.current, {
@@ -205,6 +259,13 @@ export function useDocumentInsertCommands({
   const refreshTableOfContents = useCallback(
     () =>
       editor?.commands.refreshDocumentTablesOfContents({
+        resolveContext: resolveFieldContext ?? undefined,
+      }) ?? false,
+    [editor, resolveFieldContext],
+  );
+  const refreshIndex = useCallback(
+    () =>
+      editor?.commands.refreshDocumentIndexes({
         resolveContext: resolveFieldContext ?? undefined,
       }) ?? false,
     [editor, resolveFieldContext],
@@ -252,6 +313,27 @@ export function useDocumentInsertCommands({
           insertDialog.options,
           buildOptions,
         );
+    if (!applied) return;
+    invokerRef.current = editor.view.dom;
+    setInsertDialog(null);
+  };
+  const submitIndexEntry = () => {
+    if (!editor || insertDialog?.kind !== 'indexEntry') return;
+    const applied = insertDialog.editing
+      ? editor.commands.updateDocumentIndexEntry(insertDialog.value)
+      : editor.commands.markDocumentIndexEntry(insertDialog.value);
+    if (!applied) return;
+    invokerRef.current = editor.view.dom;
+    setInsertDialog(null);
+  };
+  const submitIndex = () => {
+    if (!editor || insertDialog?.kind !== 'index') return;
+    const buildOptions = {
+      resolveContext: resolveFieldContext ?? undefined,
+    };
+    const applied = insertDialog.editing
+      ? editor.commands.updateDocumentIndex(insertDialog.options, buildOptions)
+      : editor.commands.insertDocumentIndex(insertDialog.options, buildOptions);
     if (!applied) return;
     invokerRef.current = editor.view.dom;
     setInsertDialog(null);
@@ -418,6 +500,28 @@ export function useDocumentInsertCommands({
           onSubmit={submitTableOfContents}
         />
       )}
+      {insertDialog?.kind === 'indexEntry' && (
+        <DocumentIndexEntryDialog
+          editing={insertDialog.editing}
+          value={insertDialog.value}
+          restoreFocusTarget={() => invokerRef.current}
+          onCancel={() => setInsertDialog(null)}
+          onChange={(value) => setInsertDialog({ ...insertDialog, value })}
+          onSubmit={submitIndexEntry}
+        />
+      )}
+      {insertDialog?.kind === 'index' && (
+        <DocumentIndexDialog
+          editing={insertDialog.editing}
+          options={insertDialog.options}
+          restoreFocusTarget={() => invokerRef.current}
+          onCancel={() => setInsertDialog(null)}
+          onOptionsChange={(options) =>
+            setInsertDialog({ ...insertDialog, options })
+          }
+          onSubmit={submitIndex}
+        />
+      )}
     </Fragment>
   );
 
@@ -428,8 +532,11 @@ export function useDocumentInsertCommands({
     insertField,
     insertImage,
     insertNote,
+    openIndexEntry,
+    openIndex,
     openTableOfContents,
     refreshFields,
+    refreshIndex,
     refreshTableOfContents,
   };
 }

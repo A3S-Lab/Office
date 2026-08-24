@@ -967,11 +967,16 @@ function documentToolbar(
       onInsertNote={noop}
       onInsertCaption={noop}
       onInsertCrossReference={noop}
+      onOpenTableOfContents={noop}
+      onOpenIndexEntry={noop}
+      onOpenIndex={noop}
       citationsOpen={false}
       citationSourceCount={0}
       onToggleCitations={noop}
       onInsertField={noop}
       onRefreshFields={noop}
+      onRefreshIndex={noop}
+      onRefreshTableOfContents={noop}
       canInsertComment={canInsertComment}
       onInsertComment={onInsertComment}
       commentsOpen={false}

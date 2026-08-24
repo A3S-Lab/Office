@@ -15,6 +15,8 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.31.0' ||
+    version === '0.30.0' ||
     version === '0.29.0' ||
     version === '0.28.0' ||
     version === '0.27.0' ||
@@ -53,6 +55,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.31.0',
     '0.30.0',
     '0.29.0',
     '0.28.0',
@@ -156,18 +159,21 @@ test('makes the latest main capabilities discoverable from README and both docum
 
   expect(readme).toContain('## Latest on `main`');
   expect(readme).toContain('Latest capabilities → 可更新目录');
+  expect(readme).toContain('Latest capabilities → 原生索引');
   expect(readme).toContain('Latest capabilities → 字符底纹');
   expect(readme).toContain('Latest capabilities → 校对语言');
   expect(readme).toContain('Latest capabilities → 数据验证');
 
   expect(englishHome).toContain('aria-label="Latest capabilities on main"');
   expect(englishHome).toContain('Table of contents');
+  expect(englishHome).toContain('Document index');
   expect(englishHome).toContain('Character shading');
   expect(englishHome).toContain('Proofing languages');
   expect(englishHome).toContain('Data validation');
 
   expect(chineseHome).toContain('aria-label="main 分支最新能力"');
   expect(chineseHome).toContain('document.html#原生可更新目录');
+  expect(chineseHome).toContain('document.html#原生文档索引');
   expect(chineseHome).toContain('原生字符底纹');
   expect(chineseHome).toContain('原生校对语言');
   expect(chineseHome).toContain('spreadsheet.html#数据验证');
@@ -277,6 +283,94 @@ test('publishes Writer Table of Contents in README, docs, roadmap, and Playgroun
     expect(document).toContain('512');
     expect(document).toContain('`w:sdt`');
     expect(document).toContain('`TOC`');
+  }
+});
+
+test('publishes native Writer indexes in README, docs, roadmap, and Playground guidance', async () => {
+  const [
+    readme,
+    changelog,
+    roadmap,
+    english,
+    chinese,
+    releaseEnglish,
+    releaseChinese,
+    englishArchitecture,
+    chineseArchitecture,
+    englishRoadmap,
+    chineseRoadmap,
+    templates,
+    playground,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.31.0/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.31.0/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'src/internal/features/work/work-templates.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'playground/src/workspace-home.tsx'),
+      'utf8',
+    ),
+  ]);
+
+  expect(readme).toContain('Latest capabilities → 原生索引');
+  expect(readme).toContain('native `XE` simple fields');
+  expect(changelog).toContain('native Writer index authoring');
+  expect(roadmap).toContain('| Native index authoring | **Supported**');
+  expect(english).toContain('## Native document index');
+  expect(chinese).toContain('## 原生文档索引');
+  expect(releaseEnglish).toContain('## Native document index');
+  expect(releaseChinese).toContain('## 原生文档索引');
+  expect(templates).toContain("id: 'document-index'");
+  expect(playground).toContain("'document-index'");
+  for (const document of [
+    readme,
+    english,
+    chinese,
+    releaseEnglish,
+    releaseChinese,
+    englishArchitecture,
+    chineseArchitecture,
+    englishRoadmap,
+    chineseRoadmap,
+  ]) {
+    expect(document).toContain('`XE`');
+    expect(document).toContain('`INDEX`');
+    expect(document).toContain('512');
   }
 });
 
@@ -419,6 +513,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.31.0',
     '0.28.0',
     '0.27.0',
     '0.26.0',
@@ -486,6 +581,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.31.0',
     '0.28.0',
     '0.27.0',
     '0.26.0',

@@ -20,6 +20,10 @@ import {
   documentRunShadingDomAttributes,
 } from './work-document-run-shading';
 import { documentProofingDomAttributes } from './work-document-proofing';
+import {
+  documentIndexEntryHtml,
+  documentIndexHtml,
+} from './work-document-index';
 import { documentTableOfContentsHtml } from './work-document-table-of-contents';
 import type { WorkDocumentScriptFontSlot } from './work-document-script-fonts';
 
@@ -44,6 +48,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     name: '可更新目录',
     description: '标题级别、超链接、页码、前导符与原生 DOCX 往返',
     accent: '#315f9f',
+  },
+  {
+    id: 'document-index',
+    kind: 'document',
+    name: '原生索引',
+    description: '主次索引项、交叉引用、页码样式与原生 DOCX 往返',
+    accent: '#4d6398',
   },
   {
     id: 'text-effects',
@@ -146,6 +157,7 @@ function initialTitle(templateId: string, kind: WorkArtifactKind): string {
   const titles: Record<string, string> = {
     'project-brief': '新项目方案',
     'table-of-contents': '可更新目录示例',
+    'document-index': '原生索引示例',
     'text-effects': '文字效果示例',
     'run-borders': '字符边框示例',
     'run-shading': '字符底纹示例',
@@ -224,6 +236,111 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
         '<hr class="work-page-break" data-page-break="true">',
         '<h1 data-office-paragraph-id="00001003" data-office-paragraph-text-id="00002003">实施计划</h1>',
         '<p>导出 DOCX 后仍保留原生 TOC 域、缓存目录项、超链接和前导符。</p>',
+      ].join(''),
+    };
+  }
+  if (templateId === 'document-index') {
+    return {
+      type: 'document',
+      pageSize: 'a4',
+      html: [
+        documentIndexHtml({
+          id: 'playground-document-index',
+          options: {
+            columns: 2,
+            format: 'indented',
+            rightAlignPageNumbers: true,
+            leader: 'dot',
+          },
+          entries: [
+            {
+              mainEntry: 'Architecture',
+              subEntry: '',
+              crossReference: '',
+              pages: [
+                {
+                  pageNumber: 1,
+                  pageBold: false,
+                  pageItalic: false,
+                  targetIds: ['index-entry-architecture'],
+                },
+              ],
+            },
+            {
+              mainEntry: 'Architecture',
+              subEntry: 'Runtime',
+              crossReference: '',
+              pages: [
+                {
+                  pageNumber: 1,
+                  pageBold: true,
+                  pageItalic: false,
+                  targetIds: ['index-entry-runtime'],
+                },
+              ],
+            },
+            {
+              mainEntry: 'Collaboration',
+              subEntry: '',
+              crossReference: 'Architecture',
+              pages: [],
+            },
+            {
+              mainEntry: 'Performance',
+              subEntry: '',
+              crossReference: '',
+              pages: [
+                {
+                  pageNumber: 2,
+                  pageBold: false,
+                  pageItalic: true,
+                  targetIds: ['index-entry-performance'],
+                },
+              ],
+            },
+          ],
+        }),
+        '<h1>原生索引</h1>',
+        `<p>选择正文后，从“引用 → 标记索引项”创建主索引项、次索引项或交叉引用。${documentIndexEntryHtml(
+          {
+            id: 'index-entry-architecture',
+            mainEntry: 'Architecture',
+            subEntry: '',
+            crossReference: '',
+            pageBold: false,
+            pageItalic: false,
+          },
+        )}</p>`,
+        `<p>Runtime 项的页码使用粗体，并作为 Architecture 的次索引项。${documentIndexEntryHtml(
+          {
+            id: 'index-entry-runtime',
+            mainEntry: 'Architecture',
+            subEntry: 'Runtime',
+            crossReference: '',
+            pageBold: true,
+            pageItalic: false,
+          },
+        )}</p>`,
+        `<p>Collaboration 使用“参见 Architecture”交叉引用，不生成当前页码。${documentIndexEntryHtml(
+          {
+            id: 'index-entry-collaboration',
+            mainEntry: 'Collaboration',
+            subEntry: '',
+            crossReference: 'Architecture',
+            pageBold: false,
+            pageItalic: false,
+          },
+        )}</p>`,
+        '<hr class="work-page-break" data-page-break="true">',
+        `<p>Performance 位于第二页，页码使用斜体。${documentIndexEntryHtml({
+          id: 'index-entry-performance',
+          mainEntry: 'Performance',
+          subEntry: '',
+          crossReference: '',
+          pageBold: false,
+          pageItalic: true,
+        })}</p>`,
+        '<p>修改索引项后选择“更新索引”，再导出 DOCX 验证原生 XE 与 INDEX 域。</p>',
       ].join(''),
     };
   }

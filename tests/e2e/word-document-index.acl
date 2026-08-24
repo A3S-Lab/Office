@@ -1,0 +1,334 @@
+suite "office-word-document-index" {
+    version = 1
+
+    scenario "edit-customize-refresh-and-undo-native-document-index" {
+        name = "Edit, customize, refresh, and undo a native Writer index"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        expect "latest-document-index-is-public" {
+            visible = css("button[aria-label='打开最新能力：原生索引']")
+        }
+
+        click "open-document-index-template" {
+            target = role("button", "打开最新能力：原生索引")
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "document-index-title-is-visible" {
+            visible = css("input[aria-label='文件名'][value='原生索引示例']")
+        }
+
+        expect "typed-document-index-is-visible" {
+            visible = css(".work-document-index[data-index-columns='2'][data-index-format='indented'][data-index-right-align-page-numbers='true'][data-index-leader='dot'][data-index-truncated='false']")
+        }
+
+        expect "native-entry-kinds-are-visible" {
+            visible = css(".work-document-index:has([data-index-main-entry='Architecture'][data-index-sub-entry='Runtime']):has([data-index-main-entry='Collaboration'] .work-document-index-cross-reference):has(a[data-index-target='index-entry-performance'].italic)")
+        }
+
+        click "navigate-from-runtime-page" {
+            target = css(".work-document-index a[data-index-target='index-entry-runtime']")
+        }
+
+        expect "runtime-marker-is-selected" {
+            visible = css(".work-document-index-entry[data-index-entry-id='index-entry-runtime'].ProseMirror-selectednode")
+        }
+
+        click "open-references-tab" {
+            target = role("tab", "引用")
+        }
+
+        click "open-runtime-entry-dialog" {
+            target = role("button", "标记索引项")
+        }
+
+        wait "entry-dialog-is-visible" {
+            visible = css(".work-document-index-entry-dialog[role='dialog']")
+        }
+
+        expect "entry-dialog-starts-focused" {
+            visible = css(".work-document-index-entry-dialog input[aria-label='主索引项'][value='Architecture']:focus")
+        }
+
+        expect "runtime-subentry-is-preserved" {
+            visible = css(".work-document-index-entry-dialog input[aria-label='次索引项'][value='Runtime']")
+        }
+
+        check "make-runtime-page-italic" {
+            target = css(".work-document-index-entry-dialog input[aria-label='页码倾斜']")
+        }
+
+        click "apply-runtime-entry" {
+            target = role("button", "应用")
+        }
+
+        expect "runtime-page-emphasis-is-applied" {
+            visible = css(".work-document-index-entry[data-index-entry-id='index-entry-runtime'][data-index-page-bold='true'][data-index-page-italic='true']")
+        }
+
+        expect "entry-edit-restores-editor-focus" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-runtime-entry-edit" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restores-runtime-page-style" {
+            visible = css(".work-document-index-entry[data-index-entry-id='index-entry-runtime'][data-index-page-bold='true'][data-index-page-italic='false']")
+        }
+
+        click "select-document-index" {
+            target = css(".work-document-index-header")
+        }
+
+        expect "document-index-is-selected" {
+            visible = css(".work-document-index.ProseMirror-selectednode")
+        }
+
+        click "open-document-index-dialog" {
+            target = role("button", "插入或自定义索引")
+        }
+
+        wait "customization-dialog-is-visible" {
+            visible = css(".work-document-index-dialog[role='dialog']")
+        }
+
+        expect "column-control-starts-focused" {
+            visible = css(".work-document-index-dialog [role='combobox'][aria-label='索引栏数']:focus")
+        }
+
+        click "open-column-options" {
+            target = role("combobox", "索引栏数")
+        }
+
+        click "select-three-columns" {
+            target = role("option", "三栏")
+        }
+
+        click "open-layout-options" {
+            target = role("combobox", "索引布局")
+        }
+
+        click "select-run-in-layout" {
+            target = role("option", "连续式")
+        }
+
+        click "open-leader-options" {
+            target = role("combobox", "索引前导符")
+        }
+
+        click "select-dash-leader" {
+            target = role("option", "短横线（----）")
+        }
+
+        click "apply-document-index-options" {
+            target = role("button", "应用")
+        }
+
+        expect "native-index-options-are-applied" {
+            visible = css(".work-document-index[data-index-columns='3'][data-index-format='run-in'][data-index-right-align-page-numbers='true'][data-index-leader='dash']")
+        }
+
+        expect "index-customization-restores-editor-focus" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-document-index-customization" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restores-original-index-options" {
+            visible = css(".work-document-index[data-index-columns='2'][data-index-format='indented'][data-index-leader='dot']")
+        }
+
+        click "select-performance-marker" {
+            target = css(".work-document-index-entry[data-index-entry-id='index-entry-performance']")
+        }
+
+        click "open-performance-entry-dialog" {
+            target = role("button", "标记索引项")
+        }
+
+        fill "rename-performance-entry" {
+            target = label("主索引项")
+            value = "Throughput"
+        }
+
+        click "apply-performance-entry" {
+            target = role("button", "应用")
+        }
+
+        expect "marker-edit-is-applied-before-refresh" {
+            visible = css(".work-document-index-entry[data-index-entry-id='index-entry-performance'][data-index-main-entry='Throughput']")
+        }
+
+        expect "generated-cache-remains-explicitly-stale" {
+            visible = css(".work-document-index[data-index-entries*='Performance']:not([data-index-entries*='Throughput'])")
+        }
+
+        click "refresh-document-index" {
+            target = role("button", "更新索引")
+        }
+
+        expect "refresh-rebuilds-generated-cache" {
+            visible = css(".work-document-index[data-index-entries*='Throughput']:not([data-index-entries*='Performance'])")
+        }
+
+        press "undo-document-index-refresh" {
+            key = "Control+z"
+        }
+
+        expect "refresh-undo-restores-stale-cache-only" {
+            visible = css(".work-document-index[data-index-entries*='Performance']:not([data-index-entries*='Throughput'])")
+        }
+
+        expect "refresh-undo-keeps-marker-edit" {
+            visible = css(".work-document-index-entry[data-index-entry-id='index-entry-performance'][data-index-main-entry='Throughput']")
+        }
+
+        accessibility "document-index-accessibility" {
+            path = "evidence/document-index-accessibility.json"
+            interactive = true
+        }
+
+        console "document-index-console" {
+            path = "diagnostics/document-index-console.json"
+            clear = false
+        }
+
+        page_errors "document-index-page-errors" {
+            path = "diagnostics/document-index-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "open-document-index-dialogs-on-phone" {
+        name = "Open the Writer index dialogs on a phone viewport"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document-index-template" {
+            target = role("button", "打开最新能力：原生索引")
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "phone-document-index-is-typed" {
+            visible = css(".work-document-index[data-index-columns='2'][data-index-leader='dot']")
+        }
+
+        click "select-runtime-marker" {
+            target = css(".work-document-index-entry[data-index-entry-id='index-entry-runtime']")
+        }
+
+        click "open-references-tab" {
+            target = role("tab", "引用")
+        }
+
+        click "open-entry-dialog" {
+            target = role("button", "标记索引项")
+        }
+
+        wait "responsive-entry-dialog-is-visible" {
+            visible = css(".work-document-index-entry-dialog[role='dialog']")
+        }
+
+        expect "phone-entry-dialog-starts-focused" {
+            visible = css(".work-document-index-entry-dialog input[aria-label='主索引项']:focus")
+        }
+
+        expect "phone-page-style-controls-remain-visible" {
+            visible = css(".work-document-index-entry-dialog .work-office-checkbox:has(input[aria-label='页码加粗'])")
+        }
+
+        expect "phone-entry-apply-action-remains-visible" {
+            visible = css(".work-document-index-entry-dialog > footer > button:last-child")
+        }
+
+        click "cancel-entry-dialog" {
+            target = role("button", "取消")
+        }
+
+        click "select-document-index" {
+            target = css(".work-document-index-header")
+        }
+
+        click "open-index-dialog" {
+            target = role("button", "插入或自定义索引")
+        }
+
+        wait "responsive-index-dialog-is-visible" {
+            visible = css(".work-document-index-dialog[role='dialog']")
+        }
+
+        expect "phone-index-dialog-starts-focused" {
+            visible = css(".work-document-index-dialog [role='combobox'][aria-label='索引栏数']:focus")
+        }
+
+        expect "phone-layout-control-remains-visible" {
+            visible = css(".work-document-index-dialog [role='combobox'][aria-label='索引布局']")
+        }
+
+        expect "phone-leader-control-remains-visible" {
+            visible = css(".work-document-index-dialog [role='combobox'][aria-label='索引前导符']")
+        }
+
+        expect "phone-preview-remains-visible" {
+            visible = css(".work-document-index-dialog [aria-label='索引预览']")
+        }
+
+        expect "phone-index-apply-action-remains-visible" {
+            visible = css(".work-document-index-dialog > footer > button:last-child")
+        }
+
+        accessibility "phone-document-index-accessibility" {
+            path = "evidence/phone-document-index-accessibility.json"
+            interactive = true
+        }
+
+        console "phone-document-index-console" {
+            path = "diagnostics/phone-document-index-console.json"
+            clear = false
+        }
+
+        page_errors "phone-document-index-page-errors" {
+            path = "diagnostics/phone-document-index-page-errors.json"
+            clear = false
+        }
+    }
+}

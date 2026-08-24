@@ -39,6 +39,11 @@ test('publishes the latest main capabilities as first-class Playground entries',
       name: '打开最新能力：校对语言',
     }),
   ).toBeInTheDocument();
+  expect(
+    within(latest).getByRole('button', {
+      name: '打开最新能力：原生索引',
+    }),
+  ).toBeInTheDocument();
   const dataValidation = within(latest).getByRole('button', {
     name: '打开最新能力：数据验证',
   });

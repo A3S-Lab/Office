@@ -1,7 +1,6 @@
 import type { Editor } from '@tiptap/core';
 import {
   Bookmark as BookmarkIcon,
-  BookOpen,
   Check,
   CheckCheck,
   ChevronDown,
@@ -14,7 +13,6 @@ import {
   Eye,
   Image as ImageIcon,
   Link2,
-  ListTree,
   ListChecks,
   Languages,
   MessageSquarePlus,
@@ -23,11 +21,9 @@ import {
   PanelLeftOpen,
   PanelTopOpen,
   Redo2,
-  RefreshCw,
   Ruler,
   Scan,
   StretchHorizontal,
-  Table2,
   Undo2,
   XCircle,
   ZoomIn,
@@ -52,7 +48,6 @@ import {
   normalizeDocumentHref,
 } from '../work-document-links';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
-import { documentHasTableOfContents } from '../work-document-table-of-contents-node';
 import type { WorkDocumentSectionLayout } from '../work-types';
 import {
   type DocumentRibbonTabId,
@@ -62,6 +57,8 @@ import {
   documentTableRibbonTabs,
   getDocumentCommandDefinition,
 } from './document-command-catalog';
+import { synchronizeDocumentEditorSelectionFromDom } from './document-dom-selection';
+import { documentHasRefreshableFields } from './document-editor-support';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 import { DocumentProofingDialog } from './document-proofing-dialog';
 import {
@@ -83,6 +80,7 @@ import {
 } from './document-page-chrome-ribbon';
 import { DocumentPageLayoutRibbon } from './document-page-layout-ribbon';
 import { DocumentPictureRibbon } from './document-picture-ribbon';
+import { DocumentReferencesRibbon } from './document-references-ribbon';
 import {
   actionableDocumentChangeIndex,
   adjacentDocumentChangeIndex,
@@ -167,11 +165,14 @@ interface DocumentToolbarProps {
   onInsertCaption: (kind: WorkDocumentCaptionKind) => void;
   onInsertCrossReference: () => void;
   onOpenTableOfContents: () => void;
+  onOpenIndexEntry: () => void;
+  onOpenIndex: () => void;
   citationsOpen: boolean;
   citationSourceCount: number;
   onToggleCitations: () => void;
   onInsertField: (kind: WorkDocumentFieldKind) => void;
   onRefreshFields: () => void;
+  onRefreshIndex: () => void;
   onRefreshTableOfContents: () => void;
   canInsertComment: boolean;
   onInsertComment: () => void;
@@ -237,11 +238,14 @@ export function DocumentToolbar({
   onInsertCaption,
   onInsertCrossReference,
   onOpenTableOfContents,
+  onOpenIndexEntry,
+  onOpenIndex,
   citationsOpen,
   citationSourceCount,
   onToggleCitations,
   onInsertField,
   onRefreshFields,
+  onRefreshIndex,
   onRefreshTableOfContents,
   canInsertComment,
   onInsertComment,
@@ -273,7 +277,6 @@ export function DocumentToolbar({
   const tableSelected = editor.isActive('table');
   const activeBookmark = activeDocumentBookmark(editor);
   const hasRefreshableFields = documentHasRefreshableFields(editor);
-  const hasTableOfContents = documentHasTableOfContents(editor);
   const documentChanges = collectDocumentChanges(editor.state.doc);
   const previousChangeIndex = adjacentDocumentChangeIndex(
     documentChanges,
@@ -291,12 +294,12 @@ export function DocumentToolbar({
   );
   const undoCommand = getDocumentCommandDefinition('undo');
   const redoCommand = getDocumentCommandDefinition('redo');
-  const refreshFieldsCommand = getDocumentCommandDefinition('refreshFields');
   const spellingCommand = getDocumentCommandDefinition('spelling');
   const insertCommentCommand = getDocumentCommandDefinition('insertComment');
   const trackChangesCommand = getDocumentCommandDefinition('trackChanges');
   const openFontDialog = useCallback((target: Editor) => {
     if (target.isDestroyed) return;
+    synchronizeDocumentEditorSelectionFromDom(target);
     const { from, to } = target.state.selection;
     setFontDialogRequest({
       editor: target,
@@ -306,6 +309,7 @@ export function DocumentToolbar({
   }, []);
   const openProofingDialog = useCallback((target: Editor) => {
     if (target.isDestroyed) return;
+    synchronizeDocumentEditorSelectionFromDom(target);
     const { from, to } = target.state.selection;
     setProofingDialogRequest({
       editor: target,
@@ -759,96 +763,21 @@ export function DocumentToolbar({
             />
           ),
           references: reviewOnly ? null : (
-            <>
-              <RibbonGroup label="目录" priority="high">
-                <ToolbarButton
-                  label="插入或自定义目录"
-                  displayLabel
-                  onClick={onOpenTableOfContents}
-                >
-                  <ListTree size={19} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="更新目录"
-                  displayLabel
-                  disabled={!hasTableOfContents}
-                  title={
-                    hasTableOfContents
-                      ? '根据当前标题和页码更新目录'
-                      : '文档中没有可更新的目录'
-                  }
-                  onClick={onRefreshTableOfContents}
-                >
-                  <RefreshCw size={19} />
-                </ToolbarButton>
-              </RibbonGroup>
-              <RibbonGroup label="脚注" priority="high">
-                <ToolbarButton
-                  label="插入脚注"
-                  displayLabel
-                  onClick={() => onInsertNote('footnote')}
-                >
-                  <span className="work-ribbon-glyph">¹</span>
-                </ToolbarButton>
-                <ToolbarButton
-                  label="插入尾注"
-                  displayLabel
-                  onClick={() => onInsertNote('endnote')}
-                >
-                  <span className="work-ribbon-glyph">ⅰ</span>
-                </ToolbarButton>
-              </RibbonGroup>
-              <RibbonGroup label="题注">
-                <ToolbarButton
-                  label="插入图片题注"
-                  displayLabel
-                  onClick={() => onInsertCaption('figure')}
-                >
-                  <ImageIcon size={19} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="插入表格题注"
-                  displayLabel
-                  onClick={() => onInsertCaption('table')}
-                >
-                  <Table2 size={19} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="插入交叉引用"
-                  displayLabel
-                  onClick={onInsertCrossReference}
-                >
-                  <Link2 size={19} />
-                </ToolbarButton>
-              </RibbonGroup>
-              <RibbonGroup label="引文和书目" priority="high">
-                <ToolbarButton
-                  label={`文献库${citationSourceCount ? `（${citationSourceCount}）` : ''}`}
-                  displayLabel
-                  active={citationsOpen}
-                  onClick={onToggleCitations}
-                >
-                  <BookOpen size={19} />
-                </ToolbarButton>
-              </RibbonGroup>
-              <RibbonGroup label="更新" priority="low">
-                <ToolbarButton
-                  label="更新页码和日期"
-                  displayLabel
-                  shortcut={refreshFieldsCommand.shortcut?.label}
-                  ariaKeyShortcuts={refreshFieldsCommand.shortcut?.aria}
-                  disabled={!hasRefreshableFields}
-                  title={
-                    hasRefreshableFields
-                      ? `更新页码和日期（${refreshFieldsCommand.shortcut?.label}）`
-                      : '文档中没有可更新的页码或日期'
-                  }
-                  onClick={onRefreshFields}
-                >
-                  <RefreshCw size={19} />
-                </ToolbarButton>
-              </RibbonGroup>
-            </>
+            <DocumentReferencesRibbon
+              editor={editor}
+              citationsOpen={citationsOpen}
+              citationSourceCount={citationSourceCount}
+              onInsertNote={onInsertNote}
+              onInsertCaption={onInsertCaption}
+              onInsertCrossReference={onInsertCrossReference}
+              onOpenTableOfContents={onOpenTableOfContents}
+              onRefreshTableOfContents={onRefreshTableOfContents}
+              onOpenIndexEntry={onOpenIndexEntry}
+              onOpenIndex={onOpenIndex}
+              onRefreshIndex={onRefreshIndex}
+              onToggleCitations={onToggleCitations}
+              onRefreshFields={onRefreshFields}
+            />
           ),
           review: (
             <>
@@ -1241,14 +1170,4 @@ function DocumentFieldSelect({
       }}
     />
   );
-}
-
-function documentHasRefreshableFields(editor: Editor): boolean {
-  let found = false;
-  editor.state.doc.descendants((node) => {
-    if (node.type.name !== 'documentField') return !found;
-    found = true;
-    return false;
-  });
-  return found;
 }

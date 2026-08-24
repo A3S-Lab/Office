@@ -137,6 +137,83 @@ test('inserts a configured table of contents and restores document focus', async
   }
 });
 
+test('marks the selected text as a configured index entry and restores focus', async () => {
+  const { editor, element } = createEditor();
+  editor.commands.setTextSelection(textRange(editor, 'Alpha'));
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开索引项' }));
+
+    const dialog = screen.getByRole('dialog', { name: '标记索引项' });
+    const mainEntry = within(dialog).getByRole('textbox', {
+      name: '主索引项',
+    });
+    expect(mainEntry).toHaveFocus();
+    expect(mainEntry).toHaveValue('Alpha');
+    fireEvent.change(
+      within(dialog).getByRole('textbox', { name: '次索引项' }),
+      { target: { value: 'Runtime' } },
+    );
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: '页码加粗' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: '标记' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '标记索引项' })).toBeNull(),
+    );
+    expect(editor.getHTML()).toContain('data-document-index-entry="true"');
+    expect(editor.getHTML()).toContain('data-index-main-entry="Alpha"');
+    expect(editor.getHTML()).toContain('data-index-sub-entry="Runtime"');
+    expect(editor.getHTML()).toContain('data-index-page-bold="true"');
+    expect(editor.view.dom).toHaveFocus();
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('inserts a configured native index from marked entries', async () => {
+  const { editor, element } = createEditor();
+  editor.commands.setTextSelection(textRange(editor, 'Alpha'));
+  editor.commands.markDocumentIndexEntry({
+    mainEntry: 'Alpha',
+    subEntry: '',
+    crossReference: '',
+    pageBold: false,
+    pageItalic: false,
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Beta').from);
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开索引' }));
+
+    const dialog = screen.getByRole('dialog', { name: '插入索引' });
+    expect(
+      within(dialog).getByRole('combobox', { name: '索引栏数' }),
+    ).toHaveFocus();
+    fireEvent.click(within(dialog).getByRole('combobox', { name: '索引栏数' }));
+    fireEvent.click(screen.getByRole('option', { name: '两栏' }));
+    fireEvent.click(
+      within(dialog).getByRole('combobox', { name: '索引前导符' }),
+    );
+    fireEvent.click(screen.getByRole('option', { name: '短横线（----）' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: '插入索引' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '插入索引' })).toBeNull(),
+    );
+    expect(editor.getHTML()).toContain('data-document-index="true"');
+    expect(editor.getHTML()).toContain('data-index-columns="2"');
+    expect(editor.getHTML()).toContain('data-index-leader="dash"');
+    expect(editor.getHTML()).toContain('Alpha');
+    expect(editor.view.dom).toHaveFocus();
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
 function InsertDialogHarness({ editor }: { editor: Editor }) {
   const contentRef = useRef<WorkDocumentContent>({
     type: 'document',
@@ -153,6 +230,12 @@ function InsertDialogHarness({ editor }: { editor: Editor }) {
       </button>
       <button type="button" onClick={commands.openTableOfContents}>
         打开目录
+      </button>
+      <button type="button" onClick={commands.openIndexEntry}>
+        打开索引项
+      </button>
+      <button type="button" onClick={commands.openIndex}>
+        打开索引
       </button>
       {commands.dialog}
     </>

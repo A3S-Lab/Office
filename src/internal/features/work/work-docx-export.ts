@@ -12,6 +12,7 @@ import { documentCharacterSpacingTwipsFromElement } from './work-document-charac
 import { documentEmphasisMarkFromElement } from './work-document-emphasis';
 import { documentKerningThresholdHalfPointsFromElement } from './work-document-kerning';
 import { documentHiddenTextFromElement } from './work-document-hidden-text';
+import { normalizeDocumentIndexesHtml } from './work-document-index';
 import {
   DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
   DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
@@ -89,6 +90,12 @@ import {
 } from './work-docx-export-formatting';
 import { imageToDocx } from './work-docx-export-image';
 import { docxDocumentFieldRun } from './work-docx-field-export';
+import {
+  DocxIndexPatchCollector,
+  docxDocumentIndex,
+  docxIndexEntryRun,
+  patchDocxIndexes,
+} from './work-docx-index-export';
 import {
   DocxRunFormattingChangePatchCollector,
   patchDocxRunFormattingChanges,
@@ -237,6 +244,7 @@ interface DocxNoteContext extends DocxListExportContext {
   usedNativeTextEffectMarkers: Set<string>;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
   tableOfContentsPatches: DocxTableOfContentsPatchCollector;
+  indexPatches: DocxIndexPatchCollector;
   hasExplicitZeroCharacterSpacing: boolean;
   hasExplicitZeroKerningThreshold: boolean;
 }
@@ -261,8 +269,10 @@ export async function createDocxBlob(
   const docx = await import('docx');
   const normalizedContent = {
     ...content,
-    html: normalizeDocumentBookmarkReferencesHtml(
-      normalizeDocumentBookmarksHtml(content.html),
+    html: normalizeDocumentIndexesHtml(
+      normalizeDocumentBookmarkReferencesHtml(
+        normalizeDocumentBookmarksHtml(content.html),
+      ),
     ),
   };
   const noteCollection = collectDocumentNotes(normalizedContent.html);
@@ -323,6 +333,7 @@ export async function createDocxBlob(
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
     tableOfContentsPatches: new DocxTableOfContentsPatchCollector(),
+    indexPatches: new DocxIndexPatchCollector(),
     hasExplicitZeroCharacterSpacing: false,
     hasExplicitZeroKerningThreshold: false,
   };
@@ -488,9 +499,13 @@ export async function createDocxBlob(
     paragraphIdentityPatched,
     noteContext.tableOfContentsPatches.patches,
   );
+  const indexPatched = await patchDocxIndexes(
+    tableOfContentsPatched,
+    noteContext.indexPatches.patches,
+  );
   const paragraphFormattingChangesPatched =
     await patchDocxParagraphFormattingChanges(
-      tableOfContentsPatched,
+      indexPatched,
       noteContext.paragraphFormattingChangePatches.patches,
     );
   const equationPatched = await patchDocxEquations(
@@ -752,6 +767,9 @@ async function blockToFileChildren(
       docxTableOfContents(element, docx, noteContext.tableOfContentsPatches),
     ];
   }
+  if (element.hasAttribute('data-document-index')) {
+    return docxDocumentIndex(element, docx, noteContext.indexPatches);
+  }
   if (element.hasAttribute('data-document-caption')) {
     return [
       docxCaptionParagraph(
@@ -924,6 +942,10 @@ async function inlineRuns(
       return [docxCitationRun(node, docx)];
     if (node.hasAttribute('data-document-field'))
       return [docxDocumentFieldRun(node, docx)];
+    if (node.hasAttribute('data-document-index-entry')) {
+      const entry = docxIndexEntryRun(node, docx);
+      return entry ? [entry] : [];
+    }
     if (node.hasAttribute('data-document-equation')) {
       const equation = noteContext.equationPatches.marker(node);
       return [new docx.TextRun(equation ?? node.textContent ?? '')];

@@ -452,6 +452,21 @@ export const documentCommandCatalog = {
     label: '更新目录',
     location: { area: 'ribbon', tab: 'references', group: 'tableOfContents' },
   },
+  markIndexEntry: {
+    id: 'references.markIndexEntry',
+    label: '标记索引项',
+    location: { area: 'ribbon', tab: 'references', group: 'index' },
+  },
+  index: {
+    id: 'references.index',
+    label: '插入或自定义索引',
+    location: { area: 'ribbon', tab: 'references', group: 'index' },
+  },
+  refreshIndex: {
+    id: 'references.refreshIndex',
+    label: '更新索引',
+    location: { area: 'ribbon', tab: 'references', group: 'index' },
+  },
   refreshFields: {
     id: 'references.refreshFields',
     label: '更新域',

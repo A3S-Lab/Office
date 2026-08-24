@@ -254,6 +254,16 @@ export function documentCurrentPage(editor: Editor): number {
   return page;
 }
 
+export function documentHasRefreshableFields(editor: Editor): boolean {
+  let found = false;
+  editor.state.doc.descendants((node) => {
+    if (node.type.name !== 'documentField') return !found;
+    found = true;
+    return false;
+  });
+  return found;
+}
+
 async function copyDocumentSelection(selection: string): Promise<void> {
   try {
     if (!navigator.clipboard?.writeText)

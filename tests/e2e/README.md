@@ -72,12 +72,13 @@ bun run test:e2e:latest-capabilities:check
 bun run test:e2e:latest-capabilities
 ```
 
-It opens the Writer table of contents, character shading, proofing languages,
-and Spreadsheet data validation from the first-class Playground strip, follows
-the documentation-home links to the full Writer and Spreadsheet references,
-repeats the public discovery check at 390 px, and captures accessibility plus
-empty console/page-error diagnostics. A hidden `?e2e=` fixture or a deep
-documentation paragraph alone cannot satisfy this gate.
+It opens the Writer table of contents, native document index, character
+shading, proofing languages, and Spreadsheet data validation from the
+first-class Playground strip, follows the documentation-home links to the full
+Writer and Spreadsheet references, repeats the public discovery check at 390
+px, and captures accessibility plus empty console/page-error diagnostics. A
+hidden `?e2e=` fixture or a deep documentation paragraph alone cannot satisfy
+this gate.
 
 Run the focused suites against the built static preview through
 `scripts/run-a3s-test-web-gate.sh` before a release. The local gate performs
@@ -228,6 +229,22 @@ scenario keeps the complete dialog usable at 390 px. The suite captures
 accessibility and empty console/page-error diagnostics through pinned local
 A3S Test 1.0.0, agent-browser 0.26.0, and protocol revision 15; GitHub Actions
 and Pages never install or invoke A3S Test.
+
+The Writer native document-index workflow has a focused local gate:
+
+```bash
+bun run test:e2e:writer-document-index:check
+bun run test:e2e:writer-document-index
+```
+
+It opens the public **原生索引** template, navigates from a generated page
+number to its stable marker, edits page-number emphasis, customizes columns,
+layout, and leaders, refreshes a deliberately stale generated cache, and proves
+that customization and refresh each have one-step Undo without discarding a
+separate marker edit. A second scenario keeps both dialogs usable at 390 px.
+The suite captures accessibility and empty console/page-error diagnostics
+through pinned local A3S Test 1.0.0, agent-browser 0.26.0, and protocol revision
+15; GitHub Actions and Pages never install or invoke A3S Test.
 
 The Writer native character-scale workflow has a focused local gate:
 

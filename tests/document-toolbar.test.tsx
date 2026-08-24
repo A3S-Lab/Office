@@ -38,11 +38,14 @@ interface ToolbarCalls {
   crossReferences: number;
   imageRequests: number;
   insertComments: number;
+  indexEntries: number;
+  indexes: number;
   layout: number;
   navigation: number;
   pageChromePageNumbers: number;
   pageNumbers: number;
   refreshFields: number;
+  refreshIndexes: number;
   refreshTableOfContents: number;
   rulers: number;
   sections: number;
@@ -202,6 +205,7 @@ test('orders References, Review, and View groups like WPS Writer', () => {
     '脚注',
     '题注',
     '引文和书目',
+    '索引',
     '更新',
   ]);
 
@@ -216,6 +220,17 @@ test('wires every References, Review, and View action without silent buttons', (
   editor = createEditor();
   editor.commands.insertDocumentField('date');
   editor.commands.insertDocumentTableOfContents();
+  editor.commands.setTextSelection(textRange(editor, 'Toolbar text'));
+  editor.commands.markDocumentIndexEntry({
+    mainEntry: 'Toolbar text',
+    subEntry: '',
+    crossReference: '',
+    pageBold: false,
+    pageItalic: false,
+  });
+  editor.commands.setTextSelection(1);
+  editor.commands.insertDocumentIndex();
+  editor.commands.setTextSelection(textRange(editor, 'Toolbar text'));
   const calls = createCalls();
   render(toolbar(editor, calls));
 
@@ -238,6 +253,9 @@ test('wires every References, Review, and View action without silent buttons', (
   }
   fireEvent.click(screen.getByRole('button', { name: '插入交叉引用' }));
   fireEvent.click(screen.getByRole('button', { name: '文献库（2）' }));
+  fireEvent.click(screen.getByRole('button', { name: '标记索引项' }));
+  fireEvent.click(screen.getByRole('button', { name: '插入或自定义索引' }));
+  fireEvent.click(screen.getByRole('button', { name: '更新索引' }));
   const refreshFields = screen.getByRole('button', {
     name: '更新页码和日期',
   });
@@ -248,6 +266,9 @@ test('wires every References, Review, and View action without silent buttons', (
   expect(calls.crossReferences).toBe(1);
   expect(calls.toggleCitations).toBe(1);
   expect(calls.refreshFields).toBe(1);
+  expect(calls.indexEntries).toBe(1);
+  expect(calls.indexes).toBe(1);
+  expect(calls.refreshIndexes).toBe(1);
   expect(calls.tableOfContents).toBe(1);
   expect(calls.refreshTableOfContents).toBe(1);
 
@@ -536,6 +557,48 @@ test('opens and applies advanced font spacing from the scoped shortcut and launc
   fireEvent.click(within(reopened).getByRole('button', { name: '取消' }));
 });
 
+test('captures the visible text selection before the advanced font shortcut opens', async () => {
+  editor = createEditor();
+  const root = document.createElement('section');
+  root.className = 'work-document-editor';
+  root.append(editor.view.dom);
+  document.body.append(root);
+  render(toolbar(editor, createCalls()));
+  const expected = textRange(editor, 'Toolbar text');
+  editor.commands.setTextSelection(expected.from);
+  editor.view.focus();
+
+  const text = editor.view.dom.querySelector('p')?.firstChild;
+  if (!(text instanceof Text)) throw new Error('Toolbar text is missing.');
+  const range = document.createRange();
+  range.selectNodeContents(text);
+  const visibleSelection = window.getSelection();
+  visibleSelection?.removeAllRanges();
+  visibleSelection?.addRange(range);
+
+  // Do not dispatch selectionchange: this reproduces a shortcut arriving
+  // before the browser has delivered its deferred selection notification.
+  fireEvent.keyDown(editor.view.dom, { key: 'd', ctrlKey: true });
+
+  const dialog = await screen.findByRole('dialog', {
+    name: '字体高级设置',
+  });
+  expect(editor.state.selection.from).toBe(expected.from);
+  expect(editor.state.selection.to).toBe(expected.to);
+  expect(dialog).toHaveTextContent('12 个字符');
+  fireEvent.click(within(dialog).getByRole('combobox', { name: '字符间距' }));
+  fireEvent.click(await screen.findByRole('option', { name: '加宽' }));
+  fireEvent.change(
+    within(dialog).getByRole('textbox', { name: '间距值（磅）' }),
+    { target: { value: '1.5' } },
+  );
+  fireEvent.click(within(dialog).getByRole('button', { name: '应用' }));
+
+  await waitFor(() =>
+    expect(editor?.getHTML()).toContain('letter-spacing: 1.5pt'),
+  );
+});
+
 test('routes the advanced font shortcut to the active page-chrome editor', async () => {
   editor = createEditor();
   const pageChromeEditor = new Editor({
@@ -801,6 +864,12 @@ function toolbar(
       onOpenTableOfContents={() => {
         calls.tableOfContents += 1;
       }}
+      onOpenIndexEntry={() => {
+        calls.indexEntries += 1;
+      }}
+      onOpenIndex={() => {
+        calls.indexes += 1;
+      }}
       citationsOpen={false}
       citationSourceCount={2}
       onToggleCitations={() => {
@@ -809,6 +878,9 @@ function toolbar(
       onInsertField={(kind) => calls.fields.push(kind)}
       onRefreshFields={() => {
         calls.refreshFields += 1;
+      }}
+      onRefreshIndex={() => {
+        calls.refreshIndexes += 1;
       }}
       onRefreshTableOfContents={() => {
         calls.refreshTableOfContents += 1;
@@ -854,11 +926,14 @@ function createCalls(): ToolbarCalls {
     crossReferences: 0,
     imageRequests: 0,
     insertComments: 0,
+    indexEntries: 0,
+    indexes: 0,
     layout: 0,
     navigation: 0,
     pageChromePageNumbers: 0,
     pageNumbers: 0,
     refreshFields: 0,
+    refreshIndexes: 0,
     refreshTableOfContents: 0,
     rulers: 0,
     sections: 0,

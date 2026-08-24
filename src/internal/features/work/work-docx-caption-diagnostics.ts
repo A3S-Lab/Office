@@ -13,6 +13,10 @@ import {
 } from './work-docx-field-instructions';
 import { attribute, descendants } from './work-ooxml-package';
 import type { WorkCompatibilityIssue } from './work-types';
+import {
+  supportedDocxIndexEntryField,
+  supportedDocxIndexField,
+} from './work-docx-index-import';
 import { supportedDocxTableOfContentsField } from './work-docx-table-of-contents-import';
 
 export interface DocxCaptionDiagnostics {
@@ -27,6 +31,8 @@ export function diagnoseDocxCaptions(
   const tableOfContentsFields = fields.filter(
     supportedDocxTableOfContentsField,
   );
+  const indexEntryFields = fields.filter(supportedDocxIndexEntryField);
+  const indexFields = fields.filter(supportedDocxIndexField);
   const tableOfContentsContainers = new Set(
     tableOfContentsFields.flatMap((field) => {
       const container = closestAncestor(field.start, 'sdt');
@@ -37,6 +43,18 @@ export function diagnoseDocxCaptions(
     const container = closestAncestor(field.start, 'sdt');
     return Boolean(container && tableOfContentsContainers.has(container));
   };
+  const indexContainers = new Set(
+    indexFields.flatMap((field) => {
+      const container = closestAncestor(field.start, 'sdt');
+      return container ? [container] : [];
+    }),
+  );
+  const isIndexField = (field: DocxFieldOccurrence) => {
+    const container = closestAncestor(field.start, 'sdt');
+    return Boolean(container && indexContainers.has(container));
+  };
+  const isSupportedBlockField = (field: DocxFieldOccurrence) =>
+    isTableOfContentsField(field) || isIndexField(field);
   const sequences = fields.filter((field) =>
     docxCaptionSequenceKind(field.instruction),
   );
@@ -49,7 +67,7 @@ export function diagnoseDocxCaptions(
     docxFieldOccurrenceIsInlineEditable,
   );
   const hasUnsupportedFieldStructure =
-    hasInvalidDocxFieldStructure(document, isTableOfContentsField) ||
+    hasInvalidDocxFieldStructure(document, isSupportedBlockField) ||
     bodyFields.some((field) => !docxFieldOccurrenceIsInlineEditable(field));
   const bookmarkNames = new Set([
     ...captionBookmarkNames(sequences),
@@ -90,6 +108,17 @@ export function diagnoseDocxCaptions(
             } satisfies WorkCompatibilityIssue,
           ]
         : []),
+      ...(indexEntryFields.length || indexFields.length
+        ? [
+            {
+              code: 'docx.index',
+              feature: 'Index',
+              message:
+                'Native XE entries, primary and secondary terms, cross-references, page emphasis, cached INDEX rows, columns, and leader styles remain editable and round-trip in DOCX output.',
+              severity: 'info',
+            } satisfies WorkCompatibilityIssue,
+          ]
+        : []),
       ...(hasUnsupportedFieldStructure
         ? [
             {
@@ -106,7 +135,8 @@ export function diagnoseDocxCaptions(
       hasUnsupportedFieldStructure ||
       fields.some(
         (field) =>
-          !isTableOfContentsField(field) &&
+          !isSupportedBlockField(field) &&
+          !supportedDocxIndexEntryField(field) &&
           !isSupportedCaptionField(field.instruction, bookmarkNames),
       ),
   };

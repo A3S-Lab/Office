@@ -56,18 +56,19 @@ workflows, and a separate Rust automation plane.
 
 ## Latest on `main`
 
-The `0.30.0` release and current Pages deployment expose these capabilities as
-normal user-facing Playground templates, with matching implementation detail
-in the versioned documentation:
+The `0.31.0` release plus the current `main` branch expose these capabilities
+as normal user-facing Playground templates, with matching implementation
+detail in the documentation:
 
 | Editor | Latest capability | Public entry |
 | --- | --- | --- |
 | Writer | Insert, customize, navigate, and explicitly refresh a typed Table of Contents with heading and native outline levels 1–9, hyperlinks, page numbers, alignment, four leader styles, and native DOCX `TOC` round trips | Playground **Latest capabilities → 可更新目录** · [Document reference](docs/latest/en/components/document.mdx#native-table-of-contents) |
+| Writer | Mark primary and secondary index terms, cross-references, and bold/italic page numbers; insert, navigate, customize, and refresh a bounded native index with editable DOCX `XE` and `INDEX` round trips | Playground **Latest capabilities → 原生索引** · [Document reference](docs/latest/en/components/document.mdx#native-document-index) |
 | Writer | Native character shading with exact `w:shd` patterns, foreground/background color identity, explicit resets, authoring, and DOCX reopen | Playground **Latest capabilities → 字符底纹** · [Document reference](docs/latest/en/components/document.mdx#native-character-shading) |
 | Writer | Independent Latin, East Asian, and bidi proofing languages plus explicit `w:noProof` inclusion/exclusion | Playground **Latest capabilities → 校对语言** · [Document reference](docs/latest/en/components/document.mdx#native-proofing-languages) |
 | Spreadsheet | Complete common Data Validation input, blank/dropdown, and Stop/Warning/Information error settings with native XLSX round trips | Playground **Latest capabilities → 数据验证** · [Spreadsheet reference](docs/latest/en/components/spreadsheet.mdx#data-validation) |
 
-The same four entries remain available under **新建**. The highlighted strip
+The same five entries remain available under **新建**. The highlighted strip
 exists so a capability is discoverable from the first Playground viewport
 instead of only through a deep documentation section or an `?e2e=` fixture.
 
@@ -131,7 +132,7 @@ baseline rather than one specific release.
 | Page layout and rendering | **Partial** — sections, margins, page size, columns, headers/footers, fields, and live pagination | Desktop-grade pagination, print layout, and vector output |
 | Tables, pictures, and equations | **Partial** — rich table geometry, floating pictures, crop/wrap, and structured OMML | Broader drawings, text boxes, charts, WordArt, and SmartArt |
 | Comments, revisions, and collaboration | **Partial** — comments, suggestions, text/format revisions, decisions, Yjs presence, and host relay contracts | Full revision families plus integrated sharing and review services |
-| References and document generation | **Partial** — typed Table of Contents authoring and refresh, bookmarks, links, captions, cross-references, citations, notes, and common fields | Index authoring, mail merge, compare/combine, and broader fields |
+| References and document generation | **Partial** — typed Table of Contents and native index authoring/refresh, bookmarks, links, captions, cross-references, citations, notes, and common fields | Mail merge, compare/combine, tables of figures/authorities, and broader fields |
 | Ribbon and shortcuts | **Supported** — responsive Office-style ribbon and editor-scoped daily-writing shortcuts | Complete desktop shortcut and contextual-tool surface |
 | Very large documents | **Supported with boundaries** — bounded 100,000-block plain-document windows and measured edit/navigation budgets | Native-engine virtualization with device-dependent limits |
 | DOCX and PDF fidelity | **Partial** — source-aware DOCX preservation and live-layout raster PDF export | Broader legacy/OOXML compatibility and searchable vector PDF output |
@@ -246,6 +247,21 @@ is requested. The complete gap inventory and exit evidence live in the
   `\\u`, full-range `\\n`, and space-separator `\\p` subset while diagnosing
   lossy custom style mappings. The Playground's **可更新目录** template exposes
   the complete flow.
+  Writer indexes use hidden, selectable inline entry atoms and a separate
+  selectable generated block. Primary terms, secondary terms, cross-references,
+  and bold/italic page-number intent remain typed; duplicate terms on the same
+  page merge while retaining every stable marker target. The live Worker/WASM
+  field resolver remains the only page-number source. Mark, edit, insert,
+  customize, and explicit all-index refresh each commit one TipTap transaction
+  and one Undo record. At most 2,048 markers contribute to at most 512 cached
+  rows, with explicit truncation beyond either bound. DOCX export writes
+  native `XE` simple fields and a real `w:sdt`/`INDEX` content control with cached
+  `Index1`/`Index2` rows, columns, cross-references, page emphasis, alignment,
+  and dot/dash/underline/no leaders. Import accepts the lossless common `XE`
+  `\\b`, `\\i`, and `\\t` plus `INDEX` `\\c`, `\\e`, and `\\r` subset;
+  unsupported switches remain diagnosed instead of approximated. The
+  Playground's **原生索引** template exposes marking, navigation, refresh,
+  export, and reopen.
 - **Framework choice** — React components, Vue 3 adapters, Custom Elements,
   and a framework-neutral Core API over the same engine.
 - **Responsive computation** — Lazy editor chunks, cancellable Workers,
@@ -1553,6 +1569,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.31.0 documentation](https://a3s-lab.github.io/Office/docs/0.31.0/)
 - [A3S Office 0.30.0 documentation](https://a3s-lab.github.io/Office/docs/0.30.0/)
 - [A3S Office 0.29.0 documentation](https://a3s-lab.github.io/Office/docs/0.29.0/)
 - [A3S Office 0.28.0 documentation](https://a3s-lab.github.io/Office/docs/0.28.0/)

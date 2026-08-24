@@ -9,6 +9,7 @@ import {
   FilePlus2,
   Languages,
   ListChecks,
+  ListOrdered,
   ListTree,
   PanelLeftOpen,
   Pencil,
@@ -29,6 +30,7 @@ const templateCellIds = Array.from(
 );
 const latestTemplateIds = new Set([
   'table-of-contents',
+  'document-index',
   'run-shading',
   'proofing-languages',
   'data-validation',
@@ -322,6 +324,9 @@ export function WorkspaceHome({
 function LatestCapabilityIcon({ templateId }: { templateId: string }) {
   if (templateId === 'table-of-contents') {
     return <ListTree size={19} aria-hidden="true" />;
+  }
+  if (templateId === 'document-index') {
+    return <ListOrdered size={18} aria-hidden="true" />;
   }
   if (templateId === 'proofing-languages') {
     return <Languages size={16} aria-hidden="true" />;

@@ -147,6 +147,7 @@ suites=(
   "tests/e2e/word-character-spacing.acl"
   "tests/e2e/word-proofing-languages.acl"
   "tests/e2e/word-table-of-contents.acl"
+  "tests/e2e/word-document-index.acl"
   "tests/e2e/word-script-fonts.acl"
   "tests/e2e/word-strike-styles.acl"
 )

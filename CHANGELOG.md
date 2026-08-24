@@ -4,6 +4,26 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.31.0 - 2026-08-25
+
+- Added native Writer index authoring with selectable primary and secondary
+  `XE` entry atoms, cross-references, bold/italic page intent, stable marker
+  identity, same-page merging, page navigation, and a bounded generated index
+  block. Mark, edit, insert, customize, and explicit all-index refresh each use
+  one TipTap transaction and one Undo record.
+- Added a responsive References workflow for **标记索引项**, **插入或自定义索引**,
+  and **更新索引**, including 1–4 columns, indented/run-in layouts,
+  page-number alignment, four leader styles, mixed-safe dialogs, and exact
+  invoking-focus restoration without advertising non-standard shortcuts.
+- Added native DOCX `w:fldSimple` `XE` and `w:sdt`/`INDEX` export, import,
+  diagnostics, reopen, and second-export fidelity. Cached `Index1`/`Index2`
+  rows retain primary/secondary terms, cross-references, emphasized page runs,
+  columns, and leaders; unsupported ranges, entry types, locale controls,
+  malformed structures, and unknown switches fail closed.
+- Added the public Playground **原生索引** template plus matching `0.31.0`
+  cards, README capability matrix, bilingual component and architecture
+  references, roadmap status, focused Rstest, and local-only A3S Test coverage.
+
 ## 0.30.0 - 2026-08-24
 
 - Made the `0.30.0` capability set discoverable from the first

@@ -37,6 +37,21 @@ test('keeps Writer command ids and WPS locations unique', () => {
     tab: 'references',
     group: 'tableOfContents',
   });
+  expect(getDocumentCommandDefinition('markIndexEntry').location).toEqual({
+    area: 'ribbon',
+    tab: 'references',
+    group: 'index',
+  });
+  expect(getDocumentCommandDefinition('index').location).toEqual({
+    area: 'ribbon',
+    tab: 'references',
+    group: 'index',
+  });
+  expect(getDocumentCommandDefinition('refreshIndex').location).toEqual({
+    area: 'ribbon',
+    tab: 'references',
+    group: 'index',
+  });
   expect(getDocumentCommandDefinition('navigationPane').location).toEqual({
     area: 'ribbon',
     tab: 'view',
@@ -92,6 +107,11 @@ test('defines the WPS Writer shortcut contract in one catalog', () => {
   expect(
     getDocumentCommandDefinition('refreshTableOfContents').shortcut,
   ).toBeUndefined();
+  expect(
+    getDocumentCommandDefinition('markIndexEntry').shortcut,
+  ).toBeUndefined();
+  expect(getDocumentCommandDefinition('index').shortcut).toBeUndefined();
+  expect(getDocumentCommandDefinition('refreshIndex').shortcut).toBeUndefined();
   expect(getDocumentCommandDefinition('doubleStrike')).toMatchObject({
     id: 'font.doubleStrike',
     label: '双删除线',

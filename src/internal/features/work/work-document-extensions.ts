@@ -28,6 +28,7 @@ import { DocumentComment } from './work-document-comments';
 import { DocumentEquation } from './work-document-equations';
 import { DocumentField } from './work-document-field-node';
 import { DocumentImage } from './work-document-image-layout';
+import { DocumentIndex, DocumentIndexEntry } from './work-document-index-nodes';
 import { DocumentLazyBlock } from './work-document-lazy-block';
 import {
   DocumentBulletList,
@@ -133,6 +134,8 @@ export function createWorkDocumentExtensions(
     citationExtension,
     DocumentBibliography,
     DocumentTableOfContents,
+    DocumentIndexEntry,
+    DocumentIndex,
     DocumentField,
     DocumentEquation,
     commentExtension,

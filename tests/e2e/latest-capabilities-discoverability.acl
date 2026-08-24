@@ -24,6 +24,10 @@ suite "latest-capabilities-discoverability" {
             visible = css("button[aria-label='打开最新能力：可更新目录']")
         }
 
+        expect "document-index-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：原生索引']")
+        }
+
         expect "character-shading-entry-is-visible" {
             visible = css("button[aria-label='打开最新能力：字符底纹']")
         }
@@ -53,6 +57,26 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-playground-home-after-table-of-contents" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-document-index" {
+            target = role("button", "打开最新能力：原生索引")
+        }
+
+        wait "document-index-document-is-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "document-index-title-is-visible" {
+            visible = css("input[aria-label='文件名'][value='原生索引示例']")
+        }
+
+        expect "typed-document-index-is-visible" {
+            visible = css(".work-document-index[data-index-columns='2'][data-index-leader='dot']")
+        }
+
+        navigate "return-to-playground-home-after-document-index" {
             url = "http://127.0.0.1:4175/"
         }
 
@@ -139,6 +163,22 @@ suite "latest-capabilities-discoverability" {
             visible = css("main .docs-home-hero__latest a[href*='components/document.html#']")
         }
 
+        click "open-document-index-documentation" {
+            target = css("main .docs-home-hero__latest a[href*='components/document.html#原生文档索引']")
+        }
+
+        wait "document-index-documentation-is-open" {
+            text = "原生文档索引"
+        }
+
+        expect "document-index-is-documented" {
+            visible = css("main h2#原生文档索引")
+        }
+
+        navigate "return-to-documentation-home-after-document-index" {
+            url = "http://127.0.0.1:4175/docs/"
+        }
+
         click "open-table-of-contents-documentation" {
             target = css("main .docs-home-hero__latest a[href*='components/document.html#原生可更新目录']")
         }
@@ -199,6 +239,10 @@ suite "latest-capabilities-discoverability" {
 
         expect "phone-table-of-contents-entry-is-visible" {
             visible = css("button[aria-label='打开最新能力：可更新目录']")
+        }
+
+        expect "phone-document-index-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：原生索引']")
         }
 
         expect "phone-data-validation-entry-is-visible" {
