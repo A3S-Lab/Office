@@ -1155,6 +1155,18 @@
     display: flex;
   }
 
+  .work-editor-shell.pdf .work-pdf-page-organizer-trigger.ds-button {
+    width: 28px;
+    min-width: 28px;
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0;
+  }
+
+  .work-editor-shell.pdf .work-pdf-page-organizer-label {
+    display: none;
+  }
+
   .work-editor-shell.pdf .work-pdf-search {
     width: min(220px, 28vw);
   }

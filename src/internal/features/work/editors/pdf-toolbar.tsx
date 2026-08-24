@@ -200,11 +200,12 @@ export function PdfToolbar({
             className="work-pdf-page-organizer-trigger"
             data-pdf-page-organizer-trigger
             aria-label="组织 PDF 页面"
+            title="组织 PDF 页面"
             disabled={!can.openPageOrganizer()}
             onClick={commands.openPageOrganizer}
           >
             <LayoutGrid size={15} />
-            组织页面
+            <span className="work-pdf-page-organizer-label">组织页面</span>
           </Button>
         </div>
       )}
