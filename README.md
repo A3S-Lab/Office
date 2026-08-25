@@ -13,14 +13,14 @@
 
 <p align="center">
   <a href="https://github.com/A3S-Lab/Office/actions/workflows/ci.yml"><img alt="CI status" src="https://img.shields.io/github/actions/workflow/status/A3S-Lab/Office/ci.yml?branch=main&amp;style=flat-square&amp;label=CI"></a>
-  <a href="https://a3s-lab.github.io/Office/"><img alt="Open the live Playground" src="https://img.shields.io/badge/Live_Playground-open-2f6fed?style=flat-square"></a>
+  <a href="https://a3s-lab.github.io/Office/playground/"><img alt="Open the live Playground" src="https://img.shields.io/badge/Live_Playground-open-2f6fed?style=flat-square"></a>
   <a href="#project-status"><img alt="Project status: pre-1.0" src="https://img.shields.io/badge/status-pre--1.0-7a5bd6?style=flat-square"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-159469?style=flat-square"></a>
 </p>
 
 <p align="center">
-  <a href="https://a3s-lab.github.io/Office/">Playground</a> ·
-  <a href="https://a3s-lab.github.io/Office/docs/">Documentation</a> ·
+  <a href="https://a3s-lab.github.io/Office/playground/">Playground</a> ·
+  <a href="https://a3s-lab.github.io/Office/">Documentation</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#editor-capability-comparison">Editors</a> ·
   <a href="#real-time-collaboration">Collaboration</a> ·
@@ -71,16 +71,17 @@ detail in the documentation:
 | Spreadsheet | Complete common Data Validation input, blank/dropdown, and Stop/Warning/Information error settings with native XLSX round trips | Playground **Latest capabilities → 数据验证** · [Spreadsheet reference](docs/latest/en/components/spreadsheet.mdx#data-validation) |
 | PDF | Insert, delete, rotate, reorder, extract, merge, and split pages through a dedicated Web Worker, with Blob-level Undo/Redo and independent binary reopen verification | Playground **Latest capabilities → 组织 PDF 页面** · [PDF reference](docs/latest/en/components/pdf.mdx#page-organization) |
 
-All eight entries are reachable from the first Playground viewport. The seven
-content templates also remain under **新建**; **组织 PDF 页面** opens the normal
-PDF file workflow because page organization must operate on host-provided source
-bytes. The highlighted strip keeps each capability discoverable without a deep
-documentation section or an `?e2e=` fixture.
+All eight entries are reachable from the first Playground viewport. The
+filterable capability gallery groups releases by editor, publishes the source
+release on every card, and grows from one shared metadata list instead of a
+fixed-width strip. The seven content templates also remain under **新建**;
+**组织 PDF 页面** opens the normal PDF file workflow because page organization
+must operate on host-provided source bytes.
 
 ## See it working
 
 The images below are committed visual-regression baselines from the real
-[Playground](https://a3s-lab.github.io/Office/), not conceptual mockups.
+[Playground](https://a3s-lab.github.io/Office/playground/), not conceptual mockups.
 
 <p align="center">
   <a href="visual-tests/__snapshots__/linux/desktop-1280/document.png">
@@ -343,7 +344,7 @@ alignment, direction, indentation, spacing, pagination, outline, tab stops,
 borders, shading, and collapsed state without deleting text. Authenticated
 `suggest` updates must preserve both revision kinds and cannot rewrite their
 identity or snapshot. `suggest` on non-Document formats remains receive-only.
-See the bilingual [real-time collaboration guide](https://a3s-lab.github.io/Office/docs/components/collaboration.html)
+See the bilingual [real-time collaboration guide](https://a3s-lab.github.io/Office/components/collaboration.html)
 for React, Vue, Web Component, reconnect, security, and native-agent setup.
 The repository also ships a runnable
 [A3S Boot collaboration server](examples/collaboration-server/) with signed
@@ -364,7 +365,7 @@ bun run playground
 ```
 
 Then open the local URL printed by the development server. For a zero-install
-tour, use the [live Playground](https://a3s-lab.github.io/Office/).
+tour, use the [live Playground](https://a3s-lab.github.io/Office/playground/).
 Choose **体验格式修订**, open **审阅**, then **查看修订（2）** to inspect the
 independent Formatting and Paragraph Formatting cards and exercise accept or
 reject semantics.
@@ -572,7 +573,7 @@ into the PDF; searchable text and vector output remain future fidelity work.
 - `@a3s-lab/office/styles.css` — Shared editor and interaction-system styles.
 
 Copyable React, Vue, and Web Component examples live in the
-[component documentation](https://a3s-lab.github.io/Office/docs/components/).
+[component documentation](https://a3s-lab.github.io/Office/components/).
 
 ## Controlled by design
 
@@ -1553,7 +1554,7 @@ attribution, or conflicting final decisions fail without a durable update.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published
-[CLI and Skill guide](https://a3s-lab.github.io/Office/docs/automation/).
+[CLI and Skill guide](https://a3s-lab.github.io/Office/automation/).
 
 ## Architecture
 
@@ -1613,61 +1614,62 @@ committed visual contracts; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentation
 
-The published website keeps the interactive Playground at its root and builds
-the searchable Rspress documentation center under `/docs/`. Simplified Chinese
-is the stable default, English remains available from the language menu, and
-the version menu switches between `latest` and frozen release documentation.
-Search is scoped to the active language and version. Both surfaces use the
-same deployment base, so preview, Pages, and fork deployments keep working
-without hard-coded return URLs.
+The published website follows the A3S UI documentation model: the searchable
+Rspress documentation center owns the website root, while Playground is a
+primary top-navigation route under `/playground/`. Simplified Chinese is the
+stable default, English remains available from the language menu, and the
+version menu switches between `latest` and frozen release documentation.
+Search is scoped to the active language and version. Both surfaces derive
+their paths from one deployment base, so preview, Pages, and fork deployments
+keep working without hard-coded return URLs.
 
-- [Live Playground](https://a3s-lab.github.io/Office/)
-- [Documentation center](https://a3s-lab.github.io/Office/docs/)
-- [A3S Office 0.34.0 documentation](https://a3s-lab.github.io/Office/docs/0.34.0/)
-- [A3S Office 0.33.0 documentation](https://a3s-lab.github.io/Office/docs/0.33.0/)
-- [A3S Office 0.32.0 documentation](https://a3s-lab.github.io/Office/docs/0.32.0/)
-- [A3S Office 0.31.0 documentation](https://a3s-lab.github.io/Office/docs/0.31.0/)
-- [A3S Office 0.30.0 documentation](https://a3s-lab.github.io/Office/docs/0.30.0/)
-- [A3S Office 0.29.0 documentation](https://a3s-lab.github.io/Office/docs/0.29.0/)
-- [A3S Office 0.28.0 documentation](https://a3s-lab.github.io/Office/docs/0.28.0/)
-- [A3S Office 0.27.0 documentation](https://a3s-lab.github.io/Office/docs/0.27.0/)
-- [A3S Office 0.26.0 documentation](https://a3s-lab.github.io/Office/docs/0.26.0/)
-- [A3S Office 0.25.0 documentation](https://a3s-lab.github.io/Office/docs/0.25.0/)
-- [A3S Office 0.24.0 documentation](https://a3s-lab.github.io/Office/docs/0.24.0/)
-- [A3S Office 0.23.0 documentation](https://a3s-lab.github.io/Office/docs/0.23.0/)
-- [A3S Office 0.22.0 documentation](https://a3s-lab.github.io/Office/docs/0.22.0/)
-- [A3S Office 0.21.0 documentation](https://a3s-lab.github.io/Office/docs/0.21.0/)
-- [A3S Office 0.20.0 documentation](https://a3s-lab.github.io/Office/docs/0.20.0/)
-- [A3S Office 0.19.0 documentation](https://a3s-lab.github.io/Office/docs/0.19.0/)
-- [A3S Office 0.18.0 documentation](https://a3s-lab.github.io/Office/docs/0.18.0/)
-- [A3S Office 0.17.0 documentation](https://a3s-lab.github.io/Office/docs/0.17.0/)
-- [A3S Office 0.16.0 documentation](https://a3s-lab.github.io/Office/docs/0.16.0/)
-- [A3S Office 0.15.0 documentation](https://a3s-lab.github.io/Office/docs/0.15.0/)
-- [A3S Office 0.14.0 documentation](https://a3s-lab.github.io/Office/docs/0.14.0/)
-- [A3S Office 0.13.1 documentation](https://a3s-lab.github.io/Office/docs/0.13.1/)
-- [A3S Office 0.13.0 documentation](https://a3s-lab.github.io/Office/docs/0.13.0/)
-- [A3S Office 0.12.0 documentation](https://a3s-lab.github.io/Office/docs/0.12.0/)
-- [A3S Office 0.11.0 documentation](https://a3s-lab.github.io/Office/docs/0.11.0/)
-- [A3S Office 0.10.0 documentation](https://a3s-lab.github.io/Office/docs/0.10.0/)
-- [A3S Office 0.9.2 documentation](https://a3s-lab.github.io/Office/docs/0.9.2/)
-- [A3S Office 0.9.1 documentation](https://a3s-lab.github.io/Office/docs/0.9.1/)
-- [A3S Office 0.9.0 documentation](https://a3s-lab.github.io/Office/docs/0.9.0/)
-- [A3S Office 0.8.1 documentation](https://a3s-lab.github.io/Office/docs/0.8.1/)
-- [A3S Office 0.8.0 documentation](https://a3s-lab.github.io/Office/docs/0.8.0/)
-- [A3S Office 0.7.3 documentation](https://a3s-lab.github.io/Office/docs/0.7.3/)
-- [A3S Office 0.7.2 documentation](https://a3s-lab.github.io/Office/docs/0.7.2/)
-- [A3S Office 0.7.1 documentation](https://a3s-lab.github.io/Office/docs/0.7.1/)
-- [A3S Office 0.7.0 documentation](https://a3s-lab.github.io/Office/docs/0.7.0/)
-- [A3S Office 0.6.0 documentation](https://a3s-lab.github.io/Office/docs/0.6.0/)
-- [A3S Office 0.5.0 documentation](https://a3s-lab.github.io/Office/docs/0.5.0/)
-- [A3S Office 0.4.0 documentation](https://a3s-lab.github.io/Office/docs/0.4.0/)
-- [A3S Office 0.3.0 documentation](https://a3s-lab.github.io/Office/docs/0.3.0/)
-- [A3S Office 0.2.0 documentation](https://a3s-lab.github.io/Office/docs/0.2.0/)
-- [A3S Office 0.1.0 documentation](https://a3s-lab.github.io/Office/docs/0.1.0/)
-- [React, Vue, and Web Component integration](https://a3s-lab.github.io/Office/docs/components/)
-- [Real-time collaboration](https://a3s-lab.github.io/Office/docs/en/components/collaboration.html)
+- [Live Playground](https://a3s-lab.github.io/Office/playground/)
+- [Documentation center](https://a3s-lab.github.io/Office/)
+- [A3S Office 0.34.0 documentation](https://a3s-lab.github.io/Office/0.34.0/)
+- [A3S Office 0.33.0 documentation](https://a3s-lab.github.io/Office/0.33.0/)
+- [A3S Office 0.32.0 documentation](https://a3s-lab.github.io/Office/0.32.0/)
+- [A3S Office 0.31.0 documentation](https://a3s-lab.github.io/Office/0.31.0/)
+- [A3S Office 0.30.0 documentation](https://a3s-lab.github.io/Office/0.30.0/)
+- [A3S Office 0.29.0 documentation](https://a3s-lab.github.io/Office/0.29.0/)
+- [A3S Office 0.28.0 documentation](https://a3s-lab.github.io/Office/0.28.0/)
+- [A3S Office 0.27.0 documentation](https://a3s-lab.github.io/Office/0.27.0/)
+- [A3S Office 0.26.0 documentation](https://a3s-lab.github.io/Office/0.26.0/)
+- [A3S Office 0.25.0 documentation](https://a3s-lab.github.io/Office/0.25.0/)
+- [A3S Office 0.24.0 documentation](https://a3s-lab.github.io/Office/0.24.0/)
+- [A3S Office 0.23.0 documentation](https://a3s-lab.github.io/Office/0.23.0/)
+- [A3S Office 0.22.0 documentation](https://a3s-lab.github.io/Office/0.22.0/)
+- [A3S Office 0.21.0 documentation](https://a3s-lab.github.io/Office/0.21.0/)
+- [A3S Office 0.20.0 documentation](https://a3s-lab.github.io/Office/0.20.0/)
+- [A3S Office 0.19.0 documentation](https://a3s-lab.github.io/Office/0.19.0/)
+- [A3S Office 0.18.0 documentation](https://a3s-lab.github.io/Office/0.18.0/)
+- [A3S Office 0.17.0 documentation](https://a3s-lab.github.io/Office/0.17.0/)
+- [A3S Office 0.16.0 documentation](https://a3s-lab.github.io/Office/0.16.0/)
+- [A3S Office 0.15.0 documentation](https://a3s-lab.github.io/Office/0.15.0/)
+- [A3S Office 0.14.0 documentation](https://a3s-lab.github.io/Office/0.14.0/)
+- [A3S Office 0.13.1 documentation](https://a3s-lab.github.io/Office/0.13.1/)
+- [A3S Office 0.13.0 documentation](https://a3s-lab.github.io/Office/0.13.0/)
+- [A3S Office 0.12.0 documentation](https://a3s-lab.github.io/Office/0.12.0/)
+- [A3S Office 0.11.0 documentation](https://a3s-lab.github.io/Office/0.11.0/)
+- [A3S Office 0.10.0 documentation](https://a3s-lab.github.io/Office/0.10.0/)
+- [A3S Office 0.9.2 documentation](https://a3s-lab.github.io/Office/0.9.2/)
+- [A3S Office 0.9.1 documentation](https://a3s-lab.github.io/Office/0.9.1/)
+- [A3S Office 0.9.0 documentation](https://a3s-lab.github.io/Office/0.9.0/)
+- [A3S Office 0.8.1 documentation](https://a3s-lab.github.io/Office/0.8.1/)
+- [A3S Office 0.8.0 documentation](https://a3s-lab.github.io/Office/0.8.0/)
+- [A3S Office 0.7.3 documentation](https://a3s-lab.github.io/Office/0.7.3/)
+- [A3S Office 0.7.2 documentation](https://a3s-lab.github.io/Office/0.7.2/)
+- [A3S Office 0.7.1 documentation](https://a3s-lab.github.io/Office/0.7.1/)
+- [A3S Office 0.7.0 documentation](https://a3s-lab.github.io/Office/0.7.0/)
+- [A3S Office 0.6.0 documentation](https://a3s-lab.github.io/Office/0.6.0/)
+- [A3S Office 0.5.0 documentation](https://a3s-lab.github.io/Office/0.5.0/)
+- [A3S Office 0.4.0 documentation](https://a3s-lab.github.io/Office/0.4.0/)
+- [A3S Office 0.3.0 documentation](https://a3s-lab.github.io/Office/0.3.0/)
+- [A3S Office 0.2.0 documentation](https://a3s-lab.github.io/Office/0.2.0/)
+- [A3S Office 0.1.0 documentation](https://a3s-lab.github.io/Office/0.1.0/)
+- [React, Vue, and Web Component integration](https://a3s-lab.github.io/Office/components/)
+- [Real-time collaboration](https://a3s-lab.github.io/Office/en/components/collaboration.html)
 - [Collaboration delivery roadmap](COLLABORATION_ROADMAP.md)
-- [Office CLI and coding-agent Skill](https://a3s-lab.github.io/Office/docs/automation/)
+- [Office CLI and coding-agent Skill](https://a3s-lab.github.io/Office/automation/)
 - [Browser editor architecture](docs/latest/en/browser-editor-architecture.md)
 - [Native Office engine](docs/latest/en/native-office-engine.md)
 - [CLI reference](docs/latest/en/cli-reference.md)

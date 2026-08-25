@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-const targetUrl = process.argv[2] ?? 'http://127.0.0.1:4175/';
+const targetUrl = process.argv[2] ?? 'http://127.0.0.1:4175/playground/';
 const repeatCount = positiveInteger(process.argv[3], 3);
 const timeoutMs = 180_000;
 const fixturePath = fileURLToPath(

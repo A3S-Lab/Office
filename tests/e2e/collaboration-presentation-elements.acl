@@ -13,7 +13,7 @@ suite "collaboration-presentation-elements" {
         }
 
         navigate "open-presentation-collaboration-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=collaboration-presentation-elements"
+            url = "http://127.0.0.1:4175/playground/?e2e=collaboration-presentation-elements"
         }
 
         wait "playground-ready" {

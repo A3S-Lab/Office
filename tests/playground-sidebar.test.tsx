@@ -10,7 +10,7 @@ test('publishes the latest main capabilities as first-class Playground entries',
   render(
     <WorkspaceHome
       artifacts={[]}
-      collaborationDocsUrl="/docs/components/collaboration-server.html"
+      collaborationDocsUrl="/components/collaboration-server.html"
       sidebarOpen
       onOpenSidebar={() => undefined}
       onCreate={(templateId) => createdTemplates.push(templateId)}
@@ -28,6 +28,7 @@ test('publishes the latest main capabilities as first-class Playground entries',
     name: '打开最新能力：入场动画',
   });
   expect(entranceAnimations).toHaveTextContent('Presentation');
+  expect(entranceAnimations).toHaveTextContent('v0.34.0');
   expect(
     within(latest).getByRole('button', {
       name: '打开最新能力：文档比较',
@@ -53,6 +54,10 @@ test('publishes the latest main capabilities as first-class Playground entries',
       name: '打开最新能力：原生索引',
     }),
   ).toBeInTheDocument();
+  const pdfPageOrganization = within(latest).getByRole('button', {
+    name: '打开最新能力：组织 PDF 页面',
+  });
+  expect(pdfPageOrganization).toHaveTextContent('v0.33.0');
   const dataValidation = within(latest).getByRole('button', {
     name: '打开最新能力：数据验证',
   });
@@ -61,6 +66,19 @@ test('publishes the latest main capabilities as first-class Playground entries',
   expect(createdTemplates).toEqual(['data-validation']);
   fireEvent.click(entranceAnimations);
   expect(createdTemplates).toEqual(['data-validation', 'animated-deck']);
+
+  fireEvent.click(within(latest).getByRole('button', { name: '文字 5' }));
+  expect(
+    within(latest).queryByRole('button', {
+      name: '打开最新能力：入场动画',
+    }),
+  ).toBeNull();
+  expect(
+    within(latest).getByRole('button', {
+      name: '打开最新能力：文档比较',
+    }),
+  ).toBeVisible();
+  expect(within(latest).getByText('5 / 8 项')).toBeVisible();
 });
 
 test('keeps Markdown last in the quick-create list', () => {
@@ -68,7 +86,7 @@ test('keeps Markdown last in the quick-create list', () => {
 
   render(
     <SiteSidebar
-      docsUrl="/docs/"
+      docsUrl="/"
       onCollapse={() => undefined}
       onHome={() => undefined}
       onCreate={(templateId) => createdTemplates.push(templateId)}
@@ -95,7 +113,7 @@ test('keeps one documentation entry in the product navigation', () => {
 
   render(
     <SiteSidebar
-      docsUrl="/docs/"
+      docsUrl="/"
       onCollapse={() => undefined}
       onHome={() => {
         homeRequests += 1;
@@ -115,7 +133,7 @@ test('keeps one documentation entry in the product navigation', () => {
   expect(playground).toHaveAttribute('aria-current', 'page');
   expect(
     within(productNavigation).getByRole('link', { name: '文档' }),
-  ).toHaveAttribute('href', '/docs/');
+  ).toHaveAttribute('href', '/');
   fireEvent.click(playground);
   expect(homeRequests).toBe(1);
 });
@@ -156,7 +174,7 @@ function ModalSidebarHarness() {
       </button>
       {open && (
         <SiteSidebar
-          docsUrl="/docs/"
+          docsUrl="/"
           modal
           onCollapse={() => setOpen(false)}
           onHome={() => undefined}

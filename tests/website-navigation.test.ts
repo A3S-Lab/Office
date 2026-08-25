@@ -8,19 +8,23 @@ import {
 } from '../website/theme/site-navigation';
 
 test('derives a deployment-relative Playground link from every docs route depth', () => {
-  expect(playgroundHrefFromDocsRoute('/')).toBe('../');
-  expect(playgroundHrefFromDocsRoute('/index.html')).toBe('../');
-  expect(playgroundHrefFromDocsRoute('/native-office-engine.html')).toBe('../');
-  expect(playgroundHrefFromDocsRoute('/guide/')).toBe('../../');
-  expect(playgroundHrefFromDocsRoute('/guide/index.html')).toBe('../../');
+  expect(playgroundHrefFromDocsRoute('/')).toBe('playground/');
+  expect(playgroundHrefFromDocsRoute('/index.html')).toBe('playground/');
+  expect(playgroundHrefFromDocsRoute('/native-office-engine.html')).toBe(
+    'playground/',
+  );
+  expect(playgroundHrefFromDocsRoute('/guide/')).toBe('../playground/');
+  expect(playgroundHrefFromDocsRoute('/guide/index.html')).toBe(
+    '../playground/',
+  );
   expect(playgroundHrefFromDocsRoute('/components/react.html?tab=usage')).toBe(
-    '../../',
+    '../playground/',
   );
   expect(playgroundHrefFromDocsRoute('/en/components/react.html')).toBe(
-    '../../../',
+    '../../playground/',
   );
   expect(playgroundHrefFromDocsRoute('/0.1.0/en/components/react.html')).toBe(
-    '../../../../',
+    '../../../playground/',
   );
 });
 
@@ -30,11 +34,11 @@ test('derives deployment-relative Playground assets from localized version route
       '/0.1.0/en/automation/',
       '/downloads/a3s-office-skill.tar.gz',
     ),
-  ).toBe('../../../../downloads/a3s-office-skill.tar.gz');
-  expect(playgroundAssetHrefFromDocsRoute('/', '')).toBe('../');
+  ).toBe('../../../playground/downloads/a3s-office-skill.tar.gz');
+  expect(playgroundAssetHrefFromDocsRoute('/', '')).toBe('playground/');
 });
 
-test('uses the shared A3S navigation without an online Playground button', async () => {
+test('uses the shared A3S navigation with Playground as a primary route', async () => {
   const themeRoot = path.resolve(import.meta.dirname, '../website/theme');
   const websiteRoot = path.resolve(import.meta.dirname, '../website');
   const [config, themeEntry, contentStyles, homeStyles, navSource, logo] =
@@ -56,6 +60,8 @@ test('uses the shared A3S navigation without an online Playground button', async
   expect(navSource).toContain(
     "language === 'zh' ? '打开导航' : 'Open navigation'",
   );
+  expect(navSource).toContain("link: withBase('/playground/')");
+  expect(navSource).toContain('<NavScreenMenu menuItems={menuItems} />');
   expect(themeStyles).toMatch(/--rp-nav-height:\s*72px/);
   expect(themeStyles).toMatch(/width:\s*31px/);
   expect(createHash('sha256').update(logo).digest('hex')).toBe(

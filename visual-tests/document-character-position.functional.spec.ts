@@ -9,7 +9,7 @@ test('Writer authors native character position through the font dialog', async (
   page.on('console', (message) => {
     if (message.type() === 'error') browserErrors.push(message.text());
   });
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白文字 从一张干净的 A4 页面开始',
@@ -60,7 +60,7 @@ test('Writer keeps character-position controls usable in the compact dialog', as
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   await page.setViewportSize({ width: 560, height: 820 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白文字 从一张干净的 A4 页面开始',

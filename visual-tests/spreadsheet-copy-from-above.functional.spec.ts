@@ -8,7 +8,7 @@ test('Spreadsheet copies the exact formula or value from above without replacing
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
-  await page.goto('/?e2e=spreadsheet-copy-from-above');
+  await page.goto('/playground/?e2e=spreadsheet-copy-from-above');
 
   const grid = page.locator('.fortune-sheet-overlay');
   const nameBox = page.locator('.fortune-name-box');

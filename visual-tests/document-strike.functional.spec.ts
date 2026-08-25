@@ -6,7 +6,7 @@ test('Writer preserves native double strike, explicit reset, shortcut ownership,
   const browserErrors: string[] = [];
   const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
   page.on('pageerror', (error) => browserErrors.push(error.message));
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白文字 从一张干净的 A4 页面开始',

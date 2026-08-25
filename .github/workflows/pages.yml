@@ -57,7 +57,7 @@ jobs:
       - name: Type-check playground
         run: bun run playground:typecheck
 
-      - name: Build Playground homepage and documentation center
+      - name: Build documentation website and Playground
         run: bun run playground:build
 
       - name: Check playground bundle budget
@@ -99,7 +99,7 @@ jobs:
       - name: Build GitHub Pages website
         run: bun run playground:build
         env:
-          A3S_OFFICE_PLAYGROUND_BASE: ${{ steps.pages.outputs.base_path }}/
+          A3S_OFFICE_SITE_BASE: ${{ steps.pages.outputs.base_path }}/
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v5

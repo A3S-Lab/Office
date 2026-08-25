@@ -64,7 +64,7 @@ bun run test:e2e:collaboration-playground:check
 bun run test:e2e:collaboration-playground
 ```
 
-The release-facing README, documentation hero, and Playground capability strip
+The release-facing README, documentation hero, and Playground capability gallery
 share one focused discoverability gate:
 
 ```bash
@@ -74,7 +74,7 @@ bun run test:e2e:latest-capabilities
 
 It opens the Writer table of contents, native document index, character
 shading, proofing languages, and Spreadsheet data validation from the
-first-class Playground strip; verifies the PDF page-organization entry; follows
+filterable Playground gallery; verifies the PDF page-organization entry; follows
 the documentation-home links to the full Writer, Spreadsheet, and PDF
 references; repeats the public discovery check at 390 px; and captures
 accessibility plus empty console/page-error diagnostics. A hidden `?e2e=`
@@ -646,11 +646,11 @@ selection, modal close behavior, and an unobstructed document canvas; the
 phone Markdown source, visual, and split-mode workflow with
 unambiguous accessible controls, a source-first full-workspace phone switch,
 synchronized preview content, and touch-sized actions; and the public
-Playground-to-documentation-center navigation contract, including Simplified
-Chinese as the default language, a prominent homepage and sidebar route to the
+Playground-to-documentation-center navigation contract, including the
+documentation center at the website root, Playground in the top navigation,
+Simplified Chinese as the default language, a prominent homepage and sidebar route to the
 five-format real-time collaboration guide, collaboration accessibility
-evidence, and language and release-version switching. The docs header
-deliberately omits the former route-dependent online Playground button.
+evidence, and language and release-version switching.
 The responsive Office-shell workflow also crosses from a persistent desktop
 sidebar into a 390 px workspace, proves the phone drawer stays closed without
 moving search focus, and restores the prior persistent sidebar on return.

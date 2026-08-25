@@ -12,7 +12,7 @@ test('reports reviewed ranges changed by a controlled host update', async ({
   });
   page.on('pageerror', (error) => pageErrors.push(error.message));
 
-  await page.goto('/?e2e=word-review-conflict');
+  await page.goto('/playground/?e2e=word-review-conflict');
   await page
     .locator('.playground-template-card')
     .filter({ hasText: '项目方案' })

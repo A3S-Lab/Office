@@ -13,7 +13,7 @@ suite "spreadsheet-go-to" {
         }
 
         navigate "open-go-to-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-go-to"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-go-to"
         }
 
         wait "spreadsheet-ready" {

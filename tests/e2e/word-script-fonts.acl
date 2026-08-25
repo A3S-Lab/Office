@@ -13,7 +13,7 @@ suite "office-word-script-fonts" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         expect "playground-ready" {

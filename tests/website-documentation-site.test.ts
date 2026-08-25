@@ -246,7 +246,7 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
       'utf8',
     ),
     readFile(
-      path.join(repositoryRoot, 'playground/src/workspace-home.tsx'),
+      path.join(repositoryRoot, 'playground/src/latest-capabilities.ts'),
       'utf8',
     ),
     readFile(
@@ -307,7 +307,9 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
   expect(templates).toContain("effect: 'fade'");
   expect(templates).toContain("effect: 'fly-in'");
   expect(templates).toContain("effect: 'zoom'");
-  expect(playground).toContain("template.id === 'animated-deck'");
+  expect(playground).toContain(
+    "{ templateId: 'animated-deck', release: '0.34.0' }",
+  );
   expect(pptxTest).toContain(
     'round-trips supported entrance animations through native PPTX timing trees',
   );
@@ -365,7 +367,7 @@ test('publishes PDF page organization across README, docs, Playground, and relea
     readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
     readFile(path.join(documentationRoot, 'latest/zh/index.mdx'), 'utf8'),
     readFile(
-      path.join(repositoryRoot, 'playground/src/workspace-home.tsx'),
+      path.join(repositoryRoot, 'playground/src/latest-capabilities.ts'),
       'utf8',
     ),
     readFile(
@@ -427,6 +429,7 @@ test('publishes PDF page organization across README, docs, Playground, and relea
   expect(chineseHome).toContain('pdf.html#页面组织');
   expect(playground).toContain("id: 'pdf-page-organization'");
   expect(playground).toContain('组织 PDF 页面');
+  expect(playground).toContain("release: '0.33.0'");
   expect(visualSpec).toContain('PDF page organization mutates, exports, saves');
   expect(aclSuite).toContain('suite "office-pdf-page-organization"');
   expect(discoverabilityAcl).toContain('components/pdf.html#页面组织');

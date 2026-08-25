@@ -13,7 +13,7 @@ suite "collaboration-playground-entry" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         expect "collaboration-capability-is-visible" {
@@ -21,7 +21,7 @@ suite "collaboration-playground-entry" {
         }
 
         expect "backend-guide-has-a-canonical-route" {
-            visible = css("a[href$='/docs/components/collaboration-server.html']")
+            visible = css("a[href$='/components/collaboration-server.html']")
         }
 
         click "open-collaboration-demo" {
@@ -76,7 +76,7 @@ suite "collaboration-playground-entry" {
         }
 
         navigate "open-compact-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         expect "compact-collaboration-capability-is-visible" {
@@ -84,7 +84,7 @@ suite "collaboration-playground-entry" {
         }
 
         expect "compact-backend-guide-is-visible" {
-            visible = css("a[href$='/docs/components/collaboration-server.html']")
+            visible = css("a[href$='/components/collaboration-server.html']")
         }
 
         click "open-compact-collaboration-demo" {

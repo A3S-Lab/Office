@@ -5,12 +5,18 @@ import { gzipSync } from 'node:zlib';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const playgroundDist = resolve(repositoryRoot, 'playground-dist');
-const indexPath = resolve(playgroundDist, 'index.html');
+const playgroundOutput = resolve(playgroundDist, 'playground');
+const documentationIndexPath = resolve(playgroundDist, 'index.html');
+const indexPath = resolve(playgroundOutput, 'index.html');
 const maximumInitialJavaScriptGzipBytes = 220 * 1024;
 
 assert(
+  existsSync(documentationIndexPath),
+  'Documentation output is missing from the website root. Run bun run playground:build first.',
+);
+assert(
   existsSync(indexPath),
-  'Playground output is missing. Run bun run playground:build first.',
+  'Playground output is missing from /playground/. Run bun run playground:build first.',
 );
 
 const html = readFileSync(indexPath, 'utf8');
@@ -24,7 +30,7 @@ const assets = initialScripts.map((source) => {
   const pathname = new URL(source, 'https://a3s-office.invalid').pathname;
   const staticIndex = pathname.indexOf('/static/');
   assert(staticIndex >= 0, `Unexpected initial script URL: ${source}`);
-  const path = resolve(playgroundDist, pathname.slice(staticIndex + 1));
+  const path = resolve(playgroundOutput, pathname.slice(staticIndex + 1));
   assert(existsSync(path), `Initial script is missing: ${path}`);
   const sourceBytes = readFileSync(path);
   return {

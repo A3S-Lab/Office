@@ -10,7 +10,7 @@ test('Word page navigation previews measured pages and jumps without losing edit
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 

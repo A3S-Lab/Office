@@ -8,7 +8,7 @@ test('Spreadsheet hyperlinks stay atomic and accessible at every layout', async 
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
-  await page.goto('/?e2e=spreadsheet-hyperlink');
+  await page.goto('/playground/?e2e=spreadsheet-hyperlink');
   await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
 
   const grid = page.locator('.fortune-sheet-overlay');

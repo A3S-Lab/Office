@@ -13,7 +13,7 @@ suite "office-spreadsheet-date-time" {
         }
 
         navigate "open-date-time-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-date-time"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-date-time"
         }
 
         wait "spreadsheet-ready" {

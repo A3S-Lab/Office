@@ -13,7 +13,7 @@ test('Writer authors and undoes exact native character shading', async ({
     await page.setViewportSize({ width: 390, height: 844 });
   }
 
-  await page.goto('/');
+  await page.goto('/playground/');
   const latestCapabilities = page.getByRole('region', { name: '最新能力' });
   const characterShadingEntry = latestCapabilities.getByRole('button', {
     name: '打开最新能力：字符底纹',

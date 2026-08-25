@@ -13,7 +13,7 @@ test('Writer authors and explicitly clears a native emphasis mark in the respons
     await page.setViewportSize({ width: 390, height: 844 });
   }
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白文字 从一张干净的 A4 页面开始',

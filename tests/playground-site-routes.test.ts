@@ -1,22 +1,32 @@
 import { expect, test } from '@rstest/core';
 import {
+  collaborationServerDocumentationUrl,
   documentationEntryUrl,
   legacyDocsPath,
 } from '../playground/src/site-routes';
 
-test('keeps the Playground at the site root and opens the documentation center', () => {
+test('keeps documentation at the site root and resolves it from Playground', () => {
   expect(
-    documentationEntryUrl('https://a3s-lab.github.io/Office/index.html'),
-  ).toBe('https://a3s-lab.github.io/Office/docs/');
-  expect(documentationEntryUrl('http://127.0.0.1:4175/')).toBe(
-    'http://127.0.0.1:4175/docs/',
+    documentationEntryUrl(
+      'https://a3s-lab.github.io/Office/playground/index.html',
+    ),
+  ).toBe('https://a3s-lab.github.io/Office/');
+  expect(documentationEntryUrl('http://127.0.0.1:4175/playground/')).toBe(
+    'http://127.0.0.1:4175/',
+  );
+  expect(
+    collaborationServerDocumentationUrl(
+      'https://a3s-lab.github.io/Office/playground/',
+    ),
+  ).toBe(
+    'https://a3s-lab.github.io/Office/components/collaboration-server.html',
   );
 });
 
 test('keeps legacy guide hashes on dedicated documentation routes', () => {
-  expect(legacyDocsPath('#guide')).toBe('docs/guide/');
-  expect(legacyDocsPath('#guide/components')).toBe('docs/components/');
-  expect(legacyDocsPath('#guide/api')).toBe('docs/components/document.html');
-  expect(legacyDocsPath('#guide/cli')).toBe('docs/automation/');
+  expect(legacyDocsPath('#guide')).toBe('../guide/');
+  expect(legacyDocsPath('#guide/components')).toBe('../components/');
+  expect(legacyDocsPath('#guide/api')).toBe('../components/document.html');
+  expect(legacyDocsPath('#guide/cli')).toBe('../automation/');
   expect(legacyDocsPath('#unknown')).toBeNull();
 });

@@ -6,7 +6,7 @@ test.use({ viewport: { width: 390, height: 700 } });
 test('Phone Markdown split view gives one pane the full workspace', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
 
   const workspace = page.locator('.work-markdown-workspace.split');
@@ -79,7 +79,7 @@ test('Phone Markdown split view gives one pane the full workspace', async ({
 test('Presentation prioritizes its canvas and uses a dismissible slide drawer', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -182,7 +182,7 @@ test('Presentation prioritizes its canvas and uses a dismissible slide drawer', 
 });
 
 test('Phone Office sidebar owns focus until dismissed', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   const trigger = page.getByRole('button', { name: '展开办公侧边栏' });
   await trigger.click();
 
@@ -214,7 +214,7 @@ test('Phone Office sidebar owns focus until dismissed', async ({ page }) => {
 test('Phone AI assistant keeps focus out of the obscured editor', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '新项目方案 DOCX · 本次会话' })
     .click();
@@ -248,7 +248,7 @@ test('Phone Word comments own focus until the review drawer closes', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 700 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '新项目方案 DOCX · 本次会话' })
     .click();
@@ -306,7 +306,7 @@ test('Shared Office color picker exposes phone-sized touch targets', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 568 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '新项目方案 DOCX · 本次会话' })
     .click();
@@ -357,7 +357,7 @@ test('Shared Office color picker exposes phone-sized touch targets', async ({
 test('Phone Spreadsheet find keeps its input and actions touch-sized', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '季度执行计划 XLSX · 本次会话' })
     .click();
@@ -419,7 +419,7 @@ test('Phone Spreadsheet find keeps its input and actions touch-sized', async ({
 test('Phone Spreadsheet context menu uses a touch-sized bottom action sheet', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '季度执行计划 XLSX · 本次会话' })
     .click();
@@ -475,7 +475,7 @@ test('Word page color keeps its custom controls visible at phone height', async 
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 700 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '新项目方案 DOCX · 本次会话' })
     .click();
@@ -523,7 +523,7 @@ test('Word page color keeps its custom controls visible at phone height', async 
 test('PDF keeps compact tools clear of the file actions on phones', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page);
   await waitForPdfFixture(page);
 
@@ -606,7 +606,7 @@ test('PDF keeps compact tools clear of the file actions on phones', async ({
 });
 
 test('PDF uses a dismissible page drawer on phones', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page, { pageCount: 3 });
   await waitForPdfFixture(page);
 

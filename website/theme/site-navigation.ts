@@ -4,7 +4,7 @@ export function playgroundHrefFromDocsRoute(routePath: string): string {
   const directoryDepth = normalized.endsWith('/')
     ? segments.length
     : Math.max(0, segments.length - 1);
-  return '../'.repeat(directoryDepth + 1);
+  return `${'../'.repeat(directoryDepth)}playground/`;
 }
 
 export function playgroundAssetHrefFromDocsRoute(

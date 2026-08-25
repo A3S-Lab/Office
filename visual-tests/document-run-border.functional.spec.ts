@@ -13,7 +13,7 @@ test('Writer authors and undoes an exact native character border', async ({
     await page.setViewportSize({ width: 390, height: 844 });
   }
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '字符边框 原生线型、颜色、宽度、间距与阴影',

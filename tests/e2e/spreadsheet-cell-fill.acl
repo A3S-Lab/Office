@@ -13,7 +13,7 @@ suite "spreadsheet-cell-fill" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-cell-fill"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-cell-fill"
         }
 
         wait "spreadsheet-artifact-ready" {

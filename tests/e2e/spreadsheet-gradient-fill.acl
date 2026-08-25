@@ -13,7 +13,7 @@ suite "office-spreadsheet-gradient-fill" {
         }
 
         navigate "open-gradient-gallery" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-gradient-fill"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-gradient-fill"
         }
 
         wait "spreadsheet-ready" {
@@ -137,7 +137,7 @@ suite "office-spreadsheet-gradient-fill" {
         }
 
         navigate "open-compact-gradient-gallery" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-gradient-fill"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-gradient-fill"
         }
 
         wait "compact-spreadsheet-ready" {

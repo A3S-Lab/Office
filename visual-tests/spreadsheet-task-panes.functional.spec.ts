@@ -308,7 +308,7 @@ async function expectTextDraftBeforePaneClose(
 }
 
 async function openSpreadsheetFixture(page: Page) {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '季度执行计划 XLSX · 本次会话',

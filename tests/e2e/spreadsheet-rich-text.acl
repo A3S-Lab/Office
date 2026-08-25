@@ -13,7 +13,7 @@ suite "office-spreadsheet-rich-text" {
         }
 
         navigate "open-rich-text-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-rich-text"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-rich-text"
         }
 
         wait "spreadsheet-ready" {
@@ -84,7 +84,7 @@ suite "office-spreadsheet-rich-text" {
         }
 
         navigate "open-rich-text-selection-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-rich-text"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-rich-text"
         }
 
         wait "rich-text-selection-ready" {
@@ -187,7 +187,7 @@ suite "office-spreadsheet-rich-text" {
         }
 
         navigate "open-rich-text-edit-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-rich-text"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-rich-text"
         }
 
         wait "rich-text-edit-ready" {
@@ -299,7 +299,7 @@ suite "office-spreadsheet-rich-text" {
         }
 
         navigate "open-formatted-paste-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-rich-text"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-rich-text"
         }
 
         wait "formatted-paste-ready" {

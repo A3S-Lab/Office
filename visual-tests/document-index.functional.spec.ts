@@ -13,7 +13,7 @@ test('Writer edits and customizes a native document index responsively', async (
     await page.setViewportSize({ width: 390, height: 844 });
   }
 
-  await page.goto('/');
+  await page.goto('/playground/');
   const latestCapabilities = page.getByRole('region', { name: '最新能力' });
   const documentIndexEntry = latestCapabilities.getByRole('button', {
     name: '打开最新能力：原生索引',

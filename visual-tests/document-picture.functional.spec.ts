@@ -13,7 +13,7 @@ test('picture contextual ribbon keeps properties, focus, and cleanup coherent', 
   page,
 }) => {
   const originalViewport = page.viewportSize();
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 

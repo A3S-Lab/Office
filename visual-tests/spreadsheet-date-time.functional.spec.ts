@@ -11,7 +11,7 @@ test('Spreadsheet inserts static WPS date and time values with one-step history'
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
   await page.clock.setFixedTime(FIXED_LOCAL_TIME);
-  await page.goto('/?e2e=spreadsheet-date-time');
+  await page.goto('/playground/?e2e=spreadsheet-date-time');
 
   const grid = page.locator('.fortune-sheet-overlay');
   const nameBox = page.locator('.fortune-name-box');

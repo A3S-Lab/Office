@@ -13,7 +13,7 @@ suite "collaboration-document-suggestions" {
         }
 
         navigate "open-native-suggestion-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=collaboration-document-suggestions"
+            url = "http://127.0.0.1:4175/playground/?e2e=collaboration-document-suggestions"
         }
 
         click "open-native-suggestion-demo" {
@@ -132,7 +132,7 @@ suite "collaboration-document-suggestions" {
         }
 
         navigate "open-suggestion-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=collaboration-document-suggestions"
+            url = "http://127.0.0.1:4175/playground/?e2e=collaboration-document-suggestions"
         }
 
         click "open-suggestion-demo" {
@@ -272,7 +272,7 @@ suite "collaboration-document-suggestions" {
         }
 
         navigate "open-compact-suggestion-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=collaboration-document-suggestions"
+            url = "http://127.0.0.1:4175/playground/?e2e=collaboration-document-suggestions"
         }
 
         click "open-compact-suggestion-demo" {

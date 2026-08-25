@@ -13,7 +13,7 @@ suite "spreadsheet-maximum-sparse" {
         }
 
         navigate "open-maximum-sparse-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-sparse-maximum"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-sparse-maximum"
         }
 
         wait "initial-sparse-state" {

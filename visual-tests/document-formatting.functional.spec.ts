@@ -22,7 +22,7 @@ test('Word formatting controls apply computed styles and preview their fonts', a
 }) => {
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -99,7 +99,7 @@ test('Phone Word font options remain touch-sized and keyboard reachable', async 
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
   await page.setViewportSize({ width: 390, height: 700 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -133,7 +133,7 @@ test('Word keeps browser-synthesized bold text on deterministic layout', async (
 }) => {
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白文字 从一张干净的 A4 页面开始',
@@ -168,7 +168,7 @@ test('Word paginates gradual hard-break input before it leaves the paper', async
 }) => {
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白文字 从一张干净的 A4 页面开始',
@@ -201,7 +201,7 @@ test('Word keeps paragraph input inside the active section and paginates it', as
 }) => {
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白文字 从一张干净的 A4 页面开始',
@@ -231,7 +231,7 @@ test('Word preview reuses the live WASM pagination result', async ({
 }) => {
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白文字 从一张干净的 A4 页面开始',
@@ -308,7 +308,7 @@ test('Word PDF export crops the live WASM pagination surface', async ({
   test.setTimeout(60_000);
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白文字 从一张干净的 A4 页面开始',
@@ -343,7 +343,7 @@ test('Word edit, preview, and PDF surfaces share one typography baseline', async
 }) => {
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -385,7 +385,7 @@ test('Word preview keeps page chrome inside the physical page margins', async ({
 }) => {
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -509,7 +509,7 @@ test('Word paper starts without rulers and persists explicit page controls', asy
 }) => {
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 

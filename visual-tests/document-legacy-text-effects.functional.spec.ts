@@ -13,7 +13,7 @@ test('Writer previews, resolves conflicts, and undoes native text effects', asyn
     await page.setViewportSize({ width: 390, height: 844 });
   }
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '文字效果 空心、阴影、阳文与阴文',

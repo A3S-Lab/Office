@@ -95,7 +95,7 @@ declare global {
   }
 }
 
-const targetUrl = argument('--url') ?? 'http://127.0.0.1:4175/';
+const targetUrl = argument('--url') ?? 'http://127.0.0.1:4175/playground/';
 const repeatCount = positiveInteger(argument('--runs'), 3);
 const timeoutMs = positiveInteger(argument('--timeout-ms'), 120_000);
 const fixture =

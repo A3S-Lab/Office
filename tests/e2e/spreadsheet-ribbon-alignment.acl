@@ -13,7 +13,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -208,7 +208,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -343,7 +343,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -458,7 +458,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -577,7 +577,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -713,7 +713,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -826,7 +826,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {

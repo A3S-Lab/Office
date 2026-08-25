@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('Presenter view keeps one navigation strip and aligns its content', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -66,7 +66,7 @@ test('Presenter view keeps the current slide, cue, notes, and controls usable on
     'The phone contract only needs one browser project.',
   );
   await page.setViewportSize({ width: 390, height: 700 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();

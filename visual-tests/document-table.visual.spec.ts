@@ -8,7 +8,7 @@ import {
 test('document table Design and Layout stay visual and survive preview', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -64,7 +64,7 @@ test('table sizing uses contained touch controls on phone', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -112,7 +112,7 @@ test('table sizing uses contained touch controls on phone', async ({
 test('table sizing stays usable on desktop and compact ribbons', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -195,7 +195,7 @@ test('table properties keep table, row, column, and cell changes in one workflow
 }) => {
   const pageErrors: Error[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -314,7 +314,7 @@ test('table properties keep table, row, column, and cell changes in one workflow
 test('table contextual tabs clean up after deletion through real ribbon overflow', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 

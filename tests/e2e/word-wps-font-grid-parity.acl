@@ -13,7 +13,7 @@ suite "office-word-wps-font-grid-parity" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=word-wps-font-matrix"
+            url = "http://127.0.0.1:4175/playground/?e2e=word-wps-font-matrix"
         }
 
         expect "playground-ready" {
@@ -76,7 +76,7 @@ suite "office-word-wps-font-grid-parity" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=word-wps-cjk-font-matrix"
+            url = "http://127.0.0.1:4175/playground/?e2e=word-wps-cjk-font-matrix"
         }
 
         expect "playground-ready" {
@@ -135,7 +135,7 @@ suite "office-word-wps-font-grid-parity" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=word-wps-grid-matrix"
+            url = "http://127.0.0.1:4175/playground/?e2e=word-wps-grid-matrix"
         }
 
         expect "playground-ready" {
@@ -194,7 +194,7 @@ suite "office-word-wps-font-grid-parity" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=word-wps-script-matrix"
+            url = "http://127.0.0.1:4175/playground/?e2e=word-wps-script-matrix"
         }
 
         expect "playground-ready" {

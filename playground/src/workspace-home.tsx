@@ -25,30 +25,20 @@ import { useMemo, useState } from 'react';
 import { WORK_TEMPLATES as officeTemplates } from '../../src/internal/features/work/work-templates';
 import { warmPlaygroundEditor } from './editor-preload';
 import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
+import { LATEST_CAPABILITIES } from './latest-capabilities';
 
 const templateCellIds = Array.from(
   { length: 20 },
   (_, index) => `cell-${index + 1}`,
 );
-const latestTemplateIds = new Set([
-  'document-comparison',
-  'table-of-contents',
-  'document-index',
-  'run-shading',
-  'proofing-languages',
-  'data-validation',
-]);
-const latestTemplates: Array<
-  Pick<OfficeTemplate, 'description' | 'id' | 'kind' | 'name'>
-> = [
-  ...officeTemplates.filter((template) => template.id === 'animated-deck'),
-  {
-    id: 'pdf-page-organization',
-    kind: 'pdf',
-    name: '组织 PDF 页面',
-    description: '插入、删除、旋转、重排、抽取、合并与拆分',
-  },
-  ...officeTemplates.filter((template) => latestTemplateIds.has(template.id)),
+type LatestCapabilityFilter = 'all' | OfficeArtifactKind;
+
+const latestCapabilityKinds: OfficeArtifactKind[] = [
+  'document',
+  'spreadsheet',
+  'presentation',
+  'pdf',
+  'markdown',
 ];
 
 export function WorkspaceHome({
@@ -77,6 +67,8 @@ export function WorkspaceHome({
   onOpenPdf: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const [latestFilter, setLatestFilter] =
+    useState<LatestCapabilityFilter>('all');
   const visibleArtifacts = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
     return [...artifacts]
@@ -88,6 +80,29 @@ export function WorkspaceHome({
       )
       .sort((left, right) => right.lastOpenedAt - left.lastOpenedAt);
   }, [artifacts, query]);
+  const latestFilters = useMemo(
+    () => [
+      { count: LATEST_CAPABILITIES.length, id: 'all' as const },
+      ...latestCapabilityKinds
+        .map((kind) => ({
+          count: LATEST_CAPABILITIES.filter(
+            (capability) => capability.kind === kind,
+          ).length,
+          id: kind,
+        }))
+        .filter(({ count }) => count > 0),
+    ],
+    [],
+  );
+  const visibleLatestTemplates = useMemo(
+    () =>
+      latestFilter === 'all'
+        ? LATEST_CAPABILITIES
+        : LATEST_CAPABILITIES.filter(
+            (capability) => capability.kind === latestFilter,
+          ),
+    [latestFilter],
+  );
 
   return (
     <section className="playground-home">
@@ -135,43 +150,67 @@ export function WorkspaceHome({
         aria-labelledby="playground-latest-capabilities-title"
       >
         <div className="playground-latest-capabilities-heading">
-          <span>
-            <Sparkles size={13} aria-hidden="true" />
-            main 已部署
-          </span>
-          <h2 id="playground-latest-capabilities-title">最新能力</h2>
-          <p>从这里直接打开近期新增的可编辑模板。</p>
+          <div>
+            <div className="playground-latest-capabilities-title-row">
+              <h2 id="playground-latest-capabilities-title">最新能力</h2>
+              <span>
+                <Sparkles size={13} aria-hidden="true" />
+                main 已部署
+              </span>
+            </div>
+            <p>按编辑器筛选近期发布的完整可编辑工作流。</p>
+          </div>
+          <output aria-live="polite">
+            {visibleLatestTemplates.length} / {LATEST_CAPABILITIES.length} 项
+          </output>
         </div>
-        <div className="playground-latest-capability-list">
-          {latestTemplates.map((template) => (
+        <fieldset className="playground-latest-capability-filters">
+          <legend className="sr-only">按编辑器筛选最新能力</legend>
+          {latestFilters.map(({ count, id }) => (
             <button
               type="button"
-              className={`playground-latest-capability ${template.kind}`}
-              aria-label={`打开最新能力：${template.name}`}
-              key={template.id}
-              onFocus={() => warmPlaygroundEditor(template.kind)}
-              onClick={() =>
-                template.id === 'pdf-page-organization'
-                  ? onOpenPdf()
-                  : onCreate(template.id)
-              }
-              onPointerEnter={() => warmPlaygroundEditor(template.kind)}
+              aria-controls="playground-latest-capability-list"
+              aria-pressed={latestFilter === id}
+              key={id}
+              onClick={() => setLatestFilter(id)}
+            >
+              <span>{latestCapabilityFilterLabel(id)}</span>
+              <small>{count}</small>
+            </button>
+          ))}
+        </fieldset>
+        <div
+          className="playground-latest-capability-list"
+          id="playground-latest-capability-list"
+        >
+          {visibleLatestTemplates.map((capability) => (
+            <button
+              type="button"
+              className={`playground-latest-capability ${capability.kind}`}
+              aria-label={`打开最新能力：${capability.name}`}
+              key={capability.id}
+              onFocus={() => warmPlaygroundEditor(capability.kind)}
+              onClick={() => {
+                if (capability.launch.type === 'pdf-page-organization') {
+                  onOpenPdf();
+                  return;
+                }
+                onCreate(capability.launch.templateId);
+              }}
+              onPointerEnter={() => warmPlaygroundEditor(capability.kind)}
             >
               <span className="playground-latest-capability-icon">
-                <LatestCapabilityIcon templateId={template.id} />
+                <LatestCapabilityIcon templateId={capability.id} />
               </span>
               <span className="playground-latest-capability-copy">
-                <small>
-                  {template.kind === 'document'
-                    ? 'Writer'
-                    : template.kind === 'spreadsheet'
-                      ? 'Spreadsheet'
-                      : template.kind === 'presentation'
-                        ? 'Presentation'
-                        : 'PDF'}
-                </small>
-                <strong>{template.name}</strong>
-                <span>{template.description}</span>
+                <span className="playground-latest-capability-meta">
+                  <small>{latestCapabilityEditorLabel(capability.kind)}</small>
+                  <small>v{capability.release}</small>
+                </span>
+                <strong>{capability.name}</strong>
+                <span className="playground-latest-capability-description">
+                  {capability.description}
+                </span>
               </span>
               <ArrowRight size={14} aria-hidden="true" />
             </button>
@@ -341,6 +380,23 @@ export function WorkspaceHome({
       </section>
     </section>
   );
+}
+
+function latestCapabilityFilterLabel(filter: LatestCapabilityFilter): string {
+  if (filter === 'all') return '全部';
+  if (filter === 'document') return '文字';
+  if (filter === 'spreadsheet') return '表格';
+  if (filter === 'presentation') return '演示';
+  if (filter === 'pdf') return 'PDF';
+  return 'Markdown';
+}
+
+function latestCapabilityEditorLabel(kind: OfficeArtifactKind): string {
+  if (kind === 'document') return 'Writer';
+  if (kind === 'spreadsheet') return 'Spreadsheet';
+  if (kind === 'presentation') return 'Presentation';
+  if (kind === 'pdf') return 'PDF';
+  return 'Markdown';
 }
 
 function LatestCapabilityIcon({ templateId }: { templateId: string }) {

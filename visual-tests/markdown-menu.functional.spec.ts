@@ -3,7 +3,7 @@ import { expect, type Locator, test } from '@playwright/test';
 test('Markdown insert dialogs return focus to the invoking editing surface', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
 
   const source = page.getByRole('textbox', { name: 'Markdown 源码' });
@@ -36,7 +36,7 @@ test('Markdown insert dialogs return focus to the invoking editing surface', asy
 test('Markdown split mode keeps source editable and preview read-only', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
 
   const sourcePane = page.getByRole('region', {
@@ -65,7 +65,7 @@ test('Markdown split mode keeps source editable and preview read-only', async ({
 test('Markdown edits and removes the exact link selected in source mode', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
 
   const source = page.getByRole('textbox', { name: 'Markdown 源码' });
@@ -137,7 +137,7 @@ test('Markdown edits and removes the exact link selected in source mode', async 
 test('Markdown edits and removes links without losing the visual selection', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
 
   const source = page.getByRole('textbox', { name: 'Markdown 源码' });
@@ -170,7 +170,7 @@ test('Markdown edits and removes links without losing the visual selection', asy
 test('Markdown insert dialogs reject unsafe sources and preserve relative images', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
 
   const source = page.getByRole('textbox', { name: 'Markdown 源码' });
@@ -211,7 +211,7 @@ test('Markdown insert dialogs reject unsafe sources and preserve relative images
 test('Markdown view controls return keyboard focus to the selected surface', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
 
   await page.getByRole('tab', { name: '视图' }).click();
@@ -236,7 +236,7 @@ test('Markdown view controls return keyboard focus to the selected surface', asy
 test('Markdown source selection keeps ribbon state synchronized', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
   await page.getByRole('tab', { name: '视图' }).click();
   await page
@@ -284,7 +284,7 @@ test('Markdown source selection keeps ribbon state synchronized', async ({
 test('Markdown opens source selection actions from the keyboard', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
 
   const source = page.getByRole('textbox', { name: 'Markdown 源码' });

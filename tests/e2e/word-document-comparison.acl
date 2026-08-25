@@ -13,7 +13,7 @@ suite "word-document-comparison" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         click "open-comparison-template" {
@@ -106,7 +106,7 @@ suite "word-document-comparison" {
         }
 
         navigate "open-phone-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         click "open-phone-comparison-template" {

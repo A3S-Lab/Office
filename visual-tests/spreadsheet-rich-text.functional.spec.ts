@@ -8,7 +8,7 @@ test('Spreadsheet renders native rich text and formats every run through one con
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
-  await page.goto('/?e2e=spreadsheet-rich-text');
+  await page.goto('/playground/?e2e=spreadsheet-rich-text');
 
   const grid = page.locator('.fortune-sheet-overlay');
   const status = page.getByTestId('spreadsheet-rich-text-status');
@@ -53,7 +53,7 @@ test('Spreadsheet formats only selected rich text and restores the formula-bar s
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
-  await page.goto('/?e2e=spreadsheet-rich-text');
+  await page.goto('/playground/?e2e=spreadsheet-rich-text');
 
   const status = page.getByTestId('spreadsheet-rich-text-status');
   const formulaBar = page.locator('.fortune-fx-input');
@@ -116,7 +116,7 @@ test('Spreadsheet formula-bar insertion and deletion preserve native rich-text r
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
-  await page.goto('/?e2e=spreadsheet-rich-text');
+  await page.goto('/playground/?e2e=spreadsheet-rich-text');
 
   const status = page.getByTestId('spreadsheet-rich-text-status');
   const formulaBar = page.locator('.fortune-fx-input');
@@ -176,7 +176,7 @@ test('Spreadsheet formula-bar paste preserves authenticated clipboard formatting
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
-  await page.goto('/?e2e=spreadsheet-rich-text');
+  await page.goto('/playground/?e2e=spreadsheet-rich-text');
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], {
     origin: new URL(page.url()).origin,
   });
@@ -267,7 +267,7 @@ test('Spreadsheet in-cell insertion and deletion retain rich-text semantics', as
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
-  await page.goto('/?e2e=spreadsheet-rich-text');
+  await page.goto('/playground/?e2e=spreadsheet-rich-text');
 
   const grid = page.locator('.fortune-sheet-overlay');
   const nameBox = page.locator('.fortune-name-box');

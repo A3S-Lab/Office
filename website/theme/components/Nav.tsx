@@ -6,7 +6,9 @@ import {
   usePage,
   useSite,
   useVersion,
+  withBase,
 } from '@rspress/core/runtime';
+import type { NavItem } from '@rspress/core';
 import {
   IconSmallMenu,
   NavTitle,
@@ -23,12 +25,17 @@ import {
   NavMenuDivider,
   NavMenuItemWithChildren,
 } from '@rspress/core/dist/theme/components/Nav/NavMenu.js';
-import { NavScreen } from '@rspress/core/dist/theme/components/NavScreen/index.js';
+import { NavScreenAppearance } from '@rspress/core/dist/theme/components/NavScreen/NavScreenAppearance.js';
+import { NavScreenLangs } from '@rspress/core/dist/theme/components/NavScreen/NavScreenLangs.js';
+import { NavScreenMenu } from '@rspress/core/dist/theme/components/NavScreen/NavScreenMenu.js';
+import { NavScreenVersions } from '@rspress/core/dist/theme/components/NavScreen/NavScreenVersions.js';
+import { NavScreenDivider } from '@rspress/core/dist/theme/components/NavScreen/index.js';
 import { useNavScreen } from '@rspress/core/dist/theme/components/NavHamburger/useNavScreen.js';
 import '@rspress/core/dist/theme/components/Nav/index.css';
 import '@rspress/core/dist/theme/components/NavHamburger/index.css';
+import '@rspress/core/dist/theme/components/NavScreen/index.css';
 import { createPortal } from 'react-dom';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 function labelSocialLinks(root: ParentNode, language: string) {
   root
@@ -112,7 +119,49 @@ function isVisibleControl(element: HTMLElement, screen: HTMLElement) {
   );
 }
 
-function NavHamburger() {
+function OfficeNavScreen({
+  isScreenOpen,
+  menuItems,
+}: {
+  isScreenOpen: boolean;
+  menuItems: NavItem[];
+}) {
+  useEffect(() => {
+    if (!isScreenOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPaddingRight;
+    };
+  }, [isScreenOpen]);
+
+  return (
+    <div
+      className={`rp-nav-screen${isScreenOpen ? ' rp-nav-screen--open' : ''}`}
+    >
+      <div className="rp-nav-screen__container">
+        <NavScreenMenu menuItems={menuItems} />
+        <NavScreenDivider />
+        <NavScreenAppearance />
+        <NavScreenLangs />
+        <NavScreenVersions />
+        <NavScreenDivider />
+        <SocialLinks />
+      </div>
+    </div>
+  );
+}
+
+function NavHamburger({ menuItems }: { menuItems: NavItem[] }) {
   const { closeScreen, isScreenOpen, toggleScreen } = useNavScreen();
   const language = useLang();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -282,7 +331,7 @@ function NavHamburger() {
       {isScreenOpen &&
         modalContainer &&
         createPortal(
-          <NavScreen isScreenOpen={isScreenOpen} toggleScreen={toggleScreen} />,
+          <OfficeNavScreen isScreenOpen={isScreenOpen} menuItems={menuItems} />,
           modalContainer,
         )}
       <button
@@ -310,12 +359,41 @@ export function Nav({
   const navList = useNav();
   const language = useLang();
   const { site } = useSite();
-  const primaryNavList = navList.map((item) =>
+  const navigationList = useMemo(() => {
+    if (
+      navList.some(
+        (item) => 'link' in item && /\/playground\/?$/.test(item.link),
+      )
+    ) {
+      return navList;
+    }
+
+    const playgroundItem: NavItem = {
+      text: 'Playground',
+      link: withBase('/playground/'),
+      activeMatch: '^/playground(?:/|$)',
+      position: 'left',
+    };
+    const utilityIndex = navList.findIndex(
+      (item) =>
+        item.position === 'right' ||
+        (item.position === undefined &&
+          'items' in item &&
+          item.items.length > 0),
+    );
+    if (utilityIndex < 0) return [...navList, playgroundItem];
+    return [
+      ...navList.slice(0, utilityIndex),
+      playgroundItem,
+      ...navList.slice(utilityIndex),
+    ];
+  }, [navList]);
+  const primaryNavList = navigationList.map((item) =>
     item.position === undefined && !('items' in item && item.items.length > 0)
       ? { ...item, position: 'left' as const }
       : item,
   );
-  const utilityNavList = navList.filter(
+  const utilityNavList = navigationList.filter(
     (item) =>
       item.position === 'right' ||
       (item.position === undefined && 'items' in item && item.items.length > 0),
@@ -412,7 +490,7 @@ export function Nav({
           {hasAppearanceSwitch && <SwitchAppearance />}
           <SocialLinks />
         </div>
-        <NavHamburger />
+        <NavHamburger menuItems={navigationList} />
         {afterNavMenu}
       </div>
     </header>

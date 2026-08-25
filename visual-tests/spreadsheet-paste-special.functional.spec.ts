@@ -8,7 +8,7 @@ test('Spreadsheet Paste Special keeps rich content atomic at every layout', asyn
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
-  await page.goto('/?e2e=spreadsheet-paste-special');
+  await page.goto('/playground/?e2e=spreadsheet-paste-special');
   await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
 
   const grid = page.locator('.fortune-sheet-overlay');

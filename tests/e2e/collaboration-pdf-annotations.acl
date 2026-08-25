@@ -13,7 +13,7 @@ suite "collaboration-pdf-annotations" {
         }
 
         navigate "open-pdf-collaboration-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=collaboration-pdf-annotations"
+            url = "http://127.0.0.1:4175/playground/?e2e=collaboration-pdf-annotations"
         }
 
         upload "open-source-pdf" {

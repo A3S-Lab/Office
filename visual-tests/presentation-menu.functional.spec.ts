@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('Presentation formatting shortcuts update only the active text selection', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -53,7 +53,7 @@ test('Presentation formatting shortcuts update only the active text selection', 
 test('Presentation clipboard shortcuts keep object selection and focus coherent', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -100,7 +100,7 @@ test('Presentation clipboard shortcuts keep object selection and focus coherent'
 test('Presentation history shortcuts stay scoped to the editor', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -131,7 +131,7 @@ test('Presentation history shortcuts stay scoped to the editor', async ({
 test('Presentation numeric menus commit complete font and timing values', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -182,7 +182,7 @@ test('Presentation numeric menus commit complete font and timing values', async 
 test('Presentation font controls keep standard single-border geometry', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -219,7 +219,7 @@ test('Presentation font controls keep standard single-border geometry', async ({
 test('Presentation returns object keyboard control after ribbon formatting', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -252,7 +252,7 @@ test('Presentation returns object keyboard control after ribbon formatting', asy
 test('Presentation returns keyboard control to newly inserted objects', async ({
   page,
 }, testInfo) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -302,7 +302,7 @@ test('Presentation returns keyboard control to newly inserted objects', async ({
 test('Presentation returns keyboard control after slide mutations and blocks them in layout editing', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -337,7 +337,7 @@ test('Presentation returns keyboard control after slide mutations and blocks the
 test('Presentation returns keyboard control after cutting a selected object', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -358,7 +358,7 @@ test('Presentation returns keyboard control after cutting a selected object', as
 test('Presentation view switches move focus into the active slide view', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();
@@ -394,7 +394,7 @@ test('Presentation view switches move focus into the active slide view', async (
 test('Presentation opens slide menus from the keyboard and preserves tab order', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
     .click();

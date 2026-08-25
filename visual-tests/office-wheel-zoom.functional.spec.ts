@@ -76,7 +76,7 @@ test('every editor routes Ctrl/Cmd + wheel to its own bounded zoom', async ({
 
   for (const fixture of fixtures) {
     await test.step(fixture.name, async () => {
-      await page.goto('/');
+      await page.goto('/playground/');
       await fixture.open(page);
       await fixture.ready(page);
 

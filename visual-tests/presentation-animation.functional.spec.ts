@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('Presentation entrance animations author and play ordered cues', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page.getByRole('button', { name: '打开最新能力：入场动画' }).click();
 
   const canvas = page.locator('.work-slide-canvas.interactive');

@@ -319,7 +319,7 @@ test('Presentation disables slide transitions while editing a layout', async ({
 });
 
 async function openPresentationFixture(page: Page) {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '业务策略汇报 PPTX · 本次会话',

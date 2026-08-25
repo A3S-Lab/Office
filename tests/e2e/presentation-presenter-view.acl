@@ -12,7 +12,7 @@ suite "presentation-presenter-view" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         click "open-presentation" {
@@ -101,7 +101,7 @@ suite "presentation-presenter-view" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         click "open-presentation" {

@@ -14,7 +14,7 @@ test('PDF page organization mutates, exports, saves, and restores exact history'
   test.setTimeout(180_000);
   const browserErrors = collectBrowserErrors(page);
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page, { pageCount: 4 });
   await waitForPdfFixture(page);
   await expectPdfPageCount(page, 4);
@@ -110,7 +110,7 @@ test('compact PDF page organization opens through overflow and restores focus', 
   test.skip(testInfo.project.name !== 'compact-768');
   const browserErrors = collectBrowserErrors(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page, { pageCount: 3 });
   await waitForPdfFixture(page);
 

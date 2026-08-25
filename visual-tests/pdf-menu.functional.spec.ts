@@ -4,7 +4,7 @@ import { openPdfFixture, waitForPdfFixture } from './pdf-test-support';
 test('PDF page rail scrolls, selects pages, and follows toolbar navigation', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page, { pageCount: 12 });
   await waitForPdfFixture(page);
 
@@ -68,7 +68,7 @@ test('PDF page rail scrolls, selects pages, and follows toolbar navigation', asy
 test('PDF page thumbnails stay inside their navigation cards', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page, { pageCount: 3 });
   await waitForPdfFixture(page);
 
@@ -110,7 +110,7 @@ test('PDF page thumbnails stay inside their navigation cards', async ({
 test('PDF toolbar shortcuts stay inside the editor command surface', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page);
   await waitForPdfFixture(page);
 
@@ -134,7 +134,7 @@ test('PDF toolbar shortcuts stay inside the editor command surface', async ({
 test('PDF shortcuts do not take over controls outside the editor', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page);
   await waitForPdfFixture(page);
 
@@ -157,7 +157,7 @@ test('PDF shortcuts do not take over controls outside the editor', async ({
 test('PDF overflow menu uses keyboard navigation and restores its trigger', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page);
   await waitForPdfFixture(page);
 
@@ -178,7 +178,7 @@ test('PDF overflow menu uses keyboard navigation and restores its trigger', asyn
 test('PDF page Escape cancels navigation and annotation styles exit in document order', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page, { pageCount: 2 });
   await waitForPdfFixture(page);
 
@@ -213,7 +213,7 @@ test('PDF page Escape cancels navigation and annotation styles exit in document 
 test('PDF search advances a settled query and clear keeps the search field active', async ({
   page,
 }, testInfo) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page, { pageCount: 2 });
   await waitForPdfFixture(page);
 
@@ -254,7 +254,7 @@ test('PDF search advances a settled query and clear keeps the search field activ
 test('PDF command states use the same product accent as the file identity', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openPdfFixture(page);
   await waitForPdfFixture(page);
 

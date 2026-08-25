@@ -13,7 +13,7 @@ suite "spreadsheet-auto-sum" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-auto-sum"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-auto-sum"
         }
 
         wait "spreadsheet-artifact-ready" {

@@ -9,7 +9,7 @@ test('Spreadsheet data validation is discoverable from the public Playground', a
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await expect(page.getByRole('heading', { name: '我的文档' })).toBeVisible();
   const latestCapabilities = page.getByRole('region', { name: '最新能力' });
   const dataValidationEntry = latestCapabilities.getByRole('button', {
@@ -61,7 +61,7 @@ test('Spreadsheet data validation stays atomic and accessible at every layout', 
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
-  await page.goto('/?e2e=spreadsheet-data-validation');
+  await page.goto('/playground/?e2e=spreadsheet-data-validation');
   await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
 
   const ribbon = page.locator('.work-spreadsheet-ribbon');

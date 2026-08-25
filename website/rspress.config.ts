@@ -6,17 +6,15 @@ import {
   DOCUMENTATION_LOCALES,
   DOCUMENTATION_VERSIONS,
 } from './documentation-site';
+import { siteBaseFromEnvironment } from './site-paths';
 
-const playgroundBase = normalizeBase(
-  process.env.A3S_OFFICE_PLAYGROUND_BASE ?? '/',
-);
-const docsBase = `${playgroundBase}docs/`;
+const siteBase = siteBaseFromEnvironment();
 const siteOrigin = process.env.DOCS_ORIGIN ?? 'https://a3s-lab.github.io';
 
 export default defineConfig({
   root: path.resolve(import.meta.dirname, '../docs'),
   themeDir: path.resolve(import.meta.dirname, 'theme'),
-  base: docsBase,
+  base: siteBase,
   siteOrigin,
   title: 'A3S Office',
   description:
@@ -37,7 +35,7 @@ export default defineConfig({
   icon: '/favicon.svg',
   logo: '/a3s-logo.png',
   logoText: 'A3S Office',
-  outDir: path.resolve(import.meta.dirname, '../playground-dist/docs'),
+  outDir: path.resolve(import.meta.dirname, '../playground-dist'),
   llms: true,
   head: [
     ['meta', { name: 'theme-color', content: '#f5f7fb' }],
@@ -47,7 +45,7 @@ export default defineConfig({
       'link',
       {
         rel: 'canonical',
-        href: `${siteOrigin}${docsBase.replace(/\/$/, '')}${route.routePath}`,
+        href: `${siteOrigin}${siteBase.replace(/\/$/, '')}${route.routePath}`,
       },
     ],
   ],
@@ -72,10 +70,3 @@ export default defineConfig({
     ],
   },
 });
-
-function normalizeBase(value: string): string {
-  const withLeadingSlash = value.startsWith('/') ? value : `/${value}`;
-  return withLeadingSlash.endsWith('/')
-    ? withLeadingSlash
-    : `${withLeadingSlash}/`;
-}

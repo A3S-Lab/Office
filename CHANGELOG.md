@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Moved the Rspress documentation center to the website root and the
+  Playground to the dedicated `/playground/` route, matching the A3S UI site
+  model. The desktop and mobile documentation navigation now expose
+  Playground as a primary item, and all Pages, preview, README, test, download,
+  and collaboration links derive from the same deployment base.
+- Replaced the fixed-width latest-capability strip with a release-labelled,
+  editor-filterable responsive gallery. A typed release registry now owns the
+  launch target and version for every entry, while an auto-filling grid responds
+  to its actual content width instead of viewport breakpoints. The gallery
+  preserves direct access to every recent workflow and scales across expanded,
+  collapsed, desktop, tablet, and phone layouts without feature-specific
+  structure.
+
 ## 0.34.0 - 2026-08-25
 
 - Added a bounded Work Presentation entrance-animation model with stable

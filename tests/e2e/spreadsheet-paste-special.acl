@@ -13,7 +13,7 @@ suite "spreadsheet-paste-special" {
         }
 
         navigate "open-paste-special-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-paste-special"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-paste-special"
         }
 
         wait "spreadsheet-ready" {

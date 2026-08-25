@@ -27,7 +27,7 @@ test('document styles stay visible, semantic, and compact when needed', async ({
   if (!fixture) throw new Error('Missing document visual fixture.');
 
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -77,7 +77,7 @@ test('document list libraries keep styles and numbering settings in context', as
   const fixture = fixtures.find((candidate) => candidate.kind === 'document');
   if (!fixture) throw new Error('Missing document visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -157,7 +157,7 @@ test('document navigation keeps a live outline beside the editing surface', asyn
   const fixture = fixtures.find((candidate) => candidate.kind === 'document');
   if (!fixture) throw new Error('Missing document visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
   await page.getByRole('tab', { name: '视图' }).click();
@@ -291,7 +291,7 @@ test('document selection toolbar keeps formatting and review in context', async 
   const fixture = fixtures.find((candidate) => candidate.kind === 'document');
   if (!fixture) throw new Error('Missing document visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
   await expectNoPageErrors(
@@ -430,7 +430,7 @@ test('document comments align with their review rail', async ({
   if (!fixture) throw new Error('Missing document visual fixture.');
 
   await page.clock.setFixedTime(new Date('2026-07-29T08:00:00.000Z'));
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
   const selectedRange = await selectDocumentParagraphText(page, 1, 12);
@@ -539,7 +539,7 @@ test('document comment drafts stay visible and only warn for written content', a
   const fixture = fixtures.find((candidate) => candidate.kind === 'document');
   if (!fixture) throw new Error('Missing document visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
   const body = page.getByRole('textbox', { name: '文档正文' });
@@ -626,7 +626,7 @@ test('document comment drafts clean up and stacked comments do not overlap', asy
   const fixture = fixtures.find((candidate) => candidate.kind === 'document');
   if (!fixture) throw new Error('Missing document visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
   const modalPane = documentTaskPanesAreModal(page);
@@ -718,7 +718,7 @@ test('document task panes and dialogs preserve the editing context', async ({
   const fixture = fixtures.find((candidate) => candidate.kind === 'document');
   if (!fixture) throw new Error('Missing document visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
   const modalPane = documentTaskPanesAreModal(page);
@@ -906,7 +906,7 @@ test('document revision decisions require an explicit confirmation', async ({
   const fixture = fixtures.find((candidate) => candidate.kind === 'document');
   if (!fixture) throw new Error('Missing document visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
   const modalPane = documentTaskPanesAreModal(page);
@@ -979,7 +979,7 @@ test('document review views remain usable at phone width', async ({ page }) => {
   if (!fixture) throw new Error('Missing document visual fixture.');
 
   await page.setViewportSize({ width: 390, height: 700 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 

@@ -1,6 +1,6 @@
-const DOCUMENTATION_ENTRY_PATH = 'docs/';
-const GETTING_STARTED_PATH = 'docs/guide/';
-const COLLABORATION_SERVER_PATH = 'docs/components/collaboration-server.html';
+const DOCUMENTATION_ENTRY_PATH = '../';
+const GETTING_STARTED_PATH = '../guide/';
+const COLLABORATION_SERVER_PATH = '../components/collaboration-server.html';
 
 export function documentationEntryUrl(baseUri: string): string {
   return new URL(DOCUMENTATION_ENTRY_PATH, baseUri).href;
@@ -11,8 +11,8 @@ export function collaborationServerDocumentationUrl(baseUri: string): string {
 }
 
 export function legacyDocsPath(hash: string): string | null {
-  if (hash === '#guide/components') return 'docs/components/';
-  if (hash === '#guide/api') return 'docs/components/document.html';
+  if (hash === '#guide/components') return '../components/';
+  if (hash === '#guide/api') return '../components/document.html';
   if (
     hash === '#guide/automation' ||
     hash === '#guide/cli' ||
@@ -20,7 +20,7 @@ export function legacyDocsPath(hash: string): string | null {
     hash === '#cli' ||
     hash === '#skill'
   ) {
-    return 'docs/automation/';
+    return '../automation/';
   }
   return hash === '#guide' ? GETTING_STARTED_PATH : null;
 }

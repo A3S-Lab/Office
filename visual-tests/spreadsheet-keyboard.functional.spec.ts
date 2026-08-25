@@ -882,7 +882,7 @@ test('Spreadsheet keeps the active worksheet visible when the footer compacts to
 });
 
 async function openSpreadsheetFixture(page: Page) {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '季度执行计划 XLSX · 本次会话',
@@ -892,7 +892,7 @@ async function openSpreadsheetFixture(page: Page) {
 }
 
 async function openSpreadsheetGoToFixture(page: Page) {
-  await page.goto('/?e2e=spreadsheet-go-to');
+  await page.goto('/playground/?e2e=spreadsheet-go-to');
   await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
 }
 

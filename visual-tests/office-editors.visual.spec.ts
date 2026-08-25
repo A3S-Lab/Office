@@ -79,7 +79,7 @@ const fixtures: VisualFixture[] = [
 test.describe('Office editor visual contracts', () => {
   for (const fixture of fixtures) {
     test(`${fixture.kind} editor`, async ({ page }, testInfo) => {
-      await page.goto('/');
+      await page.goto('/playground/');
       await fixture.open(page);
       await fixture.ready(page);
       await stabilizeVisualSurface(page);
@@ -97,7 +97,7 @@ test('shared command bar remains compact when editors enter preview', async ({
   page,
 }) => {
   for (const fixture of fixtures.filter(({ kind }) => kind !== 'pdf')) {
-    await page.goto('/');
+    await page.goto('/playground/');
     await fixture.open(page);
     await fixture.ready(page);
     await page.getByRole('button', { name: '预览' }).click();
@@ -148,7 +148,7 @@ test('PDF uses a collision-free two-row command surface at phone width', async (
   if (!fixture) throw new Error('Missing PDF visual fixture.');
 
   await page.setViewportSize({ width: 390, height: 700 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -216,7 +216,7 @@ test('every editor keeps sidebar access and separate phone header regions', asyn
 
   for (const fixture of fixtures) {
     await test.step(fixture.kind, async () => {
-      await page.goto('/');
+      await page.goto('/playground/');
       await fixture.open(page);
       await fixture.ready(page);
 
@@ -294,7 +294,7 @@ test('Word paragraph layout popovers use touch-sized phone controls', async ({
     'The phone contract only needs one browser project.',
   );
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
   await page.getByRole('tab', { name: '页面布局' }).click();
@@ -383,7 +383,7 @@ test('Word list galleries use touch-sized phone controls and preserve editing fo
     'The phone contract only needs one browser project.',
   );
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -551,7 +551,7 @@ test('PDF prioritizes page and zoom controls at compact workspace width', async 
   if (!fixture) throw new Error('Missing PDF visual fixture.');
 
   await page.setViewportSize({ width: 768, height: 800 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -575,7 +575,7 @@ test('PDF keeps page and zoom controls inside the desktop command row', async ({
   const fixture = fixtures.find((candidate) => candidate.kind === 'pdf');
   if (!fixture) throw new Error('Missing PDF visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -617,7 +617,7 @@ test('Markdown keeps a flat readable split view at compact width', async ({
   const fixture = fixtures.find((candidate) => candidate.kind === 'markdown');
   if (!fixture) throw new Error('Missing Markdown visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -677,7 +677,7 @@ test('presentation transition controls keep standard ribbon geometry', async ({
   );
   if (!fixture) throw new Error('Missing presentation visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
   await page.getByRole('tab', { name: '切换', exact: true }).click();
@@ -745,7 +745,7 @@ test('compact spreadsheet ribbon advances to a complete group', async ({
   );
   if (!fixture) throw new Error('Missing spreadsheet visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
   const toolbar = page.getByRole('toolbar', { name: '开始工具栏' });
@@ -830,7 +830,7 @@ test('compact shared ribbon tabs remain readable without overlapping labels', as
   );
   if (!fixture) throw new Error('Missing presentation visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -860,7 +860,7 @@ test('compact spreadsheet task panels stay contained and keyboard dismissible', 
   );
   if (!fixture) throw new Error('Missing spreadsheet visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -958,7 +958,7 @@ test('closing PDF annotation style keeps the active pen', async ({ page }) => {
   const fixture = fixtures.find((candidate) => candidate.kind === 'pdf');
   if (!fixture) throw new Error('Missing PDF visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
   const pen = page.getByRole('button', { name: '画笔' });
@@ -990,7 +990,7 @@ test.describe('Office editor context menu contracts', () => {
       const fixture = fixtures.find((candidate) => candidate.kind === kind);
       if (!fixture) throw new Error(`Missing ${kind} visual fixture.`);
 
-      await page.goto('/');
+      await page.goto('/playground/');
       await fixture.open(page);
       await fixture.ready(page);
       await openEditorContextMenu(page, kind);
@@ -1049,10 +1049,10 @@ test.describe('Office editor context menu contracts', () => {
   }
 });
 
-test('Playground opens a standalone documentation center with collaboration discoverable', async ({
+test('Playground returns to the root documentation center with collaboration discoverable', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await expect(
     page.getByRole('heading', { name: '我的文档', level: 1 }),
   ).toBeVisible();
@@ -1069,10 +1069,10 @@ test('Playground opens a standalone documentation center with collaboration disc
     productNavigation.getByRole('button', { name: 'Playground' }),
   ).toHaveAttribute('aria-current', 'page');
   const docs = productNavigation.getByRole('link', { name: '文档' });
-  await expect(docs).toHaveAttribute('href', /docs\/$/);
+  await expect(docs).toHaveAttribute('href', /^http:\/\/127\.0\.0\.1:4175\/$/);
   await docs.click();
 
-  await expect(page).toHaveURL(/\/docs\/$/);
+  await expect(page).toHaveURL(/^http:\/\/127\.0\.0\.1:4175\/$/);
   await expect(
     page.getByRole('heading', {
       name: '从嵌入编辑器到多人实时协作',
@@ -1089,6 +1089,9 @@ test('Playground opens a standalone documentation center with collaboration disc
     'DocumentEditor',
   );
   await expect(page.locator('.office-docs-playground-link')).toHaveCount(0);
+  await expect(
+    page.locator('.rp-nav__left').getByRole('link', { name: 'Playground' }),
+  ).toHaveAttribute('href', '/playground/');
 
   const collaborationGuide = page
     .locator('main')
@@ -1099,7 +1102,7 @@ test('Playground opens a standalone documentation center with collaboration disc
     /components\/collaboration\.html$/,
   );
   await collaborationGuide.click();
-  await expect(page).toHaveURL(/\/docs\/components\/collaboration\.html$/);
+  await expect(page).toHaveURL(/\/components\/collaboration\.html$/);
   await expect(
     page.getByRole('heading', { name: '多人实时协作', level: 1 }),
   ).toBeVisible();
@@ -1112,7 +1115,7 @@ test('documentation keeps the current page across version and language switches'
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/docs/components/document.html');
+  await page.goto('/components/document.html');
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
   await expect(
     page.getByRole('heading', { name: 'DocumentEditor', level: 1 }),
@@ -1126,7 +1129,7 @@ test('documentation keeps the current page across version and language switches'
   const versionMenu = navigationMenuFor('0.1.0');
   await versionMenu.locator(':scope > .rp-nav-menu__item__container').click();
   await versionMenu.getByRole('link', { name: '0.1.0', exact: true }).click();
-  await expect(page).toHaveURL(/\/docs\/0\.1\.0\/components\/document\.html$/);
+  await expect(page).toHaveURL(/\/0\.1\.0\/components\/document\.html$/);
   await expect(
     page.getByRole('heading', { name: '自定义选区菜单', level: 2 }),
   ).toBeVisible();
@@ -1136,9 +1139,7 @@ test('documentation keeps the current page across version and language switches'
   await languageMenu
     .getByRole('link', { name: 'English', exact: true })
     .click();
-  await expect(page).toHaveURL(
-    /\/docs\/0\.1\.0\/en\/components\/document\.html$/,
-  );
+  await expect(page).toHaveURL(/\/0\.1\.0\/en\/components\/document\.html$/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(
     page.getByRole('heading', {
@@ -1150,7 +1151,7 @@ test('documentation keeps the current page across version and language switches'
   const latestMenu = navigationMenuFor('latest');
   await latestMenu.locator(':scope > .rp-nav-menu__item__container').click();
   await latestMenu.getByRole('link', { name: 'latest', exact: true }).click();
-  await expect(page).toHaveURL(/\/docs\/en\/components\/document\.html$/);
+  await expect(page).toHaveURL(/\/en\/components\/document\.html$/);
   await expect(page.locator('.office-docs-playground-link')).toHaveCount(0);
   await expect(
     page
@@ -1162,7 +1163,7 @@ test('documentation keeps the current page across version and language switches'
 test('documentation pages provide searchable framework examples with syntax highlighting', async ({
   page,
 }) => {
-  await page.goto('/docs/components/react.html');
+  await page.goto('/components/react.html');
   await expect(
     page.getByRole('heading', { name: 'React', level: 1 }),
   ).toBeVisible();
@@ -1205,7 +1206,7 @@ test('documentation pages provide searchable framework examples with syntax high
 test('CLI and coding-agent Skill remain one managed documentation workflow', async ({
   page,
 }) => {
-  await page.goto('/docs/automation/index.html');
+  await page.goto('/automation/index.html');
   await expect(
     page.getByRole('heading', {
       name: 'Office CLI 与编码智能体 Skill',
@@ -1220,7 +1221,7 @@ test('CLI and coding-agent Skill remain one managed documentation workflow', asy
   ).toBeVisible();
   await expect(
     page.getByRole('link', { name: '下载 A3S Office Skill' }),
-  ).toHaveAttribute('href', '../../downloads/a3s-office-skill.tar.gz');
+  ).toHaveAttribute('href', '../playground/downloads/a3s-office-skill.tar.gz');
   await expect(
     page.getByRole('heading', { name: '职责边界', level: 2 }),
   ).toBeVisible();
@@ -1230,8 +1231,8 @@ test('legacy guide links migrate to bounded editor API pages on narrow screens',
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/#guide/api');
-  await expect(page).toHaveURL(/\/docs\/components\/document\.html$/);
+  await page.goto('/playground/#guide/api');
+  await expect(page).toHaveURL(/\/components\/document\.html$/);
   await expect(
     page.getByRole('heading', { name: 'DocumentEditor', level: 1 }),
   ).toBeVisible();
@@ -1260,7 +1261,7 @@ test('Markdown GFM source and visual panes stay synchronized', async ({
   const fixture = fixtures.find((candidate) => candidate.kind === 'markdown');
   if (!fixture) throw new Error('Missing Markdown visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
   await expect(
@@ -1334,7 +1335,7 @@ test('presentation transforms snap visually and commit one undo step', async ({
   );
   if (!fixture) throw new Error('Missing presentation visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -1422,7 +1423,7 @@ test('presentation keeps object selection separate from text editing', async ({
   );
   if (!fixture) throw new Error('Missing presentation visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -1514,7 +1515,7 @@ test('presentation groups remain atomic across selection and history', async ({
   );
   if (!fixture) throw new Error('Missing presentation visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -1648,7 +1649,7 @@ test('presentation keeps long-deck thumbnail scenes inside a viewport window', a
   );
   if (!fixture) throw new Error('Missing presentation visual fixture.');
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -1743,7 +1744,7 @@ test('presentation keeps long-deck thumbnail scenes inside a viewport window', a
 test('PDF workspace card uses a single, legible file mark', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   const card = page.getByRole('button', {
     name: 'PDF 编辑器 查看、批注并保存 PDF',
   });

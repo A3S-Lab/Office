@@ -11,7 +11,7 @@ test('projects host-owned participants across edit and preview chrome', async ({
   page.on('pageerror', (error) => browserErrors.push(error.message));
   await page.clock.install();
 
-  await page.goto('/?e2e=collaboration-presence');
+  await page.goto('/playground/?e2e=collaboration-presence');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 

@@ -1,7 +1,11 @@
 import { pluginReact } from '@rsbuild/plugin-react';
 import { defineConfig } from '@rsbuild/core';
+import {
+  playgroundBaseFromSiteBase,
+  siteBaseFromEnvironment,
+} from '../website/site-paths';
 
-const assetPrefix = process.env.A3S_OFFICE_PLAYGROUND_BASE ?? '/';
+const assetPrefix = playgroundBaseFromSiteBase(siteBaseFromEnvironment());
 
 export default defineConfig({
   html: {
@@ -29,7 +33,7 @@ export default defineConfig({
       },
     ],
     distPath: {
-      root: '../playground-dist',
+      root: '../playground-dist/playground',
     },
   },
   plugins: [pluginReact()],

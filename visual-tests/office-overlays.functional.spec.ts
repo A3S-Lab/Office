@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('Office sidebar becomes modal only when it overlays the page', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   const compact = (page.viewportSize()?.width ?? 0) <= 839;
 
   const collapse = page.getByRole('button', { name: '收起办公侧边栏' });
@@ -40,7 +40,7 @@ test('Office sidebar preserves desktop preference without covering a resized pho
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/');
+  await page.goto('/playground/');
 
   const sidebar = page.getByLabel('A3S Office 导航');
   const mainPane = page.locator('.playground-main-pane');
@@ -69,7 +69,7 @@ test('Opening an editor on phone does not restore a stale desktop sidebar', asyn
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await expect(page.getByLabel('A3S Office 导航')).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 700 });
@@ -92,7 +92,7 @@ test('Opening an editor on phone does not restore a stale desktop sidebar', asyn
 test('AI assistant becomes modal only when it overlays the editor', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   const compact = (page.viewportSize()?.width ?? 0) <= 1040;
   const collapse = page.getByRole('button', { name: '收起办公侧边栏' });
   if (await collapse.isVisible()) await collapse.click();
@@ -130,7 +130,7 @@ test('AI assistant becomes modal only when it overlays the editor', async ({
 test('Creation feedback stays clear of the editor status bar', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白 Markdown 用轻量标记编写结构化内容',

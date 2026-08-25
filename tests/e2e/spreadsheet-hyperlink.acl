@@ -13,7 +13,7 @@ suite "spreadsheet-hyperlink" {
         }
 
         navigate "open-hyperlink-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-hyperlink"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-hyperlink"
         }
 
         wait "spreadsheet-ready" {

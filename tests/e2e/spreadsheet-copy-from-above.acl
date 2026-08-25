@@ -13,7 +13,7 @@ suite "office-spreadsheet-copy-from-above" {
         }
 
         navigate "open-copy-from-above-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-copy-from-above"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-copy-from-above"
         }
 
         wait "spreadsheet-ready" {

@@ -20,7 +20,7 @@ for (const viewport of [
     });
     page.on('pageerror', (error) => browserErrors.push(error.message));
     await page.setViewportSize(viewport);
-    await page.goto('/?e2e=spreadsheet-pattern-fill');
+    await page.goto('/playground/?e2e=spreadsheet-pattern-fill');
 
     const grid = page.locator('.fortune-sheet-overlay');
     const status = page.getByTestId('spreadsheet-pattern-fill-status');

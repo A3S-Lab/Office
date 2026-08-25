@@ -13,7 +13,7 @@ suite "collaboration-spreadsheet-cells" {
         }
 
         navigate "open-spreadsheet-collaboration-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=collaboration-spreadsheet-cells"
+            url = "http://127.0.0.1:4175/playground/?e2e=collaboration-spreadsheet-cells"
         }
 
         wait "playground-ready" {

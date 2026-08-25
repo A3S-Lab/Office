@@ -13,11 +13,19 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "open-playground-home" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         expect "latest-capability-strip-is-visible" {
             visible = css(".playground-latest-capabilities[aria-labelledby='playground-latest-capabilities-title']")
+        }
+
+        expect "latest-capability-filters-are-visible" {
+            visible = css(".playground-latest-capability-filters button[aria-pressed='true']")
+        }
+
+        expect "all-latest-capabilities-are-counted" {
+            text = "8 / 8 项"
         }
 
         expect "entrance-animation-entry-is-visible" {
@@ -65,7 +73,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-playground-home-after-entrance-animations" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         click "open-document-comparison" {
@@ -81,7 +89,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-playground-home-after-document-comparison" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         click "open-table-of-contents" {
@@ -101,7 +109,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-playground-home-after-table-of-contents" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         click "open-document-index" {
@@ -121,7 +129,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-playground-home-after-document-index" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         click "open-character-shading" {
@@ -137,7 +145,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-playground-home-after-shading" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         click "open-proofing-languages" {
@@ -153,7 +161,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-playground-home-after-proofing" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         click "open-data-validation" {
@@ -196,7 +204,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "open-documentation-home" {
-            url = "http://127.0.0.1:4175/docs/"
+            url = "http://127.0.0.1:4175/"
         }
 
         expect "latest-documentation-links-are-visible" {
@@ -220,7 +228,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-documentation-home-after-entrance-animation" {
-            url = "http://127.0.0.1:4175/docs/"
+            url = "http://127.0.0.1:4175/"
         }
 
         click "open-document-comparison-documentation" {
@@ -236,7 +244,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-documentation-home-after-document-comparison" {
-            url = "http://127.0.0.1:4175/docs/"
+            url = "http://127.0.0.1:4175/"
         }
 
         click "open-document-index-documentation" {
@@ -252,7 +260,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-documentation-home-after-document-index" {
-            url = "http://127.0.0.1:4175/docs/"
+            url = "http://127.0.0.1:4175/"
         }
 
         click "open-table-of-contents-documentation" {
@@ -268,7 +276,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-documentation-home" {
-            url = "http://127.0.0.1:4175/docs/"
+            url = "http://127.0.0.1:4175/"
         }
 
         click "open-data-validation-documentation" {
@@ -284,7 +292,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "return-to-documentation-home-after-data-validation" {
-            url = "http://127.0.0.1:4175/docs/"
+            url = "http://127.0.0.1:4175/"
         }
 
         click "open-pdf-page-organization-documentation" {
@@ -322,11 +330,15 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "open-phone-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         expect "phone-latest-capability-strip-is-visible" {
             visible = css(".playground-latest-capabilities")
+        }
+
+        expect "phone-latest-capability-filters-are-reachable" {
+            visible = css(".playground-latest-capability-filters button[aria-controls='playground-latest-capability-list']")
         }
 
         expect "phone-entrance-animation-entry-is-visible" {
@@ -351,6 +363,27 @@ suite "latest-capabilities-discoverability" {
 
         expect "phone-pdf-page-organization-entry-is-visible" {
             visible = css("button[aria-label='打开最新能力：组织 PDF 页面']")
+        }
+
+        click "filter-phone-capabilities-to-writer" {
+            target = role("button", "文字 5")
+        }
+
+        expect "phone-writer-filter-is-active" {
+            visible = css(".playground-latest-capability-filters button[aria-pressed='true']")
+        }
+
+        expect "phone-writer-capabilities-are-counted" {
+            text = "5 / 8 项"
+        }
+
+        screenshot "phone-writer-capability-layout" {
+            path = "screenshots/phone-writer-capabilities.png"
+        }
+
+        accessibility "phone-writer-capability-accessibility" {
+            path = "evidence/phone-writer-capabilities.json"
+            interactive = true
         }
 
         console "phone-latest-capability-console" {

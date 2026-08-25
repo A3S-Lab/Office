@@ -13,7 +13,7 @@ suite "spreadsheet-data-validation" {
         }
 
         navigate "open-playground-home" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/playground/"
         }
 
         expect "playground-home-ready" {
@@ -96,7 +96,7 @@ suite "spreadsheet-data-validation" {
         }
 
         navigate "open-data-validation-fixture" {
-            url = "http://127.0.0.1:4175/?e2e=spreadsheet-data-validation"
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-data-validation"
         }
 
         wait "spreadsheet-ready" {

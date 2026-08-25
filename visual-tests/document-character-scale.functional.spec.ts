@@ -10,7 +10,7 @@ test('Writer authors native character scale through the responsive font dialog',
     if (message.type() === 'error') browserErrors.push(message.text());
   });
 
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白文字 从一张干净的 A4 页面开始',

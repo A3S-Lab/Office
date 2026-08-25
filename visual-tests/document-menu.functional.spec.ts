@@ -5,7 +5,7 @@ import {
 } from './visual-test-support';
 
 test('Word starts a blank document with an empty history', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', {
       name: '空白文字 从一张干净的 A4 页面开始',
@@ -32,7 +32,7 @@ test('Word starts a blank document with an empty history', async ({ page }) => {
 test('Word paragraph pagination menu updates live and restores style defaults', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -74,7 +74,7 @@ test('Word paragraph pagination menu updates live and restores style defaults', 
 test('Word paragraph spacing cancels a dirty draft before closing', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -102,7 +102,7 @@ test('Word paragraph spacing cancels a dirty draft before closing', async ({
 test('Word transient ribbon commands return keyboard control to the document', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -137,7 +137,7 @@ test('Word transient ribbon commands return keyboard control to the document', a
 test('Word repeats Find and Replace commands by returning focus to the query', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -207,7 +207,7 @@ test('Word repeats Find and Replace commands by returning focus to the query', a
 test('Word list galleries apply a style without trapping focus in the ribbon', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -248,7 +248,7 @@ test('Word list galleries apply a style without trapping focus in the ribbon', a
 test('Word page and reference commands keep the document ready for typing', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -285,7 +285,7 @@ test('Word page and reference commands keep the document ready for typing', asyn
 test('Word keeps cross-references truthful when their caption is deleted', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -330,7 +330,7 @@ test('Word keeps cross-references truthful when their caption is deleted', async
 test('Word opens the selected-text menu from the keyboard at the selection', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '项目方案 目标、范围、里程碑与风险' })
     .click();
@@ -387,7 +387,7 @@ test('Word asks for a question before preparing selected-text context for AI', a
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await page.goto('/playground/');
   await page
     .getByRole('button', { name: '项目方案 目标、范围、里程碑与风险' })
     .click();
