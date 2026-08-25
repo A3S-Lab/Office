@@ -1089,9 +1089,23 @@ test('Playground returns to the root documentation center with collaboration dis
     'DocumentEditor',
   );
   await expect(page.locator('.office-docs-playground-link')).toHaveCount(0);
-  await expect(
-    page.locator('.rp-nav__left').getByRole('link', { name: 'Playground' }),
-  ).toHaveAttribute('href', '/playground/');
+  const playgroundNavLink = page
+    .locator('.rp-nav__left')
+    .getByRole('link', { name: 'Playground' });
+  if (await playgroundNavLink.isVisible()) {
+    await expect(playgroundNavLink).toHaveAttribute('href', '/playground/');
+  } else {
+    const openNavigation = page.getByRole('button', { name: '打开导航' });
+    await expect(openNavigation).toBeVisible();
+    await openNavigation.click();
+    const mobileNavigation = page.locator('#office-mobile-navigation');
+    await expect(mobileNavigation).toBeVisible();
+    await expect(
+      mobileNavigation.getByRole('link', { name: 'Playground' }),
+    ).toHaveAttribute('href', '/playground/');
+    await page.keyboard.press('Escape');
+    await expect(mobileNavigation).toBeHidden();
+  }
 
   const collaborationGuide = page
     .locator('main')
