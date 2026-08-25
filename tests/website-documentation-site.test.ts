@@ -203,8 +203,12 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
     product,
     english,
     chinese,
+    releaseEnglish,
+    releaseChinese,
     englishHome,
     chineseHome,
+    releaseEnglishHome,
+    releaseChineseHome,
     templates,
     playground,
     pptxTest,
@@ -225,8 +229,18 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
       path.join(documentationRoot, 'latest/zh/components/presentation.mdx'),
       'utf8',
     ),
+    readFile(
+      path.join(documentationRoot, '0.34.0/en/components/presentation.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.34.0/zh/components/presentation.mdx'),
+      'utf8',
+    ),
     readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
     readFile(path.join(documentationRoot, 'latest/zh/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, '0.34.0/en/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, '0.34.0/zh/index.mdx'), 'utf8'),
     readFile(
       path.join(repositoryRoot, 'src/internal/features/work/work-templates.ts'),
       'utf8',
@@ -265,10 +279,11 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
     '| Animations and media | **Partial** — the Work scene model authors',
   );
   expect(changelog).toContain('Work Presentation entrance-animation model');
+  expect(changelog).toContain('## 0.34.0 - 2026-08-25');
   expect(roadmap).toContain('| Object animations and triggers | **Partial**');
   expect(product).toContain('## Current Presentation Milestone');
 
-  for (const document of [english, chinese]) {
+  for (const document of [english, chinese, releaseEnglish, releaseChinese]) {
     expect(document).toContain('WorkSlide.animations');
     expect(document).toContain("'appear' | 'fade' | 'fly-in' | 'zoom'");
     expect(document).toContain("'on-click'");
@@ -282,6 +297,10 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
   expect(chinese).toContain('## 入场动画');
   expect(englishHome).toContain('presentation.html#entrance-animations');
   expect(chineseHome).toContain('presentation.html#入场动画');
+  expect(releaseEnglishHome).toContain('Released in 0.34.0');
+  expect(releaseEnglishHome).toContain('presentation.html#entrance-animations');
+  expect(releaseChineseHome).toContain('0.34.0 发布');
+  expect(releaseChineseHome).toContain('presentation.html#入场动画');
 
   expect(templates).toContain("id: 'animated-deck'");
   expect(templates).toContain("effect: 'appear'");

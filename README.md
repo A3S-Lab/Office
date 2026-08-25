@@ -56,7 +56,7 @@ workflows, and a separate Rust automation plane.
 
 ## Latest on `main`
 
-The `0.33.0` release plus the current `main` branch expose these capabilities
+The `0.34.0` release plus the current `main` branch expose these capabilities
 as normal user-facing Playground templates, with matching implementation
 detail in the documentation:
 
@@ -1623,6 +1623,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.34.0 documentation](https://a3s-lab.github.io/Office/docs/0.34.0/)
 - [A3S Office 0.33.0 documentation](https://a3s-lab.github.io/Office/docs/0.33.0/)
 - [A3S Office 0.32.0 documentation](https://a3s-lab.github.io/Office/docs/0.32.0/)
 - [A3S Office 0.31.0 documentation](https://a3s-lab.github.io/Office/docs/0.31.0/)

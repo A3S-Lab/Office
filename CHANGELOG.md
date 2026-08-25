@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.34.0 - 2026-08-25
+
 - Added a bounded Work Presentation entrance-animation model with stable
   identities, ordered click/with-previous/after-previous cues, timing and
   direction controls, collaboration validation, copy/delete remapping, and
