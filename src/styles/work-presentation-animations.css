@@ -1,0 +1,128 @@
+.work-presentation-animation-options,
+.work-presentation-animation-timing {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-presentation-animation-options .work-office-field,
+.work-presentation-animation-timing .work-office-field {
+  flex: 0 0 auto;
+}
+
+.work-presentation-animation-options .work-office-field.effect {
+  width: 88px;
+}
+
+.work-presentation-animation-options .work-office-field.trigger {
+  width: 120px;
+}
+
+.work-presentation-animation-options .work-office-field.direction {
+  width: 82px;
+}
+
+.work-presentation-animation-timing .work-office-field.seconds {
+  width: 64px;
+}
+
+.work-presentation-player
+  .work-slide-element[data-slide-animation-state="pending"] {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.work-presentation-player
+  .work-slide-element[data-slide-animation-state="playing"] {
+  animation-delay: var(--work-slide-animation-delay, 0ms);
+  animation-duration: var(--work-slide-animation-duration, 500ms);
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.work-presentation-player
+  .work-slide-element[data-slide-animation-state="finished"] {
+  visibility: visible;
+  opacity: var(--work-slide-element-opacity, 1);
+  scale: 1;
+  translate: 0 0;
+}
+
+.work-presentation-player
+  .work-slide-element[data-slide-animation-effect="appear"][data-slide-animation-state="playing"] {
+  animation-name: work-slide-animation-appear;
+  animation-timing-function: steps(1, start);
+}
+
+.work-presentation-player
+  .work-slide-element[data-slide-animation-effect="fade"][data-slide-animation-state="playing"] {
+  animation-name: work-slide-animation-fade;
+}
+
+.work-presentation-player
+  .work-slide-element[data-slide-animation-effect="fly-in"][data-slide-animation-state="playing"] {
+  animation-name: work-slide-animation-fly-in;
+}
+
+.work-presentation-player
+  .work-slide-element[data-slide-animation-effect="zoom"][data-slide-animation-state="playing"] {
+  animation-name: work-slide-animation-zoom;
+}
+
+@keyframes work-slide-animation-appear {
+  from {
+    visibility: hidden;
+    opacity: 0;
+  }
+  to {
+    visibility: visible;
+    opacity: var(--work-slide-element-opacity, 1);
+  }
+}
+
+@keyframes work-slide-animation-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--work-slide-element-opacity, 1);
+  }
+}
+
+@keyframes work-slide-animation-fly-in {
+  from {
+    opacity: 0;
+    translate: var(--work-slide-animation-translate-x, -18%)
+      var(--work-slide-animation-translate-y, 0);
+  }
+  to {
+    opacity: var(--work-slide-element-opacity, 1);
+    translate: 0 0;
+  }
+}
+
+@keyframes work-slide-animation-zoom {
+  from {
+    opacity: 0;
+    scale: 0.72;
+  }
+  to {
+    opacity: var(--work-slide-element-opacity, 1);
+    scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work-presentation-player
+    .work-slide-element[data-slide-animation-state="playing"] {
+    visibility: visible;
+    animation: none;
+    opacity: var(--work-slide-element-opacity, 1);
+    scale: 1;
+    translate: 0 0;
+  }
+}

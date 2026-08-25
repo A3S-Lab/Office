@@ -1,6 +1,8 @@
 import type { OfficeKernelPresentationAlignment } from '../../../kernel/office-kernel-protocol';
 import type {
   WorkPresentationContent,
+  WorkSlideAnimation,
+  WorkSlideAnimationEffect,
   WorkSlideElement,
   WorkSlideTransition,
   WorkSlideTextRun,
@@ -58,9 +60,11 @@ export interface PresentationEditorCommands {
     slideId: string,
     commentId: string,
   ) => PresentationCommandResult;
+  moveEntranceAnimation: (direction: -1 | 1) => PresentationCommandResult;
   nudgeSelection: (key: string, distance: number) => boolean;
   openComment: (commentId: string) => PresentationCommandResult;
   pasteSelection: () => boolean;
+  previewAnimations: () => PresentationCommandResult;
   redo: () => boolean;
   renamePresentationLayout: (name: string) => PresentationCommandResult;
   renamePresentationMaster: (name: string) => PresentationCommandResult;
@@ -79,6 +83,9 @@ export interface PresentationEditorCommands {
     content: WorkPresentationContent,
   ) => PresentationCommandResult;
   setBackground: (color: string) => PresentationCommandResult;
+  setEntranceAnimation: (
+    effect: WorkSlideAnimationEffect | undefined,
+  ) => PresentationCommandResult;
   setPresentationLayoutBackground: (
     color: string | undefined,
   ) => PresentationCommandResult;
@@ -103,6 +110,9 @@ export interface PresentationEditorCommands {
   updateElement: (
     patch: Partial<WorkSlideElement>,
     options?: { restoreTextFocus?: boolean },
+  ) => PresentationCommandResult;
+  updateEntranceAnimation: (
+    patch: Partial<WorkSlideAnimation>,
   ) => PresentationCommandResult;
   updateNotes: (notes: string) => PresentationCommandResult;
   updatePresentationComment: (
@@ -163,6 +173,21 @@ export interface PresentationSlideCommandPort {
     transition: WorkSlideTransition | undefined,
   ) => PresentationCommandResult;
   updateNotes: (notes: string) => PresentationCommandResult;
+}
+
+export interface PresentationAnimationCommandPort {
+  canMoveEntranceAnimation: (direction: -1 | 1) => boolean;
+  canPreviewAnimations: boolean;
+  canSetEntranceAnimation: boolean;
+  canUpdateEntranceAnimation: boolean;
+  moveEntranceAnimation: (direction: -1 | 1) => PresentationCommandResult;
+  previewAnimations: () => PresentationCommandResult;
+  setEntranceAnimation: (
+    effect: WorkSlideAnimationEffect | undefined,
+  ) => PresentationCommandResult;
+  updateEntranceAnimation: (
+    patch: Partial<WorkSlideAnimation>,
+  ) => PresentationCommandResult;
 }
 
 export interface PresentationInsertCommandPort {
@@ -276,6 +301,7 @@ export interface PresentationKeyboardCommandPort {
 }
 
 export interface PresentationCommandContext {
+  animations: PresentationAnimationCommandPort;
   clipboard: PresentationClipboardCommandPort;
   design: PresentationDesignCommandPort;
   document: PresentationDocumentCommandPort;

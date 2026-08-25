@@ -62,6 +62,7 @@ detail in the documentation:
 
 | Editor | Latest capability | Public entry |
 | --- | --- | --- |
+| Presentation | Author, reorder, preview, collaborate on, and play ordered appear, fade, fly-in, and zoom entrance animations with on-click, with-previous, and after-previous triggers; the bounded subset round-trips through native PPTX timing trees | Playground **Latest capabilities → 入场动画** · [Presentation reference](docs/latest/en/components/presentation.mdx#entrance-animations) |
 | Writer | Compare the current document with an imported DOCX, HTML, or TXT version and generate deterministic insertion, deletion, character-formatting, and paragraph-formatting revisions; combine a reviewed copy only after exact baseline verification | Playground **Latest capabilities → 文档比较** · [Document reference](docs/latest/en/components/document.mdx#document-compare-and-combine) |
 | Writer | Insert, customize, navigate, and explicitly refresh a typed Table of Contents with heading and native outline levels 1–9, hyperlinks, page numbers, alignment, four leader styles, and native DOCX `TOC` round trips | Playground **Latest capabilities → 可更新目录** · [Document reference](docs/latest/en/components/document.mdx#native-table-of-contents) |
 | Writer | Mark primary and secondary index terms, cross-references, and bold/italic page numbers; insert, navigate, customize, and refresh a bounded native index with editable DOCX `XE` and `INDEX` round trips | Playground **Latest capabilities → 原生索引** · [Document reference](docs/latest/en/components/document.mdx#native-document-index) |
@@ -70,7 +71,7 @@ detail in the documentation:
 | Spreadsheet | Complete common Data Validation input, blank/dropdown, and Stop/Warning/Information error settings with native XLSX round trips | Playground **Latest capabilities → 数据验证** · [Spreadsheet reference](docs/latest/en/components/spreadsheet.mdx#data-validation) |
 | PDF | Insert, delete, rotate, reorder, extract, merge, and split pages through a dedicated Web Worker, with Blob-level Undo/Redo and independent binary reopen verification | Playground **Latest capabilities → 组织 PDF 页面** · [PDF reference](docs/latest/en/components/pdf.mdx#page-organization) |
 
-All seven entries are reachable from the first Playground viewport. The six
+All eight entries are reachable from the first Playground viewport. The seven
 content templates also remain under **新建**; **组织 PDF 页面** opens the normal
 PDF file workflow because page organization must operate on host-provided source
 bytes. The highlighted strip keeps each capability discoverable without a deep
@@ -163,7 +164,7 @@ baseline rather than one specific release.
 | Text, shapes, tables, charts, and images | **Partial** — typed editable objects with native import/export paths | Broader shapes, connectors, effects, SmartArt, and embedded chart editing |
 | Masters and layouts | **Partial** — import/export inheritance with editable common paths | Full visual master, layout, and placeholder authoring |
 | Transitions and timings | **Partial** — fade, push, wipe, split, cut, and click/automatic advance | Broader transition catalog and timing controls |
-| Animations and media | **Gap** — no production animation timeline, trigger model, audio, video, or recording path | Object animation, motion paths, media editing, and recording |
+| Animations and media | **Partial** — the Work scene model authors, validates, copies, collaborates on, previews, and plays ordered appear/fade/fly-in/zoom entrance cues with click/with-previous/after-previous triggers and bounded timing; this supported entrance subset round-trips through native PPTX timing trees | Exit/emphasis effects, motion paths, audio, video, recording, and broader PPTX preservation |
 | Slideshow and presenter workflows | **Supported** — current/beginning start, keyboard playback, notes, timer, and responsive presenter view | Rehearsal, recording, ink/laser, and richer multi-display controls |
 | Review and collaboration | **Partial** — comments, shared presence, remote object locations, and host transport | Threads, assignments, mentions, and integrated cloud review |
 | PPTX, print, PDF, and video | **Partial** — PPTX round trip plus slide/notes/handout PDF models; no video export | Broader print controls, vector fidelity, media preservation, and video export |

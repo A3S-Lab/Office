@@ -54,12 +54,20 @@ interface PptxBounds {
 }
 
 export class PptxGroupExportRegistry {
+  private readonly animatedElementKeys = new Set<string>();
   private readonly bindings = new Map<string, PptxExportBinding>();
+  private readonly bindingsByElement = new Map<string, PptxExportBinding>();
   private readonly roleCounts = new Map<PptxExportObjectRole, number>();
   private markerSequence = 0;
 
   get size(): number {
     return this.bindings.size;
+  }
+
+  registerAnimatedElements(scope: string, elementIds: Iterable<string>): void {
+    for (const elementId of elementIds) {
+      this.animatedElementKeys.add(exportElementKey(scope, elementId));
+    }
   }
 
   objectName(
@@ -68,18 +76,30 @@ export class PptxGroupExportRegistry {
     role: PptxExportObjectRole,
   ): string | undefined {
     const groupPath = presentationGroupPath(element);
-    if (!groupPath.length) return undefined;
+    const elementKey = exportElementKey(scope, element.id);
+    if (!groupPath.length && !this.animatedElementKeys.has(elementKey)) {
+      return undefined;
+    }
+    const existing = this.bindingsByElement.get(elementKey);
+    if (existing) return existing.marker;
     const roleCount = (this.roleCounts.get(role) ?? 0) + 1;
     this.roleCounts.set(role, roleCount);
     this.markerSequence += 1;
     const marker = `${EXPORT_MARKER_PREFIX}${this.markerSequence}`;
-    this.bindings.set(marker, {
+    const binding: PptxExportBinding = {
       displayName: `${pptxRoleName(role)} ${roleCount}`,
       groupPath,
       groupScope: scope,
       marker,
-    });
+    };
+    this.bindings.set(marker, binding);
+    this.bindingsByElement.set(elementKey, binding);
     return marker;
+  }
+
+  markerForElement(scope: string, elementId: string): string | undefined {
+    return this.bindingsByElement.get(exportElementKey(scope, elementId))
+      ?.marker;
   }
 
   binding(marker: string): PptxExportBinding | undefined {
@@ -121,7 +141,7 @@ export async function patchPptxNativeGroups(
     const count = found.get(binding.marker) ?? 0;
     if (count !== 1) {
       throw new Error(
-        `PPTX group export expected one generated object for ${binding.displayName}, but found ${count}.`,
+        `PPTX export expected one generated object for ${binding.displayName}, but found ${count}.`,
       );
     }
   }
@@ -136,6 +156,7 @@ function patchPptxShapeTree(
   registry: PptxGroupExportRegistry,
   found: Map<string, number>,
 ): boolean {
+  normalizePptxNonVisualIds(shapeTree);
   const sceneNodes = directChildren(shapeTree)
     .filter(isPptxSceneNode)
     .map<PptxSceneNode>((node, order) => {
@@ -157,9 +178,11 @@ function patchPptxShapeTree(
   if (!sceneNodes.some((item) => item.binding)) return false;
 
   const roots = new Map<string, PptxGroupBucket>();
-  const rootNodes = sceneNodes.filter((item) => !item.binding);
+  const rootNodes = sceneNodes.filter(
+    (item) => !item.binding?.groupPath.length,
+  );
   for (const item of sceneNodes) {
-    if (!item.binding) continue;
+    if (!item.binding?.groupPath.length) continue;
     let siblings = roots;
     let bucket: PptxGroupBucket | undefined;
     for (const groupId of item.binding.groupPath) {
@@ -196,7 +219,6 @@ function patchPptxShapeTree(
   for (const item of renderedRoots) {
     shapeTree.insertBefore(item.node, extensionList);
   }
-  normalizePptxNonVisualIds(shapeTree);
   return true;
 }
 
@@ -378,6 +400,10 @@ function normalizePptxNonVisualIds(shapeTree: Element): void {
 
 function groupBucketKey(scope: string, groupId: string): string {
   return `${scope}\u0000${groupId}`;
+}
+
+function exportElementKey(scope: string, elementId: string): string {
+  return `${scope}\u0000${elementId}`;
 }
 
 function isPptxSceneNode(node: Element): boolean {

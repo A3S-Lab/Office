@@ -27,6 +27,7 @@ describe('presentation editor extensions', () => {
       'presentationHistory',
       'presentationClipboard',
       'presentationSlides',
+      'presentationAnimations',
       'presentationElements',
       'presentationDesign',
       'presentationInsert',
@@ -66,6 +67,13 @@ describe('presentation editor extensions', () => {
       speed: 'medium',
       advanceOnClick: true,
     });
+    commands.setEntranceAnimation('fade');
+    commands.updateEntranceAnimation({
+      trigger: 'with-previous',
+      durationMs: 750,
+    });
+    commands.moveEntranceAnimation(-1);
+    commands.previewAnimations();
     commands.selectSlide('slide-2', true);
     commands.selectElement('element-2', true);
     commands.updateTextElement('element-2', { text: 'Updated' });
@@ -80,6 +88,10 @@ describe('presentation editor extensions', () => {
       'clipboard.copy',
       'transition.set:fade',
       'transition.applyToAll:fade',
+      'animation.set:fade',
+      'animation.update:with-previous:750',
+      'animation.move:-1',
+      'animation.preview',
       'slide.select:slide-2:true',
       'selection.select:element-2:true',
       'element.text:element-2:Updated',
@@ -257,6 +269,22 @@ function presentationEditor(calls: string[]) {
 
 function presentationContext(calls: string[]): PresentationCommandContext {
   return {
+    animations: {
+      canMoveEntranceAnimation: () => true,
+      canPreviewAnimations: true,
+      canSetEntranceAnimation: true,
+      canUpdateEntranceAnimation: true,
+      moveEntranceAnimation: (direction) =>
+        record(calls, `animation.move:${direction}`),
+      previewAnimations: () => calls.push('animation.preview'),
+      setEntranceAnimation: (effect) =>
+        record(calls, `animation.set:${effect ?? 'none'}`),
+      updateEntranceAnimation: (patch) =>
+        record(
+          calls,
+          `animation.update:${patch.trigger ?? 'same'}:${patch.durationMs ?? 'same'}`,
+        ),
+    },
     clipboard: {
       canCopySelection: true,
       canCutSelection: true,

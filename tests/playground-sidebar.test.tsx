@@ -24,6 +24,10 @@ test('publishes the latest main capabilities as first-class Playground entries',
   );
 
   const latest = screen.getByRole('region', { name: '最新能力' });
+  const entranceAnimations = within(latest).getByRole('button', {
+    name: '打开最新能力：入场动画',
+  });
+  expect(entranceAnimations).toHaveTextContent('Presentation');
   expect(
     within(latest).getByRole('button', {
       name: '打开最新能力：文档比较',
@@ -55,6 +59,8 @@ test('publishes the latest main capabilities as first-class Playground entries',
   fireEvent.click(dataValidation);
 
   expect(createdTemplates).toEqual(['data-validation']);
+  fireEvent.click(entranceAnimations);
+  expect(createdTemplates).toEqual(['data-validation', 'animated-deck']);
 });
 
 test('keeps Markdown last in the quick-create list', () => {

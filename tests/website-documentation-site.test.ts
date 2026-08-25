@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.34.0' ||
     version === '0.33.0' ||
     version === '0.32.0' ||
     version === '0.31.0' ||
@@ -57,6 +58,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.34.0',
     '0.33.0',
     '0.32.0',
     '0.31.0',
@@ -162,6 +164,7 @@ test('makes the latest main capabilities discoverable from README and both docum
   ]);
 
   expect(readme).toContain('## Latest on `main`');
+  expect(readme).toContain('Latest capabilities → 入场动画');
   expect(readme).toContain('Latest capabilities → 文档比较');
   expect(readme).toContain('Latest capabilities → 可更新目录');
   expect(readme).toContain('Latest capabilities → 原生索引');
@@ -171,6 +174,8 @@ test('makes the latest main capabilities discoverable from README and both docum
   expect(readme).toContain('Latest capabilities → 组织 PDF 页面');
 
   expect(englishHome).toContain('aria-label="Latest capabilities on main"');
+  expect(englishHome).toContain('presentation.html#entrance-animations');
+  expect(englishHome).toContain('Entrance animations');
   expect(englishHome).toContain('Document compare');
   expect(englishHome).toContain('Table of contents');
   expect(englishHome).toContain('Document index');
@@ -180,6 +185,7 @@ test('makes the latest main capabilities discoverable from README and both docum
   expect(englishHome).toContain('pdf.html#page-organization');
 
   expect(chineseHome).toContain('aria-label="main 分支最新能力"');
+  expect(chineseHome).toContain('presentation.html#入场动画');
   expect(chineseHome).toContain('document.html#文档比较与合并');
   expect(chineseHome).toContain('document.html#原生可更新目录');
   expect(chineseHome).toContain('document.html#原生文档索引');
@@ -187,6 +193,115 @@ test('makes the latest main capabilities discoverable from README and both docum
   expect(chineseHome).toContain('原生校对语言');
   expect(chineseHome).toContain('spreadsheet.html#数据验证');
   expect(chineseHome).toContain('pdf.html#页面组织');
+});
+
+test('publishes Presentation entrance animations across implementation, docs, Playground, and release evidence', async () => {
+  const [
+    readme,
+    changelog,
+    roadmap,
+    product,
+    english,
+    chinese,
+    englishHome,
+    chineseHome,
+    templates,
+    playground,
+    pptxTest,
+    visualSpec,
+    aclSuite,
+    discoverabilityAcl,
+    packageManifest,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/presentation.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/presentation.mdx'),
+      'utf8',
+    ),
+    readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, 'latest/zh/index.mdx'), 'utf8'),
+    readFile(
+      path.join(repositoryRoot, 'src/internal/features/work/work-templates.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'playground/src/workspace-home.tsx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/pptx-animation-round-trip.test.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/presentation-animation.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/presentation-animation.acl'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'tests/e2e/latest-capabilities-discoverability.acl',
+      ),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
+  ]);
+
+  expect(readme).toContain('Latest capabilities → 入场动画');
+  expect(readme).toContain(
+    '| Animations and media | **Partial** — the Work scene model authors',
+  );
+  expect(changelog).toContain('Work Presentation entrance-animation model');
+  expect(roadmap).toContain('| Object animations and triggers | **Partial**');
+  expect(product).toContain('## Current Presentation Milestone');
+
+  for (const document of [english, chinese]) {
+    expect(document).toContain('WorkSlide.animations');
+    expect(document).toContain("'appear' | 'fade' | 'fly-in' | 'zoom'");
+    expect(document).toContain("'on-click'");
+    expect(document).toContain("'with-previous'");
+    expect(document).toContain("'after-previous'");
+    expect(document).toContain('256');
+    expect(document).toContain('60,000');
+    expect(document).toContain('PresentationML');
+  }
+  expect(english).toContain('## Entrance animations');
+  expect(chinese).toContain('## 入场动画');
+  expect(englishHome).toContain('presentation.html#entrance-animations');
+  expect(chineseHome).toContain('presentation.html#入场动画');
+
+  expect(templates).toContain("id: 'animated-deck'");
+  expect(templates).toContain("effect: 'appear'");
+  expect(templates).toContain("effect: 'fade'");
+  expect(templates).toContain("effect: 'fly-in'");
+  expect(templates).toContain("effect: 'zoom'");
+  expect(playground).toContain("template.id === 'animated-deck'");
+  expect(pptxTest).toContain(
+    'round-trips supported entrance animations through native PPTX timing trees',
+  );
+  expect(visualSpec).toContain(
+    'Presentation entrance animations author and play ordered cues',
+  );
+  expect(aclSuite).toContain('suite "office-presentation-animation"');
+  expect(discoverabilityAcl).toContain('打开最新能力：入场动画');
+  expect(discoverabilityAcl).toContain('components/presentation.html#入场动画');
+  expect(packageManifest).toContain(
+    '"playground:visual:presentation-animation"',
+  );
+  expect(packageManifest).toContain('"test:e2e:presentation-animation"');
 });
 
 test('publishes PDF page organization across README, docs, Playground, and release evidence', async () => {
@@ -746,6 +861,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.34.0',
     '0.33.0',
     '0.32.0',
     '0.31.0',
@@ -816,6 +932,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
   for (const version of [
+    '0.34.0',
     '0.33.0',
     '0.32.0',
     '0.31.0',

@@ -81,6 +81,7 @@ import {
   useOfficeEditorWheelZoom,
 } from './use-office-editor-wheel-zoom';
 import { usePresentationClipboard } from './use-presentation-clipboard';
+import { usePresentationAnimationCommands } from './use-presentation-animation-commands';
 import { usePresentationDesignCommands } from './use-presentation-design-commands';
 import { usePresentationElementCommands } from './use-presentation-element-commands';
 import { usePresentationGeometry } from './use-presentation-geometry';
@@ -537,6 +538,15 @@ function PresentationEditingSurface({
     onSelectSlide: setSelectedSlideId,
     selectedSlide,
   });
+  const presentationAnimations = usePresentationAnimationCommands({
+    content,
+    onChange,
+    selectedElementId:
+      designMode === 'slide' && singleSelectedElement
+        ? singleSelectedElement.id
+        : undefined,
+    selectedSlide,
+  });
 
   const presentationElements = usePresentationElementCommands({
     activeElements,
@@ -719,12 +729,49 @@ function PresentationEditingSurface({
       toolbarSelectedElement,
     ],
   );
+  const startPresentationSlideshow = useCallback(
+    (source: 'beginning' | 'current') => {
+      const currentIndex = content.slides.findIndex(
+        (slide) => slide.id === selectedSlide.id,
+      );
+      const activeElement = document.activeElement;
+      slideshowReturnFocusRef.current =
+        activeElement instanceof HTMLElement && activeElement !== document.body
+          ? activeElement
+          : document.querySelector<HTMLElement>(
+              `[data-presentation-slideshow-source="${source}"]`,
+            );
+      setAgentMenu(null);
+      setSlideshowStartIndex(
+        source === 'current' ? Math.max(0, currentIndex) : 0,
+      );
+      onStartSlideshow?.();
+    },
+    [content.slides, onStartSlideshow, selectedSlide.id],
+  );
   const presentationExtensions = useMemo(
     createPresentationEditorExtensions,
     [],
   );
   const presentationEditor = useOfficeEditorRuntime(
     {
+      animations: {
+        canMoveEntranceAnimation: (direction) =>
+          designMode === 'slide' &&
+          presentationAnimations.canMoveEntranceAnimation(direction),
+        canPreviewAnimations:
+          designMode === 'slide' && Boolean(selectedSlide.animations?.length),
+        canSetEntranceAnimation:
+          designMode === 'slide' &&
+          presentationAnimations.canSetEntranceAnimation,
+        canUpdateEntranceAnimation:
+          designMode === 'slide' &&
+          presentationAnimations.canUpdateEntranceAnimation,
+        moveEntranceAnimation: presentationAnimations.moveEntranceAnimation,
+        previewAnimations: () => startPresentationSlideshow('current'),
+        setEntranceAnimation: presentationAnimations.setEntranceAnimation,
+        updateEntranceAnimation: presentationAnimations.updateEntranceAnimation,
+      },
       clipboard: {
         canCopySelection:
           selectedElements.length > 0 ||
@@ -857,24 +904,7 @@ function PresentationEditingSurface({
       view: {
         canStartSlideshow: designMode === 'slide' && content.slides.length > 0,
         setViewMode,
-        startSlideshow: (source) => {
-          const currentIndex = content.slides.findIndex(
-            (slide) => slide.id === selectedSlide.id,
-          );
-          const activeElement = document.activeElement;
-          slideshowReturnFocusRef.current =
-            activeElement instanceof HTMLElement &&
-            activeElement !== document.body
-              ? activeElement
-              : document.querySelector<HTMLElement>(
-                  `[data-presentation-slideshow-source="${source}"]`,
-                );
-          setAgentMenu(null);
-          setSlideshowStartIndex(
-            source === 'current' ? Math.max(0, currentIndex) : 0,
-          );
-          onStartSlideshow?.();
-        },
+        startSlideshow: startPresentationSlideshow,
         toggleDesign: presentationDesign.toggleDesignPanel,
       },
     },

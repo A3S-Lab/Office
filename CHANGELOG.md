@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added a bounded Work Presentation entrance-animation model with stable
+  identities, ordered click/with-previous/after-previous cues, timing and
+  direction controls, collaboration validation, copy/delete remapping, and
+  slideshow/presenter playback for appear, fade, fly-in, and zoom effects. The
+  supported entrance subset round-trips through native PPTX timing trees;
+  emphasis/exit effects, motion paths, media, and recording remain explicit
+  compatibility boundaries.
+- Published the same entrance-animation slice through the Playground's
+  **入场动画** template, README capability matrix, product and roadmap contracts,
+  and the English and Simplified Chinese Presentation documentation instead of
+  leaving the implementation discoverable only through source code.
+- Added desktop and compact Playwright authoring/playback coverage plus pinned
+  local-only A3S Test discovery, control, cue-consumption, accessibility, and
+  empty browser-diagnostic evidence; Actions and Pages remain free of A3S Test.
+
 ## 0.33.0 - 2026-08-25
 
 - Added PDF page organization for inserting blank pages, deleting, rotating,

@@ -4,6 +4,7 @@ import { patchPptxChartLayoutAndSeriesStyles } from './work-pptx-chart-layout-st
 import { patchPptxChartSeriesAnalysis } from './work-pptx-chart-series-analysis';
 import { patchPptxChartXySettings } from './work-pptx-chart-xy';
 import { patchPptxComments } from './work-pptx-comments';
+import { patchPptxAnimations } from './work-pptx-animation';
 import {
   patchPptxNativeGroups,
   PptxGroupExportRegistry,
@@ -75,6 +76,11 @@ function createPptxExportState(
     if (!source.useLayoutBackground) {
       slide.background = { color: source.background.replace('#', '') };
     }
+    const groupScope = `slide:${source.id}`;
+    groups.registerAnimatedElements(
+      groupScope,
+      source.animations?.map((animation) => animation.elementId) ?? [],
+    );
     for (const element of source.elements) {
       addPresentationElement(
         slide,
@@ -83,7 +89,7 @@ function createPptxExportState(
         slideWidth,
         slideHeight,
         groups,
-        `slide:${source.id}`,
+        groupScope,
         element.placeholder
           ? binding?.placeholderNames.get(element.placeholder.key)
           : undefined,
@@ -134,7 +140,12 @@ export async function createPptxBlob(
       ? (artifact.content.height ?? 7.5)
       : 7.5,
   );
-  const patched = await patchPptxNativeGroups(withComments, groups);
+  const withAnimations = await patchPptxAnimations(
+    withComments,
+    slides,
+    groups,
+  );
+  const patched = await patchPptxNativeGroups(withAnimations, groups);
   return new Blob([patched], {
     type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   });
@@ -280,19 +291,35 @@ function addPresentationElement(
     return;
   }
   if (element.type === 'shape') {
-    addShape(
-      slide,
-      element,
-      presentation,
-      x,
-      y,
-      width,
-      height,
-      resolvedPlaceholder,
-      groups.objectName(groupScope, element, 'shape'),
-    );
+    const objectName = groups.objectName(groupScope, element, 'shape');
+    if (element.text || element.textRuns?.length) {
+      addText(
+        slide,
+        element,
+        x,
+        y,
+        width,
+        height,
+        resolvedPlaceholder,
+        objectName,
+        pptxShapeType(presentation, element),
+      );
+    } else {
+      addShape(
+        slide,
+        element,
+        presentation,
+        x,
+        y,
+        width,
+        height,
+        resolvedPlaceholder,
+        objectName,
+      );
+    }
+    return;
   }
-  if (element.text) {
+  if (element.type === 'text') {
     addText(
       slide,
       element,
@@ -360,16 +387,7 @@ function addShape(
   placeholder?: string,
   objectName?: string,
 ) {
-  const shapeType =
-    element.shapeType === 'ellipse'
-      ? presentation.ShapeType.ellipse
-      : element.shapeType === 'triangle'
-        ? presentation.ShapeType.triangle
-        : element.shapeType === 'diamond'
-          ? presentation.ShapeType.diamond
-          : element.shapeType === 'roundRect'
-            ? presentation.ShapeType.roundRect
-            : presentation.ShapeType.rect;
+  const shapeType = pptxShapeType(presentation, element);
   const fillColor = element.fill.replace('#', '');
   const borderColor = (element.borderColor ?? element.fill).replace('#', '');
   const options = {
@@ -405,6 +423,7 @@ function addText(
   height: number,
   placeholder?: string,
   objectName?: string,
+  shape?: NonNullable<Parameters<PptxSlide['addText']>[1]>['shape'],
 ) {
   const text = element.textRuns?.length
     ? element.textRuns.map((run) => ({
@@ -436,14 +455,34 @@ function addText(
     valign: element.verticalAlign ?? 'middle',
     margin: element.fill === 'transparent' ? 0 : 10,
     breakLine: false,
+    shape,
     fill:
       element.fill === 'transparent'
         ? undefined
         : { color: element.fill.replace('#', '') },
+    line:
+      element.borderWidth && element.borderColor
+        ? {
+            color: element.borderColor.replace('#', ''),
+            width: element.borderWidth,
+          }
+        : undefined,
     hyperlink: element.href ? { url: element.href } : undefined,
     placeholder,
     ...(objectName ? { objectName } : {}),
   });
+}
+
+function pptxShapeType(
+  presentation: PptxPresentation,
+  element: WorkSlideElement,
+) {
+  if (element.shapeType === 'ellipse') return presentation.ShapeType.ellipse;
+  if (element.shapeType === 'triangle') return presentation.ShapeType.triangle;
+  if (element.shapeType === 'diamond') return presentation.ShapeType.diamond;
+  if (element.shapeType === 'roundRect')
+    return presentation.ShapeType.roundRect;
+  return presentation.ShapeType.rect;
 }
 
 async function presentationArrayBuffer(

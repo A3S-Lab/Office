@@ -18,6 +18,7 @@ export function createPresentationTimerController(
 }
 
 export function PresentationPresenterView({
+  animationCueIndex,
   content,
   slide,
   nextSlide,
@@ -26,6 +27,7 @@ export function PresentationPresenterView({
   aspectRatio,
   timer,
 }: {
+  animationCueIndex?: number;
   content: WorkPresentationContent;
   slide: WorkSlide;
   nextSlide?: WorkSlide;
@@ -108,6 +110,7 @@ export function PresentationPresenterView({
         >
           <h2>{slide.name}</h2>
           <SlideCanvas
+            animationCueIndex={animationCueIndex}
             content={content}
             slide={slide}
             interactive={false}

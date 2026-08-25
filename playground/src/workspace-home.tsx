@@ -14,6 +14,7 @@ import {
   ListTree,
   PanelLeftOpen,
   Pencil,
+  Play,
   Search,
   ServerCog,
   Sparkles,
@@ -40,6 +41,7 @@ const latestTemplateIds = new Set([
 const latestTemplates: Array<
   Pick<OfficeTemplate, 'description' | 'id' | 'kind' | 'name'>
 > = [
+  ...officeTemplates.filter((template) => template.id === 'animated-deck'),
   {
     id: 'pdf-page-organization',
     kind: 'pdf',
@@ -164,7 +166,9 @@ export function WorkspaceHome({
                     ? 'Writer'
                     : template.kind === 'spreadsheet'
                       ? 'Spreadsheet'
-                      : 'PDF'}
+                      : template.kind === 'presentation'
+                        ? 'Presentation'
+                        : 'PDF'}
                 </small>
                 <strong>{template.name}</strong>
                 <span>{template.description}</span>
@@ -357,6 +361,9 @@ function LatestCapabilityIcon({ templateId }: { templateId: string }) {
   }
   if (templateId === 'data-validation') {
     return <ListChecks size={16} aria-hidden="true" />;
+  }
+  if (templateId === 'animated-deck') {
+    return <Play size={17} aria-hidden="true" />;
   }
   return <Sparkles size={16} aria-hidden="true" />;
 }

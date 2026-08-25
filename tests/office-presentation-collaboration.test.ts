@@ -134,6 +134,61 @@ test('rejects duplicate comment identities before bootstrap writes metadata', ()
   expect(session.document.getMap(session.rootName('metadata')).size).toBe(0);
 });
 
+test('round-trips valid slide animations and rejects ambiguous targets', () => {
+  const fixture = presentationFixture();
+  const elementId = fixture.slides[0].elements[0].id;
+  const animation = {
+    id: 'animation-title',
+    elementId,
+    effect: 'fly-in' as const,
+    trigger: 'on-click' as const,
+    durationMs: 700,
+    delayMs: 100,
+    direction: 'left' as const,
+  };
+  const content = {
+    ...fixture,
+    slides: fixture.slides.map((slide, index) =>
+      index === 0 ? { ...slide, animations: [animation] } : slide,
+    ),
+  };
+  const session = createOfficeCollaborationSession({
+    artifactId: 'presentation-animations',
+    kind: 'presentation',
+  });
+
+  initializeOfficePresentationCollaboration(session, content);
+  expect(
+    readOfficePresentationCollaboration(session).slides[0].animations,
+  ).toEqual([animation]);
+
+  for (const [artifactId, animations, message] of [
+    [
+      'presentation-animation-missing-target',
+      [{ ...animation, elementId: 'missing-element' }],
+      /reference an existing element/,
+    ],
+    [
+      'presentation-animation-duplicate-target',
+      [animation, { ...animation, id: 'animation-title-copy' }],
+      /at most one entrance animation/,
+    ],
+  ] as const) {
+    const invalidSession = createOfficeCollaborationSession({
+      artifactId,
+      kind: 'presentation',
+    });
+    expect(() =>
+      initializeOfficePresentationCollaboration(invalidSession, {
+        ...fixture,
+        slides: fixture.slides.map((slide, index) =>
+          index === 0 ? { ...slide, animations: [...animations] } : slide,
+        ),
+      }),
+    ).toThrow(message);
+  }
+});
+
 test('detects concurrent independent Presentation bootstrap', () => {
   const firstDocument = new Y.Doc();
   const secondDocument = new Y.Doc();

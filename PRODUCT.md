@@ -531,6 +531,43 @@ The public Playground template, bilingual documentation, focused Rstest,
 responsive Playwright, and pinned local-only A3S Test suite form the release
 evidence without adding A3S Test to Actions or Pages.
 
+## Current Presentation Milestone
+
+The first Presentation-animation milestone adds a bounded entrance-animation
+sequence to each slide. One slide-owned object may have one editable entrance
+animation: appear, fade, fly in, or zoom. Array order is playback order, and
+each item starts on click, with the previous item, or after the previous item.
+Duration is bounded from 100 milliseconds through 60 seconds, delay from zero
+through 60 seconds, and fly-in direction to left, right, up, or down. A slide
+accepts at most 256 animation records.
+
+The Animation ribbon tab edits the selected object's effect, trigger, timing,
+direction, and order and previews the current slide. Every command emits one
+controlled presentation update and one Undo record. Collaboration validates
+the complete sequence and stable object targets; deleting an object removes
+its animation, while object and slide copies create fresh animation and object
+identities without breaking their target mapping. Slideshow and presenter
+view consume pending click cues before navigating to the next slide. Automatic
+cues start with the slide, and reduced-motion environments reveal each cue
+without decorative movement while retaining the same sequence semantics.
+
+The supported subset exports as native PresentationML timing trees and imports
+back into the editable Work model with effect, order, trigger, duration, delay,
+direction, and object identity intact across a second export and reopen.
+Malformed timing, namespace spoofing, unavailable or ambiguous targets,
+duplicate object effects, unsupported entrance effects, and non-entrance
+classes fail closed with compatibility diagnostics. The remaining alignment
+work is explicit: emphasis and exit effects, motion paths, trigger-on-object,
+the broader native animation catalog, audio and video, rehearsal and recording,
+and full preservation of unsupported timing trees.
+
+The public Playground exposes **入场动画** with all four effects and all three
+trigger modes. Focused Rstest covers the model, commands, ribbon, slideshow,
+collaboration, clipboard identity, and native PPTX export/import/reopen. A
+responsive Playwright workflow and the pinned local-only A3S Test suite complete
+the release evidence without installing or invoking A3S Test in Actions or
+Pages.
+
 ## Current PDF Milestone
 
 The first PDF-workbench milestone adds one page-organization surface for seven

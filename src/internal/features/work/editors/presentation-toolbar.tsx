@@ -36,6 +36,7 @@ import {
   DOCUMENT_LINK_VALIDATION_MESSAGE,
   normalizeDocumentHref,
 } from '../work-document-links';
+import { workSlideAnimationForElement } from '../work-presentation-animation';
 import type {
   WorkSlide,
   WorkSlideElement,
@@ -57,6 +58,7 @@ import type {
   PresentationEditorCanCommands,
   PresentationEditorCommands,
 } from './presentation-command-types';
+import { PresentationAnimationPanel } from './presentation-animation-panel';
 import { PresentationTransitionPanel } from './presentation-transition-panel';
 import {
   type WorkOfficeFileAction,
@@ -70,6 +72,7 @@ const presentationRibbonTabs = [
   { id: 'insert', label: '插入' },
   { id: 'design', label: '设计' },
   { id: 'transitions', label: '切换' },
+  { id: 'animations', label: '动画' },
   { id: 'slideshow', label: '幻灯片放映', compactLabel: '放映' },
   { id: 'review', label: '审阅' },
   { id: 'view', label: '视图' },
@@ -132,6 +135,10 @@ export function PresentationToolbar({
   );
   const fontFamilyValue = presentationFontFamilyValue(
     selectedElement?.fontFamily,
+  );
+  const selectedAnimation = workSlideAnimationForElement(
+    selectedSlide,
+    selectedElement?.id,
   );
   useEffect(() => {
     setFontSizeDraft(selectedElement ? String(selectedElement.fontSize) : '');
@@ -529,6 +536,18 @@ export function PresentationToolbar({
               canApplyToAll={can.applyTransitionToAll}
               onChange={commands.setTransition}
               onApplyToAll={commands.applyTransitionToAll}
+            />
+          ),
+          animations: (
+            <PresentationAnimationPanel
+              animation={selectedAnimation}
+              canMove={can.moveEntranceAnimation}
+              canPreview={can.previewAnimations()}
+              editable={can.setEntranceAnimation(selectedAnimation?.effect)}
+              onMove={commands.moveEntranceAnimation}
+              onPreview={commands.previewAnimations}
+              onSetEffect={commands.setEntranceAnimation}
+              onUpdate={commands.updateEntranceAnimation}
             />
           ),
           slideshow: (

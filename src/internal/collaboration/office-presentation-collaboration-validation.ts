@@ -3,9 +3,16 @@ import type {
   WorkPresentationLayout,
   WorkPresentationMaster,
   WorkSlide,
+  WorkSlideAnimation,
   WorkSlideComment,
   WorkSlideElement,
 } from '../features/work/work-types';
+import {
+  WORK_SLIDE_ANIMATION_LIMIT,
+  WORK_SLIDE_ANIMATION_MAX_DELAY_MS,
+  WORK_SLIDE_ANIMATION_MAX_DURATION_MS,
+  WORK_SLIDE_ANIMATION_MIN_DURATION_MS,
+} from '../features/work/work-presentation-animation-constraints';
 import { WorkOfficeCollaborationError } from './office-collaboration';
 import {
   cloneWorkOfficeCollaborationJson as cloneJsonValue,
@@ -111,7 +118,102 @@ function validateSlide(value: unknown): WorkSlide {
       validateComment,
     );
   }
+  if (record.animations !== undefined) {
+    slide.animations = validateSlideAnimations(record.animations, slide);
+  }
   return slide;
+}
+
+function validateSlideAnimations(
+  value: unknown,
+  slide: WorkSlide,
+): WorkSlideAnimation[] {
+  if (!Array.isArray(value) || value.length > WORK_SLIDE_ANIMATION_LIMIT) {
+    invalidWorkOfficePresentationInput(
+      `an array of at most ${WORK_SLIDE_ANIMATION_LIMIT} slide animations`,
+    );
+  }
+  const animationIds = new Set<string>();
+  const targetIds = new Set<string>();
+  const elementIds = new Set(slide.elements.map((element) => element.id));
+  return value.map((item) => {
+    const record = requiredInputRecord(item, 'slide animation');
+    const animation = validateJsonRecord(
+      record,
+      'slide animation',
+    ) as unknown as WorkSlideAnimation;
+    animation.id = requiredIdentifier(record.id, 'slide animation');
+    animation.elementId = requiredIdentifier(
+      record.elementId,
+      'slide animation element',
+    );
+    if (animationIds.has(animation.id)) {
+      invalidWorkOfficePresentationInput(
+        `a unique slide animation ID; '${animation.id}' is repeated`,
+      );
+    }
+    if (!elementIds.has(animation.elementId)) {
+      invalidWorkOfficePresentationInput(
+        `slide animation '${animation.id}' to reference an existing element`,
+      );
+    }
+    if (targetIds.has(animation.elementId)) {
+      invalidWorkOfficePresentationInput(
+        `at most one entrance animation for element '${animation.elementId}'`,
+      );
+    }
+    if (
+      record.effect !== 'appear' &&
+      record.effect !== 'fade' &&
+      record.effect !== 'fly-in' &&
+      record.effect !== 'zoom'
+    ) {
+      invalidWorkOfficePresentationInput(
+        'a supported slide entrance animation effect',
+      );
+    }
+    animation.effect = record.effect;
+    if (
+      record.trigger !== 'on-click' &&
+      record.trigger !== 'with-previous' &&
+      record.trigger !== 'after-previous'
+    ) {
+      invalidWorkOfficePresentationInput('a supported slide animation trigger');
+    }
+    animation.trigger = record.trigger;
+    animation.durationMs = requiredIntegerInRange(
+      record.durationMs,
+      WORK_SLIDE_ANIMATION_MIN_DURATION_MS,
+      WORK_SLIDE_ANIMATION_MAX_DURATION_MS,
+      'slide animation duration',
+    );
+    animation.delayMs = requiredIntegerInRange(
+      record.delayMs,
+      0,
+      WORK_SLIDE_ANIMATION_MAX_DELAY_MS,
+      'slide animation delay',
+    );
+    if (animation.effect === 'fly-in') {
+      if (
+        record.direction !== 'left' &&
+        record.direction !== 'right' &&
+        record.direction !== 'up' &&
+        record.direction !== 'down'
+      ) {
+        invalidWorkOfficePresentationInput(
+          'a direction for each fly-in animation',
+        );
+      }
+      animation.direction = record.direction;
+    } else if (record.direction !== undefined) {
+      invalidWorkOfficePresentationInput(
+        'slide animation directions only on fly-in effects',
+      );
+    }
+    animationIds.add(animation.id);
+    targetIds.add(animation.elementId);
+    return animation;
+  });
 }
 
 function validateMaster(value: unknown): WorkPresentationMaster {
@@ -292,6 +394,25 @@ function requiredString(value: unknown, label: string): string {
 function requiredFiniteNumber(value: unknown, label: string): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     invalidWorkOfficePresentationInput(`a finite number for ${label}`);
+  }
+  return value as number;
+}
+
+function requiredIntegerInRange(
+  value: unknown,
+  minimum: number,
+  maximum: number,
+  label: string,
+): number {
+  if (
+    typeof value !== 'number' ||
+    !Number.isSafeInteger(value) ||
+    value < minimum ||
+    value > maximum
+  ) {
+    invalidWorkOfficePresentationInput(
+      `an integer ${label} from ${minimum} through ${maximum}`,
+    );
   }
   return value as number;
 }

@@ -728,6 +728,27 @@ export interface WorkSlideTransition {
   advanceAfterMs?: number;
 }
 
+export type WorkSlideAnimationEffect = 'appear' | 'fade' | 'fly-in' | 'zoom';
+export type WorkSlideAnimationTrigger =
+  | 'on-click'
+  | 'with-previous'
+  | 'after-previous';
+export type WorkSlideAnimationDirection = 'left' | 'right' | 'up' | 'down';
+
+/**
+ * One bounded entrance animation applied to one slide-owned element.
+ * Array order on `WorkSlide.animations` is the canonical playback order.
+ */
+export interface WorkSlideAnimation {
+  id: string;
+  elementId: string;
+  effect: WorkSlideAnimationEffect;
+  trigger: WorkSlideAnimationTrigger;
+  durationMs: number;
+  delayMs: number;
+  direction?: WorkSlideAnimationDirection;
+}
+
 export interface WorkSlideElement {
   id: string;
   type: WorkSlideElementType;
@@ -773,6 +794,7 @@ export interface WorkSlide {
   notes?: string;
   comments?: WorkSlideComment[];
   transition?: WorkSlideTransition;
+  animations?: WorkSlideAnimation[];
 }
 
 export interface WorkSlideComment {

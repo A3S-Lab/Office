@@ -3,9 +3,11 @@ import {
   presentationSlideViewFromDesign,
   type WorkPresentationDesignContent,
 } from '../work-presentation-layouts';
+import { workSlideAnimationCues } from '../work-presentation-animation';
 import type {
   WorkPresentationContent,
   WorkSlide,
+  WorkSlideAnimation,
   WorkSlideElement,
 } from '../work-types';
 import { OfficeTextArea } from './office-controls';
@@ -17,6 +19,7 @@ export function SlideCanvas({
   slide,
   interactive,
   aspectRatio,
+  animationCueIndex,
   showPlaceholders = false,
 }: {
   content?: WorkPresentationContent;
@@ -24,6 +27,7 @@ export function SlideCanvas({
   slide: WorkSlide;
   interactive: boolean;
   aspectRatio: string;
+  animationCueIndex?: number;
   showPlaceholders?: boolean;
 }) {
   const view = designContent
@@ -41,6 +45,10 @@ export function SlideCanvas({
       origin: 'slide' as const,
     })),
   ];
+  const animationPlayback =
+    animationCueIndex === undefined
+      ? undefined
+      : slideAnimationPlayback(slide.animations, animationCueIndex);
   return (
     <span
       className={`work-slide-canvas ${interactive ? 'interactive' : ''}`}
@@ -52,6 +60,9 @@ export function SlideCanvas({
           key={`${origin}:${element.id}`}
           origin={origin}
           showPlaceholder={showPlaceholders}
+          animationPlayback={
+            origin === 'slide' ? animationPlayback?.get(element.id) : undefined
+          }
         />
       ))}
     </span>
@@ -59,10 +70,12 @@ export function SlideCanvas({
 }
 
 export function SlideElementPreview({
+  animationPlayback,
   element,
   origin,
   showPlaceholder = false,
 }: {
+  animationPlayback?: SlideElementAnimationPlayback;
   element: WorkSlideElement;
   origin: 'inherited' | 'slide';
   showPlaceholder?: boolean;
@@ -71,8 +84,14 @@ export function SlideElementPreview({
   return (
     <span
       className={`work-slide-element ${element.type} ${origin} ${showPlaceholder && element.placeholder ? 'placeholder' : ''}`.trim()}
+      data-slide-preview-element-id={element.id}
       data-slide-element-origin={origin}
-      style={slideElementStyle(element)}
+      data-slide-animation-effect={animationPlayback?.animation.effect}
+      data-slide-animation-state={animationPlayback?.state}
+      style={{
+        ...slideElementStyle(element),
+        ...slideElementAnimationStyle(animationPlayback),
+      }}
     >
       {element.type === 'image' && element.image ? (
         <img
@@ -164,6 +183,8 @@ export function slideElementStyle(
       element.shapeType === 'ellipse' ? '50%' : `${element.radius ?? 0}%`,
     clipPath: shapeClipPath,
     opacity: element.opacity,
+    '--work-slide-element-opacity': element.opacity ?? 1,
+    '--work-slide-element-rotation': `${element.rotation ?? 0}deg`,
     transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
     transformOrigin: 'center',
     ...(element.type === 'line'
@@ -172,7 +193,52 @@ export function slideElementStyle(
           borderTop: `${Math.max(0.5, element.borderWidth ?? 1)}px solid ${element.borderColor ?? element.color}`,
         }
       : {}),
-  };
+  } as React.CSSProperties;
+}
+
+interface SlideElementAnimationPlayback {
+  animation: WorkSlideAnimation;
+  startOffsetMs: number;
+  state: 'finished' | 'pending' | 'playing';
+}
+
+function slideAnimationPlayback(
+  animations: readonly WorkSlideAnimation[] | undefined,
+  activeCueIndex: number,
+): Map<string, SlideElementAnimationPlayback> {
+  const playback = new Map<string, SlideElementAnimationPlayback>();
+  for (const [cueIndex, cue] of workSlideAnimationCues(animations).entries()) {
+    for (const item of cue.items) {
+      playback.set(item.animation.elementId, {
+        animation: item.animation,
+        startOffsetMs: item.startOffsetMs,
+        state:
+          cueIndex < activeCueIndex
+            ? 'finished'
+            : cueIndex === activeCueIndex
+              ? 'playing'
+              : 'pending',
+      });
+    }
+  }
+  return playback;
+}
+
+function slideElementAnimationStyle(
+  playback: SlideElementAnimationPlayback | undefined,
+): React.CSSProperties {
+  if (!playback) return {};
+  const direction = playback.animation.direction ?? 'left';
+  const translateX =
+    direction === 'left' ? '-18%' : direction === 'right' ? '18%' : '0';
+  const translateY =
+    direction === 'up' ? '-18%' : direction === 'down' ? '18%' : '0';
+  return {
+    '--work-slide-animation-delay': `${playback.startOffsetMs}ms`,
+    '--work-slide-animation-duration': `${playback.animation.durationMs}ms`,
+    '--work-slide-animation-translate-x': translateX,
+    '--work-slide-animation-translate-y': translateY,
+  } as React.CSSProperties;
 }
 
 export function slideTextStyle(element: WorkSlideElement): React.CSSProperties {

@@ -13,6 +13,10 @@ import {
   useState,
 } from 'react';
 import { slideTransitionDurationMilliseconds } from '../work-presentation-transition';
+import {
+  initialWorkSlideAnimationCueIndex,
+  workSlideAnimationCues,
+} from '../work-presentation-animation';
 import type { WorkPresentationContent } from '../work-types';
 import {
   createPresentationTimerController,
@@ -22,6 +26,7 @@ import {
 import { SlideCanvas } from './presentation-slide-canvas';
 
 interface PlaybackState {
+  animationCueIndex: number;
   index: number;
   transitionKey: number;
 }
@@ -38,6 +43,11 @@ export function PresentationPlayer({
   onExit?: () => void;
 }) {
   const [playback, setPlayback] = useState<PlaybackState>({
+    animationCueIndex: initialAnimationCueIndex(
+      content.slides[
+        presentationPlaybackIndex(initialIndex, content.slides.length)
+      ],
+    ),
     index: presentationPlaybackIndex(initialIndex, content.slides.length),
     transitionKey: 0,
   });
@@ -74,11 +84,58 @@ export function PresentationPlayer({
         );
         return index === current.index
           ? current
-          : { index, transitionKey: current.transitionKey + 1 };
+          : {
+              animationCueIndex: initialAnimationCueIndex(
+                content.slides[index],
+              ),
+              index,
+              transitionKey: current.transitionKey + 1,
+            };
       });
     },
-    [content.slides.length],
+    [content.slides],
   );
+  const advance = useCallback(() => {
+    setPlayback((current) => {
+      const currentSlide = content.slides[current.index];
+      const cueCount = workSlideAnimationCues(currentSlide?.animations).length;
+      if (current.animationCueIndex < cueCount - 1) {
+        return {
+          ...current,
+          animationCueIndex: current.animationCueIndex + 1,
+        };
+      }
+      const index = Math.min(current.index + 1, content.slides.length - 1);
+      if (index === current.index) return current;
+      return {
+        animationCueIndex: initialAnimationCueIndex(content.slides[index]),
+        index,
+        transitionKey: current.transitionKey + 1,
+      };
+    });
+  }, [content.slides]);
+  const retreat = useCallback(() => {
+    setPlayback((current) => {
+      const currentSlide = content.slides[current.index];
+      const initialCueIndex = initialAnimationCueIndex(currentSlide);
+      if (current.animationCueIndex > initialCueIndex) {
+        return {
+          ...current,
+          animationCueIndex: current.animationCueIndex - 1,
+        };
+      }
+      const index = Math.max(current.index - 1, 0);
+      if (index === current.index) return current;
+      const previousCues = workSlideAnimationCues(
+        content.slides[index]?.animations,
+      );
+      return {
+        animationCueIndex: previousCues.length - 1,
+        index,
+        transitionKey: current.transitionKey + 1,
+      };
+    });
+  }, [content.slides]);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -108,7 +165,7 @@ export function PresentationPlayer({
         event.key === 'Spacebar'
       ) {
         event.preventDefault();
-        move(1);
+        advance();
         return;
       }
       if (
@@ -117,7 +174,7 @@ export function PresentationPlayer({
         event.key === 'PageUp'
       ) {
         event.preventDefault();
-        move(-1);
+        retreat();
         return;
       }
       if (event.key === 'Home') {
@@ -132,7 +189,7 @@ export function PresentationPlayer({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [completeExit, content.slides.length, move]);
+  }, [advance, completeExit, content.slides.length, move, retreat]);
   useLayoutEffect(() => {
     const player = playerRef.current;
     if (!autoFullscreen || !player) return;
@@ -179,6 +236,9 @@ export function PresentationPlayer({
   if (!slide) return null;
   const aspectRatio = `${content.width ?? 13.333} / ${content.height ?? 7.5}`;
   const transition = slide.transition;
+  const animationCues = workSlideAnimationCues(slide.animations);
+  const hasPendingAnimation =
+    playback.animationCueIndex < animationCues.length - 1;
   const transitionStyle = {
     '--work-slide-transition-duration': `${slideTransitionDurationMilliseconds(transition)}ms`,
   } as React.CSSProperties;
@@ -191,6 +251,7 @@ export function PresentationPlayer({
     >
       {presenter ? (
         <PresentationPresenterView
+          animationCueIndex={playback.animationCueIndex}
           content={content}
           slide={slide}
           nextSlide={content.slides[playback.index + 1]}
@@ -206,10 +267,11 @@ export function PresentationPlayer({
             className="work-presentation-player-advance"
             aria-label="单击换到下一张幻灯片"
             disabled={
-              transition?.advanceOnClick === false ||
-              playback.index === content.slides.length - 1
+              !hasPendingAnimation &&
+              (transition?.advanceOnClick === false ||
+                playback.index === content.slides.length - 1)
             }
-            onClick={() => move(1)}
+            onClick={() => advance()}
           />
           <div
             aria-live="polite"
@@ -223,6 +285,7 @@ export function PresentationPlayer({
             style={transitionStyle}
           >
             <SlideCanvas
+              animationCueIndex={playback.animationCueIndex}
               content={content}
               slide={slide}
               interactive={false}
@@ -236,8 +299,11 @@ export function PresentationPlayer({
           type="button"
           aria-label="上一张"
           aria-keyshortcuts="ArrowLeft ArrowUp PageUp"
-          disabled={playback.index === 0}
-          onClick={() => move(-1)}
+          disabled={
+            playback.index === 0 &&
+            playback.animationCueIndex <= initialAnimationCueIndex(slide)
+          }
+          onClick={retreat}
         >
           <ChevronLeft size={18} />
         </button>
@@ -248,8 +314,10 @@ export function PresentationPlayer({
           type="button"
           aria-label="下一张"
           aria-keyshortcuts="ArrowRight ArrowDown PageDown Space"
-          disabled={playback.index === content.slides.length - 1}
-          onClick={() => move(1)}
+          disabled={
+            !hasPendingAnimation && playback.index === content.slides.length - 1
+          }
+          onClick={advance}
         >
           <ChevronRight size={18} />
         </button>
@@ -315,6 +383,14 @@ function presentationTargetActivatesWithSpace(
 function presentationPlaybackIndex(index: number, slideCount: number): number {
   if (slideCount <= 1) return 0;
   return Math.min(slideCount - 1, Math.max(0, Math.trunc(index)));
+}
+
+function initialAnimationCueIndex(
+  slide: WorkPresentationContent['slides'][number] | undefined,
+): number {
+  return initialWorkSlideAnimationCueIndex(
+    workSlideAnimationCues(slide?.animations),
+  );
 }
 
 async function requestPresentationFullscreen(

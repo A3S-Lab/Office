@@ -150,6 +150,11 @@
   color: #b63737;
 }
 
+.playground-latest-capability.presentation .playground-latest-capability-icon {
+  background: color-mix(in srgb, #7657c8 11%, var(--a3s-panel));
+  color: #6848b7;
+}
+
 .playground-latest-capability-copy {
   display: flex;
   min-width: 0;

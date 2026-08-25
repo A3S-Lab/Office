@@ -20,6 +20,10 @@ suite "latest-capabilities-discoverability" {
             visible = css(".playground-latest-capabilities[aria-labelledby='playground-latest-capabilities-title']")
         }
 
+        expect "entrance-animation-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：入场动画']")
+        }
+
         expect "document-comparison-entry-is-visible" {
             visible = css("button[aria-label='打开最新能力：文档比较']")
         }
@@ -46,6 +50,22 @@ suite "latest-capabilities-discoverability" {
 
         expect "pdf-page-organization-entry-is-visible" {
             visible = css("button[aria-label='打开最新能力：组织 PDF 页面']")
+        }
+
+        click "open-entrance-animations" {
+            target = role("button", "打开最新能力：入场动画")
+        }
+
+        wait "entrance-animation-presentation-is-ready" {
+            text = "让信息按叙事顺序出现"
+        }
+
+        expect "entrance-animation-title-is-visible" {
+            visible = css("input[aria-label='文件名'][value='入场动画示例']")
+        }
+
+        navigate "return-to-playground-home-after-entrance-animations" {
+            url = "http://127.0.0.1:4175/"
         }
 
         click "open-document-comparison" {
@@ -187,6 +207,22 @@ suite "latest-capabilities-discoverability" {
             visible = css("main .docs-home-hero__latest a[href*='components/document.html#']")
         }
 
+        click "open-entrance-animation-documentation" {
+            target = css("main .docs-home-hero__latest a[href*='components/presentation.html#入场动画']")
+        }
+
+        wait "entrance-animation-documentation-is-open" {
+            text = "入场动画"
+        }
+
+        expect "entrance-animation-is-documented" {
+            visible = css("main h2#入场动画")
+        }
+
+        navigate "return-to-documentation-home-after-entrance-animation" {
+            url = "http://127.0.0.1:4175/docs/"
+        }
+
         click "open-document-comparison-documentation" {
             target = css("main .docs-home-hero__latest a[href*='components/document.html#文档比较与合并']")
         }
@@ -291,6 +327,10 @@ suite "latest-capabilities-discoverability" {
 
         expect "phone-latest-capability-strip-is-visible" {
             visible = css(".playground-latest-capabilities")
+        }
+
+        expect "phone-entrance-animation-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：入场动画']")
         }
 
         expect "phone-document-comparison-entry-is-visible" {

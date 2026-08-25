@@ -2,6 +2,7 @@ import { expect, test } from '@rstest/core';
 import {
   clearPresentationClipboard,
   clonePresentationElementsForPaste,
+  clonePresentationElementsAndAnimationsForPaste,
   clonePresentationSlideForPaste,
   copyPresentationElements,
   takePresentationClipboard,
@@ -93,6 +94,83 @@ test('numbers repeated slide copies without growing the source label', () => {
   ]);
 
   expect(copy.name).toBe('封面 副本 3');
+});
+
+test('remaps slide animation identities and targets with copied objects', () => {
+  const elements = [
+    presentationElement('first', 10, 20),
+    presentationElement('second', 40, 50),
+  ];
+  const copy = clonePresentationSlideForPaste({
+    id: 'animated-slide',
+    name: 'Animated',
+    background: '#ffffff',
+    elements,
+    animations: [
+      {
+        id: 'animation-first',
+        elementId: 'first',
+        effect: 'fade',
+        trigger: 'on-click',
+        durationMs: 500,
+        delayMs: 0,
+      },
+      {
+        id: 'animation-second',
+        elementId: 'second',
+        effect: 'zoom',
+        trigger: 'after-previous',
+        durationMs: 700,
+        delayMs: 100,
+      },
+    ],
+  });
+
+  expect(copy.animations?.map(({ elementId }) => elementId)).toEqual(
+    copy.elements.map(({ id }) => id),
+  );
+  expect(copy.animations?.map(({ id }) => id)).not.toEqual([
+    'animation-first',
+    'animation-second',
+  ]);
+});
+
+test('remaps selected object animations without copying unrelated cues', () => {
+  const elements = [
+    presentationElement('first', 10, 20),
+    presentationElement('second', 40, 50),
+  ];
+  const paste = clonePresentationElementsAndAnimationsForPaste(
+    [elements[0]],
+    [
+      {
+        id: 'animation-first',
+        elementId: 'first',
+        effect: 'fade',
+        trigger: 'on-click',
+        durationMs: 500,
+        delayMs: 0,
+      },
+      {
+        id: 'animation-second',
+        elementId: 'second',
+        effect: 'zoom',
+        trigger: 'on-click',
+        durationMs: 500,
+        delayMs: 0,
+      },
+    ],
+    5,
+  );
+
+  expect(paste.elements).toHaveLength(1);
+  expect(paste.animations).toEqual([
+    expect.objectContaining({
+      elementId: paste.elements[0].id,
+      effect: 'fade',
+    }),
+  ]);
+  expect(paste.animations?.[0].id).not.toBe('animation-first');
 });
 
 function presentationElement(

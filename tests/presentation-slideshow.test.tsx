@@ -243,6 +243,49 @@ test('keeps the presenter timer continuous for the slideshow session', () => {
   }
 });
 
+test('consumes ordered click animation cues before advancing the slide', () => {
+  render(<PresentationPlayer content={animatedPresentation()} />);
+
+  const first = screen
+    .getByText('Animated one')
+    .closest<HTMLElement>('[data-slide-preview-element-id="element-one"]');
+  const second = screen
+    .getByText('Animated two')
+    .closest<HTMLElement>('[data-slide-preview-element-id="element-two"]');
+  const advance = screen.getByRole('button', {
+    name: '单击换到下一张幻灯片',
+  });
+  expect(first).toHaveAttribute('data-slide-animation-state', 'pending');
+  expect(second).toHaveAttribute('data-slide-animation-state', 'pending');
+
+  fireEvent.click(advance);
+  expect(screen.getByText('1 / 2')).toBeVisible();
+  expect(first).toHaveAttribute('data-slide-animation-state', 'playing');
+  expect(second).toHaveAttribute('data-slide-animation-state', 'pending');
+
+  fireEvent.click(advance);
+  expect(screen.getByText('1 / 2')).toBeVisible();
+  expect(first).toHaveAttribute('data-slide-animation-state', 'finished');
+  expect(second).toHaveAttribute('data-slide-animation-state', 'playing');
+
+  fireEvent.click(advance);
+  expect(screen.getByText('2 / 2')).toBeVisible();
+});
+
+test('starts a leading automatic animation cue without a click', () => {
+  const content = animatedPresentation();
+  const firstAnimation = content.slides[0].animations?.[0];
+  if (!firstAnimation) throw new Error('Expected the animated fixture cue.');
+  firstAnimation.trigger = 'after-previous';
+  render(<PresentationPlayer content={content} />);
+
+  expect(
+    screen
+      .getByText('Animated one')
+      .closest('[data-slide-preview-element-id="element-one"]'),
+  ).toHaveAttribute('data-slide-animation-state', 'playing');
+});
+
 function presentation(): WorkPresentationContent {
   return {
     type: 'presentation',
@@ -250,6 +293,68 @@ function presentation(): WorkPresentationContent {
       { id: 'slide-1', name: 'One', elements: [] },
       { id: 'slide-2', name: 'Two', elements: [] },
       { id: 'slide-3', name: 'Three', elements: [] },
+    ],
+  };
+}
+
+function animatedPresentation(): WorkPresentationContent {
+  return {
+    type: 'presentation',
+    slides: [
+      {
+        id: 'animated-slide',
+        name: 'Animated',
+        elements: [
+          {
+            id: 'element-one',
+            type: 'text',
+            x: 10,
+            y: 10,
+            width: 30,
+            height: 12,
+            text: 'Animated one',
+            fontSize: 20,
+            color: '#111111',
+            fill: 'transparent',
+            bold: false,
+            align: 'left',
+          },
+          {
+            id: 'element-two',
+            type: 'text',
+            x: 10,
+            y: 30,
+            width: 30,
+            height: 12,
+            text: 'Animated two',
+            fontSize: 20,
+            color: '#111111',
+            fill: 'transparent',
+            bold: false,
+            align: 'left',
+          },
+        ],
+        animations: [
+          {
+            id: 'animation-one',
+            elementId: 'element-one',
+            effect: 'fade',
+            trigger: 'on-click',
+            durationMs: 500,
+            delayMs: 0,
+          },
+          {
+            id: 'animation-two',
+            elementId: 'element-two',
+            effect: 'fly-in',
+            trigger: 'on-click',
+            durationMs: 600,
+            delayMs: 100,
+            direction: 'right',
+          },
+        ],
+      },
+      { id: 'final-slide', name: 'Final', elements: [] },
     ],
   };
 }

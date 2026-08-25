@@ -29,13 +29,118 @@ while a text box is being edited.
 | Field | Type | Description |
 | --- | --- | --- |
 | `type` | `'presentation'` | Content discriminator. |
-| `slides` | `WorkSlide[]` | Slides, elements, notes, comments, and transitions. |
+| `slides` | `WorkSlide[]` | Slides, elements, notes, comments, transitions, and entrance animations. |
 | `width`, `height` | `number` | Presentation canvas dimensions. |
 | `masters` | `WorkPresentationMaster[]` | Master backgrounds and elements. |
 | `layouts` | `WorkPresentationLayout[]` | Master-linked layouts, placeholders, and inherited elements. |
 
 Use `fileActions`, `onAgentRequest`, and `onStartSlideshow` for stable host
 integration. The internal scene-command runtime is not a public extension API.
+
+## Entrance animations
+
+`WorkSlide.animations` is the canonical ordered entrance sequence for one
+slide. Each record targets one slide-owned element by stable ID. One object may
+have at most one editable animation, and one slide accepts at most 256 records.
+
+```ts
+type WorkSlideAnimationEffect = 'appear' | 'fade' | 'fly-in' | 'zoom';
+type WorkSlideAnimationTrigger =
+  | 'on-click'
+  | 'with-previous'
+  | 'after-previous';
+type WorkSlideAnimationDirection = 'left' | 'right' | 'up' | 'down';
+
+interface WorkSlideAnimation {
+  id: string;
+  elementId: string;
+  effect: WorkSlideAnimationEffect;
+  trigger: WorkSlideAnimationTrigger;
+  durationMs: number;
+  delayMs: number;
+  direction?: WorkSlideAnimationDirection;
+}
+
+const slide = {
+  id: 'launch',
+  name: 'Launch',
+  background: '#ffffff',
+  elements: [
+    {
+      id: 'headline',
+      type: 'text',
+      x: 8,
+      y: 10,
+      width: 80,
+      height: 16,
+      text: 'Launch plan',
+      fontSize: 34,
+      color: '#111827',
+      fill: 'transparent',
+      bold: true,
+      align: 'left',
+    },
+  ],
+  animations: [
+    {
+      id: 'headline-entrance',
+      elementId: 'headline',
+      effect: 'fade',
+      trigger: 'on-click',
+      durationMs: 600,
+      delayMs: 100,
+    },
+  ],
+};
+```
+
+Select an object and open the **Animation** ribbon tab to set or remove its
+effect, choose the trigger, edit duration and delay, choose a fly-in direction,
+move the item earlier or later, or preview the current slide. Duration is
+normalized to 100–60,000 milliseconds and delay to 0–60,000 milliseconds. Each
+edit produces one controlled `onChange` value and one Undo record. Deleting an
+object removes its animation; copying objects or slides creates fresh object
+and animation IDs while preserving the target mapping. Collaboration accepts
+only bounded sequences with unique animation IDs, available object targets,
+one effect per object, and normalized timing.
+
+### Cue and playback semantics
+
+| Trigger | Playback behavior |
+| --- | --- |
+| `on-click` | Starts a new cue. Slideshow navigation consumes this cue before it advances to the next slide. |
+| `with-previous` | Starts from the previous item's start time plus its own delay. |
+| `after-previous` | Starts from the previous item's end time plus its own delay. |
+
+If a slide begins with `with-previous` or `after-previous`, its first cue starts
+automatically when the slide opens. Audience and presenter modes render the
+same pending, playing, and finished object state, so switching views does not
+skip an object. In a `prefers-reduced-motion: reduce` environment, a playing
+item becomes visible without decorative movement while the cue order remains
+unchanged.
+
+### Native PPTX boundary
+
+The supported subset exports as native PresentationML timing trees. Import
+maps the timing target's `cNvPr` shape ID back to the stable browser element ID,
+and a second export and reopen retain effect, order, trigger, duration, delay,
+and fly-in direction. Text inside an animated shape remains one PPTX object,
+and grouped animated objects keep valid timing targets.
+
+Import is deliberately bounded. Emphasis and exit effects, motion paths,
+unsupported entrance presets, duplicate effects on one object, missing or
+ambiguous targets, malformed timing, and namespace-spoofed timing trees do not
+become editable records. Compatibility diagnostics report each skipped or
+normalized item. Export writes the supported editable sequence; it does not
+claim lossless preservation of an unsupported source timing tree. Audio,
+video, rehearsal, recording, trigger-on-object behavior, and the broader
+animation catalog remain future work.
+
+Open **Latest capabilities → 入场动画** in the Playground to inspect all four
+effects and all three trigger modes, edit the sequence from the Animation tab,
+and verify it in the built-in slideshow. Focused model, command, component,
+collaboration, clipboard, slideshow, and native PPTX reopen tests keep this
+public contract synchronized with the implementation.
 
 ## Large decks
 

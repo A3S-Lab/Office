@@ -35,6 +35,7 @@ import {
   readPptxSlideComments,
 } from './work-pptx-comments';
 import { readPptxChart } from './work-pptx-chart-import';
+import { readPptxAnimations } from './work-pptx-animation';
 import { readPptxTransition } from './work-pptx-transition';
 import { scaledPresentationVisuals } from './work-presentation-visual-scale';
 import { createWorkId } from './work-templates';
@@ -66,6 +67,7 @@ interface PptxImportContext {
   theme: PptxThemeColors;
   issues: WorkCompatibilityIssue[];
   imageBudget: { bytes: number };
+  elementIdByPptxShapeId: Map<string, string>;
   location?: string;
 }
 
@@ -233,6 +235,7 @@ async function parseSlide(
     theme,
     issues,
     imageBudget,
+    elementIdByPptxShapeId: new Map(),
     location: `幻灯片 ${slideNumber}`,
   };
   const design = await ensurePptxDesignDefinitions(
@@ -251,6 +254,10 @@ async function parseSlide(
     elements,
     design.master,
     design.layout,
+  );
+  const animationResult = readPptxAnimations(
+    document,
+    context.elementIdByPptxShapeId,
   );
 
   const transition = readPptxTransition(document);
@@ -314,13 +321,17 @@ async function parseSlide(
       );
     }
   }
-  if (firstDescendant(document, 'timing')) {
+  if (animationResult.animations.length) {
     addIssue(
       context,
       'pptx.animation',
       'Animations',
-      'Object animations are not replayed and will be omitted on export.',
+      `${animationResult.animations.length} supported object entrance animation(s) are preserved, editable, replayed, and exported.`,
+      'info',
     );
+  }
+  for (const diagnostic of animationResult.diagnostics) {
+    addIssue(context, diagnostic.code, 'Animations', diagnostic.message);
   }
   for (const relationship of relationships.values()) {
     if (
@@ -365,6 +376,9 @@ async function parseSlide(
       ? commentResult.comments
       : undefined,
     transition: transition.transition,
+    animations: animationResult.animations.length
+      ? animationResult.animations
+      : undefined,
   };
 }
 
@@ -388,6 +402,7 @@ async function loadPptxPresentationDesigns(
     theme,
     issues,
     imageBudget,
+    elementIdByPptxShapeId: new Map(),
     location: '母版与布局',
   };
   for (const relationship of relationships.values()) {
@@ -499,6 +514,7 @@ async function parsePptxDesignElements(
 ): Promise<WorkSlideElement[]> {
   const partContext: PptxImportContext = {
     ...context,
+    elementIdByPptxShapeId: new Map(),
     relationships: part.relationships,
     placeholders: new Map(),
   };
@@ -580,35 +596,40 @@ async function parseSlideNode(
   context: PptxImportContext,
   transform?: GroupTransform,
 ): Promise<WorkSlideElement[]> {
-  if (node.localName === 'sp')
-    return [
+  let elements: WorkSlideElement[];
+  if (node.localName === 'sp') {
+    elements = [
       withImportedGroupTransform(
         parseShape(node, context, transform),
         transform,
       ),
     ];
-  if (node.localName === 'pic')
-    return [
+  } else if (node.localName === 'pic') {
+    elements = [
       withImportedGroupTransform(
         await parsePicture(node, context, transform),
         transform,
       ),
     ];
-  if (node.localName === 'graphicFrame')
-    return [
+  } else if (node.localName === 'graphicFrame') {
+    elements = [
       withImportedGroupTransform(
         await parseGraphicFrame(node, context, transform),
         transform,
       ),
     ];
-  if (node.localName === 'cxnSp')
-    return [
+  } else if (node.localName === 'cxnSp') {
+    elements = [
       withImportedGroupTransform(
         parseConnector(node, context, transform),
         transform,
       ),
     ];
-  if (node.localName === 'grpSp') return parseGroup(node, context, transform);
+  } else if (node.localName === 'grpSp') {
+    return parseGroup(node, context, transform);
+  } else {
+    elements = [];
+  }
   if (['contentPart', 'oleObj'].includes(node.localName)) {
     addIssue(
       context,
@@ -617,7 +638,11 @@ async function parseSlideNode(
       'An embedded slide object remains available in the original PPTX only.',
     );
   }
-  return [];
+  const pptxShapeId = attribute(firstDescendant(node, 'cNvPr') ?? node, 'id');
+  if (pptxShapeId && elements.length === 1) {
+    context.elementIdByPptxShapeId.set(pptxShapeId, elements[0].id);
+  }
+  return elements;
 }
 
 function parseShape(

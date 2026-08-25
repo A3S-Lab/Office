@@ -133,6 +133,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     description: '结论先行的三页汇报',
     accent: '#c85637',
   },
+  {
+    id: 'animated-deck',
+    kind: 'presentation',
+    name: '入场动画',
+    description: '出现、淡入、飞入、缩放与三种触发方式',
+    accent: '#7657c8',
+  },
 ];
 
 export function createWorkArtifact(templateId: string): WorkArtifact {
@@ -173,6 +180,7 @@ function initialTitle(templateId: string, kind: WorkArtifactKind): string {
     'quarterly-plan': '季度执行计划',
     'data-validation': '数据验证示例',
     'strategy-deck': '业务策略汇报',
+    'animated-deck': '入场动画示例',
   };
   if (titles[templateId]) return titles[templateId];
   if (kind === 'document') return '无标题文字';
@@ -448,6 +456,9 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
   }
   if (templateId === 'strategy-deck') {
     return strategyPresentation();
+  }
+  if (templateId === 'animated-deck') {
+    return animatedPresentation();
   }
   if (templateId === 'blank-spreadsheet') {
     return { type: 'spreadsheet', sheets: [blankSheet()] };
@@ -914,4 +925,118 @@ function strategyPresentation(): WorkPresentationContent {
     },
   ];
   return { type: 'presentation', slides };
+}
+
+function animatedPresentation(): WorkPresentationContent {
+  const titleId = createWorkId('element');
+  const subtitleId = createWorkId('element');
+  const sequenceId = createWorkId('element');
+  const conclusionId = createWorkId('element');
+  return {
+    type: 'presentation',
+    slides: [
+      {
+        id: createWorkId('slide'),
+        name: '入场动画',
+        background: '#17162b',
+        notes:
+          '从“动画”选项卡编辑效果、触发方式、持续时间、延迟和顺序，再从头放映验证逐步播放。',
+        elements: [
+          {
+            id: titleId,
+            type: 'text',
+            x: 8,
+            y: 10,
+            width: 76,
+            height: 16,
+            text: '让信息按叙事顺序出现',
+            fontSize: 34,
+            color: '#ffffff',
+            fill: 'transparent',
+            bold: true,
+            align: 'left',
+          },
+          {
+            id: subtitleId,
+            type: 'text',
+            x: 8,
+            y: 28,
+            width: 68,
+            height: 9,
+            text: '单击开始，下一对象与标题同时淡入',
+            fontSize: 16,
+            color: '#b9b7dc',
+            fill: 'transparent',
+            bold: false,
+            align: 'left',
+          },
+          {
+            id: sequenceId,
+            type: 'shape',
+            x: 8,
+            y: 46,
+            width: 52,
+            height: 20,
+            text: '上一动画完成后，从左侧飞入',
+            fontSize: 19,
+            color: '#211f35',
+            fill: '#d9d3ff',
+            bold: true,
+            align: 'center',
+            radius: 4,
+          },
+          {
+            id: conclusionId,
+            type: 'shape',
+            x: 66,
+            y: 46,
+            width: 26,
+            height: 20,
+            text: '再次单击\n缩放结论',
+            fontSize: 17,
+            color: '#ffffff',
+            fill: '#7657c8',
+            bold: true,
+            align: 'center',
+            radius: 5,
+          },
+        ],
+        animations: [
+          {
+            id: createWorkId('slide-animation'),
+            elementId: titleId,
+            effect: 'appear',
+            trigger: 'on-click',
+            durationMs: 300,
+            delayMs: 0,
+          },
+          {
+            id: createWorkId('slide-animation'),
+            elementId: subtitleId,
+            effect: 'fade',
+            trigger: 'with-previous',
+            durationMs: 600,
+            delayMs: 100,
+          },
+          {
+            id: createWorkId('slide-animation'),
+            elementId: sequenceId,
+            effect: 'fly-in',
+            trigger: 'after-previous',
+            durationMs: 700,
+            delayMs: 150,
+            direction: 'left',
+          },
+          {
+            id: createWorkId('slide-animation'),
+            elementId: conclusionId,
+            effect: 'zoom',
+            trigger: 'on-click',
+            durationMs: 650,
+            delayMs: 0,
+          },
+        ],
+      },
+    ],
+  };
 }

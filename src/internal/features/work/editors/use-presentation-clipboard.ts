@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 import { showToast } from '../../../state/app-state';
 import {
-  clonePresentationElementForPaste,
-  clonePresentationElementsForPaste,
+  clonePresentationElementsAndAnimationsForPaste,
   clonePresentationSlideForPaste,
   copyPresentationElements,
   copyPresentationSlide,
@@ -10,9 +9,14 @@ import {
   takePresentationClipboard,
 } from '../work-presentation-clipboard';
 import { withPresentationDesign } from '../work-presentation-layouts';
+import {
+  removeWorkSlideAnimationsForElements,
+  WORK_SLIDE_ANIMATION_LIMIT,
+} from '../work-presentation-animation';
 import type {
   WorkPresentationContent,
   WorkSlide,
+  WorkSlideAnimation,
   WorkSlideElement,
 } from '../work-types';
 import type { PresentationDesignMode } from './presentation-editor-types';
@@ -44,7 +48,10 @@ export function usePresentationClipboard({
   const selectedElement = selectedElements.at(-1) ?? null;
   const copySelection = useCallback((): boolean => {
     if (selectedElements.length) {
-      copyPresentationElements(selectedElements);
+      copyPresentationElements(
+        selectedElements,
+        mode === 'slide' ? selectedSlide?.animations : undefined,
+      );
       showToast(
         selectedElements.length > 1
           ? `已复制 ${selectedElements.length} 个对象`
@@ -62,8 +69,12 @@ export function usePresentationClipboard({
   const deleteSelectedElement = useCallback((): boolean => {
     if (!selectedElements.length || !targetId) return false;
     const selectedIds = new Set(selectedElements.map((element) => element.id));
-    const next = updateTargetElements(content, mode, targetId, (elements) =>
-      elements.filter((element) => !selectedIds.has(element.id)),
+    const next = updateTargetElements(
+      content,
+      mode,
+      targetId,
+      (elements) => elements.filter((element) => !selectedIds.has(element.id)),
+      selectedIds,
     );
     if (!next) return false;
     onChange(next);
@@ -73,7 +84,10 @@ export function usePresentationClipboard({
 
   const cutSelection = useCallback((): boolean => {
     if (selectedElements.length) {
-      copyPresentationElements(selectedElements);
+      copyPresentationElements(
+        selectedElements,
+        mode === 'slide' ? selectedSlide?.animations : undefined,
+      );
       if (!deleteSelectedElement()) return false;
       showToast(
         selectedElements.length > 1
@@ -122,27 +136,43 @@ export function usePresentationClipboard({
       clipboard.payload.kind === 'elements'
     ) {
       if (!targetId) return false;
-      const pasted =
+      const sourceElements =
         clipboard.payload.kind === 'element'
-          ? [
-              clonePresentationElementForPaste(
-                clipboard.payload.element,
-                clipboard.offset,
-              ),
-            ]
-          : clonePresentationElementsForPaste(
-              clipboard.payload.elements,
-              clipboard.offset,
-            );
-      const next = updateTargetElements(content, mode, targetId, (elements) => [
-        ...elements,
-        ...pasted,
-      ]);
+          ? [clipboard.payload.element]
+          : clipboard.payload.elements;
+      const sourceAnimations =
+        clipboard.payload.kind === 'element'
+          ? clipboard.payload.animation
+            ? [clipboard.payload.animation]
+            : []
+          : (clipboard.payload.animations ?? []);
+      const pasted = clonePresentationElementsAndAnimationsForPaste(
+        sourceElements,
+        sourceAnimations,
+        clipboard.offset,
+      );
+      if (
+        mode === 'slide' &&
+        !canAppendSlideAnimations(content, targetId, pasted.animations)
+      ) {
+        showToast('对象动画数量已达到每张幻灯片 256 条的上限。', 'info');
+        return true;
+      }
+      const next = updateTargetElements(
+        content,
+        mode,
+        targetId,
+        (elements) => [...elements, ...pasted.elements],
+        undefined,
+        pasted.animations,
+      );
       if (!next) return false;
       onChange(next);
-      onSelectElements(pasted.map((element) => element.id));
+      onSelectElements(pasted.elements.map((element) => element.id));
       showToast(
-        pasted.length > 1 ? `已粘贴 ${pasted.length} 个对象` : '已粘贴演示元素',
+        pasted.elements.length > 1
+          ? `已粘贴 ${pasted.elements.length} 个对象`
+          : '已粘贴演示元素',
         'success',
       );
       return true;
@@ -177,19 +207,33 @@ export function usePresentationClipboard({
 
   const duplicateSelection = useCallback((): boolean => {
     if (selectedElements.length && targetId) {
-      const copies = clonePresentationElementsForPaste(
+      const copies = clonePresentationElementsAndAnimationsForPaste(
         selectedElements,
+        mode === 'slide' ? (selectedSlide?.animations ?? []) : [],
         PRESENTATION_OBJECT_OFFSET_STEP,
       );
-      const next = updateTargetElements(content, mode, targetId, (elements) => [
-        ...elements,
-        ...copies,
-      ]);
+      if (
+        mode === 'slide' &&
+        !canAppendSlideAnimations(content, targetId, copies.animations)
+      ) {
+        showToast('对象动画数量已达到每张幻灯片 256 条的上限。', 'info');
+        return true;
+      }
+      const next = updateTargetElements(
+        content,
+        mode,
+        targetId,
+        (elements) => [...elements, ...copies.elements],
+        undefined,
+        copies.animations,
+      );
       if (!next) return false;
       onChange(next);
-      onSelectElements(copies.map((element) => element.id));
+      onSelectElements(copies.elements.map((element) => element.id));
       showToast(
-        copies.length > 1 ? `已复制 ${copies.length} 个对象` : '已复制演示元素',
+        copies.elements.length > 1
+          ? `已复制 ${copies.elements.length} 个对象`
+          : '已复制演示元素',
         'success',
       );
       return true;
@@ -304,6 +348,8 @@ function updateTargetElements(
   mode: PresentationDesignMode,
   targetId: string,
   update: (elements: WorkSlideElement[]) => WorkSlideElement[],
+  removedElementIds?: ReadonlySet<string>,
+  addedAnimations?: readonly WorkSlideAnimation[],
 ): WorkPresentationContent | null {
   if (mode === 'slide') {
     if (!content.slides.some((slide) => slide.id === targetId)) return null;
@@ -311,7 +357,13 @@ function updateTargetElements(
       ...content,
       slides: content.slides.map((slide) =>
         slide.id === targetId
-          ? { ...slide, elements: update(structuredCopy(slide.elements)) }
+          ? appendWorkSlideAnimations(
+              removeWorkSlideAnimationsForElements(
+                { ...slide, elements: update(structuredCopy(slide.elements)) },
+                removedElementIds ?? new Set(),
+              ),
+              addedAnimations,
+            )
           : slide,
       ),
     };
@@ -338,6 +390,31 @@ function updateTargetElements(
         ? { ...master, elements: update(structuredCopy(master.elements)) }
         : master,
     ),
+  };
+}
+
+function canAppendSlideAnimations(
+  content: WorkPresentationContent,
+  slideId: string,
+  animations: readonly WorkSlideAnimation[] | undefined,
+): boolean {
+  if (!animations?.length) return true;
+  const slide = content.slides.find((candidate) => candidate.id === slideId);
+  return (
+    Boolean(slide) &&
+    (slide?.animations?.length ?? 0) + animations.length <=
+      WORK_SLIDE_ANIMATION_LIMIT
+  );
+}
+
+function appendWorkSlideAnimations(
+  slide: WorkSlide,
+  animations: readonly WorkSlideAnimation[] | undefined,
+): WorkSlide {
+  if (!animations?.length) return slide;
+  return {
+    ...slide,
+    animations: [...(slide.animations ?? []), ...structuredCopy(animations)],
   };
 }
 

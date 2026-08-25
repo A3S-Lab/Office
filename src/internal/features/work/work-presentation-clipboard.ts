@@ -1,13 +1,26 @@
 import { remapPresentationGroupPaths } from './work-presentation-groups';
+import { remapWorkSlideAnimations } from './work-presentation-animation';
 import { createWorkId } from './work-templates';
-import type { WorkSlide, WorkSlideElement } from './work-types';
+import type {
+  WorkSlide,
+  WorkSlideAnimation,
+  WorkSlideElement,
+} from './work-types';
 
 export const PRESENTATION_OBJECT_OFFSET_STEP = 5;
 const PRESENTATION_CLIPBOARD_MAX_OFFSET = 20;
 
 export type WorkPresentationClipboardPayload =
-  | { kind: 'element'; element: WorkSlideElement }
-  | { kind: 'elements'; elements: WorkSlideElement[] }
+  | {
+      kind: 'element';
+      element: WorkSlideElement;
+      animation?: WorkSlideAnimation;
+    }
+  | {
+      kind: 'elements';
+      elements: WorkSlideElement[];
+      animations?: WorkSlideAnimation[];
+    }
   | { kind: 'slide'; slide: WorkSlide };
 
 export interface WorkPresentationClipboardRead {
@@ -20,9 +33,21 @@ let clipboard: {
   pasteCount: number;
 } | null = null;
 
-export function copyPresentationElement(element: WorkSlideElement): void {
+export interface WorkPresentationElementPaste {
+  animations?: WorkSlideAnimation[];
+  elements: WorkSlideElement[];
+}
+
+export function copyPresentationElement(
+  element: WorkSlideElement,
+  animation?: WorkSlideAnimation,
+): void {
   clipboard = {
-    payload: { kind: 'element', element: structuredCopy(element) },
+    payload: {
+      kind: 'element',
+      element: structuredCopy(element),
+      ...(animation ? { animation: structuredCopy(animation) } : {}),
+    },
     pasteCount: 0,
   };
   writeSystemClipboardText(presentationElementPlainText(element));
@@ -30,10 +55,21 @@ export function copyPresentationElement(element: WorkSlideElement): void {
 
 export function copyPresentationElements(
   elements: readonly WorkSlideElement[],
+  animations: readonly WorkSlideAnimation[] = [],
 ): void {
   if (!elements.length) return;
+  const elementIds = new Set(elements.map((element) => element.id));
+  const selectedAnimations = animations.filter((animation) =>
+    elementIds.has(animation.elementId),
+  );
   clipboard = {
-    payload: { kind: 'elements', elements: structuredCopy([...elements]) },
+    payload: {
+      kind: 'elements',
+      elements: structuredCopy([...elements]),
+      ...(selectedAnimations.length
+        ? { animations: structuredCopy(selectedAnimations) }
+        : {}),
+    },
     pasteCount: 0,
   };
   writeSystemClipboardText(
@@ -73,21 +109,24 @@ export function clonePresentationElementForPaste(
   element: WorkSlideElement,
   offset: number,
 ): WorkSlideElement {
-  const copy = remapPresentationGroupPaths([structuredCopy(element)])[0];
-  return {
-    ...copy,
-    id: createWorkId('element'),
-    x: clamp(copy.x + offset, 0, Math.max(0, 100 - copy.width)),
-    y: clamp(copy.y + offset, 0, Math.max(0, 100 - copy.height)),
-    placeholder: undefined,
-  };
+  return clonePresentationElementsAndAnimationsForPaste([element], [], offset)
+    .elements[0];
 }
 
 export function clonePresentationElementsForPaste(
   elements: readonly WorkSlideElement[],
   offset: number,
 ): WorkSlideElement[] {
-  if (!elements.length) return [];
+  return clonePresentationElementsAndAnimationsForPaste(elements, [], offset)
+    .elements;
+}
+
+export function clonePresentationElementsAndAnimationsForPaste(
+  elements: readonly WorkSlideElement[],
+  animations: readonly WorkSlideAnimation[],
+  offset: number,
+): WorkPresentationElementPaste {
+  if (!elements.length) return { elements: [] };
   const right = Math.max(
     ...elements.map((element) => element.x + element.width),
   );
@@ -96,15 +135,24 @@ export function clonePresentationElementsForPaste(
   );
   const offsetX = clamp(offset, 0, Math.max(0, 100 - right));
   const offsetY = clamp(offset, 0, Math.max(0, 100 - bottom));
-  return remapPresentationGroupPaths(structuredCopy(elements)).map(
-    (element) => ({
-      ...element,
-      id: createWorkId('element'),
-      x: element.x + offsetX,
-      y: element.y + offsetY,
-      placeholder: undefined,
-    }),
+  const elementIds = new Map<string, string>();
+  const copies = remapPresentationGroupPaths(structuredCopy(elements)).map(
+    (element) => {
+      const id = createWorkId('element');
+      elementIds.set(element.id, id);
+      return {
+        ...element,
+        id,
+        x: element.x + offsetX,
+        y: element.y + offsetY,
+        placeholder: undefined,
+      };
+    },
   );
+  return {
+    elements: copies,
+    animations: remapWorkSlideAnimations(animations, elementIds),
+  };
 }
 
 export function clonePresentationSlideForPaste(
@@ -112,14 +160,18 @@ export function clonePresentationSlideForPaste(
   existingSlideNames: readonly string[] = [],
 ): WorkSlide {
   const copy = structuredCopy(slide);
+  const elementIds = new Map<string, string>();
+  const elements = remapPresentationGroupPaths(copy.elements).map((element) => {
+    const id = createWorkId('element');
+    elementIds.set(element.id, id);
+    return { ...element, id };
+  });
   return {
     ...copy,
     id: createWorkId('slide'),
     name: nextPresentationSlideCopyName(slide.name, existingSlideNames),
-    elements: remapPresentationGroupPaths(copy.elements).map((element) => ({
-      ...element,
-      id: createWorkId('element'),
-    })),
+    elements,
+    animations: remapWorkSlideAnimations(copy.animations, elementIds),
     comments: copy.comments?.map((comment) => ({
       ...comment,
       id: createWorkId('slide-comment'),

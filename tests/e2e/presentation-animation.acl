@@ -1,0 +1,114 @@
+suite "office-presentation-animation" {
+    version = 1
+
+    scenario "discover-and-preview-ordered-entrance-cues" {
+        name = "Discover and preview ordered Presentation entrance cues"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-animation-template" {
+            target = role("button", "打开最新能力：入场动画")
+        }
+
+        wait "animation-template-loaded" {
+            text = "让信息按叙事顺序出现"
+        }
+
+        click "select-fly-in-object" {
+            target = css(".work-slide-canvas.interactive > fieldset[data-slide-element-id]:nth-of-type(3)")
+        }
+
+        expect "fly-in-object-is-selected" {
+            visible = css(".work-slide-canvas.interactive [data-slide-element-selected='true']")
+        }
+
+        click "open-animation-tab" {
+            target = role("tab", "动画")
+        }
+
+        expect "animation-effect-is-editable" {
+            visible = css("[aria-label='对象入场动画效果']")
+        }
+
+        expect "animation-trigger-is-editable" {
+            visible = css("[aria-label='对象入场动画触发方式']")
+        }
+
+        expect "fly-in-direction-is-editable" {
+            visible = css("[aria-label='对象飞入方向']")
+        }
+
+        expect "animation-duration-is-editable" {
+            visible = css("[aria-label='对象入场动画持续秒数']")
+        }
+
+        expect "animation-delay-is-editable" {
+            visible = css("[aria-label='对象入场动画延迟秒数']")
+        }
+
+        expect "animation-order-is-editable" {
+            visible = css("button[aria-label='提前对象动画']:not(:disabled)")
+        }
+
+        click "preview-current-slide" {
+            target = role("button", "预览当前幻灯片动画")
+        }
+
+        expect "first-click-cue-is-pending" {
+            visible = css("[role='dialog'][aria-label='幻灯片放映'] button[aria-label='下一张']:not(:disabled)")
+        }
+
+        click "consume-first-click-cue" {
+            target = role("button", "下一张")
+        }
+
+        expect "first-cue-is-playing" {
+            visible = css("[role='dialog'][aria-label='幻灯片放映'] [data-slide-animation-effect='appear'][data-slide-animation-state='playing']")
+        }
+
+        click "consume-next-click-cue" {
+            target = role("button", "单击换到下一张幻灯片")
+        }
+
+        expect "zoom-cue-is-playing" {
+            visible = css("[role='dialog'][aria-label='幻灯片放映'] [data-slide-animation-effect='zoom'][data-slide-animation-state='playing']")
+        }
+
+        expect "only-slide-does-not-advance-after-cues" {
+            visible = css("[role='dialog'][aria-label='幻灯片放映'] button[aria-label='下一张']:disabled")
+        }
+
+        press "exit-preview" {
+            key = "Escape"
+        }
+
+        expect "animation-editor-restored" {
+            visible = css("[aria-label='对象入场动画效果']")
+        }
+
+        accessibility "animation-controls" {
+            path = "evidence/animation-controls.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}
