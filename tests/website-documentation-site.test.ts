@@ -102,6 +102,41 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   ]);
 });
 
+test('builds a product home beside, rather than inside, the versioned docs site', async () => {
+  const [productHome, productTheme, productConfig, docsConfig] =
+    await Promise.all([
+      readFile(path.join(repositoryRoot, 'website/product/index.mdx'), 'utf8'),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'website/product-theme/components/HomeLayout.tsx',
+        ),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'website/rspress.config.ts'), 'utf8'),
+      readFile(
+        path.join(repositoryRoot, 'website/rspress.docs.config.ts'),
+        'utf8',
+      ),
+    ]);
+
+  expect(productHome).toContain('pageType: home');
+  expect(productHome).toContain('sidebar: false');
+  expect(productTheme).toContain('className="docs-home office-product-home"');
+  expect(productConfig).toContain(
+    "root: path.resolve(import.meta.dirname, 'product')",
+  );
+  expect(productConfig).toContain("{ text: '文档', link: '/docs/' }");
+  expect(productConfig).toContain(
+    "{ text: 'Playground', link: '/playground/' }",
+  );
+  expect(docsConfig).toContain(
+    "root: path.resolve(import.meta.dirname, '../docs')",
+  );
+  expect(docsConfig).toContain('const docsBase =');
+  expect(docsConfig).toContain('base: docsBase');
+});
+
 test('keeps every public route available in every language and version', async () => {
   for (const version of DOCUMENTATION_VERSIONS) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
@@ -318,7 +353,10 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
   );
   expect(aclSuite).toContain('suite "office-presentation-animation"');
   expect(discoverabilityAcl).toContain('打开最新能力：入场动画');
-  expect(discoverabilityAcl).toContain('components/presentation.html#入场动画');
+  expect(discoverabilityAcl).toContain(
+    'navigate "open-entrance-animation-documentation"',
+  );
+  expect(discoverabilityAcl).toContain("main h2[id='入场动画']");
   expect(packageManifest).toContain(
     '"playground:visual:presentation-animation"',
   );
@@ -432,7 +470,10 @@ test('publishes PDF page organization across README, docs, Playground, and relea
   expect(playground).toContain("release: '0.33.0'");
   expect(visualSpec).toContain('PDF page organization mutates, exports, saves');
   expect(aclSuite).toContain('suite "office-pdf-page-organization"');
-  expect(discoverabilityAcl).toContain('components/pdf.html#页面组织');
+  expect(discoverabilityAcl).toContain(
+    'navigate "open-pdf-page-organization-documentation"',
+  );
+  expect(discoverabilityAcl).toContain("main h2[id='页面组织']");
   expect(e2eGuide).toContain('bun run test:e2e:pdf-page-organization');
   expect(packageManifest).toContain(
     '"playground:visual:pdf-page-organization"',

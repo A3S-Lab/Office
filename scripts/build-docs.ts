@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { cp, mkdir, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const siteBase = normalizeBase(
@@ -18,22 +19,38 @@ if (siteBase !== '/') {
   environment.RSPRESS_PERSISTENT_CACHE = 'false';
 }
 
+const repositoryRoot = resolve(import.meta.dirname, '..');
+const siteOutput = resolve(repositoryRoot, 'playground-dist');
+const docsOutput = resolve(repositoryRoot, '.docs-build');
 const rspress = resolve(
   import.meta.dirname,
   '../node_modules/.bin',
   process.platform === 'win32' ? 'rspress.cmd' : 'rspress',
 );
-const result = spawnSync(
-  rspress,
-  ['build', '-c', 'website/rspress.config.ts'],
-  {
+
+await rm(docsOutput, { force: true, recursive: true });
+await rm(siteOutput, { force: true, recursive: true });
+
+runRspress('website/rspress.config.ts');
+runRspress('website/rspress.docs.config.ts');
+
+const docsTarget = resolve(siteOutput, 'docs');
+await mkdir(docsTarget, { recursive: true });
+await cp(docsOutput, docsTarget, { recursive: true });
+await rm(docsOutput, { force: true, recursive: true });
+
+function runRspress(config: string) {
+  const result = spawnSync(rspress, ['build', '-c', config], {
+    cwd: repositoryRoot,
     env: environment,
     stdio: 'inherit',
-  },
-);
+  });
 
-if (result.error) throw result.error;
-process.exit(result.status ?? 1);
+  if (result.error) throw result.error;
+  if ((result.status ?? 1) !== 0) {
+    process.exit(result.status ?? 1);
+  }
+}
 
 function normalizeBase(value: string): string {
   const withLeadingSlash = value.startsWith('/') ? value : `/${value}`;

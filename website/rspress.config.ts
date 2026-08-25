@@ -1,46 +1,43 @@
 import path from 'node:path';
 import { defineConfig } from '@rspress/core';
-import {
-  DOCUMENTATION_DEFAULT_LANGUAGE,
-  DOCUMENTATION_DEFAULT_VERSION,
-  DOCUMENTATION_LOCALES,
-  DOCUMENTATION_VERSIONS,
-} from './documentation-site';
 import { siteBaseFromEnvironment } from './site-paths';
 
 const siteBase = siteBaseFromEnvironment();
 const siteOrigin = process.env.DOCS_ORIGIN ?? 'https://a3s-lab.github.io';
 
 export default defineConfig({
-  root: path.resolve(import.meta.dirname, '../docs'),
-  themeDir: path.resolve(import.meta.dirname, 'theme'),
+  root: path.resolve(import.meta.dirname, 'product'),
+  themeDir: path.resolve(import.meta.dirname, 'product-theme'),
   base: siteBase,
   siteOrigin,
   title: 'A3S Office',
   description:
-    '在应用中接入、扩展 A3S Office 编辑器，并通过 CLI 与编码智能体处理 Office 文件。',
-  lang: DOCUMENTATION_DEFAULT_LANGUAGE,
-  locales: [...DOCUMENTATION_LOCALES],
-  multiVersion: {
-    default: DOCUMENTATION_DEFAULT_VERSION,
-    versions: [...DOCUMENTATION_VERSIONS],
-  },
-  route: {
-    localeRedirect: 'never',
-  },
-  search: {
-    mode: 'local',
-    versioned: true,
-  },
+    'Bring document, Markdown, spreadsheet, presentation, and PDF editing into your product with one host contract.',
+  lang: 'zh',
+  locales: [
+    {
+      lang: 'zh',
+      label: '简体中文',
+      title: 'A3S Office',
+      description:
+        '将文档、Markdown、表格、演示文稿和 PDF 编辑能力带进你的产品。',
+    },
+    {
+      lang: 'en',
+      label: 'English',
+      title: 'A3S Office',
+      description:
+        'Bring document, Markdown, spreadsheet, presentation, and PDF editing into your product.',
+    },
+  ],
   icon: '/favicon.svg',
   logo: '/a3s-logo.png',
   logoText: 'A3S Office',
   outDir: path.resolve(import.meta.dirname, '../playground-dist'),
-  llms: true,
   head: [
-    ['meta', { name: 'theme-color', content: '#f5f7fb' }],
+    ['meta', { name: 'theme-color', content: '#f7faff' }],
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:site_name', content: 'A3S Office Docs' }],
+    ['meta', { property: 'og:site_name', content: 'A3S Office' }],
     (route) => [
       'link',
       {
@@ -49,18 +46,34 @@ export default defineConfig({
       },
     ],
   ],
+  builderConfig: {
+    server: {
+      publicDir: {
+        name: path.resolve(import.meta.dirname, '../docs/public'),
+      },
+    },
+  },
   themeConfig: {
-    search: true,
-    fallbackHeadingTitle: false,
-    enableContentAnimation: false,
-    editLink: {
-      docRepoBaseUrl: 'https://github.com/A3S-Lab/Office/tree/main/docs',
-    },
-    lastUpdated: true,
-    llmsUI: {
-      placement: 'outline',
-      viewOptions: ['markdownLink', 'chatgpt', 'claude'],
-    },
+    darkMode: 'force-light',
+    enableContentAnimation: true,
+    nav: [
+      { text: '产品首页', link: '/' },
+      { text: '文档', link: '/docs/' },
+      { text: 'Playground', link: '/playground/' },
+      {
+        text: '资源',
+        items: [
+          {
+            text: 'GitHub',
+            link: 'https://github.com/A3S-Lab/Office',
+          },
+          {
+            text: 'npm',
+            link: 'https://www.npmjs.com/package/@a3s-lab/office',
+          },
+        ],
+      },
+    ],
     socialLinks: [
       {
         icon: 'github',

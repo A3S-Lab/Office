@@ -1049,7 +1049,7 @@ test.describe('Office editor context menu contracts', () => {
   }
 });
 
-test('Playground returns to the root documentation center with collaboration discoverable', async ({
+test('Playground returns to the documentation center with collaboration discoverable', async ({
   page,
 }) => {
   await page.goto('/playground/');
@@ -1069,10 +1069,15 @@ test('Playground returns to the root documentation center with collaboration dis
     productNavigation.getByRole('button', { name: 'Playground' }),
   ).toHaveAttribute('aria-current', 'page');
   const docs = productNavigation.getByRole('link', { name: '文档' });
-  await expect(docs).toHaveAttribute('href', /^http:\/\/127\.0\.0\.1:4175\/$/);
+  await expect(docs).toHaveAttribute(
+    'href',
+    /^http:\/\/127\.0\.0\.1:4175\/docs\/$/,
+  );
   await docs.click();
 
-  await expect(page).toHaveURL(/^http:\/\/127\.0\.0\.1:4175\/$/);
+  await expect(page).toHaveURL(
+    /^http:\/\/127\.0\.0\.1:4175\/docs\/(?:index\.html)?$/,
+  );
   await expect(
     page.getByRole('heading', {
       name: '从嵌入编辑器到多人实时协作',
@@ -1093,7 +1098,7 @@ test('Playground returns to the root documentation center with collaboration dis
     .locator('.rp-nav__left')
     .getByRole('link', { name: 'Playground' });
   if (await playgroundNavLink.isVisible()) {
-    await expect(playgroundNavLink).toHaveAttribute('href', '/playground/');
+    await expect(playgroundNavLink).toHaveAttribute('href', /\/playground\/$/);
   } else {
     const openNavigation = page.getByRole('button', { name: '打开导航' });
     await expect(openNavigation).toBeVisible();
@@ -1102,7 +1107,7 @@ test('Playground returns to the root documentation center with collaboration dis
     await expect(mobileNavigation).toBeVisible();
     await expect(
       mobileNavigation.getByRole('link', { name: 'Playground' }),
-    ).toHaveAttribute('href', '/playground/');
+    ).toHaveAttribute('href', /\/playground\/$/);
     await page.keyboard.press('Escape');
     await expect(mobileNavigation).toBeHidden();
   }
@@ -1116,7 +1121,7 @@ test('Playground returns to the root documentation center with collaboration dis
     /components\/collaboration\.html$/,
   );
   await collaborationGuide.click();
-  await expect(page).toHaveURL(/\/components\/collaboration\.html$/);
+  await expect(page).toHaveURL(/\/docs\/components\/collaboration\.html$/);
   await expect(
     page.getByRole('heading', { name: '多人实时协作', level: 1 }),
   ).toBeVisible();
@@ -1129,7 +1134,7 @@ test('documentation keeps the current page across version and language switches'
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/components/document.html');
+  await page.goto('/docs/components/document.html');
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
   await expect(
     page.getByRole('heading', { name: 'DocumentEditor', level: 1 }),
@@ -1143,7 +1148,7 @@ test('documentation keeps the current page across version and language switches'
   const versionMenu = navigationMenuFor('0.1.0');
   await versionMenu.locator(':scope > .rp-nav-menu__item__container').click();
   await versionMenu.getByRole('link', { name: '0.1.0', exact: true }).click();
-  await expect(page).toHaveURL(/\/0\.1\.0\/components\/document\.html$/);
+  await expect(page).toHaveURL(/\/docs\/0\.1\.0\/components\/document\.html$/);
   await expect(
     page.getByRole('heading', { name: '自定义选区菜单', level: 2 }),
   ).toBeVisible();
@@ -1153,7 +1158,9 @@ test('documentation keeps the current page across version and language switches'
   await languageMenu
     .getByRole('link', { name: 'English', exact: true })
     .click();
-  await expect(page).toHaveURL(/\/0\.1\.0\/en\/components\/document\.html$/);
+  await expect(page).toHaveURL(
+    /\/docs\/0\.1\.0\/en\/components\/document\.html$/,
+  );
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(
     page.getByRole('heading', {
@@ -1165,19 +1172,19 @@ test('documentation keeps the current page across version and language switches'
   const latestMenu = navigationMenuFor('latest');
   await latestMenu.locator(':scope > .rp-nav-menu__item__container').click();
   await latestMenu.getByRole('link', { name: 'latest', exact: true }).click();
-  await expect(page).toHaveURL(/\/en\/components\/document\.html$/);
+  await expect(page).toHaveURL(/\/docs\/en\/components\/document\.html$/);
   await expect(page.locator('.office-docs-playground-link')).toHaveCount(0);
   await expect(
     page
       .locator('.rp-doc-layout__sidebar')
       .getByRole('link', { name: 'Real-time collaboration' }),
-  ).toHaveAttribute('href', /\/en\/components\/collaboration\.html$/);
+  ).toHaveAttribute('href', /\/docs\/en\/components\/collaboration\.html$/);
 });
 
 test('documentation pages provide searchable framework examples with syntax highlighting', async ({
   page,
 }) => {
-  await page.goto('/components/react.html');
+  await page.goto('/docs/components/react.html');
   await expect(
     page.getByRole('heading', { name: 'React', level: 1 }),
   ).toBeVisible();
@@ -1204,23 +1211,23 @@ test('documentation pages provide searchable framework examples with syntax high
   }
   await expect(sidebar.getByRole('link', { name: 'Vue' })).toHaveAttribute(
     'href',
-    /components\/vue\.html$/,
+    /\/docs\/components\/vue\.html$/,
   );
   await expect(
     sidebar.getByRole('link', { name: 'Web Component' }),
-  ).toHaveAttribute('href', /components\/web-component\.html$/);
+  ).toHaveAttribute('href', /\/docs\/components\/web-component\.html$/);
   await expect(
     sidebar.getByRole('link', { name: 'DocumentEditor' }),
-  ).toHaveAttribute('href', /components\/document\.html$/);
+  ).toHaveAttribute('href', /\/docs\/components\/document\.html$/);
   await expect(
     sidebar.getByRole('link', { name: 'PdfViewer' }),
-  ).toHaveAttribute('href', /components\/pdf\.html$/);
+  ).toHaveAttribute('href', /\/docs\/components\/pdf\.html$/);
 });
 
 test('CLI and coding-agent Skill remain one managed documentation workflow', async ({
   page,
 }) => {
-  await page.goto('/automation/index.html');
+  await page.goto('/docs/automation/index.html');
   await expect(
     page.getByRole('heading', {
       name: 'Office CLI 与编码智能体 Skill',
@@ -1235,7 +1242,10 @@ test('CLI and coding-agent Skill remain one managed documentation workflow', asy
   ).toBeVisible();
   await expect(
     page.getByRole('link', { name: '下载 A3S Office Skill' }),
-  ).toHaveAttribute('href', '../playground/downloads/a3s-office-skill.tar.gz');
+  ).toHaveAttribute(
+    'href',
+    '../../playground/downloads/a3s-office-skill.tar.gz',
+  );
   await expect(
     page.getByRole('heading', { name: '职责边界', level: 2 }),
   ).toBeVisible();
@@ -1246,7 +1256,7 @@ test('legacy guide links migrate to bounded editor API pages on narrow screens',
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/playground/#guide/api');
-  await expect(page).toHaveURL(/\/components\/document\.html$/);
+  await expect(page).toHaveURL(/\/docs\/components\/document\.html$/);
   await expect(
     page.getByRole('heading', { name: 'DocumentEditor', level: 1 }),
   ).toBeVisible();

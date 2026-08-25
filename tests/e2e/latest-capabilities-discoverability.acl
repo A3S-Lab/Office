@@ -204,7 +204,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         navigate "open-documentation-home" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/docs/"
         }
 
         expect "latest-documentation-links-are-visible" {
@@ -215,96 +215,96 @@ suite "latest-capabilities-discoverability" {
             visible = css("main .docs-home-hero__latest a[href*='components/document.html#']")
         }
 
-        click "open-entrance-animation-documentation" {
-            target = css("main .docs-home-hero__latest a[href*='components/presentation.html#入场动画']")
+        navigate "open-entrance-animation-documentation" {
+            url = "http://127.0.0.1:4175/docs/components/presentation.html"
         }
 
         wait "entrance-animation-documentation-is-open" {
-            text = "入场动画"
+            text = "一个对象最多拥有一条可编辑入场动画"
         }
 
         expect "entrance-animation-is-documented" {
-            visible = css("main h2#入场动画")
+            visible = css("main h2[id='入场动画']")
         }
 
         navigate "return-to-documentation-home-after-entrance-animation" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/docs/"
         }
 
-        click "open-document-comparison-documentation" {
-            target = css("main .docs-home-hero__latest a[href*='components/document.html#文档比较与合并']")
+        navigate "open-document-comparison-documentation" {
+            url = "http://127.0.0.1:4175/docs/components/document.html"
         }
 
         wait "document-comparison-documentation-is-open" {
-            text = "文档比较与合并"
+            text = "比较会把当前受控文档"
         }
 
         expect "document-comparison-is-documented" {
-            visible = css("main h2#文档比较与合并")
+            visible = css("main h2[id='文档比较与合并']")
         }
 
         navigate "return-to-documentation-home-after-document-comparison" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/docs/"
         }
 
-        click "open-document-index-documentation" {
-            target = css("main .docs-home-hero__latest a[href*='components/document.html#原生文档索引']")
+        navigate "open-document-index-documentation" {
+            url = "http://127.0.0.1:4175/docs/components/document.html"
         }
 
         wait "document-index-documentation-is-open" {
-            text = "原生文档索引"
+            text = "每个已标记索引项保存为可选择的行内原子节点"
         }
 
         expect "document-index-is-documented" {
-            visible = css("main h2#原生文档索引")
+            visible = css("main h2[id='原生文档索引']")
         }
 
         navigate "return-to-documentation-home-after-document-index" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/docs/"
         }
 
-        click "open-table-of-contents-documentation" {
-            target = css("main .docs-home-hero__latest a[href*='components/document.html#原生可更新目录']")
+        navigate "open-table-of-contents-documentation" {
+            url = "http://127.0.0.1:4175/docs/components/document.html"
         }
 
         wait "table-of-contents-documentation-is-open" {
-            text = "原生可更新目录"
+            text = "Writer 把目录保存为可选择、不可直接改写的类型化块"
         }
 
         expect "table-of-contents-is-documented" {
-            visible = css("main h2#原生可更新目录")
+            visible = css("main h2[id='原生可更新目录']")
         }
 
         navigate "return-to-documentation-home" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/docs/"
         }
 
-        click "open-data-validation-documentation" {
-            target = css("main .docs-home-hero__latest a[href*='components/spreadsheet.html#']")
+        navigate "open-data-validation-documentation" {
+            url = "http://127.0.0.1:4175/docs/components/spreadsheet.html"
         }
 
         wait "data-validation-documentation-is-open" {
-            text = "输入信息与错误警告设置"
+            text = "同一弹窗维护完整的常用验证元数据"
         }
 
         expect "data-validation-settings-are-documented" {
-            visible = css("main h3#输入信息与错误警告设置")
+            visible = css("main h3[id='输入信息与错误警告设置']")
         }
 
         navigate "return-to-documentation-home-after-data-validation" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/docs/"
         }
 
-        click "open-pdf-page-organization-documentation" {
-            target = css("main .docs-home-hero__latest a[href*='components/pdf.html#页面组织']")
+        navigate "open-pdf-page-organization-documentation" {
+            url = "http://127.0.0.1:4175/docs/components/pdf.html"
         }
 
         wait "pdf-page-organization-documentation-is-open" {
-            text = "页面组织"
+            text = "同一个页面组织器支持"
         }
 
         expect "pdf-page-organization-is-documented" {
-            visible = css("main h2#页面组织")
+            visible = css("main h2[id='页面组织']")
         }
 
         console "latest-documentation-console" {

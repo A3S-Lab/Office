@@ -10,7 +10,7 @@ test('publishes the latest main capabilities as first-class Playground entries',
   render(
     <WorkspaceHome
       artifacts={[]}
-      collaborationDocsUrl="/components/collaboration-server.html"
+      collaborationDocsUrl="/docs/components/collaboration-server.html"
       sidebarOpen
       onOpenSidebar={() => undefined}
       onCreate={(templateId) => createdTemplates.push(templateId)}
@@ -86,7 +86,7 @@ test('keeps Markdown last in the quick-create list', () => {
 
   render(
     <SiteSidebar
-      docsUrl="/"
+      docsUrl="/docs/"
       onCollapse={() => undefined}
       onHome={() => undefined}
       onCreate={(templateId) => createdTemplates.push(templateId)}
@@ -113,7 +113,7 @@ test('keeps one documentation entry in the product navigation', () => {
 
   render(
     <SiteSidebar
-      docsUrl="/"
+      docsUrl="/docs/"
       onCollapse={() => undefined}
       onHome={() => {
         homeRequests += 1;
@@ -133,7 +133,7 @@ test('keeps one documentation entry in the product navigation', () => {
   expect(playground).toHaveAttribute('aria-current', 'page');
   expect(
     within(productNavigation).getByRole('link', { name: '文档' }),
-  ).toHaveAttribute('href', '/');
+  ).toHaveAttribute('href', '/docs/');
   fireEvent.click(playground);
   expect(homeRequests).toBe(1);
 });
@@ -174,7 +174,7 @@ function ModalSidebarHarness() {
       </button>
       {open && (
         <SiteSidebar
-          docsUrl="/"
+          docsUrl="/docs/"
           modal
           onCollapse={() => setOpen(false)}
           onHome={() => undefined}

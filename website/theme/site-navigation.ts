@@ -4,7 +4,10 @@ export function playgroundHrefFromDocsRoute(routePath: string): string {
   const directoryDepth = normalized.endsWith('/')
     ? segments.length
     : Math.max(0, segments.length - 1);
-  return `${'../'.repeat(directoryDepth)}playground/`;
+  // Documentation is mounted at `/docs/`, while the Playground remains a
+  // sibling of that mount. The first parent traversal leaves the docs tree;
+  // the remaining traversals account for the current page depth.
+  return `../${'../'.repeat(directoryDepth)}playground/`;
 }
 
 export function playgroundAssetHrefFromDocsRoute(

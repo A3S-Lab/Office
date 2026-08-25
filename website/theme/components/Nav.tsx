@@ -6,7 +6,6 @@ import {
   usePage,
   useSite,
   useVersion,
-  withBase,
 } from '@rspress/core/runtime';
 import type { NavItem } from '@rspress/core';
 import {
@@ -72,6 +71,15 @@ function versionHref(
     parts.push(cleanUrls ? 'index' : 'index.html');
   }
   return `/${parts.join('/')}`;
+}
+
+function siteRootHref(pathname: string, path: string): string {
+  const normalizedPath = pathname.split(/[?#]/, 1)[0] ?? '/';
+  const segments = normalizedPath.split('/').filter(Boolean);
+  const directoryDepth = normalizedPath.endsWith('/')
+    ? segments.length
+    : Math.max(0, segments.length - 1);
+  return `${'../'.repeat(Math.max(1, directoryDepth))}${path.replace(/^\/+/, '')}`;
 }
 
 function NavVersions() {
@@ -358,36 +366,49 @@ export function Nav({
 }: NavProps) {
   const navList = useNav();
   const language = useLang();
+  const { pathname } = useLocation();
   const { site } = useSite();
   const navigationList = useMemo(() => {
-    if (
-      navList.some(
-        (item) => 'link' in item && /\/playground\/?$/.test(item.link),
-      )
-    ) {
-      return navList;
-    }
-
+    const productHomeItem: NavItem = {
+      text: language === 'zh' ? '产品首页' : 'Product home',
+      link: siteRootHref(pathname, '/'),
+      activeMatch: '^/$|^/en/?$',
+      position: 'left',
+    };
     const playgroundItem: NavItem = {
       text: 'Playground',
-      link: withBase('/playground/'),
+      link: siteRootHref(pathname, '/playground/'),
       activeMatch: '^/playground(?:/|$)',
       position: 'left',
     };
-    const utilityIndex = navList.findIndex(
+    const withProductHome = navList.some(
+      (item) => 'link' in item && item.link === productHomeItem.link,
+    )
+      ? navList
+      : [productHomeItem, ...navList];
+    if (
+      withProductHome.some(
+        (item) => 'link' in item && /\/playground\/?$/.test(item.link),
+      )
+    ) {
+      return withProductHome;
+    }
+    const utilityIndexWithProductHome = withProductHome.findIndex(
       (item) =>
         item.position === 'right' ||
         (item.position === undefined &&
           'items' in item &&
           item.items.length > 0),
     );
-    if (utilityIndex < 0) return [...navList, playgroundItem];
+    if (utilityIndexWithProductHome < 0) {
+      return [...withProductHome, playgroundItem];
+    }
     return [
-      ...navList.slice(0, utilityIndex),
+      ...withProductHome.slice(0, utilityIndexWithProductHome),
       playgroundItem,
-      ...navList.slice(utilityIndex),
+      ...withProductHome.slice(utilityIndexWithProductHome),
     ];
-  }, [navList]);
+  }, [language, navList, pathname]);
   const primaryNavList = navigationList.map((item) =>
     item.position === undefined && !('items' in item && item.items.length > 0)
       ? { ...item, position: 'left' as const }

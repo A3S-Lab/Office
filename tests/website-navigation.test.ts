@@ -8,23 +8,23 @@ import {
 } from '../website/theme/site-navigation';
 
 test('derives a deployment-relative Playground link from every docs route depth', () => {
-  expect(playgroundHrefFromDocsRoute('/')).toBe('playground/');
-  expect(playgroundHrefFromDocsRoute('/index.html')).toBe('playground/');
+  expect(playgroundHrefFromDocsRoute('/')).toBe('../playground/');
+  expect(playgroundHrefFromDocsRoute('/index.html')).toBe('../playground/');
   expect(playgroundHrefFromDocsRoute('/native-office-engine.html')).toBe(
-    'playground/',
+    '../playground/',
   );
-  expect(playgroundHrefFromDocsRoute('/guide/')).toBe('../playground/');
+  expect(playgroundHrefFromDocsRoute('/guide/')).toBe('../../playground/');
   expect(playgroundHrefFromDocsRoute('/guide/index.html')).toBe(
-    '../playground/',
-  );
-  expect(playgroundHrefFromDocsRoute('/components/react.html?tab=usage')).toBe(
-    '../playground/',
-  );
-  expect(playgroundHrefFromDocsRoute('/en/components/react.html')).toBe(
     '../../playground/',
   );
-  expect(playgroundHrefFromDocsRoute('/0.1.0/en/components/react.html')).toBe(
+  expect(playgroundHrefFromDocsRoute('/components/react.html?tab=usage')).toBe(
+    '../../playground/',
+  );
+  expect(playgroundHrefFromDocsRoute('/en/components/react.html')).toBe(
     '../../../playground/',
+  );
+  expect(playgroundHrefFromDocsRoute('/0.1.0/en/components/react.html')).toBe(
+    '../../../../playground/',
   );
 });
 
@@ -34,33 +34,49 @@ test('derives deployment-relative Playground assets from localized version route
       '/0.1.0/en/automation/',
       '/downloads/a3s-office-skill.tar.gz',
     ),
-  ).toBe('../../../playground/downloads/a3s-office-skill.tar.gz');
-  expect(playgroundAssetHrefFromDocsRoute('/', '')).toBe('playground/');
+  ).toBe('../../../../playground/downloads/a3s-office-skill.tar.gz');
+  expect(playgroundAssetHrefFromDocsRoute('/', '')).toBe('../playground/');
 });
 
 test('uses the shared A3S navigation with Playground as a primary route', async () => {
   const themeRoot = path.resolve(import.meta.dirname, '../website/theme');
   const websiteRoot = path.resolve(import.meta.dirname, '../website');
-  const [config, themeEntry, contentStyles, homeStyles, navSource, logo] =
-    await Promise.all([
-      readFile(path.join(websiteRoot, 'rspress.config.ts'), 'utf8'),
-      readFile(path.join(themeRoot, 'index.tsx'), 'utf8'),
-      readFile(path.join(themeRoot, 'docs-content.css'), 'utf8'),
-      readFile(path.join(themeRoot, 'index.css'), 'utf8'),
-      readFile(path.join(themeRoot, 'components/Nav.tsx'), 'utf8'),
-      readFile(
-        path.resolve(import.meta.dirname, '../docs/public/a3s-logo.png'),
-      ),
-    ]);
+  const [
+    config,
+    docsConfig,
+    themeEntry,
+    contentStyles,
+    homeStyles,
+    navSource,
+    logo,
+  ] = await Promise.all([
+    readFile(path.join(websiteRoot, 'rspress.config.ts'), 'utf8'),
+    readFile(path.join(websiteRoot, 'rspress.docs.config.ts'), 'utf8'),
+    readFile(path.join(themeRoot, 'index.tsx'), 'utf8'),
+    readFile(path.join(themeRoot, 'docs-content.css'), 'utf8'),
+    readFile(path.join(themeRoot, 'index.css'), 'utf8'),
+    readFile(path.join(themeRoot, 'components/Nav.tsx'), 'utf8'),
+    readFile(path.resolve(import.meta.dirname, '../docs/public/a3s-logo.png')),
+  ]);
   const themeStyles = `${contentStyles}\n${homeStyles}`;
 
   expect(config).toContain("logo: '/a3s-logo.png'");
+  expect(config).toContain(
+    "root: path.resolve(import.meta.dirname, 'product')",
+  );
+  expect(config).toContain("{ text: '文档', link: '/docs/' }");
+  expect(config).toContain("{ text: 'Playground', link: '/playground/' }");
+  expect(docsConfig).toContain(
+    "root: path.resolve(import.meta.dirname, '../docs')",
+  );
+  expect(docsConfig).toContain('base: docsBase');
   expect(themeEntry).toContain("export { Nav } from './components/Nav'");
   expect(navSource).toContain('aria-controls="office-mobile-navigation"');
   expect(navSource).toContain(
     "language === 'zh' ? '打开导航' : 'Open navigation'",
   );
-  expect(navSource).toContain("link: withBase('/playground/')");
+  expect(navSource).toContain("link: siteRootHref(pathname, '/playground/')");
+  expect(navSource).toContain("link: siteRootHref(pathname, '/')");
   expect(navSource).toContain('<NavScreenMenu menuItems={menuItems} />');
   expect(themeStyles).toMatch(/--rp-nav-height:\s*72px/);
   expect(themeStyles).toMatch(/width:\s*31px/);

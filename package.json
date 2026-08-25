@@ -73,7 +73,7 @@
     "collaboration-server:typecheck": "tsc --noEmit -p examples/collaboration-server/tsconfig.json",
     "dev": "bun run kernel:build && rslib --watch",
     "docs:build": "bun scripts/build-docs.ts",
-    "docs:dev": "rspress -c website/rspress.config.ts",
+    "docs:dev": "rspress -c website/rspress.docs.config.ts",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",

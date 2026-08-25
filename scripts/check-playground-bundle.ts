@@ -12,7 +12,7 @@ const maximumInitialJavaScriptGzipBytes = 220 * 1024;
 
 assert(
   existsSync(documentationIndexPath),
-  'Documentation output is missing from the website root. Run bun run playground:build first.',
+  'Product homepage output is missing from the website root. Run bun run playground:build first.',
 );
 assert(
   existsSync(indexPath),

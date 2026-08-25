@@ -2,7 +2,7 @@ suite "office-docs-navigation" {
     version = 1
 
     scenario "discover-collaboration-backend" {
-        name = "Discover the collaboration backend from the documentation center"
+        name = "Separate the product home from the documentation center"
         surface = "web"
         timeout_ms = 90000
 
@@ -12,12 +12,40 @@ suite "office-docs-navigation" {
             scale = 1
         }
 
-        navigate "open-documentation-center" {
+        navigate "open-product-home" {
             url = "http://127.0.0.1:4175/"
         }
 
+        expect "product-home-ready" {
+            visible = css("main.office-product-home h1#office-product-title")
+        }
+
+        expect "product-home-uses-product-layout" {
+            visible = css("main.office-product-home")
+        }
+
+        expect "product-home-has-no-documentation-sidebar" {
+            visible = css("main.office-product-home:not(:has(.rp-doc-layout__sidebar))")
+        }
+
+        expect "product-home-exposes-documentation-entry" {
+            visible = css(".rp-nav a[href$='/docs/index.html']")
+        }
+
+        expect "product-home-exposes-playground-entry" {
+            visible = css(".rp-nav a[href$='/playground/index.html']")
+        }
+
+        click "open-documentation-center" {
+            target = css(".rp-nav a[href$='/docs/index.html']")
+        }
+
+        wait "documentation-center-route" {
+            url = "http://127.0.0.1:4175/docs/index.html"
+        }
+
         expect "documentation-center-ready" {
-            text = "从嵌入编辑器到多人实时协作"
+            visible = css("main .docs-home-hero")
         }
 
         expect "documentation-defaults-to-chinese" {
@@ -33,7 +61,7 @@ suite "office-docs-navigation" {
         }
 
         expect "playground-is-a-primary-navigation-route" {
-            visible = css(".rp-nav__left .rp-nav-menu--left a[href='/playground/']")
+            visible = css(".rp-nav__left .rp-nav-menu--left a[href$='/playground/']")
         }
 
         expect "utility-navigation-follows-search" {
@@ -85,7 +113,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-collaboration-guide" {
-            url = "http://127.0.0.1:4175/components/collaboration.html"
+            url = "http://127.0.0.1:4175/docs/components/collaboration.html"
         }
 
         expect "collaboration-guide-ready" {
@@ -109,7 +137,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-collaboration-server-guide" {
-            url = "http://127.0.0.1:4175/components/collaboration-server.html"
+            url = "http://127.0.0.1:4175/docs/components/collaboration-server.html"
         }
 
         expect "collaboration-server-runbook-is-complete" {
@@ -155,7 +183,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-collaboration-server-reference" {
-            url = "http://127.0.0.1:4175/components/collaboration-server.html"
+            url = "http://127.0.0.1:4175/docs/components/collaboration-server.html"
         }
 
         expect "collaboration-server-reference-ready" {
@@ -214,7 +242,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-document-performance-reference" {
-            url = "http://127.0.0.1:4175/en/components/document.html"
+            url = "http://127.0.0.1:4175/docs/en/components/document.html"
         }
 
         expect "performance-reference-ready" {
@@ -264,7 +292,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-phone-documentation-center" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/docs/"
         }
 
         expect "phone-documentation-hero-is-visible" {
@@ -319,7 +347,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-latest-document-reference" {
-            url = "http://127.0.0.1:4175/components/document.html"
+            url = "http://127.0.0.1:4175/docs/components/document.html"
         }
 
         wait "latest-document-reference-hydrated" {
@@ -343,15 +371,15 @@ suite "office-docs-navigation" {
         }
 
         expect "version-0-1-0-visible" {
-            visible = css(".rp-hover-group a[aria-label='0.1.0'][href='/0.1.0/components/document']")
+            visible = css(".rp-hover-group a[aria-label='0.1.0'][href$='/docs/0.1.0/components/document']")
         }
 
         click "select-version-0-1-0" {
-            target = css(".rp-hover-group a[aria-label='0.1.0'][href='/0.1.0/components/document']")
+            target = css(".rp-hover-group a[aria-label='0.1.0'][href$='/docs/0.1.0/components/document']")
         }
 
         wait "versioned-document-route" {
-            url = "http://127.0.0.1:4175/0.1.0/components/document.html"
+            url = "http://127.0.0.1:4175/docs/0.1.0/components/document.html"
         }
 
         expect "versioned-document-ready" {
@@ -381,7 +409,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-versioned-document-reference" {
-            url = "http://127.0.0.1:4175/0.1.0/components/document.html"
+            url = "http://127.0.0.1:4175/docs/0.1.0/components/document.html"
         }
 
         expect "versioned-document-reference-ready" {
@@ -397,7 +425,7 @@ suite "office-docs-navigation" {
         }
 
         expect "responsive-playground-route-is-visible" {
-            visible = css(".rp-nav-screen--open a[href='/playground/']")
+            visible = css(".rp-nav-screen--open a[href$='/playground/']")
         }
 
         click "open-language-menu" {
@@ -421,7 +449,7 @@ suite "office-docs-navigation" {
         }
 
         wait "english-versioned-document-route" {
-            url = "http://127.0.0.1:4175/0.1.0/en/components/document.html"
+            url = "http://127.0.0.1:4175/docs/0.1.0/en/components/document.html"
         }
 
         expect "english-document-ready" {
@@ -449,15 +477,15 @@ suite "office-docs-navigation" {
         }
 
         expect "latest-version-visible" {
-            visible = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href='/en/components/document.html']")
+            visible = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href$='/docs/en/components/document.html']")
         }
 
         click "select-latest" {
-            target = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href='/en/components/document.html']")
+            target = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href$='/docs/en/components/document.html']")
         }
 
         wait "latest-english-document-route" {
-            url = "http://127.0.0.1:4175/en/components/document.html"
+            url = "http://127.0.0.1:4175/docs/en/components/document.html"
         }
 
         expect "latest-english-document-ready" {
@@ -487,7 +515,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-chinese-release-homepage" {
-            url = "http://127.0.0.1:4175/0.11.0/index.html"
+            url = "http://127.0.0.1:4175/docs/0.11.0/index.html"
         }
 
         wait "release-homepage-hydrated" {
@@ -503,7 +531,7 @@ suite "office-docs-navigation" {
         }
 
         wait "release-collaboration-route" {
-            url = "http://127.0.0.1:4175/0.11.0/components/collaboration.html"
+            url = "http://127.0.0.1:4175/docs/0.11.0/components/collaboration.html"
         }
 
         expect "release-collaboration-guide-ready" {
@@ -511,7 +539,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-chinese-collaboration-server-release" {
-            url = "http://127.0.0.1:4175/0.11.0/components/collaboration-server.html"
+            url = "http://127.0.0.1:4175/docs/0.11.0/components/collaboration-server.html"
         }
 
         expect "chinese-collaboration-server-release-ready" {
@@ -539,7 +567,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-english-collaboration-server-release" {
-            url = "http://127.0.0.1:4175/0.11.0/en/components/collaboration-server.html"
+            url = "http://127.0.0.1:4175/docs/0.11.0/en/components/collaboration-server.html"
         }
 
         expect "english-collaboration-server-release-ready" {

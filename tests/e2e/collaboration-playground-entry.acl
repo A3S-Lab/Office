@@ -21,7 +21,7 @@ suite "collaboration-playground-entry" {
         }
 
         expect "backend-guide-has-a-canonical-route" {
-            visible = css("a[href$='/components/collaboration-server.html']")
+            visible = css("a[href*='/docs/components/collaboration-server.html']")
         }
 
         click "open-collaboration-demo" {
@@ -84,7 +84,7 @@ suite "collaboration-playground-entry" {
         }
 
         expect "compact-backend-guide-is-visible" {
-            visible = css("a[href$='/components/collaboration-server.html']")
+            visible = css("a[href*='/docs/components/collaboration-server.html']")
         }
 
         click "open-compact-collaboration-demo" {
