@@ -100,6 +100,7 @@ jobs:
         run: bun run playground:build
         env:
           A3S_OFFICE_SITE_BASE: ${{ steps.pages.outputs.base_path }}/
+          RSPRESS_PERSISTENT_CACHE: false
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v5
