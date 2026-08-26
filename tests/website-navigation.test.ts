@@ -3,9 +3,27 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@rstest/core';
 import {
+  normalizeNavigationPath,
   playgroundAssetHrefFromDocsRoute,
   playgroundHrefFromDocsRoute,
 } from '../website/theme/site-navigation';
+
+test('normalizes relative and index navigation links before merging menus', () => {
+  expect(normalizeNavigationPath('/', '/index.html')).toBe('/');
+  expect(normalizeNavigationPath('/', '../')).toBe('/');
+  expect(
+    normalizeNavigationPath(
+      '/docs/components/document.html',
+      '../../../playground/index.html',
+    ),
+  ).toBe('/playground');
+  expect(
+    normalizeNavigationPath(
+      '/docs/components/document.html',
+      'https://github.com/A3S-Lab/Office',
+    ),
+  ).toBeNull();
+});
 
 test('derives a deployment-relative Playground link from every docs route depth', () => {
   expect(playgroundHrefFromDocsRoute('/')).toBe('../playground/');

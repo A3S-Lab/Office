@@ -35,6 +35,7 @@ import '@rspress/core/dist/theme/components/NavHamburger/index.css';
 import '@rspress/core/dist/theme/components/NavScreen/index.css';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef } from 'react';
+import { normalizeNavigationPath } from '../site-navigation';
 
 function labelSocialLinks(root: ParentNode, language: string) {
   root
@@ -382,13 +383,16 @@ export function Nav({
       position: 'left',
     };
     const withProductHome = navList.some(
-      (item) => 'link' in item && item.link === productHomeItem.link,
+      (item) =>
+        'link' in item && normalizeNavigationPath(pathname, item.link) === '/',
     )
       ? navList
       : [productHomeItem, ...navList];
     if (
       withProductHome.some(
-        (item) => 'link' in item && /\/playground\/?$/.test(item.link),
+        (item) =>
+          'link' in item &&
+          normalizeNavigationPath(pathname, item.link) === '/playground',
       )
     ) {
       return withProductHome;
