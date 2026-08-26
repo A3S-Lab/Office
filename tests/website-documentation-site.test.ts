@@ -103,26 +103,46 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
 });
 
 test('builds a product home beside, rather than inside, the versioned docs site', async () => {
-  const [productHome, productTheme, productConfig, docsConfig] =
-    await Promise.all([
-      readFile(path.join(repositoryRoot, 'website/product/index.mdx'), 'utf8'),
-      readFile(
-        path.join(
-          repositoryRoot,
-          'website/product-theme/components/HomeLayout.tsx',
-        ),
-        'utf8',
+  const [
+    productHome,
+    productTheme,
+    productThemeEntry,
+    productHomeStyles,
+    productConfig,
+    docsConfig,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'website/product/index.mdx'), 'utf8'),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'website/product-theme/components/HomeLayout.tsx',
       ),
-      readFile(path.join(repositoryRoot, 'website/rspress.config.ts'), 'utf8'),
-      readFile(
-        path.join(repositoryRoot, 'website/rspress.docs.config.ts'),
-        'utf8',
-      ),
-    ]);
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'website/product-theme/index.tsx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'website/product-theme/product-home.css'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'website/rspress.config.ts'), 'utf8'),
+    readFile(
+      path.join(repositoryRoot, 'website/rspress.docs.config.ts'),
+      'utf8',
+    ),
+  ]);
 
   expect(productHome).toContain('pageType: home');
   expect(productHome).toContain('sidebar: false');
   expect(productTheme).toContain('className="docs-home office-product-home"');
+  expect(productThemeEntry).toContain("import './product-home.css';");
+  expect(productHomeStyles).toContain('html .docs-home.office-product-home');
+  expect(productHomeStyles).toContain(
+    '.office-product-home .docs-home-collaboration',
+  );
+  expect(productHomeStyles).not.toContain('var(--home-night)');
   expect(productConfig).toContain(
     "root: path.resolve(import.meta.dirname, 'product')",
   );

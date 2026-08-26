@@ -142,17 +142,13 @@ function surfaceDocsPage(component: string): string {
 function productCopy(language: Language) {
   const zh = language === 'zh';
   return {
-    kicker: zh ? 'A3S OFFICE · EDITOR SYSTEM' : 'A3S OFFICE · EDITOR SYSTEM',
-    title: zh
-      ? '从嵌入编辑器到多人实时协作'
-      : 'From embedded editors to live collaboration',
     lead: zh
       ? '把文档、Markdown、表格、演示文稿和 PDF 能力嵌入你的产品。宿主掌握文件与权限，用户和编码智能体共享同一份可审计状态。'
       : 'Bring documents, Markdown, spreadsheets, presentations, and PDFs into your product. The host owns files and permissions while people and coding agents share one auditable state.',
     primary: zh ? '查看接入文档' : 'Read the integration docs',
     secondary: zh ? '打开 Playground' : 'Open Playground',
     install: zh ? '安装 A3S Office' : 'Install A3S Office',
-    assurance: zh ? 'ONE HOST CONTRACT' : 'ONE HOST CONTRACT',
+    assurance: zh ? '统一宿主契约' : 'One host contract',
     latest: zh ? 'main 最新能力' : 'Latest on main',
     workflowTitle: zh ? '按工作流接入' : 'Integrate by workflow',
     workflowLead: zh
@@ -179,6 +175,25 @@ function productCopy(language: Language) {
     backend: zh ? 'A3S Boot 后端' : 'A3S Boot backend',
     automation: zh ? 'CLI 与 Skill' : 'CLI and Skill',
   };
+}
+
+function ArrowIcon({ external = false }: { external?: boolean }) {
+  return (
+    <svg aria-hidden="true" className="docs-home-arrow" viewBox="0 0 16 16">
+      {external ? (
+        <>
+          <path d="M6 3h7v7" />
+          <path d="m13 3-8 8" />
+          <path d="M11 9v4H3V5h4" />
+        </>
+      ) : (
+        <>
+          <path d="M3 8h10" />
+          <path d="m9 4 4 4-4 4" />
+        </>
+      )}
+    </svg>
+  );
 }
 
 export function HomeLayout() {
@@ -261,14 +276,12 @@ export function HomeLayout() {
         aria-labelledby="office-product-title"
       >
         <div className="docs-home-hero__copy">
-          <div className="docs-home-kicker">
-            <span aria-hidden="true" />
-            {copy.kicker}
-            <i aria-hidden="true" />
-          </div>
           <h1 id="office-product-title">
+            <span className="docs-home-hero__brand">A3S Office</span>
             {zh ? '从嵌入编辑器' : 'From embedded editors'}
-            <span>{zh ? '到多人实时协作' : 'to live collaboration'}</span>
+            <span className="docs-home-hero__promise">
+              {zh ? '到多人实时协作' : 'to live collaboration'}
+            </span>
           </h1>
           <p className="docs-home-hero__lead">{copy.lead}</p>
           <nav
@@ -279,13 +292,13 @@ export function HomeLayout() {
               className="docs-home-action docs-home-action--primary"
               href={docsPath('guide/', language)}
             >
-              {copy.primary} <span aria-hidden="true">→</span>
+              {copy.primary} <ArrowIcon />
             </a>
             <a
               className="docs-home-action docs-home-action--secondary"
               href={playground}
             >
-              {copy.secondary} <span aria-hidden="true">↗</span>
+              {copy.secondary} <ArrowIcon external />
             </a>
           </nav>
           <section className="docs-home-install" aria-label={copy.install}>
@@ -438,7 +451,7 @@ export function HomeLayout() {
               <div className="docs-home-stage__links">
                 {stage.links.map((link) => (
                   <a href={link.href} key={link.href}>
-                    {link.label} <span aria-hidden="true">→</span>
+                    {link.label} <ArrowIcon />
                   </a>
                 ))}
               </div>
@@ -452,7 +465,6 @@ export function HomeLayout() {
         aria-labelledby="office-collaboration-title"
       >
         <div className="docs-home-collaboration__copy">
-          <span className="docs-home-section-tag">COLLABORATION PATH</span>
           <h2 id="office-collaboration-title">{copy.collaborationTitle}</h2>
           <p>{copy.collaborationLead}</p>
           <ul className="docs-home-collaboration__facts">
@@ -477,14 +489,12 @@ export function HomeLayout() {
           </ul>
           <div className="docs-home-collaboration__links">
             <a href={docsPath('components/collaboration.html', language)}>
-              {zh ? '阅读接入流程' : 'Read the integration flow'}{' '}
-              <span aria-hidden="true">→</span>
+              {zh ? '阅读接入流程' : 'Read the integration flow'} <ArrowIcon />
             </a>
             <a
               href={docsPath('components/collaboration-server.html', language)}
             >
-              {zh ? '部署完整后端' : 'Deploy the full backend'}{' '}
-              <span aria-hidden="true">→</span>
+              {zh ? '部署完整后端' : 'Deploy the full backend'} <ArrowIcon />
             </a>
           </div>
         </div>
@@ -548,7 +558,6 @@ export function HomeLayout() {
 
       <section className="docs-home-final" aria-labelledby="office-final-title">
         <div>
-          <span className="docs-home-section-tag">READY WHEN YOU ARE</span>
           <h2 id="office-final-title">{copy.finalTitle}</h2>
           <p>{copy.finalLead}</p>
         </div>
@@ -557,7 +566,7 @@ export function HomeLayout() {
             className="docs-home-action docs-home-action--primary"
             href={docsPath('', language)}
           >
-            {zh ? '浏览文档' : 'Browse docs'} <span aria-hidden="true">→</span>
+            {zh ? '浏览文档' : 'Browse docs'} <ArrowIcon />
           </a>
           <a
             className="docs-home-action docs-home-action--secondary"
