@@ -7,10 +7,11 @@ A3S Browser adapter or the standalone `agent-browser` adapter.
 Evidence is written under `.a3s-test/`, which is ignored by Git.
 
 The current local release contract pins `a3s-test 1.0.0`, standalone
-`agent-browser 0.26.0`, and Web protocol revision 15. The gate reuses the
-Chromium executable already provided by the repository's Playwright install;
-it never downloads or installs a browser. A missing or incompatible executable
-fails before any suite starts.
+`agent-browser 0.26.0`, and Web protocol revision 15. The gate prefers the
+Chromium executable provided by the repository's Playwright install and falls
+back to the already-installed agent-browser Chromium when that cache is
+unavailable; it never downloads or installs a browser. A missing or
+incompatible executable fails before any suite starts.
 
 Build the Playground and start its static preview in one terminal:
 
@@ -62,6 +63,16 @@ bun run test:e2e:docs:check
 bun run test:e2e:docs
 bun run test:e2e:collaboration-playground:check
 bun run test:e2e:collaboration-playground
+```
+
+The product home also has a focused visual and interaction gate. It waits for
+the shipped Document, Spreadsheet, and Presentation components, exercises the
+stage tabs on desktop and phone viewports, and records the live-editor
+accessibility tree plus console/page-error diagnostics:
+
+```bash
+bun run test:e2e:homepage:check
+bun run test:e2e:homepage
 ```
 
 The release-facing README, documentation hero, and Playground capability gallery

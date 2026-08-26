@@ -1,0 +1,153 @@
+suite "homepage-editor-demo" {
+    version = 1
+
+    scenario "desktop-live-editor-demo" {
+        name = "Show the shipped Office editors in the product-home hero"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1440
+            height = 900
+            scale = 1
+        }
+
+        navigate "open-product-home" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "hero-heading-is-visible" {
+            visible = css("main.office-product-home h1#office-product-title")
+        }
+
+        expect "hero-primary-action-is-visible" {
+            visible = css("main.office-product-home .docs-home-action--primary")
+        }
+
+        expect "live-runtime-is-mounted" {
+            visible = css(".office-editor-demo[data-editor-runtime='live']")
+        }
+
+        hover "pause-desktop-demo" {
+            target = css(".office-editor-demo")
+        }
+
+        wait "document-editor-is-ready" {
+            text = "Launch brief"
+        }
+
+        expect "document-editor-is-live" {
+            visible = css(".office-editor-demo .work-document-editor")
+        }
+
+        expect "document-editor-fits-hero-window" {
+            visible = css(".office-editor-demo__surface .work-document-editor")
+        }
+
+        click "switch-to-spreadsheet" {
+            target = css(".office-editor-demo__stage-tabs button:nth-child(2)")
+        }
+
+        wait "spreadsheet-editor-is-ready" {
+            text = "Launch plan"
+        }
+
+        expect "spreadsheet-editor-is-live" {
+            visible = css(".office-editor-demo .work-spreadsheet-editor")
+        }
+
+        click "switch-to-presentation" {
+            target = css(".office-editor-demo__stage-tabs button:nth-child(3)")
+        }
+
+        wait "presentation-editor-is-ready" {
+            text = "Move from draft to decision."
+        }
+
+        expect "presentation-editor-is-live" {
+            visible = css(".office-editor-demo .work-presentation-editor")
+        }
+
+        expect "editor-demo-controls-are-keyboard-addressable" {
+            visible = css(".office-editor-demo__stage-tabs[role='tablist']")
+        }
+
+        accessibility "desktop-home-editor-demo-tree" {
+            path = "evidence/homepage-editor-demo-desktop.json"
+            interactive = true
+        }
+
+        console "desktop-console" {
+            path = "diagnostics/homepage-editor-demo-desktop-console.json"
+            clear = false
+        }
+
+        page_errors "desktop-errors" {
+            path = "diagnostics/homepage-editor-demo-desktop-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "phone-live-editor-demo" {
+        name = "Keep the live editor demo usable on a phone viewport"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-product-home-on-phone" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "phone-hero-heading-is-visible" {
+            visible = css("main.office-product-home h1#office-product-title")
+        }
+
+        hover "pause-phone-demo" {
+            target = css(".office-editor-demo")
+        }
+
+        wait "phone-document-editor-is-ready" {
+            text = "Launch brief"
+        }
+
+        expect "phone-document-editor-is-live" {
+            visible = css(".office-editor-demo .work-document-editor")
+        }
+
+        click "phone-switch-to-spreadsheet" {
+            target = css(".office-editor-demo__stage-tabs button:nth-child(2)")
+        }
+
+        wait "phone-spreadsheet-editor-is-ready" {
+            text = "Launch plan"
+        }
+
+        expect "phone-spreadsheet-editor-is-live" {
+            visible = css(".office-editor-demo .work-spreadsheet-editor")
+        }
+
+        expect "phone-stage-tabs-remain-visible" {
+            visible = css(".office-editor-demo__stage-tabs button")
+        }
+
+        accessibility "phone-home-editor-demo-tree" {
+            path = "evidence/homepage-editor-demo-phone.json"
+            interactive = true
+        }
+
+        console "phone-console" {
+            path = "diagnostics/homepage-editor-demo-phone-console.json"
+            clear = false
+        }
+
+        page_errors "phone-errors" {
+            path = "diagnostics/homepage-editor-demo-phone-errors.json"
+            clear = false
+        }
+    }
+}

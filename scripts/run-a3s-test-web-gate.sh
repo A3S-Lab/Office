@@ -62,15 +62,23 @@ case "$browser_driver" in
     fi
 
     if [[ -z "${AGENT_BROWSER_EXECUTABLE_PATH:-}" ]]; then
-      AGENT_BROWSER_EXECUTABLE_PATH="$(
+      playwright_browser_path="$(
         node -e \
           "const { chromium } = require('playwright'); process.stdout.write(chromium.executablePath())"
       )"
+      if [[ -x "$playwright_browser_path" ]]; then
+        AGENT_BROWSER_EXECUTABLE_PATH="$playwright_browser_path"
+      else
+        AGENT_BROWSER_EXECUTABLE_PATH="$(
+          "$agent_browser" doctor --json |
+            jq -er '.checks[] | select(.id == "chrome.installed" and .status == "pass") | (.message | capture(" at (?<path>.*)$") | .path)'
+        )"
+      fi
       export AGENT_BROWSER_EXECUTABLE_PATH
     fi
 
     if [[ ! -x "$AGENT_BROWSER_EXECUTABLE_PATH" ]]; then
-      echo "Playwright Chromium executable is missing: $AGENT_BROWSER_EXECUTABLE_PATH" >&2
+      echo "Chromium executable is missing from Playwright and agent-browser: ${AGENT_BROWSER_EXECUTABLE_PATH:-<unset>}" >&2
       exit 1
     fi
 

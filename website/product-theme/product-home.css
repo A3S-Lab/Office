@@ -300,7 +300,7 @@ html .docs-home.office-product-home {
   font-size: 12px;
 }
 
-.office-product-home .docs-home-assurance li small {
+.office-product-home :where(.docs-home-assurance) li small {
   margin-top: 5px;
   font-family: var(--rp-font-family-mono);
   font-size: 8px;
@@ -766,6 +766,581 @@ html .docs-home.office-product-home {
   }
 
   .office-product-home .docs-home-arrow {
+    transition: none;
+  }
+}
+
+/* The hero uses the shipped Office surfaces themselves. The surrounding
+   frame only supplies the Cloud-style product window and a small stage
+   switcher; all toolbar, page, grid, and status UI comes from the editor. */
+.office-product-home .docs-home-hero__visual {
+  min-width: 0;
+  min-height: 0;
+}
+
+.office-product-home .office-editor-demo {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  color: var(--home-ink);
+}
+
+.office-product-home .office-editor-demo__window {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #cbd7e8;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow:
+    0 38px 86px rgb(36 76 137 / 17%),
+    0 10px 22px rgb(36 76 137 / 8%);
+  transform: rotate(0.65deg);
+  animation: office-editor-window-arrive 760ms cubic-bezier(0.16, 1, 0.3, 1)
+    both;
+}
+
+.office-product-home .office-editor-demo__window-bar {
+  display: flex;
+  min-width: 0;
+  height: 42px;
+  flex: 0 0 42px;
+  align-items: center;
+  gap: 11px;
+  padding: 0 15px;
+  border-bottom: 1px solid #dce4f0;
+  color: #687991;
+  background: #ffffff;
+  font-family: var(--rp-font-family-mono);
+  font-size: 9px;
+  letter-spacing: 0.02em;
+}
+
+.office-product-home .office-editor-demo__window-bar strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #263752;
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-product-home .office-editor-demo__window-dots {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 5px;
+}
+
+.office-product-home .office-editor-demo__window-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #aab6c7;
+}
+
+.office-product-home .office-editor-demo__window-dots i:first-child {
+  background: #eaa18c;
+}
+
+.office-product-home .office-editor-demo__window-dots i:nth-child(2) {
+  background: #e5c472;
+}
+
+.office-product-home .office-editor-demo__window-dots i:last-child {
+  background: #75cda9;
+}
+
+.office-product-home .office-editor-demo__sync-state {
+  display: inline-flex;
+  margin-left: auto;
+  align-items: center;
+  gap: 6px;
+  color: #087553;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.office-product-home .office-editor-demo__sync-state i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16a675;
+  box-shadow: 0 0 0 4px rgb(22 166 117 / 12%);
+}
+
+.office-product-home .office-editor-demo__surface {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  height: 472px;
+  min-height: 0;
+  flex: 1 1 472px;
+  overflow: hidden;
+  background: #f4f7fb;
+  animation: office-editor-surface-in 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.office-product-home .office-editor-demo__surface > .a3s-office {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.office-product-home
+  .office-editor-demo__surface
+  :where(
+    .work-document-editor,
+    .work-spreadsheet-editor,
+    .work-presentation-editor
+  ) {
+  min-width: 0;
+  min-height: 0;
+}
+
+.office-product-home
+  .office-editor-demo__surface
+  :where(
+    .work-office-ribbon,
+    .work-office-preview-bar,
+    .work-presentation-ribbon
+  ) {
+  max-width: 100%;
+}
+
+.office-product-home
+  .office-editor-demo__surface
+  :where(.work-office-ribbon-tabs, .work-office-ribbon-content) {
+  scrollbar-width: none;
+}
+
+.office-product-home
+  .office-editor-demo__surface
+  :where(
+    .work-office-ribbon-tabs,
+    .work-office-ribbon-content
+  )::-webkit-scrollbar {
+  display: none;
+}
+
+.office-product-home .office-editor-demo__footer {
+  display: flex;
+  min-width: 0;
+  min-height: 84px;
+  flex: 0 0 auto;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 13px 11px;
+  border-top: 1px solid #dce4f0;
+  background: #ffffff;
+}
+
+.office-product-home .office-editor-demo__stage-tabs {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 5px;
+}
+
+.office-product-home .office-editor-demo__stage-tabs button {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 9px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: #718198;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.office-product-home .office-editor-demo__stage-tabs button:hover {
+  border-color: #cbd9ee;
+  color: #253b5d;
+  background: #f6f9fd;
+  transform: translateY(-1px);
+}
+
+.office-product-home .office-editor-demo__stage-tabs button:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+.office-product-home .office-editor-demo__stage-tabs button.is-active {
+  border-color: #bcd1f5;
+  color: #174ea6;
+  background: #edf4ff;
+}
+
+.office-product-home .office-editor-demo__stage-tabs button span {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-product-home .office-editor-demo__stage-tabs button small {
+  overflow: hidden;
+  color: #7d8ba0;
+  font-family: var(--rp-font-family-mono);
+  font-size: 8px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-product-home .office-editor-demo__stage-tabs button.is-active small {
+  color: #5676a9;
+}
+
+.office-product-home .office-editor-demo__footer-note {
+  display: flex;
+  min-width: 135px;
+  align-items: center;
+  justify-content: flex-end;
+  color: #718198;
+  font-size: 9px;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.office-product-home .office-editor-demo__footer-note b {
+  color: #087553;
+  font-weight: 720;
+}
+
+.office-product-home .office-editor-demo__caption {
+  display: flex;
+  min-width: 0;
+  margin-top: 15px;
+  align-items: baseline;
+  gap: 9px;
+  color: #6d7d93;
+  font-size: 11px;
+}
+
+.office-product-home .office-editor-demo__caption > span {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  color: #174ea6;
+  font-family: var(--rp-font-family-mono);
+  font-size: 9px;
+  font-weight: 720;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.office-product-home .office-editor-demo__caption > span i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1264ff;
+}
+
+.office-product-home .office-editor-demo__caption strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #536176;
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.office-product-home .office-editor-demo__caption small {
+  margin-left: auto;
+  color: #8390a3;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.office-product-home .office-editor-demo__loading,
+.office-product-home .office-editor-demo__error,
+.office-product-home .office-editor-demo__fallback {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 26px;
+  background: #f4f7fb;
+  text-align: center;
+}
+
+.office-product-home .office-editor-demo__loading-page {
+  display: flex;
+  width: 66px;
+  height: 76px;
+  margin-bottom: 17px;
+  flex-direction: column;
+  gap: 7px;
+  padding: 21px 13px;
+  border: 1px solid #c5d8f5;
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow: 0 16px 30px rgb(47 95 166 / 12%);
+  transform: translateY(0);
+  animation: office-editor-loading-page 1.7s ease-in-out infinite;
+}
+
+.office-product-home .office-editor-demo__loading-page i,
+.office-product-home .office-editor-demo__fallback-lines i {
+  display: block;
+  width: 100%;
+  height: 4px;
+  border-radius: 4px;
+  background: #dce6f3;
+}
+
+.office-product-home .office-editor-demo__loading-page i:first-child {
+  width: 62%;
+  background: #6c9cf0;
+}
+
+.office-product-home .office-editor-demo__loading strong,
+.office-product-home .office-editor-demo__error strong {
+  color: #253b5d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.office-product-home .office-editor-demo__loading small,
+.office-product-home .office-editor-demo__error span {
+  max-width: 38ch;
+  margin-top: 7px;
+  color: #718198;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.office-product-home .office-editor-demo__error button {
+  min-height: 34px;
+  margin-top: 18px;
+  padding: 0 14px;
+  border: 1px solid #bcd1f5;
+  border-radius: 8px;
+  color: #174ea6;
+  background: #edf4ff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  transition:
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.office-product-home .office-editor-demo__error button:hover {
+  background: #e1edff;
+  transform: translateY(-1px);
+}
+
+.office-product-home .office-editor-demo__fallback {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+  background: #f4f7fb;
+  text-align: left;
+}
+
+.office-product-home .office-editor-demo__fallback-toolbar {
+  display: flex;
+  height: 52px;
+  flex: 0 0 52px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+  border-bottom: 1px solid #dce4f0;
+  background: #ffffff;
+}
+
+.office-product-home .office-editor-demo__fallback-toolbar span {
+  width: 38px;
+  height: 13px;
+  border-radius: 4px;
+  background: #e7edf6;
+}
+
+.office-product-home .office-editor-demo__fallback-toolbar span:first-child {
+  width: 66px;
+  background: #d7e5ff;
+}
+
+.office-product-home .office-editor-demo__fallback article {
+  width: min(78%, 350px);
+  margin: 46px auto 0;
+  padding: 30px 32px 34px;
+  border: 1px solid #d5dfed;
+  background: #ffffff;
+  box-shadow: 0 18px 36px rgb(36 76 137 / 10%);
+}
+
+.office-product-home .office-editor-demo__fallback article small {
+  color: #718198;
+  font-family: var(--rp-font-family-mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.office-product-home .office-editor-demo__fallback article h3 {
+  margin-top: 17px;
+  color: #1c2b44;
+  font-size: 23px;
+  font-weight: 720;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.office-product-home .office-editor-demo__fallback article p {
+  margin-top: 13px;
+  color: #6a7890;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.office-product-home .office-editor-demo__fallback-lines {
+  display: flex;
+  margin-top: 23px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.office-product-home .office-editor-demo__fallback-lines i.is-short {
+  width: 62%;
+}
+
+@keyframes office-editor-window-arrive {
+  from {
+    filter: blur(4px);
+    opacity: 0.72;
+    transform: translateY(22px) rotate(0.65deg);
+  }
+
+  to {
+    filter: blur(0);
+    opacity: 1;
+    transform: translateY(0) rotate(0.65deg);
+  }
+}
+
+@keyframes office-editor-surface-in {
+  from {
+    filter: blur(2px);
+    opacity: 0.48;
+    transform: translate3d(14px, 0, 0);
+  }
+
+  to {
+    filter: blur(0);
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes office-editor-loading-page {
+  0%,
+  100% {
+    box-shadow: 0 14px 28px rgb(47 95 166 / 9%);
+    transform: translateY(1px);
+  }
+
+  50% {
+    box-shadow: 0 20px 38px rgb(47 95 166 / 16%);
+    transform: translateY(-3px);
+  }
+}
+
+@media (max-width: 960px) {
+  .office-product-home .office-editor-demo__window {
+    transform: none;
+  }
+
+  .office-product-home .office-editor-demo__surface {
+    height: 500px;
+    flex-basis: 500px;
+  }
+}
+
+@media (max-width: 640px) {
+  .office-product-home .office-editor-demo__window-bar {
+    padding-inline: 11px;
+  }
+
+  .office-product-home .office-editor-demo__surface {
+    height: 420px;
+    flex-basis: 420px;
+  }
+
+  .office-product-home .office-editor-demo__footer {
+    min-height: 0;
+    flex-direction: column;
+    gap: 7px;
+    padding: 8px;
+  }
+
+  .office-product-home .office-editor-demo__stage-tabs button {
+    padding: 7px 6px;
+  }
+
+  .office-product-home .office-editor-demo__stage-tabs button small {
+    display: none;
+  }
+
+  .office-product-home .office-editor-demo__footer-note {
+    min-width: 0;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .office-product-home .office-editor-demo__caption {
+    flex-wrap: wrap;
+    gap: 5px 8px;
+  }
+
+  .office-product-home .office-editor-demo__caption small {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .office-product-home .office-editor-demo__window,
+  .office-product-home .office-editor-demo__surface,
+  .office-product-home .office-editor-demo__loading-page {
+    animation: none;
+  }
+
+  .office-product-home .office-editor-demo__window {
+    transform: none;
+  }
+
+  .office-product-home .office-editor-demo__stage-tabs button {
     transition: none;
   }
 }

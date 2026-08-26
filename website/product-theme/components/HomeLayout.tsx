@@ -1,4 +1,5 @@
 import { useLang, withBase } from '@rspress/core/runtime';
+import { HomeEditorDemo } from './HomeEditorDemo';
 
 type Language = 'zh' | 'en';
 
@@ -312,87 +313,8 @@ export function HomeLayout() {
           </section>
         </div>
 
-        <div
-          className="docs-home-hero__visual"
-          role="img"
-          aria-label={
-            zh
-              ? 'A3S Office 编辑器与协作状态示意'
-              : 'A3S Office editor and collaboration state'
-          }
-        >
-          <div className="docs-home-system-window">
-            <div className="docs-home-system-window__topbar">
-              <span className="docs-home-window-dots" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </span>
-              <span>project-brief.docx</span>
-              <b>SYNCED</b>
-            </div>
-            <div className="docs-home-system-window__tabs">
-              <span className="is-active">Document</span>
-              <span>Spreadsheet</span>
-              <span>Presentation</span>
-              <span>PDF</span>
-            </div>
-            <div className="docs-home-system-window__body">
-              <aside className="docs-home-system-rail" aria-hidden="true">
-                <span className="is-active">A</span>
-                <span>T</span>
-                <span>▦</span>
-                <span>◌</span>
-              </aside>
-              <div className="docs-home-system-canvas" aria-hidden="true">
-                <div className="docs-home-paper">
-                  <span className="docs-home-paper__label">
-                    SHARED DOCUMENT
-                  </span>
-                  <strong>Product brief</strong>
-                  <em>One document · three collaborators</em>
-                  <div className="docs-home-paper__rule" />
-                  <i />
-                  <i />
-                  <i className="short" />
-                  <div className="docs-home-paper__callout">
-                    <b>02</b>
-                    <span>Selection comment anchored to this paragraph</span>
-                  </div>
-                  <i />
-                  <i className="short" />
-                </div>
-              </div>
-              <aside className="docs-home-system-side" aria-hidden="true">
-                <span className="docs-home-side-label">COLLABORATORS</span>
-                <div className="docs-home-avatars">
-                  <b>A</b>
-                  <b>B</b>
-                  <b>C</b>
-                  <span>+1</span>
-                </div>
-                <span className="docs-home-side-label">HOST STATE</span>
-                <strong className="docs-home-state">
-                  <i /> Connected
-                </strong>
-                <div className="docs-home-side-line" />
-                <span className="docs-home-side-label">A3S BOOT</span>
-                <code>auth → room → persist</code>
-              </aside>
-            </div>
-            <div className="docs-home-system-window__footer">
-              <span>Yjs / Yrs compatible</span>
-              <span>Undo local · state shared</span>
-            </div>
-          </div>
-          <div
-            className="docs-home-hero-orbit docs-home-hero-orbit--one"
-            aria-hidden="true"
-          />
-          <div
-            className="docs-home-hero-orbit docs-home-hero-orbit--two"
-            aria-hidden="true"
-          />
+        <div className="docs-home-hero__visual">
+          <HomeEditorDemo language={language} />
         </div>
       </section>
 
