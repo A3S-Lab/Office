@@ -1,6 +1,7 @@
 use a3s_use_core::{UseError, UseResult};
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::name::ResolveResult;
+use quick_xml::XmlVersion;
 
 use crate::discovery::office_error;
 use crate::xml::LosslessXmlPart;
@@ -105,7 +106,7 @@ pub(crate) fn parse_xml_tree(part: &LosslessXmlPart) -> UseResult<XmlElement> {
                 append_element(part.name(), &mut stack, &mut root, element)?;
             }
             Event::Text(text) => {
-                let text = text.xml_content().map_err(|error| {
+                let text = text.xml_content(XmlVersion::Implicit1_0).map_err(|error| {
                     tree_error(part.name(), format!("Failed to decode XML text: {error}"))
                 })?;
                 append_text(&mut stack, text.into_owned());
@@ -171,7 +172,10 @@ fn element(
         if raw_name == "xmlns" || raw_name.starts_with("xmlns:") {
             continue;
         }
-        let namespace = namespace(part_name, reader.resolve_attribute(attribute.key).0)?;
+        let namespace = namespace(
+            part_name,
+            reader.resolver().resolve_attribute(attribute.key).0,
+        )?;
         let local_name = std::str::from_utf8(attribute.key.local_name().as_ref())
             .map(str::to_string)
             .map_err(|error| {
@@ -181,7 +185,7 @@ fn element(
                 )
             })?;
         let value = attribute
-            .decode_and_unescape_value(reader.decoder())
+            .decoded_and_normalized_value(XmlVersion::Implicit1_0, reader.decoder())
             .map_err(|error| {
                 tree_error(
                     part_name,

@@ -5,6 +5,7 @@ use a3s_use_core::{UseError, UseResult};
 use quick_xml::events::Event;
 use quick_xml::name::{QName, ResolveResult};
 use quick_xml::reader::NsReader;
+use quick_xml::XmlVersion;
 
 use crate::discovery::office_error;
 use crate::xml::{LosslessXmlPart, XmlEncoding};
@@ -651,7 +652,7 @@ fn indexed_element(
                 )
             })?;
         let value = attribute
-            .decode_and_unescape_value(reader.decoder())
+            .decoded_and_normalized_value(XmlVersion::Implicit1_0, reader.decoder())
             .map_err(|error| {
                 edit_error(
                     part_name,
@@ -681,7 +682,7 @@ fn resolved_element_namespace(
     reader: &NsReader<&[u8]>,
     name: QName<'_>,
 ) -> UseResult<Option<String>> {
-    match reader.resolve_element(name).0 {
+    match reader.resolver().resolve_element(name).0 {
         ResolveResult::Unbound => Ok(None),
         ResolveResult::Bound(namespace) => std::str::from_utf8(namespace.as_ref())
             .map(|namespace| Some(namespace.to_string()))

@@ -5,6 +5,7 @@ use a3s_use_core::{UseError, UseResult};
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::name::ResolveResult;
 use quick_xml::reader::NsReader;
+use quick_xml::XmlVersion;
 use serde::{Deserialize, Serialize};
 
 use crate::discovery::office_error;
@@ -147,7 +148,7 @@ pub(crate) fn decode_attributes(
         }
         if !is_namespace_declaration(key)
             && matches!(
-                reader.resolve_attribute(attribute.key).0,
+                reader.resolver().resolve_attribute(attribute.key).0,
                 ResolveResult::Unknown(_)
             )
         {
@@ -158,7 +159,7 @@ pub(crate) fn decode_attributes(
             ));
         }
         let value = attribute
-            .decode_and_unescape_value(reader.decoder())
+            .decoded_and_normalized_value(XmlVersion::Implicit1_0, reader.decoder())
             .map_err(|error| {
                 xml_error(
                     part_name,
@@ -298,7 +299,7 @@ fn validate_xml(part_name: &str, bytes: &[u8], limits: XmlLimits) -> UseResult<X
                 })?;
             }
             Event::Text(text) => {
-                let text = text.xml_content().map_err(|error| {
+                let text = text.xml_content(XmlVersion::Implicit1_0).map_err(|error| {
                     xml_error(
                         part_name,
                         "use.office.xml_encoding_invalid",
