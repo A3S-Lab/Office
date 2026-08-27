@@ -33,9 +33,13 @@ pub use render_batch::{
 };
 pub use renderer::NativeOfficePdfiumLayoutRenderer;
 pub use text::{
-    NativeOfficePdfPageTextLayer, NativeOfficePdfTextCharacter, NativeOfficePdfTextLayerOptions,
-    DEFAULT_NATIVE_OFFICE_PDF_TEXT_CHARACTERS, DEFAULT_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES,
+    NativeOfficePdfPageObjectSummary, NativeOfficePdfPageTextLayer, NativeOfficePdfTextCharacter,
+    NativeOfficePdfTextColor, NativeOfficePdfTextLayerOptions, NativeOfficePdfTextRenderMode,
+    NativeOfficePdfTextRun, NativeOfficePdfVisualObject, NativeOfficePdfVisualObjectInventory,
+    NativeOfficePdfVisualObjectKind, DEFAULT_NATIVE_OFFICE_PDF_TEXT_CHARACTERS,
+    DEFAULT_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES, DEFAULT_NATIVE_OFFICE_PDF_TEXT_RUNS,
     MAX_NATIVE_OFFICE_PDF_TEXT_CHARACTERS, MAX_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES,
+    MAX_NATIVE_OFFICE_PDF_TEXT_RUNS, MAX_NATIVE_OFFICE_PDF_VISUAL_OBJECTS,
     NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
 };
 

@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Extended native PDF text-layer schema v5 with a closed PDFium non-text
+  object summary and stable, bounded source geometry for up to 4,096 page
+  objects and annotations. Oversized inventories and missing/degenerate bounds
+  remain explicit so consumers can fail closed to complete-page visual work;
+  no document-content heuristic participates.
+- Added bounded PDFium-native text runs with stable indices, character and
+  UTF-8/UTF-16 ranges, exact PDF-space bounds, deterministic validation, and an
+  independent hard run limit to both single-page and ordered-batch native PDF
+  text-layer receipts. Ambiguous PDFium rectangles are conservatively omitted
+  without discarding the page's exact character evidence.
 - Added bounded ordered PDF text-layer batches that capture and open one
   immutable PDF once per batch, preserve isolated page outcomes, and enforce
   per-page plus aggregate character, UTF-8 byte, cardinality, and deadline

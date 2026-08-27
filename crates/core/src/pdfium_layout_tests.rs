@@ -2,13 +2,14 @@ use crate::{
     NativeOfficeLayoutEnvironment, NativeOfficeLayoutRenderer, NativeOfficeLayoutSourceKind,
     NativeOfficePdfOutline, NativeOfficePdfOutlineEntry, NativeOfficePdfOutlineOptions,
     NativeOfficePdfPageBox, NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory,
-    NativeOfficePdfPageInventoryOptions, NativeOfficePdfPageTextBatch,
-    NativeOfficePdfPageTextLayer, NativeOfficePdfRenderBatchOptions,
+    NativeOfficePdfPageInventoryOptions, NativeOfficePdfPageObjectSummary,
+    NativeOfficePdfPageTextBatch, NativeOfficePdfPageTextLayer, NativeOfficePdfRenderBatchOptions,
     NativeOfficePdfRenderBatchSlotOutcome, NativeOfficePdfTextBatchOptions,
     NativeOfficePdfTextBatchSlot, NativeOfficePdfTextBatchSlotOutcome,
-    NativeOfficePdfTextCharacter, NativeOfficePdfTextLayerOptions,
+    NativeOfficePdfTextCharacter, NativeOfficePdfTextColor, NativeOfficePdfTextLayerOptions,
+    NativeOfficePdfTextRenderMode, NativeOfficePdfTextRun, NativeOfficePdfVisualObjectInventory,
     NativeOfficePdfiumLayoutRenderer, NativeOfficeUnit, NativeOfficeUnitLocator, PackageRevision,
-    NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
+    MAX_NATIVE_OFFICE_PDF_VISUAL_OBJECTS, NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
 };
 use sha2::Digest as _;
 
@@ -149,7 +150,14 @@ fn pdf_text_layer_preserves_unicode_offsets_geometry_and_source_identity() {
         page_geometry: inventory.pages[0].clone(),
         engine_version: "chromium/7881".to_string(),
         max_characters: 8,
+        max_runs: 4,
         max_text_bytes: 32,
+        page_objects: NativeOfficePdfPageObjectSummary {
+            total_objects: 1,
+            text_objects: 1,
+            ..NativeOfficePdfPageObjectSummary::default()
+        },
+        visual_objects: empty_visual_inventory(),
         text_sha256: format!("{:x}", sha2::Sha256::digest(text.as_bytes())),
         text,
         characters: vec![
@@ -173,16 +181,43 @@ fn pdf_text_layer_preserves_unicode_offsets_geometry_and_source_identity() {
                 Some(text_box(10_000, 40_000, 22_000, 52_000)),
             ),
         ],
+        runs: vec![NativeOfficePdfTextRun {
+            index: 0,
+            character_start: 0,
+            character_end: 1,
+            utf8_start: 0,
+            utf8_end: 1,
+            utf16_start: 0,
+            utf16_end: 1,
+            text: "A".to_string(),
+            bounds: text_box(10_000, 20_000, 18_000, 32_000),
+        }],
     };
 
     layer.validate(&inventory).unwrap();
+    assert!(!layer.page_objects.has_unverified_visual_content());
     assert_eq!(layer.characters[2].utf8_range(), 2..6);
     assert_eq!(layer.characters[2].utf16_range(), 2..4);
+    assert_eq!(layer.runs[0].text, "A");
+
+    let mut tampered_run = layer.clone();
+    tampered_run.runs[0].utf8_end = 2;
+    assert_eq!(
+        tampered_run.validate(&inventory).unwrap_err().code,
+        "use.office.pdf_text_layer_invalid"
+    );
 
     let mut tampered = layer.clone();
     tampered.characters[2].utf16_end = 3;
     assert_eq!(
         tampered.validate(&inventory).unwrap_err().code,
+        "use.office.pdf_text_layer_invalid"
+    );
+
+    let mut unclassified_object = layer.clone();
+    unclassified_object.page_objects.total_objects = 2;
+    assert_eq!(
+        unclassified_object.validate(&inventory).unwrap_err().code,
         "use.office.pdf_text_layer_invalid"
     );
 
@@ -208,6 +243,7 @@ fn pdf_text_batch_contract_preserves_order_bounds_and_isolated_failures() {
     let options = NativeOfficePdfTextBatchOptions {
         max_pages: 2,
         max_characters_per_page: 8,
+        max_runs_per_page: 4,
         max_text_bytes_per_page: 32,
         max_total_characters: 8,
         max_total_text_bytes: 32,
@@ -220,7 +256,14 @@ fn pdf_text_batch_contract_preserves_order_bounds_and_isolated_failures() {
         page_geometry: inventory.pages[0].clone(),
         engine_version: "chromium/7881".to_string(),
         max_characters: options.max_characters_per_page,
+        max_runs: options.max_runs_per_page,
         max_text_bytes: options.max_text_bytes_per_page,
+        page_objects: NativeOfficePdfPageObjectSummary {
+            total_objects: 1,
+            text_objects: 1,
+            ..NativeOfficePdfPageObjectSummary::default()
+        },
+        visual_objects: empty_visual_inventory(),
         text_sha256: format!("{:x}", sha2::Sha256::digest(b"A")),
         text: "A".to_string(),
         characters: vec![text_character(
@@ -232,6 +275,17 @@ fn pdf_text_batch_contract_preserves_order_bounds_and_isolated_failures() {
             1,
             Some(text_box(10_000, 20_000, 18_000, 32_000)),
         )],
+        runs: vec![NativeOfficePdfTextRun {
+            index: 0,
+            character_start: 0,
+            character_end: 1,
+            utf8_start: 0,
+            utf8_end: 1,
+            utf16_start: 0,
+            utf16_end: 1,
+            text: "A".to_string(),
+            bounds: text_box(10_000, 20_000, 18_000, 32_000),
+        }],
     };
     let batch = NativeOfficePdfPageTextBatch {
         source_revision: inventory.source_revision.clone(),
@@ -403,6 +457,7 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
             inventory.pages[0].unit.clone(),
             NativeOfficePdfTextLayerOptions {
                 max_characters: 64,
+                max_runs: 16,
                 max_text_bytes: 1024,
                 timeout_ms: TEST_TIMEOUT_MS,
             },
@@ -412,6 +467,21 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
     assert_eq!(renderer.inventory_call_count(), 1);
     assert_eq!(first_text.text, "Hello PDF");
     assert_eq!(first_text.characters.len(), 9);
+    assert!(!first_text.runs.is_empty());
+    assert_eq!(first_text.runs[0].index, 0);
+    assert!(first_text.characters.iter().all(|character| {
+        character.font_name.as_deref() == Some("Helvetica")
+            && character.font_weight == Some(400)
+            && character.italic == Some(false)
+            && character.fill_color
+                == Some(NativeOfficePdfTextColor {
+                    red: 255,
+                    green: 0,
+                    blue: 0,
+                    alpha: 255,
+                })
+            && character.render_mode == Some(NativeOfficePdfTextRenderMode::FilledUnstroked)
+    }));
     assert!(first_text
         .characters
         .iter()
@@ -422,6 +492,7 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
     let batch_options = NativeOfficePdfTextBatchOptions {
         max_pages: 2,
         max_characters_per_page: 64,
+        max_runs_per_page: 16,
         max_text_bytes_per_page: 1024,
         max_total_characters: 128,
         max_total_text_bytes: 2048,
@@ -512,6 +583,7 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
             inventory.pages[0].unit.clone(),
             NativeOfficePdfTextLayerOptions {
                 max_characters: 1,
+                max_runs: 1,
                 max_text_bytes: 1024,
                 timeout_ms: TEST_TIMEOUT_MS,
             },
@@ -948,6 +1020,7 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
             blank_inventory.pages[0].unit.clone(),
             NativeOfficePdfTextLayerOptions {
                 max_characters: 8,
+                max_runs: 8,
                 max_text_bytes: 8,
                 timeout_ms: TEST_TIMEOUT_MS,
             },
@@ -956,6 +1029,7 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
         .unwrap();
     assert!(blank_text.text.is_empty());
     assert!(blank_text.characters.is_empty());
+    assert!(blank_text.runs.is_empty());
     blank_text.validate(&blank_inventory).unwrap();
 }
 
@@ -1102,7 +1176,21 @@ fn text_character(
         bounds,
         font_size_millipoints: Some(12_000),
         rotation_millidegrees: Some(0),
+        font_name: None,
+        font_weight: None,
+        italic: None,
+        fill_color: None,
+        stroke_color: None,
+        render_mode: None,
         generated: Some(false),
+    }
+}
+
+fn empty_visual_inventory() -> NativeOfficePdfVisualObjectInventory {
+    NativeOfficePdfVisualObjectInventory {
+        max_objects: MAX_NATIVE_OFFICE_PDF_VISUAL_OBJECTS,
+        truncated: false,
+        objects: Vec::new(),
     }
 }
 

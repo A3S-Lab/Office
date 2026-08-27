@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::{
     NativeOfficePdfPageInventory, NativeOfficePdfPageTextLayer, NativeOfficePdfTextLayerOptions,
     MAX_NATIVE_OFFICE_PDF_TEXT_CHARACTERS, MAX_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES,
+    MAX_NATIVE_OFFICE_PDF_TEXT_RUNS,
 };
 use crate::layout::layout_error;
 use crate::{NativeOfficeUnit, PackageRevision};
@@ -30,6 +31,7 @@ pub const MAX_NATIVE_OFFICE_PDF_TEXT_BATCH_TEXT_BYTES: usize = 256 * 1024 * 1024
 pub struct NativeOfficePdfTextBatchOptions {
     pub max_pages: usize,
     pub max_characters_per_page: usize,
+    pub max_runs_per_page: usize,
     pub max_text_bytes_per_page: usize,
     pub max_total_characters: usize,
     pub max_total_text_bytes: usize,
@@ -42,6 +44,7 @@ impl Default for NativeOfficePdfTextBatchOptions {
         Self {
             max_pages: DEFAULT_NATIVE_OFFICE_PDF_TEXT_BATCH_PAGES,
             max_characters_per_page: page.max_characters,
+            max_runs_per_page: page.max_runs,
             max_text_bytes_per_page: page.max_text_bytes,
             max_total_characters: DEFAULT_NATIVE_OFFICE_PDF_TEXT_BATCH_CHARACTERS,
             max_total_text_bytes: DEFAULT_NATIVE_OFFICE_PDF_TEXT_BATCH_TEXT_BYTES,
@@ -54,6 +57,7 @@ impl NativeOfficePdfTextBatchOptions {
     pub fn validate(&self) -> UseResult<()> {
         if (1..=MAX_NATIVE_OFFICE_PDF_TEXT_BATCH_PAGES).contains(&self.max_pages)
             && (1..=MAX_NATIVE_OFFICE_PDF_TEXT_CHARACTERS).contains(&self.max_characters_per_page)
+            && (1..=MAX_NATIVE_OFFICE_PDF_TEXT_RUNS).contains(&self.max_runs_per_page)
             && (1..=MAX_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES).contains(&self.max_text_bytes_per_page)
             && (1..=MAX_NATIVE_OFFICE_PDF_TEXT_BATCH_CHARACTERS)
                 .contains(&self.max_total_characters)
@@ -65,13 +69,14 @@ impl NativeOfficePdfTextBatchOptions {
         }
         Err(layout_error(
             "use.office.pdf_text_batch_options_invalid",
-            "PDF text batch page, character, byte, and timeout bounds are invalid.",
+            "PDF text batch page, character, run, byte, and timeout bounds are invalid.",
         ))
     }
 
     pub(super) fn page_options(self) -> NativeOfficePdfTextLayerOptions {
         NativeOfficePdfTextLayerOptions {
             max_characters: self.max_characters_per_page,
+            max_runs: self.max_runs_per_page,
             max_text_bytes: self.max_text_bytes_per_page,
             timeout_ms: self.timeout_ms,
         }
@@ -138,6 +143,7 @@ impl NativeOfficePdfPageTextBatch {
                     validated_request.validate_layer(layer)?;
                     if layer.unit != slot.unit
                         || layer.max_characters != options.max_characters_per_page
+                        || layer.max_runs != options.max_runs_per_page
                         || layer.max_text_bytes != options.max_text_bytes_per_page
                     {
                         return Err(invalid_batch_output());
@@ -234,6 +240,7 @@ fn invalid_batch_output() -> UseError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layout::pdfium::DEFAULT_NATIVE_OFFICE_PDF_TEXT_RUNS;
 
     #[test]
     fn batch_options_have_a_strict_bounded_wire_contract() {
@@ -244,6 +251,7 @@ mod tests {
             value["maxPages"],
             DEFAULT_NATIVE_OFFICE_PDF_TEXT_BATCH_PAGES
         );
+        assert_eq!(value["maxRunsPerPage"], DEFAULT_NATIVE_OFFICE_PDF_TEXT_RUNS);
         assert_eq!(
             serde_json::from_value::<NativeOfficePdfTextBatchOptions>(value.clone()).unwrap(),
             options

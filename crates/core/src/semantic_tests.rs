@@ -26,6 +26,10 @@ async fn native_word_read_supports_text_get_query_outline_and_statistics() {
     assert!(document.text_view().text.contains("North\t100"));
     let heading = document.get("/body/p[1]", 1).unwrap();
     assert_eq!(heading.style.as_deref(), Some("Heading1"));
+    assert_eq!(
+        heading.format.get("outlineLevel").map(String::as_str),
+        Some("0")
+    );
     assert_eq!(heading.children[0].format["bold"], "true");
     assert_eq!(
         document
@@ -911,7 +915,7 @@ fn word_fixture() -> (TempDir, PathBuf) {
         r#"<Types xmlns="{CONTENT_TYPES_NAMESPACE}"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>"#
     );
     let root_relationships = root_relationships("word/document.xml");
-    let document = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:pPr><w:pStyle w:val="Heading1"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/></w:rPr><w:t>Quarterly Results</w:t></w:r></w:p><w:p><w:r><w:t xml:space="preserve">Summary &amp; outlook</w:t></w:r></w:p><w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/></w:tblPr><w:tr><w:tc><w:p><w:r><w:t>North</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>100</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:sectPr/></w:body></w:document>"#;
+    let document = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:pPr><w:pStyle w:val="Heading1"/><w:jc w:val="center"/><w:outlineLvl w:val="0"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/></w:rPr><w:t>Quarterly Results</w:t></w:r></w:p><w:p><w:r><w:t xml:space="preserve">Summary &amp; outlook</w:t></w:r></w:p><w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/></w:tblPr><w:tr><w:tc><w:p><w:r><w:t>North</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>100</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:sectPr/></w:body></w:document>"#;
     let styles = r#"<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/></w:style><w:style w:type="table" w:styleId="TableGrid"><w:name w:val="Table Grid"/></w:style></w:styles>"#;
     fixture(
         "document.docx",

@@ -434,14 +434,29 @@ and deadline bounds. Batch receipts retain the
 same source, unit, render-profile, raster hash, and geometry validation as the
 single-page API. The same retained inventory now
 authorizes bounded native PDF text-layer extraction with source-order Unicode,
-exact UTF-8/UTF-16 ranges, optional glyph boxes in PDF coordinates, and bounded
-document outlines with exact page targets. Text and outline calls revalidate
+exact UTF-8/UTF-16 ranges, optional glyph boxes, and PDFium-native same-line,
+same-style runs with exact PDF-coordinate bounds. Independent character and run
+limits keep the result bounded. Rectangles that cannot map to one unambiguous
+contiguous source range are omitted as runs while exact character evidence is
+retained, so consumers can fall back without losing the page text layer.
+Text-layer schema v5 also reports a closed PDFium object-family summary and a
+stable inventory of at most 4,096 non-text page objects and annotations. Each
+entry carries its conservative PDF-space envelope when PDFium supplies valid
+positive-area geometry. If the object count exceeds the bound, any envelope is
+missing, or geometry is degenerate, the receipt explicitly remains truncated
+or incomplete so consumers can select the complete page. Office does not infer
+whether an object contains text and does not inspect strings, file names, page
+numbers, source hashes, or downstream provider labels when producing this
+inventory.
+Document outlines retain exact page targets.
+Text and outline calls revalidate
 the immutable source, reuse inventory authority, and return typed limit or
 unsupported failures without OCR or Browser access. The text API also accepts
 an ordered batch of at most 512 unique inventoried pages. Its default 64-page
 window reads and opens the immutable PDF once, isolates page failures in exact
-input slots, and enforces per-page plus aggregate character, UTF-8 byte, and
-deadline bounds. Richer slides and formats without an authoritative provider
+input slots, and enforces per-page run limits plus per-page and aggregate
+character, UTF-8 byte, and deadline bounds. Richer slides and formats without
+an authoritative provider
 remain typed unsupported instead of being relabeled semantic previews.
 Native DOCX and PPTX table reads also normalize merged cells into one-based
 logical row and column coordinates, row and column spans, and stable anchor

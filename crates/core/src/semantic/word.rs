@@ -534,6 +534,9 @@ fn apply_paragraph_properties(
         }
     }
     copy_child_value(properties, "jc", "alignment", node);
+    // Preserve the source's explicit OOXML outline level. Consumers can map
+    // this closed numeric semantic without guessing from localized style names.
+    copy_child_value(properties, "outlineLvl", "outlineLevel", node);
     if let Some(numbering) = properties.child("numPr") {
         copy_child_value(numbering, "numId", "numId", node);
         copy_child_value(numbering, "ilvl", "numLevel", node);
