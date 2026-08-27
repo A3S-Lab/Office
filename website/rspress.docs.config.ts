@@ -35,7 +35,7 @@ export default defineConfig({
   },
   icon: '/favicon.svg',
   logo: '/a3s-logo.png',
-  logoText: 'A3S Office Docs',
+  logoText: 'A3S Office',
   outDir: path.resolve(import.meta.dirname, '../.docs-build'),
   llms: true,
   head: [

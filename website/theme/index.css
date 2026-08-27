@@ -1,5 +1,120 @@
+@import "./site-tokens.css";
+
 /* The docs shell keeps the A3S UI navigation; the home surface uses the
    lighter, product-system language of the A3S Cloud website. */
+:root {
+  /* Keep the A3S UI documentation vocabulary and the product vocabulary
+     backed by one physical token set. */
+  --rp-nav-height: var(--a3s-site-nav-height);
+  --ui-home-width: var(--a3s-site-max-width);
+  --ui-nav-width: var(--a3s-site-max-width);
+  --ui-canvas: var(--a3s-site-bg);
+  --ui-paper: var(--a3s-site-surface);
+  --ui-panel: var(--a3s-site-surface-soft);
+  --ui-panel-raised: var(--a3s-site-surface-raised);
+  --ui-ink: var(--a3s-site-ink);
+  --ui-muted: var(--a3s-site-muted);
+  --ui-faint: var(--a3s-site-faint);
+  --ui-line: var(--a3s-site-line);
+  --ui-line-strong: var(--a3s-site-line-strong);
+  --ui-border-strong: var(--a3s-site-border-strong);
+  --ui-blue: var(--a3s-site-accent);
+  --ui-blue-deep: var(--a3s-site-accent-strong);
+  --ui-green: var(--a3s-site-success);
+  --ui-purple: var(--a3s-site-violet);
+  --ui-amber: var(--a3s-site-amber);
+  --ui-red: var(--a3s-site-danger);
+  --ui-mono: var(--a3s-site-mono);
+}
+
+html .rp-nav {
+  height: var(--a3s-site-nav-height);
+  padding-right: max(
+    24px,
+    calc((100vw - var(--a3s-site-max-width)) / 2 + 24px)
+  );
+  padding-left: max(24px, calc((100vw - var(--a3s-site-max-width)) / 2 + 24px));
+  border-bottom-color: rgb(203 215 233 / 82%);
+  background: rgb(255 255 255 / 90%);
+  box-shadow: 0 10px 34px rgb(31 65 116 / 7%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  transition: none;
+}
+
+html .rp-nav__left {
+  align-items: center;
+  gap: 32px;
+}
+
+html .rp-nav__title__link {
+  gap: 10px;
+  letter-spacing: -0.025em;
+}
+
+html .rp-nav__title__logo,
+html .rp-nav__title__logo-image,
+html img.rspress-logo {
+  display: grid;
+  overflow: hidden;
+  width: 31px;
+  min-width: 31px;
+  max-width: 31px;
+  height: 31px;
+  min-height: 31px;
+  max-height: 31px;
+  aspect-ratio: 1;
+  flex: 0 0 31px;
+  margin-right: 0;
+  border-radius: 9px;
+  box-shadow: 0 6px 16px rgb(36 58 154 / 20%);
+  object-fit: contain;
+  place-items: center;
+}
+
+html .rp-nav__title__logo img,
+html .rp-nav__title__logo-image,
+html img.rspress-logo {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: 1;
+  object-fit: contain !important;
+}
+
+html .rp-nav__title__link > span {
+  color: var(--a3s-site-ink);
+  font-family: var(--a3s-site-font);
+  font-size: 17px;
+  font-weight: 740;
+}
+
+html .rp-nav-menu__item {
+  color: var(--a3s-site-muted);
+  font-family: var(--a3s-site-font);
+  font-size: 14px;
+  font-weight: 560;
+}
+
+html .rp-nav-menu__item:hover,
+html .rp-nav-menu__item--active {
+  color: var(--a3s-site-accent);
+}
+
+html .rp-search-button {
+  border-color: var(--a3s-site-line) !important;
+  border-radius: var(--a3s-site-radius-small) !important;
+  background: var(--a3s-site-surface) !important;
+}
+
+html .rp-nav-hamburger,
+html .rp-search-button--mobile {
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--a3s-site-ink);
+}
 .rp-nav__others > .rp-nav-menu__item > .rp-hover-group {
   max-height: calc(100vh - var(--rp-nav-height) - 16px);
   overflow-y: auto;

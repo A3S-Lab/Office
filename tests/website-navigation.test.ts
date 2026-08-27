@@ -3,9 +3,13 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@rstest/core';
 import {
+  isProductHomeRoute,
   normalizeNavigationPath,
+  productSiteBase,
   playgroundAssetHrefFromDocsRoute,
   playgroundHrefFromDocsRoute,
+  siteNavigationHref,
+  sitePathFromRoute,
 } from '../website/theme/site-navigation';
 
 test('normalizes relative and index navigation links before merging menus', () => {
@@ -56,6 +60,26 @@ test('derives deployment-relative Playground assets from localized version route
   expect(playgroundAssetHrefFromDocsRoute('/', '')).toBe('../playground/');
 });
 
+test('keeps cross-mount navigation valid for root and GitHub Pages deployments', () => {
+  expect(productSiteBase('/docs/')).toBe('/');
+  expect(productSiteBase('/Office/docs/')).toBe('/Office/');
+  expect(sitePathFromRoute('/components/document.html', '/Office/docs/')).toBe(
+    '/Office/docs/components/document.html',
+  );
+  expect(
+    siteNavigationHref(
+      '/Office/docs/components/document.html',
+      '/Office/docs/',
+      '/playground/index.html',
+    ),
+  ).toBe('../../playground/index.html');
+  expect(siteNavigationHref('/', '/Office/', '/docs/index.html')).toBe(
+    '/Office/docs/index.html',
+  );
+  expect(isProductHomeRoute('/Office/en/', '/Office/')).toBe(true);
+  expect(isProductHomeRoute('/Office/docs/', '/Office/docs/')).toBe(false);
+});
+
 test('uses the shared A3S navigation with Playground as a primary route', async () => {
   const themeRoot = path.resolve(import.meta.dirname, '../website/theme');
   const websiteRoot = path.resolve(import.meta.dirname, '../website');
@@ -93,8 +117,9 @@ test('uses the shared A3S navigation with Playground as a primary route', async 
   expect(navSource).toContain(
     "language === 'zh' ? '打开导航' : 'Open navigation'",
   );
-  expect(navSource).toContain("link: siteRootHref(pathname, '/playground/')");
-  expect(navSource).toContain("link: siteRootHref(pathname, '/')");
+  expect(navSource).toContain('siteNavigationHref(pathname, site.base');
+  expect(navSource).toContain("'/playground/index.html'");
+  expect(navSource).toContain("'/index.html'");
   expect(navSource).toContain('<NavScreenMenu menuItems={menuItems} />');
   expect(themeStyles).toMatch(/--rp-nav-height:\s*72px/);
   expect(themeStyles).toMatch(/width:\s*31px/);

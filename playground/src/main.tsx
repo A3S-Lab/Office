@@ -5,7 +5,15 @@ import type {
   OfficeArtifactContent,
   OfficeFileImportProgress,
 } from '@a3s-lab/office/core';
-import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import {
+  AlertCircle,
+  BookOpenText,
+  CheckCircle2,
+  ExternalLink,
+  Github,
+  Home,
+  Info,
+} from 'lucide-react';
 import {
   lazy,
   StrictMode,
@@ -16,7 +24,10 @@ import {
   useState,
 } from 'react';
 import { createRoot } from 'react-dom/client';
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
 import '@a3s-lab/office/styles.css';
+import '../../website/theme/site-tokens.css';
 import { serializeDocumentParagraphFormatting } from '../../src/internal/features/work/work-document-paragraph-format-changes';
 import { WorkEditorLoadingState } from '../../src/internal/features/work/components/work-editor-loading-state';
 import { WORK_IMPORT_ACCEPT as OFFICE_FILE_ACCEPT } from '../../src/internal/features/work/work-file-contract';
@@ -96,6 +107,70 @@ import './workspace.css';
 const EditorWorkspace = lazy(async () => ({
   default: (await loadPlaygroundEditorWorkspace()).EditorWorkspace,
 }));
+
+function PlaygroundSiteHeader() {
+  const english =
+    typeof window !== 'undefined' &&
+    /\/en(?:\/|$)/.test(window.location.pathname);
+  const homeLabel = english ? 'Product home' : '产品首页';
+  const docsLabel = english ? 'Docs' : '文档';
+  const playgroundLabel = 'Playground';
+  const homeUrl =
+    typeof document === 'undefined'
+      ? '/'
+      : new URL('../', document.baseURI).href;
+  const docsUrl =
+    typeof document === 'undefined'
+      ? '/docs/'
+      : new URL(`../docs/${english ? 'en/' : ''}`, document.baseURI).href;
+  const logoUrl =
+    typeof document === 'undefined'
+      ? '/a3s-logo.png'
+      : new URL('../a3s-logo.png', document.baseURI).href;
+
+  return (
+    <header className="playground-site-header">
+      <a
+        className="playground-site-header__brand"
+        href={homeUrl}
+        aria-label="A3S Office home"
+      >
+        <img src={logoUrl} alt="" />
+        <span>A3S Office</span>
+      </a>
+      <nav className="playground-site-header__nav" aria-label="Site navigation">
+        <a href={homeUrl}>
+          <Home size={15} aria-hidden="true" />
+          {homeLabel}
+        </a>
+        <a href={docsUrl}>
+          <BookOpenText size={15} aria-hidden="true" />
+          {docsLabel}
+        </a>
+        <a
+          href={
+            typeof window === 'undefined'
+              ? '/playground/'
+              : window.location.href
+          }
+          aria-current="page"
+        >
+          {playgroundLabel}
+        </a>
+      </nav>
+      <a
+        className="playground-site-header__github"
+        href="https://github.com/A3S-Lab/Office"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="A3S Office on GitHub"
+      >
+        <Github size={16} aria-hidden="true" />
+        <ExternalLink size={12} aria-hidden="true" />
+      </a>
+    </header>
+  );
+}
 
 function Playground() {
   const [e2eFixture] = useState(readPlaygroundE2eFixture);
@@ -417,155 +492,160 @@ function Playground() {
   };
 
   return (
-    <main
-      className={`playground-site ${sidebarOpen ? 'sidebar-visible' : ''} ${
-        activeArtifact ? 'editor-open' : ''
-      }`}
-    >
-      <input
-        ref={fileInput}
-        className="playground-file-input"
-        type="file"
-        accept={OFFICE_FILE_ACCEPT}
-        aria-label="打开 Office 或 PDF 文件"
-        onChange={(event) => {
-          const input = event.currentTarget;
-          const file = input.files?.[0];
-          const pendingImport = file ? importFile(file) : null;
-          input.value = '';
-          if (pendingImport) void pendingImport;
-        }}
-      />
-      <input
-        ref={pdfInput}
-        className="playground-file-input"
-        type="file"
-        accept=".pdf,application/pdf"
-        aria-label="打开 PDF 文件"
-        onChange={(event) => {
-          const input = event.currentTarget;
-          const file = input.files?.[0];
-          const pendingImport = file ? importFile(file) : null;
-          input.value = '';
-          if (pendingImport) void pendingImport;
-        }}
-      />
-
-      {sidebarOpen && (
-        <SiteSidebar
-          docsUrl={docsUrl}
-          modal={sidebarModal}
-          onCollapse={() => setSidebarOpen(false)}
-          onCreate={newArtifact}
-          onHome={() => {
-            setActiveArtifactId(null);
-            setAssistantOpen(false);
-            setLastAgentRequest(null);
-            if (window.innerWidth < 840) setSidebarOpen(false);
+    <div className="playground-shell">
+      <PlaygroundSiteHeader />
+      <main
+        className={`playground-site ${sidebarOpen ? 'sidebar-visible' : ''} ${
+          activeArtifact ? 'editor-open' : ''
+        }`}
+      >
+        <input
+          ref={fileInput}
+          className="playground-file-input"
+          type="file"
+          accept={OFFICE_FILE_ACCEPT}
+          aria-label="打开 Office 或 PDF 文件"
+          onChange={(event) => {
+            const input = event.currentTarget;
+            const file = input.files?.[0];
+            const pendingImport = file ? importFile(file) : null;
+            input.value = '';
+            if (pendingImport) void pendingImport;
           }}
-          onOpenFile={() => fileInput.current?.click()}
-          onOpenPdf={() => pdfInput.current?.click()}
         />
-      )}
-      {sidebarOpen && (
-        <button
-          type="button"
-          className="playground-sidebar-scrim"
-          aria-label="关闭办公侧边栏"
-          aria-hidden="true"
-          tabIndex={-1}
-          onClick={() => setSidebarOpen(false)}
+        <input
+          ref={pdfInput}
+          className="playground-file-input"
+          type="file"
+          accept=".pdf,application/pdf"
+          aria-label="打开 PDF 文件"
+          onChange={(event) => {
+            const input = event.currentTarget;
+            const file = input.files?.[0];
+            const pendingImport = file ? importFile(file) : null;
+            input.value = '';
+            if (pendingImport) void pendingImport;
+          }}
         />
-      )}
 
-      <section className="playground-main-pane">
-        {activeArtifact ? (
-          <Suspense
-            fallback={<WorkEditorLoadingState title="正在加载编辑器" />}
-          >
-            <EditorWorkspace
-              key={activeArtifact.id}
-              artifact={activeArtifact}
-              collaborationDemo={
-                collaborationDemoArtifactId === activeArtifact.id
-              }
-              suggestionDemo={suggestionDemoArtifactId === activeArtifact.id}
-              assistantModal={assistantModal}
-              assistantOpen={assistantOpen}
-              assistantWidth={assistantWidth}
-              lastAgentRequest={lastAgentRequest}
-              sidebarOpen={sidebarOpen}
-              onAgentRequest={(request) => {
-                setLastAgentRequest(request);
-                setAssistantOpen(true);
-              }}
-              onAssistantWidthChange={(width) => {
-                setAssistantWidth(width);
-                persistAssistantWidth(width);
-              }}
-              onBack={() => {
-                setActiveArtifactId(null);
-                setCollaborationDemoArtifactId(null);
-                setSuggestionDemoArtifactId(null);
-                setAssistantOpen(false);
-                setLastAgentRequest(null);
-                if (window.innerWidth >= 840) setSidebarOpen(true);
-              }}
-              onChange={(content: OfficeArtifactContent) =>
-                updateActiveArtifact((artifact) => ({
-                  ...artifact,
-                  content,
-                  kind: content.type,
-                  revision: artifact.revision + 1,
-                  updatedAt: Date.now(),
-                }))
-              }
-              onNotice={showNotice}
-              onOpenSidebar={() => setSidebarOpen(true)}
-              onRename={(title) =>
-                updateActiveArtifact((artifact) => ({
-                  ...artifact,
-                  title,
-                  revision: artifact.revision + 1,
-                  updatedAt: Date.now(),
-                }))
-              }
-              onToggleAssistant={() => setAssistantOpen((current) => !current)}
-              onTouch={() =>
-                updateActiveArtifact((artifact) => ({
-                  ...artifact,
-                  revision: artifact.revision + 1,
-                  updatedAt: Date.now(),
-                }))
-              }
-            />
-          </Suspense>
-        ) : (
-          <WorkspaceHome
-            artifacts={artifacts}
-            collaborationDocsUrl={collaborationDocsUrl}
-            sidebarOpen={sidebarOpen}
+        {sidebarOpen && (
+          <SiteSidebar
+            docsUrl={docsUrl}
+            modal={sidebarModal}
+            onCollapse={() => setSidebarOpen(false)}
             onCreate={newArtifact}
-            onImport={() => fileInput.current?.click()}
-            onOpen={openArtifact}
-            onOpenCollaborationDemo={openCollaborationDemo}
-            onOpenFormattingReviewDemo={openFormattingReviewDemo}
-            onOpenSuggestionDemo={openSuggestionDemo}
+            onHome={() => {
+              setActiveArtifactId(null);
+              setAssistantOpen(false);
+              setLastAgentRequest(null);
+              if (window.innerWidth < 840) setSidebarOpen(false);
+            }}
+            onOpenFile={() => fileInput.current?.click()}
             onOpenPdf={() => pdfInput.current?.click()}
-            onOpenSidebar={() => setSidebarOpen(true)}
           />
         )}
-      </section>
+        {sidebarOpen && (
+          <button
+            type="button"
+            className="playground-sidebar-scrim"
+            aria-label="关闭办公侧边栏"
+            aria-hidden="true"
+            tabIndex={-1}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
-      {activeImport && (
-        <PlaygroundImportProgress
-          state={activeImport}
-          onCancel={() => importController.current?.controller.abort()}
-        />
-      )}
+        <section className="playground-main-pane">
+          {activeArtifact ? (
+            <Suspense
+              fallback={<WorkEditorLoadingState title="正在加载编辑器" />}
+            >
+              <EditorWorkspace
+                key={activeArtifact.id}
+                artifact={activeArtifact}
+                collaborationDemo={
+                  collaborationDemoArtifactId === activeArtifact.id
+                }
+                suggestionDemo={suggestionDemoArtifactId === activeArtifact.id}
+                assistantModal={assistantModal}
+                assistantOpen={assistantOpen}
+                assistantWidth={assistantWidth}
+                lastAgentRequest={lastAgentRequest}
+                sidebarOpen={sidebarOpen}
+                onAgentRequest={(request) => {
+                  setLastAgentRequest(request);
+                  setAssistantOpen(true);
+                }}
+                onAssistantWidthChange={(width) => {
+                  setAssistantWidth(width);
+                  persistAssistantWidth(width);
+                }}
+                onBack={() => {
+                  setActiveArtifactId(null);
+                  setCollaborationDemoArtifactId(null);
+                  setSuggestionDemoArtifactId(null);
+                  setAssistantOpen(false);
+                  setLastAgentRequest(null);
+                  if (window.innerWidth >= 840) setSidebarOpen(true);
+                }}
+                onChange={(content: OfficeArtifactContent) =>
+                  updateActiveArtifact((artifact) => ({
+                    ...artifact,
+                    content,
+                    kind: content.type,
+                    revision: artifact.revision + 1,
+                    updatedAt: Date.now(),
+                  }))
+                }
+                onNotice={showNotice}
+                onOpenSidebar={() => setSidebarOpen(true)}
+                onRename={(title) =>
+                  updateActiveArtifact((artifact) => ({
+                    ...artifact,
+                    title,
+                    revision: artifact.revision + 1,
+                    updatedAt: Date.now(),
+                  }))
+                }
+                onToggleAssistant={() =>
+                  setAssistantOpen((current) => !current)
+                }
+                onTouch={() =>
+                  updateActiveArtifact((artifact) => ({
+                    ...artifact,
+                    revision: artifact.revision + 1,
+                    updatedAt: Date.now(),
+                  }))
+                }
+              />
+            </Suspense>
+          ) : (
+            <WorkspaceHome
+              artifacts={artifacts}
+              collaborationDocsUrl={collaborationDocsUrl}
+              sidebarOpen={sidebarOpen}
+              onCreate={newArtifact}
+              onImport={() => fileInput.current?.click()}
+              onOpen={openArtifact}
+              onOpenCollaborationDemo={openCollaborationDemo}
+              onOpenFormattingReviewDemo={openFormattingReviewDemo}
+              onOpenSuggestionDemo={openSuggestionDemo}
+              onOpenPdf={() => pdfInput.current?.click()}
+              onOpenSidebar={() => setSidebarOpen(true)}
+            />
+          )}
+        </section>
 
-      {notice && <PlaygroundToast key={notice.id} notice={notice} />}
-    </main>
+        {activeImport && (
+          <PlaygroundImportProgress
+            state={activeImport}
+            onCancel={() => importController.current?.controller.abort()}
+          />
+        )}
+
+        {notice && <PlaygroundToast key={notice.id} notice={notice} />}
+      </main>
+    </div>
   );
 }
 

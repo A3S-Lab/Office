@@ -6,11 +6,11 @@ import {
   usePage,
   useSite,
   useVersion,
+  withBase,
 } from '@rspress/core/runtime';
 import type { NavItem } from '@rspress/core';
 import {
   IconSmallMenu,
-  NavTitle,
   Search,
   SocialLinks,
   SwitchAppearance,
@@ -35,7 +35,39 @@ import '@rspress/core/dist/theme/components/NavHamburger/index.css';
 import '@rspress/core/dist/theme/components/NavScreen/index.css';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef } from 'react';
-import { normalizeNavigationPath } from '../site-navigation';
+import {
+  isProductHomeRoute,
+  normalizeNavigationPath,
+  siteNavigationHref,
+} from '../site-navigation';
+
+function OfficeNavTitle({ pathname }: { pathname: string }) {
+  const { site } = useSite();
+  const language = useLang();
+  const homeHref = siteNavigationHref(
+    pathname,
+    site.base,
+    language === 'en' ? '/en/index.html' : '/index.html',
+  );
+  return (
+    <div className="rp-nav__title" data-site-nav-title="office">
+      <a
+        className="rp-nav__title__link"
+        href={homeHref}
+        aria-label="A3S Office home"
+      >
+        <div className="rp-nav__title__logo">
+          <img
+            src={withBase('/a3s-logo.png')}
+            alt=""
+            className="rspress-logo rp-nav__title__logo-image"
+          />
+        </div>
+        <span>{site.logoText ?? 'A3S Office'}</span>
+      </a>
+    </div>
+  );
+}
 
 function labelSocialLinks(root: ParentNode, language: string) {
   root
@@ -74,13 +106,16 @@ function versionHref(
   return `/${parts.join('/')}`;
 }
 
-function siteRootHref(pathname: string, path: string): string {
-  const normalizedPath = pathname.split(/[?#]/, 1)[0] ?? '/';
-  const segments = normalizedPath.split('/').filter(Boolean);
-  const directoryDepth = normalizedPath.endsWith('/')
-    ? segments.length
-    : Math.max(0, segments.length - 1);
-  return `${'../'.repeat(Math.max(1, directoryDepth))}${path.replace(/^\/+/, '')}`;
+function dedupeNavigationItems(pathname: string, items: NavItem[]): NavItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (!('link' in item)) return true;
+    const normalized = normalizeNavigationPath(pathname, item.link);
+    if (!normalized) return true;
+    if (seen.has(normalized)) return false;
+    seen.add(normalized);
+    return true;
+  });
 }
 
 function NavVersions() {
@@ -370,49 +405,57 @@ export function Nav({
   const { pathname } = useLocation();
   const { site } = useSite();
   const navigationList = useMemo(() => {
+    const productHomeRoute =
+      language === 'en' ? '/en/index.html' : '/index.html';
+    const docsRoute =
+      language === 'en' ? '/docs/en/index.html' : '/docs/index.html';
+    const collaborationRoute =
+      language === 'en'
+        ? '/docs/en/components/collaboration.html'
+        : '/docs/components/collaboration.html';
+    const playgroundRoute = site.base.endsWith('/docs/')
+      ? '/playground/'
+      : '/playground/index.html';
     const productHomeItem: NavItem = {
       text: language === 'zh' ? '产品首页' : 'Product home',
-      link: siteRootHref(pathname, '/'),
+      link: siteNavigationHref(pathname, site.base, productHomeRoute),
       activeMatch: '^/$|^/en/?$',
       position: 'left',
     };
     const playgroundItem: NavItem = {
       text: 'Playground',
-      link: siteRootHref(pathname, '/playground/'),
+      link: siteNavigationHref(pathname, site.base, playgroundRoute),
       activeMatch: '^/playground(?:/|$)',
       position: 'left',
     };
-    const withProductHome = navList.some(
-      (item) =>
-        'link' in item && normalizeNavigationPath(pathname, item.link) === '/',
-    )
-      ? navList
-      : [productHomeItem, ...navList];
-    if (
-      withProductHome.some(
-        (item) =>
-          'link' in item &&
-          normalizeNavigationPath(pathname, item.link) === '/playground',
-      )
-    ) {
-      return withProductHome;
-    }
-    const utilityIndexWithProductHome = withProductHome.findIndex(
+    const docsItem: NavItem = {
+      text: language === 'zh' ? '文档' : 'Docs',
+      link: siteNavigationHref(pathname, site.base, docsRoute),
+      activeMatch: '^/docs(?:/|$)',
+      position: 'left',
+    };
+    const collaborationItem: NavItem = {
+      text: language === 'zh' ? '协作' : 'Collaboration',
+      link: siteNavigationHref(pathname, site.base, collaborationRoute),
+      activeMatch: '^/docs/(?:[^/]+/)?components/collaboration(?:\\.html)?',
+      position: 'left',
+    };
+    const routeItems = isProductHomeRoute(pathname, site.base)
+      ? [docsItem, playgroundItem, collaborationItem]
+      : [productHomeItem, docsItem, playgroundItem, collaborationItem];
+    // Keep only explicit utility menus (Resources today). Rspress may expose
+    // an auto-generated documentation tree through `useNav`; that tree
+    // belongs in the sidebar, not in the global product navigation.
+    const utilityItems = navList.filter(
       (item) =>
         item.position === 'right' ||
-        (item.position === undefined &&
-          'items' in item &&
-          item.items.length > 0),
+        ('items' in item &&
+          item.items.some(
+            (child) => 'link' in child && /^https?:\/\//.test(child.link),
+          )),
     );
-    if (utilityIndexWithProductHome < 0) {
-      return [...withProductHome, playgroundItem];
-    }
-    return [
-      ...withProductHome.slice(0, utilityIndexWithProductHome),
-      playgroundItem,
-      ...withProductHome.slice(utilityIndexWithProductHome),
-    ];
-  }, [language, navList, pathname]);
+    return dedupeNavigationItems(pathname, [...routeItems, ...utilityItems]);
+  }, [language, navList, pathname, site.base]);
   const primaryNavList = navigationList.map((item) =>
     item.position === undefined && !('items' in item && item.items.length > 0)
       ? { ...item, position: 'left' as const }
@@ -500,7 +543,7 @@ export function Nav({
     <header className="rp-nav">
       <div className="rp-nav__left">
         {beforeNavTitle}
-        {navTitle ?? <NavTitle />}
+        {navTitle ?? <OfficeNavTitle pathname={pathname} />}
         <NavMenu menuItems={primaryNavList} position="left" />
         {afterNavTitle}
       </div>

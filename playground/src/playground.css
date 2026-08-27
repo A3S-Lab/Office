@@ -13,6 +13,128 @@
   text-rendering: optimizeLegibility;
 }
 
+/* Keep the standalone editor workspace on the same site contract as the
+   Rspress product home and versioned docs. The editor itself still owns its
+   internal `--a3s-*` theme tokens; these aliases only style the Playground
+   shell around it. */
+.playground-shell {
+  --a3s-bg: var(--a3s-site-bg);
+  --a3s-panel: var(--a3s-site-surface);
+  --a3s-panel-soft: var(--a3s-site-surface-soft);
+  --a3s-panel-strong: var(--a3s-site-surface-raised);
+  --a3s-ink: var(--a3s-site-ink);
+  --a3s-muted: var(--a3s-site-muted);
+  --a3s-subtle: var(--a3s-site-faint);
+  --a3s-faint: var(--a3s-site-faint);
+  --a3s-line: var(--a3s-site-line);
+  --a3s-line-strong: var(--a3s-site-line-strong);
+  --a3s-action: var(--a3s-site-accent);
+  --a3s-action-hover: var(--a3s-site-accent-strong);
+  --a3s-blue: var(--a3s-site-accent);
+  --a3s-green: var(--a3s-site-success);
+  --a3s-ui-font: var(--a3s-site-font);
+  --font-mono: var(--a3s-site-mono);
+}
+
+.playground-shell,
+.playground-shell * {
+  box-sizing: border-box;
+}
+
+.playground-shell {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--a3s-site-bg);
+  color: var(--a3s-site-ink);
+  font-family: var(--a3s-site-font);
+}
+
+.playground-site-header {
+  display: flex;
+  width: 100%;
+  height: var(--a3s-site-nav-height);
+  min-height: var(--a3s-site-nav-height);
+  align-items: center;
+  gap: 30px;
+  padding: 0 max(16px, calc((100vw - var(--a3s-site-max-width)) / 2 + 24px));
+  border-bottom: 1px solid rgb(203 215 233 / 82%);
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 10px 34px rgb(31 65 116 / 7%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+}
+
+.playground-site-header__brand {
+  display: inline-flex;
+  min-width: max-content;
+  align-items: center;
+  gap: 10px;
+  color: var(--a3s-site-ink);
+  font-size: 17px;
+  font-weight: 740;
+  letter-spacing: -0.025em;
+  text-decoration: none;
+}
+
+.playground-site-header__brand img {
+  display: block;
+  width: 31px;
+  height: 31px;
+  border-radius: 9px;
+  box-shadow: 0 6px 16px rgb(36 58 154 / 20%);
+  object-fit: contain;
+}
+
+.playground-site-header__nav {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 24px;
+}
+
+.playground-site-header__nav a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  color: var(--a3s-site-muted);
+  font-size: 14px;
+  font-weight: 560;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.playground-site-header__nav a:hover,
+.playground-site-header__nav a[aria-current="page"] {
+  color: var(--a3s-site-accent);
+}
+
+.playground-site-header__github {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  margin-left: auto;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--a3s-site-muted);
+  text-decoration: none;
+}
+
+.playground-site-header__github:hover {
+  color: var(--a3s-site-accent);
+}
+
+.playground-site-header :where(a):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--a3s-site-accent) 72%, white);
+  outline-offset: 3px;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -65,9 +187,10 @@ input:focus-visible,
   position: relative;
   display: flex;
   width: 100%;
-  height: 100%;
+  height: auto;
   min-width: 0;
   min-height: 0;
+  flex: 1 1 auto;
   overflow: hidden;
   background: var(--a3s-bg);
   color: var(--a3s-ink);
@@ -638,6 +761,39 @@ body.playground-resizing * {
 }
 
 @media (max-width: 640px) {
+  .playground-site-header {
+    gap: 14px;
+    padding-inline: 14px;
+  }
+
+  .playground-site-header__brand {
+    font-size: 16px;
+  }
+
+  .playground-site-header__nav {
+    gap: 8px;
+  }
+
+  .playground-site-header__nav a {
+    min-width: 38px;
+    justify-content: center;
+    font-size: 0;
+  }
+
+  .playground-site-header__nav a svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .playground-site-header__nav a:last-child {
+    min-width: 72px;
+    font-size: 11px;
+  }
+
+  .playground-site-header__github {
+    min-width: 38px;
+  }
+
   .playground-page-header {
     gap: 16px;
   }

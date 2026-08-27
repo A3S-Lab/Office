@@ -1,8 +1,8 @@
 suite "homepage-editor-demo" {
     version = 1
 
-    scenario "desktop-live-editor-demo" {
-        name = "Show the shipped Office editors in the product-home hero"
+    scenario "desktop-editor-chapters" {
+        name = "Show one lightweight UI/UX motion preview for every Office editor"
         surface = "web"
         timeout_ms = 120000
 
@@ -20,76 +20,114 @@ suite "homepage-editor-demo" {
             visible = css("main.office-product-home h1#office-product-title")
         }
 
-        expect "hero-primary-action-is-visible" {
-            visible = css("main.office-product-home .docs-home-action--primary")
+        expect "hero-heading-is-in-viewport" {
+            in_viewport = css("main.office-product-home h1#office-product-title")
         }
 
-        expect "live-runtime-is-mounted" {
-            visible = css(".office-editor-demo[data-editor-runtime='live']")
+        expect "surface-map-is-visible" {
+            visible = css(".office-home-surface-map")
         }
 
-        hover "pause-desktop-demo" {
-            target = css(".office-editor-demo")
+        expect "chapter-preview-mode-is-explicit" {
+            visible = css(".office-editor-chapters[data-editor-runtime='preview'][data-preview-kind='editor-chapters']")
         }
 
-        wait "document-editor-is-ready" {
-            text = "Launch brief"
+        expect "preview-boundary-is-visible" {
+            visible = css("#office-editor-chapters-preview-note")
         }
 
-        expect "document-editor-is-live" {
-            visible = css(".office-editor-demo .work-document-editor")
+        expect "live-editor-runtime-is-not-mounted" {
+            visible = css("main.office-product-home:not(:has(.work-document-editor, .work-spreadsheet-editor, .work-presentation-editor, .work-pdf-viewer))")
         }
 
-        expect "document-editor-fits-hero-window" {
-            visible = css(".office-editor-demo__surface .work-document-editor")
+        expect "chapter-navigation-is-visible" {
+            visible = css(".office-editor-chapters__index")
         }
 
-        click "switch-to-spreadsheet" {
-            target = css(".office-editor-demo__stage-tabs button:nth-child(2)")
+        expect "chapter-progress-is-visible" {
+            visible = css(".office-editor-chapters__progress[role='status']")
         }
 
-        wait "spreadsheet-editor-is-ready" {
-            text = "Launch plan"
+        expect "chapter-recovery-path-is-discoverable" {
+            visible = css(".office-editor-chapter__recovery summary")
         }
 
-        expect "spreadsheet-editor-is-live" {
-            visible = css(".office-editor-demo .work-spreadsheet-editor")
+        expect "document-motion-preview-is-visible" {
+            visible = css("[data-editor-chapter='document'] .office-motion-window")
         }
 
-        click "switch-to-presentation" {
-            target = css(".office-editor-demo__stage-tabs button:nth-child(3)")
+        expect "markdown-motion-preview-is-visible" {
+            visible = css("[data-editor-chapter='markdown'] .office-motion-window")
         }
 
-        wait "presentation-editor-is-ready" {
-            text = "Move from draft to decision."
+        expect "spreadsheet-motion-preview-is-visible" {
+            visible = css("[data-editor-chapter='spreadsheet'] .office-motion-window")
         }
 
-        expect "presentation-editor-is-live" {
-            visible = css(".office-editor-demo .work-presentation-editor")
+        expect "presentation-motion-preview-is-visible" {
+            visible = css("[data-editor-chapter='presentation'] .office-motion-window")
         }
 
-        expect "editor-demo-controls-are-keyboard-addressable" {
-            visible = css(".office-editor-demo__stage-tabs[role='tablist']")
+        expect "pdf-motion-preview-is-visible" {
+            visible = css("[data-editor-chapter='pdf'] .office-motion-window")
         }
 
-        accessibility "desktop-home-editor-demo-tree" {
-            path = "evidence/homepage-editor-demo-desktop.json"
+        wheel "desktop-to-chapter-controls" {
+            delta_x = 0
+            delta_y = 900
+            modifiers = []
+        }
+
+        click "pause-previews" {
+            target = css(".office-editor-chapters__motion-toggle")
+        }
+
+        expect "previews-are-paused" {
+            visible = css(".office-editor-chapters[data-motion-paused='true'] .office-editor-chapters__motion-toggle[aria-pressed='true']")
+        }
+
+        click "resume-previews" {
+            target = css(".office-editor-chapters__motion-toggle")
+        }
+
+        expect "previews-are-playing" {
+            visible = css(".office-editor-chapters[data-motion-paused='false'] .office-editor-chapters__motion-toggle[aria-pressed='false']")
+        }
+
+        click "jump-to-markdown-chapter" {
+            target = css(".office-editor-chapters__index a[href='#editor-chapter-markdown']")
+        }
+
+        expect "markdown-anchor-is-selected" {
+            visible = css("#editor-chapter-markdown:target")
+        }
+
+        wait "markdown-chapter-scroll-settled" {
+            text = "Markdown 章节已定位"
+        }
+
+        expect "markdown-chapter-is-addressable" {
+            in_viewport = css("[data-editor-chapter='markdown']")
+        }
+
+        accessibility "desktop-editor-chapters-tree" {
+            path = "evidence/homepage-editor-chapters-desktop.json"
             interactive = true
         }
 
         console "desktop-console" {
-            path = "diagnostics/homepage-editor-demo-desktop-console.json"
+            path = "diagnostics/homepage-editor-chapters-desktop-console.json"
             clear = false
         }
 
         page_errors "desktop-errors" {
-            path = "diagnostics/homepage-editor-demo-desktop-errors.json"
+            path = "diagnostics/homepage-editor-chapters-desktop-errors.json"
             clear = false
         }
     }
 
-    scenario "phone-live-editor-demo" {
-        name = "Keep the live editor demo usable on a phone viewport"
+    scenario "phone-editor-chapters" {
+        name = "Keep the chapter index and motion previews usable on a phone"
         surface = "web"
         timeout_ms = 120000
 
@@ -107,46 +145,105 @@ suite "homepage-editor-demo" {
             visible = css("main.office-product-home h1#office-product-title")
         }
 
-        hover "pause-phone-demo" {
-            target = css(".office-editor-demo")
+        expect "phone-hero-heading-is-in-viewport" {
+            in_viewport = css("main.office-product-home h1#office-product-title")
         }
 
-        wait "phone-document-editor-is-ready" {
-            text = "Launch brief"
+        expect "phone-chapter-navigation-is-visible" {
+            visible = css(".office-editor-chapters__index")
         }
 
-        expect "phone-document-editor-is-live" {
-            visible = css(".office-editor-demo .work-document-editor")
+        expect "phone-preview-mode-is-explicit" {
+            visible = css(".office-editor-chapters[data-editor-runtime='preview']")
         }
 
-        click "phone-switch-to-spreadsheet" {
-            target = css(".office-editor-demo__stage-tabs button:nth-child(2)")
+        expect "phone-preview-boundary-is-visible" {
+            visible = css("#office-editor-chapters-preview-note")
         }
 
-        wait "phone-spreadsheet-editor-is-ready" {
-            text = "Launch plan"
+        expect "phone-chapter-progress-is-visible" {
+            visible = css(".office-editor-chapters__progress[role='status']")
         }
 
-        expect "phone-spreadsheet-editor-is-live" {
-            visible = css(".office-editor-demo .work-spreadsheet-editor")
+        expect "phone-live-editor-runtime-is-not-mounted" {
+            visible = css("main.office-product-home:not(:has(.work-document-editor, .work-spreadsheet-editor, .work-presentation-editor, .work-pdf-viewer))")
         }
 
-        expect "phone-stage-tabs-remain-visible" {
-            visible = css(".office-editor-demo__stage-tabs button")
+        expect "phone-chapter-recovery-path-is-discoverable" {
+            visible = css(".office-editor-chapter__recovery summary")
         }
 
-        accessibility "phone-home-editor-demo-tree" {
-            path = "evidence/homepage-editor-demo-phone.json"
+        wheel "phone-to-chapter-index" {
+            delta_x = 0
+            delta_y = 1400
+            modifiers = []
+        }
+
+        wheel "phone-index-to-pdf" {
+            target = css(".office-editor-chapters__index")
+            delta_x = 520
+            delta_y = 0
+            modifiers = []
+        }
+
+        click "phone-jump-to-pdf-chapter" {
+            target = css(".office-editor-chapters__index a[href='#editor-chapter-pdf']")
+        }
+
+        expect "phone-pdf-anchor-is-selected" {
+            visible = css("#editor-chapter-pdf:target")
+        }
+
+        wait "phone-pdf-chapter-is-visible" {
+            text = "PDF 章节已定位"
+        }
+
+        expect "phone-pdf-chapter-is-addressable" {
+            in_viewport = css("[data-editor-chapter='pdf']")
+        }
+
+        expect "phone-pdf-motion-preview-is-visible" {
+            visible = css("[data-editor-chapter='pdf'] .office-motion-window")
+        }
+
+        wheel "phone-to-motion-control" {
+            delta_x = 0
+            delta_y = -4500
+            modifiers = []
+        }
+
+        expect "phone-motion-control-is-in-viewport" {
+            in_viewport = css(".office-editor-chapters__motion-toggle")
+        }
+
+        focus "phone-focus-motion-control" {
+            target = css(".office-editor-chapters__motion-toggle")
+        }
+
+        press "phone-pause-previews" {
+            key = "Space"
+        }
+
+        wait "phone-pause-state-is-announced" {
+            text = "播放预览"
+        }
+
+        expect "phone-previews-are-paused" {
+            text = "播放预览"
+        }
+
+        accessibility "phone-editor-chapters-tree" {
+            path = "evidence/homepage-editor-chapters-phone.json"
             interactive = true
         }
 
         console "phone-console" {
-            path = "diagnostics/homepage-editor-demo-phone-console.json"
+            path = "diagnostics/homepage-editor-chapters-phone-console.json"
             clear = false
         }
 
         page_errors "phone-errors" {
-            path = "diagnostics/homepage-editor-demo-phone-errors.json"
+            path = "diagnostics/homepage-editor-chapters-phone-errors.json"
             clear = false
         }
     }

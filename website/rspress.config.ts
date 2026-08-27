@@ -5,6 +5,35 @@ import { siteBaseFromEnvironment } from './site-paths';
 const siteBase = siteBaseFromEnvironment();
 const siteOrigin = process.env.DOCS_ORIGIN ?? 'https://a3s-lab.github.io';
 
+const zhNav = [
+  { text: '文档', link: '/docs/' },
+  { text: 'Playground', link: '/playground/' },
+  { text: '协作', link: '/docs/components/collaboration.html' },
+];
+
+const enNav = [
+  { text: 'Docs', link: '/docs/' },
+  { text: 'Playground', link: '/playground/' },
+  { text: 'Collaboration', link: '/docs/components/collaboration.html' },
+];
+
+const resourceItems = {
+  text: '资源',
+  position: 'right' as const,
+  items: [
+    { text: 'GitHub', link: 'https://github.com/A3S-Lab/Office' },
+    {
+      text: 'npm',
+      link: 'https://www.npmjs.com/package/@a3s-lab/office',
+    },
+  ],
+};
+
+const resourceItemsEn = {
+  ...resourceItems,
+  text: 'Resources',
+};
+
 export default defineConfig({
   root: path.resolve(import.meta.dirname, 'product'),
   themeDir: path.resolve(import.meta.dirname, 'product-theme'),
@@ -33,6 +62,7 @@ export default defineConfig({
   icon: '/favicon.svg',
   logo: '/a3s-logo.png',
   logoText: 'A3S Office',
+  logoHref: '/',
   outDir: path.resolve(import.meta.dirname, '../playground-dist'),
   head: [
     ['meta', { name: 'theme-color', content: '#f7faff' }],
@@ -56,23 +86,10 @@ export default defineConfig({
   themeConfig: {
     darkMode: 'force-light',
     enableContentAnimation: true,
-    nav: [
-      { text: '产品首页', link: '/' },
-      { text: '文档', link: '/docs/' },
-      { text: 'Playground', link: '/playground/' },
-      {
-        text: '资源',
-        items: [
-          {
-            text: 'GitHub',
-            link: 'https://github.com/A3S-Lab/Office',
-          },
-          {
-            text: 'npm',
-            link: 'https://www.npmjs.com/package/@a3s-lab/office',
-          },
-        ],
-      },
+    nav: [...zhNav, resourceItems],
+    locales: [
+      { lang: 'zh', label: '简体中文', nav: [...zhNav, resourceItems] },
+      { lang: 'en', label: 'English', nav: [...enNav, resourceItemsEn] },
     ],
     socialLinks: [
       {

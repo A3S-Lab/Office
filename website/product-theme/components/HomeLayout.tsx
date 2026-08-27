@@ -1,4 +1,5 @@
 import { useLang, withBase } from '@rspress/core/runtime';
+import { useEffect } from 'react';
 import { HomeEditorDemo } from './HomeEditorDemo';
 
 type Language = 'zh' | 'en';
@@ -144,8 +145,8 @@ function productCopy(language: Language) {
   const zh = language === 'zh';
   return {
     lead: zh
-      ? '把文档、Markdown、表格、演示文稿和 PDF 能力嵌入你的产品。宿主掌握文件与权限，用户和编码智能体共享同一份可审计状态。'
-      : 'Bring documents, Markdown, spreadsheets, presentations, and PDFs into your product. The host owns files and permissions while people and coding agents share one auditable state.',
+      ? '把文档、Markdown、表格、演示文稿和 PDF 嵌入你的产品。宿主管理文件与权限，团队共享可审计的实时状态。'
+      : 'Embed documents, Markdown, spreadsheets, presentations, and PDFs. Your host keeps files and permissions while teams share live, auditable state.',
     primary: zh ? '查看接入文档' : 'Read the integration docs',
     secondary: zh ? '打开 Playground' : 'Open Playground',
     install: zh ? '安装 A3S Office' : 'Install A3S Office',
@@ -197,17 +198,146 @@ function ArrowIcon({ external = false }: { external?: boolean }) {
   );
 }
 
+function HomeSurfaceMap({ language }: { language: Language }) {
+  const zh = language === 'zh';
+  return (
+    <div
+      className="office-home-surface-map"
+      role="img"
+      aria-label={
+        zh
+          ? 'A3S Office 统一宿主契约连接文档、Markdown、表格、演示文稿和 PDF 五种编辑器'
+          : 'One A3S Office host contract connects document, Markdown, spreadsheet, presentation, and PDF editors'
+      }
+    >
+      <div className="office-home-surface-map__window">
+        <header className="office-home-surface-map__bar">
+          <span className="office-home-surface-map__dots" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          <code>A3S OFFICE / SURFACE MAP</code>
+          <b>
+            <i aria-hidden="true" />
+            {zh ? '统一宿主契约' : 'One host contract'}
+          </b>
+        </header>
+        <div className="office-home-surface-map__body">
+          <div className="office-home-surface-map__intro">
+            <small>
+              {zh ? '一个宿主 · 五种界面' : 'ONE HOST · FIVE SURFACES'}
+            </small>
+            <strong>
+              {zh ? '按文件模型选择体验' : 'Choose by file model'}
+            </strong>
+            <span>
+              {zh
+                ? '格式、权限和协作状态沿同一条接入路径流动。'
+                : 'Format, permissions, and collaboration state travel through one integration path.'}
+            </span>
+          </div>
+          <ol className="office-home-surface-map__list">
+            {surfaces[language].map((surface, index) => (
+              <li key={surface.component}>
+                <span>{`0${index + 1}`}</span>
+                <strong>{surface.name}</strong>
+                <code>{surface.component}</code>
+                <i aria-hidden="true" />
+              </li>
+            ))}
+          </ol>
+          <div className="office-home-surface-map__signal" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </div>
+        </div>
+        <footer className="office-home-surface-map__footer">
+          <span>
+            {zh
+              ? '按需加载 · 状态可控 · 文件原生'
+              : 'On demand · controlled state · native files'}
+          </span>
+          <b>READY</b>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 export function HomeLayout() {
   const language = (useLang() === 'en' ? 'en' : 'zh') as Language;
   const copy = productCopy(language);
   const zh = language === 'zh';
   const playground = withBase('/playground/');
+  const languageHref = (target: Language) =>
+    target === 'en' ? withBase('/en/') : withBase('/');
   const latest = latestCapabilities[language];
   const hrefs = capabilityHrefs[language];
+
+  useEffect(() => {
+    // Rspress preserves the previous scroll offset when a viewport changes or
+    // a localized home route is hydrated. Product home must always begin at
+    // its hero; in-page hash navigation remains opt-in.
+    const previousRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+    const resetHomeScroll = () => {
+      if (window.location.hash) return;
+
+      // The shared A3S shell uses smooth scrolling for in-page links. Reusing
+      // that behavior for arrival makes the async editor mount look like a
+      // restored scroll position on compact screens. Temporarily override the
+      // root behavior so the product home always paints from its hero.
+      const root = document.documentElement;
+      const previousBehavior = root.style.scrollBehavior;
+      root.style.scrollBehavior = 'auto';
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+
+      // Rspress may own the scroll position from a layout container instead
+      // of the document element. Reset only scrollable ancestors of the
+      // product surface so docs pages keep their own reading position.
+      let ancestor = document.querySelector<HTMLElement>(
+        '.office-product-home',
+      )?.parentElement;
+      while (ancestor && ancestor !== document.body) {
+        const style = window.getComputedStyle(ancestor);
+        if (
+          (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+          ancestor.scrollHeight > ancestor.clientHeight
+        ) {
+          ancestor.scrollTop = 0;
+        }
+        ancestor = ancestor.parentElement;
+      }
+      root.style.scrollBehavior = previousBehavior;
+    };
+
+    resetHomeScroll();
+    const frame = window.requestAnimationFrame(resetHomeScroll);
+    const secondFrame = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(resetHomeScroll);
+    });
+    const deferred = window.setTimeout(resetHomeScroll, 180);
+    window.addEventListener('pageshow', resetHomeScroll);
+    window.addEventListener('popstate', resetHomeScroll);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(secondFrame);
+      window.clearTimeout(deferred);
+      window.removeEventListener('pageshow', resetHomeScroll);
+      window.removeEventListener('popstate', resetHomeScroll);
+      window.history.scrollRestoration = previousRestoration;
+    };
+  }, []);
+
   const workflow: WorkflowStage[] = [
     {
       index: '01',
-      name: 'Start',
+      name: zh ? '开始' : 'Start',
       detail: zh
         ? '安装包并在现有应用中挂载第一个编辑器。'
         : 'Install the package and mount the first editor in an existing application.',
@@ -221,7 +351,7 @@ export function HomeLayout() {
     },
     {
       index: '02',
-      name: 'Build',
+      name: zh ? '构建' : 'Build',
       detail: zh
         ? '配置文件模型、受控状态、导入导出和宿主扩展。'
         : 'Configure file models, controlled state, import and export, and host extensions.',
@@ -238,7 +368,7 @@ export function HomeLayout() {
     },
     {
       index: '03',
-      name: 'Collaborate',
+      name: zh ? '协作' : 'Collaborate',
       detail: zh
         ? '让用户与编码智能体通过 Yjs/Yrs 实时编辑或审阅同一文件。'
         : 'Let people and coding agents edit or review the same file through Yjs and Yrs.',
@@ -256,7 +386,7 @@ export function HomeLayout() {
     },
     {
       index: '04',
-      name: 'Automate',
+      name: zh ? '自动化' : 'Automate',
       detail: zh
         ? '通过 CLI、MCP、A3S Code 与 Skill 安全处理 Office 文件。'
         : 'Process Office files safely through the CLI, MCP, A3S Code, and the Skill.',
@@ -271,18 +401,38 @@ export function HomeLayout() {
   ];
 
   return (
-    <main className="docs-home office-product-home">
+    <main className="docs-home office-product-home" data-home-surface="product">
       <section
         className="docs-home-hero"
         aria-labelledby="office-product-title"
       >
         <div className="docs-home-hero__copy">
+          <div className="docs-home-hero__meta office-home-hero__meta">
+            <span>
+              A3S OFFICE <i aria-hidden="true">·</i> EMBEDDED EDITORS
+            </span>
+            <nav aria-label={zh ? '首页语言' : 'Homepage language'}>
+              <a
+                href={languageHref('zh')}
+                aria-current={zh ? 'page' : undefined}
+              >
+                中文
+              </a>
+              <a
+                href={languageHref('en')}
+                aria-current={!zh ? 'page' : undefined}
+              >
+                EN
+              </a>
+            </nav>
+          </div>
           <h1 id="office-product-title">
             <span className="docs-home-hero__brand">A3S Office</span>
-            {zh ? '从嵌入编辑器' : 'From embedded editors'}
-            <span className="docs-home-hero__promise">
-              {zh ? '到多人实时协作' : 'to live collaboration'}
-            </span>
+            <strong className="docs-home-hero__promise">
+              {zh
+                ? '嵌入编辑器，协作自然发生'
+                : 'Embedded editors for live collaboration'}
+            </strong>
           </h1>
           <p className="docs-home-hero__lead">{copy.lead}</p>
           <nav
@@ -314,7 +464,7 @@ export function HomeLayout() {
         </div>
 
         <div className="docs-home-hero__visual">
-          <HomeEditorDemo language={language} />
+          <HomeSurfaceMap language={language} />
         </div>
       </section>
 
@@ -348,6 +498,8 @@ export function HomeLayout() {
           </a>
         ))}
       </nav>
+
+      <HomeEditorDemo language={language} />
 
       <section
         className="docs-home-section docs-home-journey"

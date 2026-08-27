@@ -1,0 +1,42 @@
+/*
+ * A3S Office site contract.
+ *
+ * Product home, versioned documentation, and the standalone editor
+ * Playground all consume these primitives.  Surface-specific styles may add
+ * semantic aliases, but they should not invent a second neutral, type, or
+ * navigation scale.
+ */
+:root {
+  --a3s-site-bg: #f5f7fb;
+  --a3s-site-surface: #ffffff;
+  --a3s-site-surface-soft: #eaf0f8;
+  --a3s-site-surface-raised: #e3eaf5;
+  --a3s-site-ink: #142033;
+  --a3s-site-muted: #526078;
+  --a3s-site-faint: #748095;
+  --a3s-site-line: #dce3ec;
+  --a3s-site-line-strong: #cbd4e0;
+  --a3s-site-border-strong: #aab7c8;
+  --a3s-site-accent: #1456f0;
+  --a3s-site-accent-strong: #0f46c7;
+  --a3s-site-accent-soft: #e8efff;
+  --a3s-site-success: #16845b;
+  --a3s-site-success-soft: #e7f5ef;
+  --a3s-site-violet: #5b57d9;
+  --a3s-site-violet-soft: #efefff;
+  --a3s-site-amber: #a55b09;
+  --a3s-site-amber-soft: #fff1da;
+  --a3s-site-danger: #c93d45;
+  --a3s-site-nav-height: 64px;
+  --a3s-site-max-width: 1440px;
+  --a3s-site-font:
+    "Geist Variable", "Avenir Next", "HarmonyOS Sans SC", "PingFang SC",
+    "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
+  --a3s-site-mono:
+    "Geist Mono Variable", "SFMono-Regular", "Cascadia Code", Menlo, Consolas,
+    monospace;
+  --a3s-site-radius: 14px;
+  --a3s-site-radius-small: 9px;
+  --a3s-site-shadow: 0 20px 32px -18px rgb(15 35 70 / 28%);
+  --a3s-site-shadow-raised: 0 34px 84px rgb(36 76 137 / 18%);
+}

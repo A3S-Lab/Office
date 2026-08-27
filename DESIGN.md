@@ -18,16 +18,36 @@ Playground.
 - **Type:** Geist and Geist Mono, inherited from the documentation shell. Large
   headings are left aligned with restrained tracking. Monospace is limited to
   commands, component names, protocol labels, and measured state.
-- **Hero visual:** a light editor-system window communicates actual product
-  boundaries: editor surfaces, shared state, collaborators, and the A3S Boot
-  host contract. It is synthetic UI chrome, not a claim about real users or
-  production scale.
-- **Composition:** the first viewport moves from product promise to the editor
-  system, then to a five-surface contract bar. Workflow, collaboration, editor
-  surfaces, and the final action use distinct chapter colors and layouts.
-- **Motion:** the editor system has one short arrival transition. Hover and
-  focus-visible states remain functional, and `prefers-reduced-motion`
-  disables authored motion without hiding content.
+- **Hero visual:** a light surface map communicates the product boundary:
+  editor surfaces, shared state, collaborators, and the A3S Boot host
+  contract. The hero never mounts a full editor runtime.
+- **Composition:** the first viewport moves from product promise to the surface
+  map, then to a five-surface contract bar. The editor section is a deliberate
+  chapter sequence: Document, Markdown, Spreadsheet, Presentation, and PDF.
+  Each chapter pairs the real editor's interaction language with a lightweight
+  UI/UX motion preview and a documentation entry point. The complete editable
+  editors remain in Playground.
+- **Motion:** each chapter preview animates one recognizable interaction, such
+  as a revision/comment, source-to-preview sync, cell selection, an entrance
+  cue, or page annotation. A shared pause control stops every preview;
+  `prefers-reduced-motion` disables authored motion without hiding content and
+  exposes that system-controlled state on the disabled motion control.
+  A sticky current-chapter meter keeps the reader oriented through the long
+  sequence without introducing a second navigation model. The heading, pause
+  control, chapter index, and meter stay painted while the heavy preview stack
+  uses `content-visibility: auto` with viewport-calibrated intrinsic reserves.
+  This preserves deep-link scroll stability without making a returning user
+  click into an unpainted control.
+- **Preview boundary:** the chapter header carries a persistent
+  `Illustrative UI/UX · preview only` note, and simulated window status values
+  use `Sample`/`示意` wording. Each chapter exposes a collapsed, non-modal
+  recovery disclosure with base-aware links to the component documentation and
+  Playground. These cues make sample presence, autosave, and rendering states
+  explicit without adding noise to the healthy path.
+- **Runtime boundary:** the product home imports only the preview components.
+  It does not load DocumentEditor, MarkdownEditor, SpreadsheetEditor,
+  PresentationEditor, or PdfViewer runtimes, keeping the first paint small and
+  leaving editing state and large document work to Playground.
 
 ## Responsive behavior
 
@@ -45,3 +65,11 @@ treatments must keep these destinations base-aware so Rspress can rewrite them
 for root and GitHub Pages deployments. Product-only CSS belongs under
 `website/product-theme/`; documentation typography and syntax highlighting
 remain owned by `website/theme/`.
+
+The five chapter anchors (`#editor-chapter-document`,
+`#editor-chapter-markdown`, `#editor-chapter-spreadsheet`,
+`#editor-chapter-presentation`, and `#editor-chapter-pdf`) are part of the
+homepage contract. Keep their labels, preview captions, and documentation
+links synchronized when an editor is renamed or its route changes. The
+`data-current-chapter` value and progress meter are derived from those same
+anchors; do not add a parallel chapter registry.
