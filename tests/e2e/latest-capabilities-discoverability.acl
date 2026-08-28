@@ -193,7 +193,7 @@ suite "latest-capabilities-discoverability" {
     }
 
     scenario "follow-latest-documentation-links" {
-        name = "Follow latest capability links from the documentation hero"
+        name = "Follow latest capability links from the documentation index"
         surface = "web"
         timeout_ms = 90000
 
@@ -208,11 +208,11 @@ suite "latest-capabilities-discoverability" {
         }
 
         expect "latest-documentation-links-are-visible" {
-            visible = css("main .docs-home-hero__latest[aria-label='main 分支最新能力']")
+            text = "main 最新能力"
         }
 
         expect "latest-documentation-covers-writer" {
-            visible = css("main .docs-home-hero__latest a[href*='components/document.html#']")
+            visible = css("main .rp-doc a[href*='components/document.html#']")
         }
 
         navigate "open-entrance-animation-documentation" {

@@ -1,146 +1,62 @@
 ---
 title: A3S Office 0.11.0 documentation
 description: Integrate A3S Office 0.11.0, including paragraph-formatting revisions, DOCX w:pPrChange, and the complete real-time collaboration path.
-pageType: doc-wide
-outline: false
 ---
 
-<div className="docs-home">
-  <section className="docs-home-hero" aria-labelledby="a3s-office-0110-documentation">
-    <div className="docs-home-hero__copy">
 # A3S Office 0.11.0 documentation
 
-      <p className="docs-home-hero__lead"><strong>Frozen documentation.</strong> This snapshot records paragraph-formatting revisions, native DOCX <code>w:pPrChange</code> round trips, browser/Yrs validation, the complete A3S Boot collaboration backend, and deterministic Playground coverage released in A3S Office 0.11.0.</p>
-      <div className="docs-home-actions" aria-label="Primary documentation paths">
-        <a className="docs-home-action docs-home-action--primary" href="./guide/index.html">Start integrating <span aria-hidden="true">→</span></a>
-        <a className="docs-home-action docs-home-action--secondary" href="./components/collaboration.html">Explore live collaboration</a>
-      </div>
-    </div>
+Frozen documentation. This snapshot records paragraph-formatting revisions, native DOCX `w:pPrChange` round trips, browser/Yrs validation, the complete A3S Boot collaboration backend, and deterministic Playground coverage released in A3S Office 0.11.0.
 
-    <div className="docs-home-install" aria-label="Install A3S Office">
-      <div className="docs-home-install__header">
-        <span>package</span>
-        <strong>@a3s-lab/office</strong>
-      </div>
-      <pre><code>bun add @a3s-lab/office</code></pre>
-      <div className="docs-home-install__surfaces" aria-label="Supported editor surfaces">
-        <span>Document</span>
-        <span>Markdown</span>
-        <span>Spreadsheet</span>
-        <span>Presentation</span>
-        <span>PDF</span>
-      </div>
-    </div>
-  </section>
+## Start here
 
-  <section className="docs-home-section docs-home-journey" aria-labelledby="docs-home-journey-title">
-    <div className="docs-home-section__intro">
-      <h2 id="docs-home-journey-title">Read by workflow</h2>
-      <p>Begin with one component, then add file behavior, live collaboration, and agent automation.</p>
-    </div>
+| Goal | Documentation |
+| --- | --- |
+| Mount the first controlled editor | [Getting started](./guide/index.html) |
+| Choose React, Vue, or Web Component | [Component integration](./components/index.html) |
+| Configure an editor and its content model | [Editor APIs](./components/document.html) |
+| Add host actions or extensions | [Extension model](./components/extensions.html) |
+| Add real-time collaboration | [Real-time collaboration](./components/collaboration.html) |
+| Deploy the collaboration backend | [A3S Boot collaboration server](./components/collaboration-server.html) |
+| Use the CLI and coding-agent Skill | [CLI and Skill](./automation/index.html) |
 
-    <ol className="docs-home-flow">
-      <li className="docs-home-stage">
-        <span className="docs-home-stage__index" aria-hidden="true">01</span>
-        <div className="docs-home-stage__body">
-          <h3>Start</h3>
-          <p>Install the package and mount the first editor in an existing application.</p>
-        </div>
-        <div className="docs-home-stage__links">
-          <a href="./guide/index.html">Getting started <span aria-hidden="true">→</span></a>
-          <a href="./components/index.html">Choose a framework <span aria-hidden="true">→</span></a>
-        </div>
-      </li>
-      <li className="docs-home-stage">
-        <span className="docs-home-stage__index" aria-hidden="true">02</span>
-        <div className="docs-home-stage__body">
-          <h3>Build</h3>
-          <p>Configure file models, controlled state, import and export, and host extensions.</p>
-        </div>
-        <div className="docs-home-stage__links">
-          <a href="./components/document.html">Editor APIs <span aria-hidden="true">→</span></a>
-          <a href="./components/extensions.html">Extension model <span aria-hidden="true">→</span></a>
-        </div>
-      </li>
-      <li className="docs-home-stage docs-home-stage--collaborate">
-        <span className="docs-home-stage__index" aria-hidden="true">03</span>
-        <div className="docs-home-stage__body">
-          <h3>Collaborate</h3>
-          <p>Let people and coding agents edit or review the same file through Yjs and Yrs, including durable Document selection comments.</p>
-        </div>
-        <div className="docs-home-stage__links">
-          <a href="./components/collaboration.html">Live collaboration <span aria-hidden="true">→</span></a>
-          <a href="./components/collaboration-server.html">A3S Boot backend <span aria-hidden="true">→</span></a>
-        </div>
-      </li>
-      <li className="docs-home-stage">
-        <span className="docs-home-stage__index" aria-hidden="true">04</span>
-        <div className="docs-home-stage__body">
-          <h3>Automate</h3>
-          <p>Process Office files safely through the CLI, MCP, A3S Code, and the Skill.</p>
-        </div>
-        <div className="docs-home-stage__links">
-          <a href="./automation/index.html">CLI and Skill <span aria-hidden="true">→</span></a>
-          <a href="./cli-reference.html">CLI reference <span aria-hidden="true">→</span></a>
-        </div>
-      </li>
-    </ol>
-  </section>
+## Editor components
 
-  <section className="docs-home-collaboration" aria-labelledby="docs-home-collaboration-title">
-    <div className="docs-home-collaboration__copy">
-      <h2 id="docs-home-collaboration-title">Collaboration is a complete path</h2>
-      <p>Office owns format bindings, participants, remote locations, and local undo. The host keeps ownership of rooms, authentication, authorization, the network provider, offline buffering, and persistence.</p>
-      <ul className="docs-home-collaboration__facts">
-        <li>All five editors share one typed collaboration boundary</li>
-        <li>Document comment mode supports attributed threads, replies, resolve/reopen, and own-record deletion</li>
-        <li>Document suggestion mode supports attributed insert/delete/replace proposals and immutable editor decisions</li>
-        <li>Character-formatting revisions accept the new marks or restore the exact prior formatting and round-trip as DOCX <code>w:rPrChange</code></li>
-        <li>Browser Yjs and native Yrs exchange standard incremental updates</li>
-        <li>The A3S Boot example authorizes review semantics before persistence and broadcast</li>
-      </ul>
-      <div className="docs-home-collaboration__links">
-        <a href="./components/collaboration.html">Read the integration flow <span aria-hidden="true">→</span></a>
-        <a href="./components/collaboration-server.html">Deploy the full backend <span aria-hidden="true">→</span></a>
-      </div>
-    </div>
+| File type | Public component | Content model and implementation |
+| --- | --- | --- |
+| Document | [`DocumentEditor`](./components/document.html) | TipTap and ProseMirror with the A3S Office layout kernel |
+| Markdown | [`MarkdownEditor`](./components/markdown.html) | Visual editing with a controlled Markdown source model |
+| Spreadsheet | [`SpreadsheetEditor`](./components/spreadsheet.html) | Workbook interaction with the A3S Office calculation kernel |
+| Presentation | [`PresentationEditor`](./components/presentation.html) | A scene graph with on-demand text editing |
+| PDF | [`PdfViewer`](./components/pdf.html) | PDFium WebAssembly rendering and annotation controllers |
 
-    <figure
-      className="docs-home-collaboration__diagram"
-      role="img"
-      aria-label="Two browsers and one native agent share Yjs and Yrs state through an authenticated and persistent A3S Boot service"
-    >
-      <div className="docs-home-diagram__peers" aria-hidden="true">
-        <span>Browser A<small>Yjs</small></span>
-        <span>Browser B<small>Yjs</small></span>
-        <span>A3S Agent<small>Yrs</small></span>
-      </div>
-      <div className="docs-home-diagram__connector" aria-hidden="true">
-        <i></i><b>state vectors + updates</b><i></i>
-      </div>
-      <div className="docs-home-diagram__service" aria-hidden="true">
-        <strong>A3S Boot</strong>
-        <span>room auth · awareness · persistence</span>
-      </div>
-    </figure>
-  </section>
+## Released in 0.11.0
 
-  <section className="docs-home-section docs-home-editors" aria-labelledby="docs-home-editors-title">
-    <div className="docs-home-section__intro">
-      <h2 id="docs-home-editors-title">Choose an editor surface</h2>
-      <p>Each file format keeps its own data model while sharing one host integration pattern.</p>
-    </div>
-    <ul className="docs-home-surface-list">
-      <li><a href="./components/document.html"><strong>Document</strong><span>TipTap and ProseMirror with the A3S Office layout kernel</span><code>DocumentEditor</code></a></li>
-      <li><a href="./components/markdown.html"><strong>Markdown</strong><span>Visual editing with a controlled Markdown source model</span><code>MarkdownEditor</code></a></li>
-      <li><a href="./components/spreadsheet.html"><strong>Spreadsheet</strong><span>Workbook interaction with the A3S Office calculation kernel</span><code>SpreadsheetEditor</code></a></li>
-      <li><a href="./components/presentation.html"><strong>Presentation</strong><span>A scene graph with on-demand text editing</span><code>PresentationEditor</code></a></li>
-      <li><a href="./components/pdf.html"><strong>PDF</strong><span>PDFium WebAssembly rendering and annotation controllers</span><code>PdfViewer</code></a></li>
-    </ul>
-  </section>
+Release-specific behavior is documented in the component references above.
 
-  <aside className="docs-home-version-note" aria-label="Documentation language and version">
-    <strong>You are reading 0.11.0</strong>
-    <span>This frozen release remains available from the top navigation. Switch language or version there; search remains scoped to the active language and version.</span>
-  </aside>
-</div>
+## Real-time collaboration
+
+Browsers use Yjs and native agents use Yrs. The host owns rooms, identity,
+authorization, providers, offline buffering, and persistence; editors exchange
+content and presence through the typed collaboration protocol.
+
+- All five editors share one typed collaboration boundary
+- Document comment mode supports attributed threads, replies, resolve/reopen, and own-record deletion
+- Document suggestion mode supports attributed insert/delete/replace proposals and immutable editor decisions
+- Character-formatting revisions accept the new marks or restore the exact prior formatting and round-trip as DOCX `w:rPrChange`
+- Browser Yjs and native Yrs exchange standard incremental updates
+- The A3S Boot example authorizes review semantics before persistence and broadcast
+
+- [Collaboration protocol and state boundaries](./components/collaboration.html)
+- [A3S Boot collaboration server](./components/collaboration-server.html)
+
+## Engineering references
+
+| Topic | Reference |
+| --- | --- |
+| Browser editors, Workers, and WebAssembly | [Browser editor architecture](./browser-editor-architecture.md) |
+| Rust core and local files | [Native Office engine](./native-office-engine.md) |
+| Quality gates and compatibility | [Editor quality roadmap](./editor-quality-roadmap.md) |
+| CLI commands and JSON protocol | [CLI reference](./cli-reference.md) |
+
+Use the header controls to switch between Simplified Chinese, English, and other
+frozen releases. Search remains scoped to the active version and language.

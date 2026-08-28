@@ -1080,7 +1080,7 @@ test('Playground returns to the documentation center with collaboration discover
   );
   await expect(
     page.getByRole('heading', {
-      name: '从嵌入编辑器到多人实时协作',
+      name: 'A3S Office 文档',
       level: 1,
     }),
   ).toBeVisible();
@@ -1093,6 +1093,9 @@ test('Playground returns to the documentation center with collaboration discover
   await expect(page.locator('.rp-doc-layout__sidebar')).toContainText(
     'DocumentEditor',
   );
+  await expect(page.locator('main .docs-home-hero')).toHaveCount(0);
+  await expect(page.locator('main .docs-home-collaboration')).toHaveCount(0);
+  await expect(page.locator('main .rp-doc table').first()).toBeVisible();
   await expect(page.locator('.office-docs-playground-link')).toHaveCount(0);
   const playgroundNavLink = page
     .locator('.rp-nav__left')

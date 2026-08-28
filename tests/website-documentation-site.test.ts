@@ -12,7 +12,10 @@ import {
 const documentationRoot = path.resolve(import.meta.dirname, '../docs');
 const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
-function homepageComponentHref(version: string, component: string): string {
+function documentationComponentHref(
+  version: string,
+  component: string,
+): string {
   const extension =
     version === 'latest' ||
     version === '0.34.0' ||
@@ -161,6 +164,17 @@ test('builds a product home beside, rather than inside, the versioned docs site'
   expect(docsConfig).toContain('base: docsBase');
 });
 
+test('points README documentation links at the independent docs deployment', async () => {
+  const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
+
+  expect(readme).toContain('https://a3s-lab.github.io/Office/docs/');
+  expect(readme).toContain('https://a3s-lab.github.io/Office/docs/components/');
+  expect(readme).toContain('https://a3s-lab.github.io/Office/docs/automation/');
+  expect(readme).not.toMatch(
+    /https:\/\/a3s-lab\.github\.io\/Office\/(?:components|automation|en\/components|0\.\d)/,
+  );
+});
+
 test('keeps every public route available in every language and version', async () => {
   for (const version of DOCUMENTATION_VERSIONS) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
@@ -232,7 +246,7 @@ test('makes the latest main capabilities discoverable from README and both docum
   expect(readme).toContain('Latest capabilities → 数据验证');
   expect(readme).toContain('Latest capabilities → 组织 PDF 页面');
 
-  expect(englishHome).toContain('aria-label="Latest capabilities on main"');
+  expect(englishHome).toContain('## Latest capabilities on `main`');
   expect(englishHome).toContain('presentation.html#entrance-animations');
   expect(englishHome).toContain('Entrance animations');
   expect(englishHome).toContain('Document compare');
@@ -243,7 +257,7 @@ test('makes the latest main capabilities discoverable from README and both docum
   expect(englishHome).toContain('Data validation');
   expect(englishHome).toContain('pdf.html#page-organization');
 
-  expect(chineseHome).toContain('aria-label="main 分支最新能力"');
+  expect(chineseHome).toContain('## `main` 最新能力');
   expect(chineseHome).toContain('presentation.html#入场动画');
   expect(chineseHome).toContain('document.html#文档比较与合并');
   expect(chineseHome).toContain('document.html#原生可更新目录');
@@ -252,6 +266,38 @@ test('makes the latest main capabilities discoverable from README and both docum
   expect(chineseHome).toContain('原生校对语言');
   expect(chineseHome).toContain('spreadsheet.html#数据验证');
   expect(chineseHome).toContain('pdf.html#页面组织');
+});
+
+test('keeps every documentation index separate from the product home surface', async () => {
+  const documentationIndexes = await Promise.all(
+    DOCUMENTATION_VERSIONS.flatMap((version) =>
+      DOCUMENTATION_LOCALES.map(async ({ lang }) => ({
+        lang,
+        version,
+        contents: await readFile(
+          path.join(documentationRoot, version, lang, 'index.mdx'),
+          'utf8',
+        ),
+      })),
+    ),
+  );
+
+  for (const { contents: index } of documentationIndexes) {
+    expect(index).not.toContain('docs-home-hero');
+    expect(index).not.toContain('docs-home-collaboration');
+    expect(index).not.toContain('docs-home-final');
+    expect(index).not.toContain('docs-home-system-window');
+    expect(index).not.toContain('pageType: home');
+    expect(index).not.toContain('<PlaygroundLink');
+    expect(index).not.toContain('在线体验');
+    expect(index).not.toContain('Open the Playground');
+    expect(index).not.toContain('Product storytelling');
+    expect(index).not.toContain('product-home demonstrations');
+    expect(index).not.toContain('产品首页');
+    expect(index).toContain('./guide/index.');
+    expect(index).toContain('./components/index.');
+    expect(index).toContain('./automation/index.');
+  }
 });
 
 test('publishes Presentation entrance animations across implementation, docs, Playground, and release evidence', async () => {
@@ -946,7 +992,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
   }
 });
 
-test('keeps published release homepages frozen and visibly versioned', async () => {
+test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
     '0.34.0',
     '0.33.0',
@@ -1000,24 +1046,24 @@ test('keeps published release homepages frozen and visibly versioned', async () 
   }
 });
 
-test('removes broken online Playground actions from frozen homepages', async () => {
+test('removes broken online Playground actions from frozen documentation indexes', async () => {
   for (const version of DOCUMENTATION_VERSIONS.filter(
     (candidate) => candidate !== 'latest',
   )) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
-      const homepage = await readFile(
+      const documentationIndex = await readFile(
         path.join(documentationRoot, version, lang, 'index.mdx'),
         'utf8',
       );
 
-      expect(homepage).not.toContain('<PlaygroundLink>');
-      expect(homepage).not.toContain('在线体验');
-      expect(homepage).not.toContain('Open the Playground');
+      expect(documentationIndex).not.toContain('<PlaygroundLink>');
+      expect(documentationIndex).not.toContain('在线体验');
+      expect(documentationIndex).not.toContain('Open the Playground');
     }
   }
 });
 
-test('uses deployable HTML targets in current release homepage actions', async () => {
+test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
     '0.34.0',
     '0.33.0',
@@ -1051,16 +1097,16 @@ test('uses deployable HTML targets in current release homepage actions', async (
     '0.7.3',
   ]) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
-      const homepage = await readFile(
+      const documentationIndex = await readFile(
         path.join(documentationRoot, version, lang, 'index.mdx'),
         'utf8',
       );
 
-      expect(homepage).not.toMatch(/href="[^"]+\.mdx(?:[?#][^"]*)?"/);
-      expect(homepage).toContain('href="./guide/index.html"');
-      expect(homepage).toContain('href="./components/collaboration.html"');
-      expect(homepage).toContain(
-        'href="./components/collaboration-server.html"',
+      expect(documentationIndex).not.toMatch(/href="[^"]+\.mdx(?:[?#][^"]*)?"/);
+      expect(documentationIndex).toContain('./guide/index.html');
+      expect(documentationIndex).toContain('./components/collaboration.html');
+      expect(documentationIndex).toContain(
+        './components/collaboration-server.html',
       );
     }
   }
@@ -1093,19 +1139,20 @@ test('publishes real-time collaboration as a bilingual first-class capability', 
   ]) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
-      const [homepage, componentIndex, componentNavigation, collaboration] =
-        await Promise.all([
-          readFile(path.join(localeRoot, 'index.mdx'), 'utf8'),
-          readFile(path.join(localeRoot, 'components/index.mdx'), 'utf8'),
-          readFile(path.join(localeRoot, 'components/_meta.json'), 'utf8'),
-          readFile(
-            path.join(localeRoot, 'components/collaboration.mdx'),
-            'utf8',
-          ),
-        ]);
+      const [
+        documentationIndex,
+        componentIndex,
+        componentNavigation,
+        collaboration,
+      ] = await Promise.all([
+        readFile(path.join(localeRoot, 'index.mdx'), 'utf8'),
+        readFile(path.join(localeRoot, 'components/index.mdx'), 'utf8'),
+        readFile(path.join(localeRoot, 'components/_meta.json'), 'utf8'),
+        readFile(path.join(localeRoot, 'components/collaboration.mdx'), 'utf8'),
+      ]);
 
-      expect(homepage).toContain(
-        homepageComponentHref(version, 'collaboration'),
+      expect(documentationIndex).toContain(
+        documentationComponentHref(version, 'collaboration'),
       );
       expect(componentIndex).toContain('./collaboration.mdx');
       expect(componentNavigation).toContain('"collaboration"');
@@ -1144,7 +1191,7 @@ test('publishes the runnable collaboration backend in latest releases', async ()
   ]) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
-      const [homepage, componentIndex, componentNavigation, server] =
+      const [documentationIndex, componentIndex, componentNavigation, server] =
         await Promise.all([
           readFile(path.join(localeRoot, 'index.mdx'), 'utf8'),
           readFile(path.join(localeRoot, 'components/index.mdx'), 'utf8'),
@@ -1155,8 +1202,8 @@ test('publishes the runnable collaboration backend in latest releases', async ()
           ),
         ]);
 
-      expect(homepage).toContain(
-        homepageComponentHref(version, 'collaboration-server'),
+      expect(documentationIndex).toContain(
+        documentationComponentHref(version, 'collaboration-server'),
       );
       expect(componentIndex).toContain('./collaboration-server.mdx');
       expect(componentNavigation).toContain('"collaboration-server"');

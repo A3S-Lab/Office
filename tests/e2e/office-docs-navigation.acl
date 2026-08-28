@@ -45,7 +45,11 @@ suite "office-docs-navigation" {
         }
 
         expect "documentation-center-ready" {
-            visible = css("main .docs-home-hero")
+            visible = css("main .rp-doc h1")
+        }
+
+        expect "documentation-center-is-a-reading-surface" {
+            visible = css("main .rp-doc:not(:has(.docs-home-hero)):not(:has(.docs-home-collaboration)):not(:has(.docs-home-final))")
         }
 
         expect "documentation-defaults-to-chinese" {
@@ -85,7 +89,7 @@ suite "office-docs-navigation" {
         }
 
         expect "latest-main-capabilities-are-prominent" {
-            visible = css("main .docs-home-hero__latest[aria-label='main 分支最新能力']")
+            text = "main 最新能力"
         }
 
         expect "latest-writer-capabilities-are-linked" {
@@ -93,23 +97,19 @@ suite "office-docs-navigation" {
         }
 
         expect "latest-spreadsheet-capability-is-linked" {
-            visible = css("main .docs-home-hero__latest a[href*='components/spreadsheet.html#']")
+            visible = css("main .rp-doc a[href*='components/spreadsheet.html#']")
         }
 
-        expect "workflow-navigation-is-visible" {
-            visible = css("main .docs-home-flow")
-        }
-
-        expect "collaboration-stage-is-emphasized" {
-            visible = css("main .docs-home-stage--collaborate")
+        expect "documentation-index-table-is-visible" {
+            visible = css("main .rp-doc table")
         }
 
         expect "collaboration-entry-is-prominent" {
-            visible = css("main .docs-home-stage--collaborate a[href$='/components/collaboration.html']")
+            visible = css("main .rp-doc a[href$='/components/collaboration.html']")
         }
 
         expect "collaboration-backend-entry-is-prominent" {
-            visible = css("main .docs-home-stage--collaborate a[href$='/components/collaboration-server.html']")
+            visible = css("main .rp-doc a[href$='/components/collaboration-server.html']")
         }
 
         navigate "open-collaboration-guide" {
@@ -281,7 +281,7 @@ suite "office-docs-navigation" {
     }
 
     scenario "scan-documentation-center-on-phone" {
-        name = "Scan the documentation workflow and collaboration path on a phone"
+        name = "Scan the documentation index and collaboration references on a phone"
         surface = "web"
         timeout_ms = 90000
 
@@ -295,28 +295,28 @@ suite "office-docs-navigation" {
             url = "http://127.0.0.1:4175/docs/"
         }
 
-        expect "phone-documentation-hero-is-visible" {
-            visible = css("main .docs-home-hero")
+        expect "phone-documentation-heading-is-visible" {
+            visible = css("main .rp-doc h1")
         }
 
         expect "phone-navigation-has-an-accessible-trigger" {
             visible = css("button.rp-nav-hamburger[aria-label='打开导航']")
         }
 
-        expect "phone-primary-action-is-visible" {
-            visible = css("main .docs-home-action--primary[href$='/guide/index.html']")
+        expect "phone-getting-started-link-is-visible" {
+            visible = css("main .rp-doc a[href$='/guide/index.html']")
         }
 
-        expect "phone-workflow-is-readable" {
-            visible = css("main .docs-home-flow")
+        expect "phone-documentation-table-is-readable" {
+            visible = css("main .rp-doc table")
         }
 
         expect "phone-collaboration-is-discoverable" {
-            visible = css("main .docs-home-stage--collaborate a[href$='/components/collaboration.html']")
+            visible = css("main .rp-doc a[href$='/components/collaboration.html']")
         }
 
         expect "phone-backend-guide-is-discoverable" {
-            visible = css("main .docs-home-stage--collaborate a[href$='/components/collaboration-server.html']")
+            visible = css("main .rp-doc a[href$='/components/collaboration-server.html']")
         }
 
         accessibility "phone-documentation-accessibility" {
@@ -522,12 +522,16 @@ suite "office-docs-navigation" {
             load = "networkidle"
         }
 
-        expect "release-collaboration-action-uses-html-route" {
-            visible = css(".docs-home-action[href='./components/collaboration.html']")
+        expect "release-documentation-is-a-reading-surface" {
+            visible = css("main .rp-doc:not(:has(.docs-home-hero)):not(:has(.docs-home-collaboration)):not(:has(.docs-home-final))")
         }
 
-        click "open-collaboration-from-release-homepage" {
-            target = css(".docs-home-action[href='./components/collaboration.html']")
+        expect "release-collaboration-entry-uses-html-route" {
+            visible = css("main .rp-doc a[href$='/components/collaboration.html']")
+        }
+
+        click "open-collaboration-from-release-documentation" {
+            target = css("main .rp-doc a[href$='/components/collaboration.html']")
         }
 
         wait "release-collaboration-route" {

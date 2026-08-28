@@ -1,145 +1,59 @@
 ---
 title: A3S Office 0.9.0 文档
 description: 接入 A3S Office 0.9.0，包括原生 Spreadsheet 单元格原子批处理与完整多人实时协作链路。
-pageType: doc-wide
-outline: false
 ---
 
-<div className="docs-home">
-  <section className="docs-home-hero" aria-labelledby="a3s-office-090-文档">
-    <div className="docs-home-hero__copy">
 # A3S Office 0.9.0 文档
 
-      <p className="docs-home-hero__lead"><strong>冻结文档。</strong>这里记录 A3S Office 0.9.0 发布时的浏览器编辑器、原生 Spreadsheet 单元格原子批处理、署名 Document 审阅流程、A3S Boot 实时协作后端和确定性 Playground 覆盖。</p>
-      <div className="docs-home-actions" aria-label="主要文档入口">
-        <a className="docs-home-action docs-home-action--primary" href="./guide/index.html">开始接入 <span aria-hidden="true">→</span></a>
-        <a className="docs-home-action docs-home-action--secondary" href="./components/collaboration.html">查看多人实时协作</a>
-      </div>
-    </div>
+冻结文档。这里记录 A3S Office 0.9.0 发布时的浏览器编辑器、原生 Spreadsheet 单元格原子批处理、署名 Document 审阅流程、A3S Boot 实时协作后端和确定性 Playground 覆盖。
 
-    <div className="docs-home-install" aria-label="安装 A3S Office">
-      <div className="docs-home-install__header">
-        <span>package</span>
-        <strong>@a3s-lab/office</strong>
-      </div>
-      <pre><code>bun add @a3s-lab/office</code></pre>
-      <div className="docs-home-install__surfaces" aria-label="支持的编辑器">
-        <span>Document</span>
-        <span>Markdown</span>
-        <span>Spreadsheet</span>
-        <span>Presentation</span>
-        <span>PDF</span>
-      </div>
-    </div>
-  </section>
+## 从这里开始
 
-  <section className="docs-home-section docs-home-journey" aria-labelledby="docs-home-journey-title">
-    <div className="docs-home-section__intro">
-      <h2 id="docs-home-journey-title">按工作流阅读</h2>
-      <p>从第一个组件开始，逐步接入文件能力、实时协作和智能体自动化。</p>
-    </div>
+| 目标 | 文档入口 |
+| --- | --- |
+| 在应用中挂载第一个受控编辑器 | [快速开始](./guide/index.html) |
+| 选择 React、Vue 或 Web Component | [组件接入](./components/index.html) |
+| 配置编辑器和内容模型 | [编辑器 API](./components/document.html) |
+| 添加宿主操作或扩展 | [扩展机制](./components/extensions.html) |
+| 接入多人实时协作 | [多人实时协作](./components/collaboration.html) |
+| 部署协作后端 | [A3S Boot 实时协作后端](./components/collaboration-server.html) |
+| 使用 CLI 与编码智能体 | [CLI 与 Skill](./automation/index.html) |
 
-    <ol className="docs-home-flow">
-      <li className="docs-home-stage">
-        <span className="docs-home-stage__index" aria-hidden="true">01</span>
-        <div className="docs-home-stage__body">
-          <h3>Start</h3>
-          <p>安装包并在现有应用中挂载第一个编辑器。</p>
-        </div>
-        <div className="docs-home-stage__links">
-          <a href="./guide/index.html">快速开始 <span aria-hidden="true">→</span></a>
-          <a href="./components/index.html">选择框架 <span aria-hidden="true">→</span></a>
-        </div>
-      </li>
-      <li className="docs-home-stage">
-        <span className="docs-home-stage__index" aria-hidden="true">02</span>
-        <div className="docs-home-stage__body">
-          <h3>Build</h3>
-          <p>配置文件模型、受控状态、导入导出和宿主扩展。</p>
-        </div>
-        <div className="docs-home-stage__links">
-          <a href="./components/document.html">编辑器 API <span aria-hidden="true">→</span></a>
-          <a href="./components/extensions.html">扩展机制 <span aria-hidden="true">→</span></a>
-        </div>
-      </li>
-      <li className="docs-home-stage docs-home-stage--collaborate">
-        <span className="docs-home-stage__index" aria-hidden="true">03</span>
-        <div className="docs-home-stage__body">
-          <h3>Collaborate</h3>
-          <p>让用户与编码智能体通过 Yjs/Yrs 实时编辑或审阅同一文件，包括持久的 Document 选区评论。</p>
-        </div>
-        <div className="docs-home-stage__links">
-          <a href="./components/collaboration.html">多人实时协作 <span aria-hidden="true">→</span></a>
-          <a href="./components/collaboration-server.html">A3S Boot 后端 <span aria-hidden="true">→</span></a>
-        </div>
-      </li>
-      <li className="docs-home-stage">
-        <span className="docs-home-stage__index" aria-hidden="true">04</span>
-        <div className="docs-home-stage__body">
-          <h3>Automate</h3>
-          <p>通过 CLI、MCP、A3S Code 与 Skill 安全处理 Office 文件。</p>
-        </div>
-        <div className="docs-home-stage__links">
-          <a href="./automation/index.html">CLI 与 Skill <span aria-hidden="true">→</span></a>
-          <a href="./cli-reference.html">CLI 参考 <span aria-hidden="true">→</span></a>
-        </div>
-      </li>
-    </ol>
-  </section>
+## 编辑器组件
 
-  <section className="docs-home-collaboration" aria-labelledby="docs-home-collaboration-title">
-    <div className="docs-home-collaboration__copy">
-      <h2 id="docs-home-collaboration-title">协作是一条完整链路</h2>
-      <p>Office 负责格式绑定、在线成员、远端位置与本地撤销。宿主继续拥有房间、鉴权、权限、网络 Provider、离线队列和持久化。</p>
-      <ul className="docs-home-collaboration__facts">
-        <li>五种编辑器使用同一套类型化协作边界</li>
-        <li>Document 评论模式支持实名线程、回复、解决/重开和本人记录删除</li>
-        <li>Document 建议模式支持署名插入/删除/替换提案与不可变编辑决定</li>
-        <li>浏览器 Yjs 与原生 Yrs 交换标准增量更新</li>
-        <li>A3S Boot 示例在持久化和广播前执行审核语义授权</li>
-      </ul>
-      <div className="docs-home-collaboration__links">
-        <a href="./components/collaboration.html">阅读接入流程 <span aria-hidden="true">→</span></a>
-        <a href="./components/collaboration-server.html">部署完整后端 <span aria-hidden="true">→</span></a>
-      </div>
-    </div>
+| 文件类型 | 公开组件 | 内容模型与实现 |
+| --- | --- | --- |
+| 文档 | [`DocumentEditor`](./components/document.html) | TipTap / ProseMirror 与 A3S Office 排版内核 |
+| Markdown | [`MarkdownEditor`](./components/markdown.html) | 可视化编辑与受控 Markdown 源码 |
+| 表格 | [`SpreadsheetEditor`](./components/spreadsheet.html) | 工作表交互与 A3S Office 计算内核 |
+| 演示文稿 | [`PresentationEditor`](./components/presentation.html) | 场景图与按需加载的文本编辑 |
+| PDF | [`PdfViewer`](./components/pdf.html) | PDFium WebAssembly 渲染与批注控制器 |
 
-    <figure
-      className="docs-home-collaboration__diagram"
-      role="img"
-      aria-label="两个浏览器和一个原生智能体通过带鉴权与持久化的 A3S Boot 服务共享 Yjs 与 Yrs 状态"
-    >
-      <div className="docs-home-diagram__peers" aria-hidden="true">
-        <span>Browser A<small>Yjs</small></span>
-        <span>Browser B<small>Yjs</small></span>
-        <span>A3S Agent<small>Yrs</small></span>
-      </div>
-      <div className="docs-home-diagram__connector" aria-hidden="true">
-        <i></i><b>state vectors + updates</b><i></i>
-      </div>
-      <div className="docs-home-diagram__service" aria-hidden="true">
-        <strong>A3S Boot</strong>
-        <span>room auth · awareness · persistence</span>
-      </div>
-    </figure>
-  </section>
+## 0.9.0 发布内容
 
-  <section className="docs-home-section docs-home-editors" aria-labelledby="docs-home-editors-title">
-    <div className="docs-home-section__intro">
-      <h2 id="docs-home-editors-title">选择编辑器界面</h2>
-      <p>每种文件格式都有自己的数据模型，同时共享统一的宿主接入方式。</p>
-    </div>
-    <ul className="docs-home-surface-list">
-      <li><a href="./components/document.html"><strong>文档</strong><span>TipTap / ProseMirror 与 A3S Office 排版内核</span><code>DocumentEditor</code></a></li>
-      <li><a href="./components/markdown.html"><strong>Markdown</strong><span>可视化编辑与受控 Markdown 源码</span><code>MarkdownEditor</code></a></li>
-      <li><a href="./components/spreadsheet.html"><strong>表格</strong><span>工作表交互与 A3S Office 计算内核</span><code>SpreadsheetEditor</code></a></li>
-      <li><a href="./components/presentation.html"><strong>演示文稿</strong><span>场景图与按需加载的文本编辑</span><code>PresentationEditor</code></a></li>
-      <li><a href="./components/pdf.html"><strong>PDF</strong><span>PDFium WebAssembly 渲染与批注控制器</span><code>PdfViewer</code></a></li>
-    </ul>
-  </section>
+该版本的具体能力记录在上面的组件文档中。
 
-  <aside className="docs-home-version-note" aria-label="文档语言与版本">
-    <strong>正在阅读 0.9.0</strong>
-    <span>使用页面顶部控件切换简体中文、English 或冻结版本。搜索结果始终限制在当前语言和版本。</span>
-  </aside>
-</div>
+## 多人实时协作
+
+浏览器端使用 Yjs，原生智能体使用 Yrs。宿主负责房间、身份、权限、Provider、离线队列和持久化；
+编辑器通过类型化协作协议交换内容与 presence 状态。
+
+- 五种编辑器使用同一套类型化协作边界
+- Document 评论模式支持实名线程、回复、解决/重开和本人记录删除
+- Document 建议模式支持署名插入/删除/替换提案与不可变编辑决定
+- 浏览器 Yjs 与原生 Yrs 交换标准增量更新
+- A3S Boot 示例在持久化和广播前执行审核语义授权
+
+- [协作协议与状态边界](./components/collaboration.html)
+- [A3S Boot 实时协作后端](./components/collaboration-server.html)
+
+## 工程参考
+
+| 主题 | 参考文档 |
+| --- | --- |
+| 浏览器编辑器、Worker 与 WebAssembly | [浏览器编辑器架构](./browser-editor-architecture.md) |
+| Rust 核心与本地文件 | [本地 Office 引擎](./native-office-engine.md) |
+| 质量门禁与兼容性 | [编辑器质量路线图](./editor-quality-roadmap.md) |
+| CLI 命令与 JSON 协议 | [CLI 参考](./cli-reference.md) |
+
+使用页面顶部控件切换简体中文、English 或其他冻结版本；搜索只返回当前版本和语言的结果。
