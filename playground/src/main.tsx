@@ -5,6 +5,7 @@ import type {
   OfficeArtifactContent,
   OfficeFileImportProgress,
 } from '@a3s-lab/office/core';
+import { A3SReviewOverlay, A3STestBoundary, A3STestKit } from './testkit';
 import {
   AlertCircle,
   BookOpenText,
@@ -492,9 +493,19 @@ function Playground() {
   };
 
   return (
-    <div className="playground-shell">
-      <PlaygroundSiteHeader />
-      <main
+    <div
+      className={`playground-shell ${activeArtifact ? 'editor-open' : 'home-open'}`}
+    >
+      {!activeArtifact && <PlaygroundSiteHeader />}
+      <A3STestBoundary
+        id="office-playground"
+        name="Office Playground"
+        as="main"
+        source={{ file: 'playground/src/main.tsx' }}
+        facts={() => ({
+          activeEditor: activeArtifact?.kind ?? null,
+          view: activeArtifact ? 'editor' : 'workspace',
+        })}
         className={`playground-site ${sidebarOpen ? 'sidebar-visible' : ''} ${
           activeArtifact ? 'editor-open' : ''
         }`}
@@ -555,7 +566,17 @@ function Playground() {
           />
         )}
 
-        <section className="playground-main-pane">
+        <A3STestBoundary
+          id="office-editor-workspace"
+          name="Office editor workspace"
+          as="section"
+          className="playground-main-pane"
+          source={{ file: 'playground/src/main.tsx' }}
+          facts={() => ({
+            activeArtifactId: activeArtifact?.id ?? null,
+            editorKind: activeArtifact?.kind ?? null,
+          })}
+        >
           {activeArtifact ? (
             <Suspense
               fallback={<WorkEditorLoadingState title="正在加载编辑器" />}
@@ -634,7 +655,7 @@ function Playground() {
               onOpenSidebar={() => setSidebarOpen(true)}
             />
           )}
-        </section>
+        </A3STestBoundary>
 
         {activeImport && (
           <PlaygroundImportProgress
@@ -644,7 +665,7 @@ function Playground() {
         )}
 
         {notice && <PlaygroundToast key={notice.id} notice={notice} />}
-      </main>
+      </A3STestBoundary>
     </div>
   );
 }
@@ -774,9 +795,13 @@ function persistAssistantWidth(width: number): void {
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Playground root element is missing.');
+const testKitEnabled = import.meta.env.DEV;
 
 createRoot(root).render(
   <StrictMode>
-    <Playground />
+    <A3STestKit enabled={testKitEnabled} page={{ id: 'office-playground' }}>
+      <Playground />
+      <A3SReviewOverlay enabled={testKitEnabled} locale="auto" />
+    </A3STestKit>
   </StrictMode>,
 );

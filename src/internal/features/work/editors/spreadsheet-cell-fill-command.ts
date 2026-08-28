@@ -13,6 +13,7 @@ import {
   createOfficeEditorExtension,
   type OfficeEditorExtension,
 } from './office-editor-extension';
+import { spreadsheetLiveCommandSelections } from './spreadsheet-command-selection';
 
 export function createSpreadsheetCellFillExtension(): OfficeEditorExtension<
   SpreadsheetCommandContext,
@@ -98,9 +99,11 @@ function spreadsheetSelectedCellFillPlan(
   ) {
     return null;
   }
-  const selections = context.workbook.getSelection();
+  const selections = spreadsheetLiveCommandSelections(context);
   if (selections?.length !== 1) return null;
-  const plan = planSpreadsheetCellFill(selections[0], direction);
+  const selection = selections[0];
+  if (!selection) return null;
+  const plan = planSpreadsheetCellFill(selection, direction);
   if (!plan) return null;
   const sheet = context.content.sheets.find(
     (candidate) => candidate.id === context.targetSheetId,

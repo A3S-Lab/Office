@@ -2,6 +2,8 @@ import type {
   PresentationCommandResult,
   PresentationEditorCommands,
 } from './presentation-command-types';
+import type { WorkSlideElement } from '../work-types';
+import { presentationElementCanEditContent } from './presentation-selection';
 
 export interface PresentationObjectFocusState {
   editingElementId: string | null;
@@ -16,6 +18,20 @@ export interface PresentationWorkspaceFocusState
 
 const PRESENTATION_OBJECT_FOCUS_RETRY_FRAMES = 4;
 const PRESENTATION_WORKSPACE_FOCUS_RETRY_FRAMES = 6;
+
+export function presentationInitialEditingElementId(
+  elements: readonly WorkSlideElement[],
+): string | null {
+  return (
+    elements.find(
+      (element) =>
+        element.placeholder?.type === 'title' &&
+        presentationElementCanEditContent(element) &&
+        !element.text.trim() &&
+        !element.textRuns?.some((run) => run.text.trim()),
+    )?.id ?? null
+  );
+}
 
 export function restorePresentationObjectFocus(
   container: HTMLElement | null,

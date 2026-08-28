@@ -52,6 +52,7 @@ import {
   type PresentationObjectFocusState,
   type PresentationWorkspaceFocusState,
   presentationCommandsWithObjectFocus,
+  presentationInitialEditingElementId,
   presentationWorkspaceFocusTarget,
   restorePresentationWorkspaceFocus,
 } from './presentation-editor-focus';
@@ -305,7 +306,10 @@ function PresentationEditingSurface({
       : designMode === 'master'
         ? (selectedMaster?.elements ?? [])
         : (selectedSlide?.elements ?? []);
-  const selection = usePresentationSelection(activeElements);
+  const selection = usePresentationSelection(
+    activeElements,
+    autoFocus ? presentationInitialEditingElementId(activeElements) : null,
+  );
   const presentationPresenceLocation = useMemo(
     () => ({
       kind: 'presentation' as const,

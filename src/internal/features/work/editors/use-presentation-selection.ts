@@ -15,9 +15,20 @@ export interface PresentationSelectionController {
 
 export function usePresentationSelection(
   elements: readonly WorkSlideElement[],
+  initialEditingElementId: string | null = null,
 ): PresentationSelectionController {
-  const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
-  const [editingElementId, setEditingElementId] = useState<string | null>(null);
+  const initialEditingElementExists = Boolean(
+    initialEditingElementId &&
+      elements.some((element) => element.id === initialEditingElementId),
+  );
+  const [selectedElementIds, setSelectedElementIds] = useState<string[]>(() =>
+    initialEditingElementExists && initialEditingElementId
+      ? selectionWithPendingIds(elements, [initialEditingElementId])
+      : [],
+  );
+  const [editingElementId, setEditingElementId] = useState<string | null>(() =>
+    initialEditingElementExists ? initialEditingElementId : null,
+  );
 
   const clear = useCallback(() => {
     setSelectedElementIds([]);

@@ -309,15 +309,16 @@
     }
   },
   "devDependencies": {
+    "@a3s-lab/testkit": "0.6.2",
     "@biomejs/biome": "2.4.15",
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
-    "@rspress/core": "^2.0.17",
-    "@rspress/shared": "2.0.19",
     "@playwright/test": "1.61.1",
     "@rsbuild/core": "^2.1.5",
     "@rsbuild/plugin-react": "^2.1.0",
     "@rslib/core": "^0.23.2",
+    "@rspress/core": "^2.0.17",
+    "@rspress/shared": "2.0.19",
     "@rstest/adapter-rslib": "^0.10.6",
     "@rstest/core": "^0.10.6",
     "@rstest/coverage-v8": "0.10.6",

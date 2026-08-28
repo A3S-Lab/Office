@@ -17,7 +17,7 @@
    Rspress product home and versioned docs. The editor itself still owns its
    internal `--a3s-*` theme tokens; these aliases only style the Playground
    shell around it. */
-.playground-shell {
+.playground-shell.home-open {
   --a3s-bg: var(--a3s-site-bg);
   --a3s-panel: var(--a3s-site-surface);
   --a3s-panel-soft: var(--a3s-site-surface-soft);

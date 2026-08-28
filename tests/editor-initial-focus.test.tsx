@@ -82,21 +82,43 @@ test('focuses the spreadsheet grid when the editor first opens', async () => {
   await waitFor(() => expect(grid).toHaveFocus());
 });
 
-test('focuses the active slide when the presentation first opens', async () => {
-  const view = render(<PresentationOpeningHarness />);
+test('focuses the empty title editor when a presentation first opens', async () => {
+  render(<PresentationOpeningHarness />);
 
   const opener = screen.getByRole('button', { name: 'Open presentation' });
   opener.focus();
   fireEvent.click(opener);
 
-  const activeSlide = await waitFor(() => {
-    const target = view.container.querySelector<HTMLElement>(
-      '[data-slide-thumbnail].active',
-    );
-    expect(target).not.toBeNull();
-    return target as HTMLElement;
+  const title = await screen.findByRole('textbox', { name: '幻灯片文本' });
+  await waitFor(() => expect(title).toHaveFocus());
+  expect(title).toHaveAttribute('contenteditable', 'true');
+});
+
+test('keeps opener focus when presentation first-open focus is disabled', async () => {
+  render(<PresentationOpeningHarness autoFocus={false} />);
+
+  const opener = screen.getByRole('button', { name: 'Open presentation' });
+  opener.focus();
+  fireEvent.click(opener);
+
+  await screen.findByRole('group', { name: '单击添加标题' });
+  expect(screen.queryByRole('textbox', { name: '幻灯片文本' })).toBeNull();
+  expect(opener).toHaveFocus();
+});
+
+test('does not steal focus when the user moves on while a presentation opens', async () => {
+  render(<PresentationOpeningHarness showNextControl />);
+
+  const opener = screen.getByRole('button', { name: 'Open presentation' });
+  const next = screen.getByRole('button', {
+    name: 'Next presentation control',
   });
-  await waitFor(() => expect(activeSlide).toHaveFocus());
+  opener.focus();
+  fireEvent.click(opener);
+  next.focus();
+
+  await screen.findByRole('textbox', { name: '幻灯片文本' });
+  await waitFor(() => expect(next).toHaveFocus());
 });
 
 function DocumentOpeningHarness({
@@ -163,7 +185,13 @@ function SpreadsheetOpeningHarness() {
   );
 }
 
-function PresentationOpeningHarness() {
+function PresentationOpeningHarness({
+  autoFocus,
+  showNextControl = false,
+}: {
+  autoFocus?: boolean;
+  showNextControl?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [content, setContent] =
     useState<PresentationContent>(blankPresentation);
@@ -172,8 +200,12 @@ function PresentationOpeningHarness() {
       <button type="button" onClick={() => setOpen(true)}>
         Open presentation
       </button>
+      {showNextControl && (
+        <button type="button">Next presentation control</button>
+      )}
       {open && (
         <PresentationEditor
+          autoFocus={autoFocus}
           content={content}
           onChange={setContent}
           theme="light"

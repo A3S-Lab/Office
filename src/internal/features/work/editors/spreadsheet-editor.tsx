@@ -8,6 +8,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -73,11 +74,16 @@ import { useSpreadsheetCollaborationPresenceProjection } from './spreadsheet-col
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import {
   createSpreadsheetEditorExtensions,
+  type SpreadsheetCommandSelection,
   type SpreadsheetCommandRange,
   type SpreadsheetEditorCommands,
   type SpreadsheetFormatCellsOpenRequest,
   type SpreadsheetStructureAxis,
 } from './spreadsheet-command-controller';
+import {
+  acceptSpreadsheetSelectionChange,
+  releaseSpreadsheetSelectionRequest,
+} from './spreadsheet-command-selection';
 import {
   spreadsheetCoreContextMenuItems,
   spreadsheetSortContextMenuItems,
@@ -287,6 +293,75 @@ function SpreadsheetEditorSurface({
   const projectedWorkbookSheetsRef = useRef<WorkSpreadsheetContent['sheets']>(
     [],
   );
+  useLayoutEffect(() => {
+    const container = spreadsheetCanvasRef.current;
+    if (!container || preview) return;
+
+    let pendingEditor: HTMLElement | null = null;
+    let pointerEnteredEditor = false;
+
+    const moveEditorCaretToEnd = (editor: HTMLElement): boolean => {
+      if (
+        document.activeElement !== editor ||
+        !editor.isConnected ||
+        !editor.textContent
+      ) {
+        return false;
+      }
+      const selection = document.getSelection();
+      if (!selection) return false;
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return true;
+    };
+
+    const handlePointerDown = (event: PointerEvent): void => {
+      pointerEnteredEditor =
+        event.target instanceof Element &&
+        Boolean(event.target.closest('.luckysheet-cell-input'));
+    };
+    const handleFocusIn = (event: FocusEvent): void => {
+      const target = event.target;
+      const editor =
+        target instanceof Element
+          ? target.closest<HTMLElement>('.luckysheet-cell-input')
+          : null;
+      if (!editor || pointerEnteredEditor) {
+        pendingEditor = null;
+        pointerEnteredEditor = false;
+        return;
+      }
+      pendingEditor = editor;
+      queueMicrotask(() => {
+        if (pendingEditor === editor && moveEditorCaretToEnd(editor)) {
+          pendingEditor = null;
+        }
+      });
+    };
+    const observer = new MutationObserver(() => {
+      const editor = pendingEditor;
+      if (!editor || document.activeElement !== editor) return;
+      if (!editor.textContent) return;
+      moveEditorCaretToEnd(editor);
+      pendingEditor = null;
+    });
+
+    container.addEventListener('pointerdown', handlePointerDown, true);
+    container.addEventListener('focusin', handleFocusIn, true);
+    observer.observe(container, {
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
+    return () => {
+      container.removeEventListener('pointerdown', handlePointerDown, true);
+      container.removeEventListener('focusin', handleFocusIn, true);
+      observer.disconnect();
+    };
+  }, [preview]);
   const spreadsheetZoomRef = useRef(100);
   const [workbookInstance, setWorkbookInstance] =
     useState<WorkbookInstance | null>(null);
@@ -331,6 +406,10 @@ function SpreadsheetEditorSurface({
   const panelTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [selectionState, setSelectionState] =
     useState<SpreadsheetSelectionState | null>(null);
+  const selectionStateRef = useRef<{
+    current: SpreadsheetCommandSelection | null;
+    requested: SpreadsheetCommandSelection | null;
+  }>({ current: null, requested: null });
   const formatPainterSelectionHandlerRef = useRef(
     (_sheetId: string, _selection: Selection) => undefined,
   );
@@ -550,12 +629,30 @@ function SpreadsheetEditorSurface({
         collaborationView?.activateSheet(id);
         if (previewRef.current) setPreviewActiveSheetId(id);
         else setNavigationActiveSheetId(id);
+        selectionStateRef.current.current = null;
+        releaseSpreadsheetSelectionRequest(selectionStateRef.current);
         setSelectionState(null);
       },
       afterSelectionChange: (sheetId, selection) => {
-        collaborationView?.select(sheetId, selection);
-        setSelectionState({ sheetId, selection });
-        formatPainterSelectionHandlerRef.current(sheetId, selection);
+        const next = acceptSpreadsheetSelectionChange(
+          selectionStateRef.current,
+          sheetId,
+          selection,
+        );
+        if (!next) {
+          // Fortune can flush an older React state update after a newer
+          // keyboard command. Do not let that stale callback roll back the
+          // synchronous selection shadow.
+          return;
+        }
+        // Keep the request as a guard until a new user interaction arrives.
+        // Fortune can emit one or more delayed callbacks for the previous
+        // React state after the requested callback has already been delivered.
+        // Clearing the guard here would let that stale state roll back the
+        // synchronous selection shadow.
+        collaborationView?.select(sheetId, next.selection);
+        setSelectionState(next);
+        formatPainterSelectionHandlerRef.current(sheetId, next.selection);
       },
       beforeUpdateCell: (row, column) => {
         const sheet = contentRef.current.sheets.find(
@@ -998,6 +1095,8 @@ function SpreadsheetEditorSurface({
       if (collaborationView && !collaborationView.activateSheet(sheetId)) {
         return false;
       }
+      selectionStateRef.current.current = null;
+      releaseSpreadsheetSelectionRequest(selectionStateRef.current);
       setSelectionState(null);
       if (previewRef.current) setPreviewActiveSheetId(sheetId);
       try {
@@ -1039,7 +1138,7 @@ function SpreadsheetEditorSurface({
           targetRow: activeCell.row,
           targetColumn: activeCell.column,
         });
-        setSelectionState({
+        const nextSelection = {
           sheetId,
           selection: {
             row: [...focusedRange.row],
@@ -1047,7 +1146,17 @@ function SpreadsheetEditorSurface({
             row_focus: activeCell.row,
             column_focus: activeCell.column,
           },
-        });
+        };
+        selectionStateRef.current.current = nextSelection;
+        selectionStateRef.current.requested = {
+          sheetId,
+          selection: {
+            ...nextSelection.selection,
+            row: [...nextSelection.selection.row],
+            column: [...nextSelection.selection.column],
+          },
+        };
+        setSelectionState(nextSelection);
       } catch {
         return false;
       }
@@ -1229,6 +1338,7 @@ function SpreadsheetEditorSurface({
           ) ?? false,
       },
       selection: selectionState,
+      selectionRef: selectionStateRef.current,
       table: spreadsheetTable.commandPort,
       targetSheetGridSize,
       targetSheetId: toolbarSheetId,
@@ -1362,6 +1472,10 @@ function SpreadsheetEditorSurface({
   const handleSpreadsheetKeyDownCapture = (
     event: React.KeyboardEvent<HTMLElement>,
   ) => {
+    // A key that reaches the workbook without our command handler is a fresh
+    // native Fortune interaction (for example, Enter while editing a cell).
+    // It is allowed to replace a pending programmatic selection guard.
+    releaseSpreadsheetSelectionRequest(selectionStateRef.current);
     if (
       event.key === 'Alt' &&
       !event.repeat &&
@@ -1381,6 +1495,9 @@ function SpreadsheetEditorSurface({
   const handleSpreadsheetPointerDownCapture = (
     event: ReactPointerEvent<HTMLElement>,
   ): void => {
+    // A pointer interaction is a fresh user intent and may legitimately
+    // supersede a pending programmatic selection request.
+    releaseSpreadsheetSelectionRequest(selectionStateRef.current);
     const controller = richTextSelectionRef.current;
     if (!controller) return;
     if (!isSpreadsheetRichTextFormatPointerTarget(event.target)) {

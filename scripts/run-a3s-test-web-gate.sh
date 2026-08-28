@@ -4,6 +4,7 @@ set -euo pipefail
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 artifact_root="${A3S_TEST_ARTIFACT_ROOT:-$repository_root/.a3s-test/web-gate}"
 preview_log="$artifact_root/preview.log"
+fixture_log="$artifact_root/fixtures.log"
 preview_pid=""
 
 cd "$repository_root"
@@ -110,6 +111,12 @@ if ! jq -e \
   exit 1
 fi
 jq '{integration, version, protocol_revision}' "$capabilities_result"
+
+# E2E fixtures are generated artifacts and are intentionally ignored by Git.
+# Generate them as part of the gate so a clean checkout exercises the same
+# deterministic upload flows as a developer checkout that has run the fixture
+# helper already.
+bun scripts/create-e2e-fixtures.ts >"$fixture_log" 2>&1
 
 cleanup() {
   if [[ -n "$preview_pid" ]] && kill -0 "$preview_pid" 2>/dev/null; then

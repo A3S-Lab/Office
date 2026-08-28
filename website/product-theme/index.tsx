@@ -4,6 +4,7 @@ import '../../src/styles/index.css';
 import '../theme/docs-content.css';
 import '../theme/index.css';
 import './product-home.css';
+import './product-home-flow.css';
 
 export * from '@rspress/core/theme-original';
 export { Nav } from '../theme/components/Nav';

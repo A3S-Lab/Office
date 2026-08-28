@@ -1370,14 +1370,19 @@ async function spreadsheetCanvasDigest(page: Page): Promise<number> {
     const context = canvas?.getContext('2d');
     if (!canvas || !context) return 0;
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-    let digest = 2_166_136_261;
+    // A native canvas repaint can change antialiased text pixels by one value
+    // on different GPU/browser combinations. Aggregate quantized color mass
+    // instead of hashing every byte so the contract observes row/column
+    // visibility while remaining stable across those equivalent repaints.
+    let colorMass = 0;
     for (let index = 0; index < pixels.length; index += 16) {
-      digest ^=
-        (pixels[index] ?? 0) ^
-        ((pixels[index + 1] ?? 0) << 8) ^
-        ((pixels[index + 2] ?? 0) << 16);
-      digest = Math.imul(digest, 16_777_619);
+      colorMass += Math.round(
+        ((pixels[index] ?? 0) +
+          (pixels[index + 1] ?? 0) +
+          (pixels[index + 2] ?? 0)) /
+          16,
+      );
     }
-    return digest >>> 0;
+    return Math.round(colorMass / 100);
   });
 }

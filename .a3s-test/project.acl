@@ -1,0 +1,25 @@
+project "a3s-office" {
+  version = 1
+  root = ".."
+
+  dev_server {
+    executable = "bun"
+    args = ["run", "playground"]
+    working_directory = "."
+    url = "http://127.0.0.1:3000/playground/"
+    startup_timeout_ms = 180000
+    cleanup_timeout_ms = 10000
+  }
+
+  browser {
+    driver = "standalone"
+    session = "dev"
+    headed = true
+    command_timeout_ms = 25000
+    idle_timeout_ms = 300000
+  }
+
+  testkit {
+    required = true
+  }
+}

@@ -149,7 +149,6 @@ function productCopy(language: Language) {
       : 'Embed documents, Markdown, spreadsheets, presentations, and PDFs. Your host keeps files and permissions while teams share live, auditable state.',
     primary: zh ? '查看接入文档' : 'Read the integration docs',
     secondary: zh ? '打开 Playground' : 'Open Playground',
-    install: zh ? '安装 A3S Office' : 'Install A3S Office',
     assurance: zh ? '统一宿主契约' : 'One host contract',
     latest: zh ? 'main 最新能力' : 'Latest on main',
     workflowTitle: zh ? '按工作流接入' : 'Integrate by workflow',
@@ -200,6 +199,12 @@ function ArrowIcon({ external = false }: { external?: boolean }) {
 
 function HomeSurfaceMap({ language }: { language: Language }) {
   const zh = language === 'zh';
+  const ribbonTabs = zh
+    ? ['文件', '开始', '插入', '布局', '引用', '审阅', '视图']
+    : ['File', 'Home', 'Insert', 'Layout', 'References', 'Review', 'View'];
+  const ribbonCommands = zh
+    ? ['粘贴', '字体', '段落', '样式', '批注']
+    : ['Paste', 'Font', 'Paragraph', 'Styles', 'Comment'];
   return (
     <div
       className="office-home-surface-map"
@@ -217,49 +222,109 @@ function HomeSurfaceMap({ language }: { language: Language }) {
             <i />
             <i />
           </span>
-          <code>A3S OFFICE / SURFACE MAP</code>
-          <b>
-            <i aria-hidden="true" />
-            {zh ? '统一宿主契约' : 'One host contract'}
-          </b>
-        </header>
-        <div className="office-home-surface-map__body">
-          <div className="office-home-surface-map__intro">
+          <span className="office-home-surface-map__identity">
+            <strong>launch-brief.docx</strong>
             <small>
-              {zh ? '一个宿主 · 五种界面' : 'ONE HOST · FIVE SURFACES'}
+              <i aria-hidden="true" />
+              {zh ? '已保存 · 3 位在线' : 'Saved · 3 online'}
             </small>
-            <strong>
-              {zh ? '按文件模型选择体验' : 'Choose by file model'}
-            </strong>
-            <span>
-              {zh
-                ? '格式、权限和协作状态沿同一条接入路径流动。'
-                : 'Format, permissions, and collaboration state travel through one integration path.'}
-            </span>
-          </div>
-          <ol className="office-home-surface-map__list">
-            {surfaces[language].map((surface, index) => (
-              <li key={surface.component}>
-                <span>{`0${index + 1}`}</span>
-                <strong>{surface.name}</strong>
-                <code>{surface.component}</code>
-                <i aria-hidden="true" />
-              </li>
+          </span>
+          <span className="office-home-surface-map__actions">
+            <span>{zh ? '已审阅' : 'Reviewed'}</span>
+            <b>{zh ? '共享' : 'Share'}</b>
+          </span>
+        </header>
+        <div className="office-home-surface-map__body" aria-hidden="true">
+          <nav className="office-home-surface-map__tabs">
+            {ribbonTabs.map((tab, index) => (
+              <span className={index === 1 ? 'is-active' : undefined} key={tab}>
+                {tab}
+              </span>
             ))}
-          </ol>
-          <div className="office-home-surface-map__signal" aria-hidden="true">
-            <i />
-            <i />
-            <i />
+          </nav>
+          <div className="office-home-surface-map__ribbon">
+            {ribbonCommands.map((command, index) => (
+              <span key={command}>
+                <i data-command={index} />
+                <small>{command}</small>
+              </span>
+            ))}
+          </div>
+          <div className="office-home-surface-map__workspace">
+            <ol className="office-home-surface-map__list">
+              {surfaces[language].map((surface, index) => (
+                <li
+                  className={index === 0 ? 'is-active' : undefined}
+                  key={surface.component}
+                >
+                  <span>{`0${index + 1}`}</span>
+                  <strong>{surface.name}</strong>
+                </li>
+              ))}
+            </ol>
+            <div className="office-home-surface-map__canvas">
+              <div className="office-home-surface-map__ruler">
+                <span>1</span>
+                <i />
+                <span>2</span>
+                <i />
+                <span>3</span>
+              </div>
+              <article className="office-home-surface-map__paper">
+                <small>PRODUCT TEAM · SHARED BRIEF</small>
+                <h3>{zh ? '发布简报' : 'Launch brief'}</h3>
+                <p className="office-home-surface-map__paper-lead">
+                  {zh
+                    ? '一份可审阅、可协作的工作文档'
+                    : 'A reviewed, collaborative working document'}
+                </p>
+                <div className="office-home-surface-map__paper-rule" />
+                <p className="office-home-surface-map__paper-line is-wide" />
+                <p className="office-home-surface-map__paper-line" />
+                <p className="office-home-surface-map__paper-selection">
+                  {zh
+                    ? '发布窗口已经与产品团队确认。'
+                    : 'The release window is aligned with the product team.'}
+                  <span>Mina</span>
+                </p>
+                <p className="office-home-surface-map__paper-line is-short" />
+                <p className="office-home-surface-map__paper-line" />
+              </article>
+            </div>
+            <aside className="office-home-surface-map__inspector">
+              <header>
+                <strong>{zh ? '批注' : 'Comments'}</strong>
+                <span>1</span>
+              </header>
+              <div className="office-home-surface-map__presence">
+                <span>M</span>
+                <span>L</span>
+                <span>N</span>
+                <small>{zh ? '3 位在线' : '3 online'}</small>
+              </div>
+              <article>
+                <strong>Mina</strong>
+                <p>
+                  {zh
+                    ? '这个决定可以同步给发布小组。'
+                    : 'Share this decision with the release group.'}
+                </p>
+                <small>{zh ? '刚刚 · 未解决' : 'Just now · Open'}</small>
+              </article>
+              <div className="office-home-surface-map__sync">
+                <i />
+                <span>{zh ? '实时状态已同步' : 'Live state synced'}</span>
+              </div>
+            </aside>
           </div>
         </div>
         <footer className="office-home-surface-map__footer">
           <span>
             {zh
-              ? '按需加载 · 状态可控 · 文件原生'
-              : 'On demand · controlled state · native files'}
+              ? '第 1 页，共 3 页 · 修订 2 · 评论 1'
+              : 'Page 1 of 3 · 2 revisions · 1 comment'}
           </span>
-          <b>READY</b>
+          <b>{zh ? '已同步' : 'Synced'}</b>
         </footer>
       </div>
     </div>
@@ -452,15 +517,6 @@ export function HomeLayout() {
               {copy.secondary} <ArrowIcon external />
             </a>
           </nav>
-          <section className="docs-home-install" aria-label={copy.install}>
-            <div className="docs-home-install__header">
-              <span>INSTALL</span>
-              <strong>@a3s-lab/office</strong>
-            </div>
-            <pre>
-              <code>bun add @a3s-lab/office</code>
-            </pre>
-          </section>
         </div>
 
         <div className="docs-home-hero__visual">
@@ -506,6 +562,9 @@ export function HomeLayout() {
         aria-labelledby="office-workflow-title"
       >
         <div className="docs-home-section__intro">
+          <span className="docs-home-section__eyebrow">
+            02 / {zh ? '接入路径' : 'INTEGRATION PATH'}
+          </span>
           <h2 id="office-workflow-title">{copy.workflowTitle}</h2>
           <p>{copy.workflowLead}</p>
         </div>
@@ -539,6 +598,9 @@ export function HomeLayout() {
         aria-labelledby="office-collaboration-title"
       >
         <div className="docs-home-collaboration__copy">
+          <span className="docs-home-section__eyebrow">
+            03 / {zh ? '实时协作' : 'LIVE COLLABORATION'}
+          </span>
           <h2 id="office-collaboration-title">{copy.collaborationTitle}</h2>
           <p>{copy.collaborationLead}</p>
           <ul className="docs-home-collaboration__facts">
@@ -609,6 +671,9 @@ export function HomeLayout() {
         aria-labelledby="office-editors-title"
       >
         <div className="docs-home-section__intro">
+          <span className="docs-home-section__eyebrow">
+            04 / {zh ? '组件接口' : 'COMPONENT API'}
+          </span>
           <h2 id="office-editors-title">{copy.editorsTitle}</h2>
           <p>{copy.editorsLead}</p>
         </div>
@@ -632,6 +697,9 @@ export function HomeLayout() {
 
       <section className="docs-home-final" aria-labelledby="office-final-title">
         <div>
+          <span className="docs-home-section__eyebrow">
+            {zh ? '开始构建' : 'START BUILDING'}
+          </span>
           <h2 id="office-final-title">{copy.finalTitle}</h2>
           <p>{copy.finalLead}</p>
         </div>

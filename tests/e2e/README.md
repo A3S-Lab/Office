@@ -120,9 +120,10 @@ PDF bytes, and verifies save/reopen order, page counts, and rotations.
 
 Run the focused suites against the built static preview through
 `scripts/run-a3s-test-web-gate.sh` before a release. The local gate performs
-admission first, owns the preview lifecycle, and fails when captured console or
-page-error diagnostics are non-empty. Local environments with the A3S Browser
-integration can run the gate without the standalone adapter:
+admission first, generates the ignored deterministic upload fixtures, owns the
+preview lifecycle, and fails when captured console or page-error diagnostics
+are non-empty. Local environments with the A3S Browser integration can run the
+gate without the standalone adapter:
 
 ```bash
 A3S_TEST_BROWSER_DRIVER=a3s bash scripts/run-a3s-test-web-gate.sh

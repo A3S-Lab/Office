@@ -921,6 +921,9 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
     >
       <header className="office-editor-chapters__header">
         <div>
+          <span className="docs-home-section__eyebrow">
+            01 / {zh ? '编辑器界面' : 'EDITOR SURFACES'}
+          </span>
           <h2 id="office-editor-chapters-title">
             {zh
               ? '五种编辑器，五段交互语言。'

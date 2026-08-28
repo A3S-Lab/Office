@@ -4,6 +4,18 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Fixed `PresentationEditor` first-open focus for blank title slides. With
+  `autoFocus` enabled, an empty title placeholder now enters its editable text
+  surface immediately while existing titles, disabled autofocus, and deliberate
+  user focus changes remain undisturbed ([#11](https://github.com/A3S-Lab/Office/issues/11)).
+- Hardened Spreadsheet live-selection ownership across native pointer and
+  keyboard events. Rich-text focus, contiguous navigation, fill commands, and
+  delayed Fortune Sheet callbacks now converge on the newest selection without
+  dropping the intentional multi-range guard; the pure selection gate helpers
+  are covered by focused unit tests.
+- Made the local A3S Test web gate self-contained by generating its ignored
+  deterministic E2E fixtures before suite execution, so clean checkouts cannot
+  time out while uploading a missing PDF or document fixture.
 - Moved the Rspress documentation center to the website root and the
   Playground to the dedicated `/playground/` route, matching the A3S UI site
   model. The desktop and mobile documentation navigation now expose

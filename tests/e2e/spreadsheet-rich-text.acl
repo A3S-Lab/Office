@@ -91,6 +91,10 @@ suite "office-spreadsheet-rich-text" {
             visible = css("[data-testid='spreadsheet-rich-text-status'][data-revision='1'][data-run-count='3'][data-run-bold='1,0,0']")
         }
 
+        wait "formula-bar-is-ready" {
+            visible = css(".fortune-fx-input")
+        }
+
         focus "focus-formula-bar" {
             target = css(".fortune-fx-input")
         }

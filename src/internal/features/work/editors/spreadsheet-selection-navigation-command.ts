@@ -13,6 +13,10 @@ import {
   scopeSpreadsheetKeyboardSelection,
   spreadsheetSelectionContainsFocus,
 } from './spreadsheet-keyboard-navigation';
+import {
+  rememberSpreadsheetCommandSelection,
+  spreadsheetLiveCommandSelection,
+} from './spreadsheet-command-selection';
 
 interface SpreadsheetSelectionNavigationStorage {
   focus: { column: number; row: number } | null;
@@ -74,7 +78,7 @@ function updateSpreadsheetSelection(
   );
   if (!sheet) return false;
   const liveSelection =
-    context.workbook.getSelection()?.at(-1) ?? context.fallbackRange;
+    spreadsheetLiveCommandSelection(context) ?? context.fallbackRange;
   const rememberedFocus = storage.focus;
   const selection =
     rememberedFocus &&
@@ -88,6 +92,7 @@ function updateSpreadsheetSelection(
   const next = update(sheet, selection);
   try {
     context.workbook.setSelection([next], { id: context.targetSheetId });
+    rememberSpreadsheetCommandSelection(context, next);
     storage.focus = {
       row: next.row_focus ?? next.row[1] ?? next.row[0] ?? 0,
       column: next.column_focus ?? next.column[1] ?? next.column[0] ?? 0,

@@ -3,6 +3,7 @@
 *.local
 *.log*
 .a3s-test/*
+!.a3s-test/project.acl
 !.a3s-test/performance/
 .a3s-test/performance/*
 !.a3s-test/performance/benchmark-document-edit.ts

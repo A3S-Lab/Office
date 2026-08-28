@@ -30,6 +30,7 @@ import type { SpreadsheetCellStyleChoice } from './spreadsheet-cell-style';
 import { createSpreadsheetCellStyleExtension } from './spreadsheet-cell-style-command';
 import {
   canEditSpreadsheetSelection,
+  rememberSpreadsheetCommandSelection,
   spreadsheetLiveCommandRange,
 } from './spreadsheet-command-selection';
 import type { SpreadsheetCopyFromAboveKind } from './spreadsheet-copy-from-above';
@@ -160,6 +161,16 @@ export interface SpreadsheetCommandRange extends SpreadsheetKeyboardSelection {
 export interface SpreadsheetCommandSelection {
   sheetId: string;
   selection: Selection;
+}
+
+/**
+ * Synchronous selection state shared by commands and the Fortune Sheet bridge.
+ * Fortune applies API calls through React state, so reading its imperative API
+ * twice in the same task can otherwise return the previous selection.
+ */
+export interface SpreadsheetSelectionRef {
+  current: SpreadsheetCommandSelection | null;
+  requested: SpreadsheetCommandSelection | null;
 }
 
 export type SpreadsheetStructureAxis = 'row' | 'column';
@@ -367,6 +378,7 @@ export interface SpreadsheetCommandContext {
   onChange: (content: WorkSpreadsheetContent) => void;
   richTextFormat?: SpreadsheetRichTextFormatCommandPort | null;
   selection: SpreadsheetCommandSelection | null;
+  selectionRef?: SpreadsheetSelectionRef;
   table: SpreadsheetTableCommandPort;
   targetSheetGridSize?: SpreadsheetGridSize | null;
   targetSheetId: string;
@@ -764,6 +776,12 @@ function pasteCells(
       ],
       { id: context.targetSheetId },
     );
+    rememberSpreadsheetCommandSelection(context, {
+      row: [...range.row],
+      column: [...range.column],
+      row_focus: range.row[0],
+      column_focus: range.column[0],
+    });
   } catch {
     // The values were committed; selection highlighting is best effort.
   }

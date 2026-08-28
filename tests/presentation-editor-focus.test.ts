@@ -1,10 +1,31 @@
 import { expect, test } from '@rstest/core';
 import {
+  presentationInitialEditingElementId,
   presentationCommandsWithObjectFocus,
   restorePresentationObjectFocus,
   restorePresentationWorkspaceFocus,
 } from '../src/internal/features/work/editors/presentation-editor-focus';
 import type { PresentationEditorCommands } from '../src/internal/features/work/editors/presentation-command-types';
+import type { WorkSlideElement } from '../src/internal/features/work/work-types';
+
+test('uses only an empty title placeholder for first-open text editing', () => {
+  const body = presentationTextElement('body', 'Body', 'body');
+  const title = presentationTextElement('title', '', 'title');
+
+  expect(presentationInitialEditingElementId([body, title])).toBe('title');
+  expect(
+    presentationInitialEditingElementId([
+      body,
+      { ...title, text: 'Existing title' },
+    ]),
+  ).toBeNull();
+  expect(
+    presentationInitialEditingElementId([
+      body,
+      { ...title, textRuns: [{ text: 'Rich title' }] },
+    ]),
+  ).toBeNull();
+});
 
 test('returns successful object-level ribbon commands to the slide selection', () => {
   const calls: string[] = [];
@@ -245,6 +266,31 @@ function presentationObject(id: string, selected: boolean): HTMLElement {
   element.dataset.slideElementId = id;
   element.dataset.slideElementSelected = selected ? 'true' : 'false';
   return element;
+}
+
+function presentationTextElement(
+  id: string,
+  text: string,
+  placeholderType: string,
+): WorkSlideElement {
+  return {
+    id,
+    type: 'text',
+    x: 0,
+    y: 0,
+    width: 50,
+    height: 10,
+    text,
+    fontSize: 24,
+    color: '#000000',
+    fill: 'transparent',
+    bold: false,
+    align: 'left',
+    placeholder: {
+      key: id,
+      type: placeholderType,
+    },
+  };
 }
 
 function waitForAnimationFrames(count: number): Promise<void> {

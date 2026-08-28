@@ -180,4 +180,64 @@ suite "office-editor-initial-focus" {
             clear = false
         }
     }
+
+    scenario "focus-blank-presentation-title-on-first-open" {
+        name = "Focus and edit the empty presentation title on first open"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-blank-presentation" {
+            target = text("演示", true)
+        }
+
+        wait "blank-title-focused-and-editable" {
+            visible = css("[data-presentation-text-engine='tiptap'][contenteditable='true']:focus")
+        }
+
+        type "enter-first-presentation-title" {
+            target = css("[data-presentation-text-engine='tiptap'][contenteditable='true']")
+            value = "FIRST_OPEN_PRESENTATION"
+        }
+
+        expect "first-presentation-title-accepted" {
+            text = "FIRST_OPEN_PRESENTATION"
+        }
+
+        click "return-to-playground-home" {
+            target = css(".work-editor-back")
+        }
+
+        click "reopen-presentation" {
+            target = text("无标题演示", true)
+        }
+
+        expect "first-presentation-title-preserved" {
+            text = "FIRST_OPEN_PRESENTATION"
+        }
+
+        accessibility "presentation-accessibility" {
+            path = "evidence/presentation-accessibility.json"
+            interactive = true
+        }
+
+        console "presentation-console" {
+            path = "diagnostics/presentation-console.json"
+            clear = false
+        }
+
+        page_errors "presentation-errors" {
+            path = "diagnostics/presentation-errors.json"
+            clear = false
+        }
+    }
 }

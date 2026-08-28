@@ -52,6 +52,18 @@ suite "homepage-editor-demo" {
             visible = css(".office-editor-chapter__recovery summary")
         }
 
+        expect "collaboration-path-is-discoverable" {
+            visible = css(".docs-home-collaboration a[href*='collaboration']")
+        }
+
+        expect "collaboration-state-diagram-is-visible" {
+            visible = css(".docs-home-collaboration__diagram")
+        }
+
+        expect "final-product-cta-is-discoverable" {
+            visible = css(".docs-home-final .docs-home-action--primary")
+        }
+
         expect "document-motion-preview-is-visible" {
             visible = css("[data-editor-chapter='document'] .office-motion-window")
         }
@@ -173,6 +185,14 @@ suite "homepage-editor-demo" {
             visible = css(".office-editor-chapter__recovery summary")
         }
 
+        expect "phone-collaboration-path-is-discoverable" {
+            visible = css(".docs-home-collaboration a[href*='collaboration']")
+        }
+
+        expect "phone-final-product-cta-is-discoverable" {
+            visible = css(".docs-home-final .docs-home-action--primary")
+        }
+
         wheel "phone-to-chapter-index" {
             delta_x = 0
             delta_y = 1400
@@ -208,7 +228,11 @@ suite "homepage-editor-demo" {
 
         wheel "phone-to-motion-control" {
             delta_x = 0
-            delta_y = -4500
+            # The Flow-style mobile chapter stack reserves the preview space
+            # while it is content-visibility skipped. Keep the return gesture
+            # large enough to bring the header control back into the viewport
+            # after jumping from the PDF chapter.
+            delta_y = -5000
             modifiers = []
         }
 

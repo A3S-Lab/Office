@@ -6,15 +6,18 @@ Playground.
 
 ## Visual decisions
 
-- **Canvas:** white is the primary canvas. Full-width chapters alternate
-  between neutral white, violet-tinted workflow, green-tinted collaboration,
-  and blue-tinted action surfaces within a 1,440px product frame.
-- **Palette:** A3S blue (`#1264ff`) leads the brand and primary actions. Green
-  (`#0c8f69`), violet (`#7157c9`), and amber (`#a96906`) distinguish product
-  states without turning the page into a dark developer-tool interface.
-- **Dark surfaces:** dark navy appears only inside the installation command,
-  where it communicates executable code. Product copy, diagrams, editor
-  chrome, collaboration, and calls to action stay on light surfaces.
+- **Canvas:** a cool light canvas (`#f5f7fb`) frames white editor surfaces and
+  the same centered product grid used by A3S Flow. Sections use whitespace and
+  hairline rules for rhythm; they do not switch to unrelated color bands.
+- **Palette:** one blue accent (`#1456f0`) owns brand emphasis, links, active
+  controls, and primary actions. Green is reserved for semantic sync/success
+  status, while neutral slate tones carry copy, borders, and editor chrome.
+  This keeps the page recognizable as one product instead of a color-coded
+  collection of editors.
+- **Light-first surfaces:** the product home has no dark installation panel.
+  Code and protocol examples keep their own documentation syntax theme, while
+  product copy, diagrams, editor chrome, collaboration, and calls to action
+  remain readable on light surfaces.
 - **Type:** Geist and Geist Mono, inherited from the documentation shell. Large
   headings are left aligned with restrained tracking. Monospace is limited to
   commands, component names, protocol labels, and measured state.
@@ -29,7 +32,10 @@ Playground.
   editors remain in Playground.
 - **Motion:** each chapter preview animates one recognizable interaction, such
   as a revision/comment, source-to-preview sync, cell selection, an entrance
-  cue, or page annotation. A shared pause control stops every preview;
+  cue, or page annotation. The collaboration diagram adds a restrained state
+  packet and service-status pulse so the backend path reads as live without
+  competing with the editor chapters. A shared pause control stops every
+  chapter preview;
   `prefers-reduced-motion` disables authored motion without hiding content and
   exposes that system-controlled state on the disabled motion control.
   A sticky current-chapter meter keeps the reader oriented through the long
@@ -51,11 +57,15 @@ Playground.
 
 ## Responsive behavior
 
-The hero switches to one column below 960px, and the product window hides its
-secondary host panel below 520px. Assurance items scroll horizontally on
-narrow screens, while workflow, collaboration peers, editor entries, and final
-actions become single-column reading paths. The global A3S navigation remains
-the source of truth for Product, Docs, and Playground wayfinding.
+The hero switches to one column below 1,040px, and compact chapter/window
+controls collapse below 720px (with a final 420px pass for very narrow phones).
+The product window hides its secondary host panel on compact screens.
+Assurance items and the chapter index scroll horizontally when needed, while
+workflow, collaboration peers, editor entries, and final actions become
+single-column reading paths. Chapter deep links reserve space for both the
+global navigation and sticky progress meter, so the destination heading is not
+hidden behind chrome. The global A3S navigation remains the source of truth for
+Product, Docs, and Playground wayfinding.
 
 ## Content contract
 
