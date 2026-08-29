@@ -133,32 +133,30 @@ function productCopy(language: Language) {
   const zh = language === 'zh';
   return {
     lead: zh
-      ? '把文档、Markdown、表格、演示文稿和 PDF 嵌入你的产品。宿主管理文件与权限，团队共享可审计的实时状态。'
-      : 'Embed documents, Markdown, spreadsheets, presentations, and PDFs. Your host keeps files and permissions while teams share live, auditable state.',
-    primary: zh ? '查看接入文档' : 'Read the integration docs',
+      ? '在你的应用里打开、编辑和保存文档、Markdown、表格、演示文稿与 PDF。文件、权限和存储仍由你的应用管理；多人协作可以单独接入。'
+      : 'Open, edit, and save documents, Markdown, spreadsheets, presentations, and PDFs in your app. Your app keeps files, permissions, and storage; collaboration can be added separately.',
+    primary: zh ? '开始接入' : 'Start integrating',
     secondary: zh ? '打开 Playground' : 'Open Playground',
-    assurance: zh ? '统一宿主契约' : 'One host contract',
-    latest: zh ? 'main 最新能力' : 'Latest on main',
-    workflowTitle: zh ? '按工作流接入' : 'Integrate by workflow',
+    assurance: zh ? '支持的编辑器' : 'Supported editors',
+    latest: zh ? '最近更新' : 'Recent updates',
+    workflowTitle: zh ? '接入步骤' : 'Integration steps',
     workflowLead: zh
-      ? '从第一个组件开始，逐步接入文件能力、实时协作和智能体自动化。'
-      : 'Start with one component, then add file behavior, live collaboration, and agent automation.',
+      ? '先渲染一个编辑器，再接上文件数据。需要多人协作时，继续接入协作服务。'
+      : 'Render one editor, then connect your file data. Add collaboration when you need it.',
     collaborationTitle: zh
-      ? '多人和智能体，在同一页协作'
-      : 'People and agents edit on one page',
+      ? '成员和 Agent 同时改一份文件'
+      : 'Let people and an agent edit one file',
     collaborationLead: zh
-      ? '两位成员与一个 A3S Agent 通过同一房间编辑、评论和审阅；动画展示共享状态如何在编辑器之间实时往返。'
-      : 'Two people and an A3S Agent edit, comment, and review through one room; the animation shows shared state moving between editors in real time.',
-    editorsTitle: zh ? '选择编辑器界面' : 'Choose an editor surface',
+      ? '成员 A、成员 B 和 A3S Agent 打开同一份项目方案。文字、评论和审阅状态会同步到三块屏幕。'
+      : 'Person A, Person B, and A3S Agent open the same project brief. Text, comments, and review state appear on all three screens.',
+    editorsTitle: zh ? '五种编辑器' : 'Five editors',
     editorsLead: zh
-      ? '每种文件格式都有自己的数据模型，同时共享统一的宿主接入方式。'
-      : 'Each file format keeps its own data model while sharing one host integration pattern.',
-    finalTitle: zh
-      ? '把编辑器带进你的产品。'
-      : 'Bring the editor into your product.',
+      ? '文档、Markdown、表格、演示文稿和 PDF，各有对应的编辑器。'
+      : 'Documents, Markdown, spreadsheets, presentations, and PDFs each have a matching editor.',
+    finalTitle: zh ? '开始接入' : 'Start integrating',
     finalLead: zh
-      ? '从文档开始，再按需打开协作、自动化和原生能力。'
-      : 'Start with a document, then open collaboration, automation, and native capabilities as you need them.',
+      ? '先从一个编辑器开始，其他编辑器可以随后加入。'
+      : 'Start with one editor and add the others when you need them.',
     docs: zh ? '文档' : 'Docs',
     collaboration: zh ? '多人实时协作' : 'Live collaboration',
     backend: zh ? 'A3S Boot 后端' : 'A3S Boot backend',
@@ -236,19 +234,19 @@ export function HomeLayout() {
       key: 'human-a',
       avatar: 'A',
       name: zh ? '成员 A' : 'Person A',
-      role: zh ? '人类编辑' : 'Human editor',
+      role: zh ? '编辑' : 'Editor',
     },
     {
       key: 'human-b',
       avatar: 'B',
       name: zh ? '成员 B' : 'Person B',
-      role: zh ? '人类审阅' : 'Human reviewer',
+      role: zh ? '审阅' : 'Reviewer',
     },
     {
       key: 'agent',
       avatar: 'AI',
       name: 'A3S Agent',
-      role: zh ? '智能体编辑' : 'Agent editor',
+      role: zh ? 'Agent' : 'Agent',
     },
   ] as const;
 
@@ -312,10 +310,10 @@ export function HomeLayout() {
   const workflow: WorkflowStage[] = [
     {
       index: '01',
-      name: zh ? '开始' : 'Start',
+      name: zh ? '安装' : 'Install',
       detail: zh
-        ? '安装包并在现有应用中挂载第一个编辑器。'
-        : 'Install the package and mount the first editor in an existing application.',
+        ? '安装包，在现有页面里渲染第一个编辑器。'
+        : 'Install the package and render the first editor in an existing page.',
       links: [
         { label: copy.docs, href: docsPath('guide/', language) },
         {
@@ -326,10 +324,10 @@ export function HomeLayout() {
     },
     {
       index: '02',
-      name: zh ? '构建' : 'Build',
+      name: zh ? '接入' : 'Connect',
       detail: zh
-        ? '配置文件模型、受控状态、导入导出和宿主扩展。'
-        : 'Configure file models, controlled state, import and export, and host extensions.',
+        ? '接上文件数据，处理更新、导入导出和自定义按钮。'
+        : 'Connect file data, updates, import and export, and custom commands.',
       links: [
         {
           label: zh ? '编辑器 API' : 'Editor APIs',
@@ -345,8 +343,8 @@ export function HomeLayout() {
       index: '03',
       name: zh ? '协作' : 'Collaborate',
       detail: zh
-        ? '让用户与编码智能体通过 Yjs/Yrs 实时编辑或审阅同一文件。'
-        : 'Let people and coding agents edit or review the same file through Yjs and Yrs.',
+        ? '把同一份文件交给成员和 Agent 一起编辑。Yjs/Yrs 传递变更。'
+        : 'Let people and an agent edit the same file. Yjs and Yrs carry the changes.',
       accent: true,
       links: [
         {
@@ -363,8 +361,8 @@ export function HomeLayout() {
       index: '04',
       name: zh ? '自动化' : 'Automate',
       detail: zh
-        ? '通过 CLI、MCP、A3S Code 与 Skill 安全处理 Office 文件。'
-        : 'Process Office files safely through the CLI, MCP, A3S Code, and the Skill.',
+        ? '用 CLI、MCP、A3S Code 或 Skill 批量处理 Office 文件。'
+        : 'Process Office files in batches with the CLI, MCP, A3S Code, or a Skill.',
       links: [
         { label: copy.automation, href: docsPath('automation/', language) },
         {
@@ -401,9 +399,19 @@ export function HomeLayout() {
           <h1 id="office-product-title">
             <span className="docs-home-hero__brand">A3S Office</span>
             <strong className="docs-home-hero__promise">
-              {zh
-                ? '嵌入编辑器，协作自然发生'
-                : 'Embedded editors for live collaboration'}
+              {zh ? (
+                <>
+                  在应用里编辑
+                  <br />
+                  Office 文件
+                </>
+              ) : (
+                <>
+                  Edit Office files
+                  <br />
+                  in your app
+                </>
+              )}
             </strong>
           </h1>
           <p className="docs-home-hero__lead">{copy.lead}</p>
@@ -502,14 +510,14 @@ export function HomeLayout() {
           <ul className="docs-home-collaboration__facts">
             {(zh
               ? [
-                  '同一文件共享评论、建议和格式修订',
-                  '人类与 A3S Agent 共享光标和编辑状态',
-                  'A3S Boot 负责鉴权、广播与持久化',
+                  '评论、建议和修订都写回同一份文件',
+                  '成员和 A3S Agent 能看到彼此的光标',
+                  'A3S Boot 负责房间鉴权、消息转发和存储',
                 ]
               : [
-                  'Comments, suggestions, and formatting revisions share one file',
-                  'People and the A3S Agent share cursors and edit state',
-                  'A3S Boot handles room auth, broadcast, and persistence',
+                  'Comments, suggestions, and revisions write to one file',
+                  'People and the A3S Agent can see each other’s cursors',
+                  'A3S Boot handles room auth, message routing, and storage',
                 ]
             ).map((fact) => (
               <li key={fact}>{fact}</li>
@@ -545,7 +553,7 @@ export function HomeLayout() {
               <strong>{zh ? '项目方案' : 'Project brief'}</strong>
               <span className="office-collab-demo__live">
                 <i />
-                {zh ? '实时同步' : 'Live sync'}
+                {zh ? '同步中' : 'Syncing'}
               </span>
             </div>
             <div className="office-collab-demo__participants">
@@ -582,7 +590,7 @@ export function HomeLayout() {
               <span className="office-collab-demo__wire-line">
                 <i />
               </span>
-              <strong>{zh ? '共享状态' : 'Shared state'}</strong>
+              <strong>{zh ? '编辑变更' : 'Edit changes'}</strong>
               <span className="office-collab-demo__wire-line office-collab-demo__wire-line--reverse">
                 <i />
               </span>
@@ -590,11 +598,11 @@ export function HomeLayout() {
             <div className="office-collab-demo__service">
               <div>
                 <strong>A3S Boot</strong>
-                <span>{zh ? '同一协作房间' : 'One collaboration room'}</span>
+                <span>{zh ? '同一房间' : 'One room'}</span>
               </div>
               <span className="office-collab-demo__service-state">
                 <i />
-                {zh ? '已同步' : 'Synced'}
+                {zh ? '已连接' : 'Connected'}
               </span>
             </div>
           </div>

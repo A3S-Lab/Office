@@ -2036,9 +2036,9 @@ html .office-product-home .office-home-screenshot-stack::before {
 
 html .office-product-home .office-home-screenshot-stack__card {
   position: absolute;
-  top: 58%;
+  top: 72%;
   left: 50%;
-  width: min(82%, 670px);
+  width: min(76%, 620px);
   aspect-ratio: 16 / 10;
   margin: 0;
   overflow: hidden;
@@ -2084,7 +2084,7 @@ html .office-product-home .office-home-screenshot-stack__card--document {
 
 html .office-product-home .office-home-screenshot-stack__card--markdown {
   --card-angle: 10deg;
-  --card-x: 13%;
+  --card-x: 10%;
   --card-y: -3px;
   --card-z: 30px;
   z-index: 5;
@@ -2106,7 +2106,7 @@ html .office-product-home .office-home-screenshot-stack__card--spreadsheet {
 
 html .office-product-home .office-home-screenshot-stack__card--presentation {
   --card-angle: -10deg;
-  --card-x: -13%;
+  --card-x: -10%;
   --card-y: -3px;
   --card-z: 8px;
   z-index: 3;
@@ -2117,7 +2117,7 @@ html .office-product-home .office-home-screenshot-stack__card--presentation {
 
 html .office-product-home .office-home-screenshot-stack__card--pdf {
   --card-angle: -19deg;
-  --card-x: -25%;
+  --card-x: -18%;
   --card-y: 7px;
   --card-z: 0px;
   z-index: 1;
@@ -2141,7 +2141,7 @@ html
   .office-product-home
   .office-home-screenshot-stack:hover
   .office-home-screenshot-stack__card--markdown {
-  transform: translate3d(-50%, -100%, 34px) translateX(18%) translateY(-8px)
+  transform: translate3d(-50%, -100%, 34px) translateX(15%) translateY(-8px)
     rotate(13deg);
 }
 
@@ -2283,6 +2283,7 @@ html
   }
 
   html .office-product-home .office-home-screenshot-stack__card {
+    top: 62%;
     width: 92%;
     border-radius: 12px;
   }
@@ -2295,7 +2296,7 @@ html
 
   html .office-product-home .office-home-screenshot-stack__card--markdown {
     --card-angle: 8deg;
-    --card-x: 14%;
+    --card-x: 12%;
     --card-y: -2px;
   }
 
@@ -2307,13 +2308,13 @@ html
 
   html .office-product-home .office-home-screenshot-stack__card--presentation {
     --card-angle: -8deg;
-    --card-x: -14%;
+    --card-x: -12%;
     --card-y: -2px;
   }
 
   html .office-product-home .office-home-screenshot-stack__card--pdf {
     --card-angle: -15deg;
-    --card-x: -27%;
+    --card-x: -22%;
     --card-y: 6px;
   }
 }
@@ -2455,7 +2456,7 @@ html .office-product-home .office-real-editor-shot__viewport {
   }
 
   html .office-product-home .docs-home-hero__visual {
-    transform: translateY(-10px);
+    transform: translateY(0);
   }
 }
 
@@ -2510,7 +2511,7 @@ html .office-product-home .office-real-editor-shot__viewport {
 html .office-product-home
   .office-home-screenshot-stack:hover
   .office-home-screenshot-stack__card--presentation {
-  transform: translate3d(-50%, -100%, 14px) translateX(-19%) translateY(-8px)
+  transform: translate3d(-50%, -100%, 14px) translateX(-15%) translateY(-8px)
     rotate(-13deg);
 }
 
@@ -2518,7 +2519,7 @@ html
   .office-product-home
   .office-home-screenshot-stack:hover
   .office-home-screenshot-stack__card--pdf {
-  transform: translate3d(-50%, -100%, 4px) translateX(-34%) translateY(9px)
+  transform: translate3d(-50%, -100%, 4px) translateX(-26%) translateY(9px)
     rotate(-22deg);
 }
 
@@ -2545,5 +2546,49 @@ html
     .office-home-screenshot-stack__card--pdf {
     transform: translate3d(-50%, -100%, var(--card-z)) translateX(var(--card-x))
       translateY(var(--card-y)) rotate(var(--card-angle));
+  }
+}
+
+/* Keep the compact desktop hero in two columns so the real editor preview
+ * remains visible beside the copy. At 920px and below the base tablet rule
+ * switches to a single reading column. */
+@media (min-width: 921px) and (max-width: 1040px) {
+  html .office-product-home .docs-home-hero {
+    min-height: max(690px, calc(100dvh - var(--a3s-site-nav-height)));
+    padding: 48px 42px 56px;
+    gap: 28px;
+    grid-template-columns: minmax(300px, 0.78fr) minmax(480px, 1.22fr);
+  }
+
+  html .office-product-home .docs-home-hero__copy {
+    max-width: 360px;
+    margin-top: 20px;
+  }
+
+  html .office-product-home .docs-home-hero__visual {
+    width: 100%;
+    transform: none;
+  }
+
+  html .office-product-home .office-home-screenshot-stack {
+    height: 410px;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card {
+    top: 74%;
+    width: min(74%, 500px);
+    border-radius: 14px;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card--markdown {
+    --card-x: 8%;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card--presentation {
+    --card-x: -8%;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card--pdf {
+    --card-x: -14%;
   }
 }

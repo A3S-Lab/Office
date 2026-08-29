@@ -22,45 +22,43 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       index: '01',
       label: '文档',
       component: 'DocumentEditor',
-      title: '写作、审阅和协作在同一页完成。',
+      title: '写文档，批注和修订一起看。',
       detail:
-        '保留熟悉的功能区和页面感，把批注、建议、远端光标与撤销历史放进同一条编辑路径。',
+        '功能区、页面、批注和修订在同一个编辑器里；协作者的光标会显示在页面上。',
       linkLabel: '查看 DocumentEditor',
     },
     markdown: {
       index: '02',
       label: 'Markdown',
       component: 'MarkdownEditor',
-      title: '源码和可视化预览保持同步。',
-      detail:
-        '作者可以在 Markdown 源码、分屏和可视化模式之间切换，光标位置和受控内容始终属于同一个模型。',
+      title: '改源码，预览就更新。',
+      detail: '在源码、分屏和预览之间切换，内容和光标位置都保留。',
       linkLabel: '查看 MarkdownEditor',
     },
     spreadsheet: {
       index: '03',
       label: '表格',
       component: 'SpreadsheetEditor',
-      title: '选择一个单元格，就能读懂整张表。',
+      title: '选中单元格，看公式和校验。',
       detail:
-        '公式栏、稀疏网格、表格样式和数据验证围绕当前选择展开；大量空白区域不会变成大量 DOM。',
+        '公式栏、表格样式和数据验证围绕当前单元格显示；空白区域按需绘制。',
       linkLabel: '查看 SpreadsheetEditor',
     },
     presentation: {
       index: '04',
       label: '演示文稿',
       component: 'PresentationEditor',
-      title: '从场景图到入场动画，顺着对象工作。',
+      title: '选中对象，设置入场动画。',
       detail:
-        '幻灯片、对象、动画时间线和演讲者备注各自有清晰的焦点，按需加载文本编辑，不牺牲画布流畅度。',
+        '幻灯片、对象、动画时间线和演讲者备注分别显示；编辑文字时再打开文字编辑器。',
       linkLabel: '查看 PresentationEditor',
     },
     pdf: {
       index: '05',
       label: 'PDF',
       component: 'PdfViewer',
-      title: '页面组织和批注，不打断阅读。',
-      detail:
-        'PDFium WebAssembly 负责渲染，缩略图、批注和页面操作保持在同一工作台，并把重写任务交给 Worker。',
+      title: '看 PDF 时整理页面和批注。',
+      detail: '缩略图、批注和页面操作都在阅读区里；页面重排交给 Worker。',
       linkLabel: '查看 PdfViewer',
     },
   },
@@ -69,45 +67,45 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       index: '01',
       label: 'Document',
       component: 'DocumentEditor',
-      title: 'Write, review, and collaborate on one page.',
+      title: 'Write, comment, and review in one view.',
       detail:
-        'Keep the familiar ribbon and page model while comments, suggestions, remote cursors, and undo history share one editing path.',
+        'The ribbon, page, comments, and revisions stay in one editor; collaborators see remote cursors on the page.',
       linkLabel: 'View DocumentEditor',
     },
     markdown: {
       index: '02',
       label: 'Markdown',
       component: 'MarkdownEditor',
-      title: 'Source and visual preview stay in sync.',
+      title: 'Edit the source. The preview follows.',
       detail:
-        'Authors can move between Markdown source, split view, and visual mode while caret position and controlled content remain one model.',
+        'Move between source, split view, and preview without losing the content or caret position.',
       linkLabel: 'View MarkdownEditor',
     },
     spreadsheet: {
       index: '03',
       label: 'Spreadsheet',
       component: 'SpreadsheetEditor',
-      title: 'Select one cell and understand the whole sheet.',
+      title: 'Select a cell. See its formula and validation.',
       detail:
-        'The formula bar, sparse grid, table styles, and data validation follow the active selection; empty maximum-size ranges stay unmaterialized.',
+        'The formula bar, table styles, and data validation follow the active cell; empty areas are drawn on demand.',
       linkLabel: 'View SpreadsheetEditor',
     },
     presentation: {
       index: '04',
       label: 'Presentation',
       component: 'PresentationEditor',
-      title: 'Work from the scene graph to the entrance cue.',
+      title: 'Select an object. Set its entrance animation.',
       detail:
-        'Slides, objects, animation timing, and presenter notes each get a clear focus, with on-demand text editing that keeps the canvas responsive.',
+        'Slides, objects, animation timing, and presenter notes have separate views; text editing opens when needed.',
       linkLabel: 'View PresentationEditor',
     },
     pdf: {
       index: '05',
       label: 'PDF',
       component: 'PdfViewer',
-      title: 'Organize pages and annotate without leaving reading mode.',
+      title: 'Read the PDF while you organize pages and notes.',
       detail:
-        'PDFium WebAssembly renders the source while thumbnails, annotations, and page operations share one workbench; rewrites run in a Worker.',
+        'Thumbnails, annotations, and page operations share the reading workspace; page reordering runs in a Worker.',
       linkLabel: 'View PdfViewer',
     },
   },
@@ -410,20 +408,20 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
               <>
                 五种编辑器，
                 <br />
-                五段交互语言。
+                分别看一个操作。
               </>
             ) : (
               <>
                 Five editors.
                 <br />
-                Five interaction languages.
+                One action from each.
               </>
             )}
           </h2>
           <p>
             {zh
-              ? '五种可嵌入编辑器的真实界面截图，展示各自的工作焦点。完整编辑器请在 Playground 中体验。'
-              : 'Real captures of five embeddable editors, each showing its working focus. Open the Playground for the complete editors.'}
+              ? '下面的截图来自实际编辑器，每段只展示一个常用操作。完整界面可在 Playground 打开。'
+              : 'These captures come from the editors themselves. Each section shows one common action; open the Playground for the full interface.'}
           </p>
         </div>
         <div className="office-editor-chapters__header-actions">
