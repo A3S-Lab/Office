@@ -9,6 +9,7 @@ test('document table Design and Layout stay visual and survive preview', async (
   page,
 }) => {
   await page.goto('/playground/');
+  await stabilizeVisualSurface(page);
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
@@ -41,7 +42,6 @@ test('document table Design and Layout stay visual and survive preview', async (
 
   await designTab.click();
   await table.scrollIntoViewIfNeeded();
-  await stabilizeVisualSurface(page);
   await expect(page).toHaveScreenshot('document-table-design.png');
 
   await page.getByRole('button', { name: '预览' }).click();

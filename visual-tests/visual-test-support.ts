@@ -47,6 +47,17 @@ export async function stabilizeVisualSurface(page: Page): Promise<void> {
         display: none !important;
       }
 
+      /*
+       * Editor snapshots intentionally isolate the editor surface from the
+       * Playground's global site chrome.  The site header is covered by the
+       * navigation/route contracts; keeping it out of these baselines also
+       * preserves the editor geometry contract when the header is mounted
+       * while an editor is open.
+       */
+      .playground-site-header {
+        display: none !important;
+      }
+
       ${
         visualDifferenceProbe
           ? `

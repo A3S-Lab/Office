@@ -78,6 +78,7 @@ test('document list libraries keep styles and numbering settings in context', as
   if (!fixture) throw new Error('Missing document visual fixture.');
 
   await page.goto('/playground/');
+  await stabilizeVisualSurface(page);
   await fixture.open(page);
   await fixture.ready(page);
 
@@ -147,7 +148,6 @@ test('document list libraries keep styles and numbering settings in context', as
 
   await numberingTrigger.click();
   await expect(numberingLibrary).toBeVisible();
-  await stabilizeVisualSurface(page);
   await expect(page).toHaveScreenshot('document-numbering-library.png');
 });
 
@@ -158,6 +158,7 @@ test('document navigation keeps a live outline beside the editing surface', asyn
   if (!fixture) throw new Error('Missing document visual fixture.');
 
   await page.goto('/playground/');
+  await stabilizeVisualSurface(page);
   await fixture.open(page);
   await fixture.ready(page);
   await page.getByRole('tab', { name: '视图' }).click();
@@ -246,7 +247,6 @@ test('document navigation keeps a live outline beside the editing surface', asyn
   }
 
   await search.evaluate((element) => element.blur());
-  await stabilizeVisualSurface(page);
   await expect(pane).toHaveScreenshot('document-navigation-pane.png');
   await page.keyboard.press('Escape');
   await expect(pane).toBeHidden();
@@ -431,6 +431,7 @@ test('document comments align with their review rail', async ({
 
   await page.clock.setFixedTime(new Date('2026-07-29T08:00:00.000Z'));
   await page.goto('/playground/');
+  await stabilizeVisualSurface(page);
   await fixture.open(page);
   await fixture.ready(page);
   const selectedRange = await selectDocumentParagraphText(page, 1, 12);
@@ -506,7 +507,6 @@ test('document comments align with their review rail', async ({
   expect(geometry.panelRight).toBeLessThanOrEqual(geometry.viewportWidth + 1);
   expect(geometry.panelWidth).toBeGreaterThanOrEqual(270);
 
-  await stabilizeVisualSurface(page);
   await expect(page).toHaveScreenshot('document-comments.png');
 
   const reply = panel.getByRole('textbox', { name: '回复批注 1' });

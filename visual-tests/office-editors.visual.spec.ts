@@ -80,9 +80,13 @@ test.describe('Office editor visual contracts', () => {
   for (const fixture of fixtures) {
     test(`${fixture.kind} editor`, async ({ page }, testInfo) => {
       await page.goto('/playground/');
+      // Isolate the editor surface before the fixture is mounted.  PDF page
+      // rasterization observes its host size during first layout; hiding the
+      // global Playground header after that point can shift compact snapshots
+      // by a pixel even though the editor geometry is otherwise unchanged.
+      await stabilizeVisualSurface(page);
       await fixture.open(page);
       await fixture.ready(page);
-      await stabilizeVisualSurface(page);
       await verifySharedEditorGeometry(
         page,
         fixture.kind,
