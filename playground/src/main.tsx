@@ -109,17 +109,14 @@ function PlaygroundSiteHeader() {
   const english =
     typeof window !== 'undefined' &&
     /\/en(?:\/|$)/.test(window.location.pathname);
-  const navigationItems = officeSiteNavigationItems(
-    english ? 'en' : 'zh',
-    '/playground/',
-  );
+  const homeRoute = officeSiteNavigationItems(english ? 'en' : 'zh')[0].route;
   const baseUri =
     typeof document === 'undefined'
       ? 'http://localhost/playground/'
       : document.baseURI;
   const navigationHref = (route: string) =>
     playgroundSiteNavigationHref(baseUri, route);
-  const homeUrl = navigationHref(navigationItems[0].route);
+  const homeUrl = navigationHref(homeRoute);
   const logoUrl = navigationHref('/a3s-logo.png');
 
   return (
@@ -131,27 +128,6 @@ function PlaygroundSiteHeader() {
       >
         <img src={logoUrl} alt="" />
         <span>A3S Office</span>
-      </a>
-      <nav className="playground-site-header__nav" aria-label="Site navigation">
-        {navigationItems.map((item) => (
-          <a
-            href={navigationHref(item.route)}
-            key={item.key}
-            data-site-nav-key={item.key}
-            aria-current={item.key === 'playground' ? 'page' : undefined}
-          >
-            {item.label}
-          </a>
-        ))}
-      </nav>
-      <a
-        className="playground-site-header__github"
-        href="https://github.com/A3S-Lab/Office"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="A3S Office on GitHub"
-      >
-        GitHub
       </a>
     </header>
   );

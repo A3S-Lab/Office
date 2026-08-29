@@ -13,7 +13,6 @@ interface ChapterCopy {
   component: string;
   title: string;
   detail: string;
-  features: string[];
   linkLabel: string;
 }
 
@@ -26,7 +25,6 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       title: '写作、审阅和协作在同一页完成。',
       detail:
         '保留熟悉的功能区和页面感，把批注、建议、远端光标与撤销历史放进同一条编辑路径。',
-      features: ['功能区与页面布局', '批注和修订', '多人实时状态'],
       linkLabel: '查看 DocumentEditor',
     },
     markdown: {
@@ -36,7 +34,6 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       title: '源码和可视化预览保持同步。',
       detail:
         '作者可以在 Markdown 源码、分屏和可视化模式之间切换，光标位置和受控内容始终属于同一个模型。',
-      features: ['源码 / 分屏 / 预览', 'CommonMark 结构', '受控 Markdown 状态'],
       linkLabel: '查看 MarkdownEditor',
     },
     spreadsheet: {
@@ -46,7 +43,6 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       title: '选择一个单元格，就能读懂整张表。',
       detail:
         '公式栏、稀疏网格、表格样式和数据验证围绕当前选择展开；大量空白区域不会变成大量 DOM。',
-      features: ['公式栏和范围选择', '稀疏渲染', '数据验证与表格'],
       linkLabel: '查看 SpreadsheetEditor',
     },
     presentation: {
@@ -56,7 +52,6 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       title: '从场景图到入场动画，顺着对象工作。',
       detail:
         '幻灯片、对象、动画时间线和演讲者备注各自有清晰的焦点，按需加载文本编辑，不牺牲画布流畅度。',
-      features: ['场景图对象', '入场动画时间线', '演讲者备注'],
       linkLabel: '查看 PresentationEditor',
     },
     pdf: {
@@ -66,7 +61,6 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       title: '页面组织和批注，不打断阅读。',
       detail:
         'PDFium WebAssembly 负责渲染，缩略图、批注和页面操作保持在同一工作台，并把重写任务交给 Worker。',
-      features: ['PDFium WebAssembly', '缩略图与批注', '页面组织 Worker'],
       linkLabel: '查看 PdfViewer',
     },
   },
@@ -78,11 +72,6 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       title: 'Write, review, and collaborate on one page.',
       detail:
         'Keep the familiar ribbon and page model while comments, suggestions, remote cursors, and undo history share one editing path.',
-      features: [
-        'Ribbon and page layout',
-        'Comments and revisions',
-        'Live participant state',
-      ],
       linkLabel: 'View DocumentEditor',
     },
     markdown: {
@@ -92,11 +81,6 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       title: 'Source and visual preview stay in sync.',
       detail:
         'Authors can move between Markdown source, split view, and visual mode while caret position and controlled content remain one model.',
-      features: [
-        'Source / split / preview',
-        'CommonMark structure',
-        'Controlled Markdown state',
-      ],
       linkLabel: 'View MarkdownEditor',
     },
     spreadsheet: {
@@ -106,11 +90,6 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       title: 'Select one cell and understand the whole sheet.',
       detail:
         'The formula bar, sparse grid, table styles, and data validation follow the active selection; empty maximum-size ranges stay unmaterialized.',
-      features: [
-        'Formula bar and ranges',
-        'Sparse rendering',
-        'Validation and tables',
-      ],
       linkLabel: 'View SpreadsheetEditor',
     },
     presentation: {
@@ -120,11 +99,6 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       title: 'Work from the scene graph to the entrance cue.',
       detail:
         'Slides, objects, animation timing, and presenter notes each get a clear focus, with on-demand text editing that keeps the canvas responsive.',
-      features: [
-        'Scene-graph objects',
-        'Entrance animation timing',
-        'Presenter notes',
-      ],
       linkLabel: 'View PresentationEditor',
     },
     pdf: {
@@ -134,11 +108,6 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       title: 'Organize pages and annotate without leaving reading mode.',
       detail:
         'PDFium WebAssembly renders the source while thumbnails, annotations, and page operations share one workbench; rewrites run in a Worker.',
-      features: [
-        'PDFium WebAssembly',
-        'Thumbnails and annotations',
-        'Worker page operations',
-      ],
       linkLabel: 'View PdfViewer',
     },
   },
@@ -169,17 +138,7 @@ function RealEditorPreview({
           loading={kind === 'document' ? 'eager' : 'lazy'}
           decoding="async"
         />
-        <span className="office-real-editor-shot__badge">
-          <i aria-hidden="true" />
-          {zh ? '真实编辑器截图' : 'REAL EDITOR CAPTURE'}
-        </span>
         <span className="office-real-editor-shot__scan" aria-hidden="true" />
-      </div>
-      <div className="office-real-editor-shot__meta" aria-hidden="true">
-        <span>{label}</span>
-        <small>
-          {zh ? '来自 visual-tests 快照' : 'From the visual-tests suite'}
-        </small>
       </div>
     </div>
   );
@@ -431,7 +390,6 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
         ? '暂停动画'
         : 'Pause previews';
   const currentChapterCopy = copy[currentChapter];
-  const playgroundHref = withBase('/playground/');
   const currentChapterNumber = chapterOrder.indexOf(currentChapter) + 1;
 
   return (
@@ -444,7 +402,6 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
       data-current-chapter={currentChapter}
       data-anchor-settled={settledAnchor ?? undefined}
       aria-labelledby="office-editor-chapters-title"
-      aria-describedby="office-editor-chapters-preview-note"
     >
       <header className="office-editor-chapters__header">
         <div>
@@ -465,18 +422,11 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
           </h2>
           <p>
             {zh
-              ? '下面是每个可嵌入编辑器的真实界面截图，并用轻量动效标出当前工作焦点。完整编辑器和可编辑内容请在 Playground 中体验。'
-              : 'Each panel below is a real capture of an embeddable editor, with a lightweight focus cue. Open the Playground for the complete editors and editable content.'}
+              ? '五种可嵌入编辑器的真实界面截图，展示各自的工作焦点。完整编辑器请在 Playground 中体验。'
+              : 'Real captures of five embeddable editors, each showing its working focus. Open the Playground for the complete editors.'}
           </p>
         </div>
         <div className="office-editor-chapters__header-actions">
-          <span
-            className="office-editor-chapters__preview-note"
-            id="office-editor-chapters-preview-note"
-          >
-            <i aria-hidden="true" />
-            {zh ? '真实截图 · 轻量动效' : 'Real captures · lightweight motion'}
-          </span>
           <button
             className="office-editor-chapters__motion-toggle"
             type="button"
@@ -525,7 +475,6 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
             >
               <span>{chapter.index}</span>
               <strong>{chapter.label}</strong>
-              <small>{chapter.component}</small>
             </a>
           );
         })}
@@ -539,11 +488,9 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
         aria-atomic="true"
       >
         <div className="office-editor-chapters__progress-copy">
-          <span>{zh ? '当前章节' : 'Now viewing'}</span>
           <strong>
             {currentChapterCopy.index} · {currentChapterCopy.label}
           </strong>
-          <small>{currentChapterCopy.component}</small>
         </div>
         <div className="office-editor-chapters__progress-meter">
           <span>
@@ -596,16 +543,10 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
                     {chapter.index}
                   </span>
                   <div>
-                    <small>{chapter.component}</small>
                     <h3 id={`editor-chapter-${kind}-title`}>{chapter.title}</h3>
                   </div>
                 </div>
                 <p>{chapter.detail}</p>
-                <ul>
-                  {chapter.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
                 <a
                   className="office-editor-chapter__link"
                   href={docsHref(kind, language)}
@@ -613,21 +554,6 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
                   {chapter.linkLabel}
                   <MotionArrow />
                 </a>
-                <details className="office-editor-chapter__recovery">
-                  <summary>
-                    {zh ? '预览无法加载？' : 'Preview unavailable?'}
-                  </summary>
-                  <p>
-                    {zh
-                      ? '打开组件文档或 Playground 继续。'
-                      : 'Open the component docs or Playground to continue.'}{' '}
-                    <a href={docsHref(kind, language)}>
-                      {zh ? '组件文档' : 'Component docs'}
-                    </a>
-                    <span aria-hidden="true"> · </span>
-                    <a href={playgroundHref}>Playground</a>
-                  </p>
-                </details>
               </div>
               <figure
                 className="office-editor-chapter__preview"
@@ -639,14 +565,6 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
                 }
               >
                 <RealEditorPreview kind={kind} language={language} />
-                <figcaption>
-                  <span>{zh ? '真实编辑器截图' : 'Real editor capture'}</span>
-                  <b>
-                    {zh
-                      ? '来自 visual-tests · 不挂载首页运行时'
-                      : 'From visual-tests · no homepage runtime mounted'}
-                  </b>
-                </figcaption>
               </figure>
             </article>
           );

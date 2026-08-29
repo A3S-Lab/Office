@@ -178,6 +178,7 @@ test('uses the shared A3S navigation with Playground as a primary route', async 
   expect(navSource).toContain('siteNavigationHref(pathname, site.base');
   expect(navSource).toContain('officeSiteNavigationItems');
   expect(navSource).toContain("'/playground/index.html'");
+  expect(navSource).toContain(".filter((item) => item.key !== 'home')");
   expect(navSource).not.toContain(
     'NavMenu menuItems={primaryNavList} position="left"',
   );
@@ -222,7 +223,7 @@ test('matches the A3S UI documentation rendering contract', async () => {
   expect(themeStyles).toContain('.rp-doc .rp-table-scroll-container');
 });
 
-test('keeps the Playground global header mounted while an editor is open', async () => {
+test('keeps the Playground header focused on the home link', async () => {
   const [mainSource, playgroundStyles] = await Promise.all([
     readFile(
       path.resolve(import.meta.dirname, '../playground/src/main.tsx'),
@@ -234,12 +235,59 @@ test('keeps the Playground global header mounted while an editor is open', async
     ),
   ]);
 
-  expect(mainSource).toContain('officeSiteNavigationItems');
   expect(mainSource).toContain('data-site-navigation="office"');
   expect(mainSource).toContain('<PlaygroundSiteHeader />');
-  expect(mainSource).not.toContain(
-    '{!activeArtifact && <PlaygroundSiteHeader />}',
-  );
-  expect(playgroundStyles).toContain('margin-left: auto;');
+  expect(mainSource).toContain('playground-site-header__brand');
+  expect(mainSource).not.toContain('playground-site-header__nav');
+  expect(mainSource).not.toContain('playground-site-header__github');
+  expect(playgroundStyles).toContain('.playground-site-header__brand');
+  expect(playgroundStyles).not.toContain('.playground-site-header__nav');
+  expect(playgroundStyles).not.toContain('.playground-site-header__github');
   expect(playgroundStyles).not.toContain('font-size: 0;');
+});
+
+test('keeps the product home capture and collaboration surfaces uncluttered', async () => {
+  const [homeSource, editorDemoSource, homeStyles, homepageAcl] =
+    await Promise.all([
+      readFile(
+        path.resolve(
+          import.meta.dirname,
+          '../website/product-theme/components/HomeLayout.tsx',
+        ),
+        'utf8',
+      ),
+      readFile(
+        path.resolve(
+          import.meta.dirname,
+          '../website/product-theme/components/HomeEditorDemo.tsx',
+        ),
+        'utf8',
+      ),
+      readFile(
+        path.resolve(
+          import.meta.dirname,
+          '../website/product-theme/product-home-redesign.css',
+        ),
+        'utf8',
+      ),
+      readFile(
+        path.resolve(import.meta.dirname, 'e2e/homepage-editor-demo.acl'),
+        'utf8',
+      ),
+    ]);
+
+  expect(homeSource).toContain('data-stack-style="poker-hand"');
+  expect(homeSource).toContain('data-collaboration-animation="true"');
+  expect(homeSource).toContain('data-collaboration-participants="3"');
+  expect(homeSource).not.toContain('<small>{capability.type}</small>');
+  expect(homeSource).not.toContain('docs-home-surface-list__component');
+  expect(editorDemoSource).not.toContain('office-real-editor-shot__badge');
+  expect(editorDemoSource).not.toContain('office-real-editor-shot__meta');
+  expect(editorDemoSource).not.toContain('chapter.features.map');
+  expect(homeStyles).toContain('.office-collab-demo__wire-line');
+  expect(homeStyles).toContain('@keyframes office-collab-packet');
+  expect(homeStyles).not.toContain('.office-real-editor-shot__badge');
+  expect(homepageAcl).toContain('scenario "playground-brand-shell"');
+  expect(homepageAcl).toContain('visible_count = 1');
+  expect(homepageAcl).toContain('header.playground-site-header__nav');
 });

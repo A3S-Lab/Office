@@ -36,12 +36,16 @@ suite "homepage-editor-demo" {
             visible = css(".office-home-screenshot-stack__card:nth-child(5) img[src*='editor-previews/pdf.png']")
         }
 
+        expect "hero-stack-uses-poker-hand-layout" {
+            visible = css(".office-home-screenshot-stack[data-stack-style='poker-hand']")
+        }
+
         expect "chapter-preview-mode-is-explicit" {
             visible = css(".office-editor-chapters[data-editor-runtime='preview'][data-preview-kind='editor-chapters']")
         }
 
-        expect "preview-boundary-is-visible" {
-            visible = css("#office-editor-chapters-preview-note")
+        expect "capture-badges-are-removed" {
+            visible = css(".office-editor-chapters:not(:has(.office-real-editor-shot__badge))")
         }
 
         expect "live-editor-runtime-is-not-mounted" {
@@ -56,16 +60,20 @@ suite "homepage-editor-demo" {
             visible = css(".office-editor-chapters__progress[role='status']")
         }
 
-        expect "chapter-recovery-path-is-discoverable" {
-            visible = css(".office-editor-chapter__recovery summary")
-        }
-
         expect "collaboration-path-is-discoverable" {
             visible = css(".docs-home-collaboration a[href*='collaboration']")
         }
 
-        expect "collaboration-state-diagram-is-visible" {
-            visible = css(".docs-home-collaboration__diagram")
+        expect "collaboration-animation-is-visible" {
+            visible = css(".office-collab-demo[data-collaboration-animation='true'][data-collaboration-participants='3']")
+        }
+
+        expect "collaboration-has-three-editor-screens" {
+            visible = css(".office-collab-demo__participants .office-collab-peer:nth-child(3) .office-collab-peer__screen img[src*='editor-previews/document.png']")
+        }
+
+        expect "collaboration-state-packets-are-visible" {
+            visible = css(".office-collab-demo__wire-line i")
         }
 
         expect "final-product-cta-is-discoverable" {
@@ -177,8 +185,8 @@ suite "homepage-editor-demo" {
             visible = css(".office-editor-chapters[data-editor-runtime='preview']")
         }
 
-        expect "phone-preview-boundary-is-visible" {
-            visible = css("#office-editor-chapters-preview-note")
+        expect "phone-capture-badges-are-removed" {
+            visible = css(".office-editor-chapters:not(:has(.office-real-editor-shot__badge))")
         }
 
         expect "phone-chapter-progress-is-visible" {
@@ -189,12 +197,12 @@ suite "homepage-editor-demo" {
             visible = css("main.office-product-home:not(:has(.work-document-editor, .work-spreadsheet-editor, .work-presentation-editor, .work-pdf-viewer))")
         }
 
-        expect "phone-chapter-recovery-path-is-discoverable" {
-            visible = css(".office-editor-chapter__recovery summary")
-        }
-
         expect "phone-collaboration-path-is-discoverable" {
             visible = css(".docs-home-collaboration a[href*='collaboration']")
+        }
+
+        expect "phone-collaboration-animation-is-visible" {
+            visible = css(".office-collab-demo[data-collaboration-animation='true'][data-collaboration-participants='3']")
         }
 
         expect "phone-final-product-cta-is-discoverable" {
@@ -281,6 +289,54 @@ suite "homepage-editor-demo" {
 
         page_errors "phone-errors" {
             path = "diagnostics/homepage-editor-chapters-phone-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "playground-brand-shell" {
+        name = "Keep the Playground header limited to the home brand link"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "playground" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-brand-is-visible" {
+            visible = css("header.playground-site-header > a.playground-site-header__brand")
+        }
+
+        expect "playground-header-has-only-brand" {
+            target = css("header.playground-site-header > *")
+            visible_count = 1
+        }
+
+        expect "playground-header-has-no-global-menu" {
+            target = css("header.playground-site-header__nav, header.playground-site-header__github")
+            visible_count = 0
+        }
+
+        click "return-home-from-brand" {
+            target = css("header.playground-site-header > a.playground-site-header__brand")
+        }
+
+        expect "brand-returns-to-product-home" {
+            visible = css("main.office-product-home h1#office-product-title")
+        }
+
+        console "playground-console" {
+            path = "diagnostics/playground-console.json"
+            clear = false
+        }
+
+        page_errors "playground-errors" {
+            path = "diagnostics/playground-errors.json"
             clear = false
         }
     }

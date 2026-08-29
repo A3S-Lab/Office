@@ -37,7 +37,6 @@ import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef } from 'react';
 import {
   officeSiteNavigationActiveKey,
-  isProductHomeRoute,
   normalizeNavigationPath,
   officeSiteNavigationItems,
   siteNavigationHref,
@@ -410,12 +409,13 @@ export function Nav({
       ? '/playground/'
       : '/playground/index.html';
     const activeKey = officeSiteNavigationActiveKey(pathname, site.base);
-    const onProductHome = isProductHomeRoute(pathname, site.base);
     const routeItems: NavItem[] = officeSiteNavigationItems(
       language === 'en' ? 'en' : 'zh',
       playgroundRoute,
     )
-      .filter((item) => item.key !== 'home' || onProductHome)
+      // The logo is the default home destination. Keep the global menu focused
+      // on destinations that change the user's working surface.
+      .filter((item) => item.key !== 'home')
       .map((item) => ({
         text: item.label,
         link: siteNavigationHref(pathname, site.base, item.route),
@@ -423,10 +423,9 @@ export function Nav({
         // key keeps SSR and hydration identical even when Rspress temporarily
         // reports a path relative to its `/docs/` mount.
         activeMatch: item.key === activeKey ? '.*' : '(?!)',
-        // The home route is represented by the logo, just like A3S Flow. Keep
-        // the two reading/product routes on the left and the Playground action
-        // on the right so the header never changes shape between surfaces.
-        position: item.key === 'playground' ? 'right' : 'left',
+        // Every destination belongs to the right-side navigation group. The
+        // left side is reserved for the brand, matching the A3S Flow shell.
+        position: 'right',
       }));
     // Keep only explicit utility menus (Resources today). Rspress may expose
     // an auto-generated documentation tree through `useNav`; that tree
@@ -443,25 +442,18 @@ export function Nav({
       ...routeItems,
       ...utilityItems,
     ]);
-    const left = deduped.filter(
-      (item) =>
-        item.position === 'left' &&
-        'link' in item &&
-        !normalizeNavigationPath(pathname, item.link)?.match(/^(?:\/$)/),
-    );
     const right = deduped.filter(
       (item) => item.position === 'right' && 'link' in item,
     );
-    // Reuse the same page-aware route contract in the mobile sheet. On docs
-    // pages the logo remains the home destination, while the redundant
-    // "Product home" text item is intentionally omitted on every surface.
+    // Reuse the same page-aware route contract in the mobile sheet. The logo
+    // remains the home destination, while the redundant "Product home" text
+    // item is intentionally omitted on every surface.
     const mobile = dedupeNavigationItems(pathname, [
       ...routeItems,
       ...utilityItems,
     ]);
-    return { left, right, mobile };
+    return { right, mobile };
   }, [language, navList, pathname, site.base]);
-  const leftNavigationList = navigationLists.left;
   const navigationList = navigationLists.right;
   const mobileNavigationList = navigationLists.mobile;
   const hasAppearanceSwitch = isDarkModeSwitchEnabled(
@@ -542,7 +534,6 @@ export function Nav({
       <div className="rp-nav__left">
         {beforeNavTitle}
         {navTitle ?? <OfficeNavTitle pathname={pathname} />}
-        <NavMenu menuItems={leftNavigationList} position="left" />
         {afterNavTitle}
       </div>
       <div className="rp-nav__right">

@@ -24,12 +24,13 @@ Playground.
 - **Hero visual:** a light surface map communicates the product boundary:
   editor surfaces, shared state, collaborators, and the A3S Boot host
   contract. The hero never mounts a full editor runtime.
-- **Composition:** the first viewport moves from product promise to the surface
-  map, then to a five-surface contract bar. The editor section is a deliberate
-  chapter sequence: Document, Markdown, Spreadsheet, Presentation, and PDF.
-  Each chapter pairs the real editor's interaction language with a lightweight
-  UI/UX motion preview and a documentation entry point. The complete editable
-  editors remain in Playground.
+- **Composition:** the first viewport moves from the product promise to a
+  poker-hand stack of five real editor captures, then to a compact five-surface
+  contract bar. The editor section is a deliberate chapter sequence: Document,
+  Markdown, Spreadsheet, Presentation, and PDF. Each chapter pairs the real
+  editor's interaction language with a lightweight UI/UX motion preview and a
+  documentation entry point. The complete editable editors remain in
+  Playground.
 - **Motion:** each chapter preview animates one recognizable interaction, such
   as a revision/comment, source-to-preview sync, cell selection, an entrance
   cue, or page annotation. The collaboration diagram adds a restrained state
@@ -44,16 +45,25 @@ Playground.
   uses `content-visibility: auto` with viewport-calibrated intrinsic reserves.
   This preserves deep-link scroll stability without making a returning user
   click into an unpainted control.
-- **Preview boundary:** the chapter header carries a persistent
-  `Illustrative UI/UX · preview only` note, and simulated window status values
-  use `Sample`/`示意` wording. Each chapter exposes a collapsed, non-modal
-  recovery disclosure with base-aware links to the component documentation and
-  Playground. These cues make sample presence, autosave, and rendering states
-  explicit without adding noise to the healthy path.
+- **Preview boundary:** the chapter and collaboration surfaces use captures
+  produced by the visual-test suite. Capture labels, implementation metadata,
+  and recovery instructions are intentionally omitted from the healthy path so
+  the editor UI remains the visual focus. The surrounding headings and links
+  provide the only necessary context and recovery route.
+- **Collaboration scene:** the homepage includes a compact three-peer scene
+  using the real Document editor capture for Member A, Member B, and A3S Agent.
+  Colored cursors and selections move over each capture while state packets
+  travel to an A3S Boot room node. The scene is illustrative and does not mount
+  a live editor runtime; the collaboration and backend links lead to the full
+  implementation documentation.
 - **Runtime boundary:** the product home imports only the preview components.
   It does not load DocumentEditor, MarkdownEditor, SpreadsheetEditor,
   PresentationEditor, or PdfViewer runtimes, keeping the first paint small and
   leaving editing state and large document work to Playground.
+- **Playground shell:** Playground is an editing workspace, not another
+  marketing surface. Its top bar contains only the A3S Office logo and name;
+  that brand link returns to the product home. Product navigation stays in the
+  documentation shell and is not duplicated above the editor.
 
 ## Responsive behavior
 

@@ -1,10 +1,7 @@
 import { useLang, withBase } from '@rspress/core/runtime';
 import { useEffect } from 'react';
 import { HomeEditorDemo } from './HomeEditorDemo';
-import {
-  editorScreenshotFiles,
-  editorScreenshotLabels,
-} from './home-editor-assets';
+import { editorScreenshotFiles } from './home-editor-assets';
 import { chapterOrder } from './HomeEditorContent';
 import type { ChapterKind } from './HomeEditorContent';
 
@@ -12,7 +9,6 @@ type Language = 'zh' | 'en';
 
 type Surface = {
   name: string;
-  detail: string;
   component: string;
 };
 
@@ -28,83 +24,69 @@ const surfaces: Record<Language, Surface[]> = {
   zh: [
     {
       name: '文档',
-      detail: 'TipTap / ProseMirror 与 A3S Office 排版内核',
       component: 'DocumentEditor',
     },
     {
       name: 'Markdown',
-      detail: '可视化编辑与受控 Markdown 源码',
       component: 'MarkdownEditor',
     },
     {
       name: '表格',
-      detail: '稀疏工作簿、原生表格与 A3S Office 计算内核',
       component: 'SpreadsheetEditor',
     },
     {
       name: '演示文稿',
-      detail: '场景图与按需加载的文本编辑',
       component: 'PresentationEditor',
     },
     {
       name: 'PDF',
-      detail: 'PDFium WebAssembly 渲染与批注控制器',
       component: 'PdfViewer',
     },
   ],
   en: [
     {
       name: 'Document',
-      detail: 'TipTap and ProseMirror with the A3S Office layout kernel',
       component: 'DocumentEditor',
     },
     {
       name: 'Markdown',
-      detail: 'Visual editing with a controlled Markdown source model',
       component: 'MarkdownEditor',
     },
     {
       name: 'Spreadsheet',
-      detail:
-        'Sparse workbooks, native tables, and the A3S Office calculation kernel',
       component: 'SpreadsheetEditor',
     },
     {
       name: 'Presentation',
-      detail: 'A scene graph with on-demand text editing',
       component: 'PresentationEditor',
     },
     {
       name: 'PDF',
-      detail: 'PDFium WebAssembly rendering and annotation controllers',
       component: 'PdfViewer',
     },
   ],
 };
 
-const latestCapabilities: Record<
-  Language,
-  Array<{ label: string; type: string }>
-> = {
+const latestCapabilities: Record<Language, Array<{ label: string }>> = {
   zh: [
-    { label: '入场动画', type: 'Presentation' },
-    { label: '文档比较', type: 'Writer' },
-    { label: '原生索引', type: 'Writer' },
-    { label: '可更新目录', type: 'Writer' },
-    { label: '字符底纹', type: 'Writer' },
-    { label: '校对语言', type: 'Writer' },
-    { label: '数据验证', type: 'Spreadsheet' },
-    { label: '页面组织', type: 'PDF' },
+    { label: '入场动画' },
+    { label: '文档比较' },
+    { label: '原生索引' },
+    { label: '可更新目录' },
+    { label: '字符底纹' },
+    { label: '校对语言' },
+    { label: '数据验证' },
+    { label: '页面组织' },
   ],
   en: [
-    { label: 'Entrance animations', type: 'Presentation' },
-    { label: 'Document compare', type: 'Writer' },
-    { label: 'Document index', type: 'Writer' },
-    { label: 'Table of contents', type: 'Writer' },
-    { label: 'Character shading', type: 'Writer' },
-    { label: 'Proofing languages', type: 'Writer' },
-    { label: 'Data validation', type: 'Spreadsheet' },
-    { label: 'Page organization', type: 'PDF' },
+    { label: 'Entrance animations' },
+    { label: 'Document compare' },
+    { label: 'Document index' },
+    { label: 'Table of contents' },
+    { label: 'Character shading' },
+    { label: 'Proofing languages' },
+    { label: 'Data validation' },
+    { label: 'Page organization' },
   ],
 };
 
@@ -162,11 +144,11 @@ function productCopy(language: Language) {
       ? '从第一个组件开始，逐步接入文件能力、实时协作和智能体自动化。'
       : 'Start with one component, then add file behavior, live collaboration, and agent automation.',
     collaborationTitle: zh
-      ? '协作是一条完整链路'
-      : 'Collaboration is a complete path',
+      ? '多人和智能体，在同一页协作'
+      : 'People and agents edit on one page',
     collaborationLead: zh
-      ? 'Office 负责格式绑定、成员状态、远端位置与本地撤销。宿主继续拥有房间、鉴权、权限、网络 Provider、离线队列和持久化。'
-      : 'Office owns format bindings, participants, remote locations, and local undo. The host keeps rooms, authentication, authorization, networking, offline buffering, and persistence.',
+      ? '两位成员与一个 A3S Agent 通过同一房间编辑、评论和审阅；动画展示共享状态如何在编辑器之间实时往返。'
+      : 'Two people and an A3S Agent edit, comment, and review through one room; the animation shows shared state moving between editors in real time.',
     editorsTitle: zh ? '选择编辑器界面' : 'Choose an editor surface',
     editorsLead: zh
       ? '每种文件格式都有自己的数据模型，同时共享统一的宿主接入方式。'
@@ -205,7 +187,6 @@ function ArrowIcon({ external = false }: { external?: boolean }) {
 
 function HomeSurfaceMap({ language }: { language: Language }) {
   const zh = language === 'zh';
-  const labels = editorScreenshotLabels[language];
 
   return (
     <div
@@ -218,15 +199,11 @@ function HomeSurfaceMap({ language }: { language: Language }) {
           : 'Stacked previews of five real A3S Office editor screenshots'
       }
     >
-      <div className="office-home-surface-map__header">
-        <span>{zh ? '真实编辑器截图' : 'REAL EDITOR CAPTURES'}</span>
-        <small>
-          {zh
-            ? '视觉回归快照 · 1280 × 800'
-            : 'Visual-suite snapshots · 1280 × 800'}
-        </small>
-      </div>
-      <div className="office-home-screenshot-stack" aria-hidden="true">
+      <div
+        className="office-home-screenshot-stack"
+        data-stack-style="poker-hand"
+        aria-hidden="true"
+      >
         {chapterOrder.map((kind: ChapterKind, index) => (
           <figure
             className={`office-home-screenshot-stack__card office-home-screenshot-stack__card--${kind}`}
@@ -238,22 +215,9 @@ function HomeSurfaceMap({ language }: { language: Language }) {
               loading={index === 0 ? 'eager' : 'lazy'}
               decoding="async"
             />
-            <figcaption>
-              <b>{`0${index + 1}`}</b>
-              <span>{labels[kind]}</span>
-            </figcaption>
           </figure>
         ))}
-        <span className="office-home-screenshot-stack__focus" />
       </div>
-      <footer className="office-home-surface-map__footer">
-        <span>
-          {zh
-            ? '文档 · Markdown · 表格 · 演示 · PDF'
-            : 'Document · Markdown · Spreadsheet · Presentation · PDF'}
-        </span>
-        <b>{zh ? '来自真实编辑器' : 'Captured from the editors'}</b>
-      </footer>
     </div>
   );
 }
@@ -267,6 +231,26 @@ export function HomeLayout() {
     target === 'en' ? withBase('/en/') : withBase('/');
   const latest = latestCapabilities[language];
   const hrefs = capabilityHrefs[language];
+  const collaborationParticipants = [
+    {
+      key: 'human-a',
+      avatar: 'A',
+      name: zh ? '成员 A' : 'Person A',
+      role: zh ? '人类编辑' : 'Human editor',
+    },
+    {
+      key: 'human-b',
+      avatar: 'B',
+      name: zh ? '成员 B' : 'Person B',
+      role: zh ? '人类审阅' : 'Human reviewer',
+    },
+    {
+      key: 'agent',
+      avatar: 'AI',
+      name: 'A3S Agent',
+      role: zh ? '智能体编辑' : 'Agent editor',
+    },
+  ] as const;
 
   useEffect(() => {
     // Rspress preserves the previous scroll offset when a viewport changes or
@@ -399,9 +383,6 @@ export function HomeLayout() {
       >
         <div className="docs-home-hero__copy">
           <div className="docs-home-hero__meta office-home-hero__meta">
-            <span>
-              A3S OFFICE <i aria-hidden="true">·</i> EMBEDDED EDITORS
-            </span>
             <nav aria-label={zh ? '首页语言' : 'Homepage language'}>
               <a
                 href={languageHref('zh')}
@@ -456,13 +437,9 @@ export function HomeLayout() {
       >
         <strong>{copy.assurance}</strong>
         <ul>
-          {surfaces[language].map((surface, index) => (
-            <li key={surface.component}>
-              <b>0{index + 1}</b>
-              <span>
-                {surface.name}
-                <small>{surface.component}</small>
-              </span>
+          {surfaces[language].map((surface) => (
+            <li key={surface.component} data-surface={surface.component}>
+              <span>{surface.name}</span>
             </li>
           ))}
         </ul>
@@ -475,7 +452,6 @@ export function HomeLayout() {
         <span>{copy.latest}</span>
         {latest.map((capability, index) => (
           <a href={docsPath(hrefs[index], language)} key={capability.label}>
-            <small>{capability.type}</small>
             {capability.label}
           </a>
         ))}
@@ -526,18 +502,14 @@ export function HomeLayout() {
           <ul className="docs-home-collaboration__facts">
             {(zh
               ? [
-                  '五种编辑器使用同一套类型化协作边界',
-                  'Document 评论与建议模式保留署名、线程和不可变决定',
-                  'Spreadsheet 表格/ListObject 以校验后的 ID 索引记录收敛',
-                  '浏览器 Yjs 与原生 Yrs 交换标准增量更新',
-                  'A3S Boot 在持久化和广播前执行语义授权',
+                  '同一文件共享评论、建议和格式修订',
+                  '人类与 A3S Agent 共享光标和编辑状态',
+                  'A3S Boot 负责鉴权、广播与持久化',
                 ]
               : [
-                  'All five editors share one typed collaboration boundary',
-                  'Document comments and suggestions retain attribution and immutable decisions',
-                  'Spreadsheet Tables/ListObjects converge as validated ID-keyed records',
-                  'Browser Yjs and native Yrs exchange standard incremental updates',
-                  'A3S Boot authorizes review semantics before persistence and broadcast',
+                  'Comments, suggestions, and formatting revisions share one file',
+                  'People and the A3S Agent share cursors and edit state',
+                  'A3S Boot handles room auth, broadcast, and persistence',
                 ]
             ).map((fact) => (
               <li key={fact}>{fact}</li>
@@ -559,29 +531,72 @@ export function HomeLayout() {
           role="img"
           aria-label={
             zh
-              ? '浏览器和原生智能体通过 A3S Boot 共享协作状态'
-              : 'Browsers and a native agent share collaboration state through A3S Boot'
+              ? '两位成员和 A3S Agent 在同一编辑器中实时协作'
+              : 'Two people and an A3S Agent collaborate in the same editor in real time'
           }
         >
-          <div className="docs-home-diagram__peers" aria-hidden="true">
-            <span>
-              <b>A</b>Browser A<small>Yjs</small>
-            </span>
-            <span>
-              <b>B</b>Browser B<small>Yjs</small>
-            </span>
-            <span>
-              <b>C</b>A3S Agent<small>Yrs</small>
-            </span>
-          </div>
-          <div className="docs-home-diagram__connector" aria-hidden="true">
-            <i />
-            <b>state vectors + updates</b>
-            <i />
-          </div>
-          <div className="docs-home-diagram__service" aria-hidden="true">
-            <strong>A3S Boot</strong>
-            <span>room auth · awareness · persistence</span>
+          <div
+            className="office-collab-demo"
+            data-collaboration-animation="true"
+            data-collaboration-participants="3"
+            aria-hidden="true"
+          >
+            <div className="office-collab-demo__header">
+              <strong>{zh ? '项目方案' : 'Project brief'}</strong>
+              <span className="office-collab-demo__live">
+                <i />
+                {zh ? '实时同步' : 'Live sync'}
+              </span>
+            </div>
+            <div className="office-collab-demo__participants">
+              {collaborationParticipants.map((participant) => (
+                <article
+                  className={`office-collab-peer office-collab-peer--${participant.key}`}
+                  key={participant.key}
+                  aria-label={`${participant.name}, ${participant.role}`}
+                  data-peer-role={participant.role}
+                >
+                  <header className="office-collab-peer__header">
+                    <b>{participant.avatar}</b>
+                    <strong>{participant.name}</strong>
+                  </header>
+                  <div className="office-collab-peer__screen">
+                    <img
+                      src={withBase(
+                        `/editor-previews/${editorScreenshotFiles.document}`,
+                      )}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <span className="office-collab-peer__selection" />
+                    <span className="office-collab-peer__cursor">
+                      <i />
+                      <b>{participant.avatar}</b>
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="office-collab-demo__wire">
+              <span className="office-collab-demo__wire-line">
+                <i />
+              </span>
+              <strong>{zh ? '共享状态' : 'Shared state'}</strong>
+              <span className="office-collab-demo__wire-line office-collab-demo__wire-line--reverse">
+                <i />
+              </span>
+            </div>
+            <div className="office-collab-demo__service">
+              <div>
+                <strong>A3S Boot</strong>
+                <span>{zh ? '同一协作房间' : 'One collaboration room'}</span>
+              </div>
+              <span className="office-collab-demo__service-state">
+                <i />
+                {zh ? '已同步' : 'Synced'}
+              </span>
+            </div>
           </div>
         </figure>
       </section>
@@ -604,8 +619,12 @@ export function HomeLayout() {
                 )}
               >
                 <strong>{surface.name}</strong>
-                <span>{surface.detail}</span>
-                <code>{surface.component}</code>
+                <span
+                  className="docs-home-surface-list__arrow"
+                  aria-hidden="true"
+                >
+                  <ArrowIcon />
+                </span>
               </a>
             </li>
           ))}
