@@ -62,9 +62,10 @@ Playground.
   PresentationEditor, or PdfViewer runtimes, keeping the first paint small and
   leaving editing state and large document work to Playground.
 - **Playground shell:** Playground is an editing workspace, not another
-  marketing surface. Its top bar contains only the A3S Office logo and name;
-  that brand link returns to the product home. Product navigation stays in the
-  documentation shell and is not duplicated above the editor.
+  marketing surface. It has no global top navigation and consumes the full
+  dynamic viewport. The A3S Office logo and name live in the sidebar as the
+  product-home link; product navigation stays in the documentation shell and
+  is not duplicated above the editor.
 
 ## Responsive behavior
 

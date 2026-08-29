@@ -292,7 +292,7 @@ suite "homepage-editor-demo" {
     }
 
     scenario "playground-brand-shell" {
-        name = "Keep the Playground header limited to the home brand link"
+        name = "Keep the Playground immersive with a sidebar home brand link"
         surface = "web"
         timeout_ms = 30000
 
@@ -306,22 +306,21 @@ suite "homepage-editor-demo" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
-        expect "playground-brand-is-visible" {
-            visible = css("header.playground-site-header > a.playground-site-header__brand")
-        }
-
-        expect "playground-header-has-only-brand" {
-            target = css("header.playground-site-header > *")
-            visible_count = 1
-        }
-
-        expect "playground-header-has-no-global-menu" {
-            target = css("header.playground-site-header__nav, header.playground-site-header__github")
+        expect "playground-has-no-global-header" {
+            target = css(".playground-site-header")
             visible_count = 0
         }
 
+        expect "playground-sidebar-brand-is-visible" {
+            visible = css(".playground-sidebar .playground-sidebar-brand")
+        }
+
+        expect "playground-shell-fills-viewport" {
+            in_viewport = css(".playground-shell")
+        }
+
         click "return-home-from-brand" {
-            target = css("header.playground-site-header > a.playground-site-header__brand")
+            target = css(".playground-sidebar .playground-sidebar-brand")
         }
 
         expect "brand-returns-to-product-home" {

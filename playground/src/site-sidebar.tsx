@@ -18,6 +18,8 @@ import { warmPlaygroundEditor } from './editor-preload';
 
 export function SiteSidebar({
   docsUrl,
+  homeUrl,
+  logoUrl,
   modal = false,
   onCollapse,
   onHome,
@@ -26,6 +28,8 @@ export function SiteSidebar({
   onOpenPdf,
 }: {
   docsUrl: string;
+  homeUrl: string;
+  logoUrl: string;
   modal?: boolean;
   onCollapse: () => void;
   onHome: () => void;
@@ -57,7 +61,14 @@ export function SiteSidebar({
       onKeyDown={focusScope.handleKeyDown}
     >
       <header className="sidebar-product-header">
-        <strong>办公</strong>
+        <a
+          className="playground-sidebar-brand"
+          href={homeUrl}
+          aria-label="A3S Office home"
+        >
+          <img src={logoUrl} alt="" />
+          <span>A3S Office</span>
+        </a>
         <button
           ref={closeButtonRef}
           type="button"

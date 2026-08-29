@@ -223,10 +223,14 @@ test('matches the A3S UI documentation rendering contract', async () => {
   expect(themeStyles).toContain('.rp-doc .rp-table-scroll-container');
 });
 
-test('keeps the Playground header focused on the home link', async () => {
-  const [mainSource, playgroundStyles] = await Promise.all([
+test('keeps the Playground immersive and preserves a sidebar home link', async () => {
+  const [mainSource, sidebarSource, playgroundStyles] = await Promise.all([
     readFile(
       path.resolve(import.meta.dirname, '../playground/src/main.tsx'),
+      'utf8',
+    ),
+    readFile(
+      path.resolve(import.meta.dirname, '../playground/src/site-sidebar.tsx'),
       'utf8',
     ),
     readFile(
@@ -236,14 +240,14 @@ test('keeps the Playground header focused on the home link', async () => {
   ]);
 
   expect(mainSource).toContain('data-site-navigation="office"');
-  expect(mainSource).toContain('<PlaygroundSiteHeader />');
-  expect(mainSource).toContain('playground-site-header__brand');
-  expect(mainSource).not.toContain('playground-site-header__nav');
-  expect(mainSource).not.toContain('playground-site-header__github');
-  expect(playgroundStyles).toContain('.playground-site-header__brand');
-  expect(playgroundStyles).not.toContain('.playground-site-header__nav');
-  expect(playgroundStyles).not.toContain('.playground-site-header__github');
-  expect(playgroundStyles).not.toContain('font-size: 0;');
+  expect(mainSource).not.toContain('PlaygroundSiteHeader');
+  expect(mainSource).not.toContain('playground-site-header');
+  expect(sidebarSource).toContain('playground-sidebar-brand');
+  expect(sidebarSource).toContain('href={homeUrl}');
+  expect(sidebarSource).toContain('src={logoUrl}');
+  expect(playgroundStyles).toContain('height: 100dvh');
+  expect(playgroundStyles).toContain('min-height: 100svh');
+  expect(playgroundStyles).not.toContain('.playground-site-header');
 });
 
 test('keeps the product home capture and collaboration surfaces uncluttered', async () => {
@@ -288,6 +292,6 @@ test('keeps the product home capture and collaboration surfaces uncluttered', as
   expect(homeStyles).toContain('@keyframes office-collab-packet');
   expect(homeStyles).not.toContain('.office-real-editor-shot__badge');
   expect(homepageAcl).toContain('scenario "playground-brand-shell"');
-  expect(homepageAcl).toContain('visible_count = 1');
-  expect(homepageAcl).toContain('header.playground-site-header__nav');
+  expect(homepageAcl).toContain('visible_count = 0');
+  expect(homepageAcl).toContain('playground-sidebar-brand');
 });

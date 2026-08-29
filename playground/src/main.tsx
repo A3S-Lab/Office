@@ -105,32 +105,21 @@ const EditorWorkspace = lazy(async () => ({
   default: (await loadPlaygroundEditorWorkspace()).EditorWorkspace,
 }));
 
-function PlaygroundSiteHeader() {
+function playgroundBrandLinks(): { homeUrl: string; logoUrl: string } {
   const english =
     typeof window !== 'undefined' &&
     /\/en(?:\/|$)/.test(window.location.pathname);
-  const homeRoute = officeSiteNavigationItems(english ? 'en' : 'zh')[0].route;
   const baseUri =
     typeof document === 'undefined'
       ? 'http://localhost/playground/'
       : document.baseURI;
   const navigationHref = (route: string) =>
     playgroundSiteNavigationHref(baseUri, route);
-  const homeUrl = navigationHref(homeRoute);
-  const logoUrl = navigationHref('/a3s-logo.png');
-
-  return (
-    <header className="playground-site-header" data-site-navigation="office">
-      <a
-        className="playground-site-header__brand"
-        href={homeUrl}
-        aria-label="A3S Office home"
-      >
-        <img src={logoUrl} alt="" />
-        <span>A3S Office</span>
-      </a>
-    </header>
-  );
+  const homeRoute = officeSiteNavigationItems(english ? 'en' : 'zh')[0].route;
+  return {
+    homeUrl: navigationHref(homeRoute),
+    logoUrl: navigationHref('/a3s-logo.png'),
+  };
 }
 
 function Playground() {
@@ -195,6 +184,7 @@ function Playground() {
   const collaborationDocsUrl = collaborationServerDocumentationUrl(
     document.baseURI,
   );
+  const { homeUrl, logoUrl } = playgroundBrandLinks();
 
   useEffect(() => {
     const redirectLegacyDocsRoute = () => {
@@ -455,8 +445,8 @@ function Playground() {
   return (
     <div
       className={`playground-shell ${activeArtifact ? 'editor-open' : 'home-open'}`}
+      data-site-navigation="office"
     >
-      <PlaygroundSiteHeader />
       <A3STestBoundary
         id="office-playground"
         name="Office Playground"
@@ -502,6 +492,8 @@ function Playground() {
         {sidebarOpen && (
           <SiteSidebar
             docsUrl={docsUrl}
+            homeUrl={homeUrl}
+            logoUrl={logoUrl}
             modal={sidebarModal}
             onCollapse={() => setSidebarOpen(false)}
             onCreate={newArtifact}

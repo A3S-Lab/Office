@@ -4,6 +4,11 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Made the Playground an immersive full-viewport workspace. The duplicated
+  global top bar is gone; the A3S Office logo remains available as a
+  product-home link in the workspace sidebar, with dynamic viewport sizing on
+  desktop and compact screens.
+
 ## 0.35.0 - 2026-08-29
 
 - Fixed `PresentationEditor` first-open focus for blank title slides. With
