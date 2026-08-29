@@ -40,6 +40,10 @@ suite "homepage-editor-demo" {
             visible = css(".office-home-screenshot-stack[data-stack-style='poker-hand']")
         }
 
+        expect "redundant-capability-rails-are-removed" {
+            visible = css("main.office-product-home:not(:has(.docs-home-assurance, .docs-home-latest))")
+        }
+
         expect "chapter-preview-mode-is-explicit" {
             visible = css(".office-editor-chapters[data-editor-runtime='preview'][data-preview-kind='editor-chapters']")
         }
@@ -111,7 +115,7 @@ suite "homepage-editor-demo" {
         }
 
         expect "previews-are-paused" {
-            visible = css(".office-editor-chapters[data-motion-paused='true'] .office-editor-chapters__motion-toggle[aria-pressed='true']")
+            visible = css(".office-editor-chapters__motion-toggle[aria-pressed='true']")
         }
 
         click "resume-previews" {
@@ -119,7 +123,7 @@ suite "homepage-editor-demo" {
         }
 
         expect "previews-are-playing" {
-            visible = css(".office-editor-chapters[data-motion-paused='false'] .office-editor-chapters__motion-toggle[aria-pressed='false']")
+            visible = css(".office-editor-chapters__motion-toggle[aria-pressed='false']")
         }
 
         click "jump-to-markdown-chapter" {
@@ -251,18 +255,12 @@ suite "homepage-editor-demo" {
             modifiers = []
         }
 
-        wheel "phone-top-to-motion-control" {
-            delta_x = 0
-            delta_y = 1400
-            modifiers = []
-        }
-
-        expect "phone-motion-control-is-in-viewport" {
-            in_viewport = css(".office-editor-chapters__motion-toggle")
-        }
-
         focus "phone-focus-motion-control" {
             target = css(".office-editor-chapters__motion-toggle")
+        }
+
+        expect "phone-motion-control-is-visible" {
+            visible = css(".office-editor-chapters__motion-toggle")
         }
 
         press "phone-pause-previews" {

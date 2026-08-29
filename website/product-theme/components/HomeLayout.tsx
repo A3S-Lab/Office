@@ -1,9 +1,9 @@
 import { useLang, withBase } from '@rspress/core/runtime';
 import { useEffect } from 'react';
+import type { ChapterKind } from './HomeEditorContent';
+import { chapterOrder } from './HomeEditorContent';
 import { HomeEditorDemo } from './HomeEditorDemo';
 import { editorScreenshotFiles } from './home-editor-assets';
-import { chapterOrder } from './HomeEditorContent';
-import type { ChapterKind } from './HomeEditorContent';
 
 type Language = 'zh' | 'en';
 
@@ -67,52 +67,6 @@ const surfaces: Record<Language, Surface[]> = {
   ],
 };
 
-const latestCapabilities: Record<Language, Array<{ label: string }>> = {
-  zh: [
-    { label: '入场动画' },
-    { label: '文档比较' },
-    { label: '原生索引' },
-    { label: '可更新目录' },
-    { label: '字符底纹' },
-    { label: '校对语言' },
-    { label: '数据验证' },
-    { label: '页面组织' },
-  ],
-  en: [
-    { label: 'Entrance animations' },
-    { label: 'Document compare' },
-    { label: 'Document index' },
-    { label: 'Table of contents' },
-    { label: 'Character shading' },
-    { label: 'Proofing languages' },
-    { label: 'Data validation' },
-    { label: 'Page organization' },
-  ],
-};
-
-const capabilityHrefs: Record<Language, string[]> = {
-  zh: [
-    'components/presentation.html#入场动画',
-    'components/document.html#文档比较与合并',
-    'components/document.html#原生文档索引',
-    'components/document.html#原生可更新目录',
-    'components/document.html#原生字符底纹',
-    'components/document.html#原生校对语言',
-    'components/spreadsheet.html#数据验证',
-    'components/pdf.html#页面组织',
-  ],
-  en: [
-    'components/presentation.html#entrance-animations',
-    'components/document.html#document-compare-and-combine',
-    'components/document.html#native-document-index',
-    'components/document.html#native-table-of-contents',
-    'components/document.html#native-character-shading',
-    'components/document.html#native-proofing-languages',
-    'components/spreadsheet.html#data-validation',
-    'components/pdf.html#page-organization',
-  ],
-};
-
 function docsPath(path: string, language: Language) {
   const locale = language === 'en' ? 'en/' : '';
   return withBase(`/docs/${locale}${path}`);
@@ -137,8 +91,6 @@ function productCopy(language: Language) {
       : 'Open, edit, and save documents, Markdown, spreadsheets, presentations, and PDFs in your app. Your app keeps files, permissions, and storage; collaboration can be added separately.',
     primary: zh ? '开始接入' : 'Start integrating',
     secondary: zh ? '打开 Playground' : 'Open Playground',
-    assurance: zh ? '支持的编辑器' : 'Supported editors',
-    latest: zh ? '最近更新' : 'Recent updates',
     workflowTitle: zh ? '接入步骤' : 'Integration steps',
     workflowLead: zh
       ? '先渲染一个编辑器，再接上文件数据。需要多人协作时，继续接入协作服务。'
@@ -227,8 +179,6 @@ export function HomeLayout() {
   const playground = withBase('/playground/');
   const languageHref = (target: Language) =>
     target === 'en' ? withBase('/en/') : withBase('/');
-  const latest = latestCapabilities[language];
-  const hrefs = capabilityHrefs[language];
   const collaborationParticipants = [
     {
       key: 'human-a',
@@ -438,32 +388,6 @@ export function HomeLayout() {
           <HomeSurfaceMap language={language} />
         </div>
       </section>
-
-      <section
-        className="docs-home-assurance"
-        aria-label={zh ? '编辑器能力范围' : 'Editor surfaces'}
-      >
-        <strong>{copy.assurance}</strong>
-        <ul>
-          {surfaces[language].map((surface) => (
-            <li key={surface.component} data-surface={surface.component}>
-              <span>{surface.name}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <nav
-        className="docs-home-hero__latest docs-home-latest"
-        aria-label={copy.latest}
-      >
-        <span>{copy.latest}</span>
-        {latest.map((capability, index) => (
-          <a href={docsPath(hrefs[index], language)} key={capability.label}>
-            {capability.label}
-          </a>
-        ))}
-      </nav>
 
       <HomeEditorDemo language={language} />
 

@@ -140,6 +140,10 @@ test('builds a product home beside, rather than inside, the versioned docs site'
   expect(productHome).toContain('pageType: home');
   expect(productHome).toContain('sidebar: false');
   expect(productTheme).toContain('className="docs-home office-product-home"');
+  expect(productTheme).not.toContain('className="docs-home-assurance"');
+  expect(productTheme).not.toContain(
+    'className="docs-home-hero__latest docs-home-latest"',
+  );
   expect(productThemeEntry).toContain(
     "export { Nav } from '../theme/components/Nav';",
   );

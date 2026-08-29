@@ -25,8 +25,8 @@ Playground.
   editor surfaces, shared state, collaborators, and the A3S Boot host
   contract. The hero never mounts a full editor runtime.
 - **Composition:** the first viewport moves from the product promise to a
-  poker-hand stack of five real editor captures, then to a compact five-surface
-  contract bar. The editor section is a deliberate chapter sequence: Document,
+  poker-hand stack of five real editor captures, then directly into the editor
+  chapter sequence: Document,
   Markdown, Spreadsheet, Presentation, and PDF. Each chapter pairs the real
   editor's interaction language with a lightweight UI/UX motion preview and a
   documentation entry point. The complete editable editors remain in
@@ -70,8 +70,8 @@ Playground.
 The hero switches to one column below 1,040px, and compact chapter/window
 controls collapse below 720px (with a final 420px pass for very narrow phones).
 The product window hides its secondary host panel on compact screens.
-Assurance items and the chapter index scroll horizontally when needed, while
-workflow, collaboration peers, editor entries, and final actions become
+The chapter index scrolls horizontally when needed, while workflow,
+collaboration peers, editor entries, and final actions become
 single-column reading paths. Chapter deep links reserve space for both the
 global navigation and sticky progress meter, so the destination heading is not
 hidden behind chrome. The global A3S navigation remains the source of truth for
@@ -79,10 +79,12 @@ Product, Docs, and Playground wayfinding.
 
 ## Content contract
 
-The latest-capability rail, collaboration links, A3S Boot backend route,
-Playground route, and editor names are stable product contracts. New homepage
-treatments must keep these destinations base-aware so Rspress can rewrite them
-for root and GitHub Pages deployments. Product-only CSS belongs under
+Collaboration links, the A3S Boot backend route, the Playground route, and
+editor names are stable product contracts. Latest capabilities remain
+discoverable in the documentation homes, README, and Playground; the product
+home does not repeat them in a separate rail. New homepage treatments must keep
+these destinations base-aware so Rspress can rewrite them for root and GitHub
+Pages deployments. Product-only CSS belongs under
 `website/product-theme/`; documentation typography and syntax highlighting
 remain owned by `website/theme/`.
 
