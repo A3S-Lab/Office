@@ -21,7 +21,7 @@ html:root {
   --rp-c-text-1: #142033;
   --rp-c-text-2: #526078;
   --rp-c-text-3: #748095;
-  --rp-nav-height: 72px;
+  --rp-nav-height: var(--a3s-site-nav-height);
   --rp-sidebar-width: 320px;
   --rp-sidebar-padding: 20px;
   --rp-outline-width: 268px;
@@ -189,7 +189,7 @@ html .rp-nav__title__logo {
   flex: 0 0 31px;
   margin-right: 0;
   border-radius: 9px;
-  box-shadow: 0 6px 16px rgb(36 58 154 / 20%);
+  box-shadow: none;
   place-items: center;
 }
 

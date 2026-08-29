@@ -3,14 +3,72 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@rstest/core';
 import {
+  OFFICE_SITE_NAVIGATION_KEYS,
+  officeSiteNavigationActiveKey,
   isProductHomeRoute,
   normalizeNavigationPath,
+  officeSiteNavigationItems,
+  playgroundSiteNavigationHref,
   productSiteBase,
   playgroundAssetHrefFromDocsRoute,
   playgroundHrefFromDocsRoute,
   siteNavigationHref,
   sitePathFromRoute,
 } from '../website/theme/site-navigation';
+
+test('keeps one ordered navigation contract for every surface', () => {
+  expect(OFFICE_SITE_NAVIGATION_KEYS).toEqual([
+    'home',
+    'docs',
+    'playground',
+    'collaboration',
+  ]);
+
+  expect(
+    officeSiteNavigationItems('zh', '/playground/').map((item) => ({
+      key: item.key,
+      label: item.label,
+      route: item.route,
+    })),
+  ).toEqual([
+    { key: 'home', label: '产品首页', route: '/index.html' },
+    { key: 'docs', label: '文档', route: '/docs/index.html' },
+    { key: 'playground', label: 'Playground', route: '/playground/' },
+    {
+      key: 'collaboration',
+      label: '协作',
+      route: '/docs/components/collaboration.html',
+    },
+  ]);
+
+  expect(
+    officeSiteNavigationItems('en', '/playground/').map((item) => item.label),
+  ).toEqual(['Product home', 'Docs', 'Playground', 'Collaboration']);
+  expect(
+    playgroundSiteNavigationHref(
+      'https://a3s-lab.github.io/Office/playground/index.html',
+      '/docs/en/index.html',
+    ),
+  ).toBe('https://a3s-lab.github.io/Office/docs/en/index.html');
+
+  expect(officeSiteNavigationActiveKey('/Office/', '/Office/')).toBe('home');
+  expect(officeSiteNavigationActiveKey('/', '/Office/docs/')).toBe('docs');
+  expect(
+    officeSiteNavigationActiveKey(
+      '/components/collaboration.html',
+      '/Office/docs/',
+    ),
+  ).toBe('collaboration');
+  expect(
+    officeSiteNavigationActiveKey(
+      '/0.1.0/en/components/collaboration.html',
+      '/Office/docs/',
+    ),
+  ).toBe('collaboration');
+  expect(officeSiteNavigationActiveKey('/playground/', '/Office/')).toBe(
+    'playground',
+  );
+});
 
 test('normalizes relative and index navigation links before merging menus', () => {
   expect(normalizeNavigationPath('/', '/index.html')).toBe('/');
@@ -118,10 +176,16 @@ test('uses the shared A3S navigation with Playground as a primary route', async 
     "language === 'zh' ? '打开导航' : 'Open navigation'",
   );
   expect(navSource).toContain('siteNavigationHref(pathname, site.base');
+  expect(navSource).toContain('officeSiteNavigationItems');
   expect(navSource).toContain("'/playground/index.html'");
-  expect(navSource).toContain("'/index.html'");
+  expect(navSource).not.toContain(
+    'NavMenu menuItems={primaryNavList} position="left"',
+  );
+  expect(navSource).toContain(
+    'NavMenu menuItems={navigationList} position="right"',
+  );
   expect(navSource).toContain('<NavScreenMenu menuItems={menuItems} />');
-  expect(themeStyles).toMatch(/--rp-nav-height:\s*72px/);
+  expect(themeStyles).toContain('--rp-nav-height: var(--a3s-site-nav-height)');
   expect(themeStyles).toMatch(/width:\s*31px/);
   expect(createHash('sha256').update(logo).digest('hex')).toBe(
     'ecfcf5c9f783c2c49bf7623cab825a81f500ca7313cd33540d948f276e59e46d',
@@ -156,4 +220,26 @@ test('matches the A3S UI documentation rendering contract', async () => {
   );
   expect(themeStyles).toMatch(/:not\(pre\)\s*> code/);
   expect(themeStyles).toContain('.rp-doc .rp-table-scroll-container');
+});
+
+test('keeps the Playground global header mounted while an editor is open', async () => {
+  const [mainSource, playgroundStyles] = await Promise.all([
+    readFile(
+      path.resolve(import.meta.dirname, '../playground/src/main.tsx'),
+      'utf8',
+    ),
+    readFile(
+      path.resolve(import.meta.dirname, '../playground/src/playground.css'),
+      'utf8',
+    ),
+  ]);
+
+  expect(mainSource).toContain('officeSiteNavigationItems');
+  expect(mainSource).toContain('data-site-navigation="office"');
+  expect(mainSource).toContain('<PlaygroundSiteHeader />');
+  expect(mainSource).not.toContain(
+    '{!activeArtifact && <PlaygroundSiteHeader />}',
+  );
+  expect(playgroundStyles).toContain('margin-left: auto;');
+  expect(playgroundStyles).not.toContain('font-size: 0;');
 });

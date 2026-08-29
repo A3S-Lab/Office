@@ -1,13 +1,11 @@
 import { withBase } from '@rspress/core/runtime';
 import { useEffect, useRef, useState } from 'react';
-import {
-  chapterOrder,
-  MotionArrow,
-  MotionRibbon,
-  SyncIcon,
-  WindowChrome,
-} from './HomeEditorContent';
+import { chapterOrder, MotionArrow } from './HomeEditorContent';
 import type { ChapterKind, HomeLanguage } from './HomeEditorContent';
+import {
+  editorScreenshotFiles,
+  editorScreenshotLabels,
+} from './home-editor-assets';
 
 interface ChapterCopy {
   index: string;
@@ -146,516 +144,45 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
   },
 };
 
-function DocumentPreview({ language }: { language: HomeLanguage }) {
+function RealEditorPreview({
+  kind,
+  language,
+}: {
+  kind: ChapterKind;
+  language: HomeLanguage;
+}) {
   const zh = language === 'zh';
-  return (
-    <WindowChrome
-      file="launch-brief.docx"
-      status={zh ? '示意 · 3 位在线' : 'Sample · 3 online'}
-    >
-      <MotionRibbon
-        tabs={
-          zh
-            ? ['开始', '插入', '页面布局', '引用', '审阅', '视图']
-            : ['Home', 'Insert', 'Layout', 'References', 'Review', 'View']
-        }
-        active={zh ? '开始' : 'Home'}
-        commands={
-          zh
-            ? [
-                { icon: 'undo', label: '撤销' },
-                { icon: 'redo', label: '重做' },
-                { icon: 'paste', label: '粘贴' },
-                { icon: 'paint', label: '格式刷' },
-                { icon: 'font', label: '字体' },
-                { icon: 'align', label: '段落' },
-                { icon: 'comment', label: '批注', active: true },
-                { icon: 'share', label: '共享' },
-              ]
-            : [
-                { icon: 'undo', label: 'Undo' },
-                { icon: 'redo', label: 'Redo' },
-                { icon: 'paste', label: 'Paste' },
-                { icon: 'paint', label: 'Painter' },
-                { icon: 'font', label: 'Font' },
-                { icon: 'align', label: 'Paragraph' },
-                { icon: 'comment', label: 'Comment', active: true },
-                { icon: 'share', label: 'Share' },
-              ]
-        }
-        accent="blue"
-      />
-      <div className="office-document-preview__ruler" aria-hidden="true">
-        <span>0</span>
-        <i />
-        <span>1</span>
-        <i />
-        <span>2</span>
-        <i />
-        <span>3</span>
-        <i />
-        <span>4</span>
-        <i />
-        <span>5</span>
-      </div>
-      <div className="office-document-preview__body">
-        <article className="office-document-preview__page" aria-hidden="true">
-          <small>PRODUCT TEAM · SHARED BRIEF</small>
-          <h4>{zh ? '发布简报' : 'Launch brief'}</h4>
-          <p className="office-document-preview__meta">
-            {zh
-              ? '一份可审阅的协作工作文档'
-              : 'A reviewed, shared working document'}
-          </p>
-          <div className="office-document-preview__rule" />
-          <p className="office-document-preview__line is-wide" />
-          <p className="office-document-preview__line" />
-          <p className="office-document-preview__line is-medium" />
-          <p className="office-document-preview__highlight">
-            {zh
-              ? '评审小组已确认首个发布窗口。'
-              : 'The review group aligned on the release window.'}
-            <span className="office-document-preview__caret">Mina</span>
-          </p>
-          <p className="office-document-preview__line is-short" />
-          <p className="office-document-preview__line" />
-          <p className="office-document-preview__line is-medium" />
-        </article>
-        <aside className="office-document-preview__comment" aria-hidden="true">
-          <span className="office-document-preview__comment-pin">M</span>
-          <strong>{zh ? 'Mina 的批注' : "Mina's comment"}</strong>
-          <p>
-            {zh
-              ? '可以把这个决定保留给整个发布小组吗？'
-              : 'Can we keep this decision visible to the launch group?'}
-          </p>
-          <small>{zh ? '刚刚 · 未解决' : 'Just now · Open'}</small>
-        </aside>
-      </div>
-      <footer className="office-motion-window__footer">
-        <span>{zh ? '修订 2 · 评论 1' : '2 revisions · 1 comment'}</span>
-        <b>{zh ? '已同步' : 'Synced'}</b>
-      </footer>
-    </WindowChrome>
-  );
-}
+  const label = editorScreenshotLabels[language][kind];
 
-function MarkdownPreview({ language }: { language: HomeLanguage }) {
-  const zh = language === 'zh';
   return (
-    <WindowChrome
-      file="README.md"
-      status={zh ? '示意 · 受控内容' : 'Sample · Controlled'}
+    <div
+      className={`office-motion-window office-real-editor-shot office-real-editor-shot--${kind}`}
+      data-real-editor-screenshot="true"
+      data-screenshot-kind={kind}
     >
-      <MotionRibbon
-        tabs={
-          zh
-            ? ['编辑', '源码', '预览', '协作', '设置']
-            : ['Edit', 'Source', 'Preview', 'Collab', 'Settings']
-        }
-        active={zh ? '编辑' : 'Edit'}
-        commands={
-          zh
-            ? [
-                { icon: 'undo', label: '撤销' },
-                { icon: 'redo', label: '重做' },
-                { icon: 'source', label: '源码', active: true },
-                { icon: 'preview', label: '预览' },
-                { icon: 'link', label: '链接' },
-                { icon: 'search', label: '查找' },
-              ]
-            : [
-                { icon: 'undo', label: 'Undo' },
-                { icon: 'redo', label: 'Redo' },
-                { icon: 'source', label: 'Source', active: true },
-                { icon: 'preview', label: 'Preview' },
-                { icon: 'link', label: 'Link' },
-                { icon: 'search', label: 'Find' },
-              ]
-        }
-        accent="violet"
-      />
-      <div className="office-markdown-preview__body">
-        <section className="office-markdown-preview__source" aria-hidden="true">
-          <header>
-            <span>MARKDOWN</span>
-            <code>source</code>
-          </header>
-          <div className="office-markdown-preview__source-editor">
-            <ol aria-hidden="true">
-              <li>1</li>
-              <li>2</li>
-              <li>3</li>
-              <li>4</li>
-              <li>5</li>
-              <li>6</li>
-              <li>7</li>
-              <li>8</li>
-            </ol>
-            <pre>
-              <code>
-                <span className="is-muted">#</span> Launch plan{`\n`}
-                <span className="is-muted">-</span> Owner: Mina{`\n`}
-                <span className="is-muted">-</span> Status: <b>ready</b>
-                {`\n\n`}
-                <span className="is-muted">##</span> Next steps{`\n`}
-                <span className="is-muted">1.</span> Publish docs{`\n`}
-                <span className="is-muted">2.</span> Open the room
-              </code>
-            </pre>
-          </div>
-          <i className="office-markdown-preview__source-caret" />
-        </section>
-        <div className="office-markdown-preview__bridge" aria-hidden="true">
-          <i />
-          <span>
-            <SyncIcon />
-          </span>
-          <i />
-        </div>
-        <article
-          className="office-markdown-preview__rendered"
-          aria-hidden="true"
-        >
-          <small>VISUAL PREVIEW</small>
-          <h4>{zh ? '发布计划' : 'Launch plan'}</h4>
-          <p>
-            {zh
-              ? '一份可以直接审阅的 Markdown 文档。'
-              : 'A Markdown document ready for review.'}
-          </p>
-          <div className="office-markdown-preview__checklist">
-            <span>
-              <i />
-              {zh ? '发布文档' : 'Publish docs'}
-            </span>
-            <span>
-              <i />
-              {zh ? '打开协作房间' : 'Open the room'}
-            </span>
-          </div>
-          <span className="office-markdown-preview__selection">
-            {zh ? '光标同步' : 'Caret synced'}
-          </span>
-        </article>
-      </div>
-      <footer className="office-motion-window__footer">
-        <span>
-          {zh ? '源码和预览共享同一状态' : 'Source and preview share one state'}
-        </span>
-        <b>{zh ? '已更新' : 'Updated'}</b>
-      </footer>
-    </WindowChrome>
-  );
-}
-
-function SpreadsheetPreview({ language }: { language: HomeLanguage }) {
-  const zh = language === 'zh';
-  const rows = [
-    ['Docs', 'Lin', 'Done', '83%'],
-    ['Realtime room', 'Mina', 'In progress', '58%'],
-    ['Release checks', 'Noah', 'Done', '100%'],
-    ['Customer preview', 'Avery', 'Next', '32%'],
-  ];
-  return (
-    <WindowChrome
-      file="launch-plan.xlsx"
-      status={zh ? '示意 · 自动保存' : 'Sample · Autosaved'}
-    >
-      <MotionRibbon
-        tabs={
-          zh
-            ? ['开始', '插入', '页面布局', '公式', '数据', '审阅', '视图']
-            : ['Home', 'Insert', 'Layout', 'Formulas', 'Data', 'Review', 'View']
-        }
-        active={zh ? '开始' : 'Home'}
-        commands={
-          zh
-            ? [
-                { icon: 'undo', label: '撤销' },
-                { icon: 'redo', label: '重做' },
-                { icon: 'paste', label: '粘贴' },
-                { icon: 'bold', label: '加粗' },
-                { icon: 'align', label: '对齐' },
-                { icon: 'table', label: '表格' },
-                { icon: 'filter', label: '筛选', active: true },
-                { icon: 'more', label: '更多' },
-              ]
-            : [
-                { icon: 'undo', label: 'Undo' },
-                { icon: 'redo', label: 'Redo' },
-                { icon: 'paste', label: 'Paste' },
-                { icon: 'bold', label: 'Bold' },
-                { icon: 'align', label: 'Align' },
-                { icon: 'table', label: 'Table' },
-                { icon: 'filter', label: 'Filter', active: true },
-                { icon: 'more', label: 'More' },
-              ]
-        }
-        accent="green"
-      />
-      <div className="office-spreadsheet-preview__formula" aria-hidden="true">
-        <span className="office-spreadsheet-preview__name-box">F3</span>
-        <b>fx</b>
-        <code>=SUM(C3:C6)</code>
-      </div>
-      <div className="office-spreadsheet-preview__body">
-        <span
-          className="office-spreadsheet-preview__freeze"
-          aria-hidden="true"
+      <div className="office-real-editor-shot__viewport">
+        <img
+          src={withBase(`/editor-previews/${editorScreenshotFiles[kind]}`)}
+          alt={
+            zh ? `${label}真实界面截图` : `Real ${label} interface screenshot`
+          }
+          loading={kind === 'document' ? 'eager' : 'lazy'}
+          decoding="async"
         />
-        <table aria-hidden="true">
-          <thead>
-            <tr>
-              <th />
-              <th>A</th>
-              <th>B</th>
-              <th>C</th>
-              <th>D</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr key={row[0]}>
-                <th>{rowIndex + 3}</th>
-                <td>{row[0]}</td>
-                <td>{row[1]}</td>
-                <td className={rowIndex === 1 ? 'is-selected' : undefined}>
-                  {row[2]}
-                </td>
-                <td className={rowIndex === 1 ? 'is-focus' : undefined}>
-                  {row[3]}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <span
-          className="office-spreadsheet-preview__validation"
-          aria-hidden="true"
-        >
-          {zh ? '数据验证 · 3 个选项' : 'Validation · 3 options'}
+        <span className="office-real-editor-shot__badge">
+          <i aria-hidden="true" />
+          {zh ? '真实编辑器截图' : 'REAL EDITOR CAPTURE'}
         </span>
-        <i
-          className="office-spreadsheet-preview__fill-handle"
-          aria-hidden="true"
-        />
+        <span className="office-real-editor-shot__scan" aria-hidden="true" />
       </div>
-      <div className="office-spreadsheet-preview__sheetbar" aria-hidden="true">
-        <span className="is-active">{zh ? 'Launch plan' : 'Launch plan'}</span>
-        <span>{zh ? 'Owners' : 'Owners'}</span>
-        <b>+</b>
+      <div className="office-real-editor-shot__meta" aria-hidden="true">
+        <span>{label}</span>
+        <small>
+          {zh ? '来自 visual-tests 快照' : 'From the visual-tests suite'}
+        </small>
       </div>
-      <footer className="office-motion-window__footer">
-        <span>
-          {zh ? 'Launch plan · 4 行已填充' : 'Launch plan · 4 populated rows'}
-        </span>
-        <b>{zh ? '范围 F3' : 'Range F3'}</b>
-      </footer>
-    </WindowChrome>
+    </div>
   );
-}
-
-function PresentationPreview({ language }: { language: HomeLanguage }) {
-  const zh = language === 'zh';
-  return (
-    <WindowChrome
-      file="launch-story.pptx"
-      status={zh ? '示意 · 动画就绪' : 'Sample · Animation ready'}
-    >
-      <MotionRibbon
-        tabs={
-          zh
-            ? ['开始', '插入', '设计', '切换', '动画', '幻灯片放映', '审阅']
-            : [
-                'Home',
-                'Insert',
-                'Design',
-                'Transitions',
-                'Animations',
-                'Slide Show',
-                'Review',
-              ]
-        }
-        active={zh ? '动画' : 'Animations'}
-        commands={
-          zh
-            ? [
-                { icon: 'undo', label: '撤销' },
-                { icon: 'redo', label: '重做' },
-                { icon: 'slide', label: '新建幻灯片' },
-                { icon: 'arrange', label: '排列' },
-                { icon: 'play', label: '预览', active: true },
-                { icon: 'rotate', label: '时序' },
-                { icon: 'comment', label: '批注' },
-              ]
-            : [
-                { icon: 'undo', label: 'Undo' },
-                { icon: 'redo', label: 'Redo' },
-                { icon: 'slide', label: 'New slide' },
-                { icon: 'arrange', label: 'Arrange' },
-                { icon: 'play', label: 'Preview', active: true },
-                { icon: 'rotate', label: 'Timing' },
-                { icon: 'comment', label: 'Comment' },
-              ]
-        }
-        accent="orange"
-      />
-      <div className="office-presentation-preview__body">
-        <aside className="office-presentation-preview__rail" aria-hidden="true">
-          <span className="is-active">
-            <b>01</b>
-            <i />
-          </span>
-          <span>
-            <b>02</b>
-            <i />
-          </span>
-          <span>
-            <b>03</b>
-            <i />
-          </span>
-          <span className="office-presentation-preview__add">+</span>
-        </aside>
-        <div className="office-presentation-preview__stage" aria-hidden="true">
-          <div className="office-presentation-preview__stagebar">
-            <span>{zh ? '幻灯片 1 · 编辑' : 'Slide 1 · Editing'}</span>
-            <span>{zh ? '适应窗口' : 'Fit to window'}</span>
-          </div>
-          <article className="office-presentation-preview__slide">
-            <small>A3S OFFICE · SHARED WORKSPACE</small>
-            <h4>{zh ? '从草稿到决定' : 'Move from draft to decision.'}</h4>
-            <p>
-              {zh
-                ? '一个共享状态，三种编辑界面。'
-                : 'One shared state · three surfaces.'}
-            </p>
-            <div className="office-presentation-preview__object-box">
-              <span className="office-presentation-preview__object">
-                {zh ? '入场 · 淡入' : 'Entrance · Fade'}
-              </span>
-              <i />
-              <i />
-              <i />
-              <i />
-            </div>
-          </article>
-          <div className="office-presentation-preview__timeline">
-            <span>{zh ? '单击时' : 'On click'}</span>
-            <i className="is-active" />
-            <span>{zh ? '与上一项同时' : 'With previous'}</span>
-            <i />
-            <span>{zh ? '持续 0.42s' : '0.42s'}</span>
-          </div>
-        </div>
-      </div>
-      <footer className="office-motion-window__footer">
-        <span>
-          {zh ? '幻灯片 1 / 3 · 演讲者备注' : 'Slide 1 / 3 · Presenter notes'}
-        </span>
-        <b>{zh ? '可播放' : 'Playable'}</b>
-      </footer>
-    </WindowChrome>
-  );
-}
-
-function PdfPreview({ language }: { language: HomeLanguage }) {
-  const zh = language === 'zh';
-  return (
-    <WindowChrome
-      file="review-packet.pdf"
-      status={zh ? '示意 · PDFium' : 'Sample · PDFium rendered'}
-    >
-      <MotionRibbon
-        tabs={
-          zh
-            ? ['阅读', '批注', '页面', '表单', '视图']
-            : ['Read', 'Annotate', 'Pages', 'Forms', 'View']
-        }
-        active={zh ? '阅读' : 'Read'}
-        commands={
-          zh
-            ? [
-                { icon: 'undo', label: '撤销' },
-                { icon: 'redo', label: '重做' },
-                { icon: 'comment', label: '批注', active: true },
-                { icon: 'pages', label: '页面' },
-                { icon: 'rotate', label: '旋转' },
-                { icon: 'zoom', label: '缩放' },
-                { icon: 'search', label: '查找' },
-              ]
-            : [
-                { icon: 'undo', label: 'Undo' },
-                { icon: 'redo', label: 'Redo' },
-                { icon: 'comment', label: 'Annotate', active: true },
-                { icon: 'pages', label: 'Pages' },
-                { icon: 'rotate', label: 'Rotate' },
-                { icon: 'zoom', label: 'Zoom' },
-                { icon: 'search', label: 'Find' },
-              ]
-        }
-        accent="violet"
-      />
-      <div className="office-pdf-preview__controls" aria-hidden="true">
-        <span>1 / 12</span>
-        <i />
-        <span>{zh ? '单页' : 'Single page'}</span>
-        <b>−</b>
-        <strong>90%</strong>
-        <b>＋</b>
-      </div>
-      <div className="office-pdf-preview__body">
-        <aside className="office-pdf-preview__thumbs" aria-hidden="true">
-          <span className="is-active">
-            <b>1</b>
-            <i />
-          </span>
-          <span>
-            <b>2</b>
-            <i />
-          </span>
-          <span className="is-moving">
-            <b>3</b>
-            <i />
-          </span>
-        </aside>
-        <article className="office-pdf-preview__page" aria-hidden="true">
-          <small>REVIEW PACKET · PAGE 1</small>
-          <h4>{zh ? '发布检查清单' : 'Release checklist'}</h4>
-          <p>
-            {zh
-              ? '在阅读路径上完成页面组织和批注。'
-              : 'Organize pages and annotate without leaving reading mode.'}
-          </p>
-          <div className="office-pdf-preview__highlight">
-            {zh ? '需要负责人确认' : 'Owner confirmation needed'}
-          </div>
-          <div className="office-pdf-preview__line" />
-          <div className="office-pdf-preview__line is-short" />
-          <span className="office-pdf-preview__note">
-            {zh ? 'Mina · 批注' : 'Mina · annotation'}
-          </span>
-        </article>
-      </div>
-      <footer className="office-motion-window__footer">
-        <span>
-          {zh
-            ? '第 1 页 / 共 12 页 · 缩略图窗口化'
-            : 'Page 1 / 12 · Windowed thumbnails'}
-        </span>
-        <b>{zh ? '可组织' : 'Organize'}</b>
-      </footer>
-    </WindowChrome>
-  );
-}
-
-function renderPreview(kind: ChapterKind, language: HomeLanguage) {
-  if (kind === 'document') return <DocumentPreview language={language} />;
-  if (kind === 'markdown') return <MarkdownPreview language={language} />;
-  if (kind === 'spreadsheet') return <SpreadsheetPreview language={language} />;
-  if (kind === 'presentation')
-    return <PresentationPreview language={language} />;
-  return <PdfPreview language={language} />;
 }
 
 function docsHref(kind: ChapterKind, language: HomeLanguage) {
@@ -921,18 +448,25 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
     >
       <header className="office-editor-chapters__header">
         <div>
-          <span className="docs-home-section__eyebrow">
-            01 / {zh ? '编辑器界面' : 'EDITOR SURFACES'}
-          </span>
           <h2 id="office-editor-chapters-title">
-            {zh
-              ? '五种编辑器，五段交互语言。'
-              : 'Five editors. Five interaction languages.'}
+            {zh ? (
+              <>
+                五种编辑器，
+                <br />
+                五段交互语言。
+              </>
+            ) : (
+              <>
+                Five editors.
+                <br />
+                Five interaction languages.
+              </>
+            )}
           </h2>
           <p>
             {zh
-              ? '下面是每个可嵌入编辑器的 UI/UX 动画预览。它们展示真实组件的工作方式，完整编辑器和可编辑内容请在 Playground 中体验。'
-              : 'These UI/UX motion previews show how each embeddable editor works. Open the Playground for the complete editors and editable content.'}
+              ? '下面是每个可嵌入编辑器的真实界面截图，并用轻量动效标出当前工作焦点。完整编辑器和可编辑内容请在 Playground 中体验。'
+              : 'Each panel below is a real capture of an embeddable editor, with a lightweight focus cue. Open the Playground for the complete editors and editable content.'}
           </p>
         </div>
         <div className="office-editor-chapters__header-actions">
@@ -941,7 +475,7 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
             id="office-editor-chapters-preview-note"
           >
             <i aria-hidden="true" />
-            {zh ? '示意 UI/UX · 仅预览' : 'Illustrative UI/UX · preview only'}
+            {zh ? '真实截图 · 轻量动效' : 'Real captures · lightweight motion'}
           </span>
           <button
             className="office-editor-chapters__motion-toggle"
@@ -1104,13 +638,13 @@ export function HomeEditorDemo({ language }: { language: HomeLanguage }) {
                     : `${chapter.label} ${chapter.component} UI/UX motion preview`
                 }
               >
-                {renderPreview(kind, language)}
+                <RealEditorPreview kind={kind} language={language} />
                 <figcaption>
-                  <span>{zh ? 'UI/UX 动画预览' : 'UI/UX motion preview'}</span>
+                  <span>{zh ? '真实编辑器截图' : 'Real editor capture'}</span>
                   <b>
                     {zh
-                      ? '轻量展示 · 不挂载编辑器运行时'
-                      : 'Lightweight preview · no editor runtime mounted'}
+                      ? '来自 visual-tests · 不挂载首页运行时'
+                      : 'From visual-tests · no homepage runtime mounted'}
                   </b>
                 </figcaption>
               </figure>

@@ -43,8 +43,14 @@ html .rp-nav {
 }
 
 html .rp-nav__left {
+  flex: 0 0 auto;
   align-items: center;
   gap: 32px;
+}
+
+html .rp-nav__right {
+  min-width: 0;
+  margin-left: auto;
 }
 
 html .rp-nav__title__link {
@@ -67,7 +73,7 @@ html img.rspress-logo {
   flex: 0 0 31px;
   margin-right: 0;
   border-radius: 9px;
-  box-shadow: 0 6px 16px rgb(36 58 154 / 20%);
+  box-shadow: none;
   object-fit: contain;
   place-items: center;
 }

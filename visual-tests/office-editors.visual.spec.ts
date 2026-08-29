@@ -1098,7 +1098,7 @@ test('Playground returns to the documentation center with collaboration discover
   await expect(page.locator('main .rp-doc table').first()).toBeVisible();
   await expect(page.locator('.office-docs-playground-link')).toHaveCount(0);
   const playgroundNavLink = page
-    .locator('.rp-nav__left')
+    .locator('.rp-nav__right')
     .getByRole('link', { name: 'Playground' });
   if (await playgroundNavLink.isVisible()) {
     await expect(playgroundNavLink).toHaveAttribute('href', /\/playground\/$/);

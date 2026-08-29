@@ -1,6 +1,12 @@
 import { useLang, withBase } from '@rspress/core/runtime';
 import { useEffect } from 'react';
 import { HomeEditorDemo } from './HomeEditorDemo';
+import {
+  editorScreenshotFiles,
+  editorScreenshotLabels,
+} from './home-editor-assets';
+import { chapterOrder } from './HomeEditorContent';
+import type { ChapterKind } from './HomeEditorContent';
 
 type Language = 'zh' | 'en';
 
@@ -199,134 +205,55 @@ function ArrowIcon({ external = false }: { external?: boolean }) {
 
 function HomeSurfaceMap({ language }: { language: Language }) {
   const zh = language === 'zh';
-  const ribbonTabs = zh
-    ? ['文件', '开始', '插入', '布局', '引用', '审阅', '视图']
-    : ['File', 'Home', 'Insert', 'Layout', 'References', 'Review', 'View'];
-  const ribbonCommands = zh
-    ? ['粘贴', '字体', '段落', '样式', '批注']
-    : ['Paste', 'Font', 'Paragraph', 'Styles', 'Comment'];
+  const labels = editorScreenshotLabels[language];
+
   return (
     <div
       className="office-home-surface-map"
+      data-real-editor-gallery="hero"
       role="img"
       aria-label={
         zh
-          ? 'A3S Office 统一宿主契约连接文档、Markdown、表格、演示文稿和 PDF 五种编辑器'
-          : 'One A3S Office host contract connects document, Markdown, spreadsheet, presentation, and PDF editors'
+          ? '五种真实 A3S Office 编辑器截图的堆叠预览'
+          : 'Stacked previews of five real A3S Office editor screenshots'
       }
     >
-      <div className="office-home-surface-map__window">
-        <header className="office-home-surface-map__bar">
-          <span className="office-home-surface-map__dots" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className="office-home-surface-map__identity">
-            <strong>launch-brief.docx</strong>
-            <small>
-              <i aria-hidden="true" />
-              {zh ? '已保存 · 3 位在线' : 'Saved · 3 online'}
-            </small>
-          </span>
-          <span className="office-home-surface-map__actions">
-            <span>{zh ? '已审阅' : 'Reviewed'}</span>
-            <b>{zh ? '共享' : 'Share'}</b>
-          </span>
-        </header>
-        <div className="office-home-surface-map__body" aria-hidden="true">
-          <nav className="office-home-surface-map__tabs">
-            {ribbonTabs.map((tab, index) => (
-              <span className={index === 1 ? 'is-active' : undefined} key={tab}>
-                {tab}
-              </span>
-            ))}
-          </nav>
-          <div className="office-home-surface-map__ribbon">
-            {ribbonCommands.map((command, index) => (
-              <span key={command}>
-                <i data-command={index} />
-                <small>{command}</small>
-              </span>
-            ))}
-          </div>
-          <div className="office-home-surface-map__workspace">
-            <ol className="office-home-surface-map__list">
-              {surfaces[language].map((surface, index) => (
-                <li
-                  className={index === 0 ? 'is-active' : undefined}
-                  key={surface.component}
-                >
-                  <span>{`0${index + 1}`}</span>
-                  <strong>{surface.name}</strong>
-                </li>
-              ))}
-            </ol>
-            <div className="office-home-surface-map__canvas">
-              <div className="office-home-surface-map__ruler">
-                <span>1</span>
-                <i />
-                <span>2</span>
-                <i />
-                <span>3</span>
-              </div>
-              <article className="office-home-surface-map__paper">
-                <small>PRODUCT TEAM · SHARED BRIEF</small>
-                <h3>{zh ? '发布简报' : 'Launch brief'}</h3>
-                <p className="office-home-surface-map__paper-lead">
-                  {zh
-                    ? '一份可审阅、可协作的工作文档'
-                    : 'A reviewed, collaborative working document'}
-                </p>
-                <div className="office-home-surface-map__paper-rule" />
-                <p className="office-home-surface-map__paper-line is-wide" />
-                <p className="office-home-surface-map__paper-line" />
-                <p className="office-home-surface-map__paper-selection">
-                  {zh
-                    ? '发布窗口已经与产品团队确认。'
-                    : 'The release window is aligned with the product team.'}
-                  <span>Mina</span>
-                </p>
-                <p className="office-home-surface-map__paper-line is-short" />
-                <p className="office-home-surface-map__paper-line" />
-              </article>
-            </div>
-            <aside className="office-home-surface-map__inspector">
-              <header>
-                <strong>{zh ? '批注' : 'Comments'}</strong>
-                <span>1</span>
-              </header>
-              <div className="office-home-surface-map__presence">
-                <span>M</span>
-                <span>L</span>
-                <span>N</span>
-                <small>{zh ? '3 位在线' : '3 online'}</small>
-              </div>
-              <article>
-                <strong>Mina</strong>
-                <p>
-                  {zh
-                    ? '这个决定可以同步给发布小组。'
-                    : 'Share this decision with the release group.'}
-                </p>
-                <small>{zh ? '刚刚 · 未解决' : 'Just now · Open'}</small>
-              </article>
-              <div className="office-home-surface-map__sync">
-                <i />
-                <span>{zh ? '实时状态已同步' : 'Live state synced'}</span>
-              </div>
-            </aside>
-          </div>
-        </div>
-        <footer className="office-home-surface-map__footer">
-          <span>
-            {zh
-              ? '第 1 页，共 3 页 · 修订 2 · 评论 1'
-              : 'Page 1 of 3 · 2 revisions · 1 comment'}
-          </span>
-          <b>{zh ? '已同步' : 'Synced'}</b>
-        </footer>
+      <div className="office-home-surface-map__header">
+        <span>{zh ? '真实编辑器截图' : 'REAL EDITOR CAPTURES'}</span>
+        <small>
+          {zh
+            ? '视觉回归快照 · 1280 × 800'
+            : 'Visual-suite snapshots · 1280 × 800'}
+        </small>
       </div>
+      <div className="office-home-screenshot-stack" aria-hidden="true">
+        {chapterOrder.map((kind: ChapterKind, index) => (
+          <figure
+            className={`office-home-screenshot-stack__card office-home-screenshot-stack__card--${kind}`}
+            key={kind}
+          >
+            <img
+              src={withBase(`/editor-previews/${editorScreenshotFiles[kind]}`)}
+              alt=""
+              loading={index === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+            />
+            <figcaption>
+              <b>{`0${index + 1}`}</b>
+              <span>{labels[kind]}</span>
+            </figcaption>
+          </figure>
+        ))}
+        <span className="office-home-screenshot-stack__focus" />
+      </div>
+      <footer className="office-home-surface-map__footer">
+        <span>
+          {zh
+            ? '文档 · Markdown · 表格 · 演示 · PDF'
+            : 'Document · Markdown · Spreadsheet · Presentation · PDF'}
+        </span>
+        <b>{zh ? '来自真实编辑器' : 'Captured from the editors'}</b>
+      </footer>
     </div>
   );
 }
@@ -347,8 +274,12 @@ export function HomeLayout() {
     // its hero; in-page hash navigation remains opt-in.
     const previousRestoration = window.history.scrollRestoration;
     window.history.scrollRestoration = 'manual';
+    let userHasScrolled = false;
+    const markUserScroll = () => {
+      userHasScrolled = true;
+    };
     const resetHomeScroll = () => {
-      if (window.location.hash) return;
+      if (window.location.hash || userHasScrolled) return;
 
       // The shared A3S shell uses smooth scrolling for in-page links. Reusing
       // that behavior for arrival makes the async editor mount look like a
@@ -383,18 +314,13 @@ export function HomeLayout() {
 
     resetHomeScroll();
     const frame = window.requestAnimationFrame(resetHomeScroll);
-    const secondFrame = window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(resetHomeScroll);
+    window.addEventListener('scroll', markUserScroll, {
+      passive: true,
+      once: true,
     });
-    const deferred = window.setTimeout(resetHomeScroll, 180);
-    window.addEventListener('pageshow', resetHomeScroll);
-    window.addEventListener('popstate', resetHomeScroll);
     return () => {
       window.cancelAnimationFrame(frame);
-      window.cancelAnimationFrame(secondFrame);
-      window.clearTimeout(deferred);
-      window.removeEventListener('pageshow', resetHomeScroll);
-      window.removeEventListener('popstate', resetHomeScroll);
+      window.removeEventListener('scroll', markUserScroll);
       window.history.scrollRestoration = previousRestoration;
     };
   }, []);
@@ -562,9 +488,6 @@ export function HomeLayout() {
         aria-labelledby="office-workflow-title"
       >
         <div className="docs-home-section__intro">
-          <span className="docs-home-section__eyebrow">
-            02 / {zh ? '接入路径' : 'INTEGRATION PATH'}
-          </span>
           <h2 id="office-workflow-title">{copy.workflowTitle}</h2>
           <p>{copy.workflowLead}</p>
         </div>
@@ -598,9 +521,6 @@ export function HomeLayout() {
         aria-labelledby="office-collaboration-title"
       >
         <div className="docs-home-collaboration__copy">
-          <span className="docs-home-section__eyebrow">
-            03 / {zh ? '实时协作' : 'LIVE COLLABORATION'}
-          </span>
           <h2 id="office-collaboration-title">{copy.collaborationTitle}</h2>
           <p>{copy.collaborationLead}</p>
           <ul className="docs-home-collaboration__facts">
@@ -671,9 +591,6 @@ export function HomeLayout() {
         aria-labelledby="office-editors-title"
       >
         <div className="docs-home-section__intro">
-          <span className="docs-home-section__eyebrow">
-            04 / {zh ? '组件接口' : 'COMPONENT API'}
-          </span>
           <h2 id="office-editors-title">{copy.editorsTitle}</h2>
           <p>{copy.editorsLead}</p>
         </div>
@@ -697,9 +614,6 @@ export function HomeLayout() {
 
       <section className="docs-home-final" aria-labelledby="office-final-title">
         <div>
-          <span className="docs-home-section__eyebrow">
-            {zh ? '开始构建' : 'START BUILDING'}
-          </span>
           <h2 id="office-final-title">{copy.finalTitle}</h2>
           <p>{copy.finalLead}</p>
         </div>

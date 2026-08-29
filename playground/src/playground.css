@@ -60,7 +60,7 @@
   height: var(--a3s-site-nav-height);
   min-height: var(--a3s-site-nav-height);
   align-items: center;
-  gap: 30px;
+  gap: 32px;
   padding: 0 max(16px, calc((100vw - var(--a3s-site-max-width)) / 2 + 24px));
   border-bottom: 1px solid rgb(203 215 233 / 82%);
   background: rgb(255 255 255 / 92%);
@@ -86,12 +86,12 @@
   width: 31px;
   height: 31px;
   border-radius: 9px;
-  box-shadow: 0 6px 16px rgb(36 58 154 / 20%);
   object-fit: contain;
 }
 
 .playground-site-header__nav {
   display: flex;
+  margin-left: auto;
   min-width: 0;
   align-items: center;
   gap: 24px;
@@ -101,7 +101,6 @@
   display: inline-flex;
   min-height: 44px;
   align-items: center;
-  gap: 6px;
   color: var(--a3s-site-muted);
   font-size: 14px;
   font-weight: 560;
@@ -118,16 +117,25 @@
   display: inline-flex;
   min-width: 44px;
   min-height: 44px;
-  margin-left: auto;
   align-items: center;
   justify-content: center;
-  gap: 2px;
   color: var(--a3s-site-muted);
+  font-size: 14px;
+  font-weight: 560;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .playground-site-header__github:hover {
   color: var(--a3s-site-accent);
+}
+
+.playground-site-header__github::after {
+  margin-left: 5px;
+  color: var(--a3s-site-faint);
+  content: "↗";
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .playground-site-header :where(a):focus-visible {
@@ -762,7 +770,7 @@ body.playground-resizing * {
 
 @media (max-width: 640px) {
   .playground-site-header {
-    gap: 14px;
+    gap: 12px;
     padding-inline: 14px;
   }
 
@@ -771,27 +779,24 @@ body.playground-resizing * {
   }
 
   .playground-site-header__nav {
-    gap: 8px;
+    min-width: 0;
+    margin-left: 0;
+    gap: 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .playground-site-header__nav::-webkit-scrollbar {
+    display: none;
   }
 
   .playground-site-header__nav a {
-    min-width: 38px;
-    justify-content: center;
-    font-size: 0;
-  }
-
-  .playground-site-header__nav a svg {
-    width: 17px;
-    height: 17px;
-  }
-
-  .playground-site-header__nav a:last-child {
-    min-width: 72px;
-    font-size: 11px;
+    flex: 0 0 auto;
+    font-size: 13px;
   }
 
   .playground-site-header__github {
-    min-width: 38px;
+    display: none;
   }
 
   .playground-page-header {

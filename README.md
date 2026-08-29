@@ -56,7 +56,7 @@ workflows, and a separate Rust automation plane.
 
 ## Latest on `main`
 
-The `0.34.0` release plus the current `main` branch expose these capabilities
+The `0.35.0` release plus the current `main` branch expose these capabilities
 as normal user-facing Playground templates, with matching implementation
 detail in the documentation:
 

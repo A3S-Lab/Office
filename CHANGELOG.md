@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.35.0 - 2026-08-29
+
 - Fixed `PresentationEditor` first-open focus for blank title slides. With
   `autoFocus` enabled, an empty title placeholder now enters its editable text
   surface immediately while existing titles, disabled autofocus, and deliberate

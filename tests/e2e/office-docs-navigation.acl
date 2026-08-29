@@ -61,11 +61,11 @@ suite "office-docs-navigation" {
         }
 
         expect "primary-navigation-matches-a3s-ui-shell" {
-            visible = css(".rp-nav__left .rp-nav-menu--left .rp-nav-menu__item__container")
+            visible = css(".rp-nav__right .rp-nav-menu--right .rp-nav-menu__item__container")
         }
 
         expect "playground-is-a-primary-navigation-route" {
-            visible = css(".rp-nav__left .rp-nav-menu--left a[href$='/playground/']")
+            visible = css(".rp-nav__right .rp-nav-menu--right a[href$='/playground/']")
         }
 
         expect "utility-navigation-follows-search" {

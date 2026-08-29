@@ -2,7 +2,7 @@ suite "homepage-editor-demo" {
     version = 1
 
     scenario "desktop-editor-chapters" {
-        name = "Show one lightweight UI/UX motion preview for every Office editor"
+        name = "Show real editor captures for every Office editor"
         surface = "web"
         timeout_ms = 120000
 
@@ -26,6 +26,14 @@ suite "homepage-editor-demo" {
 
         expect "surface-map-is-visible" {
             visible = css(".office-home-surface-map")
+        }
+
+        expect "hero-stack-uses-real-captures" {
+            visible = css(".office-home-surface-map[data-real-editor-gallery='hero'] .office-home-screenshot-stack__card img[src*='editor-previews/document.png']")
+        }
+
+        expect "hero-stack-has-five-captures" {
+            visible = css(".office-home-screenshot-stack__card:nth-child(5) img[src*='editor-previews/pdf.png']")
         }
 
         expect "chapter-preview-mode-is-explicit" {
@@ -65,23 +73,23 @@ suite "homepage-editor-demo" {
         }
 
         expect "document-motion-preview-is-visible" {
-            visible = css("[data-editor-chapter='document'] .office-motion-window")
+            visible = css("[data-editor-chapter='document'] .office-motion-window[data-real-editor-screenshot='true'] img[src*='editor-previews/document.png']")
         }
 
         expect "markdown-motion-preview-is-visible" {
-            visible = css("[data-editor-chapter='markdown'] .office-motion-window")
+            visible = css("[data-editor-chapter='markdown'] .office-motion-window[data-real-editor-screenshot='true'] img[src*='editor-previews/markdown.png']")
         }
 
         expect "spreadsheet-motion-preview-is-visible" {
-            visible = css("[data-editor-chapter='spreadsheet'] .office-motion-window")
+            visible = css("[data-editor-chapter='spreadsheet'] .office-motion-window[data-real-editor-screenshot='true'] img[src*='editor-previews/spreadsheet.png']")
         }
 
         expect "presentation-motion-preview-is-visible" {
-            visible = css("[data-editor-chapter='presentation'] .office-motion-window")
+            visible = css("[data-editor-chapter='presentation'] .office-motion-window[data-real-editor-screenshot='true'] img[src*='editor-previews/presentation.png']")
         }
 
         expect "pdf-motion-preview-is-visible" {
-            visible = css("[data-editor-chapter='pdf'] .office-motion-window")
+            visible = css("[data-editor-chapter='pdf'] .office-motion-window[data-real-editor-screenshot='true'] img[src*='editor-previews/pdf.png']")
         }
 
         wheel "desktop-to-chapter-controls" {
@@ -226,13 +234,18 @@ suite "homepage-editor-demo" {
             visible = css("[data-editor-chapter='pdf'] .office-motion-window")
         }
 
-        wheel "phone-to-motion-control" {
+        wheel "phone-return-to-top" {
             delta_x = 0
-            # The Flow-style mobile chapter stack reserves the preview space
-            # while it is content-visibility skipped. Keep the return gesture
-            # large enough to bring the header control back into the viewport
-            # after jumping from the PDF chapter.
+            # Return to the top before moving to the chapter header. A single
+            # large reverse gesture can stop at scrollY=0 while the chapter
+            # controls are still below the hero on a compact viewport.
             delta_y = -5000
+            modifiers = []
+        }
+
+        wheel "phone-top-to-motion-control" {
+            delta_x = 0
+            delta_y = 1400
             modifiers = []
         }
 

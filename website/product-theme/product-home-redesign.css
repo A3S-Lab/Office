@@ -1,0 +1,2349 @@
+/*
+ * Product home composition v2.
+ *
+ * The older product-home layers still provide the editor drawing primitives.
+ * This file owns the page-level composition so the homepage reads as one
+ * product story instead of a stack of unrelated documentation blocks.
+ */
+
+html .office-product-home {
+  --home-canvas-v2: #f4f7fb;
+  --home-surface-v2: #ffffff;
+  --home-panel-v2: #eef3f9;
+  --home-panel-blue-v2: #e9f1ff;
+  --home-ink-v2: #101b2d;
+  --home-muted-v2: #52627a;
+  --home-faint-v2: #7d8ba0;
+  --home-line-v2: #d7e0ec;
+  --home-line-strong-v2: #bdccdf;
+  --home-accent-v2: #1456f0;
+  --home-accent-deep-v2: #0d43bd;
+  --home-success-v2: #0b8a63;
+  min-width: 0;
+  background: var(--home-canvas-v2);
+  color: var(--home-ink-v2);
+}
+
+html .office-product-home :where(h1, h2, h3, p, ul, ol, figure) {
+  margin-block-start: 0;
+}
+
+html .office-product-home :where(a, button):focus-visible {
+  outline: 3px solid rgb(20 86 240 / 34%);
+  outline-offset: 3px;
+}
+
+/* Hero ------------------------------------------------------------------ */
+
+html .office-product-home .docs-home-hero {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 1440px);
+  min-height: min(660px, calc(100svh - var(--a3s-site-nav-height)));
+  margin: 0 auto;
+  padding: clamp(52px, 6vw, 78px) clamp(24px, 5vw, 72px) 60px;
+  align-items: center;
+  border-right: 1px solid var(--home-line-v2);
+  border-left: 1px solid var(--home-line-v2);
+  background: var(--home-canvas-v2);
+  gap: clamp(34px, 5vw, 76px);
+  grid-template-columns: minmax(330px, 0.86fr) minmax(500px, 1.14fr);
+}
+
+html .office-product-home .docs-home-hero::before {
+  position: absolute;
+  z-index: -1;
+  top: -310px;
+  right: -190px;
+  width: 650px;
+  height: 650px;
+  border: 1px solid rgb(20 86 240 / 11%);
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset 0 0 0 96px rgb(255 255 255 / 34%);
+  content: "";
+  pointer-events: none;
+}
+
+html .office-product-home .docs-home-hero::after {
+  position: absolute;
+  z-index: -1;
+  bottom: -120px;
+  left: 7%;
+  width: 260px;
+  height: 1px;
+  background: var(--home-line-strong-v2);
+  content: "";
+  opacity: 0.7;
+}
+
+html .office-product-home .docs-home-hero__copy {
+  min-width: 0;
+  max-width: 560px;
+}
+
+html .office-product-home .docs-home-hero__meta {
+  margin-bottom: 28px;
+  align-items: center;
+}
+
+html .office-product-home .docs-home-hero__meta > span {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #bcd1f7;
+  border-radius: 999px;
+  color: var(--home-accent-v2);
+  background: rgb(255 255 255 / 78%);
+  font-family: var(--a3s-site-mono);
+  font-size: 9px;
+  font-weight: 720;
+  letter-spacing: 0.1em;
+}
+
+html .office-product-home .docs-home-hero__meta nav {
+  border: 1px solid var(--home-line-v2);
+  border-radius: 9px;
+  background: rgb(255 255 255 / 68%);
+}
+
+html .office-product-home .docs-home-hero__meta nav a {
+  min-width: 40px;
+  height: 27px;
+  color: var(--home-faint-v2);
+  font-size: 11px;
+}
+
+html .office-product-home .docs-home-hero__meta nav a[aria-current="page"] {
+  color: var(--home-accent-v2);
+  background: var(--home-surface-v2);
+  box-shadow: 0 2px 8px rgb(28 60 110 / 9%);
+}
+
+html .office-product-home .docs-home-hero h1 {
+  max-width: 12ch;
+  color: var(--home-ink-v2);
+  font-size: clamp(48px, 5vw, 68px);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 0.99;
+  text-wrap: balance;
+}
+
+html .office-product-home .docs-home-hero h1 > .docs-home-hero__brand {
+  margin-bottom: 13px;
+  color: var(--home-accent-v2);
+  font-size: 0.52em;
+  font-weight: 720;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+html .office-product-home .docs-home-hero h1 > .docs-home-hero__promise {
+  color: var(--home-ink-v2);
+  font-weight: inherit;
+}
+
+html .office-product-home .docs-home-hero__lead {
+  max-width: 48ch;
+  margin-top: 24px;
+  color: var(--home-muted-v2);
+  font-size: 16px;
+  line-height: 1.68;
+  text-wrap: pretty;
+}
+
+html .office-product-home .docs-home-actions {
+  margin-top: 30px;
+  gap: 10px;
+}
+
+html .office-product-home .docs-home-action {
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+html .office-product-home .docs-home-action:hover {
+  transform: translateY(-1px);
+}
+
+html .office-product-home .docs-home-action--primary,
+html .office-product-home .docs-home-action--primary:visited,
+html .office-product-home .docs-home-action--primary:hover,
+html .office-product-home .docs-home-action--primary:active,
+html .office-product-home .docs-home-action--primary:focus-visible {
+  color: #ffffff !important;
+  background: var(--home-accent-v2);
+  box-shadow: 0 12px 26px -14px rgb(20 86 240 / 70%);
+}
+
+html .office-product-home .docs-home-action--primary:hover {
+  background: var(--home-accent-deep-v2);
+}
+
+html .office-product-home .docs-home-action--primary .docs-home-arrow {
+  stroke: #ffffff;
+}
+
+html .office-product-home .docs-home-action--secondary {
+  border-color: var(--home-line-strong-v2);
+  color: var(--home-ink-v2);
+  background: var(--home-surface-v2);
+}
+
+html .office-product-home .docs-home-action--secondary:hover {
+  border-color: #9fb2cc;
+  color: var(--home-ink-v2);
+  background: #fbfdff;
+}
+
+html .office-product-home .docs-home-hero__visual {
+  width: 100%;
+  min-width: 0;
+}
+
+html .office-product-home .office-home-surface-map__window {
+  border-color: var(--home-line-strong-v2);
+  border-radius: 18px;
+  background: var(--home-surface-v2);
+  box-shadow:
+    0 32px 70px -44px rgb(15 35 70 / 54%),
+    0 8px 24px -18px rgb(15 35 70 / 30%);
+  animation: office-home-v2-enter 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html .office-product-home .office-home-surface-map__bar {
+  min-height: 54px;
+  padding-inline: 13px;
+  border-bottom-color: var(--home-line-v2);
+}
+
+html .office-product-home .office-home-surface-map__actions > b {
+  color: #ffffff;
+  background: var(--home-accent-v2);
+}
+
+html .office-product-home .office-home-surface-map__body {
+  background: var(--home-panel-v2);
+}
+
+html .office-product-home .office-home-surface-map__tabs,
+html .office-product-home .office-home-surface-map__ribbon {
+  border-bottom-color: var(--home-line-v2);
+}
+
+html .office-product-home .office-home-surface-map__list li.is-active {
+  border-color: #c4d8fb;
+  color: var(--home-accent-v2);
+  background: var(--home-panel-blue-v2);
+}
+
+html .office-product-home .office-home-surface-map__canvas {
+  background: #e8eef6;
+}
+
+html .office-product-home .office-home-surface-map__paper {
+  border-color: #cad7e7;
+  box-shadow: 0 20px 32px -26px rgb(15 35 70 / 55%);
+}
+
+/* Two slim rails establish the product inventory without stealing the hero. */
+
+html .office-product-home .docs-home-assurance {
+  width: min(calc(100% - 96px), 1280px);
+  min-height: 82px;
+  margin: 0 auto;
+  border: 1px solid var(--home-line-v2);
+  border-radius: 14px;
+  background: var(--home-surface-v2);
+  box-shadow: 0 14px 34px -30px rgb(15 35 70 / 42%);
+  grid-template-columns: 154px minmax(0, 1fr);
+}
+
+html .office-product-home .docs-home-assurance > strong {
+  display: flex;
+  padding: 0 20px;
+  align-items: center;
+  color: var(--home-ink-v2);
+  font-size: 11px;
+  font-weight: 720;
+}
+
+html .office-product-home .docs-home-assurance ul {
+  min-width: 0;
+  border-left: 1px solid var(--home-line-v2);
+}
+
+html .office-product-home .docs-home-assurance li {
+  min-height: 80px;
+  padding: 12px 14px;
+  border-left-color: var(--home-line-v2);
+  gap: 8px;
+}
+
+html .office-product-home .docs-home-assurance li > b,
+html .office-product-home .docs-home-assurance li:nth-child(n) > b {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  border: 1px solid #c7d9fb;
+  border-radius: 8px;
+  color: var(--home-accent-v2);
+  background: var(--home-panel-blue-v2);
+  font-size: 8px;
+  place-items: center;
+}
+
+html .office-product-home .docs-home-assurance li > span {
+  color: var(--home-ink-v2);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+html .office-product-home .docs-home-assurance li small {
+  margin-top: 3px;
+  color: var(--home-faint-v2);
+  font-size: 7px;
+}
+
+html .office-product-home .docs-home-latest {
+  width: min(calc(100% - 96px), 1280px);
+  min-height: 48px;
+  margin: 14px auto 0;
+  border: 1px solid var(--home-line-v2);
+  border-radius: 11px;
+  background: var(--home-surface-v2);
+  box-shadow: none;
+}
+
+html .office-product-home .docs-home-latest > span {
+  min-width: 122px;
+  padding-inline: 13px;
+  border-right-color: var(--home-line-v2);
+  color: var(--home-accent-v2);
+  background: var(--home-panel-blue-v2);
+  font-size: 8px;
+}
+
+html .office-product-home .docs-home-latest > a,
+html .office-product-home .docs-home-latest > a:nth-of-type(n) {
+  min-width: 122px;
+  padding: 7px 11px;
+  border-right-color: var(--home-line-v2);
+  color: var(--home-ink-v2);
+  font-size: 9px;
+}
+
+html .office-product-home .docs-home-latest > a:hover {
+  color: var(--home-accent-v2);
+  background: #f8fbff;
+}
+
+html .office-product-home .docs-home-latest > a small {
+  color: var(--home-faint-v2);
+  font-size: 7px;
+}
+
+/* Editor chapters ------------------------------------------------------ */
+
+html .office-product-home .office-editor-chapters {
+  width: min(calc(100% - 96px), 1280px);
+  margin: 32px auto 0;
+  padding: 82px 48px 88px;
+  border: 1px solid var(--home-line-v2);
+  border-radius: 22px;
+  background: var(--home-surface-v2);
+  box-shadow: 0 26px 62px -54px rgb(15 35 70 / 42%);
+}
+
+html .office-product-home .office-editor-chapters__header {
+  display: grid;
+  align-items: end;
+  gap: 26px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+html .office-product-home .office-editor-chapters__header h2 {
+  max-width: 15ch;
+  color: var(--home-ink-v2);
+  font-size: clamp(38px, 4.4vw, 56px);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+html .office-product-home .office-editor-chapters__header p {
+  max-width: 66ch;
+  margin-top: 16px;
+  color: var(--home-muted-v2);
+  font-size: 15px;
+  line-height: 1.68;
+  text-wrap: pretty;
+}
+
+html .office-product-home .office-editor-chapters__header-actions {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 10px;
+}
+
+html .office-product-home .office-editor-chapters__preview-note {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--home-line-v2);
+  border-radius: 8px;
+  color: var(--home-faint-v2);
+  background: #f8fafc;
+  font-size: 9px;
+}
+
+html .office-product-home .office-editor-chapters__preview-note i {
+  width: 5px;
+  height: 5px;
+  background: var(--home-accent-v2);
+}
+
+html .office-product-home .office-editor-chapters__motion-toggle {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--home-line-strong-v2);
+  border-radius: 9px;
+  color: var(--home-ink-v2);
+  background: var(--home-surface-v2);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+html .office-product-home .office-editor-chapters__motion-toggle:hover {
+  border-color: #9fb2cc;
+  background: #f8fbff;
+}
+
+html .office-product-home .office-editor-chapters__motion-toggle:disabled {
+  color: var(--home-faint-v2);
+  background: #f7f9fc;
+  cursor: not-allowed;
+}
+
+html .office-product-home .office-editor-chapters__index {
+  display: grid;
+  min-width: 0;
+  margin-top: 32px;
+  overflow: hidden;
+  border: 1px solid var(--home-line-v2);
+  border-radius: 12px;
+  background: var(--home-panel-v2);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+html .office-product-home .office-editor-chapters__index a {
+  display: grid;
+  min-height: 62px;
+  padding: 10px 12px;
+  align-content: center;
+  border-left: 1px solid var(--home-line-v2);
+  color: var(--home-faint-v2);
+  background: transparent;
+  gap: 2px;
+}
+
+html .office-product-home .office-editor-chapters__index a:first-child {
+  border-left: 0;
+}
+
+html .office-product-home .office-editor-chapters__index a:hover,
+html
+  .office-product-home
+  .office-editor-chapters__index
+  a[aria-current="location"] {
+  color: var(--home-accent-v2);
+  background: var(--home-surface-v2);
+}
+
+html .office-product-home .office-editor-chapters__index a > span {
+  color: inherit;
+  font-family: var(--a3s-site-mono);
+  font-size: 8px;
+  font-weight: 720;
+}
+
+html .office-product-home .office-editor-chapters__index a strong {
+  overflow: hidden;
+  color: var(--home-ink-v2);
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html .office-product-home .office-editor-chapters__index a small {
+  overflow: hidden;
+  color: var(--home-faint-v2);
+  font-family: var(--a3s-site-mono);
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html .office-product-home .office-editor-chapters__progress {
+  position: relative;
+  z-index: 1;
+  top: auto;
+  display: flex;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 7px 11px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 0;
+  border-top: 1px solid var(--home-line-v2);
+  border-bottom: 1px solid var(--home-line-v2);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+html .office-product-home .office-editor-chapters__progress-copy {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+
+html .office-product-home .office-editor-chapters__progress-copy > span {
+  color: var(--home-faint-v2);
+  font-family: var(--a3s-site-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+html .office-product-home .office-editor-chapters__progress-copy strong {
+  overflow: hidden;
+  color: var(--home-ink-v2);
+  font-size: 11px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html .office-product-home .office-editor-chapters__progress-copy small {
+  overflow: hidden;
+  color: var(--home-faint-v2);
+  font-family: var(--a3s-site-mono);
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html .office-product-home .office-editor-chapters__progress-meter {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+}
+
+html .office-product-home .office-editor-chapters__progress-meter > span {
+  color: var(--home-faint-v2);
+  font-family: var(--a3s-site-mono);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+html .office-product-home .office-editor-chapters__progress-dots {
+  display: flex;
+  width: 94px;
+  align-items: center;
+  gap: 4px;
+}
+
+html .office-product-home .office-editor-chapters__progress-dots i {
+  display: block;
+  height: 4px;
+  flex: 1 1 0;
+  border-radius: 4px;
+  background: #dfe7f1;
+  transition: background-color 180ms ease;
+}
+
+html .office-product-home .office-editor-chapters__progress-dots i.is-active {
+  background: var(--home-accent-v2);
+}
+
+html .office-product-home .office-editor-chapters__list {
+  display: flex;
+  margin-top: 0;
+  flex-direction: column;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 2850px;
+}
+
+html .office-product-home .office-editor-chapter,
+html .office-product-home .office-editor-chapter:nth-child(even) {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  padding: 66px 0 70px;
+  align-items: center;
+  border-bottom: 1px solid var(--home-line-v2);
+  gap: clamp(34px, 5vw, 68px);
+  grid-template-columns: minmax(250px, 0.76fr) minmax(0, 1.24fr);
+  scroll-margin-top: calc(var(--a3s-site-nav-height) + 22px);
+}
+
+html .office-product-home .office-editor-chapter:last-child {
+  padding-bottom: 18px;
+  border-bottom: 0;
+}
+
+html
+  .office-product-home
+  .office-editor-chapter:nth-child(even)
+  .office-editor-chapter__copy {
+  order: 2;
+}
+
+html
+  .office-product-home
+  .office-editor-chapter:nth-child(even)
+  .office-editor-chapter__preview {
+  order: 1;
+}
+
+html .office-product-home .office-editor-chapter__copy {
+  min-width: 0;
+}
+
+html .office-product-home .office-editor-chapter__heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+html .office-product-home .office-editor-chapter__index {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border: 1px solid #c5d8fa;
+  border-radius: 9px;
+  color: var(--home-accent-v2);
+  background: var(--home-panel-blue-v2);
+  font-family: var(--a3s-site-mono);
+  font-size: 9px;
+  font-weight: 720;
+  place-items: center;
+}
+
+html .office-product-home .office-editor-chapter__heading small {
+  color: var(--home-accent-v2);
+  font-family: var(--a3s-site-mono);
+  font-size: 8px;
+  font-weight: 720;
+  letter-spacing: 0.04em;
+}
+
+html .office-product-home .office-editor-chapter__heading h3 {
+  max-width: 17ch;
+  margin-top: 9px;
+  color: var(--home-ink-v2);
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 730;
+  letter-spacing: -0.04em;
+  line-height: 1.07;
+  text-wrap: balance;
+}
+
+html .office-product-home .office-editor-chapter__copy > p {
+  max-width: 47ch;
+  margin-top: 18px;
+  color: var(--home-muted-v2);
+  font-size: 14px;
+  line-height: 1.68;
+}
+
+html .office-product-home .office-editor-chapter__copy > ul {
+  display: flex;
+  margin: 18px 0 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+}
+
+html .office-product-home .office-editor-chapter__copy > ul li {
+  padding: 6px 8px;
+  border: 1px solid var(--home-line-v2);
+  border-radius: 6px;
+  color: var(--home-muted-v2);
+  background: #f8fafc;
+  font-family: var(--a3s-site-mono);
+  font-size: 8px;
+}
+
+html .office-product-home .office-editor-chapter__link {
+  display: inline-flex;
+  margin-top: 23px;
+  align-items: center;
+  gap: 6px;
+  color: var(--home-accent-deep-v2);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+html .office-product-home .office-editor-chapter__recovery {
+  margin-top: 12px;
+  color: var(--home-faint-v2);
+  font-size: 10px;
+}
+
+html .office-product-home .office-editor-chapter__preview {
+  min-width: 0;
+  margin: 0;
+}
+
+html .office-product-home .office-editor-chapter__preview figcaption {
+  display: flex;
+  min-width: 0;
+  margin-top: 9px;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--home-faint-v2);
+  font-size: 9px;
+}
+
+html .office-product-home .office-editor-chapter__preview figcaption span {
+  color: var(--home-accent-deep-v2);
+  font-family: var(--a3s-site-mono);
+  font-size: 7px;
+  font-weight: 720;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+html .office-product-home .office-editor-chapter__preview figcaption b {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--home-faint-v2);
+  font-size: 8px;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html .office-product-home .office-motion-window {
+  border-color: var(--home-line-strong-v2);
+  border-radius: 15px;
+  box-shadow:
+    0 26px 58px -40px rgb(15 35 70 / 48%),
+    0 7px 18px -14px rgb(15 35 70 / 28%);
+}
+
+/* Give the previews the same information density as the editors they
+   represent. The source remains lightweight DOM, but the hierarchy is
+   legible at a glance instead of looking like an empty wireframe. */
+
+html .office-product-home .office-motion-window__bar,
+html .office-product-home .office-motion-window__footer {
+  min-height: 40px;
+  color: #63738a;
+  font-size: 8px;
+}
+
+html .office-product-home .office-motion-window__bar code {
+  color: #233b60;
+  font-size: 9px;
+}
+
+html .office-product-home .office-motion-ribbon__tabs {
+  min-height: 36px;
+  font-size: 8px;
+}
+
+html
+  .office-product-home
+  .office-motion-ribbon__tabs
+  > span:not(.office-motion-ribbon__window-actions) {
+  min-height: 36px;
+  padding-inline: 9px;
+}
+
+html .office-product-home .office-motion-ribbon__commands {
+  min-height: 56px;
+  padding: 5px 10px;
+}
+
+html .office-product-home .office-motion-command {
+  min-width: 46px;
+  padding: 4px 6px 3px;
+  gap: 4px;
+  font-size: 8px;
+}
+
+html .office-product-home .office-motion-command svg {
+  width: 17px;
+  height: 17px;
+}
+
+html .office-product-home .office-motion-command small {
+  max-width: 68px;
+  font-size: 8px;
+}
+
+html .office-product-home .office-document-preview__body {
+  min-height: 322px;
+}
+
+html .office-product-home .office-document-preview__page {
+  padding: 27px 27px 22px;
+}
+
+html .office-product-home .office-document-preview__page h4 {
+  color: #203553;
+  font-size: 24px;
+}
+
+html .office-product-home .office-document-preview__page > small,
+html .office-product-home .office-markdown-preview__rendered > small,
+html .office-product-home .office-presentation-preview__slide > small,
+html .office-product-home .office-pdf-preview__page > small {
+  color: #7890ad;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+}
+
+html .office-product-home .office-document-preview__meta,
+html .office-product-home .office-markdown-preview__rendered > p,
+html .office-product-home .office-presentation-preview__slide > p,
+html .office-product-home .office-pdf-preview__page > p {
+  color: #71829a;
+  font-size: 10px;
+}
+
+html .office-product-home .office-document-preview__line {
+  height: 4px;
+  background: #d7e1ee;
+}
+
+html .office-product-home .office-document-preview__highlight {
+  color: #4e6380;
+  background: #edf3fb;
+  font-size: 9px;
+}
+
+html .office-product-home .office-document-preview__comment {
+  padding: 13px;
+}
+
+html .office-product-home .office-document-preview__comment strong {
+  font-size: 10px;
+}
+
+html .office-product-home .office-document-preview__comment p {
+  color: #5d708d;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+html .office-product-home .office-markdown-preview__body {
+  min-height: 322px;
+}
+
+html .office-product-home .office-markdown-preview__source header {
+  min-height: 30px;
+  font-size: 8px;
+}
+
+html .office-product-home .office-markdown-preview__source-editor {
+  min-height: 246px;
+}
+
+html .office-product-home .office-markdown-preview__source-editor pre {
+  color: #415878;
+  font-size: 10px;
+  line-height: 1.85;
+}
+
+html .office-product-home .office-markdown-preview__rendered {
+  padding: 23px 24px;
+}
+
+html .office-product-home .office-markdown-preview__rendered h4 {
+  color: #203553;
+  font-size: 22px;
+}
+
+html .office-product-home .office-markdown-preview__checklist {
+  font-size: 10px;
+}
+
+html .office-product-home .office-spreadsheet-preview__formula {
+  min-height: 40px;
+  font-size: 10px;
+}
+
+html .office-product-home .office-spreadsheet-preview__name-box {
+  font-size: 9px;
+}
+
+html .office-product-home .office-spreadsheet-preview__body th,
+html .office-product-home .office-spreadsheet-preview__body td {
+  min-height: 30px;
+  height: 30px;
+  color: #425775;
+  font-size: 10px;
+}
+
+html .office-product-home .office-spreadsheet-preview__body th {
+  color: #71839b;
+  background: #f4f7fb;
+}
+
+html .office-product-home .office-spreadsheet-preview__validation {
+  font-size: 8px;
+}
+
+html .office-product-home .office-presentation-preview__body {
+  min-height: 322px;
+}
+
+html .office-product-home .office-presentation-preview__slide {
+  min-height: 212px;
+}
+
+html .office-product-home .office-presentation-preview__slide h4 {
+  color: #203553;
+  font-size: 23px;
+}
+
+html .office-product-home .office-presentation-preview__object {
+  font-size: 9px;
+}
+
+html .office-product-home .office-presentation-preview__timeline {
+  font-size: 8px;
+}
+
+html .office-product-home .office-pdf-preview__body {
+  min-height: 322px;
+}
+
+html .office-product-home .office-pdf-preview__page {
+  padding: 25px 26px;
+}
+
+html .office-product-home .office-pdf-preview__page h4 {
+  color: #203553;
+  font-size: 22px;
+}
+
+html .office-product-home .office-pdf-preview__highlight {
+  font-size: 9px;
+}
+
+html .office-product-home .office-motion-window__status,
+html .office-product-home .office-motion-window__footer b {
+  color: var(--home-success-v2);
+}
+
+/* Integration / collaboration / API ---------------------------------- */
+
+html .office-product-home .docs-home-journey,
+html .office-product-home .docs-home-collaboration,
+html .office-product-home .docs-home-editors {
+  width: min(calc(100% - 96px), 1280px);
+  margin: 24px auto 0;
+  padding: 82px 48px;
+  border: 1px solid var(--home-line-v2);
+  border-radius: 20px;
+  box-shadow: none;
+}
+
+html .office-product-home .docs-home-journey {
+  background: var(--home-panel-v2);
+}
+
+html .office-product-home .docs-home-collaboration {
+  background: var(--home-surface-v2);
+  gap: clamp(36px, 5vw, 72px);
+  grid-template-columns: minmax(0, 0.86fr) minmax(380px, 1.14fr);
+}
+
+html .office-product-home .docs-home-editors {
+  background: var(--home-panel-v2);
+}
+
+html .office-product-home .docs-home-section__intro {
+  max-width: 780px;
+}
+
+html .office-product-home .docs-home-section__intro h2,
+html .office-product-home .docs-home-collaboration h2,
+html .office-product-home .docs-home-final h2 {
+  max-width: 16ch;
+  color: var(--home-ink-v2);
+  font-size: clamp(36px, 4.1vw, 54px);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+html .office-product-home .docs-home-section__intro p,
+html .office-product-home .docs-home-collaboration__copy > p {
+  max-width: 62ch;
+  margin-top: 16px;
+  color: var(--home-muted-v2);
+  font-size: 15px;
+  line-height: 1.68;
+}
+
+html .office-product-home .docs-home-flow {
+  display: block;
+  margin-top: 40px;
+  border-top: 1px solid var(--home-line-strong-v2);
+}
+
+html .office-product-home .docs-home-stage,
+html .office-product-home .docs-home-stage--collaborate {
+  display: grid;
+  min-height: 104px;
+  padding: 20px 0;
+  align-items: center;
+  border: 0;
+  border-bottom: 1px solid var(--home-line-v2);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 18px;
+  grid-template-columns: 44px minmax(0, 1fr) minmax(190px, auto);
+}
+
+html .office-product-home .docs-home-stage__index,
+html
+  .office-product-home
+  .docs-home-stage:nth-child(n)
+  .docs-home-stage__index {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #c5d8fa;
+  border-radius: 9px;
+  color: var(--home-accent-v2);
+  background: var(--home-panel-blue-v2);
+  place-items: center;
+}
+
+html .office-product-home .docs-home-stage__body h3 {
+  color: var(--home-ink-v2);
+  font-size: 16px;
+  font-weight: 710;
+}
+
+html .office-product-home .docs-home-stage__body p {
+  max-width: 58ch;
+  margin-top: 6px;
+  color: var(--home-muted-v2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html .office-product-home .docs-home-stage__links,
+html .office-product-home .docs-home-collaboration__links {
+  display: flex;
+  margin: 0;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 6px;
+}
+
+html .office-product-home .docs-home-stage__links a,
+html .office-product-home .docs-home-collaboration__links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--home-accent-deep-v2);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+html .office-product-home .docs-home-collaboration__facts {
+  margin-top: 22px;
+  border-top: 1px solid var(--home-line-v2);
+}
+
+html .office-product-home .docs-home-collaboration__facts li {
+  position: relative;
+  padding: 11px 0 11px 17px;
+  border-bottom: 1px solid var(--home-line-v2);
+  color: var(--home-muted-v2);
+  font-size: 11px;
+  line-height: 1.52;
+}
+
+html .office-product-home .docs-home-collaboration__facts li::before {
+  position: absolute;
+  top: 17px;
+  left: 1px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--home-accent-v2);
+  content: "";
+}
+
+html .office-product-home .docs-home-collaboration__links {
+  margin-top: 22px;
+  align-items: flex-start;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+html .office-product-home .docs-home-collaboration__diagram {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--home-line-strong-v2);
+  border-radius: 15px;
+  background: var(--home-panel-v2);
+  box-shadow: 0 22px 46px -38px rgb(15 35 70 / 45%);
+}
+
+html .office-product-home .docs-home-diagram__peers span,
+html .office-product-home .docs-home-diagram__peers span:nth-child(n) {
+  min-height: 86px;
+  padding: 13px;
+  border-color: var(--home-line-v2);
+  border-radius: 10px;
+  background: var(--home-surface-v2);
+}
+
+html .office-product-home .docs-home-diagram__peers span b {
+  width: 25px;
+  height: 25px;
+  border-radius: 7px;
+  color: var(--home-accent-v2);
+  background: var(--home-panel-blue-v2);
+}
+
+html .office-product-home .docs-home-diagram__service {
+  min-height: 78px;
+  padding: 16px 18px;
+  border-color: #c5d8fa;
+  border-radius: 11px;
+  background: var(--home-panel-blue-v2);
+}
+
+html .office-product-home .docs-home-diagram__service strong {
+  color: var(--home-accent-deep-v2);
+  font-size: 16px;
+}
+
+html .office-product-home .docs-home-surface-list {
+  display: block;
+  margin-top: 36px;
+  border-top: 1px solid var(--home-line-strong-v2);
+}
+
+html .office-product-home .docs-home-surface-list li {
+  border-bottom-color: var(--home-line-v2);
+}
+
+html .office-product-home .docs-home-surface-list a {
+  display: grid;
+  min-height: 78px;
+  padding: 15px 0;
+  align-items: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 20px;
+  grid-template-columns: 145px minmax(0, 1fr) 180px;
+}
+
+html .office-product-home .docs-home-surface-list a:hover {
+  padding-inline: 10px;
+  color: var(--home-accent-v2);
+  background: var(--home-surface-v2);
+  transform: none;
+}
+
+html .office-product-home .docs-home-surface-list strong {
+  color: var(--home-ink-v2);
+  font-size: 14px;
+  font-weight: 710;
+}
+
+html .office-product-home .docs-home-surface-list strong::before,
+html
+  .office-product-home
+  .docs-home-surface-list
+  li:nth-child(n)
+  strong::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--home-accent-v2);
+}
+
+html .office-product-home .docs-home-surface-list a > span {
+  color: var(--home-muted-v2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+html .office-product-home .docs-home-surface-list code {
+  justify-self: end;
+  color: var(--home-accent-deep-v2);
+  background: var(--home-panel-blue-v2);
+  font-size: 8px;
+}
+
+/* Final close ---------------------------------------------------------- */
+
+html .office-product-home .docs-home-final {
+  display: flex;
+  width: min(calc(100% - 96px), 1280px);
+  min-height: 230px;
+  margin: 32px auto 62px;
+  padding: 46px 54px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #bfd2f4;
+  border-radius: 20px;
+  color: var(--home-ink-v2);
+  background: var(--home-panel-blue-v2);
+  box-shadow: 0 24px 58px -46px rgb(20 86 240 / 42%);
+  gap: 34px;
+}
+
+html .office-product-home .docs-home-final > div:first-child {
+  max-width: 700px;
+}
+
+html .office-product-home .docs-home-final p {
+  max-width: 60ch;
+  margin-top: 14px;
+  color: var(--home-muted-v2);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+html .office-product-home .docs-home-final__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html .office-product-home .docs-home-final .docs-home-action--secondary {
+  border-color: #b4c9ed;
+  background: rgb(255 255 255 / 82%);
+}
+
+@keyframes office-home-v2-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive composition ----------------------------------------------- */
+
+@media (max-width: 1120px) {
+  html .office-product-home .docs-home-hero {
+    min-height: 0;
+    padding-top: 56px;
+    grid-template-columns: minmax(300px, 0.86fr) minmax(440px, 1.14fr);
+  }
+
+  html .office-product-home .office-home-surface-map__workspace {
+    grid-template-columns: 70px minmax(0, 1fr) 132px;
+  }
+
+  html .office-product-home .office-editor-chapters,
+  html .office-product-home .docs-home-journey,
+  html .office-product-home .docs-home-collaboration,
+  html .office-product-home .docs-home-editors {
+    padding-inline: 36px;
+  }
+}
+
+@media (max-width: 920px) {
+  html .office-product-home .docs-home-hero {
+    padding: 56px 36px 52px;
+    grid-template-columns: 1fr;
+  }
+
+  html .office-product-home .docs-home-hero__copy {
+    max-width: 720px;
+  }
+
+  html .office-product-home .docs-home-hero__visual {
+    width: min(100%, 760px);
+    justify-self: center;
+  }
+
+  html .office-product-home .docs-home-assurance,
+  html .office-product-home .docs-home-latest,
+  html .office-product-home .office-editor-chapters,
+  html .office-product-home .docs-home-journey,
+  html .office-product-home .docs-home-collaboration,
+  html .office-product-home .docs-home-editors,
+  html .office-product-home .docs-home-final {
+    width: calc(100% - 72px);
+  }
+
+  html .office-product-home .office-editor-chapters {
+    padding-top: 68px;
+  }
+
+  html .office-product-home .office-editor-chapter,
+  html .office-product-home .office-editor-chapter:nth-child(even) {
+    gap: 38px;
+    grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
+  }
+
+  html .office-product-home .docs-home-collaboration {
+    grid-template-columns: 1fr;
+  }
+
+  html .office-product-home .docs-home-collaboration__diagram {
+    width: min(100%, 760px);
+  }
+}
+
+@media (max-width: 760px) {
+  html .office-product-home .docs-home-hero {
+    padding: 44px 24px 40px;
+    border-right: 0;
+    border-left: 0;
+    gap: 34px;
+  }
+
+  html .office-product-home .docs-home-hero__meta {
+    margin-bottom: 24px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  html .office-product-home .docs-home-hero h1 {
+    max-width: 11ch;
+    font-size: clamp(44px, 12vw, 62px);
+  }
+
+  html .office-product-home .docs-home-hero__lead {
+    font-size: 15px;
+  }
+
+  html .office-product-home .docs-home-actions {
+    align-items: stretch;
+  }
+
+  html .office-product-home .docs-home-action {
+    flex: 1 1 auto;
+  }
+
+  html .office-product-home .office-home-surface-map__window {
+    border-radius: 15px;
+  }
+
+  html .office-product-home .office-home-surface-map__actions > span {
+    display: none;
+  }
+
+  html .office-product-home .office-home-surface-map__workspace {
+    min-height: 276px;
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  html .office-product-home .office-home-surface-map__list li strong {
+    display: none;
+  }
+
+  html .office-product-home .office-home-surface-map__inspector {
+    display: none;
+  }
+
+  html .office-product-home .docs-home-assurance,
+  html .office-product-home .docs-home-latest,
+  html .office-product-home .office-editor-chapters,
+  html .office-product-home .docs-home-journey,
+  html .office-product-home .docs-home-collaboration,
+  html .office-product-home .docs-home-editors {
+    width: calc(100% - 48px);
+  }
+
+  html .office-product-home .docs-home-assurance {
+    grid-template-columns: 1fr;
+  }
+
+  html .office-product-home .docs-home-assurance > strong {
+    min-height: 48px;
+    padding-inline: 16px;
+    border-bottom: 1px solid var(--home-line-v2);
+  }
+
+  html .office-product-home .docs-home-assurance ul {
+    overflow-x: auto;
+    border-left: 0;
+    grid-template-columns: repeat(5, minmax(138px, 1fr));
+    scrollbar-width: thin;
+  }
+
+  html .office-product-home .docs-home-assurance li {
+    min-height: 72px;
+  }
+
+  html .office-product-home .docs-home-latest {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  html .office-product-home .office-editor-chapters {
+    padding: 56px 24px 66px;
+    border-radius: 18px;
+  }
+
+  html .office-product-home .office-editor-chapters__header {
+    align-items: flex-start;
+    grid-template-columns: 1fr;
+  }
+
+  html .office-product-home .office-editor-chapters__header-actions {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  html .office-product-home .office-editor-chapters__index {
+    margin-right: -24px;
+    margin-left: -24px;
+    padding-left: 24px;
+    overflow-x: auto;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    grid-template-columns: repeat(5, minmax(138px, 1fr));
+    scrollbar-width: none;
+  }
+
+  html .office-product-home .office-editor-chapters__index a:first-child {
+    border-left: 1px solid var(--home-line-v2);
+  }
+
+  html .office-product-home .office-editor-chapter,
+  html .office-product-home .office-editor-chapter:nth-child(even) {
+    padding: 48px 0 52px;
+    gap: 28px;
+    grid-template-columns: 1fr;
+  }
+
+  html
+    .office-product-home
+    .office-editor-chapter:nth-child(even)
+    .office-editor-chapter__copy,
+  html
+    .office-product-home
+    .office-editor-chapter:nth-child(even)
+    .office-editor-chapter__preview {
+    order: initial;
+  }
+
+  html .office-product-home .office-editor-chapter__copy {
+    max-width: 640px;
+  }
+
+  html .office-product-home .office-editor-chapters__progress-copy small {
+    display: none;
+  }
+
+  html .office-product-home .office-editor-chapters__progress-dots {
+    width: 74px;
+  }
+
+  html .office-product-home .docs-home-journey,
+  html .office-product-home .docs-home-collaboration,
+  html .office-product-home .docs-home-editors {
+    padding: 58px 24px;
+    border-radius: 18px;
+  }
+
+  html .office-product-home .docs-home-stage,
+  html .office-product-home .docs-home-stage--collaborate {
+    min-height: 0;
+    padding: 18px 0;
+    align-items: flex-start;
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  html .office-product-home .docs-home-stage__links {
+    align-items: flex-start;
+    grid-column: 2;
+  }
+
+  html .office-product-home .docs-home-collaboration__diagram {
+    padding: 16px;
+  }
+
+  html .office-product-home .docs-home-diagram__peers {
+    grid-template-columns: 1fr;
+  }
+
+  html .office-product-home .docs-home-surface-list a {
+    min-height: 102px;
+    gap: 7px;
+    grid-template-columns: 1fr;
+  }
+
+  html .office-product-home .docs-home-surface-list code {
+    justify-self: start;
+  }
+
+  html .office-product-home .docs-home-final {
+    width: calc(100% - 48px);
+    min-height: 0;
+    margin: 24px auto 42px;
+    padding: 38px 24px;
+    align-items: flex-start;
+    border-radius: 18px;
+    flex-direction: column;
+  }
+
+  html .office-product-home .docs-home-final__actions {
+    width: 100%;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 420px) {
+  html .office-product-home .docs-home-hero {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  html .office-product-home .docs-home-actions {
+    flex-direction: column;
+  }
+
+  html .office-product-home .office-editor-chapters,
+  html .office-product-home .docs-home-journey,
+  html .office-product-home .docs-home-collaboration,
+  html .office-product-home .docs-home-editors,
+  html .office-product-home .docs-home-final {
+    width: calc(100% - 40px);
+  }
+
+  html .office-product-home .office-editor-chapters {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  html .office-product-home .office-editor-chapters__index {
+    margin-right: -20px;
+    margin-left: -20px;
+    padding-left: 20px;
+  }
+
+  html .office-product-home .office-editor-chapters__progress-copy > span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html .office-product-home .office-home-surface-map__window {
+    animation: none;
+  }
+}
+
+/* Real editor capture system ------------------------------------------------
+ *
+ * The first viewport and every chapter use captures produced by the same
+ * visual-tests suite as the Playground.  Keep the presentation quiet enough
+ * that the editor chrome remains the hero; motion is limited to a gentle
+ * entrance, a scan line, and the stack's hover lift.
+ */
+
+html .office-product-home {
+  --home-canvas-v3: #f6f8fb;
+  --home-surface-v3: #ffffff;
+  --home-ink-v3: #172033;
+  --home-muted-v3: #5d6b80;
+  --home-faint-v3: #7e8a9c;
+  --home-line-v3: #dbe3ed;
+  --home-blue-v3: #1f63ed;
+  --home-blue-soft-v3: #eaf2ff;
+  background: var(--home-canvas-v3);
+  color: var(--home-ink-v3);
+  overflow-x: clip;
+}
+
+html .office-product-home .docs-home-hero {
+  width: min(100%, 1440px);
+  min-height: max(690px, calc(100dvh - var(--a3s-site-nav-height)));
+  padding: clamp(54px, 6vw, 86px) clamp(30px, 5vw, 72px) clamp(58px, 7vw, 92px);
+  align-items: center;
+  background:
+    radial-gradient(circle at 84% 18%, rgb(211 226 255 / 52%), transparent 28%),
+    linear-gradient(135deg, #f8fbff 0%, var(--home-canvas-v3) 64%, #f1f5fa 100%);
+  gap: clamp(38px, 5vw, 84px);
+  grid-template-columns: minmax(320px, 0.78fr) minmax(540px, 1.22fr);
+}
+
+html .office-product-home .docs-home-hero::before {
+  top: -360px;
+  right: -240px;
+  width: 720px;
+  height: 720px;
+  border-color: rgb(31 99 237 / 10%);
+  box-shadow: inset 0 0 0 112px rgb(255 255 255 / 34%);
+}
+
+html .office-product-home .docs-home-hero__copy {
+  position: relative;
+  z-index: 2;
+  max-width: 590px;
+}
+
+html .office-product-home .docs-home-hero h1 {
+  max-width: 10ch;
+  color: var(--home-ink-v3);
+  font-size: clamp(50px, 5.3vw, 74px);
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+html .office-product-home .docs-home-hero__lead {
+  max-width: 47ch;
+  margin-top: 26px;
+  color: var(--home-muted-v3);
+  font-size: 16px;
+  line-height: 1.72;
+}
+
+html .office-product-home .docs-home-hero__visual {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Hero stack -------------------------------------------------------------- */
+
+html .office-product-home .office-home-surface-map {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  padding-top: 8px;
+}
+
+html .office-product-home .office-home-surface-map__header {
+  display: flex;
+  min-height: 27px;
+  margin: 0 2px 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: #5270a2;
+  font-family: var(--a3s-site-mono);
+  font-size: 9px;
+  font-weight: 720;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html .office-product-home .office-home-surface-map__header small {
+  color: var(--home-faint-v3);
+  font-size: 8px;
+  font-weight: 560;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+html .office-product-home .office-home-screenshot-stack {
+  position: relative;
+  width: 100%;
+  height: clamp(400px, 39vw, 560px);
+  isolation: isolate;
+  perspective: 1500px;
+}
+
+html .office-product-home .office-home-screenshot-stack::before {
+  position: absolute;
+  right: 3%;
+  bottom: 4%;
+  left: 8%;
+  height: 24%;
+  border-radius: 50%;
+  background: rgb(35 67 121 / 16%);
+  content: "";
+  filter: blur(28px);
+  transform: translateY(8px);
+}
+
+html .office-product-home .office-home-screenshot-stack__card {
+  position: absolute;
+  top: 3%;
+  left: 7%;
+  width: 86%;
+  aspect-ratio: 16 / 10;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgb(149 169 198 / 72%);
+  border-radius: 15px;
+  background: var(--home-surface-v3);
+  box-shadow:
+    0 34px 54px -36px rgb(30 56 102 / 58%),
+    0 10px 20px -15px rgb(30 56 102 / 38%);
+  transform-origin: 50% 92%;
+  transition:
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 360ms ease,
+    filter 360ms ease;
+}
+
+html .office-product-home .office-home-screenshot-stack__card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #eef2f7;
+}
+
+html .office-product-home .office-home-screenshot-stack__card::after {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(255 255 255 / 58%);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+html .office-product-home .office-home-screenshot-stack__card figcaption {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  min-height: 24px;
+  padding: 0 8px 0 6px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgb(164 180 204 / 52%);
+  border-radius: 7px;
+  color: #273752;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 5px 13px rgb(22 49 89 / 13%);
+  font-size: 9px;
+  font-weight: 720;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+html .office-product-home .office-home-screenshot-stack__card figcaption b {
+  color: var(--home-blue-v3);
+  font-family: var(--a3s-site-mono);
+  font-size: 8px;
+}
+
+html .office-product-home .office-home-screenshot-stack__card--document {
+  z-index: 5;
+  top: 23%;
+  left: 9%;
+  width: 88%;
+  transform: rotate(0.4deg) translate3d(0, 0, 36px);
+}
+
+html .office-product-home .office-home-screenshot-stack__card--markdown {
+  z-index: 4;
+  top: 17%;
+  left: 8%;
+  width: 87%;
+  filter: saturate(0.94);
+  transform: rotate(-2.2deg) translate3d(10px, 0, 8px);
+}
+
+html .office-product-home .office-home-screenshot-stack__card--spreadsheet {
+  z-index: 3;
+  top: 11%;
+  left: 7%;
+  width: 86%;
+  filter: saturate(0.9);
+  transform: rotate(2.6deg) translate3d(16px, 0, 0);
+}
+
+html .office-product-home .office-home-screenshot-stack__card--presentation {
+  z-index: 2;
+  top: 6%;
+  left: 6%;
+  width: 85%;
+  filter: saturate(0.84);
+  transform: rotate(-3.6deg) translate3d(20px, 0, -8px);
+}
+
+html .office-product-home .office-home-screenshot-stack__card--pdf {
+  z-index: 1;
+  top: 1%;
+  left: 5%;
+  width: 84%;
+  filter: saturate(0.78);
+  transform: rotate(4.3deg) translate3d(25px, 0, -18px);
+}
+
+html
+  .office-product-home
+  .office-home-screenshot-stack:hover
+  .office-home-screenshot-stack__card--document {
+  box-shadow:
+    0 42px 66px -38px rgb(30 56 102 / 64%),
+    0 12px 24px -15px rgb(30 56 102 / 44%);
+  transform: rotate(0.4deg) translate3d(-4px, -7px, 42px);
+}
+
+html
+  .office-product-home
+  .office-home-screenshot-stack:hover
+  .office-home-screenshot-stack__card--markdown {
+  transform: rotate(-2.2deg) translate3d(4px, -3px, 8px);
+}
+
+html
+  .office-product-home
+  .office-home-screenshot-stack:hover
+  .office-home-screenshot-stack__card--spreadsheet {
+  transform: rotate(2.6deg) translate3d(10px, -1px, 0);
+}
+
+html
+  .office-product-home
+  .office-home-screenshot-stack:hover
+  .office-home-screenshot-stack__card
+  figcaption {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+html .office-product-home .office-home-screenshot-stack__focus {
+  position: absolute;
+  z-index: 6;
+  right: 6%;
+  bottom: 8%;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--home-blue-v3);
+  border-radius: 50%;
+  box-shadow: 0 0 0 7px rgb(31 99 237 / 11%);
+  opacity: 0.78;
+  animation: office-home-capture-focus 3.8s ease-in-out infinite;
+}
+
+html .office-product-home .office-home-surface-map__footer {
+  display: flex;
+  min-height: 39px;
+  margin-top: 10px;
+  padding: 0 3px;
+  align-items: center;
+  border-top: 1px solid var(--home-line-v3);
+  color: var(--home-faint-v3);
+  font-family: var(--a3s-site-mono);
+  font-size: 8px;
+  gap: 12px;
+}
+
+html .office-product-home .office-home-surface-map__footer b {
+  margin-left: auto;
+  color: #2d609f;
+  font-size: 8px;
+  font-weight: 720;
+  letter-spacing: 0.04em;
+}
+
+/* Chapter capture frame --------------------------------------------------- */
+
+html .office-product-home .office-real-editor-shot {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #cbd7e6;
+  border-radius: 15px;
+  background: var(--home-surface-v3);
+  box-shadow:
+    0 28px 58px -42px rgb(32 62 109 / 58%),
+    0 7px 16px -12px rgb(32 62 109 / 33%);
+}
+
+html .office-product-home .office-real-editor-shot__viewport {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #eef2f6;
+}
+
+html .office-product-home .office-real-editor-shot__viewport img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+html .office-product-home .office-real-editor-shot__viewport::after {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(255 255 255 / 60%);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+html .office-product-home .office-real-editor-shot__badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  min-height: 24px;
+  padding: 0 8px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgb(158 178 210 / 62%);
+  border-radius: 7px;
+  color: #2e4d7a;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 5px 13px rgb(22 49 89 / 13%);
+  font-family: var(--a3s-site-mono);
+  font-size: 8px;
+  font-weight: 720;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+html .office-product-home .office-real-editor-shot__badge i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2d9b74;
+  box-shadow: 0 0 0 3px rgb(45 155 116 / 13%);
+}
+
+html .office-product-home .office-real-editor-shot__scan {
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: 16%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(31 99 237 / 58%),
+    transparent
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+html
+  .office-product-home
+  .office-editor-chapter[data-motion-active="true"]
+  .office-real-editor-shot__scan {
+  animation: office-home-capture-scan 5.4s ease-in-out infinite;
+}
+
+html .office-product-home .office-real-editor-shot__meta {
+  display: flex;
+  min-height: 42px;
+  padding: 0 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--home-line-v3);
+  color: var(--home-ink-v3);
+  font-size: 10px;
+  font-weight: 720;
+}
+
+html .office-product-home .office-real-editor-shot__meta small {
+  color: var(--home-faint-v3);
+  font-family: var(--a3s-site-mono);
+  font-size: 7px;
+  font-weight: 560;
+  white-space: nowrap;
+}
+
+html .office-product-home .office-editor-chapter__preview figcaption span {
+  color: #315e9d;
+}
+
+html .office-product-home .office-editor-chapter__preview figcaption b {
+  color: var(--home-faint-v3);
+}
+
+@keyframes office-home-capture-focus {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+}
+
+@keyframes office-home-capture-scan {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  20%,
+  68% {
+    opacity: 0.68;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(360px);
+  }
+}
+
+@media (max-width: 1120px) {
+  html .office-product-home .docs-home-hero {
+    grid-template-columns: minmax(300px, 0.72fr) minmax(500px, 1.28fr);
+  }
+
+  html .office-product-home .office-home-screenshot-stack {
+    height: clamp(380px, 41vw, 500px);
+  }
+}
+
+@media (max-width: 920px) {
+  html .office-product-home .docs-home-hero {
+    min-height: 0;
+    padding-top: 56px;
+    padding-bottom: 62px;
+    grid-template-columns: 1fr;
+  }
+
+  html .office-product-home .docs-home-hero__copy {
+    max-width: 720px;
+  }
+
+  html .office-product-home .docs-home-hero__visual {
+    width: min(100%, 760px);
+    justify-self: center;
+  }
+
+  html .office-product-home .office-home-screenshot-stack {
+    height: clamp(390px, 61vw, 520px);
+  }
+}
+
+@media (max-width: 760px) {
+  html .office-product-home .docs-home-hero {
+    padding: 44px 24px 48px;
+    gap: 38px;
+  }
+
+  html .office-product-home .docs-home-hero__meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  html .office-product-home .docs-home-hero h1 {
+    max-width: 11ch;
+    font-size: clamp(44px, 12vw, 62px);
+  }
+
+  html .office-product-home .office-home-surface-map__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  html .office-product-home .office-home-screenshot-stack {
+    height: clamp(290px, 87vw, 390px);
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card {
+    border-radius: 11px;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card--document {
+    top: 24%;
+    left: 3%;
+    width: 95%;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card--markdown {
+    top: 18%;
+    left: 4%;
+    width: 94%;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card--spreadsheet {
+    top: 12%;
+    left: 5%;
+    width: 93%;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card--presentation {
+    top: 6%;
+    left: 6%;
+    width: 92%;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card--pdf {
+    top: 0;
+    left: 7%;
+    width: 91%;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card figcaption {
+    top: 8px;
+    left: 8px;
+    min-height: 21px;
+    padding-inline: 6px;
+    font-size: 8px;
+  }
+
+  html
+    .office-product-home
+    .office-home-screenshot-stack__card:not(
+      .office-home-screenshot-stack__card--document
+    )
+    figcaption {
+    display: none;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__focus {
+    right: 3%;
+    bottom: 6%;
+  }
+
+  html .office-product-home .office-home-surface-map__footer {
+    min-height: 34px;
+    font-size: 7px;
+  }
+
+  html .office-product-home .office-real-editor-shot__badge {
+    top: 8px;
+    right: 8px;
+    min-height: 21px;
+    padding-inline: 6px;
+    font-size: 7px;
+  }
+
+  html .office-product-home .office-real-editor-shot__meta {
+    min-height: 38px;
+    padding-inline: 10px;
+  }
+
+  html .office-product-home .office-real-editor-shot__meta small {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html .office-product-home .office-home-screenshot-stack__focus,
+  html
+    .office-product-home
+    .office-editor-chapter[data-motion-active="true"]
+    .office-real-editor-shot__scan {
+    animation: none;
+  }
+
+  html .office-product-home .office-home-screenshot-stack__card {
+    transition: none;
+  }
+}
+
+/* Flow-style page rhythm -------------------------------------------------- */
+
+html .office-product-home .docs-home-assurance,
+html .office-product-home .docs-home-latest,
+html .office-product-home .office-editor-chapters,
+html .office-product-home .docs-home-journey,
+html .office-product-home .docs-home-collaboration,
+html .office-product-home .docs-home-editors,
+html .office-product-home .docs-home-final {
+  width: min(100%, 1440px);
+  margin-right: auto;
+  margin-left: auto;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+html .office-product-home .docs-home-assurance {
+  min-height: 82px;
+  border-top: 1px solid var(--home-line-v3);
+  border-bottom: 1px solid var(--home-line-v3);
+  background: var(--home-surface-v3);
+}
+
+html .office-product-home .docs-home-latest {
+  min-height: 50px;
+  margin-top: 0;
+  border-top: 0;
+  border-bottom: 1px solid var(--home-line-v3);
+  border-radius: 0;
+  background: var(--home-surface-v3);
+}
+
+html .office-product-home .office-editor-chapters {
+  margin-top: 0;
+  padding: clamp(66px, 7vw, 92px) clamp(28px, 6vw, 88px) clamp(72px, 8vw, 104px);
+  border-top: 1px solid var(--home-line-v3);
+  border-bottom: 1px solid var(--home-line-v3);
+  background: var(--home-surface-v3);
+}
+
+html .office-product-home .office-editor-chapters__header {
+  gap: 24px;
+}
+
+html .office-product-home .office-editor-chapters__header h2 {
+  max-width: 16ch;
+}
+
+html .office-product-home .office-editor-chapters__index {
+  margin-top: 27px;
+}
+
+html .office-product-home .office-editor-chapters__list {
+  margin-top: 4px;
+}
+
+html .office-product-home .office-editor-chapter,
+html .office-product-home .office-editor-chapter:nth-child(even) {
+  min-height: 0;
+  padding: clamp(58px, 6vw, 82px) 0;
+  align-items: start;
+  gap: clamp(34px, 5vw, 76px);
+  grid-template-columns: minmax(250px, 0.76fr) minmax(0, 1.24fr);
+}
+
+html .office-product-home .office-editor-chapter:last-child {
+  padding-bottom: 12px;
+}
+
+html .office-product-home .office-editor-chapter__preview {
+  width: 100%;
+  max-width: 780px;
+  justify-self: stretch;
+}
+
+html .office-product-home .docs-home-journey,
+html .office-product-home .docs-home-collaboration,
+html .office-product-home .docs-home-editors {
+  border-bottom: 1px solid var(--home-line-v3);
+  background: var(--home-canvas-v3);
+}
+
+html .office-product-home .docs-home-journey {
+  padding-top: clamp(72px, 8vw, 108px);
+  padding-bottom: clamp(72px, 8vw, 108px);
+}
+
+html .office-product-home .docs-home-collaboration {
+  padding-top: clamp(72px, 8vw, 108px);
+  padding-bottom: clamp(72px, 8vw, 108px);
+}
+
+html .office-product-home .docs-home-editors {
+  padding-top: clamp(62px, 7vw, 92px);
+  padding-bottom: clamp(62px, 7vw, 92px);
+}
+
+html .office-product-home .docs-home-final {
+  margin-top: 0;
+  margin-bottom: 0;
+  border-top: 1px solid #c6d7f2;
+  border-bottom: 1px solid #c6d7f2;
+  background: var(--home-blue-soft-v3);
+}
+
+/* Keep the real capture legible at laptop widths. */
+
+html .office-product-home .office-real-editor-shot__viewport {
+  min-height: 0;
+}
+
+@media (min-width: 921px) {
+  html .office-product-home .docs-home-hero {
+    align-items: start;
+    padding-top: clamp(58px, 6vw, 74px);
+  }
+
+  html .office-product-home .docs-home-hero__copy {
+    margin-top: clamp(22px, 3.2vw, 46px);
+  }
+
+  html .office-product-home .docs-home-hero__visual {
+    transform: translateY(-10px);
+  }
+}
+
+@media (max-width: 920px) {
+  html .office-product-home .docs-home-assurance,
+  html .office-product-home .docs-home-latest,
+  html .office-product-home .office-editor-chapters,
+  html .office-product-home .docs-home-journey,
+  html .office-product-home .docs-home-collaboration,
+  html .office-product-home .docs-home-editors,
+  html .office-product-home .docs-home-final {
+    width: 100%;
+  }
+
+  html .office-product-home .office-editor-chapters {
+    padding-right: clamp(24px, 5vw, 52px);
+    padding-left: clamp(24px, 5vw, 52px);
+  }
+}
+
+@media (max-width: 760px) {
+  html .office-product-home .docs-home-hero__copy {
+    margin-top: 0;
+  }
+
+  html .office-product-home .office-editor-chapters {
+    padding-top: 54px;
+    padding-bottom: 68px;
+  }
+
+  html .office-product-home .office-editor-chapter,
+  html .office-product-home .office-editor-chapter:nth-child(even) {
+    grid-template-columns: 1fr;
+    padding-top: 46px;
+    padding-bottom: 48px;
+  }
+
+  html
+    .office-product-home
+    .office-editor-chapter:nth-child(even)
+    .office-editor-chapter__copy,
+  html
+    .office-product-home
+    .office-editor-chapter:nth-child(even)
+    .office-editor-chapter__preview {
+    order: initial;
+  }
+}

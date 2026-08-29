@@ -39,6 +39,15 @@ export function PresentationTextEditor({
   const onSelectionChangeRef = useRef(onSelectionChange);
   const appliedSignatureRef = useRef(presentationTextElementSignature(element));
   const initialContentRef = useRef(presentationTextElementHtml(element));
+  // Capture the focus owner at the moment this editor is mounted. Creating a
+  // TipTap instance is asynchronous, so a user can move focus to another
+  // control before the auto-focus frame runs. In that case the later frame
+  // must yield rather than stealing the user's focus back.
+  const initialFocusTargetRef = useRef<HTMLElement | null>(
+    typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null,
+  );
   elementRef.current = element;
   onChangeRef.current = onChange;
   onEditorChangeRef.current = onEditorChange;
@@ -99,7 +108,10 @@ export function PresentationTextEditor({
   useEffect(() => {
     if (!autoFocus || !editor || editor.isDestroyed) return;
     const frame = window.requestAnimationFrame(() => {
-      if (!editor.isDestroyed) editor.commands.focus('end');
+      if (editor.isDestroyed || !presentationFocusOwnerIsUnchanged(initialFocusTargetRef.current)) {
+        return;
+      }
+      editor.commands.focus('end');
     });
     return () => window.cancelAnimationFrame(frame);
   }, [autoFocus, editor]);
@@ -124,6 +136,21 @@ export function PresentationTextEditor({
       style={presentationTextBaseStyle(element)}
     />
   );
+}
+
+/**
+ * Keep delayed first-open focus from overriding a deliberate focus move that
+ * happened while the rich-text editor was being created. The document body is
+ * treated as an unfocused baseline so opening from a non-focusable surface can
+ * still enter the editor normally.
+ */
+export function presentationFocusOwnerIsUnchanged(
+  initialFocusTarget: HTMLElement | null,
+): boolean {
+  if (typeof document === 'undefined') return true;
+  const currentFocusTarget = document.activeElement;
+  if (!currentFocusTarget || currentFocusTarget === document.body) return true;
+  return !initialFocusTarget || currentFocusTarget === initialFocusTarget;
 }
 
 export function createPresentationTextEditorExtensions(

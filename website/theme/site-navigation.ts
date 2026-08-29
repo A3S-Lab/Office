@@ -1,3 +1,83 @@
+/**
+ * The global Office navigation is intentionally small and ordered.  Keep this
+ * contract framework-neutral so the Rspress shell and the standalone
+ * Playground cannot drift into different labels, destinations, or ordering.
+ */
+export const OFFICE_SITE_NAVIGATION_KEYS = [
+  'home',
+  'docs',
+  'playground',
+  'collaboration',
+] as const;
+
+export type OfficeSiteNavigationKey =
+  (typeof OFFICE_SITE_NAVIGATION_KEYS)[number];
+
+export type OfficeSiteNavigationLanguage = 'zh' | 'en';
+
+export interface OfficeSiteNavigationItem {
+  key: OfficeSiteNavigationKey;
+  label: string;
+  route: string;
+  activeMatch: string;
+}
+
+/**
+ * Return the one source of truth for the product-level navigation.
+ *
+ * `playgroundRoute` differs between the product Rspress build (which emits
+ * `index.html`) and the docs/standalone build (which serves a directory
+ * entry), so callers provide that one deployment detail while every other
+ * part of the contract remains shared.
+ */
+export function officeSiteNavigationItems(
+  language: OfficeSiteNavigationLanguage,
+  playgroundRoute = '/playground/index.html',
+): OfficeSiteNavigationItem[] {
+  const english = language === 'en';
+  return [
+    {
+      key: 'home',
+      label: english ? 'Product home' : '产品首页',
+      route: english ? '/en/index.html' : '/index.html',
+      activeMatch: '^/$|^/en/?$',
+    },
+    {
+      key: 'docs',
+      label: english ? 'Docs' : '文档',
+      route: english ? '/docs/en/index.html' : '/docs/index.html',
+      activeMatch: '^/docs(?:/|$)',
+    },
+    {
+      key: 'playground',
+      label: 'Playground',
+      route: playgroundRoute,
+      activeMatch: '^/playground(?:/|$)',
+    },
+    {
+      key: 'collaboration',
+      label: english ? 'Collaboration' : '协作',
+      route: english
+        ? '/docs/en/components/collaboration.html'
+        : '/docs/components/collaboration.html',
+      activeMatch: '^/docs/(?:[^/]+/)?components/collaboration(?:\\.html)?',
+    },
+  ];
+}
+
+/**
+ * Resolve a global navigation route from the standalone Playground mount.
+ * `baseUri` is normally `/Office/playground/` (or `/playground/` locally),
+ * so traversing one level first preserves a GitHub Pages project prefix.
+ */
+export function playgroundSiteNavigationHref(
+  baseUri: string,
+  route: string,
+): string {
+  const productRoot = new URL('../', baseUri);
+  return new URL(route.replace(/^\/+/, ''), productRoot).href;
+}
+
 export function playgroundHrefFromDocsRoute(routePath: string): string {
   const normalized = routePath.split(/[?#]/, 1)[0] ?? '/';
   const segments = normalized.split('/').filter(Boolean);
@@ -113,6 +193,44 @@ export function siteNavigationHref(
     return target;
   }
   return relativePath(current, target);
+}
+
+/**
+ * Resolve the active global route from the deployment-aware pathname.  Rspress
+ * exposes a base-relative pathname during SSR on some versions, so deriving
+ * the key from the site base keeps the first paint and the hydrated header in
+ * agreement instead of briefly highlighting the product home on every docs
+ * page.
+ */
+export function officeSiteNavigationActiveKey(
+  pathname: string,
+  siteBase: string,
+): OfficeSiteNavigationKey | null {
+  const current = sitePathFromRoute(pathname, siteBase)
+    .replace(/\/index\.html?$/, '/')
+    .replace(/\/{2,}/g, '/');
+  const root = productSiteBase(siteBase);
+  const relative =
+    root === '/'
+      ? current.replace(/^\/+/, '')
+      : current.startsWith(root)
+        ? current.slice(root.length)
+        : current.replace(/^\/+/, '');
+  const normalized = relative.replace(/^\/+|\/+$/g, '');
+
+  if (!normalized || normalized === 'en') return 'home';
+  if (normalized === 'playground' || normalized.startsWith('playground/')) {
+    return 'playground';
+  }
+  if (
+    /^docs\/(?:[^/]+\/)*components\/collaboration(?:\.html)?$/.test(
+      normalized,
+    )
+  ) {
+    return 'collaboration';
+  }
+  if (normalized === 'docs' || normalized.startsWith('docs/')) return 'docs';
+  return null;
 }
 
 export function isProductHomeRoute(

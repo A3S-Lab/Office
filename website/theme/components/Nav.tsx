@@ -36,19 +36,20 @@ import '@rspress/core/dist/theme/components/NavScreen/index.css';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef } from 'react';
 import {
+  officeSiteNavigationActiveKey,
   isProductHomeRoute,
   normalizeNavigationPath,
+  officeSiteNavigationItems,
   siteNavigationHref,
 } from '../site-navigation';
 
 function OfficeNavTitle({ pathname }: { pathname: string }) {
   const { site } = useSite();
   const language = useLang();
-  const homeHref = siteNavigationHref(
-    pathname,
-    site.base,
-    language === 'en' ? '/en/index.html' : '/index.html',
-  );
+  const homeRoute = officeSiteNavigationItems(
+    language === 'en' ? 'en' : 'zh',
+  )[0].route;
+  const homeHref = siteNavigationHref(pathname, site.base, homeRoute);
   return (
     <div className="rp-nav__title" data-site-nav-title="office">
       <a
@@ -404,45 +405,29 @@ export function Nav({
   const language = useLang();
   const { pathname } = useLocation();
   const { site } = useSite();
-  const navigationList = useMemo(() => {
-    const productHomeRoute =
-      language === 'en' ? '/en/index.html' : '/index.html';
-    const docsRoute =
-      language === 'en' ? '/docs/en/index.html' : '/docs/index.html';
-    const collaborationRoute =
-      language === 'en'
-        ? '/docs/en/components/collaboration.html'
-        : '/docs/components/collaboration.html';
+  const navigationLists = useMemo(() => {
     const playgroundRoute = site.base.endsWith('/docs/')
       ? '/playground/'
       : '/playground/index.html';
-    const productHomeItem: NavItem = {
-      text: language === 'zh' ? '产品首页' : 'Product home',
-      link: siteNavigationHref(pathname, site.base, productHomeRoute),
-      activeMatch: '^/$|^/en/?$',
-      position: 'left',
-    };
-    const playgroundItem: NavItem = {
-      text: 'Playground',
-      link: siteNavigationHref(pathname, site.base, playgroundRoute),
-      activeMatch: '^/playground(?:/|$)',
-      position: 'left',
-    };
-    const docsItem: NavItem = {
-      text: language === 'zh' ? '文档' : 'Docs',
-      link: siteNavigationHref(pathname, site.base, docsRoute),
-      activeMatch: '^/docs(?:/|$)',
-      position: 'left',
-    };
-    const collaborationItem: NavItem = {
-      text: language === 'zh' ? '协作' : 'Collaboration',
-      link: siteNavigationHref(pathname, site.base, collaborationRoute),
-      activeMatch: '^/docs/(?:[^/]+/)?components/collaboration(?:\\.html)?',
-      position: 'left',
-    };
-    const routeItems = isProductHomeRoute(pathname, site.base)
-      ? [docsItem, playgroundItem, collaborationItem]
-      : [productHomeItem, docsItem, playgroundItem, collaborationItem];
+    const activeKey = officeSiteNavigationActiveKey(pathname, site.base);
+    const onProductHome = isProductHomeRoute(pathname, site.base);
+    const routeItems: NavItem[] = officeSiteNavigationItems(
+      language === 'en' ? 'en' : 'zh',
+      playgroundRoute,
+    )
+      .filter((item) => item.key !== 'home' || onProductHome)
+      .map((item) => ({
+        text: item.label,
+        link: siteNavigationHref(pathname, site.base, item.route),
+        // `matchNavbar` only receives the router pathname.  An explicit active
+        // key keeps SSR and hydration identical even when Rspress temporarily
+        // reports a path relative to its `/docs/` mount.
+        activeMatch: item.key === activeKey ? '.*' : '(?!)',
+        // The home route is represented by the logo, just like A3S Flow. Keep
+        // the two reading/product routes on the left and the Playground action
+        // on the right so the header never changes shape between surfaces.
+        position: item.key === 'playground' ? 'right' : 'left',
+      }));
     // Keep only explicit utility menus (Resources today). Rspress may expose
     // an auto-generated documentation tree through `useNav`; that tree
     // belongs in the sidebar, not in the global product navigation.
@@ -454,18 +439,31 @@ export function Nav({
             (child) => 'link' in child && /^https?:\/\//.test(child.link),
           )),
     );
-    return dedupeNavigationItems(pathname, [...routeItems, ...utilityItems]);
+    const deduped = dedupeNavigationItems(pathname, [
+      ...routeItems,
+      ...utilityItems,
+    ]);
+    const left = deduped.filter(
+      (item) =>
+        item.position === 'left' &&
+        'link' in item &&
+        !normalizeNavigationPath(pathname, item.link)?.match(/^(?:\/$)/),
+    );
+    const right = deduped.filter(
+      (item) => item.position === 'right' && 'link' in item,
+    );
+    // Reuse the same page-aware route contract in the mobile sheet. On docs
+    // pages the logo remains the home destination, while the redundant
+    // "Product home" text item is intentionally omitted on every surface.
+    const mobile = dedupeNavigationItems(pathname, [
+      ...routeItems,
+      ...utilityItems,
+    ]);
+    return { left, right, mobile };
   }, [language, navList, pathname, site.base]);
-  const primaryNavList = navigationList.map((item) =>
-    item.position === undefined && !('items' in item && item.items.length > 0)
-      ? { ...item, position: 'left' as const }
-      : item,
-  );
-  const utilityNavList = navigationList.filter(
-    (item) =>
-      item.position === 'right' ||
-      (item.position === undefined && 'items' in item && item.items.length > 0),
-  );
+  const leftNavigationList = navigationLists.left;
+  const navigationList = navigationLists.right;
+  const mobileNavigationList = navigationLists.mobile;
   const hasAppearanceSwitch = isDarkModeSwitchEnabled(
     site.themeConfig.darkMode,
   );
@@ -540,17 +538,17 @@ export function Nav({
   }, []);
 
   return (
-    <header className="rp-nav">
+    <header className="rp-nav" data-site-navigation="office">
       <div className="rp-nav__left">
         {beforeNavTitle}
         {navTitle ?? <OfficeNavTitle pathname={pathname} />}
-        <NavMenu menuItems={primaryNavList} position="left" />
+        <NavMenu menuItems={leftNavigationList} position="left" />
         {afterNavTitle}
       </div>
       <div className="rp-nav__right">
         {beforeNavMenu}
         <Search />
-        <NavMenu menuItems={utilityNavList} position="right" />
+        <NavMenu menuItems={navigationList} position="right" />
         <div className="rp-nav__others">
           <NavMenuDivider />
           <NavLangs />
@@ -558,7 +556,7 @@ export function Nav({
           {hasAppearanceSwitch && <SwitchAppearance />}
           <SocialLinks />
         </div>
-        <NavHamburger menuItems={navigationList} />
+        <NavHamburger menuItems={mobileNavigationList} />
         {afterNavMenu}
       </div>
     </header>

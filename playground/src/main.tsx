@@ -6,15 +6,7 @@ import type {
   OfficeFileImportProgress,
 } from '@a3s-lab/office/core';
 import { A3SReviewOverlay, A3STestBoundary, A3STestKit } from './testkit';
-import {
-  AlertCircle,
-  BookOpenText,
-  CheckCircle2,
-  ExternalLink,
-  Github,
-  Home,
-  Info,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import {
   lazy,
   StrictMode,
@@ -98,6 +90,10 @@ import {
   documentationEntryUrl,
   legacyDocsPath,
 } from './site-routes';
+import {
+  officeSiteNavigationItems,
+  playgroundSiteNavigationHref,
+} from '../../website/theme/site-navigation';
 import { SiteSidebar } from './site-sidebar';
 import { useMediaQuery } from './use-media-query';
 import { usePlaygroundSidebarState } from './use-playground-sidebar-state';
@@ -113,24 +109,21 @@ function PlaygroundSiteHeader() {
   const english =
     typeof window !== 'undefined' &&
     /\/en(?:\/|$)/.test(window.location.pathname);
-  const homeLabel = english ? 'Product home' : '产品首页';
-  const docsLabel = english ? 'Docs' : '文档';
-  const playgroundLabel = 'Playground';
-  const homeUrl =
+  const navigationItems = officeSiteNavigationItems(
+    english ? 'en' : 'zh',
+    '/playground/',
+  );
+  const baseUri =
     typeof document === 'undefined'
-      ? '/'
-      : new URL('../', document.baseURI).href;
-  const docsUrl =
-    typeof document === 'undefined'
-      ? '/docs/'
-      : new URL(`../docs/${english ? 'en/' : ''}`, document.baseURI).href;
-  const logoUrl =
-    typeof document === 'undefined'
-      ? '/a3s-logo.png'
-      : new URL('../a3s-logo.png', document.baseURI).href;
+      ? 'http://localhost/playground/'
+      : document.baseURI;
+  const navigationHref = (route: string) =>
+    playgroundSiteNavigationHref(baseUri, route);
+  const homeUrl = navigationHref(navigationItems[0].route);
+  const logoUrl = navigationHref('/a3s-logo.png');
 
   return (
-    <header className="playground-site-header">
+    <header className="playground-site-header" data-site-navigation="office">
       <a
         className="playground-site-header__brand"
         href={homeUrl}
@@ -140,24 +133,16 @@ function PlaygroundSiteHeader() {
         <span>A3S Office</span>
       </a>
       <nav className="playground-site-header__nav" aria-label="Site navigation">
-        <a href={homeUrl}>
-          <Home size={15} aria-hidden="true" />
-          {homeLabel}
-        </a>
-        <a href={docsUrl}>
-          <BookOpenText size={15} aria-hidden="true" />
-          {docsLabel}
-        </a>
-        <a
-          href={
-            typeof window === 'undefined'
-              ? '/playground/'
-              : window.location.href
-          }
-          aria-current="page"
-        >
-          {playgroundLabel}
-        </a>
+        {navigationItems.map((item) => (
+          <a
+            href={navigationHref(item.route)}
+            key={item.key}
+            data-site-nav-key={item.key}
+            aria-current={item.key === 'playground' ? 'page' : undefined}
+          >
+            {item.label}
+          </a>
+        ))}
       </nav>
       <a
         className="playground-site-header__github"
@@ -166,8 +151,7 @@ function PlaygroundSiteHeader() {
         rel="noreferrer"
         aria-label="A3S Office on GitHub"
       >
-        <Github size={16} aria-hidden="true" />
-        <ExternalLink size={12} aria-hidden="true" />
+        GitHub
       </a>
     </header>
   );
@@ -496,7 +480,7 @@ function Playground() {
     <div
       className={`playground-shell ${activeArtifact ? 'editor-open' : 'home-open'}`}
     >
-      {!activeArtifact && <PlaygroundSiteHeader />}
+      <PlaygroundSiteHeader />
       <A3STestBoundary
         id="office-playground"
         name="Office Playground"

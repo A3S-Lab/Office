@@ -41,7 +41,7 @@ dependencies = [
 
 [[package]]
 name = "a3s-office"
-version = "0.34.0"
+version = "0.35.0"
 dependencies = [
  "a3s-office-formula-parser",
  "a3s-use-core",
@@ -67,7 +67,7 @@ dependencies = [
 
 [[package]]
 name = "a3s-office-cli"
-version = "0.34.0"
+version = "0.35.0"
 dependencies = [
  "a3s-office",
  "a3s-use-browser",
@@ -91,7 +91,7 @@ dependencies = [
 
 [[package]]
 name = "a3s-office-collaboration-server"
-version = "0.34.0"
+version = "0.35.0"
 dependencies = [
  "a3s-boot",
  "a3s-office",
@@ -110,14 +110,14 @@ dependencies = [
 
 [[package]]
 name = "a3s-office-formula-parser"
-version = "0.34.0"
+version = "0.35.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "a3s-office-web-kernel"
-version = "0.34.0"
+version = "0.35.0"
 dependencies = [
  "a3s-office-formula-parser",
  "rustybuzz",
