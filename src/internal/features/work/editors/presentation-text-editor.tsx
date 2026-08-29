@@ -44,7 +44,8 @@ export function PresentationTextEditor({
   // control before the auto-focus frame runs. In that case the later frame
   // must yield rather than stealing the user's focus back.
   const initialFocusTargetRef = useRef<HTMLElement | null>(
-    typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+    typeof document !== 'undefined' &&
+      document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null,
   );
@@ -108,7 +109,10 @@ export function PresentationTextEditor({
   useEffect(() => {
     if (!autoFocus || !editor || editor.isDestroyed) return;
     const frame = window.requestAnimationFrame(() => {
-      if (editor.isDestroyed || !presentationFocusOwnerIsUnchanged(initialFocusTargetRef.current)) {
+      if (
+        editor.isDestroyed ||
+        !presentationFocusOwnerIsUnchanged(initialFocusTargetRef.current)
+      ) {
         return;
       }
       editor.commands.focus('end');

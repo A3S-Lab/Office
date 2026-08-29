@@ -223,9 +223,7 @@ export function officeSiteNavigationActiveKey(
     return 'playground';
   }
   if (
-    /^docs\/(?:[^/]+\/)*components\/collaboration(?:\.html)?$/.test(
-      normalized,
-    )
+    /^docs\/(?:[^/]+\/)*components\/collaboration(?:\.html)?$/.test(normalized)
   ) {
     return 'collaboration';
   }
