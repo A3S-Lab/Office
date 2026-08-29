@@ -1,9 +1,9 @@
 import type { Cell, Op, Sheet } from '@fortune-sheet/core';
-import { sparseArrayEntries } from '../spreadsheet-sparse';
 import type {
   OfficeKernelSpreadsheetCoordinate,
   OfficeKernelSpreadsheetInputCell,
   OfficeKernelSpreadsheetInputSheet,
+  OfficeKernelSpreadsheetInputTable,
   OfficeKernelSpreadsheetSessionCellChange,
   OfficeKernelSpreadsheetValue,
 } from '../../../kernel/office-kernel-protocol';
@@ -13,12 +13,14 @@ import {
   OFFICE_KERNEL_SPREADSHEET_MAX_ROWS,
   OFFICE_KERNEL_SPREADSHEET_MAX_TEXT_BYTES,
 } from '../../../kernel/office-kernel-spreadsheet-protocol';
+import { sparseArrayEntries } from '../spreadsheet-sparse';
 import { spreadsheetFormulaRangeForCell } from '../work-spreadsheet-formulas';
 import { spreadsheetMatrixProfile } from '../work-spreadsheet-matrix-profile';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetFormulaRangeType,
   WorkSpreadsheetSheet,
+  WorkSpreadsheetTable,
 } from '../work-types';
 
 const SPREADSHEET_KERNEL_MAX_CELLS = 100_000;
@@ -31,6 +33,10 @@ const SPREADSHEET_FINGERPRINT_OFFSET_A = 0xcbf2_9ce4_8422_2325n;
 const SPREADSHEET_FINGERPRINT_OFFSET_B = 0x8422_2325_cbf2_9ce4n;
 const SPREADSHEET_FINGERPRINT_PRIME = 0x0000_0100_0000_01b3n;
 const textEncoder = new TextEncoder();
+
+type SpreadsheetKernelSheet = Sheet & {
+  tables?: WorkSpreadsheetTable[];
+};
 
 export interface SpreadsheetKernelWorkbook {
   fallbackCells: SpreadsheetKernelFallbackCell[];
@@ -90,7 +96,7 @@ export function prepareSpreadsheetKernelWorkbook(
 }
 
 export function refreshSpreadsheetKernelWorkbook(
-  sheets: readonly Sheet[],
+  sheets: readonly SpreadsheetKernelSheet[],
   fallbackCells: readonly SpreadsheetKernelFallbackCell[],
 ): SpreadsheetKernelWorkbook | null {
   return compileSpreadsheetKernelWorkbook(sheets, [...fallbackCells]);
@@ -359,7 +365,7 @@ function isInputCellPath(operation: Op): boolean {
 }
 
 function compileSpreadsheetKernelWorkbook(
-  sheets: readonly Sheet[],
+  sheets: readonly SpreadsheetKernelSheet[],
   fallbackCells: SpreadsheetKernelFallbackCell[] = [],
 ): SpreadsheetKernelWorkbook | null {
   if (sheets.length > SPREADSHEET_KERNEL_MAX_SHEETS) return null;
@@ -395,7 +401,14 @@ function compileSpreadsheetKernelWorkbook(
     cellCount += cells.length;
     sheetIds.add(id);
     sheetNames.add(normalizedName);
-    sourceSheets.push({ id, name, cells });
+    const tables = spreadsheetKernelTables(sheet.tables);
+    if (tables === null) return null;
+    sourceSheets.push({
+      id,
+      name,
+      cells,
+      ...(tables.length ? { tables } : {}),
+    });
   }
   const compiled = sourceSheets.map((sheet) => ({
     ...sheet,
@@ -447,16 +460,36 @@ function spreadsheetKernelSourceState(
     fingerprintB,
     sourceCells,
     structureKey: JSON.stringify(
-      sheets.map((sheet) => ({ id: sheet.id, name: sheet.name })),
+      sheets.map((sheet) => ({
+        id: sheet.id,
+        name: sheet.name,
+        tables: sheet.tables ?? [],
+      })),
     ),
   };
 }
 
-function spreadsheetStructureKey(sheets: readonly Sheet[]): string | null {
+function spreadsheetStructureKey(
+  sheets: readonly SpreadsheetKernelSheet[],
+): string | null {
   if (sheets.length > SPREADSHEET_KERNEL_MAX_SHEETS) return null;
   const ids = new Set<string>();
   const names = new Set<string>();
-  const structure: Array<{ id: string; name: string }> = [];
+  const structure: Array<{
+    id: string;
+    name: string;
+    tables: Array<{
+      name: string;
+      displayName?: string;
+      startRow: number;
+      endRow: number;
+      startColumn: number;
+      endColumn: number;
+      columns: string[];
+      headerRow: boolean;
+      totalsRow: boolean;
+    }>;
+  }> = [];
   for (const sheet of sheets) {
     const id = sheet.id;
     const name = sheet.name;
@@ -474,7 +507,21 @@ function spreadsheetStructureKey(sheets: readonly Sheet[]): string | null {
     }
     ids.add(id);
     names.add(normalizedName);
-    structure.push({ id, name });
+    structure.push({
+      id,
+      name,
+      tables: (sheet.tables ?? []).map((table) => ({
+        name: table.name,
+        displayName: table.displayName,
+        startRow: table.range.row[0],
+        endRow: table.range.row[1],
+        startColumn: table.range.column[0],
+        endColumn: table.range.column[1],
+        columns: table.columns.map((column) => column.name),
+        headerRow: table.headerRow,
+        totalsRow: table.totalsRow,
+      })),
+    });
   }
   return JSON.stringify(structure);
 }
@@ -577,6 +624,88 @@ function spreadsheetKernelInputCell(
   if (!fallback || !cell.formula) return cell;
   const { formula: _formula, ...cachedCell } = cell;
   return cachedCell;
+}
+
+function spreadsheetKernelTables(
+  tables: readonly WorkSpreadsheetTable[] | undefined,
+): OfficeKernelSpreadsheetInputTable[] | null {
+  if (!tables?.length) return [];
+  const names = new Map<string, number>();
+  const ranges: Array<OfficeKernelSpreadsheetInputTable> = [];
+  for (const [tableIndex, table] of tables.entries()) {
+    const [startRow, endRow] = table.range.row;
+    const [startColumn, endColumn] = table.range.column;
+    if (
+      !table.name?.trim() ||
+      utf8ByteLength(table.name) > SPREADSHEET_KERNEL_MAX_IDENTIFIER_BYTES ||
+      (table.displayName !== undefined &&
+        (!table.displayName.trim() ||
+          utf8ByteLength(table.displayName) >
+            SPREADSHEET_KERNEL_MAX_IDENTIFIER_BYTES)) ||
+      !isSpreadsheetCoordinateIndex(
+        startRow,
+        OFFICE_KERNEL_SPREADSHEET_MAX_ROWS,
+      ) ||
+      !isSpreadsheetCoordinateIndex(
+        endRow,
+        OFFICE_KERNEL_SPREADSHEET_MAX_ROWS,
+      ) ||
+      !isSpreadsheetCoordinateIndex(
+        startColumn,
+        OFFICE_KERNEL_SPREADSHEET_MAX_COLUMNS,
+      ) ||
+      !isSpreadsheetCoordinateIndex(
+        endColumn,
+        OFFICE_KERNEL_SPREADSHEET_MAX_COLUMNS,
+      ) ||
+      startRow > endRow ||
+      startColumn > endColumn ||
+      table.columns.length !== endColumn - startColumn + 1
+    ) {
+      return null;
+    }
+    for (const alias of [table.name, table.displayName]) {
+      if (!alias) continue;
+      const normalized = alias.toLocaleLowerCase();
+      const previous = names.get(normalized);
+      if (previous !== undefined && previous !== tableIndex) return null;
+      names.set(normalized, tableIndex);
+    }
+    const columnNames = new Set<string>();
+    for (const column of table.columns) {
+      if (
+        !column.name?.trim() ||
+        utf8ByteLength(column.name) > SPREADSHEET_KERNEL_MAX_IDENTIFIER_BYTES
+      )
+        return null;
+      const normalized = column.name.toLocaleLowerCase();
+      if (columnNames.has(normalized)) return null;
+      columnNames.add(normalized);
+    }
+    const next: OfficeKernelSpreadsheetInputTable = {
+      name: table.name,
+      ...(table.displayName ? { displayName: table.displayName } : {}),
+      startRow,
+      endRow,
+      startColumn,
+      endColumn,
+      columns: table.columns.map((column) => column.name),
+      headerRow: Boolean(table.headerRow),
+      totalsRow: Boolean(table.totalsRow),
+    };
+    if (
+      ranges.some(
+        (previous) =>
+          next.startRow <= previous.endRow &&
+          next.endRow >= previous.startRow &&
+          next.startColumn <= previous.endColumn &&
+          next.endColumn >= previous.startColumn,
+      )
+    )
+      return null;
+    ranges.push(next);
+  }
+  return ranges;
 }
 
 function spreadsheetSheetsWithKernelChanges(

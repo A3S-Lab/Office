@@ -1,9 +1,9 @@
 import {
-  genarate,
-  update,
   type Cell,
+  genarate,
   type Op,
   type Sheet,
+  update,
 } from '@fortune-sheet/core';
 import type {
   OfficeKernelSpreadsheetCalculatedCell,
@@ -12,14 +12,14 @@ import type {
   OfficeKernelSpreadsheetSessionUpdate,
   OfficeKernelSpreadsheetValue,
 } from '../../../kernel/office-kernel-protocol';
-import type { SpreadsheetCalculationCommand } from './spreadsheet-command-controller';
 import {
-  sameSpreadsheetKernelInputCell,
-  spreadsheetKernelCellKey,
   SPREADSHEET_KERNEL_MAX_PATCH_CELLS,
   type SpreadsheetKernelFallbackCell,
   type SpreadsheetKernelWorkbook,
+  sameSpreadsheetKernelInputCell,
+  spreadsheetKernelCellKey,
 } from './spreadsheet-calculation-projection';
+import type { SpreadsheetCalculationCommand } from './spreadsheet-command-controller';
 
 export function spreadsheetCalculationTargets(
   workbook: SpreadsheetKernelWorkbook,
@@ -176,7 +176,10 @@ function sameSpreadsheetStructure(
     previous.length === current.length &&
     previous.every(
       (sheet, index) =>
-        sheet.id === current[index]?.id && sheet.name === current[index]?.name,
+        sheet.id === current[index]?.id &&
+        sheet.name === current[index]?.name &&
+        JSON.stringify(sheet.tables ?? []) ===
+          JSON.stringify(current[index]?.tables ?? []),
     )
   );
 }

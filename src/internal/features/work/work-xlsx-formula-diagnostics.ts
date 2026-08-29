@@ -119,7 +119,8 @@ export async function diagnoseXlsxFormulas(
     issues.push(
       issue(
         'xlsx.formulas.structured-references',
-        `${structuredReferences.length} formula cell(s) use structured table references; formulas round-trip unchanged, but the Work calculation engine does not resolve Excel table objects.`,
+        `${structuredReferences.length} formula cell(s) use structured table references; the browser kernel resolves bounded table names, display names, contiguous column ranges, and common row selectors. Disjoint, external, and advanced forms keep their source formula and cached value for compatible recalculation.`,
+        'info',
       ),
     );
   }

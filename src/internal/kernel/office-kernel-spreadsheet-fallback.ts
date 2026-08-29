@@ -29,6 +29,11 @@ import {
   OFFICE_KERNEL_SPREADSHEET_MAX_COLUMNS,
   OFFICE_KERNEL_SPREADSHEET_MAX_ROWS,
 } from './office-kernel-spreadsheet-protocol';
+import {
+  expandSpreadsheetStructuredReferences,
+  SpreadsheetStructuredReferenceCatalog,
+  SpreadsheetStructuredReferenceError,
+} from './office-kernel-spreadsheet-structured-reference';
 import { OFFICE_KERNEL_PROTOCOL_VERSION } from './office-kernel-version';
 
 type FormulaParserModule = typeof import('@fortune-sheet/formula-parser');
@@ -63,11 +68,15 @@ class JavaScriptSpreadsheetEvaluator {
   private readonly stack: string[] = [];
   private readonly calculationOrder: OfficeKernelSpreadsheetCoordinate[] = [];
   private readonly issues: OfficeKernelSpreadsheetCalculationIssue[] = [];
+  private readonly tableCatalog: SpreadsheetStructuredReferenceCatalog;
 
   constructor(
     private readonly request: OfficeKernelSpreadsheetCalculationRequest,
     private readonly formulaParser: FormulaParserModule,
   ) {
+    this.tableCatalog = new SpreadsheetStructuredReferenceCatalog(
+      request.sheets,
+    );
     for (const sheet of request.sheets) {
       this.sheetsByName.set(sheet.name.toLowerCase(), sheet);
       for (const cell of sheet.cells) {
@@ -162,6 +171,29 @@ class JavaScriptSpreadsheetEvaluator {
     indexed: IndexedCell,
   ): EvaluationState {
     const formula = indexed.cell.formula ?? '';
+    let expandedFormula: string;
+    try {
+      expandedFormula = expandSpreadsheetStructuredReferences(
+        formula,
+        this.tableCatalog,
+        indexed.sheet,
+        coordinate.row,
+        coordinate.column,
+      );
+    } catch (error) {
+      const message =
+        error instanceof SpreadsheetStructuredReferenceError
+          ? error.message
+          : 'Structured reference expansion failed.';
+      return failedEvaluation(
+        indexed.cell.value,
+        calculationIssue(
+          coordinate,
+          'office.kernel.spreadsheet.formula_unsupported',
+          message,
+        ),
+      );
+    }
     const parser = new this.formulaParser.Parser();
     let unresolvedDependency = false;
     let unsupportedReference = false;
@@ -223,9 +255,12 @@ class JavaScriptSpreadsheetEvaluator {
       );
     });
 
-    const parsed = parser.parse(normalizeFormulaForFortuneParser(formula), {
-      sheetId: indexed.sheet.id,
-    });
+    const parsed = parser.parse(
+      normalizeFormulaForFortuneParser(expandedFormula),
+      {
+        sheetId: indexed.sheet.id,
+      },
+    );
     if (unsupportedFunction) {
       return failedEvaluation(
         indexed.cell.value,
@@ -288,7 +323,16 @@ class JavaScriptSpreadsheetEvaluator {
     reserveRangeCells: (cells: number) => boolean,
   ): unknown[][] {
     const startCoordinate = this.resolveCoordinate(currentSheet, start);
-    const endCoordinate = this.resolveCoordinate(currentSheet, end);
+    // A qualified range such as `Sales!A2:A3` carries the worksheet only on
+    // its first endpoint in Fortune's parser. Resolve the second endpoint
+    // against that same worksheet instead of accidentally defaulting it to
+    // the formula cell's sheet.
+    const rangeSheet = start.sheetName
+      ? this.sheetsByName.get(start.sheetName.toLowerCase())
+      : currentSheet;
+    const endCoordinate = rangeSheet
+      ? this.resolveCoordinate(rangeSheet, end)
+      : null;
     if (
       !startCoordinate ||
       !endCoordinate ||

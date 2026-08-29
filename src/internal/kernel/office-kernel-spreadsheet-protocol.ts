@@ -42,10 +42,29 @@ export interface OfficeKernelSpreadsheetInputCell {
   value: OfficeKernelSpreadsheetValue;
 }
 
+/**
+ * The bounded table metadata needed to resolve native structured references.
+ * Ranges are zero-based and inclusive, matching the controlled workbook
+ * model. Styling, filters, and drawing metadata intentionally stay outside
+ * the calculation kernel.
+ */
+export interface OfficeKernelSpreadsheetInputTable {
+  name: string;
+  displayName?: string;
+  startRow: number;
+  endRow: number;
+  startColumn: number;
+  endColumn: number;
+  columns: string[];
+  headerRow: boolean;
+  totalsRow: boolean;
+}
+
 export interface OfficeKernelSpreadsheetInputSheet {
   id: string;
   name: string;
   cells: OfficeKernelSpreadsheetInputCell[];
+  tables?: OfficeKernelSpreadsheetInputTable[];
 }
 
 export interface OfficeKernelSpreadsheetCalculationRequest {

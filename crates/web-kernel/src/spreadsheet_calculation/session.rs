@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use serde::{Deserialize, Serialize};
 
+use super::tables::SpreadsheetTableCatalog;
 use super::{
     validate_spreadsheet_coordinate, validate_spreadsheet_input_cell, validate_spreadsheet_sheets,
     CellKey, EvaluationFailure, IndexedCell, SpreadsheetCalculatedCell,
@@ -193,6 +194,7 @@ pub(super) struct SpreadsheetSessionWorkbook {
     pub(super) dependencies: BTreeMap<CellKey, BTreeSet<CellKey>>,
     pub(super) dependents: BTreeMap<CellKey, BTreeSet<CellKey>>,
     pub(super) unresolved_formulas: BTreeSet<CellKey>,
+    pub(super) table_catalog: SpreadsheetTableCatalog,
     pending_dirty: BTreeSet<CellKey>,
     dependency_edge_count: usize,
     document_revision: u64,
@@ -204,6 +206,9 @@ impl SpreadsheetSessionWorkbook {
         sheets: &[SpreadsheetInputSheet],
     ) -> Result<Self, KernelError> {
         validate_spreadsheet_sheets(sheets)?;
+        let table_catalog = SpreadsheetTableCatalog::from_sheets(sheets).map_err(|error| {
+            KernelError::invalid("office.kernel.spreadsheet.table_invalid", error)
+        })?;
         let mut sheet_metadata = Vec::with_capacity(sheets.len());
         let mut sheet_ids = BTreeMap::new();
         let mut sheet_names = BTreeMap::new();
@@ -235,6 +240,7 @@ impl SpreadsheetSessionWorkbook {
             dependencies: BTreeMap::new(),
             dependents: BTreeMap::new(),
             unresolved_formulas: BTreeSet::new(),
+            table_catalog,
             pending_dirty,
             dependency_edge_count: 0,
             document_revision,

@@ -4,7 +4,6 @@ import {
 } from './office-kernel-spreadsheet-protocol';
 import { OFFICE_KERNEL_PROTOCOL_VERSION } from './office-kernel-version';
 
-export { OFFICE_KERNEL_PROTOCOL_VERSION };
 export type {
   OfficeKernelSpreadsheetCalculatedCell,
   OfficeKernelSpreadsheetCalculationIssue,
@@ -14,6 +13,7 @@ export type {
   OfficeKernelSpreadsheetError,
   OfficeKernelSpreadsheetInputCell,
   OfficeKernelSpreadsheetInputSheet,
+  OfficeKernelSpreadsheetInputTable,
   OfficeKernelSpreadsheetSessionCalculationRequest,
   OfficeKernelSpreadsheetSessionCalculationResult,
   OfficeKernelSpreadsheetSessionCalculationScope,
@@ -22,6 +22,8 @@ export type {
   OfficeKernelSpreadsheetSessionUpdate,
   OfficeKernelSpreadsheetValue,
 } from './office-kernel-spreadsheet-protocol';
+export { OFFICE_KERNEL_PROTOCOL_VERSION };
+
 import type {
   OfficeKernelSpreadsheetCalculationRequest,
   OfficeKernelSpreadsheetCalculationResult,

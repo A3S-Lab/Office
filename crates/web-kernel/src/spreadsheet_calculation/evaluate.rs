@@ -35,15 +35,12 @@ impl SpreadsheetEvaluator<'_> {
             SpreadsheetFormulaExpressionKind::Name { name, .. } => Err(unsupported(format!(
                 "Named formula or range '{name}' is outside the first browser calculation slice."
             ))),
-            SpreadsheetFormulaExpressionKind::StructuredReference { reference, .. } => {
-                Err(unsupported(format!(
-                    "Structured reference '{reference}' is not yet calculated in the browser kernel."
-                )))
-            }
+            SpreadsheetFormulaExpressionKind::StructuredReference {
+                qualifier,
+                reference,
+            } => self.evaluate_structured_reference(qualifier.as_ref(), reference, current),
             SpreadsheetFormulaExpressionKind::Unary { operator, operand } => {
-                let value = self
-                    .evaluate_value(operand, current)?
-                    .into_scalar();
+                let value = self.evaluate_value(operand, current)?.into_scalar();
                 let number = match scalar_number(value) {
                     Ok(number) => number,
                     Err(error) => {
@@ -59,9 +56,7 @@ impl SpreadsheetEvaluator<'_> {
             }
             SpreadsheetFormulaExpressionKind::Postfix { operator, operand } => match operator {
                 SpreadsheetFormulaPostfixOperator::Percent => {
-                    let value = self
-                        .evaluate_value(operand, current)?
-                        .into_scalar();
+                    let value = self.evaluate_value(operand, current)?.into_scalar();
                     let number = match scalar_number(value) {
                         Ok(number) => number,
                         Err(error) => {
@@ -160,6 +155,55 @@ impl SpreadsheetEvaluator<'_> {
                     row,
                     column,
                 })?);
+            }
+        }
+        Ok(EvaluatedValue::Range(values))
+    }
+
+    fn evaluate_structured_reference(
+        &mut self,
+        qualifier: Option<&a3s_office_formula_parser::SpreadsheetFormulaQualifier>,
+        reference: &str,
+        current: &CellKey,
+    ) -> Result<EvaluatedValue, EvaluationFailure> {
+        let areas = self
+            .session
+            .table_catalog
+            .resolve(
+                qualifier,
+                reference,
+                current.sheet,
+                current.column,
+                current.row,
+            )
+            .map_err(unsupported)?;
+        let mut values = Vec::new();
+        for area in areas {
+            let rows = usize::try_from(area.end_row - area.start_row + 1).map_err(|_| {
+                unsupported("Structured-reference height is outside supported limits.")
+            })?;
+            let columns =
+                usize::try_from(area.end_column - area.start_column + 1).map_err(|_| {
+                    unsupported("Structured-reference width is outside supported limits.")
+                })?;
+            let cells = rows.checked_mul(columns).ok_or_else(|| {
+                unsupported("Structured-reference size is outside supported limits.")
+            })?;
+            self.reserve_materialized_range_cells(cells)?;
+            let capacity = values.len().checked_add(cells).ok_or_else(|| {
+                unsupported("Structured-reference materialization exceeds supported limits.")
+            })?;
+            if values.capacity() < capacity {
+                values.reserve(capacity - values.capacity());
+            }
+            for row in area.start_row..=area.end_row {
+                for column in area.start_column..=area.end_column {
+                    values.push(self.evaluate_dependency(&CellKey {
+                        sheet: area.sheet,
+                        row,
+                        column,
+                    })?);
+                }
             }
         }
         Ok(EvaluatedValue::Range(values))

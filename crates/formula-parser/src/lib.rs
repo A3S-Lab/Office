@@ -10,6 +10,7 @@ use std::fmt::{Display, Formatter};
 mod ast;
 mod lexer;
 mod parser;
+mod structured_reference;
 
 pub use ast::{
     SpreadsheetFormula, SpreadsheetFormulaBinaryOperator, SpreadsheetFormulaErrorLiteral,
@@ -21,6 +22,11 @@ pub use ast::{
 };
 pub use lexer::{
     FormulaToken as SpreadsheetFormulaToken, FormulaTokenKind as SpreadsheetFormulaTokenKind,
+};
+pub use structured_reference::{
+    parse_spreadsheet_structured_reference, SpreadsheetStructuredReference,
+    SpreadsheetStructuredReferenceParseError, SpreadsheetStructuredReferenceParseErrorKind,
+    SpreadsheetStructuredRowSelection,
 };
 
 pub const MAX_COLUMNS: u32 = 16_384;
@@ -138,5 +144,42 @@ mod tests {
         let error = tokenize_spreadsheet_formula("=名+\u{0001}").unwrap_err();
         assert_eq!(error.byte_offset(), 4);
         assert_eq!(error.character_offset(), 2);
+    }
+
+    #[test]
+    fn public_structured_reference_parser_normalizes_common_table_selections() {
+        let parsed =
+            parse_spreadsheet_structured_reference("Sales[[#Data],[Quantity]:[Unit Price]]")
+                .unwrap();
+
+        assert_eq!(parsed.table_name.as_deref(), Some("Sales"));
+        assert_eq!(parsed.first_column.as_deref(), Some("Quantity"));
+        assert_eq!(parsed.last_column.as_deref(), Some("Unit Price"));
+        assert!(parsed.rows.data);
+        assert!(!parsed.rows.current);
+
+        let current = parse_spreadsheet_structured_reference("[@[Unit Price]]").unwrap();
+        assert_eq!(current.table_name, None);
+        assert_eq!(current.first_column.as_deref(), Some("Unit Price"));
+        assert_eq!(current.last_column.as_deref(), Some("Unit Price"));
+        assert!(current.rows.current);
+    }
+
+    #[test]
+    fn public_structured_reference_parser_rejects_disjoint_or_conflicting_rows() {
+        let disjoint =
+            parse_spreadsheet_structured_reference("Sales[[Quantity],[Unit Price]]").unwrap_err();
+        assert_eq!(
+            disjoint.kind(),
+            SpreadsheetStructuredReferenceParseErrorKind::Unsupported
+        );
+
+        let conflicting =
+            parse_spreadsheet_structured_reference("Sales[[#This Row],[#Totals],[Quantity]]")
+                .unwrap_err();
+        assert_eq!(
+            conflicting.kind(),
+            SpreadsheetStructuredReferenceParseErrorKind::Unsupported
+        );
     }
 }

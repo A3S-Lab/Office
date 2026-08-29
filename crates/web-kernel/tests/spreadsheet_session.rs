@@ -2,7 +2,8 @@ use a3s_office_web_kernel::{
     calculate_spreadsheet_session, SpreadsheetCalculationSession,
     SpreadsheetCalculationSessionCellChange, SpreadsheetCalculationSessionRequest,
     SpreadsheetCalculationSessionScope, SpreadsheetCalculationSessionUpdate, SpreadsheetCoordinate,
-    SpreadsheetInputCell, SpreadsheetInputSheet, SpreadsheetValue, OFFICE_KERNEL_PROTOCOL_VERSION,
+    SpreadsheetInputCell, SpreadsheetInputSheet, SpreadsheetInputTable, SpreadsheetValue,
+    OFFICE_KERNEL_PROTOCOL_VERSION,
 };
 
 #[test]
@@ -195,6 +196,7 @@ fn tracks_references_to_cells_that_were_blank_when_the_graph_was_built() {
                     id: "sheet-1".into(),
                     name: "Sheet 1".into(),
                     cells: vec![input_cell(0, 1, Some("=A1+1"), SpreadsheetValue::Blank)],
+                    tables: vec![],
                 }],
             },
             calculation: SpreadsheetCalculationSessionScope::Workbook,
@@ -230,6 +232,7 @@ fn keeps_unresolved_formulas_and_their_dependents_conservatively_dirty() {
                         input_cell(0, 1, Some("=A3S_UNKNOWN(A1)"), number(41.0)),
                         input_cell(0, 2, Some("=B1+1"), number(42.0)),
                     ],
+                    tables: vec![],
                 }],
             },
             calculation: SpreadsheetCalculationSessionScope::Workbook,
@@ -364,6 +367,72 @@ fn target_calculation_preserves_unvisited_dirty_dependents() {
 }
 
 #[test]
+fn retains_table_catalog_across_incremental_cell_patches() {
+    let mut session = SpreadsheetCalculationSession::default();
+    let initial = calculate_spreadsheet_session(
+        &mut session,
+        &SpreadsheetCalculationSessionRequest {
+            protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+            kind: "spreadsheetSessionCalculation".into(),
+            request_id: 1,
+            revision: 1,
+            document_revision: 1,
+            update: SpreadsheetCalculationSessionUpdate::Replace {
+                sheets: vec![SpreadsheetInputSheet {
+                    id: "sales".into(),
+                    name: "Sales".into(),
+                    cells: vec![
+                        input_cell(0, 0, None, number(2.0)),
+                        input_cell(1, 0, None, number(3.0)),
+                        input_cell(0, 1, Some("=SUM(Sales[Quantity])"), SpreadsheetValue::Blank),
+                    ],
+                    tables: vec![SpreadsheetInputTable {
+                        name: "Sales".into(),
+                        display_name: None,
+                        start_row: 0,
+                        end_row: 1,
+                        start_column: 0,
+                        end_column: 0,
+                        columns: vec!["Quantity".into()],
+                        header_row: false,
+                        totals_row: false,
+                    }],
+                }],
+            },
+            calculation: SpreadsheetCalculationSessionScope::Workbook,
+        },
+    )
+    .unwrap();
+    assert_eq!(initial.cells[0].value, number(5.0));
+    assert_eq!(initial.stats.dependency_edge_count, 2);
+
+    let patched = calculate_spreadsheet_session(
+        &mut session,
+        &SpreadsheetCalculationSessionRequest {
+            protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+            kind: "spreadsheetSessionCalculation".into(),
+            request_id: 2,
+            revision: 2,
+            document_revision: 2,
+            update: SpreadsheetCalculationSessionUpdate::Patch {
+                base_document_revision: 1,
+                changes: vec![SpreadsheetCalculationSessionCellChange::Upsert {
+                    sheet_id: "sales".into(),
+                    row: 0,
+                    column: 0,
+                    formula: None,
+                    value: number(4.0),
+                }],
+            },
+            calculation: SpreadsheetCalculationSessionScope::Dirty,
+        },
+    )
+    .unwrap();
+    assert_eq!(patched.cells[0].value, number(7.0));
+    assert_eq!(patched.stats.dependency_edge_count, 2);
+}
+
+#[test]
 fn invalid_targets_do_not_advance_or_replace_the_session() {
     let mut session = SpreadsheetCalculationSession::default();
     calculate_spreadsheet_session(&mut session, &replace_request()).unwrap();
@@ -423,6 +492,7 @@ fn replace_request() -> SpreadsheetCalculationSessionRequest {
                     input_cell(0, 2, Some("=B1+1"), SpreadsheetValue::Blank),
                     input_cell(0, 3, Some("=10"), SpreadsheetValue::Blank),
                 ],
+                tables: vec![],
             }],
         },
         calculation: SpreadsheetCalculationSessionScope::Workbook,

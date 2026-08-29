@@ -178,6 +178,14 @@ function cloneSheets(
   return sheets.map((sheet) => ({
     id: sheet.id,
     name: sheet.name,
+    ...(sheet.tables?.length
+      ? {
+          tables: sheet.tables.map((table) => ({
+            ...table,
+            columns: [...table.columns],
+          })),
+        }
+      : {}),
     cells: sheet.cells.map((cell) => ({
       ...cell,
       value: { ...cell.value },

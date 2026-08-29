@@ -1,16 +1,17 @@
 import { describe, expect, test } from '@rstest/core';
-import parityFixtures from './fixtures/spreadsheet-kernel-parity.json';
 import { createOfficeKernelClient } from '../src/internal/kernel/office-kernel-client';
-import { calculateSpreadsheetInJavaScript } from '../src/internal/kernel/office-kernel-spreadsheet-fallback';
-import { JavaScriptSpreadsheetCalculationSession } from '../src/internal/kernel/office-kernel-spreadsheet-session-fallback';
 import {
   isOfficeKernelResponse,
+  OFFICE_KERNEL_PROTOCOL_VERSION,
   type OfficeKernelSpreadsheetCalculatedCell,
   type OfficeKernelSpreadsheetCalculationRequest,
   type OfficeKernelSpreadsheetCoordinate,
   type OfficeKernelSpreadsheetInputSheet,
-  OFFICE_KERNEL_PROTOCOL_VERSION,
+  type OfficeKernelSpreadsheetInputTable,
 } from '../src/internal/kernel/office-kernel-protocol';
+import { calculateSpreadsheetInJavaScript } from '../src/internal/kernel/office-kernel-spreadsheet-fallback';
+import { JavaScriptSpreadsheetCalculationSession } from '../src/internal/kernel/office-kernel-spreadsheet-session-fallback';
+import parityFixtures from './fixtures/spreadsheet-kernel-parity.json';
 
 describe('Spreadsheet calculation kernel', () => {
   test('calculates sparse formula dependencies in deterministic order', async () => {
@@ -36,6 +37,217 @@ describe('Spreadsheet calculation kernel', () => {
       { sheetId: 'sheet-1', row: 1, column: 1 },
     ]);
     expect(result.issues).toEqual([]);
+  });
+
+  test('calculates table structured references in the JavaScript fallback', async () => {
+    const table: OfficeKernelSpreadsheetInputTable = {
+      name: 'Sales',
+      displayName: 'SalesView',
+      startRow: 0,
+      endRow: 2,
+      startColumn: 0,
+      endColumn: 2,
+      columns: ['Quantity', 'Unit Price', 'Total'],
+      headerRow: true,
+      totalsRow: false,
+    };
+    const sheets: OfficeKernelSpreadsheetInputSheet[] = [
+      {
+        id: 'sales',
+        name: 'Sales',
+        tables: [table],
+        cells: [
+          { row: 0, column: 0, value: { kind: 'text', value: 'Quantity' } },
+          { row: 0, column: 1, value: { kind: 'text', value: 'Unit Price' } },
+          { row: 0, column: 2, value: { kind: 'text', value: 'Total' } },
+          { row: 1, column: 0, value: { kind: 'number', value: 2 } },
+          { row: 1, column: 1, value: { kind: 'number', value: 10 } },
+          {
+            row: 1,
+            column: 2,
+            formula: '=[@Quantity]*[@[Unit Price]]',
+            value: { kind: 'blank' },
+          },
+          { row: 2, column: 0, value: { kind: 'number', value: 3 } },
+          { row: 2, column: 1, value: { kind: 'number', value: 20 } },
+          {
+            row: 2,
+            column: 2,
+            formula: '=[@Quantity]*[@[Unit Price]]',
+            value: { kind: 'blank' },
+          },
+        ],
+      },
+      {
+        id: 'summary',
+        name: 'Summary',
+        cells: [
+          {
+            row: 0,
+            column: 0,
+            formula: '=SUM(Sales[Quantity])',
+            value: { kind: 'blank' },
+          },
+          {
+            row: 1,
+            column: 0,
+            formula: '=SUM(SalesView[[Quantity]:[Unit Price]])',
+            value: { kind: 'blank' },
+          },
+          {
+            row: 2,
+            column: 0,
+            formula: '=COUNTA(Sales[#Headers])',
+            value: { kind: 'blank' },
+          },
+        ],
+      },
+    ];
+    const result = await calculateSpreadsheetInJavaScript({
+      protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+      kind: 'spreadsheetCalculation',
+      requestId: 12,
+      revision: 1,
+      documentRevision: 1,
+      sheets,
+    });
+
+    expect(result.cells).toEqual([
+      {
+        sheetId: 'sales',
+        row: 1,
+        column: 2,
+        value: { kind: 'number', value: 20 },
+      },
+      {
+        sheetId: 'sales',
+        row: 2,
+        column: 2,
+        value: { kind: 'number', value: 60 },
+      },
+      {
+        sheetId: 'summary',
+        row: 0,
+        column: 0,
+        value: { kind: 'number', value: 5 },
+      },
+      {
+        sheetId: 'summary',
+        row: 1,
+        column: 0,
+        value: { kind: 'number', value: 35 },
+      },
+      {
+        sheetId: 'summary',
+        row: 2,
+        column: 0,
+        value: { kind: 'number', value: 3 },
+      },
+    ]);
+    expect(result.issues).toEqual([]);
+  });
+
+  test('validates table aliases and keeps oversized structured ranges sparse', async () => {
+    const duplicateTable: OfficeKernelSpreadsheetInputTable = {
+      name: 'Sales',
+      displayName: 'Sales',
+      startRow: 0,
+      endRow: 0,
+      startColumn: 0,
+      endColumn: 0,
+      columns: ['Value'],
+      headerRow: false,
+      totalsRow: false,
+    };
+    const duplicate = request();
+    const duplicateSheet = duplicate.sheets[0];
+    if (!duplicateSheet) throw new Error('Spreadsheet fixture is incomplete.');
+    duplicateSheet.tables = [duplicateTable];
+    duplicate.sheets.push({
+      id: 'sheet-2',
+      name: 'Sheet 2',
+      tables: [{ ...duplicateTable }],
+      cells: [],
+    });
+    await expect(
+      calculateSpreadsheetInJavaScript(duplicate),
+    ).rejects.toMatchObject({
+      code: 'office.kernel.spreadsheet.table_invalid',
+    });
+
+    const sparse = request();
+    const sparseSheet = sparse.sheets[0];
+    if (!sparseSheet) throw new Error('Spreadsheet fixture is incomplete.');
+    sparseSheet.tables = [
+      {
+        name: 'Huge',
+        startRow: 0,
+        endRow: 1_048_575,
+        startColumn: 0,
+        endColumn: 0,
+        columns: ['Value'],
+        headerRow: false,
+        totalsRow: false,
+      },
+    ];
+    sparseSheet.cells.push({
+      row: 0,
+      column: 2,
+      formula: '=SUM(Huge[Value])',
+      value: { kind: 'blank' },
+    });
+    const result = await calculateSpreadsheetInJavaScript(sparse);
+    expect(
+      result.cells.some(
+        (cell) =>
+          cell.sheetId === 'sheet-1' && cell.row === 0 && cell.column === 2,
+      ),
+    ).toBe(false);
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({
+        cell: { sheetId: 'sheet-1', row: 0, column: 2 },
+        code: 'office.kernel.spreadsheet.formula_unsupported',
+      }),
+    );
+  });
+
+  test('fails closed for disjoint structured row areas in the JavaScript fallback', async () => {
+    const input = request();
+    const sheet = input.sheets[0];
+    if (!sheet) throw new Error('Spreadsheet fixture is incomplete.');
+    sheet.tables = [
+      {
+        name: 'Sales',
+        startRow: 0,
+        endRow: 3,
+        startColumn: 0,
+        endColumn: 0,
+        columns: ['Value'],
+        headerRow: true,
+        totalsRow: true,
+      },
+    ];
+    sheet.cells.push({
+      row: 4,
+      column: 0,
+      formula: '=SUM(Sales[[#Headers],[#Totals]])',
+      value: { kind: 'blank' },
+    });
+
+    const result = await calculateSpreadsheetInJavaScript(input);
+    expect(
+      result.cells.some(
+        (cell) =>
+          cell.sheetId === 'sheet-1' && cell.row === 4 && cell.column === 0,
+      ),
+    ).toBe(false);
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({
+        cell: { sheetId: 'sheet-1', row: 4, column: 0 },
+        code: 'office.kernel.spreadsheet.formula_unsupported',
+        message: expect.stringContaining('disjoint row areas'),
+      }),
+    );
   });
 
   test('sorts implicit formula targets independently of sparse input order', async () => {

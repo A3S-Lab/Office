@@ -1,5 +1,6 @@
 import type {
   OfficeKernelSpreadsheetCalculationRequest,
+  OfficeKernelSpreadsheetInputSheet,
   OfficeKernelSpreadsheetValue,
 } from './office-kernel-spreadsheet-protocol';
 import {
@@ -87,6 +88,8 @@ export function validateSpreadsheetCalculationRequest(
     sheetIds.add(sheet.id);
     sheetNames.add(normalizedName);
 
+    validateSpreadsheetTables(sheet, request.sheets);
+
     const coordinates = new Set<string>();
     for (const cell of sheet.cells) {
       const key = `${cell.row}:${cell.column}`;
@@ -138,6 +141,133 @@ export function validateSpreadsheetCalculationRequest(
         'Spreadsheet calculation targets must reference an existing, bounded cell.',
       );
     }
+  }
+}
+
+function validateSpreadsheetTables(
+  sheet: OfficeKernelSpreadsheetInputSheet,
+  sheets: readonly OfficeKernelSpreadsheetInputSheet[],
+): void {
+  const tables = sheet.tables ?? [];
+  const tableCount = sheets.reduce(
+    (count, candidate) => count + (candidate.tables?.length ?? 0),
+    0,
+  );
+  if (tableCount > 1_024) {
+    throw kernelError(
+      'office.kernel.spreadsheet.table_limit_exceeded',
+      'A Spreadsheet calculation request may contain at most 1024 tables.',
+    );
+  }
+  const aliases = new Map<string, string>();
+  for (const candidate of sheets) {
+    for (const [tableIndex, table] of (candidate.tables ?? []).entries()) {
+      const identity = `${candidate.id}\u0000${tableIndex}`;
+      for (const alias of [table.name, table.displayName]) {
+        if (!alias) continue;
+        const normalized = alias.toLocaleLowerCase();
+        const existing = aliases.get(normalized);
+        if (existing && existing !== identity) {
+          throw kernelError(
+            'office.kernel.spreadsheet.table_invalid',
+            `Spreadsheet table name '${alias}' is ambiguous.`,
+          );
+        }
+        aliases.set(normalized, identity);
+      }
+    }
+  }
+  const ranges: Array<{
+    startRow: number;
+    endRow: number;
+    startColumn: number;
+    endColumn: number;
+    name: string;
+  }> = [];
+  for (const table of tables) {
+    for (const [kind, value] of [
+      ['startRow', table.startRow],
+      ['endRow', table.endRow],
+      ['startColumn', table.startColumn],
+      ['endColumn', table.endColumn],
+    ] as const) {
+      if (
+        !boundedSpreadsheetIndex(
+          value,
+          kind.endsWith('Row')
+            ? OFFICE_KERNEL_SPREADSHEET_MAX_ROWS
+            : OFFICE_KERNEL_SPREADSHEET_MAX_COLUMNS,
+        )
+      ) {
+        throw kernelError(
+          'office.kernel.spreadsheet.table_invalid',
+          `Spreadsheet table '${table.name}' has an out-of-bounds ${kind}.`,
+        );
+      }
+    }
+    if (
+      table.startRow > table.endRow ||
+      table.startColumn > table.endColumn ||
+      table.columns.length !== table.endColumn - table.startColumn + 1
+    ) {
+      throw kernelError(
+        'office.kernel.spreadsheet.table_invalid',
+        `Spreadsheet table '${table.name}' has an invalid range or column count.`,
+      );
+    }
+    validateTableName(table.name, 'name');
+    if (table.displayName !== undefined)
+      validateTableName(table.displayName, 'displayName');
+    const columnNames = new Set<string>();
+    for (const column of table.columns) {
+      validateTableName(column, 'column');
+      const normalized = column.toLocaleLowerCase();
+      if (columnNames.has(normalized)) {
+        throw kernelError(
+          'office.kernel.spreadsheet.table_invalid',
+          `Spreadsheet table '${table.name}' contains duplicate column names.`,
+        );
+      }
+      columnNames.add(normalized);
+    }
+    if (table.headerRow && table.totalsRow && table.startRow === table.endRow) {
+      throw kernelError(
+        'office.kernel.spreadsheet.table_invalid',
+        `Spreadsheet table '${table.name}' cannot use header and totals rows in one row.`,
+      );
+    }
+    for (const previous of ranges) {
+      if (
+        table.startRow <= previous.endRow &&
+        table.endRow >= previous.startRow &&
+        table.startColumn <= previous.endColumn &&
+        table.endColumn >= previous.startColumn
+      ) {
+        throw kernelError(
+          'office.kernel.spreadsheet.table_invalid',
+          `Spreadsheet tables '${previous.name}' and '${table.name}' overlap.`,
+        );
+      }
+    }
+    ranges.push({
+      startRow: table.startRow,
+      endRow: table.endRow,
+      startColumn: table.startColumn,
+      endColumn: table.endColumn,
+      name: table.name,
+    });
+  }
+}
+
+function validateTableName(value: string, kind: string): void {
+  if (
+    !value.trim() ||
+    utf8ByteLength(value) > MAX_SPREADSHEET_IDENTIFIER_BYTES
+  ) {
+    throw kernelError(
+      'office.kernel.spreadsheet.table_invalid',
+      `Spreadsheet table ${kind} must contain 1-${MAX_SPREADSHEET_IDENTIFIER_BYTES} UTF-8 bytes.`,
+    );
   }
 }
 

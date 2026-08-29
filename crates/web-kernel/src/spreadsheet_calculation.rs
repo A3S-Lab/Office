@@ -12,6 +12,7 @@ use crate::{KernelError, OFFICE_KERNEL_PROTOCOL_VERSION};
 mod evaluate;
 mod functions;
 mod session;
+mod tables;
 mod value;
 
 pub use session::{
@@ -91,12 +92,34 @@ pub struct SpreadsheetInputCell {
     pub value: SpreadsheetValue,
 }
 
+/// Bounded table metadata used by the calculation kernel to resolve
+/// structured references such as `Sales[Quantity]`.
+///
+/// Coordinates are zero-based and inclusive. Cell values and table styling
+/// intentionally remain separate so the evaluator can stay sparse.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SpreadsheetInputTable {
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    pub start_row: u32,
+    pub end_row: u32,
+    pub start_column: u32,
+    pub end_column: u32,
+    pub columns: Vec<String>,
+    pub header_row: bool,
+    pub totals_row: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SpreadsheetInputSheet {
     pub id: String,
     pub name: String,
     pub cells: Vec<SpreadsheetInputCell>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tables: Vec<SpreadsheetInputTable>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -542,6 +565,8 @@ pub(super) fn validate_spreadsheet_sheets(
             return Err(cell_limit_error());
         }
     }
+    tables::validate_tables(sheets)
+        .map_err(|error| KernelError::invalid("office.kernel.spreadsheet.table_invalid", error))?;
     Ok(())
 }
 

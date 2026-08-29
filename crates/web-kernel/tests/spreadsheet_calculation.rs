@@ -1,7 +1,7 @@
 use a3s_office_web_kernel::{
     calculate_spreadsheet, SpreadsheetCalculatedCell, SpreadsheetCalculationRequest,
-    SpreadsheetCoordinate, SpreadsheetInputCell, SpreadsheetInputSheet, SpreadsheetValue,
-    OFFICE_KERNEL_PROTOCOL_VERSION,
+    SpreadsheetCoordinate, SpreadsheetInputCell, SpreadsheetInputSheet, SpreadsheetInputTable,
+    SpreadsheetValue, OFFICE_KERNEL_PROTOCOL_VERSION,
 };
 use serde::Deserialize;
 
@@ -229,6 +229,127 @@ fn bounds_text_produced_by_formula_calculation() {
     );
 }
 
+#[test]
+fn calculates_table_structured_references_and_current_row_formulas() {
+    let request = SpreadsheetCalculationRequest {
+        protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+        kind: "spreadsheetCalculation".into(),
+        request_id: 12,
+        revision: 1,
+        document_revision: 1,
+        sheets: vec![
+            SpreadsheetInputSheet {
+                id: "sales".into(),
+                name: "Sales".into(),
+                cells: vec![
+                    input_value(0, 0, text("Quantity")),
+                    input_value(0, 1, text("Unit Price")),
+                    input_value(0, 2, text("Total")),
+                    input_value(1, 0, number(2.0)),
+                    input_value(1, 1, number(10.0)),
+                    input_formula(1, 2, "=[@Quantity]*[@[Unit Price]]"),
+                    input_value(2, 0, number(3.0)),
+                    input_value(2, 1, number(20.0)),
+                    input_formula(2, 2, "=[@Quantity]*[@[Unit Price]]"),
+                    input_value(3, 0, number(100.0)),
+                    input_value(3, 1, number(200.0)),
+                    input_value(3, 2, number(300.0)),
+                ],
+                tables: vec![SpreadsheetInputTable {
+                    name: "Sales".into(),
+                    display_name: Some("SalesTable".into()),
+                    start_row: 0,
+                    end_row: 3,
+                    start_column: 0,
+                    end_column: 2,
+                    columns: vec!["Quantity".into(), "Unit Price".into(), "Total".into()],
+                    header_row: true,
+                    totals_row: true,
+                }],
+            },
+            SpreadsheetInputSheet {
+                id: "summary".into(),
+                name: "Summary".into(),
+                cells: vec![
+                    input_formula(0, 0, "=SUM(Sales[Quantity])"),
+                    input_formula(1, 0, "=SUM(Sales[[#Data],[Quantity]:[Unit Price]])"),
+                    input_formula(2, 0, "=COUNTA(Sales[#Headers])"),
+                    input_formula(3, 0, "=SUM(Sales[#Totals])"),
+                    input_formula(4, 0, "=SUM(Sales[#All])"),
+                ],
+                tables: vec![],
+            },
+        ],
+        targets: vec![],
+    };
+
+    let result = calculate_spreadsheet(&request).unwrap();
+    let values = result
+        .cells
+        .iter()
+        .map(|cell| {
+            (
+                (cell.sheet_id.as_str(), cell.row, cell.column),
+                cell.value.clone(),
+            )
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+    assert_eq!(values.get(&("sales", 1, 2)), Some(&number(20.0)));
+    assert_eq!(values.get(&("sales", 2, 2)), Some(&number(60.0)));
+    assert_eq!(values.get(&("summary", 0, 0)), Some(&number(5.0)));
+    assert_eq!(values.get(&("summary", 1, 0)), Some(&number(35.0)));
+    assert_eq!(values.get(&("summary", 2, 0)), Some(&number(3.0)));
+    assert_eq!(values.get(&("summary", 3, 0)), Some(&number(600.0)));
+    assert_eq!(values.get(&("summary", 4, 0)), Some(&number(715.0)));
+    assert!(result.issues.is_empty());
+}
+
+#[test]
+fn rejects_invalid_table_metadata_and_bounds_sparse_materialization() {
+    let mut invalid = request();
+    invalid.sheets[0].tables = vec![SpreadsheetInputTable {
+        name: "Broken".into(),
+        display_name: None,
+        start_row: 0,
+        end_row: 1,
+        start_column: 0,
+        end_column: 1,
+        columns: vec!["Only one".into()],
+        header_row: true,
+        totals_row: false,
+    }];
+    let error = calculate_spreadsheet(&invalid).unwrap_err();
+    assert_eq!(error.code, "office.kernel.spreadsheet.table_invalid");
+
+    let mut sparse = request();
+    sparse.sheets[0].tables = vec![SpreadsheetInputTable {
+        name: "Huge".into(),
+        display_name: None,
+        start_row: 0,
+        end_row: 1_048_575,
+        start_column: 0,
+        end_column: 0,
+        columns: vec!["Value".into()],
+        header_row: false,
+        totals_row: false,
+    }];
+    sparse.sheets[0].cells.push(SpreadsheetInputCell {
+        row: 0,
+        column: 2,
+        formula: Some("=SUM(Huge[Value])".into()),
+        value: SpreadsheetValue::Blank,
+    });
+    let result = calculate_spreadsheet(&sparse).unwrap();
+    assert!(!result
+        .cells
+        .iter()
+        .any(|cell| cell.sheet_id == "sheet-1" && cell.row == 0 && cell.column == 2));
+    assert!(result
+        .issues
+        .iter()
+        .any(|issue| { issue.code == "office.kernel.spreadsheet.formula_unsupported" }));
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ParityFixture {
@@ -282,7 +403,36 @@ fn request() -> SpreadsheetCalculationRequest {
                     value: SpreadsheetValue::Blank,
                 },
             ],
+            tables: vec![],
         }],
         targets: Vec::new(),
     }
+}
+
+fn input_value(row: u32, column: u32, value: SpreadsheetValue) -> SpreadsheetInputCell {
+    SpreadsheetInputCell {
+        row,
+        column,
+        formula: None,
+        value,
+    }
+}
+
+fn input_formula(row: u32, column: u32, formula: &str) -> SpreadsheetInputCell {
+    SpreadsheetInputCell {
+        row,
+        column,
+        formula: Some(formula.into()),
+        value: SpreadsheetValue::Blank,
+    }
+}
+
+fn text(value: &str) -> SpreadsheetValue {
+    SpreadsheetValue::Text {
+        value: value.into(),
+    }
+}
+
+fn number(value: f64) -> SpreadsheetValue {
+    SpreadsheetValue::Number { value }
 }

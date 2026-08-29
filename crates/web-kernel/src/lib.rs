@@ -25,7 +25,7 @@ pub use spreadsheet_calculation::{
     SpreadsheetCalculationSessionRequest, SpreadsheetCalculationSessionResult,
     SpreadsheetCalculationSessionScope, SpreadsheetCalculationSessionStats,
     SpreadsheetCalculationSessionUpdate, SpreadsheetCoordinate, SpreadsheetInputCell,
-    SpreadsheetInputSheet, SpreadsheetValue,
+    SpreadsheetInputSheet, SpreadsheetInputTable, SpreadsheetValue,
 };
 pub use text_layout::{
     layout_text, validate_font, FontRegistry, TextDirection, TextLayoutLine, TextLayoutParagraph,

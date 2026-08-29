@@ -164,9 +164,9 @@ function createSpreadsheetFormulaDiagnostics(
   if (summary.structuredReferenceCells) {
     diagnostics.push({
       code: 'formula.structured-references',
-      severity: 'warning',
+      severity: 'info',
       title: '结构化引用',
-      message: `${summary.structuredReferenceCells} 个公式使用表格结构化引用；公式会原样保存，但当前计算引擎不解析 Excel 表对象。`,
+      message: `${summary.structuredReferenceCells} 个公式使用表格结构化引用；浏览器内核支持有界表名、显示名称、连续列范围以及常见标题、数据、汇总和当前行选择。不连续、外部或高级形式会保留公式与缓存值，交由兼容应用重算。`,
       locations: locations.structured,
     });
   }
