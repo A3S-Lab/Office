@@ -65,18 +65,6 @@ html .office-product-home .docs-home-hero::before {
   pointer-events: none;
 }
 
-html .office-product-home .docs-home-hero::after {
-  position: absolute;
-  z-index: -1;
-  bottom: -120px;
-  left: 7%;
-  width: 260px;
-  height: 1px;
-  background: var(--home-line-strong-v2);
-  content: "";
-  opacity: 0.7;
-}
-
 html .office-product-home .docs-home-hero__copy {
   min-width: 0;
   max-width: 560px;
@@ -2340,7 +2328,8 @@ html .office-product-home .office-editor-chapters,
 html .office-product-home .docs-home-journey,
 html .office-product-home .docs-home-collaboration,
 html .office-product-home .docs-home-editors,
-html .office-product-home .docs-home-final {
+html .office-product-home .docs-home-final,
+html .office-product-home .docs-home-version-note {
   width: min(100%, 1440px);
   margin-right: auto;
   margin-left: auto;
@@ -2591,4 +2580,92 @@ html
   html .office-product-home .office-home-screenshot-stack__card--pdf {
     --card-x: -14%;
   }
+}
+
+/* Section rhythm ---------------------------------------------------------
+ *
+ * The product home uses surface changes and generous whitespace to mark
+ * chapters. Rules between those chapters (and between their plain-text
+ * lists) add visual noise without carrying state, so keep separators out of
+ * the homepage while retaining borders on editor captures, controls, and
+ * collaboration surfaces where they communicate an actual boundary.
+ */
+
+html .office-product-home .docs-home-hero,
+html .office-product-home .office-editor-chapters,
+html .office-product-home .docs-home-journey,
+html .office-product-home .docs-home-collaboration,
+html .office-product-home .docs-home-editors,
+html .office-product-home .docs-home-final {
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+}
+
+html .office-product-home .office-editor-chapters__progress,
+html .office-product-home .office-editor-chapter,
+html .office-product-home .office-editor-chapter:nth-child(even),
+html .office-product-home .docs-home-flow,
+html .office-product-home .docs-home-stage,
+html .office-product-home .docs-home-stage--collaborate,
+html .office-product-home .docs-home-collaboration__facts,
+html .office-product-home .docs-home-collaboration__facts li,
+html .office-product-home .docs-home-surface-list,
+html .office-product-home .docs-home-surface-list li {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+html .office-product-home .docs-home-flow::before {
+  display: none;
+}
+
+html .office-product-home .docs-home-stage + .docs-home-stage {
+  border-left: 0;
+}
+
+html .office-product-home .office-editor-chapter:last-child {
+  border-bottom: 0;
+}
+
+html .office-product-home .office-editor-chapters__index a:first-child {
+  border-left: 0;
+}
+
+html .office-product-home .docs-home-assurance,
+html .office-product-home .docs-home-latest {
+  border: 0;
+}
+
+html .office-product-home .docs-home-assurance ul,
+html .office-product-home .docs-home-assurance li,
+html .office-product-home .docs-home-latest > span,
+html .office-product-home .docs-home-latest > a,
+html .office-product-home .office-editor-chapters__index,
+html .office-product-home .office-editor-chapters__index a {
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+}
+
+html .office-product-home .docs-home-assurance,
+html .office-product-home .docs-home-latest,
+html .office-product-home .office-editor-chapters__index {
+  border-radius: 0;
+}
+
+html .office-product-home .docs-home-assurance > strong {
+  border-bottom: 0;
+}
+
+/* The collaboration preview is one surface. Its live status stays legible,
+ * while the header no longer introduces a second, decorative rule inside the
+ * section. The animated edit wire below remains because it explains the
+ * collaboration flow rather than separating page content.
+ */
+
+html .office-product-home .office-collab-demo__header {
+  border-bottom: 0;
 }

@@ -8,7 +8,8 @@ Playground.
 
 - **Canvas:** a cool light canvas (`#f5f7fb`) frames white editor surfaces and
   the same centered product grid used by A3S Flow. Sections use whitespace and
-  hairline rules for rhythm; they do not switch to unrelated color bands.
+  restrained surface changes for rhythm; decorative divider rules stay out of
+  the product home.
 - **Palette:** one blue accent (`#1456f0`) owns brand emphasis, links, active
   controls, and primary actions. Green is reserved for semantic sync/success
   status, while neutral slate tones carry copy, borders, and editor chrome.
