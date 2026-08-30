@@ -9,6 +9,7 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useMemo, useRef } from 'react';
 import type { WorkSlideElement, WorkSlideTextRun } from '../work-types';
+import { isOfficeCompositionKeyboardEvent } from './office-shortcuts';
 
 export interface PresentationTextValue {
   text: string;
@@ -37,6 +38,8 @@ export function PresentationTextEditor({
   const onEditorChangeRef = useRef(onEditorChange);
   const onExitEditingRef = useRef(onExitEditing);
   const onSelectionChangeRef = useRef(onSelectionChange);
+  const editorRef = useRef<Editor | null>(null);
+  const compositionPublishTimerRef = useRef<number | null>(null);
   const appliedSignatureRef = useRef(presentationTextElementSignature(element));
   const initialContentRef = useRef(presentationTextElementHtml(element));
   // Capture the focus owner at the moment this editor is mounted. Creating a
@@ -61,6 +64,30 @@ export function PresentationTextEditor({
       ),
     [element.placeholder?.prompt],
   );
+  const publishEditorValue = (current: Editor) => {
+    const value = presentationTextValue(current, elementRef.current);
+    const signature = presentationTextElementSignature({
+      ...elementRef.current,
+      ...value,
+    });
+    if (signature === appliedSignatureRef.current) return;
+    appliedSignatureRef.current = signature;
+    onChangeRef.current(value);
+  };
+  const cancelCompositionPublication = () => {
+    if (compositionPublishTimerRef.current === null) return;
+    window.clearTimeout(compositionPublishTimerRef.current);
+    compositionPublishTimerRef.current = null;
+  };
+  const publishCommittedComposition = () => {
+    cancelCompositionPublication();
+    compositionPublishTimerRef.current = window.setTimeout(() => {
+      compositionPublishTimerRef.current = null;
+      const current = editorRef.current;
+      if (!current || current.isDestroyed || current.view.composing) return;
+      publishEditorValue(current);
+    }, 0);
+  };
   const editor = useEditor({
     extensions,
     content: initialContentRef.current,
@@ -73,7 +100,20 @@ export function PresentationTextEditor({
         role: 'textbox',
         spellcheck: 'true',
       },
+      handleDOMEvents: {
+        compositionstart: () => {
+          cancelCompositionPublication();
+          return false;
+        },
+        compositionend: () => {
+          publishCommittedComposition();
+          return false;
+        },
+      },
       handleKeyDown: (view, event) => {
+        if (view.composing || isOfficeCompositionKeyboardEvent(event)) {
+          return false;
+        }
         if (event.key !== 'Escape' || !onExitEditingRef.current) return false;
         const object = view.dom.closest<HTMLElement>(
           '[data-slide-element-origin]',
@@ -85,18 +125,17 @@ export function PresentationTextEditor({
       },
     },
     onCreate: ({ editor: current }) => {
+      editorRef.current = current;
       applyPresentationTextStoredMarks(current, elementRef.current);
+    },
+    onDestroy: () => {
+      editorRef.current = null;
+      cancelCompositionPublication();
     },
     onSelectionUpdate: () => onSelectionChangeRef.current?.(),
     onUpdate: ({ editor: current }) => {
-      const value = presentationTextValue(current, elementRef.current);
-      const signature = presentationTextElementSignature({
-        ...elementRef.current,
-        ...value,
-      });
-      if (signature === appliedSignatureRef.current) return;
-      appliedSignatureRef.current = signature;
-      onChangeRef.current(value);
+      if (current.view.composing) return;
+      publishEditorValue(current);
     },
   });
 

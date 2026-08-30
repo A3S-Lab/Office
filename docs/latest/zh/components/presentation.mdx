@@ -5,7 +5,9 @@ description: 演示文稿内容、实时协作、放映事件、几何内核与�
 
 # PresentationEditor
 
-`PresentationEditor` 使用类型化场景图保存幻灯片，只在编辑文本框时挂载 TipTap。
+`PresentationEditor` 使用类型化场景图保存幻灯片，只在编辑文本框时挂载 TipTap。中文等输入法的
+预编辑文字在组合期间只保留于本地，`onChange` 只接收最终确认的内容；编辑器快捷键也会在组合输入
+期间让输入法优先处理键盘事件。
 
 ## 属性
 

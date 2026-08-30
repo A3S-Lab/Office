@@ -1471,8 +1471,9 @@ and clean diagnostics without adding A3S Test to Actions or Pages.
 The forty-third Spreadsheet slice completes common offline text comparison in
 Sort Options. One typed collation model normalizes pinyin/stroke and case
 sensitivity, compiles one local Simplified Chinese comparator per request,
-keeps numeric text lexical while real numbers remain numeric, and rejects an
-unsupported collation before mutation. Both row and column movement reuse the
+keeps numeric text lexical while real numbers remain numeric, behavior-probes
+the requested order across runtime label aliases, and rejects an unsupported
+collation before mutation. Both row and column movement reuse the
 same stable comparator. Deep browser repetition also exposed and fixed a
 controlled-remount race by enrolling directly focused grid overlays in the
 existing bounded focus handoff. Focused Rstest, desktop/compact repeated

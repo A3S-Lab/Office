@@ -1,6 +1,12 @@
 const MODAL_DIALOG_SELECTOR = '[role="dialog"][aria-modal="true"]';
 const OFFICE_SHORTCUT_IGNORE_SELECTOR = '[data-office-shortcuts="ignore"]';
 
+export function isOfficeCompositionKeyboardEvent(
+  event: Pick<KeyboardEvent, 'isComposing' | 'key' | 'keyCode'>,
+): boolean {
+  return event.isComposing || event.key === 'Process' || event.keyCode === 229;
+}
+
 export function isOfficeShortcutBlocked(target: EventTarget | null): boolean {
   if (typeof document === 'undefined') return false;
   if (

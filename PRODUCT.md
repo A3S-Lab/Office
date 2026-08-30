@@ -675,8 +675,10 @@ blank cells remain last.
 
 One `spreadsheet-sort-collation` boundary compiles the requested local
 `Intl.Collator` once per accepted operation and is reused by the same stable
-matrix comparator in both orientations. Invalid settings and runtimes without
-the requested collation fail before mutation instead of silently falling back.
+matrix comparator in both orientations. It probes observable pinyin or stroke
+ordering instead of trusting runtime-specific resolved labels. Invalid settings
+and runtimes without the requested ordering fail before mutation instead of
+silently falling back.
 The dialog request carries normalized options, while older command callers that
 omit them retain pinyin, case-insensitive defaults. Focused model, dialog,
 command, and focus Rstest, desktop/compact repeated Playwright, and the pinned

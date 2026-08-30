@@ -1470,8 +1470,9 @@ and declines to flatten native patterns or gradients into one color. The
 command reconstructs that snapshot from controlled sheet state and the live
 range immediately before execution, then validates its shape and target
 identities. The `spreadsheet-sort-collation` boundary compiles one local
-`Intl.Collator` per request, keeps numeric text lexical, and fails closed when
-the requested method is unavailable. A direction-neutral matrix engine transposes only its bounded item
+`Intl.Collator` per request, keeps numeric text lexical, behavior-probes the
+requested order instead of trusting runtime-specific resolved labels, and fails
+closed when that order is unavailable. A direction-neutral matrix engine transposes only its bounded item
 view, then uses one stable comparator for both orientations. Relative formula
 references are translated along the moved row or column axis with the same
 bounded reference engine used by Paste Special, while absolute references stay
