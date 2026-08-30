@@ -382,20 +382,33 @@ export type WorkSpreadsheetDynamicFilter =
   | 'month-11'
   | 'month-12';
 
-export type WorkSpreadsheetFilterCriteria =
-  | { type: 'values'; values: string[]; includeBlanks: boolean }
+export type WorkSpreadsheetCustomFilterCondition =
   | { type: 'equals'; value: string }
   | { type: 'not-equals'; value: string }
   | { type: 'contains'; value: string }
   | { type: 'does-not-contain'; value: string }
   | { type: 'begins-with'; value: string }
+  | { type: 'does-not-begin-with'; value: string }
   | { type: 'ends-with'; value: string }
+  | { type: 'does-not-end-with'; value: string }
   | { type: 'greater-than'; value: string }
   | { type: 'greater-than-or-equal'; value: string }
   | { type: 'less-than'; value: string }
-  | { type: 'less-than-or-equal'; value: string }
+  | { type: 'less-than-or-equal'; value: string };
+
+export type WorkSpreadsheetFilterCriteria =
+  | WorkSpreadsheetCustomFilterCondition
+  | { type: 'values'; values: string[]; includeBlanks: boolean }
   | { type: 'between'; lower: string; upper: string }
   | { type: 'not-between'; lower: string; upper: string }
+  | {
+      type: 'compound';
+      conjunction: 'and' | 'or';
+      conditions: [
+        WorkSpreadsheetCustomFilterCondition,
+        WorkSpreadsheetCustomFilterCondition,
+      ];
+    }
   | { type: 'blanks' }
   | { type: 'non-blanks' }
   | { type: 'top'; count: number }

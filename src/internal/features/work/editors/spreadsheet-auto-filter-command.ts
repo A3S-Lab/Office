@@ -2,6 +2,7 @@ import {
   normalizedWorkSpreadsheetAutoFilterRange,
   normalizeWorkSpreadsheetFilterCriteria,
 } from '../work-spreadsheet-auto-filter';
+import type { WorkSpreadsheetCustomFilterCondition } from '../work-types';
 import {
   applySpreadsheetAutoFilterCriteria,
   clearSpreadsheetAutoFilterCriteria,
@@ -152,21 +153,29 @@ function supportedSpreadsheetAutoFilterCriteria(
     const upper = finiteSpreadsheetAutoFilterNumber(normalized.upper);
     return lower !== null && upper !== null && lower <= upper;
   }
+  if (normalized.type === 'compound') {
+    return normalized.conditions.every(supportedSpreadsheetAutoFilterCondition);
+  }
+  if ('value' in normalized) {
+    return supportedSpreadsheetAutoFilterCondition(normalized);
+  }
+  return true;
+}
+
+function supportedSpreadsheetAutoFilterCondition(
+  condition: WorkSpreadsheetCustomFilterCondition,
+): boolean {
   if (
     [
       'greater-than',
       'greater-than-or-equal',
       'less-than',
       'less-than-or-equal',
-    ].includes(normalized.type)
+    ].includes(condition.type)
   ) {
-    return (
-      'value' in normalized &&
-      finiteSpreadsheetAutoFilterNumber(normalized.value) !== null
-    );
+    return finiteSpreadsheetAutoFilterNumber(condition.value) !== null;
   }
-  if ('value' in normalized) return Boolean(normalized.value.trim());
-  return true;
+  return Boolean(condition.value.trim());
 }
 
 function finiteSpreadsheetAutoFilterNumber(value: string): number | null {

@@ -1,5 +1,6 @@
 import type { Cell } from '@fortune-sheet/core';
 import type {
+  WorkSpreadsheetCustomFilterCondition,
   WorkSpreadsheetDynamicFilter,
   WorkSpreadsheetFilter,
   WorkSpreadsheetFilterCriteria,
@@ -15,7 +16,9 @@ const SINGLE_VALUE_FILTER_TYPES = new Set([
   'contains',
   'does-not-contain',
   'begins-with',
+  'does-not-begin-with',
   'ends-with',
+  'does-not-end-with',
   'greater-than',
   'greater-than-or-equal',
   'less-than',
@@ -274,6 +277,28 @@ export function normalizeWorkSpreadsheetFilterCriteria(
       ? { type, lower: value.lower, upper: value.upper }
       : null;
   }
+  if (type === 'compound') {
+    if (
+      (value.conjunction !== 'and' && value.conjunction !== 'or') ||
+      !Array.isArray(value.conditions) ||
+      value.conditions.length !== 2
+    ) {
+      return null;
+    }
+    const first = normalizeWorkSpreadsheetCustomFilterCondition(
+      value.conditions[0],
+    );
+    const second = normalizeWorkSpreadsheetCustomFilterCondition(
+      value.conditions[1],
+    );
+    return first && second
+      ? {
+          type,
+          conjunction: value.conjunction,
+          conditions: [first, second],
+        }
+      : null;
+  }
   if (type === 'top' || type === 'bottom') {
     return Number.isSafeInteger(value.count) &&
       Number(value.count) >= 1 &&
@@ -294,10 +319,23 @@ export function normalizeWorkSpreadsheetFilterCriteria(
       ? { type, kind: value.kind as WorkSpreadsheetDynamicFilter }
       : null;
   }
-  return typeof type === 'string' &&
-    SINGLE_VALUE_FILTER_TYPES.has(type) &&
+  return normalizeWorkSpreadsheetCustomFilterCondition(value);
+}
+
+function normalizeWorkSpreadsheetCustomFilterCondition(
+  condition: unknown,
+): WorkSpreadsheetCustomFilterCondition | null {
+  if (!condition || typeof condition !== 'object' || Array.isArray(condition)) {
+    return null;
+  }
+  const value = condition as Record<string, unknown>;
+  return typeof value.type === 'string' &&
+    SINGLE_VALUE_FILTER_TYPES.has(value.type) &&
     typeof value.value === 'string'
-    ? ({ type, value: value.value } as WorkSpreadsheetFilterCriteria)
+    ? ({
+        type: value.type,
+        value: value.value,
+      } as WorkSpreadsheetCustomFilterCondition)
     : null;
 }
 
@@ -404,6 +442,13 @@ function filterMatcher(
       return criteria.type === 'between' ? between : !between;
     };
   }
+  if (criteria.type === 'compound') {
+    const first = customFilterMatcher(criteria.conditions[0]);
+    const second = customFilterMatcher(criteria.conditions[1]);
+    return criteria.conjunction === 'and'
+      ? (cell) => first(cell) && second(cell)
+      : (cell) => first(cell) || second(cell);
+  }
   if (
     criteria.type === 'top' ||
     criteria.type === 'top-percent' ||
@@ -413,6 +458,12 @@ function filterMatcher(
   ) {
     return null;
   }
+  return customFilterMatcher(criteria);
+}
+
+function customFilterMatcher(
+  criteria: WorkSpreadsheetCustomFilterCondition,
+): (cell: Cell | null) => boolean {
   const expected = criteria.value;
   if (criteria.type === 'contains') {
     return (cell) => cellText(cell).includes(comparableText(expected));
@@ -423,8 +474,14 @@ function filterMatcher(
   if (criteria.type === 'begins-with') {
     return (cell) => cellText(cell).startsWith(comparableText(expected));
   }
+  if (criteria.type === 'does-not-begin-with') {
+    return (cell) => !cellText(cell).startsWith(comparableText(expected));
+  }
   if (criteria.type === 'ends-with') {
     return (cell) => cellText(cell).endsWith(comparableText(expected));
+  }
+  if (criteria.type === 'does-not-end-with') {
+    return (cell) => !cellText(cell).endsWith(comparableText(expected));
   }
   return (cell) => {
     const order = compareCell(cell, expected);

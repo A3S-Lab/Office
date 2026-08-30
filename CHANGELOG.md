@@ -4,6 +4,11 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added exactly two same-column Spreadsheet Custom AutoFilter conditions joined
+  by AND or OR, including does-not-begin-with and does-not-end-with operators.
+  The nonrecursive typed model is validated across commands and collaboration,
+  evaluated for dense or sparse worksheets, and round-trips native OOXML
+  `<customFilters and="...">` pairs through worksheet and table XLSX paths.
 - Added an accessible Spreadsheet **Custom AutoFilter** dialog for common
   equality, containment, prefix/suffix, numeric comparison/range, blank, and
   nonblank conditions. Conditions on separate columns combine without losing

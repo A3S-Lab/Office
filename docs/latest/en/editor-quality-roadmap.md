@@ -1510,6 +1510,20 @@ focus, accessibility, and clean diagnostics without adding A3S Test to Actions
 or Pages. Same-column AND/OR, wildcard authoring, Top/Bottom and dynamic
 evaluation, and table/AutoFilter-integrated custom sorting remain open.
 
+The forty-sixth Spreadsheet slice adds exactly two same-column Custom
+AutoFilter conditions joined by AND or OR. A fixed nonrecursive tuple extends
+the closed filter model, collaboration validator, command reauthorization,
+dense/sparse evaluator, and shared worksheet/table OOXML path. The accessible
+dialog can add or remove the second condition, restores controlled/imported
+pairs, validates both operands, and adds negative prefix and suffix operators.
+General native `<customFilters and="1|0">` pairs round-trip without collapsing
+their relation, while canonical between/not-between forms remain stable.
+Focused Rstest, desktop/compact Playwright, and the local-only pinned A3S Test
+1.0.0 gate cover AND/OR semantics, malformed nesting, responsive containment,
+XLSX reopen, Undo, accessibility, and clean diagnostics without adding A3S Test
+to Actions or Pages. Wildcard authoring, Top/Bottom and dynamic evaluation, and
+table/AutoFilter-integrated custom sorting remain open.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

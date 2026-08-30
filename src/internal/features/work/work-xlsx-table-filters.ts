@@ -1,5 +1,6 @@
 import { attribute, directChild, directChildren } from './work-ooxml-package';
 import type {
+  WorkSpreadsheetCustomFilterCondition,
   WorkSpreadsheetDynamicFilter,
   WorkSpreadsheetFilter,
   WorkSpreadsheetFilterCriteria,
@@ -145,6 +146,15 @@ function parseFilterCriteria(
       ) {
         return { type: 'not-between', lower: first.value, upper: second.value };
       }
+      const firstCondition = customFilterCondition(first);
+      const secondCondition = customFilterCondition(second);
+      if (firstCondition && secondCondition) {
+        return {
+          type: 'compound',
+          conjunction: conjunction ? 'and' : 'or',
+          conditions: [firstCondition, secondCondition],
+        };
+      }
     }
   }
   const top = directChild(column, 'top10');
@@ -173,6 +183,13 @@ function singleCustomFilter(item: {
   if (item.operator === 'notEqual' && item.value === '') {
     return { type: 'non-blanks' };
   }
+  return customFilterCondition(item);
+}
+
+function customFilterCondition(item: {
+  operator: string;
+  value: string;
+}): WorkSpreadsheetCustomFilterCondition | null {
   if (item.operator === 'equal') {
     const wildcard = wildcardCriterion(item.value);
     return (
@@ -190,9 +207,13 @@ function singleCustomFilter(item: {
         value: unescapeWildcards(item.value),
       };
     }
-    return wildcard.type === 'contains'
-      ? { type: 'does-not-contain', value: wildcard.value }
-      : null;
+    if (wildcard.type === 'contains') {
+      return { type: 'does-not-contain', value: wildcard.value };
+    }
+    if (wildcard.type === 'begins-with') {
+      return { type: 'does-not-begin-with', value: wildcard.value };
+    }
+    return { type: 'does-not-end-with', value: wildcard.value };
   }
   const types: Record<
     string,
@@ -252,6 +273,21 @@ function criteriaXml(criteria: WorkSpreadsheetFilterCriteria): string {
       criteria.upper,
     );
   }
+  if (criteria.type === 'compound') {
+    const [firstOperator, firstValue] = customFilterParts(
+      criteria.conditions[0],
+    );
+    const [secondOperator, secondValue] = customFilterParts(
+      criteria.conditions[1],
+    );
+    return customFilterPairXml(
+      criteria.conjunction === 'and',
+      firstOperator,
+      firstValue,
+      secondOperator,
+      secondValue,
+    );
+  }
   if (criteria.type === 'top') return topXml(true, false, criteria.count);
   if (criteria.type === 'top-percent')
     return topXml(true, true, criteria.percent);
@@ -263,6 +299,13 @@ function criteriaXml(criteria: WorkSpreadsheetFilterCriteria): string {
     const kind = OOXML_DYNAMIC_FILTERS.get(criteria.kind);
     return kind ? `<dynamicFilter type="${kind}"/>` : '';
   }
+  const [operator, value] = customFilterParts(criteria);
+  return customFilterXml(operator, value);
+}
+
+function customFilterParts(
+  criteria: WorkSpreadsheetCustomFilterCondition,
+): [operator: string, value: string] {
   const operator = comparisonOperator(criteria.type);
   const value =
     criteria.type === 'contains'
@@ -271,33 +314,27 @@ function criteriaXml(criteria: WorkSpreadsheetFilterCriteria): string {
         ? `*${escapeWildcards(criteria.value)}*`
         : criteria.type === 'begins-with'
           ? `${escapeWildcards(criteria.value)}*`
-          : criteria.type === 'ends-with'
-            ? `*${escapeWildcards(criteria.value)}`
-            : criteria.type === 'equals' || criteria.type === 'not-equals'
-              ? escapeWildcards(criteria.value)
-              : criteria.value;
-  return customFilterXml(operator, value);
+          : criteria.type === 'does-not-begin-with'
+            ? `${escapeWildcards(criteria.value)}*`
+            : criteria.type === 'ends-with'
+              ? `*${escapeWildcards(criteria.value)}`
+              : criteria.type === 'does-not-end-with'
+                ? `*${escapeWildcards(criteria.value)}`
+                : criteria.type === 'equals' || criteria.type === 'not-equals'
+                  ? escapeWildcards(criteria.value)
+                  : criteria.value;
+  return [operator, value];
 }
 
 function comparisonOperator(
-  type: Exclude<
-    WorkSpreadsheetFilterCriteria['type'],
-    | 'between'
-    | 'blanks'
-    | 'bottom'
-    | 'bottom-percent'
-    | 'dynamic'
-    | 'non-blanks'
-    | 'not-between'
-    | 'top'
-    | 'top-percent'
-    | 'values'
-  >,
+  type: WorkSpreadsheetCustomFilterCondition['type'],
 ): string {
   const operators: Record<typeof type, string> = {
     'begins-with': 'equal',
     contains: 'equal',
+    'does-not-begin-with': 'notEqual',
     'does-not-contain': 'notEqual',
+    'does-not-end-with': 'notEqual',
     'ends-with': 'equal',
     equals: 'equal',
     'greater-than': 'greaterThan',

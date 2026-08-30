@@ -433,7 +433,9 @@ test('accepts every closed native table filter criterion', () => {
     { type: 'contains', value: 'middle' },
     { type: 'does-not-contain', value: 'blocked' },
     { type: 'begins-with', value: 'prefix' },
+    { type: 'does-not-begin-with', value: 'excluded-prefix' },
     { type: 'ends-with', value: 'suffix' },
+    { type: 'does-not-end-with', value: 'excluded-suffix' },
     { type: 'greater-than', value: '10' },
     { type: 'greater-than-or-equal', value: '20' },
     { type: 'less-than', value: '90' },
@@ -447,6 +449,14 @@ test('accepts every closed native table filter criterion', () => {
     { type: 'bottom', count: 5 },
     { type: 'bottom-percent', percent: 15 },
     { type: 'dynamic', kind: 'this-month' },
+    {
+      type: 'compound',
+      conjunction: 'or',
+      conditions: [
+        { type: 'contains', value: 'Risk' },
+        { type: 'greater-than', value: '100' },
+      ],
+    },
   ];
   const session = spreadsheetSession('spreadsheet-table-filter-criteria');
 
@@ -518,6 +528,46 @@ test('rejects malformed native table filters before collaboration writes', () =>
       name: 'XML-forbidden comparison',
       criteria: { type: 'ends-with', value: 'unsafe\u0000value' },
       expected: /XML-compatible filter text/,
+    },
+    {
+      name: 'compound without exactly two conditions',
+      criteria: {
+        type: 'compound',
+        conjunction: 'and',
+        conditions: [{ type: 'equals', value: 'Open' }],
+      },
+      expected: /exactly two custom filter conditions/,
+    },
+    {
+      name: 'compound with an unknown conjunction',
+      criteria: {
+        type: 'compound',
+        conjunction: 'xor',
+        conditions: [
+          { type: 'equals', value: 'Open' },
+          { type: 'equals', value: 'Closed' },
+        ],
+      },
+      expected: /an 'and' or 'or' conjunction/,
+    },
+    {
+      name: 'recursive compound condition',
+      criteria: {
+        type: 'compound',
+        conjunction: 'or',
+        conditions: [
+          { type: 'equals', value: 'Open' },
+          {
+            type: 'compound',
+            conjunction: 'and',
+            conditions: [
+              { type: 'equals', value: 'Open' },
+              { type: 'equals', value: 'Closed' },
+            ],
+          },
+        ],
+      },
+      expected: /supported custom filter condition/,
     },
     {
       name: 'top count outside contract',

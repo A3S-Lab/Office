@@ -1,7 +1,7 @@
 .work-spreadsheet-auto-filter-dialog {
   --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
 
-  width: min(500px, 100%);
+  width: min(560px, 100%);
 }
 
 .work-spreadsheet-auto-filter-form {
@@ -19,12 +19,56 @@
   grid-column: 1 / -1;
 }
 
+.work-spreadsheet-auto-filter-add-condition,
+.work-spreadsheet-auto-filter-remove-condition {
+  justify-self: start;
+}
+
+.work-spreadsheet-auto-filter-compound {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--work-office-border, #d9dedb);
+}
+
+.work-spreadsheet-auto-filter-conjunction {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 12px 0 0;
+  margin: 0;
+  border: 0;
+}
+
+.work-spreadsheet-auto-filter-conjunction legend {
+  width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--work-office-text-muted, #5b655f);
+}
+
+.work-spreadsheet-auto-filter-conjunction label {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.work-spreadsheet-auto-filter-second-condition {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .work-spreadsheet-auto-filter-clear {
   margin-right: auto;
 }
 
 @media (max-width: 520px) {
   .work-spreadsheet-auto-filter-values {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-auto-filter-second-condition {
     grid-template-columns: minmax(0, 1fr);
   }
 

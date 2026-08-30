@@ -1485,11 +1485,43 @@ describe('spreadsheet command controller', () => {
     expect(editor.commands.clearAutoFilterCriteria(target)).toBe(false);
 
     editor.updateContext({ ...fixture.context, content: filtered });
+    const compoundCriteria = {
+      type: 'compound',
+      conjunction: 'or',
+      conditions: [
+        { type: 'begins-with', value: 'Ready' },
+        { type: 'does-not-end-with', value: 'Risk' },
+      ],
+    } as const;
+    expect(
+      editor.can().applyAutoFilterCriteria({
+        ...target,
+        criteria: compoundCriteria,
+      }),
+    ).toBe(true);
+    expect(
+      editor.commands.applyAutoFilterCriteria({
+        ...target,
+        criteria: compoundCriteria,
+      }),
+    ).toBe(true);
+    expect(fixture.changes[2]?.sheets[0]?.filter?.['0']).toMatchObject({
+      rowhidden: { '2': 0 },
+    });
+
     for (const criteria of [
       { type: 'contains', value: '   ' },
       { type: 'greater-than', value: 'not-a-number' },
       { type: 'between', lower: '5', upper: '' },
       { type: 'between', lower: '10', upper: '5' },
+      {
+        type: 'compound',
+        conjunction: 'and',
+        conditions: [
+          { type: 'equals', value: 'Risk' },
+          { type: 'greater-than', value: 'not-a-number' },
+        ],
+      },
     ] as const) {
       expect(
         editor.can().applyAutoFilterCriteria({ ...target, criteria }),
@@ -1498,7 +1530,7 @@ describe('spreadsheet command controller', () => {
         editor.commands.applyAutoFilterCriteria({ ...target, criteria }),
       ).toBe(false);
     }
-    expect(fixture.changes).toHaveLength(2);
+    expect(fixture.changes).toHaveLength(3);
   });
 
   test('owns WPS AutoFilter toggle and header-menu shortcuts', () => {

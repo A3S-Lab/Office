@@ -285,6 +285,10 @@ describe('spreadsheet table XLSX interop', () => {
         column: 1,
         criteria: { type: 'not-equals', value: 'other*?~value' },
       },
+      {
+        column: 2,
+        criteria: { type: 'does-not-begin-with', value: 'unsupported' },
+      },
     ]);
 
     const patched = await patchXlsxSpreadsheetTables(await blankWorkbook(), {
@@ -298,6 +302,82 @@ describe('spreadsheet table XLSX interop', () => {
     );
     expect(table).toContain(
       '<customFilter operator="notEqual" val="other~*~?~~value"/>',
+    );
+    expect(table).toContain(
+      '<customFilter operator="notEqual" val="unsupported*"/>',
+    );
+
+    const roundTrip = await readXlsxWorksheetTables(
+      await OoxmlPackage.load(patched),
+      'xl/worksheets/sheet1.xml',
+    );
+    expect(roundTrip[0]?.filters).toEqual(tables[0]?.filters);
+  });
+
+  test('round-trips compound and negative prefix or suffix custom filters', async () => {
+    const buffer = await tableWorkbook(
+      [
+        '<filterColumn colId="0"><customFilters and="1">',
+        '<customFilter operator="greaterThan" val="100"/>',
+        '<customFilter operator="lessThan" val="200"/>',
+        '</customFilters></filterColumn>',
+        '<filterColumn colId="1"><customFilters and="0">',
+        '<customFilter operator="equal" val="*risk*"/>',
+        '<customFilter operator="notEqual" val="blocked*"/>',
+        '</customFilters></filterColumn>',
+        '<filterColumn colId="2"><customFilters>',
+        '<customFilter operator="notEqual" val="*archived"/>',
+        '</customFilters></filterColumn>',
+      ].join(''),
+    );
+    const tables = await readXlsxWorksheetTables(
+      await OoxmlPackage.load(buffer),
+      'xl/worksheets/sheet1.xml',
+    );
+
+    expect(tables[0]?.filters).toEqual([
+      {
+        column: 0,
+        criteria: {
+          type: 'compound',
+          conjunction: 'and',
+          conditions: [
+            { type: 'greater-than', value: '100' },
+            { type: 'less-than', value: '200' },
+          ],
+        },
+      },
+      {
+        column: 1,
+        criteria: {
+          type: 'compound',
+          conjunction: 'or',
+          conditions: [
+            { type: 'contains', value: 'risk' },
+            { type: 'does-not-begin-with', value: 'blocked' },
+          ],
+        },
+      },
+      {
+        column: 2,
+        criteria: { type: 'does-not-end-with', value: 'archived' },
+      },
+    ]);
+
+    const patched = await patchXlsxSpreadsheetTables(await blankWorkbook(), {
+      type: 'spreadsheet',
+      sheets: [{ id: 'sheet-1', name: 'Sales', tables }],
+    });
+    const zip = await JSZip.loadAsync(patched);
+    const table = (await zip.file('xl/tables/table1.xml')?.async('text')) ?? '';
+    expect(table).toContain(
+      '<customFilters and="1"><customFilter operator="greaterThan" val="100"/><customFilter operator="lessThan" val="200"/></customFilters>',
+    );
+    expect(table).toContain(
+      '<customFilters and="0"><customFilter operator="equal" val="*risk*"/><customFilter operator="notEqual" val="blocked*"/></customFilters>',
+    );
+    expect(table).toContain(
+      '<customFilter operator="notEqual" val="*archived"/>',
     );
 
     const roundTrip = await readXlsxWorksheetTables(

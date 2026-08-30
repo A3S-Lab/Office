@@ -417,10 +417,16 @@ GitHub Actions and Pages do not install or invoke A3S Test.
 Enable **Data → Sort and Filter → Filter** or press `Cmd/Ctrl+Shift+L`, then
 open an active header and choose **Filter by condition**. The A3S-owned
 **Custom AutoFilter** dialog supports equal and not equal, contains and does
-not contain, begins with, ends with, greater/greater-or-equal,
+not contain, begins/does-not-begin with, ends/does-not-end with,
+greater/greater-or-equal,
 less/less-or-equal, inclusive between/not-between, blanks, and nonblanks.
 Numeric conditions require finite bounds and reject a reversed range before
 the command can run.
+
+For common custom comparisons, **Add second condition** creates exactly one
+additional condition and joins the pair with **AND** or **OR**. The controlled
+model uses a fixed two-item tuple of nonrecursive conditions; ranges, blank
+selectors, Top/Bottom, and dynamic families cannot become nested predicates.
 
 Each active column owns its own hidden-row set. Conditions on different
 columns therefore combine as an intersection of visible rows, and clearing one
@@ -446,9 +452,10 @@ cannot recover an imported manual hide that exactly overlaps such an inferred
 filter hide. Imported Top/Bottom, percentage, and dynamic criteria remain typed
 and are written back, but their visible-row calculation is not authored or
 recomputed yet; their existing hidden rows are conservatively retained as
-manual. Same-column two-clause AND/OR, wildcard authoring, Top/Bottom and
-dynamic evaluation, and table/AutoFilter-integrated custom sorting remain
-explicit boundaries.
+manual. General two-item native `<customFilters and="1|0">` groups preserve
+their AND/OR relation, including negative prefix and suffix operators.
+Wildcard authoring, Top/Bottom and dynamic evaluation, and
+table/AutoFilter-integrated custom sorting remain explicit boundaries.
 
 Focused model, command, dialog, Hook, import, and XLSX Rstest cover the bounded
 contract. Desktop and compact Playwright exercise the real vendor header menu,

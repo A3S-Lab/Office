@@ -726,6 +726,24 @@ overlap, XLSX reopen, Undo, selection, accessibility, and clean diagnostics.
 Same-column two-clause AND/OR, wildcard authoring, Top/Bottom and dynamic
 evaluation, and table/AutoFilter-integrated custom sorting remain open.
 
+The fifty-sixth milestone adds exactly two same-column Custom AutoFilter
+conditions joined by AND or OR. The dialog exposes a deliberate second-condition
+step, restores imported or controlled pairs, validates each numeric operand,
+and includes the Traditional Office negative prefix and suffix operators. The
+closed model stores a fixed tuple of nonrecursive custom conditions, so command
+reauthorization and collaboration validation cannot admit nested or unbounded
+predicate trees. Dense and sparse worksheet evaluation composes the two
+matchers without changing multi-column or manual-hide ownership.
+
+Native worksheet and table OOXML now read and write general two-item
+`<customFilters and="1|0">` groups while retaining canonical between and
+not-between shortcuts. Negative prefix and suffix conditions use native
+`notEqual` wildcard forms and preserve escaped literal wildcard characters.
+Focused model, command, dialog, collaboration, worksheet/table XLSX, responsive
+Playwright, and local-only A3S Test coverage protect the bounded contract.
+Wildcard authoring, Top/Bottom and dynamic evaluation, and
+table/AutoFilter-integrated custom sorting remain open.
+
 ## Current Presentation Milestone
 
 The first Presentation-animation milestone adds a bounded entrance-animation

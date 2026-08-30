@@ -1480,7 +1480,7 @@ One accepted operation crosses the Fortune boundary as one range write and one
 controlled Undo record. Table, worksheet-AutoFilter, hyperlink-map,
 imported-formula-metadata, and border-sidecar intersections fail closed because
 those models still own coordinates outside the cell matrix. Moving large sorts,
-same-column compound or wildcard filter predicates, Top/Bottom and dynamic
+wildcard-authored filter predicates, Top/Bottom and dynamic
 filter evaluation, full custom-list preference management, and structural
 sidecar reconciliation into the Worker/WASM kernel remains Stage 3 work.
 Direct host focus of the native grid now enters the same bounded focus observer
@@ -1499,11 +1499,20 @@ separate when a criterion is replaced or removed. This gives one source of
 truth for multi-column ownership instead of inferring provenance from the
 combined `config.rowhidden` map.
 
+Same-column custom conditions use a separate fixed pair inside the closed
+filter union. Each item is a nonrecursive single-value predicate and the pair
+has one explicit AND/OR discriminator. The evaluator composes exactly two
+matchers, collaboration validation rejects any nested or differently sized
+condition array, and the dialog cannot attach a second condition to range,
+blank, Top/Bottom, or dynamic families.
+
 The same closed `WorkSpreadsheetFilterCriteria` union now serves worksheet and
 table native OOXML. Package scan and import read only the worksheet root's
 direct `<autoFilter>` child, hydrate supported criteria, and retain imported
 unsupported typed criteria without pretending to evaluate them. Export patches
-the generated worksheet element with native `<filterColumn>` children. The
+the generated worksheet element with native `<filterColumn>` children. General
+two-item `<customFilters and="1|0">` groups and negative prefix/suffix wildcard
+forms round-trip through the shared worksheet/table path. The
 React adapter owns only vendor-menu discovery, the accessible condition dialog,
 short-lived selection preservation, and focus restoration; unsafe vendor sort
 items are not exposed because they bypass typed sort and structural guards.

@@ -11,6 +11,7 @@ import {
   createWorkArtifactBlob,
   importWorkFile,
 } from '../src/internal/features/work/work-file-io';
+import { normalizeWorkSpreadsheetFilterCriteria } from '../src/internal/features/work/work-spreadsheet-auto-filter';
 import { createWorkArtifact } from '../src/internal/features/work/work-templates';
 import type {
   WorkSpreadsheetContent,
@@ -316,6 +317,124 @@ describe('spreadsheet AutoFilter model', () => {
     });
   });
 
+  test('combines exactly two same-column conditions with AND or OR', () => {
+    const sheet: WorkSpreadsheetSheet = {
+      ...quarterlySheet(),
+      filter: {},
+      filter_select: { row: [2, 6], column: [0, 6] },
+      config: {
+        ...quarterlySheet().config,
+        rowhidden: { '4': 0, '9': 0 },
+      },
+    };
+    const andFiltered = applySpreadsheetAutoFilterCriteria(
+      workbook(sheet),
+      'sheet-1',
+      1,
+      {
+        type: 'compound',
+        conjunction: 'and',
+        conditions: [
+          { type: 'greater-than', value: '120' },
+          { type: 'less-than', value: '140' },
+        ],
+      },
+    );
+    const orFiltered = andFiltered
+      ? applySpreadsheetAutoFilterCriteria(andFiltered, 'sheet-1', 1, {
+          type: 'compound',
+          conjunction: 'or',
+          conditions: [
+            { type: 'less-than', value: '1' },
+            { type: 'greater-than', value: '140' },
+          ],
+        })
+      : null;
+    const cleared = orFiltered
+      ? clearSpreadsheetAutoFilterCriteria(orFiltered, 'sheet-1', 1)
+      : null;
+    const negativeTextFiltered = applySpreadsheetAutoFilterCriteria(
+      workbook(sheet),
+      'sheet-1',
+      6,
+      {
+        type: 'compound',
+        conjunction: 'and',
+        conditions: [
+          { type: 'does-not-begin-with', value: '有' },
+          { type: 'does-not-end-with', value: '风险' },
+        ],
+      },
+    );
+
+    expect(spreadsheetAutoFilterCriteria(andFiltered?.sheets[0], 1)).toEqual({
+      type: 'compound',
+      conjunction: 'and',
+      conditions: [
+        { type: 'greater-than', value: '120' },
+        { type: 'less-than', value: '140' },
+      ],
+    });
+    expect(andFiltered?.sheets[0]?.config?.rowhidden).toEqual({
+      '3': 0,
+      '4': 0,
+      '5': 0,
+      '6': 0,
+      '9': 0,
+    });
+    expect(orFiltered?.sheets[0]?.config?.rowhidden).toEqual({
+      '3': 0,
+      '4': 0,
+      '9': 0,
+    });
+    expect(cleared?.sheets[0]?.config?.rowhidden).toEqual({
+      '4': 0,
+      '9': 0,
+    });
+    expect(negativeTextFiltered?.sheets[0]?.config?.rowhidden).toEqual({
+      '4': 0,
+      '6': 0,
+      '9': 0,
+    });
+  });
+
+  test('rejects malformed or recursively nested compound conditions', () => {
+    expect(
+      normalizeWorkSpreadsheetFilterCriteria({
+        type: 'compound',
+        conjunction: 'and',
+        conditions: [{ type: 'equals', value: 'Ready' }],
+      }),
+    ).toBeNull();
+    expect(
+      normalizeWorkSpreadsheetFilterCriteria({
+        type: 'compound',
+        conjunction: 'xor',
+        conditions: [
+          { type: 'equals', value: 'Ready' },
+          { type: 'equals', value: 'Risk' },
+        ],
+      }),
+    ).toBeNull();
+    expect(
+      normalizeWorkSpreadsheetFilterCriteria({
+        type: 'compound',
+        conjunction: 'or',
+        conditions: [
+          { type: 'equals', value: 'Ready' },
+          {
+            type: 'compound',
+            conjunction: 'and',
+            conditions: [
+              { type: 'equals', value: 'Risk' },
+              { type: 'equals', value: 'Blocked' },
+            ],
+          },
+        ],
+      }),
+    ).toBeNull();
+  });
+
   test('supports blanks, non-blanks, inclusive ranges, and selected values', () => {
     const sheet: WorkSpreadsheetSheet = {
       id: 'sheet-1',
@@ -420,7 +539,14 @@ describe('spreadsheet AutoFilter model', () => {
       content,
       content.sheets[0]?.id ?? '',
       3,
-      { type: 'greater-than', value: '0.95' },
+      {
+        type: 'compound',
+        conjunction: 'and',
+        conditions: [
+          { type: 'greater-than', value: '0.95' },
+          { type: 'less-than', value: '1000000' },
+        ],
+      },
     );
     if (!filtered) throw new Error('Expected the filter criteria to apply.');
 
@@ -441,7 +567,14 @@ describe('spreadsheet AutoFilter model', () => {
     });
     expect(
       spreadsheetAutoFilterCriteria(imported.content.sheets[0], 3),
-    ).toEqual({ type: 'greater-than', value: '0.95' });
+    ).toEqual({
+      type: 'compound',
+      conjunction: 'and',
+      conditions: [
+        { type: 'greater-than', value: '0.95' },
+        { type: 'less-than', value: '1000000' },
+      ],
+    });
     expect(imported.content.sheets[0]?.filter?.['3']?.rowhidden).toEqual({
       '4': 0,
       '5': 0,

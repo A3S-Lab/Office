@@ -8,6 +8,7 @@ import {
 import { isValidSpreadsheetDefinedName } from '../features/work/work-spreadsheet-ranges';
 import type {
   WorkSpreadsheetContent,
+  WorkSpreadsheetCustomFilterCondition,
   WorkSpreadsheetDynamicFilter,
   WorkSpreadsheetSheet,
   WorkSpreadsheetTable,
@@ -678,20 +679,18 @@ function requiredSpreadsheetTableFilterCriteria(
     case 'contains':
     case 'does-not-contain':
     case 'begins-with':
+    case 'does-not-begin-with':
     case 'ends-with':
+    case 'does-not-end-with':
     case 'greater-than':
     case 'greater-than-or-equal':
     case 'less-than':
     case 'less-than-or-equal':
-      assertExactRecordKeys(
+      return requiredSpreadsheetCustomFilterCondition(
         record,
-        ['type', 'value'],
-        `filter criteria for ${label}`,
+        label,
+        textBudget,
       );
-      return {
-        type,
-        value: requiredSpreadsheetFilterText(record.value, label, textBudget),
-      };
     case 'between':
     case 'not-between':
       assertExactRecordKeys(
@@ -708,6 +707,39 @@ function requiredSpreadsheetTableFilterCriteria(
     case 'non-blanks':
       assertExactRecordKeys(record, ['type'], `filter criteria for ${label}`);
       return { type };
+    case 'compound': {
+      assertExactRecordKeys(
+        record,
+        ['type', 'conjunction', 'conditions'],
+        `filter criteria for ${label}`,
+      );
+      if (record.conjunction !== 'and' && record.conjunction !== 'or') {
+        invalidWorkOfficeSpreadsheetInput(
+          `an 'and' or 'or' conjunction for compound filter criteria for ${label}`,
+        );
+      }
+      if (!Array.isArray(record.conditions) || record.conditions.length !== 2) {
+        invalidWorkOfficeSpreadsheetInput(
+          `exactly two custom filter conditions for ${label}`,
+        );
+      }
+      return {
+        type,
+        conjunction: record.conjunction,
+        conditions: [
+          requiredSpreadsheetCustomFilterCondition(
+            record.conditions[0],
+            label,
+            textBudget,
+          ),
+          requiredSpreadsheetCustomFilterCondition(
+            record.conditions[1],
+            label,
+            textBudget,
+          ),
+        ],
+      };
+    }
     case 'top':
     case 'bottom':
       assertExactRecordKeys(
@@ -758,6 +790,44 @@ function requiredSpreadsheetTableFilterCriteria(
     default:
       invalidWorkOfficeSpreadsheetInput(
         `supported filter criteria for ${label}`,
+      );
+  }
+}
+
+function requiredSpreadsheetCustomFilterCondition(
+  value: unknown,
+  label: string,
+  textBudget: { bytes: number },
+): WorkSpreadsheetCustomFilterCondition {
+  const record = validateJsonRecord(
+    requiredInputRecord(value, `custom filter condition for ${label}`),
+    `custom filter condition for ${label}`,
+  );
+  switch (record.type) {
+    case 'equals':
+    case 'not-equals':
+    case 'contains':
+    case 'does-not-contain':
+    case 'begins-with':
+    case 'does-not-begin-with':
+    case 'ends-with':
+    case 'does-not-end-with':
+    case 'greater-than':
+    case 'greater-than-or-equal':
+    case 'less-than':
+    case 'less-than-or-equal':
+      assertExactRecordKeys(
+        record,
+        ['type', 'value'],
+        `custom filter condition for ${label}`,
+      );
+      return {
+        type: record.type,
+        value: requiredSpreadsheetFilterText(record.value, label, textBudget),
+      };
+    default:
+      invalidWorkOfficeSpreadsheetInput(
+        `supported custom filter condition for ${label}`,
       );
   }
 }

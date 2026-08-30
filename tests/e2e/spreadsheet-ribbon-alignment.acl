@@ -333,6 +333,24 @@ suite "office-spreadsheet-ribbon-alignment" {
             value = "风险"
         }
 
+        click "add-second-filter-condition" {
+            target = role("button", "添加第二个条件")
+        }
+
+        expect "compound-filter-relation-visible" {
+            visible = css(".work-spreadsheet-auto-filter-conjunction input[type='radio']:checked")
+        }
+
+        select "choose-negative-suffix-condition" {
+            target = css(".work-spreadsheet-auto-filter-dialog select[aria-label='第二个筛选条件']")
+            values = ["does-not-end-with"]
+        }
+
+        fill "enter-completed-suffix" {
+            target = css(".work-spreadsheet-auto-filter-dialog input[aria-label='第二个筛选值']")
+            value = "完成"
+        }
+
         screenshot "autofilter-condition-dialog" {
             path = "screenshots/autofilter-condition-dialog.png"
         }

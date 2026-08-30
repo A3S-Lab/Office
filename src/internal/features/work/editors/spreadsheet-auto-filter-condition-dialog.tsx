@@ -1,22 +1,24 @@
 import { type FormEvent, useId, useState } from 'react';
 import { Button, Dialog, Field } from '../../../design-system/primitives';
-import type { WorkSpreadsheetFilterCriteria } from '../work-types';
+import type {
+  WorkSpreadsheetCustomFilterCondition,
+  WorkSpreadsheetFilterCriteria,
+} from '../work-types';
+import {
+  BLANK_CONDITIONS,
+  CONDITION_LABELS,
+  NUMBER_COMPARISON_CONDITIONS,
+  NUMBER_CONDITIONS,
+  spreadsheetAutoFilterConditionCriteria,
+  spreadsheetAutoFilterConditionDraft,
+  spreadsheetAutoFilterCustomConditionType,
+  spreadsheetAutoFilterPrimaryConditionError,
+  spreadsheetAutoFilterValueError,
+  TEXT_CONDITIONS,
+  type SpreadsheetAutoFilterConditionType,
+} from './spreadsheet-auto-filter-condition-dialog-model';
 
-export type SpreadsheetAutoFilterConditionType =
-  | 'equals'
-  | 'not-equals'
-  | 'contains'
-  | 'does-not-contain'
-  | 'begins-with'
-  | 'ends-with'
-  | 'greater-than'
-  | 'greater-than-or-equal'
-  | 'less-than'
-  | 'less-than-or-equal'
-  | 'between'
-  | 'not-between'
-  | 'blanks'
-  | 'non-blanks';
+export type { SpreadsheetAutoFilterConditionType } from './spreadsheet-auto-filter-condition-dialog-model';
 
 export interface SpreadsheetAutoFilterConditionDialogSource {
   columnLabel: string;
@@ -24,54 +26,6 @@ export interface SpreadsheetAutoFilterConditionDialogSource {
   hasActiveFilter: boolean;
   numeric: boolean;
   sheetName: string;
-}
-
-const CONDITION_LABELS: Readonly<
-  Record<SpreadsheetAutoFilterConditionType, string>
-> = {
-  equals: '等于',
-  'not-equals': '不等于',
-  contains: '包含',
-  'does-not-contain': '不包含',
-  'begins-with': '开头是',
-  'ends-with': '结尾是',
-  'greater-than': '大于',
-  'greater-than-or-equal': '大于或等于',
-  'less-than': '小于',
-  'less-than-or-equal': '小于或等于',
-  between: '介于',
-  'not-between': '不介于',
-  blanks: '空白',
-  'non-blanks': '非空白',
-};
-
-const TEXT_CONDITIONS: readonly SpreadsheetAutoFilterConditionType[] = [
-  'equals',
-  'not-equals',
-  'contains',
-  'does-not-contain',
-  'begins-with',
-  'ends-with',
-];
-
-const NUMBER_CONDITIONS: readonly SpreadsheetAutoFilterConditionType[] = [
-  'greater-than',
-  'greater-than-or-equal',
-  'less-than',
-  'less-than-or-equal',
-  'between',
-  'not-between',
-];
-
-const BLANK_CONDITIONS: readonly SpreadsheetAutoFilterConditionType[] = [
-  'blanks',
-  'non-blanks',
-];
-
-interface SpreadsheetAutoFilterConditionDraft {
-  type: SpreadsheetAutoFilterConditionType;
-  upperValue: string;
-  value: string;
 }
 
 export function SpreadsheetAutoFilterConditionDialog({
@@ -92,11 +46,17 @@ export function SpreadsheetAutoFilterConditionDialog({
   );
   const [touched, setTouched] = useState(false);
   const formId = useId();
-  const error = spreadsheetAutoFilterConditionError(draft);
+  const primaryError = spreadsheetAutoFilterPrimaryConditionError(draft);
+  const secondError = draft.useSecond
+    ? spreadsheetAutoFilterValueError(draft.secondType, draft.secondValue)
+    : null;
+  const error = primaryError ?? secondError;
   const needsValue = !BLANK_CONDITIONS.includes(draft.type);
   const needsUpperValue =
     draft.type === 'between' || draft.type === 'not-between';
   const numericValue = NUMBER_CONDITIONS.includes(draft.type);
+  const canUseSecond = spreadsheetAutoFilterCustomConditionType(draft.type);
+  const secondNumericValue = NUMBER_CONDITIONS.includes(draft.secondType);
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setTouched(true);
@@ -157,6 +117,9 @@ export function SpreadsheetAutoFilterConditionDialog({
               setDraft((current) => ({
                 ...current,
                 type,
+                useSecond:
+                  current.useSecond &&
+                  spreadsheetAutoFilterCustomConditionType(type),
                 ...(BLANK_CONDITIONS.includes(type)
                   ? { value: '', upperValue: '' }
                   : !NUMBER_CONDITIONS.includes(type)
@@ -195,7 +158,7 @@ export function SpreadsheetAutoFilterConditionDialog({
             <Field
               label={needsUpperValue ? '下限' : '筛选值'}
               required
-              error={touched ? (error ?? undefined) : undefined}
+              error={touched ? (primaryError ?? undefined) : undefined}
             >
               <input
                 type="text"
@@ -226,83 +189,118 @@ export function SpreadsheetAutoFilterConditionDialog({
             )}
           </div>
         )}
+
+        {canUseSecond && !draft.useSecond && (
+          <Button
+            type="button"
+            tone="quiet"
+            className="work-spreadsheet-auto-filter-add-condition"
+            onClick={() => {
+              setDraft((current) => ({ ...current, useSecond: true }));
+              setTouched(false);
+            }}
+          >
+            添加第二个条件
+          </Button>
+        )}
+
+        {draft.useSecond && (
+          <div className="work-spreadsheet-auto-filter-compound">
+            <fieldset className="work-spreadsheet-auto-filter-conjunction">
+              <legend>条件关系</legend>
+              <label>
+                <input
+                  type="radio"
+                  name={`${formId}-conjunction`}
+                  checked={draft.conjunction === 'and'}
+                  onChange={() => {
+                    setDraft((current) => ({
+                      ...current,
+                      conjunction: 'and',
+                    }));
+                  }}
+                />
+                并且
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name={`${formId}-conjunction`}
+                  checked={draft.conjunction === 'or'}
+                  onChange={() => {
+                    setDraft((current) => ({
+                      ...current,
+                      conjunction: 'or',
+                    }));
+                  }}
+                />
+                或者
+              </label>
+            </fieldset>
+            <div className="work-spreadsheet-auto-filter-second-condition">
+              <Field label="第二个筛选条件">
+                <select
+                  aria-label="第二个筛选条件"
+                  value={draft.secondType}
+                  onChange={(event) => {
+                    const secondType = event.currentTarget
+                      .value as WorkSpreadsheetCustomFilterCondition['type'];
+                    setDraft((current) => ({ ...current, secondType }));
+                    setTouched(false);
+                  }}
+                >
+                  <optgroup label="文本与值">
+                    {TEXT_CONDITIONS.map((type) => (
+                      <option key={type} value={type}>
+                        {CONDITION_LABELS[type]}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="数字">
+                    {NUMBER_COMPARISON_CONDITIONS.map((type) => (
+                      <option key={type} value={type}>
+                        {CONDITION_LABELS[type]}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </Field>
+              <Field
+                label="第二个筛选值"
+                required
+                error={touched ? (secondError ?? undefined) : undefined}
+              >
+                <input
+                  type="text"
+                  aria-label="第二个筛选值"
+                  inputMode={secondNumericValue ? 'decimal' : 'text'}
+                  value={draft.secondValue}
+                  onBlur={() => setTouched(true)}
+                  onChange={(event) => {
+                    const secondValue = event.currentTarget.value;
+                    setDraft((current) => ({ ...current, secondValue }));
+                  }}
+                />
+              </Field>
+            </div>
+            <Button
+              type="button"
+              tone="quiet"
+              className="work-spreadsheet-auto-filter-remove-condition"
+              onClick={() => {
+                setDraft((current) => ({
+                  ...current,
+                  secondValue: '',
+                  useSecond: false,
+                }));
+                setTouched(false);
+              }}
+            >
+              移除第二个条件
+            </Button>
+          </div>
+        )}
       </form>
     </Dialog>
-  );
-}
-
-function spreadsheetAutoFilterConditionDraft(
-  criteria: WorkSpreadsheetFilterCriteria | null,
-  numeric: boolean,
-): SpreadsheetAutoFilterConditionDraft {
-  if (criteria && spreadsheetAutoFilterConditionType(criteria.type)) {
-    if (criteria.type === 'between' || criteria.type === 'not-between') {
-      return {
-        type: criteria.type,
-        value: criteria.lower,
-        upperValue: criteria.upper,
-      };
-    }
-    if (criteria.type === 'blanks' || criteria.type === 'non-blanks') {
-      return { type: criteria.type, value: '', upperValue: '' };
-    }
-    if ('value' in criteria) {
-      return { type: criteria.type, value: criteria.value, upperValue: '' };
-    }
-  }
-  return {
-    type: numeric ? 'equals' : 'contains',
-    value: '',
-    upperValue: '',
-  };
-}
-
-function spreadsheetAutoFilterConditionCriteria(
-  draft: SpreadsheetAutoFilterConditionDraft,
-): WorkSpreadsheetFilterCriteria | null {
-  if (spreadsheetAutoFilterConditionError(draft)) return null;
-  if (draft.type === 'blanks' || draft.type === 'non-blanks') {
-    return { type: draft.type };
-  }
-  if (draft.type === 'between' || draft.type === 'not-between') {
-    return {
-      type: draft.type,
-      lower: draft.value.trim(),
-      upper: draft.upperValue.trim(),
-    };
-  }
-  return { type: draft.type, value: draft.value };
-}
-
-function spreadsheetAutoFilterConditionError(
-  draft: SpreadsheetAutoFilterConditionDraft,
-): string | null {
-  if (draft.type === 'blanks' || draft.type === 'non-blanks') return null;
-  if (!draft.value.trim()) return '请输入筛选值。';
-  if (NUMBER_CONDITIONS.includes(draft.type)) {
-    if (!Number.isFinite(Number(draft.value))) return '请输入有效数字。';
-    if (
-      (draft.type === 'between' || draft.type === 'not-between') &&
-      (!draft.upperValue.trim() || !Number.isFinite(Number(draft.upperValue)))
-    ) {
-      return '请输入有效的上限。';
-    }
-    if (
-      (draft.type === 'between' || draft.type === 'not-between') &&
-      Number(draft.value) > Number(draft.upperValue)
-    ) {
-      return '下限不能大于上限。';
-    }
-  }
-  return null;
-}
-
-function spreadsheetAutoFilterConditionType(
-  value: string,
-): value is SpreadsheetAutoFilterConditionType {
-  return (
-    TEXT_CONDITIONS.includes(value as SpreadsheetAutoFilterConditionType) ||
-    NUMBER_CONDITIONS.includes(value as SpreadsheetAutoFilterConditionType) ||
-    BLANK_CONDITIONS.includes(value as SpreadsheetAutoFilterConditionType)
   );
 }

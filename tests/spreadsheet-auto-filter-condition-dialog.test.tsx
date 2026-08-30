@@ -87,3 +87,112 @@ test('shows and invokes the owned clear action for an active condition', () => {
   expect(clears).toBe(1);
   expect(closes).toBe(1);
 });
+
+test('authors two custom conditions with an explicit OR relationship', () => {
+  const applied: WorkSpreadsheetFilterCriteria[] = [];
+  render(
+    <SpreadsheetAutoFilterConditionDialog
+      source={{
+        columnLabel: '状态',
+        criteria: null,
+        hasActiveFilter: false,
+        numeric: false,
+        sheetName: '季度经营',
+      }}
+      restoreFocusTarget={() => null}
+      onApply={(criteria) => {
+        applied.push(criteria);
+        return true;
+      }}
+      onClear={() => false}
+      onClose={() => undefined}
+    />,
+  );
+
+  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
+    target: { value: 'begins-with' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: '筛选值' }), {
+    target: { value: '待' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '添加第二个条件' }));
+  fireEvent.click(screen.getByRole('radio', { name: '或者' }));
+  fireEvent.change(screen.getByRole('combobox', { name: '第二个筛选条件' }), {
+    target: { value: 'does-not-end-with' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: '第二个筛选值' }), {
+    target: { value: '归档' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(applied).toEqual([
+    {
+      type: 'compound',
+      conjunction: 'or',
+      conditions: [
+        { type: 'begins-with', value: '待' },
+        { type: 'does-not-end-with', value: '归档' },
+      ],
+    },
+  ]);
+});
+
+test('restores and validates a compound numeric condition', () => {
+  const applied: WorkSpreadsheetFilterCriteria[] = [];
+  render(
+    <SpreadsheetAutoFilterConditionDialog
+      source={{
+        columnLabel: '收入',
+        criteria: {
+          type: 'compound',
+          conjunction: 'and',
+          conditions: [
+            { type: 'greater-than', value: '100' },
+            { type: 'less-than', value: '200' },
+          ],
+        },
+        hasActiveFilter: true,
+        numeric: true,
+        sheetName: '季度经营',
+      }}
+      restoreFocusTarget={() => null}
+      onApply={(criteria) => {
+        applied.push(criteria);
+        return true;
+      }}
+      onClear={() => false}
+      onClose={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue(
+    'greater-than',
+  );
+  expect(screen.getByRole('radio', { name: '并且' })).toBeChecked();
+  expect(screen.getByRole('combobox', { name: '第二个筛选条件' })).toHaveValue(
+    'less-than',
+  );
+  expect(screen.getByRole('textbox', { name: '第二个筛选值' })).toHaveValue(
+    '200',
+  );
+
+  fireEvent.change(screen.getByRole('textbox', { name: '第二个筛选值' }), {
+    target: { value: 'not-a-number' },
+  });
+  expect(screen.getByRole('button', { name: '确定' })).toBeDisabled();
+  fireEvent.change(screen.getByRole('textbox', { name: '第二个筛选值' }), {
+    target: { value: ' 180 ' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(applied).toEqual([
+    {
+      type: 'compound',
+      conjunction: 'and',
+      conditions: [
+        { type: 'greater-than', value: '100' },
+        { type: 'less-than', value: '180' },
+      ],
+    },
+  ]);
+});
