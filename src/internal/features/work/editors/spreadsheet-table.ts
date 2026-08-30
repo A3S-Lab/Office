@@ -1,4 +1,5 @@
 import type { Cell, Selection } from '@fortune-sheet/core';
+import { OFFICE_KERNEL_SPREADSHEET_MAX_ROWS } from '../../../kernel/office-kernel-spreadsheet-protocol';
 import { sparseArrayEntries, sparseArrayIndexes } from '../spreadsheet-sparse';
 import {
   formatSpreadsheetCellRanges,
@@ -16,15 +17,22 @@ import { spreadsheetSelectionOrCurrentRegion } from './spreadsheet-auto-filter';
 import { canMutateSpreadsheetCellRanges } from './spreadsheet-cell-mutation-guard';
 import {
   normalizeSpreadsheetCellRange,
+  type SpreadsheetCellRange,
   spreadsheetCellRangeArea,
   spreadsheetCellRangeContains,
   spreadsheetCellRangesIntersect,
-  type SpreadsheetCellRange,
 } from './spreadsheet-cell-range';
 import { spreadsheetSheetBounds } from './spreadsheet-keyboard-navigation';
+import { reconcileSpreadsheetTableCalculatedColumns } from './spreadsheet-table-calculated-columns';
 import { materializeSpreadsheetTableAppearance } from './spreadsheet-table-conversion';
 import { MAX_SPREADSHEET_TABLE_CELLS } from './spreadsheet-table-limits';
-import { reconcileSpreadsheetTableCalculatedColumns } from './spreadsheet-table-calculated-columns';
+import {
+  type SpreadsheetTableTotalsColumnPatch,
+  spreadsheetTableTotalsColumnPatch,
+  spreadsheetTableTotalsRowHasContent,
+  synchronizeSpreadsheetTableTotalsRow,
+  withDefaultSpreadsheetTableTotalsLabel,
+} from './spreadsheet-table-totals';
 
 export { MAX_SPREADSHEET_TABLE_CELLS } from './spreadsheet-table-limits';
 
@@ -36,6 +44,7 @@ export interface SpreadsheetTableTarget {
 export interface SpreadsheetTableDialogValue {
   headerRow: boolean;
   rangeReference: string;
+  totalsRow?: boolean;
 }
 
 export interface SpreadsheetTableDialogSource {
@@ -53,6 +62,12 @@ export interface SpreadsheetTableRequest {
   range: SpreadsheetCellRange;
   sheetId: string;
   style?: WorkSpreadsheetTableStyle;
+  /** Create the table with a native totals row appended to the range. */
+  totalsRow?: boolean;
+  /** Initial per-column totals metadata, keyed by zero-based table offset. */
+  totalsColumns?:
+    | Readonly<Record<string, SpreadsheetTableTotalsColumnPatch>>
+    | readonly (SpreadsheetTableTotalsColumnPatch | null | undefined)[];
 }
 
 export type SpreadsheetTableValidation =
@@ -75,6 +90,7 @@ export type SpreadsheetTableErrorCode =
   | 'invalid-name'
   | 'invalid-range'
   | 'invalid-style'
+  | 'invalid-totals'
   | 'merged-range'
   | 'name-conflict'
   | 'out-of-bounds'
@@ -82,7 +98,8 @@ export type SpreadsheetTableErrorCode =
   | 'pivot-table'
   | 'range-too-large'
   | 'sheet-not-found'
-  | 'table-overlap';
+  | 'table-overlap'
+  | 'totals-row-content';
 
 export interface SpreadsheetTableDesignPatch {
   name?: string;
@@ -91,6 +108,12 @@ export interface SpreadsheetTableDesignPatch {
   showLastColumn?: boolean;
   showRowStripes?: boolean;
   style?: WorkSpreadsheetTableStyle;
+  /** Toggle the native totals row. Enabling appends one row to the table. */
+  totalsRow?: boolean;
+  /** Update per-column totals function, label, or custom formula. */
+  totalsColumns?:
+    | Readonly<Record<string, SpreadsheetTableTotalsColumnPatch>>
+    | readonly (SpreadsheetTableTotalsColumnPatch | null | undefined)[];
 }
 
 export function createSpreadsheetTableDialogSource(
@@ -120,7 +143,11 @@ export function createSpreadsheetTableDialogSource(
     rangeReference,
     sheetId: target.sheetId,
     sheetName: sheet.name,
-    value: { headerRow: request.headerRow, rangeReference },
+    value: {
+      headerRow: request.headerRow,
+      rangeReference,
+      totalsRow: false,
+    },
   };
 }
 
@@ -142,15 +169,33 @@ export function validateSpreadsheetTableRequest(
   if (sheet.isPivotTable || sheet.pivotTables?.length) {
     return tableError('pivot-table');
   }
-  const range = normalizeSpreadsheetCellRange(request.range);
-  if (!range) return tableError('invalid-range');
+  const bodyRange = normalizeSpreadsheetCellRange(request.range);
+  if (!bodyRange) return tableError('invalid-range');
+  const totalsRow = request.totalsRow === true;
+  const range = totalsRow
+    ? {
+        row: [bodyRange.row[0], bodyRange.row[1] + 1] as [number, number],
+        column: [...bodyRange.column] as [number, number],
+      }
+    : bodyRange;
   const name = request.name.trim();
   if (!validSpreadsheetTableName(name)) return tableError('invalid-name');
   if (spreadsheetTableNameExists(content, name)) {
     return tableError('name-conflict');
   }
   const bounds = spreadsheetSheetBounds(sheet);
-  if (range.row[1] > bounds.lastRow || range.column[1] > bounds.lastColumn) {
+  const configuredRows = Number(sheet.row);
+  const lastAllowedRow =
+    Number.isFinite(configuredRows) && configuredRows > 0
+      ? bounds.lastRow
+      : Math.max(bounds.lastRow, range.row[1]);
+  if (
+    bodyRange.row[0] > lastAllowedRow ||
+    bodyRange.row[1] > lastAllowedRow ||
+    bodyRange.column[0] > bounds.lastColumn ||
+    bodyRange.column[1] > bounds.lastColumn ||
+    range.row[1] >= OFFICE_KERNEL_SPREADSHEET_MAX_ROWS
+  ) {
     return tableError('out-of-bounds');
   }
   const height = range.row[1] - range.row[0] + 1;
@@ -179,12 +224,38 @@ export function validateSpreadsheetTableRequest(
   }
   const style = request.style ?? { family: 'medium', number: 2 };
   if (!validSpreadsheetTableStyle(style)) return tableError('invalid-style');
-  const columns = spreadsheetTableColumnNames(sheet, range, request.headerRow);
+  const columns = spreadsheetTableColumnNames(
+    sheet,
+    bodyRange,
+    request.headerRow,
+  );
   if (
     !columns.length ||
     columns.some((column) => !validTableColumnName(column))
   ) {
     return tableError('invalid-column-name');
+  }
+  const totalsColumns = spreadsheetTableTotalsColumnPatch(
+    columns.map((name) => ({ name })),
+    request.totalsColumns,
+  );
+  if (!totalsColumns) return tableError('invalid-totals');
+  const candidate: WorkSpreadsheetTable = {
+    id: '__validation__',
+    name,
+    range,
+    columns: withDefaultSpreadsheetTableTotalsLabel(totalsColumns, totalsRow),
+    filters: [],
+    headerRow: request.headerRow,
+    totalsRow,
+    style,
+    showFirstColumn: false,
+    showLastColumn: false,
+    showRowStripes: style.family !== 'none',
+    showColumnStripes: false,
+  };
+  if (totalsRow && spreadsheetTableTotalsRowHasContent(sheet, candidate)) {
+    return tableError('totals-row-content');
   }
   return { columns, name, ok: true, range, sheet };
 }
@@ -196,14 +267,20 @@ export function applySpreadsheetTable(
   const validation = validateSpreadsheetTableRequest(content, request);
   if (!validation.ok) return null;
   const style = request.style ?? { family: 'medium', number: 2 };
+  const totalsRow = request.totalsRow === true;
+  const totalsColumns = spreadsheetTableTotalsColumnPatch(
+    validation.columns.map((name) => ({ name })),
+    request.totalsColumns,
+  );
+  if (!totalsColumns) return null;
   const tableWithoutCalculatedColumns: WorkSpreadsheetTable = {
     id: createWorkId('spreadsheet-table'),
     name: validation.name,
     range: cloneRange(validation.range),
-    columns: validation.columns.map((name) => ({ name })),
+    columns: withDefaultSpreadsheetTableTotalsLabel(totalsColumns, totalsRow),
     filters: [],
     headerRow: request.headerRow,
-    totalsRow: false,
+    totalsRow,
     style,
     showFirstColumn: false,
     showLastColumn: false,
@@ -224,9 +301,19 @@ export function applySpreadsheetTable(
         validation.columns,
       )
     : validation.sheet;
+  const sizedSheet = ensureSpreadsheetTableRowCapacity(
+    nextSheet,
+    rangeEndRow(table),
+  );
+  const synchronizedSheet = synchronizeSpreadsheetTableTotalsRow(
+    sizedSheet,
+    undefined,
+    table,
+    { force: totalsRow },
+  );
   return replaceSpreadsheetTableSheet(content, {
-    ...nextSheet,
-    tables: [...(nextSheet.tables ?? []), table],
+    ...synchronizedSheet,
+    tables: [...(synchronizedSheet.tables ?? []), table],
   });
 }
 
@@ -258,21 +345,77 @@ export function updateSpreadsheetTable(
   ) {
     return null;
   }
-  const tables = sheet.tables?.map((candidate) =>
-    candidate.id === tableId
-      ? {
-          ...candidate,
-          name,
-          ...(patch.name === undefined ? {} : { displayName: undefined }),
-          style,
-          showFirstColumn,
-          showLastColumn,
-          showRowStripes,
-          showColumnStripes,
-        }
-      : candidate,
+  const totalsRow = patch.totalsRow ?? table.totalsRow;
+  const range = cloneRange(table.range);
+  if (totalsRow !== table.totalsRow) {
+    range.row[1] += totalsRow ? 1 : -1;
+  }
+  if (
+    range.row[0] < 0 ||
+    range.row[1] < range.row[0] ||
+    range.row[1] >= OFFICE_KERNEL_SPREADSHEET_MAX_ROWS ||
+    range.row[1] - range.row[0] + 1 <=
+      Number(table.headerRow) + Number(totalsRow)
+  ) {
+    return null;
+  }
+  const totalsColumns = spreadsheetTableTotalsColumnPatch(
+    table.columns,
+    patch.totalsColumns,
   );
-  return replaceSpreadsheetTableSheet(content, { ...sheet, tables });
+  if (!totalsColumns) return null;
+  const nextColumns = withDefaultSpreadsheetTableTotalsLabel(
+    totalsColumns,
+    totalsRow,
+  );
+  const nextTable: WorkSpreadsheetTable = {
+    ...table,
+    name,
+    ...(patch.name === undefined ? {} : { displayName: undefined }),
+    range,
+    columns: nextColumns,
+    totalsRow,
+    style,
+    showFirstColumn,
+    showLastColumn,
+    showRowStripes,
+    showColumnStripes,
+  };
+  if (
+    totalsRow &&
+    !table.totalsRow &&
+    spreadsheetTableTotalsRowHasContent(sheet, nextTable)
+  ) {
+    return null;
+  }
+  if (totalsRow && !table.totalsRow) {
+    const totalsGrowthRange: SpreadsheetCellRange = {
+      row: [table.range.row[1] + 1, range.row[1]],
+      column: [...range.column] as [number, number],
+    };
+    if (
+      spreadsheetCellRangeArea(range) > MAX_SPREADSHEET_TABLE_CELLS ||
+      spreadsheetTableGrowthConflicts(sheet, tableId, totalsGrowthRange)
+    ) {
+      return null;
+    }
+  }
+  const tables = sheet.tables?.map((candidate) =>
+    candidate.id === tableId ? nextTable : candidate,
+  );
+  const sizedSheet = ensureSpreadsheetTableRowCapacity(
+    sheet,
+    rangeEndRow(nextTable),
+  );
+  const synchronizedSheet = synchronizeSpreadsheetTableTotalsRow(
+    sizedSheet,
+    table,
+    nextTable,
+  );
+  return replaceSpreadsheetTableSheet(content, {
+    ...synchronizedSheet,
+    tables,
+  });
 }
 
 export function convertSpreadsheetTableToRange(
@@ -496,6 +639,30 @@ function spreadsheetTableIntersectsMerge(
   );
 }
 
+function spreadsheetTableGrowthConflicts(
+  sheet: WorkSpreadsheetSheet,
+  tableId: string,
+  growthRange: SpreadsheetCellRange,
+): boolean {
+  if (
+    spreadsheetTableIntersectsMerge(sheet, growthRange) ||
+    (sheet.tables ?? []).some(
+      (candidate) =>
+        candidate.id !== tableId &&
+        spreadsheetCellRangesIntersect(candidate.range, growthRange),
+    ) ||
+    !canMutateSpreadsheetCellRanges(sheet, [growthRange])
+  ) {
+    return true;
+  }
+  const autoFilter = normalizeSpreadsheetCellRange(
+    sheet.filter_select ?? { row: [], column: [] },
+  );
+  return Boolean(
+    autoFilter && spreadsheetCellRangesIntersect(autoFilter, growthRange),
+  );
+}
+
 function replaceSpreadsheetTableSheet(
   content: WorkSpreadsheetContent,
   nextSheet: WorkSpreadsheetSheet,
@@ -561,6 +728,7 @@ function tableError(
     'invalid-name': '表格名称必须是有效且不类似单元格引用的标识符。',
     'invalid-range': '表格至少需要一行数据。',
     'invalid-style': '表格样式身份无效。',
+    'invalid-totals': '汇总行函数、标签或公式无效。',
     'merged-range': '请先取消表格区域内的合并单元格。',
     'name-conflict': '表格名称已被其他表格或名称使用。',
     'out-of-bounds': '表格区域超出当前工作表边界。',
@@ -569,6 +737,27 @@ function tableError(
     'range-too-large': `一次最多可创建 ${MAX_SPREADSHEET_TABLE_CELLS.toLocaleString()} 个单元格的表格。`,
     'sheet-not-found': '找不到目标工作表。',
     'table-overlap': '表格区域不能与其他表格重叠。',
+    'totals-row-content': '汇总行目标单元格已有内容，请先清空后再启用。',
   };
   return { code, message: messages[code], ok: false };
+}
+
+function rangeEndRow(table: WorkSpreadsheetTable): number {
+  return table.range.row[1];
+}
+
+/** Grow the declared Fortune sheet dimension only when the totals row needs it. */
+function ensureSpreadsheetTableRowCapacity(
+  sheet: WorkSpreadsheetSheet,
+  lastRow: number,
+): WorkSpreadsheetSheet {
+  if (!Number.isSafeInteger(lastRow) || lastRow < 0) return sheet;
+  const configured = Number(sheet.row);
+  if (!Number.isFinite(configured) || configured <= 0) return sheet;
+  const required = lastRow + 1;
+  if (required <= configured) return sheet;
+  return {
+    ...sheet,
+    row: Math.min(OFFICE_KERNEL_SPREADSHEET_MAX_ROWS, required),
+  };
 }

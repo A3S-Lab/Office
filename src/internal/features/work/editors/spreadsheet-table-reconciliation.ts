@@ -10,6 +10,10 @@ import {
   fillSpreadsheetTableCalculatedColumns,
   reconcileSpreadsheetTableCalculatedColumns,
 } from './spreadsheet-table-calculated-columns';
+import {
+  reconcileSpreadsheetTableTotalsColumns,
+  synchronizeSpreadsheetTableTotalsRow,
+} from './spreadsheet-table-totals';
 
 export type SpreadsheetTableStructureChange =
   | {
@@ -69,6 +73,7 @@ export function reconcileSpreadsheetTablesAfterFortune(
     let tables = source.tables;
     const reconcileColumns = new Set<string>();
     const calculatedColumnRows = new Map<string, Set<number>>();
+    const editedTotalsColumns = new Map<string, Set<number>>();
     if (!operations.length) {
       for (const table of tables) reconcileColumns.add(table.id);
     }
@@ -107,7 +112,18 @@ export function reconcileSpreadsheetTablesAfterFortune(
           coordinate.column,
         ),
       );
-      if (table) reconcileColumns.add(table.id);
+      if (table) {
+        reconcileColumns.add(table.id);
+        if (table.totalsRow && coordinate.row === table.range.row[1]) {
+          const offset = coordinate.column - table.range.column[0];
+          if (offset >= 0 && offset < table.columns.length) {
+            const offsets =
+              editedTotalsColumns.get(table.id) ?? new Set<number>();
+            offsets.add(offset);
+            editedTotalsColumns.set(table.id, offsets);
+          }
+        }
+      }
     }
 
     const updates: HeaderCellUpdate[] = [];
@@ -119,8 +135,13 @@ export function reconcileSpreadsheetTablesAfterFortune(
         sheet,
         { ...table, columns },
       );
+      const reconciledColumns = reconcileSpreadsheetTableTotalsColumns(
+        sheet,
+        { ...table, columns: calculatedColumns },
+        editedTotalsColumns.get(table.id),
+      );
       if (table.headerRow) {
-        for (const [offset, column] of calculatedColumns.entries()) {
+        for (const [offset, column] of reconciledColumns.entries()) {
           const cellColumn = table.range.column[0] + offset;
           if (
             spreadsheetCellText(readCell(table.range.row[0], cellColumn)) !==
@@ -134,9 +155,9 @@ export function reconcileSpreadsheetTablesAfterFortune(
           }
         }
       }
-      return sameSpreadsheetTableColumns(table.columns, calculatedColumns)
+      return sameSpreadsheetTableColumns(table.columns, reconciledColumns)
         ? table
-        : { ...table, columns: calculatedColumns };
+        : { ...table, columns: reconciledColumns };
     });
 
     let withCalculatedColumns = sheet;
@@ -153,8 +174,19 @@ export function reconcileSpreadsheetTablesAfterFortune(
       withCalculatedColumns,
       updates,
     );
+    let withTotals = withHeaders;
+    for (const table of tables) {
+      const previous = source.tables.find(
+        (candidate) => candidate.id === table.id,
+      );
+      withTotals = synchronizeSpreadsheetTableTotalsRow(
+        withTotals,
+        previous,
+        table,
+      );
+    }
     return {
-      ...withHeaders,
+      ...withTotals,
       tables: tables.length ? tables : undefined,
     };
   });
@@ -399,7 +431,10 @@ function canonicalSpreadsheetTableColumns(
       suffix += 1;
     }
     observed.add(candidate.toLocaleLowerCase());
-    return { name: candidate };
+    return {
+      ...(table.columns[offset] ?? {}),
+      name: candidate,
+    };
   });
 }
 
@@ -606,7 +641,10 @@ function sameSpreadsheetTableColumns(
     left.every(
       (column, index) =>
         column.name === right[index]?.name &&
-        column.calculatedFormula === right[index]?.calculatedFormula,
+        column.calculatedFormula === right[index]?.calculatedFormula &&
+        column.totalsFunction === right[index]?.totalsFunction &&
+        column.totalsLabel === right[index]?.totalsLabel &&
+        column.totalsFormula === right[index]?.totalsFormula,
     )
   );
 }

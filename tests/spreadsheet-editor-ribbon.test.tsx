@@ -1299,6 +1299,85 @@ test('shows a contextual Table Design ribbon with all 60 built-in styles', () =>
   ]);
 });
 
+test('edits native totals-row functions, labels, and custom formulas', () => {
+  const patches: unknown[] = [];
+  const table = {
+    id: 'table-totals',
+    name: 'Sales',
+    range: {
+      row: [0, 3] as [number, number],
+      column: [0, 2] as [number, number],
+    },
+    columns: [
+      { name: 'Item', totalsLabel: 'Total' },
+      { name: 'Units', totalsFunction: 'sum' as const },
+      { name: 'State' },
+    ],
+    filters: [],
+    headerRow: true,
+    totalsRow: true,
+    style: { family: 'medium' as const, number: 2 },
+    showFirstColumn: false,
+    showLastColumn: false,
+    showRowStripes: true,
+    showColumnStripes: false,
+  };
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="tableDesign"
+      activeTable={table}
+      activeTableSheetId="sheet-1"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          updateTable: (_sheetId, _tableId, patch) => {
+            patches.push(patch);
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      findOpen={false}
+      gridLinesVisible
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '汇总行' }));
+  const menu = screen.getByRole('dialog', { name: '表格汇总行设置' });
+  expect(
+    within(menu).getByRole('checkbox', { name: '启用汇总行' }),
+  ).toBeChecked();
+  const unitsFunction = within(menu).getByRole('combobox', {
+    name: 'Units 汇总函数',
+  });
+  fireEvent.change(unitsFunction, { target: { value: 'average' } });
+  expect(patches.at(-1)).toEqual({
+    totalsColumns: {
+      1: { totalsFunction: 'average', totalsFormula: null, totalsLabel: null },
+    },
+  });
+
+  const stateFunction = within(menu).getByRole('combobox', {
+    name: 'State 汇总函数',
+  });
+  fireEvent.change(stateFunction, { target: { value: 'custom' } });
+  expect(patches.at(-1)).toEqual({
+    totalsColumns: {
+      2: {
+        totalsFunction: 'custom',
+        totalsFormula: '=SUM(Sales[State])',
+        totalsLabel: null,
+      },
+    },
+  });
+});
+
 function spreadsheetCan(): SpreadsheetEditorCanCommands {
   return {
     activateSheet: () => true,

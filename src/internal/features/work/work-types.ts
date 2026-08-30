@@ -318,7 +318,33 @@ export interface WorkSpreadsheetTableColumn {
    * stores the editable form with a leading `=`; XLSX table parts omit it.
    */
   calculatedFormula?: string;
+  /**
+   * Native totals-row aggregation. An omitted value means that the totals
+   * cell is not owned by the table. The controlled model uses camelCase names
+   * while XLSX table parts use their OOXML spellings.
+   */
+  totalsFunction?: WorkSpreadsheetTableTotalsFunction;
+  /** Optional text label rendered in this column's totals-row cell. */
+  totalsLabel?: string;
+  /**
+   * A bounded custom totals-row formula. The controlled model stores the
+   * editable form with a leading `=`; XLSX table parts omit it.
+   */
+  totalsFormula?: string;
 }
+
+export type WorkSpreadsheetTableTotalsFunction =
+  | 'sum'
+  | 'average'
+  | 'count'
+  | 'countNums'
+  | 'max'
+  | 'min'
+  | 'stdDev'
+  | 'stdDevP'
+  | 'var'
+  | 'varP'
+  | 'custom';
 
 export type WorkSpreadsheetDynamicFilter =
   | 'above-average'

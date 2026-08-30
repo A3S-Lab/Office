@@ -1,6 +1,7 @@
 import type { FormulaParserCoordinate } from '@fortune-sheet/formula-parser';
 import {
   browserScalarFunctionArities,
+  evaluateParserSubtotal,
   normalizeFormulaForFortuneParser,
   normalizeSpreadsheetFunctionName,
 } from './office-kernel-spreadsheet-fallback-formula';
@@ -208,7 +209,7 @@ class JavaScriptSpreadsheetEvaluator {
       .setFunction('COLUMN', (parameters) =>
         parameters.length ? null : coordinate.column + 1,
       );
-    parser.on('callFunction', (name, parameters) => {
+    parser.on('callFunction', (name, parameters, done) => {
       const normalized = normalizeSpreadsheetFunctionName(name);
       const arity = browserScalarFunctionArities.get(normalized);
       if (
@@ -217,6 +218,9 @@ class JavaScriptSpreadsheetEvaluator {
         parameters.length > arity[1]
       ) {
         unsupportedFunction ??= name.toUpperCase();
+      }
+      if (normalized === 'SUBTOTAL') {
+        done(evaluateParserSubtotal(parameters));
       }
     });
     parser.on('callCellValue', (cell, _options, done) => {

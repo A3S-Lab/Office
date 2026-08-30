@@ -1,4 +1,4 @@
-import { Columns3, Rows3, TableProperties } from 'lucide-react';
+import { Calculator, Columns3, Rows3, TableProperties } from 'lucide-react';
 import { type KeyboardEvent, type ReactNode, useEffect, useState } from 'react';
 import { Popover } from '../../../design-system/primitives';
 import { showToast } from '../../../state/app-state';
@@ -6,12 +6,17 @@ import type {
   WorkSpreadsheetTable,
   WorkSpreadsheetTableStyle,
 } from '../work-types';
+import { OfficeCheckbox } from './office-controls';
+import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
 import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
-import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
 import { spreadsheetTableStyleChoices } from './spreadsheet-table-style';
+import {
+  SPREADSHEET_TABLE_TOTALS_FUNCTIONS,
+  spreadsheetTableTotalsFunctionLabel,
+} from './spreadsheet-table-totals';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
@@ -51,6 +56,14 @@ export function SpreadsheetTableDesignRibbon({
         >
           <TableProperties size={19} />
         </WorkOfficeRibbonButton>
+      </WorkOfficeRibbonGroup>
+      <WorkOfficeRibbonGroup label="汇总行" priority="high">
+        <SpreadsheetTableTotalsMenu
+          can={can}
+          commands={commands}
+          sheetId={sheetId}
+          table={table}
+        />
       </WorkOfficeRibbonGroup>
       <WorkOfficeRibbonGroup label="表格样式" priority="high">
         <SpreadsheetTableStyleGallery
@@ -123,6 +136,244 @@ export function SpreadsheetTableDesignRibbon({
       </WorkOfficeRibbonGroup>
     </>
   );
+}
+
+const totalsFunctionOptions = [
+  { value: 'none', label: '不汇总' },
+  ...SPREADSHEET_TABLE_TOTALS_FUNCTIONS.map((value) => ({
+    value,
+    label: spreadsheetTableTotalsFunctionLabel(value),
+  })),
+] as const;
+
+function SpreadsheetTableTotalsMenu({
+  can,
+  commands,
+  sheetId,
+  table,
+}: {
+  can: SpreadsheetEditorCanCommands;
+  commands: SpreadsheetEditorCommands;
+  sheetId: string;
+  table: WorkSpreadsheetTable;
+}) {
+  const [drafts, setDrafts] = useState<
+    Record<number, { formula: string; label: string }>
+  >({});
+  useEffect(() => {
+    const next: Record<number, { formula: string; label: string }> = {};
+    table.columns.forEach((column, offset) => {
+      next[offset] = {
+        formula: column.totalsFormula ?? '',
+        label: column.totalsLabel ?? '',
+      };
+    });
+    setDrafts(next);
+  }, [table.id, table.columns]);
+
+  const patchColumn = (
+    offset: number,
+    patch: {
+      totalsFormula?: string | null;
+      totalsFunction?:
+        | WorkSpreadsheetTable['columns'][number]['totalsFunction']
+        | null;
+      totalsLabel?: string | null;
+    },
+  ) => {
+    const designPatch = { totalsColumns: { [offset]: patch } };
+    if (
+      !can.updateTable(sheetId, table.id, designPatch) ||
+      !commands.updateTable(sheetId, table.id, designPatch)
+    ) {
+      showToast('汇总行设置无效，请检查函数、标签或公式。', 'error');
+    }
+  };
+
+  const toggleTotalsRow = () => {
+    const patch = { totalsRow: !table.totalsRow };
+    if (
+      !can.updateTable(sheetId, table.id, patch) ||
+      !commands.updateTable(sheetId, table.id, patch)
+    ) {
+      showToast(
+        table.totalsRow
+          ? '无法关闭汇总行。'
+          : '汇总行目标区域已有内容，请先清空该行。',
+        'error',
+      );
+    }
+  };
+
+  return (
+    <Popover
+      label="汇总行"
+      panelLabel="表格汇总行设置"
+      panelRole="dialog"
+      portal
+      className="work-spreadsheet-table-totals-root"
+      panelClassName="work-spreadsheet-table-totals-menu"
+      placement="bottom-end"
+      trigger={(triggerProps, { open }) => (
+        <button
+          {...triggerProps}
+          className={`with-label work-spreadsheet-table-totals-trigger${open || table.totalsRow ? ' active' : ''}`}
+          aria-pressed={table.totalsRow}
+          title="设置表格汇总行"
+        >
+          <Calculator size={19} />
+          <span>汇总行</span>
+        </button>
+      )}
+    >
+      {(close) => (
+        <div className="work-spreadsheet-table-totals-content">
+          <OfficeCheckbox
+            ariaLabel="启用汇总行"
+            checked={table.totalsRow}
+            disabled={
+              !table.totalsRow &&
+              !can.updateTable(sheetId, table.id, { totalsRow: true })
+            }
+            onCheckedChange={() => {
+              toggleTotalsRow();
+            }}
+          >
+            启用汇总行
+          </OfficeCheckbox>
+          <p className="work-spreadsheet-table-totals-hint">
+            汇总行位于表格末尾，函数会随筛选结果更新。
+          </p>
+          <div className="work-spreadsheet-table-totals-columns">
+            {table.columns.map((column, offset) => {
+              const selected = column.totalsFormula
+                ? 'custom'
+                : (column.totalsFunction ?? 'none');
+              const draft = drafts[offset] ?? {
+                formula: column.totalsFormula ?? '',
+                label: column.totalsLabel ?? '',
+              };
+              const formulaEnabled = selected === 'custom';
+              const labelEnabled = selected === 'none';
+              return (
+                <div
+                  className="work-spreadsheet-table-totals-column"
+                  key={`${table.id}-${offset}`}
+                >
+                  <strong>{column.name}</strong>
+                  <label>
+                    <span>函数</span>
+                    <select
+                      aria-label={`${column.name} 汇总函数`}
+                      disabled={!table.totalsRow}
+                      value={selected}
+                      onChange={(event) => {
+                        const value = event.currentTarget.value;
+                        if (value === 'none') {
+                          patchColumn(offset, {
+                            totalsFunction: null,
+                            totalsFormula: null,
+                          });
+                        } else if (value === 'custom') {
+                          const formula =
+                            draft.formula ||
+                            `=SUM(${table.name}[${escapeTotalsColumnName(column.name)}])`;
+                          setDrafts((current) => ({
+                            ...current,
+                            [offset]: { ...draft, formula },
+                          }));
+                          patchColumn(offset, {
+                            totalsFunction: 'custom',
+                            totalsFormula: formula,
+                            totalsLabel: null,
+                          });
+                        } else {
+                          patchColumn(offset, {
+                            totalsFunction: value as NonNullable<
+                              typeof column.totalsFunction
+                            >,
+                            totalsFormula: null,
+                            totalsLabel: null,
+                          });
+                        }
+                      }}
+                    >
+                      {totalsFunctionOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>标签</span>
+                    <input
+                      aria-label={`${column.name} 汇总标签`}
+                      disabled={!table.totalsRow || !labelEnabled}
+                      value={draft.label}
+                      onChange={(event) => {
+                        const value = event.currentTarget.value;
+                        setDrafts((current) => ({
+                          ...current,
+                          [offset]: { ...draft, label: value },
+                        }));
+                      }}
+                      onBlur={() => {
+                        if (!labelEnabled) return;
+                        patchColumn(offset, {
+                          totalsLabel: draft.label.trim() || null,
+                        });
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') event.currentTarget.blur();
+                      }}
+                    />
+                  </label>
+                  <label>
+                    <span>自定义公式</span>
+                    <input
+                      aria-label={`${column.name} 汇总公式`}
+                      disabled={!table.totalsRow || !formulaEnabled}
+                      placeholder="=SUM(Table[Column])"
+                      value={draft.formula}
+                      onChange={(event) => {
+                        const value = event.currentTarget.value;
+                        setDrafts((current) => ({
+                          ...current,
+                          [offset]: { ...draft, formula: value },
+                        }));
+                      }}
+                      onBlur={() => {
+                        if (!formulaEnabled) return;
+                        patchColumn(offset, {
+                          totalsFunction: 'custom',
+                          totalsFormula: draft.formula.trim() || null,
+                        });
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') event.currentTarget.blur();
+                      }}
+                    />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            className="work-spreadsheet-table-totals-close"
+            onClick={close}
+          >
+            完成
+          </button>
+        </div>
+      )}
+    </Popover>
+  );
+}
+
+function escapeTotalsColumnName(value: string): string {
+  return value.replaceAll(']', ']]');
 }
 
 function SpreadsheetTableNameControl({

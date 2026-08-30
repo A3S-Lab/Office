@@ -1,8 +1,11 @@
 import type { Cell, CellWithRowAndCol } from '@fortune-sheet/core';
+import { normalizeSpreadsheetTableCalculatedFormula } from '../features/work/editors/spreadsheet-table-calculated-columns';
 import {
-  OFFICE_KERNEL_SPREADSHEET_MAX_COLUMNS,
-  OFFICE_KERNEL_SPREADSHEET_MAX_ROWS,
-} from '../kernel/office-kernel-spreadsheet-protocol';
+  normalizeSpreadsheetTableTotalsFormula,
+  normalizeSpreadsheetTableTotalsFunction,
+  normalizeSpreadsheetTableTotalsLabel,
+} from '../features/work/editors/spreadsheet-table-totals';
+import { isValidSpreadsheetDefinedName } from '../features/work/work-spreadsheet-ranges';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetDynamicFilter,
@@ -10,8 +13,10 @@ import type {
   WorkSpreadsheetTable,
   WorkSpreadsheetTableFilterCriteria,
 } from '../features/work/work-types';
-import { normalizeSpreadsheetTableCalculatedFormula } from '../features/work/editors/spreadsheet-table-calculated-columns';
-import { isValidSpreadsheetDefinedName } from '../features/work/work-spreadsheet-ranges';
+import {
+  OFFICE_KERNEL_SPREADSHEET_MAX_COLUMNS,
+  OFFICE_KERNEL_SPREADSHEET_MAX_ROWS,
+} from '../kernel/office-kernel-spreadsheet-protocol';
 import { WorkOfficeCollaborationError } from './office-collaboration';
 import {
   invalidWorkOfficeSpreadsheetInput,
@@ -461,7 +466,13 @@ function requiredSpreadsheetTableColumns(
     const record = requiredInputRecord(candidate, `${label} column`);
     assertOptionalRecordKeys(
       record,
-      ['name', 'calculatedFormula'],
+      [
+        'name',
+        'calculatedFormula',
+        'totalsFunction',
+        'totalsLabel',
+        'totalsFormula',
+      ],
       `column for ${label}`,
     );
     const name = requiredTableColumnName(record.name, label);
@@ -470,16 +481,86 @@ function requiredSpreadsheetTableColumns(
       invalidWorkOfficeSpreadsheetInput(`unique column names for ${label}`);
     }
     names.add(normalized);
-    if (record.calculatedFormula === undefined) return { name };
-    const calculatedFormula = normalizeSpreadsheetTableCalculatedFormula(
-      record.calculatedFormula,
-    );
-    if (!calculatedFormula || calculatedFormula !== record.calculatedFormula) {
+    let calculatedFormula: string | undefined;
+    if (record.calculatedFormula !== undefined) {
+      calculatedFormula = normalizeSpreadsheetTableCalculatedFormula(
+        record.calculatedFormula,
+      );
+      if (
+        !calculatedFormula ||
+        calculatedFormula !== record.calculatedFormula
+      ) {
+        invalidWorkOfficeSpreadsheetInput(
+          `a bounded structured calculated-column formula for ${label}`,
+        );
+      }
+    }
+    const totalsFunction =
+      record.totalsFunction === undefined
+        ? undefined
+        : normalizeSpreadsheetTableTotalsFunction(record.totalsFunction);
+    if (
+      record.totalsFunction !== undefined &&
+      (!totalsFunction || totalsFunction !== record.totalsFunction)
+    ) {
       invalidWorkOfficeSpreadsheetInput(
-        `a bounded structured calculated-column formula for ${label}`,
+        `a supported totals-row function for ${label}`,
       );
     }
-    return { name, calculatedFormula };
+    const totalsLabel =
+      record.totalsLabel === undefined
+        ? undefined
+        : normalizeSpreadsheetTableTotalsLabel(record.totalsLabel);
+    if (
+      record.totalsLabel !== undefined &&
+      (!totalsLabel || totalsLabel !== record.totalsLabel)
+    ) {
+      invalidWorkOfficeSpreadsheetInput(
+        `a bounded totals-row label for ${label}`,
+      );
+    }
+    const totalsFormula =
+      record.totalsFormula === undefined
+        ? undefined
+        : normalizeSpreadsheetTableTotalsFormula(record.totalsFormula);
+    if (
+      record.totalsFormula !== undefined &&
+      (!totalsFormula || totalsFormula !== record.totalsFormula)
+    ) {
+      invalidWorkOfficeSpreadsheetInput(
+        `a bounded totals-row formula for ${label}`,
+      );
+    }
+    if (totalsFormula && totalsFunction !== 'custom') {
+      invalidWorkOfficeSpreadsheetInput(
+        `custom totals-row formulas to declare the custom function for ${label}`,
+      );
+    }
+    if (totalsFunction === 'custom' && !totalsFormula) {
+      invalidWorkOfficeSpreadsheetInput(
+        `custom totals-row functions to include a formula for ${label}`,
+      );
+    }
+    if ((totalsFunction || totalsFormula) && totalsLabel) {
+      invalidWorkOfficeSpreadsheetInput(
+        `totals-row labels not to share a cell with a formula for ${label}`,
+      );
+    }
+    if (
+      !calculatedFormula &&
+      !totalsFunction &&
+      !totalsLabel &&
+      !totalsFormula
+    ) {
+      return { name };
+    }
+    return {
+      name,
+      ...(calculatedFormula ? { calculatedFormula } : {}),
+      ...(totalsFunction ? { totalsFunction } : {}),
+      ...(totalsLabel ? { totalsLabel } : {}),
+      ...(totalsFormula ? { totalsFormula } : {}),
+    };
   });
 }
 

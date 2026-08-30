@@ -1,0 +1,112 @@
+suite "office-spreadsheet-table-totals" {
+    version = 1
+
+    scenario "author-and-edit-totals-row" {
+        name = "Author and edit a native Spreadsheet totals row"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        wait "playground-ready" {
+            visible = css(".playground-latest-capabilities")
+        }
+
+        click "open-structured-reference-template" {
+            target = role("button", "打开最新能力：结构化引用")
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "template-title-visible" {
+            visible = css("input[aria-label='文件名'][value='结构化引用示例']")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-table-header" {
+            key = "Control+Home"
+        }
+
+        press "move-to-table" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-table-body" {
+            key = "ArrowDown"
+        }
+
+        expect "table-design-tab-visible" {
+            visible = css(".work-spreadsheet-ribbon [role='tab'][aria-selected='true'][data-contextual='true']")
+        }
+
+        click "open-totals-menu" {
+            target = role("button", "汇总行")
+        }
+
+        expect "totals-menu-visible" {
+            visible = css("[role='dialog'][aria-label='表格汇总行设置']")
+        }
+
+        expect "totals-enabled" {
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] input[aria-label='启用汇总行']:checked")
+        }
+
+        expect "units-sum-selected" {
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数'] option[value='sum']:checked")
+        }
+
+        select "change-units-function" {
+            target = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数']")
+            values = ["average"]
+        }
+
+        expect "units-average-selected" {
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数'] option[value='average']:checked")
+        }
+
+        select "choose-custom-function" {
+            target = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Revenue 汇总函数']")
+            values = ["custom"]
+        }
+
+        expect "custom-formula-visible" {
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] input[aria-label='Revenue 汇总公式']:not([disabled])")
+        }
+
+        click "close-totals-menu" {
+            target = role("button", "完成")
+        }
+
+        expect "totals-menu-closed" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='汇总行'][aria-pressed='true']")
+        }
+
+        accessibility "spreadsheet-table-totals-accessibility" {
+            path = "evidence/spreadsheet-table-totals-accessibility.json"
+            interactive = true
+        }
+
+        console "spreadsheet-table-totals-console" {
+            path = "diagnostics/spreadsheet-table-totals-console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-table-totals-page-errors" {
+            path = "diagnostics/spreadsheet-table-totals-page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -11,9 +11,9 @@ import {
   createSpreadsheetTableDialogSource,
   type SpreadsheetTableDialogSource,
   type SpreadsheetTableDialogValue,
+  type SpreadsheetTableTarget,
   spreadsheetTableFailureMessage,
   spreadsheetTableRangeFromText,
-  type SpreadsheetTableTarget,
 } from './spreadsheet-table';
 import { SpreadsheetTableDialog } from './spreadsheet-table-dialog';
 
@@ -131,6 +131,7 @@ export function useSpreadsheetTable({
                 name: source.name,
                 range,
                 sheetId: source.sheetId,
+                totalsRow: value.totalsRow === true,
               }) ?? false;
             appliedRef.current = handled;
           } finally {
@@ -169,5 +170,6 @@ function spreadsheetTableValidationMessage(
     name: source.name,
     range,
     sheetId: source.sheetId,
+    totalsRow: value.totalsRow === true,
   });
 }

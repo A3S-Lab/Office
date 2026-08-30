@@ -148,6 +148,7 @@ suites=(
   "tests/e2e/spreadsheet-font-dialog-shortcuts.acl"
   "tests/e2e/spreadsheet-rich-text.acl"
   "tests/e2e/spreadsheet-table.acl"
+  "tests/e2e/spreadsheet-table-totals.acl"
   "tests/e2e/spreadsheet-data-validation.acl"
   "tests/e2e/spreadsheet-hyperlink.acl"
   "tests/e2e/spreadsheet-paste-special.acl"

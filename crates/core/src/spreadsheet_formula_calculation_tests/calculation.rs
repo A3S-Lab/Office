@@ -100,6 +100,8 @@ async fn calculation_covers_the_closed_scalar_function_registry() {
         .set_cell_value("/Sheet1/A2", text("ignored"))
         .unwrap();
     editor.set_cell_value("/Sheet1/A3", boolean(true)).unwrap();
+    editor.set_cell_value("/Sheet1/A4", number("4")).unwrap();
+    editor.set_cell_value("/Sheet1/A5", number("6")).unwrap();
     for (path, expression) in [
         ("/Sheet1/B1", "SUM(A1:A3)"),
         ("/Sheet1/B2", "AVERAGE(A1:A3)"),
@@ -123,6 +125,14 @@ async fn calculation_covers_the_closed_scalar_function_registry() {
         ("/Sheet1/B20", "IF(FALSE,9)"),
         ("/Sheet1/B21", "NA()"),
         ("/Sheet1/B22", "PI()"),
+        ("/Sheet1/B23", "SUBTOTAL(109,A1:A5)"),
+        ("/Sheet1/B24", "SUBTOTAL(101,A1:A5)"),
+        ("/Sheet1/B25", "SUBTOTAL(102,A1:A5)"),
+        ("/Sheet1/B26", "SUBTOTAL(103,A1:A5)"),
+        ("/Sheet1/B27", "SUBTOTAL(104,A1:A5)"),
+        ("/Sheet1/B28", "SUBTOTAL(105,A1:A5)"),
+        ("/Sheet1/B29", "SUBTOTAL(999,A1:A5)"),
+        ("/Sheet1/B30", "SUBTOTAL(109,A1:A1,A4:A5)"),
     ] {
         editor.set_cell_value(path, formula(expression)).unwrap();
     }
@@ -152,6 +162,13 @@ async fn calculation_covers_the_closed_scalar_function_registry() {
         ("/Sheet1/B12", "7"),
         ("/Sheet1/B17", "3"),
         ("/Sheet1/B18", "2"),
+        ("/Sheet1/B23", "12"),
+        ("/Sheet1/B24", "4"),
+        ("/Sheet1/B25", "3"),
+        ("/Sheet1/B26", "5"),
+        ("/Sheet1/B27", "6"),
+        ("/Sheet1/B28", "2"),
+        ("/Sheet1/B30", "12"),
     ] {
         assert_eq!(
             values[path],
@@ -192,6 +209,10 @@ async fn calculation_covers_the_closed_scalar_function_registry() {
         panic!("PI did not return a number");
     };
     assert!((value.parse::<f64>().unwrap() - std::f64::consts::PI).abs() < f64::EPSILON);
+    assert_eq!(
+        values["/Sheet1/B29"],
+        SpreadsheetFormulaValue::error(SpreadsheetFormulaErrorLiteral::Value)
+    );
 }
 
 #[tokio::test]

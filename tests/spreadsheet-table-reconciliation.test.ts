@@ -382,6 +382,76 @@ describe('spreadsheet table reconciliation', () => {
         ?.v?.f,
     ).toBe('=[@Units]*2');
   });
+
+  test('moves totals cells with body-row insertion and preserves totals metadata', () => {
+    const source = totalsTableSheet();
+    const changed = structuredClone(source);
+    changed.data = [
+      changed.data?.[0] ?? [],
+      [{ v: 'New' }, { v: 3 }, undefined],
+      changed.data?.[1] ?? [],
+      changed.data?.[2] ?? [],
+      changed.data?.[3] ?? [],
+    ];
+    const reconciled = reconcileSpreadsheetTablesAfterFortune(
+      [changed],
+      [source],
+      [
+        {
+          id: source.id,
+          op: 'insertRowCol',
+          path: [],
+          value: {
+            count: 1,
+            direction: 'lefttop',
+            id: source.id,
+            index: 1,
+            type: 'row',
+          },
+        },
+      ],
+    );
+    const table = reconciled[0]?.tables?.[0];
+    expect(table?.range).toEqual({ row: [0, 4], column: [0, 2] });
+    expect(table?.columns).toEqual([
+      { name: 'Item', totalsLabel: 'Total' },
+      { name: 'Units', totalsFunction: 'sum' },
+      { name: 'State' },
+    ]);
+    expect(reconciled[0]?.data?.[4]?.[0]).toMatchObject({
+      m: 'Total',
+      v: 'Total',
+    });
+    expect(reconciled[0]?.data?.[4]?.[1]?.f).toBe(
+      '=SUBTOTAL(109,Table1[Units])',
+    );
+  });
+
+  test('turns a directly edited totals formula into a custom rule', () => {
+    const source = totalsTableSheet();
+    const changed = structuredClone(source);
+    const totals = changed.data?.[3];
+    if (!totals) throw new Error('Expected totals row.');
+    totals[1] = { f: '=SUM(B2:B3)', v: 22 };
+    const reconciled = reconcileSpreadsheetTablesAfterFortune(
+      [changed],
+      [source],
+      [
+        {
+          id: source.id,
+          op: 'replace',
+          path: ['data', 3, 1],
+          value: totals[1],
+        },
+      ],
+    );
+    expect(reconciled[0]?.tables?.[0]?.columns[1]).toEqual({
+      name: 'Units',
+      totalsFunction: 'custom',
+      totalsFormula: '=SUM(B2:B3)',
+    });
+    expect(reconciled[0]?.data?.[3]?.[1]?.f).toBe('=SUM(B2:B3)');
+  });
 });
 
 function tableSheet(
@@ -440,5 +510,28 @@ function calculatedTableSheet(): WorkSpreadsheetSheet {
   sheet.data?.[2]?.splice(0, 3, { v: 'West' }, { v: 12 }, undefined);
   sheet.data?.[1]?.splice(2, 1, { f: '=[@Units]*2', v: 20 });
   sheet.data?.[2]?.splice(2, 1, { f: '=[@Units]*2', v: 24 });
+  return sheet;
+}
+
+function totalsTableSheet(): WorkSpreadsheetSheet {
+  const sheet = tableSheet({
+    columns: [
+      { name: 'Item', totalsLabel: 'Total' },
+      { name: 'Units', totalsFunction: 'sum' },
+      { name: 'State' },
+    ],
+    range: { row: [0, 3], column: [0, 2] },
+    totalsRow: true,
+  });
+  sheet.data = [
+    [{ v: 'Item' }, { v: 'Units' }, { v: 'State' }],
+    [{ v: 'East' }, { v: 10 }, { v: 'Ready' }],
+    [{ v: 'West' }, { v: 12 }, { v: 'Blocked' }],
+    [
+      { m: 'Total', v: 'Total' },
+      { f: '=SUBTOTAL(109,Table1[Units])' },
+      undefined,
+    ],
+  ];
   return sheet;
 }

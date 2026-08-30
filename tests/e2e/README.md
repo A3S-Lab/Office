@@ -551,6 +551,19 @@ table-style options, Convert to Range, one-step Undo, accessibility, and clean
 browser diagnostics. The suite is local-only; GitHub Actions keeps the
 equivalent Playwright regression and never installs or invokes A3S Test.
 
+The native Spreadsheet totals-row authoring workflow has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-table-totals:check
+bun run test:e2e:spreadsheet-table-totals
+```
+
+It opens the public structured-reference workbook, verifies the enabled totals
+row and native function selector, changes a column to `AVERAGE`, opens a custom
+formula editor, and records accessibility plus empty browser diagnostics. The
+suite is local-only; GitHub Actions and Pages do not install or invoke A3S
+Test.
+
 The native Presentation scene-element and z-order lifecycle has a focused gate:
 
 ```bash

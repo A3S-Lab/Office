@@ -1,4 +1,11 @@
 import JSZip from 'jszip';
+import { normalizeSpreadsheetTableCalculatedFormula } from './editors/spreadsheet-table-calculated-columns';
+import {
+  normalizeSpreadsheetTableTotalsFormula,
+  normalizeSpreadsheetTableTotalsLabel,
+  spreadsheetTableTotalsFunctionFromOoxml,
+  spreadsheetTableTotalsFunctionToOoxml,
+} from './editors/spreadsheet-table-totals';
 import {
   attribute,
   directChild,
@@ -11,16 +18,15 @@ import {
   formatSpreadsheetCellRanges,
   parseSpreadsheetCellRanges,
 } from './work-spreadsheet-ranges';
-import { normalizeSpreadsheetTableCalculatedFormula } from './editors/spreadsheet-table-calculated-columns';
-import {
-  readXlsxTableFilters,
-  xlsxTableAutoFilterXml,
-} from './work-xlsx-table-filters';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetTable,
   WorkSpreadsheetTableStyle,
 } from './work-types';
+import {
+  readXlsxTableFilters,
+  xlsxTableAutoFilterXml,
+} from './work-xlsx-table-filters';
 
 const PACKAGE_RELATIONSHIP_NAMESPACE =
   'http://schemas.openxmlformats.org/package/2006/relationships';
@@ -180,10 +186,27 @@ function parseXlsxTable(
       const calculatedFormula = normalizeSpreadsheetTableCalculatedFormula(
         directChild(column, 'calculatedColumnFormula')?.textContent,
       );
+      const totalsFunction = spreadsheetTableTotalsFunctionFromOoxml(
+        attribute(column, 'totalsRowFunction'),
+      );
+      const totalsLabel = normalizeSpreadsheetTableTotalsLabel(
+        attribute(column, 'totalsRowLabel'),
+      );
+      const totalsFormula = normalizeSpreadsheetTableTotalsFormula(
+        directChild(column, 'totalsRowFormula')?.textContent,
+      );
+      const normalizedTotalsFunction = totalsFormula
+        ? 'custom'
+        : totalsFunction;
       return [
         {
           name: columnName,
           ...(calculatedFormula ? { calculatedFormula } : {}),
+          ...(normalizedTotalsFunction
+            ? { totalsFunction: normalizedTotalsFunction }
+            : {}),
+          ...(totalsLabel && !totalsFormula ? { totalsLabel } : {}),
+          ...(totalsFormula ? { totalsFormula } : {}),
         },
       ];
     },
@@ -237,12 +260,34 @@ function xlsxTableXml(
             formula.replace(/^=/, ''),
           )}</calculatedColumnFormula>`
         : '';
-      const opening = `<tableColumn id="${index + 1}" name="${escapeXml(
-        column.name,
-      )}"`;
-      return formulaElement
-        ? `${opening}>${formulaElement}</tableColumn>`
-        : `${opening}/>`;
+      const totalsFunction = spreadsheetTableTotalsFunctionToOoxml(
+        column.totalsFunction,
+      );
+      const totalsLabel = normalizeSpreadsheetTableTotalsLabel(
+        column.totalsLabel,
+      );
+      const totalsFormula = normalizeSpreadsheetTableTotalsFormula(
+        column.totalsFormula,
+      );
+      const attributes = [
+        `id="${index + 1}"`,
+        `name="${escapeXml(column.name)}"`,
+        ...(totalsFunction
+          ? [`totalsRowFunction="${escapeXml(totalsFunction)}"`]
+          : []),
+        ...(totalsLabel && !totalsFormula
+          ? [`totalsRowLabel="${escapeXml(totalsLabel)}"`]
+          : []),
+      ].join(' ');
+      const totalsFormulaElement = totalsFormula
+        ? `<totalsRowFormula>${escapeXml(
+            totalsFormula.replace(/^=/, ''),
+          )}</totalsRowFormula>`
+        : '';
+      const children = `${formulaElement}${totalsFormulaElement}`;
+      return children
+        ? `<tableColumn ${attributes}>${children}</tableColumn>`
+        : `<tableColumn ${attributes}/>`;
     })
     .join('');
   const styleName = tableStyleName(table.style);

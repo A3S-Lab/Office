@@ -385,6 +385,235 @@ describe('spreadsheet tables', () => {
       null,
     );
   });
+
+  test('creates and synchronizes a native totals row without overwriting body data', () => {
+    const content = tableContent();
+    const next = applySpreadsheetTable(content, {
+      sheetId: 'sheet-1',
+      name: 'Sales',
+      range: { row: [0, 2], column: [0, 2] },
+      headerRow: true,
+      totalsRow: true,
+      totalsColumns: {
+        '1': { totalsFunction: 'sum' },
+        '2': { totalsFunction: 'count' },
+      },
+    });
+
+    expect(next?.sheets[0]?.tables?.[0]).toMatchObject({
+      range: { row: [0, 3], column: [0, 2] },
+      totalsRow: true,
+      columns: [
+        { name: 'Region', totalsLabel: 'Total' },
+        { name: 'Column2', totalsFunction: 'sum' },
+        { name: 'Region2', totalsFunction: 'count' },
+      ],
+    });
+    expect(next?.sheets[0]?.data?.[3]).toEqual([
+      { m: 'Total', v: 'Total' },
+      { f: '=SUBTOTAL(109,Sales[Column2])' },
+      { f: '=SUBTOTAL(103,Sales[Region2])' },
+    ]);
+  });
+
+  test('fails closed when enabling totals would overwrite populated cells', () => {
+    const content = tableContent();
+    const sheet = firstSheet(content);
+    if (!sheet.data) throw new Error('Expected table fixture data.');
+    sheet.data[3] = [{ v: 'Keep me' }];
+    const table = applySpreadsheetTable(content, {
+      sheetId: 'sheet-1',
+      name: 'Sales',
+      range: { row: [0, 2], column: [0, 2] },
+      headerRow: true,
+    });
+    const target = table?.sheets[0]?.tables?.[0];
+    expect(
+      table &&
+        target &&
+        updateSpreadsheetTable(table, 'sheet-1', target.id, {
+          totalsRow: true,
+        }),
+    ).toBeNull();
+  });
+
+  test('fails closed when the appended totals row intersects another table', () => {
+    const content = tableContent();
+    const created = applySpreadsheetTable(content, {
+      sheetId: 'sheet-1',
+      name: 'Sales',
+      range: { row: [0, 2], column: [0, 1] },
+      headerRow: true,
+    });
+    if (!created) throw new Error('Expected first table.');
+    const sheet = firstSheet(created);
+    sheet.tables?.push({
+      id: 'table-2',
+      name: 'Other',
+      range: { row: [3, 4], column: [0, 1] },
+      columns: [{ name: 'A' }, { name: 'B' }],
+      filters: [],
+      headerRow: true,
+      totalsRow: false,
+      style: { family: 'medium', number: 2 },
+      showFirstColumn: false,
+      showLastColumn: false,
+      showRowStripes: true,
+      showColumnStripes: false,
+    });
+    const table = sheet.tables?.find((candidate) => candidate.id !== 'table-2');
+    expect(
+      table &&
+        updateSpreadsheetTable(created, 'sheet-1', table.id, {
+          totalsRow: true,
+        }),
+    ).toBeNull();
+  });
+
+  test('allows a totals row on a sparse sheet without an explicit row dimension', () => {
+    const content = tableContent();
+    const sheet = firstSheet(content);
+    delete sheet.row;
+    const next = applySpreadsheetTable(content, {
+      sheetId: 'sheet-1',
+      name: 'Sales',
+      range: { row: [0, 2], column: [0, 2] },
+      headerRow: true,
+      totalsRow: true,
+    });
+    expect(next?.sheets[0]?.tables?.[0]?.range.row).toEqual([0, 3]);
+    expect(next?.sheets[0]?.data?.[3]?.[0]).toMatchObject({
+      m: 'Total',
+      v: 'Total',
+    });
+  });
+
+  test('keeps manually authored totals cells when disabling the totals row', () => {
+    const content = tableContent();
+    const sheet = firstSheet(content);
+    if (!sheet.data) throw new Error('Expected table fixture data.');
+    sheet.data[3] = [
+      { m: 'Total', v: 'Total' },
+      { f: '=SUM(B2:B3)', v: 22 },
+      { v: 'manual' },
+    ];
+    const table = {
+      ...content,
+      sheets: [
+        {
+          ...sheet,
+          tables: [
+            {
+              id: 'table-1',
+              name: 'Sales',
+              range: { row: [0, 3], column: [0, 2] as [number, number] },
+              columns: [
+                { name: 'Region', totalsLabel: 'Total' },
+                { name: 'Amount', totalsFunction: 'sum' as const },
+                { name: 'Status' },
+              ],
+              filters: [],
+              headerRow: true,
+              totalsRow: true,
+              style: { family: 'medium' as const, number: 2 },
+              showFirstColumn: false,
+              showLastColumn: false,
+              showRowStripes: true,
+              showColumnStripes: false,
+            },
+          ],
+        },
+      ],
+    };
+    const target = table.sheets[0]?.tables?.[0];
+    const updated = target
+      ? updateSpreadsheetTable(table, 'sheet-1', target.id, {
+          totalsRow: false,
+        })
+      : null;
+    expect(updated?.sheets[0]?.tables?.[0]?.range).toEqual({
+      row: [0, 2],
+      column: [0, 2],
+    });
+    expect(updated?.sheets[0]?.data?.[3]).toEqual(sheet.data[3]);
+  });
+
+  test('rewrites generated totals formulas after a table rename', () => {
+    const content = tableContent();
+    const sheet = firstSheet(content);
+    sheet.data?.push([
+      { m: 'Total', v: 'Total' },
+      { f: '=SUBTOTAL(109,Sales[Amount])' },
+      undefined,
+    ]);
+    sheet.tables = [
+      {
+        id: 'table-1',
+        name: 'Sales',
+        range: { row: [0, 3], column: [0, 2] },
+        columns: [
+          { name: 'Region', totalsLabel: 'Total' },
+          { name: 'Amount', totalsFunction: 'sum' },
+          { name: 'Status' },
+        ],
+        filters: [],
+        headerRow: true,
+        totalsRow: true,
+        style: { family: 'medium', number: 2 },
+        showFirstColumn: false,
+        showLastColumn: false,
+        showRowStripes: true,
+        showColumnStripes: false,
+      },
+    ];
+    const table = sheet.tables[0];
+    const updated = updateSpreadsheetTable(content, 'sheet-1', table.id, {
+      name: 'Sales2026',
+    });
+    expect(updated?.sheets[0]?.tables?.[0]?.name).toBe('Sales2026');
+    expect(updated?.sheets[0]?.data?.[3]?.[1]?.f).toBe(
+      '=SUBTOTAL(109,Sales2026[Amount])',
+    );
+  });
+
+  test('preserves a manually authored totals formula after a table rename', () => {
+    const content = tableContent();
+    const sheet = firstSheet(content);
+    sheet.data?.push([
+      { m: 'Total', v: 'Total' },
+      { f: '=SUM(B2:B3)', v: 22 },
+      undefined,
+    ]);
+    sheet.tables = [
+      {
+        id: 'table-1',
+        name: 'Sales',
+        range: { row: [0, 3], column: [0, 2] },
+        columns: [
+          { name: 'Region', totalsLabel: 'Total' },
+          { name: 'Amount', totalsFunction: 'sum' },
+          { name: 'Status' },
+        ],
+        filters: [],
+        headerRow: true,
+        totalsRow: true,
+        style: { family: 'medium', number: 2 },
+        showFirstColumn: false,
+        showLastColumn: false,
+        showRowStripes: true,
+        showColumnStripes: false,
+      },
+    ];
+    const table = sheet.tables[0];
+    const updated = updateSpreadsheetTable(content, 'sheet-1', table.id, {
+      name: 'Sales2026',
+    });
+    expect(updated?.sheets[0]?.tables?.[0]?.columns[1]).toEqual({
+      name: 'Amount',
+      totalsFunction: 'sum',
+    });
+    expect(updated?.sheets[0]?.data?.[3]?.[1]?.f).toBe('=SUM(B2:B3)');
+  });
 });
 
 function tableContent(): WorkSpreadsheetContent {

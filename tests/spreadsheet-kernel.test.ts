@@ -147,6 +147,77 @@ describe('Spreadsheet calculation kernel', () => {
     expect(result.issues).toEqual([]);
   });
 
+  test('calculates native SUBTOTAL functions in the JavaScript fallback', async () => {
+    const input = request();
+    const sheet = input.sheets[0];
+    if (!sheet) throw new Error('Spreadsheet fixture is incomplete.');
+    sheet.tables = [
+      {
+        name: 'Sales',
+        startRow: 0,
+        endRow: 3,
+        startColumn: 0,
+        endColumn: 0,
+        columns: ['Qty'],
+        headerRow: true,
+        totalsRow: true,
+      },
+    ];
+    sheet.cells = [
+      { row: 0, column: 0, value: { kind: 'text', value: 'Qty' } },
+      { row: 1, column: 0, value: { kind: 'number', value: 2 } },
+      { row: 2, column: 0, value: { kind: 'number', value: 3 } },
+      {
+        row: 4,
+        column: 0,
+        formula: '=SUBTOTAL(109,Sales[Qty])',
+        value: { kind: 'blank' },
+      },
+      {
+        row: 5,
+        column: 0,
+        formula: '=SUBTOTAL(101,Sales[Qty])',
+        value: { kind: 'blank' },
+      },
+      {
+        row: 6,
+        column: 0,
+        formula: '=SUBTOTAL(102,Sales[Qty])',
+        value: { kind: 'blank' },
+      },
+      {
+        row: 7,
+        column: 0,
+        formula: '=SUBTOTAL(103,Sales[Qty])',
+        value: { kind: 'blank' },
+      },
+      {
+        row: 8,
+        column: 0,
+        formula: '=SUBTOTAL(999,Sales[Qty])',
+        value: { kind: 'blank' },
+      },
+      {
+        row: 9,
+        column: 0,
+        formula: '=SUBTOTAL(109,2,3)',
+        value: { kind: 'blank' },
+      },
+    ];
+
+    const result = await calculateSpreadsheetInJavaScript(input);
+    const valueAt = (row: number) =>
+      result.cells.find((cell) => cell.sheetId === sheet.id && cell.row === row)
+        ?.value;
+    expect(valueAt(4)).toEqual({ kind: 'number', value: 5 });
+    expect(valueAt(5)).toEqual({ kind: 'number', value: 2.5 });
+    expect(valueAt(6)).toEqual({ kind: 'number', value: 2 });
+    expect(valueAt(7)).toEqual({ kind: 'number', value: 2 });
+    expect(valueAt(8)).toEqual({ kind: 'error', value: '#VALUE!' });
+    expect(valueAt(9)).toEqual({ kind: 'number', value: 5 });
+    expect(result.issues).toEqual([]);
+  });
+
   test('validates table aliases and keeps oversized structured ranges sparse', async () => {
     const duplicateTable: OfficeKernelSpreadsheetInputTable = {
       name: 'Sales',

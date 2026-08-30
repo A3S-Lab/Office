@@ -85,6 +85,145 @@ pub(super) fn aggregate(
     )))
 }
 
+/// Evaluate the bounded native `SUBTOTAL(function_num, ref1, ...)` family.
+/// Hidden-row state is not part of the calculation input yet, so the browser
+/// kernel applies the requested aggregation to the resolved references while
+/// retaining Excel's function-number mapping and error behaviour.
+pub(super) fn subtotal(
+    context: &EvaluationContext<'_>,
+    arguments: &[EvalValue],
+) -> UseResult<EvalValue> {
+    let Some(code_value) = arguments.first() else {
+        return Ok(EvalValue::Scalar(ScalarValue::Error(
+            SpreadsheetFormulaErrorLiteral::Value,
+        )));
+    };
+    let code = argument_scalars(context, code_value)?
+        .into_iter()
+        .next()
+        .and_then(|value| scalar_number(value).ok())
+        .filter(|value| value.is_finite())
+        .map(|value| value.trunc() as i32);
+    let Some(code) = code else {
+        return Ok(EvalValue::Scalar(ScalarValue::Error(
+            SpreadsheetFormulaErrorLiteral::Value,
+        )));
+    };
+
+    let mut values = Vec::new();
+    for argument in arguments.iter().skip(1) {
+        values.extend(argument_scalars(context, argument)?);
+    }
+    let result = match code {
+        1 | 101 => subtotal_numeric(&values, SubtotalOperation::Average),
+        2 | 102 => subtotal_count(&values, false),
+        3 | 103 => subtotal_count(&values, true),
+        4 | 104 => subtotal_numeric(&values, SubtotalOperation::Maximum),
+        5 | 105 => subtotal_numeric(&values, SubtotalOperation::Minimum),
+        6 | 106 => subtotal_numeric(&values, SubtotalOperation::Product),
+        7 | 107 => subtotal_numeric(&values, SubtotalOperation::StdDev),
+        8 | 108 => subtotal_numeric(&values, SubtotalOperation::StdDevP),
+        9 | 109 => subtotal_numeric(&values, SubtotalOperation::Sum),
+        10 | 110 => subtotal_numeric(&values, SubtotalOperation::Var),
+        11 | 111 => subtotal_numeric(&values, SubtotalOperation::VarP),
+        _ => ScalarValue::Error(SpreadsheetFormulaErrorLiteral::Value),
+    };
+    Ok(EvalValue::Scalar(result))
+}
+
+#[derive(Debug, Clone, Copy)]
+enum SubtotalOperation {
+    Average,
+    Maximum,
+    Minimum,
+    Product,
+    StdDev,
+    StdDevP,
+    Sum,
+    Var,
+    VarP,
+}
+
+fn subtotal_numeric(values: &[ScalarValue], operation: SubtotalOperation) -> ScalarValue {
+    let mut numbers = Vec::new();
+    for value in values {
+        match value {
+            ScalarValue::Number(number) => numbers.push(*number),
+            ScalarValue::Error(error) => return ScalarValue::Error(error.clone()),
+            ScalarValue::Blank => {}
+            _ => {}
+        }
+    }
+    let count = numbers.len();
+    let sum = numbers.iter().sum::<f64>();
+    let result = match operation {
+        SubtotalOperation::Sum => sum,
+        SubtotalOperation::Average => {
+            if count == 0 {
+                return ScalarValue::Error(SpreadsheetFormulaErrorLiteral::DivisionByZero);
+            }
+            sum / count as f64
+        }
+        SubtotalOperation::Maximum => numbers.iter().copied().reduce(f64::max).unwrap_or(0.0),
+        SubtotalOperation::Minimum => numbers.iter().copied().reduce(f64::min).unwrap_or(0.0),
+        SubtotalOperation::Product => {
+            if count == 0 {
+                0.0
+            } else {
+                numbers.iter().product()
+            }
+        }
+        SubtotalOperation::StdDev | SubtotalOperation::Var if count < 2 => {
+            return ScalarValue::Error(SpreadsheetFormulaErrorLiteral::DivisionByZero);
+        }
+        SubtotalOperation::StdDevP | SubtotalOperation::VarP if count == 0 => {
+            return ScalarValue::Error(SpreadsheetFormulaErrorLiteral::DivisionByZero);
+        }
+        SubtotalOperation::StdDev | SubtotalOperation::StdDevP => {
+            let mean = sum / count as f64;
+            let divisor = if matches!(operation, SubtotalOperation::StdDev) {
+                (count - 1) as f64
+            } else {
+                count as f64
+            };
+            (numbers
+                .iter()
+                .map(|number| (number - mean).powi(2))
+                .sum::<f64>()
+                / divisor)
+                .sqrt()
+        }
+        SubtotalOperation::Var | SubtotalOperation::VarP => {
+            let mean = sum / count as f64;
+            let divisor = if matches!(operation, SubtotalOperation::Var) {
+                (count - 1) as f64
+            } else {
+                count as f64
+            };
+            numbers
+                .iter()
+                .map(|number| (number - mean).powi(2))
+                .sum::<f64>()
+                / divisor
+        }
+    };
+    super::super::finite_or_number_error(result)
+}
+
+fn subtotal_count(values: &[ScalarValue], include_non_numeric: bool) -> ScalarValue {
+    let count = values
+        .iter()
+        .filter(|value| {
+            if include_non_numeric {
+                !matches!(value, ScalarValue::Blank)
+            } else {
+                matches!(value, ScalarValue::Number(_))
+            }
+        })
+        .count();
+    ScalarValue::Number(count as f64)
+}
+
 pub(super) fn count(
     context: &EvaluationContext<'_>,
     arguments: &[EvalValue],

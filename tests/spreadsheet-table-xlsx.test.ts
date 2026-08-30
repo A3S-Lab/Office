@@ -198,6 +198,38 @@ describe('spreadsheet table XLSX interop', () => {
     expect(table).not.toContain('calculatedColumnFormula');
   });
 
+  test('round-trips native and custom totals-row metadata', async () => {
+    const buffer = await tableWorkbookWithTotalsRow();
+    const imported = await readXlsxWorksheetTables(
+      await OoxmlPackage.load(buffer),
+      'xl/worksheets/sheet1.xml',
+    );
+    expect(imported[0]?.columns).toEqual([
+      { name: 'Region', totalsLabel: 'Total' },
+      { name: 'Qty', totalsFunction: 'sum' },
+      {
+        name: 'State',
+        totalsFunction: 'custom',
+        totalsFormula: '=SUM(Sales[Qty])',
+      },
+    ]);
+
+    const patched = await patchXlsxSpreadsheetTables(await blankWorkbook(), {
+      type: 'spreadsheet',
+      sheets: [{ id: 'sheet-1', name: 'Sales', tables: imported }],
+    });
+    const zip = await JSZip.loadAsync(patched);
+    const table = (await zip.file('xl/tables/table1.xml')?.async('text')) ?? '';
+    expect(table).toContain('totalsRowLabel="Total"');
+    expect(table).toContain('totalsRowFunction="sum"');
+    expect(table).toContain(
+      '<totalsRowFormula>SUM(Sales[Qty])</totalsRowFormula>',
+    );
+    expect(table).not.toContain(
+      '<totalsRowFormula>=SUM(Sales[Qty])</totalsRowFormula>',
+    );
+  });
+
   test('ignores malformed, duplicate, and prototype-like filter columns', async () => {
     const buffer = await tableWorkbook(
       [
@@ -331,6 +363,28 @@ async function tableWorkbookWithCalculatedColumn(): Promise<ArrayBuffer> {
       '<tableColumn id="3" name="State"/>',
       '<tableColumn id="3" name="State"><calculatedColumnFormula>[@Qty]*2</calculatedColumnFormula></tableColumn>',
     ),
+  );
+  return zip.generateAsync({ type: 'arraybuffer' });
+}
+
+async function tableWorkbookWithTotalsRow(): Promise<ArrayBuffer> {
+  const zip = await JSZip.loadAsync(await tableWorkbook());
+  const table = (await zip.file('xl/tables/table7.xml')?.async('text')) ?? '';
+  zip.file(
+    'xl/tables/table7.xml',
+    table
+      .replace(
+        '<tableColumn id="1" name="Region"/>',
+        '<tableColumn id="1" name="Region" totalsRowLabel="Total"/>',
+      )
+      .replace(
+        '<tableColumn id="2" name="Qty"/>',
+        '<tableColumn id="2" name="Qty" totalsRowFunction="sum"/>',
+      )
+      .replace(
+        '<tableColumn id="3" name="State"/>',
+        '<tableColumn id="3" name="State" totalsRowFunction="custom"><totalsRowFormula>SUM(Sales[Qty])</totalsRowFormula></tableColumn>',
+      ),
   );
   return zip.generateAsync({ type: 'arraybuffer' });
 }

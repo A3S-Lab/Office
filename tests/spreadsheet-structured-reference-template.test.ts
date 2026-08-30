@@ -17,6 +17,7 @@ describe('structured-reference Playground template', () => {
       // duplicating the copy in the Playground UI.
       WORK_TEMPLATES.find(({ id }) => id === 'structured-references');
     expect(template?.description).toContain('插入行自动填充');
+    expect(template?.description).toContain('汇总行');
 
     const artifact = createWorkArtifact('structured-references');
     if (artifact.content.type !== 'spreadsheet') {
@@ -39,6 +40,19 @@ describe('structured-reference Playground template', () => {
     }
     const workbook = createSpreadsheetKernelWorkbook(artifact.content);
     if (!workbook) throw new Error('Expected a formula-bearing workbook.');
+    const artifactSalesSheet = artifact.content.sheets.find(
+      (sheet) => sheet.name === 'Sales',
+    );
+    expect(artifactSalesSheet?.tables?.[0]?.columns).toEqual([
+      { name: 'Item', totalsLabel: 'Total' },
+      { name: 'Units', totalsFunction: 'sum' },
+      { name: 'Unit price' },
+      {
+        name: 'Revenue',
+        calculatedFormula: '=[@Units]*[@[Unit price]]',
+        totalsFunction: 'sum',
+      },
+    ]);
 
     const request: OfficeKernelSpreadsheetCalculationRequest = {
       protocol: OFFICE_KERNEL_PROTOCOL_VERSION,

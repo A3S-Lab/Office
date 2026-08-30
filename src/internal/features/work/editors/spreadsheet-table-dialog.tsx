@@ -98,6 +98,15 @@ export function SpreadsheetTableDialog({
         >
           表包含标题
         </OfficeCheckbox>
+        <OfficeCheckbox
+          ariaLabel="启用汇总行"
+          checked={value.totalsRow === true}
+          onCheckedChange={(totalsRow) =>
+            setValue((current) => ({ ...current, totalsRow }))
+          }
+        >
+          启用汇总行
+        </OfficeCheckbox>
       </form>
     </Dialog>
   );

@@ -31,6 +31,7 @@ impl SpreadsheetEvaluator<'_> {
         let values = self.evaluate_arguments(arguments, current)?;
         let result = match normalized.as_str() {
             "SUM" => aggregate(&values, Aggregate::Sum),
+            "SUBTOTAL" => subtotal(&values),
             "AVERAGE" => aggregate(&values, Aggregate::Average),
             "MIN" => aggregate(&values, Aggregate::Minimum),
             "MAX" => aggregate(&values, Aggregate::Maximum),
@@ -177,6 +178,141 @@ fn aggregate(values: &[EvaluatedValue], operation: Aggregate) -> SpreadsheetValu
         Aggregate::Minimum => finite_number(minimum.unwrap_or(0.0)),
         Aggregate::Maximum => finite_number(maximum.unwrap_or(0.0)),
     }
+}
+
+/// Evaluate the bounded native `SUBTOTAL(function_num, ref)` family. Hidden
+/// row metadata is not currently part of the kernel request, so the resolved
+/// reference values are aggregated as-is while preserving Excel's function
+/// number mapping.
+fn subtotal(values: &[EvaluatedValue]) -> SpreadsheetValue {
+    let Some(code) = values
+        .first()
+        .cloned()
+        .map(EvaluatedValue::into_scalar)
+        .and_then(|value| scalar_number(value).ok())
+        .filter(|value| value.is_finite())
+        .map(|value| value.trunc() as i32)
+    else {
+        return value_error();
+    };
+    let arguments = &values[1..];
+    let flattened = arguments
+        .iter()
+        .cloned()
+        .flat_map(EvaluatedValue::into_values)
+        .collect::<Vec<_>>();
+    match code {
+        1 | 101 => subtotal_numeric(&flattened, SubtotalOperation::Average),
+        2 | 102 => subtotal_count(&flattened, false),
+        3 | 103 => subtotal_count(&flattened, true),
+        4 | 104 => subtotal_numeric(&flattened, SubtotalOperation::Maximum),
+        5 | 105 => subtotal_numeric(&flattened, SubtotalOperation::Minimum),
+        6 | 106 => subtotal_numeric(&flattened, SubtotalOperation::Product),
+        7 | 107 => subtotal_numeric(&flattened, SubtotalOperation::StdDev),
+        8 | 108 => subtotal_numeric(&flattened, SubtotalOperation::StdDevP),
+        9 | 109 => subtotal_numeric(&flattened, SubtotalOperation::Sum),
+        10 | 110 => subtotal_numeric(&flattened, SubtotalOperation::Var),
+        11 | 111 => subtotal_numeric(&flattened, SubtotalOperation::VarP),
+        _ => value_error(),
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum SubtotalOperation {
+    Average,
+    Maximum,
+    Minimum,
+    Product,
+    StdDev,
+    StdDevP,
+    Sum,
+    Var,
+    VarP,
+}
+
+fn subtotal_numeric(values: &[SpreadsheetValue], operation: SubtotalOperation) -> SpreadsheetValue {
+    let mut numbers = Vec::new();
+    for value in values {
+        match value {
+            SpreadsheetValue::Number { value } => numbers.push(*value),
+            SpreadsheetValue::Error { value } => {
+                return SpreadsheetValue::Error {
+                    value: value.clone(),
+                };
+            }
+            SpreadsheetValue::Blank
+            | SpreadsheetValue::Text { .. }
+            | SpreadsheetValue::Boolean { .. } => {}
+        }
+    }
+    let count = numbers.len();
+    let sum = numbers.iter().sum::<f64>();
+    let result = match operation {
+        SubtotalOperation::Sum => sum,
+        SubtotalOperation::Average => {
+            if count == 0 {
+                return SpreadsheetValue::error(SpreadsheetFormulaErrorLiteral::DivisionByZero);
+            }
+            sum / count as f64
+        }
+        SubtotalOperation::Maximum => numbers.iter().copied().reduce(f64::max).unwrap_or(0.0),
+        SubtotalOperation::Minimum => numbers.iter().copied().reduce(f64::min).unwrap_or(0.0),
+        SubtotalOperation::Product => {
+            if count == 0 {
+                0.0
+            } else {
+                numbers.iter().product()
+            }
+        }
+        SubtotalOperation::StdDev | SubtotalOperation::Var if count < 2 => {
+            return SpreadsheetValue::error(SpreadsheetFormulaErrorLiteral::DivisionByZero);
+        }
+        SubtotalOperation::StdDevP | SubtotalOperation::VarP if count == 0 => {
+            return SpreadsheetValue::error(SpreadsheetFormulaErrorLiteral::DivisionByZero);
+        }
+        SubtotalOperation::StdDev | SubtotalOperation::StdDevP => {
+            let mean = sum / count as f64;
+            let divisor = if matches!(operation, SubtotalOperation::StdDev) {
+                (count - 1) as f64
+            } else {
+                count as f64
+            };
+            (numbers
+                .iter()
+                .map(|number| (number - mean).powi(2))
+                .sum::<f64>()
+                / divisor)
+                .sqrt()
+        }
+        SubtotalOperation::Var | SubtotalOperation::VarP => {
+            let mean = sum / count as f64;
+            let divisor = if matches!(operation, SubtotalOperation::Var) {
+                (count - 1) as f64
+            } else {
+                count as f64
+            };
+            numbers
+                .iter()
+                .map(|number| (number - mean).powi(2))
+                .sum::<f64>()
+                / divisor
+        }
+    };
+    finite_number(result)
+}
+
+fn subtotal_count(values: &[SpreadsheetValue], include_non_numeric: bool) -> SpreadsheetValue {
+    let count = values
+        .iter()
+        .filter(|value| {
+            if include_non_numeric {
+                !matches!(value, SpreadsheetValue::Blank)
+            } else {
+                matches!(value, SpreadsheetValue::Number { .. })
+            }
+        })
+        .count();
+    finite_number(count as f64)
 }
 
 fn count(values: &[EvaluatedValue]) -> SpreadsheetValue {
@@ -348,6 +484,7 @@ fn function_arity(name: &str) -> Option<(usize, Option<usize>)> {
     Some(match name {
         "SUM" | "AVERAGE" | "MIN" | "MAX" | "COUNT" | "COUNTA" | "AND" | "OR" | "CONCAT"
         | "CONCATENATE" => (1, Some(255)),
+        "SUBTOTAL" => (2, Some(255)),
         "ABS" | "SQRT" | "NOT" => (1, Some(1)),
         "POWER" | "MOD" | "ROUND" => (2, Some(2)),
         "ROW" | "COLUMN" => (0, Some(0)),

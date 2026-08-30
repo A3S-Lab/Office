@@ -46,6 +46,7 @@ struct FunctionEntry {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum BuiltinFunction {
     Sum,
+    Subtotal,
     Average,
     Minimum,
     Maximum,
@@ -82,6 +83,13 @@ impl Default for SpreadsheetFormulaFunctionRegistry {
                 Some(255),
                 SpreadsheetFormulaFunctionReturnKind::Scalar,
                 BuiltinFunction::Sum,
+            ),
+            (
+                "SUBTOTAL",
+                2,
+                Some(255),
+                SpreadsheetFormulaFunctionReturnKind::Scalar,
+                BuiltinFunction::Subtotal,
             ),
             (
                 "AVERAGE",

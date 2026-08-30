@@ -1,5 +1,5 @@
-import { expect, test } from '@rstest/core';
 import { readFileSync } from 'node:fs';
+import { expect, test } from '@rstest/core';
 import * as Y from 'yjs';
 import {
   createOfficeCollaborationSession,
@@ -8,13 +8,13 @@ import {
   readOfficeSpreadsheetCollaboration,
   type SpreadsheetContent,
 } from '../src/core';
-import { spreadsheetCollaborationFixture as fixture } from './fixtures/spreadsheet-collaboration';
 import {
   NATIVE_SPREADSHEET_BATCH_CELLS_BASE64,
   NATIVE_SPREADSHEET_CREATE_CELL_BASE64,
   NATIVE_SPREADSHEET_DELETE_CELL_BASE64,
   NATIVE_SPREADSHEET_SET_CELL_BASE64,
 } from './fixtures/native-spreadsheet-cell-updates';
+import { spreadsheetCollaborationFixture as fixture } from './fixtures/spreadsheet-collaboration';
 
 const BROWSER_SPREADSHEET_FIXTURE_BASE64 = readFileSync(
   'tests/fixtures/browser-spreadsheet-collaboration-update.base64',
@@ -394,6 +394,37 @@ test('syncs validated calculated-column formulas across Yjs clients', () => {
   ]);
 });
 
+test('syncs validated totals-row metadata across Yjs clients', () => {
+  const content = spreadsheetTableFilterContent([
+    { type: 'blanks' },
+    { type: 'non-blanks' },
+  ]);
+  const table = content.sheets[0]?.tables?.[0];
+  if (!table) throw new Error('Expected a table fixture.');
+  table.totalsRow = true;
+  table.range = { row: [0, 3], column: [0, 1] };
+  table.columns = [
+    { name: 'Column 1', totalsLabel: 'Total' },
+    { name: 'Column 2', totalsFunction: 'sum' },
+  ];
+
+  const firstDocument = new Y.Doc();
+  const first = spreadsheetSession(
+    'spreadsheet-totals-row-sync',
+    firstDocument,
+  );
+  initializeOfficeSpreadsheetCollaboration(first, content);
+  const secondDocument = new Y.Doc();
+  Y.applyUpdate(secondDocument, Y.encodeStateAsUpdate(firstDocument));
+  const second = spreadsheetSession(
+    'spreadsheet-totals-row-sync',
+    secondDocument,
+  );
+  expect(readOfficeSpreadsheetCollaboration(second).sheets[0]?.tables).toEqual([
+    table,
+  ]);
+});
+
 test('accepts every closed native table filter criterion', () => {
   const criteria = [
     { type: 'values', values: ['Open', 'Closed'], includeBlanks: true },
@@ -589,6 +620,22 @@ test('rejects malformed native table metadata before collaboration writes', () =
         }
       },
       expected: /bounded structured calculated-column formula/,
+    },
+    {
+      name: 'unknown totals function',
+      mutate: (table) => {
+        const columns = table.columns as Array<Record<string, unknown>>;
+        if (columns[0]) columns[0].totalsFunction = 'median';
+      },
+      expected: /supported totals-row function/,
+    },
+    {
+      name: 'custom totals function without formula',
+      mutate: (table) => {
+        const columns = table.columns as Array<Record<string, unknown>>;
+        if (columns[0]) columns[0].totalsFunction = 'custom';
+      },
+      expected: /custom totals-row functions to include a formula/,
     },
   ];
 

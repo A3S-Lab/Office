@@ -1,14 +1,9 @@
 import type { Cell, CellMatrix, Sheet } from '@fortune-sheet/core';
-import type {
-  WorkArtifact,
-  WorkArtifactContent,
-  WorkArtifactKind,
-  WorkPresentationContent,
-  WorkSlide,
-  WorkSpreadsheetDataValidationItem,
-  WorkSpreadsheetSheet,
-  WorkTemplate,
-} from './work-types';
+import {
+  documentIndexEntryHtml,
+  documentIndexHtml,
+} from './work-document-index';
+import { documentProofingDomAttributes } from './work-document-proofing';
 import {
   DOCUMENT_RUN_BORDER_ATTRIBUTE,
   type DocumentRunBorder,
@@ -19,13 +14,18 @@ import {
   type DocumentRunShading,
   documentRunShadingDomAttributes,
 } from './work-document-run-shading';
-import { documentProofingDomAttributes } from './work-document-proofing';
-import {
-  documentIndexEntryHtml,
-  documentIndexHtml,
-} from './work-document-index';
-import { documentTableOfContentsHtml } from './work-document-table-of-contents';
 import type { WorkDocumentScriptFontSlot } from './work-document-script-fonts';
+import { documentTableOfContentsHtml } from './work-document-table-of-contents';
+import type {
+  WorkArtifact,
+  WorkArtifactContent,
+  WorkArtifactKind,
+  WorkPresentationContent,
+  WorkSlide,
+  WorkSpreadsheetDataValidationItem,
+  WorkSpreadsheetSheet,
+  WorkTemplate,
+} from './work-types';
 
 export const WORK_TEMPLATES: WorkTemplate[] = [
   {
@@ -123,7 +123,7 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     id: 'structured-references',
     kind: 'spreadsheet',
     name: '结构化引用',
-    description: '表名、当前行公式与插入行自动填充',
+    description: '表名、当前行公式、插入行自动填充与汇总行',
     accent: '#0f7b61',
   },
   {
@@ -732,13 +732,13 @@ function structuredReferenceTemplateSheets(): WorkSpreadsheetSheet[] {
     fc: '#215446',
     bg: '#dff3ec',
   });
-  sales[7][1] = styledCell('=SUM(Sales[Units])', {
+  sales[7][1] = styledCell('=SUBTOTAL(109,Sales[Units])', {
     bl: 1,
     fc: '#215446',
     bg: '#dff3ec',
     ct: { fa: '0', t: 'n' },
   });
-  sales[7][3] = styledCell('=SUM(Sales[Revenue])', {
+  sales[7][3] = styledCell('=SUBTOTAL(109,Sales[Revenue])', {
     bl: 1,
     fc: '#215446',
     bg: '#dff3ec',
@@ -771,10 +771,14 @@ function structuredReferenceTemplateSheets(): WorkSpreadsheetSheet[] {
     displayName: 'SalesData',
     range: { row: [2, 7], column: [0, 3] },
     columns: [
-      { name: 'Item' },
-      { name: 'Units' },
+      { name: 'Item', totalsLabel: 'Total' },
+      { name: 'Units', totalsFunction: 'sum' },
       { name: 'Unit price' },
-      { name: 'Revenue', calculatedFormula: '=[@Units]*[@[Unit price]]' },
+      {
+        name: 'Revenue',
+        calculatedFormula: '=[@Units]*[@[Unit price]]',
+        totalsFunction: 'sum',
+      },
     ],
     filters: [],
     headerRow: true,

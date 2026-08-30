@@ -95,6 +95,116 @@
   min-width: 76px;
 }
 
+.work-spreadsheet-table-totals-root {
+  display: flex;
+}
+
+.work-office-ribbon .work-spreadsheet-table-totals-trigger {
+  min-width: 70px;
+}
+
+.work-spreadsheet-table-totals-menu {
+  width: min(560px, calc(100vw - 24px));
+  max-height: min(650px, calc(100vh - 32px));
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid var(--a3s-overlay-border);
+  border-radius: var(--a3s-overlay-radius);
+  background: var(--a3s-overlay-surface);
+  box-shadow: var(--a3s-shadow-soft);
+}
+
+.work-spreadsheet-table-totals-content {
+  display: grid;
+  gap: 10px;
+}
+
+.work-spreadsheet-table-totals-hint {
+  margin: -4px 0 2px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.work-spreadsheet-table-totals-columns {
+  display: grid;
+  gap: 8px;
+  max-height: 440px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.work-spreadsheet-table-totals-column {
+  display: grid;
+  grid-template-columns: minmax(92px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr);
+  align-items: end;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 7px;
+  background: var(--a3s-panel-soft);
+}
+
+.work-spreadsheet-table-totals-column > strong {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--a3s-ink);
+  font-size: 11px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-table-totals-column label {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.work-spreadsheet-table-totals-column label > span {
+  color: var(--a3s-muted);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.work-spreadsheet-table-totals-column select,
+.work-spreadsheet-table-totals-column input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 5px;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font-size: 11px;
+}
+
+.work-spreadsheet-table-totals-column select:disabled,
+.work-spreadsheet-table-totals-column input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.work-spreadsheet-table-totals-close {
+  justify-self: end;
+  min-height: 29px;
+  padding: 0 13px;
+  border: 1px solid var(--work-spreadsheet-accent, #159469);
+  border-radius: 5px;
+  background: var(--work-spreadsheet-accent, #159469);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-table-totals-close:hover,
+.work-spreadsheet-table-totals-close:focus-visible {
+  filter: brightness(0.94);
+}
+
 .work-spreadsheet-table-style-preview {
   display: grid;
   width: 48px;
@@ -190,6 +300,19 @@
   .work-spreadsheet-table-style-menu {
     width: min(356px, calc(100vw - 16px));
     padding: 8px;
+  }
+
+  .work-spreadsheet-table-totals-menu {
+    width: min(440px, calc(100vw - 16px));
+    padding: 10px;
+  }
+
+  .work-spreadsheet-table-totals-column {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .work-spreadsheet-table-totals-column label:last-child {
+    grid-column: 1 / -1;
   }
 
   .work-spreadsheet-table-style-family > div {
