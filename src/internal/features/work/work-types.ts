@@ -313,6 +313,11 @@ export type WorkSpreadsheetTableStyle =
 
 export interface WorkSpreadsheetTableColumn {
   name: string;
+  /**
+   * A bounded native table calculated-column formula. The controlled model
+   * stores the editable form with a leading `=`; XLSX table parts omit it.
+   */
+  calculatedFormula?: string;
 }
 
 export type WorkSpreadsheetDynamicFilter =

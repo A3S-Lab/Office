@@ -10,6 +10,7 @@ import type {
   WorkSpreadsheetTable,
   WorkSpreadsheetTableFilterCriteria,
 } from '../features/work/work-types';
+import { normalizeSpreadsheetTableCalculatedFormula } from '../features/work/editors/spreadsheet-table-calculated-columns';
 import { isValidSpreadsheetDefinedName } from '../features/work/work-spreadsheet-ranges';
 import { WorkOfficeCollaborationError } from './office-collaboration';
 import {
@@ -458,15 +459,44 @@ function requiredSpreadsheetTableColumns(
   const names = new Set<string>();
   return value.map((candidate) => {
     const record = requiredInputRecord(candidate, `${label} column`);
-    assertExactRecordKeys(record, ['name'], `column for ${label}`);
+    assertOptionalRecordKeys(
+      record,
+      ['name', 'calculatedFormula'],
+      `column for ${label}`,
+    );
     const name = requiredTableColumnName(record.name, label);
     const normalized = name.toLocaleLowerCase();
     if (names.has(normalized)) {
       invalidWorkOfficeSpreadsheetInput(`unique column names for ${label}`);
     }
     names.add(normalized);
-    return { name };
+    if (record.calculatedFormula === undefined) return { name };
+    const calculatedFormula = normalizeSpreadsheetTableCalculatedFormula(
+      record.calculatedFormula,
+    );
+    if (!calculatedFormula || calculatedFormula !== record.calculatedFormula) {
+      invalidWorkOfficeSpreadsheetInput(
+        `a bounded structured calculated-column formula for ${label}`,
+      );
+    }
+    return { name, calculatedFormula };
   });
+}
+
+function assertOptionalRecordKeys(
+  record: Record<string, unknown>,
+  keys: readonly string[],
+  label: string,
+): void {
+  const allowed = new Set(keys);
+  if (
+    !Object.hasOwn(record, keys[0] ?? '') ||
+    Object.keys(record).some((key) => !allowed.has(key))
+  ) {
+    invalidWorkOfficeSpreadsheetInput(
+      `a complete ${label} record without unknown fields`,
+    );
+  }
 }
 
 function requiredSpreadsheetTableFilters(

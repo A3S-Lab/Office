@@ -6,6 +6,10 @@ import type {
   WorkSpreadsheetTableColumn,
   WorkSpreadsheetTableFilter,
 } from '../work-types';
+import {
+  fillSpreadsheetTableCalculatedColumns,
+  reconcileSpreadsheetTableCalculatedColumns,
+} from './spreadsheet-table-calculated-columns';
 
 export type SpreadsheetTableStructureChange =
   | {
@@ -64,6 +68,7 @@ export function reconcileSpreadsheetTablesAfterFortune(
     );
     let tables = source.tables;
     const reconcileColumns = new Set<string>();
+    const calculatedColumnRows = new Map<string, Set<number>>();
     if (!operations.length) {
       for (const table of tables) reconcileColumns.add(table.id);
     }
@@ -71,8 +76,20 @@ export function reconcileSpreadsheetTablesAfterFortune(
     for (const operation of sheetOperations) {
       const structure = spreadsheetTableStructureChangeFromOperation(operation);
       if (structure) {
+        transformCalculatedColumnRows(calculatedColumnRows, structure);
         const transformed: WorkSpreadsheetTable[] = [];
         for (const table of tables) {
+          if (structure.axis === 'row' && structure.kind === 'insert') {
+            const insertedRows = rowsInsertedIntoSpreadsheetTableBody(
+              table,
+              structure,
+            );
+            if (insertedRows.length) {
+              const rows = calculatedColumnRows.get(table.id) ?? new Set();
+              for (const row of insertedRows) rows.add(row);
+              calculatedColumnRows.set(table.id, rows);
+            }
+          }
           const next = transformSpreadsheetTableStructure(table, structure);
           if (!next) continue;
           transformed.push(next);
@@ -83,12 +100,12 @@ export function reconcileSpreadsheetTablesAfterFortune(
       }
       const coordinate = spreadsheetCellCoordinateFromOperation(operation);
       if (!coordinate) continue;
-      const table = tables.find(
-        (candidate) =>
-          candidate.headerRow &&
-          candidate.range.row[0] === coordinate.row &&
-          coordinate.column >= candidate.range.column[0] &&
-          coordinate.column <= candidate.range.column[1],
+      const table = tables.find((candidate) =>
+        spreadsheetTableContainsCell(
+          candidate,
+          coordinate.row,
+          coordinate.column,
+        ),
       );
       if (table) reconcileColumns.add(table.id);
     }
@@ -98,8 +115,12 @@ export function reconcileSpreadsheetTablesAfterFortune(
     tables = tables.map((table) => {
       if (!reconcileColumns.has(table.id)) return table;
       const columns = canonicalSpreadsheetTableColumns(table, readCell);
+      const calculatedColumns = reconcileSpreadsheetTableCalculatedColumns(
+        sheet,
+        { ...table, columns },
+      );
       if (table.headerRow) {
-        for (const [offset, column] of columns.entries()) {
+        for (const [offset, column] of calculatedColumns.entries()) {
           const cellColumn = table.range.column[0] + offset;
           if (
             spreadsheetCellText(readCell(table.range.row[0], cellColumn)) !==
@@ -113,12 +134,25 @@ export function reconcileSpreadsheetTablesAfterFortune(
           }
         }
       }
-      return sameSpreadsheetTableColumns(table.columns, columns)
+      return sameSpreadsheetTableColumns(table.columns, calculatedColumns)
         ? table
-        : { ...table, columns };
+        : { ...table, columns: calculatedColumns };
     });
 
-    const withHeaders = stampSpreadsheetTableHeaderCells(sheet, updates);
+    let withCalculatedColumns = sheet;
+    for (const table of tables) {
+      const rows = calculatedColumnRows.get(table.id);
+      if (!rows?.size) continue;
+      withCalculatedColumns = fillSpreadsheetTableCalculatedColumns(
+        withCalculatedColumns,
+        table,
+        [...rows],
+      );
+    }
+    const withHeaders = stampSpreadsheetTableHeaderCells(
+      withCalculatedColumns,
+      updates,
+    );
     return {
       ...withHeaders,
       tables: tables.length ? tables : undefined,
@@ -197,6 +231,65 @@ function transformSpreadsheetTableStructure(
       removed,
     ),
   };
+}
+
+function spreadsheetTableContainsCell(
+  table: WorkSpreadsheetTable,
+  row: number,
+  column: number,
+): boolean {
+  return (
+    row >= table.range.row[0] &&
+    row <= table.range.row[1] &&
+    column >= table.range.column[0] &&
+    column <= table.range.column[1]
+  );
+}
+
+function rowsInsertedIntoSpreadsheetTableBody(
+  table: WorkSpreadsheetTable,
+  change: Extract<SpreadsheetTableStructureChange, { kind: 'insert' }>,
+): number[] {
+  if (change.axis !== 'row') return [];
+  const transformed = transformSpreadsheetTableAxisForInsertion(
+    table.range.row,
+    change,
+  );
+  if (!transformed.inside) return [];
+  const insertion = change.index + (change.direction === 'rightbottom' ? 1 : 0);
+  const bodyStart = table.range.row[0] + Number(table.headerRow);
+  if (insertion < bodyStart) return [];
+  return Array.from(
+    { length: change.count },
+    (_, offset) => insertion + offset,
+  );
+}
+
+function transformCalculatedColumnRows(
+  rowsByTable: Map<string, Set<number>>,
+  change: SpreadsheetTableStructureChange,
+): void {
+  if (change.axis !== 'row' || !rowsByTable.size) return;
+  if (change.kind === 'insert') {
+    const insertion =
+      change.index + (change.direction === 'rightbottom' ? 1 : 0);
+    for (const [tableId, rows] of rowsByTable) {
+      const next = new Set<number>();
+      for (const row of rows)
+        next.add(row >= insertion ? row + change.count : row);
+      rowsByTable.set(tableId, next);
+    }
+    return;
+  }
+  const count = change.end - change.start + 1;
+  for (const [tableId, rows] of rowsByTable) {
+    const next = new Set<number>();
+    for (const row of rows) {
+      if (row < change.start) next.add(row);
+      else if (row > change.end) next.add(row - count);
+    }
+    rowsByTable.set(tableId, next);
+  }
 }
 
 function transformSpreadsheetTableAxisForInsertion(
@@ -510,7 +603,11 @@ function sameSpreadsheetTableColumns(
 ): boolean {
   return (
     left.length === right.length &&
-    left.every((column, index) => column.name === right[index]?.name)
+    left.every(
+      (column, index) =>
+        column.name === right[index]?.name &&
+        column.calculatedFormula === right[index]?.calculatedFormula,
+    )
   );
 }
 

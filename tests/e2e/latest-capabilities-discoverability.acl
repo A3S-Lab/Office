@@ -60,6 +60,10 @@ suite "latest-capabilities-discoverability" {
             visible = css("button[aria-label='打开最新能力：结构化引用']")
         }
 
+        expect "structured-reference-calculated-column-fill-is-described" {
+            text = "插入行自动填充"
+        }
+
         expect "pdf-page-organization-entry-is-visible" {
             visible = css("button[aria-label='打开最新能力：组织 PDF 页面']")
         }

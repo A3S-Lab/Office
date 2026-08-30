@@ -68,6 +68,35 @@ describe('spreadsheet tables', () => {
     expect(next?.sheets[0]?.data?.[1]?.[0]).not.toHaveProperty('bg');
   });
 
+  test('captures a shared current-row formula as the calculated-column rule', () => {
+    const content = tableContent();
+    const sheet = firstSheet(content);
+    const rows = sheet.data;
+    if (!rows) throw new Error('Expected table fixture data.');
+    const header = rows[0];
+    const firstBody = rows[1];
+    const secondBody = rows[2];
+    if (!header || !firstBody || !secondBody)
+      throw new Error('Expected table fixture rows.');
+    firstBody[2] = { f: '=[@Units]*2', v: 20 };
+    secondBody[2] = { f: '=[@Units]*2', v: 24 };
+    header[1] = { v: 'Units' };
+    header[2] = { v: 'Amount' };
+
+    const next = applySpreadsheetTable(content, {
+      sheetId: 'sheet-1',
+      name: 'Table1',
+      range: { row: [0, 2], column: [0, 2] },
+      headerRow: true,
+    });
+
+    expect(next?.sheets[0]?.tables?.[0]?.columns).toEqual([
+      { name: 'Region' },
+      { name: 'Units' },
+      { name: 'Amount', calculatedFormula: '=[@Units]*2' },
+    ]);
+  });
+
   test('opens a one-row current region as a headerless table', () => {
     const content = tableContent();
     const sheet = firstSheet(content);

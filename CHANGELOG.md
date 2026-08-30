@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.36.0 - 2026-08-30
+
 - Made the Playground an immersive full-viewport workspace. The duplicated
   global top bar is gone; the A3S Office logo remains available as a
   product-home link in the workspace sidebar, with dynamic viewport sizing on
@@ -16,10 +18,20 @@ All notable changes to A3S Office will be documented in this file.
   most 1,024 tables and materializes at most 100,000 cells per structured area.
   Unsupported external, three-dimensional, disjoint, missing, and over-budget
   references fail closed with cell-scoped diagnostics.
+- Added automatic Spreadsheet calculated-column fill for structural row
+  insertion. A consistent current-row formula is inferred and persisted as
+  table metadata, then copied only into empty cells in new body rows. Existing
+  values, formulas, styles, and manual exceptions remain authoritative;
+  conflicting formulas fail closed. Dense and sparse sheets are supported,
+  Yjs collaboration validates the rule, and native XLSX
+  `<calculatedColumnFormula>` metadata round-trips with the controlled leading
+  `=` form. Dangerous, external, malformed, or overlong rules are never
+  propagated.
 - Published the public Playground **结构化引用** workbook with a calculated
   `Revenue` column, totals row, selector examples, and a qualified-reference
-  summary sheet. Updated the latest bilingual Spreadsheet, architecture, and
-  quality documentation plus focused publication and discoverability tests.
+  summary sheet and an insertion hint. Updated the latest bilingual
+  Spreadsheet, architecture, quality, README, roadmap, and product contracts
+  plus focused publication, collaboration, and discoverability tests.
 
 ## 0.35.0 - 2026-08-29
 

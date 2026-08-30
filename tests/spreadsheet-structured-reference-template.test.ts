@@ -1,6 +1,9 @@
 import { describe, expect, test } from '@rstest/core';
 import { createSpreadsheetKernelWorkbook } from '../src/internal/features/work/editors/spreadsheet-calculation-projection';
-import { createWorkArtifact } from '../src/internal/features/work/work-templates';
+import {
+  createWorkArtifact,
+  WORK_TEMPLATES,
+} from '../src/internal/features/work/work-templates';
 import { calculateSpreadsheetInJavaScript } from '../src/internal/kernel/office-kernel-spreadsheet-fallback';
 import {
   OFFICE_KERNEL_PROTOCOL_VERSION,
@@ -8,6 +11,25 @@ import {
 } from '../src/internal/kernel/office-kernel-protocol';
 
 describe('structured-reference Playground template', () => {
+  test('advertises calculated-column fill in the template metadata and sheet', () => {
+    const template =
+      // Keep this assertion tied to the public template registry rather than
+      // duplicating the copy in the Playground UI.
+      WORK_TEMPLATES.find(({ id }) => id === 'structured-references');
+    expect(template?.description).toContain('插入行自动填充');
+
+    const artifact = createWorkArtifact('structured-references');
+    if (artifact.content.type !== 'spreadsheet') {
+      throw new Error(
+        'Expected the structured-reference template to be a workbook.',
+      );
+    }
+    const salesSheet = artifact.content.sheets.find(
+      ({ name }) => name === 'Sales',
+    );
+    expect(salesSheet?.data?.[1]?.[0]?.v).toContain('自动补齐 Revenue');
+  });
+
   test('calculates table-local, selector, range, and qualified formulas', async () => {
     const artifact = createWorkArtifact('structured-references');
     if (artifact.content.type !== 'spreadsheet') {

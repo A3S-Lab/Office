@@ -24,6 +24,7 @@ import {
 import { spreadsheetSheetBounds } from './spreadsheet-keyboard-navigation';
 import { materializeSpreadsheetTableAppearance } from './spreadsheet-table-conversion';
 import { MAX_SPREADSHEET_TABLE_CELLS } from './spreadsheet-table-limits';
+import { reconcileSpreadsheetTableCalculatedColumns } from './spreadsheet-table-calculated-columns';
 
 export { MAX_SPREADSHEET_TABLE_CELLS } from './spreadsheet-table-limits';
 
@@ -195,7 +196,7 @@ export function applySpreadsheetTable(
   const validation = validateSpreadsheetTableRequest(content, request);
   if (!validation.ok) return null;
   const style = request.style ?? { family: 'medium', number: 2 };
-  const table: WorkSpreadsheetTable = {
+  const tableWithoutCalculatedColumns: WorkSpreadsheetTable = {
     id: createWorkId('spreadsheet-table'),
     name: validation.name,
     range: cloneRange(validation.range),
@@ -208,6 +209,13 @@ export function applySpreadsheetTable(
     showLastColumn: false,
     showRowStripes: style.family !== 'none',
     showColumnStripes: false,
+  };
+  const table: WorkSpreadsheetTable = {
+    ...tableWithoutCalculatedColumns,
+    columns: reconcileSpreadsheetTableCalculatedColumns(
+      validation.sheet,
+      tableWithoutCalculatedColumns,
+    ),
   };
   const nextSheet = request.headerRow
     ? stampSpreadsheetTableHeaders(

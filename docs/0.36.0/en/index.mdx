@@ -1,0 +1,71 @@
+---
+title: A3S Office 0.36.0 documentation
+description: Integrate A3S Office 0.36.0 structured spreadsheet references, calculated-column fill, browser editors, and real-time collaboration.
+pageType: doc-wide
+outline: false
+---
+
+# A3S Office 0.36.0 documentation
+
+This is the frozen documentation index for A3S Office 0.36.0. It records the
+bounded structured-reference calculation and calculated-column fill contract,
+alongside the browser editor, collaboration, and native automation APIs
+available in this release.
+
+## Start here
+
+| Goal | Documentation |
+| --- | --- |
+| Mount the first controlled editor | [Getting started](./guide/index.html) |
+| Choose React, Vue, or Web Component | [Component integration](./components/index.html) |
+| Configure an editor and its content model | [Editor APIs](./components/document.html) |
+| Add host actions or TipTap extensions | [Extension model](./components/extensions.html) |
+| Let people and agents edit one file live | [Real-time collaboration](./components/collaboration.html) |
+| Deploy an authenticated, persistent backend | [A3S Boot collaboration server](./components/collaboration-server.html) |
+| Process Office files from a coding agent | [CLI and Skill](./automation/index.html) |
+
+## Editor components
+
+| File type | Public component | Content model and implementation |
+| --- | --- | --- |
+| Document | [`DocumentEditor`](./components/document.html) | `DocumentContent`; TipTap / ProseMirror and the A3S Office layout kernel |
+| Markdown | [`MarkdownEditor`](./components/markdown.html) | `MarkdownContent`; visual editing with a controlled source |
+| Spreadsheet | [`SpreadsheetEditor`](./components/spreadsheet.html) | `SpreadsheetContent`; sparse workbook and calculation kernel |
+| Presentation | [`PresentationEditor`](./components/presentation.html) | `PresentationContent`; scene graph with on-demand text editing |
+| PDF | [`PdfViewer`](./components/pdf.html) | `Blob` input/output; PDFium WebAssembly and annotation controllers |
+
+## Released in 0.36.0
+
+These links document the APIs and constraints available in 0.36.0:
+
+- [Structured-reference calculation and calculated-column fill](./components/spreadsheet.html#structured-reference-calculation)
+- [Presentation entrance animations](./components/presentation.html#entrance-animations)
+- [Document compare and combine](./components/document.html#document-compare-and-combine)
+- [Native table of contents](./components/document.html#native-table-of-contents)
+- [Native document index](./components/document.html#native-document-index)
+- [Native character shading](./components/document.html#native-character-shading)
+- [Native proofing languages](./components/document.html#native-proofing-languages)
+- [Spreadsheet data validation](./components/spreadsheet.html#data-validation)
+- [PDF page organization](./components/pdf.html#page-organization)
+
+## Real-time collaboration
+
+The collaboration protocol covers all five editors and all three framework
+bindings. Browsers use Yjs and native agents use Yrs. The host owns rooms,
+identity, authorization, providers, offline buffering, and persistence.
+
+- [Collaboration protocol and state boundaries](./components/collaboration.html)
+- [Complete A3S Boot backend example](./components/collaboration-server.html)
+
+## Engineering references
+
+| Topic | Reference |
+| --- | --- |
+| Browser components, Workers, and WebAssembly boundaries | [Browser editor architecture](./browser-editor-architecture.html) |
+| Rust core, CLI, MCP, and local files | [Native Office engine](./native-office-engine.html) |
+| Quality gates, performance metrics, and compatibility | [Editor quality roadmap](./editor-quality-roadmap.html) |
+| Commands, selectors, and JSON protocol | [CLI reference](./cli-reference.html) |
+
+This frozen snapshot remains available from the version menu. Search is scoped
+to the active language and version so API results from different releases are
+never mixed.

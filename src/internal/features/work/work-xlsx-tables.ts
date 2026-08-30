@@ -11,6 +11,7 @@ import {
   formatSpreadsheetCellRanges,
   parseSpreadsheetCellRanges,
 } from './work-spreadsheet-ranges';
+import { normalizeSpreadsheetTableCalculatedFormula } from './editors/spreadsheet-table-calculated-columns';
 import {
   readXlsxTableFilters,
   xlsxTableAutoFilterXml,
@@ -175,7 +176,16 @@ function parseXlsxTable(
   const columns = directChildren(columnsElement, 'tableColumn').flatMap(
     (column) => {
       const columnName = attribute(column, 'name');
-      return columnName === null ? [] : [{ name: columnName }];
+      if (columnName === null) return [];
+      const calculatedFormula = normalizeSpreadsheetTableCalculatedFormula(
+        directChild(column, 'calculatedColumnFormula')?.textContent,
+      );
+      return [
+        {
+          name: columnName,
+          ...(calculatedFormula ? { calculatedFormula } : {}),
+        },
+      ];
     },
   );
   const width = range.column[1] - range.column[0] + 1;
@@ -218,10 +228,22 @@ function xlsxTableXml(
     ? xlsxTableAutoFilterXml(table.filters, reference, table.totalsRow)
     : '';
   const columns = table.columns
-    .map(
-      (column, index) =>
-        `<tableColumn id="${index + 1}" name="${escapeXml(column.name)}"/>`,
-    )
+    .map((column, index) => {
+      const formula = normalizeSpreadsheetTableCalculatedFormula(
+        column.calculatedFormula,
+      );
+      const formulaElement = formula
+        ? `<calculatedColumnFormula>${escapeXml(
+            formula.replace(/^=/, ''),
+          )}</calculatedColumnFormula>`
+        : '';
+      const opening = `<tableColumn id="${index + 1}" name="${escapeXml(
+        column.name,
+      )}"`;
+      return formulaElement
+        ? `${opening}>${formulaElement}</tableColumn>`
+        : `${opening}/>`;
+    })
     .join('');
   const styleName = tableStyleName(table.style);
   const style = styleName

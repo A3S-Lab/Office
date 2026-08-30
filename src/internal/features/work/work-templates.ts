@@ -123,7 +123,7 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     id: 'structured-references',
     kind: 'spreadsheet',
     name: '结构化引用',
-    description: '表名、标题/数据/汇总区域与当前行公式',
+    description: '表名、当前行公式与插入行自动填充',
     accent: '#0f7b61',
   },
   {
@@ -705,7 +705,7 @@ function structuredReferenceTemplateSheets(): WorkSpreadsheetSheet[] {
     bg: '#0f7b61',
   });
   sales[1][0] = styledCell(
-    '表内计算列会按当前行计算；汇总行和右侧示例使用有界表区域。',
+    '插入表格正文行会自动补齐 Revenue；已填写的手工值不会覆盖。',
     { fc: '#49645c', fs: 10 },
   );
   ['Item', 'Units', 'Unit price', 'Revenue'].forEach((value, column) => {
@@ -774,7 +774,7 @@ function structuredReferenceTemplateSheets(): WorkSpreadsheetSheet[] {
       { name: 'Item' },
       { name: 'Units' },
       { name: 'Unit price' },
-      { name: 'Revenue' },
+      { name: 'Revenue', calculatedFormula: '=[@Units]*[@[Unit price]]' },
     ],
     filters: [],
     headerRow: true,

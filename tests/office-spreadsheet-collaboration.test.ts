@@ -363,6 +363,37 @@ test('syncs native table records and merges independent design edits', () => {
   });
 });
 
+test('syncs validated calculated-column formulas across Yjs clients', () => {
+  const content = spreadsheetTableFilterContent([
+    { type: 'blanks' },
+    { type: 'non-blanks' },
+  ]);
+  const table = content.sheets[0]?.tables?.[0];
+  if (!table) throw new Error('Expected a table fixture.');
+  table.columns[1] = {
+    ...table.columns[1],
+    calculatedFormula: '=[@Column 1]*2',
+  };
+
+  const firstDocument = new Y.Doc();
+  const first = spreadsheetSession(
+    'spreadsheet-calculated-column-sync',
+    firstDocument,
+  );
+  initializeOfficeSpreadsheetCollaboration(first, content);
+
+  const secondDocument = new Y.Doc();
+  Y.applyUpdate(secondDocument, Y.encodeStateAsUpdate(firstDocument));
+  const second = spreadsheetSession(
+    'spreadsheet-calculated-column-sync',
+    secondDocument,
+  );
+
+  expect(readOfficeSpreadsheetCollaboration(second).sheets[0]?.tables).toEqual([
+    table,
+  ]);
+});
+
 test('accepts every closed native table filter criterion', () => {
   const criteria = [
     { type: 'values', values: ['Open', 'Closed'], includeBlanks: true },
@@ -538,6 +569,26 @@ test('rejects malformed native table metadata before collaboration writes', () =
         if (columns[0]) columns[0].formula = '=1';
       },
       expected: /without unknown fields/,
+    },
+    {
+      name: 'dangerous calculated-column formula',
+      mutate: (table) => {
+        const columns = table.columns as Array<Record<string, unknown>>;
+        if (columns[0]) {
+          columns[0].calculatedFormula = '=INDIRECT([@Column 1])';
+        }
+      },
+      expected: /bounded structured calculated-column formula/,
+    },
+    {
+      name: 'external calculated-column formula',
+      mutate: (table) => {
+        const columns = table.columns as Array<Record<string, unknown>>;
+        if (columns[0]) {
+          columns[0].calculatedFormula = '=SUM([Book.xlsx]Sheet1![@Column 1])';
+        }
+      },
+      expected: /bounded structured calculated-column formula/,
     },
   ];
 

@@ -221,9 +221,13 @@ from two browser clients converge. The follow-up structured-reference slice
 resolves bounded table names/display names, contiguous columns,
 header/data/totals selectors, worksheet-qualified references, and table-local
 calculated-column formulas through the shared Rust/WASM and JavaScript
-calculation paths. Automatic calculated-column fill on row insertion,
-complete totals-row authoring, slicers, and external/query tables remain
-explicit compatibility gaps.
+calculation paths. The calculated-column slice now infers a shared current-row
+formula, persists it as typed table metadata, and fills only newly inserted
+body rows. Existing values, formulas, and manual exceptions remain
+authoritative; conflicting formulas fail closed. Native XLSX
+`<calculatedColumnFormula>` metadata and Yjs table records round-trip with the
+editable leading `=` form. Complete totals-row authoring, slicers, and
+external/query tables remain explicit compatibility gaps.
 The twenty-third milestone completes the frequent Traditional Office font-size
 and border keyboard path under Home and Font. Grow Font owns `Cmd/Ctrl+Shift+.` and
 `Cmd/Ctrl+]`; Shrink Font owns `Cmd/Ctrl+Shift+,` and `Cmd/Ctrl+[`; Outside
@@ -534,6 +538,19 @@ block-container semantics remain an explicit native paragraph-mark boundary.
 The public Playground template, bilingual documentation, focused Rstest,
 responsive Playwright, and pinned local-only A3S Test suite form the release
 evidence without adding A3S Test to Actions or Pages.
+
+The forty-sixth milestone completes the first automatic Spreadsheet calculated
+column workflow. When a table contains one consistent current-row formula such
+as `=[@Units]*[@[Unit price]]`, the controlled model records it as a calculated
+column and fills only empty cells in newly inserted body rows. Values, formulas,
+styles, and manual exceptions are never overwritten; a conflicting column
+loses its automatic rule instead of guessing. Dense Fortune matrices and
+sparse `celldata` both remain supported. The rule is validated at the
+collaboration boundary, survives Yjs field-level convergence, and round-trips
+through native XLSX `<calculatedColumnFormula>` elements with the editable
+leading `=` restored. Focused model, reconciliation, collaboration, XLSX, and
+Playground tests plus the local-only A3S Test gate form the release evidence;
+complete totals-row authoring, slicers, and external/query tables remain open.
 
 ## Current Presentation Milestone
 

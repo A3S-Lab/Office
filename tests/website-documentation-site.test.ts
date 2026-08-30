@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.36.0' ||
     version === '0.34.0' ||
     version === '0.33.0' ||
     version === '0.32.0' ||
@@ -61,6 +62,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.36.0',
     '0.34.0',
     '0.33.0',
     '0.32.0',
@@ -998,6 +1000,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.36.0',
     '0.34.0',
     '0.33.0',
     '0.32.0',
@@ -1069,6 +1072,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.36.0',
     '0.34.0',
     '0.33.0',
     '0.32.0',
@@ -2501,6 +2505,8 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
     chineseArchitecture,
     quality,
     chineseQuality,
+    releaseEnglish,
+    releaseChinese,
     englishHome,
     chineseHome,
     templates,
@@ -2536,6 +2542,14 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
       path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
       'utf8',
     ),
+    readFile(
+      path.join(documentationRoot, '0.36.0/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.36.0/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
     readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
     readFile(path.join(documentationRoot, 'latest/zh/index.mdx'), 'utf8'),
     readFile(
@@ -2561,25 +2575,48 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
 
   expect(readme).toContain('Latest capabilities → 结构化引用');
   expect(readme).toContain('structured-reference-calculation');
+  expect(readme).toContain('automatic calculated-column fill');
+  expect(readme).toContain('newly inserted table');
+  expect(readme).toContain('body rows');
   expect(readme).toContain('1,024 tables');
   expect(roadmap).toContain('bounded structured-reference calculation');
+  expect(roadmap).toContain('Automatic calculated-column fill');
+  expect(roadmap).toContain('now\n  supported');
   expect(changelog).toContain(
     'bounded Spreadsheet structured-reference calculation',
   );
+  expect(changelog).toContain('automatic Spreadsheet calculated-column fill');
   expect(product).toContain('follow-up structured-reference slice');
+  expect(product).toContain('fills only newly');
+  expect(product).toContain('inserted');
+  expect(product).toContain('body rows');
   expect(english).toContain('## Structured-reference calculation');
   expect(chinese).toContain('## 结构化引用计算');
   expect(english).toContain('=SUM(Sales[Revenue])');
   expect(chinese).toContain('=SUM(Sales[Revenue])');
+  expect(english).toContain('<calculatedColumnFormula>');
+  expect(chinese).toContain('calculatedColumnFormula');
+  expect(english).toContain('Rows inserted outside the table');
+  expect(english).toContain('do not trigger a fill');
+  expect(chinese).toContain('表格外插入的行不会触发填充');
   expect(architecture).toContain('worksheet-qualified tables');
   expect(chineseArchitecture).toContain('工作表限定');
+  expect(architecture).toContain('newly inserted body rows');
+  expect(chineseArchitecture).toContain('新插入的正文空单元格');
   expect(quality).toContain('The follow-up structured-reference slice');
   expect(chineseQuality).toContain('结构化引用计算切片');
+  expect(quality).toContain('conflicts remove the rule');
+  expect(chineseQuality).toContain('检测到冲突时会删除规则');
+  expect(releaseEnglish).toContain('calculated-column rule');
+  expect(releaseEnglish).toContain('<calculatedColumnFormula>');
+  expect(releaseChinese).toContain('计算列规则');
+  expect(releaseChinese).toContain('calculatedColumnFormula');
   expect(englishHome).toContain('Structured-reference calculation');
   expect(chineseHome).toContain('结构化引用计算');
   expect(templates).toContain("id: 'structured-references'");
   expect(templates).toContain('=[@Units]*[@[Unit price]]');
   expect(templates).toContain('=SUM(Sales[Revenue])');
+  expect(templates).toContain('插入表格正文行会自动补齐 Revenue');
   expect(latestCapabilities).toContain(
     "{ templateId: 'structured-references', release: '0.36.0' }",
   );

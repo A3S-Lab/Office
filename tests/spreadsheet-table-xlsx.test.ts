@@ -118,6 +118,86 @@ describe('spreadsheet table XLSX interop', () => {
     });
   });
 
+  test('round-trips a bounded calculated-column formula without its leading equals sign', async () => {
+    const buffer = await tableWorkbookWithCalculatedColumn();
+    const imported = await readXlsxWorksheetTables(
+      await OoxmlPackage.load(buffer),
+      'xl/worksheets/sheet1.xml',
+    );
+
+    expect(imported[0]?.columns).toEqual([
+      { name: 'Region' },
+      { name: 'Qty' },
+      { name: 'State', calculatedFormula: '=[@Qty]*2' },
+    ]);
+
+    const patched = await patchXlsxSpreadsheetTables(await blankWorkbook(), {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sales',
+          tables: imported,
+        },
+      ],
+    });
+    const zip = await JSZip.loadAsync(patched);
+    const table = (await zip.file('xl/tables/table1.xml')?.async('text')) ?? '';
+    expect(table).toContain(
+      '<calculatedColumnFormula>[@Qty]*2</calculatedColumnFormula>',
+    );
+    expect(table).not.toContain(
+      '<calculatedColumnFormula>=[@Qty]*2</calculatedColumnFormula>',
+    );
+
+    const roundTrip = await readXlsxWorksheetTables(
+      await OoxmlPackage.load(patched),
+      'xl/worksheets/sheet1.xml',
+    );
+    expect(roundTrip[0]?.columns[2]).toEqual({
+      name: 'State',
+      calculatedFormula: '=[@Qty]*2',
+    });
+  });
+
+  test('drops unsafe calculated-column metadata at the XLSX boundary', async () => {
+    const patched = await patchXlsxSpreadsheetTables(await blankWorkbook(), {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sales',
+          tables: [
+            {
+              id: 'table-unsafe',
+              name: 'Sales',
+              range: { row: [0, 2], column: [0, 2] },
+              columns: [
+                { name: 'Region' },
+                { name: 'Qty' },
+                {
+                  name: 'State',
+                  calculatedFormula: '=HYPERLINK("https://example.test")',
+                },
+              ],
+              filters: [],
+              headerRow: true,
+              totalsRow: false,
+              style: { family: 'medium', number: 2 },
+              showFirstColumn: false,
+              showLastColumn: false,
+              showRowStripes: true,
+              showColumnStripes: false,
+            },
+          ],
+        },
+      ],
+    });
+    const zip = await JSZip.loadAsync(patched);
+    const table = (await zip.file('xl/tables/table1.xml')?.async('text')) ?? '';
+    expect(table).not.toContain('calculatedColumnFormula');
+  });
+
   test('ignores malformed, duplicate, and prototype-like filter columns', async () => {
     const buffer = await tableWorkbook(
       [
@@ -238,6 +318,19 @@ async function tableWorkbook(
       ' showLastColumn="0" showRowStripes="1" showColumnStripes="0"/>',
       '</table>',
     ].join(''),
+  );
+  return zip.generateAsync({ type: 'arraybuffer' });
+}
+
+async function tableWorkbookWithCalculatedColumn(): Promise<ArrayBuffer> {
+  const zip = await JSZip.loadAsync(await tableWorkbook());
+  const table = (await zip.file('xl/tables/table7.xml')?.async('text')) ?? '';
+  zip.file(
+    'xl/tables/table7.xml',
+    table.replace(
+      '<tableColumn id="3" name="State"/>',
+      '<tableColumn id="3" name="State"><calculatedColumnFormula>[@Qty]*2</calculatedColumnFormula></tableColumn>',
+    ),
   );
   return zip.generateAsync({ type: 'arraybuffer' });
 }
