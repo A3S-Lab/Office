@@ -379,6 +379,100 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".luckysheet-filter-options[aria-label='状态 筛选']:not(.luckysheet-filter-options-active)")
         }
 
+        press "return-to-workbook-origin-for-rank-filter" {
+            key = "Control+Home"
+        }
+
+        press "select-rank-header-row-one" {
+            key = "ArrowDown"
+        }
+
+        press "select-rank-header-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "select-rank-owner-header" {
+            key = "ArrowRight"
+        }
+
+        press "select-january-rank-header" {
+            key = "ArrowRight"
+        }
+
+        expect "rank-filter-target-selected" {
+            text = "C3"
+        }
+
+        press "open-january-filter-menu" {
+            key = "Alt+ArrowDown"
+        }
+
+        expect "owned-rank-action-visible" {
+            visible = css(".fortune-filter-menu[aria-label='一月 筛选'] [data-a3s-auto-filter-rank]")
+        }
+
+        click "open-owned-rank-dialog" {
+            target = css(".fortune-filter-menu [data-a3s-auto-filter-rank]")
+        }
+
+        expect "rank-dialog-targets-january" {
+            text = "执行看板!一月"
+        }
+
+        expect "rank-dialog-defaults-to-ten-items" {
+            visible = css(".work-spreadsheet-auto-filter-dialog select[aria-label='筛选条件']:has(option[value='top']:checked)")
+        }
+
+        select "choose-bottom-percent-filter" {
+            target = css(".work-spreadsheet-auto-filter-dialog select[aria-label='筛选条件']")
+            values = ["bottom-percent"]
+        }
+
+        fill "enter-bottom-percent" {
+            target = css(".work-spreadsheet-auto-filter-dialog input[aria-label='百分比']")
+            value = "50"
+        }
+
+        screenshot "autofilter-rank-dialog" {
+            path = "screenshots/autofilter-rank-dialog.png"
+        }
+
+        click "apply-rank-condition" {
+            target = role("button", "确定")
+        }
+
+        expect "rank-filter-active" {
+            visible = css(".luckysheet-filter-options[aria-label='一月 筛选'].luckysheet-filter-options-active")
+        }
+
+        focus "return-to-ranked-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "undo-rank-filter" {
+            key = "Control+z"
+        }
+
+        expect "rank-filter-undone" {
+            visible = css(".luckysheet-filter-options[aria-label='一月 筛选']:not(.luckysheet-filter-options-active)")
+        }
+
+        press "return-to-february-header" {
+            key = "ArrowRight"
+        }
+
+        press "return-to-march-header" {
+            key = "ArrowRight"
+        }
+
+        press "return-to-progress-header" {
+            key = "ArrowRight"
+        }
+
+        press "return-to-status-header" {
+            key = "ArrowRight"
+        }
+
         press "reopen-status-filter-menu" {
             key = "Alt+ArrowDown"
         }

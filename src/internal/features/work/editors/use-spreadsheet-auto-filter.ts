@@ -16,10 +16,12 @@ import type {
   WorkSpreadsheetSheet,
 } from '../work-types';
 import {
+  spreadsheetAutoFilterColumnIsNumeric,
   spreadsheetAutoFilterCriteria,
   spreadsheetAutoFilterHeaderColumn,
   toggleSpreadsheetAutoFilter,
 } from './spreadsheet-auto-filter';
+import { spreadsheetAutoFilterRankConditionType } from './spreadsheet-auto-filter-condition-dialog-model';
 import {
   SpreadsheetAutoFilterConditionDialog,
   type SpreadsheetAutoFilterConditionDialogSource,
@@ -36,9 +38,9 @@ import {
   spreadsheetAutoFilterConditionAction,
   spreadsheetAutoFilterMenu,
   spreadsheetAutoFilterMenuFocusable,
+  spreadsheetAutoFilterRankAction,
   spreadsheetAutoFilterTrigger,
 } from './spreadsheet-auto-filter-menu';
-import { spreadsheetSheetCellReader } from './spreadsheet-current-region';
 
 export interface UseSpreadsheetAutoFilterOptions {
   canvasRef: RefObject<HTMLElement | null>;
@@ -184,57 +186,70 @@ export function useSpreadsheetAutoFilter({
     );
   }, []);
 
-  const openConditionDialog = useCallback((action: HTMLElement): boolean => {
-    if (!editableRef.current || conditionSurfaceRef.current) return false;
-    const activeSheet = contentRef.current.sheets.find(
-      (candidate) => candidate.id === sheetIdRef.current,
-    );
-    const invoker = keyboardInvokerRef.current;
-    const column = Number(invoker?.dataset.filterColumn);
-    const range = normalizedSpreadsheetAutoFilterRange(
-      activeSheet?.filter_select,
-    );
-    if (
-      !activeSheet ||
-      !range ||
-      !Number.isSafeInteger(column) ||
-      column < range.column[0] ||
-      column > range.column[1]
-    ) {
-      return false;
-    }
-    const key = String(column - range.column[0]);
-    const source: SpreadsheetAutoFilterConditionSurface = {
-      column,
-      columnLabel: spreadsheetAutoFilterColumnLabel(
-        activeSheet,
-        range.row[0],
+  const openConditionDialog = useCallback(
+    (action: HTMLElement, rankRequested = false): boolean => {
+      if (!editableRef.current || conditionSurfaceRef.current) return false;
+      const activeSheet = contentRef.current.sheets.find(
+        (candidate) => candidate.id === sheetIdRef.current,
+      );
+      const invoker = keyboardInvokerRef.current;
+      const column = Number(invoker?.dataset.filterColumn);
+      const range = normalizedSpreadsheetAutoFilterRange(
+        activeSheet?.filter_select,
+      );
+      if (
+        !activeSheet ||
+        !range ||
+        !Number.isSafeInteger(column) ||
+        column < range.column[0] ||
+        column > range.column[1]
+      ) {
+        return false;
+      }
+      const key = String(column - range.column[0]);
+      const activeCriteria = spreadsheetAutoFilterCriteria(activeSheet, column);
+      const criteria =
+        rankRequested &&
+        !spreadsheetAutoFilterRankConditionType(activeCriteria?.type ?? '')
+          ? ({ type: 'top', count: 10 } as const)
+          : activeCriteria;
+      const source: SpreadsheetAutoFilterConditionSurface = {
         column,
-      ),
-      criteria: spreadsheetAutoFilterCriteria(activeSheet, column),
-      filterRange: range,
-      hasActiveFilter: Object.hasOwn(activeSheet.filter ?? {}, key),
-      invoker,
-      numeric: spreadsheetAutoFilterColumnIsNumeric(activeSheet, range, column),
-      sheetId: activeSheet.id ?? sheetIdRef.current,
-      sheetName: activeSheet.name,
-    };
-    dialogSelectionRef.current = {
-      selections: [
-        currentSpreadsheetAutoFilterSelection(
-          selectionRef.current,
-          workbookRef.current,
+        columnLabel: spreadsheetAutoFilterColumnLabel(
+          activeSheet,
+          range.row[0],
+          column,
         ),
-      ],
-      sheetId: source.sheetId,
-    };
-    const menu = action.closest<HTMLElement>('.fortune-filter-menu');
-    restoreInvokerFocusRef.current = false;
-    menu?.querySelector<HTMLElement>('.button-default')?.click();
-    conditionSurfaceRef.current = source;
-    setConditionSurface(source);
-    return true;
-  }, []);
+        criteria,
+        filterRange: range,
+        hasActiveFilter: Object.hasOwn(activeSheet.filter ?? {}, key),
+        invoker,
+        numeric: spreadsheetAutoFilterColumnIsNumeric(
+          activeSheet,
+          range,
+          column,
+        ),
+        sheetId: activeSheet.id ?? sheetIdRef.current,
+        sheetName: activeSheet.name,
+      };
+      dialogSelectionRef.current = {
+        selections: [
+          currentSpreadsheetAutoFilterSelection(
+            selectionRef.current,
+            workbookRef.current,
+          ),
+        ],
+        sheetId: source.sheetId,
+      };
+      const menu = action.closest<HTMLElement>('.fortune-filter-menu');
+      restoreInvokerFocusRef.current = false;
+      menu?.querySelector<HTMLElement>('.button-default')?.click();
+      conditionSurfaceRef.current = source;
+      setConditionSurface(source);
+      return true;
+    },
+    [],
+  );
 
   useEffect(() => {
     const container = canvasRef.current;
@@ -269,11 +284,13 @@ export function useSpreadsheetAutoFilter({
       restoreInvokerFocusRef.current = false;
     };
     const handleClick = (event: MouseEvent) => {
-      const action = spreadsheetAutoFilterConditionAction(event.target);
+      const rankAction = spreadsheetAutoFilterRankAction(event.target);
+      const action =
+        rankAction ?? spreadsheetAutoFilterConditionAction(event.target);
       if (!action) return;
       event.preventDefault();
       event.stopPropagation();
-      openConditionDialog(action);
+      openConditionDialog(action, Boolean(rankAction));
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       const trigger = spreadsheetAutoFilterTrigger(event.target);
@@ -494,20 +511,4 @@ function normalizedSpreadsheetAutoFilterRange(
       Math.max(Number(columnStart), Number(columnEnd)),
     ],
   };
-}
-
-function spreadsheetAutoFilterColumnIsNumeric(
-  sheet: WorkSpreadsheetSheet,
-  range: SpreadsheetAutoFilterConditionSurface['filterRange'],
-  column: number,
-): boolean {
-  const cellAt = spreadsheetSheetCellReader(sheet);
-  let values = 0;
-  for (let row = range.row[0] + 1; row <= range.row[1]; row += 1) {
-    const value = cellAt(row, column)?.v ?? cellAt(row, column)?.m;
-    if (value === undefined || value === null || value === '') continue;
-    values += 1;
-    if (typeof value !== 'number' || !Number.isFinite(value)) return false;
-  }
-  return values > 0;
 }

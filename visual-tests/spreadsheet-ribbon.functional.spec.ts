@@ -1175,6 +1175,7 @@ test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
   ).toBeLessThanOrEqual(viewport?.height ?? 0);
   await expect(dialog.getByRole('button', { name: '升序' })).toHaveCount(0);
   await expect(dialog.getByRole('button', { name: '降序' })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: '前 10 项' })).toHaveCount(0);
 
   await dialog.getByRole('button', { name: '按条件过滤' }).click();
   const conditionDialog = page.getByRole('dialog', {
@@ -1209,6 +1210,47 @@ test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
   await expect(
     canvas.getByRole('button', { name: '状态 筛选' }),
   ).not.toHaveClass(/luckysheet-filter-options-active/);
+
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await expect(nameBox).toHaveText('C3');
+  await page.keyboard.press('Alt+ArrowDown');
+  const numericDialog = canvas.getByRole('dialog', { name: '一月 筛选' });
+  await expect(numericDialog).toBeVisible();
+  await numericDialog.getByRole('button', { name: '前 10 项' }).click();
+  await expect(conditionDialog).toContainText('执行看板!一月');
+  await expect(
+    conditionDialog.getByRole('combobox', { name: '筛选条件' }),
+  ).toHaveValue('top');
+  await expect(
+    conditionDialog.getByRole('textbox', { name: '项目数' }),
+  ).toHaveValue('10');
+  await conditionDialog
+    .getByRole('combobox', { name: '筛选条件' })
+    .selectOption('bottom-percent');
+  await conditionDialog.getByRole('textbox', { name: '百分比' }).fill('50');
+  await conditionDialog.screenshot({
+    path: testInfo.outputPath('spreadsheet-auto-filter-rank-dialog.png'),
+    animations: 'disabled',
+  });
+  await conditionDialog.getByRole('button', { name: '确定' }).click();
+  await expect(canvas.getByRole('button', { name: '一月 筛选' })).toHaveClass(
+    /luckysheet-filter-options-active/,
+  );
+  await expect(nameBox).toHaveText('C3');
+  await grid.focus();
+  await page.keyboard.press('Control+z');
+  await expect(
+    canvas.getByRole('button', { name: '一月 筛选' }),
+  ).not.toHaveClass(/luckysheet-filter-options-active/);
+
+  for (let index = 0; index < 4; index += 1) {
+    await page.keyboard.press('ArrowRight');
+  }
+  await expect(nameBox).toHaveText('G3');
 
   await page.keyboard.press('Alt+ArrowDown');
   dialog = canvas.getByRole('dialog', { name: '状态 筛选' });

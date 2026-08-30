@@ -141,13 +141,7 @@ function supportedSpreadsheetAutoFilterCriteria(
 ): boolean {
   const normalized = normalizeWorkSpreadsheetFilterCriteria(criteria);
   if (!normalized) return false;
-  if (
-    ['bottom', 'bottom-percent', 'dynamic', 'top', 'top-percent'].includes(
-      normalized.type,
-    )
-  ) {
-    return false;
-  }
+  if (normalized.type === 'dynamic') return false;
   if (normalized.type === 'between' || normalized.type === 'not-between') {
     const lower = finiteSpreadsheetAutoFilterNumber(normalized.lower);
     const upper = finiteSpreadsheetAutoFilterNumber(normalized.upper);

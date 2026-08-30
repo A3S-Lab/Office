@@ -257,6 +257,42 @@ describe('spreadsheet table XLSX interop', () => {
     ]);
   });
 
+  test('round-trips Top/Bottom item and percentage filters', async () => {
+    const buffer = await tableWorkbook(
+      [
+        '<filterColumn colId="0"><top10 top="1" percent="0" val="2"/></filterColumn>',
+        '<filterColumn colId="1"><top10 top="0" percent="1" val="50"/></filterColumn>',
+        '<filterColumn colId="2"><top10 top="1" percent="1" val="25"/></filterColumn>',
+      ].join(''),
+    );
+    const tables = await readXlsxWorksheetTables(
+      await OoxmlPackage.load(buffer),
+      'xl/worksheets/sheet1.xml',
+    );
+
+    expect(tables[0]?.filters).toEqual([
+      { column: 0, criteria: { type: 'top', count: 2 } },
+      { column: 1, criteria: { type: 'bottom-percent', percent: 50 } },
+      { column: 2, criteria: { type: 'top-percent', percent: 25 } },
+    ]);
+
+    const patched = await patchXlsxSpreadsheetTables(await blankWorkbook(), {
+      type: 'spreadsheet',
+      sheets: [{ id: 'sheet-1', name: 'Sales', tables }],
+    });
+    const zip = await JSZip.loadAsync(patched);
+    const table = (await zip.file('xl/tables/table1.xml')?.async('text')) ?? '';
+    expect(table).toContain('<top10 percent="0" top="1" val="2"/>');
+    expect(table).toContain('<top10 percent="1" top="0" val="50"/>');
+    expect(table).toContain('<top10 percent="1" top="1" val="25"/>');
+
+    const roundTrip = await readXlsxWorksheetTables(
+      await OoxmlPackage.load(patched),
+      'xl/worksheets/sheet1.xml',
+    );
+    expect(roundTrip[0]?.filters).toEqual(tables[0]?.filters);
+  });
+
   test('round-trips literal wildcard characters without changing filter meaning', async () => {
     const buffer = await tableWorkbook(
       [

@@ -1533,6 +1533,59 @@ describe('spreadsheet command controller', () => {
     expect(fixture.changes).toHaveLength(3);
   });
 
+  test('reauthorizes bounded Top/Bottom AutoFilter criteria', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      data: [
+        [{ v: 'Score' }],
+        [{ v: 100 }],
+        [{ v: 90 }],
+        [{ v: 90 }],
+        [{ v: 80 }],
+      ],
+      filter: {},
+      filter_select: { row: [0, 4], column: [0, 0] },
+    };
+    const editor = spreadsheetEditor(fixture.context);
+    const target = {
+      sheetId: 'sheet-1',
+      column: 0,
+      filterRange: { row: [0, 4], column: [0, 0] },
+    } as const;
+
+    expect(
+      editor.can().applyAutoFilterCriteria({
+        ...target,
+        criteria: { type: 'top', count: 2 },
+      }),
+    ).toBe(true);
+    expect(
+      editor.commands.applyAutoFilterCriteria({
+        ...target,
+        criteria: { type: 'top', count: 2 },
+      }),
+    ).toBe(true);
+    expect(fixture.changes[0]?.sheets[0]?.filter?.['0']).toMatchObject({
+      rowhidden: { '4': 0 },
+    });
+
+    for (const criteria of [
+      { type: 'top', count: 0 },
+      { type: 'bottom', count: 501 },
+      { type: 'top-percent', percent: 0 },
+      { type: 'bottom-percent', percent: 101 },
+    ] as const) {
+      expect(
+        editor.can().applyAutoFilterCriteria({ ...target, criteria }),
+      ).toBe(false);
+      expect(
+        editor.commands.applyAutoFilterCriteria({ ...target, criteria }),
+      ).toBe(false);
+    }
+    expect(fixture.changes).toHaveLength(1);
+  });
+
   test('owns WPS AutoFilter toggle and header-menu shortcuts', () => {
     const fixture = commandFixture();
     fixture.autoFilter.active = true;

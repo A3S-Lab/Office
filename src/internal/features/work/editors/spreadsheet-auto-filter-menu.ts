@@ -1,4 +1,6 @@
 import type { WorkSpreadsheetSheet } from '../work-types';
+import { normalizedWorkSpreadsheetAutoFilterRange } from '../work-spreadsheet-auto-filter';
+import { spreadsheetAutoFilterColumnIsNumeric } from './spreadsheet-auto-filter';
 
 export const SPREADSHEET_AUTO_FILTER_MENU_ITEMS: string[] = [
   'filter-by-condition',
@@ -86,7 +88,48 @@ export function enhanceSpreadsheetAutoFilterSurface(
       action.setAttribute('aria-haspopup', 'dialog');
     }
   }
+  synchronizeSpreadsheetAutoFilterRankAction(menu, sheet, trigger);
   return menu;
+}
+
+function synchronizeSpreadsheetAutoFilterRankAction(
+  menu: HTMLElement,
+  sheet: WorkSpreadsheetSheet | undefined,
+  trigger: HTMLElement | undefined,
+): void {
+  const existing = menu.querySelector<HTMLElement>(
+    '[data-a3s-auto-filter-rank]',
+  );
+  const range = normalizedWorkSpreadsheetAutoFilterRange(sheet?.filter_select);
+  const column = Number(trigger?.dataset.filterColumn);
+  const numeric = Boolean(
+    sheet &&
+      range &&
+      Number.isSafeInteger(column) &&
+      spreadsheetAutoFilterColumnIsNumeric(sheet, range, column),
+  );
+  if (!numeric) {
+    existing?.remove();
+    return;
+  }
+  if (existing) {
+    existing.dataset.filterColumn = String(column);
+    return;
+  }
+  const action = document.createElement('div');
+  action.className = 'luckysheet-cols-menuitem';
+  action.dataset.a3sAutoFilterRank = '';
+  action.dataset.filterColumn = String(column);
+  action.dataset.officeShortcuts = 'ignore';
+  action.tabIndex = 0;
+  action.textContent = '前 10 项';
+  action.setAttribute('role', 'button');
+  action.setAttribute('aria-label', '前 10 项');
+  action.setAttribute('aria-haspopup', 'dialog');
+  const condition = menu.querySelector<HTMLElement>(
+    '[data-a3s-auto-filter-condition]',
+  );
+  condition ? condition.before(action) : menu.prepend(action);
 }
 
 export function focusSpreadsheetAutoFilterMenu(container: HTMLElement): void {
@@ -130,6 +173,14 @@ export function spreadsheetAutoFilterConditionAction(
 ): HTMLElement | null {
   return target instanceof Element
     ? target.closest<HTMLElement>('[data-a3s-auto-filter-condition]')
+    : null;
+}
+
+export function spreadsheetAutoFilterRankAction(
+  target: EventTarget | null,
+): HTMLElement | null {
+  return target instanceof Element
+    ? target.closest<HTMLElement>('[data-a3s-auto-filter-rank]')
     : null;
 }
 

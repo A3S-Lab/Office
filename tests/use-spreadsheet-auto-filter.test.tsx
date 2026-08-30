@@ -12,7 +12,10 @@ import {
   type SpreadsheetAutoFilterController,
   useSpreadsheetAutoFilter,
 } from '../src/internal/features/work/editors/use-spreadsheet-auto-filter';
-import { SPREADSHEET_AUTO_FILTER_MENU_ITEMS } from '../src/internal/features/work/editors/spreadsheet-auto-filter-menu';
+import {
+  enhanceSpreadsheetAutoFilterSurface,
+  SPREADSHEET_AUTO_FILTER_MENU_ITEMS,
+} from '../src/internal/features/work/editors/spreadsheet-auto-filter-menu';
 import { applySpreadsheetAutoFilterCriteria } from '../src/internal/features/work/editors/spreadsheet-auto-filter';
 import type { SpreadsheetEditorCommands } from '../src/internal/features/work/editors/spreadsheet-command-controller';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
@@ -56,6 +59,123 @@ test('keeps unsafe vendor row sorting out of the AutoFilter menu', () => {
   expect(SPREADSHEET_AUTO_FILTER_MENU_ITEMS).toContain('filter-by-condition');
   expect(SPREADSHEET_AUTO_FILTER_MENU_ITEMS).not.toContain('sort-by-asc');
   expect(SPREADSHEET_AUTO_FILTER_MENU_ITEMS).not.toContain('sort-by-desc');
+});
+
+test('adds the owned Top 10 action only for numeric filter columns', () => {
+  const canvas = document.createElement('div');
+  const triggers = Array.from({ length: 3 }, () => {
+    const trigger = document.createElement('div');
+    trigger.className = 'luckysheet-filter-options';
+    trigger.tabIndex = 0;
+    canvas.append(trigger);
+    return trigger;
+  });
+  const menu = document.createElement('div');
+  menu.className = 'fortune-filter-menu';
+  const condition = document.createElement('div');
+  condition.className = 'luckysheet-cols-menuitem';
+  condition.tabIndex = 0;
+  condition.textContent = '按条件过滤';
+  menu.append(condition);
+  canvas.append(menu);
+
+  const content = spreadsheetContent(true);
+  const sheet = content.sheets[0];
+  if (!sheet) throw new Error('Expected the spreadsheet fixture.');
+  enhanceSpreadsheetAutoFilterSurface(canvas, sheet, triggers[1] ?? null);
+  const rank = canvas.querySelector<HTMLElement>('[data-a3s-auto-filter-rank]');
+  expect(rank).not.toBeNull();
+  expect(rank).toHaveTextContent('前 10 项');
+  expect(rank).toHaveAttribute('role', 'button');
+  expect(rank).toHaveAttribute('aria-haspopup', 'dialog');
+
+  enhanceSpreadsheetAutoFilterSurface(canvas, sheet, triggers[2] ?? null);
+  expect(canvas.querySelector('[data-a3s-auto-filter-rank]')).toBeNull();
+});
+
+test('opens the owned Top 10 action with a bounded default criterion', async () => {
+  const canvas = document.createElement('div');
+  const triggers = Array.from({ length: 3 }, () => {
+    const trigger = document.createElement('div');
+    trigger.className = 'luckysheet-filter-options';
+    trigger.tabIndex = 0;
+    canvas.append(trigger);
+    return trigger;
+  });
+  const trigger = triggers[1] as HTMLElement;
+  document.body.append(canvas);
+  trigger.addEventListener('click', () => {
+    if (canvas.querySelector('.fortune-filter-menu')) return;
+    const menu = document.createElement('div');
+    menu.className = 'fortune-filter-menu';
+    const condition = document.createElement('div');
+    condition.className = 'luckysheet-cols-menuitem';
+    condition.tabIndex = 0;
+    condition.textContent = '按条件过滤';
+    const cancel = document.createElement('div');
+    cancel.className = 'button-basic button-default';
+    cancel.tabIndex = 0;
+    cancel.textContent = '取消';
+    cancel.addEventListener('click', () => menu.remove());
+    menu.append(condition, cancel);
+    canvas.append(menu);
+  });
+  const requests: Array<
+    Parameters<SpreadsheetEditorCommands['applyAutoFilterCriteria']>[0]
+  > = [];
+  const commandsRef = {
+    current: {
+      applyAutoFilterCriteria: (request) => {
+        requests.push(request);
+        return true;
+      },
+    } as SpreadsheetEditorCommands,
+  };
+  const { result, unmount } = renderHook(() =>
+    useSpreadsheetAutoFilter({
+      canvasRef: { current: canvas },
+      commandsRef,
+      content: spreadsheetContent(true),
+      editable: true,
+      onChange: () => undefined,
+      selection: cellSelection(2, 1),
+      sheetId: 'sheet-1',
+    }),
+  );
+
+  fireEvent.pointerDown(trigger);
+  fireEvent.click(trigger);
+  const rank = await waitFor(() => {
+    const candidate = canvas.querySelector<HTMLElement>(
+      '[data-a3s-auto-filter-rank]',
+    );
+    expect(candidate).not.toBeNull();
+    return candidate as HTMLElement;
+  });
+  fireEvent.click(rank);
+  await waitFor(() => expect(result.current.dialog).not.toBeNull());
+  render(result.current.dialog);
+
+  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue('top');
+  expect(screen.getByRole('textbox', { name: '项目数' })).toHaveValue('10');
+  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
+    target: { value: 'bottom-percent' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: '百分比' }), {
+    target: { value: '50' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(requests).toEqual([
+    {
+      sheetId: 'sheet-1',
+      column: 1,
+      filterRange: { row: [2, 4], column: [0, 2] },
+      criteria: { type: 'bottom-percent', percent: 50 },
+    },
+  ]);
+  unmount();
+  canvas.remove();
 });
 
 test('defers worksheet range discovery until AutoFilter is toggled', () => {

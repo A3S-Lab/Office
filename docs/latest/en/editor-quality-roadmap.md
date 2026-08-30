@@ -1524,6 +1524,20 @@ XLSX reopen, Undo, accessibility, and clean diagnostics without adding A3S Test
 to Actions or Pages. Wildcard authoring, Top/Bottom and dynamic evaluation, and
 table/AutoFilter-integrated custom sorting remain open.
 
+The forty-seventh Spreadsheet slice completes local Top/Bottom AutoFilter
+authoring and evaluation. Numeric-column menus expose an owned **Top 10 Items**
+action with a bounded ten-item default; the shared dialog authors top or bottom
+1–500 items and 1–100 percent with integer validation. The dense/sparse model
+computes one numeric threshold, rounds percentage counts upward, preserves all
+boundary ties, and excludes text, Boolean, blank, and nonfinite cells. Command
+reauthorization, manual-hide and multi-column ownership, worksheet/table native
+`<top10>` round trips, and imported-workbook recomputation use the same closed
+criteria union. Focused Rstest, desktop/compact Playwright, and the local-only
+pinned A3S Test 1.0.0 gate cover the numeric-only menu entry, default/edit flow,
+application, Undo, accessibility, XLSX reopen, and clean diagnostics. Wildcard
+authoring, dynamic evaluation, large-rank Worker/WASM offload, and
+table/AutoFilter-integrated custom sorting remain open.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

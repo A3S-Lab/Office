@@ -18,6 +18,10 @@ export type SpreadsheetAutoFilterConditionType =
   | 'less-than-or-equal'
   | 'between'
   | 'not-between'
+  | 'top'
+  | 'top-percent'
+  | 'bottom'
+  | 'bottom-percent'
   | 'blanks'
   | 'non-blanks';
 
@@ -38,6 +42,10 @@ export const CONDITION_LABELS: Readonly<
   'less-than-or-equal': '小于或等于',
   between: '介于',
   'not-between': '不介于',
+  top: '前几项',
+  'top-percent': '前百分比',
+  bottom: '后几项',
+  'bottom-percent': '后百分比',
   blanks: '空白',
   'non-blanks': '非空白',
 };
@@ -62,6 +70,13 @@ export const NUMBER_COMPARISON_CONDITIONS = [
 
 export const NUMBER_CONDITIONS: readonly SpreadsheetAutoFilterConditionType[] =
   [...NUMBER_COMPARISON_CONDITIONS, 'between', 'not-between'];
+
+export const RANK_CONDITIONS = [
+  'top',
+  'top-percent',
+  'bottom',
+  'bottom-percent',
+] as const satisfies readonly SpreadsheetAutoFilterConditionType[];
 
 export const BLANK_CONDITIONS: readonly SpreadsheetAutoFilterConditionType[] = [
   'blanks',
@@ -91,6 +106,26 @@ export function spreadsheetAutoFilterConditionDraft(
       upperValue: '',
       useSecond: true,
       value: criteria.conditions[0].value,
+    };
+  }
+  if (
+    criteria?.type === 'top' ||
+    criteria?.type === 'bottom' ||
+    criteria?.type === 'top-percent' ||
+    criteria?.type === 'bottom-percent'
+  ) {
+    const value =
+      criteria.type === 'top' || criteria.type === 'bottom'
+        ? criteria.count
+        : criteria.percent;
+    return {
+      conjunction: 'and',
+      secondType: 'greater-than',
+      secondValue: '',
+      type: criteria.type,
+      upperValue: '',
+      useSecond: false,
+      value: String(value),
     };
   }
   const defaults = {
@@ -145,6 +180,12 @@ export function spreadsheetAutoFilterConditionCriteria(
   ) {
     return null;
   }
+  if (spreadsheetAutoFilterRankConditionType(draft.type)) {
+    const value = Number(draft.value.trim());
+    return draft.type === 'top' || draft.type === 'bottom'
+      ? { type: draft.type, count: value }
+      : { type: draft.type, percent: value };
+  }
   if (draft.useSecond) {
     if (!spreadsheetAutoFilterCustomConditionType(draft.type)) return null;
     return {
@@ -176,6 +217,18 @@ export function spreadsheetAutoFilterPrimaryConditionError(
   draft: SpreadsheetAutoFilterConditionDraft,
 ): string | null {
   if (draft.type === 'blanks' || draft.type === 'non-blanks') return null;
+  if (spreadsheetAutoFilterRankConditionType(draft.type)) {
+    const value = draft.value.trim();
+    if (!/^\d+$/.test(value)) return '请输入整数。';
+    const maximum =
+      draft.type === 'top-percent' || draft.type === 'bottom-percent'
+        ? 100
+        : 500;
+    const numeric = Number(value);
+    return numeric >= 1 && numeric <= maximum
+      ? null
+      : `请输入 1 到 ${maximum} 之间的整数。`;
+  }
   const valueError = spreadsheetAutoFilterValueError(draft.type, draft.value);
   if (valueError) return valueError;
   if (NUMBER_CONDITIONS.includes(draft.type)) {
@@ -216,6 +269,12 @@ export function spreadsheetAutoFilterCustomConditionType(
   );
 }
 
+export function spreadsheetAutoFilterRankConditionType(
+  value: string,
+): value is (typeof RANK_CONDITIONS)[number] {
+  return RANK_CONDITIONS.includes(value as (typeof RANK_CONDITIONS)[number]);
+}
+
 function spreadsheetAutoFilterCustomCondition(
   type: WorkSpreadsheetCustomFilterCondition['type'],
   value: string,
@@ -232,6 +291,7 @@ function spreadsheetAutoFilterConditionType(
   return (
     TEXT_CONDITIONS.includes(value as SpreadsheetAutoFilterConditionType) ||
     NUMBER_CONDITIONS.includes(value as SpreadsheetAutoFilterConditionType) ||
+    RANK_CONDITIONS.includes(value as (typeof RANK_CONDITIONS)[number]) ||
     BLANK_CONDITIONS.includes(value as SpreadsheetAutoFilterConditionType)
   );
 }

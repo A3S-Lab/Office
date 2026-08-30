@@ -4,6 +4,11 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added local Spreadsheet Top/Bottom AutoFilter evaluation and authoring for
+  1–500 items or 1–100 percent. Numeric-column filter menus expose the owned
+  **Top 10 Items** action, boundary ties remain visible, dense and sparse sheets
+  share one evaluator, and native worksheet/table OOXML `<top10>` criteria are
+  recomputed on reopen without a cloud dependency.
 - Added exactly two same-column Spreadsheet Custom AutoFilter conditions joined
   by AND or OR, including does-not-begin-with and does-not-end-with operators.
   The nonrecursive typed model is validated across commands and collaboration,

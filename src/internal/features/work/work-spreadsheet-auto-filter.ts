@@ -410,12 +410,58 @@ function hiddenRowsForCriteria(
   column: number,
   criteria: WorkSpreadsheetFilterCriteria,
 ): Record<string, 0> | null {
+  if (
+    criteria.type === 'top' ||
+    criteria.type === 'top-percent' ||
+    criteria.type === 'bottom' ||
+    criteria.type === 'bottom-percent'
+  ) {
+    return hiddenRowsForRankCriteria(sheet, range, column, criteria);
+  }
   const matches = filterMatcher(criteria);
   if (!matches) return null;
   const cellAt = sheetCellReader(sheet);
   const hidden: Record<string, 0> = {};
   for (let row = range.row[0] + 1; row <= range.row[1]; row += 1) {
     if (!matches(cellAt(row, column))) hidden[String(row)] = 0;
+  }
+  return hidden;
+}
+
+function hiddenRowsForRankCriteria(
+  sheet: WorkSpreadsheetSheet,
+  range: WorkSpreadsheetAutoFilterRange,
+  column: number,
+  criteria: Extract<
+    WorkSpreadsheetFilterCriteria,
+    {
+      type: 'top' | 'top-percent' | 'bottom' | 'bottom-percent';
+    }
+  >,
+): Record<string, 0> {
+  const cellAt = sheetCellReader(sheet);
+  const values: number[] = [];
+  for (let row = range.row[0] + 1; row <= range.row[1]; row += 1) {
+    const value = numericCellValue(cellAt(row, column));
+    if (value !== null) values.push(value);
+  }
+  const top = criteria.type === 'top' || criteria.type === 'top-percent';
+  values.sort((left, right) => (top ? right - left : left - right));
+  const requested =
+    criteria.type === 'top' || criteria.type === 'bottom'
+      ? criteria.count
+      : Math.ceil((values.length * criteria.percent) / 100);
+  const boundary = values[Math.min(requested, values.length) - 1];
+  const hidden: Record<string, 0> = {};
+  for (let row = range.row[0] + 1; row <= range.row[1]; row += 1) {
+    const value = numericCellValue(cellAt(row, column));
+    if (
+      value === null ||
+      boundary === undefined ||
+      (top ? value < boundary : value > boundary)
+    ) {
+      hidden[String(row)] = 0;
+    }
   }
   return hidden;
 }
@@ -524,6 +570,11 @@ function cellValue(cell: Cell | null): string | number | boolean | null {
   if (typeof value === 'string') return value === '' ? null : value;
   if (typeof value === 'boolean') return value;
   return null;
+}
+
+function numericCellValue(cell: Cell | null): number | null {
+  const value = cellValue(cell);
+  return typeof value === 'number' ? value : null;
 }
 
 function comparableText(value: string): string {

@@ -744,6 +744,24 @@ Playwright, and local-only A3S Test coverage protect the bounded contract.
 Wildcard authoring, Top/Bottom and dynamic evaluation, and
 table/AutoFilter-integrated custom sorting remain open.
 
+The fifty-seventh milestone completes local Top/Bottom AutoFilter authoring and
+evaluation for numeric columns. The owned **Top 10 Items** menu action opens the
+same typed dialog with a bounded ten-item default and supports top or bottom
+1–500 items and 1–100 percent. Validation accepts integers only. Ranking ignores
+blank, text, Boolean, and nonfinite values, rounds percentage counts upward,
+and compares every numeric cell with the selected boundary so ties remain
+visible rather than being cut at an arbitrary row.
+
+The dense and sparse worksheet paths share the same threshold evaluator and
+retain independent multi-column and manual-hide ownership. Imported or authored
+worksheet and table criteria continue to use native `<top10 top="..."
+percent="..." val="..."/>` OOXML and are recomputed when a workbook reopens.
+Focused model, command, dialog, menu, worksheet/table XLSX, responsive
+Playwright, and local-only A3S Test coverage protect application, Undo,
+accessibility, and clean diagnostics. Wildcard authoring, dynamic filter
+evaluation, large-rank Worker/WASM offload, and table/AutoFilter-integrated
+custom sorting remain open.
+
 ## Current Presentation Milestone
 
 The first Presentation-animation milestone adds a bounded entrance-animation

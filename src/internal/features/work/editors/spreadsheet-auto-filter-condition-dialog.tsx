@@ -9,6 +9,7 @@ import {
   CONDITION_LABELS,
   NUMBER_COMPARISON_CONDITIONS,
   NUMBER_CONDITIONS,
+  RANK_CONDITIONS,
   spreadsheetAutoFilterConditionCriteria,
   spreadsheetAutoFilterConditionDraft,
   spreadsheetAutoFilterCustomConditionType,
@@ -54,7 +55,20 @@ export function SpreadsheetAutoFilterConditionDialog({
   const needsValue = !BLANK_CONDITIONS.includes(draft.type);
   const needsUpperValue =
     draft.type === 'between' || draft.type === 'not-between';
-  const numericValue = NUMBER_CONDITIONS.includes(draft.type);
+  const rankValue = RANK_CONDITIONS.includes(
+    draft.type as (typeof RANK_CONDITIONS)[number],
+  );
+  const rankPercent =
+    draft.type === 'top-percent' || draft.type === 'bottom-percent';
+  const valueLabel = rankValue
+    ? rankPercent
+      ? '百分比'
+      : '项目数'
+    : needsUpperValue
+      ? '下限'
+      : '筛选值';
+  const numericValue = NUMBER_CONDITIONS.includes(draft.type) || rankValue;
+  const showRankConditions = source.numeric || rankValue;
   const canUseSecond = spreadsheetAutoFilterCustomConditionType(draft.type);
   const secondNumericValue = NUMBER_CONDITIONS.includes(draft.secondType);
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -143,6 +157,15 @@ export function SpreadsheetAutoFilterConditionDialog({
                 </option>
               ))}
             </optgroup>
+            {showRankConditions && (
+              <optgroup label="排名">
+                {RANK_CONDITIONS.map((type) => (
+                  <option key={type} value={type}>
+                    {CONDITION_LABELS[type]}
+                  </option>
+                ))}
+              </optgroup>
+            )}
             <optgroup label="空白单元格">
               {BLANK_CONDITIONS.map((type) => (
                 <option key={type} value={type}>
@@ -156,14 +179,16 @@ export function SpreadsheetAutoFilterConditionDialog({
         {needsValue && (
           <div className="work-spreadsheet-auto-filter-values">
             <Field
-              label={needsUpperValue ? '下限' : '筛选值'}
+              label={valueLabel}
               required
               error={touched ? (primaryError ?? undefined) : undefined}
             >
               <input
                 type="text"
-                aria-label={needsUpperValue ? '下限' : '筛选值'}
-                inputMode={numericValue ? 'decimal' : 'text'}
+                aria-label={valueLabel}
+                inputMode={
+                  rankValue ? 'numeric' : numericValue ? 'decimal' : 'text'
+                }
                 value={draft.value}
                 onBlur={() => setTouched(true)}
                 onChange={(event) => {

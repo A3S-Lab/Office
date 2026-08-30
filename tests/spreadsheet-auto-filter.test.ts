@@ -474,6 +474,70 @@ describe('spreadsheet AutoFilter model', () => {
     }
   });
 
+  test('evaluates Top/Bottom items and percentages with boundary ties', () => {
+    const sheet: WorkSpreadsheetSheet = {
+      id: 'sheet-1',
+      name: '排名筛选',
+      data: [
+        [{ v: '分数' }],
+        [{ v: 100 }],
+        [{ v: 90 }],
+        [{ v: 90 }],
+        [{ v: 80 }],
+        [{ v: '未评分' }],
+        [],
+      ],
+      filter: {},
+      filter_select: { row: [0, 6], column: [0, 0] },
+      config: {},
+    };
+    const scenarios = [
+      [{ type: 'top', count: 2 }, ['4', '5', '6']],
+      [{ type: 'bottom', count: 2 }, ['1', '5', '6']],
+      [{ type: 'top-percent', percent: 25 }, ['2', '3', '4', '5', '6']],
+      [{ type: 'bottom-percent', percent: 50 }, ['1', '5', '6']],
+    ] as const;
+
+    for (const [criteria, hiddenRows] of scenarios) {
+      const filtered = applySpreadsheetAutoFilterCriteria(
+        workbook(sheet),
+        'sheet-1',
+        0,
+        criteria,
+      );
+      expect(Object.keys(filtered?.sheets[0]?.config?.rowhidden ?? {})).toEqual(
+        hiddenRows,
+      );
+    }
+
+    const sparse: WorkSpreadsheetSheet = {
+      id: 'sheet-1',
+      name: '稀疏排名筛选',
+      celldata: [
+        { r: 0, c: 0, v: { v: '分数' } },
+        { r: 1, c: 0, v: { v: 100 } },
+        { r: 2, c: 0, v: { v: 90 } },
+        { r: 3, c: 0, v: { v: 90 } },
+        { r: 4, c: 0, v: { v: 80 } },
+        { r: 5, c: 0, v: { v: '未评分' } },
+      ],
+      filter: {},
+      filter_select: { row: [0, 6], column: [0, 0] },
+      config: {},
+    };
+    const sparseFiltered = applySpreadsheetAutoFilterCriteria(
+      workbook(sparse),
+      'sheet-1',
+      0,
+      { type: 'top', count: 2 },
+    );
+    expect(sparseFiltered?.sheets[0]?.config?.rowhidden).toEqual({
+      '4': 0,
+      '5': 0,
+      '6': 0,
+    });
+  });
+
   test('fails closed for inactive, header, and out-of-range filter columns', () => {
     const active: WorkSpreadsheetSheet = {
       ...quarterlySheet(),
@@ -516,7 +580,7 @@ describe('spreadsheet AutoFilter model', () => {
     ).toBeNull();
   });
 
-  test('preserves the filter range, criteria, and hidden rows through XLSX export', async () => {
+  test('preserves compound and ranked criteria through XLSX export', async () => {
     const artifact = createWorkArtifact('quarterly-plan');
     if (artifact.content.type !== 'spreadsheet') {
       throw new Error('Expected the quarterly plan spreadsheet.');
@@ -549,10 +613,17 @@ describe('spreadsheet AutoFilter model', () => {
       },
     );
     if (!filtered) throw new Error('Expected the filter criteria to apply.');
+    const ranked = applySpreadsheetAutoFilterCriteria(
+      filtered,
+      content.sheets[0]?.id ?? '',
+      2,
+      { type: 'top', count: 2 },
+    );
+    if (!ranked) throw new Error('Expected the ranked criteria to apply.');
 
     const blob = await createWorkArtifactBlob({
       ...artifact,
-      content: filtered,
+      content: ranked,
     });
     const imported = await importWorkFile(
       new File([blob], 'quarterly-plan-filtered.xlsx', { type: blob.type }),
@@ -574,6 +645,12 @@ describe('spreadsheet AutoFilter model', () => {
         { type: 'greater-than', value: '0.95' },
         { type: 'less-than', value: '1000000' },
       ],
+    });
+    expect(
+      spreadsheetAutoFilterCriteria(imported.content.sheets[0], 2),
+    ).toEqual({ type: 'top', count: 2 });
+    expect(imported.content.sheets[0]?.filter?.['2']?.rowhidden).toEqual({
+      '4': 0,
     });
     expect(imported.content.sheets[0]?.filter?.['3']?.rowhidden).toEqual({
       '4': 0,

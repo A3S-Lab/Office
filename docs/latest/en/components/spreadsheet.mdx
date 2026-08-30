@@ -428,6 +428,11 @@ additional condition and joins the pair with **AND** or **OR**. The controlled
 model uses a fixed two-item tuple of nonrecursive conditions; ranges, blank
 selectors, Top/Bottom, and dynamic families cannot become nested predicates.
 
+For a numeric column, its filter menu also exposes **Top 10 Items**. The dialog
+supports top or bottom 1–500 items and 1–100 percent, accepts integers only, and
+keeps every value tied at the selected boundary. Percentage counts round up;
+text, Boolean, blank, and nonfinite cells are excluded from the ranking domain.
+
 Each active column owns its own hidden-row set. Conditions on different
 columns therefore combine as an intersection of visible rows, and clearing one
 column removes only that column's ownership. Rows hidden independently through
@@ -449,12 +454,14 @@ filter union as native tables and round-trip through XLSX import and export.
 Supported imported value and common custom conditions are recomputed in the
 browser, so their filter-owned rows are inferred from the current cells. OOXML
 cannot recover an imported manual hide that exactly overlaps such an inferred
-filter hide. Imported Top/Bottom, percentage, and dynamic criteria remain typed
-and are written back, but their visible-row calculation is not authored or
-recomputed yet; their existing hidden rows are conservatively retained as
-manual. General two-item native `<customFilters and="1|0">` groups preserve
+filter hide. Imported Top/Bottom item and percentage criteria are recomputed
+from finite numeric cells and written back as native `<top10>` elements.
+Imported dynamic criteria remain typed and are written back, but their
+visible-row calculation is not authored or recomputed yet; their existing
+hidden rows are conservatively retained as manual. General two-item native
+`<customFilters and="1|0">` groups preserve
 their AND/OR relation, including negative prefix and suffix operators.
-Wildcard authoring, Top/Bottom and dynamic evaluation, and
+Wildcard authoring, dynamic evaluation, large-rank Worker/WASM offload, and
 table/AutoFilter-integrated custom sorting remain explicit boundaries.
 
 Focused model, command, dialog, Hook, import, and XLSX Rstest cover the bounded

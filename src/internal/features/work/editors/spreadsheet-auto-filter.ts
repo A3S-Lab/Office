@@ -31,6 +31,11 @@ export interface SpreadsheetAutoFilterCriteriaRequest
   criteria: WorkSpreadsheetFilterCriteria;
 }
 
+const spreadsheetAutoFilterNumericColumnCache = new WeakMap<
+  WorkSpreadsheetSheet,
+  Map<string, boolean>
+>();
+
 export function spreadsheetAutoFilterRange(
   sheet: WorkSpreadsheetSheet,
   selection: Selection,
@@ -94,6 +99,43 @@ export function spreadsheetAutoFilterCriteria(
   column: number,
 ): WorkSpreadsheetFilterCriteria | null {
   return workSpreadsheetAutoFilterCriteria(sheet, column);
+}
+
+export function spreadsheetAutoFilterColumnIsNumeric(
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetAutoFilterRange,
+  column: number,
+): boolean {
+  if (
+    !Number.isSafeInteger(column) ||
+    column < range.column[0] ||
+    column > range.column[1]
+  ) {
+    return false;
+  }
+  const key = `${range.row[0]}:${range.row[1]}:${column}`;
+  const cached = spreadsheetAutoFilterNumericColumnCache.get(sheet)?.get(key);
+  if (cached !== undefined) return cached;
+  const cellAt = spreadsheetSheetCellReader(sheet);
+  let values = 0;
+  let numeric = true;
+  for (let row = range.row[0] + 1; row <= range.row[1]; row += 1) {
+    const cell = cellAt(row, column);
+    const value = cell?.v ?? cell?.m;
+    if (value === undefined || value === null || value === '') continue;
+    values += 1;
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      numeric = false;
+      break;
+    }
+  }
+  const result = numeric && values > 0;
+  const sheetCache =
+    spreadsheetAutoFilterNumericColumnCache.get(sheet) ??
+    new Map<string, boolean>();
+  sheetCache.set(key, result);
+  spreadsheetAutoFilterNumericColumnCache.set(sheet, sheetCache);
+  return result;
 }
 
 export function applySpreadsheetAutoFilterCriteria(

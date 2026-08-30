@@ -196,3 +196,61 @@ test('restores and validates a compound numeric condition', () => {
     },
   ]);
 });
+
+test('authors bounded Top/Bottom item and percentage filters for numeric columns', () => {
+  const applied: WorkSpreadsheetFilterCriteria[] = [];
+  const { unmount } = render(
+    <SpreadsheetAutoFilterConditionDialog
+      source={{
+        columnLabel: '收入',
+        criteria: { type: 'top-percent', percent: 25 },
+        hasActiveFilter: true,
+        numeric: true,
+        sheetName: '季度经营',
+      }}
+      restoreFocusTarget={() => null}
+      onApply={(criteria) => {
+        applied.push(criteria);
+        return true;
+      }}
+      onClear={() => false}
+      onClose={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue(
+    'top-percent',
+  );
+  expect(screen.getByRole('textbox', { name: '百分比' })).toHaveValue('25');
+  fireEvent.change(screen.getByRole('textbox', { name: '百分比' }), {
+    target: { value: '101' },
+  });
+  expect(screen.getByRole('button', { name: '确定' })).toBeDisabled();
+
+  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
+    target: { value: 'bottom' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: '项目数' }), {
+    target: { value: ' 2 ' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+  expect(applied).toEqual([{ type: 'bottom', count: 2 }]);
+
+  unmount();
+  render(
+    <SpreadsheetAutoFilterConditionDialog
+      source={{
+        columnLabel: '状态',
+        criteria: null,
+        hasActiveFilter: false,
+        numeric: false,
+        sheetName: '季度经营',
+      }}
+      restoreFocusTarget={() => null}
+      onApply={() => false}
+      onClear={() => false}
+      onClose={() => undefined}
+    />,
+  );
+  expect(screen.queryByRole('option', { name: '前几项' })).toBeNull();
+});

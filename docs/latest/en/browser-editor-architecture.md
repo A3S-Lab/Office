@@ -1480,9 +1480,9 @@ One accepted operation crosses the Fortune boundary as one range write and one
 controlled Undo record. Table, worksheet-AutoFilter, hyperlink-map,
 imported-formula-metadata, and border-sidecar intersections fail closed because
 those models still own coordinates outside the cell matrix. Moving large sorts,
-wildcard-authored filter predicates, Top/Bottom and dynamic
-filter evaluation, full custom-list preference management, and structural
-sidecar reconciliation into the Worker/WASM kernel remains Stage 3 work.
+wildcard-authored or dynamic filter predicates, rank threshold scans, full
+custom-list preference management, and structural sidecar reconciliation into
+the Worker/WASM kernel remains Stage 3 work.
 Direct host focus of the native grid now enters the same bounded focus observer
 used by ribbon commands. If a controlled workbook update replaces the focused
 Fortune overlay, focus transfers to its connected replacement; deliberate
@@ -1506,13 +1506,22 @@ matchers, collaboration validation rejects any nested or differently sized
 condition array, and the dialog cannot attach a second condition to range,
 blank, Top/Bottom, or dynamic families.
 
+Top/Bottom criteria take a separate aggregate path before the per-cell matcher.
+The evaluator gathers finite numeric values from the filter column, converts a
+percentage to `ceil(n * percent / 100)` items, sorts in the requested direction,
+and uses the selected boundary as a comparison threshold. Every equal boundary
+value remains visible, while text, Boolean, blank, and nonfinite cells do not
+enter the ranking domain. Dense and sparse cell readers share this path, and
+the resulting hidden-row set remains one independently owned column entry.
+
 The same closed `WorkSpreadsheetFilterCriteria` union now serves worksheet and
 table native OOXML. Package scan and import read only the worksheet root's
 direct `<autoFilter>` child, hydrate supported criteria, and retain imported
 unsupported typed criteria without pretending to evaluate them. Export patches
 the generated worksheet element with native `<filterColumn>` children. General
-two-item `<customFilters and="1|0">` groups and negative prefix/suffix wildcard
-forms round-trip through the shared worksheet/table path. The
+two-item `<customFilters and="1|0">` groups, negative prefix/suffix wildcard
+forms, and `<top10 top="..." percent="..." val="..."/>` criteria round-trip
+through the shared worksheet/table path. The
 React adapter owns only vendor-menu discovery, the accessible condition dialog,
 short-lived selection preservation, and focus restoration; unsafe vendor sort
 items are not exposed because they bypass typed sort and structural guards.
