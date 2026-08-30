@@ -293,6 +293,67 @@ describe('spreadsheet table XLSX interop', () => {
     expect(roundTrip[0]?.filters).toEqual(tables[0]?.filters);
   });
 
+  test('round-trips arbitrary WPS wildcard expressions without flattening their meaning', async () => {
+    const buffer = await tableWorkbook(
+      [
+        '<filterColumn colId="0"><customFilters>',
+        '<customFilter operator="equal" val="K?ng*"/>',
+        '</customFilters></filterColumn>',
+        '<filterColumn colId="1"><customFilters and="1">',
+        '<customFilter operator="equal" val="*risk??"/>',
+        '<customFilter operator="notEqual" val="*do?e"/>',
+        '</customFilters></filterColumn>',
+        '<filterColumn colId="2"><customFilters>',
+        '<customFilter operator="equal" val="King~*"/>',
+        '</customFilters></filterColumn>',
+      ].join(''),
+    );
+    const tables = await readXlsxWorksheetTables(
+      await OoxmlPackage.load(buffer),
+      'xl/worksheets/sheet1.xml',
+    );
+
+    expect(tables[0]?.filters).toEqual([
+      {
+        column: 0,
+        criteria: { type: 'matches-wildcard', value: 'K?ng*' },
+      },
+      {
+        column: 1,
+        criteria: {
+          type: 'compound',
+          conjunction: 'and',
+          conditions: [
+            { type: 'matches-wildcard', value: '*risk??' },
+            { type: 'does-not-match-wildcard', value: '*do?e' },
+          ],
+        },
+      },
+      {
+        column: 2,
+        criteria: { type: 'equals', value: 'King*' },
+      },
+    ]);
+
+    const patched = await patchXlsxSpreadsheetTables(await blankWorkbook(), {
+      type: 'spreadsheet',
+      sheets: [{ id: 'sheet-1', name: 'Sales', tables }],
+    });
+    const zip = await JSZip.loadAsync(patched);
+    const table = (await zip.file('xl/tables/table1.xml')?.async('text')) ?? '';
+    expect(table).toContain('<customFilter operator="equal" val="K?ng*"/>');
+    expect(table).toContain(
+      '<customFilters and="1"><customFilter operator="equal" val="*risk??"/><customFilter operator="notEqual" val="*do?e"/></customFilters>',
+    );
+    expect(table).toContain('<customFilter operator="equal" val="King~*"/>');
+
+    const roundTrip = await readXlsxWorksheetTables(
+      await OoxmlPackage.load(patched),
+      'xl/worksheets/sheet1.xml',
+    );
+    expect(roundTrip[0]?.filters).toEqual(tables[0]?.filters);
+  });
+
   test('round-trips literal wildcard characters without changing filter meaning', async () => {
     const buffer = await tableWorkbook(
       [

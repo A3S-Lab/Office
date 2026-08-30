@@ -403,10 +403,10 @@ test('opens the owned condition dialog from the vendor menu and filters controll
     screen.getByRole('dialog', { name: '自定义自动筛选' }),
   ).toHaveTextContent('季度经营!状态');
   fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
-    target: { value: 'contains' },
+    target: { value: 'matches-wildcard' },
   });
-  fireEvent.change(screen.getByRole('textbox', { name: '筛选值' }), {
-    target: { value: '风险' },
+  fireEvent.change(screen.getByRole('textbox', { name: '通配符表达式' }), {
+    target: { value: '有?险' },
   });
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
 
@@ -415,7 +415,7 @@ test('opens the owned condition dialog from the vendor menu and filters controll
       sheetId: 'sheet-1',
       column: 2,
       filterRange: { row: [2, 4], column: [0, 2] },
-      criteria: { type: 'contains', value: '风险' },
+      criteria: { type: 'matches-wildcard', value: '有?险' },
     },
   ]);
   expect(selectionDuringApply).toEqual({

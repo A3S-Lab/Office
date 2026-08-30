@@ -6,6 +6,7 @@ import type {
   WorkSpreadsheetFilterCriteria,
   WorkSpreadsheetTableFilter,
 } from './work-types';
+import { workSpreadsheetHasUnescapedWildcard } from './work-spreadsheet-wildcard';
 
 const DYNAMIC_FILTERS = new Map<string, WorkSpreadsheetDynamicFilter>([
   ['aboveAverage', 'above-average'],
@@ -213,6 +214,9 @@ function customFilterCondition(item: {
     if (wildcard.type === 'begins-with') {
       return { type: 'does-not-begin-with', value: wildcard.value };
     }
+    if (wildcard.type === 'matches-wildcard') {
+      return { type: 'does-not-match-wildcard', value: wildcard.value };
+    }
     return { type: 'does-not-end-with', value: wildcard.value };
   }
   const types: Record<
@@ -231,17 +235,27 @@ function customFilterCondition(item: {
   return type ? { type, value: item.value } : null;
 }
 
-function wildcardCriterion(
-  source: string,
-): { type: 'begins-with' | 'contains' | 'ends-with'; value: string } | null {
+function wildcardCriterion(source: string): {
+  type: 'begins-with' | 'contains' | 'ends-with' | 'matches-wildcard';
+  value: string;
+} | null {
   const starts = source.startsWith('*');
   const ends = unescapedFinalAsterisk(source);
-  if (!starts && !ends) return null;
-  const value = unescapeWildcards(
-    source.slice(starts ? 1 : 0, ends ? -1 : undefined),
-  );
-  if (starts && ends) return { type: 'contains', value };
-  return starts ? { type: 'ends-with', value } : { type: 'begins-with', value };
+  const inner = source.slice(starts ? 1 : 0, ends ? -1 : undefined);
+  if (
+    (starts || ends) &&
+    inner.length > 0 &&
+    !workSpreadsheetHasUnescapedWildcard(inner)
+  ) {
+    const value = unescapeWildcards(inner);
+    if (starts && ends) return { type: 'contains', value };
+    return starts
+      ? { type: 'ends-with', value }
+      : { type: 'begins-with', value };
+  }
+  return workSpreadsheetHasUnescapedWildcard(source)
+    ? { type: 'matches-wildcard', value: source }
+    : null;
 }
 
 function criteriaXml(criteria: WorkSpreadsheetFilterCriteria): string {
@@ -307,23 +321,30 @@ function customFilterParts(
   criteria: WorkSpreadsheetCustomFilterCondition,
 ): [operator: string, value: string] {
   const operator = comparisonOperator(criteria.type);
-  const value =
-    criteria.type === 'contains'
-      ? `*${escapeWildcards(criteria.value)}*`
-      : criteria.type === 'does-not-contain'
-        ? `*${escapeWildcards(criteria.value)}*`
-        : criteria.type === 'begins-with'
-          ? `${escapeWildcards(criteria.value)}*`
-          : criteria.type === 'does-not-begin-with'
-            ? `${escapeWildcards(criteria.value)}*`
-            : criteria.type === 'ends-with'
-              ? `*${escapeWildcards(criteria.value)}`
-              : criteria.type === 'does-not-end-with'
-                ? `*${escapeWildcards(criteria.value)}`
-                : criteria.type === 'equals' || criteria.type === 'not-equals'
-                  ? escapeWildcards(criteria.value)
-                  : criteria.value;
-  return [operator, value];
+  if (criteria.type === 'contains' || criteria.type === 'does-not-contain') {
+    return [operator, `*${escapeWildcards(criteria.value)}*`];
+  }
+  if (
+    criteria.type === 'begins-with' ||
+    criteria.type === 'does-not-begin-with'
+  ) {
+    return [operator, `${escapeWildcards(criteria.value)}*`];
+  }
+  if (criteria.type === 'ends-with' || criteria.type === 'does-not-end-with') {
+    return [operator, `*${escapeWildcards(criteria.value)}`];
+  }
+  if (
+    criteria.type === 'matches-wildcard' ||
+    criteria.type === 'does-not-match-wildcard'
+  ) {
+    return [operator, criteria.value];
+  }
+  return [
+    operator,
+    criteria.type === 'equals' || criteria.type === 'not-equals'
+      ? escapeWildcards(criteria.value)
+      : criteria.value,
+  ];
 }
 
 function comparisonOperator(
@@ -335,6 +356,7 @@ function comparisonOperator(
     'does-not-begin-with': 'notEqual',
     'does-not-contain': 'notEqual',
     'does-not-end-with': 'notEqual',
+    'does-not-match-wildcard': 'notEqual',
     'ends-with': 'equal',
     equals: 'equal',
     'greater-than': 'greaterThan',
@@ -342,6 +364,7 @@ function comparisonOperator(
     'less-than': 'lessThan',
     'less-than-or-equal': 'lessThanOrEqual',
     'not-equals': 'notEqual',
+    'matches-wildcard': 'equal',
   };
   return operators[type];
 }

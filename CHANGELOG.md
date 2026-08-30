@@ -4,6 +4,12 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added explicit local Spreadsheet wildcard AutoFilter authoring and
+  evaluation. The closed criteria union now preserves arbitrary native OOXML
+  `*`, `?`, and `~` expressions without changing existing literal equality
+  semantics, compiles them into a bounded normalized-Unicode token matcher with
+  ordered-literal and bitset fast paths, and round-trips positive, negative,
+  single, and compound native `<customFilter>` forms without a cloud dependency.
 - Added local Spreadsheet Top/Bottom AutoFilter evaluation and authoring for
   1–500 items or 1–100 percent. Numeric-column filter menus expose the owned
   **Top 10 Items** action, boundary ties remain visible, dense and sparse sheets

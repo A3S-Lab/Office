@@ -6,6 +6,8 @@ import type {
   WorkSpreadsheetFilterCriteria,
   WorkSpreadsheetSheet,
 } from './work-types';
+import { workSpreadsheetFilterTextIsBounded } from './work-spreadsheet-filter-contract';
+import { workSpreadsheetWildcardMatcher } from './work-spreadsheet-wildcard';
 
 const AUTO_FILTER_CRITERIA_KIND = 'a3s-office-auto-filter-criteria';
 const AUTO_FILTER_CRITERIA_VERSION = 1;
@@ -19,6 +21,8 @@ const SINGLE_VALUE_FILTER_TYPES = new Set([
   'does-not-begin-with',
   'ends-with',
   'does-not-end-with',
+  'matches-wildcard',
+  'does-not-match-wildcard',
   'greater-than',
   'greater-than-or-equal',
   'less-than',
@@ -329,14 +333,24 @@ function normalizeWorkSpreadsheetCustomFilterCondition(
     return null;
   }
   const value = condition as Record<string, unknown>;
-  return typeof value.type === 'string' &&
-    SINGLE_VALUE_FILTER_TYPES.has(value.type) &&
-    typeof value.value === 'string'
-    ? ({
-        type: value.type,
-        value: value.value,
-      } as WorkSpreadsheetCustomFilterCondition)
-    : null;
+  if (
+    typeof value.type !== 'string' ||
+    !SINGLE_VALUE_FILTER_TYPES.has(value.type) ||
+    typeof value.value !== 'string'
+  ) {
+    return null;
+  }
+  if (
+    (value.type === 'matches-wildcard' ||
+      value.type === 'does-not-match-wildcard') &&
+    !workSpreadsheetFilterTextIsBounded(value.value)
+  ) {
+    return null;
+  }
+  return {
+    type: value.type,
+    value: value.value,
+  } as WorkSpreadsheetCustomFilterCondition;
 }
 
 function sheetWithFilterState(
@@ -510,6 +524,19 @@ function filterMatcher(
 function customFilterMatcher(
   criteria: WorkSpreadsheetCustomFilterCondition,
 ): (cell: Cell | null) => boolean {
+  if (
+    criteria.type === 'matches-wildcard' ||
+    criteria.type === 'does-not-match-wildcard'
+  ) {
+    const matchesWildcard = workSpreadsheetWildcardMatcher(criteria.value);
+    const matches = (cell: Cell | null) => {
+      const value = cellValue(cell);
+      return value !== null && matchesWildcard(String(value));
+    };
+    return criteria.type === 'matches-wildcard'
+      ? matches
+      : (cell) => !matches(cell);
+  }
   const expected = criteria.value;
   if (criteria.type === 'contains') {
     return (cell) => cellText(cell).includes(comparableText(expected));

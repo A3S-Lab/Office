@@ -1184,16 +1184,19 @@ test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
   await expect(conditionDialog).toContainText('执行看板!状态');
   await conditionDialog
     .getByRole('combobox', { name: '筛选条件' })
-    .selectOption('contains');
-  await conditionDialog.getByRole('textbox', { name: '筛选值' }).fill('风险');
+    .selectOption('matches-wildcard');
+  await conditionDialog
+    .getByRole('textbox', { name: '通配符表达式' })
+    .fill('*风?');
   await conditionDialog.getByRole('button', { name: '添加第二个条件' }).click();
   await conditionDialog.getByRole('radio', { name: '并且' }).click();
   await conditionDialog
     .getByRole('combobox', { name: '第二个筛选条件' })
-    .selectOption('does-not-end-with');
+    .selectOption('does-not-match-wildcard');
   await conditionDialog
     .getByRole('textbox', { name: '第二个筛选值' })
-    .fill('完成');
+    .fill('*完成');
+  await expect(conditionDialog.getByText(/\* 匹配任意多个字符/)).toHaveCount(2);
   await conditionDialog.screenshot({
     path: testInfo.outputPath('spreadsheet-auto-filter-condition-dialog.png'),
     animations: 'disabled',

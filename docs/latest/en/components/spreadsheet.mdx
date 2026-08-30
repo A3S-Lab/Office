@@ -428,6 +428,12 @@ additional condition and joins the pair with **AND** or **OR**. The controlled
 model uses a fixed two-item tuple of nonrecursive conditions; ranges, blank
 selectors, Top/Bottom, and dynamic families cannot become nested predicates.
 
+**Wildcard match** and **Wildcard does not match** preserve one explicit native
+expression instead of changing the meaning of existing literal equality.
+`*` matches zero or more normalized Unicode characters, `?` matches one, and
+`~` escapes `*`, `?`, or `~`. Expressions share the 32,767-character filter
+operand ceiling and may be used in either position of the fixed AND/OR pair.
+
 For a numeric column, its filter menu also exposes **Top 10 Items**. The dialog
 supports top or bottom 1–500 items and 1–100 percent, accepts integers only, and
 keeps every value tied at the selected boundary. Percentage counts round up;
@@ -461,8 +467,11 @@ visible-row calculation is not authored or recomputed yet; their existing
 hidden rows are conservatively retained as manual. General two-item native
 `<customFilters and="1|0">` groups preserve
 their AND/OR relation, including negative prefix and suffix operators.
-Wildcard authoring, dynamic evaluation, large-rank Worker/WASM offload, and
-table/AutoFilter-integrated custom sorting remain explicit boundaries.
+Arbitrary positive and negative wildcard expressions retain their native
+`<customFilter>` values; canonical leading/trailing-star forms still normalize
+to contains, begins-with, or ends-with criteria. Dynamic evaluation, large-rank
+Worker/WASM offload, and table/AutoFilter-integrated custom sorting remain
+explicit boundaries.
 
 Focused model, command, dialog, Hook, import, and XLSX Rstest cover the bounded
 contract. Desktop and compact Playwright exercise the real vendor header menu,

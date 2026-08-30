@@ -323,14 +323,14 @@ suite "office-spreadsheet-ribbon-alignment" {
             text = "执行看板!状态"
         }
 
-        select "choose-contains-condition" {
+        select "choose-wildcard-condition" {
             target = css(".work-spreadsheet-auto-filter-dialog select[aria-label='筛选条件']")
-            values = ["contains"]
+            values = ["matches-wildcard"]
         }
 
-        fill "enter-risk-condition" {
-            target = css(".work-spreadsheet-auto-filter-dialog input[aria-label='筛选值']")
-            value = "风险"
+        fill "enter-risk-wildcard" {
+            target = css(".work-spreadsheet-auto-filter-dialog input[aria-label='通配符表达式']")
+            value = "*风?"
         }
 
         click "add-second-filter-condition" {
@@ -341,14 +341,18 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".work-spreadsheet-auto-filter-conjunction input[type='radio']:checked")
         }
 
-        select "choose-negative-suffix-condition" {
+        select "choose-negative-wildcard-condition" {
             target = css(".work-spreadsheet-auto-filter-dialog select[aria-label='第二个筛选条件']")
-            values = ["does-not-end-with"]
+            values = ["does-not-match-wildcard"]
         }
 
-        fill "enter-completed-suffix" {
+        fill "enter-completed-wildcard" {
             target = css(".work-spreadsheet-auto-filter-dialog input[aria-label='第二个筛选值']")
-            value = "完成"
+            value = "*完成"
+        }
+
+        expect "wildcard-guidance-visible" {
+            text = "* 匹配任意多个字符，? 匹配单个字符，~ 用于转义。"
         }
 
         screenshot "autofilter-condition-dialog" {

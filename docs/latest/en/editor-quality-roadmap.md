@@ -1538,6 +1538,24 @@ application, Undo, accessibility, XLSX reopen, and clean diagnostics. Wildcard
 authoring, dynamic evaluation, large-rank Worker/WASM offload, and
 table/AutoFilter-integrated custom sorting remain open.
 
+The forty-eighth Spreadsheet slice completes local wildcard AutoFilter
+authoring and evaluation. Two explicit nonrecursive custom-condition variants
+preserve arbitrary `*`, `?`, and `~` expressions while existing equality and
+text operands retain literal semantics. A controlled token compiler normalizes
+Unicode text, handles zero-or-more, single-character, and escaped operators,
+and applies the shared 32,767-character filter operand ceiling. The variants
+remain valid in either position of the fixed AND/OR pair and pass through the
+same command and collaboration reauthorization boundaries.
+
+Worksheet and table OOXML retain arbitrary positive and negative
+`<customFilter>` values; canonical edge-star patterns still normalize to the
+narrower contains, begins-with, or ends-with criteria. Focused model, compiler,
+command, dialog, Hook, collaboration, and XLSX Rstest plus desktop/compact
+Playwright and the local-only pinned A3S Test 1.0.0 gate cover Unicode,
+escaping, compound authoring, import/reopen, Undo, accessibility, and clean
+diagnostics. Dynamic evaluation, large-rank Worker/WASM offload, and
+table/AutoFilter-integrated custom sorting remain open.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

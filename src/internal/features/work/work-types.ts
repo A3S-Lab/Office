@@ -391,6 +391,8 @@ export type WorkSpreadsheetCustomFilterCondition =
   | { type: 'does-not-begin-with'; value: string }
   | { type: 'ends-with'; value: string }
   | { type: 'does-not-end-with'; value: string }
+  | { type: 'matches-wildcard'; value: string }
+  | { type: 'does-not-match-wildcard'; value: string }
   | { type: 'greater-than'; value: string }
   | { type: 'greater-than-or-equal'; value: string }
   | { type: 'less-than'; value: string }

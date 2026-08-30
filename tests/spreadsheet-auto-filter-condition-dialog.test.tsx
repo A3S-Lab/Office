@@ -137,6 +137,63 @@ test('authors two custom conditions with an explicit OR relationship', () => {
   ]);
 });
 
+test('restores and authors WPS wildcard expressions in compound conditions', () => {
+  const applied: WorkSpreadsheetFilterCriteria[] = [];
+  render(
+    <SpreadsheetAutoFilterConditionDialog
+      source={{
+        columnLabel: '名称',
+        criteria: { type: 'matches-wildcard', value: 'K?ng*' },
+        hasActiveFilter: true,
+        numeric: false,
+        sheetName: '客户清单',
+      }}
+      restoreFocusTarget={() => null}
+      onApply={(criteria) => {
+        applied.push(criteria);
+        return true;
+      }}
+      onClear={() => false}
+      onClose={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue(
+    'matches-wildcard',
+  );
+  expect(screen.getByRole('textbox', { name: '通配符表达式' })).toHaveValue(
+    'K?ng*',
+  );
+  expect(screen.getByText(/\* 匹配任意多个字符/)).toBeVisible();
+  fireEvent.change(screen.getByRole('textbox', { name: '通配符表达式' }), {
+    target: { value: '*'.repeat(32_768) },
+  });
+  expect(screen.getByRole('button', { name: '确定' })).toBeDisabled();
+  fireEvent.change(screen.getByRole('textbox', { name: '通配符表达式' }), {
+    target: { value: 'K?ng*' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '添加第二个条件' }));
+  fireEvent.click(screen.getByRole('radio', { name: '并且' }));
+  fireEvent.change(screen.getByRole('combobox', { name: '第二个筛选条件' }), {
+    target: { value: 'does-not-match-wildcard' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: '第二个筛选值' }), {
+    target: { value: 'King~*' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(applied).toEqual([
+    {
+      type: 'compound',
+      conjunction: 'and',
+      conditions: [
+        { type: 'matches-wildcard', value: 'K?ng*' },
+        { type: 'does-not-match-wildcard', value: 'King~*' },
+      ],
+    },
+  ]);
+});
+
 test('restores and validates a compound numeric condition', () => {
   const applied: WorkSpreadsheetFilterCriteria[] = [];
   render(

@@ -927,7 +927,9 @@ defined names.
 Filter criteria are a closed union rather than arbitrary shared JSON. Value
 filters accept at most 10,000 unique entries, each text operand is limited to
 32,767 XML-compatible characters, and all filter text in one table is limited
-to 1,048,576 UTF-8 bytes. Top/bottom counts are 1–500, percentages are 1–100,
+to 1,048,576 UTF-8 bytes. Explicit positive and negative wildcard variants
+retain native OOXML `*`, `?`, and `~` expressions inside the same nonrecursive
+custom condition contract. Top/bottom counts are 1–500, percentages are 1–100,
 dynamic filters use the documented enum, and filters require an enabled header.
 
 Snapshot replacement is translated into record and field patches. For example,

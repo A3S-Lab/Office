@@ -1489,8 +1489,8 @@ describe('spreadsheet command controller', () => {
       type: 'compound',
       conjunction: 'or',
       conditions: [
-        { type: 'begins-with', value: 'Ready' },
-        { type: 'does-not-end-with', value: 'Risk' },
+        { type: 'matches-wildcard', value: 'R?ady' },
+        { type: 'does-not-match-wildcard', value: '*Risk' },
       ],
     } as const;
     expect(
@@ -1511,6 +1511,8 @@ describe('spreadsheet command controller', () => {
 
     for (const criteria of [
       { type: 'contains', value: '   ' },
+      { type: 'matches-wildcard', value: '   ' },
+      { type: 'matches-wildcard', value: '*'.repeat(32_768) },
       { type: 'greater-than', value: 'not-a-number' },
       { type: 'between', lower: '5', upper: '' },
       { type: 'between', lower: '10', upper: '5' },

@@ -2,6 +2,10 @@ import type {
   WorkSpreadsheetCustomFilterCondition,
   WorkSpreadsheetFilterCriteria,
 } from '../work-types';
+import {
+  WORK_SPREADSHEET_FILTER_TEXT_MAX_CHARACTERS,
+  workSpreadsheetFilterTextCharacters,
+} from '../work-spreadsheet-filter-contract';
 
 export type SpreadsheetAutoFilterConditionType =
   | 'equals'
@@ -12,6 +16,8 @@ export type SpreadsheetAutoFilterConditionType =
   | 'does-not-begin-with'
   | 'ends-with'
   | 'does-not-end-with'
+  | 'matches-wildcard'
+  | 'does-not-match-wildcard'
   | 'greater-than'
   | 'greater-than-or-equal'
   | 'less-than'
@@ -36,6 +42,8 @@ export const CONDITION_LABELS: Readonly<
   'does-not-begin-with': '开头不是',
   'ends-with': '结尾是',
   'does-not-end-with': '结尾不是',
+  'matches-wildcard': '通配符匹配',
+  'does-not-match-wildcard': '通配符不匹配',
   'greater-than': '大于',
   'greater-than-or-equal': '大于或等于',
   'less-than': '小于',
@@ -59,7 +67,14 @@ export const TEXT_CONDITIONS: readonly SpreadsheetAutoFilterConditionType[] = [
   'does-not-begin-with',
   'ends-with',
   'does-not-end-with',
+  'matches-wildcard',
+  'does-not-match-wildcard',
 ];
+
+export const WILDCARD_CONDITIONS = [
+  'matches-wildcard',
+  'does-not-match-wildcard',
+] as const satisfies readonly SpreadsheetAutoFilterConditionType[];
 
 export const NUMBER_COMPARISON_CONDITIONS = [
   'greater-than',
@@ -253,6 +268,15 @@ export function spreadsheetAutoFilterValueError(
   value: string,
 ): string | null {
   if (!value.trim()) return '请输入筛选值。';
+  if (
+    WILDCARD_CONDITIONS.includes(
+      type as (typeof WILDCARD_CONDITIONS)[number],
+    ) &&
+    workSpreadsheetFilterTextCharacters(value) >
+      WORK_SPREADSHEET_FILTER_TEXT_MAX_CHARACTERS
+  ) {
+    return `通配符表达式不能超过 ${WORK_SPREADSHEET_FILTER_TEXT_MAX_CHARACTERS.toLocaleString()} 个字符。`;
+  }
   return NUMBER_CONDITIONS.includes(type) && !Number.isFinite(Number(value))
     ? '请输入有效数字。'
     : null;

@@ -17,6 +17,7 @@ import {
   spreadsheetAutoFilterValueError,
   TEXT_CONDITIONS,
   type SpreadsheetAutoFilterConditionType,
+  WILDCARD_CONDITIONS,
 } from './spreadsheet-auto-filter-condition-dialog-model';
 
 export type { SpreadsheetAutoFilterConditionType } from './spreadsheet-auto-filter-condition-dialog-model';
@@ -60,17 +61,25 @@ export function SpreadsheetAutoFilterConditionDialog({
   );
   const rankPercent =
     draft.type === 'top-percent' || draft.type === 'bottom-percent';
+  const wildcardValue = WILDCARD_CONDITIONS.includes(
+    draft.type as (typeof WILDCARD_CONDITIONS)[number],
+  );
   const valueLabel = rankValue
     ? rankPercent
       ? '百分比'
       : '项目数'
-    : needsUpperValue
-      ? '下限'
-      : '筛选值';
+    : wildcardValue
+      ? '通配符表达式'
+      : needsUpperValue
+        ? '下限'
+        : '筛选值';
   const numericValue = NUMBER_CONDITIONS.includes(draft.type) || rankValue;
   const showRankConditions = source.numeric || rankValue;
   const canUseSecond = spreadsheetAutoFilterCustomConditionType(draft.type);
   const secondNumericValue = NUMBER_CONDITIONS.includes(draft.secondType);
+  const secondWildcardValue = WILDCARD_CONDITIONS.includes(
+    draft.secondType as (typeof WILDCARD_CONDITIONS)[number],
+  );
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setTouched(true);
@@ -181,6 +190,11 @@ export function SpreadsheetAutoFilterConditionDialog({
             <Field
               label={valueLabel}
               required
+              description={
+                wildcardValue
+                  ? '* 匹配任意多个字符，? 匹配单个字符，~ 用于转义。'
+                  : undefined
+              }
               error={touched ? (primaryError ?? undefined) : undefined}
             >
               <input
@@ -293,6 +307,11 @@ export function SpreadsheetAutoFilterConditionDialog({
               <Field
                 label="第二个筛选值"
                 required
+                description={
+                  secondWildcardValue
+                    ? '* 匹配任意多个字符，? 匹配单个字符，~ 用于转义。'
+                    : undefined
+                }
                 error={touched ? (secondError ?? undefined) : undefined}
               >
                 <input

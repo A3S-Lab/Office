@@ -762,6 +762,28 @@ accessibility, and clean diagnostics. Wildcard authoring, dynamic filter
 evaluation, large-rank Worker/WASM offload, and table/AutoFilter-integrated
 custom sorting remain open.
 
+The fifty-eighth milestone completes local wildcard AutoFilter authoring
+and evaluation. Two explicit custom-condition variants preserve arbitrary
+expressions while existing equality and other text criteria retain their
+literal operand semantics. `*` matches zero or more normalized Unicode
+characters, `?` matches one, and `~` escapes `*`, `?`, or `~`. The dialog
+documents the grammar, permits the variants in the fixed two-condition tuple,
+and applies the shared 32,767-character filter-text ceiling before the command
+boundary.
+
+The evaluator compiles each expression once into a controlled token sequence
+instead of executing or interpolating user input. Ordered literal segments and
+a bounded bitset path prevent long late-mismatch expressions from repeatedly
+rescanning the same text. Dense and sparse worksheets, command
+reauthorization, and collaboration validation share the closed types.
+Native worksheet and table `<customFilter>` import retains arbitrary positive
+or negative patterns, while canonical leading/trailing-star forms continue to
+normalize to contains, begins-with, or ends-with criteria. Focused Rstest,
+desktop/compact Playwright, and local-only A3S Test coverage protect Unicode,
+escaping, compound authoring, XLSX reopen, Undo, accessibility, and clean
+diagnostics. Dynamic filter evaluation, large-rank Worker/WASM offload, and
+table/AutoFilter-integrated custom sorting remain open.
+
 ## Current Presentation Milestone
 
 The first Presentation-animation milestone adds a bounded entrance-animation

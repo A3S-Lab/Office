@@ -436,6 +436,8 @@ test('accepts every closed native table filter criterion', () => {
     { type: 'does-not-begin-with', value: 'excluded-prefix' },
     { type: 'ends-with', value: 'suffix' },
     { type: 'does-not-end-with', value: 'excluded-suffix' },
+    { type: 'matches-wildcard', value: 'K?ng*' },
+    { type: 'does-not-match-wildcard', value: '*~?draft' },
     { type: 'greater-than', value: '10' },
     { type: 'greater-than-or-equal', value: '20' },
     { type: 'less-than', value: '90' },
@@ -517,6 +519,11 @@ test('rejects malformed native table filters before collaboration writes', () =>
     {
       name: 'empty comparison',
       criteria: { type: 'equals', value: '' },
+      expected: /1 to 32,767 characters/,
+    },
+    {
+      name: 'empty wildcard expression',
+      criteria: { type: 'matches-wildcard', value: '' },
       expected: /1 to 32,767 characters/,
     },
     {

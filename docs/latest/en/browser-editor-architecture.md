@@ -1480,9 +1480,9 @@ One accepted operation crosses the Fortune boundary as one range write and one
 controlled Undo record. Table, worksheet-AutoFilter, hyperlink-map,
 imported-formula-metadata, and border-sidecar intersections fail closed because
 those models still own coordinates outside the cell matrix. Moving large sorts,
-wildcard-authored or dynamic filter predicates, rank threshold scans, full
-custom-list preference management, and structural sidecar reconciliation into
-the Worker/WASM kernel remains Stage 3 work.
+dynamic filter predicates, rank threshold scans, full custom-list preference
+management, and structural sidecar reconciliation into the Worker/WASM kernel
+remains Stage 3 work.
 Direct host focus of the native grid now enters the same bounded focus observer
 used by ribbon commands. If a controlled workbook update replaces the focused
 Fortune overlay, focus transfers to its connected replacement; deliberate
@@ -1506,6 +1506,16 @@ matchers, collaboration validation rejects any nested or differently sized
 condition array, and the dialog cannot attach a second condition to range,
 blank, Top/Bottom, or dynamic families.
 
+Wildcard expressions are two additional nonrecursive custom-condition
+variants, so existing equality and other text operands remain literal. A pure
+compiler tokenizes `*`, `?`, and `~` once per criterion, normalizes literal
+segments and cell text with NFKC plus the existing locale-pinned lowercase
+folding, and evaluates the token sequence without executing or interpolating
+user text. The same 32,767-character operand ceiling is enforced by the dialog,
+model, command, and collaboration boundaries. Literal-only spans use ordered
+substring search; long fixed-width candidate scans switch to a bounded bitset
+matcher instead of quadratically rescanning late mismatches.
+
 Top/Bottom criteria take a separate aggregate path before the per-cell matcher.
 The evaluator gathers finite numeric values from the filter column, converts a
 percentage to `ceil(n * percent / 100)` items, sorts in the requested direction,
@@ -1519,9 +1529,11 @@ table native OOXML. Package scan and import read only the worksheet root's
 direct `<autoFilter>` child, hydrate supported criteria, and retain imported
 unsupported typed criteria without pretending to evaluate them. Export patches
 the generated worksheet element with native `<filterColumn>` children. General
-two-item `<customFilters and="1|0">` groups, negative prefix/suffix wildcard
-forms, and `<top10 top="..." percent="..." val="..."/>` criteria round-trip
-through the shared worksheet/table path. The
+two-item `<customFilters and="1|0">` groups, arbitrary positive/negative
+wildcard expressions, negative prefix/suffix forms, and
+`<top10 top="..." percent="..." val="..."/>` criteria round-trip through the
+shared worksheet/table path. Canonical edge-star patterns still normalize to
+the narrower contains, begins-with, or ends-with variants. The
 React adapter owns only vendor-menu discovery, the accessible condition dialog,
 short-lived selection preservation, and focus restoration; unsafe vendor sort
 items are not exposed because they bypass typed sort and structural guards.

@@ -5,6 +5,7 @@ import {
   normalizeSpreadsheetTableTotalsFunction,
   normalizeSpreadsheetTableTotalsLabel,
 } from '../features/work/editors/spreadsheet-table-totals';
+import { WORK_SPREADSHEET_FILTER_TEXT_MAX_CHARACTERS } from '../features/work/work-spreadsheet-filter-contract';
 import { isValidSpreadsheetDefinedName } from '../features/work/work-spreadsheet-ranges';
 import type {
   WorkSpreadsheetContent,
@@ -31,7 +32,6 @@ import {
 const MAX_POPULATED_CELLS = 1_000_000;
 const MAX_DENSE_MATRIX_CELLS = 1_000_000;
 const MAX_FILTER_VALUES_PER_COLUMN = 10_000;
-const MAX_FILTER_VALUE_CHARACTERS = 32_767;
 const MAX_FILTER_TEXT_BYTES = 1_048_576;
 const FILTER_TEXT_ENCODER = new TextEncoder();
 const SPREADSHEET_DYNAMIC_FILTERS: ReadonlySet<string> = new Set([
@@ -682,6 +682,8 @@ function requiredSpreadsheetTableFilterCriteria(
     case 'does-not-begin-with':
     case 'ends-with':
     case 'does-not-end-with':
+    case 'matches-wildcard':
+    case 'does-not-match-wildcard':
     case 'greater-than':
     case 'greater-than-or-equal':
     case 'less-than':
@@ -812,6 +814,8 @@ function requiredSpreadsheetCustomFilterCondition(
     case 'does-not-begin-with':
     case 'ends-with':
     case 'does-not-end-with':
+    case 'matches-wildcard':
+    case 'does-not-match-wildcard':
     case 'greater-than':
     case 'greater-than-or-equal':
     case 'less-than':
@@ -839,7 +843,7 @@ function requiredSpreadsheetFilterText(
 ): string {
   if (typeof value !== 'string') {
     invalidWorkOfficeSpreadsheetInput(
-      `filter text containing 1 to ${MAX_FILTER_VALUE_CHARACTERS.toLocaleString()} characters for ${label}`,
+      `filter text containing 1 to ${WORK_SPREADSHEET_FILTER_TEXT_MAX_CHARACTERS.toLocaleString()} characters for ${label}`,
     );
   }
   let characters = 0;
@@ -862,9 +866,12 @@ function requiredSpreadsheetFilterText(
       );
     }
   }
-  if (characters < 1 || characters > MAX_FILTER_VALUE_CHARACTERS) {
+  if (
+    characters < 1 ||
+    characters > WORK_SPREADSHEET_FILTER_TEXT_MAX_CHARACTERS
+  ) {
     invalidWorkOfficeSpreadsheetInput(
-      `filter text containing 1 to ${MAX_FILTER_VALUE_CHARACTERS.toLocaleString()} characters for ${label}`,
+      `filter text containing 1 to ${WORK_SPREADSHEET_FILTER_TEXT_MAX_CHARACTERS.toLocaleString()} characters for ${label}`,
     );
   }
   textBudget.bytes += FILTER_TEXT_ENCODER.encode(value).byteLength;

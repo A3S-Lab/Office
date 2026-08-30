@@ -240,6 +240,73 @@ describe('spreadsheet AutoFilter model', () => {
     expect(sheet.config?.rowhidden).toEqual({ '9': 0 });
   });
 
+  test('evaluates WPS wildcard expressions with single, repeated, and escaped characters', () => {
+    const sheet: WorkSpreadsheetSheet = {
+      id: 'sheet-1',
+      name: 'Wildcard filters',
+      data: [
+        [{ v: 'Name' }],
+        [{ v: 'KingSoft' }],
+        [{ v: 'King' }],
+        [{ v: 'Kang' }],
+        [{ v: 'Kedger' }],
+        [{ v: 'King*' }],
+        [{ v: 'King?' }],
+        [{ v: 'King~' }],
+        [],
+        [{ v: 42 }],
+      ],
+      filter: {},
+      filter_select: { row: [0, 9], column: [0, 0] },
+      config: {},
+    };
+
+    const matching = applySpreadsheetAutoFilterCriteria(
+      workbook(sheet),
+      'sheet-1',
+      0,
+      { type: 'matches-wildcard', value: 'Ｋ?ＮＧ*' },
+    );
+    expect(matching?.sheets[0]?.config?.rowhidden).toEqual({
+      '4': 0,
+      '8': 0,
+      '9': 0,
+    });
+
+    for (const [value, visibleRow] of [
+      ['King~*', '5'],
+      ['King~?', '6'],
+      ['King~~', '7'],
+    ] as const) {
+      const escaped = applySpreadsheetAutoFilterCriteria(
+        workbook(sheet),
+        'sheet-1',
+        0,
+        { type: 'matches-wildcard', value },
+      );
+      expect(Object.keys(escaped?.sheets[0]?.config?.rowhidden ?? {})).toEqual(
+        Array.from({ length: 9 }, (_, index) => String(index + 1)).filter(
+          (row) => row !== visibleRow,
+        ),
+      );
+    }
+
+    const excluded = applySpreadsheetAutoFilterCriteria(
+      workbook(sheet),
+      'sheet-1',
+      0,
+      { type: 'does-not-match-wildcard', value: 'K?ng*' },
+    );
+    expect(excluded?.sheets[0]?.config?.rowhidden).toEqual({
+      '1': 0,
+      '2': 0,
+      '3': 0,
+      '5': 0,
+      '6': 0,
+      '7': 0,
+    });
+  });
+
   test('preserves a manually hidden row that overlaps a replaced criterion', () => {
     const sheet: WorkSpreadsheetSheet = {
       ...quarterlySheet(),
@@ -580,7 +647,7 @@ describe('spreadsheet AutoFilter model', () => {
     ).toBeNull();
   });
 
-  test('preserves compound and ranked criteria through XLSX export', async () => {
+  test('preserves compound, ranked, and wildcard criteria through XLSX export', async () => {
     const artifact = createWorkArtifact('quarterly-plan');
     if (artifact.content.type !== 'spreadsheet') {
       throw new Error('Expected the quarterly plan spreadsheet.');
@@ -620,10 +687,17 @@ describe('spreadsheet AutoFilter model', () => {
       { type: 'top', count: 2 },
     );
     if (!ranked) throw new Error('Expected the ranked criteria to apply.');
+    const wildcarded = applySpreadsheetAutoFilterCriteria(
+      ranked,
+      content.sheets[0]?.id ?? '',
+      0,
+      { type: 'matches-wildcard', value: '*报?' },
+    );
+    if (!wildcarded) throw new Error('Expected wildcard criteria to apply.');
 
     const blob = await createWorkArtifactBlob({
       ...artifact,
-      content: ranked,
+      content: wildcarded,
     });
     const imported = await importWorkFile(
       new File([blob], 'quarterly-plan-filtered.xlsx', { type: blob.type }),
@@ -649,6 +723,14 @@ describe('spreadsheet AutoFilter model', () => {
     expect(
       spreadsheetAutoFilterCriteria(imported.content.sheets[0], 2),
     ).toEqual({ type: 'top', count: 2 });
+    expect(
+      spreadsheetAutoFilterCriteria(imported.content.sheets[0], 0),
+    ).toEqual({ type: 'matches-wildcard', value: '*报?' });
+    expect(imported.content.sheets[0]?.filter?.['0']?.rowhidden).toEqual({
+      '4': 0,
+      '5': 0,
+      '6': 0,
+    });
     expect(imported.content.sheets[0]?.filter?.['2']?.rowhidden).toEqual({
       '4': 0,
     });
