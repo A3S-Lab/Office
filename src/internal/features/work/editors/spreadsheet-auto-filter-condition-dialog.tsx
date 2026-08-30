@@ -5,14 +5,17 @@ import type {
   WorkSpreadsheetFilterCriteria,
 } from '../work-types';
 import {
+  AVERAGE_CONDITIONS,
   BLANK_CONDITIONS,
   CONDITION_LABELS,
+  DATE_CONDITIONS,
   NUMBER_COMPARISON_CONDITIONS,
   NUMBER_CONDITIONS,
   RANK_CONDITIONS,
   spreadsheetAutoFilterConditionCriteria,
   spreadsheetAutoFilterConditionDraft,
   spreadsheetAutoFilterCustomConditionType,
+  spreadsheetAutoFilterDynamicConditionType,
   spreadsheetAutoFilterPrimaryConditionError,
   spreadsheetAutoFilterValueError,
   TEXT_CONDITIONS,
@@ -25,6 +28,7 @@ export type { SpreadsheetAutoFilterConditionType } from './spreadsheet-auto-filt
 export interface SpreadsheetAutoFilterConditionDialogSource {
   columnLabel: string;
   criteria: WorkSpreadsheetFilterCriteria | null;
+  date: boolean;
   hasActiveFilter: boolean;
   numeric: boolean;
   sheetName: string;
@@ -44,7 +48,11 @@ export function SpreadsheetAutoFilterConditionDialog({
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState(() =>
-    spreadsheetAutoFilterConditionDraft(source.criteria, source.numeric),
+    spreadsheetAutoFilterConditionDraft(
+      source.criteria,
+      source.numeric,
+      source.date,
+    ),
   );
   const [touched, setTouched] = useState(false);
   const formId = useId();
@@ -53,7 +61,11 @@ export function SpreadsheetAutoFilterConditionDialog({
     ? spreadsheetAutoFilterValueError(draft.secondType, draft.secondValue)
     : null;
   const error = primaryError ?? secondError;
-  const needsValue = !BLANK_CONDITIONS.includes(draft.type);
+  const dynamicCondition = spreadsheetAutoFilterDynamicConditionType(
+    draft.type,
+  );
+  const needsValue =
+    !BLANK_CONDITIONS.includes(draft.type) && !dynamicCondition;
   const needsUpperValue =
     draft.type === 'between' || draft.type === 'not-between';
   const rankValue = RANK_CONDITIONS.includes(
@@ -75,6 +87,14 @@ export function SpreadsheetAutoFilterConditionDialog({
         : '筛选值';
   const numericValue = NUMBER_CONDITIONS.includes(draft.type) || rankValue;
   const showRankConditions = source.numeric || rankValue;
+  const showAverageConditions =
+    source.numeric ||
+    AVERAGE_CONDITIONS.includes(
+      draft.type as (typeof AVERAGE_CONDITIONS)[number],
+    );
+  const showDateConditions =
+    source.date ||
+    DATE_CONDITIONS.includes(draft.type as (typeof DATE_CONDITIONS)[number]);
   const canUseSecond = spreadsheetAutoFilterCustomConditionType(draft.type);
   const secondNumericValue = NUMBER_CONDITIONS.includes(draft.secondType);
   const secondWildcardValue = WILDCARD_CONDITIONS.includes(
@@ -143,7 +163,8 @@ export function SpreadsheetAutoFilterConditionDialog({
                 useSecond:
                   current.useSecond &&
                   spreadsheetAutoFilterCustomConditionType(type),
-                ...(BLANK_CONDITIONS.includes(type)
+                ...(BLANK_CONDITIONS.includes(type) ||
+                spreadsheetAutoFilterDynamicConditionType(type)
                   ? { value: '', upperValue: '' }
                   : !NUMBER_CONDITIONS.includes(type)
                     ? { upperValue: '' }
@@ -169,6 +190,24 @@ export function SpreadsheetAutoFilterConditionDialog({
             {showRankConditions && (
               <optgroup label="排名">
                 {RANK_CONDITIONS.map((type) => (
+                  <option key={type} value={type}>
+                    {CONDITION_LABELS[type]}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {showAverageConditions && (
+              <optgroup label="平均值">
+                {AVERAGE_CONDITIONS.map((type) => (
+                  <option key={type} value={type}>
+                    {CONDITION_LABELS[type]}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {showDateConditions && (
+              <optgroup label="日期">
+                {DATE_CONDITIONS.map((type) => (
                   <option key={type} value={type}>
                     {CONDITION_LABELS[type]}
                   </option>

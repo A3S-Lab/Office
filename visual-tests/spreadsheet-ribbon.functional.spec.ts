@@ -1250,6 +1250,34 @@ test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
     canvas.getByRole('button', { name: '一月 筛选' }),
   ).not.toHaveClass(/luckysheet-filter-options-active/);
 
+  await page.keyboard.press('Alt+ArrowDown');
+  const averageDialog = canvas.getByRole('dialog', { name: '一月 筛选' });
+  await expect(averageDialog).toBeVisible();
+  await averageDialog.getByRole('button', { name: '按条件过滤' }).click();
+  await conditionDialog
+    .getByRole('combobox', { name: '筛选条件' })
+    .selectOption('above-average');
+  await expect(
+    conditionDialog.getByRole('option', { name: '低于平均值' }),
+  ).toHaveCount(1);
+  await expect(
+    conditionDialog.getByRole('combobox', { name: '筛选条件' }),
+  ).toHaveValue('above-average');
+  await expect(conditionDialog.getByRole('textbox')).toHaveCount(0);
+  await conditionDialog.screenshot({
+    path: testInfo.outputPath('spreadsheet-auto-filter-average-dialog.png'),
+    animations: 'disabled',
+  });
+  await conditionDialog.getByRole('button', { name: '确定' }).click();
+  await expect(canvas.getByRole('button', { name: '一月 筛选' })).toHaveClass(
+    /luckysheet-filter-options-active/,
+  );
+  await grid.focus();
+  await page.keyboard.press('Control+z');
+  await expect(
+    canvas.getByRole('button', { name: '一月 筛选' }),
+  ).not.toHaveClass(/luckysheet-filter-options-active/);
+
   for (let index = 0; index < 4; index += 1) {
     await page.keyboard.press('ArrowRight');
   }

@@ -10,6 +10,7 @@ test('validates and applies a bounded numeric condition', () => {
       source={{
         columnLabel: '收入',
         criteria: null,
+        date: false,
         hasActiveFilter: false,
         numeric: true,
         sheetName: '季度经营',
@@ -63,6 +64,7 @@ test('shows and invokes the owned clear action for an active condition', () => {
       source={{
         columnLabel: '状态',
         criteria: { type: 'contains', value: '风险' },
+        date: false,
         hasActiveFilter: true,
         numeric: false,
         sheetName: '季度经营',
@@ -95,6 +97,7 @@ test('authors two custom conditions with an explicit OR relationship', () => {
       source={{
         columnLabel: '状态',
         criteria: null,
+        date: false,
         hasActiveFilter: false,
         numeric: false,
         sheetName: '季度经营',
@@ -144,6 +147,7 @@ test('restores and authors WPS wildcard expressions in compound conditions', () 
       source={{
         columnLabel: '名称',
         criteria: { type: 'matches-wildcard', value: 'K?ng*' },
+        date: false,
         hasActiveFilter: true,
         numeric: false,
         sheetName: '客户清单',
@@ -208,6 +212,7 @@ test('restores and validates a compound numeric condition', () => {
             { type: 'less-than', value: '200' },
           ],
         },
+        date: false,
         hasActiveFilter: true,
         numeric: true,
         sheetName: '季度经营',
@@ -261,6 +266,7 @@ test('authors bounded Top/Bottom item and percentage filters for numeric columns
       source={{
         columnLabel: '收入',
         criteria: { type: 'top-percent', percent: 25 },
+        date: false,
         hasActiveFilter: true,
         numeric: true,
         sheetName: '季度经营',
@@ -299,6 +305,7 @@ test('authors bounded Top/Bottom item and percentage filters for numeric columns
       source={{
         columnLabel: '状态',
         criteria: null,
+        date: false,
         hasActiveFilter: false,
         numeric: false,
         sheetName: '季度经营',
@@ -310,4 +317,76 @@ test('authors bounded Top/Bottom item and percentage filters for numeric columns
     />,
   );
   expect(screen.queryByRole('option', { name: '前几项' })).toBeNull();
+});
+
+test('restores and authors value-free dynamic date conditions for date columns', () => {
+  const applied: WorkSpreadsheetFilterCriteria[] = [];
+  render(
+    <SpreadsheetAutoFilterConditionDialog
+      source={{
+        columnLabel: '交付日期',
+        criteria: { type: 'dynamic', kind: 'this-month' },
+        date: true,
+        hasActiveFilter: true,
+        numeric: false,
+        sheetName: '项目计划',
+      }}
+      restoreFocusTarget={() => null}
+      onApply={(criteria) => {
+        applied.push(criteria);
+        return true;
+      }}
+      onClear={() => false}
+      onClose={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue(
+    'this-month',
+  );
+  expect(screen.getByRole('option', { name: '今天' })).toBeVisible();
+  expect(screen.getByRole('option', { name: '六月' })).toBeVisible();
+  expect(screen.queryByRole('textbox')).toBeNull();
+  expect(screen.queryByRole('button', { name: '添加第二个条件' })).toBeNull();
+
+  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
+    target: { value: 'year-to-date' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+  expect(applied).toEqual([{ type: 'dynamic', kind: 'year-to-date' }]);
+});
+
+test('offers and restores strict average conditions for numeric columns', () => {
+  const applied: WorkSpreadsheetFilterCriteria[] = [];
+  render(
+    <SpreadsheetAutoFilterConditionDialog
+      source={{
+        columnLabel: '收入',
+        criteria: { type: 'dynamic', kind: 'above-average' },
+        date: false,
+        hasActiveFilter: true,
+        numeric: true,
+        sheetName: '季度经营',
+      }}
+      restoreFocusTarget={() => null}
+      onApply={(criteria) => {
+        applied.push(criteria);
+        return true;
+      }}
+      onClear={() => false}
+      onClose={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue(
+    'above-average',
+  );
+  expect(screen.getByRole('option', { name: '低于平均值' })).toBeVisible();
+  expect(screen.queryByRole('option', { name: '今天' })).toBeNull();
+  expect(screen.queryByRole('textbox')).toBeNull();
+  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
+    target: { value: 'below-average' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+  expect(applied).toEqual([{ type: 'dynamic', kind: 'below-average' }]);
 });

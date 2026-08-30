@@ -91,6 +91,19 @@ test('adds the owned Top 10 action only for numeric filter columns', () => {
 
   enhanceSpreadsheetAutoFilterSurface(canvas, sheet, triggers[2] ?? null);
   expect(canvas.querySelector('[data-a3s-auto-filter-rank]')).toBeNull();
+
+  const dateSheet = {
+    ...sheet,
+    data: sheet.data?.map((row, rowIndex) =>
+      row.map((cell, columnIndex) =>
+        rowIndex > 2 && columnIndex === 1
+          ? { ...cell, ct: { fa: 'yyyy-MM-dd', t: 'd' } }
+          : cell,
+      ),
+    ),
+  };
+  enhanceSpreadsheetAutoFilterSurface(canvas, dateSheet, triggers[1] ?? null);
+  expect(canvas.querySelector('[data-a3s-auto-filter-rank]')).toBeNull();
 });
 
 test('opens the owned Top 10 action with a bounded default criterion', async () => {

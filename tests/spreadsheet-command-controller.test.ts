@@ -1588,6 +1588,35 @@ describe('spreadsheet command controller', () => {
     expect(fixture.changes).toHaveLength(1);
   });
 
+  test('authorizes and applies dynamic average AutoFilter criteria', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      data: [
+        [{ v: 'Score' }],
+        [{ v: 100 }],
+        [{ v: 80 }],
+        [{ v: 60 }],
+        [{ v: 'Not scored' }],
+      ],
+      filter: {},
+      filter_select: { row: [0, 4], column: [0, 0] },
+    };
+    const editor = spreadsheetEditor(fixture.context);
+    const target = {
+      sheetId: 'sheet-1',
+      column: 0,
+      filterRange: { row: [0, 4], column: [0, 0] },
+      criteria: { type: 'dynamic', kind: 'above-average' },
+    } as const;
+
+    expect(editor.can().applyAutoFilterCriteria(target)).toBe(true);
+    expect(editor.commands.applyAutoFilterCriteria(target)).toBe(true);
+    expect(fixture.changes[0]?.sheets[0]?.filter?.['0']).toMatchObject({
+      rowhidden: { '2': 0, '3': 0, '4': 0 },
+    });
+  });
+
   test('owns WPS AutoFilter toggle and header-menu shortcuts', () => {
     const fixture = commandFixture();
     fixture.autoFilter.active = true;

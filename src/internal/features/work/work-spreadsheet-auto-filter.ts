@@ -7,6 +7,10 @@ import type {
   WorkSpreadsheetSheet,
 } from './work-types';
 import { workSpreadsheetFilterTextIsBounded } from './work-spreadsheet-filter-contract';
+import {
+  type WorkSpreadsheetDynamicFilterContext,
+  workSpreadsheetDynamicFilterMatcher,
+} from './work-spreadsheet-dynamic-filter';
 import { workSpreadsheetWildcardMatcher } from './work-spreadsheet-wildcard';
 
 const AUTO_FILTER_CRITERIA_KIND = 'a3s-office-auto-filter-criteria';
@@ -148,6 +152,7 @@ export function workSpreadsheetSheetWithAutoFilterCriteria(
   sheet: WorkSpreadsheetSheet,
   column: number,
   criteria: WorkSpreadsheetFilterCriteria,
+  context: WorkSpreadsheetDynamicFilterContext = { now: new Date() },
 ): WorkSpreadsheetSheet | null {
   const normalizedCriteria = normalizeWorkSpreadsheetFilterCriteria(criteria);
   const range = normalizedWorkSpreadsheetAutoFilterRange(sheet.filter_select);
@@ -159,6 +164,7 @@ export function workSpreadsheetSheetWithAutoFilterCriteria(
     range,
     column,
     normalizedCriteria,
+    context,
   );
   if (!rowhidden) return null;
   const manuallyHiddenRows = workSpreadsheetAutoFilterManuallyHiddenRows(sheet);
@@ -211,6 +217,7 @@ export function workSpreadsheetAutoFilterManuallyHiddenRows(
 export function workSpreadsheetSheetWithImportedAutoFilterCriteria(
   sheet: WorkSpreadsheetSheet,
   entries: readonly WorkSpreadsheetFilter[],
+  context: WorkSpreadsheetDynamicFilterContext = { now: new Date() },
 ): WorkSpreadsheetSheet {
   const range = normalizedWorkSpreadsheetAutoFilterRange(sheet.filter_select);
   if (!range || !entries.length) return sheet;
@@ -229,7 +236,7 @@ export function workSpreadsheetSheetWithImportedAutoFilterCriteria(
     }
     const column = range.column[0] + entry.column;
     const rowhidden =
-      hiddenRowsForCriteria(sheet, range, column, criteria) ?? {};
+      hiddenRowsForCriteria(sheet, range, column, criteria, context) ?? {};
     for (const row of Object.keys(rowhidden)) owned.add(row);
     filter[String(entry.column)] = filterColumnState(
       range,
@@ -423,6 +430,7 @@ function hiddenRowsForCriteria(
   range: WorkSpreadsheetAutoFilterRange,
   column: number,
   criteria: WorkSpreadsheetFilterCriteria,
+  context: WorkSpreadsheetDynamicFilterContext,
 ): Record<string, 0> | null {
   if (
     criteria.type === 'top' ||
@@ -432,9 +440,42 @@ function hiddenRowsForCriteria(
   ) {
     return hiddenRowsForRankCriteria(sheet, range, column, criteria);
   }
+  if (criteria.type === 'dynamic') {
+    return hiddenRowsForDynamicCriteria(
+      sheet,
+      range,
+      column,
+      criteria.kind,
+      context,
+    );
+  }
   const matches = filterMatcher(criteria);
   if (!matches) return null;
   const cellAt = sheetCellReader(sheet);
+  const hidden: Record<string, 0> = {};
+  for (let row = range.row[0] + 1; row <= range.row[1]; row += 1) {
+    if (!matches(cellAt(row, column))) hidden[String(row)] = 0;
+  }
+  return hidden;
+}
+
+function hiddenRowsForDynamicCriteria(
+  sheet: WorkSpreadsheetSheet,
+  range: WorkSpreadsheetAutoFilterRange,
+  column: number,
+  kind: WorkSpreadsheetDynamicFilter,
+  context: WorkSpreadsheetDynamicFilterContext,
+): Record<string, 0> | null {
+  const cellAt = sheetCellReader(sheet);
+  const cells = {
+    *[Symbol.iterator](): Iterator<Cell | null> {
+      for (let row = range.row[0] + 1; row <= range.row[1]; row += 1) {
+        yield cellAt(row, column);
+      }
+    },
+  };
+  const matches = workSpreadsheetDynamicFilterMatcher(kind, cells, context);
+  if (!matches) return null;
   const hidden: Record<string, 0> = {};
   for (let row = range.row[0] + 1; row <= range.row[1]; row += 1) {
     if (!matches(cellAt(row, column))) hidden[String(row)] = 0;

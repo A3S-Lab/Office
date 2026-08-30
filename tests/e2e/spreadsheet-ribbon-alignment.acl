@@ -461,6 +461,51 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".luckysheet-filter-options[aria-label='一月 筛选']:not(.luckysheet-filter-options-active)")
         }
 
+        press "reopen-january-filter-menu-for-average" {
+            key = "Alt+ArrowDown"
+        }
+
+        expect "january-filter-menu-reopened" {
+            visible = css(".fortune-filter-menu[aria-label='一月 筛选']")
+        }
+
+        click "open-average-condition-dialog" {
+            target = css(".fortune-filter-menu [data-a3s-auto-filter-condition]")
+        }
+
+        select "choose-above-average-filter" {
+            target = css(".work-spreadsheet-auto-filter-dialog select[aria-label='筛选条件']")
+            values = ["above-average"]
+        }
+
+        expect "average-filter-selected" {
+            visible = css(".work-spreadsheet-auto-filter-dialog select[aria-label='筛选条件']:has(option[value='above-average']:checked)")
+        }
+
+        screenshot "autofilter-average-dialog" {
+            path = "screenshots/autofilter-average-dialog.png"
+        }
+
+        click "apply-average-condition" {
+            target = role("button", "确定")
+        }
+
+        expect "average-filter-active" {
+            visible = css(".luckysheet-filter-options[aria-label='一月 筛选'].luckysheet-filter-options-active")
+        }
+
+        focus "return-to-average-filtered-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "undo-average-filter" {
+            key = "Control+z"
+        }
+
+        expect "average-filter-undone" {
+            visible = css(".luckysheet-filter-options[aria-label='一月 筛选']:not(.luckysheet-filter-options-active)")
+        }
+
         press "return-to-february-header" {
             key = "ArrowRight"
         }

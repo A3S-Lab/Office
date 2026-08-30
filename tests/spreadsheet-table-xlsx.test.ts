@@ -293,6 +293,45 @@ describe('spreadsheet table XLSX interop', () => {
     expect(roundTrip[0]?.filters).toEqual(tables[0]?.filters);
   });
 
+  test('round-trips dynamic date and average filters as native OOXML types', async () => {
+    const buffer = await tableWorkbook(
+      [
+        '<filterColumn colId="0"><dynamicFilter type="today"/></filterColumn>',
+        '<filterColumn colId="1"><dynamicFilter type="aboveAverage"/></filterColumn>',
+        '<filterColumn colId="2"><dynamicFilter type="M6"/></filterColumn>',
+      ].join(''),
+    );
+    const tables = await readXlsxWorksheetTables(
+      await OoxmlPackage.load(buffer),
+      'xl/worksheets/sheet1.xml',
+    );
+
+    expect(tables[0]?.filters).toEqual([
+      { column: 0, criteria: { type: 'dynamic', kind: 'today' } },
+      {
+        column: 1,
+        criteria: { type: 'dynamic', kind: 'above-average' },
+      },
+      { column: 2, criteria: { type: 'dynamic', kind: 'month-6' } },
+    ]);
+
+    const patched = await patchXlsxSpreadsheetTables(await blankWorkbook(), {
+      type: 'spreadsheet',
+      sheets: [{ id: 'sheet-1', name: 'Sales', tables }],
+    });
+    const zip = await JSZip.loadAsync(patched);
+    const table = (await zip.file('xl/tables/table1.xml')?.async('text')) ?? '';
+    expect(table).toContain('<dynamicFilter type="today"/>');
+    expect(table).toContain('<dynamicFilter type="aboveAverage"/>');
+    expect(table).toContain('<dynamicFilter type="M6"/>');
+
+    const roundTrip = await readXlsxWorksheetTables(
+      await OoxmlPackage.load(patched),
+      'xl/worksheets/sheet1.xml',
+    );
+    expect(roundTrip[0]?.filters).toEqual(tables[0]?.filters);
+  });
+
   test('round-trips arbitrary WPS wildcard expressions without flattening their meaning', async () => {
     const buffer = await tableWorkbook(
       [

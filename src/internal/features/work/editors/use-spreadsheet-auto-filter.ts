@@ -16,6 +16,7 @@ import type {
   WorkSpreadsheetSheet,
 } from '../work-types';
 import {
+  spreadsheetAutoFilterColumnIsDate,
   spreadsheetAutoFilterColumnIsNumeric,
   spreadsheetAutoFilterCriteria,
   spreadsheetAutoFilterHeaderColumn,
@@ -221,6 +222,7 @@ export function useSpreadsheetAutoFilter({
           column,
         ),
         criteria,
+        date: spreadsheetAutoFilterColumnIsDate(activeSheet, range, column),
         filterRange: range,
         hasActiveFilter: Object.hasOwn(activeSheet.filter ?? {}, key),
         invoker,

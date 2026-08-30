@@ -1556,6 +1556,23 @@ escaping, compound authoring, import/reopen, Undo, accessibility, and clean
 diagnostics. Dynamic evaluation, large-rank Worker/WASM offload, and
 table/AutoFilter-integrated custom sorting remain open.
 
+The forty-ninth Spreadsheet slice completes local dynamic AutoFilter authoring
+and evaluation for the closed native family. Numeric columns expose strict
+above/below-average conditions; typed date columns expose relative day, week,
+month, quarter, and year ranges, Year to Date, calendar quarters 1–4, and
+calendar months 1–12 without an operand. A pure compiler receives an explicit
+clock, uses Sunday-start inclusive/exclusive ranges, streams aggregate input
+without retaining the column, recovers imported SheetJS dates across time
+zones, and never treats an unformatted number as a date. Command
+reauthorization, dense/sparse row ownership, manual-hide preservation,
+worksheet/table `<dynamicFilter>` round trips, and imported-workbook
+recomputation share the existing closed criterion union. Focused Rstest runs in
+UTC, Asia/Shanghai, and America/Los_Angeles; desktop/compact Playwright and the
+local-only pinned A3S Test 1.0.0 gate cover authoring, application, Undo,
+accessibility, and clean diagnostics. Source-level 1904 date-system retention,
+large aggregate/rank Worker/WASM offload, and table/AutoFilter-integrated custom
+sorting remain open.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

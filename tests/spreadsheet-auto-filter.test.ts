@@ -3,6 +3,8 @@ import { describe, expect, test } from '@rstest/core';
 import {
   applySpreadsheetAutoFilterCriteria,
   clearSpreadsheetAutoFilterCriteria,
+  spreadsheetAutoFilterColumnIsDate,
+  spreadsheetAutoFilterColumnIsNumeric,
   spreadsheetAutoFilterCriteria,
   spreadsheetAutoFilterRange,
   toggleSpreadsheetAutoFilter,
@@ -605,6 +607,75 @@ describe('spreadsheet AutoFilter model', () => {
     });
   });
 
+  test('evaluates date criteria with an injected local clock and typed date cells only', () => {
+    const sheet: WorkSpreadsheetSheet = {
+      id: 'sheet-1',
+      name: '日期筛选',
+      data: [
+        [{ v: '日期' }],
+        [dateCell('2026-06-16')],
+        [dateCell('2026-06-17')],
+        [{ ...dateCell('2026-06-17'), v: excelSerial('2026-06-17') + 0.5 }],
+        [dateCell('2026-06-18')],
+        [{ v: excelSerial('2026-06-17') }],
+        [{ v: '2026-06-17' }],
+      ],
+      filter: {},
+      filter_select: { row: [0, 6], column: [0, 0] },
+      config: { rowhidden: { '9': 0 } },
+    };
+
+    const filtered = applySpreadsheetAutoFilterCriteria(
+      workbook(sheet),
+      'sheet-1',
+      0,
+      { type: 'dynamic', kind: 'today' },
+      { now: new Date(2026, 5, 17, 12) },
+    );
+
+    expect(spreadsheetAutoFilterCriteria(filtered?.sheets[0], 0)).toEqual({
+      type: 'dynamic',
+      kind: 'today',
+    });
+    expect(filtered?.sheets[0]?.filter?.['0']).toMatchObject({
+      rowhidden: { '1': 0, '4': 0, '5': 0, '6': 0 },
+    });
+    expect(filtered?.sheets[0]?.config?.rowhidden).toEqual({
+      '1': 0,
+      '4': 0,
+      '5': 0,
+      '6': 0,
+      '9': 0,
+    });
+  });
+
+  test('profiles date, numeric, and mixed columns without offering rank filters for dates', () => {
+    const importedDate = {
+      v: new Date(2026, 5, 18),
+      ct: { fa: 'yyyy-MM-dd', t: 'd' },
+    } as unknown as NonNullable<WorkSpreadsheetSheet['data']>[number][number];
+    const sheet: WorkSpreadsheetSheet = {
+      id: 'sheet-1',
+      name: '列类型',
+      data: [
+        [{ v: '日期' }, { v: '金额' }, { v: '混合' }],
+        [dateCell('2026-06-17'), { v: 100 }, dateCell('2026-06-17')],
+        [importedDate, { v: 200 }, { v: 300 }],
+      ],
+      filter: {},
+      filter_select: { row: [0, 2], column: [0, 2] },
+      config: {},
+    };
+    const range = { row: [0, 2], column: [0, 2] } as const;
+
+    expect(spreadsheetAutoFilterColumnIsDate(sheet, range, 0)).toBe(true);
+    expect(spreadsheetAutoFilterColumnIsNumeric(sheet, range, 0)).toBe(false);
+    expect(spreadsheetAutoFilterColumnIsDate(sheet, range, 1)).toBe(false);
+    expect(spreadsheetAutoFilterColumnIsNumeric(sheet, range, 1)).toBe(true);
+    expect(spreadsheetAutoFilterColumnIsDate(sheet, range, 2)).toBe(false);
+    expect(spreadsheetAutoFilterColumnIsNumeric(sheet, range, 2)).toBe(false);
+  });
+
   test('fails closed for inactive, header, and out-of-range filter columns', () => {
     const active: WorkSpreadsheetSheet = {
       ...quarterlySheet(),
@@ -744,6 +815,66 @@ describe('spreadsheet AutoFilter model', () => {
       '9': 0,
     });
   });
+
+  test('round-trips authored dynamic date criteria and recomputes imported rows', async () => {
+    const artifact = createWorkArtifact('quarterly-plan');
+    if (artifact.content.type !== 'spreadsheet') {
+      throw new Error('Expected the quarterly plan spreadsheet.');
+    }
+    const firstSheet = artifact.content.sheets[0];
+    if (!firstSheet) throw new Error('Expected a spreadsheet sheet.');
+    const content: WorkSpreadsheetContent = {
+      ...artifact.content,
+      sheets: [
+        {
+          ...firstSheet,
+          row: 5,
+          column: 1,
+          data: [
+            [{ v: '日期' }],
+            [dateCell('2026-01-15')],
+            [dateCell('2026-06-01')],
+            [dateCell('2026-06-30')],
+            [dateCell('2026-07-01')],
+          ],
+          celldata: undefined,
+          config: {},
+          filter: {},
+          filter_select: { row: [0, 4], column: [0, 0] },
+        },
+      ],
+    };
+    const filtered = applySpreadsheetAutoFilterCriteria(
+      content,
+      firstSheet.id ?? '',
+      0,
+      { type: 'dynamic', kind: 'month-6' },
+    );
+    if (!filtered) throw new Error('Expected the dynamic filter to apply.');
+
+    const blob = await createWorkArtifactBlob({
+      ...artifact,
+      content: filtered,
+    });
+    const imported = await importWorkFile(
+      new File([blob], 'dynamic-date-filter.xlsx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'spreadsheet') {
+      throw new Error('Expected an imported spreadsheet.');
+    }
+
+    expect(
+      spreadsheetAutoFilterCriteria(imported.content.sheets[0], 0),
+    ).toEqual({ type: 'dynamic', kind: 'month-6' });
+    expect(imported.content.sheets[0]?.filter?.['0']?.rowhidden).toEqual({
+      '1': 0,
+      '4': 0,
+    });
+    expect(imported.content.sheets[0]?.config?.rowhidden).toEqual({
+      '1': 0,
+      '4': 0,
+    });
+  });
 });
 
 function selection(row: number, column: number): Selection {
@@ -757,6 +888,21 @@ function selection(row: number, column: number): Selection {
 
 function workbook(sheet: WorkSpreadsheetSheet): WorkSpreadsheetContent {
   return { type: 'spreadsheet', sheets: [sheet] };
+}
+
+function dateCell(value: string) {
+  return {
+    v: excelSerial(value),
+    ct: { fa: 'yyyy-MM-dd', t: 'd' },
+  };
+}
+
+function excelSerial(value: string): number {
+  const [year, month, day] = value.split('-').map(Number);
+  return (
+    (Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1) - Date.UTC(1899, 11, 30)) /
+    86_400_000
+  );
 }
 
 function quarterlySheet(): WorkSpreadsheetSheet {

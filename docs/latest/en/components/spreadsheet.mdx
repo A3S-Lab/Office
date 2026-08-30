@@ -439,6 +439,23 @@ supports top or bottom 1–500 items and 1–100 percent, accepts integers only,
 keeps every value tied at the selected boundary. Percentage counts round up;
 text, Boolean, blank, and nonfinite cells are excluded from the ranking domain.
 
+The same dialog exposes **Above Average** and **Below Average** for numeric
+columns. Their arithmetic mean is compiled once per application; comparison is
+strict, so values equal to the mean stay hidden for both conditions. Typed date
+columns expose Today, Yesterday, Tomorrow, last/this/next week, month, quarter,
+and year, Year to Date, calendar quarters 1–4, and calendar months 1–12. These
+dynamic choices take no operand and cannot be combined with a second condition.
+
+Date evaluation accepts imported `Date` values and finite Excel 1900 serials
+whose native cell type is `ct.t='d'`; an ordinary unformatted number is never
+silently treated as a date. Relative conditions use the user's local civil
+date, Sunday-start weeks, inclusive starts, and exclusive ends. Year to Date
+includes the current local day. The clock is an explicit pure-model input for
+deterministic tests, while editor commands supply the current local time. Source
+workbook retention for the 1904 date system remains a separate interoperability
+boundary, so dynamic date authoring currently follows the normalized 1900
+model.
+
 Each active column owns its own hidden-row set. Conditions on different
 columns therefore combine as an intersection of visible rows, and clearing one
 column removes only that column's ownership. Rows hidden independently through
@@ -462,20 +479,20 @@ browser, so their filter-owned rows are inferred from the current cells. OOXML
 cannot recover an imported manual hide that exactly overlaps such an inferred
 filter hide. Imported Top/Bottom item and percentage criteria are recomputed
 from finite numeric cells and written back as native `<top10>` elements.
-Imported dynamic criteria remain typed and are written back, but their
-visible-row calculation is not authored or recomputed yet; their existing
-hidden rows are conservatively retained as manual. General two-item native
+Imported dynamic criteria are recomputed from current numeric or typed-date
+cells and written back as native `<dynamicFilter>` elements. General two-item native
 `<customFilters and="1|0">` groups preserve
 their AND/OR relation, including negative prefix and suffix operators.
 Arbitrary positive and negative wildcard expressions retain their native
 `<customFilter>` values; canonical leading/trailing-star forms still normalize
-to contains, begins-with, or ends-with criteria. Dynamic evaluation, large-rank
-Worker/WASM offload, and table/AutoFilter-integrated custom sorting remain
-explicit boundaries.
+to contains, begins-with, or ends-with criteria. Source-level 1904 date-system
+retention, large aggregate/rank Worker/WASM offload, and
+table/AutoFilter-integrated custom sorting remain explicit boundaries.
 
-Focused model, command, dialog, Hook, import, and XLSX Rstest cover the bounded
-contract. Desktop and compact Playwright exercise the real vendor header menu,
-owned dialog, selection retention, apply, and Undo. The local-only
+Focused model, command, dialog, Hook, import, XLSX, and multi-time-zone Rstest
+cover the bounded contract. Desktop and compact Playwright exercise the real
+vendor header menu, owned dialog, dynamic-average authoring, selection
+retention, apply, and Undo. The local-only
 `tests/e2e/spreadsheet-ribbon-alignment.acl` A3S Test gate additionally checks
 accessibility and empty console/page-error diagnostics; GitHub Actions and
 Pages do not install or invoke A3S Test.

@@ -1480,7 +1480,7 @@ One accepted operation crosses the Fortune boundary as one range write and one
 controlled Undo record. Table, worksheet-AutoFilter, hyperlink-map,
 imported-formula-metadata, and border-sidecar intersections fail closed because
 those models still own coordinates outside the cell matrix. Moving large sorts,
-dynamic filter predicates, rank threshold scans, full custom-list preference
+large aggregate/rank scans, remaining advanced filter predicates, full custom-list preference
 management, and structural sidecar reconciliation into the Worker/WASM kernel
 remains Stage 3 work.
 Direct host focus of the native grid now enters the same bounded focus observer
@@ -1524,6 +1524,20 @@ value remains visible, while text, Boolean, blank, and nonfinite cells do not
 enter the ranking domain. Dense and sparse cell readers share this path, and
 the resulting hidden-row set remains one independently owned column entry.
 
+Dynamic criteria use a separate pure compiler with an explicit local-clock
+context. Above/below-average consumes the column as an iterable, calculates one
+finite numeric mean, and returns a strict matcher without retaining the column.
+Date families compile one inclusive-start/exclusive-end serial interval and do
+not pre-read the column. They accept imported `Date` objects or finite numeric
+cells explicitly marked `ct.t='d'`, recover SheetJS local-date serials across
+time zones, reject the fictional serial 60, and never classify an unformatted
+number as a date. Relative weeks begin on Sunday; calendar month and quarter
+families classify independently of year. Column profiling is cached per
+immutable sheet and keeps typed dates out of numeric rank actions. The editor
+uses the current local clock, while model tests inject a deterministic clock.
+The controlled model still normalizes dates to the 1900 system; source-level
+1904 retention remains an explicit import boundary.
+
 The same closed `WorkSpreadsheetFilterCriteria` union now serves worksheet and
 table native OOXML. Package scan and import read only the worksheet root's
 direct `<autoFilter>` child, hydrate supported criteria, and retain imported
@@ -1532,7 +1546,9 @@ the generated worksheet element with native `<filterColumn>` children. General
 two-item `<customFilters and="1|0">` groups, arbitrary positive/negative
 wildcard expressions, negative prefix/suffix forms, and
 `<top10 top="..." percent="..." val="..."/>` criteria round-trip through the
-shared worksheet/table path. Canonical edge-star patterns still normalize to
+shared worksheet/table path. Imported native dynamic filters are recomputed
+from current cells and emitted as native `<dynamicFilter>` elements. Canonical
+edge-star patterns still normalize to
 the narrower contains, begins-with, or ends-with variants. The
 React adapter owns only vendor-menu discovery, the accessible condition dialog,
 short-lived selection preservation, and focus restoration; unsafe vendor sort

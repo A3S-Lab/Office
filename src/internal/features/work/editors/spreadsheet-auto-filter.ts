@@ -12,6 +12,10 @@ import {
   workSpreadsheetSheetWithoutAutoFilterCriteria,
 } from '../work-spreadsheet-auto-filter';
 import {
+  type WorkSpreadsheetDynamicFilterContext,
+  workSpreadsheetCellIsDate,
+} from '../work-spreadsheet-dynamic-filter';
+import {
   spreadsheetCurrentRegion,
   spreadsheetRowHasContent,
   spreadsheetSheetCellReader,
@@ -31,9 +35,14 @@ export interface SpreadsheetAutoFilterCriteriaRequest
   criteria: WorkSpreadsheetFilterCriteria;
 }
 
-const spreadsheetAutoFilterNumericColumnCache = new WeakMap<
+interface SpreadsheetAutoFilterColumnProfile {
+  date: boolean;
+  numeric: boolean;
+}
+
+const spreadsheetAutoFilterColumnProfileCache = new WeakMap<
   WorkSpreadsheetSheet,
-  Map<string, boolean>
+  Map<string, SpreadsheetAutoFilterColumnProfile>
 >();
 
 export function spreadsheetAutoFilterRange(
@@ -106,35 +115,60 @@ export function spreadsheetAutoFilterColumnIsNumeric(
   range: SpreadsheetAutoFilterRange,
   column: number,
 ): boolean {
+  return spreadsheetAutoFilterColumnProfile(sheet, range, column).numeric;
+}
+
+export function spreadsheetAutoFilterColumnIsDate(
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetAutoFilterRange,
+  column: number,
+): boolean {
+  return spreadsheetAutoFilterColumnProfile(sheet, range, column).date;
+}
+
+function spreadsheetAutoFilterColumnProfile(
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetAutoFilterRange,
+  column: number,
+): SpreadsheetAutoFilterColumnProfile {
   if (
     !Number.isSafeInteger(column) ||
     column < range.column[0] ||
     column > range.column[1]
   ) {
-    return false;
+    return { date: false, numeric: false };
   }
   const key = `${range.row[0]}:${range.row[1]}:${column}`;
-  const cached = spreadsheetAutoFilterNumericColumnCache.get(sheet)?.get(key);
-  if (cached !== undefined) return cached;
+  const cached = spreadsheetAutoFilterColumnProfileCache.get(sheet)?.get(key);
+  if (cached) return cached;
   const cellAt = spreadsheetSheetCellReader(sheet);
-  let values = 0;
-  let numeric = true;
+  let columnKind: 'date' | 'numeric' | null = null;
   for (let row = range.row[0] + 1; row <= range.row[1]; row += 1) {
     const cell = cellAt(row, column);
-    const value = cell?.v ?? cell?.m;
+    const value =
+      (cell as { m?: unknown; v?: unknown } | null)?.v ??
+      (cell as { m?: unknown } | null)?.m;
     if (value === undefined || value === null || value === '') continue;
-    values += 1;
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
-      numeric = false;
+    const valueKind = workSpreadsheetCellIsDate(cell)
+      ? 'date'
+      : typeof value === 'number' && Number.isFinite(value)
+        ? 'numeric'
+        : null;
+    if (!valueKind || (columnKind !== null && columnKind !== valueKind)) {
+      columnKind = null;
       break;
     }
+    columnKind = valueKind;
   }
-  const result = numeric && values > 0;
+  const result = {
+    date: columnKind === 'date',
+    numeric: columnKind === 'numeric',
+  };
   const sheetCache =
-    spreadsheetAutoFilterNumericColumnCache.get(sheet) ??
-    new Map<string, boolean>();
+    spreadsheetAutoFilterColumnProfileCache.get(sheet) ??
+    new Map<string, SpreadsheetAutoFilterColumnProfile>();
   sheetCache.set(key, result);
-  spreadsheetAutoFilterNumericColumnCache.set(sheet, sheetCache);
+  spreadsheetAutoFilterColumnProfileCache.set(sheet, sheetCache);
   return result;
 }
 
@@ -143,6 +177,7 @@ export function applySpreadsheetAutoFilterCriteria(
   sheetId: string,
   column: number,
   criteria: WorkSpreadsheetFilterCriteria,
+  context?: WorkSpreadsheetDynamicFilterContext,
 ): WorkSpreadsheetContent | null {
   const sheetIndex = content.sheets.findIndex((sheet) => sheet.id === sheetId);
   const sheet = content.sheets[sheetIndex];
@@ -151,6 +186,7 @@ export function applySpreadsheetAutoFilterCriteria(
     sheet,
     column,
     criteria,
+    context,
   );
   if (!nextSheet) return null;
   const sheets = [...content.sheets];
