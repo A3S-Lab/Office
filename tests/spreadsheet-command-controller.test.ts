@@ -1944,8 +1944,12 @@ describe('spreadsheet command controller', () => {
     expect(fixture.sort.requests).toEqual([
       {
         sheetId: 'sheet-1',
-        range: { row: [0, 4], column: [0, 2] },
         activeColumn: 1,
+        intent: { type: 'custom' },
+        selected: {
+          range: { row: [0, 4], column: [0, 2] },
+          available: true,
+        },
       },
     ]);
     expect(
@@ -1981,6 +1985,108 @@ describe('spreadsheet command controller', () => {
       }),
     ).toBe(false);
     expect(fixture.workbook.pastes).toHaveLength(1);
+  });
+
+  test('plans the WPS sort warning from a selected cell and its current region', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [
+      { row: [1, 1], column: [1, 1], row_focus: 1, column_focus: 1 },
+    ];
+    fixture.context.content = {
+      ...fixture.context.content,
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sheet 1',
+          data: [
+            [{ v: 'Name' }, { v: 'Score' }],
+            [{ v: 'Beta' }, { v: 80 }],
+            [{ v: 'Alpha' }, { v: 90 }],
+          ],
+        },
+      ],
+    };
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().openCustomSort()).toBe(true);
+    expect(editor.commands.openCustomSort()).toBe(true);
+    expect(editor.can().sortSelectedCells('descending')).toBe(true);
+    expect(editor.commands.sortSelectedCells('descending')).toBe(true);
+    expect(fixture.sort.requests).toEqual([
+      {
+        sheetId: 'sheet-1',
+        activeColumn: 1,
+        intent: { type: 'custom' },
+        selected: {
+          range: { row: [1, 1], column: [1, 1] },
+          available: false,
+        },
+        expanded: {
+          range: { row: [0, 2], column: [0, 1] },
+          available: true,
+        },
+      },
+      {
+        sheetId: 'sheet-1',
+        activeColumn: 1,
+        intent: { type: 'quick', direction: 'descending' },
+        selected: {
+          range: { row: [1, 1], column: [1, 1] },
+          available: false,
+        },
+        expanded: {
+          range: { row: [0, 2], column: [0, 1] },
+          available: true,
+        },
+      },
+    ]);
+    expect(fixture.workbook.pastes).toEqual([]);
+  });
+
+  test('keeps exact-range sorting available when adjacent sidecars block expansion', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [
+      { row: [0, 2], column: [0, 0], row_focus: 1, column_focus: 0 },
+    ];
+    fixture.context.content = {
+      ...fixture.context.content,
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sheet 1',
+          data: [
+            [{ v: 'Name' }, { v: 'Owner' }],
+            [{ v: 'Beta' }, { v: 'Lin' }],
+            [{ v: 'Alpha' }, { v: 'Ada' }],
+          ],
+          hyperlink: {
+            '1_1': {
+              linkType: 'webpage',
+              linkAddress: 'https://example.com',
+            },
+          },
+        },
+      ],
+    };
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().openCustomSort()).toBe(true);
+    expect(editor.commands.openCustomSort()).toBe(true);
+    expect(fixture.sort.requests).toEqual([
+      {
+        sheetId: 'sheet-1',
+        activeColumn: 0,
+        intent: { type: 'custom' },
+        selected: {
+          range: { row: [0, 2], column: [0, 0] },
+          available: true,
+        },
+        expanded: {
+          range: { row: [0, 2], column: [0, 1] },
+          available: false,
+        },
+      },
+    ]);
   });
 
   test('fails sorting closed across table and AutoFilter ownership', () => {
@@ -2695,6 +2801,10 @@ function commandFixture(): {
 class RecordingSpreadsheetSort implements SpreadsheetSortCommandPort {
   canOpen = true;
   requests: Parameters<SpreadsheetSortCommandPort['open']>[0][] = [];
+
+  canApply(): boolean {
+    return false;
+  }
 
   open(request: Parameters<SpreadsheetSortCommandPort['open']>[0]): boolean {
     if (!this.canOpen) return false;

@@ -2,17 +2,42 @@ import type { Cell } from '@fortune-sheet/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { showToast } from '../../../state/app-state';
 import type { WorkSpreadsheetContent } from '../work-types';
+import type { SpreadsheetCellRange } from './spreadsheet-cell-range';
+import { spreadsheetCellRangesEqual } from './spreadsheet-cell-range';
 import type {
   SpreadsheetEditorCommands,
   SpreadsheetSortCommandPort,
 } from './spreadsheet-command-controller';
 import {
   createSpreadsheetSortDialogSource,
+  createSpreadsheetSortRangeDialogSource,
   type SpreadsheetSortDialogSource,
   type SpreadsheetSortDialogValue,
   type SpreadsheetSortOpenRequest,
+  type SpreadsheetSortRangeCandidate,
+  type SpreadsheetSortRangeChoice,
+  type SpreadsheetSortRangeDialogSource,
+  type SpreadsheetSortRequest,
 } from './spreadsheet-sort';
 import { SpreadsheetSortDialog } from './spreadsheet-sort-dialog';
+import { SpreadsheetSortRangeDialog } from './spreadsheet-sort-range-dialog';
+
+type SpreadsheetSortSurface =
+  | {
+      kind: 'custom';
+      selectedRange: SpreadsheetCellRange;
+      source: SpreadsheetSortDialogSource;
+    }
+  | {
+      kind: 'range';
+      request: SpreadsheetSortOpenRequest;
+      source: SpreadsheetSortRangeDialogSource;
+    };
+
+interface SpreadsheetSortReadRequest {
+  range: SpreadsheetSortRangeCandidate['range'];
+  sheetId: string;
+}
 
 export function useSpreadsheetSort({
   commandsRef,
@@ -26,50 +51,144 @@ export function useSpreadsheetSort({
   contentRef: { current: WorkSpreadsheetContent };
   focusGrid: (focusOrigin: Element | null) => void;
   getGridFocusTarget: () => HTMLElement | null;
-  getRows: (request: SpreadsheetSortOpenRequest) => (Cell | null)[][] | null;
+  getRows: (request: SpreadsheetSortReadRequest) => (Cell | null)[][] | null;
   preview: boolean;
 }) {
-  const [source, setSource] = useState<SpreadsheetSortDialogSource | null>(
-    null,
-  );
+  const [surface, setSurface] = useState<SpreadsheetSortSurface | null>(null);
+  const authorizedRequestRef = useRef<{
+    request: SpreadsheetSortRequest;
+    selectedRange: SpreadsheetCellRange;
+  } | null>(null);
   const invokerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!preview) return;
-    setSource(null);
+    setSurface(null);
+    authorizedRequestRef.current = null;
     invokerRef.current = null;
   }, [preview]);
 
+  const sourceForCandidate = useCallback(
+    (
+      request: SpreadsheetSortOpenRequest,
+      candidate: SpreadsheetSortRangeCandidate,
+    ): SpreadsheetSortDialogSource | null => {
+      if (!candidate.available) return null;
+      const sheet = contentRef.current.sheets.find(
+        (item) => item.id === request.sheetId,
+      );
+      const rows = getRows({
+        sheetId: request.sheetId,
+        range: candidate.range,
+      });
+      if (!sheet || !rows) return null;
+      return createSpreadsheetSortDialogSource(
+        request.sheetId,
+        sheet.name,
+        { range: candidate.range, activeColumn: request.activeColumn },
+        rows,
+      );
+    },
+    [contentRef, getRows],
+  );
+
+  const applyAuthorizedRequest = useCallback(
+    (
+      request: SpreadsheetSortRequest,
+      selectedRange: SpreadsheetCellRange,
+    ): boolean => {
+      authorizedRequestRef.current = { request, selectedRange };
+      try {
+        const handled = commandsRef.current?.applyCustomSort(request) ?? false;
+        if (!handled) showToast('无法应用当前排序设置。', 'error');
+        return handled;
+      } finally {
+        authorizedRequestRef.current = null;
+      }
+    },
+    [commandsRef],
+  );
+
+  const applyQuickCandidate = useCallback(
+    (
+      request: SpreadsheetSortOpenRequest,
+      candidate: SpreadsheetSortRangeCandidate,
+    ): boolean => {
+      if (request.intent.type !== 'quick') return false;
+      const source = sourceForCandidate(request, candidate);
+      if (!source) return false;
+      return applyAuthorizedRequest(
+        {
+          sheetId: source.sheetId,
+          range: source.range,
+          hasHeader: source.value.hasHeader,
+          keys: [
+            {
+              column: request.activeColumn,
+              direction: request.intent.direction,
+            },
+          ],
+        },
+        request.selected.range,
+      );
+    },
+    [applyAuthorizedRequest, sourceForCandidate],
+  );
+
   const open = useCallback(
     (request: SpreadsheetSortOpenRequest): boolean => {
-      if (preview || source) return false;
+      if (preview || surface) return false;
       const sheet = contentRef.current.sheets.find(
         (candidate) => candidate.id === request.sheetId,
       );
-      const rows = getRows(request);
-      if (!sheet || !rows) return false;
-      const nextSource = createSpreadsheetSortDialogSource(
-        request.sheetId,
-        sheet.name,
-        request,
-        rows,
-      );
-      if (!nextSource) return false;
+      if (!sheet) return false;
       invokerRef.current =
         document.activeElement instanceof HTMLElement
           ? document.activeElement
           : getGridFocusTarget();
-      setSource(nextSource);
-      return true;
+      if (request.expanded) {
+        const source = createSpreadsheetSortRangeDialogSource(
+          sheet.name,
+          request,
+        );
+        if (!source) return false;
+        setSurface({ kind: 'range', request, source });
+        return true;
+      }
+      const source = sourceForCandidate(request, request.selected);
+      if (!source) return false;
+      if (request.intent.type === 'custom') {
+        setSurface({
+          kind: 'custom',
+          selectedRange: request.selected.range,
+          source,
+        });
+        return true;
+      }
+      const handled = applyQuickCandidate(request, request.selected);
+      if (handled) {
+        const invoker = invokerRef.current;
+        requestAnimationFrame(() => focusGrid(invoker));
+        invokerRef.current = null;
+      }
+      return handled;
     },
-    [contentRef, getGridFocusTarget, getRows, preview, source],
+    [
+      applyQuickCandidate,
+      contentRef,
+      focusGrid,
+      getGridFocusTarget,
+      preview,
+      sourceForCandidate,
+      surface,
+    ],
   );
 
   const close = useCallback(() => {
     const invoker = invokerRef.current;
     const grid = getGridFocusTarget();
     const openedFromGrid = invoker === grid;
-    setSource(null);
+    setSurface(null);
     requestAnimationFrame(() => {
       if (openedFromGrid || !invoker?.isConnected) focusGrid(invoker);
       else invoker.focus({ preventScroll: true });
@@ -77,40 +196,96 @@ export function useSpreadsheetSort({
     });
   }, [focusGrid, getGridFocusTarget]);
 
+  const canApply = useCallback(
+    (
+      request: SpreadsheetSortRequest,
+      liveRange: { column: readonly number[]; row: readonly number[] },
+    ): boolean => {
+      const authorized = authorizedRequestRef.current;
+      if (
+        authorized?.request.sheetId === request.sheetId &&
+        spreadsheetCellRangesEqual(authorized.request.range, request.range) &&
+        spreadsheetCellRangesEqual(authorized.selectedRange, liveRange)
+      ) {
+        return true;
+      }
+      return Boolean(
+        surface?.kind === 'custom' &&
+          surface.source.sheetId === request.sheetId &&
+          spreadsheetCellRangesEqual(surface.source.range, request.range) &&
+          spreadsheetCellRangesEqual(surface.selectedRange, liveRange),
+      );
+    },
+    [surface],
+  );
+
   const commandPort = useMemo<SpreadsheetSortCommandPort>(
-    () => ({ canOpen: !preview && source === null, open }),
-    [open, preview, source],
+    () => ({ canApply, canOpen: !preview && surface === null, open }),
+    [canApply, open, preview, surface],
   );
 
   const apply = useCallback(
     (value: SpreadsheetSortDialogValue): boolean => {
-      if (!source) return false;
-      const handled =
-        commandsRef.current?.applyCustomSort({
-          sheetId: source.sheetId,
-          range: source.range,
+      if (surface?.kind !== 'custom') return false;
+      return applyAuthorizedRequest(
+        {
+          sheetId: surface.source.sheetId,
+          range: surface.source.range,
           hasHeader: value.hasHeader,
           keys: value.keys,
-        }) ?? false;
-      if (!handled) showToast('无法应用当前排序设置。', 'error');
-      return handled;
+        },
+        surface.selectedRange,
+      );
     },
-    [commandsRef, source],
+    [applyAuthorizedRequest, surface],
   );
+
+  const chooseRange = useCallback(
+    (choice: SpreadsheetSortRangeChoice): boolean => {
+      if (surface?.kind !== 'range') return false;
+      const candidate =
+        choice === 'expand'
+          ? surface.request.expanded
+          : surface.request.selected;
+      if (!candidate?.available) return false;
+      if (surface.request.intent.type === 'quick') {
+        return applyQuickCandidate(surface.request, candidate);
+      }
+      const source = sourceForCandidate(surface.request, candidate);
+      if (!source) {
+        showToast('无法读取当前排序区域。', 'error');
+        return false;
+      }
+      setSurface({
+        kind: 'custom',
+        selectedRange: surface.request.selected.range,
+        source,
+      });
+      return false;
+    },
+    [applyQuickCandidate, sourceForCandidate, surface],
+  );
+
+  const restoreFocusTarget = () =>
+    invokerRef.current?.isConnected ? invokerRef.current : getGridFocusTarget();
 
   return {
     commandPort,
-    dialog: source ? (
-      <SpreadsheetSortDialog
-        source={source}
-        restoreFocusTarget={() =>
-          invokerRef.current?.isConnected
-            ? invokerRef.current
-            : getGridFocusTarget()
-        }
-        onApply={apply}
-        onClose={close}
-      />
-    ) : null,
+    dialog:
+      surface?.kind === 'custom' ? (
+        <SpreadsheetSortDialog
+          source={surface.source}
+          restoreFocusTarget={restoreFocusTarget}
+          onApply={apply}
+          onClose={close}
+        />
+      ) : surface?.kind === 'range' ? (
+        <SpreadsheetSortRangeDialog
+          source={surface.source}
+          restoreFocusTarget={restoreFocusTarget}
+          onApply={chooseRange}
+          onClose={close}
+        />
+      ) : null,
   };
 }

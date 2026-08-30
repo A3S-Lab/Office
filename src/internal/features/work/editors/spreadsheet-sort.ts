@@ -1,10 +1,13 @@
 import type { Cell } from '@fortune-sheet/core';
 import { formatSpreadsheetCellRanges } from '../work-spreadsheet-ranges';
+import type { WorkSpreadsheetSheet } from '../work-types';
 import {
   normalizeSpreadsheetCellRange,
-  spreadsheetCellRangeArea,
   type SpreadsheetCellRange,
+  spreadsheetCellRangeArea,
+  spreadsheetCellRangesEqual,
 } from './spreadsheet-cell-range';
+import { spreadsheetCurrentRegion } from './spreadsheet-current-region';
 import { translateSpreadsheetFormula } from './spreadsheet-paste-special-cell';
 
 export const MAX_SPREADSHEET_SORT_KEYS = 64;
@@ -29,8 +32,36 @@ export interface SpreadsheetSortTarget {
   range: SpreadsheetCellRange;
 }
 
-export interface SpreadsheetSortOpenRequest extends SpreadsheetSortTarget {
+export interface SpreadsheetSortRangeCandidate {
+  available: boolean;
+  range: SpreadsheetCellRange;
+}
+
+export type SpreadsheetSortIntent =
+  | { type: 'custom' }
+  | { type: 'quick'; direction: SpreadsheetSortDirection };
+
+export interface SpreadsheetSortOpenRequest {
+  activeColumn: number;
+  expanded?: SpreadsheetSortRangeCandidate;
+  intent: SpreadsheetSortIntent;
+  selected: SpreadsheetSortRangeCandidate;
   sheetId: string;
+}
+
+export interface SpreadsheetSortRangePlan {
+  expandedRange: SpreadsheetCellRange | null;
+  selectedRange: SpreadsheetCellRange;
+}
+
+export type SpreadsheetSortRangeChoice = 'expand' | 'selection';
+
+export interface SpreadsheetSortRangeDialogSource {
+  canSortExpandedRange: boolean;
+  canSortSelection: boolean;
+  expandedRangeReference: string;
+  selectedRangeReference: string;
+  sheetName: string;
 }
 
 export interface SpreadsheetSortRequest extends SpreadsheetSortDialogValue {
@@ -67,6 +98,40 @@ export type SpreadsheetSortValidationResult =
 export type SpreadsheetSortResult =
   | { ok: true; rows: (Cell | null)[][] }
   | { code: SpreadsheetSortErrorCode; message: string; ok: false };
+
+export function createSpreadsheetSortRangePlan(
+  sheet: WorkSpreadsheetSheet,
+  selectedRange: SpreadsheetCellRange,
+): SpreadsheetSortRangePlan | null {
+  const selected = normalizeSpreadsheetCellRange(selectedRange);
+  if (!selected) return null;
+  const currentRegion = spreadsheetCurrentRegion(sheet, selected);
+  return {
+    selectedRange: selected,
+    expandedRange:
+      currentRegion && !spreadsheetCellRangesEqual(currentRegion, selected)
+        ? currentRegion
+        : null,
+  };
+}
+
+export function createSpreadsheetSortRangeDialogSource(
+  sheetName: string,
+  request: SpreadsheetSortOpenRequest,
+): SpreadsheetSortRangeDialogSource | null {
+  if (!request.expanded) return null;
+  return {
+    sheetName,
+    selectedRangeReference: formatSpreadsheetCellRanges([
+      request.selected.range,
+    ]),
+    expandedRangeReference: formatSpreadsheetCellRanges([
+      request.expanded.range,
+    ]),
+    canSortSelection: request.selected.available,
+    canSortExpandedRange: request.expanded.available,
+  };
+}
 
 export function createSpreadsheetSortDialogSource(
   sheetId: string,
@@ -276,8 +341,8 @@ function translateSpreadsheetSortRow(
 }
 
 function spreadsheetSortHeaderText(cell: Cell | null | undefined): string {
-  const value = cell?.m ?? cell?.v;
-  if (typeof value !== 'string') return '';
+  if (cell?.f || typeof cell?.v !== 'string') return '';
+  const value = cell.v;
   return Array.from(value.trim())
     .slice(0, MAX_SPREADSHEET_SORT_HEADER_LENGTH)
     .join('');

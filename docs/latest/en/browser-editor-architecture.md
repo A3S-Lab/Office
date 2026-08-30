@@ -1452,6 +1452,18 @@ those models still own coordinates outside the cell matrix. Moving large sorts,
 advanced predicates, color/icon keys, custom lists, and structural sidecar
 reconciliation into the Worker/WASM kernel remains Stage 3 work.
 
+Partial-range planning is a separate controlled concern. The shared
+`spreadsheet-current-region` model reads dense `data` and sparse `celldata`
+without materializing worksheet dimensions, so AutoFilter and Sort cannot
+derive different bounds. The command layer creates exact and expanded
+candidates and evaluates mutation and structural guards independently. The
+React adapter owns only the accessible warning/custom-dialog transition and a
+short-lived authorization containing the frozen sort request plus its original
+selection. The command accepts an expanded destination only while the live
+selection still matches that origin; stale host state therefore fails closed.
+The header heuristic likewise reads raw non-formula text instead of formatted
+display strings, keeping numeric and formula result rows in the data body.
+
 Exit criteria: scrolling and selection do not scale with total row count;
 incremental recalculation touches only affected dependency subgraphs; XLSX
 fixtures preserve formulas, styles, names, validation, conditional formatting,

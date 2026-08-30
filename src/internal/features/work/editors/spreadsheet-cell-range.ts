@@ -77,6 +77,22 @@ export function spreadsheetCellRangesIntersect(
   );
 }
 
+export function spreadsheetCellRangesEqual(
+  left: SpreadsheetCellRangeInput,
+  right: SpreadsheetCellRangeInput,
+): boolean {
+  const normalizedLeft = normalizeSpreadsheetCellRange(left);
+  const normalizedRight = normalizeSpreadsheetCellRange(right);
+  return Boolean(
+    normalizedLeft &&
+      normalizedRight &&
+      normalizedLeft.row[0] === normalizedRight.row[0] &&
+      normalizedLeft.row[1] === normalizedRight.row[1] &&
+      normalizedLeft.column[0] === normalizedRight.column[0] &&
+      normalizedLeft.column[1] === normalizedRight.column[1],
+  );
+}
+
 export function spreadsheetCellRangeContains(
   range: SpreadsheetCellRange,
   row: number,

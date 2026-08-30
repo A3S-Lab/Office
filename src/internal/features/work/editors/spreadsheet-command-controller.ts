@@ -77,12 +77,6 @@ import {
 import type { SpreadsheetPasteContent } from './spreadsheet-paste-special';
 import type { SpreadsheetRichTextToggleAttribute } from './spreadsheet-rich-text-selection-format';
 import { createSpreadsheetSelectionNavigationExtension } from './spreadsheet-selection-navigation-command';
-import { createSpreadsheetSortExtension } from './spreadsheet-sort-command';
-import type {
-  SpreadsheetSortDirection,
-  SpreadsheetSortOpenRequest,
-  SpreadsheetSortRequest,
-} from './spreadsheet-sort';
 import {
   activateSpreadsheetSheet,
   addSpreadsheetSheet,
@@ -94,6 +88,12 @@ import {
   type SpreadsheetSheetMoveDirection,
   setSpreadsheetSheetColor,
 } from './spreadsheet-sheet-model';
+import type {
+  SpreadsheetSortDirection,
+  SpreadsheetSortOpenRequest,
+  SpreadsheetSortRequest,
+} from './spreadsheet-sort';
+import { createSpreadsheetSortExtension } from './spreadsheet-sort-command';
 import { createSpreadsheetStructureExtension } from './spreadsheet-structure-command';
 import type {
   SpreadsheetTableDesignPatch,
@@ -261,6 +261,10 @@ export interface SpreadsheetTableCommandPort {
 }
 
 export interface SpreadsheetSortCommandPort {
+  canApply: (
+    request: SpreadsheetSortRequest,
+    liveRange: SpreadsheetCommandRange,
+  ) => boolean;
   canOpen: boolean;
   open: (request: SpreadsheetSortOpenRequest) => boolean;
 }

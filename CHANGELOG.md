@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added a Traditional Office-style Spreadsheet **Sort Warning** for partial, narrow-column,
+  and single-cell sort selections. Custom Sort and quick ascending/descending
+  commands now default to expanding the selection to its dense- or sparse-sheet
+  current region, while still offering the exact selection when that candidate
+  can be sorted safely.
+- Reused one current-region model across AutoFilter and Sort, validated exact
+  and expanded candidates independently, and authenticated expanded requests
+  against both the frozen destination and the original live selection. A host
+  or selection change invalidates the request before any workbook mutation.
+- Tightened automatic header detection so formatted numeric and formula results
+  are not mistaken for text headers. Added focused model, dialog, command, Hook,
+  responsive Playwright, and local-only A3S Test coverage for range choice,
+  focus, accessibility, formula movement, one-step Undo, and clean diagnostics.
 - Added Spreadsheet **Data → Custom Sort** with an accessible multi-level
   editor for up to 64 unique value keys, explicit priority controls, automatic
   header detection with an override, stable numeric/text ordering, and blanks

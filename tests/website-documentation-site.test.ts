@@ -2646,6 +2646,9 @@ test('publishes formula-safe Spreadsheet multi-key sorting without rewriting 0.3
     sortCommand,
     structureCommand,
     e2e,
+    rangeE2e,
+    currentRegion,
+    rangeDialog,
     packageJson,
     gate,
   ] = await Promise.all([
@@ -2703,6 +2706,24 @@ test('publishes formula-safe Spreadsheet multi-key sorting without rewriting 0.3
       path.join(repositoryRoot, 'tests/e2e/spreadsheet-custom-sort.acl'),
       'utf8',
     ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/spreadsheet-sort-range.acl'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-current-region.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-sort-range-dialog.tsx',
+      ),
+      'utf8',
+    ),
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
     readFile(
       path.join(repositoryRoot, 'scripts/run-a3s-test-web-gate.sh'),
@@ -2712,29 +2733,50 @@ test('publishes formula-safe Spreadsheet multi-key sorting without rewriting 0.3
 
   expect(readme).toContain('up to 64 ordered keys');
   expect(readme).toContain('relative-formula translation');
+  expect(readme).toContain('current-region expansion warnings');
   expect(roadmap).toContain('stable value-based custom sorting');
+  expect(roadmap).toContain('exact-or-expand warnings');
   expect(changelog).toContain('Data → Custom Sort');
   expect(changelog).toContain('coordinate-owned hyperlink');
+  expect(changelog).toContain('Sort Warning');
   expect(product).toContain('The forty-eighth milestone');
+  expect(product).toContain('The forty-ninth milestone');
   expect(english).toContain('## Multi-key custom sort');
   expect(chinese).toContain('## 多关键字自定义排序');
   expect(english).toContain('coordinate-owned');
   expect(chinese).toContain('坐标归属');
+  expect(english).toContain('Traditional Office-style Sort Warning');
+  expect(chinese).toContain('传统 Office 风格“排序提醒”');
   expect(architecture).toContain('`spreadsheetSort` editor extension');
   expect(chineseArchitecture).toContain('`spreadsheetSort` 编辑器扩展');
+  expect(architecture).toContain('`spreadsheet-current-region` model');
+  expect(chineseArchitecture).toContain('`spreadsheet-current-region` 模型');
   expect(quality).toContain('The thirty-eighth Spreadsheet slice');
   expect(chineseQuality).toContain('第三十八个 Spreadsheet 纵向切片');
+  expect(quality).toContain('The thirty-ninth Spreadsheet slice');
+  expect(chineseQuality).toContain('第三十九个 Spreadsheet 纵向切片');
   expect(releaseEnglish).not.toContain('## Multi-key custom sort');
   expect(releaseChinese).not.toContain('## 多关键字自定义排序');
+  expect(releaseEnglish).not.toContain('Traditional Office-style Sort Warning');
+  expect(releaseChinese).not.toContain('传统 Office 风格“排序提醒”');
   expect(sortCommand).toContain("name: 'spreadsheetSort'");
   expect(sortCommand).toContain('spreadsheetSortRangeHasStructuralConflict');
   expect(structureCommand).not.toContain('sortSelectedCells');
+  expect(currentRegion).toContain('export function spreadsheetCurrentRegion');
+  expect(rangeDialog).toContain('扩展选定区域');
+  expect(rangeDialog).toContain('以当前选定区域排序');
   expect(e2e).toContain('moved-formula-is-rebased');
   expect(e2e).toContain('original-formula-is-restored-in-one-step');
   expect(e2e).toContain('spreadsheet-after-custom-sort-accessibility');
+  expect(rangeE2e).toContain('expand-is-default');
+  expect(rangeE2e).toContain('exact-range-has-no-header');
+  expect(rangeE2e).toContain('expanded-formula-restored-in-one-step');
   expect(packageJson).toContain('playground:visual:spreadsheet-custom-sort');
   expect(packageJson).toContain('test:e2e:spreadsheet-custom-sort');
+  expect(packageJson).toContain('playground:visual:spreadsheet-sort-range');
+  expect(packageJson).toContain('test:e2e:spreadsheet-sort-range');
   expect(gate).toContain('tests/e2e/spreadsheet-custom-sort.acl');
+  expect(gate).toContain('tests/e2e/spreadsheet-sort-range.acl');
 });
 
 test('keeps the 0.8.0 native suggestion limitation frozen', async () => {

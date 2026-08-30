@@ -285,6 +285,17 @@ sorts cell values ascending or descending. Finite numbers use numeric order,
 text uses natural Simplified Chinese collation, equal rows retain their source
 order, and blank cells stay at the end in both directions.
 
+A partial column, narrow rectangle, or single-cell selection first uses the
+same dense/sparse current-region model as AutoFilter. When adjacent data makes
+that region larger, Custom Sort and quick ascending/descending commands open an
+accessible Traditional Office-style Sort Warning. **Expand the selection** is
+the default; **Continue with the current selection** remains available when
+that exact rectangle is independently safe. A single cell cannot be sorted by
+itself, and protection or structural ownership can disable only the affected
+candidate.
+Automatic header detection accepts real non-formula text values, so formatted
+numbers and formula results are not mistaken for headers.
+
 Sorting moves complete rows, including native formatting, comments, and other
 cell-owned metadata. A formula that moves to another row translates only its
 relative row references; absolute references remain fixed. If any translated
@@ -305,12 +316,19 @@ records fail closed for the same reason. Table-aware sorting, active-filter
 reconciliation, sidecar migration, custom lists, row-direction sorting, and
 color/icon sorting remain explicit follow-up work.
 
+The warning freezes the original selection, both candidate rectangles, active
+column, worksheet, and sort intent. Applying an expanded range is authorized
+only while the controlled live selection still equals the original selection;
+a host remount or selection change invalidates the request before mutation.
+
 Focused model, dialog, command, ribbon, and formula-translation Rstest cover
 the bounded contract. Playwright exercises the real dialog and moved formula;
 `tests/e2e/spreadsheet-custom-sort.acl` uses the pinned local A3S Test gate to
 verify the two-key workflow, one-step Undo, accessibility, and empty console
-and page-error diagnostics. GitHub Actions and Pages do not install or invoke
-A3S Test.
+and page-error diagnostics. `tests/e2e/spreadsheet-sort-range.acl` additionally
+verifies the exact and expanded warning paths, focus restoration, formula-safe
+row movement, and Undo. GitHub Actions and Pages do not install or invoke A3S
+Test.
 
 ## Find and Go To
 

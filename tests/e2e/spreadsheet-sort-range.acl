@@ -1,0 +1,257 @@
+suite "office-spreadsheet-sort-range" {
+    version = 1
+
+    scenario "choose-and-expand-partial-sort-range" {
+        name = "Choose and expand a partial Spreadsheet sort range"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-quarterly-plan" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "move-to-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-header" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-first-data-row" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-owner" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-january" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-february" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-march" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-completion" {
+            key = "ArrowRight"
+        }
+
+        press "extend-second-data-row" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-third-data-row" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-fourth-data-row" {
+            key = "Shift+ArrowDown"
+        }
+
+        expect "partial-range-selected" {
+            text = "F4:F7"
+        }
+
+        click "open-data-tab" {
+            target = role("tab", "数据")
+        }
+
+        click "open-custom-sort" {
+            target = role("button", "自定义排序")
+        }
+
+        expect "range-warning-visible" {
+            visible = css(".work-spreadsheet-sort-range-dialog[role='dialog']")
+        }
+
+        expect "expanded-range-visible" {
+            text = "A3:G7"
+        }
+
+        expect "exact-range-visible" {
+            text = "F4:F7"
+        }
+
+        expect "expand-is-default" {
+            visible = css(".work-spreadsheet-sort-range-dialog input[value='expand']:checked")
+        }
+
+        accessibility "sort-range-warning-accessibility" {
+            path = "evidence/spreadsheet-sort-range-warning.json"
+            interactive = true
+        }
+
+        click "choose-exact-selection" {
+            target = css(".work-spreadsheet-sort-range-dialog input[value='selection']")
+        }
+
+        click "continue-with-exact-selection" {
+            target = role("button", "排序")
+        }
+
+        expect "exact-custom-sort-visible" {
+            visible = css(".work-spreadsheet-sort-dialog[role='dialog']")
+        }
+
+        expect "exact-custom-sort-range" {
+            text = "执行看板!F4:F7"
+        }
+
+        expect "exact-range-has-no-header" {
+            visible = css(".work-spreadsheet-sort-dialog .work-office-checkbox:not(.checked):has(input[aria-label='数据包含标题']:not(:checked))")
+        }
+
+        click "cancel-exact-sort" {
+            target = role("button", "取消")
+        }
+
+        expect "focus-restored-after-cancel" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='自定义排序']:focus")
+        }
+
+        expect "partial-range-retained" {
+            text = "F4:F7"
+        }
+
+        click "reopen-custom-sort" {
+            target = role("button", "自定义排序")
+        }
+
+        expect "expand-reset-as-default" {
+            visible = css(".work-spreadsheet-sort-range-dialog input[value='expand']:checked")
+        }
+
+        click "continue-with-expanded-range" {
+            target = role("button", "排序")
+        }
+
+        expect "expanded-custom-sort-visible" {
+            visible = css(".work-spreadsheet-sort-dialog[role='dialog']")
+        }
+
+        expect "expanded-custom-sort-range" {
+            text = "执行看板!A3:G7"
+        }
+
+        expect "expanded-header-detected" {
+            visible = css(".work-spreadsheet-sort-dialog .work-office-checkbox.checked:has(input[aria-label='数据包含标题']:checked)")
+        }
+
+        expect "completion-column-retained" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 列']:has(option[value='5']:checked)")
+        }
+
+        select "choose-descending" {
+            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']")
+            values = ["descending"]
+        }
+
+        accessibility "expanded-custom-sort-accessibility" {
+            path = "evidence/spreadsheet-sort-range-custom-dialog.json"
+            interactive = true
+        }
+
+        click "apply-expanded-sort" {
+            target = role("button", "确定")
+        }
+
+        expect "focus-restored-after-apply" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='自定义排序']:focus")
+        }
+
+        focus "focus-grid-after-sort" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "inspect-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "inspect-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-header" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-first-sorted-row" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-sorted-owner" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-january" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-february" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-march" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-formula" {
+            key = "ArrowRight"
+        }
+
+        expect "expanded-formula-is-rebased" {
+            text = "=AVERAGE(C4:E4)"
+        }
+
+        press "undo-expanded-sort" {
+            key = "Control+z"
+        }
+
+        expect "expanded-formula-restored-in-one-step" {
+            text = "=SUM(C4:E4)/3"
+        }
+
+        accessibility "spreadsheet-after-range-sort-accessibility" {
+            path = "evidence/spreadsheet-after-range-sort.json"
+            interactive = true
+        }
+
+        console "spreadsheet-sort-range-console" {
+            path = "diagnostics/spreadsheet-sort-range-console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-sort-range-page-errors" {
+            path = "diagnostics/spreadsheet-sort-range-page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -86,3 +86,18 @@ bun run playground:visual:spreadsheet-custom-sort
 The companion A3S Test ACL exercises the same public workflow through the
 local release gate and remains intentionally absent from GitHub Actions and
 Pages.
+
+## Focused Spreadsheet sort-range warning contract
+
+The functional regression selects only the quarterly workbook's formula
+column, verifies both exact and expanded Traditional Office-style warning choices, applies the
+expanded Custom Sort, and confirms formula rebasing, one-step Undo, invoker
+focus, responsive containment, and empty browser diagnostics at desktop and
+compact widths:
+
+```bash
+bun run playground:visual:spreadsheet-sort-range
+```
+
+The companion A3S Test ACL adds accessibility-tree evidence and executes the
+same local release contract without adding A3S Test to GitHub Actions or Pages.

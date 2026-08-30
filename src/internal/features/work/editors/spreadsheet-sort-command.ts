@@ -1,29 +1,33 @@
+import { parseSpreadsheetCellRanges } from '../work-spreadsheet-ranges';
+import type { WorkSpreadsheetSheet } from '../work-types';
 import {
   createOfficeEditorExtension,
   type OfficeEditorExtension,
 } from './office-editor-extension';
-import { parseSpreadsheetCellRanges } from '../work-spreadsheet-ranges';
-import type { WorkSpreadsheetSheet } from '../work-types';
 import { canMutateSpreadsheetCellRange } from './spreadsheet-cell-mutation-guard';
 import {
-  canEditSpreadsheetSelection,
-  spreadsheetLiveCommandRange,
-  spreadsheetLiveCommandSelection,
-} from './spreadsheet-command-selection';
+  normalizeSpreadsheetCellRange,
+  type SpreadsheetCellRange,
+  spreadsheetCellRangesEqual,
+  spreadsheetCellRangesIntersect,
+} from './spreadsheet-cell-range';
 import type {
   SpreadsheetCommandContext,
   SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
 import {
-  normalizeSpreadsheetCellRange,
-  spreadsheetCellRangesIntersect,
-  type SpreadsheetCellRange,
-} from './spreadsheet-cell-range';
+  canEditSpreadsheetSelection,
+  spreadsheetLiveCommandRange,
+  spreadsheetLiveCommandSelection,
+} from './spreadsheet-command-selection';
 import {
+  createSpreadsheetSortRangePlan,
   MAX_SPREADSHEET_SORT_CELLS,
-  sortSpreadsheetRows,
   type SpreadsheetSortDirection,
+  type SpreadsheetSortIntent,
+  type SpreadsheetSortOpenRequest,
   type SpreadsheetSortRequest,
+  sortSpreadsheetRows,
   validateSpreadsheetSortRequest,
 } from './spreadsheet-sort';
 
@@ -54,68 +58,109 @@ export function createSpreadsheetSortExtension(): OfficeEditorExtension<
 }
 
 function canOpenSpreadsheetSort(context: SpreadsheetCommandContext): boolean {
-  if (!canEditSpreadsheetSelection(context) || !context.sort.canOpen) {
-    return false;
-  }
-  const range = spreadsheetLiveCommandRange(context);
-  const normalized = normalizeSpreadsheetCellRange(range);
   return Boolean(
-    normalized &&
-      spreadsheetSortRangeCanRun(normalized, false) &&
-      !spreadsheetSortRangeHasStructuralConflict(context, normalized),
+    context.sort.canOpen &&
+      createSpreadsheetSortOpenRequest(context, { type: 'custom' }),
   );
 }
 
 function openSpreadsheetSort(context: SpreadsheetCommandContext): boolean {
-  if (!canOpenSpreadsheetSort(context)) return false;
-  const range = spreadsheetLiveCommandRange(context);
-  const activeColumn =
-    spreadsheetLiveCommandSelection(context)?.column_focus ?? range.column[0];
-  return context.sort.open({
-    sheetId: context.targetSheetId,
-    range: {
-      row: [range.row[0] ?? 0, range.row[1] ?? range.row[0] ?? 0],
-      column: [range.column[0] ?? 0, range.column[1] ?? range.column[0] ?? 0],
-    },
-    activeColumn,
+  if (!context.sort.canOpen) return false;
+  const request = createSpreadsheetSortOpenRequest(context, {
+    type: 'custom',
   });
+  return Boolean(request && context.sort.open(request));
 }
 
 function canQuickSortSpreadsheet(
   context: SpreadsheetCommandContext,
   direction: SpreadsheetSortDirection,
 ): boolean {
-  if (
-    (direction !== 'ascending' && direction !== 'descending') ||
-    !canEditSpreadsheetSelection(context)
-  ) {
-    return false;
-  }
-  const range = normalizeSpreadsheetCellRange(
-    spreadsheetLiveCommandRange(context),
-  );
-  return Boolean(
-    range &&
-      spreadsheetSortRangeCanRun(range, false) &&
-      !spreadsheetSortRangeHasStructuralConflict(context, range),
-  );
+  if (direction !== 'ascending' && direction !== 'descending') return false;
+  const request = createSpreadsheetSortOpenRequest(context, {
+    type: 'quick',
+    direction,
+  });
+  return Boolean(request && (!request.expanded || context.sort.canOpen));
 }
 
 function quickSortSpreadsheet(
   context: SpreadsheetCommandContext,
   direction: SpreadsheetSortDirection,
 ): boolean {
-  if (!canQuickSortSpreadsheet(context, direction)) return false;
-  const range = spreadsheetLiveCommandRange(context);
+  const request = createSpreadsheetSortOpenRequest(context, {
+    type: 'quick',
+    direction,
+  });
+  if (!request) return false;
+  if (request.expanded) {
+    return context.sort.canOpen && context.sort.open(request);
+  }
+  if (!request.selected.available) return false;
   return applySpreadsheetSort(context, {
     sheetId: context.targetSheetId,
-    range: {
-      row: [range.row[0] ?? 0, range.row[1] ?? range.row[0] ?? 0],
-      column: [range.column[0] ?? 0, range.column[1] ?? range.column[0] ?? 0],
-    },
+    range: request.selected.range,
     hasHeader: false,
-    keys: [{ column: range.column[0] ?? 0, direction }],
+    keys: [{ column: request.activeColumn, direction }],
   });
+}
+
+function createSpreadsheetSortOpenRequest(
+  context: SpreadsheetCommandContext,
+  intent: SpreadsheetSortIntent,
+): SpreadsheetSortOpenRequest | null {
+  if (!canEditSpreadsheetSelection(context)) return null;
+  const sheet = context.content.sheets.find(
+    (candidate) => candidate.id === context.targetSheetId,
+  );
+  const selectedRange = normalizeSpreadsheetCellRange(
+    spreadsheetLiveCommandRange(context),
+  );
+  if (!sheet || !selectedRange) return null;
+  const plan = createSpreadsheetSortRangePlan(sheet, selectedRange);
+  if (!plan) return null;
+  const selected = {
+    range: plan.selectedRange,
+    available: spreadsheetSortRangeCanApply(context, sheet, plan.selectedRange),
+  };
+  const expanded = plan.expandedRange
+    ? {
+        range: plan.expandedRange,
+        available: spreadsheetSortRangeCanApply(
+          context,
+          sheet,
+          plan.expandedRange,
+        ),
+      }
+    : undefined;
+  if (!selected.available && !expanded?.available) return null;
+  const selection = spreadsheetLiveCommandSelection(context);
+  const activeColumn = selection?.column_focus ?? selectedRange.column[0];
+  if (
+    activeColumn < selectedRange.column[0] ||
+    activeColumn > selectedRange.column[1]
+  ) {
+    return null;
+  }
+  return {
+    sheetId: context.targetSheetId,
+    activeColumn,
+    intent,
+    selected,
+    ...(expanded ? { expanded } : {}),
+  };
+}
+
+function spreadsheetSortRangeCanApply(
+  context: SpreadsheetCommandContext,
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetCellRange,
+): boolean {
+  return (
+    spreadsheetSortRangeCanRun(range, false) &&
+    canMutateSpreadsheetCellRange(sheet, range) &&
+    !spreadsheetSortRangeHasStructuralConflict(context, range)
+  );
 }
 
 function canApplySpreadsheetSort(
@@ -130,9 +175,15 @@ function canApplySpreadsheetSort(
   ) {
     return false;
   }
-  return sameSpreadsheetSortRange(
-    spreadsheetLiveCommandRange(context),
-    validation.request.range,
+  return (
+    spreadsheetCellRangesEqual(
+      spreadsheetLiveCommandRange(context),
+      validation.request.range,
+    ) ||
+    context.sort.canApply(
+      validation.request,
+      spreadsheetLiveCommandRange(context),
+    )
   );
 }
 
@@ -297,16 +348,4 @@ function finiteSpreadsheetSortIndex(value: unknown): number | null {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function sameSpreadsheetSortRange(
-  left: { column: readonly number[]; row: readonly number[] },
-  right: { column: readonly number[]; row: readonly number[] },
-): boolean {
-  return (
-    Math.min(left.row[0] ?? 0, left.row[1] ?? 0) === right.row[0] &&
-    Math.max(left.row[0] ?? 0, left.row[1] ?? 0) === right.row[1] &&
-    Math.min(left.column[0] ?? 0, left.column[1] ?? 0) === right.column[0] &&
-    Math.max(left.column[0] ?? 0, left.column[1] ?? 0) === right.column[1]
-  );
 }

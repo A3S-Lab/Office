@@ -578,6 +578,20 @@ that one Undo restores both values and formulas. The suite also records focus,
 accessibility, console, and page-error evidence. It uses the pinned local A3S
 Test 1.0.0 binary and remains absent from GitHub Actions and Pages.
 
+The Traditional Office-style Spreadsheet partial-range Sort Warning has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-sort-range:check
+bun run test:e2e:spreadsheet-sort-range
+```
+
+It selects only the formula column in the public quarterly workbook, verifies
+the default expanded current region and independently safe exact option, walks
+both Custom Sort transitions, and confirms formula-safe row movement plus one
+Undo. The suite records invoker focus, accessibility, console, and page-error
+evidence with the pinned local A3S Test 1.0.0 binary. It remains absent from
+GitHub Actions and Pages.
+
 The native Presentation scene-element and z-order lifecycle has a focused gate:
 
 ```bash

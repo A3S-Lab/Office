@@ -587,6 +587,28 @@ the dialog, priority changes, formula movement, accessibility, diagnostics,
 and one-step Undo. Color/icon keys, custom lists, row-direction sorting, and
 table-aware sorting remain open.
 
+The forty-ninth milestone aligns partial Spreadsheet sorting with the
+Traditional Office Sort Warning flow. AutoFilter and Sort now share one
+dense/sparse current-region
+model. A partial column or single-cell selection that touches adjacent data
+opens an accessible warning which defaults to expanding the selection and also
+offers the exact rectangle when it is independently safe. The same planner
+serves Custom Sort and quick ascending/descending commands; protection, merge,
+pivot, table, AutoFilter, coordinate sidecar, row-count, and area checks can
+disable either candidate without weakening the other. Single cells cannot be
+sorted as exact ranges.
+
+The selected range, expanded destination, active column, worksheet, and intent
+are frozen together. Application is authorized only while the controlled live
+selection still matches the original selection, so a host remount or selection
+change invalidates the request before mutation. Header inference now accepts
+only real non-formula text values and no longer treats formatted numbers or
+formula results as headers. Focused Rstest, desktop and compact Playwright, and
+the local-only A3S Test gate cover exact and expanded choices, quick and custom
+paths, focus, accessibility, formula movement, one-step Undo, and browser
+diagnostics. Custom lists, color/icon keys, row-direction sorting, and
+table-aware sorting remain open.
+
 ## Current Presentation Milestone
 
 The first Presentation-animation milestone adds a bounded entrance-animation

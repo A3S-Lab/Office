@@ -95,6 +95,82 @@
   line-height: 1.45;
 }
 
+.work-spreadsheet-sort-range-dialog {
+  --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
+
+  width: min(500px, 100%);
+}
+
+.work-spreadsheet-sort-range-options {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-spreadsheet-sort-range-options legend {
+  margin-bottom: 8px;
+  color: var(--a3s-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-sort-range-options > label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 8px;
+  background: var(--a3s-panel-soft);
+  cursor: pointer;
+}
+
+.work-spreadsheet-sort-range-options > label:has(input:checked) {
+  border-color: var(--work-spreadsheet-accent, #159469);
+  box-shadow: 0 0 0 1px
+    color-mix(in srgb, var(--work-spreadsheet-accent, #159469) 22%, transparent);
+}
+
+.work-spreadsheet-sort-range-options > label:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.work-spreadsheet-sort-range-options input {
+  margin: 2px 0 0;
+  accent-color: var(--work-spreadsheet-accent, #159469);
+}
+
+.work-spreadsheet-sort-range-options label > span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.work-spreadsheet-sort-range-options strong {
+  color: var(--a3s-ink);
+  font-size: 11px;
+}
+
+.work-spreadsheet-sort-range-options small {
+  color: var(--a3s-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.work-spreadsheet-sort-range-options code {
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--work-spreadsheet-accent, #159469);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 560px) {
   .work-spreadsheet-sort-toolbar {
     align-items: stretch;

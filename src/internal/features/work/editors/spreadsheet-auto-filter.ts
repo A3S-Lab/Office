@@ -1,9 +1,13 @@
-import type { Cell, Selection } from '@fortune-sheet/core';
+import type { Selection } from '@fortune-sheet/core';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
 } from '../work-types';
-import { sparseMatrixColumnCount } from '../spreadsheet-sparse';
+import {
+  spreadsheetCurrentRegion,
+  spreadsheetRowHasContent,
+  spreadsheetSheetCellReader,
+} from './spreadsheet-current-region';
 import { finiteSpreadsheetSelection } from './spreadsheet-editor-support';
 
 export interface SpreadsheetAutoFilterRange {
@@ -114,70 +118,13 @@ function spreadsheetFilterHiddenRows(
   return rows;
 }
 
-function spreadsheetCurrentRegion(
-  sheet: WorkSpreadsheetSheet,
-  selection: SpreadsheetAutoFilterRange,
-): SpreadsheetAutoFilterRange | null {
-  const cells = spreadsheetCellReader(sheet);
-  const bounds = spreadsheetUsedBounds(sheet);
-  let startRow = selection.row[0];
-  let endRow = selection.row[1];
-  let startColumn = selection.column[0];
-  let endColumn = selection.column[1];
-  if (
-    startRow > bounds.lastRow ||
-    startColumn > bounds.lastColumn ||
-    !spreadsheetCellHasContent(cells(startRow, startColumn))
-  ) {
-    return null;
-  }
-
-  let changed = true;
-  while (changed) {
-    changed = false;
-    while (
-      startColumn > 0 &&
-      spreadsheetColumnHasContent(cells, startColumn - 1, startRow, endRow)
-    ) {
-      startColumn -= 1;
-      changed = true;
-    }
-    while (
-      endColumn < bounds.lastColumn &&
-      spreadsheetColumnHasContent(cells, endColumn + 1, startRow, endRow)
-    ) {
-      endColumn += 1;
-      changed = true;
-    }
-    while (
-      startRow > 0 &&
-      spreadsheetRowHasContent(cells, startRow - 1, startColumn, endColumn)
-    ) {
-      startRow -= 1;
-      changed = true;
-    }
-    while (
-      endRow < bounds.lastRow &&
-      spreadsheetRowHasContent(cells, endRow + 1, startColumn, endColumn)
-    ) {
-      endRow += 1;
-      changed = true;
-    }
-  }
-
-  return {
-    row: [startRow, endRow],
-    column: [startColumn, endColumn],
-  };
-}
-
 function validSpreadsheetAutoFilterRange(
   sheet: WorkSpreadsheetSheet,
   range: SpreadsheetAutoFilterRange,
 ): boolean {
   if (range.row[1] <= range.row[0]) return false;
   if (spreadsheetAutoFilterIntersectsTable(sheet, range)) return false;
-  const cells = spreadsheetCellReader(sheet);
+  const cells = spreadsheetSheetCellReader(sheet);
   if (
     !spreadsheetRowHasContent(
       cells,
@@ -227,62 +174,6 @@ function spreadsheetRangeIntersectsMerge(
       endColumn >= range.column[0]
     );
   });
-}
-
-function spreadsheetRowHasContent(
-  cellAt: (row: number, column: number) => Cell | null,
-  row: number,
-  startColumn: number,
-  endColumn: number,
-): boolean {
-  for (let column = startColumn; column <= endColumn; column += 1) {
-    if (spreadsheetCellHasContent(cellAt(row, column))) return true;
-  }
-  return false;
-}
-
-function spreadsheetColumnHasContent(
-  cellAt: (row: number, column: number) => Cell | null,
-  column: number,
-  startRow: number,
-  endRow: number,
-): boolean {
-  for (let row = startRow; row <= endRow; row += 1) {
-    if (spreadsheetCellHasContent(cellAt(row, column))) return true;
-  }
-  return false;
-}
-
-function spreadsheetCellHasContent(cell: Cell | null): boolean {
-  if (!cell) return false;
-  return [cell.v, cell.m, cell.f].some(
-    (value) => value !== undefined && value !== null && value !== '',
-  );
-}
-
-function spreadsheetCellReader(
-  sheet: WorkSpreadsheetSheet,
-): (row: number, column: number) => Cell | null {
-  if (sheet.data) {
-    return (row, column) => sheet.data?.[row]?.[column] ?? null;
-  }
-  const cells = new Map(
-    (sheet.celldata ?? []).map((cell) => [`${cell.r}:${cell.c}`, cell.v]),
-  );
-  return (row, column) => cells.get(`${row}:${column}`) ?? null;
-}
-
-function spreadsheetUsedBounds(sheet: WorkSpreadsheetSheet): {
-  lastColumn: number;
-  lastRow: number;
-} {
-  let lastRow = Math.max((sheet.data?.length ?? 1) - 1, 0);
-  let lastColumn = Math.max(sparseMatrixColumnCount(sheet.data) - 1, 0);
-  for (const cell of sheet.celldata ?? []) {
-    lastRow = Math.max(lastRow, cell.r);
-    lastColumn = Math.max(lastColumn, cell.c);
-  }
-  return { lastColumn, lastRow };
 }
 
 function normalizeAutoFilterSelection(

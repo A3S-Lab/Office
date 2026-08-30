@@ -1,7 +1,8 @@
-import { describe, expect, test } from '@rstest/core';
 import type { Cell } from '@fortune-sheet/core';
+import { describe, expect, test } from '@rstest/core';
 import {
   createSpreadsheetSortDialogSource,
+  createSpreadsheetSortRangePlan,
   MAX_SPREADSHEET_SORT_CELLS,
   MAX_SPREADSHEET_SORT_KEYS,
   sortSpreadsheetRows,
@@ -10,6 +11,70 @@ import {
 } from '../src/internal/features/work/editors/spreadsheet-sort';
 
 describe('spreadsheet custom sort', () => {
+  test('plans a bounded WPS expansion from dense and sparse current regions', () => {
+    const dense = createSpreadsheetSortRangePlan(
+      {
+        id: 'dense',
+        name: 'Dense',
+        data: [
+          [{ v: 'Title' }],
+          [],
+          [{ v: 'Name' }, { v: 'Owner' }, { v: 'Score' }],
+          [{ v: 'Alpha' }, { v: 'Ada' }, { v: 90 }],
+          [{ v: 'Beta' }, { v: 'Lin' }, { v: 80 }],
+        ],
+      },
+      { row: [3, 3], column: [1, 1] },
+    );
+
+    expect(dense).toEqual({
+      selectedRange: { row: [3, 3], column: [1, 1] },
+      expandedRange: { row: [2, 4], column: [0, 2] },
+    });
+
+    const sparse = createSpreadsheetSortRangePlan(
+      {
+        id: 'sparse',
+        name: 'Sparse',
+        row: 1_048_576,
+        column: 16_384,
+        celldata: [
+          { r: 8, c: 4, v: { v: 'Name' } },
+          { r: 8, c: 5, v: { v: 'Score' } },
+          { r: 9, c: 4, v: { v: 'Alpha' } },
+          { r: 9, c: 5, v: { v: 90 } },
+          { r: 1_048_575, c: 16_383, v: { v: 'Tail' } },
+        ],
+      },
+      { row: [9, 9], column: [5, 5] },
+    );
+
+    expect(sparse).toEqual({
+      selectedRange: { row: [9, 9], column: [5, 5] },
+      expandedRange: { row: [8, 9], column: [4, 5] },
+    });
+  });
+
+  test('does not warn when the selection already owns its current region', () => {
+    expect(
+      createSpreadsheetSortRangePlan(
+        {
+          id: 'sheet-1',
+          name: 'Sheet 1',
+          data: [
+            [{ v: 'Name' }, { v: 'Score' }],
+            [{ v: 'Alpha' }, { v: 90 }],
+            [{ v: 'Beta' }, { v: 80 }],
+          ],
+        },
+        { row: [0, 2], column: [0, 1] },
+      ),
+    ).toEqual({
+      selectedRange: { row: [0, 2], column: [0, 1] },
+      expandedRange: null,
+    });
+  });
+
   test('keeps the header and applies stable ordered keys to complete rows', () => {
     const header = [cell('Team'), cell('Score'), cell('Name')];
     const alphaZoe = [cell('Alpha', { bl: 1 }), cell(90), cell('Zoe')];
@@ -172,6 +237,42 @@ describe('spreadsheet custom sort', () => {
         keys: [{ column: 3, direction: 'ascending' }],
       },
     });
+  });
+
+  test('does not infer headers from formatted values or formula results', () => {
+    const formatted = createSpreadsheetSortDialogSource(
+      'sheet-1',
+      'Sales',
+      {
+        range: { row: [3, 6], column: [5, 5] },
+        activeColumn: 5,
+      },
+      [
+        [{ v: 0.67, m: '67%' }],
+        [{ v: 0.47, m: '47%' }],
+        [{ v: 0.87, m: '87%' }],
+        [{ v: 1, m: '100%' }],
+      ],
+    );
+    const formulas = createSpreadsheetSortDialogSource(
+      'sheet-1',
+      'Sales',
+      {
+        range: { row: [3, 6], column: [5, 5] },
+        activeColumn: 5,
+      },
+      [
+        [{ f: '=SUM(C4:E4)/3', v: 0.67, m: '67%' }],
+        [{ f: '=AVERAGE(C5:E5)', v: 0.47, m: '47%' }],
+        [{ f: '=AVERAGE(C6:E6)', v: 0.87, m: '87%' }],
+        [{ f: '=AVERAGE(C7:E7)', v: 1, m: '100%' }],
+      ],
+    );
+
+    expect(formatted?.value.hasHeader).toBe(false);
+    expect(formatted?.columns).toEqual([{ column: 5, label: 'F' }]);
+    expect(formulas?.value.hasHeader).toBe(false);
+    expect(formulas?.columns).toEqual([{ column: 5, label: 'F' }]);
   });
 
   test('rejects duplicate, out-of-range, oversized, and malformed sort requests', () => {

@@ -1415,6 +1415,19 @@ Playwright, and local-only A3S Test 1.0.0 cover priority changes, formula
 movement, Undo, focus, accessibility, and clean browser diagnostics without
 adding A3S Test to Actions or Pages.
 
+The thirty-ninth Spreadsheet slice adds the Traditional Office Sort Warning for partial,
+narrow-column, and single-cell selections. Sort and AutoFilter share one
+dense/sparse current-region model; exact and expanded candidates run through
+independent protection, merge, pivot, table, AutoFilter, coordinate-sidecar,
+row-count, and area guards. Expand is the accessible default, while an exact
+single cell remains disabled. Both quick and Custom Sort authenticate the
+frozen destination against the original live selection, so selection changes
+fail before mutation. Deep browser testing also exposed and fixed formatted
+formula results being misclassified as headers. Focused Rstest, desktop/compact
+Playwright, and local-only A3S Test 1.0.0 cover range choice, quick/custom
+transitions, formula movement, Undo, focus, accessibility, and clean browser
+diagnostics without adding A3S Test to Actions or Pages.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,
