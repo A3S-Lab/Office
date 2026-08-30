@@ -185,6 +185,8 @@ describe('spreadsheet left-to-right sort', () => {
       ],
       value: {
         orientation: 'top-to-bottom',
+        caseSensitive: false,
+        textMethod: 'pinyin',
         hasHeader: true,
         keys: [{ index: 2, direction: 'ascending' }],
       },

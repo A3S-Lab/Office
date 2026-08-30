@@ -1,0 +1,180 @@
+suite "office-spreadsheet-text-sort" {
+    version = 1
+
+    scenario "sort-chinese-text-by-stroke-and-case" {
+        name = "Sort Chinese text by stroke and lowercase-first ties, then undo"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-text-sort-fixture" {
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-text-sort"
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "text-range-selected" {
+            text = "A1:C7"
+        }
+
+        click "open-data-tab" {
+            target = role("tab", "数据")
+        }
+
+        click "open-custom-sort" {
+            target = role("button", "自定义排序")
+        }
+
+        click "open-sort-options" {
+            target = role("button", "选项…")
+        }
+
+        expect "pinyin-is-default" {
+            visible = css(".work-spreadsheet-sort-options input[value='pinyin']:checked")
+        }
+
+        expect "case-insensitive-is-default" {
+            unchecked = css(".work-spreadsheet-sort-options input[aria-label='区分大小写']")
+        }
+
+        click "choose-stroke-order" {
+            target = css(".work-spreadsheet-sort-options input[value='stroke']")
+        }
+
+        click "enable-case-sensitive-order" {
+            target = css(".work-spreadsheet-sort-options input[aria-label='区分大小写']")
+        }
+
+        accessibility "text-sort-options-accessibility" {
+            path = "evidence/spreadsheet-text-sort-options.json"
+            interactive = true
+        }
+
+        click "apply-text-options" {
+            target = css(".work-spreadsheet-sort-options-dialog button[type='submit']")
+        }
+
+        click "add-code-tie-breaker" {
+            target = role("button", "添加条件")
+        }
+
+        expect "code-column-is-secondary" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 列']:has(option[value='1']:checked)")
+        }
+
+        accessibility "text-sort-dialog-accessibility" {
+            path = "evidence/spreadsheet-text-sort-dialog.json"
+            interactive = true
+        }
+
+        click "apply-text-sort" {
+            target = css(".work-spreadsheet-sort-dialog button[type='submit']")
+        }
+
+        expect "sort-focus-restored" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='自定义排序']:focus")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "go-to-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "inspect-first-stroke-row" {
+            key = "ArrowDown"
+        }
+
+        expect "fewest-strokes-is-first" {
+            text = "丁"
+        }
+
+        press "inspect-first-moved-formula" {
+            key = "Control+ArrowRight"
+        }
+
+        expect "stroke-sorted-formula-is-rebased" {
+            text = "=B2&\"-D\""
+        }
+
+        press "return-to-start" {
+            key = "Control+Home"
+        }
+
+        press "inspect-first-data-row" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-first-wang-row" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-case-tie-breaker" {
+            key = "ArrowRight"
+        }
+
+        expect "lowercase-precedes-uppercase" {
+            text = "a"
+        }
+
+        press "undo-text-sort" {
+            key = "Control+z"
+        }
+
+        expect "grid-focus-restored-after-undo" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "inspect-restored-row-without-delay" {
+            key = "ArrowLeft"
+        }
+
+        expect "original-third-row-is-restored" {
+            text = "阿"
+        }
+
+        press "return-to-original-first-row" {
+            key = "Control+Home"
+        }
+
+        press "inspect-original-first-row" {
+            key = "ArrowDown"
+        }
+
+        expect "original-first-name-is-restored" {
+            text = "赵"
+        }
+
+        press "inspect-original-formula" {
+            key = "Control+ArrowRight"
+        }
+
+        expect "original-formula-is-restored" {
+            text = "=B2&\"-Z\""
+        }
+
+        accessibility "spreadsheet-after-text-sort-accessibility" {
+            path = "evidence/spreadsheet-after-text-sort.json"
+            interactive = true
+        }
+
+        console "text-sort-console" {
+            path = "diagnostics/spreadsheet-text-sort-console.json"
+            clear = false
+        }
+
+        page_errors "text-sort-page-errors" {
+            path = "diagnostics/spreadsheet-text-sort-page-errors.json"
+            clear = false
+        }
+    }
+}

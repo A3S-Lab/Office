@@ -1,11 +1,11 @@
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { SpreadsheetSortDialog } from '../src/internal/features/work/editors/spreadsheet-sort-dialog';
 import type {
   SpreadsheetSortDialogSource,
   SpreadsheetSortDialogValue,
 } from '../src/internal/features/work/editors/spreadsheet-sort';
 import { SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS } from '../src/internal/features/work/editors/spreadsheet-sort-custom-list';
+import { SpreadsheetSortDialog } from '../src/internal/features/work/editors/spreadsheet-sort-dialog';
 
 test('switches to WPS row sorting and authors horizontal appearance priorities', () => {
   const applied: SpreadsheetSortDialogValue[] = [];
@@ -30,6 +30,16 @@ test('switches to WPS row sorting and authors horizontal appearance priorities',
   expect(
     within(options).getByRole('radio', { name: /按列排序/ }),
   ).toBeChecked();
+  expect(
+    within(options).getByRole('radio', { name: '拼音排序' }),
+  ).toBeChecked();
+  expect(
+    within(options).getByRole('checkbox', { name: '区分大小写' }),
+  ).not.toBeChecked();
+  fireEvent.click(within(options).getByRole('radio', { name: '笔画排序' }));
+  fireEvent.click(
+    within(options).getByRole('checkbox', { name: '区分大小写' }),
+  );
   fireEvent.click(within(options).getByRole('radio', { name: /按行排序/ }));
   fireEvent.click(within(options).getByRole('button', { name: '确定' }));
 
@@ -67,6 +77,8 @@ test('switches to WPS row sorting and authors horizontal appearance priorities',
   expect(applied).toEqual([
     {
       orientation: 'left-to-right',
+      caseSensitive: true,
+      textMethod: 'stroke',
       hasHeader: false,
       keys: [
         {
@@ -76,6 +88,59 @@ test('switches to WPS row sorting and authors horizontal appearance priorities',
           position: 'last',
         },
         { index: 0, direction: 'ascending' },
+      ],
+    },
+  ]);
+});
+
+test('changes text comparison without resetting existing sort levels', () => {
+  const source = sortSource();
+  const applied: SpreadsheetSortDialogValue[] = [];
+  render(
+    <SpreadsheetSortDialog
+      source={{
+        ...source,
+        value: {
+          ...source.value,
+          keys: [
+            { index: 0, direction: 'ascending' },
+            { index: 1, direction: 'descending' },
+          ],
+        },
+      }}
+      restoreFocusTarget={() => null}
+      onApply={(value) => {
+        applied.push(value);
+        return true;
+      }}
+      onClose={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '选项…' }));
+  const options = screen.getByRole('dialog', { name: '排序选项' });
+  fireEvent.click(within(options).getByRole('radio', { name: '笔画排序' }));
+  fireEvent.click(
+    within(options).getByRole('checkbox', { name: '区分大小写' }),
+  );
+  fireEvent.click(within(options).getByRole('button', { name: '确定' }));
+
+  expect(screen.getByRole('combobox', { name: '排序条件 1 列' })).toHaveValue(
+    '0',
+  );
+  expect(screen.getByRole('combobox', { name: '排序条件 2 列' })).toHaveValue(
+    '1',
+  );
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+  expect(applied).toEqual([
+    {
+      orientation: 'top-to-bottom',
+      caseSensitive: true,
+      textMethod: 'stroke',
+      hasHeader: true,
+      keys: [
+        { index: 0, direction: 'ascending' },
+        { index: 1, direction: 'descending' },
       ],
     },
   ]);
@@ -122,6 +187,8 @@ function sortSource(): SpreadsheetSortDialogSource {
     ],
     value: {
       orientation: 'top-to-bottom',
+      caseSensitive: false,
+      textMethod: 'pinyin',
       hasHeader: true,
       keys: [{ index: 0, direction: 'ascending' }],
     },

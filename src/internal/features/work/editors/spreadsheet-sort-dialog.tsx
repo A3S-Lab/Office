@@ -7,28 +7,29 @@ import {
   type SpreadsheetSortDialogSource,
   type SpreadsheetSortDialogValue,
   type SpreadsheetSortKey,
+  type SpreadsheetSortOptions,
 } from './spreadsheet-sort';
 import {
+  type SpreadsheetSortAppearanceField,
+  type SpreadsheetSortAppearanceTarget,
   spreadsheetSortAppearanceFields,
   spreadsheetSortAppearanceTargets,
   spreadsheetSortAppearanceTargetsEqual,
-  type SpreadsheetSortAppearanceField,
-  type SpreadsheetSortAppearanceTarget,
 } from './spreadsheet-sort-appearance';
 import {
   createSpreadsheetSortCustomList,
   MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS,
   mergeSpreadsheetSortCustomLists,
   parseSpreadsheetSortCustomList,
-  spreadsheetSortCustomListsEqual,
   type SpreadsheetSortCustomList,
+  spreadsheetSortCustomListsEqual,
 } from './spreadsheet-sort-custom-list';
 import { SpreadsheetSortCustomListEditor } from './spreadsheet-sort-custom-list-editor';
 import { SpreadsheetSortOptionsDialog } from './spreadsheet-sort-options-dialog';
 import {
   nextSpreadsheetSortKey,
-  spreadsheetSortAppearanceKey,
   SpreadsheetSortOrderControls,
+  spreadsheetSortAppearanceKey,
 } from './spreadsheet-sort-order-controls';
 
 interface SpreadsheetSortCustomListDraft {
@@ -54,6 +55,8 @@ export function SpreadsheetSortDialog({
     hasHeader: source.value.hasHeader,
     keys: source.value.keys.map(cloneSpreadsheetSortKey),
     orientation: source.value.orientation,
+    caseSensitive: source.value.caseSensitive,
+    textMethod: source.value.textMethod,
   }));
   const [verticalHasHeader, setVerticalHasHeader] = useState(
     source.value.hasHeader,
@@ -113,6 +116,8 @@ export function SpreadsheetSortDialog({
         hasHeader: value.hasHeader,
         keys: value.keys.map(cloneSpreadsheetSortKey),
         orientation: value.orientation,
+        caseSensitive: value.caseSensitive,
+        textMethod: value.textMethod,
       })
     ) {
       onClose();
@@ -179,15 +184,20 @@ export function SpreadsheetSortDialog({
     setCustomListDraft(null);
   };
 
-  const applyOrientation = (
-    orientation: SpreadsheetSortDialogValue['orientation'],
-  ) => {
+  const applyOptions = (options: SpreadsheetSortOptions) => {
     setOptionsOpen(false);
-    if (orientation === value.orientation) return;
+    if (options.orientation === value.orientation) {
+      setValue((current) => ({
+        ...current,
+        caseSensitive: options.caseSensitive,
+        textMethod: options.textMethod,
+      }));
+      return;
+    }
     const nextFields =
-      orientation === 'top-to-bottom' ? source.columns : source.rows;
+      options.orientation === 'top-to-bottom' ? source.columns : source.rows;
     const preferredIndex =
-      orientation === 'top-to-bottom'
+      options.orientation === 'top-to-bottom'
         ? (source.value.keys[0]?.index ?? nextFields[0]?.index)
         : source.activeRow;
     const index =
@@ -196,8 +206,9 @@ export function SpreadsheetSortDialog({
     if (index === undefined) return;
     setCustomListDraft(null);
     setValue({
-      orientation,
-      hasHeader: orientation === 'top-to-bottom' ? verticalHasHeader : false,
+      ...options,
+      hasHeader:
+        options.orientation === 'top-to-bottom' ? verticalHasHeader : false,
       keys: [{ index, direction: 'ascending' }],
     });
   };
@@ -409,15 +420,19 @@ export function SpreadsheetSortDialog({
             })}
           </div>
           <p className="work-spreadsheet-sort-note">
-            可按值、自定义序列、有效颜色或条件格式图标排序。按列排序移动整行；按行排序移动整列且不保留标题列。值排序的空白始终置于末尾，新建序列仅在本次编辑器会话中复用，每次排序作为一个可撤销操作提交。
+            可按值、自定义序列、有效颜色或条件格式图标排序。文本值可按拼音或笔画比较，并可区分大小写；数字文本按字符顺序排列。按列排序移动整行；按行排序移动整列且不保留标题列。空白始终置于末尾，新建序列仅在本次编辑器会话中复用，每次排序作为一个可撤销操作提交。
           </p>
         </form>
       </Dialog>
       {optionsOpen ? (
         <SpreadsheetSortOptionsDialog
-          orientation={value.orientation}
+          value={{
+            orientation: value.orientation,
+            caseSensitive: value.caseSensitive,
+            textMethod: value.textMethod,
+          }}
           restoreFocusTarget={() => optionsButtonRef.current}
-          onApply={applyOrientation}
+          onApply={applyOptions}
           onClose={() => setOptionsOpen(false)}
         />
       ) : null}

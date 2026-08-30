@@ -276,6 +276,8 @@ export function useSpreadsheetSort({
           sheetId: surface.source.sheetId,
           range: surface.source.range,
           orientation: value.orientation,
+          caseSensitive: value.caseSensitive,
+          textMethod: value.textMethod,
           hasHeader: value.hasHeader,
           keys: value.keys,
         },

@@ -1,23 +1,24 @@
 import type { Cell } from '@fortune-sheet/core';
 import { translateSpreadsheetFormula } from './spreadsheet-paste-special-cell';
 import {
-  createSpreadsheetSortDirectAppearanceRows,
-  spreadsheetSortCellMatchesAppearance,
-  type SpreadsheetSortCellAppearance,
-  type SpreadsheetSortAppearancePosition,
-  type SpreadsheetSortAppearanceRows,
-  type SpreadsheetSortAppearanceTarget,
-} from './spreadsheet-sort-appearance';
-import { spreadsheetSortCustomListMatchKey } from './spreadsheet-sort-custom-list';
-import {
-  spreadsheetSortAppearanceRowsMatch,
-  spreadsheetSortError,
   type SpreadsheetSortDirection,
   type SpreadsheetSortKey,
   type SpreadsheetSortRequest,
   type SpreadsheetSortResult,
+  spreadsheetSortAppearanceRowsMatch,
+  spreadsheetSortError,
   validateSpreadsheetSortRequest,
 } from './spreadsheet-sort';
+import {
+  createSpreadsheetSortDirectAppearanceRows,
+  type SpreadsheetSortAppearancePosition,
+  type SpreadsheetSortAppearanceRows,
+  type SpreadsheetSortAppearanceTarget,
+  type SpreadsheetSortCellAppearance,
+  spreadsheetSortCellMatchesAppearance,
+} from './spreadsheet-sort-appearance';
+import { createSpreadsheetSortTextComparator } from './spreadsheet-sort-collation';
+import { spreadsheetSortCustomListMatchKey } from './spreadsheet-sort-custom-list';
 
 interface SpreadsheetSortItem {
   appearance: readonly (SpreadsheetSortCellAppearance | undefined)[];
@@ -50,7 +51,13 @@ export function sortSpreadsheetMatrix(
 ): SpreadsheetSortResult {
   const validation = validateSpreadsheetSortRequest(request);
   if (!validation.ok) return validation;
-  const { range, hasHeader, keys, orientation } = validation.request;
+  const { caseSensitive, range, hasHeader, keys, orientation, textMethod } =
+    validation.request;
+  const compareText = createSpreadsheetSortTextComparator({
+    caseSensitive,
+    textMethod,
+  });
+  if (!compareText) return spreadsheetSortError('unsupported-text-method');
   const width = range.column[1] - range.column[0] + 1;
   const height = range.row[1] - range.row[0] + 1;
   if (source.length !== height || source.some((row) => row.length !== width)) {
@@ -101,6 +108,7 @@ export function sortSpreadsheetMatrix(
         left.appearance[key.offset],
         right.appearance[key.offset],
         key,
+        compareText,
       );
       if (order) return order;
     }
@@ -170,6 +178,7 @@ function compareSpreadsheetSortCells(
   leftAppearance: SpreadsheetSortAppearanceRows[number][number] | undefined,
   rightAppearance: SpreadsheetSortAppearanceRows[number][number] | undefined,
   key: SpreadsheetSortCompiledKey,
+  compareText: (left: string, right: string) => number,
 ): number {
   if (key.kind === 'appearance') {
     const leftMatches = spreadsheetSortCellMatchesAppearance(
@@ -204,7 +213,7 @@ function compareSpreadsheetSortCells(
   const order =
     typeof leftValue === 'number' && typeof rightValue === 'number'
       ? leftValue - rightValue
-      : spreadsheetSortCollator.compare(String(leftValue), String(rightValue));
+      : compareText(String(leftValue), String(rightValue));
   return key.kind === 'value' && key.direction === 'descending'
     ? -order
     : order;
@@ -281,8 +290,3 @@ function translateSpreadsheetSortItem(
   }
   return translated;
 }
-
-const spreadsheetSortCollator = new Intl.Collator('zh-CN', {
-  numeric: true,
-  sensitivity: 'base',
-});

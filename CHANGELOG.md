@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added offline Traditional Office-compatible Spreadsheet text comparison
+  controls to **Sort Options**. Value keys can use Simplified Chinese pinyin or
+  stroke order, optionally distinguish case with lowercase before uppercase,
+  and keep numeric text in lexical order while real numbers remain numeric.
+- Added a fail-closed `spreadsheet-sort-collation` boundary shared by
+  top-to-bottom and left-to-right sorting. Focused Rstest, desktop/compact
+  Playwright, and local-only A3S Test cover both Chinese orders, case ties,
+  formula movement, one-step Undo, accessibility, and empty diagnostics. Deep
+  testing also fixed direct grid focus loss when a controlled workbook remount
+  replaces the focused overlay.
 - Added Traditional Office-compatible Spreadsheet **Sort Options** direction controls. Custom
   Sort can now switch from top-to-bottom row movement to left-to-right complete
   column movement, exposes absolute row keys, disables header retention in the

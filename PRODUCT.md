@@ -665,6 +665,25 @@ the pinned local-only A3S Test gate cover multi-row priority, complete-column
 movement, formula translation, Undo, focus, responsive containment,
 accessibility, and empty browser diagnostics.
 
+The fifty-third milestone completes the common offline text comparison controls
+in Spreadsheet Sort Options. Value keys now choose Simplified Chinese pinyin or
+stroke order and can distinguish case; the case-sensitive ascending contract
+places lowercase before uppercase. Text containing digits uses lexical
+character order, while real numeric cells continue to compare numerically and
+blank cells remain last.
+
+One `spreadsheet-sort-collation` boundary compiles the requested local
+`Intl.Collator` once per accepted operation and is reused by the same stable
+matrix comparator in both orientations. Invalid settings and runtimes without
+the requested collation fail before mutation instead of silently falling back.
+The dialog request carries normalized options, while older command callers that
+omit them retain pinyin, case-insensitive defaults. Focused model, dialog,
+command, and focus Rstest, desktop/compact repeated Playwright, and the pinned
+local-only A3S Test gate cover pinyin/stroke differences, lowercase ties,
+numeric text, formula translation, Undo, responsive containment,
+accessibility, and empty browser diagnostics. Deep testing also closes the
+controlled-remount race for a grid overlay focused directly by a host or test.
+
 ## Current Presentation Milestone
 
 The first Presentation-animation milestone adds a bounded entrance-animation

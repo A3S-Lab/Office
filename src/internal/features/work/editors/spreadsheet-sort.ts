@@ -12,24 +12,33 @@ import {
   createSpreadsheetSortDirectAppearanceRows,
   normalizeSpreadsheetSortColor,
   normalizeSpreadsheetSortIcon,
-  spreadsheetSortAppearanceTargetValue,
   type SpreadsheetSortAppearanceKind,
   type SpreadsheetSortAppearancePosition,
   type SpreadsheetSortAppearanceRows,
   type SpreadsheetSortIconTarget,
+  spreadsheetSortAppearanceTargetValue,
 } from './spreadsheet-sort-appearance';
+import {
+  DEFAULT_SPREADSHEET_SORT_TEXT_OPTIONS,
+  isSpreadsheetSortTextMethod,
+  type SpreadsheetSortTextOptions,
+} from './spreadsheet-sort-collation';
 import {
   mergeSpreadsheetSortCustomLists,
   type SpreadsheetSortCustomList,
   validateSpreadsheetSortCustomList,
 } from './spreadsheet-sort-custom-list';
 
-export type { SpreadsheetSortCustomList } from './spreadsheet-sort-custom-list';
 export type {
   SpreadsheetSortAppearanceRows,
   SpreadsheetSortCellAppearance,
   SpreadsheetSortIconTarget,
 } from './spreadsheet-sort-appearance';
+export type {
+  SpreadsheetSortTextMethod,
+  SpreadsheetSortTextOptions,
+} from './spreadsheet-sort-collation';
+export type { SpreadsheetSortCustomList } from './spreadsheet-sort-custom-list';
 
 export const MAX_SPREADSHEET_SORT_KEYS = 64;
 export const MAX_SPREADSHEET_SORT_CELLS = 1_000_000;
@@ -77,10 +86,13 @@ export type SpreadsheetSortKey =
       sortOn: 'icon';
     };
 
-export interface SpreadsheetSortDialogValue {
+export interface SpreadsheetSortOptions extends SpreadsheetSortTextOptions {
+  orientation: SpreadsheetSortOrientation;
+}
+
+export interface SpreadsheetSortDialogValue extends SpreadsheetSortOptions {
   hasHeader: boolean;
   keys: SpreadsheetSortKey[];
-  orientation: SpreadsheetSortOrientation;
 }
 
 export interface SpreadsheetSortTarget {
@@ -122,7 +134,17 @@ export interface SpreadsheetSortRangeDialogSource {
   sheetName: string;
 }
 
-export interface SpreadsheetSortRequest extends SpreadsheetSortDialogValue {
+export type SpreadsheetSortRequest = Omit<
+  SpreadsheetSortDialogValue,
+  keyof SpreadsheetSortTextOptions
+> &
+  Partial<SpreadsheetSortTextOptions> & {
+    range: SpreadsheetCellRange;
+    sheetId: string;
+  };
+
+export interface SpreadsheetSortNormalizedRequest
+  extends SpreadsheetSortDialogValue {
   range: SpreadsheetCellRange;
   sheetId: string;
 }
@@ -150,22 +172,25 @@ export type SpreadsheetSortErrorCode =
   | 'duplicate-key'
   | 'formula-reference-out-of-range'
   | 'invalid-appearance'
+  | 'invalid-case-sensitivity'
   | 'invalid-custom-list'
   | 'invalid-direction'
   | 'invalid-header'
   | 'invalid-matrix'
   | 'invalid-orientation'
   | 'invalid-range'
+  | 'invalid-text-method'
   | 'missing-key'
   | 'not-enough-columns'
   | 'not-enough-rows'
   | 'range-too-large'
   | 'row-out-of-range'
   | 'too-many-keys'
+  | 'unsupported-text-method'
   | 'unsupported-linked-cell';
 
 export type SpreadsheetSortValidationResult =
-  | { ok: true; request: SpreadsheetSortRequest }
+  | { ok: true; request: SpreadsheetSortNormalizedRequest }
   | { code: SpreadsheetSortErrorCode; message: string; ok: false };
 
 export type SpreadsheetSortResult =
@@ -255,6 +280,7 @@ export function createSpreadsheetSortDialogSource(
     }),
     value: {
       orientation: 'top-to-bottom',
+      ...DEFAULT_SPREADSHEET_SORT_TEXT_OPTIONS,
       hasHeader,
       keys: [{ index: activeColumn, direction: 'ascending' }],
     },
@@ -277,6 +303,20 @@ export function validateSpreadsheetSortRequest(
     request.orientation !== 'left-to-right'
   ) {
     return spreadsheetSortError('invalid-orientation');
+  }
+  const caseSensitive =
+    request.caseSensitive === undefined
+      ? DEFAULT_SPREADSHEET_SORT_TEXT_OPTIONS.caseSensitive
+      : request.caseSensitive;
+  if (typeof caseSensitive !== 'boolean') {
+    return spreadsheetSortError('invalid-case-sensitivity');
+  }
+  const textMethod =
+    request.textMethod === undefined
+      ? DEFAULT_SPREADSHEET_SORT_TEXT_OPTIONS.textMethod
+      : request.textMethod;
+  if (!isSpreadsheetSortTextMethod(textMethod)) {
+    return spreadsheetSortError('invalid-text-method');
   }
   if (request.orientation === 'left-to-right' && request.hasHeader) {
     return spreadsheetSortError('invalid-header');
@@ -390,6 +430,8 @@ export function validateSpreadsheetSortRequest(
       sheetId: request.sheetId,
       range,
       orientation: request.orientation,
+      caseSensitive,
+      textMethod,
       hasHeader: Boolean(request.hasHeader),
       keys,
     },
@@ -424,18 +466,22 @@ export function spreadsheetSortError(
       '排序会使相对公式引用超出工作表范围，因此未应用任何更改。',
     'invalid-appearance':
       '外观排序条件或当前颜色/图标快照无效，因此未应用任何更改。',
+    'invalid-case-sensitivity': '请选择有效的大小写比较规则。',
     'invalid-custom-list': '自定义排序序列无效，请检查项目数量、长度和重复项。',
     'invalid-direction': '请选择有效的升序或降序次序。',
     'invalid-header': '按行排序会移动所有选定列，不能保留标题列。',
     'invalid-matrix': '排序只能应用到已完整读取的矩形区域。',
     'invalid-orientation': '请选择有效的按列或按行排序方向。',
     'invalid-range': '请选择一个有效的连续单元格区域。',
+    'invalid-text-method': '请选择拼音排序或笔画排序。',
     'missing-key': '请至少添加一个排序条件。',
     'not-enough-columns': '当前区域没有足够的数据列可供按行排序。',
     'not-enough-rows': '当前区域没有足够的数据行可供排序。',
     'range-too-large': `一次最多可排序 ${MAX_SPREADSHEET_SORT_CELLS.toLocaleString('en-US')} 个单元格。`,
     'row-out-of-range': '排序行必须位于当前选定区域内。',
     'too-many-keys': `一次最多可设置 ${MAX_SPREADSHEET_SORT_KEYS} 个排序条件。`,
+    'unsupported-text-method':
+      '当前运行环境不支持所选中文排序方法，因此未应用任何更改。',
     'unsupported-linked-cell':
       '当前区域包含坐标关联的超链接，尚不能安全地随排序移动。',
   };

@@ -1990,6 +1990,46 @@ describe('spreadsheet command controller', () => {
     expect(fixture.workbook.pastes).toHaveLength(1);
   });
 
+  test('applies WPS stroke collation through one native range write', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 5], column: [0, 0] }];
+    fixture.workbook.cells = [
+      [{ v: '姓名' }],
+      [{ v: '赵' }],
+      [{ v: '阿' }],
+      [{ v: '丁' }],
+      [{ v: '安' }],
+      [{ v: '王' }],
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(
+      editor.commands.applyCustomSort({
+        sheetId: 'sheet-1',
+        range: { row: [0, 5], column: [0, 0] },
+        orientation: 'top-to-bottom',
+        caseSensitive: true,
+        textMethod: 'stroke',
+        hasHeader: true,
+        keys: [{ index: 0, direction: 'ascending' }],
+      }),
+    ).toBe(true);
+    expect(fixture.workbook.pastes).toEqual([
+      {
+        range: { row: [0, 5], column: [0, 0] },
+        sheetId: 'sheet-1',
+        values: [
+          [{ v: '姓名' }],
+          [{ v: '丁' }],
+          [{ v: '王' }],
+          [{ v: '安' }],
+          [{ v: '阿' }],
+          [{ v: '赵' }],
+        ],
+      },
+    ]);
+  });
+
   test('applies effective conditional-icon sorting with formatting and formulas intact', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [{ row: [0, 4], column: [0, 2] }];

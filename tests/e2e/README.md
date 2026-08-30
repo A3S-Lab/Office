@@ -617,6 +617,16 @@ bun run test:e2e:spreadsheet-row-sort:check
 bun run test:e2e:spreadsheet-row-sort
 ```
 
+`spreadsheet-text-sort.acl` selects Traditional Office-compatible stroke and
+case-sensitive comparison, applies a lowercase-first tie breaker, verifies a
+moved relative formula and immediate post-remount keyboard focus, then undoes
+the single batch mutation:
+
+```bash
+bun run test:e2e:spreadsheet-text-sort:check
+bun run test:e2e:spreadsheet-text-sort
+```
+
 The Traditional Office-style Spreadsheet partial-range Sort Warning has a focused local gate:
 
 ```bash

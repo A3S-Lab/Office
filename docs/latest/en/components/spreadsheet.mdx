@@ -281,13 +281,17 @@ before publishing table-specific latency or memory targets.
 selection and its worksheet identity when the dialog opens. The Traditional Office-compatible
 **Options** dialog switches between **Sort top to bottom**, whose column keys
 move complete rows, and **Sort left to right**, whose row keys move complete
-columns. Top-to-bottom mode detects a probable header row, keeps that choice
+columns. The same dialog chooses Simplified Chinese **Pinyin** or **Stroke**
+text order and can enable case-sensitive comparison; pinyin and
+case-insensitive comparison are the defaults. Top-to-bottom mode detects a probable header row, keeps that choice
 editable, and starts with the active column. Left-to-right mode starts with the
 active row and disables header retention because every selected column moves.
 Users can add, remove, or reorder as many as 64 unique sort keys. Each value key
-sorts ascending or descending. Finite numbers use numeric order, text uses
-natural Simplified Chinese collation, equal records retain their source order,
-and blank cells stay at the end in both directions.
+sorts ascending or descending. Finite numbers use numeric order; text uses the
+selected local collation, and text containing digits stays lexical (`K1`,
+`K100`, `K11`, `K2`). Case-sensitive ascending order places a lowercase form
+before its uppercase form. Equal records retain their source order, and blank
+cells stay at the end in both directions.
 
 Each key can instead use one of seven built-in Chinese or English month and
 weekday sequences, or a user-authored sequence entered with one item per line
@@ -372,6 +376,10 @@ Undo, focus, accessibility, and empty browser diagnostics.
 `tests/e2e/spreadsheet-row-sort.acl` switches direction through Sort Options,
 applies two row keys to complete columns, and verifies horizontal formula
 translation, one-step Undo, focus, accessibility, and empty diagnostics.
+`tests/e2e/spreadsheet-text-sort.acl` selects stroke and case-sensitive text
+comparison, verifies lowercase tie-breaking and a translated formula, then
+checks immediate post-remount keyboard focus, Undo, accessibility, and clean
+diagnostics.
 GitHub Actions and Pages do not install or invoke A3S Test.
 
 ## Find and Go To

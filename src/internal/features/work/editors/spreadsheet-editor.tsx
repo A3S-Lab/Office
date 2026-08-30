@@ -1763,6 +1763,12 @@ function SpreadsheetEditorSurface({
         <div
           ref={spreadsheetCanvasRef}
           className="work-spreadsheet-canvas"
+          onFocusCapture={(event) =>
+            preserveSpreadsheetGridFocus(
+              spreadsheetCanvasRef.current,
+              event.target,
+            )
+          }
           onClickCapture={(event) => {
             if (!spreadsheetHeaderMenuTrigger(event.target)) return;
             openSpreadsheetContextMenu(event, 'column');
@@ -2139,6 +2145,22 @@ export function focusSpreadsheetGrid(
   spreadsheetFocusCleanups.set(container, stopObservingFocusTarget);
 
   restoreFocus(forceInitial);
+}
+
+export function preserveSpreadsheetGridFocus(
+  container: HTMLElement | null,
+  target: EventTarget | null,
+): void {
+  if (
+    !(target instanceof Element) ||
+    !target.matches('.fortune-sheet-overlay, .fortune-cell-area')
+  ) {
+    return;
+  }
+  focusSpreadsheetGrid(container, {
+    focusOrigin: target,
+    forceInitial: false,
+  });
 }
 
 export function spreadsheetCommandsWithGridFocus(

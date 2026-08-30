@@ -1467,6 +1467,19 @@ Focused Rstest, desktop/compact Playwright, and the local-only pinned A3S Test
 movement, atomic failure, Undo, focus, responsive containment, accessibility,
 and clean diagnostics without adding A3S Test to Actions or Pages.
 
+The forty-third Spreadsheet slice completes common offline text comparison in
+Sort Options. One typed collation model normalizes pinyin/stroke and case
+sensitivity, compiles one local Simplified Chinese comparator per request,
+keeps numeric text lexical while real numbers remain numeric, and rejects an
+unsupported collation before mutation. Both row and column movement reuse the
+same stable comparator. Deep browser repetition also exposed and fixed a
+controlled-remount race by enrolling directly focused grid overlays in the
+existing bounded focus handoff. Focused Rstest, desktop/compact repeated
+Playwright, and the local-only pinned A3S Test 1.0.0 gate cover both Chinese
+orders, lowercase ties, formulas, Undo, immediate keyboard focus,
+accessibility, and clean diagnostics without adding A3S Test to Actions or
+Pages.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

@@ -80,6 +80,8 @@ test('authenticates an expanded range before opening and applying Custom Sort', 
         sheetId: 'sheet-1',
         range: { row: [0, 2], column: [0, 2] },
         orientation: 'top-to-bottom',
+        caseSensitive: false,
+        textMethod: 'pinyin',
         hasHeader: true,
         keys: [{ index: 1, direction: 'ascending' }],
       },
@@ -265,6 +267,8 @@ test('authors an effective conditional-icon key from the controlled sheet snapsh
       sheetId: 'sheet-1',
       range: { row: [0, 2], column: [0, 2] },
       orientation: 'top-to-bottom',
+      caseSensitive: false,
+      textMethod: 'pinyin',
       hasHeader: true,
       keys: [
         {

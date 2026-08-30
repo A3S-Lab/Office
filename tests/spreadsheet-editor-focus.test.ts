@@ -3,6 +3,7 @@ import { waitFor } from '@testing-library/react';
 import type { SpreadsheetEditorCommands } from '../src/internal/features/work/editors/spreadsheet-command-controller';
 import {
   focusSpreadsheetGrid,
+  preserveSpreadsheetGridFocus,
   spreadsheetCommandsWithGridFocus,
 } from '../src/internal/features/work/editors/spreadsheet-editor';
 import {
@@ -61,6 +62,26 @@ test('restores focus to the interactive spreadsheet overlay', async () => {
   expect(document.activeElement).toBe(overlay);
 
   await waitForAnimationFrames(3);
+  const remountedOverlay = document.createElement('main');
+  remountedOverlay.className = 'fortune-sheet-overlay';
+  remountedOverlay.tabIndex = -1;
+  overlay.replaceWith(remountedOverlay);
+  await waitForAnimationFrames(3);
+
+  expect(document.activeElement).toBe(remountedOverlay);
+  container.remove();
+});
+
+test('preserves directly focused grid overlays across a controlled remount', async () => {
+  const container = document.createElement('div');
+  const overlay = document.createElement('main');
+  overlay.className = 'fortune-sheet-overlay';
+  overlay.tabIndex = -1;
+  container.append(overlay);
+  document.body.append(container);
+  overlay.focus();
+
+  preserveSpreadsheetGridFocus(container, overlay);
   const remountedOverlay = document.createElement('main');
   remountedOverlay.className = 'fortune-sheet-overlay';
   remountedOverlay.tabIndex = -1;

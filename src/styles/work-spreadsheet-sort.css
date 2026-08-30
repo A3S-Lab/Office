@@ -2,6 +2,11 @@
   inline-size: min(420px, calc(100vw - 32px));
 }
 
+.work-spreadsheet-sort-options-form {
+  display: grid;
+  gap: 16px;
+}
+
 .work-spreadsheet-sort-options {
   display: grid;
   gap: 8px;

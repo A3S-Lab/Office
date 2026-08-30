@@ -1,19 +1,19 @@
 import { type FormEvent, useId, useState } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
-import type { SpreadsheetSortOrientation } from './spreadsheet-sort';
+import type { SpreadsheetSortOptions } from './spreadsheet-sort';
 
 export function SpreadsheetSortOptionsDialog({
-  orientation,
+  value,
   restoreFocusTarget,
   onApply,
   onClose,
 }: {
-  orientation: SpreadsheetSortOrientation;
+  value: SpreadsheetSortOptions;
   restoreFocusTarget: () => HTMLElement | null;
-  onApply: (orientation: SpreadsheetSortOrientation) => void;
+  onApply: (value: SpreadsheetSortOptions) => void;
   onClose: () => void;
 }) {
-  const [draft, setDraft] = useState(orientation);
+  const [draft, setDraft] = useState(value);
   const formId = useId();
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -23,7 +23,7 @@ export function SpreadsheetSortOptionsDialog({
   return (
     <Dialog
       title="排序选项"
-      description="选择数据在选定区域内的排序方向。"
+      description="选择文本比较规则和数据在选定区域内的排序方向。"
       className="work-spreadsheet-sort-options-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
@@ -38,7 +38,73 @@ export function SpreadsheetSortOptionsDialog({
         </>
       }
     >
-      <form id={formId} onSubmit={submit}>
+      <form
+        id={formId}
+        className="work-spreadsheet-sort-options-form"
+        onSubmit={submit}
+      >
+        <fieldset className="work-spreadsheet-sort-options">
+          <legend>文本比较</legend>
+          <label>
+            <input
+              type="checkbox"
+              aria-label="区分大小写"
+              checked={draft.caseSensitive}
+              onChange={(event) => {
+                const caseSensitive = event.currentTarget.checked;
+                setDraft((current) => ({
+                  ...current,
+                  caseSensitive,
+                }));
+              }}
+            />
+            <span>
+              <strong>区分大小写</strong>
+              <small>升序时，同一字母的小写形式排在大写形式之前。</small>
+            </span>
+          </label>
+        </fieldset>
+        <fieldset className="work-spreadsheet-sort-options">
+          <legend>方法</legend>
+          <label>
+            <input
+              type="radio"
+              name="spreadsheet-sort-text-method"
+              value="pinyin"
+              aria-label="拼音排序"
+              checked={draft.textMethod === 'pinyin'}
+              onChange={() =>
+                setDraft((current) => ({
+                  ...current,
+                  textMethod: 'pinyin',
+                }))
+              }
+            />
+            <span>
+              <strong>拼音排序</strong>
+              <small>按汉字拼音和文本字符顺序比较。</small>
+            </span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="spreadsheet-sort-text-method"
+              value="stroke"
+              aria-label="笔画排序"
+              checked={draft.textMethod === 'stroke'}
+              onChange={() =>
+                setDraft((current) => ({
+                  ...current,
+                  textMethod: 'stroke',
+                }))
+              }
+            />
+            <span>
+              <strong>笔画排序</strong>
+              <small>按汉字笔画顺序比较，适合中文姓名和目录。</small>
+            </span>
+          </label>
+        </fieldset>
         <fieldset className="work-spreadsheet-sort-options">
           <legend>方向</legend>
           <label>
@@ -46,9 +112,16 @@ export function SpreadsheetSortOptionsDialog({
               type="radio"
               name="spreadsheet-sort-orientation"
               value="top-to-bottom"
-              checked={draft === 'top-to-bottom'}
-              data-autofocus={draft === 'top-to-bottom' ? '' : undefined}
-              onChange={() => setDraft('top-to-bottom')}
+              checked={draft.orientation === 'top-to-bottom'}
+              data-autofocus={
+                draft.orientation === 'top-to-bottom' ? '' : undefined
+              }
+              onChange={() =>
+                setDraft((current) => ({
+                  ...current,
+                  orientation: 'top-to-bottom',
+                }))
+              }
             />
             <span>
               <strong>按列排序</strong>
@@ -60,9 +133,16 @@ export function SpreadsheetSortOptionsDialog({
               type="radio"
               name="spreadsheet-sort-orientation"
               value="left-to-right"
-              checked={draft === 'left-to-right'}
-              data-autofocus={draft === 'left-to-right' ? '' : undefined}
-              onChange={() => setDraft('left-to-right')}
+              checked={draft.orientation === 'left-to-right'}
+              data-autofocus={
+                draft.orientation === 'left-to-right' ? '' : undefined
+              }
+              onChange={() =>
+                setDraft((current) => ({
+                  ...current,
+                  orientation: 'left-to-right',
+                }))
+              }
             />
             <span>
               <strong>按行排序</strong>

@@ -1445,7 +1445,9 @@ extension. The command freezes one continuous selection, derives a header
 candidate, and validates up to 64 unique keys before cloning and stably sorting
 complete cell rows or columns. A nested Traditional Office-compatible Sort Options dialog
 selects top-to-bottom column keys or left-to-right row keys; the latter disables
-header retention because every selected column moves. A key is a closed union
+header retention because every selected column moves. The same normalized
+options select Simplified Chinese pinyin or stroke collation and optional case
+sensitivity. A key is a closed union
 of ascending/descending value order, an explicit custom sequence, or an
 effective cell-color, font-color, or conditional-icon target with axis-aware
 first/last placement. The
@@ -1460,7 +1462,9 @@ calculated conditional-format output, preserves no-fill/automatic identities,
 and declines to flatten native patterns or gradients into one color. The
 command reconstructs that snapshot from controlled sheet state and the live
 range immediately before execution, then validates its shape and target
-identities. A direction-neutral matrix engine transposes only its bounded item
+identities. The `spreadsheet-sort-collation` boundary compiles one local
+`Intl.Collator` per request, keeps numeric text lexical, and fails closed when
+the requested method is unavailable. A direction-neutral matrix engine transposes only its bounded item
 view, then uses one stable comparator for both orientations. Relative formula
 references are translated along the moved row or column axis with the same
 bounded reference engine used by Paste Special, while absolute references stay
@@ -1471,6 +1475,10 @@ imported-formula-metadata, and border-sidecar intersections fail closed because
 those models still own coordinates outside the cell matrix. Moving large sorts,
 advanced predicates, durable host-managed custom-list settings, and structural
 sidecar reconciliation into the Worker/WASM kernel remains Stage 3 work.
+Direct host focus of the native grid now enters the same bounded focus observer
+used by ribbon commands. If a controlled workbook update replaces the focused
+Fortune overlay, focus transfers to its connected replacement; deliberate
+pointer, Tab, or active text-editor movement still cancels restoration.
 
 Partial-range planning is a separate controlled concern. The shared
 `spreadsheet-current-region` model reads dense `data` and sparse `celldata`

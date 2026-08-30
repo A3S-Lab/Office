@@ -1,17 +1,17 @@
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { SpreadsheetSortDialog } from '../src/internal/features/work/editors/spreadsheet-sort-dialog';
+import type {
+  SpreadsheetSortCustomList,
+  SpreadsheetSortDialogSource,
+  SpreadsheetSortDialogValue,
+} from '../src/internal/features/work/editors/spreadsheet-sort';
 import {
   createSpreadsheetSortCustomList,
   MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS,
   mergeSpreadsheetSortCustomLists,
   SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS,
 } from '../src/internal/features/work/editors/spreadsheet-sort-custom-list';
-import type {
-  SpreadsheetSortCustomList,
-  SpreadsheetSortDialogSource,
-  SpreadsheetSortDialogValue,
-} from '../src/internal/features/work/editors/spreadsheet-sort';
+import { SpreadsheetSortDialog } from '../src/internal/features/work/editors/spreadsheet-sort-dialog';
 
 test('authors, reorders, and applies accessible WPS multi-key sort levels', () => {
   const applied: SpreadsheetSortDialogValue[] = [];
@@ -68,6 +68,8 @@ test('authors, reorders, and applies accessible WPS multi-key sort levels', () =
   expect(applied).toEqual([
     {
       orientation: 'top-to-bottom',
+      caseSensitive: false,
+      textMethod: 'pinyin',
       hasHeader: true,
       keys: [
         { index: 1, direction: 'descending' },
@@ -84,6 +86,8 @@ test('removes levels and exposes the compact header contract', () => {
         ...sortSource(),
         value: {
           orientation: 'top-to-bottom',
+          caseSensitive: false,
+          textMethod: 'pinyin',
           hasHeader: false,
           keys: [
             { index: 0, direction: 'ascending' },
@@ -119,6 +123,8 @@ test('adds distinct appearance priorities on a one-column range', () => {
         appearanceRows: source.appearanceRows.map((row) => row.slice(0, 1)),
         value: {
           orientation: 'top-to-bottom',
+          caseSensitive: false,
+          textMethod: 'pinyin',
           hasHeader: true,
           keys: [
             {
@@ -156,6 +162,8 @@ test('adds distinct appearance priorities on a one-column range', () => {
   expect(applied).toEqual([
     {
       orientation: 'top-to-bottom',
+      caseSensitive: false,
+      textMethod: 'pinyin',
       hasHeader: true,
       keys: [
         {
@@ -219,6 +227,8 @@ test('creates and applies a reusable custom-list order without leaving the dialo
   expect(applied).toEqual([
     {
       orientation: 'top-to-bottom',
+      caseSensitive: false,
+      textMethod: 'pinyin',
       hasHeader: true,
       keys: [
         {
@@ -331,6 +341,8 @@ test('authors cell-color, font-color, and conditional-icon sort levels', () => {
   expect(applied).toEqual([
     {
       orientation: 'top-to-bottom',
+      caseSensitive: false,
+      textMethod: 'pinyin',
       hasHeader: true,
       keys: [
         {
@@ -442,6 +454,8 @@ function sortSource(): SpreadsheetSortDialogSource {
     ],
     value: {
       orientation: 'top-to-bottom',
+      caseSensitive: false,
+      textMethod: 'pinyin',
       hasHeader: true,
       keys: [{ index: 0, direction: 'ascending' }],
     },
