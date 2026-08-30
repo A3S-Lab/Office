@@ -3,6 +3,7 @@ import {
   createOfficeEditorExtension,
   createOfficeEditorRuntime,
 } from '../src/internal/features/work/editors/office-editor-extension';
+import { isOfficeCompositionKeyboardEvent } from '../src/internal/features/work/editors/office-shortcuts';
 
 interface CounterContext {
   enabled: boolean;
@@ -15,6 +16,37 @@ interface CounterCommands {
 }
 
 describe('office editor extensions', () => {
+  test('recognizes modern and legacy IME keyboard events', () => {
+    expect(
+      isOfficeCompositionKeyboardEvent({
+        isComposing: true,
+        key: 'k',
+        keyCode: 75,
+      }),
+    ).toBe(true);
+    expect(
+      isOfficeCompositionKeyboardEvent({
+        isComposing: false,
+        key: 'Process',
+        keyCode: 0,
+      }),
+    ).toBe(true);
+    expect(
+      isOfficeCompositionKeyboardEvent({
+        isComposing: false,
+        key: 'k',
+        keyCode: 229,
+      }),
+    ).toBe(true);
+    expect(
+      isOfficeCompositionKeyboardEvent({
+        isComposing: false,
+        key: 'k',
+        keyCode: 75,
+      }),
+    ).toBe(false);
+  });
+
   test('composes typed commands from ordered extensions', () => {
     const lifecycle: string[] = [];
     const counter = createOfficeEditorExtension<
@@ -185,14 +217,24 @@ describe('office editor extensions', () => {
     expect(blocked.defaultPrevented).toBe(false);
 
     editor.updateContext(context);
+    const alternateLayoutShortcut = new KeyboardEvent('keydown', {
+      cancelable: true,
+      code: 'KeyK',
+      key: 'л',
+      metaKey: true,
+    });
+    expect(editor.handleKeyDown(alternateLayoutShortcut)).toBe(true);
+    expect(alternateLayoutShortcut.defaultPrevented).toBe(true);
+    expect(context.value).toBe(5);
+
     const compositionShortcut = new KeyboardEvent('keydown', {
       cancelable: true,
       code: 'KeyK',
       key: 'Process',
       metaKey: true,
     });
-    expect(editor.handleKeyDown(compositionShortcut)).toBe(true);
-    expect(compositionShortcut.defaultPrevented).toBe(true);
+    expect(editor.handleKeyDown(compositionShortcut)).toBe(false);
+    expect(compositionShortcut.defaultPrevented).toBe(false);
     expect(context.value).toBe(5);
   });
 });

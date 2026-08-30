@@ -143,6 +143,8 @@
     "test:e2e:pdf-page-organization:check": "a3s-test check tests/e2e/pdf-page-organization.acl --json",
     "test:e2e:presentation-animation": "A3S_TEST_SUITE=tests/e2e/presentation-animation.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:presentation-animation:check": "a3s-test check tests/e2e/presentation-animation.acl --json",
+    "test:e2e:presentation-chinese-ime": "A3S_TEST_SUITE=tests/e2e/presentation-chinese-ime.acl bash scripts/run-a3s-test-web-gate.sh",
+    "test:e2e:presentation-chinese-ime:check": "a3s-test check tests/e2e/presentation-chinese-ime.acl --json",
     "test:e2e:large-presentation": "bun .a3s-test/performance/generate-fixtures.ts --presentations-only && a3s-test run tests/e2e/presentation-large-windowing.acl --json",
     "test:e2e:large-presentation:check": "a3s-test check tests/e2e/presentation-large-windowing.acl --json",
     "test:e2e:initial-focus": "a3s-test run tests/e2e/office-editor-initial-focus.acl --json",

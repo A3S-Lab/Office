@@ -107,6 +107,19 @@ workflow authors trigger and duration changes and verifies the ordered cue state
 in both desktop and compact projects. The release gate remains local-only and
 reuses the repository's existing Playwright Chromium.
 
+Presentation Chinese IME publication has a focused local gate:
+
+```bash
+bun run test:e2e:presentation-chinese-ime:check
+bun run test:e2e:presentation-chinese-ime
+```
+
+The component regression dispatches a real composition lifecycle and proves
+phonetic pre-edit text is never published to the controlled host. The A3S Test
+workflow then enters Chinese title text in the built Playground, requires the
+rendered value to match exactly once, reopens the presentation to prove
+persistence, and captures accessibility plus empty console/page-error evidence.
+
 The PDF page organizer has its own focused local gate:
 
 ```bash

@@ -1,4 +1,5 @@
 import { matchesOfficeEditorKeyboardShortcut } from '../../../keyboard-shortcuts';
+import { isOfficeCompositionKeyboardEvent } from './office-shortcuts';
 
 type CommandArguments<Command> = Command extends (
   ...args: infer Arguments extends unknown[]
@@ -289,7 +290,9 @@ export function createOfficeEditorRuntime<Context, Commands>(
     storage: Object.freeze(storage),
     can: () => canApi as unknown as OfficeEditorCanCommands<Commands>,
     handleKeyDown: (event) => {
-      if (event.defaultPrevented) return false;
+      if (event.defaultPrevented || isOfficeCompositionKeyboardEvent(event)) {
+        return false;
+      }
       for (const instance of instances) {
         for (const shortcut of instance.keyboardShortcuts) {
           if (

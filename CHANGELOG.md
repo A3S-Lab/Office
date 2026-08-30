@@ -10,6 +10,10 @@ All notable changes to A3S Office will be documented in this file.
   neutral fallback glyph, wider readable labels, bounded scrolling, stronger
   keyboard focus, and an additive `danger` action treatment for irreversible
   operations. Disabled actions remain legible and are skipped by menu focus.
+- Fixed Presentation text editing with Chinese and other IMEs. Pre-edit text
+  now stays local during composition, only the committed value reaches the
+  controlled host, and editor shortcuts yield to active or legacy composition
+  keyboard events instead of capturing phonetic input.
 - Added explicit local Spreadsheet wildcard AutoFilter authoring and
   evaluation. The closed criteria union now preserves arbitrary native OOXML
   `*`, `?`, and `~` expressions without changing existing literal equality
@@ -59,7 +63,9 @@ All notable changes to A3S Office will be documented in this file.
   Playwright, and local-only A3S Test cover both Chinese orders, case ties,
   formula movement, one-step Undo, accessibility, and empty diagnostics. Deep
   testing also fixed direct grid focus loss when a controlled workbook remount
-  replaces the focused overlay.
+  replaces the focused overlay. The capability check probes observable ordering
+  instead of requiring an implementation-specific collation label, so valid
+  Node, Bun, macOS, and Linux aliases remain interoperable.
 - Added Traditional Office-compatible Spreadsheet **Sort Options** direction controls. Custom
   Sort can now switch from top-to-bottom row movement to left-to-right complete
   column movement, exposes absolute row keys, disables header retention in the

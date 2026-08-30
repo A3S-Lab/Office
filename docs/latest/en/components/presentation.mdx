@@ -6,7 +6,9 @@ description: Presentation content, collaboration, slideshow events, geometry ker
 # PresentationEditor
 
 `PresentationEditor` uses a typed scene graph for slides and mounts TipTap only
-while a text box is being edited.
+while a text box is being edited. Chinese and other IME pre-edit text stays
+local during composition; `onChange` receives only the committed value, and
+editor shortcuts yield to composition keyboard events.
 
 ## Properties
 

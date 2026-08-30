@@ -1,6 +1,7 @@
 import type { Cell } from '@fortune-sheet/core';
-import { describe, expect, test } from '@rstest/core';
+import { describe, expect, rstest, test } from '@rstest/core';
 import { validateSpreadsheetSortRequest } from '../src/internal/features/work/editors/spreadsheet-sort';
+import { createSpreadsheetSortTextComparator } from '../src/internal/features/work/editors/spreadsheet-sort-collation';
 import { sortSpreadsheetMatrix } from '../src/internal/features/work/editors/spreadsheet-sort-matrix';
 
 describe('spreadsheet text sort options', () => {
@@ -39,6 +40,37 @@ describe('spreadsheet text sort options', () => {
       '阿',
       '赵',
     ]);
+  });
+
+  test('accepts compatible runtime collation aliases', () => {
+    const resolvedOptions = Intl.Collator.prototype.resolvedOptions;
+    const resolvedOptionsSpy = rstest
+      .spyOn(Intl.Collator.prototype, 'resolvedOptions')
+      .mockImplementation(function (this: Intl.Collator) {
+        return {
+          ...resolvedOptions.call(this),
+          collation: 'default',
+        };
+      });
+
+    try {
+      for (const [textMethod, expected] of [
+        ['pinyin', ['阿', '安', '丁', '王', '赵']],
+        ['stroke', ['丁', '王', '安', '阿', '赵']],
+      ] as const) {
+        const compare = createSpreadsheetSortTextComparator({
+          caseSensitive: false,
+          textMethod,
+        });
+
+        expect(compare).not.toBeNull();
+        expect(
+          ['赵', '阿', '丁', '安', '王'].sort(compare ?? undefined),
+        ).toEqual(expected);
+      }
+    } finally {
+      resolvedOptionsSpy.mockRestore();
+    }
   });
 
   test('puts lowercase before uppercase only when case sensitivity is enabled', () => {

@@ -1,6 +1,11 @@
-import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Editor } from '@tiptap/core';
+import {
+  newPresentationElement,
+  newSlide,
+} from '../src/internal/features/work/editors/presentation-editor-operations';
+import { SlideElementTextPreview } from '../src/internal/features/work/editors/presentation-slide-canvas';
 import {
   applyPresentationTextFormatting,
   createPresentationTextEditorExtensions,
@@ -8,11 +13,6 @@ import {
   presentationTextElementHtml,
   presentationTextValue,
 } from '../src/internal/features/work/editors/presentation-text-editor';
-import {
-  newPresentationElement,
-  newSlide,
-} from '../src/internal/features/work/editors/presentation-editor-operations';
-import { SlideElementTextPreview } from '../src/internal/features/work/editors/presentation-slide-canvas';
 import type { WorkSlideElement } from '../src/internal/features/work/work-types';
 
 test('round-trips imported presentation text runs through TipTap', () => {
@@ -132,6 +132,35 @@ test('mounts one TipTap-backed presentation text surface', async () => {
   expect(
     await screen.findByRole('textbox', { name: '幻灯片文本' }),
   ).toHaveAttribute('data-presentation-text-engine', 'tiptap');
+});
+
+test('publishes only the committed Chinese IME text', async () => {
+  let editor: Editor | null = null;
+  const published: string[] = [];
+  render(
+    <PresentationTextEditor
+      element={textElement()}
+      onChange={(value) => published.push(value.text)}
+      onEditorChange={(current) => {
+        editor = current;
+      }}
+    />,
+  );
+
+  const textbox = await screen.findByRole('textbox', {
+    name: '幻灯片文本',
+  });
+  await waitFor(() => expect(editor).not.toBeNull());
+  const currentEditor = editor as Editor;
+
+  fireEvent.compositionStart(textbox, { data: 'ni' });
+  expect(currentEditor.view.composing).toBe(true);
+  currentEditor.commands.insertContent('ni');
+  expect(published).toEqual([]);
+
+  currentEditor.chain().selectAll().insertContent('你').run();
+  fireEvent.compositionEnd(textbox, { data: '你' });
+  await waitFor(() => expect(published).toEqual(['你']));
 });
 
 test('returns Escape from text editing to its slide object', async () => {
