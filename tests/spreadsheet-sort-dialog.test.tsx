@@ -67,10 +67,11 @@ test('authors, reorders, and applies accessible WPS multi-key sort levels', () =
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
   expect(applied).toEqual([
     {
+      orientation: 'top-to-bottom',
       hasHeader: true,
       keys: [
-        { column: 1, direction: 'descending' },
-        { column: 0, direction: 'ascending' },
+        { index: 1, direction: 'descending' },
+        { index: 0, direction: 'ascending' },
       ],
     },
   ]);
@@ -82,11 +83,12 @@ test('removes levels and exposes the compact header contract', () => {
       source={{
         ...sortSource(),
         value: {
+          orientation: 'top-to-bottom',
           hasHeader: false,
           keys: [
-            { column: 0, direction: 'ascending' },
-            { column: 1, direction: 'descending' },
-            { column: 2, direction: 'ascending' },
+            { index: 0, direction: 'ascending' },
+            { index: 1, direction: 'descending' },
+            { index: 2, direction: 'ascending' },
           ],
         },
       }}
@@ -116,13 +118,14 @@ test('adds distinct appearance priorities on a one-column range', () => {
         columns: source.columns.slice(0, 1),
         appearanceRows: source.appearanceRows.map((row) => row.slice(0, 1)),
         value: {
+          orientation: 'top-to-bottom',
           hasHeader: true,
           keys: [
             {
-              column: 0,
+              index: 0,
               sortOn: 'cell-color',
               color: '#eef4ff',
-              position: 'top',
+              position: 'first',
             },
           ],
         },
@@ -152,19 +155,20 @@ test('adds distinct appearance priorities on a one-column range', () => {
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
   expect(applied).toEqual([
     {
+      orientation: 'top-to-bottom',
       hasHeader: true,
       keys: [
         {
-          column: 0,
+          index: 0,
           sortOn: 'cell-color',
           color: '#eef4ff',
-          position: 'top',
+          position: 'first',
         },
         {
-          column: 0,
+          index: 0,
           sortOn: 'cell-color',
           color: null,
-          position: 'top',
+          position: 'first',
         },
       ],
     },
@@ -214,10 +218,11 @@ test('creates and applies a reusable custom-list order without leaving the dialo
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
   expect(applied).toEqual([
     {
+      orientation: 'top-to-bottom',
       hasHeader: true,
       keys: [
         {
-          column: 0,
+          index: 0,
           customList: ['有风险', '进行中', '正常', '已完成'],
         },
       ],
@@ -294,7 +299,7 @@ test('authors cell-color, font-color, and conditional-icon sort levels', () => {
     { target: { value: 'cell-color:#eef4ff' } },
   );
   fireEvent.change(screen.getByRole('combobox', { name: '排序条件 1 位置' }), {
-    target: { value: 'bottom' },
+    target: { value: 'last' },
   });
 
   fireEvent.click(screen.getByRole('button', { name: '添加条件' }));
@@ -325,25 +330,26 @@ test('authors cell-color, font-color, and conditional-icon sort levels', () => {
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
   expect(applied).toEqual([
     {
+      orientation: 'top-to-bottom',
       hasHeader: true,
       keys: [
         {
-          column: 0,
+          index: 0,
           sortOn: 'cell-color',
           color: '#eef4ff',
-          position: 'bottom',
+          position: 'last',
         },
         {
-          column: 1,
+          index: 1,
           sortOn: 'font-color',
           color: '#d84b4f',
-          position: 'top',
+          position: 'first',
         },
         {
-          column: 2,
+          index: 2,
           sortOn: 'icon',
           icon: { iconSet: '3TrafficLights1', index: 2 },
-          position: 'top',
+          position: 'first',
         },
       ],
     },
@@ -381,10 +387,18 @@ function sortSource(): SpreadsheetSortDialogSource {
     sheetName: 'Sales',
     range: { row: [0, 4], column: [0, 2] },
     rangeReference: 'A1:C5',
+    activeRow: 1,
     columns: [
-      { column: 0, label: 'A（Team）' },
-      { column: 1, label: 'B（Score）' },
-      { column: 2, label: 'C（Owner）' },
+      { index: 0, label: 'A（Team）' },
+      { index: 1, label: 'B（Score）' },
+      { index: 2, label: 'C（Owner）' },
+    ],
+    rows: [
+      { index: 0, label: '行 1' },
+      { index: 1, label: '行 2' },
+      { index: 2, label: '行 3' },
+      { index: 3, label: '行 4' },
+      { index: 4, label: '行 5' },
     ],
     customLists: SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS,
     appearanceRows: [
@@ -427,8 +441,9 @@ function sortSource(): SpreadsheetSortDialogSource {
       ],
     ],
     value: {
+      orientation: 'top-to-bottom',
       hasHeader: true,
-      keys: [{ column: 0, direction: 'ascending' }],
+      keys: [{ index: 0, direction: 'ascending' }],
     },
   };
 }

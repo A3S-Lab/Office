@@ -79,8 +79,9 @@ test('authenticates an expanded range before opening and applying Custom Sort', 
       request: {
         sheetId: 'sheet-1',
         range: { row: [0, 2], column: [0, 2] },
+        orientation: 'top-to-bottom',
         hasHeader: true,
-        keys: [{ column: 1, direction: 'ascending' }],
+        keys: [{ index: 1, direction: 'ascending' }],
       },
     },
   ]);
@@ -89,8 +90,9 @@ test('authenticates an expanded range before opening and applying Custom Sort', 
       {
         sheetId: 'sheet-1',
         range: { row: [8, 9], column: [8, 9] },
+        orientation: 'top-to-bottom',
         hasHeader: false,
-        keys: [{ column: 8, direction: 'ascending' }],
+        keys: [{ index: 8, direction: 'ascending' }],
       },
       { row: [1, 1], column: [1, 1] },
     ),
@@ -149,8 +151,9 @@ test('applies a quick sort to the expanded current region with detected headers'
       request: {
         sheetId: 'sheet-1',
         range: { row: [0, 2], column: [0, 2] },
+        orientation: 'top-to-bottom',
         hasHeader: true,
-        keys: [{ column: 1, direction: 'descending' }],
+        keys: [{ index: 1, direction: 'descending' }],
       },
     },
   ]);
@@ -261,13 +264,14 @@ test('authors an effective conditional-icon key from the controlled sheet snapsh
     {
       sheetId: 'sheet-1',
       range: { row: [0, 2], column: [0, 2] },
+      orientation: 'top-to-bottom',
       hasHeader: true,
       keys: [
         {
-          column: 1,
+          index: 1,
           sortOn: 'icon',
           icon: { iconSet: '3TrafficLights1', index: 2 },
-          position: 'top',
+          position: 'first',
         },
       ],
     },
@@ -318,6 +322,7 @@ function expansionRequest(): SpreadsheetSortOpenRequest {
   return {
     sheetId: 'sheet-1',
     activeColumn: 1,
+    activeRow: 1,
     intent: { type: 'custom' },
     selected: {
       range: { row: [1, 1], column: [1, 1] },
@@ -334,6 +339,7 @@ function quickExpansionRequest(): SpreadsheetSortOpenRequest {
   return {
     sheetId: 'sheet-1',
     activeColumn: 1,
+    activeRow: 1,
     intent: { type: 'quick', direction: 'descending' },
     selected: {
       range: { row: [1, 2], column: [1, 1] },
@@ -350,6 +356,7 @@ function customSelectionRequest(): SpreadsheetSortOpenRequest {
   return {
     sheetId: 'sheet-1',
     activeColumn: 1,
+    activeRow: 1,
     intent: { type: 'custom' },
     selected: {
       range: { row: [0, 2], column: [0, 2] },

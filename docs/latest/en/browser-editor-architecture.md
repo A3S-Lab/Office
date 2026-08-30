@@ -1443,9 +1443,12 @@ Value-based multi-key Custom Sort is now owned by a separate
 `spreadsheetSort` editor extension rather than the row/column structure
 extension. The command freezes one continuous selection, derives a header
 candidate, and validates up to 64 unique keys before cloning and stably sorting
-complete cell rows. A key is a closed union of ascending/descending value order,
-an explicit custom sequence, or an effective cell-color, font-color, or
-conditional-icon target with top/bottom placement. The
+complete cell rows or columns. A nested Traditional Office-compatible Sort Options dialog
+selects top-to-bottom column keys or left-to-right row keys; the latter disables
+header retention because every selected column moves. A key is a closed union
+of ascending/descending value order, an explicit custom sequence, or an
+effective cell-color, font-color, or conditional-icon target with axis-aware
+first/last placement. The
 `spreadsheet-sort-custom-list` model owns
 normalization, duplicate and size guards, seven immutable month/weekday lists,
 and rank matching; the validated request clones custom entries so command
@@ -1457,16 +1460,17 @@ calculated conditional-format output, preserves no-fill/automatic identities,
 and declines to flatten native patterns or gradients into one color. The
 command reconstructs that snapshot from controlled sheet state and the live
 range immediately before execution, then validates its shape and target
-identities. Relative formula rows are
-translated with the same bounded reference engine used by Paste Special, while
-absolute references stay fixed.
+identities. A direction-neutral matrix engine transposes only its bounded item
+view, then uses one stable comparator for both orientations. Relative formula
+references are translated along the moved row or column axis with the same
+bounded reference engine used by Paste Special, while absolute references stay
+fixed.
 One accepted operation crosses the Fortune boundary as one range write and one
 controlled Undo record. Table, worksheet-AutoFilter, hyperlink-map,
 imported-formula-metadata, and border-sidecar intersections fail closed because
 those models still own coordinates outside the cell matrix. Moving large sorts,
-advanced predicates, durable host-managed custom-list settings, row-direction
-sorting, and structural sidecar reconciliation into the Worker/WASM kernel remains
-Stage 3 work.
+advanced predicates, durable host-managed custom-list settings, and structural
+sidecar reconciliation into the Worker/WASM kernel remains Stage 3 work.
 
 Partial-range planning is a separate controlled concern. The shared
 `spreadsheet-current-region` model reads dense `data` and sparse `celldata`

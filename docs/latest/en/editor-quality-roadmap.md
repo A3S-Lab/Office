@@ -1455,6 +1455,18 @@ Focused Rstest, desktop/compact Playwright, and the local-only pinned A3S Test
 focus, responsive containment, accessibility, and clean diagnostics without
 adding A3S Test to Actions or Pages.
 
+The forty-second Spreadsheet slice adds Traditional Office-compatible left-to-right Custom
+Sort. A nested options dialog changes the key axis without duplicating the main
+editor, disables header retention for horizontal movement, and maps appearance
+placement from top/bottom to left/right. One direction-neutral matrix model
+stably reorders complete rows or columns, translates relative formulas only
+along the moved axis, preserves absolute references, and rejects any
+out-of-range translation before the single native write and Undo record.
+Focused Rstest, desktop/compact Playwright, and the local-only pinned A3S Test
+1.0.0 gate cover multi-row priority, horizontal appearance order, formula
+movement, atomic failure, Undo, focus, responsive containment, accessibility,
+and clean diagnostics without adding A3S Test to Actions or Pages.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

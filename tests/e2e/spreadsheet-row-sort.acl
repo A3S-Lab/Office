@@ -1,0 +1,161 @@
+suite "office-spreadsheet-row-sort" {
+    version = 1
+
+    scenario "sort-columns-left-to-right-and-undo" {
+        name = "Sort complete columns by multiple rows, translate formulas, then undo"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-row-sort-fixture" {
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-row-sort"
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "horizontal-range-selected" {
+            text = "A1:D3"
+        }
+
+        click "open-data-tab" {
+            target = role("tab", "数据")
+        }
+
+        click "open-custom-sort" {
+            target = role("button", "自定义排序")
+        }
+
+        expect "custom-sort-dialog-visible" {
+            visible = css(".work-spreadsheet-sort-dialog[role='dialog']")
+        }
+
+        click "open-sort-options" {
+            target = role("button", "选项…")
+        }
+
+        expect "sort-options-visible" {
+            visible = css(".work-spreadsheet-sort-options-dialog[role='dialog']")
+        }
+
+        expect "column-orientation-default" {
+            visible = css(".work-spreadsheet-sort-options input[value='top-to-bottom']:checked")
+        }
+
+        click "choose-row-orientation" {
+            target = css(".work-spreadsheet-sort-options input[value='left-to-right']")
+        }
+
+        accessibility "row-sort-options-accessibility" {
+            path = "evidence/spreadsheet-row-sort-options.json"
+            interactive = true
+        }
+
+        click "apply-row-orientation" {
+            target = css(".work-spreadsheet-sort-options-dialog button[type='submit']")
+        }
+
+        expect "header-disabled-for-row-sort" {
+            disabled = css(".work-spreadsheet-sort-dialog input[aria-label='数据包含标题']")
+        }
+
+        expect "header-unchecked-for-row-sort" {
+            unchecked = css(".work-spreadsheet-sort-dialog input[aria-label='数据包含标题']")
+        }
+
+        expect "first-row-is-primary" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 行']:has(option[value='0']:checked)")
+        }
+
+        click "add-second-row-key" {
+            target = role("button", "添加条件")
+        }
+
+        expect "second-row-is-secondary" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 行']:has(option[value='1']:checked)")
+        }
+
+        select "sort-labels-descending" {
+            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 次序']")
+            values = ["descending"]
+        }
+
+        accessibility "row-sort-dialog-accessibility" {
+            path = "evidence/spreadsheet-row-sort-dialog.json"
+            interactive = true
+        }
+
+        click "apply-row-sort" {
+            target = css(".work-spreadsheet-sort-dialog button[type='submit']")
+        }
+
+        expect "sort-focus-restored" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='自定义排序']:focus")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "go-to-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "inspect-first-sorted-label" {
+            key = "ArrowDown"
+        }
+
+        expect "beta-column-is-first" {
+            text = "Beta"
+        }
+
+        press "inspect-moved-formula" {
+            key = "ArrowDown"
+        }
+
+        expect "moved-formula-is-rebased" {
+            text = "=A2&\"-B\""
+        }
+
+        press "undo-row-sort" {
+            key = "Control+z"
+        }
+
+        expect "original-formula-is-restored" {
+            text = "=A2&\"-G\""
+        }
+
+        expect "grid-focus-restored-after-undo" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "inspect-restored-label" {
+            key = "ArrowUp"
+        }
+
+        expect "original-column-order-is-restored" {
+            text = "Gamma"
+        }
+
+        accessibility "spreadsheet-after-row-sort-accessibility" {
+            path = "evidence/spreadsheet-after-row-sort.json"
+            interactive = true
+        }
+
+        console "row-sort-console" {
+            path = "diagnostics/spreadsheet-row-sort-console.json"
+            clear = false
+        }
+
+        page_errors "row-sort-page-errors" {
+            path = "diagnostics/spreadsheet-row-sort-page-errors.json"
+            clear = false
+        }
+    }
+}

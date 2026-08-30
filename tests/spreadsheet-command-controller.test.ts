@@ -1945,6 +1945,7 @@ describe('spreadsheet command controller', () => {
       {
         sheetId: 'sheet-1',
         activeColumn: 1,
+        activeRow: 1,
         intent: { type: 'custom' },
         selected: {
           range: { row: [0, 4], column: [0, 2] },
@@ -1956,11 +1957,12 @@ describe('spreadsheet command controller', () => {
       editor.commands.applyCustomSort({
         sheetId: 'sheet-1',
         range: { row: [0, 4], column: [0, 2] },
+        orientation: 'top-to-bottom',
         hasHeader: true,
         keys: [
-          { column: 0, direction: 'ascending' },
-          { column: 1, direction: 'descending' },
-          { column: 2, direction: 'ascending' },
+          { index: 0, direction: 'ascending' },
+          { index: 1, direction: 'descending' },
+          { index: 2, direction: 'ascending' },
         ],
       }),
     ).toBe(true);
@@ -1980,8 +1982,9 @@ describe('spreadsheet command controller', () => {
       editor.commands.applyCustomSort({
         sheetId: 'sheet-1',
         range: { row: [1, 4], column: [0, 2] },
+        orientation: 'top-to-bottom',
         hasHeader: false,
-        keys: [{ column: 0, direction: 'ascending' }],
+        keys: [{ index: 0, direction: 'ascending' }],
       }),
     ).toBe(false);
     expect(fixture.workbook.pastes).toHaveLength(1);
@@ -2029,15 +2032,16 @@ describe('spreadsheet command controller', () => {
       editor.commands.applyCustomSort({
         sheetId: 'sheet-1',
         range: { row: [0, 4], column: [0, 2] },
+        orientation: 'top-to-bottom',
         hasHeader: true,
         keys: [
           {
-            column: 1,
+            index: 1,
             sortOn: 'icon',
             icon: { iconSet: '3TrafficLights1', index: 2 },
-            position: 'top',
+            position: 'first',
           },
-          { column: 0, direction: 'ascending' },
+          { index: 0, direction: 'ascending' },
         ],
       }),
     ).toBe(true);
@@ -2048,6 +2052,50 @@ describe('spreadsheet command controller', () => {
       [{ v: 'Low' }, { v: 10 }, { v: 20, f: '=B4*2' }],
       [{ v: 'Middle' }, { v: 20 }, { v: 40, f: '=B5*2' }],
     ]);
+  });
+
+  test('applies one left-to-right column reorder with translated formulas', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 2], column: [0, 3] }];
+    fixture.workbook.cells = [
+      [{ v: 2 }, { v: 1 }, { v: 1 }, { v: 2 }],
+      [{ v: 'Gamma' }, { v: 'Alpha' }, { v: 'Beta' }, { v: 'Delta' }],
+      [
+        { v: 'Gamma!', f: '=A2&$D$1' },
+        { v: 'Alpha!', f: '=B2&$D$1' },
+        { v: 'Beta!', f: '=C2&$D$1' },
+        { v: 'Delta!', f: '=D2&$D$1' },
+      ],
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(
+      editor.commands.applyCustomSort({
+        sheetId: 'sheet-1',
+        range: { row: [0, 2], column: [0, 3] },
+        orientation: 'left-to-right',
+        hasHeader: false,
+        keys: [
+          { index: 0, direction: 'ascending' },
+          { index: 1, direction: 'descending' },
+        ],
+      }),
+    ).toBe(true);
+    expect(fixture.workbook.pastes).toHaveLength(1);
+    expect(fixture.workbook.pastes[0]).toEqual({
+      range: { row: [0, 2], column: [0, 3] },
+      sheetId: 'sheet-1',
+      values: [
+        [{ v: 1 }, { v: 1 }, { v: 2 }, { v: 2 }],
+        [{ v: 'Beta' }, { v: 'Alpha' }, { v: 'Gamma' }, { v: 'Delta' }],
+        [
+          { v: 'Beta!', f: '=A2&$D$1' },
+          { v: 'Alpha!', f: '=B2&$D$1' },
+          { v: 'Gamma!', f: '=C2&$D$1' },
+          { v: 'Delta!', f: '=D2&$D$1' },
+        ],
+      ],
+    });
   });
 
   test('plans the WPS sort warning from a selected cell and its current region', () => {
@@ -2079,6 +2127,7 @@ describe('spreadsheet command controller', () => {
       {
         sheetId: 'sheet-1',
         activeColumn: 1,
+        activeRow: 1,
         intent: { type: 'custom' },
         selected: {
           range: { row: [1, 1], column: [1, 1] },
@@ -2092,6 +2141,7 @@ describe('spreadsheet command controller', () => {
       {
         sheetId: 'sheet-1',
         activeColumn: 1,
+        activeRow: 1,
         intent: { type: 'quick', direction: 'descending' },
         selected: {
           range: { row: [1, 1], column: [1, 1] },
@@ -2139,6 +2189,7 @@ describe('spreadsheet command controller', () => {
       {
         sheetId: 'sheet-1',
         activeColumn: 0,
+        activeRow: 1,
         intent: { type: 'custom' },
         selected: {
           range: { row: [0, 2], column: [0, 0] },

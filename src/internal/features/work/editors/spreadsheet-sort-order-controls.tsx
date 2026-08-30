@@ -1,11 +1,14 @@
-import type { SpreadsheetSortKey } from './spreadsheet-sort';
+import type {
+  SpreadsheetSortKey,
+  SpreadsheetSortOrientation,
+} from './spreadsheet-sort';
 import {
   parseSpreadsheetSortAppearanceTargetValue,
   spreadsheetSortAppearanceTargetLabel,
   spreadsheetSortAppearanceTargets,
   spreadsheetSortAppearanceTargetsEqual,
   spreadsheetSortAppearanceTargetValue,
-  type SpreadsheetSortAppearanceColumn,
+  type SpreadsheetSortAppearanceField,
   type SpreadsheetSortAppearanceKind,
   type SpreadsheetSortAppearanceTarget,
 } from './spreadsheet-sort-appearance';
@@ -18,27 +21,29 @@ const CREATE_CUSTOM_LIST_ORDER = 'create-custom-list';
 const CUSTOM_LIST_ORDER_PREFIX = 'custom-list:';
 
 export function SpreadsheetSortOrderControls({
-  appearanceColumn,
+  appearanceField,
   customLists,
   level,
+  orientation,
   sortKey,
   onBeginCustomListEdit,
   onChange,
 }: {
-  appearanceColumn: SpreadsheetSortAppearanceColumn | undefined;
+  appearanceField: SpreadsheetSortAppearanceField | undefined;
   customLists: readonly SpreadsheetSortCustomList[];
   level: number;
+  orientation: SpreadsheetSortOrientation;
   sortKey: SpreadsheetSortKey;
   onBeginCustomListEdit: (entries?: readonly string[]) => void;
   onChange: (key: SpreadsheetSortKey) => void;
 }) {
   const sortOn = sortKey.sortOn ?? 'values';
   const appearanceTarget = spreadsheetSortKeyAppearanceTarget(sortKey);
-  const appearancePosition = sortKey.position === 'bottom' ? 'bottom' : 'top';
+  const appearancePosition = sortKey.position === 'last' ? 'last' : 'first';
   const appearanceTargets =
     sortOn === 'values'
       ? []
-      : spreadsheetSortAppearanceTargets(appearanceColumn, sortOn);
+      : spreadsheetSortAppearanceTargets(appearanceField, sortOn);
 
   return (
     <div
@@ -53,17 +58,17 @@ export function SpreadsheetSortOrderControls({
           onChange={(event) => {
             const next = event.currentTarget.value;
             if (next === 'values') {
-              onChange({ column: sortKey.column, direction: 'ascending' });
+              onChange({ index: sortKey.index, direction: 'ascending' });
               return;
             }
             if (!isSpreadsheetSortAppearanceKind(next)) return;
             const target = spreadsheetSortAppearanceTargets(
-              appearanceColumn,
+              appearanceField,
               next,
             )[0];
             if (target) {
               onChange(
-                spreadsheetSortAppearanceKey(sortKey.column, target, 'top'),
+                spreadsheetSortAppearanceKey(sortKey.index, target, 'first'),
               );
             }
           }}
@@ -72,7 +77,7 @@ export function SpreadsheetSortOrderControls({
           <option
             value="cell-color"
             disabled={
-              !spreadsheetSortAppearanceTargets(appearanceColumn, 'cell-color')
+              !spreadsheetSortAppearanceTargets(appearanceField, 'cell-color')
                 .length
             }
           >
@@ -81,7 +86,7 @@ export function SpreadsheetSortOrderControls({
           <option
             value="font-color"
             disabled={
-              !spreadsheetSortAppearanceTargets(appearanceColumn, 'font-color')
+              !spreadsheetSortAppearanceTargets(appearanceField, 'font-color')
                 .length
             }
           >
@@ -90,7 +95,7 @@ export function SpreadsheetSortOrderControls({
           <option
             value="icon"
             disabled={
-              !spreadsheetSortAppearanceTargets(appearanceColumn, 'icon').length
+              !spreadsheetSortAppearanceTargets(appearanceField, 'icon').length
             }
           >
             条件格式图标
@@ -124,7 +129,7 @@ export function SpreadsheetSortOrderControls({
                 if (!target || target.kind !== sortOn) return;
                 onChange(
                   spreadsheetSortAppearanceKey(
-                    sortKey.column,
+                    sortKey.index,
                     target,
                     appearancePosition,
                   ),
@@ -149,18 +154,22 @@ export function SpreadsheetSortOrderControls({
               onChange={(event) => {
                 if (!appearanceTarget) return;
                 const position = event.currentTarget.value;
-                if (position !== 'top' && position !== 'bottom') return;
+                if (position !== 'first' && position !== 'last') return;
                 onChange(
                   spreadsheetSortAppearanceKey(
-                    sortKey.column,
+                    sortKey.index,
                     appearanceTarget,
                     position,
                   ),
                 );
               }}
             >
-              <option value="top">置于顶端</option>
-              <option value="bottom">置于底端</option>
+              <option value="first">
+                {spreadsheetSortPositionLabel(orientation, 'first')}
+              </option>
+              <option value="last">
+                {spreadsheetSortPositionLabel(orientation, 'last')}
+              </option>
             </select>
           </label>
           {appearanceTarget ? (
@@ -187,7 +196,7 @@ export function SpreadsheetSortOrderControls({
               )}
               <span>
                 {spreadsheetSortAppearanceTargetLabel(appearanceTarget)}，
-                {appearancePosition === 'top' ? '置于顶端' : '置于底端'}
+                {spreadsheetSortPositionLabel(orientation, appearancePosition)}
               </span>
             </div>
           ) : null}
@@ -223,7 +232,7 @@ function SpreadsheetSortValueOrder({
             return;
           }
           if (order === 'ascending' || order === 'descending') {
-            onChange({ column: sortKey.column, direction: order });
+            onChange({ index: sortKey.index, direction: order });
             return;
           }
           const customListIndex = Number(
@@ -232,7 +241,7 @@ function SpreadsheetSortValueOrder({
           const customList = customLists[customListIndex];
           if (!customList) return;
           onChange({
-            column: sortKey.column,
+            index: sortKey.index,
             customList: [...customList.entries],
           });
         }}
@@ -272,23 +281,23 @@ function SpreadsheetSortValueOrder({
 }
 
 export function spreadsheetSortAppearanceKey(
-  column: number,
+  index: number,
   target: SpreadsheetSortAppearanceTarget,
-  position: 'top' | 'bottom',
+  position: 'first' | 'last',
 ): SpreadsheetSortKey {
   return target.kind === 'icon'
-    ? { column, sortOn: 'icon', icon: { ...target.icon }, position }
-    : { column, sortOn: target.kind, color: target.color, position };
+    ? { index, sortOn: 'icon', icon: { ...target.icon }, position }
+    : { index, sortOn: target.kind, color: target.color, position };
 }
 
 export function nextSpreadsheetSortKey(
   keys: readonly SpreadsheetSortKey[],
-  columns: readonly { column: number }[],
-  appearanceColumns: readonly SpreadsheetSortAppearanceColumn[],
+  fields: readonly { index: number }[],
+  appearanceFields: readonly SpreadsheetSortAppearanceField[],
 ): SpreadsheetSortKey | null {
-  const usedColumns = new Set(keys.map((key) => key.column));
-  const unused = columns.find((column) => !usedColumns.has(column.column));
-  if (unused) return { column: unused.column, direction: 'ascending' };
+  const usedIndices = new Set(keys.map((key) => key.index));
+  const unused = fields.find((field) => !usedIndices.has(field.index));
+  if (unused) return { index: unused.index, direction: 'ascending' };
 
   const defaultKinds: readonly SpreadsheetSortAppearanceKind[] = [
     'cell-color',
@@ -296,8 +305,8 @@ export function nextSpreadsheetSortKey(
     'icon',
   ];
   for (const key of [...keys].reverse()) {
-    const column = appearanceColumns.find(
-      (candidate) => candidate.column === key.column,
+    const field = appearanceFields.find(
+      (candidate) => candidate.index === key.index,
     );
     const currentTarget = spreadsheetSortKeyAppearanceTarget(key);
     const kinds = currentTarget
@@ -307,12 +316,12 @@ export function nextSpreadsheetSortKey(
         ]
       : defaultKinds;
     for (const kind of kinds) {
-      const target = spreadsheetSortAppearanceTargets(column, kind).find(
+      const target = spreadsheetSortAppearanceTargets(field, kind).find(
         (candidate) =>
           !keys.some((existing) => {
             const existingTarget = spreadsheetSortKeyAppearanceTarget(existing);
             return (
-              existing.column === key.column &&
+              existing.index === key.index &&
               existingTarget !== null &&
               spreadsheetSortAppearanceTargetsEqual(existingTarget, candidate)
             );
@@ -320,11 +329,11 @@ export function nextSpreadsheetSortKey(
       );
       if (target) {
         return spreadsheetSortAppearanceKey(
-          key.column,
+          key.index,
           target,
-          currentTarget?.kind === kind && key.position === 'bottom'
-            ? 'bottom'
-            : 'top',
+          currentTarget?.kind === kind && key.position === 'last'
+            ? 'last'
+            : 'first',
         );
       }
     }
@@ -352,6 +361,16 @@ function spreadsheetSortOrderValue(
   return index < 0
     ? CREATE_CUSTOM_LIST_ORDER
     : `${CUSTOM_LIST_ORDER_PREFIX}${index}`;
+}
+
+function spreadsheetSortPositionLabel(
+  orientation: SpreadsheetSortOrientation,
+  position: 'first' | 'last',
+): string {
+  if (orientation === 'left-to-right') {
+    return position === 'first' ? '置于左侧' : '置于右侧';
+  }
+  return position === 'first' ? '置于顶端' : '置于底端';
 }
 
 function isSpreadsheetSortAppearanceKind(

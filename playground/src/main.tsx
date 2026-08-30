@@ -46,6 +46,11 @@ import {
   SPREADSHEET_APPEARANCE_SORT_FIXTURE,
 } from './spreadsheet-appearance-sort-fixture';
 import {
+  createSpreadsheetRowSortArtifact,
+  SPREADSHEET_ROW_SORT_ARTIFACT_ID,
+  SPREADSHEET_ROW_SORT_FIXTURE,
+} from './spreadsheet-row-sort-fixture';
+import {
   createSpreadsheetCopyFromAboveArtifact,
   SPREADSHEET_COPY_FROM_ABOVE_ARTIFACT_ID,
   SPREADSHEET_COPY_FROM_ABOVE_FIXTURE,
@@ -143,25 +148,27 @@ function Playground() {
       ? MAXIMUM_SPARSE_SPREADSHEET_ARTIFACT_ID
       : e2eFixture === SPREADSHEET_APPEARANCE_SORT_FIXTURE
         ? SPREADSHEET_APPEARANCE_SORT_ARTIFACT_ID
-        : e2eFixture === SPREADSHEET_GO_TO_FIXTURE
-          ? SPREADSHEET_GO_TO_ARTIFACT_ID
-          : e2eFixture === SPREADSHEET_DATA_VALIDATION_FIXTURE
-            ? SPREADSHEET_DATA_VALIDATION_ARTIFACT_ID
-            : e2eFixture === SPREADSHEET_HYPERLINK_FIXTURE
-              ? SPREADSHEET_HYPERLINK_ARTIFACT_ID
-              : e2eFixture === SPREADSHEET_PASTE_SPECIAL_FIXTURE
-                ? SPREADSHEET_PASTE_SPECIAL_ARTIFACT_ID
-                : e2eFixture === SPREADSHEET_COPY_FROM_ABOVE_FIXTURE
-                  ? SPREADSHEET_COPY_FROM_ABOVE_ARTIFACT_ID
-                  : e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE
-                    ? SPREADSHEET_DATE_TIME_ARTIFACT_ID
-                    : e2eFixture === SPREADSHEET_GRADIENT_FILL_FIXTURE
-                      ? SPREADSHEET_GRADIENT_FILL_ARTIFACT_ID
-                      : e2eFixture === SPREADSHEET_PATTERN_FILL_FIXTURE
-                        ? SPREADSHEET_PATTERN_FILL_ARTIFACT_ID
-                        : e2eFixture === SPREADSHEET_RICH_TEXT_FIXTURE
-                          ? SPREADSHEET_RICH_TEXT_ARTIFACT_ID
-                          : null,
+        : e2eFixture === SPREADSHEET_ROW_SORT_FIXTURE
+          ? SPREADSHEET_ROW_SORT_ARTIFACT_ID
+          : e2eFixture === SPREADSHEET_GO_TO_FIXTURE
+            ? SPREADSHEET_GO_TO_ARTIFACT_ID
+            : e2eFixture === SPREADSHEET_DATA_VALIDATION_FIXTURE
+              ? SPREADSHEET_DATA_VALIDATION_ARTIFACT_ID
+              : e2eFixture === SPREADSHEET_HYPERLINK_FIXTURE
+                ? SPREADSHEET_HYPERLINK_ARTIFACT_ID
+                : e2eFixture === SPREADSHEET_PASTE_SPECIAL_FIXTURE
+                  ? SPREADSHEET_PASTE_SPECIAL_ARTIFACT_ID
+                  : e2eFixture === SPREADSHEET_COPY_FROM_ABOVE_FIXTURE
+                    ? SPREADSHEET_COPY_FROM_ABOVE_ARTIFACT_ID
+                    : e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE
+                      ? SPREADSHEET_DATE_TIME_ARTIFACT_ID
+                      : e2eFixture === SPREADSHEET_GRADIENT_FILL_FIXTURE
+                        ? SPREADSHEET_GRADIENT_FILL_ARTIFACT_ID
+                        : e2eFixture === SPREADSHEET_PATTERN_FILL_FIXTURE
+                          ? SPREADSHEET_PATTERN_FILL_ARTIFACT_ID
+                          : e2eFixture === SPREADSHEET_RICH_TEXT_FIXTURE
+                            ? SPREADSHEET_RICH_TEXT_ARTIFACT_ID
+                            : null,
   );
   const [collaborationDemoArtifactId, setCollaborationDemoArtifactId] =
     useState<string | null>(null);
@@ -692,6 +699,9 @@ function createInitialArtifacts(e2eFixture: string | null): OfficeArtifact[] {
   }
   if (e2eFixture === SPREADSHEET_APPEARANCE_SORT_FIXTURE) {
     return [createSpreadsheetAppearanceSortArtifact(), ...artifacts];
+  }
+  if (e2eFixture === SPREADSHEET_ROW_SORT_FIXTURE) {
+    return [createSpreadsheetRowSortArtifact(), ...artifacts];
   }
   if (e2eFixture === SPREADSHEET_GO_TO_FIXTURE) {
     return [createSpreadsheetGoToArtifact(), ...artifacts];

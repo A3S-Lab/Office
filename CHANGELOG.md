@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added Traditional Office-compatible Spreadsheet **Sort Options** direction controls. Custom
+  Sort can now switch from top-to-bottom row movement to left-to-right complete
+  column movement, exposes absolute row keys, disables header retention in the
+  horizontal mode, and keeps value, custom-list, color, font-color, and icon
+  priorities stable along either axis.
+- Extracted one direction-neutral matrix sorter that validates the complete
+  request before mutation, translates relative formula references along the
+  moved axis while preserving absolute references, and publishes one native
+  range write plus one Undo record. Added focused Rstest, desktop/compact
+  Playwright, and local-only A3S Test coverage for options, multi-row priority,
+  formula movement, failure atomicity, focus, accessibility, and diagnostics.
 - Added offline Spreadsheet appearance sorting to every ordered Custom Sort
   key. Users can place an effective cell color, effective font color, or
   conditional-format icon at the top or bottom; multiple levels express an

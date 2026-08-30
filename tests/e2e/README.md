@@ -607,6 +607,16 @@ The pinned local A3S Test 1.0.0 binary also records invoker/grid focus,
 interactive accessibility, console, and page-error evidence. The suite remains
 absent from GitHub Actions and Pages.
 
+`spreadsheet-row-sort.acl` switches the Traditional Office-compatible sort options to
+left-to-right, applies stable multi-row keys to complete columns, verifies
+relative formula translation and focus restoration, then undoes the single
+batch mutation:
+
+```bash
+bun run test:e2e:spreadsheet-row-sort:check
+bun run test:e2e:spreadsheet-row-sort
+```
+
 The Traditional Office-style Spreadsheet partial-range Sort Warning has a focused local gate:
 
 ```bash

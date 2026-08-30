@@ -100,7 +100,11 @@ export function useSpreadsheetSort({
       return createSpreadsheetSortDialogSource(
         request.sheetId,
         sheet.name,
-        { range: candidate.range, activeColumn: request.activeColumn },
+        {
+          range: candidate.range,
+          activeColumn: request.activeColumn,
+          activeRow: request.activeRow,
+        },
         rows,
         customLists,
         appearanceRows,
@@ -161,10 +165,11 @@ export function useSpreadsheetSort({
         {
           sheetId: source.sheetId,
           range: source.range,
+          orientation: 'top-to-bottom',
           hasHeader: source.value.hasHeader,
           keys: [
             {
-              column: request.activeColumn,
+              index: request.activeColumn,
               direction: request.intent.direction,
             },
           ],
@@ -270,6 +275,7 @@ export function useSpreadsheetSort({
         {
           sheetId: surface.source.sheetId,
           range: surface.source.range,
+          orientation: value.orientation,
           hasHeader: value.hasHeader,
           keys: value.keys,
         },

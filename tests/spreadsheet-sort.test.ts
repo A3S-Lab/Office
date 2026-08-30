@@ -5,10 +5,10 @@ import {
   createSpreadsheetSortRangePlan,
   MAX_SPREADSHEET_SORT_CELLS,
   MAX_SPREADSHEET_SORT_KEYS,
-  sortSpreadsheetRows,
   spreadsheetSortFailureMessage,
   validateSpreadsheetSortRequest,
 } from '../src/internal/features/work/editors/spreadsheet-sort';
+import { sortSpreadsheetMatrix } from '../src/internal/features/work/editors/spreadsheet-sort-matrix';
 
 describe('spreadsheet custom sort', () => {
   test('plans a bounded WPS expansion from dense and sparse current regions', () => {
@@ -82,16 +82,17 @@ describe('spreadsheet custom sort', () => {
     const alphaAmy = [cell('Alpha'), cell(90), cell('Amy', { it: 1 })];
     const betaZoe = [cell('Beta'), cell(95), cell('Zoe')];
 
-    const result = sortSpreadsheetRows(
+    const result = sortSpreadsheetMatrix(
       [header, alphaZoe, betaAmy, alphaAmy, betaZoe],
       {
         sheetId: 'sheet-1',
+        orientation: 'top-to-bottom',
         range: { row: [0, 4], column: [0, 2] },
         hasHeader: true,
         keys: [
-          { column: 0, direction: 'ascending' },
-          { column: 1, direction: 'descending' },
-          { column: 2, direction: 'ascending' },
+          { index: 0, direction: 'ascending' },
+          { index: 1, direction: 'descending' },
+          { index: 2, direction: 'ascending' },
         ],
       },
     );
@@ -119,17 +120,19 @@ describe('spreadsheet custom sort', () => {
     const tenSecond = [cell('ten-second'), cell(10)];
     const rows = [blank, tenFirst, two, tenSecond];
 
-    const ascending = sortSpreadsheetRows(rows, {
+    const ascending = sortSpreadsheetMatrix(rows, {
       sheetId: 'sheet-1',
+      orientation: 'top-to-bottom',
       range: { row: [0, 3], column: [0, 1] },
       hasHeader: false,
-      keys: [{ column: 1, direction: 'ascending' }],
+      keys: [{ index: 1, direction: 'ascending' }],
     });
-    const descending = sortSpreadsheetRows(rows, {
+    const descending = sortSpreadsheetMatrix(rows, {
       sheetId: 'sheet-1',
+      orientation: 'top-to-bottom',
       range: { row: [0, 3], column: [0, 1] },
       hasHeader: false,
-      keys: [{ column: 1, direction: 'descending' }],
+      keys: [{ index: 1, direction: 'descending' }],
     });
 
     expect(ascending.ok && ascending.rows.map((row) => row[0]?.v)).toEqual([
@@ -147,7 +150,7 @@ describe('spreadsheet custom sort', () => {
   });
 
   test('sorts listed values first, falls back naturally, and composes with later keys', () => {
-    const result = sortSpreadsheetRows(
+    const result = sortSpreadsheetMatrix(
       [
         [cell('Task'), cell('Status')],
         [cell('Beta'), cell('进行中')],
@@ -159,14 +162,15 @@ describe('spreadsheet custom sort', () => {
       ],
       {
         sheetId: 'sheet-1',
+        orientation: 'top-to-bottom',
         range: { row: [0, 6], column: [0, 1] },
         hasHeader: true,
         keys: [
           {
-            column: 1,
+            index: 1,
             customList: ['有风险', '进行中', '正常', '已完成'],
           },
-          { column: 0, direction: 'ascending' },
+          { index: 0, direction: 'ascending' },
         ],
       },
     );
@@ -193,18 +197,19 @@ describe('spreadsheet custom sort', () => {
       [cell('Beta plain'), cell('Ready')],
       [cell('Omega red'), cell('Blocked', { bg: '#ff0000' })],
     ];
-    const result = sortSpreadsheetRows(rows, {
+    const result = sortSpreadsheetMatrix(rows, {
       sheetId: 'sheet-1',
+      orientation: 'top-to-bottom',
       range: { row: [0, 5], column: [0, 1] },
       hasHeader: true,
       keys: [
         {
-          column: 1,
+          index: 1,
           sortOn: 'cell-color',
           color: '#FF0000',
-          position: 'top',
+          position: 'first',
         },
-        { column: 0, direction: 'ascending' },
+        { index: 0, direction: 'ascending' },
       ],
     });
 
@@ -219,18 +224,19 @@ describe('spreadsheet custom sort', () => {
       'Beta plain',
     ]);
 
-    const automaticFontLast = sortSpreadsheetRows(rows, {
+    const automaticFontLast = sortSpreadsheetMatrix(rows, {
       sheetId: 'sheet-1',
+      orientation: 'top-to-bottom',
       range: { row: [0, 5], column: [0, 1] },
       hasHeader: true,
       keys: [
         {
-          column: 1,
+          index: 1,
           sortOn: 'font-color',
           color: null,
-          position: 'bottom',
+          position: 'last',
         },
-        { column: 0, direction: 'ascending' },
+        { index: 0, direction: 'ascending' },
       ],
     });
     expect(
@@ -266,20 +272,21 @@ describe('spreadsheet custom sort', () => {
               },
       })),
     );
-    const result = sortSpreadsheetRows(
+    const result = sortSpreadsheetMatrix(
       rows,
       {
         sheetId: 'sheet-1',
+        orientation: 'top-to-bottom',
         range: { row: [0, 4], column: [0, 1] },
         hasHeader: true,
         keys: [
           {
-            column: 1,
+            index: 1,
             sortOn: 'icon',
             icon: { iconSet: '3TrafficLights1', index: 2 },
-            position: 'top',
+            position: 'first',
           },
-          { column: 0, direction: 'ascending' },
+          { index: 0, direction: 'ascending' },
         ],
       },
       appearances,
@@ -307,18 +314,19 @@ describe('spreadsheet custom sort', () => {
     );
 
     expect(
-      sortSpreadsheetRows(
+      sortSpreadsheetMatrix(
         rows,
         {
           sheetId: 'sheet-1',
+          orientation: 'top-to-bottom',
           range: { row: [0, 2], column: [0, 1] },
           hasHeader: true,
           keys: [
             {
-              column: 1,
+              index: 1,
               sortOn: 'cell-color',
               color: '#fce8e6',
-              position: 'top',
+              position: 'first',
             },
           ],
         },
@@ -328,7 +336,7 @@ describe('spreadsheet custom sort', () => {
   });
 
   test('composes distinct appearance priorities on the same column', () => {
-    const result = sortSpreadsheetRows(
+    const result = sortSpreadsheetMatrix(
       [
         [cell('Task'), cell('Status')],
         [cell('Blue'), cell('Ready', { bg: '#4472c4' })],
@@ -339,28 +347,29 @@ describe('spreadsheet custom sort', () => {
       ],
       {
         sheetId: 'sheet-1',
+        orientation: 'top-to-bottom',
         range: { row: [0, 5], column: [0, 1] },
         hasHeader: true,
         keys: [
           {
-            column: 1,
+            index: 1,
             sortOn: 'cell-color',
             color: '#fce8e6',
-            position: 'top',
+            position: 'first',
           },
           {
-            column: 1,
+            index: 1,
             sortOn: 'cell-color',
             color: '#fff2cc',
-            position: 'top',
+            position: 'first',
           },
           {
-            column: 1,
+            index: 1,
             sortOn: 'cell-color',
             color: '#4472c4',
-            position: 'bottom',
+            position: 'last',
           },
-          { column: 0, direction: 'ascending' },
+          { index: 0, direction: 'ascending' },
         ],
       },
     );
@@ -378,7 +387,7 @@ describe('spreadsheet custom sort', () => {
   });
 
   test('moves formulas with rows and translates only relative references', () => {
-    const result = sortSpreadsheetRows(
+    const result = sortSpreadsheetMatrix(
       [
         [cell('Name'), cell('Amount'), cell('Calculated')],
         [cell('Beta'), cell(20), cell(40, { f: '=B2*2+$B$2' })],
@@ -386,9 +395,10 @@ describe('spreadsheet custom sort', () => {
       ],
       {
         sheetId: 'sheet-1',
+        orientation: 'top-to-bottom',
         range: { row: [0, 2], column: [0, 2] },
         hasHeader: true,
-        keys: [{ column: 0, direction: 'ascending' }],
+        keys: [{ index: 0, direction: 'ascending' }],
       },
     );
 
@@ -400,16 +410,17 @@ describe('spreadsheet custom sort', () => {
   });
 
   test('rejects a sort atomically when a translated formula would leave the sheet', () => {
-    const result = sortSpreadsheetRows(
+    const result = sortSpreadsheetMatrix(
       [
         [cell('Zed'), cell(1, { f: '=A1' })],
         [cell('Alpha'), cell(2, { f: '=A1' })],
       ],
       {
         sheetId: 'sheet-1',
+        orientation: 'top-to-bottom',
         range: { row: [0, 1], column: [0, 1] },
         hasHeader: false,
-        keys: [{ column: 0, direction: 'ascending' }],
+        keys: [{ index: 0, direction: 'ascending' }],
       },
     );
 
@@ -420,16 +431,17 @@ describe('spreadsheet custom sort', () => {
   });
 
   test('rejects coordinate-linked cells before reordering any row', () => {
-    const result = sortSpreadsheetRows(
+    const result = sortSpreadsheetMatrix(
       [
         [cell('Zed'), cell('link', { hl: { r: 0, c: 1, id: 'sheet-1' } })],
         [cell('Alpha'), cell('plain')],
       ],
       {
         sheetId: 'sheet-1',
+        orientation: 'top-to-bottom',
         range: { row: [0, 1], column: [0, 1] },
         hasHeader: false,
-        keys: [{ column: 0, direction: 'ascending' }],
+        keys: [{ index: 0, direction: 'ascending' }],
       },
     );
 
@@ -446,6 +458,7 @@ describe('spreadsheet custom sort', () => {
       {
         range: { row: [0, 2], column: [2, 4] },
         activeColumn: 3,
+        activeRow: 1,
       },
       [
         [cell('Region'), cell('Revenue'), cell('Owner')],
@@ -459,13 +472,14 @@ describe('spreadsheet custom sort', () => {
       sheetName: 'Sales',
       rangeReference: 'C1:E3',
       columns: [
-        { column: 2, label: 'C（Region）' },
-        { column: 3, label: 'D（Revenue）' },
-        { column: 4, label: 'E（Owner）' },
+        { index: 2, label: 'C（Region）' },
+        { index: 3, label: 'D（Revenue）' },
+        { index: 4, label: 'E（Owner）' },
       ],
       value: {
+        orientation: 'top-to-bottom',
         hasHeader: true,
-        keys: [{ column: 3, direction: 'ascending' }],
+        keys: [{ index: 3, direction: 'ascending' }],
       },
     });
   });
@@ -477,6 +491,7 @@ describe('spreadsheet custom sort', () => {
       {
         range: { row: [3, 6], column: [5, 5] },
         activeColumn: 5,
+        activeRow: 3,
       },
       [
         [{ v: 0.67, m: '67%' }],
@@ -491,6 +506,7 @@ describe('spreadsheet custom sort', () => {
       {
         range: { row: [3, 6], column: [5, 5] },
         activeColumn: 5,
+        activeRow: 3,
       },
       [
         [{ f: '=SUM(C4:E4)/3', v: 0.67, m: '67%' }],
@@ -501,9 +517,9 @@ describe('spreadsheet custom sort', () => {
     );
 
     expect(formatted?.value.hasHeader).toBe(false);
-    expect(formatted?.columns).toEqual([{ column: 5, label: 'F' }]);
+    expect(formatted?.columns).toEqual([{ index: 5, label: 'F' }]);
     expect(formulas?.value.hasHeader).toBe(false);
-    expect(formulas?.columns).toEqual([{ column: 5, label: 'F' }]);
+    expect(formulas?.columns).toEqual([{ index: 5, label: 'F' }]);
   });
 
   test('rejects duplicate, out-of-range, oversized, and malformed sort requests', () => {
@@ -513,14 +529,15 @@ describe('spreadsheet custom sort', () => {
         row: [0, 4] as [number, number],
         column: [0, 2] as [number, number],
       },
+      orientation: 'top-to-bottom' as const,
       hasHeader: true,
     };
     expect(
       validateSpreadsheetSortRequest({
         ...base,
         keys: [
-          { column: 0, direction: 'ascending' as const },
-          { column: 0, direction: 'descending' as const },
+          { index: 0, direction: 'ascending' as const },
+          { index: 0, direction: 'descending' as const },
         ],
       }),
     ).toMatchObject({ ok: false, code: 'duplicate-key' });
@@ -529,16 +546,16 @@ describe('spreadsheet custom sort', () => {
         ...base,
         keys: [
           {
-            column: 0,
+            index: 0,
             sortOn: 'cell-color',
             color: '#fce8e6',
-            position: 'top',
+            position: 'first',
           },
           {
-            column: 0,
+            index: 0,
             sortOn: 'cell-color',
             color: '#fff2cc',
-            position: 'top',
+            position: 'first',
           },
         ],
       }),
@@ -548,16 +565,16 @@ describe('spreadsheet custom sort', () => {
         ...base,
         keys: [
           {
-            column: 0,
+            index: 0,
             sortOn: 'cell-color',
             color: '#fce8e6',
-            position: 'top',
+            position: 'first',
           },
           {
-            column: 0,
+            index: 0,
             sortOn: 'cell-color',
             color: '#fce8e6',
-            position: 'bottom',
+            position: 'last',
           },
         ],
       }),
@@ -565,7 +582,7 @@ describe('spreadsheet custom sort', () => {
     expect(
       validateSpreadsheetSortRequest({
         ...base,
-        keys: [{ column: 9, direction: 'ascending' }],
+        keys: [{ index: 9, direction: 'ascending' }],
       }),
     ).toMatchObject({ ok: false, code: 'column-out-of-range' });
     expect(
@@ -587,14 +604,14 @@ describe('spreadsheet custom sort', () => {
     expect(
       validateSpreadsheetSortRequest({
         ...base,
-        keys: [{ column: 0, direction: 'ascending' }],
+        keys: [{ index: 0, direction: 'ascending' }],
         range: { row: [0, MAX_SPREADSHEET_SORT_CELLS], column: [0, 1] },
       }),
     ).toMatchObject({ ok: false, code: 'range-too-large' });
     expect(
       validateSpreadsheetSortRequest({
         ...base,
-        keys: [{ column: 0, customList: ['High', ' high ', 'Low'] }],
+        keys: [{ index: 0, customList: ['High', ' high ', 'Low'] }],
       }),
     ).toMatchObject({ ok: false, code: 'invalid-custom-list' });
     expect(
@@ -602,10 +619,10 @@ describe('spreadsheet custom sort', () => {
         ...base,
         keys: [
           {
-            column: 0,
+            index: 0,
             sortOn: 'cell-color',
             color: 'not-a-color',
-            position: 'top',
+            position: 'first',
           },
         ],
       }),
@@ -615,20 +632,20 @@ describe('spreadsheet custom sort', () => {
         ...base,
         keys: [
           {
-            column: 0,
+            index: 0,
             sortOn: 'icon',
             icon: { iconSet: '3TrafficLights1', index: 9 },
-            position: 'top',
+            position: 'first',
           },
         ],
       }),
     ).toMatchObject({ ok: false, code: 'invalid-appearance' });
 
-    const malformedRows = sortSpreadsheetRows([[cell('A')], [cell('B')]], {
+    const malformedRows = sortSpreadsheetMatrix([[cell('A')], [cell('B')]], {
       ...base,
       range: { row: [0, 1], column: [0, 1] },
       hasHeader: false,
-      keys: [{ column: 0, direction: 'ascending' }],
+      keys: [{ index: 0, direction: 'ascending' }],
     });
     expect(malformedRows).toMatchObject({ ok: false, code: 'invalid-matrix' });
     expect(spreadsheetSortFailureMessage(malformedRows)).toContain(

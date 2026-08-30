@@ -48,11 +48,11 @@ import {
   drawSpreadsheetDiagonalDownBorder,
   drawSpreadsheetDiagonalUpBorder,
 } from '../work-spreadsheet-diagonal-border-canvas';
+import { spreadsheetMatrixProfile } from '../work-spreadsheet-matrix-profile';
 import {
   beginSpreadsheetNativeFillRender,
   finishSpreadsheetNativeFillRender,
 } from '../work-spreadsheet-native-fill-canvas';
-import { spreadsheetMatrixProfile } from '../work-spreadsheet-matrix-profile';
 import {
   reconcileSpreadsheetPivots,
   refreshSpreadsheetPivotTables,
@@ -74,8 +74,8 @@ import { useSpreadsheetCollaborationPresenceProjection } from './spreadsheet-col
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import {
   createSpreadsheetEditorExtensions,
-  type SpreadsheetCommandSelection,
   type SpreadsheetCommandRange,
+  type SpreadsheetCommandSelection,
   type SpreadsheetEditorCommands,
   type SpreadsheetFormatCellsOpenRequest,
   type SpreadsheetStructureAxis,
@@ -126,11 +126,11 @@ import { synchronizeSpreadsheetWorkbookInPlace } from './spreadsheet-in-place-wo
 import { spreadsheetSelectionContainsFocus } from './spreadsheet-keyboard-navigation';
 import { MAX_SPREADSHEET_PASTE_SPECIAL_CELLS } from './spreadsheet-paste-special';
 import { SpreadsheetPasteSpecialDialog } from './spreadsheet-paste-special-dialog';
+import { captureSpreadsheetRichTextPaste } from './spreadsheet-rich-text-paste';
 import {
   isSpreadsheetRichTextFormatPointerTarget,
   SpreadsheetRichTextSelectionController,
 } from './spreadsheet-rich-text-selection-controller';
-import { captureSpreadsheetRichTextPaste } from './spreadsheet-rich-text-paste';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
 import { spreadsheetTableAtCell } from './spreadsheet-table';
 import {
@@ -790,13 +790,23 @@ function SpreadsheetEditorSurface({
     () => spreadsheetProtectionKey(content.sheets),
     [content.sheets],
   );
-  const renderedWorkbookSheets = useMemo(
-    () =>
-      spreadsheetSheetsWithFiniteSelections(
-        spreadsheetSheetsWithChartPreviews(materializedContent),
-      ),
-    [materializedContent],
-  );
+  const requestedWorkbookSelection = selectionStateRef.current.requested;
+  const renderedWorkbookSheets = useMemo(() => {
+    // A controlled content update can schedule Fortune's remount after a
+    // keyboard command has already moved the live selection. Seed that
+    // replacement from the synchronous request instead of the older selection
+    // embedded in the controlled snapshot.
+    const renderedContent = requestedWorkbookSelection
+      ? spreadsheetContentWithSelection(
+          materializedContent,
+          requestedWorkbookSelection.sheetId,
+          requestedWorkbookSelection.selection,
+        )
+      : materializedContent;
+    return spreadsheetSheetsWithFiniteSelections(
+      spreadsheetSheetsWithChartPreviews(renderedContent),
+    );
+  }, [materializedContent, requestedWorkbookSelection]);
   const workbookSheets = useMemo(
     () => spreadsheetSheetsForFortune(renderedWorkbookSheets),
     [renderedWorkbookSheets],
@@ -1374,7 +1384,12 @@ function SpreadsheetEditorSurface({
         preview || collaborationView
           ? { activateSheet: activateLocalSpreadsheetSheet }
           : null,
-      workbook: workbookInstance,
+      // The callback ref changes synchronously during a controlled remount,
+      // before workbookInstance's state render can publish the replacement.
+      // Resolve it at command time so a key cannot target the detached API.
+      get workbook() {
+        return workbookRef.current;
+      },
     },
     spreadsheetExtensions,
   );

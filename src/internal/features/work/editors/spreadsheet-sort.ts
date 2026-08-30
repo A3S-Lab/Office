@@ -8,22 +8,18 @@ import {
   spreadsheetCellRangesEqual,
 } from './spreadsheet-cell-range';
 import { spreadsheetCurrentRegion } from './spreadsheet-current-region';
-import { translateSpreadsheetFormula } from './spreadsheet-paste-special-cell';
 import {
   createSpreadsheetSortDirectAppearanceRows,
   normalizeSpreadsheetSortColor,
   normalizeSpreadsheetSortIcon,
   spreadsheetSortAppearanceTargetValue,
-  spreadsheetSortCellMatchesAppearance,
   type SpreadsheetSortAppearanceKind,
   type SpreadsheetSortAppearancePosition,
   type SpreadsheetSortAppearanceRows,
-  type SpreadsheetSortAppearanceTarget,
   type SpreadsheetSortIconTarget,
 } from './spreadsheet-sort-appearance';
 import {
   mergeSpreadsheetSortCustomLists,
-  spreadsheetSortCustomListMatchKey,
   type SpreadsheetSortCustomList,
   validateSpreadsheetSortCustomList,
 } from './spreadsheet-sort-custom-list';
@@ -41,41 +37,42 @@ export const MAX_SPREADSHEET_SORT_CELLS = 1_000_000;
 const MAX_SPREADSHEET_SORT_HEADER_LENGTH = 48;
 
 export type SpreadsheetSortDirection = 'ascending' | 'descending';
+export type SpreadsheetSortOrientation = 'top-to-bottom' | 'left-to-right';
 
 export type SpreadsheetSortKey =
   | {
       color?: never;
-      column: number;
       customList?: never;
       direction: SpreadsheetSortDirection;
       icon?: never;
+      index: number;
       position?: never;
       sortOn?: never;
     }
   | {
       color?: never;
-      column: number;
       customList: readonly string[];
       direction?: never;
       icon?: never;
+      index: number;
       position?: never;
       sortOn?: never;
     }
   | {
       color: string | null;
-      column: number;
       customList?: never;
       direction?: never;
       icon?: never;
+      index: number;
       position: SpreadsheetSortAppearancePosition;
       sortOn: Exclude<SpreadsheetSortAppearanceKind, 'icon'>;
     }
   | {
       color?: never;
-      column: number;
       customList?: never;
       direction?: never;
       icon: SpreadsheetSortIconTarget;
+      index: number;
       position: SpreadsheetSortAppearancePosition;
       sortOn: 'icon';
     };
@@ -83,10 +80,12 @@ export type SpreadsheetSortKey =
 export interface SpreadsheetSortDialogValue {
   hasHeader: boolean;
   keys: SpreadsheetSortKey[];
+  orientation: SpreadsheetSortOrientation;
 }
 
 export interface SpreadsheetSortTarget {
   activeColumn: number;
+  activeRow: number;
   range: SpreadsheetCellRange;
 }
 
@@ -101,6 +100,7 @@ export type SpreadsheetSortIntent =
 
 export interface SpreadsheetSortOpenRequest {
   activeColumn: number;
+  activeRow: number;
   expanded?: SpreadsheetSortRangeCandidate;
   intent: SpreadsheetSortIntent;
   selected: SpreadsheetSortRangeCandidate;
@@ -127,12 +127,19 @@ export interface SpreadsheetSortRequest extends SpreadsheetSortDialogValue {
   sheetId: string;
 }
 
+export interface SpreadsheetSortField {
+  index: number;
+  label: string;
+}
+
 export interface SpreadsheetSortDialogSource {
+  activeRow: number;
   appearanceRows: SpreadsheetSortAppearanceRows;
-  columns: Array<{ column: number; label: string }>;
+  columns: SpreadsheetSortField[];
   customLists: readonly SpreadsheetSortCustomList[];
   range: SpreadsheetCellRange;
   rangeReference: string;
+  rows: SpreadsheetSortField[];
   sheetId: string;
   sheetName: string;
   value: SpreadsheetSortDialogValue;
@@ -145,11 +152,15 @@ export type SpreadsheetSortErrorCode =
   | 'invalid-appearance'
   | 'invalid-custom-list'
   | 'invalid-direction'
+  | 'invalid-header'
   | 'invalid-matrix'
+  | 'invalid-orientation'
   | 'invalid-range'
   | 'missing-key'
+  | 'not-enough-columns'
   | 'not-enough-rows'
   | 'range-too-large'
+  | 'row-out-of-range'
   | 'too-many-keys'
   | 'unsupported-linked-cell';
 
@@ -211,11 +222,11 @@ export function createSpreadsheetSortDialogSource(
     return null;
   }
   const hasHeader = height > 2 && spreadsheetSortRowsHaveHeader(rows);
-  const firstColumn =
-    target.activeColumn >= range.column[0] &&
-    target.activeColumn <= range.column[1]
-      ? target.activeColumn
-      : range.column[0];
+  const activeColumn = spreadsheetSortActiveIndex(
+    target.activeColumn,
+    range.column,
+  );
+  const activeRow = spreadsheetSortActiveIndex(target.activeRow, range.row);
   const header = rows[0] ?? [];
   const resolvedAppearanceRows =
     appearanceRows && spreadsheetSortAppearanceRowsMatch(rows, appearanceRows)
@@ -226,20 +237,26 @@ export function createSpreadsheetSortDialogSource(
     sheetName,
     range,
     rangeReference: formatSpreadsheetCellRanges([range]),
+    activeRow,
     appearanceRows: resolvedAppearanceRows,
     customLists: mergeSpreadsheetSortCustomLists(customLists),
     columns: Array.from({ length: width }, (_, offset) => {
-      const column = range.column[0] + offset;
+      const index = range.column[0] + offset;
       const name = spreadsheetSortHeaderText(header[offset]);
-      const coordinate = spreadsheetSortColumnLabel(column);
+      const coordinate = spreadsheetSortColumnLabel(index);
       return {
-        column,
+        index,
         label: name ? `${coordinate}（${name}）` : coordinate,
       };
     }),
+    rows: Array.from({ length: height }, (_, offset) => {
+      const index = range.row[0] + offset;
+      return { index, label: `行 ${index + 1}` };
+    }),
     value: {
+      orientation: 'top-to-bottom',
       hasHeader,
-      keys: [{ column: firstColumn, direction: 'ascending' }],
+      keys: [{ index: activeColumn, direction: 'ascending' }],
     },
   };
 }
@@ -248,26 +265,49 @@ export function validateSpreadsheetSortRequest(
   request: SpreadsheetSortRequest,
 ): SpreadsheetSortValidationResult {
   const range = normalizeSpreadsheetCellRange(request.range);
-  if (!range || !request.sheetId.trim()) {
+  if (
+    !range ||
+    typeof request.sheetId !== 'string' ||
+    !request.sheetId.trim()
+  ) {
     return spreadsheetSortError('invalid-range');
+  }
+  if (
+    request.orientation !== 'top-to-bottom' &&
+    request.orientation !== 'left-to-right'
+  ) {
+    return spreadsheetSortError('invalid-orientation');
+  }
+  if (request.orientation === 'left-to-right' && request.hasHeader) {
+    return spreadsheetSortError('invalid-header');
   }
   const rangeError = spreadsheetSortRangeError(range);
   if (rangeError) return rangeError;
-  if (!request.keys.length) return spreadsheetSortError('missing-key');
+  if (!Array.isArray(request.keys) || !request.keys.length) {
+    return spreadsheetSortError('missing-key');
+  }
   if (request.keys.length > MAX_SPREADSHEET_SORT_KEYS) {
     return spreadsheetSortError('too-many-keys');
   }
+
+  const keyRange =
+    request.orientation === 'top-to-bottom' ? range.column : range.row;
+  const outOfRangeCode =
+    request.orientation === 'top-to-bottom'
+      ? 'column-out-of-range'
+      : 'row-out-of-range';
   const keys: SpreadsheetSortKey[] = [];
   for (const key of request.keys) {
-    if (!Number.isSafeInteger(key.column)) {
-      return spreadsheetSortError('column-out-of-range');
-    }
-    if (key.column < range.column[0] || key.column > range.column[1]) {
-      return spreadsheetSortError('column-out-of-range');
+    if (
+      !Number.isSafeInteger(key.index) ||
+      key.index < keyRange[0] ||
+      key.index > keyRange[1]
+    ) {
+      return spreadsheetSortError(outOfRangeCode);
     }
     if (key.sortOn !== undefined) {
       if (
-        (key.position !== 'top' && key.position !== 'bottom') ||
+        (key.position !== 'first' && key.position !== 'last') ||
         key.customList !== undefined ||
         key.direction !== undefined
       ) {
@@ -279,7 +319,7 @@ export function validateSpreadsheetSortRequest(
           return spreadsheetSortError('invalid-appearance');
         }
         const normalized: SpreadsheetSortKey = {
-          column: key.column,
+          index: key.index,
           sortOn: key.sortOn,
           color,
           position: key.position,
@@ -293,7 +333,7 @@ export function validateSpreadsheetSortRequest(
         const icon = normalizeSpreadsheetSortIcon(key.icon);
         if (icon) {
           const normalized: SpreadsheetSortKey = {
-            column: key.column,
+            index: key.index,
             sortOn: 'icon',
             icon,
             position: key.position,
@@ -314,7 +354,7 @@ export function validateSpreadsheetSortRequest(
       if (!customList.ok) return spreadsheetSortError('invalid-custom-list');
       if (
         !appendSpreadsheetSortKey(keys, {
-          column: key.column,
+          index: key.index,
           customList: customList.entries,
         })
       ) {
@@ -327,107 +367,32 @@ export function validateSpreadsheetSortRequest(
     }
     if (
       !appendSpreadsheetSortKey(keys, {
-        column: key.column,
+        index: key.index,
         direction: key.direction,
       })
     ) {
       return spreadsheetSortError('duplicate-key');
     }
   }
-  const rowCount = range.row[1] - range.row[0] + 1;
-  if (rowCount - (request.hasHeader ? 1 : 0) < 2) {
-    return spreadsheetSortError('not-enough-rows');
+
+  if (request.orientation === 'top-to-bottom') {
+    const rowCount = range.row[1] - range.row[0] + 1;
+    if (rowCount - (request.hasHeader ? 1 : 0) < 2) {
+      return spreadsheetSortError('not-enough-rows');
+    }
+  } else if (range.column[1] - range.column[0] + 1 < 2) {
+    return spreadsheetSortError('not-enough-columns');
   }
+
   return {
     ok: true,
     request: {
       sheetId: request.sheetId,
       range,
+      orientation: request.orientation,
       hasHeader: Boolean(request.hasHeader),
       keys,
     },
-  };
-}
-
-export function sortSpreadsheetRows(
-  source: readonly (readonly (Cell | null)[])[],
-  request: SpreadsheetSortRequest,
-  appearanceRows?: SpreadsheetSortAppearanceRows,
-): SpreadsheetSortResult {
-  const validation = validateSpreadsheetSortRequest(request);
-  if (!validation.ok) return validation;
-  const { range, hasHeader, keys } = validation.request;
-  const width = range.column[1] - range.column[0] + 1;
-  const height = range.row[1] - range.row[0] + 1;
-  if (source.length !== height || source.some((row) => row.length !== width)) {
-    return spreadsheetSortError('invalid-matrix');
-  }
-  if (source.some((row) => row.some((cell) => Boolean(cell?.hl)))) {
-    return spreadsheetSortError('unsupported-linked-cell');
-  }
-  const resolvedAppearanceRows =
-    appearanceRows ?? createSpreadsheetSortDirectAppearanceRows(source);
-  if (
-    keys.some((key) => key.sortOn !== undefined) &&
-    !spreadsheetSortAppearanceRowsMatch(source, resolvedAppearanceRows)
-  ) {
-    return spreadsheetSortError('invalid-appearance');
-  }
-
-  const header = hasHeader ? source[0] : undefined;
-  const rows = source.slice(hasHeader ? 1 : 0);
-  const appearanceOffset = hasHeader ? 1 : 0;
-  const compiledKeys = keys.map((key) =>
-    compileSpreadsheetSortKey(key, range.column[0]),
-  );
-  if (
-    compiledKeys.some(
-      (key) =>
-        key.kind === 'appearance' &&
-        !resolvedAppearanceRows
-          .slice(appearanceOffset)
-          .some((row) =>
-            spreadsheetSortCellMatchesAppearance(row[key.offset], key.target),
-          ),
-    )
-  ) {
-    return spreadsheetSortError('invalid-appearance');
-  }
-  const sorted = rows
-    .map((cells, index) => ({
-      appearance: resolvedAppearanceRows[index + appearanceOffset] ?? [],
-      cells,
-      index,
-    }))
-    .sort((left, right) => {
-      for (const key of compiledKeys) {
-        const order = compareSpreadsheetSortCells(
-          left.cells[key.offset] ?? null,
-          right.cells[key.offset] ?? null,
-          left.appearance[key.offset],
-          right.appearance[key.offset],
-          key,
-        );
-        if (order) return order;
-      }
-      return left.index - right.index;
-    });
-  const translatedRows: (Cell | null)[][] = [];
-  for (const [targetIndex, row] of sorted.entries()) {
-    const translated = translateSpreadsheetSortRow(
-      row.cells,
-      targetIndex - row.index,
-    );
-    if (!translated) {
-      return spreadsheetSortError('formula-reference-out-of-range');
-    }
-    translatedRows.push(translated);
-  }
-  return {
-    ok: true,
-    rows: header
-      ? [header as (Cell | null)[], ...translatedRows]
-      : translatedRows,
   };
 }
 
@@ -437,6 +402,46 @@ export function spreadsheetSortFailureMessage(
   return result.ok ? null : result.message;
 }
 
+export function spreadsheetSortAppearanceRowsMatch(
+  rows: readonly (readonly (Cell | null)[])[],
+  appearances: SpreadsheetSortAppearanceRows,
+): boolean {
+  return (
+    rows.length === appearances.length &&
+    rows.every(
+      (row, index) => row.length === (appearances[index]?.length ?? -1),
+    )
+  );
+}
+
+export function spreadsheetSortError(
+  code: SpreadsheetSortErrorCode,
+): Extract<SpreadsheetSortValidationResult, { ok: false }> {
+  const messages: Record<SpreadsheetSortErrorCode, string> = {
+    'column-out-of-range': '排序列必须位于当前选定区域内。',
+    'duplicate-key': '同一行或列不能重复使用相同的值或外观排序条件。',
+    'formula-reference-out-of-range':
+      '排序会使相对公式引用超出工作表范围，因此未应用任何更改。',
+    'invalid-appearance':
+      '外观排序条件或当前颜色/图标快照无效，因此未应用任何更改。',
+    'invalid-custom-list': '自定义排序序列无效，请检查项目数量、长度和重复项。',
+    'invalid-direction': '请选择有效的升序或降序次序。',
+    'invalid-header': '按行排序会移动所有选定列，不能保留标题列。',
+    'invalid-matrix': '排序只能应用到已完整读取的矩形区域。',
+    'invalid-orientation': '请选择有效的按列或按行排序方向。',
+    'invalid-range': '请选择一个有效的连续单元格区域。',
+    'missing-key': '请至少添加一个排序条件。',
+    'not-enough-columns': '当前区域没有足够的数据列可供按行排序。',
+    'not-enough-rows': '当前区域没有足够的数据行可供排序。',
+    'range-too-large': `一次最多可排序 ${MAX_SPREADSHEET_SORT_CELLS.toLocaleString('en-US')} 个单元格。`,
+    'row-out-of-range': '排序行必须位于当前选定区域内。',
+    'too-many-keys': `一次最多可设置 ${MAX_SPREADSHEET_SORT_KEYS} 个排序条件。`,
+    'unsupported-linked-cell':
+      '当前区域包含坐标关联的超链接，尚不能安全地随排序移动。',
+  };
+  return { ok: false, code, message: messages[code] };
+}
+
 function spreadsheetSortRangeError(
   range: SpreadsheetCellRange,
 ): Extract<SpreadsheetSortValidationResult, { ok: false }> | null {
@@ -444,117 +449,6 @@ function spreadsheetSortRangeError(
   if (!Number.isSafeInteger(area) || area > MAX_SPREADSHEET_SORT_CELLS) {
     return spreadsheetSortError('range-too-large');
   }
-  return null;
-}
-
-function compareSpreadsheetSortCells(
-  left: Cell | null,
-  right: Cell | null,
-  leftAppearance: SpreadsheetSortAppearanceRows[number][number] | undefined,
-  rightAppearance: SpreadsheetSortAppearanceRows[number][number] | undefined,
-  key: SpreadsheetSortCompiledKey,
-): number {
-  if (key.kind === 'appearance') {
-    const leftMatches = spreadsheetSortCellMatchesAppearance(
-      leftAppearance,
-      key.target,
-    );
-    const rightMatches = spreadsheetSortCellMatchesAppearance(
-      rightAppearance,
-      key.target,
-    );
-    if (leftMatches === rightMatches) return 0;
-    const matchedFirst = key.position === 'top';
-    return leftMatches === matchedFirst ? -1 : 1;
-  }
-  const leftValue = spreadsheetSortValue(left);
-  const rightValue = spreadsheetSortValue(right);
-  if (leftValue === null) return rightValue === null ? 0 : 1;
-  if (rightValue === null) return -1;
-  if (key.kind === 'custom-list') {
-    const leftRank = key.customRanks.get(
-      spreadsheetSortCustomListMatchKey(leftValue),
-    );
-    const rightRank = key.customRanks.get(
-      spreadsheetSortCustomListMatchKey(rightValue),
-    );
-    if (leftRank !== undefined || rightRank !== undefined) {
-      if (leftRank === undefined) return 1;
-      if (rightRank === undefined) return -1;
-      return leftRank - rightRank;
-    }
-  }
-  const order =
-    typeof leftValue === 'number' && typeof rightValue === 'number'
-      ? leftValue - rightValue
-      : spreadsheetSortCollator.compare(String(leftValue), String(rightValue));
-  return key.kind === 'value' && key.direction === 'descending'
-    ? -order
-    : order;
-}
-
-type SpreadsheetSortCompiledKey =
-  | {
-      kind: 'appearance';
-      offset: number;
-      position: SpreadsheetSortAppearancePosition;
-      target: SpreadsheetSortAppearanceTarget;
-    }
-  | {
-      customRanks: ReadonlyMap<string, number>;
-      kind: 'custom-list';
-      offset: number;
-    }
-  | {
-      direction: SpreadsheetSortDirection;
-      kind: 'value';
-      offset: number;
-    };
-
-function compileSpreadsheetSortKey(
-  key: SpreadsheetSortKey,
-  firstColumn: number,
-): SpreadsheetSortCompiledKey {
-  if (key.sortOn === 'cell-color' || key.sortOn === 'font-color') {
-    return {
-      kind: 'appearance',
-      offset: key.column - firstColumn,
-      position: key.position,
-      target: { kind: key.sortOn, color: key.color },
-    };
-  }
-  if (key.sortOn === 'icon') {
-    return {
-      kind: 'appearance',
-      offset: key.column - firstColumn,
-      position: key.position,
-      target: { kind: 'icon', icon: key.icon },
-    };
-  }
-  if (key.customList !== undefined) {
-    return {
-      kind: 'custom-list',
-      offset: key.column - firstColumn,
-      customRanks: new Map(
-        key.customList.map((entry, index) => [
-          spreadsheetSortCustomListMatchKey(entry),
-          index,
-        ]),
-      ),
-    };
-  }
-  return {
-    kind: 'value',
-    offset: key.column - firstColumn,
-    direction: key.direction ?? 'ascending',
-  };
-}
-
-function spreadsheetSortValue(cell: Cell | null): number | string | null {
-  const value = cell?.v ?? cell?.m;
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim()) return value.trim();
-  if (typeof value === 'boolean') return value ? 1 : 0;
   return null;
 }
 
@@ -568,18 +462,6 @@ function spreadsheetSortRowsHaveHeader(
     labels.every(Boolean) &&
     new Set(labels.map((label) => label.toLocaleLowerCase())).size ===
       labels.length
-  );
-}
-
-function spreadsheetSortAppearanceRowsMatch(
-  rows: readonly (readonly (Cell | null)[])[],
-  appearances: SpreadsheetSortAppearanceRows,
-): boolean {
-  return (
-    rows.length === appearances.length &&
-    rows.every(
-      (row, index) => row.length === (appearances[index]?.length ?? -1),
-    )
   );
 }
 
@@ -599,36 +481,25 @@ function appendSpreadsheetSortKey(
 
 function spreadsheetSortKeyIdentity(key: SpreadsheetSortKey): string {
   if (key.sortOn === 'cell-color' || key.sortOn === 'font-color') {
-    return `${key.column}:${spreadsheetSortAppearanceTargetValue({
+    return `${key.index}:${spreadsheetSortAppearanceTargetValue({
       kind: key.sortOn,
       color: key.color,
     })}`;
   }
   if (key.sortOn === 'icon') {
-    return `${key.column}:${spreadsheetSortAppearanceTargetValue({
+    return `${key.index}:${spreadsheetSortAppearanceTargetValue({
       kind: 'icon',
       icon: key.icon,
     })}`;
   }
-  return `${key.column}:values`;
+  return `${key.index}:values`;
 }
 
-function translateSpreadsheetSortRow(
-  row: readonly (Cell | null)[],
-  rowOffset: number,
-): (Cell | null)[] | null {
-  if (rowOffset === 0) return row as (Cell | null)[];
-  const translated: (Cell | null)[] = [];
-  for (const cell of row) {
-    if (!cell?.f) {
-      translated.push(cell);
-      continue;
-    }
-    const formula = translateSpreadsheetFormula(cell.f, rowOffset, 0);
-    if (formula === null) return null;
-    translated.push(formula === cell.f ? cell : { ...cell, f: formula });
-  }
-  return translated;
+function spreadsheetSortActiveIndex(
+  active: number,
+  range: readonly [number, number],
+): number {
+  return active >= range[0] && active <= range[1] ? active : range[0];
 }
 
 function spreadsheetSortHeaderText(cell: Cell | null | undefined): string {
@@ -644,32 +515,3 @@ function spreadsheetSortColumnLabel(column: number): string {
     { row: [0, 0], column: [column, column] },
   ]).replace(/\d+$/, '');
 }
-
-function spreadsheetSortError(
-  code: SpreadsheetSortErrorCode,
-): Extract<SpreadsheetSortValidationResult, { ok: false }> {
-  const messages: Record<SpreadsheetSortErrorCode, string> = {
-    'column-out-of-range': '排序列必须位于当前选定区域内。',
-    'duplicate-key': '同一列不能重复使用相同的值或外观排序条件。',
-    'formula-reference-out-of-range':
-      '排序会使相对公式引用超出工作表范围，因此未应用任何更改。',
-    'invalid-appearance':
-      '外观排序条件或当前颜色/图标快照无效，因此未应用任何更改。',
-    'invalid-custom-list': '自定义排序序列无效，请检查项目数量、长度和重复项。',
-    'invalid-direction': '请选择有效的升序或降序次序。',
-    'invalid-matrix': '排序只能应用到已完整读取的矩形区域。',
-    'invalid-range': '请选择一个有效的连续单元格区域。',
-    'missing-key': '请至少添加一个排序条件。',
-    'not-enough-rows': '当前区域没有足够的数据行可供排序。',
-    'range-too-large': `一次最多可排序 ${MAX_SPREADSHEET_SORT_CELLS.toLocaleString('en-US')} 个单元格。`,
-    'too-many-keys': `一次最多可设置 ${MAX_SPREADSHEET_SORT_KEYS} 个排序条件。`,
-    'unsupported-linked-cell':
-      '当前区域包含坐标关联的超链接，尚不能安全地随排序移动。',
-  };
-  return { ok: false, code, message: messages[code] };
-}
-
-const spreadsheetSortCollator = new Intl.Collator('zh-CN', {
-  numeric: true,
-  sensitivity: 'base',
-});

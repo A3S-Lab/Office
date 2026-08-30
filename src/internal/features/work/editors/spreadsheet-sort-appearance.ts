@@ -20,7 +20,7 @@ export type SpreadsheetSortAppearanceKind =
   | 'font-color'
   | 'icon';
 
-export type SpreadsheetSortAppearancePosition = 'top' | 'bottom';
+export type SpreadsheetSortAppearancePosition = 'first' | 'last';
 
 export interface SpreadsheetSortIconTarget {
   iconSet: SpreadsheetConditionalIconSetName;
@@ -43,11 +43,11 @@ export interface SpreadsheetSortCellAppearance {
 export type SpreadsheetSortAppearanceRows =
   readonly (readonly SpreadsheetSortCellAppearance[])[];
 
-export interface SpreadsheetSortAppearanceColumn {
+export interface SpreadsheetSortAppearanceField {
   cellColors: readonly (string | null)[];
-  column: number;
   fontColors: readonly (string | null)[];
   icons: readonly SpreadsheetSortIconTarget[];
+  index: number;
 }
 
 export function createSpreadsheetSortAppearanceRows(
@@ -90,22 +90,27 @@ export function createSpreadsheetSortDirectAppearanceRows(
   return rows.map((row) => row.map(spreadsheetSortDirectCellAppearance));
 }
 
-export function spreadsheetSortAppearanceColumns(
+export function spreadsheetSortAppearanceFields(
   rows: SpreadsheetSortAppearanceRows,
   range: SpreadsheetCellRange,
+  orientation: 'top-to-bottom' | 'left-to-right',
   hasHeader: boolean,
-): readonly SpreadsheetSortAppearanceColumn[] {
-  const width = range.column[1] - range.column[0] + 1;
-  const sourceRows = rows.slice(hasHeader ? 1 : 0);
-  return Array.from({ length: width }, (_, offset) => {
+): readonly SpreadsheetSortAppearanceField[] {
+  const vertical = orientation === 'top-to-bottom';
+  const fieldCount = vertical
+    ? range.column[1] - range.column[0] + 1
+    : range.row[1] - range.row[0] + 1;
+  return Array.from({ length: fieldCount }, (_, offset) => {
     const cellColors: Array<string | null> = [];
     const fontColors: Array<string | null> = [];
     const icons: SpreadsheetSortIconTarget[] = [];
     const seenCellColors = new Set<string>();
     const seenFontColors = new Set<string>();
     const seenIcons = new Set<string>();
-    for (const row of sourceRows) {
-      const appearance = row[offset];
+    const appearances = vertical
+      ? rows.slice(hasHeader ? 1 : 0).map((row) => row[offset])
+      : (rows[offset] ?? []);
+    for (const appearance of appearances) {
       if (!appearance) continue;
       if (appearance.cellColor !== undefined) {
         appendUniqueColor(cellColors, seenCellColors, appearance.cellColor);
@@ -120,7 +125,7 @@ export function spreadsheetSortAppearanceColumns(
       }
     }
     return {
-      column: range.column[0] + offset,
+      index: (vertical ? range.column[0] : range.row[0]) + offset,
       cellColors,
       fontColors,
       icons,
@@ -217,17 +222,17 @@ export function spreadsheetSortAppearanceTargetLabel(
 }
 
 export function spreadsheetSortAppearanceTargets(
-  column: SpreadsheetSortAppearanceColumn | undefined,
+  field: SpreadsheetSortAppearanceField | undefined,
   kind: SpreadsheetSortAppearanceKind,
 ): readonly SpreadsheetSortAppearanceTarget[] {
-  if (!column) return [];
+  if (!field) return [];
   if (kind === 'cell-color') {
-    return column.cellColors.map((color) => ({ kind, color }));
+    return field.cellColors.map((color) => ({ kind, color }));
   }
   if (kind === 'font-color') {
-    return column.fontColors.map((color) => ({ kind, color }));
+    return field.fontColors.map((color) => ({ kind, color }));
   }
-  return column.icons.map((icon) => ({ kind, icon: { ...icon } }));
+  return field.icons.map((icon) => ({ kind, icon: { ...icon } }));
 }
 
 export function spreadsheetSortAppearanceTargetsEqual(

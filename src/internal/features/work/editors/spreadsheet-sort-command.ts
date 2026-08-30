@@ -27,10 +27,10 @@ import {
   type SpreadsheetSortIntent,
   type SpreadsheetSortOpenRequest,
   type SpreadsheetSortRequest,
-  sortSpreadsheetRows,
   validateSpreadsheetSortRequest,
 } from './spreadsheet-sort';
 import { createSpreadsheetSortAppearanceRows } from './spreadsheet-sort-appearance';
+import { sortSpreadsheetMatrix } from './spreadsheet-sort-matrix';
 
 export function createSpreadsheetSortExtension(): OfficeEditorExtension<
   SpreadsheetCommandContext,
@@ -101,8 +101,9 @@ function quickSortSpreadsheet(
   return applySpreadsheetSort(context, {
     sheetId: context.targetSheetId,
     range: request.selected.range,
+    orientation: 'top-to-bottom',
     hasHeader: false,
-    keys: [{ column: request.activeColumn, direction }],
+    keys: [{ index: request.activeColumn, direction }],
   });
 }
 
@@ -122,7 +123,12 @@ function createSpreadsheetSortOpenRequest(
   if (!plan) return null;
   const selected = {
     range: plan.selectedRange,
-    available: spreadsheetSortRangeCanApply(context, sheet, plan.selectedRange),
+    available: spreadsheetSortRangeCanApply(
+      context,
+      sheet,
+      plan.selectedRange,
+      intent,
+    ),
   };
   const expanded = plan.expandedRange
     ? {
@@ -131,21 +137,26 @@ function createSpreadsheetSortOpenRequest(
           context,
           sheet,
           plan.expandedRange,
+          intent,
         ),
       }
     : undefined;
   if (!selected.available && !expanded?.available) return null;
   const selection = spreadsheetLiveCommandSelection(context);
   const activeColumn = selection?.column_focus ?? selectedRange.column[0];
+  const activeRow = selection?.row_focus ?? selectedRange.row[0];
   if (
     activeColumn < selectedRange.column[0] ||
-    activeColumn > selectedRange.column[1]
+    activeColumn > selectedRange.column[1] ||
+    activeRow < selectedRange.row[0] ||
+    activeRow > selectedRange.row[1]
   ) {
     return null;
   }
   return {
     sheetId: context.targetSheetId,
     activeColumn,
+    activeRow,
     intent,
     selected,
     ...(expanded ? { expanded } : {}),
@@ -156,9 +167,10 @@ function spreadsheetSortRangeCanApply(
   context: SpreadsheetCommandContext,
   sheet: WorkSpreadsheetSheet,
   range: SpreadsheetCellRange,
+  intent: SpreadsheetSortIntent,
 ): boolean {
   return (
-    spreadsheetSortRangeCanRun(range, false) &&
+    spreadsheetSortRangeCanRun(range, intent) &&
     canMutateSpreadsheetCellRange(sheet, range) &&
     !spreadsheetSortRangeHasStructuralConflict(context, range)
   );
@@ -215,7 +227,7 @@ function applySpreadsheetSort(
       validation.request.range,
       rows,
     );
-    const result = sortSpreadsheetRows(rows, validation.request, appearances);
+    const result = sortSpreadsheetMatrix(rows, validation.request, appearances);
     if (!result.ok) return false;
     context.workbook.setCellValuesByRange(
       result.rows,
@@ -230,16 +242,17 @@ function applySpreadsheetSort(
 
 function spreadsheetSortRangeCanRun(
   range: { column: readonly number[]; row: readonly number[] },
-  hasHeader: boolean,
+  intent: SpreadsheetSortIntent,
 ): boolean {
   const rowStart = Math.min(range.row[0] ?? 0, range.row[1] ?? 0);
   const rowEnd = Math.max(range.row[0] ?? 0, range.row[1] ?? 0);
   const columnStart = Math.min(range.column[0] ?? 0, range.column[1] ?? 0);
   const columnEnd = Math.max(range.column[0] ?? 0, range.column[1] ?? 0);
-  const rows = rowEnd - rowStart + 1 - (hasHeader ? 1 : 0);
+  const rows = rowEnd - rowStart + 1;
+  const columns = columnEnd - columnStart + 1;
   const area = (rowEnd - rowStart + 1) * (columnEnd - columnStart + 1);
   return (
-    rows >= 2 &&
+    (rows >= 2 || (intent.type === 'custom' && columns >= 2)) &&
     Number.isSafeInteger(area) &&
     area <= MAX_SPREADSHEET_SORT_CELLS
   );

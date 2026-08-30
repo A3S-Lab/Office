@@ -1,3 +1,57 @@
+.work-spreadsheet-sort-options-dialog {
+  inline-size: min(420px, calc(100vw - 32px));
+}
+
+.work-spreadsheet-sort-options {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-spreadsheet-sort-options legend {
+  margin-block-end: 8px;
+  color: var(--a3s-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.work-spreadsheet-sort-options > label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.work-spreadsheet-sort-options > label:has(input:checked) {
+  border-color: var(--work-spreadsheet-accent, #159469);
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent, #159469) 10%,
+    var(--a3s-panel)
+  );
+}
+
+.work-spreadsheet-sort-options input {
+  margin-block-start: 3px;
+  accent-color: var(--work-spreadsheet-accent, #159469);
+}
+
+.work-spreadsheet-sort-options label > span {
+  display: grid;
+  gap: 3px;
+}
+
+.work-spreadsheet-sort-options small {
+  color: var(--a3s-muted);
+  line-height: 1.4;
+}
+
 .work-spreadsheet-sort-dialog {
   --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
 

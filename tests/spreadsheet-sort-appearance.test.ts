@@ -3,7 +3,7 @@ import { describe, expect, test } from '@rstest/core';
 import {
   createSpreadsheetSortAppearanceRows,
   createSpreadsheetSortDirectAppearanceRows,
-  spreadsheetSortAppearanceColumns,
+  spreadsheetSortAppearanceFields,
 } from '../src/internal/features/work/editors/spreadsheet-sort-appearance';
 import { withXlsxGradientFill } from '../src/internal/features/work/work-xlsx-gradient-fill';
 import type { WorkSpreadsheetSheet } from '../src/internal/features/work/work-types';
@@ -60,20 +60,21 @@ describe('spreadsheet sort appearances', () => {
     );
 
     expect(
-      spreadsheetSortAppearanceColumns(
+      spreadsheetSortAppearanceFields(
         appearances,
         { row: [0, 3], column: [0, 1] },
+        'top-to-bottom',
         true,
       ),
     ).toEqual([
       {
-        column: 0,
+        index: 0,
         cellColors: ['#aabbcc', '#fff2cc', null],
         fontColors: ['#0000ff', '#d84b4f', null],
         icons: [],
       },
       {
-        column: 1,
+        index: 1,
         cellColors: [null],
         fontColors: [null],
         icons: [
@@ -81,6 +82,43 @@ describe('spreadsheet sort appearances', () => {
           { iconSet: '3TrafficLights1', index: 1 },
           { iconSet: '3TrafficLights1', index: 2 },
         ],
+      },
+    ]);
+  });
+
+  test('discovers stable per-row targets for left-to-right sorting', () => {
+    const appearances = createSpreadsheetSortDirectAppearanceRows([
+      [
+        { v: 'Plain' },
+        { v: 'Red', bg: '#fce8e6' },
+        { v: 'Red again', bg: '#fce8e6' },
+      ],
+      [
+        { v: 'Automatic' },
+        { v: 'Blue', fc: '#4472c4' },
+        { v: 'Blue again', fc: '#4472c4' },
+      ],
+    ]);
+
+    expect(
+      spreadsheetSortAppearanceFields(
+        appearances,
+        { row: [4, 5], column: [2, 4] },
+        'left-to-right',
+        false,
+      ),
+    ).toEqual([
+      {
+        index: 4,
+        cellColors: [null, '#fce8e6'],
+        fontColors: [null],
+        icons: [],
+      },
+      {
+        index: 5,
+        cellColors: [null],
+        fontColors: [null, '#4472c4'],
+        icons: [],
       },
     ]);
   });
@@ -107,9 +145,10 @@ describe('spreadsheet sort appearances', () => {
     expect(appearances[0]?.[0]?.cellColor).toBeUndefined();
     expect(appearances[1]?.[0]?.cellColor).toBeNull();
     expect(
-      spreadsheetSortAppearanceColumns(
+      spreadsheetSortAppearanceFields(
         appearances,
         { row: [0, 1], column: [0, 0] },
+        'top-to-bottom',
         false,
       )[0]?.cellColors,
     ).toEqual([null]);

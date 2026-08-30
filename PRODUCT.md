@@ -584,7 +584,8 @@ coordinate-owned hyperlink, imported-formula, or border sidecars also fail
 closed until one transaction can reconcile their row ownership. Focused
 Rstest, desktop and compact Playwright, and the local-only A3S Test gate cover
 the dialog, priority changes, formula movement, accessibility, diagnostics,
-and one-step Undo. Row-direction and table-aware sorting remain open.
+and one-step Undo. Table-aware sorting remains open; left-to-right direction is
+completed by the fifty-second milestone below.
 
 The forty-ninth milestone aligns partial Spreadsheet sorting with the
 Traditional Office Sort Warning flow. AutoFilter and Sort now share one
@@ -605,7 +606,8 @@ only real non-formula text values and no longer treats formatted numbers or
 formula results as headers. Focused Rstest, desktop and compact Playwright, and
 the local-only A3S Test gate cover exact and expanded choices, quick and custom
 paths, focus, accessibility, formula movement, one-step Undo, and browser
-diagnostics. Row-direction and table-aware sorting remain open.
+diagnostics. Table-aware sorting remains open; left-to-right direction is
+completed by the fifty-second milestone below.
 
 The fiftieth milestone adds offline custom-list order to every Spreadsheet sort
 key. Seven immutable Chinese and English month/weekday sequences are always
@@ -641,8 +643,27 @@ batch, relative-formula translation, and one-step Undo boundary. Focused model,
 dialog, command, and Hook Rstest, desktop/compact Playwright, and the pinned
 local-only A3S Test gate cover four-level same-column color/font/icon priority, responsive
 containment, formula movement, Undo, focus, accessibility, and empty browser
-diagnostics. Row-direction sorting, durable host settings, and structural
-table/AutoFilter reconciliation remain open.
+diagnostics. Durable host settings and structural table/AutoFilter
+reconciliation remain open; left-to-right direction is completed below.
+
+The fifty-second milestone adds offline Traditional Office-compatible left-to-right
+Spreadsheet sorting. A nested Sort Options dialog switches the existing Custom
+Sort surface between column keys that move complete rows and row keys that move
+complete columns. Horizontal mode starts from the active row, disables header
+retention, retains up to 64 stable value, custom-list, color, font-color, or
+conditional-icon keys, and maps appearance placement to left or right.
+
+One direction-neutral matrix engine owns both orientations. It validates every
+absolute key and the complete appearance snapshot before mutation, translates
+relative formula references along the moved row or column axis, preserves
+absolute references, and rejects an out-of-bounds translation atomically. One
+accepted request still crosses Fortune as one native range write and one Undo
+record. Existing million-cell, protection, merge, pivot, table, AutoFilter,
+hyperlink, formula-metadata, and border-sidecar guards remain authoritative.
+Focused model, dialog, command, and Hook Rstest, desktop/compact Playwright, and
+the pinned local-only A3S Test gate cover multi-row priority, complete-column
+movement, formula translation, Undo, focus, responsive containment,
+accessibility, and empty browser diagnostics.
 
 ## Current Presentation Milestone
 
