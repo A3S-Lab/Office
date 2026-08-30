@@ -1,0 +1,267 @@
+suite "office-spreadsheet-custom-list-sort" {
+    version = 1
+
+    scenario "author-reuse-apply-and-undo-custom-list-sort" {
+        name = "Author, reuse, apply, and undo a Spreadsheet custom-list sort"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-custom-list-sort"
+        }
+
+        click "open-quarterly-plan" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "move-to-table-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-table-header" {
+            key = "ArrowDown"
+        }
+
+        press "extend-column-b" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-c" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-d" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-e" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-f" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-g" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-first-data-row" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-second-data-row" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-third-data-row" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-fourth-data-row" {
+            key = "Shift+ArrowDown"
+        }
+
+        expect "sort-range-selected" {
+            text = "A3:G7"
+        }
+
+        click "open-data-tab" {
+            target = role("tab", "数据")
+        }
+
+        click "open-custom-sort" {
+            target = role("button", "自定义排序")
+        }
+
+        expect "custom-sort-dialog-visible" {
+            visible = css(".work-spreadsheet-sort-dialog[role='dialog']")
+        }
+
+        select "choose-status-column" {
+            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 列']")
+            values = ["6"]
+        }
+
+        select "create-custom-list" {
+            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']")
+            values = ["create-custom-list"]
+        }
+
+        fill "enter-duplicate-custom-list" {
+            target = css(".work-spreadsheet-sort-dialog textarea[aria-label='排序条件 1 自定义序列']")
+            value = "有风险,有风险"
+        }
+
+        click "reject-duplicate-custom-list" {
+            target = role("button", "使用序列")
+        }
+
+        expect "duplicate-custom-list-is-explained" {
+            text = "自定义序列不能包含重复项"
+        }
+
+        fill "enter-valid-custom-list" {
+            target = css(".work-spreadsheet-sort-dialog textarea[aria-label='排序条件 1 自定义序列']")
+            value = "有风险,进行中,正常,已完成"
+        }
+
+        click "use-custom-list" {
+            target = role("button", "使用序列")
+        }
+
+        expect "custom-list-is-selected" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(option[value='custom-list:7']:checked)")
+        }
+
+        expect "custom-list-preview-is-visible" {
+            text = "有风险 → 进行中 → 正常 → 已完成"
+        }
+
+        click "add-secondary-key" {
+            target = role("button", "添加条件")
+        }
+
+        expect "secondary-key-defaults-to-first-unused-column" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 列']:has(option[value='0']:checked)")
+        }
+
+        accessibility "custom-list-sort-dialog-accessibility" {
+            path = "evidence/spreadsheet-custom-list-sort-dialog.json"
+            interactive = true
+        }
+
+        click "apply-custom-list-sort" {
+            target = role("button", "确定")
+        }
+
+        expect "sort-focus-restored" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='自定义排序']:focus")
+        }
+
+        click "reopen-custom-sort" {
+            target = role("button", "自定义排序")
+        }
+
+        expect "session-custom-list-is-reusable" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(option[value='custom-list:7'])")
+        }
+
+        click "close-reopened-sort" {
+            target = role("button", "取消")
+        }
+
+        focus "focus-grid-after-sort" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "inspect-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "inspect-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-header" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-first-sorted-row" {
+            key = "ArrowDown"
+        }
+
+        expect "at-risk-row-is-first" {
+            text = "新版发布"
+        }
+
+        press "inspect-sorted-owner" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-january" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-february" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-march" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-formula" {
+            key = "ArrowRight"
+        }
+
+        expect "moved-formula-is-rebased" {
+            text = "=AVERAGE(C4:E4)"
+        }
+
+        press "undo-custom-list-sort" {
+            key = "Control+z"
+        }
+
+        expect "original-formula-is-restored-in-one-step" {
+            text = "=SUM(C4:E4)/3"
+        }
+
+        press "inspect-restored-march" {
+            key = "ArrowLeft"
+        }
+
+        press "inspect-restored-february" {
+            key = "ArrowLeft"
+        }
+
+        press "inspect-restored-january" {
+            key = "ArrowLeft"
+        }
+
+        press "inspect-restored-owner" {
+            key = "ArrowLeft"
+        }
+
+        press "inspect-restored-name" {
+            key = "ArrowLeft"
+        }
+
+        expect "original-row-order-is-restored" {
+            text = "客户洞察报告"
+        }
+
+        accessibility "spreadsheet-after-custom-list-sort-accessibility" {
+            path = "evidence/spreadsheet-after-custom-list-sort.json"
+            interactive = true
+        }
+
+        console "spreadsheet-custom-list-sort-console" {
+            path = "diagnostics/spreadsheet-custom-list-sort-console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-custom-list-sort-page-errors" {
+            path = "diagnostics/spreadsheet-custom-list-sort-page-errors.json"
+            clear = false
+        }
+    }
+}

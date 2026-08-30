@@ -1,6 +1,6 @@
 import type { Cell } from '@fortune-sheet/core';
 import { expect, test } from '@rstest/core';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { useRef } from 'react';
 import type {
   SpreadsheetEditorCommands,
@@ -158,6 +158,64 @@ test('applies a quick sort to the expanded current region with detected headers'
   officeRoot.remove();
 });
 
+test('reuses authored custom lists without stealing focus after dialog close', async () => {
+  const portRef: { current: SpreadsheetSortCommandPort | null } = {
+    current: null,
+  };
+  const content = spreadsheetContent();
+  const commandsRef = {
+    current: {
+      applyCustomSort: () => true,
+    } as SpreadsheetEditorCommands,
+  };
+  const invoker = document.createElement('button');
+  const nextTarget = document.createElement('button');
+  document.body.append(invoker, nextTarget);
+  invoker.focus();
+
+  render(
+    <SortHarness
+      commandsRef={commandsRef}
+      content={content}
+      portRef={portRef}
+    />,
+  );
+
+  act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
+  const createOption = within(order).getByRole('option', {
+    name: '新建自定义序列…',
+  }) as HTMLOptionElement;
+  fireEvent.change(order, { target: { value: createOption.value } });
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
+    { target: { value: '有风险\n进行中\n正常\n已完成' } },
+  );
+  fireEvent.click(screen.getByRole('button', { name: '使用序列' }));
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
+
+  expect(screen.queryByRole('dialog', { name: '自定义排序' })).toBeNull();
+  expect(invoker).toHaveFocus();
+  nextTarget.focus();
+  await act(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      }),
+  );
+  expect(nextTarget).toHaveFocus();
+  act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  expect(
+    within(screen.getByRole('combobox', { name: '排序条件 1 次序' })).getByRole(
+      'option',
+      { name: '有风险 → 进行中 → 正常 → …' },
+    ),
+  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
+  invoker.remove();
+  nextTarget.remove();
+});
+
 function SortHarness({
   commandsRef,
   content,
@@ -224,6 +282,18 @@ function quickExpansionRequest(): SpreadsheetSortOpenRequest {
       available: true,
     },
     expanded: {
+      range: { row: [0, 2], column: [0, 2] },
+      available: true,
+    },
+  };
+}
+
+function customSelectionRequest(): SpreadsheetSortOpenRequest {
+  return {
+    sheetId: 'sheet-1',
+    activeColumn: 1,
+    intent: { type: 'custom' },
+    selected: {
       range: { row: [0, 2], column: [0, 2] },
       available: true,
     },

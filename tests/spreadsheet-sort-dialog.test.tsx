@@ -1,7 +1,14 @@
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { SpreadsheetSortDialog } from '../src/internal/features/work/editors/spreadsheet-sort-dialog';
+import {
+  createSpreadsheetSortCustomList,
+  MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS,
+  mergeSpreadsheetSortCustomLists,
+  SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS,
+} from '../src/internal/features/work/editors/spreadsheet-sort-custom-list';
 import type {
+  SpreadsheetSortCustomList,
   SpreadsheetSortDialogSource,
   SpreadsheetSortDialogValue,
 } from '../src/internal/features/work/editors/spreadsheet-sort';
@@ -104,6 +111,103 @@ test('removes levels, prevents duplicate keys, and exposes the compact header co
   ).not.toBeChecked();
 });
 
+test('creates and applies a reusable custom-list order without leaving the dialog', () => {
+  const applied: SpreadsheetSortDialogValue[] = [];
+  const remembered: SpreadsheetSortCustomList[] = [];
+  render(
+    <SpreadsheetSortDialog
+      source={sortSource()}
+      restoreFocusTarget={() => null}
+      onApply={(value) => {
+        applied.push(value);
+        return true;
+      }}
+      onRememberCustomList={(list) => remembered.push(list)}
+      onClose={() => undefined}
+    />,
+  );
+
+  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
+  const createOption = within(order).getByRole('option', {
+    name: '新建自定义序列…',
+  }) as HTMLOptionElement;
+  fireEvent.change(order, { target: { value: createOption.value } });
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
+    { target: { value: '有风险\n进行中\n正常\n已完成' } },
+  );
+  fireEvent.click(screen.getByRole('button', { name: '使用序列' }));
+
+  expect(
+    within(order).getByRole('option', {
+      name: '有风险 → 进行中 → 正常 → …',
+    }),
+  ).toBeInTheDocument();
+  expect(remembered).toEqual([
+    {
+      source: 'session',
+      label: '有风险 → 进行中 → 正常 → …',
+      entries: ['有风险', '进行中', '正常', '已完成'],
+    },
+  ]);
+
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+  expect(applied).toEqual([
+    {
+      hasHeader: true,
+      keys: [
+        {
+          column: 0,
+          customList: ['有风险', '进行中', '正常', '已完成'],
+        },
+      ],
+    },
+  ]);
+});
+
+test('rejects another authored list after the mounted-editor session bound', () => {
+  const sessionLists = Array.from(
+    { length: MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS },
+    (_, index) =>
+      createSpreadsheetSortCustomList(
+        [`First ${index}`, `Second ${index}`],
+        'session',
+      ),
+  ).filter((list): list is SpreadsheetSortCustomList => list !== null);
+  const remembered: SpreadsheetSortCustomList[] = [];
+  render(
+    <SpreadsheetSortDialog
+      source={{
+        ...sortSource(),
+        customLists: mergeSpreadsheetSortCustomLists(sessionLists),
+      }}
+      restoreFocusTarget={() => null}
+      onApply={() => true}
+      onRememberCustomList={(list) => remembered.push(list)}
+      onClose={() => undefined}
+    />,
+  );
+
+  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
+  const createOption = within(order).getByRole('option', {
+    name: '新建自定义序列…',
+  }) as HTMLOptionElement;
+  fireEvent.change(order, { target: { value: createOption.value } });
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
+    { target: { value: 'Overflow first\nOverflow second' } },
+  );
+  fireEvent.click(screen.getByRole('button', { name: '使用序列' }));
+
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    `当前编辑器会话最多保留 ${MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS} 个自定义序列。`,
+  );
+  expect(
+    screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
+  ).toHaveAttribute('aria-invalid', 'true');
+  expect(remembered).toEqual([]);
+});
+
 function sortSource(): SpreadsheetSortDialogSource {
   return {
     sheetId: 'sheet-1',
@@ -115,6 +219,7 @@ function sortSource(): SpreadsheetSortDialogSource {
       { column: 1, label: 'B（Score）' },
       { column: 2, label: 'C（Owner）' },
     ],
+    customLists: SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS,
     value: {
       hasHeader: true,
       keys: [{ column: 0, direction: 'ascending' }],

@@ -2629,7 +2629,7 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(discoverability).toContain('9 / 9 项');
 });
 
-test('publishes formula-safe Spreadsheet multi-key sorting without rewriting 0.37.0', async () => {
+test('publishes formula-safe Spreadsheet value and custom-list sorting without rewriting 0.37.0', async () => {
   const [
     readme,
     roadmap,
@@ -2647,6 +2647,10 @@ test('publishes formula-safe Spreadsheet multi-key sorting without rewriting 0.3
     structureCommand,
     e2e,
     rangeE2e,
+    customListModel,
+    customListDialog,
+    customListE2e,
+    customListVisual,
     currentRegion,
     rangeDialog,
     packageJson,
@@ -2713,6 +2717,31 @@ test('publishes formula-safe Spreadsheet multi-key sorting without rewriting 0.3
     readFile(
       path.join(
         repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-sort-custom-list.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-sort-dialog.tsx',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/spreadsheet-custom-list-sort.acl'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/spreadsheet-custom-list-sort.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
         'src/internal/features/work/editors/spreadsheet-current-region.ts',
       ),
       'utf8',
@@ -2734,19 +2763,24 @@ test('publishes formula-safe Spreadsheet multi-key sorting without rewriting 0.3
   expect(readme).toContain('up to 64 ordered keys');
   expect(readme).toContain('relative-formula translation');
   expect(readme).toContain('current-region expansion warnings');
-  expect(roadmap).toContain('stable value-based custom sorting');
+  expect(readme).toContain('seven built-in month/weekday sequences');
+  expect(roadmap).toContain('stable value/custom-list sorting');
   expect(roadmap).toContain('exact-or-expand warnings');
+  expect(roadmap).toContain('bounded session-authored sequences');
   expect(changelog).toContain('Data → Custom Sort');
   expect(changelog).toContain('coordinate-owned hyperlink');
   expect(changelog).toContain('Sort Warning');
   expect(product).toContain('The forty-eighth milestone');
   expect(product).toContain('The forty-ninth milestone');
+  expect(product).toContain('The fiftieth milestone');
   expect(english).toContain('## Multi-key custom sort');
   expect(chinese).toContain('## 多关键字自定义排序');
   expect(english).toContain('coordinate-owned');
   expect(chinese).toContain('坐标归属');
   expect(english).toContain('Traditional Office-style Sort Warning');
   expect(chinese).toContain('传统 Office 风格“排序提醒”');
+  expect(english).toContain('seven built-in Chinese or English month');
+  expect(chinese).toContain('七个中英文月份/星期内置序列');
   expect(architecture).toContain('`spreadsheetSort` editor extension');
   expect(chineseArchitecture).toContain('`spreadsheetSort` 编辑器扩展');
   expect(architecture).toContain('`spreadsheet-current-region` model');
@@ -2755,6 +2789,8 @@ test('publishes formula-safe Spreadsheet multi-key sorting without rewriting 0.3
   expect(chineseQuality).toContain('第三十八个 Spreadsheet 纵向切片');
   expect(quality).toContain('The thirty-ninth Spreadsheet slice');
   expect(chineseQuality).toContain('第三十九个 Spreadsheet 纵向切片');
+  expect(quality).toContain('The fortieth Spreadsheet slice');
+  expect(chineseQuality).toContain('第四十个 Spreadsheet 纵向切片');
   expect(releaseEnglish).not.toContain('## Multi-key custom sort');
   expect(releaseChinese).not.toContain('## 多关键字自定义排序');
   expect(releaseEnglish).not.toContain('Traditional Office-style Sort Warning');
@@ -2771,11 +2807,25 @@ test('publishes formula-safe Spreadsheet multi-key sorting without rewriting 0.3
   expect(rangeE2e).toContain('expand-is-default');
   expect(rangeE2e).toContain('exact-range-has-no-header');
   expect(rangeE2e).toContain('expanded-formula-restored-in-one-step');
+  expect(customListModel).toContain(
+    'MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRIES = 256',
+  );
+  expect(customListModel).toContain('SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS');
+  expect(customListDialog).toContain('新建自定义序列…');
+  expect(customListDialog).toContain('onRememberCustomList');
+  expect(customListE2e).toContain('duplicate-custom-list-is-explained');
+  expect(customListE2e).toContain('session-custom-list-is-reusable');
+  expect(customListVisual).toContain('spreadsheet-custom-list-sort-dialog.png');
   expect(packageJson).toContain('playground:visual:spreadsheet-custom-sort');
   expect(packageJson).toContain('test:e2e:spreadsheet-custom-sort');
+  expect(packageJson).toContain(
+    'playground:visual:spreadsheet-custom-list-sort',
+  );
+  expect(packageJson).toContain('test:e2e:spreadsheet-custom-list-sort');
   expect(packageJson).toContain('playground:visual:spreadsheet-sort-range');
   expect(packageJson).toContain('test:e2e:spreadsheet-sort-range');
   expect(gate).toContain('tests/e2e/spreadsheet-custom-sort.acl');
+  expect(gate).toContain('tests/e2e/spreadsheet-custom-list-sort.acl');
   expect(gate).toContain('tests/e2e/spreadsheet-sort-range.acl');
 });
 

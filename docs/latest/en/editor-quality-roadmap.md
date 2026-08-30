@@ -1428,6 +1428,19 @@ Playwright, and local-only A3S Test 1.0.0 cover range choice, quick/custom
 transitions, formula movement, Undo, focus, accessibility, and clean browser
 diagnostics without adding A3S Test to Actions or Pages.
 
+The fortieth Spreadsheet slice adds offline custom-list order to every sort
+key. One bounded model owns seven immutable Chinese/English month and weekday
+sequences, newline/comma parsing, Unicode normalization, duplicate detection,
+and limits of 256 entries, 128 code points per entry, and 4,096 total code
+points. Listed values sort before unmatched natural-order values, blanks remain
+last, and stable equal ranks can continue through later keys. The dialog retains
+at most 32 user sequences only for the mounted editor session; requests clone
+their sequence, while controlled workbook content and browser storage remain
+untouched. Focused Rstest, desktop/compact Playwright, and the local-only pinned
+A3S Test 1.0.0 gate cover invalid input, reuse, formula movement, one-step Undo,
+accessibility, and clean diagnostics without adding A3S Test to Actions or
+Pages.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

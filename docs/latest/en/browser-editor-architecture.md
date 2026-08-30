@@ -1443,14 +1443,22 @@ Value-based multi-key Custom Sort is now owned by a separate
 `spreadsheetSort` editor extension rather than the row/column structure
 extension. The command freezes one continuous selection, derives a header
 candidate, and validates up to 64 unique keys before cloning and stably sorting
-complete cell rows. Relative formula rows are translated with the same bounded
-reference engine used by Paste Special, while absolute references stay fixed.
+complete cell rows. A key is a closed union of ascending/descending value order
+or an explicit custom sequence. The `spreadsheet-sort-custom-list` model owns
+normalization, duplicate and size guards, seven immutable month/weekday lists,
+and rank matching; the validated request clones custom entries so command
+execution has no dependency on mutable UI state. The React adapter owns only a
+bounded in-memory registry for the mounted editor and never writes preferences
+into controlled workbook content or browser storage. Relative formula rows are
+translated with the same bounded reference engine used by Paste Special, while
+absolute references stay fixed.
 One accepted operation crosses the Fortune boundary as one range write and one
 controlled Undo record. Table, worksheet-AutoFilter, hyperlink-map,
 imported-formula-metadata, and border-sidecar intersections fail closed because
 those models still own coordinates outside the cell matrix. Moving large sorts,
-advanced predicates, color/icon keys, custom lists, and structural sidecar
-reconciliation into the Worker/WASM kernel remains Stage 3 work.
+advanced predicates, color/icon keys, durable host-managed custom-list settings,
+and structural sidecar reconciliation into the Worker/WASM kernel remains
+Stage 3 work.
 
 Partial-range planning is a separate controlled concern. The shared
 `spreadsheet-current-region` model reads dense `data` and sparse `celldata`

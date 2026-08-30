@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added offline Spreadsheet custom-list sorting to every ordered key. The Sort
+  dialog now offers seven built-in Chinese and English month/weekday sequences,
+  validates user-authored newline/comma lists, and reuses up to 32 bounded lists
+  for the lifetime of the mounted editor without writing preferences into the
+  controlled workbook or browser storage.
+- Custom-list requests carry their normalized order explicitly. Matching is
+  case- and width-insensitive, listed values precede unmatched natural-order
+  values, blanks stay last, later keys still break ties, and the existing
+  formula-safe row batch and one-step Undo contract remain unchanged. Added
+  focused Rstest, desktop/compact Playwright, and local-only A3S Test coverage.
 - Added a Traditional Office-style Spreadsheet **Sort Warning** for partial, narrow-column,
   and single-cell sort selections. Custom Sort and quick ascending/descending
   commands now default to expanding the selection to its dense- or sparse-sheet

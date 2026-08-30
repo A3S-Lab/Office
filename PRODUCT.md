@@ -584,8 +584,8 @@ coordinate-owned hyperlink, imported-formula, or border sidecars also fail
 closed until one transaction can reconcile their row ownership. Focused
 Rstest, desktop and compact Playwright, and the local-only A3S Test gate cover
 the dialog, priority changes, formula movement, accessibility, diagnostics,
-and one-step Undo. Color/icon keys, custom lists, row-direction sorting, and
-table-aware sorting remain open.
+and one-step Undo. Color/icon keys, row-direction sorting, and table-aware
+sorting remain open.
 
 The forty-ninth milestone aligns partial Spreadsheet sorting with the
 Traditional Office Sort Warning flow. AutoFilter and Sort now share one
@@ -606,8 +606,24 @@ only real non-formula text values and no longer treats formatted numbers or
 formula results as headers. Focused Rstest, desktop and compact Playwright, and
 the local-only A3S Test gate cover exact and expanded choices, quick and custom
 paths, focus, accessibility, formula movement, one-step Undo, and browser
-diagnostics. Custom lists, color/icon keys, row-direction sorting, and
-table-aware sorting remain open.
+diagnostics. Color/icon keys, row-direction sorting, and table-aware sorting
+remain open.
+
+The fiftieth milestone adds offline custom-list order to every Spreadsheet sort
+key. Seven immutable Chinese and English month/weekday sequences are always
+available. The same dialog accepts newline or comma input for two through 256
+unique entries, limits each entry and total text, and retains at most 32 user
+lists only while that editor instance remains mounted. Controlled workbook
+content and browser storage stay untouched; durable cross-editor preferences
+remain an explicit future host-settings API rather than hidden persistence.
+
+Each accepted request carries a normalized copy of its sequence, so command
+execution does not depend on mutable UI state. Matching trims and normalizes
+width/case, listed values sort first, unmatched values use natural ascending
+order, blanks remain last, and later keys break equal ranks stably. Focused
+model, dialog, and Hook Rstest, desktop/compact Playwright, and the pinned
+local-only A3S Test gate cover invalid input, session reuse, formula-safe row
+movement, one-step Undo, accessibility, and empty browser diagnostics.
 
 ## Current Presentation Milestone
 

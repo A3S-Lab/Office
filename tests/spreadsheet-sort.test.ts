@@ -146,6 +146,44 @@ describe('spreadsheet custom sort', () => {
     ]);
   });
 
+  test('sorts listed values first, falls back naturally, and composes with later keys', () => {
+    const result = sortSpreadsheetRows(
+      [
+        [cell('Task'), cell('Status')],
+        [cell('Beta'), cell('进行中')],
+        [cell('Alpha'), cell('已完成')],
+        [cell('Zeta'), cell('有风险')],
+        [cell('Delta'), cell('待确认')],
+        [cell('Epsilon'), null],
+        [cell('Gamma'), cell('有风险')],
+      ],
+      {
+        sheetId: 'sheet-1',
+        range: { row: [0, 6], column: [0, 1] },
+        hasHeader: true,
+        keys: [
+          {
+            column: 1,
+            customList: ['有风险', '进行中', '正常', '已完成'],
+          },
+          { column: 0, direction: 'ascending' },
+        ],
+      },
+    );
+
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) throw new Error(result.message);
+    expect(result.rows.map((row) => row.map((item) => item?.v))).toEqual([
+      ['Task', 'Status'],
+      ['Gamma', '有风险'],
+      ['Zeta', '有风险'],
+      ['Beta', '进行中'],
+      ['Alpha', '已完成'],
+      ['Delta', '待确认'],
+      ['Epsilon', undefined],
+    ]);
+  });
+
   test('moves formulas with rows and translates only relative references', () => {
     const result = sortSpreadsheetRows(
       [
@@ -322,6 +360,12 @@ describe('spreadsheet custom sort', () => {
         range: { row: [0, MAX_SPREADSHEET_SORT_CELLS], column: [0, 1] },
       }),
     ).toMatchObject({ ok: false, code: 'range-too-large' });
+    expect(
+      validateSpreadsheetSortRequest({
+        ...base,
+        keys: [{ column: 0, customList: ['High', ' high ', 'Low'] }],
+      }),
+    ).toMatchObject({ ok: false, code: 'invalid-custom-list' });
 
     const malformedRows = sortSpreadsheetRows([[cell('A')], [cell('B')]], {
       ...base,

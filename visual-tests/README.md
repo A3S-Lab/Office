@@ -87,6 +87,22 @@ The companion A3S Test ACL exercises the same public workflow through the
 local release gate and remains intentionally absent from GitHub Actions and
 Pages.
 
+## Focused Spreadsheet custom-list sort contract
+
+The functional regression uses the public quarterly workbook to author a
+bounded status sequence, apply it as the primary key, keep a value-based
+secondary key, reopen the dialog to prove mounted-editor session reuse, and
+verify formula translation plus one-step Undo. Playwright runs the same path at
+desktop and compact widths and rejects browser console or page errors:
+
+```bash
+bun run playground:visual:spreadsheet-custom-list-sort
+```
+
+The companion local-only A3S Test ACL additionally rejects a duplicate list and
+records interactive accessibility evidence. Neither browser gate introduces
+hidden workbook or browser-storage persistence.
+
 ## Focused Spreadsheet sort-range warning contract
 
 The functional regression selects only the quarterly workbook's formula

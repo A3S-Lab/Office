@@ -285,6 +285,22 @@ sorts cell values ascending or descending. Finite numbers use numeric order,
 text uses natural Simplified Chinese collation, equal rows retain their source
 order, and blank cells stay at the end in both directions.
 
+Each key can instead use one of seven built-in Chinese or English month and
+weekday sequences, or a user-authored sequence entered with one item per line
+or comma. A custom sequence accepts 2–256 unique entries, at most 128 Unicode
+code points per entry and 4,096 in total. Matching trims values and normalizes
+case plus full-/half-width forms. Listed values come first in the authored
+order; unlisted values then use natural ascending order, equal ranks remain
+stable for later keys, and blanks still stay last. Reverse order is expressed
+by reversing the authored sequence.
+
+The seven built-ins are immutable. Up to 32 user sequences are reusable while
+the current editor instance remains mounted. They are deliberately not written
+to the controlled workbook or hidden browser storage; durable cross-editor
+preferences require a future explicit host-settings API. Every accepted sort
+request carries its normalized sequence, so execution never depends on mutable
+dialog state.
+
 A partial column, narrow rectangle, or single-cell selection first uses the
 same dense/sparse current-region model as AutoFilter. When adjacent data makes
 that region larger, Custom Sort and quick ascending/descending commands open an
@@ -313,8 +329,8 @@ now: moving only cells while leaving table/filter row ownership unchanged
 would corrupt that structural model. Intersections with coordinate-owned
 hyperlink maps, imported formula source/range metadata, or native border
 records fail closed for the same reason. Table-aware sorting, active-filter
-reconciliation, sidecar migration, custom lists, row-direction sorting, and
-color/icon sorting remain explicit follow-up work.
+reconciliation, sidecar migration, durable host-managed custom-list settings,
+row-direction sorting, and color/icon sorting remain explicit follow-up work.
 
 The warning freezes the original selection, both candidate rectangles, active
 column, worksheet, and sort intent. Applying an expanded range is authorized
@@ -327,8 +343,9 @@ the bounded contract. Playwright exercises the real dialog and moved formula;
 verify the two-key workflow, one-step Undo, accessibility, and empty console
 and page-error diagnostics. `tests/e2e/spreadsheet-sort-range.acl` additionally
 verifies the exact and expanded warning paths, focus restoration, formula-safe
-row movement, and Undo. GitHub Actions and Pages do not install or invoke A3S
-Test.
+row movement, and Undo. `tests/e2e/spreadsheet-custom-list-sort.acl` covers
+invalid input, session reuse, formula-safe custom-list row movement, and Undo.
+GitHub Actions and Pages do not install or invoke A3S Test.
 
 ## Find and Go To
 

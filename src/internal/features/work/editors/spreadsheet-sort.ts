@@ -9,6 +9,14 @@ import {
 } from './spreadsheet-cell-range';
 import { spreadsheetCurrentRegion } from './spreadsheet-current-region';
 import { translateSpreadsheetFormula } from './spreadsheet-paste-special-cell';
+import {
+  mergeSpreadsheetSortCustomLists,
+  spreadsheetSortCustomListMatchKey,
+  type SpreadsheetSortCustomList,
+  validateSpreadsheetSortCustomList,
+} from './spreadsheet-sort-custom-list';
+
+export type { SpreadsheetSortCustomList } from './spreadsheet-sort-custom-list';
 
 export const MAX_SPREADSHEET_SORT_KEYS = 64;
 export const MAX_SPREADSHEET_SORT_CELLS = 1_000_000;
@@ -17,10 +25,17 @@ const MAX_SPREADSHEET_SORT_HEADER_LENGTH = 48;
 
 export type SpreadsheetSortDirection = 'ascending' | 'descending';
 
-export interface SpreadsheetSortKey {
-  column: number;
-  direction: SpreadsheetSortDirection;
-}
+export type SpreadsheetSortKey =
+  | {
+      column: number;
+      customList?: never;
+      direction: SpreadsheetSortDirection;
+    }
+  | {
+      column: number;
+      customList: readonly string[];
+      direction?: never;
+    };
 
 export interface SpreadsheetSortDialogValue {
   hasHeader: boolean;
@@ -71,6 +86,7 @@ export interface SpreadsheetSortRequest extends SpreadsheetSortDialogValue {
 
 export interface SpreadsheetSortDialogSource {
   columns: Array<{ column: number; label: string }>;
+  customLists: readonly SpreadsheetSortCustomList[];
   range: SpreadsheetCellRange;
   rangeReference: string;
   sheetId: string;
@@ -82,6 +98,7 @@ export type SpreadsheetSortErrorCode =
   | 'column-out-of-range'
   | 'duplicate-key'
   | 'formula-reference-out-of-range'
+  | 'invalid-custom-list'
   | 'invalid-direction'
   | 'invalid-matrix'
   | 'invalid-range'
@@ -138,6 +155,7 @@ export function createSpreadsheetSortDialogSource(
   sheetName: string,
   target: SpreadsheetSortTarget,
   rows: readonly (readonly (Cell | null)[])[],
+  customLists: readonly SpreadsheetSortCustomList[] = [],
 ): SpreadsheetSortDialogSource | null {
   const range = normalizeSpreadsheetCellRange(target.range);
   if (!range || spreadsheetSortRangeError(range)) return null;
@@ -158,6 +176,7 @@ export function createSpreadsheetSortDialogSource(
     sheetName,
     range,
     rangeReference: formatSpreadsheetCellRanges([range]),
+    customLists: mergeSpreadsheetSortCustomLists(customLists),
     columns: Array.from({ length: width }, (_, offset) => {
       const column = range.column[0] + offset;
       const name = spreadsheetSortHeaderText(header[offset]);
@@ -197,10 +216,19 @@ export function validateSpreadsheetSortRequest(
       return spreadsheetSortError('column-out-of-range');
     }
     if (seen.has(key.column)) return spreadsheetSortError('duplicate-key');
+    seen.add(key.column);
+    if (key.customList !== undefined) {
+      if (key.direction !== undefined) {
+        return spreadsheetSortError('invalid-custom-list');
+      }
+      const customList = validateSpreadsheetSortCustomList(key.customList);
+      if (!customList.ok) return spreadsheetSortError('invalid-custom-list');
+      keys.push({ column: key.column, customList: customList.entries });
+      continue;
+    }
     if (key.direction !== 'ascending' && key.direction !== 'descending') {
       return spreadsheetSortError('invalid-direction');
     }
-    seen.add(key.column);
     keys.push({ column: key.column, direction: key.direction });
   }
   const rowCount = range.row[1] - range.row[0] + 1;
@@ -236,15 +264,17 @@ export function sortSpreadsheetRows(
 
   const header = hasHeader ? source[0] : undefined;
   const rows = source.slice(hasHeader ? 1 : 0);
+  const compiledKeys = keys.map((key) =>
+    compileSpreadsheetSortKey(key, range.column[0]),
+  );
   const sorted = rows
     .map((cells, index) => ({ cells, index }))
     .sort((left, right) => {
-      for (const key of keys) {
-        const offset = key.column - range.column[0];
+      for (const key of compiledKeys) {
         const order = compareSpreadsheetSortCells(
-          left.cells[offset] ?? null,
-          right.cells[offset] ?? null,
-          key.direction,
+          left.cells[key.offset] ?? null,
+          right.cells[key.offset] ?? null,
+          key,
         );
         if (order) return order;
       }
@@ -288,17 +318,54 @@ function spreadsheetSortRangeError(
 function compareSpreadsheetSortCells(
   left: Cell | null,
   right: Cell | null,
-  direction: SpreadsheetSortDirection,
+  key: SpreadsheetSortCompiledKey,
 ): number {
   const leftValue = spreadsheetSortValue(left);
   const rightValue = spreadsheetSortValue(right);
   if (leftValue === null) return rightValue === null ? 0 : 1;
   if (rightValue === null) return -1;
+  if (key.customRanks) {
+    const leftRank = key.customRanks.get(
+      spreadsheetSortCustomListMatchKey(leftValue),
+    );
+    const rightRank = key.customRanks.get(
+      spreadsheetSortCustomListMatchKey(rightValue),
+    );
+    if (leftRank !== undefined || rightRank !== undefined) {
+      if (leftRank === undefined) return 1;
+      if (rightRank === undefined) return -1;
+      return leftRank - rightRank;
+    }
+  }
   const order =
     typeof leftValue === 'number' && typeof rightValue === 'number'
       ? leftValue - rightValue
       : spreadsheetSortCollator.compare(String(leftValue), String(rightValue));
-  return direction === 'ascending' ? order : -order;
+  return key.direction === 'descending' ? -order : order;
+}
+
+interface SpreadsheetSortCompiledKey {
+  customRanks?: ReadonlyMap<string, number>;
+  direction?: SpreadsheetSortDirection;
+  offset: number;
+}
+
+function compileSpreadsheetSortKey(
+  key: SpreadsheetSortKey,
+  firstColumn: number,
+): SpreadsheetSortCompiledKey {
+  if (key.customList !== undefined) {
+    return {
+      offset: key.column - firstColumn,
+      customRanks: new Map(
+        key.customList.map((entry, index) => [
+          spreadsheetSortCustomListMatchKey(entry),
+          index,
+        ]),
+      ),
+    };
+  }
+  return { offset: key.column - firstColumn, direction: key.direction };
 }
 
 function spreadsheetSortValue(cell: Cell | null): number | string | null {
@@ -362,6 +429,7 @@ function spreadsheetSortError(
     'duplicate-key': '每个排序条件必须使用不同的列。',
     'formula-reference-out-of-range':
       '排序会使相对公式引用超出工作表范围，因此未应用任何更改。',
+    'invalid-custom-list': '自定义排序序列无效，请检查项目数量、长度和重复项。',
     'invalid-direction': '请选择有效的升序或降序次序。',
     'invalid-matrix': '排序只能应用到已完整读取的矩形区域。',
     'invalid-range': '请选择一个有效的连续单元格区域。',

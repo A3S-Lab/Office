@@ -20,6 +20,12 @@ import {
   type SpreadsheetSortRequest,
 } from './spreadsheet-sort';
 import { SpreadsheetSortDialog } from './spreadsheet-sort-dialog';
+import {
+  createSpreadsheetSortCustomList,
+  MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS,
+  spreadsheetSortCustomListsEqual,
+  type SpreadsheetSortCustomList,
+} from './spreadsheet-sort-custom-list';
 import { SpreadsheetSortRangeDialog } from './spreadsheet-sort-range-dialog';
 
 type SpreadsheetSortSurface =
@@ -55,6 +61,9 @@ export function useSpreadsheetSort({
   preview: boolean;
 }) {
   const [surface, setSurface] = useState<SpreadsheetSortSurface | null>(null);
+  const [customLists, setCustomLists] = useState<
+    readonly SpreadsheetSortCustomList[]
+  >([]);
   const authorizedRequestRef = useRef<{
     request: SpreadsheetSortRequest;
     selectedRange: SpreadsheetCellRange;
@@ -87,9 +96,33 @@ export function useSpreadsheetSort({
         sheet.name,
         { range: candidate.range, activeColumn: request.activeColumn },
         rows,
+        customLists,
       );
     },
-    [contentRef, getRows],
+    [contentRef, customLists, getRows],
+  );
+
+  const rememberCustomList = useCallback(
+    (candidate: SpreadsheetSortCustomList) => {
+      if (candidate.source !== 'session') return;
+      const list = createSpreadsheetSortCustomList(
+        candidate.entries,
+        'session',
+      );
+      if (!list) return;
+      setCustomLists((current) => {
+        if (
+          current.some((item) =>
+            spreadsheetSortCustomListsEqual(item.entries, list.entries),
+          ) ||
+          current.length >= MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS
+        ) {
+          return current;
+        }
+        return Object.freeze([...current, list]);
+      });
+    },
+    [],
   );
 
   const applyAuthorizedRequest = useCallback(
@@ -191,7 +224,6 @@ export function useSpreadsheetSort({
     setSurface(null);
     requestAnimationFrame(() => {
       if (openedFromGrid || !invoker?.isConnected) focusGrid(invoker);
-      else invoker.focus({ preventScroll: true });
       if (invokerRef.current === invoker) invokerRef.current = null;
     });
   }, [focusGrid, getGridFocusTarget]);
@@ -277,6 +309,7 @@ export function useSpreadsheetSort({
           source={surface.source}
           restoreFocusTarget={restoreFocusTarget}
           onApply={apply}
+          onRememberCustomList={rememberCustomList}
           onClose={close}
         />
       ) : surface?.kind === 'range' ? (

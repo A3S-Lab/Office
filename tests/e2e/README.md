@@ -578,6 +578,20 @@ that one Undo restores both values and formulas. The suite also records focus,
 accessibility, console, and page-error evidence. It uses the pinned local A3S
 Test 1.0.0 binary and remains absent from GitHub Actions and Pages.
 
+The offline Spreadsheet custom-list Sort workflow has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-custom-list-sort:check
+bun run test:e2e:spreadsheet-custom-list-sort
+```
+
+It rejects a duplicate authored sequence, accepts a bounded status order,
+applies that order with a secondary value key, verifies session reuse while the
+editor remains mounted, and confirms formula-safe row movement plus one-step
+Undo. Accessibility, focus, console, and page-error evidence are captured by
+the pinned local A3S Test 1.0.0 binary; the suite remains absent from GitHub
+Actions and Pages.
+
 The Traditional Office-style Spreadsheet partial-range Sort Warning has a focused local gate:
 
 ```bash
