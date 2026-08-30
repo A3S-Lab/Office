@@ -277,6 +277,14 @@ DOCX 流程已经验证编辑最后一页时复用 118 页、仅派生末尾 2 �
 本地 A3S Test 1.0.0 ACL 验证公开流程且保持空浏览器诊断，Actions 与 Pages 不安装或
 调用 A3S Test。
 
+第二十二个原生 Table/ListObject 切片之后，结构化引用计算切片已经接入同一份 Rust/WASM
+与 JavaScript 解析器、表格目录、依赖图和无历史投影路径。它支持表名/`displayName`、工作表
+限定、连续列、`#All`、`#Headers`、`#Data`、`#Totals`、`#This Row` 与表内 `[@Column]`
+公式；每次请求最多 1,024 张表，每个结构化区域最多 100,000 个单元格。不连续、三维、外部、
+缺失或超预算引用会明确失败。插入行时自动填充计算列、完整汇总行创作、切片器、查询表和
+高级集成仍属于后续边界。聚焦 Rust、浏览器内核、会话、XLSX 与 Playground 测试已覆盖该
+切片，并保持 Actions 与 Pages 不安装或调用 A3S Test。
+
 第二十三个 Spreadsheet 纵向切片在第二十二个原生 Table/ListObject 切片之上，补齐
 开始与字体组的高频 传统 Office 字号和框线键盘路径。可见的增大/减小字号按钮共享
 `Cmd/Ctrl+Shift+.`、`Cmd/Ctrl+]`、`Cmd/Ctrl+Shift+,` 与 `Cmd/Ctrl+[`；混合选择会

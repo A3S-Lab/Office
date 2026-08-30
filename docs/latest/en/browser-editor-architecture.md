@@ -603,11 +603,16 @@ tests. Successful scalar results are applied without adding undo history,
 known grouped formulas refresh before their dependents, and unresolved
 dependencies enter an ordered, cell-scoped Fortune Sheet compatibility pass.
 The shared Rust parser handles the same bounded formula grammar in the native
-core and browser kernel. This is not a complete Excel engine: Fortune Sheet
-remains the canonical grid, initial and replacement sparse projection still
-run on the main thread, and the kernel does not materialize whole-row or
-whole-column ranges, calculate arrays, spills, structured references or
-external workbooks, own number formatting, or own print layout.
+core and browser kernel. The current table slice resolves names/display names,
+worksheet-qualified tables, contiguous column ranges, `#All`, `#Headers`,
+`#Data`, `#Totals`, `#This Row`, and table-local `[@Column]` formulas. It is not
+a complete Excel engine: Fortune Sheet remains the canonical grid, initial and
+replacement sparse projection still run on the main thread, and the kernel
+does not materialize whole-row or whole-column ranges, calculate arrays, spills,
+external workbooks, own number formatting, or own print layout. Structured
+areas are capped at 100,000 cells and requests at 1,024 tables; disjoint,
+three-dimensional, missing, or over-budget references fail closed with a
+cell-scoped diagnostic.
 Presentation sends alignment plus move and resize snapping to Rust/WASM. The
 main thread treats an ordered selection as one bounded geometry frame, paints
 at most one transient preview per animation frame, and ignores stale geometry
@@ -1419,8 +1424,11 @@ row/column operations reconcile table structure, and Convert to Range
 materializes appearance through a sparse-safe path. XLSX table parts,
 relationships, content types, styles, and supported filters round-trip, while
 Yjs uses ordered ID-keyed records and creation claims for two-client
-convergence. Structured-reference calculation, calculated columns, complete
-totals authoring, slicers, and external/query tables remain open gates.
+convergence. The follow-up structured-reference slice now shares the parser and
+dependency session with native calculation, including calculated-column
+formulas authored on data rows and totals/header/data selectors. Automatic
+calculated-column fill on structural insertion, complete totals-row authoring,
+slicers, and external/query tables remain open gates.
 
 Exit criteria: scrolling and selection do not scale with total row count;
 incremental recalculation touches only affected dependency subgraphs; XLSX
@@ -1642,9 +1650,11 @@ The XLSX row above is a rectangular one-million-cell data fixture, not a
 semantic `WorkSpreadsheetTable`/OOXML ListObject benchmark. It proves the
 plain-workbook import and visible-range Canvas path; it must not be used to
 claim that structured-reference calculation, calculated columns, totals,
-filters, or table conversion have the same profile. A dedicated large
-ListObject matrix remains required before publishing table-specific load,
-mutation, conversion, and export budgets.
+filters, or table conversion have the same profile. The structured-reference
+kernel has bounded correctness coverage but no published large-ListObject
+latency number yet. A dedicated large ListObject matrix remains required
+before publishing table-specific load, mutation, conversion, and export
+budgets.
 
 The median text phases were 121.6 ms for the complete import, 76.1 ms inside
 the Worker, and 56.6 ms for Worker parsing. The table phases were 462.6 ms,

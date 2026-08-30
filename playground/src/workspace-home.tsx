@@ -18,6 +18,7 @@ import {
   Search,
   ServerCog,
   Sparkles,
+  Table2,
   Upload,
   UsersRound,
 } from 'lucide-react';
@@ -417,6 +418,9 @@ function LatestCapabilityIcon({ templateId }: { templateId: string }) {
   }
   if (templateId === 'data-validation') {
     return <ListChecks size={16} aria-hidden="true" />;
+  }
+  if (templateId === 'structured-references') {
+    return <Table2 size={17} aria-hidden="true" />;
   }
   if (templateId === 'animated-deck') {
     return <Play size={17} aria-hidden="true" />;

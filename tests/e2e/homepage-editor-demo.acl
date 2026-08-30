@@ -115,7 +115,7 @@ suite "homepage-editor-demo" {
         }
 
         expect "previews-are-paused" {
-            visible = css(".office-editor-chapters__motion-toggle[aria-pressed='true']")
+            text = "播放预览"
         }
 
         click "resume-previews" {
@@ -123,7 +123,7 @@ suite "homepage-editor-demo" {
         }
 
         expect "previews-are-playing" {
-            visible = css(".office-editor-chapters__motion-toggle[aria-pressed='false']")
+            text = "暂停动画"
         }
 
         click "jump-to-markdown-chapter" {

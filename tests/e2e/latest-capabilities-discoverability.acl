@@ -25,7 +25,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         expect "all-latest-capabilities-are-counted" {
-            text = "8 / 8 项"
+            text = "9 / 9 项"
         }
 
         expect "entrance-animation-entry-is-visible" {
@@ -54,6 +54,10 @@ suite "latest-capabilities-discoverability" {
 
         expect "data-validation-entry-is-visible" {
             visible = css("button[aria-label='打开最新能力：数据验证']")
+        }
+
+        expect "structured-reference-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：结构化引用']")
         }
 
         expect "pdf-page-organization-entry-is-visible" {
@@ -176,6 +180,22 @@ suite "latest-capabilities-discoverability" {
             visible = css("input[aria-label='文件名'][value='数据验证示例']")
         }
 
+        navigate "return-to-playground-home-after-data-validation" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-structured-references" {
+            target = role("button", "打开最新能力：结构化引用")
+        }
+
+        wait "structured-reference-workbook-is-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "structured-reference-title-is-visible" {
+            visible = css("input[aria-label='文件名'][value='结构化引用示例']")
+        }
+
         accessibility "latest-capability-accessibility" {
             path = "evidence/latest-capabilities.json"
             interactive = true
@@ -295,6 +315,18 @@ suite "latest-capabilities-discoverability" {
             url = "http://127.0.0.1:4175/docs/"
         }
 
+        navigate "open-structured-reference-documentation" {
+            url = "http://127.0.0.1:4175/docs/components/spreadsheet.html"
+        }
+
+        wait "structured-reference-documentation-is-open" {
+            text = "浏览器计算内核现在可以解析常见且有界的原生表格公式"
+        }
+
+        expect "structured-reference-calculation-is-documented" {
+            visible = css("main h2[id='结构化引用计算']")
+        }
+
         navigate "open-pdf-page-organization-documentation" {
             url = "http://127.0.0.1:4175/docs/components/pdf.html"
         }
@@ -361,6 +393,10 @@ suite "latest-capabilities-discoverability" {
             visible = css("button[aria-label='打开最新能力：数据验证']")
         }
 
+        expect "phone-structured-reference-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：结构化引用']")
+        }
+
         expect "phone-pdf-page-organization-entry-is-visible" {
             visible = css("button[aria-label='打开最新能力：组织 PDF 页面']")
         }
@@ -374,7 +410,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         expect "phone-writer-capabilities-are-counted" {
-            text = "5 / 8 项"
+            text = "5 / 9 项"
         }
 
         screenshot "phone-writer-capability-layout" {

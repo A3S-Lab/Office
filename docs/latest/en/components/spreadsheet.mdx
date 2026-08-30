@@ -72,9 +72,11 @@ preview to reproduce the current fixture. See the
 
 This is a rectangular one-million-populated-cell workbook fixture, not a
 semantic ListObject benchmark. It quantifies import, visible-range Canvas
-painting, navigation, and controlled cell publication. It does not quantify
-structured references, calculated columns, totals, table conversion, or table
-part export. It also does not authorize unbounded full-selection formatting:
+painting, navigation, and controlled cell publication. Structured-reference
+calculation has its own bounded kernel path, but this fixture does not publish
+its calculation latency. It also does not quantify calculated-column fill,
+totals authoring, table conversion, or table-part export. It also does not
+authorize unbounded full-selection formatting:
 text orientation is capped at 10,000 cells, and one visibility command is
 capped at 10,000 rows or 1,000 columns before any native index array is built.
 
@@ -164,10 +166,11 @@ name/display name, range, columns, header/totals flags, built-in style identity,
 style options, and the supported value/custom/top/dynamic filter criteria.
 Export regenerates table parts, worksheet relationships, content-type entries,
 `tableColumns`, `autoFilter`, and `tableStyleInfo` without flattening the table
-to cell colors. Unsupported structured-reference calculation, calculated
-columns, complete totals-row authoring, slicers, external/query tables, and
-advanced table integrations remain explicit boundaries; their presence must
-not be interpreted as complete Excel or Traditional Office table parity.
+to cell colors. The structured-reference calculation boundary is described
+below. Calculated-column fill on row insertion, complete totals-row authoring,
+slicers, external/query tables, and advanced table integrations remain
+explicit boundaries; their presence must not be interpreted as complete Excel
+or Traditional Office table parity.
 
 Focused model, reconciliation, command, dialog, ribbon, Canvas, collaboration,
 and native XLSX tests cover this contract. Desktop and compact Playwright own
@@ -176,6 +179,50 @@ the visual regression. The deterministic
 release gate with A3S Test 1.0.0, standalone agent-browser 0.26.0, Web protocol
 revision 15, and the already installed Playwright Chromium. GitHub Actions and
 Pages do not install or invoke A3S Test.
+
+## Structured-reference calculation
+
+The browser calculation kernel resolves a bounded, commonly authored subset of
+native table formulas. It accepts a table `name` or `displayName`, an optional
+worksheet qualifier, and contiguous column selections in these forms:
+
+```text
+=SUM(Sales[Revenue])
+=SUM(Sales[[Units]:[Unit price]])
+=COUNTA(Sales[#Headers])
+=SUM(Sales[#Data])
+=SUM(Sales[#Totals])
+=[@Units]*[@[Unit price]]
+```
+
+`#All`, `#Headers`, `#Data`, `#Totals`, and `#This Row` resolve against the
+table's explicit header and totals flags. A table-local `[@Column]` formula
+must be inside a data row; the same current-row formula can be authored in a
+calculated column one cell at a time. A qualified form such as
+`=SUM(Sales!Sales[Revenue])` is checked against the owning worksheet instead of
+silently resolving a same-named table elsewhere.
+
+Rust/WASM and the JavaScript fallback share the same parser, table catalog,
+dependency edges, and projection semantics. Incremental sessions retain the
+catalog and recalculate only dirty dependents, while a structural table edit
+uses a checked replacement snapshot. Formula results are applied as
+no-history projection updates, so recalculation never creates a second Undo
+step or turns a cached value into user input.
+
+The calculation request accepts at most 1,024 tables and materializes at most
+100,000 cells for one structured range. Whole-row or whole-column expansion,
+three-dimensional references, external workbooks, reversed or disjoint column
+areas, missing tables/columns/rows, and ranges beyond the bound fail closed
+with a cell-scoped diagnostic. The public Playground **新建 → 结构化引用**
+template opens a `Sales` ListObject with a calculated `Revenue` column, a
+totals row, header/data/all examples, and a second sheet using a qualified
+reference. This is a real editable workbook, not a documentation-only fixture.
+
+Focused Rust, browser-kernel, session, XLSX, and Playground tests cover parser
+parity, dependency invalidation, stale-result rejection, and sparse bounds.
+The current million-cell performance table above remains a rectangular
+workbook baseline; a dedicated large-ListObject benchmark is still required
+before publishing table-specific latency or memory targets.
 
 ## Find and Go To
 

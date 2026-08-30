@@ -2489,6 +2489,105 @@ test('publishes reproducible 100k Document performance evidence', async () => {
   }
 });
 
+test('publishes bounded Spreadsheet structured references across code, docs, and Playground', async () => {
+  const [
+    readme,
+    roadmap,
+    changelog,
+    product,
+    english,
+    chinese,
+    architecture,
+    chineseArchitecture,
+    quality,
+    chineseQuality,
+    englishHome,
+    chineseHome,
+    templates,
+    latestCapabilities,
+    workspaceHome,
+    discoverability,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, 'latest/zh/index.mdx'), 'utf8'),
+    readFile(
+      path.join(repositoryRoot, 'src/internal/features/work/work-templates.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'playground/src/latest-capabilities.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'playground/src/workspace-home.tsx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'tests/e2e/latest-capabilities-discoverability.acl',
+      ),
+      'utf8',
+    ),
+  ]);
+
+  expect(readme).toContain('Latest capabilities → 结构化引用');
+  expect(readme).toContain('structured-reference-calculation');
+  expect(readme).toContain('1,024 tables');
+  expect(roadmap).toContain('bounded structured-reference calculation');
+  expect(changelog).toContain(
+    'bounded Spreadsheet structured-reference calculation',
+  );
+  expect(product).toContain('follow-up structured-reference slice');
+  expect(english).toContain('## Structured-reference calculation');
+  expect(chinese).toContain('## 结构化引用计算');
+  expect(english).toContain('=SUM(Sales[Revenue])');
+  expect(chinese).toContain('=SUM(Sales[Revenue])');
+  expect(architecture).toContain('worksheet-qualified tables');
+  expect(chineseArchitecture).toContain('工作表限定');
+  expect(quality).toContain('The follow-up structured-reference slice');
+  expect(chineseQuality).toContain('结构化引用计算切片');
+  expect(englishHome).toContain('Structured-reference calculation');
+  expect(chineseHome).toContain('结构化引用计算');
+  expect(templates).toContain("id: 'structured-references'");
+  expect(templates).toContain('=[@Units]*[@[Unit price]]');
+  expect(templates).toContain('=SUM(Sales[Revenue])');
+  expect(latestCapabilities).toContain(
+    "{ templateId: 'structured-references', release: '0.36.0' }",
+  );
+  expect(workspaceHome).toContain("templateId === 'structured-references'");
+  expect(discoverability).toContain('打开最新能力：结构化引用');
+  expect(discoverability).toContain('9 / 9 项');
+});
+
 test('keeps the 0.8.0 native suggestion limitation frozen', async () => {
   for (const { lang } of DOCUMENTATION_LOCALES) {
     const cli = await readFile(

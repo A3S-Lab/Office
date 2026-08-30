@@ -120,6 +120,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     accent: '#13795b',
   },
   {
+    id: 'structured-references',
+    kind: 'spreadsheet',
+    name: '结构化引用',
+    description: '表名、标题/数据/汇总区域与当前行公式',
+    accent: '#0f7b61',
+  },
+  {
     id: 'blank-presentation',
     kind: 'presentation',
     name: '空白演示',
@@ -179,6 +186,7 @@ function initialTitle(templateId: string, kind: WorkArtifactKind): string {
     'proofing-languages': '校对语言示例',
     'quarterly-plan': '季度执行计划',
     'data-validation': '数据验证示例',
+    'structured-references': '结构化引用示例',
     'strategy-deck': '业务策略汇报',
     'animated-deck': '入场动画示例',
   };
@@ -454,6 +462,9 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
   if (templateId === 'data-validation') {
     return { type: 'spreadsheet', sheets: dataValidationTemplateSheets() };
   }
+  if (templateId === 'structured-references') {
+    return { type: 'spreadsheet', sheets: structuredReferenceTemplateSheets() };
+  }
   if (templateId === 'strategy-deck') {
     return strategyPresentation();
   }
@@ -681,6 +692,150 @@ function dataValidationTemplateSheets(): WorkSpreadsheetSheet[] {
         [styledCell('In review')],
       ],
       config: { columnlen: { 0: 120 } },
+    },
+  ];
+}
+
+function structuredReferenceTemplateSheets(): WorkSpreadsheetSheet[] {
+  const sales = emptyMatrix(16, 10);
+  sales[0][0] = styledCell('Sales · 结构化引用', {
+    bl: 1,
+    fs: 16,
+    fc: '#ffffff',
+    bg: '#0f7b61',
+  });
+  sales[1][0] = styledCell(
+    '表内计算列会按当前行计算；汇总行和右侧示例使用有界表区域。',
+    { fc: '#49645c', fs: 10 },
+  );
+  ['Item', 'Units', 'Unit price', 'Revenue'].forEach((value, column) => {
+    sales[2][column] = headerCell(value);
+  });
+  const rows: Array<[string, number, number, string]> = [
+    ['Landing page', 12, 48, '=[@Units]*[@[Unit price]]'],
+    ['API integration', 8, 120, '=[@Units]*[@[Unit price]]'],
+    ['QA review', 16, 36, '=[@Units]*[@[Unit price]]'],
+    ['Release support', 5, 80, '=[@Units]*[@[Unit price]]'],
+  ];
+  rows.forEach((row, rowIndex) => {
+    row.forEach((value, columnIndex) => {
+      sales[rowIndex + 3][columnIndex] = styledCell(value, {
+        bg: rowIndex % 2 ? '#f3faf7' : '#ffffff',
+        ...(columnIndex >= 1
+          ? { ct: { fa: columnIndex === 1 ? '0' : '#,##0.00', t: 'n' } }
+          : {}),
+      });
+    });
+  });
+  sales[7][0] = styledCell('Total', {
+    bl: 1,
+    fc: '#215446',
+    bg: '#dff3ec',
+  });
+  sales[7][1] = styledCell('=SUM(Sales[Units])', {
+    bl: 1,
+    fc: '#215446',
+    bg: '#dff3ec',
+    ct: { fa: '0', t: 'n' },
+  });
+  sales[7][3] = styledCell('=SUM(Sales[Revenue])', {
+    bl: 1,
+    fc: '#215446',
+    bg: '#dff3ec',
+    ct: { fa: '#,##0.00', t: 'n' },
+  });
+  sales[9][0] = styledCell('Reference examples', {
+    bl: 1,
+    fc: '#215446',
+  });
+  sales[10][0] = styledCell('Headers count');
+  sales[10][1] = styledCell('=COUNTA(Sales[#Headers])', {
+    ct: { fa: '0', t: 'n' },
+  });
+  sales[11][0] = styledCell('Data revenue');
+  sales[11][1] = styledCell('=SUM(Sales[Revenue])', {
+    ct: { fa: '#,##0.00', t: 'n' },
+  });
+  sales[12][0] = styledCell('Units + prices');
+  sales[12][1] = styledCell('=SUM(Sales[[Units]:[Unit price]])', {
+    ct: { fa: '#,##0.00', t: 'n' },
+  });
+  sales[13][0] = styledCell('All table cells');
+  sales[13][1] = styledCell('=COUNTA(Sales[#All])', {
+    ct: { fa: '0', t: 'n' },
+  });
+
+  const table: NonNullable<WorkSpreadsheetSheet['tables']>[number] = {
+    id: createWorkId('spreadsheet-table'),
+    name: 'Sales',
+    displayName: 'SalesData',
+    range: { row: [2, 7], column: [0, 3] },
+    columns: [
+      { name: 'Item' },
+      { name: 'Units' },
+      { name: 'Unit price' },
+      { name: 'Revenue' },
+    ],
+    filters: [],
+    headerRow: true,
+    totalsRow: true,
+    style: { family: 'medium', number: 4 },
+    showFirstColumn: false,
+    showLastColumn: false,
+    showRowStripes: true,
+    showColumnStripes: false,
+  };
+
+  const salesSheet: WorkSpreadsheetSheet = {
+    id: createWorkId('sheet'),
+    name: 'Sales',
+    status: 1,
+    order: 0,
+    row: 16,
+    column: 10,
+    data: sales,
+    tables: [table],
+    config: {
+      columnlen: { 0: 172, 1: 76, 2: 102, 3: 112 },
+      rowlen: { 0: 32, 1: 24, 2: 28, 7: 28 },
+      merge: { '0_0': { r: 0, c: 0, rs: 1, cs: 4 } },
+    },
+  };
+
+  const summary = emptyMatrix(10, 4);
+  summary[0][0] = styledCell('Summary · qualified references', {
+    bl: 1,
+    fs: 16,
+    fc: '#ffffff',
+    bg: '#215446',
+  });
+  summary[2][0] = styledCell('Revenue from Sales table');
+  summary[2][1] = styledCell('=SUM(Sales!Sales[Revenue])', {
+    ct: { fa: '#,##0.00', t: 'n' },
+  });
+  summary[3][0] = styledCell('Headers from Sales table');
+  summary[3][1] = styledCell('=COUNTA(Sales!Sales[#Headers])', {
+    ct: { fa: '0', t: 'n' },
+  });
+  summary[5][0] = styledCell(
+    'Sales!Sales[...] demonstrates a worksheet-qualified table reference.',
+    { fc: '#49645c', fs: 10 },
+  );
+  return [
+    salesSheet,
+    {
+      id: createWorkId('sheet'),
+      name: 'Summary',
+      status: 0,
+      order: 1,
+      row: 10,
+      column: 4,
+      data: summary,
+      config: {
+        columnlen: { 0: 240, 1: 120 },
+        rowlen: { 0: 32, 5: 28 },
+        merge: { '0_0': { r: 0, c: 0, rs: 1, cs: 2 } },
+      },
     },
   ];
 }

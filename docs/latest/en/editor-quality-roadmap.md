@@ -1187,9 +1187,15 @@ creation claims, ID-keyed table records, explicit order, validation, and
 field-local patches so two clients' independent design edits converge. Focused
 Rstest, desktop and compact Playwright, and a deterministic local-only A3S Test
 1.0.0 ACL protect the slice; GitHub Actions does not install or invoke A3S
-Test. Structured-reference calculation, calculated columns, complete totals
-authoring, slicers, external/query tables, and advanced integrations remain
-open.
+Test. The follow-up structured-reference slice now shares the bounded Rust/WASM
+and JavaScript parser, table catalog, dependency graph, and no-history
+projection path. It resolves table names/display names, worksheet-qualified
+tables, contiguous columns, `#All`, `#Headers`, `#Data`, `#Totals`, `#This Row`,
+and table-local `[@Column]` formulas. Each request is capped at 1,024 tables
+and each structured area at 100,000 cells; disjoint, three-dimensional,
+external, missing, and over-budget references fail closed. Automatic
+calculated-column fill on row insertion, complete totals-row authoring,
+slicers, external/query tables, and advanced integrations remain open.
 
 The twenty-third slice completes the frequent Traditional Office font-size and border
 keyboard path under Home and Font. Visible Grow Font and Shrink Font commands

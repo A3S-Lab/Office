@@ -217,9 +217,13 @@ filters, and canonical headers. XLSX import and export preserve native table
 parts, relationships, content types, names, ranges, built-in styles, and the
 supported filter criteria. Yjs stores tables as ordered ID-keyed records with
 creation claims and field-local conflict handling, so independent design edits
-from two browser clients converge. Structured-reference calculation,
-calculated columns, complete totals-row authoring, slicers, and external/query
-tables remain explicit compatibility gaps.
+from two browser clients converge. The follow-up structured-reference slice
+resolves bounded table names/display names, contiguous columns,
+header/data/totals selectors, worksheet-qualified references, and table-local
+calculated-column formulas through the shared Rust/WASM and JavaScript
+calculation paths. Automatic calculated-column fill on row insertion,
+complete totals-row authoring, slicers, and external/query tables remain
+explicit compatibility gaps.
 The twenty-third milestone completes the frequent Traditional Office font-size
 and border keyboard path under Home and Font. Grow Font owns `Cmd/Ctrl+Shift+.` and
 `Cmd/Ctrl+]`; Shrink Font owns `Cmd/Ctrl+Shift+,` and `Cmd/Ctrl+[`; Outside

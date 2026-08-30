@@ -84,7 +84,8 @@ bun run test:e2e:latest-capabilities
 ```
 
 It opens the Writer table of contents, native document index, character
-shading, proofing languages, and Spreadsheet data validation from the
+shading, proofing languages, Spreadsheet data validation, and bounded
+Spreadsheet structured references from the
 filterable Playground gallery; verifies the PDF page-organization entry; follows
 the documentation-home links to the full Writer, Spreadsheet, and PDF
 references; repeats the public discovery check at 390 px; and captures

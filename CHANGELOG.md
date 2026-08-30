@@ -8,6 +8,18 @@ All notable changes to A3S Office will be documented in this file.
   global top bar is gone; the A3S Office logo remains available as a
   product-home link in the workspace sidebar, with dynamic viewport sizing on
   desktop and compact screens.
+- Added bounded Spreadsheet structured-reference calculation across the native
+  Rust/WASM kernel, persistent Worker session, and JavaScript fallback. Table
+  names/display names, worksheet-qualified references, contiguous columns,
+  `#All`/`#Headers`/`#Data`/`#Totals`/`#This Row`, and table-local `[@Column]`
+  formulas share one dependency-aware projection path; each request accepts at
+  most 1,024 tables and materializes at most 100,000 cells per structured area.
+  Unsupported external, three-dimensional, disjoint, missing, and over-budget
+  references fail closed with cell-scoped diagnostics.
+- Published the public Playground **结构化引用** workbook with a calculated
+  `Revenue` column, totals row, selector examples, and a qualified-reference
+  summary sheet. Updated the latest bilingual Spreadsheet, architecture, and
+  quality documentation plus focused publication and discoverability tests.
 
 ## 0.35.0 - 2026-08-29
 

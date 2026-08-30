@@ -54,6 +54,11 @@ test('publishes the latest main capabilities as first-class Playground entries',
       name: '打开最新能力：原生索引',
     }),
   ).toBeInTheDocument();
+  const structuredReferences = within(latest).getByRole('button', {
+    name: '打开最新能力：结构化引用',
+  });
+  expect(structuredReferences).toHaveTextContent('Spreadsheet');
+  expect(structuredReferences).toHaveTextContent('v0.36.0');
   const pdfPageOrganization = within(latest).getByRole('button', {
     name: '打开最新能力：组织 PDF 页面',
   });
@@ -64,8 +69,17 @@ test('publishes the latest main capabilities as first-class Playground entries',
   fireEvent.click(dataValidation);
 
   expect(createdTemplates).toEqual(['data-validation']);
+  fireEvent.click(structuredReferences);
+  expect(createdTemplates).toEqual([
+    'data-validation',
+    'structured-references',
+  ]);
   fireEvent.click(entranceAnimations);
-  expect(createdTemplates).toEqual(['data-validation', 'animated-deck']);
+  expect(createdTemplates).toEqual([
+    'data-validation',
+    'structured-references',
+    'animated-deck',
+  ]);
 
   fireEvent.click(within(latest).getByRole('button', { name: '文字 5' }));
   expect(
@@ -78,7 +92,7 @@ test('publishes the latest main capabilities as first-class Playground entries',
       name: '打开最新能力：文档比较',
     }),
   ).toBeVisible();
-  expect(within(latest).getByText('5 / 8 项')).toBeVisible();
+  expect(within(latest).getByText('5 / 9 项')).toBeVisible();
 });
 
 test('keeps Markdown last in the quick-create list', () => {
@@ -87,6 +101,8 @@ test('keeps Markdown last in the quick-create list', () => {
   render(
     <SiteSidebar
       docsUrl="/docs/"
+      homeUrl="/"
+      logoUrl="/a3s-logo.png"
       onCollapse={() => undefined}
       onHome={() => undefined}
       onCreate={(templateId) => createdTemplates.push(templateId)}
@@ -114,6 +130,8 @@ test('keeps one documentation entry in the product navigation', () => {
   render(
     <SiteSidebar
       docsUrl="/docs/"
+      homeUrl="/"
+      logoUrl="/a3s-logo.png"
       onCollapse={() => undefined}
       onHome={() => {
         homeRequests += 1;
@@ -175,6 +193,8 @@ function ModalSidebarHarness() {
       {open && (
         <SiteSidebar
           docsUrl="/docs/"
+          homeUrl="/"
+          logoUrl="/a3s-logo.png"
           modal
           onCollapse={() => setOpen(false)}
           onHome={() => undefined}

@@ -56,9 +56,10 @@ workflows, and a separate Rust automation plane.
 
 ## Latest on `main`
 
-The `0.35.0` release plus the current `main` branch expose these capabilities
-as normal user-facing Playground templates, with matching implementation
-detail in the documentation:
+The `0.35.0` release plus the current `main` branch (including the `0.36.0`
+bounded structured-reference slice) expose these capabilities as normal
+user-facing Playground templates, with matching implementation detail in the
+documentation:
 
 | Editor | Latest capability | Public entry |
 | --- | --- | --- |
@@ -69,12 +70,13 @@ detail in the documentation:
 | Writer | Native character shading with exact `w:shd` patterns, foreground/background color identity, explicit resets, authoring, and DOCX reopen | Playground **Latest capabilities → 字符底纹** · [Document reference](docs/latest/en/components/document.mdx#native-character-shading) |
 | Writer | Independent Latin, East Asian, and bidi proofing languages plus explicit `w:noProof` inclusion/exclusion | Playground **Latest capabilities → 校对语言** · [Document reference](docs/latest/en/components/document.mdx#native-proofing-languages) |
 | Spreadsheet | Complete common Data Validation input, blank/dropdown, and Stop/Warning/Information error settings with native XLSX round trips | Playground **Latest capabilities → 数据验证** · [Spreadsheet reference](docs/latest/en/components/spreadsheet.mdx#data-validation) |
+| Spreadsheet | Bounded structured-reference calculation for table names/display names, contiguous columns, header/data/totals selectors, qualified references, and table-local calculated-column formulas across Rust/WASM and JavaScript fallback | Playground **Latest capabilities → 结构化引用** · [Spreadsheet reference](docs/latest/en/components/spreadsheet.mdx#structured-reference-calculation) |
 | PDF | Insert, delete, rotate, reorder, extract, merge, and split pages through a dedicated Web Worker, with Blob-level Undo/Redo and independent binary reopen verification | Playground **Latest capabilities → 组织 PDF 页面** · [PDF reference](docs/latest/en/components/pdf.mdx#page-organization) |
 
-All eight entries are reachable from the first Playground viewport. The
+All nine entries are reachable from the first Playground viewport. The
 filterable capability gallery groups releases by editor, publishes the source
 release on every card, and grows from one shared metadata list instead of a
-fixed-width strip. The seven content templates also remain under **新建**;
+fixed-width strip. The eight content templates also remain under **新建**;
 **组织 PDF 页面** opens the normal PDF file workflow because page organization
 must operate on host-provided source bytes.
 
@@ -151,8 +153,8 @@ baseline rather than one specific release.
 | Cells, sheets, navigation, and history | **Supported** — multiple sheets, sparse editing, search, clipboard, four-direction fill, exact formula/value copy from above, and undo/redo | Mature grid workflows across desktop and web |
 | Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, all 17 native non-solid OOXML pattern fills, native linear/path XLSX gradients, and one Format Cells surface that authors none, solid, pattern, or gradient fills with exact geometry and 2–256 ordered stops; static date/time entry, contrast-safe font preview, native XLSX rich-text runs, selected-text font formatting, direct formula-bar/F2 insertion or deletion, and bounded authenticated formatted-HTML paste | Disjoint multi-edit rich-text authoring, broader themes, locale formats, and advanced style effects |
 | Ribbon and shortcuts | **Partial** — common Office-style Home/Data/View commands, grid-scoped shortcuts, and focused Font-dialog aliases | Larger command catalog and platform-specific accelerators |
-| Formulas and recalculation | **Partial** — dependency-aware calculation and common formula paths | Wider functions, arrays, volatile semantics, and calculation parity |
-| Tables, pivots, charts, and rules | **Partial** — native tables, pivots, charts, conditional formatting, and common validation rules with complete input/error-setting authoring | Calculated columns, slicers, pivot charts, custom/dependent validation rules, advanced analysis, and broader browser alert flows |
+| Formulas and recalculation | **Partial** — dependency-aware calculation plus bounded structured references (`Table[Column]`, contiguous ranges, `#All`/`#Headers`/`#Data`/`#Totals`/`#This Row`, and `[@Column]`) in the shared Rust/WASM and JavaScript paths | Wider functions, arrays, volatile semantics, and calculation parity |
+| Tables, pivots, charts, and rules | **Partial** — native tables, bounded structured-reference formulas, calculated-column formulas authored on data rows, pivots, charts, conditional formatting, and common validation rules with complete input/error-setting authoring | Automatic calculated-column fill, complete totals-row authoring, slicers, pivot charts, custom/dependent validation rules, advanced analysis, and broader browser alert flows |
 | Large worksheets | **Supported with boundaries** — maximum-dimension sparse import/editing and viewport-bounded Canvas painting | Highly optimized native grid with hardware-dependent limits |
 | Files and printing | **Partial** — XLS/XLSX/ODS/CSV import, XLSX export, and PDF output | Broader round trips, external data, print fidelity, and legacy conversion |
 | External data, macros, and specialist analysis | **Gap** — active macros are never executed; bounded models are still needed for data connections and solver-like tools | Established data, macro/add-in, scenario, and optimization ecosystems |
@@ -740,9 +742,19 @@ stable IDs, workbook-unique names, zero-based ranges, ordered columns, filters,
 header/totals flags, and built-in style identity. XLSX import and export keep
 native table parts and relationships. Table styling is resolved only for the
 visible Canvas cells; converting a table to a range materializes the confirmed
-appearance without densifying unrelated worksheet space. Structured-reference
-calculation, calculated columns, complete totals authoring, slicers, and
-external/query tables are not yet claimed.
+appearance without densifying unrelated worksheet space.
+
+The calculation kernel resolves a bounded common structured-reference subset:
+table names or `displayName`, worksheet-qualified tables, contiguous column
+ranges, `#All`, `#Headers`, `#Data`, `#Totals`, `#This Row`, and table-local
+`[@Column]` formulas. Rust/WASM and JavaScript fallback share the parser,
+catalog, dependency graph, and no-history projection path. Requests accept at
+most 1,024 tables and materialize at most 100,000 cells per structured range;
+whole-row/column, three-dimensional, external, disjoint, missing, or
+over-budget references fail closed. The Playground's **结构化引用** template
+shows a calculated `Revenue` column, a totals row, and a worksheet-qualified
+summary. Automatic fill on row insertion, complete totals-row authoring,
+slicers, and external/query tables remain explicit boundaries.
 
 Use `downloadArtifact` to start a browser download or
 `createArtifactBlob` when your application owns upload and persistence.
