@@ -58,7 +58,7 @@ test('publishes the latest main capabilities as first-class Playground entries',
     name: '打开最新能力：结构化引用',
   });
   expect(structuredReferences).toHaveTextContent('Spreadsheet');
-  expect(structuredReferences).toHaveTextContent('v0.36.0');
+  expect(structuredReferences).toHaveTextContent('v0.37.0');
   expect(structuredReferences).toHaveTextContent('插入行自动填充');
   const pdfPageOrganization = within(latest).getByRole('button', {
     name: '打开最新能力：组织 PDF 页面',

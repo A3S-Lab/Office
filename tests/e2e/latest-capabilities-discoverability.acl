@@ -60,6 +60,10 @@ suite "latest-capabilities-discoverability" {
             visible = css("button[aria-label='打开最新能力：结构化引用']")
         }
 
+        expect "structured-reference-entry-is-current-release" {
+            text = "v0.37.0"
+        }
+
         expect "structured-reference-calculated-column-fill-is-described" {
             text = "插入行自动填充"
         }

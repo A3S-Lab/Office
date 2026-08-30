@@ -61,11 +61,11 @@ suite "office-spreadsheet-table-totals" {
         }
 
         expect "totals-enabled" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] input[aria-label='启用汇总行']:checked")
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] .work-office-checkbox.checked:has(input[aria-label='启用汇总行'])")
         }
 
         expect "units-sum-selected" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数'] option[value='sum']:checked")
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数'][data-selected-value='sum']")
         }
 
         select "change-units-function" {
@@ -73,13 +73,21 @@ suite "office-spreadsheet-table-totals" {
             values = ["average"]
         }
 
+        wait "units-average-ready" {
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数'][data-selected-value='average']")
+        }
+
         expect "units-average-selected" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数'] option[value='average']:checked")
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数'][data-selected-value='average']")
         }
 
         select "choose-custom-function" {
             target = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Revenue 汇总函数']")
             values = ["custom"]
+        }
+
+        wait "custom-formula-ready" {
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] input[aria-label='Revenue 汇总公式']:not([disabled])")
         }
 
         expect "custom-formula-visible" {

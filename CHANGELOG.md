@@ -4,6 +4,25 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.37.0 - 2026-08-30
+
+- Added native Spreadsheet totals-row authoring. Table creation can enable a
+  totals row, and Table Design now edits per-column labels, `sum`, `average`,
+  `count`, `countNums`, `max`, `min`, `stdDev`, `stdDevP`, `var`, `varP`, or a
+  bounded custom formula. Native functions emit filter-aware `SUBTOTAL`
+  formulas; direct cell edits, row/column changes, and table renames reconcile
+  generated cells without overwriting manual content.
+- Added dense/sparse worksheet handling, fail-closed occupied/merged/protected/
+  overlapping/AutoFilter and bound checks, Yjs field-level validation, and
+  native XLSX `totalsRowFunction`, `totalsRowLabel`, and `totalsRowFormula`
+  round trips for totals rows. Rust, WebAssembly, Worker, and JavaScript
+  calculation paths share `SUBTOTAL` support.
+- Published the totals-row workflow in the structured-reference Playground
+  template, README, product and roadmap contracts, bilingual Spreadsheet,
+  architecture, collaboration, and quality documentation, plus focused
+  Rstest, Playwright, and local-only A3S Test coverage. GitHub Actions and
+  Pages remain free of A3S Test.
+
 ## 0.36.0 - 2026-08-30
 
 - Made the Playground an immersive full-viewport workspace. The duplicated

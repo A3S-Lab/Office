@@ -56,7 +56,7 @@ workflows, and a separate Rust automation plane.
 
 ## Latest on `main`
 
-The `0.36.0` release exposes these capabilities as normal user-facing
+The `0.37.0` release exposes these capabilities as normal user-facing
 Playground templates, with matching implementation detail in the documentation:
 
 | Editor | Latest capability | Public entry |
@@ -68,7 +68,7 @@ Playground templates, with matching implementation detail in the documentation:
 | Writer | Native character shading with exact `w:shd` patterns, foreground/background color identity, explicit resets, authoring, and DOCX reopen | Playground **Latest capabilities → 字符底纹** · [Document reference](docs/latest/en/components/document.mdx#native-character-shading) |
 | Writer | Independent Latin, East Asian, and bidi proofing languages plus explicit `w:noProof` inclusion/exclusion | Playground **Latest capabilities → 校对语言** · [Document reference](docs/latest/en/components/document.mdx#native-proofing-languages) |
 | Spreadsheet | Complete common Data Validation input, blank/dropdown, and Stop/Warning/Information error settings with native XLSX round trips | Playground **Latest capabilities → 数据验证** · [Spreadsheet reference](docs/latest/en/components/spreadsheet.mdx#data-validation) |
-| Spreadsheet | Bounded structured-reference calculation plus automatic calculated-column fill for table names/display names, contiguous columns, header/data/totals selectors, qualified references, and table-local current-row formulas across Rust/WASM and JavaScript fallback | Playground **Latest capabilities → 结构化引用** · [Spreadsheet reference](docs/latest/en/components/spreadsheet.mdx#structured-reference-calculation) |
+| Spreadsheet | Native totals-row authoring with per-column aggregates, labels, custom formulas, filtered-row-aware `SUBTOTAL`, automatic calculated-column fill for newly inserted table body rows, and bounded structured-reference calculation across Rust/WASM and JavaScript fallback | Playground **Latest capabilities → 结构化引用** · [Totals-row reference](docs/latest/en/components/spreadsheet.mdx#native-totals-row-authoring) · [Structured-reference calculation](docs/latest/en/components/spreadsheet.mdx#structured-reference-calculation) |
 | PDF | Insert, delete, rotate, reorder, extract, merge, and split pages through a dedicated Web Worker, with Blob-level Undo/Redo and independent binary reopen verification | Playground **Latest capabilities → 组织 PDF 页面** · [PDF reference](docs/latest/en/components/pdf.mdx#page-organization) |
 
 All nine entries are reachable from the first Playground viewport. The
@@ -152,7 +152,7 @@ baseline rather than one specific release.
 | Formatting and style rendering | **Partial** — native fonts, colors, borders, alignment, number formats, cell styles, all 17 native non-solid OOXML pattern fills, native linear/path XLSX gradients, and one Format Cells surface that authors none, solid, pattern, or gradient fills with exact geometry and 2–256 ordered stops; static date/time entry, contrast-safe font preview, native XLSX rich-text runs, selected-text font formatting, direct formula-bar/F2 insertion or deletion, and bounded authenticated formatted-HTML paste | Disjoint multi-edit rich-text authoring, broader themes, locale formats, and advanced style effects |
 | Ribbon and shortcuts | **Partial** — common Office-style Home/Data/View commands, grid-scoped shortcuts, and focused Font-dialog aliases | Larger command catalog and platform-specific accelerators |
 | Formulas and recalculation | **Partial** — dependency-aware calculation plus bounded structured references (`Table[Column]`, contiguous ranges, `#All`/`#Headers`/`#Data`/`#Totals`/`#This Row`, and `[@Column]`) in the shared Rust/WASM and JavaScript paths | Wider functions, arrays, volatile semantics, and calculation parity |
-| Tables, pivots, charts, and rules | **Partial** — native tables, bounded structured-reference formulas, calculated-column formulas with automatic fill for newly inserted body rows, pivots, charts, conditional formatting, and common validation rules with complete input/error-setting authoring | Complete totals-row authoring, slicers, pivot charts, custom/dependent validation rules, advanced analysis, and broader browser alert flows |
+| Tables, pivots, charts, and rules | **Partial** — native tables, bounded structured-reference formulas, calculated-column formulas with automatic fill for newly inserted body rows, complete common totals-row authoring, pivots, charts, conditional formatting, and common validation rules with complete input/error-setting authoring | Slicers, pivot charts, custom/dependent validation rules, advanced analysis, and broader browser alert flows |
 | Large worksheets | **Supported with boundaries** — maximum-dimension sparse import/editing and viewport-bounded Canvas painting | Highly optimized native grid with hardware-dependent limits |
 | Files and printing | **Partial** — XLS/XLSX/ODS/CSV import, XLSX export, and PDF output | Broader round trips, external data, print fidelity, and legacy conversion |
 | External data, macros, and specialist analysis | **Gap** — active macros are never executed; bounded models are still needed for data connections and solver-like tools | Established data, macro/add-in, scenario, and optimization ecosystems |
@@ -756,9 +756,15 @@ conflicting column fails closed and drops its automatic rule. XLSX
 `<calculatedColumnFormula>` metadata round-trips with the leading `=` restored
 in the controlled model, while unsafe or external formulas are omitted.
 The Playground's **结构化引用** template shows a calculated `Revenue` column,
-an insertion hint, a totals row, and a worksheet-qualified summary. Complete
-totals-row authoring, slicers, and external/query tables remain explicit
-boundaries.
+an insertion hint, an editable totals row, and a worksheet-qualified summary.
+The Table Design totals menu enables or disables the row and assigns each
+column a label, one of ten native aggregate functions, or a bounded custom
+formula. Native aggregates emit filtered-row-aware `SUBTOTAL` formulas; direct
+cell edits reconcile back into table metadata, table structure changes move
+the row without overwriting manual cells, and table renames rewrite only
+generated formulas. Dense and sparse worksheets, Yjs collaboration, and XLSX
+`totalsRowFunction`, `totalsRowLabel`, and `totalsRowFormula` round trips share
+the same model. Slicers and external/query tables remain explicit boundaries.
 
 Use `downloadArtifact` to start a browser download or
 `createArtifactBlob` when your application owns upload and persistence.
@@ -1641,6 +1647,7 @@ keep working without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/playground/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.37.0 documentation](https://a3s-lab.github.io/Office/docs/0.37.0/)
 - [A3S Office 0.36.0 documentation](https://a3s-lab.github.io/Office/docs/0.36.0/)
 - [A3S Office 0.34.0 documentation](https://a3s-lab.github.io/Office/docs/0.34.0/)
 - [A3S Office 0.33.0 documentation](https://a3s-lab.github.io/Office/docs/0.33.0/)

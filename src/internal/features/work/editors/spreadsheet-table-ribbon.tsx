@@ -265,6 +265,7 @@ function SpreadsheetTableTotalsMenu({
                     <span>函数</span>
                     <select
                       aria-label={`${column.name} 汇总函数`}
+                      data-selected-value={selected}
                       disabled={!table.totalsRow}
                       value={selected}
                       onChange={(event) => {

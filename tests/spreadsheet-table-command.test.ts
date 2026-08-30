@@ -125,6 +125,39 @@ test('owns Cmd/Ctrl+T only while the spreadsheet grid has focus', () => {
   input.remove();
 });
 
+test('preserves the active cell when updating table design metadata', () => {
+  const content = tableContentWithTable();
+  const changes: WorkSpreadsheetContent[] = [];
+  const selection = {
+    row: [1, 1],
+    column: [1, 1],
+    row_focus: 1,
+    column_focus: 1,
+  };
+  const workbook = {
+    getSelection: () => [selection],
+  } as SpreadsheetWorkbookCommandPort;
+  const editor = createOfficeEditorRuntime<
+    SpreadsheetCommandContext,
+    SpreadsheetEditorCommands
+  >(
+    tableContext(
+      content,
+      { canOpen: false, open: () => false },
+      workbook,
+      (next) => changes.push(next),
+    ),
+    [createSpreadsheetTableExtension()],
+  );
+
+  expect(
+    editor.commands.updateTable('sheet-1', 'table-1', {
+      showFirstColumn: true,
+    }),
+  ).toBe(true);
+  expect(changes[0]?.sheets[0]?.luckysheet_select_save).toEqual([selection]);
+});
+
 function tableContext(
   content: WorkSpreadsheetContent,
   table: SpreadsheetTableCommandPort,
@@ -198,6 +231,40 @@ function tableContent(): WorkSpreadsheetContent {
           [{ v: 'Region' }, { v: 'Revenue' }, { v: 'Status' }],
           [{ v: 'East' }, { v: 10 }, { v: 'Ready' }],
           [{ v: 'West' }, { v: 12 }, { v: 'Blocked' }],
+        ],
+      },
+    ],
+  };
+}
+
+function tableContentWithTable(): WorkSpreadsheetContent {
+  const content = tableContent();
+  const sheet = content.sheets[0];
+  if (!sheet) throw new Error('Expected a test sheet.');
+  return {
+    ...content,
+    sheets: [
+      {
+        ...sheet,
+        tables: [
+          {
+            id: 'table-1',
+            name: 'Sales',
+            range: { row: [0, 2], column: [0, 2] },
+            columns: [
+              { name: 'Region' },
+              { name: 'Revenue' },
+              { name: 'Status' },
+            ],
+            filters: [],
+            headerRow: true,
+            totalsRow: false,
+            style: { family: 'medium', number: 2 },
+            showFirstColumn: false,
+            showLastColumn: false,
+            showRowStripes: true,
+            showColumnStripes: false,
+          },
         ],
       },
     ],

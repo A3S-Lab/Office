@@ -19,7 +19,7 @@ type LatestTemplateRegistration = {
 };
 
 const LATEST_CAPABILITY_REGISTRATIONS = [
-  { templateId: 'structured-references', release: '0.36.0' },
+  { templateId: 'structured-references', release: '0.37.0' },
   { templateId: 'animated-deck', release: '0.34.0' },
   {
     id: 'pdf-page-organization',

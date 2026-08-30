@@ -226,8 +226,14 @@ formula, persists it as typed table metadata, and fills only newly inserted
 body rows. Existing values, formulas, and manual exceptions remain
 authoritative; conflicting formulas fail closed. Native XLSX
 `<calculatedColumnFormula>` metadata and Yjs table records round-trip with the
-editable leading `=` form. Complete totals-row authoring, slicers, and
-external/query tables remain explicit compatibility gaps.
+editable leading `=` form. The totals-row follow-up adds one Table Design
+surface for enabling the row and assigning each column a label, one of ten
+native aggregates, or a bounded custom formula. Native aggregates author
+filtered-row-aware `SUBTOTAL` formulas. Dense and sparse worksheets, direct
+cell edits, table structure and name changes, Yjs convergence, and native XLSX
+`totalsRowFunction`, `totalsRowLabel`, and `totalsRowFormula` round trips share
+one fail-closed model. Slicers and external/query tables remain explicit
+compatibility gaps.
 The twenty-third milestone completes the frequent Traditional Office font-size
 and border keyboard path under Home and Font. Grow Font owns `Cmd/Ctrl+Shift+.` and
 `Cmd/Ctrl+]`; Shrink Font owns `Cmd/Ctrl+Shift+,` and `Cmd/Ctrl+[`; Outside
@@ -550,7 +556,21 @@ collaboration boundary, survives Yjs field-level convergence, and round-trips
 through native XLSX `<calculatedColumnFormula>` elements with the editable
 leading `=` restored. Focused model, reconciliation, collaboration, XLSX, and
 Playground tests plus the local-only A3S Test gate form the release evidence;
-complete totals-row authoring, slicers, and external/query tables remain open.
+slicers and external/query tables remain open.
+
+The forty-seventh milestone completes common Spreadsheet totals-row authoring.
+The creation dialog can start a table with totals enabled, and the contextual
+Table Design menu enables or disables the row and edits a per-column label,
+`sum`, `average`, `count`, `countNums`, `max`, `min`, `stdDev`, `stdDevP`,
+`var`, `varP`, or bounded custom formula. Native functions generate
+filtered-row-aware `SUBTOTAL` formulas and the first eligible column defaults
+to `Total`. Structural edits move the row, direct edits reconcile metadata,
+renames rewrite only generated formulas, and occupied, merged, protected,
+overlapping, AutoFilter, out-of-bounds, external, unsafe, and over-budget
+requests fail before mutation. Dense and sparse worksheets, Yjs collaboration,
+XLSX totals metadata, Rust/WASM calculation, and the JavaScript fallback are
+covered by focused tests, responsive Playwright, and the local-only A3S Test
+gate without adding A3S Test to Actions or Pages.
 
 ## Current Presentation Milestone
 

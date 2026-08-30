@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.37.0' ||
     version === '0.36.0' ||
     version === '0.34.0' ||
     version === '0.33.0' ||
@@ -62,6 +63,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.37.0',
     '0.36.0',
     '0.34.0',
     '0.33.0',
@@ -1000,6 +1002,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.37.0',
     '0.36.0',
     '0.34.0',
     '0.33.0',
@@ -1072,6 +1075,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.37.0',
     '0.36.0',
     '0.34.0',
     '0.33.0',
@@ -2543,11 +2547,11 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
       'utf8',
     ),
     readFile(
-      path.join(documentationRoot, '0.36.0/en/components/spreadsheet.mdx'),
+      path.join(documentationRoot, '0.37.0/en/components/spreadsheet.mdx'),
       'utf8',
     ),
     readFile(
-      path.join(documentationRoot, '0.36.0/zh/components/spreadsheet.mdx'),
+      path.join(documentationRoot, '0.37.0/zh/components/spreadsheet.mdx'),
       'utf8',
     ),
     readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
@@ -2618,7 +2622,7 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(templates).toContain('=SUM(Sales[Revenue])');
   expect(templates).toContain('插入表格正文行会自动补齐 Revenue');
   expect(latestCapabilities).toContain(
-    "{ templateId: 'structured-references', release: '0.36.0' }",
+    "{ templateId: 'structured-references', release: '0.37.0' }",
   );
   expect(workspaceHome).toContain("templateId === 'structured-references'");
   expect(discoverability).toContain('打开最新能力：结构化引用');

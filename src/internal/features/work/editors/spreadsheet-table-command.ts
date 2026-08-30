@@ -7,6 +7,7 @@ import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import {
   finiteSpreadsheetSelection,
   isSpreadsheetNativeTextUndoTarget,
+  spreadsheetContentWithSelection,
 } from './spreadsheet-editor-support';
 import { isSpreadsheetGridKeyboardTarget } from './spreadsheet-keyboard-navigation';
 import {
@@ -124,7 +125,15 @@ function updateSpreadsheetTableCommand(
   if (!context.editable) return false;
   const next = updateSpreadsheetTable(context.content, sheetId, tableId, patch);
   if (!next) return false;
-  context.onChange(next);
+  // Table design edits update the controlled workbook. Preserve the live
+  // selection in the next content snapshot so a required remount does not
+  // jump back to A1 and unmount the contextual table ribbon/popovers.
+  const selection =
+    context.workbook?.getSelection()?.at(-1) ??
+    (context.selection?.sheetId === sheetId
+      ? context.selection.selection
+      : undefined);
+  context.onChange(spreadsheetContentWithSelection(next, sheetId, selection));
   return true;
 }
 
