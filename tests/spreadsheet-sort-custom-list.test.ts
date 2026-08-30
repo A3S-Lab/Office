@@ -4,7 +4,7 @@ import {
   MAX_SPREADSHEET_SORT_CUSTOM_LIST_CODE_POINTS,
   MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRIES,
   MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRY_CODE_POINTS,
-  MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS,
+  MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS,
   mergeSpreadsheetSortCustomLists,
   parseSpreadsheetSortCustomList,
   SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS,
@@ -101,9 +101,9 @@ describe('spreadsheet sort custom lists', () => {
     ).toBe(false);
   });
 
-  test('deduplicates and bounds the mounted-editor session registry', () => {
+  test('deduplicates and bounds the mounted-editor user-list registry', () => {
     const sessionLists = Array.from(
-      { length: MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS + 4 },
+      { length: MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS + 4 },
       (_, index) =>
         createSpreadsheetSortCustomList(
           [`First ${index}`, `Second ${index}`],
@@ -117,7 +117,7 @@ describe('spreadsheet sort custom lists', () => {
 
     expect(merged).toHaveLength(
       SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS.length +
-        MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS,
+        MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS,
     );
     expect(Object.isFrozen(merged)).toBe(true);
   });

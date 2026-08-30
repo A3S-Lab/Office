@@ -8,6 +8,7 @@ import {
   type GetMarkdownSelectionMenuItems,
   type MarkdownContent,
   type MarkdownSelectionContext,
+  LocalStorageSpreadsheetSortCustomListStore,
   type OfficeArtifact,
   type OfficeArtifactContent,
   type PresentationContent,
@@ -72,6 +73,7 @@ import {
 
 const assistantMinimumWidth = 340;
 const assistantMaximumWidth = 680;
+const spreadsheetSortCustomListStore = createSpreadsheetSortCustomListStore();
 
 export function EditorWorkspace({
   artifact,
@@ -857,6 +859,7 @@ export function EditorWorkspace({
                 onChange={(content: SpreadsheetContent) => onChange(content)}
                 preview={preview}
                 saveStatus="本次会话已保存"
+                sortCustomListStore={spreadsheetSortCustomListStore}
                 theme="light"
               />
             )}
@@ -930,6 +933,17 @@ export function EditorWorkspace({
       </div>
     </section>
   );
+}
+
+function createSpreadsheetSortCustomListStore():
+  | LocalStorageSpreadsheetSortCustomListStore
+  | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    return new LocalStorageSpreadsheetSortCustomListStore(window.localStorage);
+  } catch {
+    return undefined;
+  }
 }
 
 function nativeDocumentSuggestionStatus(

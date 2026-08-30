@@ -14,6 +14,7 @@ import {
   initializeOfficeSpreadsheetCollaboration,
   type OfficeCollaborationPresence,
   readOfficeMarkdownCollaboration,
+  type SpreadsheetSortCustomListStore,
 } from '../src/core';
 import type { PdfEvidenceRegion } from '../src/react';
 import {
@@ -22,7 +23,7 @@ import {
   A3SMarkdownEditorElement,
   A3SPdfViewerElement,
   type A3SPresentationEditorElement,
-  type A3SSpreadsheetEditorElement,
+  A3SSpreadsheetEditorElement,
   defineA3SOfficeElements,
 } from '../src/web-component';
 import { PDF_COLLABORATION_SOURCE } from './fixtures/pdf-collaboration';
@@ -86,6 +87,18 @@ test('registers every custom element idempotently', async () => {
   expect(spreadsheetEditor.getAttribute('kernel-wasm-url')).toBe(
     '/assets/spreadsheet-kernel.wasm',
   );
+  const sortCustomListStore: SpreadsheetSortCustomListStore = {
+    load: () => [],
+    save: () => undefined,
+  };
+  spreadsheetEditor.sortCustomListStore = sortCustomListStore;
+  expect(spreadsheetEditor.sortCustomListStore).toBe(sortCustomListStore);
+  expect(
+    Object.getOwnPropertyDescriptor(
+      A3SSpreadsheetEditorElement.prototype,
+      'sortCustomListStore',
+    )?.set,
+  ).toBeTypeOf('function');
   const presentationEditor = document.createElement(
     A3S_OFFICE_ELEMENT_NAMES.presentation,
   );

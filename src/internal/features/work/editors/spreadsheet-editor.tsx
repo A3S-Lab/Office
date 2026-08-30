@@ -167,6 +167,7 @@ import {
 } from './use-spreadsheet-format-painter';
 import { useSpreadsheetHyperlink } from './use-spreadsheet-hyperlink';
 import { useSpreadsheetSort } from './use-spreadsheet-sort';
+import type { SpreadsheetSortCustomListStore } from './spreadsheet-sort-custom-list-store';
 import { useSpreadsheetTable } from './use-spreadsheet-table';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
@@ -183,6 +184,7 @@ export interface SpreadsheetEditorProps {
   kernelWasmUrl?: string;
   preview: boolean;
   saveStatus?: string;
+  sortCustomListStore?: SpreadsheetSortCustomListStore;
   fileActions?: readonly WorkOfficeFileAction[];
   onChange: (content: WorkSpreadsheetContent) => void;
   onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
@@ -270,6 +272,7 @@ function SpreadsheetEditorSurface({
   kernelWasmUrl,
   preview,
   saveStatus = '已自动保存',
+  sortCustomListStore,
   fileActions,
   onChange,
   onDerivedChange,
@@ -483,6 +486,7 @@ function SpreadsheetEditorSurface({
     getGridFocusTarget: getSpreadsheetDialogGridFocusTarget,
     getRows: getSpreadsheetSortRows,
     preview,
+    customListStore: sortCustomListStore,
   });
   const spreadsheetTable = useSpreadsheetTable({
     commandsRef: spreadsheetCommandsRef,

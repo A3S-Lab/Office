@@ -260,6 +260,20 @@ function SpreadsheetSortValueOrder({
             ) : null,
           )}
         </optgroup>
+        {customLists.some((list) => list.source === 'stored') ? (
+          <optgroup label="已保存的序列">
+            {customLists.map((customList, customListIndex) =>
+              customList.source === 'stored' ? (
+                <option
+                  key={`stored:${customListIndex}`}
+                  value={`${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`}
+                >
+                  {customList.label}
+                </option>
+              ) : null,
+            )}
+          </optgroup>
+        ) : null}
         {customLists.some((list) => list.source === 'session') ? (
           <optgroup label="本次会话的序列">
             {customLists.map((customList, customListIndex) =>

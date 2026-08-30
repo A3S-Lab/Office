@@ -7,7 +7,7 @@ import type {
 } from '../src/internal/features/work/editors/spreadsheet-sort';
 import {
   createSpreadsheetSortCustomList,
-  MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS,
+  MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS,
   mergeSpreadsheetSortCustomLists,
   SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS,
 } from '../src/internal/features/work/editors/spreadsheet-sort-custom-list';
@@ -240,13 +240,41 @@ test('creates and applies a reusable custom-list order without leaving the dialo
   ]);
 });
 
-test('rejects another authored list after the mounted-editor session bound', () => {
-  const sessionLists = Array.from(
-    { length: MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS },
+test('keeps a stored identity when the initial key carries the same list', () => {
+  const entries = ['有风险', '进行中', '正常', '已完成'];
+  const stored = createSpreadsheetSortCustomList(entries, 'stored');
+  expect(stored).not.toBeNull();
+  const source = sortSource();
+
+  render(
+    <SpreadsheetSortDialog
+      source={{
+        ...source,
+        customLists: mergeSpreadsheetSortCustomLists(stored ? [stored] : []),
+        value: {
+          ...source.value,
+          keys: [{ index: 0, customList: entries }],
+        },
+      }}
+      restoreFocusTarget={() => null}
+      onApply={() => true}
+      onClose={() => undefined}
+    />,
+  );
+
+  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
+  expect(order).toHaveValue('custom-list:7');
+  expect(order.querySelector('optgroup[label="已保存的序列"]')).not.toBeNull();
+  expect(order.querySelector('optgroup[label="本次会话的序列"]')).toBeNull();
+});
+
+test('rejects another authored list after the mounted-editor user-list bound', () => {
+  const storedLists = Array.from(
+    { length: MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS },
     (_, index) =>
       createSpreadsheetSortCustomList(
         [`First ${index}`, `Second ${index}`],
-        'session',
+        'stored',
       ),
   ).filter((list): list is SpreadsheetSortCustomList => list !== null);
   const remembered: SpreadsheetSortCustomList[] = [];
@@ -254,7 +282,7 @@ test('rejects another authored list after the mounted-editor session bound', () 
     <SpreadsheetSortDialog
       source={{
         ...sortSource(),
-        customLists: mergeSpreadsheetSortCustomLists(sessionLists),
+        customLists: mergeSpreadsheetSortCustomLists(storedLists),
       }}
       restoreFocusTarget={() => null}
       onApply={() => true}
@@ -275,7 +303,7 @@ test('rejects another authored list after the mounted-editor session bound', () 
   fireEvent.click(screen.getByRole('button', { name: '使用序列' }));
 
   expect(screen.getByRole('alert')).toHaveTextContent(
-    `当前编辑器会话最多保留 ${MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS} 个自定义序列。`,
+    `当前编辑器最多保留 ${MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS} 个自定义序列。`,
   );
   expect(
     screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),

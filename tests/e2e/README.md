@@ -585,12 +585,12 @@ bun run test:e2e:spreadsheet-custom-list-sort:check
 bun run test:e2e:spreadsheet-custom-list-sort
 ```
 
-It rejects a duplicate authored sequence, accepts a bounded status order,
-applies that order with a secondary value key, verifies session reuse while the
-editor remains mounted, and confirms formula-safe row movement plus one-step
-Undo. Accessibility, focus, console, and page-error evidence are captured by
-the pinned local A3S Test 1.0.0 binary; the suite remains absent from GitHub
-Actions and Pages.
+It rejects a duplicate authored sequence, accepts and locally saves a bounded
+status order, applies that order with a secondary value key, verifies reuse in
+the mounted editor and after a full-page reload, and confirms formula-safe row
+movement plus one-step Undo. Accessibility, focus, console, and page-error
+evidence are captured by the pinned local A3S Test 1.0.0 binary; the suite
+remains absent from GitHub Actions and Pages.
 
 The offline Spreadsheet appearance Sort workflow has a focused local gate:
 

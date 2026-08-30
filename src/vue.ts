@@ -23,6 +23,7 @@ import type {
   PdfPageOrganizationExport,
   PresentationContent,
   SpreadsheetContent,
+  SpreadsheetSortCustomListStore,
 } from './core';
 import type { OfficeTheme } from './office-surface';
 import {
@@ -195,6 +196,7 @@ export const SpreadsheetEditor = defineComponent({
       type: Boolean,
     },
     saveStatus: String,
+    sortCustomListStore: Object as PropType<SpreadsheetSortCustomListStore>,
     theme: themeProp,
   },
   emits: {
@@ -217,6 +219,7 @@ export const SpreadsheetEditor = defineComponent({
         },
         preview: props.preview,
         saveStatus: props.saveStatus,
+        sortCustomListStore: props.sortCustomListStore,
         theme: props.theme,
       }),
     );

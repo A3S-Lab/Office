@@ -2629,7 +2629,7 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(discoverability).toContain('9 / 9 项');
 });
 
-test('publishes formula-safe Spreadsheet value, custom-list, appearance, direction, and text-collation sorting without rewriting 0.37.0', async () => {
+test('publishes formula-safe Spreadsheet value, persistent custom-list, appearance, direction, and text-collation sorting without rewriting 0.37.0', async () => {
   const [
     readme,
     roadmap,
@@ -2648,6 +2648,10 @@ test('publishes formula-safe Spreadsheet value, custom-list, appearance, directi
     e2e,
     rangeE2e,
     customListModel,
+    customListStore,
+    core,
+    vueAdapter,
+    webComponent,
     customListDialog,
     sortOrderControls,
     customListE2e,
@@ -2733,6 +2737,16 @@ test('publishes formula-safe Spreadsheet value, custom-list, appearance, directi
       ),
       'utf8',
     ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-sort-custom-list-store.ts',
+      ),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'src/core.ts'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'src/vue.ts'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'src/web-component.tsx'), 'utf8'),
     readFile(
       path.join(
         repositoryRoot,
@@ -2851,11 +2865,12 @@ test('publishes formula-safe Spreadsheet value, custom-list, appearance, directi
   expect(readme).toContain('effective cell-color');
   expect(readme).toContain('left-to-right Custom Sort');
   expect(readme).toContain('pinyin/stroke comparison');
+  expect(readme).toContain('bounded typed host-stored or mounted-session');
   expect(roadmap).toContain(
     'stable value/custom-list/effective-color/conditional-icon sorting',
   );
   expect(roadmap).toContain('exact-or-expand warnings');
-  expect(roadmap).toContain('bounded session-authored sequences');
+  expect(roadmap).toContain('bounded host-stored/session sequences');
   expect(roadmap).toContain('effective-color/conditional-icon sorting');
   expect(roadmap).toContain('left-to-right complete columns');
   expect(roadmap).toContain('pinyin/stroke comparison');
@@ -2865,12 +2880,14 @@ test('publishes formula-safe Spreadsheet value, custom-list, appearance, directi
   expect(changelog).toContain('effective cell color');
   expect(changelog).toContain('Sort Options');
   expect(changelog).toContain('lowercase before uppercase');
+  expect(changelog).toContain('LocalStorageSpreadsheetSortCustomListStore');
   expect(product).toContain('The forty-eighth milestone');
   expect(product).toContain('The forty-ninth milestone');
   expect(product).toContain('The fiftieth milestone');
   expect(product).toContain('The fifty-first milestone');
   expect(product).toContain('The fifty-second milestone');
   expect(product).toContain('The fifty-third milestone');
+  expect(product).toContain('The fifty-fourth milestone');
   expect(english).toContain('## Multi-key custom sort');
   expect(chinese).toContain('## 多关键字自定义排序');
   expect(english).toContain('coordinate-owned');
@@ -2885,6 +2902,14 @@ test('publishes formula-safe Spreadsheet value, custom-list, appearance, directi
   expect(chinese).toContain('按行排序');
   expect(english).toContain('**Pinyin** or **Stroke**');
   expect(chinese).toContain('“拼音排序”或“笔画排序”');
+  expect(english).toContain('`sortCustomListStore`');
+  expect(chinese).toContain('`sortCustomListStore`');
+  expect(english).toContain('LocalStorageSpreadsheetSortCustomListStore');
+  expect(chinese).toContain('LocalStorageSpreadsheetSortCustomListStore');
+  expect(english).toContain(
+    "element's `sortCustomListStore` JavaScript property",
+  );
+  expect(chinese).toContain('元素的 `sortCustomListStore` JavaScript 属性');
   expect(architecture).toContain('`spreadsheetSort` editor extension');
   expect(chineseArchitecture).toContain('`spreadsheetSort` 编辑器扩展');
   expect(architecture).toContain('`spreadsheet-sort-appearance` model');
@@ -2893,6 +2918,12 @@ test('publishes formula-safe Spreadsheet value, custom-list, appearance, directi
   expect(chineseArchitecture).toContain('方向中立的矩阵引擎');
   expect(architecture).toContain('`spreadsheet-sort-collation` boundary');
   expect(chineseArchitecture).toContain('`spreadsheet-sort-collation` 边界');
+  expect(architecture).toContain(
+    '`LocalStorageSpreadsheetSortCustomListStore`',
+  );
+  expect(chineseArchitecture).toContain(
+    '`LocalStorageSpreadsheetSortCustomListStore`',
+  );
   expect(architecture).toContain('`spreadsheet-current-region` model');
   expect(chineseArchitecture).toContain('`spreadsheet-current-region` 模型');
   expect(quality).toContain('The thirty-eighth Spreadsheet slice');
@@ -2907,6 +2938,8 @@ test('publishes formula-safe Spreadsheet value, custom-list, appearance, directi
   expect(chineseQuality).toContain('第四十二个 Spreadsheet 纵向切片');
   expect(quality).toContain('The forty-third Spreadsheet slice');
   expect(chineseQuality).toContain('第四十三个 Spreadsheet 纵向切片');
+  expect(quality).toContain('The forty-fourth Spreadsheet slice');
+  expect(chineseQuality).toContain('第四十四个 Spreadsheet 纵向切片');
   expect(releaseEnglish).not.toContain('## Multi-key custom sort');
   expect(releaseChinese).not.toContain('## 多关键字自定义排序');
   expect(releaseEnglish).not.toContain('Traditional Office-style Sort Warning');
@@ -2927,11 +2960,33 @@ test('publishes formula-safe Spreadsheet value, custom-list, appearance, directi
     'MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRIES = 256',
   );
   expect(customListModel).toContain('SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS');
+  expect(customListStore).toContain(
+    'DEFAULT_SPREADSHEET_SORT_CUSTOM_LIST_STORAGE_KEY',
+  );
+  expect(customListStore).toContain(
+    'SPREADSHEET_SORT_CUSTOM_LIST_STORAGE_VERSION = 1',
+  );
+  expect(customListStore).toContain(
+    'normalizeStoredSpreadsheetSortCustomLists',
+  );
+  expect(core).toContain('LocalStorageSpreadsheetSortCustomListStore');
+  expect(vueAdapter).toContain(
+    'sortCustomListStore: props.sortCustomListStore',
+  );
+  expect(webComponent).toContain(
+    'get sortCustomListStore(): SpreadsheetSortCustomListStore | undefined',
+  );
   expect(sortOrderControls).toContain('新建自定义序列…');
   expect(customListDialog).toContain('onRememberCustomList');
   expect(customListE2e).toContain('duplicate-custom-list-is-explained');
-  expect(customListE2e).toContain('session-custom-list-is-reusable');
+  expect(customListE2e).toContain(
+    'saved-custom-list-is-reusable-before-reload',
+  );
+  expect(customListE2e).toContain('saved-custom-list-survives-reload');
   expect(customListVisual).toContain('spreadsheet-custom-list-sort-dialog.png');
+  expect(customListVisual).toContain(
+    'a3s-office.spreadsheet-sort-custom-lists.v1',
+  );
   expect(appearanceModel).toContain('createSpreadsheetSortAppearanceRows');
   expect(appearanceModel).toContain('spreadsheetConditionalFormatStyles');
   expect(appearanceE2e).toContain('put-high-icon-first');

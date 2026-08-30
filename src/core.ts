@@ -205,6 +205,11 @@ export {
 export type { PdfPageOrganizationExport } from './internal/features/work/editors/use-pdf-page-organization';
 export { defaultPptxRuntimeUrl } from './internal/features/work/work-presentation-file-io';
 export {
+  DEFAULT_SPREADSHEET_SORT_CUSTOM_LIST_STORAGE_KEY,
+  LocalStorageSpreadsheetSortCustomListStore,
+  type SpreadsheetSortCustomListStore,
+} from './internal/features/work/editors/spreadsheet-sort-custom-list-store';
+export {
   forgetWorkSourceBlob as forgetSourceBlob,
   readWorkSourceBlob as readSourceBlob,
   rememberWorkSourceBlob as registerSourceBlob,

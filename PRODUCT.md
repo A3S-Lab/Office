@@ -614,16 +614,17 @@ key. Seven immutable Chinese and English month/weekday sequences are always
 available. The same dialog accepts newline or comma input for two through 256
 unique entries, limits each entry and total text, and retains at most 32 user
 lists only while that editor instance remains mounted. Controlled workbook
-content and browser storage stay untouched; durable cross-editor preferences
-remain an explicit future host-settings API rather than hidden persistence.
+content stays untouched. Explicit typed cross-editor persistence is completed
+by the fifty-fourth milestone below rather than introduced as hidden state.
 
 Each accepted request carries a normalized copy of its sequence, so command
 execution does not depend on mutable UI state. Matching trims and normalizes
 width/case, listed values sort first, unmatched values use natural ascending
 order, blanks remain last, and later keys break equal ranks stably. Focused
 model, dialog, and Hook Rstest, desktop/compact Playwright, and the pinned
-local-only A3S Test gate cover invalid input, session reuse, formula-safe row
-movement, one-step Undo, accessibility, and empty browser diagnostics.
+local-only A3S Test gate cover invalid input, mounted-session reuse,
+formula-safe row movement, one-step Undo, accessibility, and empty browser
+diagnostics.
 
 The fifty-first milestone adds offline appearance order to every Spreadsheet
 sort key. The Custom Sort dialog can place one effective cell color, effective
@@ -683,6 +684,25 @@ local-only A3S Test gate cover pinyin/stroke differences, lowercase ties,
 numeric text, formula translation, Undo, responsive containment,
 accessibility, and empty browser diagnostics. Deep testing also closes the
 controlled-remount race for a grid overlay focused directly by a host or test.
+
+The fifty-fourth milestone makes authored Spreadsheet custom sort lists
+reusable across workbook changes and editor remounts through an explicit typed
+host boundary. `SpreadsheetEditor.sortCustomListStore` synchronously loads and
+saves the same bounded canonical sequences used by the dialog; omitting the
+property retains the existing mounted-session behavior and controlled workbook
+content never owns a preference.
+
+The provided `LocalStorageSpreadsheetSortCustomListStore` receives a Storage
+object instead of selecting a backend by name. It uses a versioned key,
+normalizes and deduplicates at most 32 lists, ignores corrupt or unsupported
+payloads, and downgrades a failed write to a visible session-only list rather
+than discarding user input. Saved lists are grouped separately in the order
+selector and keep their identity when a request already carries the same
+sequence. Focused Rstest, desktop/compact Playwright, and the pinned local-only
+A3S Test gate cover storage round trips, invalid payloads, write fallback,
+full-page reload reuse, formula-safe sorting, one-step Undo, accessibility, and
+empty browser diagnostics. A full preference manager for deleting or
+reordering stored lists remains open.
 
 ## Current Presentation Milestone
 

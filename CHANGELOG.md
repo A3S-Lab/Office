@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added an opt-in typed host store for offline Spreadsheet custom sort lists.
+  `SpreadsheetEditor.sortCustomListStore` can reuse up to 32 user sequences
+  across workbook changes and editor remounts without placing preferences in
+  controlled workbook content. Without a store, authored lists remain scoped
+  to the mounted editor session.
+- Added `LocalStorageSpreadsheetSortCustomListStore` with an injected Storage
+  boundary, a versioned payload, canonical validation, duplicate and size
+  guards, and fail-closed reads. Failed writes keep the new sequence in the
+  current session and surface an error instead of losing it. Focused Rstest,
+  desktop/compact Playwright, and local-only A3S Test cover creation, reload
+  reuse, formula-safe sorting, Undo, accessibility, and empty diagnostics.
 - Added offline Traditional Office-compatible Spreadsheet text comparison
   controls to **Sort Options**. Value keys can use Simplified Chinese pinyin or
   stroke order, optionally distinguish case with lowercase before uppercase,
@@ -39,8 +50,8 @@ All notable changes to A3S Office will be documented in this file.
 - Added offline Spreadsheet custom-list sorting to every ordered key. The Sort
   dialog now offers seven built-in Chinese and English month/weekday sequences,
   validates user-authored newline/comma lists, and reuses up to 32 bounded lists
-  for the lifetime of the mounted editor without writing preferences into the
-  controlled workbook or browser storage.
+  through an optional typed host store or the mounted editor session.
+  Preferences never enter controlled workbook content.
 - Custom-list requests carry their normalized order explicitly. Matching is
   case- and width-insensitive, listed values precede unmatched natural-order
   values, blanks stay last, later keys still break ties, and the existing

@@ -20,6 +20,7 @@ description: 工作簿内容、计算内核配置、事件与宿主扩展接口�
 | `saveStatus` | `string` | 否 | `'Saved automatically'` | 由宿主管理的保存状态。 |
 | `fileActions` | `readonly OfficeFileAction[]` | 否 | `[]` | 保存、导出、历史记录与审批等操作。 |
 | `kernelWasmUrl` | `string` | 否 | 内置内核 | 公式与工作簿计算内核地址。 |
+| `sortCustomListStore` | `SpreadsheetSortCustomListStore` | 否 | 无 | 在受控工作簿之外加载并保存最多 32 个用户排序序列；不传入时，新建序列只保留在当前挂载的编辑器会话中。 |
 | `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | 否 | — | 把当前单元格或区域发送给宿主 AI 流程。 |
 | `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
 
@@ -192,9 +193,35 @@ Rust、浏览器内核、会话、XLSX 与 Playground 聚焦测试覆盖解析�
 优先排列，未列出的值随后使用自然升序；相同序位继续由后续关键字稳定区分，空白仍置于末尾。
 如需反向次序，应反向创作序列本身。
 
-七个内置序列不可变；当前编辑器实例挂载期间最多可复用 32 个用户序列。它们不会写入受控
-工作簿或隐藏的浏览器存储；跨编辑器持久化需要未来明确的宿主设置 API。每个已接受的排序请求
-都会携带规范化后的序列，因此执行过程不依赖可变弹窗状态。
+七个内置序列不可变；当前编辑器实例挂载期间最多可复用 32 个用户序列。如需让它们跨工作簿
+切换、整页刷新与编辑器重挂载继续可用，应传入明确的类型化 `sortCustomListStore` 属性。编辑器
+不会把这些偏好写入受控工作簿。每个已接受的排序请求都会携带规范化后的序列，因此执行过程
+不依赖可变弹窗状态。
+
+包内提供一个可选的浏览器存储实现。请在浏览器侧模块中只创建一次，确保 React 重渲染期间
+对象身份稳定：
+
+```tsx title="PersistentSpreadsheet.tsx"
+import { LocalStorageSpreadsheetSortCustomListStore } from '@a3s-lab/office/core';
+import { SpreadsheetEditor } from '@a3s-lab/office/react';
+
+const sortCustomListStore = new LocalStorageSpreadsheetSortCustomListStore(
+  window.localStorage,
+);
+
+<SpreadsheetEditor
+  content={content}
+  onChange={setContent}
+  sortCustomListStore={sortCustomListStore}
+/>;
+```
+
+`SpreadsheetSortCustomListStore` 提供同步的 `load()` 与 `save(lists)` 方法，宿主也可以用类型化
+对象接入其他本地设置后端。Vue 通过同名 `sortCustomListStore` prop 接收该对象；Web Component
+宿主应把它赋给元素的 `sortCustomListStore` JavaScript 属性，而不是 HTML attribute。内置实现
+把带版本的载荷保存到
+`a3s-office.spreadsheet-sort-custom-lists.v1`，读取时会校验、去重并忽略损坏或不支持的数据。
+如果写入失败，新序列仍会保留在当前会话中，编辑器同时提示失败。
 
 同一个“排序依据”控件也可以选择有效单元格颜色、有效字体颜色或条件格式图标。一个视觉目标
 在移动行时可置于顶端或底端，在移动列时可置于左侧或右侧；继续添加条件即可表达下一种颜色或
@@ -223,7 +250,7 @@ Rust、浏览器内核、会话、XLSX 与 Playground 聚焦测试覆盖解析�
 与语义 ListObject 或工作表 AutoFilter 相交的选区目前也会拒绝：如果只移动单元格而不协调
 表格/筛选器的行所有权，就会破坏结构模型。与坐标归属的超链接映射、导入公式源/区域元数据或
 原生边框记录相交时也会因同一原因失败关闭。表格感知排序、活动筛选条件协调、侧车数据迁移、
-宿主管理的持久自定义序列设置和大型排序的 Worker/WASM 执行仍是明确的后续工作。
+完整的自定义序列偏好管理和大型排序的 Worker/WASM 执行仍是明确的后续工作。
 
 排序提醒会同时冻结原选区、两个候选矩形、活动行列、工作表与排序意图。扩展区域只有在受控实时
 选区仍等于原选区时才能获得应用授权；宿主重挂载或选区变化都会在修改前使请求失效。
@@ -233,8 +260,8 @@ Rust、浏览器内核、会话、XLSX 与 Playground 聚焦测试覆盖解析�
 验证双关键字流程、单步撤销、可访问性以及空控制台和页面错误诊断。GitHub Actions 与 Pages
 不安装也不调用 A3S Test。`tests/e2e/spreadsheet-sort-range.acl` 还会验证精确/扩展两条提醒
 路径、焦点恢复、公式安全的整行移动与撤销；
-`tests/e2e/spreadsheet-custom-list-sort.acl` 则覆盖非法输入、会话复用、自定义序列下的公式安全
-整行移动与撤销；`tests/e2e/spreadsheet-appearance-sort.acl` 会同时应用单元格颜色、字体颜色与
+`tests/e2e/spreadsheet-custom-list-sort.acl` 则覆盖非法输入、整页刷新后的已保存序列复用、
+自定义序列下的公式安全整行移动与撤销；`tests/e2e/spreadsheet-appearance-sort.acl` 会同时应用单元格颜色、字体颜色与
 条件格式图标条件，并验证移动后的公式、单步撤销、焦点、可访问性及空浏览器诊断；
 `tests/e2e/spreadsheet-row-sort.acl` 会通过“排序选项”切换方向，以两个行关键字移动完整列，并验证
 横向公式平移、单步撤销、焦点、可访问性与空诊断。

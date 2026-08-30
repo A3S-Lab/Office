@@ -14,6 +14,7 @@ import type {
   PdfPageOrganizationExport,
   PresentationContent,
   SpreadsheetContent,
+  SpreadsheetSortCustomListStore,
 } from './core';
 import type { OfficeTheme } from './office-surface';
 import {
@@ -312,6 +313,7 @@ export class A3SMarkdownEditorElement extends A3SContentEditorElement<MarkdownCo
 
 export class A3SSpreadsheetEditorElement extends A3SContentEditorElement<SpreadsheetContent> {
   #collaboration: OfficeCollaborationSession | undefined;
+  #sortCustomListStore: SpreadsheetSortCustomListStore | undefined;
 
   static get observedAttributes() {
     return ['kernel-wasm-url', 'preview', 'save-status', 'theme'];
@@ -335,6 +337,15 @@ export class A3SSpreadsheetEditorElement extends A3SContentEditorElement<Spreads
     else this.setAttribute('kernel-wasm-url', value);
   }
 
+  get sortCustomListStore(): SpreadsheetSortCustomListStore | undefined {
+    return this.#sortCustomListStore;
+  }
+
+  set sortCustomListStore(value: SpreadsheetSortCustomListStore | undefined) {
+    this.#sortCustomListStore = value;
+    this.requestRender();
+  }
+
   protected editorNode(): ReactNode {
     if (!this.content) return missingContent('spreadsheet', this.theme);
     return createElement(SpreadsheetEditor, {
@@ -347,6 +358,7 @@ export class A3SSpreadsheetEditorElement extends A3SContentEditorElement<Spreads
       onChange: (content) => this.changeContent(content),
       preview: this.preview,
       saveStatus: this.saveStatus,
+      sortCustomListStore: this.sortCustomListStore,
       theme: this.theme,
     });
   }

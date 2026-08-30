@@ -1454,9 +1454,16 @@ first/last placement. The
 `spreadsheet-sort-custom-list` model owns
 normalization, duplicate and size guards, seven immutable month/weekday lists,
 and rank matching; the validated request clones custom entries so command
-execution has no dependency on mutable UI state. The React adapter owns only a
-bounded in-memory registry for the mounted editor and never writes preferences
-into controlled workbook content or browser storage. The separate
+execution has no dependency on mutable UI state. The browser adapters own a
+bounded user-list registry and never writes preferences into controlled
+workbook content. Without a store it remains scoped to the mounted session.
+The optional typed `SpreadsheetSortCustomListStore` synchronously loads and
+saves canonical lists through a host-selected local backend. The provided
+`LocalStorageSpreadsheetSortCustomListStore` accepts an injected Storage
+object, uses a versioned key, and validates, deduplicates, and caps reads at 32
+lists. Corrupt reads fail closed; a rejected write visibly downgrades the new
+list to session scope. A stored list precedes an identical request-carried
+session copy so persistence identity remains stable. The separate
 `spreadsheet-sort-appearance` model snapshots direct native styles plus
 calculated conditional-format output, preserves no-fill/automatic identities,
 and declines to flatten native patterns or gradients into one color. The
@@ -1473,7 +1480,7 @@ One accepted operation crosses the Fortune boundary as one range write and one
 controlled Undo record. Table, worksheet-AutoFilter, hyperlink-map,
 imported-formula-metadata, and border-sidecar intersections fail closed because
 those models still own coordinates outside the cell matrix. Moving large sorts,
-advanced predicates, durable host-managed custom-list settings, and structural
+advanced predicates, full custom-list preference management, and structural
 sidecar reconciliation into the Worker/WASM kernel remains Stage 3 work.
 Direct host focus of the native grid now enters the same bounded focus observer
 used by ribbon commands. If a controlled workbook update replaces the focused

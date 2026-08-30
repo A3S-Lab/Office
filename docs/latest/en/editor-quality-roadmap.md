@@ -1435,8 +1435,9 @@ and limits of 256 entries, 128 code points per entry, and 4,096 total code
 points. Listed values sort before unmatched natural-order values, blanks remain
 last, and stable equal ranks can continue through later keys. The dialog retains
 at most 32 user sequences only for the mounted editor session; requests clone
-their sequence, while controlled workbook content and browser storage remain
-untouched. Focused Rstest, desktop/compact Playwright, and the local-only pinned
+their sequence and controlled workbook content remains untouched. The typed
+host-store boundary arrives in the forty-fourth slice below. Focused Rstest,
+desktop/compact Playwright, and the local-only pinned
 A3S Test 1.0.0 gate cover invalid input, reuse, formula movement, one-step Undo,
 accessibility, and clean diagnostics without adding A3S Test to Actions or
 Pages.
@@ -1479,6 +1480,18 @@ Playwright, and the local-only pinned A3S Test 1.0.0 gate cover both Chinese
 orders, lowercase ties, formulas, Undo, immediate keyboard focus,
 accessibility, and clean diagnostics without adding A3S Test to Actions or
 Pages.
+
+The forty-fourth Spreadsheet slice makes authored custom sort lists reusable
+through an explicit typed host store. The React, Vue, and Web Component
+adapters accept one `SpreadsheetSortCustomListStore`; the provided local-storage
+implementation uses an injected backend, a versioned payload, canonical validation,
+deduplication, and the same 32-list bound as the dialog. Missing stores preserve
+mounted-session behavior, corrupt reads fail closed, rejected writes keep the
+new list in session with a visible error, and controlled workbook content never
+owns a preference. Focused Rstest, desktop/compact Playwright, and the local-only
+pinned A3S Test 1.0.0 gate cover storage round trips, full-page reload reuse,
+formula-safe sorting, one-step Undo, accessibility, and clean diagnostics
+without adding A3S Test to Actions or Pages.
 
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.

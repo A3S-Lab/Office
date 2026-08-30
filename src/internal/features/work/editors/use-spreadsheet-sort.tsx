@@ -23,10 +23,14 @@ import { SpreadsheetSortDialog } from './spreadsheet-sort-dialog';
 import { createSpreadsheetSortAppearanceRows } from './spreadsheet-sort-appearance';
 import {
   createSpreadsheetSortCustomList,
-  MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS,
+  MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS,
   spreadsheetSortCustomListsEqual,
   type SpreadsheetSortCustomList,
 } from './spreadsheet-sort-custom-list';
+import {
+  normalizeStoredSpreadsheetSortCustomLists,
+  type SpreadsheetSortCustomListStore,
+} from './spreadsheet-sort-custom-list-store';
 import { SpreadsheetSortRangeDialog } from './spreadsheet-sort-range-dialog';
 
 type SpreadsheetSortSurface =
@@ -53,6 +57,7 @@ export function useSpreadsheetSort({
   getGridFocusTarget,
   getRows,
   preview,
+  customListStore,
 }: {
   commandsRef: { current: SpreadsheetEditorCommands | null };
   contentRef: { current: WorkSpreadsheetContent };
@@ -60,11 +65,15 @@ export function useSpreadsheetSort({
   getGridFocusTarget: () => HTMLElement | null;
   getRows: (request: SpreadsheetSortReadRequest) => (Cell | null)[][] | null;
   preview: boolean;
+  customListStore?: SpreadsheetSortCustomListStore;
 }) {
   const [surface, setSurface] = useState<SpreadsheetSortSurface | null>(null);
   const [customLists, setCustomLists] = useState<
     readonly SpreadsheetSortCustomList[]
-  >([]);
+  >(() => loadStoredCustomLists(customListStore));
+  const customListsRef = useRef(customLists);
+  customListsRef.current = customLists;
+  const loadedCustomListStoreRef = useRef(customListStore);
   const authorizedRequestRef = useRef<{
     request: SpreadsheetSortRequest;
     selectedRange: SpreadsheetCellRange;
@@ -77,6 +86,14 @@ export function useSpreadsheetSort({
     authorizedRequestRef.current = null;
     invokerRef.current = null;
   }, [preview]);
+
+  useEffect(() => {
+    if (loadedCustomListStoreRef.current === customListStore) return;
+    loadedCustomListStoreRef.current = customListStore;
+    const loaded = loadStoredCustomLists(customListStore);
+    customListsRef.current = loaded;
+    setCustomLists(loaded);
+  }, [customListStore]);
 
   const sourceForCandidate = useCallback(
     (
@@ -114,26 +131,46 @@ export function useSpreadsheetSort({
   );
 
   const rememberCustomList = useCallback(
-    (candidate: SpreadsheetSortCustomList) => {
-      if (candidate.source !== 'session') return;
-      const list = createSpreadsheetSortCustomList(
-        candidate.entries,
-        'session',
+    (candidate: SpreadsheetSortCustomList): SpreadsheetSortCustomList => {
+      const existing = customListsRef.current.find((item) =>
+        spreadsheetSortCustomListsEqual(item.entries, candidate.entries),
       );
-      if (!list) return;
-      setCustomLists((current) => {
-        if (
-          current.some((item) =>
-            spreadsheetSortCustomListsEqual(item.entries, list.entries),
-          ) ||
-          current.length >= MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS
-        ) {
-          return current;
+      if (existing) return existing;
+      const source = customListStore ? 'stored' : 'session';
+      const list = createSpreadsheetSortCustomList(candidate.entries, source);
+      if (!list) return candidate;
+      if (
+        customListsRef.current.length >= MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS
+      ) {
+        return candidate;
+      }
+      const next = Object.freeze([...customListsRef.current, list]);
+      if (customListStore) {
+        try {
+          customListStore.save(
+            next
+              .filter((item) => item.source === 'stored')
+              .map((item) => item.entries),
+          );
+        } catch {
+          showToast(
+            '无法写入本地自定义序列；该序列仅在本次会话中保留。',
+            'error',
+          );
+          const session =
+            createSpreadsheetSortCustomList(candidate.entries, 'session') ??
+            candidate;
+          const fallback = Object.freeze([...customListsRef.current, session]);
+          customListsRef.current = fallback;
+          setCustomLists(fallback);
+          return session;
         }
-        return Object.freeze([...current, list]);
-      });
+      }
+      customListsRef.current = next;
+      setCustomLists(next);
+      return list;
     },
-    [],
+    [customListStore],
   );
 
   const applyAuthorizedRequest = useCallback(
@@ -336,4 +373,19 @@ export function useSpreadsheetSort({
         />
       ) : null,
   };
+}
+
+function loadStoredCustomLists(
+  store: SpreadsheetSortCustomListStore | undefined,
+): readonly SpreadsheetSortCustomList[] {
+  if (!store) return Object.freeze([]);
+  try {
+    return Object.freeze(
+      normalizeStoredSpreadsheetSortCustomLists(store.load())
+        .map((entries) => createSpreadsheetSortCustomList(entries, 'stored'))
+        .filter((list): list is SpreadsheetSortCustomList => list !== null),
+    );
+  } catch {
+    return Object.freeze([]);
+  }
 }

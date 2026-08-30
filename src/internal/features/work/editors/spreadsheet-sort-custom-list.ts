@@ -1,9 +1,9 @@
 export const MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRIES = 256;
 export const MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRY_CODE_POINTS = 128;
 export const MAX_SPREADSHEET_SORT_CUSTOM_LIST_CODE_POINTS = 4_096;
-export const MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS = 32;
+export const MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS = 32;
 
-export type SpreadsheetSortCustomListSource = 'built-in' | 'session';
+export type SpreadsheetSortCustomListSource = 'built-in' | 'stored' | 'session';
 
 export interface SpreadsheetSortCustomList {
   entries: readonly string[];
@@ -90,10 +90,15 @@ export function mergeSpreadsheetSortCustomLists(
   const merged: SpreadsheetSortCustomList[] = [
     ...SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS,
   ];
-  let sessionCount = 0;
+  let userListCount = 0;
   for (const candidate of lists) {
-    if (candidate.source !== 'session') continue;
-    const list = createSpreadsheetSortCustomList(candidate.entries, 'session');
+    if (candidate.source !== 'stored' && candidate.source !== 'session') {
+      continue;
+    }
+    const list = createSpreadsheetSortCustomList(
+      candidate.entries,
+      candidate.source,
+    );
     if (
       !list ||
       merged.some((item) =>
@@ -102,9 +107,9 @@ export function mergeSpreadsheetSortCustomLists(
     ) {
       continue;
     }
-    if (sessionCount >= MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS) break;
+    if (userListCount >= MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS) break;
     merged.push(list);
-    sessionCount += 1;
+    userListCount += 1;
   }
   return Object.freeze(merged);
 }

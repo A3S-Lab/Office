@@ -89,9 +89,9 @@ Pages.
 
 ## Focused Spreadsheet custom-list sort contract
 
-The functional regression uses the public quarterly workbook to author a
-bounded status sequence, apply it as the primary key, keep a value-based
-secondary key, reopen the dialog to prove mounted-editor session reuse, and
+The functional regression uses the public quarterly workbook to author and
+locally save a bounded status sequence, apply it as the primary key, keep a
+value-based secondary key, reopen the workbook to prove persisted reuse, and
 verify formula translation plus one-step Undo. Playwright runs the same path at
 desktop and compact widths and rejects browser console or page errors:
 
@@ -99,9 +99,10 @@ desktop and compact widths and rejects browser console or page errors:
 bun run playground:visual:spreadsheet-custom-list-sort
 ```
 
-The companion local-only A3S Test ACL additionally rejects a duplicate list and
-records interactive accessibility evidence. Neither browser gate introduces
-hidden workbook or browser-storage persistence.
+The companion local-only A3S Test ACL additionally rejects a duplicate list,
+reloads the whole Playground, verifies the saved sequence, and records
+interactive accessibility evidence. Persistence is explicit through the
+Playground's typed local store and never modifies workbook content.
 
 ## Focused Spreadsheet appearance sort contract
 

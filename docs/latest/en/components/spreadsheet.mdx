@@ -20,6 +20,7 @@ table, chart, conditional-format, pivot, and print-layout models.
 | `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |
 | `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host save, export, history, and approval actions. |
 | `kernelWasmUrl` | `string` | No | packaged kernel | Formula and workbook-kernel resource URL. |
+| `sortCustomListStore` | `SpreadsheetSortCustomListStore` | No | none | Loads and saves up to 32 user sort sequences outside controlled workbook content; omitting it keeps authored lists in the mounted editor session. |
 | `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | No | — | Sends the active cell or range to the host AI flow. |
 | `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
 
@@ -303,11 +304,39 @@ stable for later keys, and blanks still stay last. Reverse order is expressed
 by reversing the authored sequence.
 
 The seven built-ins are immutable. Up to 32 user sequences are reusable while
-the current editor instance remains mounted. They are deliberately not written
-to the controlled workbook or hidden browser storage; durable cross-editor
-preferences require a future explicit host-settings API. Every accepted sort
-request carries its normalized sequence, so execution never depends on mutable
-dialog state.
+the current editor instance remains mounted. To retain them across workbook
+changes, full-page reloads, and editor remounts, pass the explicit typed
+`sortCustomListStore` property. The editor never writes these preferences into
+controlled workbook content. Every accepted sort request carries its normalized
+sequence, so execution never depends on mutable dialog state.
+
+The package includes an opt-in browser store. Create it once in a browser-owned
+module so its identity stays stable across React renders:
+
+```tsx title="PersistentSpreadsheet.tsx"
+import { LocalStorageSpreadsheetSortCustomListStore } from '@a3s-lab/office/core';
+import { SpreadsheetEditor } from '@a3s-lab/office/react';
+
+const sortCustomListStore = new LocalStorageSpreadsheetSortCustomListStore(
+  window.localStorage,
+);
+
+<SpreadsheetEditor
+  content={content}
+  onChange={setContent}
+  sortCustomListStore={sortCustomListStore}
+/>;
+```
+
+`SpreadsheetSortCustomListStore` has synchronous `load()` and `save(lists)`
+methods, so a host can supply another local settings backend as a typed object.
+Vue accepts the same object as the `sortCustomListStore` prop; a Web Component
+host assigns it to the element's `sortCustomListStore` JavaScript property, not
+an HTML attribute.
+The provided implementation stores a versioned payload under
+`a3s-office.spreadsheet-sort-custom-lists.v1`, validates and deduplicates it on
+read, and ignores corrupt or unsupported data. If a write fails, the new list
+remains available for the current session and the editor reports the failure.
 
 The same **Sort On** control can instead target an effective cell color,
 effective font color, or conditional-format icon. A visual target is placed at
@@ -354,8 +383,8 @@ now: moving only cells while leaving table/filter row ownership unchanged
 would corrupt that structural model. Intersections with coordinate-owned
 hyperlink maps, imported formula source/range metadata, or native border
 records fail closed for the same reason. Table-aware sorting, active-filter
-reconciliation, sidecar migration, durable host-managed custom-list settings,
-and large-sort Worker/WASM execution remain explicit follow-up work.
+reconciliation, sidecar migration, full custom-list preference management, and
+large-sort Worker/WASM execution remain explicit follow-up work.
 
 The warning freezes the original selection, both candidate rectangles, active
 row and column, worksheet, and sort intent. Applying an expanded range is authorized
@@ -369,7 +398,8 @@ verify the two-key workflow, one-step Undo, accessibility, and empty console
 and page-error diagnostics. `tests/e2e/spreadsheet-sort-range.acl` additionally
 verifies the exact and expanded warning paths, focus restoration, formula-safe
 row movement, and Undo. `tests/e2e/spreadsheet-custom-list-sort.acl` covers
-invalid input, session reuse, formula-safe custom-list row movement, and Undo.
+invalid input, saved-list reuse after a full-page reload, formula-safe
+custom-list row movement, and Undo.
 `tests/e2e/spreadsheet-appearance-sort.acl` applies cell-color, font-color, and
 conditional-icon levels together, then verifies the moved formula, one-step
 Undo, focus, accessibility, and empty browser diagnostics.

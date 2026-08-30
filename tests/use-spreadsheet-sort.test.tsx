@@ -10,6 +10,7 @@ import type {
   SpreadsheetSortOpenRequest,
   SpreadsheetSortRequest,
 } from '../src/internal/features/work/editors/spreadsheet-sort';
+import type { SpreadsheetSortCustomListStore } from '../src/internal/features/work/editors/spreadsheet-sort-custom-list-store';
 import { useSpreadsheetSort } from '../src/internal/features/work/editors/use-spreadsheet-sort';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 
@@ -221,6 +222,120 @@ test('reuses authored custom lists without stealing focus after dialog close', a
   nextTarget.remove();
 });
 
+test('persists authored custom lists through a typed host store and remount', () => {
+  const portRef: { current: SpreadsheetSortCommandPort | null } = {
+    current: null,
+  };
+  const content = spreadsheetContent();
+  const commandsRef = {
+    current: {
+      applyCustomSort: () => true,
+    } as SpreadsheetEditorCommands,
+  };
+  const store = new RecordingCustomListStore();
+  const first = render(
+    <SortHarness
+      commandsRef={commandsRef}
+      content={content}
+      customListStore={store}
+      portRef={portRef}
+    />,
+  );
+  expect(store.loads).toBe(1);
+
+  act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
+  fireEvent.change(order, { target: { value: 'create-custom-list' } });
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
+    { target: { value: '有风险\n进行中\n正常\n已完成' } },
+  );
+  fireEvent.click(screen.getByRole('button', { name: '使用序列' }));
+  expect(store.saved).toEqual([[['有风险', '进行中', '正常', '已完成']]]);
+  expect(
+    within(order).getByRole('option', {
+      name: '有风险 → 进行中 → 正常 → …',
+    }),
+  ).toBeInTheDocument();
+  expect(order.querySelector('optgroup[label="已保存的序列"]')).not.toBeNull();
+  first.unmount();
+
+  render(
+    <SortHarness
+      commandsRef={commandsRef}
+      content={content}
+      customListStore={store}
+      portRef={portRef}
+    />,
+  );
+  expect(store.loads).toBe(2);
+  act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  const remountedOrder = screen.getByRole('combobox', {
+    name: '排序条件 1 次序',
+  });
+  expect(
+    within(remountedOrder).getByRole('option', {
+      name: '有风险 → 进行中 → 正常 → …',
+    }),
+  ).toBeInTheDocument();
+  expect(
+    remountedOrder.querySelector('optgroup[label="已保存的序列"]'),
+  ).not.toBeNull();
+});
+
+test('keeps an authored list in session when the host store rejects a write', () => {
+  const portRef: { current: SpreadsheetSortCommandPort | null } = {
+    current: null,
+  };
+  const content = spreadsheetContent();
+  const commandsRef = {
+    current: {
+      applyCustomSort: () => true,
+    } as SpreadsheetEditorCommands,
+  };
+  const store: SpreadsheetSortCustomListStore = {
+    load: () => [],
+    save: () => {
+      throw new Error('storage unavailable');
+    },
+  };
+
+  render(
+    <SortHarness
+      commandsRef={commandsRef}
+      content={content}
+      customListStore={store}
+      portRef={portRef}
+    />,
+  );
+
+  act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
+  fireEvent.change(order, { target: { value: 'create-custom-list' } });
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
+    { target: { value: '高\n中\n低' } },
+  );
+  fireEvent.click(screen.getByRole('button', { name: '使用序列' }));
+
+  expect(
+    order.querySelector('optgroup[label="本次会话的序列"]'),
+  ).not.toBeNull();
+  expect(order.querySelector('optgroup[label="已保存的序列"]')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
+
+  act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  const reopenedOrder = screen.getByRole('combobox', {
+    name: '排序条件 1 次序',
+  });
+  expect(
+    within(reopenedOrder).getByRole('option', { name: '高 → 中 → 低' }),
+  ).toBeInTheDocument();
+  expect(
+    reopenedOrder.querySelector('optgroup[label="本次会话的序列"]'),
+  ).not.toBeNull();
+});
+
 test('authors an effective conditional-icon key from the controlled sheet snapshot', () => {
   const applied: SpreadsheetSortRequest[] = [];
   const portRef: { current: SpreadsheetSortCommandPort | null } = {
@@ -285,10 +400,12 @@ test('authors an effective conditional-icon key from the controlled sheet snapsh
 function SortHarness({
   commandsRef,
   content,
+  customListStore,
   portRef,
 }: {
   commandsRef: { current: SpreadsheetEditorCommands | null };
   content: WorkSpreadsheetContent;
+  customListStore?: SpreadsheetSortCustomListStore;
   portRef: { current: SpreadsheetSortCommandPort | null };
 }) {
   const contentRef = useRef(content);
@@ -317,9 +434,26 @@ function SortHarness({
       return rows;
     },
     preview: false,
+    customListStore,
   });
   portRef.current = sort.commandPort;
   return sort.dialog;
+}
+
+class RecordingCustomListStore implements SpreadsheetSortCustomListStore {
+  lists: readonly (readonly string[])[] = [];
+  loads = 0;
+  readonly saved: Array<readonly (readonly string[])[]> = [];
+
+  load(): readonly (readonly string[])[] {
+    this.loads += 1;
+    return this.lists;
+  }
+
+  save(lists: readonly (readonly string[])[]): void {
+    this.lists = lists.map((list) => [...list]);
+    this.saved.push(this.lists);
+  }
 }
 
 function expansionRequest(): SpreadsheetSortOpenRequest {

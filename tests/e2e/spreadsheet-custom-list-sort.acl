@@ -1,8 +1,8 @@
 suite "office-spreadsheet-custom-list-sort" {
     version = 1
 
-    scenario "author-reuse-apply-and-undo-custom-list-sort" {
-        name = "Author, reuse, apply, and undo a Spreadsheet custom-list sort"
+    scenario "author-persist-apply-and-undo-custom-list-sort" {
+        name = "Author, persist, apply, and undo a Spreadsheet custom-list sort"
         surface = "web"
         timeout_ms = 120000
 
@@ -136,6 +136,10 @@ suite "office-spreadsheet-custom-list-sort" {
             text = "有风险 → 进行中 → 正常 → 已完成"
         }
 
+        expect "custom-list-is-marked-saved" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(optgroup[label='已保存的序列'] option[value='custom-list:7'])")
+        }
+
         click "add-secondary-key" {
             target = role("button", "添加条件")
         }
@@ -161,7 +165,7 @@ suite "office-spreadsheet-custom-list-sort" {
             target = role("button", "自定义排序")
         }
 
-        expect "session-custom-list-is-reusable" {
+        expect "saved-custom-list-is-reusable-before-reload" {
             visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(option[value='custom-list:7'])")
         }
 
@@ -247,6 +251,95 @@ suite "office-spreadsheet-custom-list-sort" {
 
         expect "original-row-order-is-restored" {
             text = "客户洞察报告"
+        }
+
+        navigate "reload-playground-after-saving-list" {
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-custom-list-sort"
+        }
+
+        click "reopen-quarterly-plan-after-reload" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready-after-reload" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid-after-reload" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-sheet-start-after-reload" {
+            key = "Control+Home"
+        }
+
+        press "move-to-table-row-two-after-reload" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-table-header-after-reload" {
+            key = "ArrowDown"
+        }
+
+        press "extend-column-b-after-reload" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-c-after-reload" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-d-after-reload" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-e-after-reload" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-f-after-reload" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-g-after-reload" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-first-data-row-after-reload" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-second-data-row-after-reload" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-third-data-row-after-reload" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-fourth-data-row-after-reload" {
+            key = "Shift+ArrowDown"
+        }
+
+        click "open-data-tab-after-reload" {
+            target = role("tab", "数据")
+        }
+
+        click "open-custom-sort-after-reload" {
+            target = role("button", "自定义排序")
+        }
+
+        expect "saved-custom-list-survives-reload" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(optgroup[label='已保存的序列'] option[value='custom-list:7'])")
+        }
+
+        accessibility "persisted-custom-list-dialog-accessibility" {
+            path = "evidence/spreadsheet-persisted-custom-list-dialog.json"
+            interactive = true
+        }
+
+        click "close-persisted-custom-list-dialog" {
+            target = role("button", "取消")
         }
 
         accessibility "spreadsheet-after-custom-list-sort-accessibility" {

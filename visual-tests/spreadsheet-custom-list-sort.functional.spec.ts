@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { openSpreadsheetFixture } from './visual-test-support';
 
-test('Spreadsheet authors, reuses, applies, and undoes a custom-list sort', async ({
+test('Spreadsheet persists, applies, and undoes a custom-list sort', async ({
   page,
 }, testInfo) => {
   const browserErrors: string[] = [];
@@ -9,6 +9,10 @@ test('Spreadsheet authors, reuses, applies, and undoes a custom-list sort', asyn
     if (message.type() === 'error') browserErrors.push(message.text());
   });
   page.on('pageerror', (error) => browserErrors.push(error.message));
+  await page.goto('/playground/');
+  await page.evaluate(() => {
+    localStorage.removeItem('a3s-office.spreadsheet-sort-custom-lists.v1');
+  });
   await openSpreadsheetFixture(page);
 
   const grid = page.locator('.fortune-sheet-overlay');
@@ -45,6 +49,7 @@ test('Spreadsheet authors, reuses, applies, and undoes a custom-list sort', asyn
   await expect(
     order.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
   ).toBeAttached();
+  await expect(order.locator('optgroup[label="已保存的序列"]')).toBeAttached();
   await dialog.getByRole('button', { name: '添加条件' }).click();
   await expect(
     dialog.getByRole('combobox', { name: '排序条件 2 列' }),
@@ -87,5 +92,34 @@ test('Spreadsheet authors, reuses, applies, and undoes a custom-list sort', asyn
   }
   await expect(nameBox).toHaveText('A4');
   await expect(formulaBar).toHaveText('客户洞察报告');
+
+  await openSpreadsheetFixture(page);
+  await grid.focus();
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  for (let index = 0; index < 6; index += 1) {
+    await page.keyboard.press('Shift+ArrowRight');
+  }
+  for (let index = 0; index < 4; index += 1) {
+    await page.keyboard.press('Shift+ArrowDown');
+  }
+  await expect(nameBox).toHaveText('A3:G7');
+  await ribbon.getByRole('tab', { name: '数据' }).click();
+  await customSort.click();
+  dialog = page.getByRole('dialog', { name: '自定义排序' });
+  const remountedOrder = dialog.getByRole('combobox', {
+    name: '排序条件 1 次序',
+  });
+  await expect(
+    remountedOrder.locator('optgroup[label="已保存的序列"]'),
+  ).toBeAttached();
+  await expect(
+    remountedOrder.getByRole('option', {
+      name: '有风险 → 进行中 → 正常 → …',
+    }),
+  ).toBeAttached();
+  await dialog.getByRole('button', { name: '取消' }).click();
+  await expect(customSort).toBeFocused();
   expect(browserErrors).toEqual([]);
 });

@@ -40,6 +40,14 @@ test('exposes PDF evidence and page events through the Vue adapter', () => {
   expect(definition.emits).toHaveProperty('pageChange');
 });
 
+test('exposes the Spreadsheet custom-list store through the Vue adapter', () => {
+  const definition = SpreadsheetEditor as unknown as {
+    props: Record<string, unknown>;
+  };
+
+  expect(definition.props).toHaveProperty('sortCustomListStore');
+});
+
 test('mounts the Vue adapter and renders the React editor', async () => {
   const target = document.createElement('div');
   document.body.append(target);

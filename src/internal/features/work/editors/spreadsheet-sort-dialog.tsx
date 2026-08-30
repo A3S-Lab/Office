@@ -18,7 +18,7 @@ import {
 } from './spreadsheet-sort-appearance';
 import {
   createSpreadsheetSortCustomList,
-  MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS,
+  MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS,
   mergeSpreadsheetSortCustomLists,
   parseSpreadsheetSortCustomList,
   type SpreadsheetSortCustomList,
@@ -48,7 +48,9 @@ export function SpreadsheetSortDialog({
   source: SpreadsheetSortDialogSource;
   restoreFocusTarget: () => HTMLElement | null;
   onApply: (value: SpreadsheetSortDialogValue) => boolean;
-  onRememberCustomList?: (list: SpreadsheetSortCustomList) => void;
+  onRememberCustomList?: (
+    list: SpreadsheetSortCustomList,
+  ) => SpreadsheetSortCustomList | void;
   onClose: () => void;
 }) {
   const [value, setValue] = useState<SpreadsheetSortDialogValue>(() => ({
@@ -149,15 +151,15 @@ export function SpreadsheetSortDialog({
     );
     let selected = existing;
     if (!selected) {
-      const sessionCount = customLists.filter(
-        (list) => list.source === 'session',
+      const userListCount = customLists.filter(
+        (list) => list.source !== 'built-in',
       ).length;
-      if (sessionCount >= MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS) {
+      if (userListCount >= MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS) {
         setCustomListDraft((current) =>
           current
             ? {
                 ...current,
-                error: `当前编辑器会话最多保留 ${MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS} 个自定义序列。`,
+                error: `当前编辑器最多保留 ${MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS} 个自定义序列。`,
               }
             : current,
         );
@@ -168,9 +170,9 @@ export function SpreadsheetSortDialog({
         'session',
       );
       if (!created) return;
-      selected = created;
-      setCustomLists((current) => Object.freeze([...current, created]));
-      onRememberCustomList?.(created);
+      const remembered = onRememberCustomList?.(created);
+      selected = normalizedRememberedCustomList(remembered, created);
+      setCustomLists((current) => Object.freeze([...current, selected!]));
     }
     const key = value.keys[customListDraft.keyIndex];
     if (!key) {
@@ -420,7 +422,7 @@ export function SpreadsheetSortDialog({
             })}
           </div>
           <p className="work-spreadsheet-sort-note">
-            可按值、自定义序列、有效颜色或条件格式图标排序。文本值可按拼音或笔画比较，并可区分大小写；数字文本按字符顺序排列。按列排序移动整行；按行排序移动整列且不保留标题列。空白始终置于末尾，新建序列仅在本次编辑器会话中复用，每次排序作为一个可撤销操作提交。
+            可按值、自定义序列、有效颜色或条件格式图标排序。文本值可按拼音或笔画比较，并可区分大小写；数字文本按字符顺序排列。按列排序移动整行；按行排序移动整列且不保留标题列。空白始终置于末尾，配置本地序列存储后新建序列可跨工作簿复用，否则仅保留于本次会话；每次排序作为一个可撤销操作提交。
           </p>
         </form>
       </Dialog>
@@ -490,12 +492,29 @@ function spreadsheetSortKeyAppearanceTarget(
 function initialSpreadsheetSortCustomLists(
   source: SpreadsheetSortDialogSource,
 ): readonly SpreadsheetSortCustomList[] {
-  const candidates: SpreadsheetSortCustomList[] = [];
+  const candidates: SpreadsheetSortCustomList[] = [...source.customLists];
   for (const key of source.value.keys) {
     if (key.customList === undefined) continue;
     const list = createSpreadsheetSortCustomList(key.customList, 'session');
     if (list) candidates.push(list);
   }
-  candidates.push(...source.customLists);
   return mergeSpreadsheetSortCustomLists(candidates);
+}
+
+function normalizedRememberedCustomList(
+  candidate: unknown,
+  fallback: SpreadsheetSortCustomList,
+): SpreadsheetSortCustomList {
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+    return fallback;
+  }
+  const source = (candidate as Partial<SpreadsheetSortCustomList>).source;
+  const entries = (candidate as Partial<SpreadsheetSortCustomList>).entries;
+  if (
+    (source !== 'stored' && source !== 'session') ||
+    !Array.isArray(entries)
+  ) {
+    return fallback;
+  }
+  return createSpreadsheetSortCustomList(entries, source) ?? fallback;
 }
