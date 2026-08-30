@@ -726,6 +726,7 @@ test('omits empty resource counts from spreadsheet ribbon actions', () => {
 test('keeps conditional formatting in Home and sorting in Data', () => {
   const panels: string[] = [];
   const sorts: string[] = [];
+  const customSorts: string[] = [];
   const { rerender } = render(
     <SpreadsheetEditorRibbon
       activeTab="home"
@@ -735,6 +736,12 @@ test('keeps conditional formatting in Home and sorting in Data', () => {
         (direction) => {
           sorts.push(direction);
           return true;
+        },
+        {
+          openCustomSort: () => {
+            customSorts.push('open');
+            return true;
+          },
         },
       )}
       content={{ type: 'spreadsheet', sheets: [] }}
@@ -760,6 +767,12 @@ test('keeps conditional formatting in Home and sorting in Data', () => {
           sorts.push(direction);
           return true;
         },
+        {
+          openCustomSort: () => {
+            customSorts.push('open');
+            return true;
+          },
+        },
       )}
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
@@ -773,7 +786,9 @@ test('keeps conditional formatting in Home and sorting in Data', () => {
 
   fireEvent.click(screen.getByRole('button', { name: '升序' }));
   fireEvent.click(screen.getByRole('button', { name: '降序' }));
+  fireEvent.click(screen.getByRole('button', { name: '自定义排序' }));
   expect(sorts).toEqual(['ascending', 'descending']);
+  expect(customSorts).toEqual(['open']);
 });
 
 test('places data validation in the WPS Data tools group', () => {
@@ -1390,6 +1405,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     applyAutoSum: () => true,
     applyHyperlink: () => true,
     applyTable: () => true,
+    applyCustomSort: () => true,
     clearSelectedCells: () => true,
     activateFormatPainter: () => true,
     applyFormatPainter: () => true,
@@ -1413,6 +1429,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     openGoTo: () => true,
     openHyperlink: () => true,
     openPasteSpecial: () => true,
+    openCustomSort: () => true,
     openTable: () => true,
     pasteCells: () => true,
     pasteSelection: () => true,
@@ -1473,6 +1490,7 @@ function spreadsheetCommands(
       | 'openGoTo'
       | 'openHyperlink'
       | 'openPasteSpecial'
+      | 'openCustomSort'
       | 'openTable'
       | 'pasteSelection'
       | 'pasteSpecial'
@@ -1498,6 +1516,7 @@ function spreadsheetCommands(
     applyAutoSum: overrides.applyAutoSum ?? (() => true),
     applyHyperlink: overrides.applyHyperlink ?? (() => true),
     applyTable: () => true,
+    applyCustomSort: () => true,
     applyFormatPainter: () => true,
     cancelFormatPainter: overrides.cancelFormatPainter ?? (() => true),
     clearSelectedCells: overrides.clearSelectedCells ?? (() => true),
@@ -1520,6 +1539,7 @@ function spreadsheetCommands(
     openGoTo: overrides.openGoTo ?? (() => true),
     openHyperlink: overrides.openHyperlink ?? (() => true),
     openPasteSpecial: overrides.openPasteSpecial ?? (() => true),
+    openCustomSort: overrides.openCustomSort ?? (() => true),
     openTable: overrides.openTable ?? (() => true),
     pasteCells: () => true,
     pasteSelection: overrides.pasteSelection ?? (() => true),

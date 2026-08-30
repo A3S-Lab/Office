@@ -2629,6 +2629,114 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(discoverability).toContain('9 / 9 项');
 });
 
+test('publishes formula-safe Spreadsheet multi-key sorting without rewriting 0.37.0', async () => {
+  const [
+    readme,
+    roadmap,
+    changelog,
+    product,
+    english,
+    chinese,
+    architecture,
+    chineseArchitecture,
+    quality,
+    chineseQuality,
+    releaseEnglish,
+    releaseChinese,
+    sortCommand,
+    structureCommand,
+    e2e,
+    packageJson,
+    gate,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.37.0/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.37.0/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-sort-command.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-structure-command.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/spreadsheet-custom-sort.acl'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
+    readFile(
+      path.join(repositoryRoot, 'scripts/run-a3s-test-web-gate.sh'),
+      'utf8',
+    ),
+  ]);
+
+  expect(readme).toContain('up to 64 ordered keys');
+  expect(readme).toContain('relative-formula translation');
+  expect(roadmap).toContain('stable value-based custom sorting');
+  expect(changelog).toContain('Data → Custom Sort');
+  expect(changelog).toContain('coordinate-owned hyperlink');
+  expect(product).toContain('The forty-eighth milestone');
+  expect(english).toContain('## Multi-key custom sort');
+  expect(chinese).toContain('## 多关键字自定义排序');
+  expect(english).toContain('coordinate-owned');
+  expect(chinese).toContain('坐标归属');
+  expect(architecture).toContain('`spreadsheetSort` editor extension');
+  expect(chineseArchitecture).toContain('`spreadsheetSort` 编辑器扩展');
+  expect(quality).toContain('The thirty-eighth Spreadsheet slice');
+  expect(chineseQuality).toContain('第三十八个 Spreadsheet 纵向切片');
+  expect(releaseEnglish).not.toContain('## Multi-key custom sort');
+  expect(releaseChinese).not.toContain('## 多关键字自定义排序');
+  expect(sortCommand).toContain("name: 'spreadsheetSort'");
+  expect(sortCommand).toContain('spreadsheetSortRangeHasStructuralConflict');
+  expect(structureCommand).not.toContain('sortSelectedCells');
+  expect(e2e).toContain('moved-formula-is-rebased');
+  expect(e2e).toContain('original-formula-is-restored-in-one-step');
+  expect(e2e).toContain('spreadsheet-after-custom-sort-accessibility');
+  expect(packageJson).toContain('playground:visual:spreadsheet-custom-sort');
+  expect(packageJson).toContain('test:e2e:spreadsheet-custom-sort');
+  expect(gate).toContain('tests/e2e/spreadsheet-custom-sort.acl');
+});
+
 test('keeps the 0.8.0 native suggestion limitation frozen', async () => {
   for (const { lang } of DOCUMENTATION_LOCALES) {
     const cli = await readFile(

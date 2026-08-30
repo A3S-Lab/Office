@@ -715,6 +715,11 @@ export const spreadsheetCommandCatalog = {
     label: '降序',
     location: { area: 'ribbon', tab: 'data', group: 'sortAndFilter' },
   },
+  customSort: {
+    id: 'data.customSort',
+    label: '自定义排序',
+    location: { area: 'ribbon', tab: 'data', group: 'sortAndFilter' },
+  },
   autoFilter: {
     id: 'data.autoFilter',
     label: '自动筛选',

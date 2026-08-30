@@ -564,6 +564,20 @@ formula editor, and records accessibility plus empty browser diagnostics. The
 suite is local-only; GitHub Actions and Pages do not install or invoke A3S
 Test.
 
+The offline Spreadsheet multi-key Custom Sort workflow has a focused local
+gate:
+
+```bash
+bun run test:e2e:spreadsheet-custom-sort:check
+bun run test:e2e:spreadsheet-custom-sort
+```
+
+It captures the quarterly pipeline selection, verifies the editable header and
+two ordered value keys, moves a relative formula with its row, and confirms
+that one Undo restores both values and formulas. The suite also records focus,
+accessibility, console, and page-error evidence. It uses the pinned local A3S
+Test 1.0.0 binary and remains absent from GitHub Actions and Pages.
+
 The native Presentation scene-element and z-order lifecycle has a focused gate:
 
 ```bash

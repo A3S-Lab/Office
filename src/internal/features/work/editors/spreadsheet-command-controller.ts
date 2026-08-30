@@ -77,6 +77,12 @@ import {
 import type { SpreadsheetPasteContent } from './spreadsheet-paste-special';
 import type { SpreadsheetRichTextToggleAttribute } from './spreadsheet-rich-text-selection-format';
 import { createSpreadsheetSelectionNavigationExtension } from './spreadsheet-selection-navigation-command';
+import { createSpreadsheetSortExtension } from './spreadsheet-sort-command';
+import type {
+  SpreadsheetSortDirection,
+  SpreadsheetSortOpenRequest,
+  SpreadsheetSortRequest,
+} from './spreadsheet-sort';
 import {
   activateSpreadsheetSheet,
   addSpreadsheetSheet,
@@ -175,7 +181,7 @@ export interface SpreadsheetSelectionRef {
 
 export type SpreadsheetStructureAxis = 'row' | 'column';
 export type SpreadsheetStructureInsertPosition = 'before' | 'after';
-export type SpreadsheetSortDirection = 'ascending' | 'descending';
+export type { SpreadsheetSortDirection } from './spreadsheet-sort';
 
 export type SpreadsheetCalculationCommand =
   | { scope: 'workbook' }
@@ -254,6 +260,11 @@ export interface SpreadsheetTableCommandPort {
   open: (target: SpreadsheetTableTarget) => boolean;
 }
 
+export interface SpreadsheetSortCommandPort {
+  canOpen: boolean;
+  open: (request: SpreadsheetSortOpenRequest) => boolean;
+}
+
 export interface SpreadsheetNavigationCommandPort {
   canOpenFind: boolean;
   canOpenGoTo: boolean;
@@ -291,6 +302,7 @@ export interface SpreadsheetEditorCommands {
   applyFormatPainter: (target: SpreadsheetCommandSelection) => boolean;
   applyHyperlink: (request: SpreadsheetHyperlinkRequest) => boolean;
   applyTable: (request: SpreadsheetTableRequest) => boolean;
+  applyCustomSort: (request: SpreadsheetSortRequest) => boolean;
   cancelFormatPainter: () => boolean;
   clearSelectedCells: (mode?: SpreadsheetCellClearMode) => boolean;
   copyCellFromAbove: (kind: SpreadsheetCopyFromAboveKind) => boolean;
@@ -319,6 +331,7 @@ export interface SpreadsheetEditorCommands {
   openGoTo: () => boolean;
   openHyperlink: () => boolean;
   openPasteSpecial: () => boolean;
+  openCustomSort: () => boolean;
   openTable: () => boolean;
   pasteCells: (values: readonly (readonly unknown[])[]) => boolean;
   pasteSelection: () => boolean;
@@ -379,6 +392,7 @@ export interface SpreadsheetCommandContext {
   richTextFormat?: SpreadsheetRichTextFormatCommandPort | null;
   selection: SpreadsheetCommandSelection | null;
   selectionRef?: SpreadsheetSelectionRef;
+  sort: SpreadsheetSortCommandPort;
   table: SpreadsheetTableCommandPort;
   targetSheetGridSize?: SpreadsheetGridSize | null;
   targetSheetId: string;
@@ -632,6 +646,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     }),
     createSpreadsheetKeyboardShortcutExtension(),
     createSpreadsheetSelectionNavigationExtension(),
+    createSpreadsheetSortExtension(),
     createSpreadsheetStructureExtension(),
     createOfficeEditorExtension<
       SpreadsheetCommandContext,

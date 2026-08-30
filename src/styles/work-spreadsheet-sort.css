@@ -1,0 +1,111 @@
+.work-spreadsheet-sort-dialog {
+  --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
+
+  width: min(640px, 100%);
+}
+
+.work-spreadsheet-sort-dialog form {
+  display: grid;
+  gap: 14px;
+}
+
+.work-spreadsheet-sort-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.work-spreadsheet-sort-toolbar .ds-button {
+  gap: 6px;
+}
+
+.work-spreadsheet-sort-toolbar .work-office-checkbox {
+  min-height: 34px;
+  padding: 6px 9px;
+}
+
+.work-spreadsheet-sort-levels {
+  display: grid;
+  max-height: min(430px, 52vh);
+  gap: 9px;
+  overflow: auto;
+  padding: 1px 3px 1px 1px;
+}
+
+.work-spreadsheet-sort-level {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(140px, 1fr) minmax(140px, 0.8fr) auto;
+  align-items: end;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 8px;
+  background: var(--a3s-panel-soft);
+}
+
+.work-spreadsheet-sort-level legend {
+  padding: 0 5px;
+  color: var(--work-spreadsheet-accent, #159469);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.work-spreadsheet-sort-level > label {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.work-spreadsheet-sort-level > label > span {
+  color: var(--a3s-muted);
+  font-size: 9px;
+}
+
+.work-spreadsheet-sort-level select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 5px;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font-size: 11px;
+}
+
+.work-spreadsheet-sort-level-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.work-spreadsheet-sort-level-actions .ds-button {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.work-spreadsheet-sort-note {
+  margin: 0;
+  color: var(--a3s-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+@media (max-width: 560px) {
+  .work-spreadsheet-sort-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .work-spreadsheet-sort-level {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-sort-level-actions {
+    justify-content: flex-end;
+  }
+}

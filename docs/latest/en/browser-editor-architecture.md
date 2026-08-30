@@ -1439,6 +1439,19 @@ changes, and table renames; and `totalsRowFunction`, `totalsRowLabel`, and
 protected, overlapping, AutoFilter, unsafe, external, and over-budget targets
 fail closed. Slicers and external/query tables remain open gates.
 
+Value-based multi-key Custom Sort is now owned by a separate
+`spreadsheetSort` editor extension rather than the row/column structure
+extension. The command freezes one continuous selection, derives a header
+candidate, and validates up to 64 unique keys before cloning and stably sorting
+complete cell rows. Relative formula rows are translated with the same bounded
+reference engine used by Paste Special, while absolute references stay fixed.
+One accepted operation crosses the Fortune boundary as one range write and one
+controlled Undo record. Table, worksheet-AutoFilter, hyperlink-map,
+imported-formula-metadata, and border-sidecar intersections fail closed because
+those models still own coordinates outside the cell matrix. Moving large sorts,
+advanced predicates, color/icon keys, custom lists, and structural sidecar
+reconciliation into the Worker/WASM kernel remains Stage 3 work.
+
 Exit criteria: scrolling and selection do not scale with total row count;
 incremental recalculation touches only affected dependency subgraphs; XLSX
 fixtures preserve formulas, styles, names, validation, conditional formatting,

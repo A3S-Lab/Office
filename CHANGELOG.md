@@ -4,6 +4,22 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added Spreadsheet **Data → Custom Sort** with an accessible multi-level
+  editor for up to 64 unique value keys, explicit priority controls, automatic
+  header detection with an override, stable numeric/text ordering, and blanks
+  kept last in either direction.
+- Moved sort ownership into a dedicated editor extension. Complete rows and
+  their native cell metadata move in one workbook batch; relative formula
+  references are translated to the destination row, absolute references stay
+  fixed, and an out-of-bounds translation fails before mutation. Table,
+  worksheet-AutoFilter, and coordinate-owned hyperlink, imported-formula, or
+  border intersections fail closed until their structural models can be
+  reconciled explicitly.
+- Added focused model, dialog, command, ribbon, Playwright, and local-only A3S
+  Test coverage for formula-safe multi-key sorting and one-step Undo, plus the
+  bilingual Spreadsheet, architecture, product, quality, README, roadmap, and
+  test contracts.
+
 ## 0.37.0 - 2026-08-30
 
 - Added native Spreadsheet totals-row authoring. Table creation can enable a

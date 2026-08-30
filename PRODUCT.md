@@ -572,6 +572,21 @@ XLSX totals metadata, Rust/WASM calculation, and the JavaScript fallback are
 covered by focused tests, responsive Playwright, and the local-only A3S Test
 gate without adding A3S Test to Actions or Pages.
 
+The forty-eighth milestone adds offline Spreadsheet multi-key Custom Sort.
+One dedicated `spreadsheetSort` editor extension captures an immutable range,
+detects an editable header, and applies up to 64 unique ascending or descending
+value keys with stable numeric and natural text ordering and blanks last.
+Complete cell rows move in one native batch and one Undo record; relative
+formula rows translate while absolute references remain fixed. Read-only,
+locked, merged, pivot, malformed, out-of-bounds, and million-cell-over-budget
+requests fail before mutation. Semantic tables, worksheet AutoFilter, and
+coordinate-owned hyperlink, imported-formula, or border sidecars also fail
+closed until one transaction can reconcile their row ownership. Focused
+Rstest, desktop and compact Playwright, and the local-only A3S Test gate cover
+the dialog, priority changes, formula movement, accessibility, diagnostics,
+and one-step Undo. Color/icon keys, custom lists, row-direction sorting, and
+table-aware sorting remain open.
+
 ## Current Presentation Milestone
 
 The first Presentation-animation milestone adds a bounded entrance-animation

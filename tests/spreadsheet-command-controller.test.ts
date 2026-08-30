@@ -14,9 +14,13 @@ import {
   type SpreadsheetFormatPainterCommandPort,
   type SpreadsheetHyperlinkCommandPort,
   type SpreadsheetNavigationCommandPort,
+  type SpreadsheetSortCommandPort,
   type SpreadsheetWorkbookCommandPort,
 } from '../src/internal/features/work/editors/spreadsheet-command-controller';
-import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
+import type {
+  WorkSpreadsheetContent,
+  WorkSpreadsheetSheet,
+} from '../src/internal/features/work/work-types';
 import { XLSX_GRADIENT_FILL_CELL_KEY } from '../src/internal/features/work/work-xlsx-gradient-fill';
 import { XLSX_PATTERN_FILL_CELL_KEY } from '../src/internal/features/work/work-xlsx-pattern-fill';
 
@@ -1916,6 +1920,184 @@ describe('spreadsheet command controller', () => {
     });
   });
 
+  test('opens and applies one stable WPS multi-key sort with a retained header', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [
+      {
+        row: [0, 4],
+        column: [0, 2],
+        row_focus: 1,
+        column_focus: 1,
+      },
+    ];
+    fixture.workbook.cells = [
+      [{ v: 'Team' }, { v: 'Score' }, { v: 'Owner' }],
+      [{ v: 'Beta' }, { v: 80 }, { v: 'Amy' }],
+      [{ v: 'Alpha', bg: '#eef4ff' }, { v: 90 }, { v: 'Zoe' }],
+      [{ v: 'Alpha' }, { v: 90 }, { v: 'Amy', it: 1 }],
+      [{ v: 'Beta' }, { v: 95 }, { v: 'Zoe' }],
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().openCustomSort()).toBe(true);
+    expect(editor.commands.openCustomSort()).toBe(true);
+    expect(fixture.sort.requests).toEqual([
+      {
+        sheetId: 'sheet-1',
+        range: { row: [0, 4], column: [0, 2] },
+        activeColumn: 1,
+      },
+    ]);
+    expect(
+      editor.commands.applyCustomSort({
+        sheetId: 'sheet-1',
+        range: { row: [0, 4], column: [0, 2] },
+        hasHeader: true,
+        keys: [
+          { column: 0, direction: 'ascending' },
+          { column: 1, direction: 'descending' },
+          { column: 2, direction: 'ascending' },
+        ],
+      }),
+    ).toBe(true);
+    expect(fixture.workbook.pastes).toHaveLength(1);
+    expect(fixture.workbook.pastes[0]).toMatchObject({
+      range: { row: [0, 4], column: [0, 2] },
+      sheetId: 'sheet-1',
+      values: [
+        [{ v: 'Team' }, { v: 'Score' }, { v: 'Owner' }],
+        [{ v: 'Alpha' }, { v: 90 }, { v: 'Amy', it: 1 }],
+        [{ v: 'Alpha', bg: '#eef4ff' }, { v: 90 }, { v: 'Zoe' }],
+        [{ v: 'Beta' }, { v: 95 }, { v: 'Zoe' }],
+        [{ v: 'Beta' }, { v: 80 }, { v: 'Amy' }],
+      ],
+    });
+    expect(
+      editor.commands.applyCustomSort({
+        sheetId: 'sheet-1',
+        range: { row: [1, 4], column: [0, 2] },
+        hasHeader: false,
+        keys: [{ column: 0, direction: 'ascending' }],
+      }),
+    ).toBe(false);
+    expect(fixture.workbook.pastes).toHaveLength(1);
+  });
+
+  test('fails sorting closed across table and AutoFilter ownership', () => {
+    const tableFixture = commandFixture();
+    tableFixture.workbook.selection = [
+      { row: [0, 2], column: [0, 1], row_focus: 0, column_focus: 0 },
+    ];
+    const tableSheet = tableFixture.context.content.sheets[0];
+    if (!tableSheet) throw new Error('Expected a worksheet fixture.');
+    tableFixture.context.content = {
+      ...tableFixture.context.content,
+      sheets: [
+        {
+          ...tableSheet,
+          tables: [
+            {
+              id: 'table-1',
+              name: 'Table1',
+              range: { row: [0, 4], column: [0, 2] },
+              columns: [{ name: 'A' }, { name: 'B' }, { name: 'C' }],
+              filters: [],
+              headerRow: true,
+              totalsRow: false,
+              style: { family: 'medium', number: 2 },
+              showFirstColumn: false,
+              showLastColumn: false,
+              showRowStripes: true,
+              showColumnStripes: false,
+            },
+          ],
+        },
+      ],
+    };
+    const tableEditor = spreadsheetEditor(tableFixture.context);
+
+    expect(tableEditor.can().openCustomSort()).toBe(false);
+    expect(tableEditor.can().sortSelectedCells('ascending')).toBe(false);
+
+    const filterFixture = commandFixture();
+    filterFixture.workbook.selection = [
+      { row: [0, 2], column: [0, 1], row_focus: 0, column_focus: 0 },
+    ];
+    const filterSheet = filterFixture.context.content.sheets[0];
+    if (!filterSheet) throw new Error('Expected a worksheet fixture.');
+    filterFixture.context.content = {
+      ...filterFixture.context.content,
+      sheets: [
+        {
+          ...filterSheet,
+          filter_select: { row: [0, 4], column: [0, 2] },
+        },
+      ],
+    };
+    const filterEditor = spreadsheetEditor(filterFixture.context);
+
+    expect(filterEditor.can().openCustomSort()).toBe(false);
+    expect(filterEditor.can().sortSelectedCells('descending')).toBe(false);
+    expect(tableFixture.workbook.pastes).toEqual([]);
+    expect(filterFixture.workbook.pastes).toEqual([]);
+  });
+
+  test('fails sorting closed across coordinate-owned sidecar metadata', () => {
+    const blockers: Array<
+      (sheet: WorkSpreadsheetSheet) => WorkSpreadsheetSheet
+    > = [
+      (sheet) => ({
+        ...sheet,
+        hyperlink: {
+          '1_1': {
+            linkType: 'webpage',
+            linkAddress: 'https://example.com',
+          },
+        },
+      }),
+      (sheet) => ({
+        ...sheet,
+        formulaMetadata: {
+          sourceFormulas: { B2: '_xlfn.XLOOKUP(A2,A:A,B:B)' },
+        },
+      }),
+      (sheet) => ({
+        ...sheet,
+        config: {
+          ...sheet.config,
+          borderInfo: [
+            {
+              rangeType: 'cell',
+              value: {
+                row_index: 1,
+                col_index: 1,
+                l: { color: '#000000', style: '1' },
+              },
+            },
+          ],
+        },
+      }),
+    ];
+
+    for (const block of blockers) {
+      const fixture = commandFixture();
+      fixture.workbook.selection = [
+        { row: [0, 2], column: [0, 1], row_focus: 0, column_focus: 0 },
+      ];
+      const sheet = fixture.context.content.sheets[0];
+      if (!sheet) throw new Error('Expected a worksheet fixture.');
+      fixture.context.content = {
+        ...fixture.context.content,
+        sheets: [block(sheet)],
+      };
+      const editor = spreadsheetEditor(fixture.context);
+
+      expect(editor.can().openCustomSort()).toBe(false);
+      expect(editor.can().sortSelectedCells('ascending')).toBe(false);
+      expect(fixture.workbook.pastes).toEqual([]);
+    }
+  });
+
   test('does not reuse a vendor-frozen paste range for the resulting selection', () => {
     const fixture = commandFixture();
     fixture.workbook.freezePastedRange = true;
@@ -2436,6 +2618,7 @@ function commandFixture(): {
   formatCells: RecordingSpreadsheetFormatCells;
   hyperlink: RecordingSpreadsheetHyperlink;
   navigation: RecordingSpreadsheetNavigation;
+  sort: RecordingSpreadsheetSort;
   workbook: RecordingSpreadsheetWorkbook;
 } {
   const content = {
@@ -2459,6 +2642,7 @@ function commandFixture(): {
   const formatCells = new RecordingSpreadsheetFormatCells();
   const hyperlink = new RecordingSpreadsheetHyperlink();
   const navigation = new RecordingSpreadsheetNavigation();
+  const sort = new RecordingSpreadsheetSort();
   const workbook = new RecordingSpreadsheetWorkbook();
   return {
     autoFilter,
@@ -2471,6 +2655,7 @@ function commandFixture(): {
     formatCells,
     hyperlink,
     navigation,
+    sort,
     workbook,
     context: {
       activeSheetId: 'sheet-1',
@@ -2497,12 +2682,25 @@ function commandFixture(): {
           column: [3, 1],
         },
       },
+      sort,
+      table: { canOpen: false, open: () => false },
       targetSheetId: 'sheet-1',
       toolbarCell: null,
       view: null,
       workbook,
     },
   };
+}
+
+class RecordingSpreadsheetSort implements SpreadsheetSortCommandPort {
+  canOpen = true;
+  requests: Parameters<SpreadsheetSortCommandPort['open']>[0][] = [];
+
+  open(request: Parameters<SpreadsheetSortCommandPort['open']>[0]): boolean {
+    if (!this.canOpen) return false;
+    this.requests.push(request);
+    return true;
+  }
 }
 
 class RecordingSpreadsheetDataValidation

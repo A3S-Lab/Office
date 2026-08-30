@@ -166,6 +166,7 @@ import {
   useSpreadsheetFormatPainter,
 } from './use-spreadsheet-format-painter';
 import { useSpreadsheetHyperlink } from './use-spreadsheet-hyperlink';
+import { useSpreadsheetSort } from './use-spreadsheet-sort';
 import { useSpreadsheetTable } from './use-spreadsheet-table';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
@@ -456,6 +457,31 @@ function SpreadsheetEditorSurface({
     focusGrid: focusSpreadsheetDialogGrid,
     getGridFocusTarget: getSpreadsheetDialogGridFocusTarget,
     getLiveSelections: getSpreadsheetDataValidationLiveSelections,
+    preview,
+  });
+  const getSpreadsheetSortRows = useCallback(
+    (request: {
+      range: { row: [number, number]; column: [number, number] };
+      sheetId: string;
+    }) => {
+      try {
+        return (
+          workbookRef.current?.getCellsByRange(request.range, {
+            id: request.sheetId,
+          }) ?? null
+        );
+      } catch {
+        return null;
+      }
+    },
+    [],
+  );
+  const spreadsheetSort = useSpreadsheetSort({
+    commandsRef: spreadsheetCommandsRef,
+    contentRef,
+    focusGrid: focusSpreadsheetDialogGrid,
+    getGridFocusTarget: getSpreadsheetDialogGridFocusTarget,
+    getRows: getSpreadsheetSortRows,
     preview,
   });
   const spreadsheetTable = useSpreadsheetTable({
@@ -1339,6 +1365,7 @@ function SpreadsheetEditorSurface({
       },
       selection: selectionState,
       selectionRef: selectionStateRef.current,
+      sort: spreadsheetSort.commandPort,
       table: spreadsheetTable.commandPort,
       targetSheetGridSize,
       targetSheetId: toolbarSheetId,
@@ -1956,6 +1983,7 @@ function SpreadsheetEditorSurface({
         />
       )}
       {spreadsheetDataValidation.dialog}
+      {spreadsheetSort.dialog}
       {spreadsheetHyperlink.dialog}
       {spreadsheetTable.dialog}
       {spreadsheetClipboard.dialogSource && (

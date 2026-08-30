@@ -1,4 +1,3 @@
-import type { Cell } from '@fortune-sheet/core';
 import { spreadsheetGridSize } from '../spreadsheet-sparse';
 import {
   createOfficeEditorExtension,
@@ -12,7 +11,6 @@ import type {
   SpreadsheetCommandContext,
   SpreadsheetCommandRange,
   SpreadsheetEditorCommands,
-  SpreadsheetSortDirection,
   SpreadsheetStructureAxis,
   SpreadsheetStructureInsertPosition,
 } from './spreadsheet-command-controller';
@@ -47,10 +45,6 @@ export function createSpreadsheetStructureExtension(): OfficeEditorExtension<
       setSelectedStructureSize: {
         canExecute: canSetSelectedStructureSize,
         execute: setSelectedStructureSize,
-      },
-      sortSelectedCells: {
-        canExecute: canSortSelectedCells,
-        execute: sortSelectedCells,
       },
     }),
   });
@@ -254,78 +248,6 @@ function setSelectedStructureSize(
     return false;
   }
 }
-
-function canSortSelectedCells(
-  context: SpreadsheetCommandContext,
-  _direction: SpreadsheetSortDirection,
-): boolean {
-  if (!canEditSpreadsheetSelection(context)) return false;
-  const [start, end] = spreadsheetStructureRange(
-    spreadsheetLiveCommandRange(context),
-    'row',
-  );
-  return end > start;
-}
-
-function sortSelectedCells(
-  context: SpreadsheetCommandContext,
-  direction: SpreadsheetSortDirection,
-): boolean {
-  if (!context.workbook || !context.targetSheetId) return false;
-  const range = spreadsheetLiveCommandRange(context);
-  try {
-    const rows = context.workbook.getCellsByRange(range, {
-      id: context.targetSheetId,
-    });
-    if (rows.length < 2) return false;
-    const sorted = rows
-      .map((cells, index) => ({ cells, index }))
-      .sort((left, right) => {
-        const result = compareSpreadsheetSortCells(
-          left.cells[0] ?? null,
-          right.cells[0] ?? null,
-          direction,
-        );
-        return result || left.index - right.index;
-      })
-      .map(({ cells }) => cells);
-    context.workbook.setCellValuesByRange(sorted, range, {
-      id: context.targetSheetId,
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function compareSpreadsheetSortCells(
-  left: Cell | null,
-  right: Cell | null,
-  direction: SpreadsheetSortDirection,
-): number {
-  const leftValue = spreadsheetSortValue(left);
-  const rightValue = spreadsheetSortValue(right);
-  if (leftValue === null) return rightValue === null ? 0 : 1;
-  if (rightValue === null) return -1;
-  const order =
-    typeof leftValue === 'number' && typeof rightValue === 'number'
-      ? leftValue - rightValue
-      : spreadsheetSortCollator.compare(String(leftValue), String(rightValue));
-  return direction === 'ascending' ? order : -order;
-}
-
-function spreadsheetSortValue(cell: Cell | null): number | string | null {
-  const value = cell?.v ?? cell?.m;
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim()) return value.trim();
-  if (typeof value === 'boolean') return value ? 1 : 0;
-  return null;
-}
-
-const spreadsheetSortCollator = new Intl.Collator('zh-CN', {
-  numeric: true,
-  sensitivity: 'base',
-});
 
 function spreadsheetStructureRange(
   range: SpreadsheetCommandRange,

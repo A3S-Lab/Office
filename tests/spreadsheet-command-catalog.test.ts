@@ -403,6 +403,15 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     group: 'sortAndFilter',
     tab: 'data',
   });
+  expect(spreadsheetCommandCatalog.customSort).toMatchObject({
+    id: 'data.customSort',
+    label: '自定义排序',
+    location: {
+      area: 'ribbon',
+      group: 'sortAndFilter',
+      tab: 'data',
+    },
+  });
   expect(spreadsheetCommandCatalog.autoFilter.location).toEqual({
     area: 'ribbon',
     group: 'sortAndFilter',

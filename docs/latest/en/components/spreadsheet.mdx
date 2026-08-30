@@ -275,6 +275,43 @@ The current million-cell performance table above remains a rectangular
 workbook baseline; a dedicated large-ListObject benchmark is still required
 before publishing table-specific latency or memory targets.
 
+## Multi-key custom sort
+
+**Data → Sort and Filter → Custom Sort** captures one normalized continuous
+selection and its worksheet identity when the dialog opens. It detects a
+probable header row, keeps the choice editable, starts with the active column,
+and lets users add, remove, or reorder as many as 64 unique sort keys. Each key
+sorts cell values ascending or descending. Finite numbers use numeric order,
+text uses natural Simplified Chinese collation, equal rows retain their source
+order, and blank cells stay at the end in both directions.
+
+Sorting moves complete rows, including native formatting, comments, and other
+cell-owned metadata. A formula that moves to another row translates only its
+relative row references; absolute references remain fixed. If any translated
+reference would leave the worksheet, the entire request fails before mutation.
+One accepted request uses one native range write and creates one Undo record.
+Closing or applying the dialog restores the exact ribbon invoker, after which
+the grid can continue keyboard navigation.
+
+The selected rectangle may contain at most 1,000,000 cells and must leave at
+least two data rows after the optional header. Read-only rows or columns,
+locked cells, merged ranges, pivot output, malformed matrices, duplicate or
+out-of-range keys, and over-budget requests fail closed. A selection that
+intersects a semantic ListObject or worksheet AutoFilter is also rejected for
+now: moving only cells while leaving table/filter row ownership unchanged
+would corrupt that structural model. Intersections with coordinate-owned
+hyperlink maps, imported formula source/range metadata, or native border
+records fail closed for the same reason. Table-aware sorting, active-filter
+reconciliation, sidecar migration, custom lists, row-direction sorting, and
+color/icon sorting remain explicit follow-up work.
+
+Focused model, dialog, command, ribbon, and formula-translation Rstest cover
+the bounded contract. Playwright exercises the real dialog and moved formula;
+`tests/e2e/spreadsheet-custom-sort.acl` uses the pinned local A3S Test gate to
+verify the two-key workflow, one-step Undo, accessibility, and empty console
+and page-error diagnostics. GitHub Actions and Pages do not install or invoke
+A3S Test.
+
 ## Find and Go To
 
 Home and Editing exposes one Office-style Find and Select menu. Find keeps the

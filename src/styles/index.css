@@ -31,6 +31,7 @@
 @import "./work-spreadsheet-chrome.css";
 @import "./work-spreadsheet-format-cells.css";
 @import "./work-spreadsheet-data-validation.css";
+@import "./work-spreadsheet-sort.css";
 @import "./work-spreadsheet-hyperlink.css";
 @import "./work-spreadsheet-paste-special.css";
 @import "./work-spreadsheet-table.css";

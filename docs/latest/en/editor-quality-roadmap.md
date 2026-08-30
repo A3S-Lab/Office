@@ -1402,6 +1402,19 @@ and reopen. Focused Rstest, desktop/compact Playwright, and local-only A3S Test
 1.0.0 cover edit, Apply, reopen, Undo, containment, accessibility, and clean
 browser diagnostics without adding A3S Test to Actions or Pages.
 
+The thirty-eighth Spreadsheet slice adds offline multi-key Custom Sort through
+one dedicated editor extension. The accessible dialog freezes a continuous
+range, exposes an editable header decision, and adds, removes, or reprioritizes
+up to 64 unique ascending or descending value keys. Stable numeric and natural
+text ordering keeps blanks last; complete cell rows move in one native batch,
+relative formula rows translate, and one Undo restores the source. Merges,
+protection, pivots, malformed or oversized matrices, structural tables,
+worksheet AutoFilter, and coordinate-owned hyperlink, imported-formula, or
+border sidecars fail closed before mutation. Focused Rstest, desktop/compact
+Playwright, and local-only A3S Test 1.0.0 cover priority changes, formula
+movement, Undo, focus, accessibility, and clean browser diagnostics without
+adding A3S Test to Actions or Pages.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

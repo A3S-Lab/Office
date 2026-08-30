@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   SortAsc,
   SortDesc,
+  SlidersHorizontal,
   Table2,
   TableProperties,
   Undo2,
@@ -314,6 +315,13 @@ export function SpreadsheetEditorRibbon({
                 onClick={() => commands.sortSelectedCells('descending')}
               >
                 <SortDesc size={19} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.customSort.label}
+                disabled={!can.openCustomSort()}
+                onClick={() => commands.openCustomSort()}
+              >
+                <SlidersHorizontal size={19} />
               </WorkOfficeRibbonButton>
               <WorkOfficeRibbonButton
                 label={spreadsheetCommandCatalog.autoFilter.label}

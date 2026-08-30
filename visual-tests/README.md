@@ -70,3 +70,19 @@ bun run playground:visual:document-legacy-text-effects
 This Playwright test owns visual evidence. The companion A3S Test ACL remains a
 local semantic and diagnostics gate and is intentionally absent from GitHub
 Actions and Pages.
+
+## Focused Spreadsheet multi-key sort contract
+
+The functional regression opens the public quarterly-pipeline workbook,
+captures a seven-column range, configures two sort levels, and verifies stable
+row movement, relative-formula translation, one-step Undo, invoker/grid focus,
+accessibility, and empty console and page-error diagnostics at desktop and
+compact widths:
+
+```bash
+bun run playground:visual:spreadsheet-custom-sort
+```
+
+The companion A3S Test ACL exercises the same public workflow through the
+local release gate and remains intentionally absent from GitHub Actions and
+Pages.

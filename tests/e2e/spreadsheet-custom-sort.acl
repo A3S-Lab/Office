@@ -1,0 +1,246 @@
+suite "office-spreadsheet-custom-sort" {
+    version = 1
+
+    scenario "apply-multi-key-sort-and-undo" {
+        name = "Apply and undo a formula-safe Spreadsheet multi-key sort"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-quarterly-plan" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "move-to-table-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-table-header" {
+            key = "ArrowDown"
+        }
+
+        press "extend-column-b" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-c" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-d" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-e" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-f" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-column-g" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-first-data-row" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-second-data-row" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-third-data-row" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-fourth-data-row" {
+            key = "Shift+ArrowDown"
+        }
+
+        expect "sort-range-selected" {
+            text = "A3:G7"
+        }
+
+        click "open-data-tab" {
+            target = role("tab", "数据")
+        }
+
+        click "open-custom-sort" {
+            target = role("button", "自定义排序")
+        }
+
+        expect "custom-sort-dialog-visible" {
+            visible = css(".work-spreadsheet-sort-dialog[role='dialog']")
+        }
+
+        expect "captured-sort-range-visible" {
+            text = "执行看板!A3:G7"
+        }
+
+        expect "header-row-detected" {
+            visible = css(".work-spreadsheet-sort-dialog .work-office-checkbox.checked:has(input[aria-label='数据包含标题']:checked)")
+        }
+
+        select "choose-completion-rate" {
+            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 列']")
+            values = ["5"]
+        }
+
+        select "choose-descending" {
+            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']")
+            values = ["descending"]
+        }
+
+        click "add-secondary-key" {
+            target = role("button", "添加条件")
+        }
+
+        select "choose-owner-secondary-key" {
+            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 列']")
+            values = ["1"]
+        }
+
+        expect "primary-key-is-completion-rate" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 列']:has(option[value='5']:checked)")
+        }
+
+        expect "primary-direction-is-descending" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(option[value='descending']:checked)")
+        }
+
+        expect "secondary-key-is-owner" {
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 列']:has(option[value='1']:checked)")
+        }
+
+        accessibility "custom-sort-dialog-accessibility" {
+            path = "evidence/spreadsheet-custom-sort-dialog.json"
+            interactive = true
+        }
+
+        click "apply-custom-sort" {
+            target = role("button", "确定")
+        }
+
+        expect "dialog-closes-after-sort" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='自定义排序']:focus")
+        }
+
+        focus "focus-grid-after-sort" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "inspect-sorted-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "inspect-sorted-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-sorted-header" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-sorted-first-row" {
+            key = "ArrowDown"
+        }
+
+        expect "highest-completion-row-is-first" {
+            text = "团队能力建设"
+        }
+
+        press "inspect-sorted-owner" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-january" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-february" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-march" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-sorted-formula" {
+            key = "ArrowRight"
+        }
+
+        expect "moved-formula-is-rebased" {
+            text = "=AVERAGE(C4:E4)"
+        }
+
+        press "undo-sort-once" {
+            key = "Control+z"
+        }
+
+        expect "original-formula-is-restored-in-one-step" {
+            text = "=SUM(C4:E4)/3"
+        }
+
+        press "inspect-restored-march" {
+            key = "ArrowLeft"
+        }
+
+        press "inspect-restored-february" {
+            key = "ArrowLeft"
+        }
+
+        press "inspect-restored-january" {
+            key = "ArrowLeft"
+        }
+
+        press "inspect-restored-owner" {
+            key = "ArrowLeft"
+        }
+
+        press "inspect-restored-name" {
+            key = "ArrowLeft"
+        }
+
+        expect "original-row-order-is-restored" {
+            text = "客户洞察报告"
+        }
+
+        accessibility "spreadsheet-after-custom-sort-accessibility" {
+            path = "evidence/spreadsheet-after-custom-sort.json"
+            interactive = true
+        }
+
+        console "spreadsheet-custom-sort-console" {
+            path = "diagnostics/spreadsheet-custom-sort-console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-custom-sort-page-errors" {
+            path = "diagnostics/spreadsheet-custom-sort-page-errors.json"
+            clear = false
+        }
+    }
+}
