@@ -1,20 +1,48 @@
 import type { Selection } from '@fortune-sheet/core';
-import { type RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
+import { showToast } from '../../../state/app-state';
+import {
+  createElement,
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type {
+  WorkSpreadsheetFilterCriteria,
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
 } from '../work-types';
 import {
+  spreadsheetAutoFilterCriteria,
   spreadsheetAutoFilterHeaderColumn,
   toggleSpreadsheetAutoFilter,
 } from './spreadsheet-auto-filter';
+import {
+  SpreadsheetAutoFilterConditionDialog,
+  type SpreadsheetAutoFilterConditionDialogSource,
+} from './spreadsheet-auto-filter-condition-dialog';
 import type {
   SpreadsheetAutoFilterCommandPort,
+  SpreadsheetEditorCommands,
   SpreadsheetWorkbookCommandPort,
 } from './spreadsheet-command-controller';
+import {
+  enhanceSpreadsheetAutoFilterSurface,
+  focusSpreadsheetAutoFilterMenu,
+  spreadsheetAutoFilterColumnLabel,
+  spreadsheetAutoFilterConditionAction,
+  spreadsheetAutoFilterMenu,
+  spreadsheetAutoFilterMenuFocusable,
+  spreadsheetAutoFilterTrigger,
+} from './spreadsheet-auto-filter-menu';
+import { spreadsheetSheetCellReader } from './spreadsheet-current-region';
 
 export interface UseSpreadsheetAutoFilterOptions {
   canvasRef: RefObject<HTMLElement | null>;
+  commandsRef: { current: SpreadsheetEditorCommands | null };
   content: WorkSpreadsheetContent;
   editable: boolean;
   mountRevision?: number;
@@ -27,12 +55,31 @@ export interface UseSpreadsheetAutoFilterOptions {
 export interface SpreadsheetAutoFilterController {
   active: boolean;
   commandPort: SpreadsheetAutoFilterCommandPort;
+  dialog: ReactNode;
   reserveAltKey: () => boolean;
+  selectionForChange: () => SpreadsheetAutoFilterSelectionState | null;
   status: string;
+}
+
+export interface SpreadsheetAutoFilterSelectionState {
+  selections: Selection[];
+  sheetId: string;
+}
+
+interface SpreadsheetAutoFilterConditionSurface
+  extends SpreadsheetAutoFilterConditionDialogSource {
+  column: number;
+  filterRange: {
+    column: [number, number];
+    row: [number, number];
+  };
+  invoker: HTMLElement | null;
+  sheetId: string;
 }
 
 export function useSpreadsheetAutoFilter({
   canvasRef,
+  commandsRef,
   content,
   editable,
   mountRevision,
@@ -48,8 +95,16 @@ export function useSpreadsheetAutoFilter({
   const sheetIdRef = useRef(sheetId);
   const workbookRef = useRef(workbook);
   const keyboardInvokerRef = useRef<HTMLElement | null>(null);
+  const dialogSelectionRef = useRef<SpreadsheetAutoFilterSelectionState | null>(
+    null,
+  );
+  const applyingConditionRef = useRef(false);
   const restoreInvokerFocusRef = useRef(false);
   const menuWasOpenRef = useRef(false);
+  const [conditionSurface, setConditionSurface] =
+    useState<SpreadsheetAutoFilterConditionSurface | null>(null);
+  const conditionSurfaceRef = useRef(conditionSurface);
+  conditionSurfaceRef.current = conditionSurface;
   contentRef.current = content;
   editableRef.current = editable;
   onChangeRef.current = onChange;
@@ -129,6 +184,58 @@ export function useSpreadsheetAutoFilter({
     );
   }, []);
 
+  const openConditionDialog = useCallback((action: HTMLElement): boolean => {
+    if (!editableRef.current || conditionSurfaceRef.current) return false;
+    const activeSheet = contentRef.current.sheets.find(
+      (candidate) => candidate.id === sheetIdRef.current,
+    );
+    const invoker = keyboardInvokerRef.current;
+    const column = Number(invoker?.dataset.filterColumn);
+    const range = normalizedSpreadsheetAutoFilterRange(
+      activeSheet?.filter_select,
+    );
+    if (
+      !activeSheet ||
+      !range ||
+      !Number.isSafeInteger(column) ||
+      column < range.column[0] ||
+      column > range.column[1]
+    ) {
+      return false;
+    }
+    const key = String(column - range.column[0]);
+    const source: SpreadsheetAutoFilterConditionSurface = {
+      column,
+      columnLabel: spreadsheetAutoFilterColumnLabel(
+        activeSheet,
+        range.row[0],
+        column,
+      ),
+      criteria: spreadsheetAutoFilterCriteria(activeSheet, column),
+      filterRange: range,
+      hasActiveFilter: Object.hasOwn(activeSheet.filter ?? {}, key),
+      invoker,
+      numeric: spreadsheetAutoFilterColumnIsNumeric(activeSheet, range, column),
+      sheetId: activeSheet.id ?? sheetIdRef.current,
+      sheetName: activeSheet.name,
+    };
+    dialogSelectionRef.current = {
+      selections: [
+        currentSpreadsheetAutoFilterSelection(
+          selectionRef.current,
+          workbookRef.current,
+        ),
+      ],
+      sheetId: source.sheetId,
+    };
+    const menu = action.closest<HTMLElement>('.fortune-filter-menu');
+    restoreInvokerFocusRef.current = false;
+    menu?.querySelector<HTMLElement>('.button-default')?.click();
+    conditionSurfaceRef.current = source;
+    setConditionSurface(source);
+    return true;
+  }, []);
+
   useEffect(() => {
     const container = canvasRef.current;
     if (!container || !editable) return;
@@ -160,6 +267,13 @@ export function useSpreadsheetAutoFilter({
       if (!trigger) return;
       keyboardInvokerRef.current = trigger;
       restoreInvokerFocusRef.current = false;
+    };
+    const handleClick = (event: MouseEvent) => {
+      const action = spreadsheetAutoFilterConditionAction(event.target);
+      if (!action) return;
+      event.preventDefault();
+      event.stopPropagation();
+      openConditionDialog(action);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       const trigger = spreadsheetAutoFilterTrigger(event.target);
@@ -227,10 +341,12 @@ export function useSpreadsheetAutoFilter({
     };
 
     enhance();
+    container.addEventListener('click', handleClick, true);
     container.addEventListener('pointerdown', handlePointerDown, true);
     container.addEventListener('keydown', handleKeyDown, true);
     if (typeof MutationObserver === 'undefined') {
       return () => {
+        container.removeEventListener('click', handleClick, true);
         container.removeEventListener('pointerdown', handlePointerDown, true);
         container.removeEventListener('keydown', handleKeyDown, true);
       };
@@ -239,10 +355,74 @@ export function useSpreadsheetAutoFilter({
     observer.observe(container, { childList: true, subtree: true });
     return () => {
       observer.disconnect();
+      container.removeEventListener('click', handleClick, true);
       container.removeEventListener('pointerdown', handlePointerDown, true);
       container.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [canvasRef, editable, mountRevision]);
+  }, [canvasRef, editable, mountRevision, openConditionDialog]);
+
+  useEffect(() => {
+    if (editable) return;
+    conditionSurfaceRef.current = null;
+    dialogSelectionRef.current = null;
+    applyingConditionRef.current = false;
+    setConditionSurface(null);
+  }, [editable]);
+
+  const closeConditionDialog = useCallback(() => {
+    conditionSurfaceRef.current = null;
+    dialogSelectionRef.current = null;
+    setConditionSurface(null);
+  }, []);
+
+  const applyCondition = useCallback(
+    (criteria: WorkSpreadsheetFilterCriteria): boolean => {
+      const source = conditionSurfaceRef.current;
+      if (!source || !editableRef.current) return false;
+      applyingConditionRef.current = true;
+      let handled = false;
+      try {
+        handled =
+          commandsRef.current?.applyAutoFilterCriteria({
+            sheetId: source.sheetId,
+            column: source.column,
+            filterRange: source.filterRange,
+            criteria,
+          }) ?? false;
+      } finally {
+        applyingConditionRef.current = false;
+      }
+      if (!handled) {
+        showToast('筛选区域已发生变化，请重新打开筛选菜单。', 'error');
+      }
+      return handled;
+    },
+    [commandsRef],
+  );
+
+  const clearCondition = useCallback((): boolean => {
+    const source = conditionSurfaceRef.current;
+    if (!source || !editableRef.current) return false;
+    applyingConditionRef.current = true;
+    let handled = false;
+    try {
+      handled =
+        commandsRef.current?.clearAutoFilterCriteria({
+          sheetId: source.sheetId,
+          column: source.column,
+          filterRange: source.filterRange,
+        }) ?? false;
+    } finally {
+      applyingConditionRef.current = false;
+    }
+    if (!handled) showToast('无法清除此列筛选。', 'error');
+    return handled;
+  }, [commandsRef]);
+
+  const selectionForChange = useCallback(
+    () => (applyingConditionRef.current ? dialogSelectionRef.current : null),
+    [],
+  );
 
   const commandPort = useMemo<SpreadsheetAutoFilterCommandPort>(
     () => ({
@@ -257,7 +437,20 @@ export function useSpreadsheetAutoFilter({
   return {
     active,
     commandPort,
+    dialog: conditionSurface
+      ? createElement(SpreadsheetAutoFilterConditionDialog, {
+          source: conditionSurface,
+          restoreFocusTarget: () =>
+            conditionSurface.invoker?.isConnected
+              ? conditionSurface.invoker
+              : canvasRef.current,
+          onApply: applyCondition,
+          onClear: clearCondition,
+          onClose: closeConditionDialog,
+        })
+      : null,
     reserveAltKey,
+    selectionForChange,
     status: active ? '自动筛选已开启；在表头按 Alt+向下箭头打开筛选菜单。' : '',
   };
 }
@@ -276,136 +469,45 @@ function currentSpreadsheetAutoFilterSelection(
   };
 }
 
-function enhanceSpreadsheetAutoFilterSurface(
-  container: HTMLElement,
-  sheet: WorkSpreadsheetSheet | undefined,
-  invoker: HTMLElement | null,
-): HTMLElement | null {
-  const range = sheet?.filter_select;
-  const startRow = range?.row?.[0];
-  const startColumn = range?.column?.[0];
-  const triggers = [
-    ...container.querySelectorAll<HTMLElement>('.luckysheet-filter-options'),
-  ];
-  for (const [index, trigger] of triggers.entries()) {
-    const column = Number(startColumn) + index;
-    if (!Number.isFinite(column) || !Number.isFinite(startRow)) continue;
-    const label = spreadsheetAutoFilterColumnLabel(
-      sheet,
-      Number(startRow),
-      column,
-    );
-    trigger.dataset.filterColumn = String(column);
-    trigger.dataset.officeShortcuts = 'ignore';
-    trigger.setAttribute('role', 'button');
-    trigger.setAttribute('aria-label', `${label} 筛选`);
-    trigger.setAttribute('aria-haspopup', 'dialog');
-    trigger.setAttribute('aria-expanded', 'false');
-    trigger.setAttribute('title', `${label} 筛选（Alt+↓）`);
+function normalizedSpreadsheetAutoFilterRange(
+  range: WorkSpreadsheetSheet['filter_select'] | undefined,
+): SpreadsheetAutoFilterConditionSurface['filterRange'] | null {
+  const rowStart = range?.row?.[0];
+  const rowEnd = range?.row?.[1];
+  const columnStart = range?.column?.[0];
+  const columnEnd = range?.column?.[1];
+  if (
+    !Number.isSafeInteger(rowStart) ||
+    !Number.isSafeInteger(rowEnd) ||
+    !Number.isSafeInteger(columnStart) ||
+    !Number.isSafeInteger(columnEnd)
+  ) {
+    return null;
   }
-
-  const menu = container.querySelector<HTMLElement>('.fortune-filter-menu');
-  if (!menu) return null;
-  const trigger =
-    invoker ?? triggers.find((candidate) => candidate.matches(':focus'));
-  const triggerLabel = trigger
-    ?.getAttribute('aria-label')
-    ?.replace(/\s*筛选$/, '');
-  const label = triggerLabel || '列';
-  menu.setAttribute('role', 'dialog');
-  menu.dataset.officeShortcuts = 'ignore';
-  menu.setAttribute('aria-label', `${label} 筛选`);
-  menu.setAttribute('aria-modal', 'false');
-  trigger?.setAttribute('aria-expanded', 'true');
-
-  const search = menu.querySelector<HTMLInputElement>(
-    '.filtermenu-input-container input, input:not([type="checkbox"])',
-  );
-  search?.setAttribute('aria-label', '搜索筛选值');
-  for (const checkbox of menu.querySelectorAll<HTMLInputElement>(
-    'input[type="checkbox"]',
-  )) {
-    const item = checkbox.closest('.select-item');
-    const itemLabel = item
-      ? [...item.children]
-          .filter(
-            (child) =>
-              child !== checkbox &&
-              !child.classList.contains('count') &&
-              !child.classList.contains('filter-caret'),
-          )
-          .map((child) => child.textContent?.trim())
-          .find(Boolean)
-      : undefined;
-    checkbox.setAttribute('aria-label', `显示 ${itemLabel || '筛选值'}`);
-  }
-  for (const action of menu.querySelectorAll<HTMLElement>(
-    '.luckysheet-cols-menuitem, .fortune-byvalue-btn, .button-basic',
-  )) {
-    action.setAttribute('role', 'button');
-    const actionLabel = action.textContent?.replace(/\s+/g, ' ').trim();
-    if (actionLabel) action.setAttribute('aria-label', actionLabel);
-  }
-  return menu;
+  return {
+    row: [
+      Math.min(Number(rowStart), Number(rowEnd)),
+      Math.max(Number(rowStart), Number(rowEnd)),
+    ],
+    column: [
+      Math.min(Number(columnStart), Number(columnEnd)),
+      Math.max(Number(columnStart), Number(columnEnd)),
+    ],
+  };
 }
 
-function focusSpreadsheetAutoFilterMenu(container: HTMLElement): void {
-  requestAnimationFrame(() => {
-    const menu = container.querySelector<HTMLElement>('.fortune-filter-menu');
-    if (!menu) return;
-    spreadsheetAutoFilterMenuFocusable(menu)[0]?.focus({
-      preventScroll: true,
-    });
-  });
-}
-
-function spreadsheetAutoFilterMenuFocusable(menu: HTMLElement): HTMLElement[] {
-  return [
-    ...menu.querySelectorAll<HTMLElement>(
-      '.luckysheet-cols-menuitem, .fortune-byvalue-btn, .select-item[tabindex], input:not([disabled]), .button-basic',
-    ),
-  ].filter((element) => element.tabIndex >= 0 && !element.hidden);
-}
-
-function spreadsheetAutoFilterTrigger(
-  target: EventTarget | null,
-): HTMLElement | null {
-  return target instanceof Element
-    ? target.closest<HTMLElement>('.luckysheet-filter-options')
-    : null;
-}
-
-function spreadsheetAutoFilterMenu(
-  target: EventTarget | null,
-): HTMLElement | null {
-  return target instanceof Element
-    ? target.closest<HTMLElement>('.fortune-filter-menu')
-    : null;
-}
-
-function spreadsheetAutoFilterColumnLabel(
-  sheet: WorkSpreadsheetSheet | undefined,
-  row: number,
+function spreadsheetAutoFilterColumnIsNumeric(
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetAutoFilterConditionSurface['filterRange'],
   column: number,
-): string {
-  const cell = sheet?.data
-    ? sheet.data[row]?.[column]
-    : sheet?.celldata?.find(
-        (candidate) => candidate.r === row && candidate.c === column,
-      )?.v;
-  const value = cell?.m ?? cell?.v;
-  const label =
-    value === undefined || value === null ? '' : String(value).trim();
-  return label || `列 ${spreadsheetColumnName(column)}`;
-}
-
-function spreadsheetColumnName(column: number): string {
-  let value = Math.max(0, Math.floor(column)) + 1;
-  let name = '';
-  while (value > 0) {
-    value -= 1;
-    name = String.fromCharCode(65 + (value % 26)) + name;
-    value = Math.floor(value / 26);
+): boolean {
+  const cellAt = spreadsheetSheetCellReader(sheet);
+  let values = 0;
+  for (let row = range.row[0] + 1; row <= range.row[1]; row += 1) {
+    const value = cellAt(row, column)?.v ?? cellAt(row, column)?.m;
+    if (value === undefined || value === null || value === '') continue;
+    values += 1;
+    if (typeof value !== 'number' || !Number.isFinite(value)) return false;
   }
-  return name;
+  return values > 0;
 }

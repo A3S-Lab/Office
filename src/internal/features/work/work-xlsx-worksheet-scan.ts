@@ -9,6 +9,7 @@ export interface XlsxWorksheetXmlScan {
 
 const IMPORTED_WORKSHEET_ELEMENTS = new Set([
   'pane',
+  'autoFilter',
   'dataValidation',
   'conditionalFormatting',
   'sheetProtection',
@@ -39,7 +40,7 @@ const DIAGNOSTIC_WORKSHEET_ELEMENTS = new Set([
 ]);
 
 const WORKSHEET_SCAN_PATTERN =
-  /<(?:[A-Za-z_][\w.-]*:)?(?:(cols|f|pane|dataValidation|conditionalFormatting|sheetProtection|protectedRange|rowBreaks|colBreaks|pageSetup|pageMargins|printOptions|headerFooter|pageSetUpPr|drawing|tableParts)(?=[\s/>])|(row)(?=[\s/>])[^>]*\s(?:collapsed|customFormat|customHeight|hidden|ht|outlineLevel|thickBot|thickTop)\s*=|(c)(?=[\s/>])[^>]*\ss\s*=|(r)(?=[\s/>]))/g;
+  /<(?:[A-Za-z_][\w.-]*:)?(?:(cols|f|pane|autoFilter|dataValidation|conditionalFormatting|sheetProtection|protectedRange|rowBreaks|colBreaks|pageSetup|pageMargins|printOptions|headerFooter|pageSetUpPr|drawing|tableParts)(?=[\s/>])|(row)(?=[\s/>])[^>]*\s(?:collapsed|customFormat|customHeight|hidden|ht|outlineLevel|thickBot|thickTop)\s*=|(c)(?=[\s/>])[^>]*\ss\s*=|(r)(?=[\s/>]))/g;
 
 /**
  * Builds every worksheet gate in one pass over the decompressed XML. The

@@ -704,6 +704,28 @@ full-page reload reuse, formula-safe sorting, one-step Undo, accessibility, and
 empty browser diagnostics. A full preference manager for deleting or
 reordering stored lists remains open.
 
+The fifty-fifth milestone adds common worksheet AutoFilter conditions through
+an A3S-owned accessible dialog reached from each active filter header. Users can
+author equal/not-equal, contains/does-not-contain, begins/ends-with, numeric
+comparison and between/not-between ranges, blanks, and nonblanks. Each
+column owns its predicted hidden rows; active columns combine, while manual row
+visibility remains a separate provenance record across replacement, clearing,
+filter removal, and one-step Undo. Dense `data` and sparse `celldata` share the
+same bounded evaluator.
+
+One typed `spreadsheetAutoFilter` extension reauthenticates the editable active
+sheet, exact live filter range, and target column immediately before a single
+controlled update. The condition dialog retains its frozen selection through a
+Fortune remount, and stale requests fail without mutation. Worksheet-level
+native OOXML `filterColumn` criteria now import and export through the same
+closed filter union already used by tables. Unsafe vendor sort entries are no
+longer exposed from the filter menu; the A3S-owned formula-safe sort commands
+remain authoritative. Focused Rstest, desktop/compact Playwright, and the
+pinned local-only A3S Test gate cover multi-column filtering, manual hidden-row
+overlap, XLSX reopen, Undo, selection, accessibility, and clean diagnostics.
+Same-column two-clause AND/OR, wildcard authoring, Top/Bottom and dynamic
+evaluation, and table/AutoFilter-integrated custom sorting remain open.
+
 ## Current Presentation Milestone
 
 The first Presentation-animation milestone adds a bounded entrance-animation

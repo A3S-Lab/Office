@@ -1493,6 +1493,23 @@ pinned A3S Test 1.0.0 gate cover storage round trips, full-page reload reuse,
 formula-safe sorting, one-step Undo, accessibility, and clean diagnostics
 without adding A3S Test to Actions or Pages.
 
+The forty-fifth Spreadsheet slice adds common worksheet AutoFilter conditions
+through an A3S-owned accessible dialog and typed command extension. Equal,
+not-equal, contains, does-not-contain, begins/ends-with, numeric comparisons and
+ranges, blanks, and nonblanks share one dense/sparse evaluator. Each active
+column owns its hidden rows, their union drives display, and an explicit overlap
+record preserves manually hidden rows across condition replacement, clearing,
+filter removal, and Undo. Commands reauthenticate the editable active sheet,
+exact filter range, and target column before one controlled update; the frozen
+selection survives the Fortune remount. Native worksheet criteria reuse the
+table filter union and round-trip through XLSX. Unsafe vendor sort actions are
+removed from the header menu so only the formula-safe typed sort path remains.
+Focused Rstest, desktop/compact Playwright, and the local-only pinned A3S Test
+1.0.0 gate cover multi-column ownership, manual overlap, XLSX reopen, Undo,
+focus, accessibility, and clean diagnostics without adding A3S Test to Actions
+or Pages. Same-column AND/OR, wildcard authoring, Top/Bottom and dynamic
+evaluation, and table/AutoFilter-integrated custom sorting remain open.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

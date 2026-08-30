@@ -412,6 +412,51 @@ checks immediate post-remount keyboard focus, Undo, accessibility, and clean
 diagnostics.
 GitHub Actions and Pages do not install or invoke A3S Test.
 
+## Worksheet AutoFilter conditions
+
+Enable **Data → Sort and Filter → Filter** or press `Cmd/Ctrl+Shift+L`, then
+open an active header and choose **Filter by condition**. The A3S-owned
+**Custom AutoFilter** dialog supports equal and not equal, contains and does
+not contain, begins with, ends with, greater/greater-or-equal,
+less/less-or-equal, inclusive between/not-between, blanks, and nonblanks.
+Numeric conditions require finite bounds and reject a reversed range before
+the command can run.
+
+Each active column owns its own hidden-row set. Conditions on different
+columns therefore combine as an intersection of visible rows, and clearing one
+column removes only that column's ownership. Rows hidden independently through
+worksheet row visibility stay hidden when a condition is replaced, cleared, or
+when AutoFilter is disabled, including the case where a manual row and a
+condition overlap. Dense `data` and sparse `celldata` worksheets use the same
+evaluator without materializing unrelated cells.
+
+Applying or clearing a condition crosses the editor through the typed
+`spreadsheetAutoFilter` command extension. It rechecks editability, the active
+sheet, the exact live filter range, and the absolute target column immediately
+before one controlled workbook update and one Undo record. A host remount or
+stale menu target fails closed. The dialog preserves the frozen live selection
+through the controlled remount and restores focus to the originating filter
+header.
+
+Native worksheet `<autoFilter>` / `<filterColumn>` criteria use the same closed
+filter union as native tables and round-trip through XLSX import and export.
+Supported imported value and common custom conditions are recomputed in the
+browser, so their filter-owned rows are inferred from the current cells. OOXML
+cannot recover an imported manual hide that exactly overlaps such an inferred
+filter hide. Imported Top/Bottom, percentage, and dynamic criteria remain typed
+and are written back, but their visible-row calculation is not authored or
+recomputed yet; their existing hidden rows are conservatively retained as
+manual. Same-column two-clause AND/OR, wildcard authoring, Top/Bottom and
+dynamic evaluation, and table/AutoFilter-integrated custom sorting remain
+explicit boundaries.
+
+Focused model, command, dialog, Hook, import, and XLSX Rstest cover the bounded
+contract. Desktop and compact Playwright exercise the real vendor header menu,
+owned dialog, selection retention, apply, and Undo. The local-only
+`tests/e2e/spreadsheet-ribbon-alignment.acl` A3S Test gate additionally checks
+accessibility and empty console/page-error diagnostics; GitHub Actions and
+Pages do not install or invoke A3S Test.
+
 ## Find and Go To
 
 Home and Editing exposes one Office-style Find and Select menu. Find keeps the

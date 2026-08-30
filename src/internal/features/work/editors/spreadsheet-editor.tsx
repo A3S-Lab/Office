@@ -149,6 +149,7 @@ import {
   useOfficeEditorWheelZoom,
 } from './use-office-editor-wheel-zoom';
 import { useOfficeHistory } from './use-office-history';
+import { SPREADSHEET_AUTO_FILTER_MENU_ITEMS } from './spreadsheet-auto-filter-menu';
 import { useSpreadsheetAutoFilter } from './use-spreadsheet-auto-filter';
 import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
 import {
@@ -1016,10 +1017,13 @@ function SpreadsheetEditorSurface({
   const {
     active: autoFilterActive,
     commandPort: autoFilter,
+    dialog: autoFilterDialog,
     reserveAltKey: reserveAutoFilterAltKey,
+    selectionForChange: autoFilterSelectionForChange,
     status: autoFilterStatus,
   } = useSpreadsheetAutoFilter({
     canvasRef: spreadsheetCanvasRef,
+    commandsRef: spreadsheetCommandsRef,
     content: materializedContent,
     editable: !preview,
     mountRevision: workbookMountRevision,
@@ -1287,6 +1291,7 @@ function SpreadsheetEditorSurface({
       : null;
     const dataValidationSelection =
       spreadsheetDataValidation.selectionForChange();
+    const autoFilterSelection = autoFilterSelectionForChange();
     const tableSelection = spreadsheetTable.selectionForChange();
     const hyperlinkSelection = spreadsheetHyperlink.selectionForChange();
     const preservedSelection = formatCellsSelection
@@ -1299,7 +1304,8 @@ function SpreadsheetEditorSurface({
             sheetId: tableSelection.sheetId,
             selections: [tableSelection.selection],
           }
-        : (dataValidationSelection ??
+        : (autoFilterSelection ??
+          dataValidationSelection ??
           (hyperlinkSelection
             ? {
                 sheetId: hyperlinkSelection.sheetId,
@@ -1806,6 +1812,7 @@ function SpreadsheetEditorSurface({
             defaultRowHeight={24}
             defaultColWidth={96}
             defaultFontSize={11}
+            filterContextMenu={SPREADSHEET_AUTO_FILTER_MENU_ITEMS}
             hooks={workbookHooks}
             onChange={handleWorkbookChange}
             onOp={handleWorkbookOperations}
@@ -2008,6 +2015,7 @@ function SpreadsheetEditorSurface({
         />
       )}
       {spreadsheetDataValidation.dialog}
+      {autoFilterDialog}
       {spreadsheetSort.dialog}
       {spreadsheetHyperlink.dialog}
       {spreadsheetTable.dialog}

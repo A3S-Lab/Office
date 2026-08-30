@@ -1,8 +1,16 @@
 import type { Selection } from '@fortune-sheet/core';
 import type {
+  WorkSpreadsheetFilterCriteria,
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
 } from '../work-types';
+import {
+  type WorkSpreadsheetAutoFilterRange,
+  workSpreadsheetAutoFilterCriteria,
+  workSpreadsheetAutoFilterManuallyHiddenRows,
+  workSpreadsheetSheetWithAutoFilterCriteria,
+  workSpreadsheetSheetWithoutAutoFilterCriteria,
+} from '../work-spreadsheet-auto-filter';
 import {
   spreadsheetCurrentRegion,
   spreadsheetRowHasContent,
@@ -10,9 +18,17 @@ import {
 } from './spreadsheet-current-region';
 import { finiteSpreadsheetSelection } from './spreadsheet-editor-support';
 
-export interface SpreadsheetAutoFilterRange {
-  row: [number, number];
-  column: [number, number];
+export type SpreadsheetAutoFilterRange = WorkSpreadsheetAutoFilterRange;
+
+export interface SpreadsheetAutoFilterTarget {
+  column: number;
+  filterRange: SpreadsheetAutoFilterRange;
+  sheetId: string;
+}
+
+export interface SpreadsheetAutoFilterCriteriaRequest
+  extends SpreadsheetAutoFilterTarget {
+  criteria: WorkSpreadsheetFilterCriteria;
 }
 
 export function spreadsheetAutoFilterRange(
@@ -73,6 +89,51 @@ export function toggleSpreadsheetAutoFilter(
   return { ...content, sheets };
 }
 
+export function spreadsheetAutoFilterCriteria(
+  sheet: WorkSpreadsheetSheet | undefined,
+  column: number,
+): WorkSpreadsheetFilterCriteria | null {
+  return workSpreadsheetAutoFilterCriteria(sheet, column);
+}
+
+export function applySpreadsheetAutoFilterCriteria(
+  content: WorkSpreadsheetContent,
+  sheetId: string,
+  column: number,
+  criteria: WorkSpreadsheetFilterCriteria,
+): WorkSpreadsheetContent | null {
+  const sheetIndex = content.sheets.findIndex((sheet) => sheet.id === sheetId);
+  const sheet = content.sheets[sheetIndex];
+  if (!sheet) return null;
+  const nextSheet = workSpreadsheetSheetWithAutoFilterCriteria(
+    sheet,
+    column,
+    criteria,
+  );
+  if (!nextSheet) return null;
+  const sheets = [...content.sheets];
+  sheets[sheetIndex] = nextSheet;
+  return { ...content, sheets };
+}
+
+export function clearSpreadsheetAutoFilterCriteria(
+  content: WorkSpreadsheetContent,
+  sheetId: string,
+  column: number,
+): WorkSpreadsheetContent | null {
+  const sheetIndex = content.sheets.findIndex((sheet) => sheet.id === sheetId);
+  const sheet = content.sheets[sheetIndex];
+  if (!sheet) return null;
+  const nextSheet = workSpreadsheetSheetWithoutAutoFilterCriteria(
+    sheet,
+    column,
+  );
+  if (!nextSheet) return null;
+  const sheets = [...content.sheets];
+  sheets[sheetIndex] = nextSheet;
+  return { ...content, sheets };
+}
+
 function spreadsheetSheetWithAutoFilter(
   sheet: WorkSpreadsheetSheet,
   selection: Selection,
@@ -92,9 +153,12 @@ function spreadsheetSheetWithAutoFilter(
 function spreadsheetSheetWithoutAutoFilter(
   sheet: WorkSpreadsheetSheet,
 ): WorkSpreadsheetSheet {
-  const hiddenByFilter = spreadsheetFilterHiddenRows(sheet.filter);
-  const rowhidden = { ...sheet.config?.rowhidden };
-  for (const row of hiddenByFilter) delete rowhidden[row];
+  const rowhidden = Object.fromEntries(
+    [...workSpreadsheetAutoFilterManuallyHiddenRows(sheet)].map((row) => [
+      row,
+      0,
+    ]),
+  );
   const config = sheet.config
     ? {
         ...sheet.config,
@@ -103,19 +167,6 @@ function spreadsheetSheetWithoutAutoFilter(
     : undefined;
   const { filter: _filter, filter_select: _selection, ...remaining } = sheet;
   return { ...remaining, config };
-}
-
-function spreadsheetFilterHiddenRows(
-  filter: WorkSpreadsheetSheet['filter'],
-): Set<string> {
-  const rows = new Set<string>();
-  for (const value of Object.values(filter ?? {})) {
-    if (!value || typeof value !== 'object') continue;
-    const rowhidden = (value as { rowhidden?: unknown }).rowhidden;
-    if (!rowhidden || typeof rowhidden !== 'object') continue;
-    for (const row of Object.keys(rowhidden)) rows.add(row);
-  }
-  return rows;
 }
 
 function validSpreadsheetAutoFilterRange(

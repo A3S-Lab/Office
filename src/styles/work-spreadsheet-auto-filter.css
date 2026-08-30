@@ -1,0 +1,34 @@
+.work-spreadsheet-auto-filter-dialog {
+  --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
+
+  width: min(500px, 100%);
+}
+
+.work-spreadsheet-auto-filter-form {
+  display: grid;
+  gap: 16px;
+}
+
+.work-spreadsheet-auto-filter-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.work-spreadsheet-auto-filter-values > :only-child {
+  grid-column: 1 / -1;
+}
+
+.work-spreadsheet-auto-filter-clear {
+  margin-right: auto;
+}
+
+@media (max-width: 520px) {
+  .work-spreadsheet-auto-filter-values {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-auto-filter-values > :only-child {
+    grid-column: auto;
+  }
+}

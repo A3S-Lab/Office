@@ -1418,6 +1418,89 @@ describe('spreadsheet command controller', () => {
     expect(editor.commands.openAutoFilterMenu()).toBe(false);
   });
 
+  test('applies and clears AutoFilter criteria through controlled commands', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      data: [[{ v: 'Status' }], [{ v: 'Ready' }], [{ v: 'Risk' }]],
+      filter: {},
+      filter_select: { row: [0, 2], column: [0, 0] },
+    };
+    const editor = spreadsheetEditor(fixture.context);
+    const target = {
+      sheetId: 'sheet-1',
+      column: 0,
+      filterRange: { row: [0, 2], column: [0, 0] },
+    } as const;
+
+    expect(
+      editor.can().applyAutoFilterCriteria({
+        ...target,
+        criteria: { type: 'contains', value: 'Risk' },
+      }),
+    ).toBe(true);
+    expect(
+      editor.commands.applyAutoFilterCriteria({
+        ...target,
+        criteria: { type: 'contains', value: 'Risk' },
+      }),
+    ).toBe(true);
+    expect(fixture.changes).toHaveLength(1);
+    expect(fixture.changes[0]?.sheets[0]?.filter?.['0']).toMatchObject({
+      cindex: 0,
+      rowhidden: { '1': 0 },
+    });
+
+    const filtered = fixture.changes[0];
+    if (!filtered) throw new Error('Expected an AutoFilter criteria change.');
+    editor.updateContext({ ...fixture.context, content: filtered });
+    expect(editor.can().clearAutoFilterCriteria(target)).toBe(true);
+    expect(editor.commands.clearAutoFilterCriteria(target)).toBe(true);
+    expect(fixture.changes[1]?.sheets[0]?.filter).toEqual({});
+    expect(fixture.changes[1]?.sheets[0]?.config?.rowhidden).toEqual({});
+
+    editor.updateContext({
+      ...fixture.context,
+      content: {
+        ...filtered,
+        sheets: filtered.sheets.map((sheet) => ({
+          ...sheet,
+          filter_select: { row: [0, 3], column: [0, 0] },
+        })),
+      },
+    });
+    expect(
+      editor.commands.applyAutoFilterCriteria({
+        ...target,
+        criteria: { type: 'contains', value: 'Risk' },
+      }),
+    ).toBe(false);
+
+    editor.updateContext({
+      ...fixture.context,
+      content: filtered,
+      editable: false,
+    });
+    expect(editor.can().clearAutoFilterCriteria(target)).toBe(false);
+    expect(editor.commands.clearAutoFilterCriteria(target)).toBe(false);
+
+    editor.updateContext({ ...fixture.context, content: filtered });
+    for (const criteria of [
+      { type: 'contains', value: '   ' },
+      { type: 'greater-than', value: 'not-a-number' },
+      { type: 'between', lower: '5', upper: '' },
+      { type: 'between', lower: '10', upper: '5' },
+    ] as const) {
+      expect(
+        editor.can().applyAutoFilterCriteria({ ...target, criteria }),
+      ).toBe(false);
+      expect(
+        editor.commands.applyAutoFilterCriteria({ ...target, criteria }),
+      ).toBe(false);
+    }
+    expect(fixture.changes).toHaveLength(2);
+  });
+
   test('owns WPS AutoFilter toggle and header-menu shortcuts', () => {
     const fixture = commandFixture();
     fixture.autoFilter.active = true;

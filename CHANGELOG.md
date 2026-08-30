@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added an accessible Spreadsheet **Custom AutoFilter** dialog for common
+  equality, containment, prefix/suffix, numeric comparison/range, blank, and
+  nonblank conditions. Conditions on separate columns combine without losing
+  each column's hidden-row ownership; replacing, clearing, disabling, or
+  undoing a condition preserves independently hidden rows and the live grid
+  selection.
+- Moved worksheet condition application behind a typed, fail-closed AutoFilter
+  command extension that reauthenticates the active sheet, exact filter range,
+  editable state, and target column before one controlled update. Native XLSX
+  worksheet `autoFilter` criteria now import and export through the shared
+  filter union, while desktop/compact Playwright and local-only A3S Test cover
+  Undo, focus, accessibility, and clean browser diagnostics. Removed vendor
+  menu sort actions that bypassed these structural and command boundaries.
 - Added an opt-in typed host store for offline Spreadsheet custom sort lists.
   `SpreadsheetEditor.sortCustomListStore` can reuse up to 32 user sequences
   across workbook changes and editor remounts without placing preferences in

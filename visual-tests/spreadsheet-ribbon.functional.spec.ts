@@ -1116,7 +1116,7 @@ test('Spreadsheet applies one-shot and locked WPS format-painter patterns', asyn
 
 test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
   page,
-}) => {
+}, testInfo) => {
   const browserErrors: string[] = [];
   page.on('pageerror', (error) => browserErrors.push(error.message));
   await openSpreadsheetFixture(page);
@@ -1158,7 +1158,7 @@ test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
   }
   await expect(nameBox).toHaveText('G3');
   await page.keyboard.press('Alt+ArrowDown');
-  const dialog = canvas.getByRole('dialog', { name: '状态 筛选' });
+  let dialog = canvas.getByRole('dialog', { name: '状态 筛选' });
   await expect(dialog).toBeVisible();
   await expect(
     dialog.getByRole('textbox', { name: '搜索筛选值' }),
@@ -1173,6 +1173,38 @@ test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
   expect(
     (dialogBounds?.y ?? 0) + (dialogBounds?.height ?? 0),
   ).toBeLessThanOrEqual(viewport?.height ?? 0);
+  await expect(dialog.getByRole('button', { name: '升序' })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: '降序' })).toHaveCount(0);
+
+  await dialog.getByRole('button', { name: '按条件过滤' }).click();
+  const conditionDialog = page.getByRole('dialog', {
+    name: '自定义自动筛选',
+  });
+  await expect(conditionDialog).toContainText('执行看板!状态');
+  await conditionDialog
+    .getByRole('combobox', { name: '筛选条件' })
+    .selectOption('contains');
+  await conditionDialog.getByRole('textbox', { name: '筛选值' }).fill('风险');
+  await conditionDialog.screenshot({
+    path: testInfo.outputPath('spreadsheet-auto-filter-condition-dialog.png'),
+    animations: 'disabled',
+  });
+  await conditionDialog.getByRole('button', { name: '确定' }).click();
+  await expect(conditionDialog).toHaveCount(0);
+  await expect(canvas.getByRole('button', { name: '状态 筛选' })).toHaveClass(
+    /luckysheet-filter-options-active/,
+  );
+  await expect(nameBox).toHaveText('G3');
+
+  await grid.focus();
+  await page.keyboard.press('Control+z');
+  await expect(
+    canvas.getByRole('button', { name: '状态 筛选' }),
+  ).not.toHaveClass(/luckysheet-filter-options-active/);
+
+  await page.keyboard.press('Alt+ArrowDown');
+  dialog = canvas.getByRole('dialog', { name: '状态 筛选' });
+  await expect(dialog).toBeVisible();
 
   await dialog
     .getByRole('button', { name: '清除', exact: true })

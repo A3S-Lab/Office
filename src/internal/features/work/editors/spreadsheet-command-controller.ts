@@ -10,6 +10,11 @@ import {
 } from './office-editor-extension';
 import type { SpreadsheetAutoSumFunction } from './spreadsheet-auto-sum';
 import { createSpreadsheetAutoSumExtension } from './spreadsheet-auto-sum-command';
+import type {
+  SpreadsheetAutoFilterCriteriaRequest,
+  SpreadsheetAutoFilterTarget,
+} from './spreadsheet-auto-filter';
+import { createSpreadsheetAutoFilterExtension } from './spreadsheet-auto-filter-command';
 import type { SpreadsheetCellBorderFormat } from './spreadsheet-cell-border';
 import { createSpreadsheetCellBorderExtension } from './spreadsheet-cell-border-command';
 import {
@@ -301,6 +306,9 @@ export interface SpreadsheetEditorCommands {
   adjustFontSize: (direction: SpreadsheetFontSizeDirection) => boolean;
   applyCellStyle: (preset: SpreadsheetCellStyleChoice) => boolean;
   applyCellFormat: (request: SpreadsheetCellFormatRequest) => boolean;
+  applyAutoFilterCriteria: (
+    request: SpreadsheetAutoFilterCriteriaRequest,
+  ) => boolean;
   applyDataValidation: (request: SpreadsheetDataValidationRequest) => boolean;
   applyAutoSum: (functionName: SpreadsheetAutoSumFunction) => boolean;
   applyFormatPainter: (target: SpreadsheetCommandSelection) => boolean;
@@ -309,6 +317,7 @@ export interface SpreadsheetEditorCommands {
   applyCustomSort: (request: SpreadsheetSortRequest) => boolean;
   cancelFormatPainter: () => boolean;
   clearSelectedCells: (mode?: SpreadsheetCellClearMode) => boolean;
+  clearAutoFilterCriteria: (target: SpreadsheetAutoFilterTarget) => boolean;
   copyCellFromAbove: (kind: SpreadsheetCopyFromAboveKind) => boolean;
   copySelection: () => boolean;
   cutSelection: () => boolean;
@@ -441,6 +450,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     createSpreadsheetCellFillExtension(),
     createSpreadsheetCopyFromAboveExtension(),
     createSpreadsheetVisibilityShortcutExtension(),
+    createSpreadsheetAutoFilterExtension(),
     createOfficeEditorExtension<
       SpreadsheetCommandContext,
       SpreadsheetEditorCommands
@@ -461,24 +471,6 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
           canExecute: ({ formatPainter }) => formatPainter.active,
           execute: ({ formatPainter }) =>
             formatPainter.active && formatPainter.cancel(),
-        },
-      }),
-    }),
-    createOfficeEditorExtension<
-      SpreadsheetCommandContext,
-      SpreadsheetEditorCommands
-    >({
-      name: 'spreadsheetAutoFilter',
-      addCommands: () => ({
-        openAutoFilterMenu: {
-          canExecute: ({ autoFilter }) => autoFilter.canOpenMenu,
-          execute: ({ autoFilter }) =>
-            autoFilter.canOpenMenu && autoFilter.openMenu(),
-        },
-        toggleAutoFilter: {
-          canExecute: ({ autoFilter }) => autoFilter.canToggle,
-          execute: ({ autoFilter }) =>
-            autoFilter.canToggle && autoFilter.toggle(),
         },
       }),
     }),

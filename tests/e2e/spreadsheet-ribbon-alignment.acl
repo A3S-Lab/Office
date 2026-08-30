@@ -307,6 +307,68 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".fortune-filter-menu input[aria-label='搜索筛选值']")
         }
 
+        expect "owned-condition-action-visible" {
+            visible = css(".fortune-filter-menu [data-a3s-auto-filter-condition]")
+        }
+
+        click "open-owned-condition-dialog" {
+            target = css(".fortune-filter-menu [data-a3s-auto-filter-condition]")
+        }
+
+        expect "condition-dialog-visible" {
+            visible = css(".work-spreadsheet-auto-filter-dialog[role='dialog']")
+        }
+
+        expect "condition-dialog-targets-status" {
+            text = "执行看板!状态"
+        }
+
+        select "choose-contains-condition" {
+            target = css(".work-spreadsheet-auto-filter-dialog select[aria-label='筛选条件']")
+            values = ["contains"]
+        }
+
+        fill "enter-risk-condition" {
+            target = css(".work-spreadsheet-auto-filter-dialog input[aria-label='筛选值']")
+            value = "风险"
+        }
+
+        screenshot "autofilter-condition-dialog" {
+            path = "screenshots/autofilter-condition-dialog.png"
+        }
+
+        click "apply-risk-condition" {
+            target = role("button", "确定")
+        }
+
+        expect "condition-filter-active" {
+            visible = css(".luckysheet-filter-options[aria-label='状态 筛选'].luckysheet-filter-options-active")
+        }
+
+        expect "condition-filter-preserves-header-selection" {
+            text = "G3"
+        }
+
+        focus "return-to-filtered-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "undo-condition-filter" {
+            key = "Control+z"
+        }
+
+        expect "condition-filter-undone" {
+            visible = css(".luckysheet-filter-options[aria-label='状态 筛选']:not(.luckysheet-filter-options-active)")
+        }
+
+        press "reopen-status-filter-menu" {
+            key = "Alt+ArrowDown"
+        }
+
+        expect "status-filter-dialog-reopened" {
+            visible = css(".fortune-filter-menu[role='dialog'][aria-label='状态 筛选']")
+        }
+
         press "close-filter-dialog" {
             key = "Escape"
         }

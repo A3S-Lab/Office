@@ -382,7 +382,7 @@ export type WorkSpreadsheetDynamicFilter =
   | 'month-11'
   | 'month-12';
 
-export type WorkSpreadsheetTableFilterCriteria =
+export type WorkSpreadsheetFilterCriteria =
   | { type: 'values'; values: string[]; includeBlanks: boolean }
   | { type: 'equals'; value: string }
   | { type: 'not-equals'; value: string }
@@ -404,10 +404,16 @@ export type WorkSpreadsheetTableFilterCriteria =
   | { type: 'bottom-percent'; percent: number }
   | { type: 'dynamic'; kind: WorkSpreadsheetDynamicFilter };
 
-export interface WorkSpreadsheetTableFilter {
+/** @deprecated Use `WorkSpreadsheetFilterCriteria` for new integrations. */
+export type WorkSpreadsheetTableFilterCriteria = WorkSpreadsheetFilterCriteria;
+
+export interface WorkSpreadsheetFilter {
   column: number;
-  criteria: WorkSpreadsheetTableFilterCriteria;
+  criteria: WorkSpreadsheetFilterCriteria;
 }
+
+/** @deprecated Use `WorkSpreadsheetFilter` for new integrations. */
+export type WorkSpreadsheetTableFilter = WorkSpreadsheetFilter;
 
 export interface WorkSpreadsheetTable {
   /** Stable browser-model identity. OOXML numeric identity is kept separately. */

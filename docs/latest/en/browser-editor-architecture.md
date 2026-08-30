@@ -1480,12 +1480,33 @@ One accepted operation crosses the Fortune boundary as one range write and one
 controlled Undo record. Table, worksheet-AutoFilter, hyperlink-map,
 imported-formula-metadata, and border-sidecar intersections fail closed because
 those models still own coordinates outside the cell matrix. Moving large sorts,
-advanced predicates, full custom-list preference management, and structural
+same-column compound or wildcard filter predicates, Top/Bottom and dynamic
+filter evaluation, full custom-list preference management, and structural
 sidecar reconciliation into the Worker/WASM kernel remains Stage 3 work.
 Direct host focus of the native grid now enters the same bounded focus observer
 used by ribbon commands. If a controlled workbook update replaces the focused
 Fortune overlay, focus transfers to its connected replacement; deliberate
 pointer, Tab, or active text-editor movement still cancels restoration.
+
+Worksheet AutoFilter conditions now have a separate A3S-owned model and typed
+`spreadsheetAutoFilter` command extension. A versioned condition payload lives
+inside each Fortune filter column only as the grid projection; the controlled
+sheet, absolute header column, exact filter range, and editable state are
+reauthenticated before mutation. The pure evaluator reads dense or sparse cells
+and derives one hidden-row set per column. Their union drives Fortune row
+visibility, while an explicit overlap marker keeps independently hidden rows
+separate when a criterion is replaced or removed. This gives one source of
+truth for multi-column ownership instead of inferring provenance from the
+combined `config.rowhidden` map.
+
+The same closed `WorkSpreadsheetFilterCriteria` union now serves worksheet and
+table native OOXML. Package scan and import read only the worksheet root's
+direct `<autoFilter>` child, hydrate supported criteria, and retain imported
+unsupported typed criteria without pretending to evaluate them. Export patches
+the generated worksheet element with native `<filterColumn>` children. The
+React adapter owns only vendor-menu discovery, the accessible condition dialog,
+short-lived selection preservation, and focus restoration; unsafe vendor sort
+items are not exposed because they bypass typed sort and structural guards.
 
 Partial-range planning is a separate controlled concern. The shared
 `spreadsheet-current-region` model reads dense `data` and sparse `celldata`

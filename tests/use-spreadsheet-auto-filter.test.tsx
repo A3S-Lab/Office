@@ -1,8 +1,25 @@
 import type { Selection } from '@fortune-sheet/core';
 import { expect, test } from '@rstest/core';
-import { act, renderHook, waitFor } from '@testing-library/react';
-import { useSpreadsheetAutoFilter } from '../src/internal/features/work/editors/use-spreadsheet-auto-filter';
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import {
+  type SpreadsheetAutoFilterController,
+  useSpreadsheetAutoFilter,
+} from '../src/internal/features/work/editors/use-spreadsheet-auto-filter';
+import { SPREADSHEET_AUTO_FILTER_MENU_ITEMS } from '../src/internal/features/work/editors/spreadsheet-auto-filter-menu';
+import { applySpreadsheetAutoFilterCriteria } from '../src/internal/features/work/editors/spreadsheet-auto-filter';
+import type { SpreadsheetEditorCommands } from '../src/internal/features/work/editors/spreadsheet-command-controller';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
+
+const noSpreadsheetCommandsRef: {
+  current: SpreadsheetEditorCommands | null;
+} = { current: null };
 
 test('publishes one controlled workbook change when AutoFilter is toggled', () => {
   const changes: WorkSpreadsheetContent[] = [];
@@ -12,6 +29,7 @@ test('publishes one controlled workbook change when AutoFilter is toggled', () =
     ({ content }) =>
       useSpreadsheetAutoFilter({
         canvasRef: { current: canvas },
+        commandsRef: noSpreadsheetCommandsRef,
         content,
         editable: true,
         onChange: (next) => changes.push(next),
@@ -34,6 +52,12 @@ test('publishes one controlled workbook change when AutoFilter is toggled', () =
   expect(result.current.active).toBe(true);
 });
 
+test('keeps unsafe vendor row sorting out of the AutoFilter menu', () => {
+  expect(SPREADSHEET_AUTO_FILTER_MENU_ITEMS).toContain('filter-by-condition');
+  expect(SPREADSHEET_AUTO_FILTER_MENU_ITEMS).not.toContain('sort-by-asc');
+  expect(SPREADSHEET_AUTO_FILTER_MENU_ITEMS).not.toContain('sort-by-desc');
+});
+
 test('defers worksheet range discovery until AutoFilter is toggled', () => {
   let worksheetScans = 0;
   const content = spreadsheetContent(false);
@@ -53,6 +77,7 @@ test('defers worksheet range discovery until AutoFilter is toggled', () => {
     ({ selection }) =>
       useSpreadsheetAutoFilter({
         canvasRef: { current: canvas },
+        commandsRef: noSpreadsheetCommandsRef,
         content,
         editable: true,
         onChange: () => undefined,
@@ -114,6 +139,7 @@ test('adapts the vendor filter trigger and menu for keyboard use', async () => {
   const { result, unmount } = renderHook(() =>
     useSpreadsheetAutoFilter({
       canvasRef: { current: canvas },
+      commandsRef: noSpreadsheetCommandsRef,
       content,
       editable: true,
       onChange: () => undefined,
@@ -163,6 +189,129 @@ test('adapts the vendor filter trigger and menu for keyboard use', async () => {
   expect(cancelCount).toBe(1);
   await waitFor(() => expect(document.activeElement).toBe(triggers[2]));
 
+  unmount();
+  canvas.remove();
+});
+
+test('opens the owned condition dialog from the vendor menu and filters controlled rows', async () => {
+  const canvas = document.createElement('div');
+  const triggers = Array.from({ length: 3 }, () => {
+    const trigger = document.createElement('div');
+    trigger.className = 'luckysheet-filter-options';
+    trigger.tabIndex = 0;
+    canvas.append(trigger);
+    return trigger;
+  });
+  const trigger = triggers[2] as HTMLElement;
+  document.body.append(canvas);
+  trigger.addEventListener('click', () => {
+    if (canvas.querySelector('.fortune-filter-menu')) return;
+    const menu = document.createElement('div');
+    menu.className = 'fortune-context-menu fortune-filter-menu';
+    const condition = document.createElement('div');
+    condition.className = 'luckysheet-cols-menuitem';
+    condition.tabIndex = 0;
+    condition.textContent = '按条件过滤';
+    const cancel = document.createElement('div');
+    cancel.className = 'button-basic button-default';
+    cancel.tabIndex = 0;
+    cancel.textContent = '取消';
+    cancel.addEventListener('click', () => menu.remove());
+    menu.append(condition, cancel);
+    canvas.append(menu);
+  });
+  const changes: WorkSpreadsheetContent[] = [];
+  const requests: Array<
+    Parameters<SpreadsheetEditorCommands['applyAutoFilterCriteria']>[0]
+  > = [];
+  let selectionDuringApply: ReturnType<
+    SpreadsheetAutoFilterController['selectionForChange']
+  > = null;
+  let readSelectionForChange: SpreadsheetAutoFilterController['selectionForChange'] =
+    () => null;
+  const content = spreadsheetContent(true);
+  content.sheets[0] = {
+    ...content.sheets[0],
+    config: { rowhidden: { '9': 0 } },
+  };
+  const commandsRef = {
+    current: {
+      applyAutoFilterCriteria: (request) => {
+        requests.push(request);
+        selectionDuringApply = readSelectionForChange();
+        const next = applySpreadsheetAutoFilterCriteria(
+          content,
+          request.sheetId,
+          request.column,
+          request.criteria,
+        );
+        if (!next) return false;
+        changes.push(next);
+        return true;
+      },
+    } as SpreadsheetEditorCommands,
+  };
+  const { result, unmount } = renderHook(() =>
+    useSpreadsheetAutoFilter({
+      canvasRef: { current: canvas },
+      commandsRef,
+      content,
+      editable: true,
+      onChange: () => {
+        throw new Error('Condition dialog bypassed the command boundary.');
+      },
+      selection: cellSelection(2, 2),
+      sheetId: 'sheet-1',
+    }),
+  );
+  readSelectionForChange = () => result.current.selectionForChange();
+
+  fireEvent.pointerDown(trigger);
+  fireEvent.click(trigger);
+  const condition = await waitFor(() => {
+    const candidate = canvas.querySelector<HTMLElement>(
+      '[data-a3s-auto-filter-condition]',
+    );
+    expect(candidate).not.toBeNull();
+    return candidate as HTMLElement;
+  });
+  fireEvent.click(condition);
+  await waitFor(() => expect(result.current.dialog).not.toBeNull());
+  render(result.current.dialog);
+
+  expect(
+    screen.getByRole('dialog', { name: '自定义自动筛选' }),
+  ).toHaveTextContent('季度经营!状态');
+  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
+    target: { value: 'contains' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: '筛选值' }), {
+    target: { value: '风险' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(requests).toEqual([
+    {
+      sheetId: 'sheet-1',
+      column: 2,
+      filterRange: { row: [2, 4], column: [0, 2] },
+      criteria: { type: 'contains', value: '风险' },
+    },
+  ]);
+  expect(selectionDuringApply).toEqual({
+    sheetId: 'sheet-1',
+    selections: [cellSelection(2, 2)],
+  });
+  expect(result.current.selectionForChange()).toBeNull();
+  expect(changes).toHaveLength(1);
+  expect(changes[0]?.sheets[0]?.config?.rowhidden).toEqual({
+    '3': 0,
+    '9': 0,
+  });
+  expect(changes[0]?.sheets[0]?.filter?.['2']).toMatchObject({
+    cindex: 2,
+    rowhidden: { '3': 0 },
+  });
   unmount();
   canvas.remove();
 });

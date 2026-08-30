@@ -21,6 +21,7 @@ import {
 } from './work-spreadsheet-matrix-profile';
 import { scanSpreadsheetPackageInWorker } from './work-spreadsheet-package-scan-worker-client';
 import { importedSheetProtectionAuthority } from './work-spreadsheet-protection';
+import { workSpreadsheetSheetWithImportedAutoFilterCriteria } from './work-spreadsheet-auto-filter';
 import { createWorkArtifact, createWorkId } from './work-templates';
 import type {
   WorkArtifact,
@@ -403,38 +404,43 @@ export async function importWorkSpreadsheetFile(
           XLSX,
         )
       : [];
-    sheets.push({
-      id,
-      name,
-      order: index,
-      status: index === 0 ? 1 : 0,
-      hide: workbook.Workbook?.Sheets?.[index]?.Hidden ? 1 : 0,
-      row: rowCount,
-      column: columnCount,
-      data,
-      config,
-      filter: filterSelect ? {} : undefined,
-      filter_select: filterSelect,
-      frozen: features?.frozen,
-      hyperlink: Object.keys(hyperlinks).length ? hyperlinks : undefined,
-      dataVerification: Object.keys(dataVerification).length
-        ? dataVerification
-        : undefined,
-      dataValidationRanges: dataValidationRanges.length
-        ? dataValidationRanges
-        : undefined,
-      luckysheet_conditionformat_save: features?.conditionalFormats.length
-        ? features.conditionalFormats
-        : undefined,
-      images: features?.images.length
-        ? xlsxWorksheetImagesToSheet(features.images, config)
-        : undefined,
-      charts: features?.charts.length
-        ? xlsxWorksheetChartsToSheet(features.charts, config)
-        : undefined,
-      tables: features?.tables.length ? features.tables : undefined,
-      formulaMetadata,
-    });
+    sheets.push(
+      workSpreadsheetSheetWithImportedAutoFilterCriteria(
+        {
+          id,
+          name,
+          order: index,
+          status: index === 0 ? 1 : 0,
+          hide: workbook.Workbook?.Sheets?.[index]?.Hidden ? 1 : 0,
+          row: rowCount,
+          column: columnCount,
+          data,
+          config,
+          filter: filterSelect ? {} : undefined,
+          filter_select: filterSelect,
+          frozen: features?.frozen,
+          hyperlink: Object.keys(hyperlinks).length ? hyperlinks : undefined,
+          dataVerification: Object.keys(dataVerification).length
+            ? dataVerification
+            : undefined,
+          dataValidationRanges: dataValidationRanges.length
+            ? dataValidationRanges
+            : undefined,
+          luckysheet_conditionformat_save: features?.conditionalFormats.length
+            ? features.conditionalFormats
+            : undefined,
+          images: features?.images.length
+            ? xlsxWorksheetImagesToSheet(features.images, config)
+            : undefined,
+          charts: features?.charts.length
+            ? xlsxWorksheetChartsToSheet(features.charts, config)
+            : undefined,
+          tables: features?.tables.length ? features.tables : undefined,
+          formulaMetadata,
+        },
+        features?.autoFilterCriteria ?? [],
+      ),
+    );
     await context.controller.checkpoint(
       'parsing',
       sheetProgressStart + sheetProgressSize,

@@ -11,6 +11,7 @@ import {
   xmlContainsAnyElement,
 } from './work-ooxml-package';
 import { sheetHasProtectionState } from './work-spreadsheet-protection';
+import { workSpreadsheetAutoFilterCriteriaEntries } from './work-spreadsheet-auto-filter';
 import {
   boundedSpreadsheetDataValidationText,
   normalizeSpreadsheetDataValidationErrorStyle,
@@ -86,7 +87,11 @@ import {
   type XlsxRichTextCell,
 } from './work-xlsx-rich-text';
 import { readXlsxWorksheetTables } from './work-xlsx-tables';
-import type { WorkSpreadsheetTable } from './work-types';
+import type { WorkSpreadsheetFilter, WorkSpreadsheetTable } from './work-types';
+import {
+  readXlsxAutoFilterColumns,
+  xlsxAutoFilterXml,
+} from './work-xlsx-table-filters';
 
 type FrozenPane = NonNullable<Sheet['frozen']>;
 
@@ -96,6 +101,7 @@ export interface XlsxDataValidation {
 }
 
 export interface XlsxSheetFeatures {
+  autoFilterCriteria: WorkSpreadsheetFilter[];
   directCellStyles: XlsxDirectCellStyle[];
   frozen?: FrozenPane;
   validations: XlsxDataValidation[];
@@ -176,6 +182,7 @@ export async function readXlsxSheetFeaturesFromPackage(
     }
     const document = parseXml(source, partPath);
     features.set(sheetName, {
+      autoFilterCriteria: readWorksheetAutoFilterCriteria(document),
       directCellStyles: readXlsxDirectCellStyles(document, styles, theme),
       frozen: parseFrozenPane(document) ?? undefined,
       validations: parseDataValidations(document, uses1904DateSystem),
@@ -208,6 +215,7 @@ function xlsxWorksheetMayReferenceSharedStrings(source: string): boolean {
 
 function emptyXlsxSheetFeatures(): XlsxSheetFeatures {
   return {
+    autoFilterCriteria: [],
     directCellStyles: [],
     validations: [],
     conditionalFormats: [],
@@ -244,6 +252,7 @@ export async function patchXlsxSheetFeatures(
         Object.keys(sheet.dataVerification ?? {}).length ||
         sheet.dataValidationRanges?.length ||
         sheet.luckysheet_conditionformat_save?.length ||
+        workSpreadsheetAutoFilterCriteriaEntries(sheet).length ||
         sheetHasXlsxRichTextCells(sheet) ||
         sheetHasDirectCellStyles(sheet) ||
         sheetHasProtectionState(sheet) ||
@@ -291,6 +300,7 @@ export async function patchXlsxSheetFeatures(
       !Object.keys(sheet.dataVerification ?? {}).length &&
       !sheet.dataValidationRanges?.length &&
       !sheet.luckysheet_conditionformat_save?.length &&
+      !workSpreadsheetAutoFilterCriteriaEntries(sheet).length &&
       !sheetHasXlsxRichTextCells(sheet) &&
       !sheetHasDirectCellStyles(sheet) &&
       !sheetHasProtectionState(sheet) &&
@@ -323,6 +333,10 @@ export async function patchXlsxSheetFeatures(
       sheet.luckysheet_conditionformat_save,
       differentialFormats,
     );
+    writeWorksheetAutoFilterCriteria(
+      document,
+      workSpreadsheetAutoFilterCriteriaEntries(sheet),
+    );
     if (directCellStyles)
       writeXlsxDirectCellStyles(document, sheet, directCellStyles);
     writeXlsxRichTextCells(document, sheet, semanticPalette?.palette);
@@ -348,6 +362,33 @@ export async function patchXlsxSheetFeatures(
   }
 
   return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
+}
+
+function readWorksheetAutoFilterCriteria(
+  document: Document,
+): WorkSpreadsheetFilter[] {
+  const autoFilter = directChild(document.documentElement, 'autoFilter');
+  return autoFilter ? readXlsxAutoFilterColumns(autoFilter, 16_384) : [];
+}
+
+function writeWorksheetAutoFilterCriteria(
+  document: Document,
+  filters: readonly WorkSpreadsheetFilter[],
+): void {
+  if (!filters.length) return;
+  const current = directChild(document.documentElement, 'autoFilter');
+  const reference = current ? attribute(current, 'ref') : null;
+  if (!current || !reference) return;
+  const namespace = document.documentElement.namespaceURI;
+  const source = xlsxAutoFilterXml(filters, reference).replace(
+    '<autoFilter ',
+    `<autoFilter xmlns="${namespace ?? ''}" `,
+  );
+  const replacement = document.importNode(
+    parseXml(source, 'worksheet AutoFilter').documentElement,
+    true,
+  );
+  current.parentNode?.replaceChild(replacement, current);
 }
 
 function spreadsheetXlsxSemanticColors(

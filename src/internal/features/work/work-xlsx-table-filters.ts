@@ -1,8 +1,9 @@
 import { attribute, directChild, directChildren } from './work-ooxml-package';
 import type {
   WorkSpreadsheetDynamicFilter,
+  WorkSpreadsheetFilter,
+  WorkSpreadsheetFilterCriteria,
   WorkSpreadsheetTableFilter,
-  WorkSpreadsheetTableFilterCriteria,
 } from './work-types';
 
 const DYNAMIC_FILTERS = new Map<string, WorkSpreadsheetDynamicFilter>([
@@ -52,7 +53,14 @@ export function readXlsxTableFilters(
 ): WorkSpreadsheetTableFilter[] {
   const autoFilter = directChild(table.documentElement, 'autoFilter');
   if (!autoFilter) return [];
-  const result: WorkSpreadsheetTableFilter[] = [];
+  return readXlsxAutoFilterColumns(autoFilter, width);
+}
+
+export function readXlsxAutoFilterColumns(
+  autoFilter: Element,
+  width: number,
+): WorkSpreadsheetFilter[] {
+  const result: WorkSpreadsheetFilter[] = [];
   const observed = new Set<number>();
   for (const column of directChildren(autoFilter, 'filterColumn')) {
     const index = integerAttribute(column, 'colId');
@@ -75,6 +83,13 @@ export function xlsxTableAutoFilterXml(
   const filterRange = totalsRow
     ? tableRangeWithoutFinalRow(rangeReference)
     : rangeReference;
+  return xlsxAutoFilterXml(filters, filterRange);
+}
+
+export function xlsxAutoFilterXml(
+  filters: readonly WorkSpreadsheetFilter[],
+  rangeReference: string,
+): string {
   const columns = filters
     .slice()
     .sort((left, right) => left.column - right.column)
@@ -85,12 +100,12 @@ export function xlsxTableAutoFilterXml(
         )}</filterColumn>`,
     )
     .join('');
-  return `<autoFilter ref="${escapeXml(filterRange)}">${columns}</autoFilter>`;
+  return `<autoFilter ref="${escapeXml(rangeReference)}">${columns}</autoFilter>`;
 }
 
 function parseFilterCriteria(
   column: Element,
-): WorkSpreadsheetTableFilterCriteria | null {
+): WorkSpreadsheetFilterCriteria | null {
   const filters = directChild(column, 'filters');
   if (filters) {
     const values = directChildren(filters, 'filter').flatMap((filter) => {
@@ -154,7 +169,7 @@ function parseFilterCriteria(
 function singleCustomFilter(item: {
   operator: string;
   value: string;
-}): WorkSpreadsheetTableFilterCriteria | null {
+}): WorkSpreadsheetFilterCriteria | null {
   if (item.operator === 'notEqual' && item.value === '') {
     return { type: 'non-blanks' };
   }
@@ -208,7 +223,7 @@ function wildcardCriterion(
   return starts ? { type: 'ends-with', value } : { type: 'begins-with', value };
 }
 
-function criteriaXml(criteria: WorkSpreadsheetTableFilterCriteria): string {
+function criteriaXml(criteria: WorkSpreadsheetFilterCriteria): string {
   if (criteria.type === 'values') {
     const blank = criteria.includeBlanks ? ' blank="1"' : '';
     return `<filters${blank}>${criteria.values
@@ -266,7 +281,7 @@ function criteriaXml(criteria: WorkSpreadsheetTableFilterCriteria): string {
 
 function comparisonOperator(
   type: Exclude<
-    WorkSpreadsheetTableFilterCriteria['type'],
+    WorkSpreadsheetFilterCriteria['type'],
     | 'between'
     | 'blanks'
     | 'bottom'

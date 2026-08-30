@@ -1,6 +1,9 @@
 import type { Selection } from '@fortune-sheet/core';
 import { describe, expect, test } from '@rstest/core';
 import {
+  applySpreadsheetAutoFilterCriteria,
+  clearSpreadsheetAutoFilterCriteria,
+  spreadsheetAutoFilterCriteria,
   spreadsheetAutoFilterRange,
   toggleSpreadsheetAutoFilter,
 } from '../src/internal/features/work/editors/spreadsheet-auto-filter';
@@ -198,7 +201,203 @@ describe('spreadsheet AutoFilter model', () => {
     });
   });
 
-  test('preserves the filter range and hidden rows through XLSX export', async () => {
+  test('applies typed text criteria while preserving manually hidden rows', () => {
+    const sheet: WorkSpreadsheetSheet = {
+      ...quarterlySheet(),
+      filter: {},
+      filter_select: { row: [2, 6], column: [0, 6] },
+      config: { ...quarterlySheet().config, rowhidden: { '9': 0 } },
+    };
+
+    const filtered = applySpreadsheetAutoFilterCriteria(
+      workbook(sheet),
+      'sheet-1',
+      6,
+      { type: 'contains', value: '风险' },
+    );
+
+    expect(filtered).not.toBeNull();
+    expect(spreadsheetAutoFilterCriteria(filtered?.sheets[0], 6)).toEqual({
+      type: 'contains',
+      value: '风险',
+    });
+    expect(filtered?.sheets[0]?.filter?.['6']).toMatchObject({
+      optionstate: true,
+      rowhidden: { '3': 0, '5': 0 },
+      str: 2,
+      edr: 6,
+      cindex: 6,
+      stc: 0,
+      edc: 6,
+    });
+    expect(filtered?.sheets[0]?.config?.rowhidden).toEqual({
+      '3': 0,
+      '5': 0,
+      '9': 0,
+    });
+    expect(sheet.filter).toEqual({});
+    expect(sheet.config?.rowhidden).toEqual({ '9': 0 });
+  });
+
+  test('preserves a manually hidden row that overlaps a replaced criterion', () => {
+    const sheet: WorkSpreadsheetSheet = {
+      ...quarterlySheet(),
+      filter: {},
+      filter_select: { row: [2, 6], column: [0, 6] },
+      config: { ...quarterlySheet().config, rowhidden: { '3': 0 } },
+    };
+    const riskOnly = applySpreadsheetAutoFilterCriteria(
+      workbook(sheet),
+      'sheet-1',
+      6,
+      { type: 'contains', value: '风险' },
+    );
+    const normalOnly = riskOnly
+      ? applySpreadsheetAutoFilterCriteria(riskOnly, 'sheet-1', 6, {
+          type: 'contains',
+          value: '正常',
+        })
+      : null;
+    const cleared = normalOnly
+      ? clearSpreadsheetAutoFilterCriteria(normalOnly, 'sheet-1', 6)
+      : null;
+
+    expect(riskOnly?.sheets[0]?.config?.rowhidden).toEqual({
+      '3': 0,
+      '5': 0,
+    });
+    expect(normalOnly?.sheets[0]?.config?.rowhidden).toEqual({
+      '3': 0,
+      '4': 0,
+      '6': 0,
+    });
+    expect(cleared?.sheets[0]?.config?.rowhidden).toEqual({ '3': 0 });
+  });
+
+  test('combines numeric criteria across columns and clears one owner only', () => {
+    const sheet: WorkSpreadsheetSheet = {
+      ...quarterlySheet(),
+      filter: {},
+      filter_select: { row: [2, 6], column: [0, 6] },
+      config: { ...quarterlySheet().config, rowhidden: { '9': 0 } },
+    };
+    const textFiltered = applySpreadsheetAutoFilterCriteria(
+      workbook(sheet),
+      'sheet-1',
+      6,
+      { type: 'contains', value: '风险' },
+    );
+    const numericFiltered = textFiltered
+      ? applySpreadsheetAutoFilterCriteria(textFiltered, 'sheet-1', 1, {
+          type: 'greater-than',
+          value: '130',
+        })
+      : null;
+
+    expect(numericFiltered?.sheets[0]?.filter?.['1']).toMatchObject({
+      rowhidden: { '3': 0, '4': 0, '5': 0 },
+    });
+    expect(numericFiltered?.sheets[0]?.config?.rowhidden).toEqual({
+      '3': 0,
+      '4': 0,
+      '5': 0,
+      '9': 0,
+    });
+
+    const cleared = numericFiltered
+      ? clearSpreadsheetAutoFilterCriteria(numericFiltered, 'sheet-1', 1)
+      : null;
+    expect(cleared?.sheets[0]?.filter?.['1']).toBeUndefined();
+    expect(cleared?.sheets[0]?.filter?.['6']).toBeDefined();
+    expect(cleared?.sheets[0]?.config?.rowhidden).toEqual({
+      '3': 0,
+      '5': 0,
+      '9': 0,
+    });
+  });
+
+  test('supports blanks, non-blanks, inclusive ranges, and selected values', () => {
+    const sheet: WorkSpreadsheetSheet = {
+      id: 'sheet-1',
+      name: '筛选条件',
+      data: [
+        [{ v: '值' }],
+        [{ v: 4 }],
+        [{ v: 8 }],
+        [{ v: 12 }],
+        [{ v: '' }],
+        [],
+      ],
+      filter: {},
+      filter_select: { row: [0, 5], column: [0, 0] },
+      config: {},
+    };
+    const scenarios = [
+      [{ type: 'between', lower: '5', upper: '10' }, ['1', '3', '4', '5']],
+      [{ type: 'blanks' }, ['1', '2', '3']],
+      [{ type: 'non-blanks' }, ['4', '5']],
+      [
+        { type: 'values', values: ['4', '12'], includeBlanks: false },
+        ['2', '4', '5'],
+      ],
+    ] as const;
+
+    for (const [criteria, hiddenRows] of scenarios) {
+      const filtered = applySpreadsheetAutoFilterCriteria(
+        workbook(sheet),
+        'sheet-1',
+        0,
+        criteria,
+      );
+      expect(Object.keys(filtered?.sheets[0]?.config?.rowhidden ?? {})).toEqual(
+        hiddenRows,
+      );
+    }
+  });
+
+  test('fails closed for inactive, header, and out-of-range filter columns', () => {
+    const active: WorkSpreadsheetSheet = {
+      ...quarterlySheet(),
+      filter: {},
+      filter_select: { row: [2, 6], column: [1, 6] },
+    };
+    const criteria = { type: 'equals', value: '正常' } as const;
+
+    expect(
+      applySpreadsheetAutoFilterCriteria(
+        workbook(quarterlySheet()),
+        'sheet-1',
+        6,
+        criteria,
+      ),
+    ).toBeNull();
+    expect(
+      applySpreadsheetAutoFilterCriteria(
+        workbook(active),
+        'sheet-1',
+        0,
+        criteria,
+      ),
+    ).toBeNull();
+    expect(
+      applySpreadsheetAutoFilterCriteria(
+        workbook(active),
+        'sheet-1',
+        7,
+        criteria,
+      ),
+    ).toBeNull();
+    expect(
+      applySpreadsheetAutoFilterCriteria(
+        workbook(active),
+        'missing-sheet',
+        6,
+        criteria,
+      ),
+    ).toBeNull();
+  });
+
+  test('preserves the filter range, criteria, and hidden rows through XLSX export', async () => {
     const artifact = createWorkArtifact('quarterly-plan');
     if (artifact.content.type !== 'spreadsheet') {
       throw new Error('Expected the quarterly plan spreadsheet.');
@@ -209,7 +408,7 @@ describe('spreadsheet AutoFilter model', () => {
         index === 0
           ? {
               ...sheet,
-              config: { ...sheet.config, rowhidden: { '4': 0 } },
+              config: { ...sheet.config, rowhidden: { '9': 0 } },
               filter: {},
               filter_select: { row: [2, 6], column: [0, 5] },
             }
@@ -217,7 +416,18 @@ describe('spreadsheet AutoFilter model', () => {
       ),
     };
 
-    const blob = await createWorkArtifactBlob({ ...artifact, content });
+    const filtered = applySpreadsheetAutoFilterCriteria(
+      content,
+      content.sheets[0]?.id ?? '',
+      3,
+      { type: 'greater-than', value: '0.95' },
+    );
+    if (!filtered) throw new Error('Expected the filter criteria to apply.');
+
+    const blob = await createWorkArtifactBlob({
+      ...artifact,
+      content: filtered,
+    });
     const imported = await importWorkFile(
       new File([blob], 'quarterly-plan-filtered.xlsx', { type: blob.type }),
     );
@@ -229,8 +439,17 @@ describe('spreadsheet AutoFilter model', () => {
       row: [2, 6],
       column: [0, 5],
     });
+    expect(
+      spreadsheetAutoFilterCriteria(imported.content.sheets[0], 3),
+    ).toEqual({ type: 'greater-than', value: '0.95' });
+    expect(imported.content.sheets[0]?.filter?.['3']?.rowhidden).toEqual({
+      '4': 0,
+      '5': 0,
+    });
     expect(imported.content.sheets[0]?.config?.rowhidden).toMatchObject({
       '4': 0,
+      '5': 0,
+      '9': 0,
     });
   });
 });
