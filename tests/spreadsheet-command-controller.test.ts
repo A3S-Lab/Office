@@ -1987,6 +1987,69 @@ describe('spreadsheet command controller', () => {
     expect(fixture.workbook.pastes).toHaveLength(1);
   });
 
+  test('applies effective conditional-icon sorting with formatting and formulas intact', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 4], column: [0, 2] }];
+    fixture.workbook.cells = [
+      [{ v: 'Task' }, { v: 'Score' }, { v: 'Calculated' }],
+      [{ v: 'Low' }, { v: 10 }, { v: 20, f: '=B2*2' }],
+      [{ v: 'High B', fc: '#d84b4f' }, { v: 30 }, { v: 60, f: '=B3*2' }],
+      [{ v: 'Middle' }, { v: 20 }, { v: 40, f: '=B4*2' }],
+      [{ v: 'High A', bg: '#fff2cc' }, { v: 40 }, { v: 80, f: '=B5*2' }],
+    ];
+    fixture.context.content = {
+      ...fixture.context.content,
+      sheets: [
+        {
+          ...fixture.context.content.sheets[0],
+          data: fixture.workbook.cells,
+          luckysheet_conditionformat_save: [
+            {
+              type: 'icons',
+              cellrange: [{ row: [1, 4], column: [1, 1] }],
+              format: {
+                iconSet: '3TrafficLights1',
+                showValue: true,
+                reverse: false,
+                percent: false,
+                thresholds: [
+                  { type: 'min', gte: true },
+                  { type: 'num', value: 15, gte: true },
+                  { type: 'num', value: 25, gte: true },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(
+      editor.commands.applyCustomSort({
+        sheetId: 'sheet-1',
+        range: { row: [0, 4], column: [0, 2] },
+        hasHeader: true,
+        keys: [
+          {
+            column: 1,
+            sortOn: 'icon',
+            icon: { iconSet: '3TrafficLights1', index: 2 },
+            position: 'top',
+          },
+          { column: 0, direction: 'ascending' },
+        ],
+      }),
+    ).toBe(true);
+    expect(fixture.workbook.pastes.at(-1)?.values).toEqual([
+      [{ v: 'Task' }, { v: 'Score' }, { v: 'Calculated' }],
+      [{ v: 'High A', bg: '#fff2cc' }, { v: 40 }, { v: 80, f: '=B2*2' }],
+      [{ v: 'High B', fc: '#d84b4f' }, { v: 30 }, { v: 60, f: '=B3*2' }],
+      [{ v: 'Low' }, { v: 10 }, { v: 20, f: '=B4*2' }],
+      [{ v: 'Middle' }, { v: 20 }, { v: 40, f: '=B5*2' }],
+    ]);
+  });
+
   test('plans the WPS sort warning from a selected cell and its current region', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [

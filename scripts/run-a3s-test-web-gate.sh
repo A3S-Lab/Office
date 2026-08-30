@@ -151,6 +151,7 @@ suites=(
   "tests/e2e/spreadsheet-table-totals.acl"
   "tests/e2e/spreadsheet-custom-sort.acl"
   "tests/e2e/spreadsheet-custom-list-sort.acl"
+  "tests/e2e/spreadsheet-appearance-sort.acl"
   "tests/e2e/spreadsheet-sort-range.acl"
   "tests/e2e/spreadsheet-data-validation.acl"
   "tests/e2e/spreadsheet-hyperlink.acl"

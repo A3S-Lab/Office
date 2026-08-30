@@ -592,6 +592,21 @@ Undo. Accessibility, focus, console, and page-error evidence are captured by
 the pinned local A3S Test 1.0.0 binary; the suite remains absent from GitHub
 Actions and Pages.
 
+The offline Spreadsheet appearance Sort workflow has a focused local gate:
+
+```bash
+bun run test:e2e:spreadsheet-appearance-sort:check
+bun run test:e2e:spreadsheet-appearance-sort
+```
+
+It applies two same-column cell-color priorities plus font-color and
+conditional-format icon levels to one captured range, verifies the resulting
+four-level priority and moved relative formula, then confirms one Undo restores
+the source rows and formula.
+The pinned local A3S Test 1.0.0 binary also records invoker/grid focus,
+interactive accessibility, console, and page-error evidence. The suite remains
+absent from GitHub Actions and Pages.
+
 The Traditional Office-style Spreadsheet partial-range Sort Warning has a focused local gate:
 
 ```bash

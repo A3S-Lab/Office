@@ -301,6 +301,21 @@ preferences require a future explicit host-settings API. Every accepted sort
 request carries its normalized sequence, so execution never depends on mutable
 dialog state.
 
+The same **Sort On** control can instead target an effective cell color,
+effective font color, or conditional-format icon. A visual target is placed at
+the top or bottom; adding another level expresses the next color or icon in the
+priority. Appearance levels remain stable, so later value, custom-list, or
+appearance keys resolve matching and non-matching ties without losing source
+order.
+
+Available targets come from a bounded snapshot of the selected rows. Calculated
+conditional formatting overrides direct presentation, while direct solid fill,
+no fill, explicit font color, and automatic font color retain distinct
+identities. Native gradient and pattern fills remain intact but are not exposed
+as a misleading single-color target. The command reconstructs and validates the
+effective snapshot immediately before the one native row batch, so it does not
+trust stale dialog state.
+
 A partial column, narrow rectangle, or single-cell selection first uses the
 same dense/sparse current-region model as AutoFilter. When adjacent data makes
 that region larger, Custom Sort and quick ascending/descending commands open an
@@ -330,7 +345,7 @@ would corrupt that structural model. Intersections with coordinate-owned
 hyperlink maps, imported formula source/range metadata, or native border
 records fail closed for the same reason. Table-aware sorting, active-filter
 reconciliation, sidecar migration, durable host-managed custom-list settings,
-row-direction sorting, and color/icon sorting remain explicit follow-up work.
+and row-direction sorting remain explicit follow-up work.
 
 The warning freezes the original selection, both candidate rectangles, active
 column, worksheet, and sort intent. Applying an expanded range is authorized
@@ -345,6 +360,9 @@ and page-error diagnostics. `tests/e2e/spreadsheet-sort-range.acl` additionally
 verifies the exact and expanded warning paths, focus restoration, formula-safe
 row movement, and Undo. `tests/e2e/spreadsheet-custom-list-sort.acl` covers
 invalid input, session reuse, formula-safe custom-list row movement, and Undo.
+`tests/e2e/spreadsheet-appearance-sort.acl` applies cell-color, font-color, and
+conditional-icon levels together, then verifies the moved formula, one-step
+Undo, focus, accessibility, and empty browser diagnostics.
 GitHub Actions and Pages do not install or invoke A3S Test.
 
 ## Find and Go To

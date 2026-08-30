@@ -30,6 +30,7 @@ import {
   sortSpreadsheetRows,
   validateSpreadsheetSortRequest,
 } from './spreadsheet-sort';
+import { createSpreadsheetSortAppearanceRows } from './spreadsheet-sort-appearance';
 
 export function createSpreadsheetSortExtension(): OfficeEditorExtension<
   SpreadsheetCommandContext,
@@ -199,14 +200,22 @@ function applySpreadsheetSort(
   const sheet = context.content.sheets.find(
     (candidate) => candidate.id === request.sheetId,
   );
-  if (!canMutateSpreadsheetCellRange(sheet, validation.request.range)) {
+  if (
+    !sheet ||
+    !canMutateSpreadsheetCellRange(sheet, validation.request.range)
+  ) {
     return false;
   }
   try {
     const rows = context.workbook.getCellsByRange(validation.request.range, {
       id: request.sheetId,
     });
-    const result = sortSpreadsheetRows(rows, validation.request);
+    const appearances = createSpreadsheetSortAppearanceRows(
+      sheet,
+      validation.request.range,
+      rows,
+    );
+    const result = sortSpreadsheetRows(rows, validation.request, appearances);
     if (!result.ok) return false;
     context.workbook.setCellValuesByRange(
       result.rows,

@@ -103,6 +103,22 @@ The companion local-only A3S Test ACL additionally rejects a duplicate list and
 records interactive accessibility evidence. Neither browser gate introduces
 hidden workbook or browser-storage persistence.
 
+## Focused Spreadsheet appearance sort contract
+
+The functional regression opens a workbook with direct cell and font colors
+plus conditional-format icons, applies all three appearance kinds across four
+levels, and verifies same-column color priority, relative-formula translation,
+one-step Undo, invoker/grid
+focus, responsive containment, and empty browser diagnostics at desktop and
+compact widths:
+
+```bash
+bun run playground:visual:spreadsheet-appearance-sort
+```
+
+The companion local-only A3S Test ACL records interactive accessibility and
+diagnostic evidence for the same complete workflow.
+
 ## Focused Spreadsheet sort-range warning contract
 
 The functional regression selects only the quarterly workbook's formula

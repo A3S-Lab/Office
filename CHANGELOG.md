@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added offline Spreadsheet appearance sorting to every ordered Custom Sort
+  key. Users can place an effective cell color, effective font color, or
+  conditional-format icon at the top or bottom; multiple levels express an
+  exact visual priority while later keys continue to break ties stably.
+- Appearance choices are derived from a frozen, bounded snapshot of direct
+  styles plus calculated conditional formatting. Solid/no-fill and
+  automatic-font identities remain explicit, conditional styles override
+  direct presentation, and native gradient or pattern fills are not
+  misrepresented as one solid color. The existing formula-safe row batch and
+  one-step Undo contract remain unchanged. Added focused Rstest,
+  desktop/compact Playwright, and local-only A3S Test coverage.
 - Added offline Spreadsheet custom-list sorting to every ordered key. The Sort
   dialog now offers seven built-in Chinese and English month/weekday sequences,
   validates user-authored newline/comma lists, and reuses up to 32 bounded lists

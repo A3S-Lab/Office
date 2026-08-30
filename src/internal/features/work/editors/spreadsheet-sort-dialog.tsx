@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, ListPlus, Trash2 } from 'lucide-react';
-import { type FormEvent, useId, useState } from 'react';
+import { type FormEvent, useId, useMemo, useState } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
 import { OfficeCheckbox } from './office-controls';
 import {
@@ -9,6 +9,13 @@ import {
   type SpreadsheetSortKey,
 } from './spreadsheet-sort';
 import {
+  spreadsheetSortAppearanceColumns,
+  spreadsheetSortAppearanceTargets,
+  spreadsheetSortAppearanceTargetsEqual,
+  type SpreadsheetSortAppearanceColumn,
+  type SpreadsheetSortAppearanceTarget,
+} from './spreadsheet-sort-appearance';
+import {
   createSpreadsheetSortCustomList,
   MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS,
   mergeSpreadsheetSortCustomLists,
@@ -16,9 +23,11 @@ import {
   spreadsheetSortCustomListsEqual,
   type SpreadsheetSortCustomList,
 } from './spreadsheet-sort-custom-list';
-
-const CREATE_CUSTOM_LIST_ORDER = 'create-custom-list';
-const CUSTOM_LIST_ORDER_PREFIX = 'custom-list:';
+import {
+  nextSpreadsheetSortKey,
+  spreadsheetSortAppearanceKey,
+  SpreadsheetSortOrderControls,
+} from './spreadsheet-sort-order-controls';
 
 interface SpreadsheetSortCustomListDraft {
   error: string | null;
@@ -46,12 +55,22 @@ export function SpreadsheetSortDialog({
   const [customLists, setCustomLists] = useState(() =>
     initialSpreadsheetSortCustomLists(source),
   );
+  const appearanceColumns = useMemo(
+    () =>
+      spreadsheetSortAppearanceColumns(
+        source.appearanceRows,
+        source.range,
+        value.hasHeader,
+      ),
+    [source.appearanceRows, source.range, value.hasHeader],
+  );
   const [customListDraft, setCustomListDraft] =
     useState<SpreadsheetSortCustomListDraft | null>(null);
   const formId = useId();
-  const canAdd =
-    value.keys.length < source.columns.length &&
-    value.keys.length < MAX_SPREADSHEET_SORT_KEYS;
+  const nextKey =
+    value.keys.length < MAX_SPREADSHEET_SORT_KEYS
+      ? nextSpreadsheetSortKey(value.keys, source.columns, appearanceColumns)
+      : null;
 
   const replaceKey = (index: number, replacement: SpreadsheetSortKey) => {
     setValue((current) => ({
@@ -171,20 +190,13 @@ export function SpreadsheetSortDialog({
           <Button
             tone="quiet"
             type="button"
-            disabled={!canAdd}
+            disabled={!nextKey}
             onClick={() => {
-              const used = new Set(value.keys.map((key) => key.column));
-              const next = source.columns.find(
-                (column) => !used.has(column.column),
-              );
-              if (!next) return;
+              if (!nextKey) return;
               setCustomListDraft(null);
               setValue((current) => ({
                 ...current,
-                keys: [
-                  ...current.keys,
-                  { column: next.column, direction: 'ascending' },
-                ],
+                keys: [...current.keys, cloneSpreadsheetSortKey(nextKey)],
               }));
             }}
           >
@@ -194,9 +206,27 @@ export function SpreadsheetSortDialog({
           <OfficeCheckbox
             ariaLabel="数据包含标题"
             checked={value.hasHeader}
-            onCheckedChange={(hasHeader) =>
-              setValue((current) => ({ ...current, hasHeader }))
-            }
+            onCheckedChange={(hasHeader) => {
+              const columns = spreadsheetSortAppearanceColumns(
+                source.appearanceRows,
+                source.range,
+                hasHeader,
+              );
+              setCustomListDraft(null);
+              setValue((current) => ({
+                ...current,
+                hasHeader,
+                keys: current.keys.map((key) =>
+                  spreadsheetSortKeyWithColumn(
+                    key,
+                    key.column,
+                    columns.find(
+                      (candidate) => candidate.column === key.column,
+                    ),
+                  ),
+                ),
+              }));
+            }}
           >
             数据包含标题
           </OfficeCheckbox>
@@ -205,11 +235,6 @@ export function SpreadsheetSortDialog({
         <div className="work-spreadsheet-sort-levels">
           {value.keys.map((key, index) => {
             const level = index + 1;
-            const usedByOthers = new Set(
-              value.keys
-                .filter((_, keyIndex) => keyIndex !== index)
-                .map((candidate) => candidate.column),
-            );
             return (
               <fieldset
                 className="work-spreadsheet-sort-level"
@@ -224,90 +249,41 @@ export function SpreadsheetSortDialog({
                     aria-label={`排序条件 ${level} 列`}
                     value={key.column}
                     onChange={(event) => {
+                      const column = Number(event.currentTarget.value);
                       replaceKey(
                         index,
                         spreadsheetSortKeyWithColumn(
                           key,
-                          Number(event.currentTarget.value),
+                          column,
+                          appearanceColumns.find(
+                            (candidate) => candidate.column === column,
+                          ),
                         ),
                       );
                     }}
                   >
                     {source.columns.map((column) => (
-                      <option
-                        key={column.column}
-                        value={column.column}
-                        disabled={usedByOthers.has(column.column)}
-                      >
+                      <option key={column.column} value={column.column}>
                         {column.label}
                       </option>
                     ))}
                   </select>
                 </label>
-                <label>
-                  <span>次序</span>
-                  <select
-                    aria-label={`排序条件 ${level} 次序`}
-                    value={spreadsheetSortOrderValue(key, customLists)}
-                    onChange={(event) => {
-                      const order = event.currentTarget.value;
-                      if (order === CREATE_CUSTOM_LIST_ORDER) {
-                        beginCustomListEdit(index, key.customList);
-                        return;
-                      }
-                      if (order === 'ascending' || order === 'descending') {
-                        setCustomListDraft(null);
-                        replaceKey(index, {
-                          column: key.column,
-                          direction: order,
-                        });
-                        return;
-                      }
-                      const customListIndex = Number(
-                        order.slice(CUSTOM_LIST_ORDER_PREFIX.length),
-                      );
-                      const customList = customLists[customListIndex];
-                      if (!customList) return;
-                      setCustomListDraft(null);
-                      replaceKey(index, {
-                        column: key.column,
-                        customList: [...customList.entries],
-                      });
-                    }}
-                  >
-                    <option value="ascending">升序（A 到 Z）</option>
-                    <option value="descending">降序（Z 到 A）</option>
-                    <optgroup label="内置序列">
-                      {customLists.map((customList, customListIndex) =>
-                        customList.source === 'built-in' ? (
-                          <option
-                            key={`built-in:${customListIndex}`}
-                            value={`${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`}
-                          >
-                            {customList.label}
-                          </option>
-                        ) : null,
-                      )}
-                    </optgroup>
-                    {customLists.some((list) => list.source === 'session') ? (
-                      <optgroup label="本次会话的序列">
-                        {customLists.map((customList, customListIndex) =>
-                          customList.source === 'session' ? (
-                            <option
-                              key={`session:${customListIndex}`}
-                              value={`${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`}
-                            >
-                              {customList.label}
-                            </option>
-                          ) : null,
-                        )}
-                      </optgroup>
-                    ) : null}
-                    <option value={CREATE_CUSTOM_LIST_ORDER}>
-                      新建自定义序列…
-                    </option>
-                  </select>
-                </label>
+                <SpreadsheetSortOrderControls
+                  appearanceColumn={appearanceColumns.find(
+                    (candidate) => candidate.column === key.column,
+                  )}
+                  customLists={customLists}
+                  level={level}
+                  sortKey={key}
+                  onBeginCustomListEdit={(entries) =>
+                    beginCustomListEdit(index, entries)
+                  }
+                  onChange={(replacement) => {
+                    setCustomListDraft(null);
+                    replaceKey(index, replacement);
+                  }}
+                />
                 <div className="work-spreadsheet-sort-level-actions">
                   <Button
                     tone="quiet"
@@ -415,7 +391,7 @@ export function SpreadsheetSortDialog({
           })}
         </div>
         <p className="work-spreadsheet-sort-note">
-          按单元格值或自定义序列排序；空白单元格始终置于末尾。新建序列仅在本次编辑器会话中复用，每次排序作为一个可撤销操作提交。
+          可按值、自定义序列、有效颜色或条件格式图标排序。值排序的空白始终置于末尾；外观排序按目标置顶/置底。新建序列仅在本次编辑器会话中复用，每次排序作为一个可撤销操作提交。
         </p>
       </form>
     </Dialog>
@@ -423,31 +399,50 @@ export function SpreadsheetSortDialog({
 }
 
 function cloneSpreadsheetSortKey(key: SpreadsheetSortKey): SpreadsheetSortKey {
-  return key.customList !== undefined
-    ? { column: key.column, customList: [...key.customList] }
-    : { column: key.column, direction: key.direction };
+  if (key.sortOn === 'cell-color' || key.sortOn === 'font-color') {
+    return { ...key };
+  }
+  if (key.sortOn === 'icon') {
+    return { ...key, icon: { ...key.icon } };
+  }
+  if (key.customList !== undefined) {
+    return { column: key.column, customList: [...key.customList] };
+  }
+  return { column: key.column, direction: key.direction ?? 'ascending' };
 }
 
 function spreadsheetSortKeyWithColumn(
   key: SpreadsheetSortKey,
   column: number,
+  appearanceColumn: SpreadsheetSortAppearanceColumn | undefined,
 ): SpreadsheetSortKey {
+  const target = spreadsheetSortKeyAppearanceTarget(key);
+  if (target) {
+    const position = key.position === 'bottom' ? 'bottom' : 'top';
+    const available = spreadsheetSortAppearanceTargets(
+      appearanceColumn,
+      target.kind,
+    );
+    const selected =
+      available.find((candidate) =>
+        spreadsheetSortAppearanceTargetsEqual(candidate, target),
+      ) ?? available[0];
+    return selected
+      ? spreadsheetSortAppearanceKey(column, selected, position)
+      : { column, direction: 'ascending' };
+  }
   return key.customList !== undefined
     ? { column, customList: [...key.customList] }
-    : { column, direction: key.direction };
+    : { column, direction: key.direction ?? 'ascending' };
 }
 
-function spreadsheetSortOrderValue(
+function spreadsheetSortKeyAppearanceTarget(
   key: SpreadsheetSortKey,
-  customLists: readonly SpreadsheetSortCustomList[],
-): string {
-  if (key.customList === undefined) return key.direction;
-  const index = customLists.findIndex((customList) =>
-    spreadsheetSortCustomListsEqual(customList.entries, key.customList ?? []),
-  );
-  return index < 0
-    ? CREATE_CUSTOM_LIST_ORDER
-    : `${CUSTOM_LIST_ORDER_PREFIX}${index}`;
+): SpreadsheetSortAppearanceTarget | null {
+  if (key.sortOn === 'cell-color' || key.sortOn === 'font-color') {
+    return { kind: key.sortOn, color: key.color };
+  }
+  return key.sortOn === 'icon' ? { kind: 'icon', icon: { ...key.icon } } : null;
 }
 
 function initialSpreadsheetSortCustomLists(

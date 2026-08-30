@@ -1441,6 +1441,20 @@ A3S Test 1.0.0 gate cover invalid input, reuse, formula movement, one-step Undo,
 accessibility, and clean diagnostics without adding A3S Test to Actions or
 Pages.
 
+The forty-first Spreadsheet slice adds offline appearance order to every sort
+key. A typed Sort On union covers values, custom lists, effective cell color,
+effective font color, and conditional-format icons; appearance targets can be
+placed at the top or bottom and repeated levels express a complete visual
+priority. A separate bounded model combines direct native styles with
+calculated conditional-format output, preserves no-fill and automatic-font
+identities, and does not flatten native gradients or patterns into false solid
+colors. The command rebuilds the effective snapshot from controlled sheet state
+and the live range before reusing the formula-safe row batch and one-step Undo.
+Focused Rstest, desktop/compact Playwright, and the local-only pinned A3S Test
+1.0.0 gate cover four-level same-column color/font/icon priority, formula movement, Undo,
+focus, responsive containment, accessibility, and clean diagnostics without
+adding A3S Test to Actions or Pages.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

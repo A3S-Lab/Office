@@ -584,8 +584,7 @@ coordinate-owned hyperlink, imported-formula, or border sidecars also fail
 closed until one transaction can reconcile their row ownership. Focused
 Rstest, desktop and compact Playwright, and the local-only A3S Test gate cover
 the dialog, priority changes, formula movement, accessibility, diagnostics,
-and one-step Undo. Color/icon keys, row-direction sorting, and table-aware
-sorting remain open.
+and one-step Undo. Row-direction and table-aware sorting remain open.
 
 The forty-ninth milestone aligns partial Spreadsheet sorting with the
 Traditional Office Sort Warning flow. AutoFilter and Sort now share one
@@ -606,8 +605,7 @@ only real non-formula text values and no longer treats formatted numbers or
 formula results as headers. Focused Rstest, desktop and compact Playwright, and
 the local-only A3S Test gate cover exact and expanded choices, quick and custom
 paths, focus, accessibility, formula movement, one-step Undo, and browser
-diagnostics. Color/icon keys, row-direction sorting, and table-aware sorting
-remain open.
+diagnostics. Row-direction and table-aware sorting remain open.
 
 The fiftieth milestone adds offline custom-list order to every Spreadsheet sort
 key. Seven immutable Chinese and English month/weekday sequences are always
@@ -624,6 +622,27 @@ order, blanks remain last, and later keys break equal ranks stably. Focused
 model, dialog, and Hook Rstest, desktop/compact Playwright, and the pinned
 local-only A3S Test gate cover invalid input, session reuse, formula-safe row
 movement, one-step Undo, accessibility, and empty browser diagnostics.
+
+The fifty-first milestone adds offline appearance order to every Spreadsheet
+sort key. The Custom Sort dialog can place one effective cell color, effective
+font color, or conditional-format icon at the top or bottom. Repeated levels
+express a complete visual priority without introducing a separate mutable
+preference model, and later value, custom-list, or appearance keys continue to
+break ties stably.
+
+One bounded appearance model combines direct native styles with calculated
+conditional-format output for the frozen range. Conditional presentation wins
+over direct presentation, solid/no-fill and automatic-font identities remain
+explicit, and native pattern or gradient fills are never flattened into a
+misleading solid-color key. The command reconstructs the effective snapshot
+from controlled sheet state and live range cells immediately before execution,
+validates its shape and target identities, then reuses the existing complete-row
+batch, relative-formula translation, and one-step Undo boundary. Focused model,
+dialog, command, and Hook Rstest, desktop/compact Playwright, and the pinned
+local-only A3S Test gate cover four-level same-column color/font/icon priority, responsive
+containment, formula movement, Undo, focus, accessibility, and empty browser
+diagnostics. Row-direction sorting, durable host settings, and structural
+table/AutoFilter reconciliation remain open.
 
 ## Current Presentation Milestone
 

@@ -2629,7 +2629,7 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(discoverability).toContain('9 / 9 项');
 });
 
-test('publishes formula-safe Spreadsheet value and custom-list sorting without rewriting 0.37.0', async () => {
+test('publishes formula-safe Spreadsheet value, custom-list, and appearance sorting without rewriting 0.37.0', async () => {
   const [
     readme,
     roadmap,
@@ -2649,8 +2649,12 @@ test('publishes formula-safe Spreadsheet value and custom-list sorting without r
     rangeE2e,
     customListModel,
     customListDialog,
+    sortOrderControls,
     customListE2e,
     customListVisual,
+    appearanceModel,
+    appearanceE2e,
+    appearanceVisual,
     currentRegion,
     rangeDialog,
     packageJson,
@@ -2729,6 +2733,13 @@ test('publishes formula-safe Spreadsheet value and custom-list sorting without r
       'utf8',
     ),
     readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-sort-order-controls.tsx',
+      ),
+      'utf8',
+    ),
+    readFile(
       path.join(repositoryRoot, 'tests/e2e/spreadsheet-custom-list-sort.acl'),
       'utf8',
     ),
@@ -2736,6 +2747,24 @@ test('publishes formula-safe Spreadsheet value and custom-list sorting without r
       path.join(
         repositoryRoot,
         'visual-tests/spreadsheet-custom-list-sort.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-sort-appearance.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/spreadsheet-appearance-sort.acl'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/spreadsheet-appearance-sort.functional.spec.ts',
       ),
       'utf8',
     ),
@@ -2764,15 +2793,21 @@ test('publishes formula-safe Spreadsheet value and custom-list sorting without r
   expect(readme).toContain('relative-formula translation');
   expect(readme).toContain('current-region expansion warnings');
   expect(readme).toContain('seven built-in month/weekday sequences');
-  expect(roadmap).toContain('stable value/custom-list sorting');
+  expect(readme).toContain('effective cell-color');
+  expect(roadmap).toContain(
+    'stable value/custom-list/effective-color/conditional-icon sorting',
+  );
   expect(roadmap).toContain('exact-or-expand warnings');
   expect(roadmap).toContain('bounded session-authored sequences');
+  expect(roadmap).toContain('effective-color/conditional-icon sorting');
   expect(changelog).toContain('Data → Custom Sort');
   expect(changelog).toContain('coordinate-owned hyperlink');
   expect(changelog).toContain('Sort Warning');
+  expect(changelog).toContain('effective cell color');
   expect(product).toContain('The forty-eighth milestone');
   expect(product).toContain('The forty-ninth milestone');
   expect(product).toContain('The fiftieth milestone');
+  expect(product).toContain('The fifty-first milestone');
   expect(english).toContain('## Multi-key custom sort');
   expect(chinese).toContain('## 多关键字自定义排序');
   expect(english).toContain('coordinate-owned');
@@ -2781,8 +2816,12 @@ test('publishes formula-safe Spreadsheet value and custom-list sorting without r
   expect(chinese).toContain('传统 Office 风格“排序提醒”');
   expect(english).toContain('seven built-in Chinese or English month');
   expect(chinese).toContain('七个中英文月份/星期内置序列');
+  expect(english).toContain('effective cell color');
+  expect(chinese).toContain('有效单元格颜色');
   expect(architecture).toContain('`spreadsheetSort` editor extension');
   expect(chineseArchitecture).toContain('`spreadsheetSort` 编辑器扩展');
+  expect(architecture).toContain('`spreadsheet-sort-appearance` model');
+  expect(chineseArchitecture).toContain('`spreadsheet-sort-appearance` 模型');
   expect(architecture).toContain('`spreadsheet-current-region` model');
   expect(chineseArchitecture).toContain('`spreadsheet-current-region` 模型');
   expect(quality).toContain('The thirty-eighth Spreadsheet slice');
@@ -2791,6 +2830,8 @@ test('publishes formula-safe Spreadsheet value and custom-list sorting without r
   expect(chineseQuality).toContain('第三十九个 Spreadsheet 纵向切片');
   expect(quality).toContain('The fortieth Spreadsheet slice');
   expect(chineseQuality).toContain('第四十个 Spreadsheet 纵向切片');
+  expect(quality).toContain('The forty-first Spreadsheet slice');
+  expect(chineseQuality).toContain('第四十一个 Spreadsheet 纵向切片');
   expect(releaseEnglish).not.toContain('## Multi-key custom sort');
   expect(releaseChinese).not.toContain('## 多关键字自定义排序');
   expect(releaseEnglish).not.toContain('Traditional Office-style Sort Warning');
@@ -2811,21 +2852,31 @@ test('publishes formula-safe Spreadsheet value and custom-list sorting without r
     'MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRIES = 256',
   );
   expect(customListModel).toContain('SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS');
-  expect(customListDialog).toContain('新建自定义序列…');
+  expect(sortOrderControls).toContain('新建自定义序列…');
   expect(customListDialog).toContain('onRememberCustomList');
   expect(customListE2e).toContain('duplicate-custom-list-is-explained');
   expect(customListE2e).toContain('session-custom-list-is-reusable');
   expect(customListVisual).toContain('spreadsheet-custom-list-sort-dialog.png');
+  expect(appearanceModel).toContain('createSpreadsheetSortAppearanceRows');
+  expect(appearanceModel).toContain('spreadsheetConditionalFormatStyles');
+  expect(appearanceE2e).toContain('put-high-icon-first');
+  expect(appearanceE2e).toContain('moved-formula-is-rebased');
+  expect(appearanceVisual).toContain('spreadsheet-appearance-sort-');
   expect(packageJson).toContain('playground:visual:spreadsheet-custom-sort');
   expect(packageJson).toContain('test:e2e:spreadsheet-custom-sort');
   expect(packageJson).toContain(
     'playground:visual:spreadsheet-custom-list-sort',
   );
   expect(packageJson).toContain('test:e2e:spreadsheet-custom-list-sort');
+  expect(packageJson).toContain(
+    'playground:visual:spreadsheet-appearance-sort',
+  );
+  expect(packageJson).toContain('test:e2e:spreadsheet-appearance-sort');
   expect(packageJson).toContain('playground:visual:spreadsheet-sort-range');
   expect(packageJson).toContain('test:e2e:spreadsheet-sort-range');
   expect(gate).toContain('tests/e2e/spreadsheet-custom-sort.acl');
   expect(gate).toContain('tests/e2e/spreadsheet-custom-list-sort.acl');
+  expect(gate).toContain('tests/e2e/spreadsheet-appearance-sort.acl');
   expect(gate).toContain('tests/e2e/spreadsheet-sort-range.acl');
 });
 

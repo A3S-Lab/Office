@@ -216,6 +216,64 @@ test('reuses authored custom lists without stealing focus after dialog close', a
   nextTarget.remove();
 });
 
+test('authors an effective conditional-icon key from the controlled sheet snapshot', () => {
+  const applied: SpreadsheetSortRequest[] = [];
+  const portRef: { current: SpreadsheetSortCommandPort | null } = {
+    current: null,
+  };
+  const content = spreadsheetContent();
+  const commandsRef = {
+    current: {
+      applyCustomSort: (request: SpreadsheetSortRequest) => {
+        applied.push(request);
+        return true;
+      },
+    } as SpreadsheetEditorCommands,
+  };
+
+  render(
+    <SortHarness
+      commandsRef={commandsRef}
+      content={content}
+      portRef={portRef}
+    />,
+  );
+
+  act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  fireEvent.change(
+    screen.getByRole('combobox', { name: '排序条件 1 排序依据' }),
+    { target: { value: 'icon' } },
+  );
+  const target = screen.getByRole('combobox', {
+    name: '排序条件 1 目标外观',
+  });
+  expect(
+    within(target).getByRole('option', {
+      name: /三色交通灯（实心） 3\/3/,
+    }),
+  ).toBeInTheDocument();
+  fireEvent.change(target, {
+    target: { value: 'icon:3TrafficLights1:2' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(applied).toEqual([
+    {
+      sheetId: 'sheet-1',
+      range: { row: [0, 2], column: [0, 2] },
+      hasHeader: true,
+      keys: [
+        {
+          column: 1,
+          sortOn: 'icon',
+          icon: { iconSet: '3TrafficLights1', index: 2 },
+          position: 'top',
+        },
+      ],
+    },
+  ]);
+});
+
 function SortHarness({
   commandsRef,
   content,
@@ -311,6 +369,23 @@ function spreadsheetContent(): WorkSpreadsheetContent {
           [{ v: 'Name' }, { v: 'Score' }, { v: 'Owner' }],
           [{ v: 'Beta' }, { v: 80 }, { v: 'Lin' }],
           [{ v: 'Alpha' }, { v: 90 }, { v: 'Ada' }],
+        ],
+        luckysheet_conditionformat_save: [
+          {
+            type: 'icons',
+            cellrange: [{ row: [1, 2], column: [1, 1] }],
+            format: {
+              iconSet: '3TrafficLights1',
+              showValue: true,
+              reverse: false,
+              percent: false,
+              thresholds: [
+                { type: 'min', gte: true },
+                { type: 'num', value: 85, gte: true },
+                { type: 'num', value: 88, gte: true },
+              ],
+            },
+          },
         ],
       },
     ],

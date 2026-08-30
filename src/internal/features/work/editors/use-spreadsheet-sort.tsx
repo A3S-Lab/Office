@@ -20,6 +20,7 @@ import {
   type SpreadsheetSortRequest,
 } from './spreadsheet-sort';
 import { SpreadsheetSortDialog } from './spreadsheet-sort-dialog';
+import { createSpreadsheetSortAppearanceRows } from './spreadsheet-sort-appearance';
 import {
   createSpreadsheetSortCustomList,
   MAX_SPREADSHEET_SORT_SESSION_CUSTOM_LISTS,
@@ -91,12 +92,18 @@ export function useSpreadsheetSort({
         range: candidate.range,
       });
       if (!sheet || !rows) return null;
+      const appearanceRows = createSpreadsheetSortAppearanceRows(
+        sheet,
+        candidate.range,
+        rows,
+      );
       return createSpreadsheetSortDialogSource(
         request.sheetId,
         sheet.name,
         { range: candidate.range, activeColumn: request.activeColumn },
         rows,
         customLists,
+        appearanceRows,
       );
     },
     [contentRef, customLists, getRows],

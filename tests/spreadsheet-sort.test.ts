@@ -184,6 +184,199 @@ describe('spreadsheet custom sort', () => {
     ]);
   });
 
+  test('sorts matching appearances top or bottom before later stable keys', () => {
+    const rows = [
+      [cell('Task'), cell('Status')],
+      [cell('Blank red'), cell(null, { bg: '#ff0000' })],
+      [cell('Zulu red'), cell('Blocked', { bg: '#f00' })],
+      [cell('Alpha blue'), cell('Ready', { bg: '#0000ff' })],
+      [cell('Beta plain'), cell('Ready')],
+      [cell('Omega red'), cell('Blocked', { bg: '#ff0000' })],
+    ];
+    const result = sortSpreadsheetRows(rows, {
+      sheetId: 'sheet-1',
+      range: { row: [0, 5], column: [0, 1] },
+      hasHeader: true,
+      keys: [
+        {
+          column: 1,
+          sortOn: 'cell-color',
+          color: '#FF0000',
+          position: 'top',
+        },
+        { column: 0, direction: 'ascending' },
+      ],
+    });
+
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) throw new Error(result.message);
+    expect(result.rows.map((row) => row[0]?.v)).toEqual([
+      'Task',
+      'Blank red',
+      'Omega red',
+      'Zulu red',
+      'Alpha blue',
+      'Beta plain',
+    ]);
+
+    const automaticFontLast = sortSpreadsheetRows(rows, {
+      sheetId: 'sheet-1',
+      range: { row: [0, 5], column: [0, 1] },
+      hasHeader: true,
+      keys: [
+        {
+          column: 1,
+          sortOn: 'font-color',
+          color: null,
+          position: 'bottom',
+        },
+        { column: 0, direction: 'ascending' },
+      ],
+    });
+    expect(
+      automaticFontLast.ok && automaticFontLast.rows.map((row) => row[0]?.v),
+    ).toEqual([
+      'Task',
+      'Alpha blue',
+      'Beta plain',
+      'Blank red',
+      'Omega red',
+      'Zulu red',
+    ]);
+  });
+
+  test('sorts a computed conditional icon target from a supplied live snapshot', () => {
+    const rows = [
+      [cell('Task'), cell('Score')],
+      [cell('Low'), cell(10)],
+      [cell('High B'), cell(30)],
+      [cell('Middle'), cell(20)],
+      [cell('High A'), cell(40)],
+    ];
+    const appearances = rows.map((row, rowIndex) =>
+      row.map((_, columnIndex) => ({
+        cellColor: null,
+        fontColor: null,
+        icon:
+          rowIndex === 0 || columnIndex === 0
+            ? null
+            : {
+                iconSet: '3TrafficLights1' as const,
+                index: rowIndex === 1 ? 0 : rowIndex === 3 ? 1 : 2,
+              },
+      })),
+    );
+    const result = sortSpreadsheetRows(
+      rows,
+      {
+        sheetId: 'sheet-1',
+        range: { row: [0, 4], column: [0, 1] },
+        hasHeader: true,
+        keys: [
+          {
+            column: 1,
+            sortOn: 'icon',
+            icon: { iconSet: '3TrafficLights1', index: 2 },
+            position: 'top',
+          },
+          { column: 0, direction: 'ascending' },
+        ],
+      },
+      appearances,
+    );
+
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) throw new Error(result.message);
+    expect(result.rows.map((row) => row[0]?.v)).toEqual([
+      'Task',
+      'High A',
+      'High B',
+      'Low',
+      'Middle',
+    ]);
+  });
+
+  test('rejects an appearance target missing from the live snapshot', () => {
+    const rows = [
+      [cell('Task'), cell('Status')],
+      [cell('Alpha'), cell('Ready')],
+      [cell('Beta'), cell('Blocked')],
+    ];
+    const appearances = rows.map((row) =>
+      row.map(() => ({ cellColor: null, fontColor: null, icon: null })),
+    );
+
+    expect(
+      sortSpreadsheetRows(
+        rows,
+        {
+          sheetId: 'sheet-1',
+          range: { row: [0, 2], column: [0, 1] },
+          hasHeader: true,
+          keys: [
+            {
+              column: 1,
+              sortOn: 'cell-color',
+              color: '#fce8e6',
+              position: 'top',
+            },
+          ],
+        },
+        appearances,
+      ),
+    ).toMatchObject({ ok: false, code: 'invalid-appearance' });
+  });
+
+  test('composes distinct appearance priorities on the same column', () => {
+    const result = sortSpreadsheetRows(
+      [
+        [cell('Task'), cell('Status')],
+        [cell('Blue'), cell('Ready', { bg: '#4472c4' })],
+        [cell('Plain'), cell('Waiting')],
+        [cell('Yellow'), cell('Review', { bg: '#fff2cc' })],
+        [cell('Red B'), cell('Blocked', { bg: '#fce8e6' })],
+        [cell('Red A'), cell('Blocked', { bg: '#fce8e6' })],
+      ],
+      {
+        sheetId: 'sheet-1',
+        range: { row: [0, 5], column: [0, 1] },
+        hasHeader: true,
+        keys: [
+          {
+            column: 1,
+            sortOn: 'cell-color',
+            color: '#fce8e6',
+            position: 'top',
+          },
+          {
+            column: 1,
+            sortOn: 'cell-color',
+            color: '#fff2cc',
+            position: 'top',
+          },
+          {
+            column: 1,
+            sortOn: 'cell-color',
+            color: '#4472c4',
+            position: 'bottom',
+          },
+          { column: 0, direction: 'ascending' },
+        ],
+      },
+    );
+
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) throw new Error(result.message);
+    expect(result.rows.map((row) => row[0]?.v)).toEqual([
+      'Task',
+      'Red A',
+      'Red B',
+      'Yellow',
+      'Plain',
+      'Blue',
+    ]);
+  });
+
   test('moves formulas with rows and translates only relative references', () => {
     const result = sortSpreadsheetRows(
       [
@@ -334,6 +527,44 @@ describe('spreadsheet custom sort', () => {
     expect(
       validateSpreadsheetSortRequest({
         ...base,
+        keys: [
+          {
+            column: 0,
+            sortOn: 'cell-color',
+            color: '#fce8e6',
+            position: 'top',
+          },
+          {
+            column: 0,
+            sortOn: 'cell-color',
+            color: '#fff2cc',
+            position: 'top',
+          },
+        ],
+      }),
+    ).toMatchObject({ ok: true });
+    expect(
+      validateSpreadsheetSortRequest({
+        ...base,
+        keys: [
+          {
+            column: 0,
+            sortOn: 'cell-color',
+            color: '#fce8e6',
+            position: 'top',
+          },
+          {
+            column: 0,
+            sortOn: 'cell-color',
+            color: '#fce8e6',
+            position: 'bottom',
+          },
+        ],
+      }),
+    ).toMatchObject({ ok: false, code: 'duplicate-key' });
+    expect(
+      validateSpreadsheetSortRequest({
+        ...base,
         keys: [{ column: 9, direction: 'ascending' }],
       }),
     ).toMatchObject({ ok: false, code: 'column-out-of-range' });
@@ -366,6 +597,32 @@ describe('spreadsheet custom sort', () => {
         keys: [{ column: 0, customList: ['High', ' high ', 'Low'] }],
       }),
     ).toMatchObject({ ok: false, code: 'invalid-custom-list' });
+    expect(
+      validateSpreadsheetSortRequest({
+        ...base,
+        keys: [
+          {
+            column: 0,
+            sortOn: 'cell-color',
+            color: 'not-a-color',
+            position: 'top',
+          },
+        ],
+      }),
+    ).toMatchObject({ ok: false, code: 'invalid-appearance' });
+    expect(
+      validateSpreadsheetSortRequest({
+        ...base,
+        keys: [
+          {
+            column: 0,
+            sortOn: 'icon',
+            icon: { iconSet: '3TrafficLights1', index: 9 },
+            position: 'top',
+          },
+        ],
+      }),
+    ).toMatchObject({ ok: false, code: 'invalid-appearance' });
 
     const malformedRows = sortSpreadsheetRows([[cell('A')], [cell('B')]], {
       ...base,

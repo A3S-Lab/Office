@@ -1,7 +1,7 @@
 .work-spreadsheet-sort-dialog {
   --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
 
-  width: min(640px, 100%);
+  width: min(820px, 100%);
 }
 
 .work-spreadsheet-sort-dialog form {
@@ -36,7 +36,7 @@
 .work-spreadsheet-sort-level {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(140px, 1fr) minmax(140px, 0.8fr) auto;
+  grid-template-columns: minmax(140px, 0.7fr) minmax(370px, 1.8fr) auto;
   align-items: end;
   gap: 9px;
   padding: 10px;
@@ -52,15 +52,70 @@
   font-weight: 700;
 }
 
-.work-spreadsheet-sort-level > label {
+.work-spreadsheet-sort-level > label,
+.work-spreadsheet-sort-order-controls > label {
   display: grid;
   min-width: 0;
   gap: 4px;
 }
 
-.work-spreadsheet-sort-level > label > span {
+.work-spreadsheet-sort-level > label > span,
+.work-spreadsheet-sort-order-controls > label > span {
   color: var(--a3s-muted);
   font-size: 9px;
+}
+
+.work-spreadsheet-sort-order-controls {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(110px, 0.75fr) minmax(170px, 1.25fr);
+  align-items: end;
+  gap: 9px;
+}
+
+.work-spreadsheet-sort-order-controls[data-appearance="true"] {
+  grid-template-columns:
+    minmax(105px, 0.75fr) minmax(155px, 1.25fr)
+    minmax(92px, 0.65fr);
+}
+
+.work-spreadsheet-sort-appearance-preview {
+  display: flex;
+  grid-column: 1 / -1;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  color: var(--a3s-muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.work-spreadsheet-sort-appearance-preview > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-sort-color-swatch {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 3px;
+}
+
+.work-spreadsheet-sort-color-swatch[data-empty="true"] {
+  background:
+    linear-gradient(
+      135deg,
+      transparent 43%,
+      var(--a3s-danger, #b42318) 44%,
+      var(--a3s-danger, #b42318) 56%,
+      transparent 57%
+    ),
+    var(--a3s-panel);
 }
 
 .work-spreadsheet-sort-level select {
@@ -244,7 +299,7 @@
   white-space: nowrap;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 700px) {
   .work-spreadsheet-sort-toolbar {
     align-items: stretch;
     flex-direction: column;
@@ -254,7 +309,29 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .work-spreadsheet-sort-order-controls,
+  .work-spreadsheet-sort-order-controls[data-appearance="true"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .work-spreadsheet-sort-order-controls[data-appearance="true"]
+    > label:last-of-type {
+    grid-column: 1 / -1;
+  }
+
   .work-spreadsheet-sort-level-actions {
     justify-content: flex-end;
+  }
+}
+
+@media (max-width: 430px) {
+  .work-spreadsheet-sort-order-controls,
+  .work-spreadsheet-sort-order-controls[data-appearance="true"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-sort-order-controls[data-appearance="true"]
+    > label:last-of-type {
+    grid-column: auto;
   }
 }
