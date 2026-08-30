@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.37.1' ||
     version === '0.37.0' ||
     version === '0.36.0' ||
     version === '0.34.0' ||
@@ -63,6 +64,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.37.1',
     '0.37.0',
     '0.36.0',
     '0.34.0',
@@ -107,6 +109,41 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
     '0.2.0',
     '0.1.0',
   ]);
+});
+
+test('documents host-owned file action icons and destructive semantics in the current release', async () => {
+  const [latestEnglish, latestChinese, releaseEnglish, releaseChinese] =
+    await Promise.all([
+      readFile(
+        path.join(documentationRoot, 'latest/en/components/react.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, 'latest/zh/components/react.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, '0.37.1/en/components/react.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, '0.37.1/zh/components/react.mdx'),
+        'utf8',
+      ),
+    ]);
+
+  for (const document of [latestEnglish, releaseEnglish]) {
+    expect(document).toContain('## Host-owned file actions');
+    expect(document).toContain('OfficeFileAction');
+    expect(document).toContain('danger: true');
+    expect(document).toContain('neutral file glyph');
+  }
+  for (const document of [latestChinese, releaseChinese]) {
+    expect(document).toContain('## 宿主持有的文件操作');
+    expect(document).toContain('OfficeFileAction');
+    expect(document).toContain('danger: true');
+    expect(document).toContain('中性文件图标');
+  }
 });
 
 test('builds a product home beside, rather than inside, the versioned docs site', async () => {
@@ -1002,6 +1039,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.37.1',
     '0.37.0',
     '0.36.0',
     '0.34.0',
@@ -1075,6 +1113,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.37.1',
     '0.37.0',
     '0.36.0',
     '0.34.0',

@@ -81,6 +81,56 @@ test('supports complete keyboard navigation in the shared file menu', async () =
   });
 });
 
+test('gives every file action an icon and exposes destructive actions distinctly', async () => {
+  render(
+    <WorkOfficeRibbon
+      ariaLabel="Test ribbon"
+      tabs={[{ id: 'home', label: '开始' }]}
+      defaultTab="home"
+      panels={{ home: <span>Home tools</span> }}
+      fileActions={[
+        {
+          id: 'save',
+          label: '立即保存',
+          disabled: true,
+          onSelect: () => undefined,
+        },
+        {
+          id: 'review',
+          label: '使用 A3S Code 审阅所选幻灯片',
+          icon: <svg data-testid="review-action-icon" />,
+          onSelect: () => undefined,
+        },
+        {
+          id: 'delete',
+          label: '删除演示文稿',
+          danger: true,
+          separatorBefore: true,
+          onSelect: () => undefined,
+        },
+      ]}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '文件' }));
+  const menu = await screen.findByRole('menu', { name: '文件菜单' });
+  const save = within(menu).getByRole('menuitem', { name: '立即保存' });
+  const review = within(menu).getByRole('menuitem', {
+    name: '使用 A3S Code 审阅所选幻灯片',
+  });
+  const remove = within(menu).getByRole('menuitem', {
+    name: '删除演示文稿',
+  });
+
+  expect(save.querySelector('.lucide-file')).toBeInTheDocument();
+  expect(
+    review.querySelector('[data-testid="review-action-icon"]'),
+  ).toBeInTheDocument();
+  expect(remove.querySelector('.lucide-file')).toBeInTheDocument();
+  expect(remove).toHaveAttribute('data-danger', 'true');
+  expect(within(menu).getByRole('separator')).toBeInTheDocument();
+});
+
 test('pages compact ribbon tabs instead of compressing their labels', async () => {
   render(
     <WorkOfficeRibbon

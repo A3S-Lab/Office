@@ -4,6 +4,12 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.37.1 - 2026-08-31
+
+- Refined the shared host-owned **File** menu with explicit action icons, a
+  neutral fallback glyph, wider readable labels, bounded scrolling, stronger
+  keyboard focus, and an additive `danger` action treatment for irreversible
+  operations. Disabled actions remain legible and are skipped by menu focus.
 - Added explicit local Spreadsheet wildcard AutoFilter authoring and
   evaluation. The closed criteria union now preserves arbitrary native OOXML
   `*`, `?`, and `~` expressions without changing existing literal equality

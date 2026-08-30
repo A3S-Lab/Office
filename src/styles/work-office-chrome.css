@@ -311,63 +311,127 @@
   top: 34px;
   left: 0;
   display: grid;
-  width: 224px;
-  padding: 6px;
-  border: 1px solid var(--a3s-line);
-  border-radius: 10px;
-  background: var(--a3s-panel);
-  box-shadow: 0 14px 36px rgb(18 26 43 / 18%);
+  width: min(280px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  padding: 8px;
+  overflow: auto;
+  border: 1px solid var(--a3s-overlay-border, var(--a3s-line));
+  border-radius: 12px;
+  background: var(--a3s-overlay-surface, var(--a3s-panel));
+  box-shadow: var(--a3s-shadow-soft, 0 16px 42px rgb(18 26 43 / 20%));
+  gap: 2px;
+  overscroll-behavior: contain;
+  backdrop-filter: blur(18px);
 }
 
 .work-office-file-popover > button {
   display: grid;
   width: 100%;
-  height: 36px;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
+  min-height: 40px;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
-  padding: 0 9px;
+  gap: 10px;
+  padding: 6px 10px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 8px;
   background: transparent;
   color: var(--a3s-ink);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.35;
   text-align: left;
   cursor: pointer;
 }
 
 .work-office-file-popover > button:hover:not(:disabled),
 .work-office-file-popover > button:focus-visible {
-  outline: 0;
-  background: var(--a3s-panel-soft);
+  background: color-mix(
+    in srgb,
+    var(--work-office-accent, var(--a3s-blue)) 8%,
+    var(--a3s-panel)
+  );
+}
+
+.work-office-file-popover > button:focus-visible {
+  outline: 2px solid
+    color-mix(
+      in srgb,
+      var(--work-office-accent, var(--a3s-blue)) 52%,
+      var(--a3s-line)
+    );
+  outline-offset: -2px;
 }
 
 .work-office-file-popover > button:disabled {
-  cursor: default;
-  opacity: 0.42;
+  color: var(--a3s-faint);
+  cursor: not-allowed;
+  opacity: 1;
 }
 
 .work-office-file-action-icon {
   display: grid;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 7px;
+  background: color-mix(
+    in srgb,
+    var(--work-office-accent, var(--a3s-blue)) 8%,
+    transparent
+  );
   color: var(--work-office-accent, var(--a3s-blue));
+}
+
+.work-office-file-action-icon > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.work-office-file-action-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.work-office-file-popover > button:disabled .work-office-file-action-icon {
+  background: color-mix(in srgb, var(--a3s-faint) 8%, transparent);
+  color: var(--a3s-faint);
+}
+
+.work-office-file-popover > button.danger:not(:disabled) {
+  color: var(--a3s-red);
+}
+
+.work-office-file-popover
+  > button.danger:not(:disabled)
+  .work-office-file-action-icon {
+  background: color-mix(in srgb, var(--a3s-red) 9%, transparent);
+  color: currentcolor;
+}
+
+.work-office-file-popover > button.danger:hover:not(:disabled),
+.work-office-file-popover > button.danger:focus-visible {
+  background: color-mix(in srgb, var(--a3s-red) 8%, var(--a3s-panel));
 }
 
 .work-office-file-popover kbd {
   color: var(--a3s-faint);
   font: inherit;
   font-size: 9px;
+  white-space: nowrap;
 }
 
 .work-office-file-separator {
   height: 1px;
-  margin: 5px 7px;
+  margin: 6px 8px;
   border: 0;
   background: var(--a3s-line);
+}
+
+@media (max-width: 640px) {
+  .work-office-file-popover > button {
+    min-height: 44px;
+    padding-block: 8px;
+  }
 }
 
 .work-office-ribbon-panel {
@@ -1032,6 +1096,24 @@ button.work-office-collaboration-participant:focus-visible
 }
 
 @media (forced-colors: active) {
+  .work-office-file-popover {
+    border-color: CanvasText;
+    background: Canvas;
+    backdrop-filter: none;
+  }
+
+  .work-office-file-action-icon {
+    background: transparent;
+  }
+
+  .work-office-file-popover > button:focus-visible {
+    outline-color: Highlight;
+  }
+
+  .work-office-file-popover > button.danger:not(:disabled) {
+    color: LinkText;
+  }
+
   .work-office-collaboration-avatar,
   .work-office-collaboration-overflow {
     border-color: Canvas;

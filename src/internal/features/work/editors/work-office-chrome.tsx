@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ChevronUp,
   Eye,
+  File as FileIcon,
   Minus,
   Plus,
 } from 'lucide-react';
@@ -42,9 +43,12 @@ export interface WorkOfficeRibbonTab<T extends string> {
 export interface WorkOfficeFileAction {
   id: string;
   label: string;
+  /** Uses a neutral file glyph when omitted so the menu never reserves a blank icon cell. */
   icon?: ReactNode;
   shortcut?: string;
   disabled?: boolean;
+  /** Visually distinguishes an irreversible action without changing its behavior. */
+  danger?: boolean;
   separatorBefore?: boolean;
   onSelect: () => void | Promise<void>;
 }
@@ -614,6 +618,8 @@ function WorkOfficeFileMenu({
                 type="button"
                 role="menuitem"
                 tabIndex={-1}
+                className={action.danger ? 'danger' : undefined}
+                data-danger={action.danger ? 'true' : undefined}
                 disabled={action.disabled}
                 onClick={() => {
                   close();
@@ -624,9 +630,11 @@ function WorkOfficeFileMenu({
                   className="work-office-file-action-icon"
                   aria-hidden="true"
                 >
-                  {action.icon}
+                  {action.icon ?? <FileIcon size={16} />}
                 </span>
-                <span>{action.label}</span>
+                <span className="work-office-file-action-label">
+                  {action.label}
+                </span>
                 {action.shortcut && <kbd>{action.shortcut}</kbd>}
               </button>
             </Fragment>

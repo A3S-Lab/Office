@@ -56,7 +56,7 @@ workflows, and a separate Rust automation plane.
 
 ## Latest on `main`
 
-The `0.37.0` release exposes these capabilities as normal user-facing
+The `0.37.1` release exposes these capabilities as normal user-facing
 Playground templates, with matching implementation detail in the documentation:
 
 | Editor | Latest capability | Public entry |
@@ -217,6 +217,9 @@ is requested. The complete gap inventory and exit evidence live in the
   preserving spatial arrow-key navigation.
   Shared Office selects use 44 px phone option rows and bounded internal
   scrolling while retaining keyboard selection and exact focus restoration.
+  Host-provided file menus keep every action visually identifiable with an
+  explicit or neutral fallback icon, readable long labels, grouped destructive
+  actions, and a visible keyboard focus ring.
 - **Editor-scoped zoom** — Status controls and Ctrl/Cmd + mouse-wheel gestures
   share each surface's bounded zoom model without changing the host browser's
   page scale.
@@ -1648,6 +1651,7 @@ keep working without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/playground/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.37.1 documentation](https://a3s-lab.github.io/Office/docs/0.37.1/)
 - [A3S Office 0.37.0 documentation](https://a3s-lab.github.io/Office/docs/0.37.0/)
 - [A3S Office 0.36.0 documentation](https://a3s-lab.github.io/Office/docs/0.36.0/)
 - [A3S Office 0.34.0 documentation](https://a3s-lab.github.io/Office/docs/0.34.0/)
