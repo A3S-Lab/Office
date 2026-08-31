@@ -6,6 +6,8 @@ import {
   MAX_SPREADSHEET_SORT_CELLS,
   MAX_SPREADSHEET_SORT_KEYS,
   spreadsheetSortFailureMessage,
+  spreadsheetSortRowsFromSheet,
+  spreadsheetSortRowsMatchRange,
   validateSpreadsheetSortRequest,
 } from '../src/internal/features/work/editors/spreadsheet-sort';
 import { sortSpreadsheetMatrix } from '../src/internal/features/work/editors/spreadsheet-sort-matrix';
@@ -72,6 +74,84 @@ describe('spreadsheet custom sort', () => {
     ).toEqual({
       selectedRange: { row: [0, 2], column: [0, 1] },
       expandedRange: null,
+    });
+  });
+
+  test('materializes bounded controlled rows when a filtered native view omits them', () => {
+    const range = { row: [1, 2], column: [1, 2] } as const;
+    const rows = spreadsheetSortRowsFromSheet(
+      {
+        id: 'filtered',
+        name: 'Filtered',
+        data: [
+          [{ v: 'Outside' }],
+          [null, { v: 'Beta' }],
+          [null, null, { v: 90 }],
+        ],
+        celldata: [{ r: 1, c: 2, v: { v: 80 } }],
+      },
+      range,
+    );
+
+    expect(rows).toEqual([
+      [{ v: 'Beta' }, { v: 80 }],
+      [null, { v: 90 }],
+    ]);
+    expect(spreadsheetSortRowsMatchRange(rows ?? [], range)).toBe(true);
+    expect(spreadsheetSortRowsMatchRange([rows?.[0] ?? []], range)).toBe(false);
+  });
+
+  test('expands selections to the exact AutoFilter or table-owned sortable range', () => {
+    const autoFilter = createSpreadsheetSortRangePlan(
+      {
+        id: 'filtered',
+        name: 'Filtered',
+        data: [
+          [{ v: 'Name' }, { v: 'Score' }],
+          [{ v: 'Beta' }, { v: 80 }],
+          [{ v: 'Alpha' }, { v: 90 }],
+        ],
+        filter_select: { row: [0, 2], column: [0, 1] },
+      },
+      { row: [1, 1], column: [1, 1] },
+    );
+    const table = createSpreadsheetSortRangePlan(
+      {
+        id: 'table',
+        name: 'Table',
+        data: [
+          [{ v: 'Name' }, { v: 'Score' }],
+          [{ v: 'Beta' }, { v: 80 }],
+          [{ v: 'Alpha' }, { v: 90 }],
+          [{ v: 'Total' }, { v: 170 }],
+        ],
+        tables: [
+          {
+            id: 'table-1',
+            name: 'Table1',
+            range: { row: [0, 3], column: [0, 1] },
+            columns: [{ name: 'Name' }, { name: 'Score' }],
+            filters: [],
+            headerRow: true,
+            totalsRow: true,
+            style: { family: 'medium', number: 2 },
+            showFirstColumn: false,
+            showLastColumn: false,
+            showRowStripes: true,
+            showColumnStripes: false,
+          },
+        ],
+      },
+      { row: [2, 2], column: [0, 0] },
+    );
+
+    expect(autoFilter).toEqual({
+      selectedRange: { row: [1, 1], column: [1, 1] },
+      expandedRange: { row: [0, 2], column: [0, 1] },
+    });
+    expect(table).toEqual({
+      selectedRange: { row: [2, 2], column: [0, 0] },
+      expandedRange: { row: [0, 2], column: [0, 1] },
     });
   });
 
@@ -522,6 +602,25 @@ describe('spreadsheet custom sort', () => {
     expect(formulas?.columns).toEqual([{ index: 5, label: 'F' }]);
   });
 
+  test('locks structural headers even when value heuristics would not detect them', () => {
+    const source = createSpreadsheetSortDialogSource(
+      'sheet-1',
+      'Filtered',
+      {
+        range: { row: [0, 2], column: [0, 0] },
+        activeColumn: 0,
+        activeRow: 1,
+        scope: { kind: 'auto-filter', hasHeader: true },
+      },
+      [[cell(10)], [cell(5)], [cell(7)]],
+    );
+
+    expect(source).toMatchObject({
+      scope: { kind: 'auto-filter', hasHeader: true },
+      value: { hasHeader: true, orientation: 'top-to-bottom' },
+    });
+  });
+
   test('rejects duplicate, out-of-range, oversized, and malformed sort requests', () => {
     const base = {
       sheetId: 'sheet-1',
@@ -541,6 +640,17 @@ describe('spreadsheet custom sort', () => {
         ],
       }),
     ).toMatchObject({ ok: false, code: 'duplicate-key' });
+    expect(
+      validateSpreadsheetSortRequest({
+        ...base,
+        scope: {
+          kind: 'table',
+          tableId: '',
+          hasHeader: true,
+        },
+        keys: [{ index: 0, direction: 'ascending' }],
+      }),
+    ).toMatchObject({ ok: false, code: 'invalid-scope' });
     expect(
       validateSpreadsheetSortRequest({
         ...base,

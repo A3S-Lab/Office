@@ -155,6 +155,7 @@ suites=(
   "tests/e2e/spreadsheet-row-sort.acl"
   "tests/e2e/spreadsheet-text-sort.acl"
   "tests/e2e/spreadsheet-sort-range.acl"
+  "tests/e2e/spreadsheet-owned-range-sort.acl"
   "tests/e2e/spreadsheet-data-validation.acl"
   "tests/e2e/spreadsheet-hyperlink.acl"
   "tests/e2e/spreadsheet-paste-special.acl"

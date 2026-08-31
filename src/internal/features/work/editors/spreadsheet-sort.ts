@@ -99,11 +99,22 @@ export interface SpreadsheetSortTarget {
   activeColumn: number;
   activeRow: number;
   range: SpreadsheetCellRange;
+  scope?: SpreadsheetSortOwnedScope;
+}
+
+export type SpreadsheetSortOwnedScope =
+  | { hasHeader: true; kind: 'auto-filter' }
+  | { hasHeader: boolean; kind: 'table'; tableId: string };
+
+export interface SpreadsheetSortOwnedRange {
+  range: SpreadsheetCellRange;
+  scope: SpreadsheetSortOwnedScope;
 }
 
 export interface SpreadsheetSortRangeCandidate {
   available: boolean;
   range: SpreadsheetCellRange;
+  scope?: SpreadsheetSortOwnedScope;
 }
 
 export type SpreadsheetSortIntent =
@@ -130,6 +141,7 @@ export interface SpreadsheetSortRangeDialogSource {
   canSortExpandedRange: boolean;
   canSortSelection: boolean;
   expandedRangeReference: string;
+  ownedScope?: SpreadsheetSortOwnedScope;
   selectedRangeReference: string;
   sheetName: string;
 }
@@ -140,12 +152,14 @@ export type SpreadsheetSortRequest = Omit<
 > &
   Partial<SpreadsheetSortTextOptions> & {
     range: SpreadsheetCellRange;
+    scope?: SpreadsheetSortOwnedScope;
     sheetId: string;
   };
 
 export interface SpreadsheetSortNormalizedRequest
   extends SpreadsheetSortDialogValue {
   range: SpreadsheetCellRange;
+  scope?: SpreadsheetSortOwnedScope;
   sheetId: string;
 }
 
@@ -162,6 +176,7 @@ export interface SpreadsheetSortDialogSource {
   range: SpreadsheetCellRange;
   rangeReference: string;
   rows: SpreadsheetSortField[];
+  scope?: SpreadsheetSortOwnedScope;
   sheetId: string;
   sheetName: string;
   value: SpreadsheetSortDialogValue;
@@ -179,6 +194,7 @@ export type SpreadsheetSortErrorCode =
   | 'invalid-matrix'
   | 'invalid-orientation'
   | 'invalid-range'
+  | 'invalid-scope'
   | 'invalid-text-method'
   | 'missing-key'
   | 'not-enough-columns'
@@ -194,7 +210,7 @@ export type SpreadsheetSortValidationResult =
   | { code: SpreadsheetSortErrorCode; message: string; ok: false };
 
 export type SpreadsheetSortResult =
-  | { ok: true; rows: (Cell | null)[][] }
+  | { ok: true; rows: (Cell | null)[][]; sourceIndexes: number[] }
   | { code: SpreadsheetSortErrorCode; message: string; ok: false };
 
 export function createSpreadsheetSortRangePlan(
@@ -203,6 +219,15 @@ export function createSpreadsheetSortRangePlan(
 ): SpreadsheetSortRangePlan | null {
   const selected = normalizeSpreadsheetCellRange(selectedRange);
   if (!selected) return null;
+  const owned = spreadsheetSortOwnedRangeContaining(sheet, selected);
+  if (owned) {
+    return {
+      selectedRange: selected,
+      expandedRange: spreadsheetCellRangesEqual(owned.range, selected)
+        ? null
+        : owned.range,
+    };
+  }
   const currentRegion = spreadsheetCurrentRegion(sheet, selected);
   return {
     selectedRange: selected,
@@ -228,6 +253,7 @@ export function createSpreadsheetSortRangeDialogSource(
     ]),
     canSortSelection: request.selected.available,
     canSortExpandedRange: request.expanded.available,
+    ...(request.expanded.scope ? { ownedScope: request.expanded.scope } : {}),
   };
 }
 
@@ -243,10 +269,11 @@ export function createSpreadsheetSortDialogSource(
   if (!range || spreadsheetSortRangeError(range)) return null;
   const width = range.column[1] - range.column[0] + 1;
   const height = range.row[1] - range.row[0] + 1;
-  if (rows.length !== height || rows.some((row) => row.length !== width)) {
+  if (!spreadsheetSortRowsMatchRange(rows, range)) {
     return null;
   }
   const hasHeader = height > 2 && spreadsheetSortRowsHaveHeader(rows);
+  const resolvedHasHeader = target.scope?.hasHeader ?? hasHeader;
   const activeColumn = spreadsheetSortActiveIndex(
     target.activeColumn,
     range.column,
@@ -265,6 +292,7 @@ export function createSpreadsheetSortDialogSource(
     activeRow,
     appearanceRows: resolvedAppearanceRows,
     customLists: mergeSpreadsheetSortCustomLists(customLists),
+    ...(target.scope ? { scope: target.scope } : {}),
     columns: Array.from({ length: width }, (_, offset) => {
       const index = range.column[0] + offset;
       const name = spreadsheetSortHeaderText(header[offset]);
@@ -281,10 +309,129 @@ export function createSpreadsheetSortDialogSource(
     value: {
       orientation: 'top-to-bottom',
       ...DEFAULT_SPREADSHEET_SORT_TEXT_OPTIONS,
-      hasHeader,
+      hasHeader: resolvedHasHeader,
       keys: [{ index: activeColumn, direction: 'ascending' }],
     },
   };
+}
+
+export function spreadsheetSortRowsMatchRange(
+  rows: readonly (readonly (Cell | null)[])[],
+  range: SpreadsheetCellRange,
+): boolean {
+  const normalized = normalizeSpreadsheetCellRange(range);
+  if (!normalized) return false;
+  const width = normalized.column[1] - normalized.column[0] + 1;
+  const height = normalized.row[1] - normalized.row[0] + 1;
+  return rows.length === height && rows.every((row) => row.length === width);
+}
+
+export function spreadsheetSortRowsFromSheet(
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetCellRange,
+): (Cell | null)[][] | null {
+  const normalized = normalizeSpreadsheetCellRange(range);
+  if (!normalized || spreadsheetSortRangeError(normalized)) return null;
+  const width = normalized.column[1] - normalized.column[0] + 1;
+  const height = normalized.row[1] - normalized.row[0] + 1;
+  const rows = Array.from({ length: height }, () =>
+    Array<Cell | null>(width).fill(null),
+  );
+  for (let row = normalized.row[0]; row <= normalized.row[1]; row += 1) {
+    const source = sheet.data?.[row];
+    if (!source) continue;
+    const target = rows[row - normalized.row[0]]!;
+    for (
+      let column = normalized.column[0];
+      column <= normalized.column[1];
+      column += 1
+    ) {
+      target[column - normalized.column[0]] = source[column] ?? null;
+    }
+  }
+  for (const entry of sheet.celldata ?? []) {
+    if (
+      entry.r < normalized.row[0] ||
+      entry.r > normalized.row[1] ||
+      entry.c < normalized.column[0] ||
+      entry.c > normalized.column[1]
+    ) {
+      continue;
+    }
+    const row = rows[entry.r - normalized.row[0]]!;
+    const column = entry.c - normalized.column[0];
+    if (row[column] === null) row[column] = entry.v ?? null;
+  }
+  return rows;
+}
+
+export function spreadsheetSortOwnedRangeForExactRange(
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetCellRange,
+): SpreadsheetSortOwnedRange | null {
+  const normalized = normalizeSpreadsheetCellRange(range);
+  if (!normalized) return null;
+  const matches = spreadsheetSortOwnedRanges(sheet).filter((candidate) =>
+    spreadsheetCellRangesEqual(candidate.range, normalized),
+  );
+  return matches.length === 1 ? matches[0]! : null;
+}
+
+function spreadsheetSortOwnedRangeContaining(
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetCellRange,
+): SpreadsheetSortOwnedRange | null {
+  const matches = spreadsheetSortOwnedRanges(sheet).filter((candidate) =>
+    spreadsheetSortRangeContains(candidate.range, range),
+  );
+  return matches.length === 1 ? matches[0]! : null;
+}
+
+function spreadsheetSortOwnedRanges(
+  sheet: WorkSpreadsheetSheet,
+): SpreadsheetSortOwnedRange[] {
+  const ranges: SpreadsheetSortOwnedRange[] = [];
+  const autoFilter = normalizeSpreadsheetCellRange(
+    sheet.filter_select ?? { row: [], column: [] },
+  );
+  if (autoFilter && autoFilter.row[1] > autoFilter.row[0]) {
+    ranges.push({
+      range: autoFilter,
+      scope: { kind: 'auto-filter', hasHeader: true },
+    });
+  }
+  for (const table of sheet.tables ?? []) {
+    const tableRange = normalizeSpreadsheetCellRange(table.range);
+    if (!tableRange || !table.id || table.columns.length === 0) continue;
+    const width = tableRange.column[1] - tableRange.column[0] + 1;
+    if (width !== table.columns.length) continue;
+    const endRow = tableRange.row[1] - Number(table.totalsRow);
+    if (endRow <= tableRange.row[0]) continue;
+    ranges.push({
+      range: {
+        row: [tableRange.row[0], endRow],
+        column: [...tableRange.column],
+      },
+      scope: {
+        kind: 'table',
+        tableId: table.id,
+        hasHeader: table.headerRow,
+      },
+    });
+  }
+  return ranges;
+}
+
+function spreadsheetSortRangeContains(
+  outer: SpreadsheetCellRange,
+  inner: SpreadsheetCellRange,
+): boolean {
+  return (
+    outer.row[0] <= inner.row[0] &&
+    outer.row[1] >= inner.row[1] &&
+    outer.column[0] <= inner.column[0] &&
+    outer.column[1] >= inner.column[1]
+  );
 }
 
 export function validateSpreadsheetSortRequest(
@@ -297,6 +444,10 @@ export function validateSpreadsheetSortRequest(
     !request.sheetId.trim()
   ) {
     return spreadsheetSortError('invalid-range');
+  }
+  const scope = normalizeSpreadsheetSortOwnedScope(request.scope);
+  if (request.scope !== undefined && !scope) {
+    return spreadsheetSortError('invalid-scope');
   }
   if (
     request.orientation !== 'top-to-bottom' &&
@@ -434,6 +585,7 @@ export function validateSpreadsheetSortRequest(
       textMethod,
       hasHeader: Boolean(request.hasHeader),
       keys,
+      ...(scope ? { scope } : {}),
     },
   };
 }
@@ -473,6 +625,7 @@ export function spreadsheetSortError(
     'invalid-matrix': '排序只能应用到已完整读取的矩形区域。',
     'invalid-orientation': '请选择有效的按列或按行排序方向。',
     'invalid-range': '请选择一个有效的连续单元格区域。',
+    'invalid-scope': '排序区域的表格或筛选所有权已变化，请重新打开排序。',
     'invalid-text-method': '请选择拼音排序或笔画排序。',
     'missing-key': '请至少添加一个排序条件。',
     'not-enough-columns': '当前区域没有足够的数据列可供按行排序。',
@@ -486,6 +639,36 @@ export function spreadsheetSortError(
       '当前区域包含坐标关联的超链接，尚不能安全地随排序移动。',
   };
   return { ok: false, code, message: messages[code] };
+}
+
+function normalizeSpreadsheetSortOwnedScope(
+  value: SpreadsheetSortOwnedScope | undefined,
+): SpreadsheetSortOwnedScope | null {
+  if (value === undefined) return null;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  if (
+    value.kind === 'auto-filter' &&
+    value.hasHeader === true &&
+    Object.keys(value).every((key) => key === 'kind' || key === 'hasHeader')
+  ) {
+    return { kind: 'auto-filter', hasHeader: true };
+  }
+  if (
+    value.kind === 'table' &&
+    typeof value.tableId === 'string' &&
+    Boolean(value.tableId.trim()) &&
+    typeof value.hasHeader === 'boolean' &&
+    Object.keys(value).every(
+      (key) => key === 'kind' || key === 'tableId' || key === 'hasHeader',
+    )
+  ) {
+    return {
+      kind: 'table',
+      tableId: value.tableId,
+      hasHeader: value.hasHeader,
+    };
+  }
+  return null;
 }
 
 function spreadsheetSortRangeError(

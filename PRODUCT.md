@@ -584,8 +584,8 @@ coordinate-owned hyperlink, imported-formula, or border sidecars also fail
 closed until one transaction can reconcile their row ownership. Focused
 Rstest, desktop and compact Playwright, and the local-only A3S Test gate cover
 the dialog, priority changes, formula movement, accessibility, diagnostics,
-and one-step Undo. Table-aware sorting remains open; left-to-right direction is
-completed by the fifty-second milestone below.
+and one-step Undo. Table-aware sorting is completed by the fifty-ninth
+milestone below; left-to-right direction is completed by the fifty-second.
 
 The forty-ninth milestone aligns partial Spreadsheet sorting with the
 Traditional Office Sort Warning flow. AutoFilter and Sort now share one
@@ -606,8 +606,8 @@ only real non-formula text values and no longer treats formatted numbers or
 formula results as headers. Focused Rstest, desktop and compact Playwright, and
 the local-only A3S Test gate cover exact and expanded choices, quick and custom
 paths, focus, accessibility, formula movement, one-step Undo, and browser
-diagnostics. Table-aware sorting remains open; left-to-right direction is
-completed by the fifty-second milestone below.
+diagnostics. Table-aware sorting is completed by the fifty-ninth milestone
+below; left-to-right direction is completed by the fifty-second.
 
 The fiftieth milestone adds offline custom-list order to every Spreadsheet sort
 key. Seven immutable Chinese and English month/weekday sequences are always
@@ -644,8 +644,9 @@ batch, relative-formula translation, and one-step Undo boundary. Focused model,
 dialog, command, and Hook Rstest, desktop/compact Playwright, and the pinned
 local-only A3S Test gate cover four-level same-column color/font/icon priority, responsive
 containment, formula movement, Undo, focus, accessibility, and empty browser
-diagnostics. Durable host settings and structural table/AutoFilter
-reconciliation remain open; left-to-right direction is completed below.
+diagnostics. Durable host settings arrive in the fifty-fourth milestone and
+structural table/AutoFilter reconciliation in the fifty-ninth; left-to-right
+direction is completed below.
 
 The fifty-second milestone adds offline Traditional Office-compatible left-to-right
 Spreadsheet sorting. A nested Sort Options dialog switches the existing Custom
@@ -731,8 +732,9 @@ longer exposed from the filter menu; the A3S-owned formula-safe sort commands
 remain authoritative. Focused Rstest, desktop/compact Playwright, and the
 pinned local-only A3S Test gate cover multi-column filtering, manual hidden-row
 overlap, XLSX reopen, Undo, selection, accessibility, and clean diagnostics.
-Same-column two-clause AND/OR, wildcard authoring, Top/Bottom and dynamic
-evaluation, and table/AutoFilter-integrated custom sorting remain open.
+The subsequent criteria milestones and current architecture contract complete
+same-column AND/OR, wildcard, Top/Bottom, and dynamic evaluation; the
+fifty-ninth milestone below completes table/AutoFilter-owned Custom Sort.
 
 The fifty-sixth milestone adds exactly two same-column Custom AutoFilter
 conditions joined by AND or OR. The dialog exposes a deliberate second-condition
@@ -749,8 +751,9 @@ not-between shortcuts. Negative prefix and suffix conditions use native
 `notEqual` wildcard forms and preserve escaped literal wildcard characters.
 Focused model, command, dialog, collaboration, worksheet/table XLSX, responsive
 Playwright, and local-only A3S Test coverage protect the bounded contract.
-Wildcard authoring, Top/Bottom and dynamic evaluation, and
-table/AutoFilter-integrated custom sorting remain open.
+The subsequent criteria milestones and current architecture contract complete
+wildcard, Top/Bottom, and dynamic evaluation; the fifty-ninth milestone below
+completes table/AutoFilter-owned Custom Sort.
 
 The fifty-seventh milestone completes local Top/Bottom AutoFilter authoring and
 evaluation for numeric columns. The owned **Top 10 Items** menu action opens the
@@ -766,9 +769,10 @@ worksheet and table criteria continue to use native `<top10 top="..."
 percent="..." val="..."/>` OOXML and are recomputed when a workbook reopens.
 Focused model, command, dialog, menu, worksheet/table XLSX, responsive
 Playwright, and local-only A3S Test coverage protect application, Undo,
-accessibility, and clean diagnostics. Wildcard authoring, dynamic filter
-evaluation, large-rank Worker/WASM offload, and table/AutoFilter-integrated
-custom sorting remain open.
+accessibility, and clean diagnostics. Later criteria work completes wildcard
+and dynamic evaluation, while the fifty-ninth milestone completes
+table/AutoFilter-owned Custom Sort. Large-rank Worker/WASM offload remains
+open.
 
 The fifty-eighth milestone completes local wildcard AutoFilter authoring
 and evaluation. Two explicit custom-condition variants preserve arbitrary
@@ -789,8 +793,31 @@ or negative patterns, while canonical leading/trailing-star forms continue to
 normalize to contains, begins-with, or ends-with criteria. Focused Rstest,
 desktop/compact Playwright, and local-only A3S Test coverage protect Unicode,
 escaping, compound authoring, XLSX reopen, Undo, accessibility, and clean
-diagnostics. Dynamic filter evaluation, large-rank Worker/WASM offload, and
-table/AutoFilter-integrated custom sorting remain open.
+diagnostics. Source-level 1904 date-system retention and large aggregate/rank
+Worker/WASM offload remain open; the fifty-ninth milestone below completes
+table/AutoFilter-owned Custom Sort.
+
+The fifty-ninth milestone integrates Spreadsheet Custom Sort with native table
+and worksheet AutoFilter ownership. Selecting any cell or rectangle inside one
+structure opens the Sort Warning with only its exact sortable owner enabled.
+Table totals are excluded, structural headers remain fixed, and Sort Options
+locks movement to top-to-bottom rows. The request carries the owner kind,
+header state, and table ID when applicable; the command derives that fingerprint
+again immediately before mutation, so changed ownership fails without editing
+cells.
+
+Filter-active owner sorts publish one controlled workbook change and one Undo
+record. Typed worksheet and table criteria are evaluated again against the
+sorted dense or sparse cells. Native Fortune value/color filters that expose
+only opaque `caljs` state instead move their `rowhidden` ownership through the
+stable source-row permutation, while independent manual hiding is retained.
+The command recovers hidden rows omitted by the native range reader from the
+controlled snapshot, limits the sort and filter-rescan budgets to one million
+cells each, and leaves unrelated filter regions on the native range-write path.
+Focused model, command, Hook, and dialog Rstest plus a local-only A3S Test gate
+and desktop/compact Playwright cover table formulas, native AutoFilter
+visibility, focus, responsive containment, one-step Undo, accessibility, and
+clean browser diagnostics.
 
 ## Current Presentation Milestone
 

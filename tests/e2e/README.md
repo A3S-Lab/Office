@@ -654,6 +654,22 @@ Undo. The suite records invoker focus, accessibility, console, and page-error
 evidence with the pinned local A3S Test 1.0.0 binary. It remains absent from
 GitHub Actions and Pages.
 
+The Spreadsheet table and AutoFilter-owned Sort workflow has a focused local
+gate:
+
+```bash
+bun run test:e2e:spreadsheet-owned-range-sort:check
+bun run test:e2e:spreadsheet-owned-range-sort
+```
+
+It starts from one cell inside a native table, requires the complete owned
+range, locks the structural header and top-to-bottom orientation, verifies
+formula-safe row movement, and confirms one Undo restores the original row.
+The complementary Playwright suite repeats table and native value-filter paths
+at desktop and compact widths, including filter-row remapping after sort and
+Undo. The A3S Test gate records accessibility and browser diagnostics locally
+and remains absent from GitHub Actions and Pages.
+
 The native Presentation scene-element and z-order lifecycle has a focused gate:
 
 ```bash

@@ -309,9 +309,12 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
-Version `0.37.3` keeps the release surface focused on local, testable
+Version `0.37.4` keeps the release surface focused on local, testable
 workflows:
 
+- Spreadsheet Custom Sort now recognizes native table and AutoFilter-owned
+  ranges, keeps headers and totals structurally safe, and reapplies active
+  filter visibility after one formula-safe, undoable sort.
 - Spreadsheet Custom Sort now includes a responsive, keyboard-accessible
   preference manager for creating, editing, deleting, and reordering bounded
   user sequences while keeping the seven built-in sequences read-only.

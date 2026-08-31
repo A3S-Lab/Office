@@ -132,6 +132,7 @@ export function sortSpreadsheetMatrix(
   if (vertical) {
     return {
       ok: true,
+      sourceIndexes: sorted.map((item) => item.index),
       rows: header
         ? [header as (Cell | null)[], ...translatedItems]
         : translatedItems,
@@ -139,6 +140,7 @@ export function sortSpreadsheetMatrix(
   }
   return {
     ok: true,
+    sourceIndexes: sorted.map((item) => item.index),
     rows: Array.from({ length: height }, (_, rowOffset) =>
       translatedItems.map((column) => column[rowOffset] ?? null),
     ),

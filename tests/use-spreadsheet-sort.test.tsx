@@ -103,6 +103,72 @@ test('authenticates an expanded range before opening and applying Custom Sort', 
   officeRoot.remove();
 });
 
+test('carries an owned table scope from the warning into locked sort controls', async () => {
+  const applied: SpreadsheetSortRequest[] = [];
+  const portRef: { current: SpreadsheetSortCommandPort | null } = {
+    current: null,
+  };
+  const officeRoot = document.createElement('div');
+  officeRoot.dataset.a3sOffice = 'true';
+  const invoker = document.createElement('button');
+  const host = document.createElement('div');
+  officeRoot.append(invoker, host);
+  document.body.append(officeRoot);
+  invoker.focus();
+  render(
+    <SortHarness
+      commandsRef={{
+        current: {
+          applyCustomSort: (request: SpreadsheetSortRequest) => {
+            applied.push(request);
+            return true;
+          },
+        } as SpreadsheetEditorCommands,
+      }}
+      content={spreadsheetContent()}
+      portRef={portRef}
+    />,
+    { container: host },
+  );
+  const request = expansionRequest();
+  if (!request.expanded) throw new Error('Expected an expanded fixture.');
+  request.expanded.scope = {
+    kind: 'table',
+    tableId: 'table-1',
+    hasHeader: true,
+  };
+
+  act(() => expect(portRef.current?.open(request)).toBe(true));
+  expect(screen.getByRole('dialog', { name: '排序提醒' })).toHaveTextContent(
+    '选定单元格位于表格中',
+  );
+  fireEvent.click(screen.getByRole('button', { name: '排序' }));
+
+  expect(
+    await screen.findByRole('dialog', { name: '自定义排序' }),
+  ).toBeVisible();
+  expect(screen.getByRole('checkbox', { name: '数据包含标题' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: '选项…' }));
+  const options = await screen.findByRole('dialog', { name: '排序选项' });
+  expect(
+    within(options).getByRole('radio', { name: /按行排序/ }),
+  ).toBeDisabled();
+  expect(options).toHaveTextContent('结构化数据区域仅支持按列排序');
+  fireEvent.click(within(options).getByRole('button', { name: '取消' }));
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(applied).toEqual([
+    expect.objectContaining({
+      sheetId: 'sheet-1',
+      range: { row: [0, 2], column: [0, 2] },
+      orientation: 'top-to-bottom',
+      hasHeader: true,
+      scope: { kind: 'table', tableId: 'table-1', hasHeader: true },
+    }),
+  ]);
+  officeRoot.remove();
+});
+
 test('applies a quick sort to the expanded current region with detected headers', () => {
   const applied: Array<{
     authorized: boolean;

@@ -214,6 +214,69 @@ export function workSpreadsheetAutoFilterManuallyHiddenRows(
   return manuallyHidden;
 }
 
+export function workSpreadsheetAutoFilterOwnedRows(
+  sheet: WorkSpreadsheetSheet,
+): Set<string> {
+  return filterHiddenRows(sheet.filter);
+}
+
+export function workSpreadsheetFilterHiddenRows(
+  sheet: WorkSpreadsheetSheet,
+  range: WorkSpreadsheetAutoFilterRange,
+  column: number,
+  criteria: WorkSpreadsheetFilterCriteria,
+  context: WorkSpreadsheetDynamicFilterContext = { now: new Date() },
+): Record<string, 0> | null {
+  const normalizedCriteria = normalizeWorkSpreadsheetFilterCriteria(criteria);
+  const normalizedRange = normalizedWorkSpreadsheetAutoFilterRange(range);
+  if (
+    !normalizedCriteria ||
+    !normalizedRange ||
+    !columnInRange(normalizedRange, column)
+  ) {
+    return null;
+  }
+  return hiddenRowsForCriteria(
+    sheet,
+    normalizedRange,
+    column,
+    normalizedCriteria,
+    context,
+  );
+}
+
+export function workSpreadsheetSheetWithReappliedAutoFilterCriteria(
+  sheet: WorkSpreadsheetSheet,
+  criteriaSource: WorkSpreadsheetSheet,
+  manuallyHiddenRows: ReadonlySet<string>,
+  context: WorkSpreadsheetDynamicFilterContext = { now: new Date() },
+): WorkSpreadsheetSheet {
+  const range = normalizedWorkSpreadsheetAutoFilterRange(sheet.filter_select);
+  if (!range) return sheet;
+  const entries = workSpreadsheetAutoFilterCriteriaEntries(criteriaSource);
+  const filter: NonNullable<WorkSpreadsheetSheet['filter']> = {};
+  for (const entry of entries) {
+    const column = range.column[0] + entry.column;
+    const criteria = normalizeWorkSpreadsheetFilterCriteria(entry.criteria);
+    if (!criteria || !columnInRange(range, column)) continue;
+    const rowhidden = hiddenRowsForCriteria(
+      sheet,
+      range,
+      column,
+      criteria,
+      context,
+    );
+    if (!rowhidden) continue;
+    filter[String(entry.column)] = filterColumnState(
+      range,
+      column,
+      criteria,
+      rowhidden,
+    );
+  }
+  return sheetWithFilterState(sheet, filter, manuallyHiddenRows);
+}
+
 export function workSpreadsheetSheetWithImportedAutoFilterCriteria(
   sheet: WorkSpreadsheetSheet,
   entries: readonly WorkSpreadsheetFilter[],

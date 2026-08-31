@@ -1,0 +1,301 @@
+suite "office-spreadsheet-owned-range-sort" {
+    version = 1
+
+    scenario "sort-complete-table-range-and-undo" {
+        name = "Sort a complete Spreadsheet table-owned range and undo"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-quarterly-plan" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "move-to-table-header" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-table-header-row" {
+            key = "ArrowDown"
+        }
+
+        press "extend-table-column-b" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-table-column-c" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-table-column-d" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-table-column-e" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-table-column-f" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-table-column-g" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-table-row-four" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-table-row-five" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-table-row-six" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-table-row-seven" {
+            key = "Shift+ArrowDown"
+        }
+
+        expect "table-range-selected" {
+            text = "A3:G7"
+        }
+
+        press "open-create-table" {
+            key = "Control+T"
+        }
+
+        expect "create-table-dialog-visible" {
+            visible = css(".work-spreadsheet-table-dialog[role='dialog']")
+        }
+
+        click "confirm-create-table" {
+            target = role("button", "确定")
+        }
+
+        focus "refocus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "return-to-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "move-to-table-row-one" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-table-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-first-data-row" {
+            key = "ArrowDown"
+        }
+
+        press "move-to-owner" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-january" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-february" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-march" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-completion" {
+            key = "ArrowRight"
+        }
+
+        expect "single-table-cell-selected" {
+            text = "F4"
+        }
+
+        click "open-data-tab" {
+            target = role("tab", "数据")
+        }
+
+        click "open-custom-sort" {
+            target = role("button", "自定义排序")
+        }
+
+        expect "owned-range-warning-visible" {
+            visible = css(".work-spreadsheet-sort-range-dialog[role='dialog']")
+        }
+
+        expect "table-owner-explained" {
+            text = "选定单元格位于表格中"
+        }
+
+        expect "complete-table-is-required" {
+            visible = css(".work-spreadsheet-sort-range-dialog input[value='expand']:checked")
+        }
+
+        expect "single-cell-sort-is-disabled" {
+            visible = css(".work-spreadsheet-sort-range-dialog input[value='selection']:disabled")
+        }
+
+        expect "complete-table-range-visible" {
+            text = "A3:G7"
+        }
+
+        accessibility "owned-range-warning-accessibility" {
+            path = "evidence/spreadsheet-owned-range-sort-warning.json"
+            interactive = true
+        }
+
+        click "continue-with-complete-table" {
+            target = role("button", "排序")
+        }
+
+        expect "owned-custom-sort-visible" {
+            visible = css(".work-spreadsheet-sort-dialog[role='dialog']")
+        }
+
+        expect "owned-range-visible" {
+            text = "执行看板!A3:G7"
+        }
+
+        expect "table-ownership-visible" {
+            text = "当前范围由表格拥有"
+        }
+
+        expect "header-is-locked" {
+            visible = css(".work-spreadsheet-sort-dialog input[aria-label='数据包含标题']:checked:disabled")
+        }
+
+        click "open-sort-options" {
+            target = role("button", "选项…")
+        }
+
+        expect "structural-direction-note-visible" {
+            text = "结构化数据区域仅支持按列排序"
+        }
+
+        expect "column-orientation-selected" {
+            visible = css(".work-spreadsheet-sort-options-dialog input[value='top-to-bottom']:checked")
+        }
+
+        expect "row-orientation-disabled" {
+            visible = css(".work-spreadsheet-sort-options-dialog input[value='left-to-right']:disabled")
+        }
+
+        click "close-sort-options" {
+            target = role("button", "取消")
+        }
+
+        select "choose-completion-descending" {
+            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']")
+            values = ["descending"]
+        }
+
+        accessibility "owned-custom-sort-accessibility" {
+            path = "evidence/spreadsheet-owned-range-sort-dialog.json"
+            interactive = true
+        }
+
+        click "apply-owned-sort" {
+            target = role("button", "确定")
+        }
+
+        expect "sort-invoker-focus-restored" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='自定义排序']:focus")
+        }
+
+        focus "inspect-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "inspect-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "inspect-table-row-one" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-table-header" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-first-sorted-row" {
+            key = "ArrowDown"
+        }
+
+        press "inspect-owner" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-january" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-february" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-march" {
+            key = "ArrowRight"
+        }
+
+        press "inspect-formula" {
+            key = "ArrowRight"
+        }
+
+        expect "sorted-formula-is-rebased" {
+            text = "=AVERAGE(C4:E4)"
+        }
+
+        press "undo-owned-sort" {
+            key = "Control+z"
+        }
+
+        expect "owned-sort-restored-in-one-step" {
+            text = "=SUM(C4:E4)/3"
+        }
+
+        accessibility "spreadsheet-after-owned-sort-accessibility" {
+            path = "evidence/spreadsheet-after-owned-range-sort.json"
+            interactive = true
+        }
+
+        console "spreadsheet-owned-range-sort-console" {
+            path = "diagnostics/spreadsheet-owned-range-sort-console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-owned-range-sort-page-errors" {
+            path = "diagnostics/spreadsheet-owned-range-sort-page-errors.json"
+            clear = false
+        }
+    }
+}

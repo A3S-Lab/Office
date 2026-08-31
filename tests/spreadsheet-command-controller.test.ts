@@ -21,6 +21,7 @@ import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
 } from '../src/internal/features/work/work-types';
+import { workSpreadsheetSheetWithAutoFilterCriteria } from '../src/internal/features/work/work-spreadsheet-auto-filter';
 import { XLSX_GRADIENT_FILL_CELL_KEY } from '../src/internal/features/work/work-xlsx-gradient-fill';
 import { XLSX_PATTERN_FILL_CELL_KEY } from '../src/internal/features/work/work-xlsx-pattern-fill';
 
@@ -2442,7 +2443,7 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
-  test('fails sorting closed across table and AutoFilter ownership', () => {
+  test('expands sorting to complete table and AutoFilter-owned ranges', () => {
     const tableFixture = commandFixture();
     tableFixture.workbook.selection = [
       { row: [0, 2], column: [0, 1], row_focus: 0, column_focus: 0 },
@@ -2475,8 +2476,26 @@ describe('spreadsheet command controller', () => {
     };
     const tableEditor = spreadsheetEditor(tableFixture.context);
 
-    expect(tableEditor.can().openCustomSort()).toBe(false);
-    expect(tableEditor.can().sortSelectedCells('ascending')).toBe(false);
+    expect(tableEditor.can().openCustomSort()).toBe(true);
+    expect(tableEditor.can().sortSelectedCells('ascending')).toBe(true);
+    tableEditor.commands.openCustomSort();
+    expect(tableFixture.sort.requests).toEqual([
+      {
+        sheetId: 'sheet-1',
+        activeColumn: 0,
+        activeRow: 0,
+        intent: { type: 'custom' },
+        selected: {
+          range: { row: [0, 2], column: [0, 1] },
+          available: false,
+        },
+        expanded: {
+          range: { row: [0, 4], column: [0, 2] },
+          available: true,
+          scope: { kind: 'table', tableId: 'table-1', hasHeader: true },
+        },
+      },
+    ]);
 
     const filterFixture = commandFixture();
     filterFixture.workbook.selection = [
@@ -2495,10 +2514,217 @@ describe('spreadsheet command controller', () => {
     };
     const filterEditor = spreadsheetEditor(filterFixture.context);
 
-    expect(filterEditor.can().openCustomSort()).toBe(false);
-    expect(filterEditor.can().sortSelectedCells('descending')).toBe(false);
+    expect(filterEditor.can().openCustomSort()).toBe(true);
+    expect(filterEditor.can().sortSelectedCells('descending')).toBe(true);
+    filterEditor.commands.openCustomSort();
+    expect(filterFixture.sort.requests).toEqual([
+      {
+        sheetId: 'sheet-1',
+        activeColumn: 0,
+        activeRow: 0,
+        intent: { type: 'custom' },
+        selected: {
+          range: { row: [0, 2], column: [0, 1] },
+          available: false,
+        },
+        expanded: {
+          range: { row: [0, 4], column: [0, 2] },
+          available: true,
+          scope: { kind: 'auto-filter', hasHeader: true },
+        },
+      },
+    ]);
     expect(tableFixture.workbook.pastes).toEqual([]);
     expect(filterFixture.workbook.pastes).toEqual([]);
+  });
+
+  test('keeps a table header and totals row outside the sortable body', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [
+      { row: [0, 3], column: [0, 1], row_focus: 1, column_focus: 0 },
+    ];
+    fixture.workbook.cells = [
+      [{ v: 'Name' }, { v: 'Score' }],
+      [{ v: 'Alpha' }, { v: 90 }],
+    ];
+    fixture.context.content = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sheet 1',
+          data: [
+            [{ v: 'Name' }, { v: 'Score' }],
+            [{ v: 'Beta' }, { v: 80 }],
+            [{ v: 'Alpha' }, { v: 90 }],
+            [{ v: 'Gamma' }, { v: 70 }],
+            [{ v: 'Total' }, { v: 240 }],
+          ],
+          tables: [
+            {
+              id: 'table-1',
+              name: 'Table1',
+              range: { row: [0, 4], column: [0, 1] },
+              columns: [{ name: 'Name' }, { name: 'Score' }],
+              filters: [],
+              headerRow: true,
+              totalsRow: true,
+              style: { family: 'medium', number: 2 },
+              showFirstColumn: false,
+              showLastColumn: false,
+              showRowStripes: true,
+              showColumnStripes: false,
+            },
+          ],
+        },
+      ],
+    };
+    const editor = spreadsheetEditor(fixture.context);
+    const baseRequest = {
+      sheetId: 'sheet-1',
+      range: {
+        row: [0, 3] as [number, number],
+        column: [0, 1] as [number, number],
+      },
+      orientation: 'top-to-bottom' as const,
+      hasHeader: true,
+      scope: {
+        kind: 'table' as const,
+        tableId: 'table-1',
+        hasHeader: true,
+      },
+      keys: [{ index: 0, direction: 'ascending' as const }],
+    };
+
+    expect(editor.can().applyCustomSort(baseRequest)).toBe(true);
+    expect(
+      editor.can().applyCustomSort({ ...baseRequest, hasHeader: false }),
+    ).toBe(false);
+    expect(
+      editor.can().applyCustomSort({
+        ...baseRequest,
+        orientation: 'left-to-right',
+      }),
+    ).toBe(false);
+    expect(
+      editor.can().applyCustomSort({
+        ...baseRequest,
+        scope: { ...baseRequest.scope, tableId: 'replaced-table' },
+      }),
+    ).toBe(false);
+    expect(editor.commands.applyCustomSort(baseRequest)).toBe(true);
+    expect(fixture.workbook.pastes).toEqual([
+      {
+        range: { row: [0, 3], column: [0, 1] },
+        sheetId: 'sheet-1',
+        values: [
+          [{ v: 'Name' }, { v: 'Score' }],
+          [{ v: 'Alpha' }, { v: 90 }],
+          [{ v: 'Beta' }, { v: 80 }],
+          [{ v: 'Gamma' }, { v: 70 }],
+        ],
+      },
+    ]);
+  });
+
+  test('commits an AutoFilter-owned sort with recomputed row visibility', () => {
+    const fixture = commandFixture();
+    const filtered = workSpreadsheetSheetWithAutoFilterCriteria(
+      {
+        id: 'sheet-1',
+        name: 'Sheet 1',
+        data: [
+          [{ v: 'Name' }, { v: 'Score' }, { v: 'Status' }],
+          [{ v: 'Low' }, { v: 10 }, { v: 'Risk' }],
+          [{ v: 'High' }, { v: 30 }, { v: 'Keep' }],
+          [{ v: 'Mid' }, { v: 20 }, { v: 'Keep' }],
+        ],
+        filter_select: { row: [0, 3], column: [0, 2] },
+      },
+      2,
+      { type: 'equals', value: 'Risk' },
+    );
+    if (!filtered) throw new Error('Expected an AutoFilter fixture.');
+    fixture.context.content = { type: 'spreadsheet', sheets: [filtered] };
+    fixture.workbook.selection = [
+      { row: [0, 3], column: [0, 2], row_focus: 1, column_focus: 1 },
+    ];
+    fixture.workbook.cells = [
+      [{ v: 'Name' }, { v: 'Score' }, { v: 'Status' }],
+      [{ v: 'Low' }, { v: 10 }, { v: 'Risk' }],
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().sortSelectedCells('descending')).toBe(true);
+    expect(editor.commands.sortSelectedCells('descending')).toBe(true);
+    expect(
+      fixture.changes[0]?.sheets[0]?.data?.map((row) =>
+        row?.map((cell) => cell?.v),
+      ),
+    ).toEqual([
+      ['Name', 'Score', 'Status'],
+      ['High', 30, 'Keep'],
+      ['Mid', 20, 'Keep'],
+      ['Low', 10, 'Risk'],
+    ]);
+    expect(fixture.changes[0]?.sheets[0]?.config?.rowhidden).toEqual({
+      '1': 0,
+      '2': 0,
+    });
+    expect(fixture.changes[0]?.sheets[0]?.filter?.['2']).toMatchObject({
+      rowhidden: { '1': 0, '2': 0 },
+    });
+    expect(fixture.workbook.clearBatches).toEqual([]);
+    expect(fixture.workbook.pastes).toEqual([]);
+  });
+
+  test('keeps sorting outside an unrelated active filter on the native path', () => {
+    const fixture = commandFixture();
+    const filtered = workSpreadsheetSheetWithAutoFilterCriteria(
+      {
+        id: 'sheet-1',
+        name: 'Sheet 1',
+        data: [
+          [{ v: 'Status' }, null, { v: 2 }, { v: 'Second' }],
+          [{ v: 'Keep' }, null, { v: 1 }, { v: 'First' }],
+          [{ v: 'Drop' }],
+        ],
+        filter_select: { row: [0, 2], column: [0, 0] },
+      },
+      0,
+      { type: 'equals', value: 'Keep' },
+    );
+    if (!filtered) throw new Error('Expected an AutoFilter fixture.');
+    fixture.context.content = { type: 'spreadsheet', sheets: [filtered] };
+    fixture.workbook.selection = [
+      { row: [0, 1], column: [2, 3], row_focus: 0, column_focus: 2 },
+    ];
+    fixture.workbook.cells = [
+      [{ v: 2 }, { v: 'Second' }],
+      [{ v: 1 }, { v: 'First' }],
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(
+      editor.commands.applyCustomSort({
+        sheetId: 'sheet-1',
+        range: { row: [0, 1], column: [2, 3] },
+        orientation: 'top-to-bottom',
+        hasHeader: false,
+        keys: [{ index: 2, direction: 'ascending' }],
+      }),
+    ).toBe(true);
+    expect(fixture.workbook.pastes).toEqual([
+      {
+        range: { row: [0, 1], column: [2, 3] },
+        sheetId: 'sheet-1',
+        values: [
+          [{ v: 1 }, { v: 'First' }],
+          [{ v: 2 }, { v: 'Second' }],
+        ],
+      },
+    ]);
+    expect(fixture.changes).toEqual([]);
   });
 
   test('fails sorting closed across coordinate-owned sidecar metadata', () => {
