@@ -93,7 +93,7 @@ suite "office-editor-initial-focus" {
     }
 
     scenario "focus-spreadsheet-grid-on-first-open" {
-        name = "Focus the Spreadsheet grid when a workbook first opens"
+        name = "Focus the Spreadsheet grid and commit its first keyboard input"
         surface = "web"
         timeout_ms = 30000
 
@@ -115,9 +115,17 @@ suite "office-editor-initial-focus" {
             visible = css(".fortune-sheet-overlay:focus")
         }
 
-        type "enter-first-cell-text" {
-            target = css(".fortune-sheet-overlay")
-            value = "FIRST_OPEN_SHEET"
+        press "begin-first-cell-edit" {
+            key = "x"
+        }
+
+        wait "first-cell-editor-active" {
+            visible = css(".luckysheet-input-box[style*='z-index: 19'] .luckysheet-cell-input:focus")
+        }
+
+        type "complete-first-cell-text" {
+            target = css(".luckysheet-input-box[style*='z-index: 19'] .luckysheet-cell-input")
+            value = "yz"
         }
 
         press "commit-first-cell-text" {
@@ -129,7 +137,32 @@ suite "office-editor-initial-focus" {
         }
 
         expect "first-cell-text-accepted" {
-            text = "FIRST_OPEN_SHEET"
+            text = "xyz"
+        }
+
+        click "return-to-playground-home" {
+            target = css(".work-editor-back")
+        }
+
+        click "reopen-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "reopened-spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "first-cell-text-preserved" {
+            text = "xyz"
+        }
+
+        screenshot "spreadsheet-first-keystroke" {
+            path = "screenshots/spreadsheet-first-keystroke.png"
+        }
+
+        accessibility "spreadsheet-accessibility" {
+            path = "evidence/spreadsheet-accessibility.json"
+            interactive = true
         }
 
         console "spreadsheet-console" {
