@@ -254,7 +254,7 @@ test('keeps public documentation on the neutral Traditional Office baseline', as
   }
 });
 
-test('keeps the five-editor README capability comparison complete', async () => {
+test('keeps the README focused on the five editor surfaces and their explicit boundaries', async () => {
   const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
   for (const editor of [
@@ -267,29 +267,26 @@ test('keeps the five-editor README capability comparison complete', async () => 
     expect(readme).toContain(`### ${editor}`);
   }
 
-  expect(
-    readme.match(
-      /\| Capability \| A3S Office today \| Traditional Office baseline \|/g,
-    ),
-  ).toHaveLength(5);
+  expect(readme).toContain('## Five surfaces, one product boundary');
+  expect(readme).toContain('## Capabilities and boundaries');
+  expect(readme).toContain('[capability roadmap](./ROADMAP.md)');
+  expect(readme).not.toContain('Traditional Office baseline');
 });
 
-test('makes the latest main capabilities discoverable from README and both documentation homes', async () => {
+test('routes the concise README to release evidence while both documentation homes expose latest capabilities', async () => {
   const [readme, englishHome, chineseHome] = await Promise.all([
     readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
     readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
     readFile(path.join(documentationRoot, 'latest/zh/index.mdx'), 'utf8'),
   ]);
 
-  expect(readme).toContain('## Latest on `main`');
-  expect(readme).toContain('Latest capabilities → 入场动画');
-  expect(readme).toContain('Latest capabilities → 文档比较');
-  expect(readme).toContain('Latest capabilities → 可更新目录');
-  expect(readme).toContain('Latest capabilities → 原生索引');
-  expect(readme).toContain('Latest capabilities → 字符底纹');
-  expect(readme).toContain('Latest capabilities → 校对语言');
-  expect(readme).toContain('Latest capabilities → 数据验证');
-  expect(readme).toContain('Latest capabilities → 组织 PDF 页面');
+  expect(readme).toContain('## Current release');
+  expect(readme).toContain('Version `0.37.1`');
+  expect(readme).toContain('[changelog](./CHANGELOG.md)');
+  expect(readme).toContain('[capability roadmap](./ROADMAP.md)');
+  expect(readme).toContain(
+    '[live Playground](https://a3s-lab.github.io/Office/playground/)',
+  );
 
   expect(englishHome).toContain('## Latest capabilities on `main`');
   expect(englishHome).toContain('presentation.html#entrance-animations');
@@ -347,7 +344,6 @@ test('keeps every documentation index separate from the product home surface', a
 
 test('publishes Presentation entrance animations across implementation, docs, Playground, and release evidence', async () => {
   const [
-    readme,
     changelog,
     roadmap,
     product,
@@ -367,7 +363,6 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
     discoverabilityAcl,
     packageManifest,
   ] = await Promise.all([
-    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
@@ -424,10 +419,6 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
   ]);
 
-  expect(readme).toContain('Latest capabilities → 入场动画');
-  expect(readme).toContain(
-    '| Animations and media | **Partial** — the Work scene model authors',
-  );
   expect(changelog).toContain('Work Presentation entrance-animation model');
   expect(changelog).toContain('## 0.34.0 - 2026-08-25');
   expect(roadmap).toContain('| Object animations and triggers | **Partial**');
@@ -478,9 +469,8 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
   expect(packageManifest).toContain('"test:e2e:presentation-animation"');
 });
 
-test('publishes PDF page organization across README, docs, Playground, and release evidence', async () => {
+test('publishes PDF page organization across docs, Playground, and release evidence', async () => {
   const [
-    readme,
     changelog,
     roadmap,
     product,
@@ -497,7 +487,6 @@ test('publishes PDF page organization across README, docs, Playground, and relea
     e2eGuide,
     packageManifest,
   ] = await Promise.all([
-    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
@@ -545,24 +534,13 @@ test('publishes PDF page organization across README, docs, Playground, and relea
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
   ]);
 
-  expect(readme).toContain('Latest capabilities → 组织 PDF 页面');
-  expect(readme).toContain(
-    '| Page organization | **Supported with boundaries**',
-  );
-  expect(readme).toContain('PdfPageOrganizationExport');
   expect(changelog).toContain('## 0.33.0 - 2026-08-25');
   expect(roadmap).toContain(
     '| Insert, delete, rotate, reorder, extract, merge, and split pages | **Supported with boundaries**',
   );
   expect(product).toContain('## Current PDF Milestone');
 
-  for (const document of [
-    readme,
-    english,
-    chinese,
-    releaseEnglish,
-    releaseChinese,
-  ]) {
+  for (const document of [english, chinese, releaseEnglish, releaseChinese]) {
     expect(document).toContain('onPageExport');
     expect(document).toContain('PdfPageOrganizationExport');
     expect(document).toContain('256 MiB');
@@ -596,9 +574,8 @@ test('publishes PDF page organization across README, docs, Playground, and relea
   expect(packageManifest).toContain('"test:e2e:pdf-page-organization"');
 });
 
-test('publishes native Writer proofing languages in README, docs, roadmap, and Playground guidance', async () => {
+test('publishes native Writer proofing languages in docs, roadmap, and Playground guidance', async () => {
   const [
-    readme,
     changelog,
     roadmap,
     english,
@@ -608,7 +585,6 @@ test('publishes native Writer proofing languages in README, docs, roadmap, and P
     englishArchitecture,
     chineseArchitecture,
   ] = await Promise.all([
-    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
     readFile(
@@ -637,9 +613,6 @@ test('publishes native Writer proofing languages in README, docs, roadmap, and P
     ),
   ]);
 
-  expect(readme).toContain('Native Writer proofing languages');
-  expect(readme).toContain('data-office-proofing-languages');
-  expect(readme).toContain("Playground's **校对语言** template");
   expect(changelog).toContain('**设置校对语言**');
   expect(changelog).toContain('RustyBuzz');
   expect(roadmap).toContain('independent native `w:lang`');
@@ -659,10 +632,9 @@ test('publishes native Writer proofing languages in README, docs, roadmap, and P
   }
 });
 
-test('publishes Writer Table of Contents in README, docs, roadmap, and Playground guidance', async () => {
-  const [readme, changelog, roadmap, english, chinese, templates, playground] =
+test('publishes Writer Table of Contents in docs, roadmap, and Playground guidance', async () => {
+  const [changelog, roadmap, english, chinese, templates, playground] =
     await Promise.all([
-      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
       readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
       readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
       readFile(
@@ -686,8 +658,6 @@ test('publishes Writer Table of Contents in README, docs, roadmap, and Playgroun
       ),
     ]);
 
-  expect(readme).toContain('Latest capabilities → 可更新目录');
-  expect(readme).toContain('native `w:sdt`/`TOC` content control');
   expect(changelog).toContain('typed Writer Table of Contents block');
   expect(roadmap).toContain(
     '**Supported**: shared semantic-heading/native-outline model',
@@ -696,16 +666,15 @@ test('publishes Writer Table of Contents in README, docs, roadmap, and Playgroun
   expect(chinese).toContain('## 原生可更新目录');
   expect(templates).toContain("id: 'table-of-contents'");
   expect(playground).toContain("'table-of-contents'");
-  for (const document of [readme, english, chinese]) {
+  for (const document of [english, chinese]) {
     expect(document).toContain('512');
     expect(document).toContain('`w:sdt`');
     expect(document).toContain('`TOC`');
   }
 });
 
-test('publishes native Writer indexes in README, docs, roadmap, and Playground guidance', async () => {
+test('publishes native Writer indexes in docs, roadmap, and Playground guidance', async () => {
   const [
-    readme,
     changelog,
     roadmap,
     english,
@@ -719,7 +688,6 @@ test('publishes native Writer indexes in README, docs, roadmap, and Playground g
     templates,
     playground,
   ] = await Promise.all([
-    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
     readFile(
@@ -764,8 +732,6 @@ test('publishes native Writer indexes in README, docs, roadmap, and Playground g
     ),
   ]);
 
-  expect(readme).toContain('Latest capabilities → 原生索引');
-  expect(readme).toContain('native `XE` simple fields');
   expect(changelog).toContain('native Writer index authoring');
   expect(roadmap).toContain('| Native index authoring | **Supported**');
   expect(english).toContain('## Native document index');
@@ -775,7 +741,6 @@ test('publishes native Writer indexes in README, docs, roadmap, and Playground g
   expect(templates).toContain("id: 'document-index'");
   expect(playground).toContain("'document-index'");
   for (const document of [
-    readme,
     english,
     chinese,
     releaseEnglish,
@@ -791,9 +756,8 @@ test('publishes native Writer indexes in README, docs, roadmap, and Playground g
   }
 });
 
-test('publishes Writer document compare and combine across every public surface', async () => {
+test('publishes Writer document compare and combine across product and documentation surfaces', async () => {
   const [
-    readme,
     changelog,
     roadmap,
     product,
@@ -810,7 +774,6 @@ test('publishes Writer document compare and combine across every public surface'
     playground,
     packageManifest,
   ] = await Promise.all([
-    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
@@ -858,8 +821,6 @@ test('publishes Writer document compare and combine across every public surface'
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
   ]);
 
-  expect(readme).toContain('Latest capabilities → 文档比较');
-  expect(readme).toContain('| Document compare and combine | **Partial**');
   expect(changelog).toContain('deterministic Writer document comparison');
   expect(roadmap).toContain('| Compare/combine documents | **Partial**');
   expect(product).toContain('The forty-fifth milestone');
@@ -900,32 +861,24 @@ test('publishes Writer document compare and combine across every public surface'
   }
 });
 
-test('publishes complete Spreadsheet data-validation settings in every public surface', async () => {
-  const [readme, changelog, roadmap, english, chinese, templates] =
-    await Promise.all([
-      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
-      readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
-      readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
-      readFile(
-        path.join(documentationRoot, 'latest/en/components/spreadsheet.mdx'),
-        'utf8',
-      ),
-      readFile(
-        path.join(documentationRoot, 'latest/zh/components/spreadsheet.mdx'),
-        'utf8',
-      ),
-      readFile(
-        path.join(
-          repositoryRoot,
-          'src/internal/features/work/work-templates.ts',
-        ),
-        'utf8',
-      ),
-    ]);
+test('publishes complete Spreadsheet data-validation settings in product documentation', async () => {
+  const [changelog, roadmap, english, chinese, templates] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'src/internal/features/work/work-templates.ts'),
+      'utf8',
+    ),
+  ]);
 
-  expect(readme).toContain('Complete Spreadsheet data-validation settings');
-  expect(readme).toContain('**新建 → 数据验证**');
-  expect(readme).toContain('not an `?e2e=` fixture');
   expect(changelog).toContain('input titles and messages');
   expect(changelog).toContain('home-page **新建 → 数据验证**');
   expect(roadmap).toContain('input and error-alert settings');
@@ -935,7 +888,7 @@ test('publishes complete Spreadsheet data-validation settings in every public su
   expect(chinese).toContain('### 输入信息与错误警告设置');
   expect(chinese).toContain('**新建 → 数据验证**');
   expect(templates).toContain("id: 'data-validation'");
-  for (const document of [readme, english, chinese]) {
+  for (const document of [english, chinese]) {
     expect(document).toContain('`allowBlank`');
     expect(document).toContain('`showDropdownArrow`');
     expect(document).toContain('`errorStyle`');
@@ -944,8 +897,7 @@ test('publishes complete Spreadsheet data-validation settings in every public su
 });
 
 test('documents the complete native Writer underline contract', async () => {
-  const [readme, roadmap, product, english, chinese] = await Promise.all([
-    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+  const [roadmap, product, english, chinese] = await Promise.all([
     readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
     readFile(
@@ -958,7 +910,6 @@ test('documents the complete native Writer underline contract', async () => {
     ),
   ]);
 
-  expect(readme).toContain('all 18 native DOCX underline values');
   expect(roadmap).toContain('all 18 native `w:u` values');
   expect(product).toContain('The thirty-ninth milestone');
   for (const document of [english, chinese]) {
@@ -990,37 +941,28 @@ test('documents the complete native Writer underline contract', async () => {
 });
 
 test('documents the complete native Writer strikethrough contract', async () => {
-  const [
-    readme,
-    roadmap,
-    product,
-    english,
-    chinese,
-    englishRoadmap,
-    chineseRoadmap,
-  ] = await Promise.all([
-    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
-    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
-    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
-    readFile(
-      path.join(documentationRoot, 'latest/en/components/document.mdx'),
-      'utf8',
-    ),
-    readFile(
-      path.join(documentationRoot, 'latest/zh/components/document.mdx'),
-      'utf8',
-    ),
-    readFile(
-      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
-      'utf8',
-    ),
-    readFile(
-      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
-      'utf8',
-    ),
-  ]);
+  const [roadmap, product, english, chinese, englishRoadmap, chineseRoadmap] =
+    await Promise.all([
+      readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+      readFile(
+        path.join(documentationRoot, 'latest/en/components/document.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, 'latest/zh/components/document.mdx'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+        'utf8',
+      ),
+    ]);
 
-  expect(readme).toContain('independent native single/double strikethrough');
   expect(roadmap).toContain('native `w:strike` / `w:dstrike` state');
   expect(product).toContain('The fortieth milestone');
   for (const document of [english, englishRoadmap]) {
@@ -1469,21 +1411,18 @@ test('documents native Writer kerning thresholds in both current locales', async
 });
 
 test('documents all native Writer emphasis marks in both current locales', async () => {
-  const [readme, roadmap, product, englishRoadmap, chineseRoadmap] =
-    await Promise.all([
-      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
-      readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
-      readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
-      readFile(
-        path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
-        'utf8',
-      ),
-      readFile(
-        path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
-        'utf8',
-      ),
-    ]);
-  expect(readme).toContain('all five native East Asian emphasis marks');
+  const [roadmap, product, englishRoadmap, chineseRoadmap] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+  ]);
   expect(roadmap).toContain('all five native `w:em` emphasis values');
   expect(product).toContain('The forty-first milestone');
 
@@ -1512,32 +1451,27 @@ test('documents all native Writer emphasis marks in both current locales', async
 });
 
 test('documents native Writer hidden text in both current locales', async () => {
-  const [
-    readme,
-    roadmap,
-    product,
-    englishRoadmap,
-    chineseRoadmap,
-    architecture,
-  ] = await Promise.all([
-    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
-    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
-    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
-    readFile(
-      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
-      'utf8',
-    ),
-    readFile(
-      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
-      'utf8',
-    ),
-    readFile(
-      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
-      'utf8',
-    ),
-  ]);
+  const [roadmap, product, englishRoadmap, chineseRoadmap, architecture] =
+    await Promise.all([
+      readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+      readFile(
+        path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          documentationRoot,
+          'latest/en/browser-editor-architecture.md',
+        ),
+        'utf8',
+      ),
+    ]);
 
-  expect(readme).toContain('native hidden text with explicit visible resets');
   expect(roadmap).toContain('native `w:vanish` hidden text');
   expect(product).toContain('The forty-second milestone');
   expect(architecture).toContain(
@@ -1570,32 +1504,27 @@ test('documents native Writer hidden text in both current locales', async () => 
 });
 
 test('documents native Writer outline, shadow, emboss, and imprint effects', async () => {
-  const [
-    readme,
-    roadmap,
-    product,
-    englishRoadmap,
-    chineseRoadmap,
-    architecture,
-  ] = await Promise.all([
-    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
-    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
-    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
-    readFile(
-      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
-      'utf8',
-    ),
-    readFile(
-      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
-      'utf8',
-    ),
-    readFile(
-      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
-      'utf8',
-    ),
-  ]);
+  const [roadmap, product, englishRoadmap, chineseRoadmap, architecture] =
+    await Promise.all([
+      readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+      readFile(
+        path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          documentationRoot,
+          'latest/en/browser-editor-architecture.md',
+        ),
+        'utf8',
+      ),
+    ]);
 
-  expect(readme).toContain('native outline/shadow/emboss/imprint effects');
   expect(roadmap).toContain('independent native `w:outline`');
   expect(product).toContain('The forty-third milestone');
   expect(architecture).toContain('collision-safe nested `w:rStyle` markers');
@@ -1628,23 +1557,16 @@ test('documents native Writer outline, shadow, emboss, and imprint effects', asy
 });
 
 test('documents native Writer character borders in both current locales', async () => {
-  const [readme, roadmap, product, changelog, architecture] = await Promise.all(
-    [
-      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
-      readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
-      readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
-      readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
-      readFile(
-        path.join(
-          documentationRoot,
-          'latest/en/browser-editor-architecture.md',
-        ),
-        'utf8',
-      ),
-    ],
-  );
+  const [roadmap, product, changelog, architecture] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
+      'utf8',
+    ),
+  ]);
 
-  expect(readme).toContain('25 visible line styles plus `nil` and `none`');
   expect(roadmap).toContain('native `w:bdr` character borders');
   expect(product).toContain('The forty-fourth milestone');
   expect(changelog).toContain('## 0.29.0 - 2026-08-24');
@@ -2449,25 +2371,20 @@ test('documents native Spreadsheet rich-text authoring through formatted paste',
 });
 
 test('publishes slice 33 rich-text reconciliation architecture', async () => {
-  const [englishRoadmap, chineseRoadmap, architecture, readme] =
-    await Promise.all([
-      readFile(
-        path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
-        'utf8',
-      ),
-      readFile(
-        path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
-        'utf8',
-      ),
-      readFile(
-        path.join(
-          documentationRoot,
-          'latest/en/browser-editor-architecture.md',
-        ),
-        'utf8',
-      ),
-      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
-    ]);
+  const [englishRoadmap, chineseRoadmap, architecture] = await Promise.all([
+    readFile(
+      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
+      'utf8',
+    ),
+  ]);
 
   expect(englishRoadmap).toContain('The thirty-third slice');
   expect(englishRoadmap).toMatch(/text-stable focus\s+callbacks/);
@@ -2479,8 +2396,6 @@ test('publishes slice 33 rich-text reconciliation architecture', async () => {
   expect(architecture).toContain(
     'Authenticated `data[row][column]` operations',
   );
-  expect(readme).toContain('direct formula-bar/F2 insertion or deletion');
-  expect(readme).toContain('Traditional Office baseline');
 });
 
 test('publishes reproducible 100k Document performance evidence', async () => {
@@ -2538,7 +2453,6 @@ test('publishes reproducible 100k Document performance evidence', async () => {
 
 test('publishes bounded Spreadsheet structured references across code, docs, and Playground', async () => {
   const [
-    readme,
     roadmap,
     changelog,
     product,
@@ -2557,7 +2471,6 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
     workspaceHome,
     discoverability,
   ] = await Promise.all([
-    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
@@ -2616,12 +2529,6 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
     ),
   ]);
 
-  expect(readme).toContain('Latest capabilities → 结构化引用');
-  expect(readme).toContain('structured-reference-calculation');
-  expect(readme).toContain('automatic calculated-column fill');
-  expect(readme).toContain('newly inserted table');
-  expect(readme).toContain('body rows');
-  expect(readme).toContain('1,024 tables');
   expect(roadmap).toContain('bounded structured-reference calculation');
   expect(roadmap).toContain('Automatic calculated-column fill');
   expect(roadmap).toContain('now\n  supported');
@@ -2670,7 +2577,6 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
 
 test('publishes formula-safe Spreadsheet value, persistent custom-list, appearance, direction, and text-collation sorting without rewriting 0.37.0', async () => {
   const [
-    readme,
     roadmap,
     changelog,
     product,
@@ -2711,7 +2617,6 @@ test('publishes formula-safe Spreadsheet value, persistent custom-list, appearan
     packageJson,
     gate,
   ] = await Promise.all([
-    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
     readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
@@ -2897,14 +2802,6 @@ test('publishes formula-safe Spreadsheet value, persistent custom-list, appearan
     ),
   ]);
 
-  expect(readme).toContain('up to 64 ordered keys');
-  expect(readme).toContain('relative-formula translation');
-  expect(readme).toContain('current-region expansion warnings');
-  expect(readme).toContain('seven built-in month/weekday sequences');
-  expect(readme).toContain('effective cell-color');
-  expect(readme).toContain('left-to-right Custom Sort');
-  expect(readme).toContain('pinyin/stroke comparison');
-  expect(readme).toContain('bounded typed host-stored or mounted-session');
   expect(roadmap).toContain(
     'stable value/custom-list/effective-color/conditional-icon sorting',
   );
