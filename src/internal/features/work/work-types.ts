@@ -257,9 +257,13 @@ export interface WorkDocumentComment {
   replies?: WorkDocumentCommentReply[];
 }
 
+export type WorkSpreadsheetDateSystem = '1900' | '1904';
+
 export interface WorkSpreadsheetContent {
   type: 'spreadsheet';
   sheets: WorkSpreadsheetSheet[];
+  /** Omitted values use the Excel-compatible 1900 date system. */
+  dateSystem?: WorkSpreadsheetDateSystem;
   calculation?: WorkSpreadsheetCalculationSettings;
   namedRanges?: WorkSpreadsheetNamedRange[];
   printAreas?: WorkSpreadsheetPrintArea[];

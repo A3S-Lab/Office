@@ -1,10 +1,12 @@
 import type { Cell } from '@fortune-sheet/core';
-import type { WorkSpreadsheetDynamicFilter } from './work-types';
+import type {
+  WorkSpreadsheetDateSystem,
+  WorkSpreadsheetDynamicFilter,
+} from './work-types';
 
 const MILLISECONDS_PER_DAY = 86_400_000;
-const EXCEL_1900_EPOCH_UTC = Date.UTC(1899, 11, 30);
 const EXCEL_1900_CIVIL_EPOCH_UTC = Date.UTC(1899, 11, 31);
-const EXCEL_1900_LOCAL_BASE = new Date(1899, 11, 30);
+const EXCEL_1904_EPOCH_UTC = Date.UTC(1904, 0, 1);
 const SERIAL_INTEGER_EPSILON = 1e-7;
 
 const CALENDAR_MONTH_FILTERS = [
@@ -30,6 +32,7 @@ const CALENDAR_QUARTER_FILTERS = [
 ] as const satisfies readonly WorkSpreadsheetDynamicFilter[];
 
 export interface WorkSpreadsheetDynamicFilterContext {
+  dateSystem?: WorkSpreadsheetDateSystem;
   now: Date;
 }
 
@@ -46,26 +49,31 @@ export function workSpreadsheetDynamicFilterMatcher(
     kind as (typeof CALENDAR_MONTH_FILTERS)[number],
   );
   if (month >= 0) {
-    return (cell) => spreadsheetDateParts(cell)?.month === month;
+    return (cell) =>
+      spreadsheetDateParts(cell, context.dateSystem)?.month === month;
   }
 
   const quarter = CALENDAR_QUARTER_FILTERS.indexOf(
     kind as (typeof CALENDAR_QUARTER_FILTERS)[number],
   );
   if (quarter >= 0) {
-    return (cell) => spreadsheetDateParts(cell)?.quarter === quarter;
+    return (cell) =>
+      spreadsheetDateParts(cell, context.dateSystem)?.quarter === quarter;
   }
 
   const bounds = relativeDateBounds(kind, context.now);
   if (!bounds) return null;
   return (cell) => {
-    const day = spreadsheetDateSerialDay(cell);
+    const day = spreadsheetDateCivilDay(cell, context.dateSystem);
     return day !== null && day >= bounds.start && day < bounds.end;
   };
 }
 
-export function workSpreadsheetCellIsDate(cell: Cell | null): boolean {
-  return spreadsheetDateSerialDay(cell) !== null;
+export function workSpreadsheetCellIsDate(
+  cell: Cell | null,
+  dateSystem: WorkSpreadsheetDateSystem = '1900',
+): boolean {
+  return spreadsheetDateCivilDay(cell, dateSystem) !== null;
 }
 
 function averageMatcher(
@@ -119,7 +127,7 @@ function relativeDateBounds(
     return null;
   }
   const month = now.getMonth();
-  const today = excelSerialFromCivilDate(year, month, now.getDate());
+  const today = civilDayFromDateParts(year, month, now.getDate());
 
   if (kind === 'yesterday') return dayBounds(today - 1);
   if (kind === 'today') return dayBounds(today);
@@ -130,58 +138,52 @@ function relativeDateBounds(
   if (kind === 'this-week') return rangeBounds(weekStart, weekStart + 7);
   if (kind === 'next-week') return rangeBounds(weekStart + 7, weekStart + 14);
 
-  const monthStart = excelSerialFromCivilDate(year, month, 1);
+  const monthStart = civilDayFromDateParts(year, month, 1);
   if (kind === 'last-month') {
-    return rangeBounds(
-      excelSerialFromCivilDate(year, month - 1, 1),
-      monthStart,
-    );
+    return rangeBounds(civilDayFromDateParts(year, month - 1, 1), monthStart);
   }
   if (kind === 'this-month') {
-    return rangeBounds(
-      monthStart,
-      excelSerialFromCivilDate(year, month + 1, 1),
-    );
+    return rangeBounds(monthStart, civilDayFromDateParts(year, month + 1, 1));
   }
   if (kind === 'next-month') {
     return rangeBounds(
-      excelSerialFromCivilDate(year, month + 1, 1),
-      excelSerialFromCivilDate(year, month + 2, 1),
+      civilDayFromDateParts(year, month + 1, 1),
+      civilDayFromDateParts(year, month + 2, 1),
     );
   }
 
   const quarterStartMonth = Math.floor(month / 3) * 3;
-  const quarterStart = excelSerialFromCivilDate(year, quarterStartMonth, 1);
+  const quarterStart = civilDayFromDateParts(year, quarterStartMonth, 1);
   if (kind === 'last-quarter') {
     return rangeBounds(
-      excelSerialFromCivilDate(year, quarterStartMonth - 3, 1),
+      civilDayFromDateParts(year, quarterStartMonth - 3, 1),
       quarterStart,
     );
   }
   if (kind === 'this-quarter') {
     return rangeBounds(
       quarterStart,
-      excelSerialFromCivilDate(year, quarterStartMonth + 3, 1),
+      civilDayFromDateParts(year, quarterStartMonth + 3, 1),
     );
   }
   if (kind === 'next-quarter') {
     return rangeBounds(
-      excelSerialFromCivilDate(year, quarterStartMonth + 3, 1),
-      excelSerialFromCivilDate(year, quarterStartMonth + 6, 1),
+      civilDayFromDateParts(year, quarterStartMonth + 3, 1),
+      civilDayFromDateParts(year, quarterStartMonth + 6, 1),
     );
   }
 
-  const yearStart = excelSerialFromCivilDate(year, 0, 1);
+  const yearStart = civilDayFromDateParts(year, 0, 1);
   if (kind === 'last-year') {
-    return rangeBounds(excelSerialFromCivilDate(year - 1, 0, 1), yearStart);
+    return rangeBounds(civilDayFromDateParts(year - 1, 0, 1), yearStart);
   }
   if (kind === 'this-year') {
-    return rangeBounds(yearStart, excelSerialFromCivilDate(year + 1, 0, 1));
+    return rangeBounds(yearStart, civilDayFromDateParts(year + 1, 0, 1));
   }
   if (kind === 'next-year') {
     return rangeBounds(
-      excelSerialFromCivilDate(year + 1, 0, 1),
-      excelSerialFromCivilDate(year + 2, 0, 1),
+      civilDayFromDateParts(year + 1, 0, 1),
+      civilDayFromDateParts(year + 2, 0, 1),
     );
   }
   if (kind === 'year-to-date') return rangeBounds(yearStart, today + 1);
@@ -190,51 +192,60 @@ function relativeDateBounds(
 
 function spreadsheetDateParts(
   cell: Cell | null,
+  dateSystem: WorkSpreadsheetDateSystem = '1900',
 ): { month: number; quarter: number } | null {
-  const day = spreadsheetDateSerialDay(cell);
+  const day = spreadsheetDateCivilDay(cell, dateSystem);
   if (day === null) return null;
-  const adjustedDay = day > 60 ? day - 1 : day;
-  const date = new Date(
-    EXCEL_1900_CIVIL_EPOCH_UTC + adjustedDay * MILLISECONDS_PER_DAY,
-  );
+  const date = new Date(day * MILLISECONDS_PER_DAY);
   const timestamp = date.getTime();
   const year = date.getUTCFullYear();
-  if (!Number.isFinite(timestamp) || year < 1900 || year > 9999) return null;
+  if (!Number.isFinite(timestamp) || year > 9999) return null;
   const month = date.getUTCMonth();
   return { month, quarter: Math.floor(month / 3) };
 }
 
-function spreadsheetDateSerialDay(cell: Cell | null): number | null {
-  const serial = spreadsheetDateCellSerial(cell);
-  if (serial === null) return null;
+function spreadsheetDateCivilDay(
+  cell: Cell | null,
+  dateSystem: WorkSpreadsheetDateSystem = '1900',
+): number | null {
+  const value = spreadsheetCellRawValue(cell);
+  if (value instanceof Date) {
+    if (!Number.isFinite(value.getTime())) return null;
+    const year = value.getFullYear();
+    const minimumYear = dateSystem === '1904' ? 1904 : 1900;
+    return year >= minimumYear && year <= 9999
+      ? civilDayFromDateParts(year, value.getMonth(), value.getDate())
+      : null;
+  }
+  if (
+    typeof value !== 'number' ||
+    !Number.isFinite(value) ||
+    cell?.ct?.t !== 'd'
+  ) {
+    return null;
+  }
+  const serial = value;
   const rounded = Math.round(serial);
   const normalized =
     Math.abs(serial - rounded) <= SERIAL_INTEGER_EPSILON ? rounded : serial;
   const day = Math.floor(normalized);
-  return day >= 1 && day !== 60 ? day : null;
-}
-
-function spreadsheetDateCellSerial(cell: Cell | null): number | null {
-  const value = spreadsheetCellRawValue(cell);
-  if (value instanceof Date) {
-    if (!Number.isFinite(value.getTime())) return null;
-    const threshold =
-      EXCEL_1900_LOCAL_BASE.getTime() +
-      (value.getTimezoneOffset() - EXCEL_1900_LOCAL_BASE.getTimezoneOffset()) *
-        60_000;
-    const serial = (value.getTime() - threshold) / MILLISECONDS_PER_DAY;
-    return Number.isFinite(serial) ? serial : null;
+  if (dateSystem === '1904') {
+    return day >= 0
+      ? (EXCEL_1904_EPOCH_UTC + day * MILLISECONDS_PER_DAY) /
+          MILLISECONDS_PER_DAY
+      : null;
   }
-  return typeof value === 'number' &&
-    Number.isFinite(value) &&
-    cell?.ct?.t === 'd'
-    ? value
-    : null;
+  if (day < 1 || day === 60) return null;
+  const civilOffset = day > 60 ? day - 1 : day;
+  return (
+    (EXCEL_1900_CIVIL_EPOCH_UTC + civilOffset * MILLISECONDS_PER_DAY) /
+    MILLISECONDS_PER_DAY
+  );
 }
 
 function spreadsheetNumericCellValue(cell: Cell | null): number | null {
-  if (spreadsheetDateCellSerial(cell) !== null) return null;
   const value = spreadsheetCellRawValue(cell);
+  if (value instanceof Date || cell?.ct?.t === 'd') return null;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
@@ -243,14 +254,12 @@ function spreadsheetCellRawValue(cell: Cell | null): unknown {
   return candidate?.v ?? candidate?.m;
 }
 
-function excelSerialFromCivilDate(
+function civilDayFromDateParts(
   year: number,
   month: number,
   day: number,
 ): number {
-  return (
-    (Date.UTC(year, month, day) - EXCEL_1900_EPOCH_UTC) / MILLISECONDS_PER_DAY
-  );
+  return Date.UTC(year, month, day) / MILLISECONDS_PER_DAY;
 }
 
 function dayBounds(day: number): { start: number; end: number } {

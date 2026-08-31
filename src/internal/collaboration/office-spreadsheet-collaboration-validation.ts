@@ -90,6 +90,14 @@ export function validateWorkOfficeSpreadsheetContent(
   }
   const sheets = validateSheets(content.sheets);
   const result: WorkSpreadsheetContent = { type: 'spreadsheet', sheets };
+  if (content.dateSystem !== undefined) {
+    if (content.dateSystem !== '1900' && content.dateSystem !== '1904') {
+      invalidWorkOfficeSpreadsheetInput(
+        "a Spreadsheet date system of '1900' or '1904'",
+      );
+    }
+    result.dateSystem = content.dateSystem;
+  }
   copyOptionalJsonField(content, result, 'calculation', 'calculation settings');
   if (content.namedRanges !== undefined) {
     result.namedRanges = validateIdRecords(

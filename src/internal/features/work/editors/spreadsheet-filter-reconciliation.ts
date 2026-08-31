@@ -7,6 +7,7 @@ import {
   workSpreadsheetFilterHiddenRows,
   workSpreadsheetSheetWithReappliedAutoFilterCriteria,
 } from '../work-spreadsheet-auto-filter';
+import type { WorkSpreadsheetDynamicFilterContext } from '../work-spreadsheet-dynamic-filter';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
@@ -20,6 +21,7 @@ export function reconcileSpreadsheetFiltersAfterFortune(
   sheets: WorkSpreadsheetContent['sheets'],
   sourceSheets: WorkSpreadsheetContent['sheets'],
   operations: readonly Op[] = [],
+  context: WorkSpreadsheetDynamicFilterContext = { now: new Date() },
 ): WorkSpreadsheetContent['sheets'] {
   const coordinates = spreadsheetCellOperationCoordinates(operations);
   return sheets.map((sheet, index) => {
@@ -33,7 +35,10 @@ export function reconcileSpreadsheetFiltersAfterFortune(
       return sheet;
     }
 
-    const previousTableOwnedRows = spreadsheetTableFilterOwnedRows(source);
+    const previousTableOwnedRows = spreadsheetTableFilterOwnedRows(
+      source,
+      context,
+    );
     const manuallyHiddenRows =
       workSpreadsheetAutoFilterManuallyHiddenRows(source);
     for (const row of previousTableOwnedRows) manuallyHiddenRows.delete(row);
@@ -47,6 +52,7 @@ export function reconcileSpreadsheetFiltersAfterFortune(
         sheet,
         source,
         manuallyHiddenRows,
+        context,
       );
     }
 
@@ -54,7 +60,7 @@ export function reconcileSpreadsheetFiltersAfterFortune(
     for (const row of workSpreadsheetAutoFilterOwnedRows(next)) {
       hiddenRows.add(row);
     }
-    for (const row of spreadsheetTableFilterOwnedRows(next)) {
+    for (const row of spreadsheetTableFilterOwnedRows(next, context)) {
       hiddenRows.add(row);
     }
     const rowhidden = Object.fromEntries(
@@ -74,6 +80,7 @@ export function reconcileSpreadsheetFiltersAfterSort(
   source: WorkSpreadsheetSheet,
   range: SpreadsheetCellRange,
   sourceIndexes: readonly number[],
+  context: WorkSpreadsheetDynamicFilterContext = { now: new Date() },
 ): WorkSpreadsheetSheet | null {
   if (
     !spreadsheetFilterReconciliationIsBounded(source) ||
@@ -84,6 +91,8 @@ export function reconcileSpreadsheetFiltersAfterSort(
   const reconciled = reconcileSpreadsheetFiltersAfterFortune(
     [sheet],
     [source],
+    [],
+    context,
   )[0];
   if (!reconciled) return null;
   let filter = reconciled.filter;
@@ -106,7 +115,7 @@ export function reconcileSpreadsheetFiltersAfterSort(
   }
   const manuallyHiddenRows =
     workSpreadsheetAutoFilterManuallyHiddenRows(source);
-  for (const row of spreadsheetTableFilterOwnedRows(source)) {
+  for (const row of spreadsheetTableFilterOwnedRows(source, context)) {
     manuallyHiddenRows.delete(row);
   }
   const withFilter = { ...reconciled, filter };
@@ -114,7 +123,7 @@ export function reconcileSpreadsheetFiltersAfterSort(
   for (const row of workSpreadsheetAutoFilterOwnedRows(withFilter)) {
     hiddenRows.add(row);
   }
-  for (const row of spreadsheetTableFilterOwnedRows(withFilter)) {
+  for (const row of spreadsheetTableFilterOwnedRows(withFilter, context)) {
     hiddenRows.add(row);
   }
   const rowhidden = Object.fromEntries(
@@ -268,6 +277,7 @@ function spreadsheetFilterRanges(sheet: WorkSpreadsheetSheet) {
 
 function spreadsheetTableFilterOwnedRows(
   sheet: WorkSpreadsheetSheet,
+  context: WorkSpreadsheetDynamicFilterContext,
 ): Set<string> {
   const hidden = new Set<string>();
   for (const table of sheet.tables ?? []) {
@@ -280,6 +290,7 @@ function spreadsheetTableFilterOwnedRows(
         range,
         column,
         filter.criteria,
+        context,
       );
       for (const row of Object.keys(rowhidden ?? {})) hidden.add(row);
     }

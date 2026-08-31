@@ -290,6 +290,10 @@ function applySpreadsheetSort(
         sheet,
         validation.request.range,
         result.sourceIndexes,
+        {
+          dateSystem: context.content.dateSystem,
+          now: new Date(),
+        },
       );
       if (!reconciled) return false;
       context.onChange({

@@ -6,7 +6,11 @@ import {
 } from './spreadsheet-sparse';
 import { exportXlsxCellComment } from './work-spreadsheet-comments';
 import { refreshSpreadsheetPivotTables } from './work-spreadsheet-pivots';
-import type { WorkArtifact, WorkSpreadsheetContent } from './work-types';
+import type {
+  WorkArtifact,
+  WorkSpreadsheetContent,
+  WorkSpreadsheetDateSystem,
+} from './work-types';
 import { exportXlsxDefinedNames } from './work-xlsx-defined-names';
 import {
   createXlsxErrorCell,
@@ -28,7 +32,11 @@ export async function createWorkSpreadsheetBlob(
   const XLSX = await import('xlsx');
   const workbook = XLSX.utils.book_new();
   for (const sheet of content.sheets) {
-    const worksheet = createSparseXlsxWorksheet(sheet, XLSX);
+    const worksheet = createSparseXlsxWorksheet(
+      sheet,
+      XLSX,
+      content.dateSystem,
+    );
     applySpreadsheetLayout(worksheet, sheet);
     XLSX.utils.book_append_sheet(
       workbook,
@@ -38,6 +46,10 @@ export async function createWorkSpreadsheetBlob(
   }
   workbook.Workbook = {
     ...workbook.Workbook,
+    WBProps: {
+      ...workbook.Workbook?.WBProps,
+      date1904: content.dateSystem === '1904',
+    },
     Sheets: content.sheets.map((sheet) => ({
       name: sheet.name.slice(0, 31) || '工作表',
       Hidden: sheet.hide ? 1 : 0,
@@ -64,6 +76,7 @@ type SparseXlsxWorksheet = WorkSheet & { '!a3sSparse'?: true };
 function createSparseXlsxWorksheet(
   sheet: WorkSpreadsheetContent['sheets'][number],
   XLSX: typeof import('xlsx'),
+  dateSystem: WorkSpreadsheetDateSystem = '1900',
 ): SparseXlsxWorksheet {
   const data = sheet.data ?? [];
   const worksheet: SparseXlsxWorksheet = { '!a3sSparse': true };
@@ -83,7 +96,7 @@ function createSparseXlsxWorksheet(
       const comment = exportXlsxCellComment(cell.ps);
       const hyperlink = sheet.hyperlink?.[`${rowIndex}_${columnIndex}`];
       const target =
-        xlsxCellObject(cell, rowIndex, columnIndex, sheet) ??
+        xlsxCellObject(cell, rowIndex, columnIndex, sheet, dateSystem) ??
         (style || comment || hyperlink ? { t: 's', v: '' } : null);
       if (!target) continue;
       if (cell.ct?.fa) target.z = cell.ct.fa;
@@ -105,17 +118,61 @@ function xlsxCellObject(
   row: number,
   column: number,
   sheet: WorkSpreadsheetContent['sheets'][number],
+  dateSystem: WorkSpreadsheetDateSystem,
 ): CellObject | null {
-  if (cell.f)
-    return createXlsxFormulaCell(cell, row, column, sheet) as CellObject;
+  if (cell.f) {
+    const formula = createXlsxFormulaCell(
+      cell,
+      row,
+      column,
+      sheet,
+    ) as CellObject;
+    if (formula.v instanceof Date && Number.isFinite(formula.v.getTime())) {
+      return {
+        ...formula,
+        t: 'n',
+        v: spreadsheetDateSerial(formula.v, dateSystem),
+      };
+    }
+    if (formula.t === 'd' && typeof formula.v === 'number') {
+      return { ...formula, t: 'n' };
+    }
+    return formula;
+  }
   if (cell.ct?.t === 'e') return createXlsxErrorCell(cell) as CellObject;
-  const value = xlsxRichTextCellText(cell) ?? cell.v ?? cell.m;
+  const value: unknown = xlsxRichTextCellText(cell) ?? cell.v ?? cell.m;
   if (value === undefined || value === null) {
     return cell.ps ? { t: 's', v: '' } : null;
+  }
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return { t: 'n', v: spreadsheetDateSerial(value, dateSystem) };
   }
   if (typeof value === 'boolean') return { t: 'b', v: value };
   if (typeof value === 'number') return { t: 'n', v: value };
   return { t: 's', v: String(value) };
+}
+
+function spreadsheetDateSerial(
+  value: Date,
+  dateSystem: WorkSpreadsheetDateSystem,
+): number {
+  const year = value.getFullYear();
+  const month = value.getMonth();
+  const day = value.getDate();
+  const time =
+    (value.getHours() * 3_600_000 +
+      value.getMinutes() * 60_000 +
+      value.getSeconds() * 1_000 +
+      value.getMilliseconds()) /
+    86_400_000;
+  if (dateSystem === '1904') {
+    return (
+      (Date.UTC(year, month, day) - Date.UTC(1904, 0, 1)) / 86_400_000 + time
+    );
+  }
+  const civilDay =
+    (Date.UTC(year, month, day) - Date.UTC(1899, 11, 31)) / 86_400_000;
+  return civilDay + (civilDay >= 60 ? 1 : 0) + time;
 }
 
 function applySpreadsheetLayout(worksheet: WorkSheet, sheet: Sheet) {

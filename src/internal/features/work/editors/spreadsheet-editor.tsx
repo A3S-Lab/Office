@@ -888,6 +888,7 @@ function SpreadsheetEditorSurface({
         sheets,
         contentRef.current.sheets,
         operations,
+        contentRef.current.dateSystem,
       );
       const withCharts = reconcileSpreadsheetChartPreviews(
         contentRef.current,

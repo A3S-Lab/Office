@@ -1,5 +1,6 @@
 import type { Selection } from '@fortune-sheet/core';
 import type {
+  WorkSpreadsheetDateSystem,
   WorkSpreadsheetFilterCriteria,
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
@@ -114,22 +115,27 @@ export function spreadsheetAutoFilterColumnIsNumeric(
   sheet: WorkSpreadsheetSheet,
   range: SpreadsheetAutoFilterRange,
   column: number,
+  dateSystem: WorkSpreadsheetDateSystem = '1900',
 ): boolean {
-  return spreadsheetAutoFilterColumnProfile(sheet, range, column).numeric;
+  return spreadsheetAutoFilterColumnProfile(sheet, range, column, dateSystem)
+    .numeric;
 }
 
 export function spreadsheetAutoFilterColumnIsDate(
   sheet: WorkSpreadsheetSheet,
   range: SpreadsheetAutoFilterRange,
   column: number,
+  dateSystem: WorkSpreadsheetDateSystem = '1900',
 ): boolean {
-  return spreadsheetAutoFilterColumnProfile(sheet, range, column).date;
+  return spreadsheetAutoFilterColumnProfile(sheet, range, column, dateSystem)
+    .date;
 }
 
 function spreadsheetAutoFilterColumnProfile(
   sheet: WorkSpreadsheetSheet,
   range: SpreadsheetAutoFilterRange,
   column: number,
+  dateSystem: WorkSpreadsheetDateSystem,
 ): SpreadsheetAutoFilterColumnProfile {
   if (
     !Number.isSafeInteger(column) ||
@@ -138,7 +144,7 @@ function spreadsheetAutoFilterColumnProfile(
   ) {
     return { date: false, numeric: false };
   }
-  const key = `${range.row[0]}:${range.row[1]}:${column}`;
+  const key = `${dateSystem}:${range.row[0]}:${range.row[1]}:${column}`;
   const cached = spreadsheetAutoFilterColumnProfileCache.get(sheet)?.get(key);
   if (cached) return cached;
   const cellAt = spreadsheetSheetCellReader(sheet);
@@ -149,7 +155,7 @@ function spreadsheetAutoFilterColumnProfile(
       (cell as { m?: unknown; v?: unknown } | null)?.v ??
       (cell as { m?: unknown } | null)?.m;
     if (value === undefined || value === null || value === '') continue;
-    const valueKind = workSpreadsheetCellIsDate(cell)
+    const valueKind = workSpreadsheetCellIsDate(cell, dateSystem)
       ? 'date'
       : typeof value === 'number' && Number.isFinite(value)
         ? 'numeric'
@@ -186,7 +192,10 @@ export function applySpreadsheetAutoFilterCriteria(
     sheet,
     column,
     criteria,
-    context,
+    {
+      dateSystem: content.dateSystem,
+      now: context?.now ?? new Date(),
+    },
   );
   if (!nextSheet) return null;
   const sheets = [...content.sheets];

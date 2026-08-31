@@ -83,8 +83,8 @@ export function initializeWorkOfficeSpreadsheetRoots(
   patchSpreadsheetFlatJsonMap(
     roots.options,
     undefined,
-    content.calculation as Record<string, unknown> | undefined,
-    'calculation settings',
+    spreadsheetWorkbookOptions(content),
+    'workbook options',
   );
   patchSheets(roots, undefined, content);
   patchIdRecords(
@@ -136,10 +136,11 @@ export function readWorkOfficeSpreadsheetRoots(
       ),
     ),
   };
-  const calculation = readSpreadsheetFlatJsonMap(
-    roots.options,
-    'calculation settings',
-  );
+  const options = readSpreadsheetFlatJsonMap(roots.options, 'workbook options');
+  const { dateSystem, ...calculation } = options;
+  if (dateSystem !== undefined) {
+    result.dateSystem = dateSystem as WorkSpreadsheetContent['dateSystem'];
+  }
   if (Object.keys(calculation).length > 0) {
     result.calculation =
       calculation as unknown as WorkSpreadsheetContent['calculation'];
@@ -173,9 +174,9 @@ export function patchWorkOfficeSpreadsheetRoots(
   appendWorkOfficeSpreadsheetRecordClaims(roots.recordClaims, previous, next);
   patchSpreadsheetFlatJsonMap(
     roots.options,
-    previous.calculation as Record<string, unknown> | undefined,
-    next.calculation as Record<string, unknown> | undefined,
-    'calculation settings',
+    spreadsheetWorkbookOptions(previous),
+    spreadsheetWorkbookOptions(next),
+    'workbook options',
   );
   patchSheets(roots, previous, next);
   patchIdRecords(
@@ -209,6 +210,18 @@ export function patchWorkOfficeSpreadsheetRoots(
     next.pageSetups ?? [],
     'page setup',
   );
+}
+
+function spreadsheetWorkbookOptions(
+  content: WorkSpreadsheetContent,
+): Record<string, unknown> | undefined {
+  const options: Record<string, unknown> = {
+    ...(content.calculation as Record<string, unknown> | undefined),
+  };
+  if (content.dateSystem !== undefined) {
+    options.dateSystem = content.dateSystem;
+  }
+  return Object.keys(options).length ? options : undefined;
 }
 
 export function assertWorkOfficeSpreadsheetRootsEmpty(

@@ -1,4 +1,7 @@
-import type { WorkSpreadsheetSheet } from '../work-types';
+import type {
+  WorkSpreadsheetDateSystem,
+  WorkSpreadsheetSheet,
+} from '../work-types';
 import { normalizedWorkSpreadsheetAutoFilterRange } from '../work-spreadsheet-auto-filter';
 import { spreadsheetAutoFilterColumnIsNumeric } from './spreadsheet-auto-filter';
 
@@ -14,6 +17,7 @@ export function enhanceSpreadsheetAutoFilterSurface(
   container: HTMLElement,
   sheet: WorkSpreadsheetSheet | undefined,
   invoker: HTMLElement | null,
+  dateSystem: WorkSpreadsheetDateSystem = '1900',
 ): HTMLElement | null {
   const range = sheet?.filter_select;
   const startRow = range?.row?.[0];
@@ -88,7 +92,7 @@ export function enhanceSpreadsheetAutoFilterSurface(
       action.setAttribute('aria-haspopup', 'dialog');
     }
   }
-  synchronizeSpreadsheetAutoFilterRankAction(menu, sheet, trigger);
+  synchronizeSpreadsheetAutoFilterRankAction(menu, sheet, trigger, dateSystem);
   return menu;
 }
 
@@ -96,6 +100,7 @@ function synchronizeSpreadsheetAutoFilterRankAction(
   menu: HTMLElement,
   sheet: WorkSpreadsheetSheet | undefined,
   trigger: HTMLElement | undefined,
+  dateSystem: WorkSpreadsheetDateSystem,
 ): void {
   const existing = menu.querySelector<HTMLElement>(
     '[data-a3s-auto-filter-rank]',
@@ -106,7 +111,7 @@ function synchronizeSpreadsheetAutoFilterRankAction(
     sheet &&
       range &&
       Number.isSafeInteger(column) &&
-      spreadsheetAutoFilterColumnIsNumeric(sheet, range, column),
+      spreadsheetAutoFilterColumnIsNumeric(sheet, range, column, dateSystem),
   );
   if (!numeric) {
     existing?.remove();

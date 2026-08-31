@@ -46,6 +46,59 @@ test('initializes sparse typed Spreadsheet roots without a workbook blob', () =>
   expect((input.get('cellPresence') as Y.Map<unknown>).size).toBe(4);
 });
 
+test('synchronizes and validates the workbook date system as a typed option', () => {
+  const session = spreadsheetSession('spreadsheet-date-system');
+  const initial = { ...fixture(), dateSystem: '1904' as const };
+
+  initializeOfficeSpreadsheetCollaboration(session, initial);
+  expect(
+    session.document
+      .getMap(session.rootName('spreadsheet.options'))
+      .get(JSON.stringify(['value', 'dateSystem'])),
+  ).toBe('1904');
+  expect(readOfficeSpreadsheetCollaboration(session).dateSystem).toBe('1904');
+
+  const binding = createOfficeSpreadsheetCollaborationBinding(session);
+  const before = binding.content();
+  binding.replace(before, { ...before, dateSystem: '1900' });
+  expect(binding.content().dateSystem).toBe('1900');
+
+  expect(() =>
+    initializeOfficeSpreadsheetCollaboration(
+      spreadsheetSession('spreadsheet-invalid-date-system'),
+      { ...fixture(), dateSystem: 'lotus' } as unknown as SpreadsheetContent,
+    ),
+  ).toThrow(/date system/i);
+});
+
+test('merges independent date-system and calculation-setting edits', () => {
+  const { first, firstDocument, second, secondDocument } = connectedPair(
+    'spreadsheet-date-system-merge',
+  );
+  const firstBinding = createOfficeSpreadsheetCollaborationBinding(first);
+  const secondBinding = createOfficeSpreadsheetCollaborationBinding(second);
+  const firstBefore = firstBinding.content();
+  const secondBefore = secondBinding.content();
+
+  firstBinding.replace(firstBefore, { ...firstBefore, dateSystem: '1904' });
+  secondBinding.replace(secondBefore, {
+    ...secondBefore,
+    calculation: {
+      ...(secondBefore.calculation as NonNullable<
+        SpreadsheetContent['calculation']
+      >),
+      maximumIterations: 250,
+    },
+  });
+  exchangeUpdates(firstDocument, secondDocument);
+
+  expect(firstBinding.content()).toMatchObject({
+    dateSystem: '1904',
+    calculation: { maximumIterations: 250 },
+  });
+  expect(secondBinding.content()).toEqual(firstBinding.content());
+});
+
 test('rejects duplicate identities before bootstrap metadata is written', () => {
   const session = spreadsheetSession('spreadsheet-duplicate');
   const content = fixture();
