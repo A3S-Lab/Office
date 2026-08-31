@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.37.3' ||
     version === '0.37.2' ||
     version === '0.37.1' ||
     version === '0.37.0' ||
@@ -65,6 +66,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.37.3',
     '0.37.2',
     '0.37.1',
     '0.37.0',
@@ -350,7 +352,7 @@ test('routes the concise README to release evidence while both documentation hom
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.37.2`');
+  expect(readme).toContain('Version `0.37.3`');
   expect(readme).toContain('[changelog](./CHANGELOG.md)');
   expect(readme).toContain('[capability roadmap](./ROADMAP.md)');
   expect(readme).toContain(
@@ -1050,6 +1052,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.37.3',
     '0.37.2',
     '0.37.1',
     '0.37.0',
@@ -1125,6 +1128,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.37.3',
     '0.37.2',
     '0.37.1',
     '0.37.0',
@@ -2646,7 +2650,7 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(discoverability).toContain('9 / 9 项');
 });
 
-test('publishes formula-safe Spreadsheet value, persistent custom-list, appearance, direction, and text-collation sorting without rewriting 0.37.0', async () => {
+test('publishes formula-safe Spreadsheet sorting and bounded custom-list preference management without rewriting 0.37.0', async () => {
   const [
     roadmap,
     changelog,
@@ -2669,6 +2673,7 @@ test('publishes formula-safe Spreadsheet value, persistent custom-list, appearan
     vueAdapter,
     webComponent,
     customListDialog,
+    customListManager,
     sortOrderControls,
     customListE2e,
     customListVisual,
@@ -2766,6 +2771,13 @@ test('publishes formula-safe Spreadsheet value, persistent custom-list, appearan
       path.join(
         repositoryRoot,
         'src/internal/features/work/editors/spreadsheet-sort-dialog.tsx',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-sort-custom-list-manager.tsx',
       ),
       'utf8',
     ),
@@ -2878,6 +2890,10 @@ test('publishes formula-safe Spreadsheet value, persistent custom-list, appearan
   );
   expect(roadmap).toContain('exact-or-expand warnings');
   expect(roadmap).toContain('bounded host-stored/session sequences');
+  expect(roadmap).toContain(
+    'accessible preference manager for atomic user-sequence creation',
+  );
+  expect(roadmap).not.toContain('Custom-list deletion/reordering UI');
   expect(roadmap).toContain('effective-color/conditional-icon sorting');
   expect(roadmap).toContain('left-to-right complete columns');
   expect(roadmap).toContain('pinyin/stroke comparison');
@@ -2888,6 +2904,9 @@ test('publishes formula-safe Spreadsheet value, persistent custom-list, appearan
   expect(changelog).toContain('Sort Options');
   expect(changelog).toContain('lowercase before uppercase');
   expect(changelog).toContain('LocalStorageSpreadsheetSortCustomListStore');
+  expect(changelog).toContain(
+    'Spreadsheet **Custom Lists** preference manager',
+  );
   expect(product).toContain('The forty-eighth milestone');
   expect(product).toContain('The forty-ninth milestone');
   expect(product).toContain('The fiftieth milestone');
@@ -2895,6 +2914,7 @@ test('publishes formula-safe Spreadsheet value, persistent custom-list, appearan
   expect(product).toContain('The fifty-second milestone');
   expect(product).toContain('The fifty-third milestone');
   expect(product).toContain('The fifty-fourth milestone');
+  expect(product).toContain('responsive, keyboard-accessible manager');
   expect(english).toContain('## Multi-key custom sort');
   expect(chinese).toContain('## 多关键字自定义排序');
   expect(english).toContain('coordinate-owned');
@@ -2912,7 +2932,9 @@ test('publishes formula-safe Spreadsheet value, persistent custom-list, appearan
   expect(english).toContain('`sortCustomListStore`');
   expect(chinese).toContain('`sortCustomListStore`');
   expect(english).toContain('LocalStorageSpreadsheetSortCustomListStore');
+  expect(english).toContain('**Custom Lists** opens a keyboard-accessible');
   expect(chinese).toContain('LocalStorageSpreadsheetSortCustomListStore');
+  expect(chinese).toContain('可用键盘操作的偏好管理器');
   expect(english).toContain(
     "element's `sortCustomListStore` JavaScript property",
   );
@@ -2928,6 +2950,7 @@ test('publishes formula-safe Spreadsheet value, persistent custom-list, appearan
   expect(architecture).toContain(
     '`LocalStorageSpreadsheetSortCustomListStore`',
   );
+  expect(architecture).toContain('A dedicated manager stages create, edit');
   expect(chineseArchitecture).toContain(
     '`LocalStorageSpreadsheetSortCustomListStore`',
   );
@@ -2947,6 +2970,8 @@ test('publishes formula-safe Spreadsheet value, persistent custom-list, appearan
   expect(chineseQuality).toContain('第四十三个 Spreadsheet 纵向切片');
   expect(quality).toContain('The forty-fourth Spreadsheet slice');
   expect(chineseQuality).toContain('第四十四个 Spreadsheet 纵向切片');
+  expect(quality).toContain('The fiftieth Spreadsheet slice');
+  expect(chineseQuality).toContain('第五十个 Spreadsheet 纵向切片');
   expect(releaseEnglish).not.toContain('## Multi-key custom sort');
   expect(releaseChinese).not.toContain('## 多关键字自定义排序');
   expect(releaseEnglish).not.toContain('Traditional Office-style Sort Warning');
@@ -2985,12 +3010,20 @@ test('publishes formula-safe Spreadsheet value, persistent custom-list, appearan
   );
   expect(sortOrderControls).toContain('新建自定义序列…');
   expect(customListDialog).toContain('onRememberCustomList');
+  expect(customListDialog).toContain('管理自定义序列');
+  expect(customListManager).toContain('MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS');
+  expect(customListManager).toContain('managedCustomListResult');
   expect(customListE2e).toContain('duplicate-custom-list-is-explained');
   expect(customListE2e).toContain(
     'saved-custom-list-is-reusable-before-reload',
   );
   expect(customListE2e).toContain('saved-custom-list-survives-reload');
+  expect(customListE2e).toContain('custom-list-manager-accessibility');
+  expect(customListE2e).toContain('delete-temporary-list');
   expect(customListVisual).toContain('spreadsheet-custom-list-sort-dialog.png');
+  expect(customListVisual).toContain(
+    'spreadsheet-custom-list-manager-dialog.png',
+  );
   expect(customListVisual).toContain(
     'a3s-office.spreadsheet-sort-custom-lists.v1',
   );

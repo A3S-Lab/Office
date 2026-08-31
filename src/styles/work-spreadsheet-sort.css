@@ -79,6 +79,13 @@
   gap: 6px;
 }
 
+.work-spreadsheet-sort-toolbar-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
 .work-spreadsheet-sort-toolbar .work-office-checkbox {
   min-height: 34px;
   padding: 6px 9px;
@@ -282,6 +289,103 @@
   line-height: 1.45;
 }
 
+.work-spreadsheet-sort-custom-list-manager {
+  --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
+
+  width: min(720px, 100%);
+}
+
+.work-spreadsheet-sort-custom-list-manager-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(280px, 1.15fr);
+  gap: 14px;
+}
+
+.work-spreadsheet-sort-custom-list-manager-layout > section,
+.work-spreadsheet-sort-custom-list-manager-layout label {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.work-spreadsheet-sort-custom-list-manager-layout > section {
+  align-content: start;
+}
+
+.work-spreadsheet-sort-custom-list-manager-layout label > span {
+  color: var(--a3s-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-sort-custom-list-manager select,
+.work-spreadsheet-sort-custom-list-manager textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 252px;
+  padding: 8px;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 6px;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.work-spreadsheet-sort-custom-list-manager textarea {
+  resize: vertical;
+}
+
+.work-spreadsheet-sort-custom-list-manager textarea[readonly] {
+  background: var(--a3s-panel-soft);
+  color: var(--a3s-muted);
+}
+
+.work-spreadsheet-sort-custom-list-manager select:focus-visible,
+.work-spreadsheet-sort-custom-list-manager textarea:focus-visible {
+  border-color: var(--work-spreadsheet-accent, #159469);
+  outline: 2px solid
+    color-mix(in srgb, var(--work-spreadsheet-accent, #159469) 24%, transparent);
+  outline-offset: 1px;
+}
+
+.work-spreadsheet-sort-custom-list-manager-layout section > p,
+.work-spreadsheet-sort-custom-list-manager-note {
+  margin: 0;
+  color: var(--a3s-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.work-spreadsheet-sort-custom-list-manager-layout
+  section
+  > .work-spreadsheet-sort-custom-list-error {
+  color: var(--a3s-danger, #b42318);
+}
+
+.work-spreadsheet-sort-custom-list-manager-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.work-spreadsheet-sort-custom-list-manager-actions .ds-button {
+  gap: 6px;
+}
+
+.work-spreadsheet-sort-custom-list-manager-actions .ds-button[aria-label] {
+  width: 34px;
+  min-width: 34px;
+  padding-inline: 0;
+}
+
+.work-spreadsheet-sort-custom-list-manager-note {
+  margin-block-start: 12px;
+}
+
 .work-spreadsheet-sort-range-dialog {
   --work-office-control-accent: var(--work-spreadsheet-accent, #159469);
 
@@ -362,6 +466,19 @@
   .work-spreadsheet-sort-toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .work-spreadsheet-sort-toolbar-actions {
+    flex-wrap: wrap;
+  }
+
+  .work-spreadsheet-sort-custom-list-manager-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-sort-custom-list-manager select,
+  .work-spreadsheet-sort-custom-list-manager textarea {
+    min-height: 180px;
   }
 
   .work-spreadsheet-sort-level {

@@ -194,7 +194,10 @@ test('creates and applies a reusable custom-list order without leaving the dialo
         applied.push(value);
         return true;
       }}
-      onRememberCustomList={(list) => remembered.push(list)}
+      onRememberCustomList={(list) => {
+        remembered.push(list);
+        return undefined;
+      }}
       onClose={() => undefined}
     />,
   );
@@ -268,6 +271,72 @@ test('keeps a stored identity when the initial key carries the same list', () =>
   expect(order.querySelector('optgroup[label="本次会话的序列"]')).toBeNull();
 });
 
+test('reconciles an active custom-list key after preference edits and deletion', () => {
+  const original = ['High', 'Medium', 'Low'];
+  const stored = createSpreadsheetSortCustomList(original, 'stored');
+  expect(stored).not.toBeNull();
+  const source = sortSource();
+  const updates: Array<readonly (readonly string[])[]> = [];
+
+  render(
+    <SpreadsheetSortDialog
+      source={{
+        ...source,
+        customLists: mergeSpreadsheetSortCustomLists(stored ? [stored] : []),
+        value: {
+          ...source.value,
+          keys: [{ index: 0, customList: original }],
+        },
+      }}
+      restoreFocusTarget={() => null}
+      onApply={() => true}
+      onUpdateCustomLists={(lists) => {
+        updates.push(lists);
+        return lists
+          .map((entries) => createSpreadsheetSortCustomList(entries, 'stored'))
+          .filter((list): list is SpreadsheetSortCustomList => list !== null);
+      }}
+      onClose={() => undefined}
+    />,
+  );
+
+  const managerButton = screen.getByRole('button', {
+    name: '管理自定义序列',
+  });
+  fireEvent.click(managerButton);
+  let manager = screen.getByRole('dialog', { name: '自定义序列' });
+  fireEvent.change(
+    within(manager).getByRole('listbox', { name: '自定义序列列表' }),
+    { target: { value: 'user:0' } },
+  );
+  fireEvent.change(
+    within(manager).getByRole('textbox', { name: '自定义序列项目' }),
+    { target: { value: 'Critical\nNormal' } },
+  );
+  fireEvent.click(within(manager).getByRole('button', { name: '保存更改' }));
+  fireEvent.click(within(manager).getByRole('button', { name: '确定' }));
+
+  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
+  expect(
+    within(order).getByRole('option', { name: 'Critical → Normal' }),
+  ).toBeInTheDocument();
+  expect(order).toHaveValue('custom-list:7');
+  expect(updates).toEqual([[['Critical', 'Normal']]]);
+  expect(managerButton).toHaveFocus();
+
+  fireEvent.click(managerButton);
+  manager = screen.getByRole('dialog', { name: '自定义序列' });
+  fireEvent.change(
+    within(manager).getByRole('listbox', { name: '自定义序列列表' }),
+    { target: { value: 'user:0' } },
+  );
+  fireEvent.click(within(manager).getByRole('button', { name: '删除序列' }));
+  fireEvent.click(within(manager).getByRole('button', { name: '确定' }));
+
+  expect(order).toHaveValue('ascending');
+  expect(updates).toEqual([[['Critical', 'Normal']], []]);
+});
+
 test('rejects another authored list after the mounted-editor user-list bound', () => {
   const storedLists = Array.from(
     { length: MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS },
@@ -286,7 +355,10 @@ test('rejects another authored list after the mounted-editor user-list bound', (
       }}
       restoreFocusTarget={() => null}
       onApply={() => true}
-      onRememberCustomList={(list) => remembered.push(list)}
+      onRememberCustomList={(list) => {
+        remembered.push(list);
+        return undefined;
+      }}
       onClose={() => undefined}
     />,
   );

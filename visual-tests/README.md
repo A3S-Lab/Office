@@ -106,18 +106,22 @@ Pages.
 
 The functional regression uses the public quarterly workbook to author and
 locally save a bounded status sequence, apply it as the primary key, keep a
-value-based secondary key, reopen the workbook to prove persisted reuse, and
-verify formula translation plus one-step Undo. Playwright runs the same path at
-desktop and compact widths and rejects browser console or page errors:
+value-based secondary key, and verify formula translation plus one-step Undo.
+It then opens the responsive preference manager, verifies the read-only
+built-ins and initial keyboard focus, edits one sequence, creates and reorders
+another, deletes a staged list, and remounts the editor to prove the exact final
+preference order persisted. Playwright runs the same path at desktop and compact
+widths, captures the manager dialog, and rejects browser console or page errors:
 
 ```bash
 bun run playground:visual:spreadsheet-custom-list-sort
 ```
 
 The companion local-only A3S Test ACL additionally rejects a duplicate list,
-reloads the whole Playground, verifies the saved sequence, and records
-interactive accessibility evidence. Persistence is explicit through the
-Playground's typed local store and never modifies workbook content.
+manages stored sequences, reloads the whole Playground, verifies the saved
+preference order, and records interactive accessibility evidence. Persistence
+is explicit through the Playground's typed local store and never modifies
+workbook content.
 
 ## Focused Spreadsheet appearance sort contract
 

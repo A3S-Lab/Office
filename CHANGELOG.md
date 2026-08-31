@@ -4,6 +4,22 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.37.3 - 2026-08-31
+
+- Added an accessible Spreadsheet **Custom Lists** preference manager to
+  **Data → Custom Sort**. The seven built-in month and weekday sequences remain
+  read-only, while up to 32 user sequences can be created, edited, deleted, and
+  reordered in one staged update without modifying controlled workbook data.
+- Kept active sort keys coherent when preferences change: editing a sequence
+  replaces its captured key and deleting it falls back to ascending value
+  order. Unchanged confirmation performs no store write, cancellation discards
+  staged edits, and rejected typed-store writes preserve the complete updated
+  preference set for the current session with visible feedback.
+- Added focused manager, dialog, persistence, duplicate, bound, focus, and
+  remount regressions plus desktop and compact Playwright coverage for the
+  complete management workflow, responsive containment, and clean browser
+  diagnostics.
+
 ## 0.37.2 - 2026-08-31
 
 - Fixed controlled Document and visual Markdown input with Chinese and other

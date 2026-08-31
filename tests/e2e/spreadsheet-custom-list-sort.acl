@@ -169,6 +169,108 @@ suite "office-spreadsheet-custom-list-sort" {
             visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(option[value='custom-list:7'])")
         }
 
+        click "open-custom-list-manager" {
+            target = role("button", "管理自定义序列")
+        }
+
+        expect "custom-list-manager-is-visible" {
+            visible = css(".work-spreadsheet-sort-custom-list-manager[role='dialog']")
+        }
+
+        expect "custom-list-manager-receives-focus" {
+            visible = css(".work-spreadsheet-sort-custom-list-manager select[aria-label='自定义序列列表']:focus")
+        }
+
+        expect "built-in-custom-list-is-read-only" {
+            visible = css(".work-spreadsheet-sort-custom-list-manager textarea[aria-label='自定义序列项目'][readonly]")
+        }
+
+        select "select-saved-list-to-edit" {
+            target = css(".work-spreadsheet-sort-custom-list-manager select[aria-label='自定义序列列表']")
+            values = ["user:0"]
+        }
+
+        fill "edit-saved-list" {
+            target = css(".work-spreadsheet-sort-custom-list-manager textarea[aria-label='自定义序列项目']")
+            value = "紧急\n普通"
+        }
+
+        click "save-edited-list" {
+            target = role("button", "保存更改")
+        }
+
+        click "start-temporary-list" {
+            target = role("button", "新建序列")
+        }
+
+        fill "enter-temporary-list" {
+            target = css(".work-spreadsheet-sort-custom-list-manager textarea[aria-label='自定义序列项目']")
+            value = "待处理\n处理中\n已完成"
+        }
+
+        click "add-temporary-list" {
+            target = role("button", "添加序列")
+        }
+
+        click "start-region-list" {
+            target = role("button", "新建序列")
+        }
+
+        fill "enter-region-list" {
+            target = css(".work-spreadsheet-sort-custom-list-manager textarea[aria-label='自定义序列项目']")
+            value = "北区\n中区\n南区"
+        }
+
+        click "add-region-list" {
+            target = role("button", "添加序列")
+        }
+
+        click "move-region-list-up-once" {
+            target = role("button", "上移序列")
+        }
+
+        click "move-region-list-to-first" {
+            target = role("button", "上移序列")
+        }
+
+        select "select-temporary-list" {
+            target = css(".work-spreadsheet-sort-custom-list-manager select[aria-label='自定义序列列表']")
+            values = ["user:1"]
+        }
+
+        click "delete-temporary-list" {
+            target = role("button", "删除序列")
+        }
+
+        expect "region-list-is-first" {
+            visible = css(".work-spreadsheet-sort-custom-list-manager optgroup[label='用户序列'] option:first-child[value='user:2']")
+        }
+
+        expect "edited-list-remains" {
+            text = "紧急 → 普通"
+        }
+
+        accessibility "custom-list-manager-accessibility" {
+            path = "evidence/spreadsheet-custom-list-manager.json"
+            interactive = true
+        }
+
+        click "apply-custom-list-preferences" {
+            target = css(".work-spreadsheet-sort-custom-list-manager > footer button:last-child")
+        }
+
+        expect "custom-list-manager-focus-is-restored" {
+            visible = css(".work-spreadsheet-sort-dialog button[aria-label='管理自定义序列']:focus")
+        }
+
+        expect "managed-region-list-is-available" {
+            text = "北区 → 中区 → 南区"
+        }
+
+        expect "managed-edited-list-is-available" {
+            text = "紧急 → 普通"
+        }
+
         click "close-reopened-sort" {
             target = role("button", "取消")
         }
@@ -330,7 +432,15 @@ suite "office-spreadsheet-custom-list-sort" {
         }
 
         expect "saved-custom-list-survives-reload" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(optgroup[label='已保存的序列'] option[value='custom-list:7'])")
+            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(optgroup[label='已保存的序列'] option[value='custom-list:7']):has(optgroup[label='已保存的序列'] option[value='custom-list:8'])")
+        }
+
+        expect "managed-region-list-survives-reload" {
+            text = "北区 → 中区 → 南区"
+        }
+
+        expect "managed-edited-list-survives-reload" {
+            text = "紧急 → 普通"
         }
 
         accessibility "persisted-custom-list-dialog-accessibility" {

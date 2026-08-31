@@ -309,9 +309,12 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
-Version `0.37.2` keeps the release surface focused on local, testable
+Version `0.37.3` keeps the release surface focused on local, testable
 workflows:
 
+- Spreadsheet Custom Sort now includes a responsive, keyboard-accessible
+  preference manager for creating, editing, deleting, and reordering bounded
+  user sequences while keeping the seven built-in sequences read-only.
 - Document, visual Markdown, and Presentation text composition is safe for
   Chinese and other IMEs: pre-edit text remains local, controlled replacement
   waits for settlement, and only the committed value reaches the host.
