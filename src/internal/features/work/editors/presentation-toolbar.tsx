@@ -31,7 +31,7 @@ import {
   Undo2,
   Ungroup,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   DOCUMENT_LINK_VALIDATION_MESSAGE,
   normalizeDocumentHref,
@@ -130,9 +130,14 @@ export function PresentationToolbar({
   commands: PresentationEditorCommands;
 }) {
   const officeDialog = useOfficeDialog();
-  const [fontSizeDraft, setFontSizeDraft] = useState(() =>
-    selectedElement ? String(selectedElement.fontSize) : '',
-  );
+  const selectedFontSize = selectedElement
+    ? String(selectedElement.fontSize)
+    : '';
+  const selectedFontSizeRef = useRef({
+    elementId: selectedElement?.id ?? null,
+    value: selectedFontSize,
+  });
+  const [fontSizeDraft, setFontSizeDraft] = useState(selectedFontSize);
   const fontFamilyValue = presentationFontFamilyValue(
     selectedElement?.fontFamily,
   );
@@ -141,8 +146,15 @@ export function PresentationToolbar({
     selectedElement?.id,
   );
   useEffect(() => {
-    setFontSizeDraft(selectedElement ? String(selectedElement.fontSize) : '');
-  }, [selectedElement?.fontSize, selectedElement?.id]);
+    const previous = selectedFontSizeRef.current;
+    const elementId = selectedElement?.id ?? null;
+    selectedFontSizeRef.current = { elementId, value: selectedFontSize };
+    setFontSizeDraft((draft) =>
+      previous.elementId !== elementId || draft === previous.value
+        ? selectedFontSize
+        : draft,
+    );
+  }, [selectedElement?.id, selectedFontSize]);
   const commitFontSize = (value: string): void => {
     if (!selectedElement) return;
     const fontSize = normalizedPresentationFontSize(

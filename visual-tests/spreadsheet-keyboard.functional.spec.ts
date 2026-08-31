@@ -518,6 +518,7 @@ test('Spreadsheet keeps displayed cell-menu shortcuts executable', async ({
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], {
     origin: new URL(page.url()).origin,
   });
+  await page.evaluate(() => navigator.clipboard.writeText(''));
 
   await grid.focus();
   await grid.press('Shift+F10');
@@ -527,7 +528,7 @@ test('Spreadsheet keeps displayed cell-menu shortcuts executable', async ({
   await expect(cellMenu).toBeHidden();
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-    .not.toBe('');
+    .toBe(initialValue);
   await expectGridFocus(page);
 
   await grid.press('Shift+F10');

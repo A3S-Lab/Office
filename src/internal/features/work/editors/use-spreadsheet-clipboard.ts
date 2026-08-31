@@ -4,6 +4,7 @@ import { showToast } from '../../../state/app-state';
 import type { WorkSpreadsheetContent } from '../work-types';
 import {
   browserSpreadsheetClipboard,
+  clearRichSpreadsheetClipboard,
   copySpreadsheetSelection,
   spreadsheetClipboardSnapshotForText,
   storeRichSpreadsheetClipboard,
@@ -58,7 +59,7 @@ export function useSpreadsheetClipboard({
     if (!editable) setDialogSource(null);
   }, [editable]);
 
-  const currentSnapshot = useCallback(() => {
+  const currentSource = useCallback(() => {
     if (!editable) return null;
     const selection = getSelection();
     if (!selection) return null;
@@ -68,22 +69,23 @@ export function useSpreadsheetClipboard({
       selection.range,
       selection.plainText,
     );
-    return snapshot ? { selection, snapshot } : null;
+    return { selection, snapshot };
   }, [contentRef, editable, getSelection]);
 
   const copy = useCallback(
     (cut: boolean): boolean => {
-      const source = currentSnapshot();
+      const source = currentSource();
       if (!source) return false;
-      storeRichSpreadsheetClipboard(source.snapshot);
-      void copySpreadsheetSelection(clipboard, source.snapshot.plainText, cut);
+      if (source.snapshot) storeRichSpreadsheetClipboard(source.snapshot);
+      else clearRichSpreadsheetClipboard();
+      void copySpreadsheetSelection(clipboard, source.selection.plainText, cut);
       if (cut && !clearSelection()) {
         showToast('选区已复制，但无法清除原内容。', 'error');
         return false;
       }
       return true;
     },
-    [clearSelection, clipboard, currentSnapshot],
+    [clearSelection, clipboard, currentSource],
   );
 
   const applySnapshot = useCallback(
@@ -270,14 +272,15 @@ export function useSpreadsheetClipboard({
 
   const copyToDataTransfer = useCallback(
     (data: DataTransfer, cut: boolean): boolean => {
-      const source = currentSnapshot();
+      const source = currentSource();
       if (!source) return false;
-      storeRichSpreadsheetClipboard(source.snapshot);
-      data.setData('text/plain', source.snapshot.plainText);
+      if (source.snapshot) storeRichSpreadsheetClipboard(source.snapshot);
+      else clearRichSpreadsheetClipboard();
+      data.setData('text/plain', source.selection.plainText);
       if (cut && !clearSelection()) return false;
       return true;
     },
-    [clearSelection, currentSnapshot],
+    [clearSelection, currentSource],
   );
 
   return {

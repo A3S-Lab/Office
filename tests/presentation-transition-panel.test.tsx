@@ -148,6 +148,19 @@ test('preserves a dirty timing draft across unrelated changes and resets it for 
   rerender(
     <PresentationTransitionPanel
       {...props}
+      slideId="slide-1"
+      transition={{
+        ...fadeTransition,
+        speed: 'slow',
+        advanceAfterMs: 6000,
+      }}
+    />,
+  );
+  expect(seconds).toHaveValue('12');
+
+  rerender(
+    <PresentationTransitionPanel
+      {...props}
       slideId="slide-2"
       transition={{ ...fadeTransition, speed: 'slow' }}
     />,

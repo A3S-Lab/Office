@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.37.1",
+  "version": "0.37.2",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -86,6 +86,7 @@
     "playground:bundle-check": "bun scripts/check-playground-bundle.ts",
     "playground:preview": "rspress preview -c website/rspress.config.ts --host 127.0.0.1 --port 4175",
     "playground:typecheck": "tsc --noEmit -p playground/tsconfig.json",
+    "playground:ime:webkit": "playwright test --config playwright.ime.config.ts",
     "playground:visual": "playwright test --config playwright.config.ts",
     "playground:visual:document-emphasis": "playwright test visual-tests/document-emphasis.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-index": "playwright test visual-tests/document-index.functional.spec.ts --config playwright.config.ts",

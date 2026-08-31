@@ -1,6 +1,6 @@
 # A3S Office / Traditional Office Capability Gap Roadmap
 
-Last reviewed: 2026-08-30
+Last reviewed: 2026-08-31
 
 This roadmap compares the current `main` branch of A3S Office with the public
 capability surface of Traditional Office. It is a prioritization tool, not a
@@ -57,6 +57,7 @@ collaboration transport, and AI providers.
 | AI writing, document analysis, slide creation, formulas, and PDF chat | Integrated Traditional Office AI features on supported plans | **Host-owned** typed agent ports and immutable selection context; no bundled model/provider | Maintain provider-neutral boundary |
 | Templates and asset marketplace | Large Traditional Office template catalog | **Partial**: small built-in starter templates, no marketplace | P3; host-extensible template catalog |
 | Responsive and keyboard-accessible editing | Varies by Traditional Office platform | **Supported** as an explicit A3S contract across desktop and compact Web | P0 regression gate |
+| IME composition in controlled rich-text editors | Native IME composition across desktop and web surfaces | **Supported** for Document, visual Markdown, and Presentation text: pre-edit text remains local, mid-composition host replacements are deferred, and the committed value publishes once; component and WebKit gates cover the contract | Maintain / P0 regression gate |
 | Encryption, permissions, and document protection | File encryption plus view/edit permissions | **Partial**: XLSX protection semantics and package-security validation; permissions are host-owned; broad Office encryption is absent | P0 fail safely; P2 encrypted-file provider |
 | Digital signatures | Signing workflows vary by document type and platform | **Gap**; package signatures are invalidated by editing and deliberately omitted | P2 validation/display; signing must use an explicit trusted provider |
 | VBA, ActiveX, and Office add-ins | Desktop ecosystem capability | **Not planned for execution**; active content is never run and macro-free export omits it | P0 security boundary; consider passive quarantine/export policy only |

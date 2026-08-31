@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.37.2 - 2026-08-31
+
+- Fixed controlled Document and visual Markdown input with Chinese and other
+  IMEs. Pinyin and other pre-edit values now stay inside ProseMirror until
+  composition settles, `onChange` publishes the committed value once, and an
+  authoritative host replacement received mid-composition is reconciled only
+  afterward. Document, visual Markdown, and Presentation text share one
+  bounded coordinator that adds no timer work to ordinary keyboard input.
+- Added controlled-echo and host-replacement component regressions plus a
+  dedicated Playwright WebKit gate that verifies zero pre-edit publications,
+  one final Chinese publication, controlled reopen persistence, and clean
+  browser diagnostics.
+
 ## 0.37.1 - 2026-08-31
 
 - Refined the shared host-owned **File** menu with explicit action icons, a

@@ -251,6 +251,42 @@ test('commits a validated presentation font size instead of editing intermediate
   expect(updates).toEqual([{ fontSize: 96 }]);
 });
 
+test('preserves a font size draft while the active text selection settles', () => {
+  const commands = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCommands;
+  const can = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCanCommands;
+  const renderToolbar = (selectedElement: WorkSlideElement) => (
+    <PresentationToolbar
+      selectedSlide={slide}
+      selectedElement={selectedElement}
+      selectedUnitCount={1}
+      can={can}
+      textFormattingAvailable
+      commentsOpen={false}
+      commentCount={0}
+      designOpen={false}
+      editingDesign={false}
+      transition={slide.transition}
+      commands={commands}
+    />
+  );
+  const { rerender } = render(renderToolbar(textElement));
+  const fontSize = screen.getByRole('textbox', { name: '演示字号' });
+
+  fireEvent.change(fontSize, { target: { value: '' } });
+  rerender(renderToolbar({ ...textElement, fontSize: 38 }));
+  expect(fontSize).toHaveValue('');
+
+  fireEvent.change(fontSize, { target: { value: '72' } });
+  rerender(renderToolbar({ ...textElement, id: 'element-2', fontSize: 18 }));
+  expect(fontSize).toHaveValue('18');
+});
+
 test('renders presentation font size as one standard ribbon control', () => {
   const commands = new Proxy(
     {},

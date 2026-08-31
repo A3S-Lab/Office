@@ -176,6 +176,7 @@ test('prefers an editor-provided keyboard anchor without moving pointer menus', 
 
 test('executes advertised shortcuts while the context menu owns focus', async () => {
   const calls: string[] = [];
+  const focusOwners: string[] = [];
 
   function Fixture() {
     const [open, setOpen] = useState(false);
@@ -196,7 +197,12 @@ test('executes advertised shortcuts while the context menu owns focus', async ()
                 icon: <span />,
                 shortcut: '⌘C',
                 ariaKeyShortcut: 'Control+C Meta+C',
-                onSelect: () => calls.push('copy'),
+                onSelect: () => {
+                  calls.push('copy');
+                  focusOwners.push(
+                    document.activeElement?.getAttribute('aria-label') ?? '',
+                  );
+                },
               },
               {
                 id: 'clear',
@@ -204,7 +210,12 @@ test('executes advertised shortcuts while the context menu owns focus', async ()
                 icon: <span />,
                 shortcut: 'Delete',
                 ariaKeyShortcut: 'Delete',
-                onSelect: () => calls.push('clear'),
+                onSelect: () => {
+                  calls.push('clear');
+                  focusOwners.push(
+                    document.activeElement?.getAttribute('aria-label') ?? '',
+                  );
+                },
               },
             ]}
             onClose={() => setOpen(false)}
@@ -228,6 +239,7 @@ test('executes advertised shortcuts while the context menu owns focus', async ()
   fireEvent.keyDown(menu, { key: 'c', metaKey: true });
   await waitFor(() => {
     expect(calls).toEqual(['copy']);
+    expect(focusOwners).toEqual(['Copy']);
     expect(screen.queryByRole('menu', { name: 'Shortcut actions' })).toBeNull();
     expect(trigger).toHaveFocus();
   });
@@ -240,6 +252,7 @@ test('executes advertised shortcuts while the context menu owns focus', async ()
   fireEvent.keyDown(menu, { key: 'c', ctrlKey: true });
   await waitFor(() => {
     expect(calls).toEqual(['copy', 'copy']);
+    expect(focusOwners).toEqual(['Copy', 'Copy']);
     expect(screen.queryByRole('menu', { name: 'Shortcut actions' })).toBeNull();
     expect(trigger).toHaveFocus();
   });
@@ -252,6 +265,7 @@ test('executes advertised shortcuts while the context menu owns focus', async ()
   fireEvent.keyDown(menu, { key: 'Delete' });
   await waitFor(() => {
     expect(calls).toEqual(['copy', 'copy', 'clear']);
+    expect(focusOwners).toEqual(['Copy', 'Copy', 'Copy']);
     expect(screen.queryByRole('menu', { name: 'Shortcut actions' })).toBeNull();
     expect(trigger).toHaveFocus();
   });

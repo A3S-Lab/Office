@@ -7,6 +7,7 @@ import {
   spreadsheetCommandsWithGridFocus,
 } from '../src/internal/features/work/editors/spreadsheet-editor';
 import {
+  isSpreadsheetCellEditorTarget,
   isSpreadsheetCellEditingTarget,
   isSpreadsheetNativeTextUndoTarget,
 } from '../src/internal/features/work/editors/spreadsheet-editor-support';
@@ -38,6 +39,7 @@ test('recognizes live cell and formula editors before restoring grid focus', () 
 
   expect(isSpreadsheetCellEditingTarget(cellInput)).toBe(true);
   expect(isSpreadsheetCellEditingTarget(hiddenCellInput)).toBe(false);
+  expect(isSpreadsheetCellEditorTarget(hiddenCellInput)).toBe(true);
   expect(isSpreadsheetCellEditingTarget(formulaInput)).toBe(true);
   expect(isSpreadsheetCellEditingTarget(unrelatedInput)).toBe(false);
   expect(isSpreadsheetNativeTextUndoTarget(cellInput)).toBe(true);
@@ -208,6 +210,32 @@ test('does not steal focus when a hidden cell editor resumes editing', async () 
   await waitForAnimationFrames(3);
 
   expect(document.activeElement).toBe(cellInput);
+  container.remove();
+});
+
+test('keeps restoring grid focus while Escape exits a live cell editor', async () => {
+  const container = document.createElement('div');
+  const overlay = document.createElement('main');
+  overlay.className = 'fortune-sheet-overlay';
+  overlay.tabIndex = -1;
+  const inputBox = document.createElement('div');
+  inputBox.className = 'luckysheet-input-box';
+  inputBox.style.zIndex = '19';
+  const cellInput = document.createElement('div');
+  cellInput.className = 'luckysheet-cell-input';
+  cellInput.contentEditable = 'true';
+  cellInput.tabIndex = 0;
+  inputBox.append(cellInput);
+  container.append(overlay, inputBox);
+  document.body.append(container);
+  cellInput.focus();
+
+  focusSpreadsheetGrid(container, { forceCellEditingExit: true });
+  expect(document.activeElement).toBe(overlay);
+  cellInput.focus();
+  await waitForAnimationFrames(3);
+
+  expect(document.activeElement).toBe(overlay);
   container.remove();
 });
 

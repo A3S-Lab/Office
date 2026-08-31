@@ -96,6 +96,37 @@ describe('spreadsheet clipboard controller', () => {
     });
   });
 
+  test('copies plain text when a partial merged selection cannot preserve rich cells', async () => {
+    const contentRef = { current: workbook() };
+    const sheet = contentRef.current.sheets[0];
+    if (!sheet) throw new Error('Expected the clipboard test sheet.');
+    sheet.config = {
+      merge: { '0_0': { r: 0, c: 0, rs: 1, cs: 2 } },
+    };
+    const writes: string[] = [];
+    const { result } = renderHook(() =>
+      useSpreadsheetClipboard({
+        canAccessSelection: true,
+        clipboard: {
+          readText: async () => writes.at(-1) ?? '',
+          writeText: async (value) => {
+            writes.push(value);
+          },
+        },
+        clearSelection: () => true,
+        commit: () => true,
+        contentRef,
+        editable: true,
+        fallbackFocusTarget: () => null,
+        getSelection: sourceSelection,
+      }),
+    );
+
+    act(() => expect(result.current.commandPort.copySelection()).toBe(true));
+    await waitFor(() => expect(writes).toEqual(['5']));
+    expect(spreadsheetClipboardSnapshotForText('5')?.kind).toBe('text');
+  });
+
   test('captures the target before asynchronous clipboard access resolves', async () => {
     const contentRef = { current: workbook() };
     const changes: WorkSpreadsheetContent[] = [];

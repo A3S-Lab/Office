@@ -1,9 +1,121 @@
 import { type Editor, Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { useState } from 'react';
 import type { DocumentContent } from '../src/core';
 import { DocumentEditor } from '../src/react';
 import { applyDocumentFontDialogPatch } from '../src/internal/features/work/editors/document-font-dialog-model';
+
+test('publishes only committed Chinese text from a controlled IME composition', async () => {
+  let editor: Editor | null = null;
+  const publications: DocumentContent[] = [];
+  const captureEditor = Extension.create({
+    name: 'captureControlledCompositionEditor',
+    onCreate() {
+      editor = this.editor;
+    },
+  });
+  const initial: DocumentContent = {
+    type: 'document',
+    html: '<p></p>',
+    pageSize: 'a4',
+  };
+
+  function ControlledDocumentEditor() {
+    const [content, setContent] = useState(initial);
+    return (
+      <DocumentEditor
+        content={content}
+        extensions={[captureEditor]}
+        onChange={(next) => {
+          publications.push(next);
+          setContent(next);
+        }}
+        theme="light"
+      />
+    );
+  }
+
+  render(<ControlledDocumentEditor />);
+  const surface = await screen.findByRole('textbox', { name: '文档正文' });
+  await waitFor(() => expect(editor).not.toBeNull());
+  const current = editor as Editor;
+
+  fireEvent.compositionStart(surface, { data: 'qingwen' });
+  expect(current.view.composing).toBe(true);
+  act(() => {
+    current.commands.insertContent('qingwen');
+  });
+  expect(publications).toEqual([]);
+
+  act(() => {
+    current.chain().selectAll().insertContent('请问').run();
+  });
+  expect(publications).toEqual([]);
+
+  fireEvent.compositionEnd(surface, { data: '请问' });
+  await waitFor(() => expect(publications).toHaveLength(1));
+  expect(publications[0]?.html).toContain('请问');
+  expect(publications[0]?.html).not.toContain('qingwen');
+  expect(surface).toHaveTextContent('请问');
+});
+
+test('defers an authoritative controlled replacement until IME composition settles', async () => {
+  let editor: Editor | null = null;
+  const publications: DocumentContent[] = [];
+  const captureEditor = Extension.create({
+    name: 'captureDeferredControlledCompositionEditor',
+    onCreate() {
+      editor = this.editor;
+    },
+  });
+  const initial: DocumentContent = {
+    type: 'document',
+    html: '<p>Initial</p>',
+    pageSize: 'a4',
+  };
+  const replacement: DocumentContent = {
+    ...initial,
+    html: '<p>Authoritative host update</p>',
+  };
+  const properties = {
+    extensions: [captureEditor],
+    onChange: (next: DocumentContent) => publications.push(next),
+    theme: 'light' as const,
+  };
+  const view = render(<DocumentEditor {...properties} content={initial} />);
+  const surface = await screen.findByRole('textbox', { name: '文档正文' });
+  await waitFor(() => expect(editor).not.toBeNull());
+  const current = editor as Editor;
+
+  fireEvent.compositionStart(surface, { data: 'qingwen' });
+  act(() => {
+    current.chain().selectAll().insertContent('qingwen').run();
+  });
+  view.rerender(<DocumentEditor {...properties} content={replacement} />);
+
+  expect(surface).toHaveTextContent('qingwen');
+  expect(surface).not.toHaveTextContent('Authoritative host update');
+  expect(publications).toEqual([]);
+
+  act(() => {
+    current.chain().selectAll().insertContent('请问').run();
+  });
+  fireEvent.compositionEnd(surface, { data: '请问' });
+
+  await waitFor(() => expect(publications).toHaveLength(1));
+  expect(publications[0]?.html).toContain('请问');
+  expect(publications[0]?.html).not.toContain('qingwen');
+  await waitFor(() =>
+    expect(surface).toHaveTextContent('Authoritative host update'),
+  );
+});
 
 test('keeps a local formatting publication until the controlled host acknowledges it', async () => {
   let editor: Editor | null = null;

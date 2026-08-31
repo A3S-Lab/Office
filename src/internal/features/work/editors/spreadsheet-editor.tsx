@@ -95,6 +95,7 @@ import {
 } from './spreadsheet-editor-ribbon';
 import {
   finiteSpreadsheetSelection,
+  isSpreadsheetCellEditorTarget,
   isSpreadsheetCellEditingTarget,
   isSpreadsheetNativeTextUndoTarget,
   sameSpreadsheetHistoryContent,
@@ -293,6 +294,7 @@ function SpreadsheetEditorSurface({
   const previewRef = useRef(preview);
   const spreadsheetRootRef = useRef<HTMLElement>(null);
   const spreadsheetCanvasRef = useRef<HTMLDivElement>(null);
+  const spreadsheetEditingEscapePendingRef = useRef(false);
   const editorFocusOrigin = useOfficeEditorFocusOrigin();
   const workbookRef = useRef<WorkbookInstance>(null);
   const projectedWorkbookSheetsRef = useRef<WorkSpreadsheetContent['sheets']>(
@@ -365,6 +367,38 @@ function SpreadsheetEditorSurface({
       container.removeEventListener('pointerdown', handlePointerDown, true);
       container.removeEventListener('focusin', handleFocusIn, true);
       observer.disconnect();
+    };
+  }, [preview]);
+  useEffect(() => {
+    const container = spreadsheetCanvasRef.current;
+    if (!container || preview) return;
+
+    const restoreGridFocus = () =>
+      requestAnimationFrame(() =>
+        focusSpreadsheetGrid(container, { forceCellEditingExit: true }),
+      );
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key !== 'Escape' ||
+        !isSpreadsheetCellEditorTarget(event.target)
+      )
+        return;
+      spreadsheetEditingEscapePendingRef.current = true;
+      restoreGridFocus();
+    };
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || !spreadsheetEditingEscapePendingRef.current)
+        return;
+      spreadsheetEditingEscapePendingRef.current = false;
+      restoreGridFocus();
+    };
+
+    container.addEventListener('keydown', handleKeyDown, true);
+    container.addEventListener('keyup', handleKeyUp, true);
+    return () => {
+      container.removeEventListener('keydown', handleKeyDown, true);
+      container.removeEventListener('keyup', handleKeyUp, true);
+      spreadsheetEditingEscapePendingRef.current = false;
     };
   }, [preview]);
   const spreadsheetZoomRef = useRef(100);
@@ -1038,6 +1072,22 @@ function SpreadsheetEditorSurface({
   const currentClipboardSelection =
     useCallback((): SpreadsheetClipboardSelectionSource | null => {
       if (previewRef.current) return null;
+      if (contextMenu) {
+        return {
+          sheetId: contextMenu.selection.sheetId,
+          range: {
+            row: [
+              contextMenu.range.row[0] ?? 0,
+              contextMenu.range.row[1] ?? contextMenu.range.row[0] ?? 0,
+            ],
+            column: [
+              contextMenu.range.column[0] ?? 0,
+              contextMenu.range.column[1] ?? contextMenu.range.column[0] ?? 0,
+            ],
+          },
+          plainText: contextMenu.selection.clipboard,
+        };
+      }
       const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
       const sheet = contentRef.current.sheets.find(
         (candidate) => candidate.id === sheetId,
@@ -1069,7 +1119,7 @@ function SpreadsheetEditorSurface({
             plainText: agentSelection.clipboard,
           }
         : null;
-    }, [selectionState]);
+    }, [contextMenu, selectionState]);
   const spreadsheetClipboard = useSpreadsheetClipboard({
     canAccessSelection: Boolean(toolbarSheet && workbookInstance),
     clearSelection: () =>
@@ -1509,18 +1559,6 @@ function SpreadsheetEditorSurface({
     onZoomIn: () => changeSpreadsheetWheelZoom('in'),
     onZoomOut: () => changeSpreadsheetWheelZoom('out'),
   });
-  const handleSpreadsheetEditingEscape = (
-    event: React.KeyboardEvent<HTMLElement>,
-  ) => {
-    if (
-      event.key === 'Escape' &&
-      isSpreadsheetCellEditingTarget(event.target)
-    ) {
-      requestAnimationFrame(() =>
-        focusSpreadsheetGrid(spreadsheetCanvasRef.current),
-      );
-    }
-  };
   const handleSpreadsheetKeyDownCapture = (
     event: React.KeyboardEvent<HTMLElement>,
   ) => {
@@ -1542,7 +1580,6 @@ function SpreadsheetEditorSurface({
       event.stopPropagation();
       return;
     }
-    handleSpreadsheetEditingEscape(event);
   };
   const handleSpreadsheetPointerDownCapture = (
     event: ReactPointerEvent<HTMLElement>,
@@ -2037,9 +2074,11 @@ export function focusSpreadsheetGrid(
   container: HTMLElement | null,
   {
     focusOrigin = document.activeElement,
+    forceCellEditingExit = false,
     forceInitial = true,
   }: {
     focusOrigin?: Element | null;
+    forceCellEditingExit?: boolean;
     forceInitial?: boolean;
   } = {},
 ): void {
@@ -2087,12 +2126,18 @@ export function focusSpreadsheetGrid(
   const restoreFocus = (force: boolean) => {
     if (focusRestorationStopped) return;
     const activeElement = document.activeElement;
-    if (!force && isSpreadsheetCellEditingTarget(activeElement)) {
+    const activeCellEditor = isSpreadsheetCellEditorTarget(activeElement);
+    if (
+      !force &&
+      !forceCellEditingExit &&
+      isSpreadsheetCellEditingTarget(activeElement)
+    ) {
       stopObservingFocusTarget();
       return;
     }
     if (
       !force &&
+      !(forceCellEditingExit && activeCellEditor) &&
       activeElement !== document.body &&
       activeElement !== document.documentElement &&
       activeElement !== commandTrigger &&

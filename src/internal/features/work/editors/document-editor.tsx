@@ -86,6 +86,7 @@ import { documentParagraphTabStops } from '../work-document-tab-stops';
 import { documentModelUsesWindowing } from '../work-document-windowing';
 import { createWorkId } from '../work-templates';
 import type { WorkDocumentContent, WorkDocumentNode } from '../work-types';
+import { ControlledEditorComposition } from './controlled-editor-composition';
 import { DocumentChangesPanel } from './document-changes-panel';
 import { DocumentCitationsPanel } from './document-citations-panel';
 import { DocumentCommentsPanel } from './document-comments-panel';
@@ -359,6 +360,13 @@ function DocumentEditorSurface({
   const editorBeforeCreateAtRef = useRef<number | null>(null);
   const editorDetachedMountAtRef = useRef<number | null>(null);
   const onChangeRef = useRef(onChange);
+  const editorRef = useRef<Editor | null>(null);
+  const compositionRef = useRef<ControlledEditorComposition | null>(null);
+  compositionRef.current ??= new ControlledEditorComposition();
+  const composition = compositionRef.current;
+  const settleCompositionRef = useRef<(editor: Editor) => void>(
+    () => undefined,
+  );
   const trackChangesRef = useRef(
     suggestionOnly || Boolean(effectiveContent.trackChanges),
   );
@@ -411,6 +419,7 @@ function DocumentEditorSurface({
   const [selectionMenu, setSelectionMenu] =
     useState<DocumentSelectionMenuState | null>(null);
   const [selectionVersion, setSelectionVersion] = useState(0);
+  const [compositionRevision, setCompositionRevision] = useState(0);
   const [statisticsOpen, setStatisticsOpen] = useState(false);
   const loadedLayoutFontIds = useDocumentLayoutFonts(layoutFonts);
   if (!collaboration) contentRef.current = content;
@@ -488,8 +497,23 @@ function DocumentEditorSurface({
         role: 'textbox',
         spellcheck: 'true',
       },
+      handleDOMEvents: {
+        compositionstart: () => {
+          composition.start();
+          return false;
+        },
+        compositionend: () => {
+          const current = editorRef.current;
+          if (current) {
+            composition.end(current, (settled) =>
+              settleCompositionRef.current(settled),
+            );
+          }
+          return false;
+        },
+      },
     }),
-    [commentOnly],
+    [commentOnly, composition],
   );
   const publishDocumentUpdate = useCallback(
     (current: Editor, previousDocument: ProseMirrorNode) => {
@@ -577,8 +601,9 @@ function DocumentEditorSurface({
       }
       const flush = () => {
         const queued = pendingLazyPublicationRef.current;
+        if (!queued || composition.isBlocking(queued.editor)) return;
         pendingLazyPublicationRef.current = null;
-        if (queued) publishDocumentUpdate(queued.editor, queued.before);
+        publishDocumentUpdate(queued.editor, queued.before);
       };
       pendingLazyPublicationRef.current = {
         before: previousDocument,
@@ -586,17 +611,51 @@ function DocumentEditorSurface({
         editor: current,
       };
     },
-    [publishDocumentUpdate],
+    [composition, publishDocumentUpdate],
   );
+  const publishDocumentSnapshot = useCallback(
+    (current: Editor, previousDocument: ProseMirrorNode, immediate = false) => {
+      if (previousDocument.eq(current.state.doc)) return;
+      const lazyProjection = documentLazyHtmlProjection(
+        contentRef.current.model,
+      );
+      if (lazyProjection) {
+        transferLazyDocumentTextStatistics(previousDocument, current.state.doc);
+      }
+      publishedDocumentRef.current = current.state.doc;
+      if (lazyProjection && !immediate) {
+        queueLazyDocumentPublication(current, previousDocument);
+      } else {
+        publishDocumentUpdate(current, previousDocument);
+      }
+    },
+    [publishDocumentUpdate, queueLazyDocumentPublication],
+  );
+  settleCompositionRef.current = (current) => {
+    const pending = pendingLazyPublicationRef.current;
+    if (pending) {
+      pending.cancel();
+      pendingLazyPublicationRef.current = null;
+    }
+    const previousDocument = pending?.before ?? publishedDocumentRef.current;
+    if (previousDocument) {
+      publishDocumentSnapshot(current, previousDocument, true);
+    } else {
+      publishedDocumentRef.current = current.state.doc;
+    }
+    setCompositionRevision((value) => value + 1);
+  };
   useEffect(
     () => () => {
       const pending = pendingLazyPublicationRef.current;
       pendingLazyPublicationRef.current = null;
       if (!pending) return;
       pending.cancel();
-      publishDocumentUpdate(pending.editor, pending.before);
+      if (!composition.isBlocking(pending.editor)) {
+        publishDocumentUpdate(pending.editor, pending.before);
+      }
     },
-    [publishDocumentUpdate],
+    [composition, publishDocumentUpdate],
   );
   const editor = useEditor({
     // TipTap's immediate constructor runs inside a React state initializer,
@@ -629,6 +688,7 @@ function DocumentEditorSurface({
       }
     },
     onCreate: ({ editor: current }) => {
+      editorRef.current = current;
       publishedDocumentRef.current = current.state.doc;
       const mountedAt = documentEditorNow();
       const detachedMountAt = editorDetachedMountAtRef.current;
@@ -655,6 +715,10 @@ function DocumentEditorSurface({
         },
       );
     },
+    onDestroy: () => {
+      editorRef.current = null;
+      composition.destroy();
+    },
     onTransaction: ({ appendedTransactions, editor: current, transaction }) => {
       if (
         documentTransactionsOnlyHydrateChunks([
@@ -666,6 +730,7 @@ function DocumentEditorSurface({
       }
     },
     onUpdate: ({ appendedTransactions, editor: current, transaction }) => {
+      if (composition.isBlocking(current)) return;
       if (
         !shouldPublishDocumentUpdate(transaction, appendedTransactions ?? [])
       ) {
@@ -678,18 +743,7 @@ function DocumentEditorSurface({
       }
       const previousDocument = publishedDocumentRef.current;
       if (previousDocument.eq(current.state.doc)) return;
-      const lazyProjection = documentLazyHtmlProjection(
-        contentRef.current.model,
-      );
-      if (lazyProjection) {
-        transferLazyDocumentTextStatistics(previousDocument, current.state.doc);
-      }
-      publishedDocumentRef.current = current.state.doc;
-      if (lazyProjection) {
-        queueLazyDocumentPublication(current, previousDocument);
-      } else {
-        publishDocumentUpdate(current, previousDocument);
-      }
+      publishDocumentSnapshot(current, previousDocument);
     },
     onSelectionUpdate: () => setSelectionVersion((value) => value + 1),
   });
@@ -725,6 +779,8 @@ function DocumentEditorSurface({
     appliedSourceKeyRef,
     artifactId,
     content: collaboration ? contentRef.current : content,
+    controlledUpdateRevision: compositionRevision,
+    deferControlledUpdates: composition.isBlocking(editor),
     editor,
     editorInput,
     normalizedContent,

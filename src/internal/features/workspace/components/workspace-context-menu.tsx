@@ -254,8 +254,8 @@ export function WorkspaceContextMenu({
         if (shortcutItem) {
           event.preventDefault();
           event.stopPropagation();
-          dismissAndRestoreFocus();
           shortcutItem.onSelect();
+          dismissAndRestoreFocus();
         } else if (event.key === 'Escape') {
           event.preventDefault();
           event.stopPropagation();
@@ -295,9 +295,9 @@ export function WorkspaceContextMenu({
             aria-label={item.label}
             aria-keyshortcuts={item.ariaKeyShortcut}
             onClick={() => {
+              item.onSelect();
               onClose();
               restoreContextFocus();
-              item.onSelect();
             }}
           >
             {item.icon}

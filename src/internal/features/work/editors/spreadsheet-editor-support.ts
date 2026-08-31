@@ -631,6 +631,7 @@ export function isSpreadsheetNativeTextUndoTarget(
 export function isSpreadsheetCellEditingTarget(
   target: EventTarget | null,
 ): boolean {
+  if (!isSpreadsheetCellEditorTarget(target)) return false;
   if (!(target instanceof Element)) return false;
   const formulaInput = target.closest('.fortune-fx-input');
   if (formulaInput) return true;
@@ -643,6 +644,15 @@ export function isSpreadsheetCellEditingTarget(
     10,
   );
   return !Number.isFinite(zIndex) || zIndex >= 0;
+}
+
+export function isSpreadsheetCellEditorTarget(
+  target: EventTarget | null,
+): boolean {
+  return (
+    target instanceof Element &&
+    Boolean(target.closest('.fortune-fx-input, .luckysheet-cell-input'))
+  );
 }
 
 export function spreadsheetFormulaBarSelectAllTarget(

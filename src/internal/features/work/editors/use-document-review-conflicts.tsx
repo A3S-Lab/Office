@@ -23,6 +23,8 @@ export interface UseDocumentReviewConflictsOptions {
   appliedSourceKeyRef: MutableValue<string>;
   artifactId?: string;
   content: WorkDocumentContent;
+  controlledUpdateRevision?: number;
+  deferControlledUpdates?: boolean;
   editor: Editor | null;
   editorInput: WorkDocumentEditorInput;
   normalizedContent: string;
@@ -36,6 +38,8 @@ export function useDocumentReviewConflicts({
   appliedSourceKeyRef,
   artifactId,
   content,
+  controlledUpdateRevision = 0,
+  deferControlledUpdates = false,
   editor,
   editorInput,
   normalizedContent,
@@ -51,7 +55,8 @@ export function useDocumentReviewConflicts({
   onReviewConflictRef.current = onReviewConflict;
 
   useEffect(() => {
-    if (!editor || !reconcileControlledUpdates) return;
+    if (!editor || !reconcileControlledUpdates || deferControlledUpdates)
+      return;
     const artifactChanged = appliedArtifactIdRef.current !== artifactId;
     const sourceChanged = appliedSourceKeyRef.current !== editorInput.sourceKey;
     appliedArtifactIdRef.current = artifactId;
@@ -112,6 +117,8 @@ export function useDocumentReviewConflicts({
     appliedSourceKeyRef,
     artifactId,
     content,
+    controlledUpdateRevision,
+    deferControlledUpdates,
     editor,
     editorInput,
     normalizedContent,
