@@ -283,6 +283,78 @@ test('persists authored custom lists through a typed host store and remount', ()
   ).not.toBeNull();
 });
 
+test('persists custom-list deletion and preference order across remounts', () => {
+  const portRef: { current: SpreadsheetSortCommandPort | null } = {
+    current: null,
+  };
+  const content = spreadsheetContent();
+  const commandsRef = {
+    current: {
+      applyCustomSort: () => true,
+    } as SpreadsheetEditorCommands,
+  };
+  const store = new RecordingCustomListStore();
+  store.lists = [
+    ['High', 'Medium', 'Low'],
+    ['North', 'South'],
+    ['Red', 'Amber', 'Green'],
+  ];
+  const first = render(
+    <SortHarness
+      commandsRef={commandsRef}
+      content={content}
+      customListStore={store}
+      portRef={portRef}
+    />,
+  );
+
+  act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  const managerButton = screen.getByRole('button', {
+    name: '管理自定义序列',
+  });
+  fireEvent.click(managerButton);
+  let manager = screen.getByRole('dialog', { name: '自定义序列' });
+  fireEvent.click(within(manager).getByRole('button', { name: '确定' }));
+  expect(store.saved).toEqual([]);
+
+  fireEvent.click(managerButton);
+  manager = screen.getByRole('dialog', { name: '自定义序列' });
+  const list = within(manager).getByRole('listbox', {
+    name: '自定义序列列表',
+  });
+  fireEvent.change(list, { target: { value: 'user:2' } });
+  fireEvent.click(within(manager).getByRole('button', { name: '上移序列' }));
+  fireEvent.click(within(manager).getByRole('button', { name: '上移序列' }));
+  fireEvent.change(list, { target: { value: 'user:1' } });
+  fireEvent.click(within(manager).getByRole('button', { name: '删除序列' }));
+  fireEvent.click(within(manager).getByRole('button', { name: '确定' }));
+
+  expect(store.saved).toEqual([
+    [
+      ['Red', 'Amber', 'Green'],
+      ['High', 'Medium', 'Low'],
+    ],
+  ]);
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
+  first.unmount();
+
+  render(
+    <SortHarness
+      commandsRef={commandsRef}
+      content={content}
+      customListStore={store}
+      portRef={portRef}
+    />,
+  );
+  act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
+  expect(
+    within(order.querySelector('optgroup[label="已保存的序列"]') as HTMLElement)
+      .getAllByRole('option')
+      .map((option) => option.textContent),
+  ).toEqual(['Red → Amber → Green', 'High → Medium → Low']);
+});
+
 test('keeps an authored list in session when the host store rejects a write', () => {
   const portRef: { current: SpreadsheetSortCommandPort | null } = {
     current: null,
@@ -334,6 +406,72 @@ test('keeps an authored list in session when the host store rejects a write', ()
   expect(
     reopenedOrder.querySelector('optgroup[label="本次会话的序列"]'),
   ).not.toBeNull();
+});
+
+test('keeps the complete managed preference set in session after a rejected write', () => {
+  const portRef: { current: SpreadsheetSortCommandPort | null } = {
+    current: null,
+  };
+  const content = spreadsheetContent();
+  const commandsRef = {
+    current: {
+      applyCustomSort: () => true,
+    } as SpreadsheetEditorCommands,
+  };
+  const store: SpreadsheetSortCustomListStore = {
+    load: () => [
+      ['High', 'Medium', 'Low'],
+      ['North', 'South'],
+    ],
+    save: () => {
+      throw new Error('storage unavailable');
+    },
+  };
+
+  render(
+    <SortHarness
+      commandsRef={commandsRef}
+      content={content}
+      customListStore={store}
+      portRef={portRef}
+    />,
+  );
+
+  act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  fireEvent.click(screen.getByRole('button', { name: '管理自定义序列' }));
+  const manager = screen.getByRole('dialog', { name: '自定义序列' });
+  const list = within(manager).getByRole('listbox', {
+    name: '自定义序列列表',
+  });
+  fireEvent.change(list, { target: { value: 'user:0' } });
+  fireEvent.change(
+    within(manager).getByRole('textbox', { name: '自定义序列项目' }),
+    { target: { value: 'Critical\nNormal' } },
+  );
+  fireEvent.click(within(manager).getByRole('button', { name: '保存更改' }));
+  fireEvent.change(list, { target: { value: 'user:1' } });
+  fireEvent.click(within(manager).getByRole('button', { name: '删除序列' }));
+  fireEvent.click(within(manager).getByRole('button', { name: '确定' }));
+
+  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
+  expect(order.querySelector('optgroup[label="已保存的序列"]')).toBeNull();
+  expect(
+    within(
+      order.querySelector('optgroup[label="本次会话的序列"]') as HTMLElement,
+    )
+      .getAllByRole('option')
+      .map((option) => option.textContent),
+  ).toEqual(['Critical → Normal']);
+
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
+  act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  expect(
+    within(
+      screen
+        .getByRole('combobox', { name: '排序条件 1 次序' })
+        .querySelector('optgroup[label="本次会话的序列"]') as HTMLElement,
+    ).getByRole('option', { name: 'Critical → Normal' }),
+  ).toBeInTheDocument();
 });
 
 test('authors an effective conditional-icon key from the controlled sheet snapshot', () => {

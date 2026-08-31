@@ -95,6 +95,35 @@ export function useSpreadsheetSort({
     setCustomLists(loaded);
   }, [customListStore]);
 
+  const updateCustomLists = useCallback(
+    (
+      lists: readonly (readonly string[])[],
+    ): readonly SpreadsheetSortCustomList[] => {
+      const normalized = normalizeStoredSpreadsheetSortCustomLists(lists);
+      let source: 'session' | 'stored' = customListStore ? 'stored' : 'session';
+      if (customListStore) {
+        try {
+          customListStore.save(normalized);
+        } catch {
+          source = 'session';
+          showToast(
+            '无法写入本地自定义序列；本次更改仅在当前会话中保留。',
+            'error',
+          );
+        }
+      }
+      const next = Object.freeze(
+        normalized
+          .map((entries) => createSpreadsheetSortCustomList(entries, source))
+          .filter((list): list is SpreadsheetSortCustomList => list !== null),
+      );
+      customListsRef.current = next;
+      setCustomLists(next);
+      return next;
+    },
+    [customListStore],
+  );
+
   const sourceForCandidate = useCallback(
     (
       request: SpreadsheetSortOpenRequest,
@@ -144,33 +173,17 @@ export function useSpreadsheetSort({
       ) {
         return candidate;
       }
-      const next = Object.freeze([...customListsRef.current, list]);
-      if (customListStore) {
-        try {
-          customListStore.save(
-            next
-              .filter((item) => item.source === 'stored')
-              .map((item) => item.entries),
-          );
-        } catch {
-          showToast(
-            '无法写入本地自定义序列；该序列仅在本次会话中保留。',
-            'error',
-          );
-          const session =
-            createSpreadsheetSortCustomList(candidate.entries, 'session') ??
-            candidate;
-          const fallback = Object.freeze([...customListsRef.current, session]);
-          customListsRef.current = fallback;
-          setCustomLists(fallback);
-          return session;
-        }
-      }
-      customListsRef.current = next;
-      setCustomLists(next);
-      return list;
+      const next = updateCustomLists([
+        ...customListsRef.current.map((item) => item.entries),
+        list.entries,
+      ]);
+      return (
+        next.find((item) =>
+          spreadsheetSortCustomListsEqual(item.entries, list.entries),
+        ) ?? list
+      );
     },
-    [customListStore],
+    [updateCustomLists],
   );
 
   const applyAuthorizedRequest = useCallback(
@@ -362,6 +375,7 @@ export function useSpreadsheetSort({
           restoreFocusTarget={restoreFocusTarget}
           onApply={apply}
           onRememberCustomList={rememberCustomList}
+          onUpdateCustomLists={updateCustomLists}
           onClose={close}
         />
       ) : surface?.kind === 'range' ? (

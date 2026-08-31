@@ -1,4 +1,11 @@
-import { ArrowDown, ArrowUp, ListPlus, Settings2, Trash2 } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ListOrdered,
+  ListPlus,
+  Settings2,
+  Trash2,
+} from 'lucide-react';
 import { type FormEvent, useId, useMemo, useRef, useState } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
 import { OfficeCheckbox } from './office-controls';
@@ -25,6 +32,10 @@ import {
   spreadsheetSortCustomListsEqual,
 } from './spreadsheet-sort-custom-list';
 import { SpreadsheetSortCustomListEditor } from './spreadsheet-sort-custom-list-editor';
+import {
+  type SpreadsheetSortCustomListManagementResult,
+  SpreadsheetSortCustomListManagerDialog,
+} from './spreadsheet-sort-custom-list-manager';
 import { SpreadsheetSortOptionsDialog } from './spreadsheet-sort-options-dialog';
 import {
   nextSpreadsheetSortKey,
@@ -43,6 +54,7 @@ export function SpreadsheetSortDialog({
   restoreFocusTarget,
   onApply,
   onRememberCustomList,
+  onUpdateCustomLists,
   onClose,
 }: {
   source: SpreadsheetSortDialogSource;
@@ -50,7 +62,10 @@ export function SpreadsheetSortDialog({
   onApply: (value: SpreadsheetSortDialogValue) => boolean;
   onRememberCustomList?: (
     list: SpreadsheetSortCustomList,
-  ) => SpreadsheetSortCustomList | void;
+  ) => SpreadsheetSortCustomList | undefined;
+  onUpdateCustomLists?: (
+    lists: readonly (readonly string[])[],
+  ) => readonly SpreadsheetSortCustomList[] | undefined;
   onClose: () => void;
 }) {
   const [value, setValue] = useState<SpreadsheetSortDialogValue>(() => ({
@@ -64,6 +79,7 @@ export function SpreadsheetSortDialog({
     source.value.hasHeader,
   );
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [customListManagerOpen, setCustomListManagerOpen] = useState(false);
   const [customLists, setCustomLists] = useState(() =>
     initialSpreadsheetSortCustomLists(source),
   );
@@ -83,6 +99,7 @@ export function SpreadsheetSortDialog({
     useState<SpreadsheetSortCustomListDraft | null>(null);
   const formId = useId();
   const optionsButtonRef = useRef<HTMLButtonElement>(null);
+  const customListManagerButtonRef = useRef<HTMLButtonElement>(null);
   const nextKey =
     value.keys.length < MAX_SPREADSHEET_SORT_KEYS
       ? nextSpreadsheetSortKey(value.keys, fields, appearanceFields)
@@ -215,6 +232,37 @@ export function SpreadsheetSortDialog({
     });
   };
 
+  const applyCustomListManagement = (
+    result: SpreadsheetSortCustomListManagementResult,
+  ) => {
+    const currentUserLists = customLists.filter(
+      (list) => list.source !== 'built-in',
+    );
+    const preferencesChanged =
+      currentUserLists.length !== result.lists.length ||
+      result.lists.some(
+        (entries, index) =>
+          !spreadsheetSortCustomListsEqual(
+            currentUserLists[index]?.entries ?? [],
+            entries,
+          ),
+      );
+    const fallback = result.lists
+      .map((entries) => createSpreadsheetSortCustomList(entries, 'session'))
+      .filter((list): list is SpreadsheetSortCustomList => list !== null);
+    const updated = preferencesChanged
+      ? (onUpdateCustomLists?.(result.lists) ?? fallback)
+      : currentUserLists;
+    setCustomLists(mergeSpreadsheetSortCustomLists(updated));
+    setCustomListDraft(null);
+    setValue((current) => ({
+      ...current,
+      keys: current.keys.map((key) =>
+        reconcileManagedCustomListKey(key, result.changes),
+      ),
+    }));
+  };
+
   return (
     <>
       <Dialog
@@ -236,31 +284,44 @@ export function SpreadsheetSortDialog({
       >
         <form id={formId} onSubmit={submit}>
           <div className="work-spreadsheet-sort-toolbar">
-            <Button
-              tone="quiet"
-              type="button"
-              disabled={!nextKey}
-              onClick={() => {
-                if (!nextKey) return;
-                setCustomListDraft(null);
-                setValue((current) => ({
-                  ...current,
-                  keys: [...current.keys, cloneSpreadsheetSortKey(nextKey)],
-                }));
-              }}
-            >
-              <ListPlus size={15} aria-hidden="true" />
-              添加条件
-            </Button>
-            <Button
-              ref={optionsButtonRef}
-              tone="quiet"
-              type="button"
-              onClick={() => setOptionsOpen(true)}
-            >
-              <Settings2 size={15} aria-hidden="true" />
-              选项…
-            </Button>
+            <div className="work-spreadsheet-sort-toolbar-actions">
+              <Button
+                tone="quiet"
+                type="button"
+                disabled={!nextKey}
+                onClick={() => {
+                  if (!nextKey) return;
+                  setCustomListDraft(null);
+                  setValue((current) => ({
+                    ...current,
+                    keys: [...current.keys, cloneSpreadsheetSortKey(nextKey)],
+                  }));
+                }}
+              >
+                <ListPlus size={15} aria-hidden="true" />
+                添加条件
+              </Button>
+              <Button
+                ref={optionsButtonRef}
+                tone="quiet"
+                type="button"
+                onClick={() => setOptionsOpen(true)}
+              >
+                <Settings2 size={15} aria-hidden="true" />
+                选项…
+              </Button>
+              <Button
+                ref={customListManagerButtonRef}
+                tone="quiet"
+                type="button"
+                aria-label="管理自定义序列"
+                title="管理自定义序列"
+                onClick={() => setCustomListManagerOpen(true)}
+              >
+                <ListOrdered size={15} aria-hidden="true" />
+                自定义序列…
+              </Button>
+            </div>
             <OfficeCheckbox
               ariaLabel="数据包含标题"
               checked={value.hasHeader}
@@ -438,8 +499,30 @@ export function SpreadsheetSortDialog({
           onClose={() => setOptionsOpen(false)}
         />
       ) : null}
+      {customListManagerOpen ? (
+        <SpreadsheetSortCustomListManagerDialog
+          customLists={customLists}
+          restoreFocusTarget={() => customListManagerButtonRef.current}
+          onApply={applyCustomListManagement}
+          onClose={() => setCustomListManagerOpen(false)}
+        />
+      ) : null}
     </>
   );
+}
+
+function reconcileManagedCustomListKey(
+  key: SpreadsheetSortKey,
+  changes: SpreadsheetSortCustomListManagementResult['changes'],
+): SpreadsheetSortKey {
+  if (key.customList === undefined) return key;
+  const change = changes.find((candidate) =>
+    spreadsheetSortCustomListsEqual(candidate.previous, key.customList ?? []),
+  );
+  if (!change) return key;
+  return change.next
+    ? { index: key.index, customList: [...change.next] }
+    : { index: key.index, direction: 'ascending' };
 }
 
 function cloneSpreadsheetSortKey(key: SpreadsheetSortKey): SpreadsheetSortKey {

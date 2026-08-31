@@ -703,8 +703,14 @@ selector and keep their identity when a request already carries the same
 sequence. Focused Rstest, desktop/compact Playwright, and the pinned local-only
 A3S Test gate cover storage round trips, invalid payloads, write fallback,
 full-page reload reuse, formula-safe sorting, one-step Undo, accessibility, and
-empty browser diagnostics. A full preference manager for deleting or
-reordering stored lists remains open.
+empty browser diagnostics. The same bounded preference surface now exposes a
+responsive, keyboard-accessible manager: built-in sequences remain read-only;
+user sequences are created, edited, deleted, and reordered in one staged
+update; duplicate or over-budget drafts fail locally; and unchanged
+confirmation does not cross the store boundary. Active sort keys adopt edited
+sequences and fall back to ascending value order after deletion. A rejected
+write keeps the complete changed set in the mounted session with visible
+feedback.
 
 The fifty-fifth milestone adds common worksheet AutoFilter conditions through
 an A3S-owned accessible dialog reached from each active filter header. Users can

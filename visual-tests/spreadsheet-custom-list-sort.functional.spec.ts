@@ -64,11 +64,68 @@ test('Spreadsheet persists, applies, and undoes a custom-list sort', async ({
 
   await customSort.click();
   dialog = page.getByRole('dialog', { name: '自定义排序' });
+  const reopenedOrder = dialog.getByRole('combobox', {
+    name: '排序条件 1 次序',
+  });
   await expect(
-    dialog
-      .getByRole('combobox', { name: '排序条件 1 次序' })
-      .getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
+    reopenedOrder.getByRole('option', {
+      name: '有风险 → 进行中 → 正常 → …',
+    }),
   ).toBeAttached();
+  const managerButton = dialog.getByRole('button', {
+    name: '管理自定义序列',
+  });
+  const usesNarrowManagerLayout = testInfo.project.name === 'compact-768';
+  if (usesNarrowManagerLayout) {
+    await page.setViewportSize({ width: 680, height: 900 });
+  }
+  await managerButton.click();
+  const manager = page.getByRole('dialog', { name: '自定义序列' });
+  const list = manager.getByRole('listbox', { name: '自定义序列列表' });
+  const entries = manager.getByRole('textbox', { name: '自定义序列项目' });
+  await expect(list).toBeFocused();
+  await expect(entries).toHaveAttribute('readonly', '');
+
+  await list.selectOption('user:0');
+  await entries.fill('紧急\n普通');
+  await manager.getByRole('button', { name: '保存更改' }).click();
+  await manager.getByRole('button', { name: '新建序列' }).click();
+  await entries.fill('待处理\n处理中\n已完成');
+  await manager.getByRole('button', { name: '添加序列' }).click();
+  await manager.getByRole('button', { name: '新建序列' }).click();
+  await entries.fill('北区\n中区\n南区');
+  await manager.getByRole('button', { name: '添加序列' }).click();
+  await manager.getByRole('button', { name: '上移序列' }).click();
+  await manager.getByRole('button', { name: '上移序列' }).click();
+  await list.selectOption('user:1');
+  await manager.getByRole('button', { name: '删除序列' }).click();
+  await expect(list.locator('optgroup[label="用户序列"] option')).toHaveText([
+    '北区 → 中区 → 南区',
+    '紧急 → 普通',
+  ]);
+  const managerBounds = await manager.boundingBox();
+  const managerViewport = page.viewportSize();
+  expect(managerBounds).not.toBeNull();
+  expect(managerViewport).not.toBeNull();
+  expect(
+    (managerBounds?.x ?? 0) + (managerBounds?.width ?? 0),
+  ).toBeLessThanOrEqual(managerViewport?.width ?? 0);
+  expect(
+    (managerBounds?.y ?? 0) + (managerBounds?.height ?? 0),
+  ).toBeLessThanOrEqual(managerViewport?.height ?? 0);
+  await manager.screenshot({
+    path: testInfo.outputPath('spreadsheet-custom-list-manager-dialog.png'),
+    animations: 'disabled',
+  });
+  await manager.getByRole('button', { name: '确定' }).click();
+  await expect(manager).toHaveCount(0);
+  await expect(managerButton).toBeFocused();
+  await expect(
+    reopenedOrder.locator('optgroup[label="已保存的序列"] option'),
+  ).toHaveText(['北区 → 中区 → 南区', '紧急 → 普通']);
+  if (usesNarrowManagerLayout) {
+    await page.setViewportSize({ width: 768, height: 800 });
+  }
   await dialog.getByRole('button', { name: '取消' }).click();
   await expect(customSort).toBeFocused();
 
@@ -115,10 +172,13 @@ test('Spreadsheet persists, applies, and undoes a custom-list sort', async ({
     remountedOrder.locator('optgroup[label="已保存的序列"]'),
   ).toBeAttached();
   await expect(
+    remountedOrder.locator('optgroup[label="已保存的序列"] option'),
+  ).toHaveText(['北区 → 中区 → 南区', '紧急 → 普通']);
+  await expect(
     remountedOrder.getByRole('option', {
       name: '有风险 → 进行中 → 正常 → …',
     }),
-  ).toBeAttached();
+  ).toHaveCount(0);
   await dialog.getByRole('button', { name: '取消' }).click();
   await expect(customSort).toBeFocused();
   expect(browserErrors).toEqual([]);
