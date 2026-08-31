@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.37.2' ||
     version === '0.37.1' ||
     version === '0.37.0' ||
     version === '0.36.0' ||
@@ -64,6 +65,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.37.2',
     '0.37.1',
     '0.37.0',
     '0.36.0',
@@ -144,6 +146,73 @@ test('documents host-owned file action icons and destructive semantics in the cu
     expect(document).toContain('danger: true');
     expect(document).toContain('中性文件图标');
   }
+});
+
+test('documents controlled rich-text IME settlement in the current release', async () => {
+  const [
+    latestEnglishDocument,
+    latestChineseDocument,
+    releaseEnglishDocument,
+    releaseChineseDocument,
+    latestEnglishMarkdown,
+    latestChineseMarkdown,
+    releaseEnglishArchitecture,
+    releaseChineseArchitecture,
+  ] = await Promise.all([
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.37.2/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.37.2/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/markdown.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/markdown.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.37.2/en/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.37.2/zh/browser-editor-architecture.md'),
+      'utf8',
+    ),
+  ]);
+
+  for (const document of [latestEnglishDocument, releaseEnglishDocument]) {
+    expect(document).toContain('## IME and controlled updates');
+    expect(document).toContain('phonetic pre-edit text');
+    expect(document).toContain('defers that replacement');
+  }
+  for (const document of [latestChineseDocument, releaseChineseDocument]) {
+    expect(document).toContain('## 输入法与受控更新');
+    expect(document).toContain('拼音等预编辑文字');
+    expect(document).toContain('把替换延后');
+  }
+  expect(latestEnglishMarkdown).toContain('## Visual-editor IME behavior');
+  expect(latestEnglishMarkdown).toContain('raw Pinyin');
+  expect(latestChineseMarkdown).toContain('## 可视化编辑器的输入法行为');
+  expect(releaseEnglishArchitecture).toContain(
+    '## Controlled rich-text IME boundary',
+  );
+  expect(releaseEnglishArchitecture).toContain(
+    'creates no timers or extra renders for ordinary keyboard input',
+  );
+  expect(releaseChineseArchitecture).toContain('## 受控富文本输入法边界');
 });
 
 test('builds a product home beside, rather than inside, the versioned docs site', async () => {
@@ -281,7 +350,7 @@ test('routes the concise README to release evidence while both documentation hom
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.37.1`');
+  expect(readme).toContain('Version `0.37.2`');
   expect(readme).toContain('[changelog](./CHANGELOG.md)');
   expect(readme).toContain('[capability roadmap](./ROADMAP.md)');
   expect(readme).toContain(
@@ -981,6 +1050,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.37.2',
     '0.37.1',
     '0.37.0',
     '0.36.0',
@@ -1055,6 +1125,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.37.2',
     '0.37.1',
     '0.37.0',
     '0.36.0',

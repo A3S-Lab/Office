@@ -71,7 +71,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          key: playwright-chromium-webkit-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
       - name: Install visual-test browser
         run: |
@@ -85,7 +85,10 @@ jobs:
                 "${ubuntu_source}"
             fi
           done
-          bunx playwright install --with-deps chromium
+          bunx playwright install --with-deps chromium webkit
+
+      - name: Check controlled IME behavior in WebKit
+        run: bun run playground:ime:webkit
 
       - name: Check editor visual contracts
         run: bun run playground:visual
@@ -97,6 +100,8 @@ jobs:
           name: office-visual-test-diagnostics
           path: |
             playwright-report
+            playwright-report-ime-webkit
+            test-results/ime-webkit
             test-results/visual
           if-no-files-found: ignore
 

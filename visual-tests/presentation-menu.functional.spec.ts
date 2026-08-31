@@ -141,7 +141,10 @@ test('Presentation numeric menus commit complete font and timing values', async 
   const title = canvas.locator(':scope > .work-slide-element').nth(1);
   await title.dblclick();
 
+  const slideEditor = page.getByRole('textbox', { name: '幻灯片文本' });
+  await expect(slideEditor).toBeFocused();
   const fontSize = page.getByRole('textbox', { name: '演示字号' });
+  await expect(fontSize).toHaveValue('38');
   const initialFontSize = await fontSize.inputValue();
   await fontSize.fill('');
   await expect(fontSize).toHaveValue('');

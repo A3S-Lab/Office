@@ -309,11 +309,12 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
-Version `0.37.1` keeps the release surface focused on local, testable
+Version `0.37.2` keeps the release surface focused on local, testable
 workflows:
 
-- Presentation text composition is safe for Chinese and other IMEs; pre-edit
-  text remains local and only the committed value reaches the host.
+- Document, visual Markdown, and Presentation text composition is safe for
+  Chinese and other IMEs: pre-edit text remains local, controlled replacement
+  waits for settlement, and only the committed value reaches the host.
 - Spreadsheet sort and AutoFilter workflows run locally, including bounded
   multi-key sorting, native wildcard filters, Top/Bottom filters, custom lists,
   and Simplified Chinese collation choices.
@@ -409,6 +410,13 @@ bun run test:e2e:initial-focus:check
 bun run test:e2e:initial-focus
 bun run test:e2e:presentation-chinese-ime:check
 bun run test:e2e:presentation-chinese-ime
+```
+
+The controlled Document IME lifecycle also runs against Playwright's pinned
+WebKit engine in CI:
+
+```bash
+bun run playground:ime:webkit
 ```
 
 GitHub Actions does not require A3S Test. See

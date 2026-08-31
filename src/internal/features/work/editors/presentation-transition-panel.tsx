@@ -1,5 +1,5 @@
 import { CopyCheck } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createWorkSlideTransition } from '../work-presentation-transition';
 import type {
   WorkSlideTransition,
@@ -35,14 +35,28 @@ export function PresentationTransitionPanel({
   const update = (patch: Partial<WorkSlideTransition>) => {
     if (transition) onChange({ ...transition, ...patch });
   };
-  const [advanceAfterDraft, setAdvanceAfterDraft] = useState(() =>
-    presentationAdvanceAfterDraft(transition?.advanceAfterMs),
+  const selectedAdvanceAfterDraft = presentationAdvanceAfterDraft(
+    transition?.advanceAfterMs,
+  );
+  const selectedAdvanceAfterDraftRef = useRef({
+    slideId,
+    value: selectedAdvanceAfterDraft,
+  });
+  const [advanceAfterDraft, setAdvanceAfterDraft] = useState(
+    selectedAdvanceAfterDraft,
   );
   useEffect(() => {
-    setAdvanceAfterDraft(
-      presentationAdvanceAfterDraft(transition?.advanceAfterMs),
+    const previous = selectedAdvanceAfterDraftRef.current;
+    selectedAdvanceAfterDraftRef.current = {
+      slideId,
+      value: selectedAdvanceAfterDraft,
+    };
+    setAdvanceAfterDraft((draft) =>
+      previous.slideId !== slideId || draft === previous.value
+        ? selectedAdvanceAfterDraft
+        : draft,
     );
-  }, [slideId, transition?.advanceAfterMs]);
+  }, [selectedAdvanceAfterDraft, slideId]);
   const commitAdvanceAfter = (value: string): void => {
     if (!transition || transition.advanceAfterMs === undefined) {
       setAdvanceAfterDraft('');
@@ -200,9 +214,16 @@ export function PresentationTransitionPanel({
             ariaLabel="自动换片"
             disabled={!editable || !transition}
             checked={transition?.advanceAfterMs !== undefined}
-            onCheckedChange={(checked) =>
-              update({ advanceAfterMs: checked ? 5000 : undefined })
-            }
+            onCheckedChange={(checked) => {
+              const advanceAfterMs = checked ? 5000 : undefined;
+              const draft = presentationAdvanceAfterDraft(advanceAfterMs);
+              selectedAdvanceAfterDraftRef.current = {
+                slideId,
+                value: draft,
+              };
+              setAdvanceAfterDraft(draft);
+              update({ advanceAfterMs });
+            }}
           >
             自动换片
           </OfficeCheckbox>

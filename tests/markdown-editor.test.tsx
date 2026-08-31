@@ -1,12 +1,14 @@
-import { Extension } from '@tiptap/core';
+import { type Editor, Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import {
+  act,
   fireEvent,
   render,
   screen,
   waitFor,
   within,
 } from '@testing-library/react';
+import { useState } from 'react';
 import type { MarkdownContent } from '../src/core';
 import { markdownTaskCheckboxLabel } from '../src/internal/features/work/editors/markdown-editor';
 import { proportionalMarkdownScrollTop } from '../src/internal/features/work/editors/markdown-workspace';
@@ -151,6 +153,66 @@ test('keeps the default split view to one editor and one read-only preview', asy
   expect(editableTask).not.toBeNull();
   expect(editableTask).toBeEnabled();
   expect(screen.queryByLabelText('Markdown 源码')).toBeNull();
+});
+
+test('publishes only committed Chinese text from controlled visual Markdown IME', async () => {
+  let editor: Editor | null = null;
+  const publications: MarkdownContent[] = [];
+  const captureEditor = Extension.create({
+    name: 'captureControlledMarkdownCompositionEditor',
+    onCreate() {
+      editor = this.editor;
+    },
+  });
+
+  function ControlledMarkdownEditor() {
+    const [content, setContent] = useState<MarkdownContent>({
+      type: 'markdown',
+      markdown: '',
+    });
+    return (
+      <MarkdownEditor
+        content={content}
+        extensions={[captureEditor]}
+        onChange={(next) => {
+          publications.push(next);
+          setContent(next);
+        }}
+        theme="light"
+      />
+    );
+  }
+
+  render(<ControlledMarkdownEditor />);
+  await screen.findByLabelText('Markdown 源码');
+  fireEvent.click(screen.getByRole('tab', { name: '视图' }));
+  fireEvent.click(
+    within(screen.getByRole('region', { name: '编辑方式' })).getByRole(
+      'button',
+      { name: '可视化编辑' },
+    ),
+  );
+  const surface = await screen.findByLabelText('Markdown 编辑区');
+  await waitFor(() => expect(editor).not.toBeNull());
+  const current = editor as Editor;
+
+  fireEvent.compositionStart(surface, { data: 'qingwen' });
+  expect(current.view.composing).toBe(true);
+  act(() => {
+    current.commands.insertContent('qingwen');
+  });
+  expect(publications).toEqual([]);
+
+  act(() => {
+    current.chain().selectAll().insertContent('请问').run();
+  });
+  expect(publications).toEqual([]);
+
+  fireEvent.compositionEnd(surface, { data: '请问' });
+  await waitFor(() =>
+    expect(publications).toEqual([{ type: 'markdown', markdown: '请问' }]),
+  );
+  expect(surface).toHaveTextContent('请问');
 });
 
 test('coalesces source edits before rebuilding the visual Markdown tree', async () => {

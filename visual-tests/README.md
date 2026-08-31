@@ -29,6 +29,21 @@ Review the ten changed PNG files for the current platform before accepting an
 update. A baseline update is not a substitute for checking keyboard access,
 responsive behavior, or editor-specific functional tests.
 
+## Focused WebKit IME contract
+
+The controlled rich-text regression uses the Playwright-pinned WebKit engine
+without expanding the screenshot matrix. It dispatches a complete composition
+lifecycle in `DocumentEditor`, proves Pinyin pre-edit changes are not published,
+expects exactly one committed Chinese publication, and reopens the controlled
+fixture to verify persistence:
+
+```bash
+bunx playwright install webkit
+bun run playground:ime:webkit
+```
+
+CI runs this focused gate separately from the Chromium visual contracts.
+
 ## Traditional Office Writer page-layout parity
 
 The deterministic Traditional Office layout contract is separate from the

@@ -1,4 +1,4 @@
-import type { Extensions } from '@tiptap/core';
+import type { Editor, Extensions } from '@tiptap/core';
 import { useEditor } from '@tiptap/react';
 import {
   type CSSProperties,
@@ -34,6 +34,7 @@ import {
   type WorkMarkdownSelectionSnapshot,
 } from '../work-markdown-selection-menu';
 import type { WorkMarkdownContent } from '../work-types';
+import { ControlledEditorComposition } from './controlled-editor-composition';
 import {
   type MarkdownEditingSurface,
   restoreMarkdownEditingSurfaceFocus,
@@ -113,6 +114,13 @@ export function MarkdownEditor({
     : content;
   const contentRef = useRef(initialContent);
   const onChangeRef = useRef(onChange);
+  const editorRef = useRef<Editor | null>(null);
+  const compositionRef = useRef<ControlledEditorComposition | null>(null);
+  compositionRef.current ??= new ControlledEditorComposition();
+  const composition = compositionRef.current;
+  const publishVisualMarkdownRef = useRef<(editor: Editor) => void>(
+    () => undefined,
+  );
   const receivedContentRef = useRef(content);
   const appliedMarkdownRef = useRef(initialContent.markdown);
   const emittedMarkdownRef = useRef<string | null>(null);
@@ -133,6 +141,7 @@ export function MarkdownEditor({
   const [viewMode, setViewMode] = useState<MarkdownViewMode>('split');
   const [zoom, setZoom] = useState(100);
   const [selectionVersion, setSelectionVersion] = useState(0);
+  const [compositionRevision, setCompositionRevision] = useState(0);
   const [presenceSurface, setPresenceSurface] = useState<'source' | 'visual'>(
     preview ? 'visual' : 'source',
   );
@@ -180,6 +189,22 @@ export function MarkdownEditor({
         role: 'textbox',
         spellcheck: 'true',
       },
+      handleDOMEvents: {
+        compositionstart: () => {
+          composition.start();
+          return false;
+        },
+        compositionend: () => {
+          const current = editorRef.current;
+          if (current) {
+            composition.end(current, (settled) => {
+              publishVisualMarkdownRef.current(settled);
+              setCompositionRevision((value) => value + 1);
+            });
+          }
+          return false;
+        },
+      },
       handleKeyDown: (_view: unknown, event: KeyboardEvent) => {
         if (
           !collaborative ||
@@ -202,8 +227,33 @@ export function MarkdownEditor({
         return false;
       },
     }),
-    [collaborative, readOnly],
+    [collaborative, composition, readOnly],
   );
+  const publishVisualMarkdown = useCallback(
+    (current: Editor) => {
+      const markdown = current.getMarkdown();
+      if (markdown === appliedMarkdownRef.current) return;
+      cancelPreviewSync();
+      if (collaborative) {
+        appliedMarkdownRef.current = markdown;
+        collaborationBindingRef.current?.replace(markdown);
+        return;
+      }
+      const next = { ...contentRef.current, markdown };
+      appliedMarkdownRef.current = markdown;
+      emittedMarkdownRef.current = markdown;
+      sourceMarkdownRef.current = markdown;
+      contentRef.current = next;
+      setSourceMarkdown(markdown);
+      resetSourceHistory(
+        markdown,
+        textareaSelection(sourceTextareaRef.current, markdown.length),
+      );
+      onChangeRef.current(next);
+    },
+    [cancelPreviewSync, collaborative, resetSourceHistory],
+  );
+  publishVisualMarkdownRef.current = publishVisualMarkdown;
   const editor = useEditor(
     {
       extensions,
@@ -211,26 +261,16 @@ export function MarkdownEditor({
       contentType: 'markdown',
       editable: !readOnly && viewMode === 'visual',
       editorProps,
+      onCreate: ({ editor: current }) => {
+        editorRef.current = current;
+      },
+      onDestroy: () => {
+        editorRef.current = null;
+        composition.destroy();
+      },
       onUpdate: ({ editor: current }) => {
-        const markdown = current.getMarkdown();
-        if (markdown === appliedMarkdownRef.current) return;
-        cancelPreviewSync();
-        if (collaborative) {
-          appliedMarkdownRef.current = markdown;
-          collaborationBindingRef.current?.replace(markdown);
-          return;
-        }
-        const next = { ...contentRef.current, markdown };
-        appliedMarkdownRef.current = markdown;
-        emittedMarkdownRef.current = markdown;
-        sourceMarkdownRef.current = markdown;
-        contentRef.current = next;
-        setSourceMarkdown(markdown);
-        resetSourceHistory(
-          markdown,
-          textareaSelection(sourceTextareaRef.current, markdown.length),
-        );
-        onChangeRef.current(next);
+        if (composition.isBlocking(current)) return;
+        publishVisualMarkdownRef.current(current);
       },
       onSelectionUpdate: () => setSelectionVersion((value) => value + 1),
     },
@@ -243,6 +283,7 @@ export function MarkdownEditor({
       if (
         !editor ||
         editor.isDestroyed ||
+        composition.isBlocking(editor) ||
         appliedMarkdownRef.current === markdown
       ) {
         return;
@@ -250,7 +291,7 @@ export function MarkdownEditor({
       appliedMarkdownRef.current = markdown;
       editor.commands.setWorkMarkdown(markdown, { emitUpdate: false });
     },
-    [cancelPreviewSync, editor],
+    [cancelPreviewSync, composition, editor],
   );
 
   const queueMarkdownPreview = useCallback(
@@ -388,7 +429,13 @@ export function MarkdownEditor({
 
   useEffect(() => {
     if (collaborative) return;
-    if (!editor || receivedContentRef.current === content) return;
+    if (
+      !editor ||
+      composition.isBlocking(editor) ||
+      receivedContentRef.current === content
+    ) {
+      return;
+    }
     receivedContentRef.current = content;
     const markdown = content.markdown;
     if (sourceMarkdownRef.current !== markdown) {
@@ -410,6 +457,8 @@ export function MarkdownEditor({
   }, [
     content,
     collaborative,
+    composition,
+    compositionRevision,
     editor,
     readOnly,
     queueMarkdownPreview,

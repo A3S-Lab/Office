@@ -959,7 +959,7 @@ test('document revision decisions require an explicit confirmation', async ({
 
   await editor.focus();
   await editor.press('End');
-  await page.keyboard.type(' reviewed');
+  await editor.pressSequentially(' reviewed');
   if (modalPane) {
     await changesTrigger.click();
     await expect(changesPane).toBeVisible();

@@ -1,0 +1,30 @@
+[
+  {
+    "text": "文档",
+    "link": "/",
+    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?(?:$|guide(?:/|$)|browser-editor-architecture|native-office-engine|editor-quality-roadmap|cli-reference)"
+  },
+  {
+    "text": "组件",
+    "link": "/components/",
+    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?components/"
+  },
+  {
+    "text": "CLI 与 Skill",
+    "link": "/automation/",
+    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?automation/"
+  },
+  {
+    "text": "资源",
+    "items": [
+      {
+        "text": "GitHub",
+        "link": "https://github.com/A3S-Lab/Office"
+      },
+      {
+        "text": "npm",
+        "link": "https://www.npmjs.com/package/@a3s-lab/office"
+      }
+    ]
+  }
+]

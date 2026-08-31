@@ -18,6 +18,11 @@ test('Spreadsheet applies and undoes WPS cell styles from the grouped gallery', 
 
   await grid.focus();
   await page.keyboard.press('Shift+F11');
+  await expect(page.getByRole('tab', { name: '工作表 2' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(grid).toBeFocused();
   await page.keyboard.type('Ready');
   await page.keyboard.press('Enter');
   await page.keyboard.press('ArrowUp');

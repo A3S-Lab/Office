@@ -1,5 +1,11 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { Editor } from '@tiptap/core';
 import {
   newPresentationElement,
@@ -161,6 +167,52 @@ test('publishes only the committed Chinese IME text', async () => {
   currentEditor.chain().selectAll().insertContent('你').run();
   fireEvent.compositionEnd(textbox, { data: '你' });
   await waitFor(() => expect(published).toEqual(['你']));
+});
+
+test('defers an authoritative presentation text replacement until IME composition settles', async () => {
+  let editor: Editor | null = null;
+  const published: string[] = [];
+  const properties = {
+    onChange: (value: { text: string }) => published.push(value.text),
+    onEditorChange: (current: Editor | null) => {
+      editor = current;
+    },
+  };
+  const view = render(
+    <PresentationTextEditor
+      {...properties}
+      element={textElement({ text: 'Initial' })}
+    />,
+  );
+  const textbox = await screen.findByRole('textbox', {
+    name: '幻灯片文本',
+  });
+  await waitFor(() => expect(editor).not.toBeNull());
+  const currentEditor = editor as Editor;
+
+  fireEvent.compositionStart(textbox, { data: 'qingwen' });
+  act(() => {
+    currentEditor.chain().selectAll().insertContent('qingwen').run();
+  });
+  view.rerender(
+    <PresentationTextEditor
+      {...properties}
+      element={textElement({ text: 'Authoritative host update' })}
+    />,
+  );
+  expect(textbox).toHaveTextContent('qingwen');
+  expect(textbox).not.toHaveTextContent('Authoritative host update');
+  expect(published).toEqual([]);
+
+  act(() => {
+    currentEditor.chain().selectAll().insertContent('请问').run();
+  });
+  fireEvent.compositionEnd(textbox, { data: '请问' });
+
+  await waitFor(() => expect(published).toEqual(['请问']));
+  await waitFor(() =>
+    expect(textbox).toHaveTextContent('Authoritative host update'),
+  );
 });
 
 test('returns Escape from text editing to its slide object', async () => {

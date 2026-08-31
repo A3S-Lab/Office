@@ -763,6 +763,11 @@ test('Spreadsheet merges and fills cells from the WPS Home alignment group', asy
 
   await grid.focus();
   await page.keyboard.press('Shift+F11');
+  await expect(page.getByRole('tab', { name: '工作表 2' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(grid).toBeFocused();
   await page.keyboard.type('North');
   await page.keyboard.press('Enter');
   await page.keyboard.press('ArrowUp');
