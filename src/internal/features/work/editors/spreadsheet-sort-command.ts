@@ -1,3 +1,4 @@
+import type { Cell } from '@fortune-sheet/core';
 import { parseSpreadsheetCellRanges } from '../work-spreadsheet-ranges';
 import type { WorkSpreadsheetSheet } from '../work-types';
 import {
@@ -25,11 +26,20 @@ import {
   MAX_SPREADSHEET_SORT_CELLS,
   type SpreadsheetSortDirection,
   type SpreadsheetSortIntent,
+  type SpreadsheetSortNormalizedRequest,
   type SpreadsheetSortOpenRequest,
+  type SpreadsheetSortOwnedRange,
   type SpreadsheetSortRequest,
+  spreadsheetSortOwnedRangeForExactRange,
+  spreadsheetSortRowsFromSheet,
+  spreadsheetSortRowsMatchRange,
   validateSpreadsheetSortRequest,
 } from './spreadsheet-sort';
 import { createSpreadsheetSortAppearanceRows } from './spreadsheet-sort-appearance';
+import {
+  reconcileSpreadsheetFiltersAfterSort,
+  spreadsheetFilterReconciliationIsBounded,
+} from './spreadsheet-filter-reconciliation';
 import { sortSpreadsheetMatrix } from './spreadsheet-sort-matrix';
 
 export function createSpreadsheetSortExtension(): OfficeEditorExtension<
@@ -102,7 +112,8 @@ function quickSortSpreadsheet(
     sheetId: context.targetSheetId,
     range: request.selected.range,
     orientation: 'top-to-bottom',
-    hasHeader: false,
+    hasHeader: request.selected.scope?.hasHeader ?? false,
+    ...(request.selected.scope ? { scope: request.selected.scope } : {}),
     keys: [{ index: request.activeColumn, direction }],
   });
 }
@@ -129,6 +140,7 @@ function createSpreadsheetSortOpenRequest(
       plan.selectedRange,
       intent,
     ),
+    ...spreadsheetSortCandidateScope(sheet, plan.selectedRange),
   };
   const expanded = plan.expandedRange
     ? {
@@ -139,6 +151,7 @@ function createSpreadsheetSortOpenRequest(
           plan.expandedRange,
           intent,
         ),
+        ...spreadsheetSortCandidateScope(sheet, plan.expandedRange),
       }
     : undefined;
   if (!selected.available && !expanded?.available) return null;
@@ -183,8 +196,30 @@ function canApplySpreadsheetSort(
   if (!canEditSpreadsheetSelection(context)) return false;
   const validation = validateSpreadsheetSortRequest(request);
   if (!validation.ok || request.sheetId !== context.targetSheetId) return false;
+  const sheet = context.content.sheets.find(
+    (candidate) => candidate.id === context.targetSheetId,
+  );
+  if (!sheet) return false;
+  const owned = spreadsheetSortOwnedRangeForExactRange(
+    sheet,
+    validation.request.range,
+  );
   if (
-    spreadsheetSortRangeHasStructuralConflict(context, validation.request.range)
+    owned &&
+    spreadsheetSortRequiresFilterReconciliation(sheet, owned) &&
+    !spreadsheetFilterReconciliationIsBounded(sheet)
+  ) {
+    return false;
+  }
+  if (!spreadsheetSortRequestMatchesOwnedRange(validation.request, owned)) {
+    return false;
+  }
+  if (
+    spreadsheetSortRangeHasStructuralConflict(
+      context,
+      validation.request.range,
+      owned,
+    )
   ) {
     return false;
   }
@@ -218,10 +253,25 @@ function applySpreadsheetSort(
   ) {
     return false;
   }
+  const owned = spreadsheetSortOwnedRangeForExactRange(
+    sheet,
+    validation.request.range,
+  );
+  let liveRows: (Cell | null)[][] | null = null;
   try {
-    const rows = context.workbook.getCellsByRange(validation.request.range, {
+    liveRows = context.workbook.getCellsByRange(validation.request.range, {
       id: request.sheetId,
     });
+  } catch {
+    // Filtered native views may not expose every hidden row through this API.
+  }
+  const rows =
+    liveRows &&
+    spreadsheetSortRowsMatchRange(liveRows, validation.request.range)
+      ? liveRows
+      : spreadsheetSortRowsFromSheet(sheet, validation.request.range);
+  if (!rows) return false;
+  try {
     const appearances = createSpreadsheetSortAppearanceRows(
       sheet,
       validation.request.range,
@@ -229,6 +279,27 @@ function applySpreadsheetSort(
     );
     const result = sortSpreadsheetMatrix(rows, validation.request, appearances);
     if (!result.ok) return false;
+    if (owned && spreadsheetSortRequiresFilterReconciliation(sheet, owned)) {
+      const sorted = spreadsheetSheetWithSortedRange(
+        sheet,
+        validation.request.range,
+        result.rows,
+      );
+      const reconciled = reconcileSpreadsheetFiltersAfterSort(
+        sorted,
+        sheet,
+        validation.request.range,
+        result.sourceIndexes,
+      );
+      if (!reconciled) return false;
+      context.onChange({
+        ...context.content,
+        sheets: context.content.sheets.map((candidate) =>
+          candidate.id === sheet.id ? reconciled : candidate,
+        ),
+      });
+      return true;
+    }
     context.workbook.setCellValuesByRange(
       result.rows,
       validation.request.range,
@@ -238,6 +309,63 @@ function applySpreadsheetSort(
   } catch {
     return false;
   }
+}
+
+function spreadsheetSheetWithSortedRange(
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetCellRange,
+  rows: readonly (readonly (Cell | null)[])[],
+): WorkSpreadsheetSheet {
+  const data = sheet.data?.slice();
+  const celldata = sheet.celldata?.filter(
+    (entry) =>
+      entry.r < range.row[0] ||
+      entry.r > range.row[1] ||
+      entry.c < range.column[0] ||
+      entry.c > range.column[1],
+  );
+  rows.forEach((source, rowOffset) => {
+    const row = range.row[0] + rowOffset;
+    const target = data
+      ? (sheet.data?.[row]?.slice() ?? [])
+      : ([] as (Cell | null)[]);
+    source.forEach((cell, columnOffset) => {
+      const column = range.column[0] + columnOffset;
+      if (cell) target[column] = cell;
+      else delete target[column];
+      if (cell && celldata) celldata.push({ r: row, c: column, v: cell });
+    });
+    if (data) data[row] = target;
+  });
+  if (data) {
+    celldata?.sort((left, right) => left.r - right.r || left.c - right.c);
+    return { ...sheet, data, ...(celldata ? { celldata } : {}) };
+  }
+  if (celldata) {
+    celldata.sort((left, right) => left.r - right.r || left.c - right.c);
+    return { ...sheet, celldata };
+  }
+  const generated: NonNullable<WorkSpreadsheetSheet['data']> = [];
+  rows.forEach((source, rowOffset) => {
+    const target: (Cell | null)[] = [];
+    source.forEach((cell, columnOffset) => {
+      if (cell) target[range.column[0] + columnOffset] = cell;
+    });
+    generated[range.row[0] + rowOffset] = target;
+  });
+  return { ...sheet, data: generated };
+}
+
+function spreadsheetSortRequiresFilterReconciliation(
+  sheet: WorkSpreadsheetSheet,
+  owned: SpreadsheetSortOwnedRange,
+): boolean {
+  if (owned.scope.kind === 'auto-filter') {
+    return Object.keys(sheet.filter ?? {}).length > 0;
+  }
+  const tableId = owned.scope.tableId;
+  const table = sheet.tables?.find((candidate) => candidate.id === tableId);
+  return Boolean(table?.headerRow && table.filters.length);
 }
 
 function spreadsheetSortRangeCanRun(
@@ -261,14 +389,24 @@ function spreadsheetSortRangeCanRun(
 function spreadsheetSortRangeHasStructuralConflict(
   context: SpreadsheetCommandContext,
   range: SpreadsheetCellRange,
+  exactOwnedRange?: SpreadsheetSortOwnedRange | null,
 ): boolean {
   const sheet = context.content.sheets.find(
     (candidate) => candidate.id === context.targetSheetId,
   );
   if (!sheet) return true;
+  const ownedRange =
+    exactOwnedRange === undefined
+      ? spreadsheetSortOwnedRangeForExactRange(sheet, range)
+      : exactOwnedRange;
   if (
-    (sheet.tables ?? []).some((table) =>
-      spreadsheetCellRangesIntersect(table.range, range),
+    (sheet.tables ?? []).some(
+      (table) =>
+        spreadsheetCellRangesIntersect(table.range, range) &&
+        !(
+          ownedRange?.scope.kind === 'table' &&
+          ownedRange.scope.tableId === table.id
+        ),
     )
   ) {
     return true;
@@ -277,10 +415,45 @@ function spreadsheetSortRangeHasStructuralConflict(
     sheet.filter_select ?? { row: [], column: [] },
   );
   return Boolean(
-    (autoFilter && spreadsheetCellRangesIntersect(autoFilter, range)) ||
+    (autoFilter &&
+      spreadsheetCellRangesIntersect(autoFilter, range) &&
+      ownedRange?.scope.kind !== 'auto-filter') ||
       spreadsheetSortRangeIntersectsHyperlink(sheet, range) ||
       spreadsheetSortRangeIntersectsFormulaMetadata(sheet, range) ||
       spreadsheetSortRangeIntersectsBorderMetadata(sheet, range),
+  );
+}
+
+function spreadsheetSortCandidateScope(
+  sheet: WorkSpreadsheetSheet,
+  range: SpreadsheetCellRange,
+): { scope?: SpreadsheetSortOwnedRange['scope'] } {
+  const owned = spreadsheetSortOwnedRangeForExactRange(sheet, range);
+  return owned ? { scope: owned.scope } : {};
+}
+
+function spreadsheetSortRequestMatchesOwnedRange(
+  request: SpreadsheetSortNormalizedRequest,
+  owned: SpreadsheetSortOwnedRange | null,
+): boolean {
+  if (!owned) return request.scope === undefined;
+  return Boolean(
+    request.scope &&
+      spreadsheetSortOwnedScopesEqual(request.scope, owned.scope) &&
+      request.orientation === 'top-to-bottom' &&
+      request.hasHeader === owned.scope.hasHeader,
+  );
+}
+
+function spreadsheetSortOwnedScopesEqual(
+  left: SpreadsheetSortOwnedRange['scope'],
+  right: SpreadsheetSortOwnedRange['scope'],
+): boolean {
+  return (
+    left.kind === right.kind &&
+    left.hasHeader === right.hasHeader &&
+    (left.kind !== 'table' ||
+      (right.kind === 'table' && left.tableId === right.tableId))
   );
 }
 

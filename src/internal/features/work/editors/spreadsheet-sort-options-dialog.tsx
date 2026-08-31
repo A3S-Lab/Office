@@ -4,11 +4,13 @@ import type { SpreadsheetSortOptions } from './spreadsheet-sort';
 
 export function SpreadsheetSortOptionsDialog({
   value,
+  orientationLocked = false,
   restoreFocusTarget,
   onApply,
   onClose,
 }: {
   value: SpreadsheetSortOptions;
+  orientationLocked?: boolean;
   restoreFocusTarget: () => HTMLElement | null;
   onApply: (value: SpreadsheetSortOptions) => void;
   onClose: () => void;
@@ -107,6 +109,11 @@ export function SpreadsheetSortOptionsDialog({
         </fieldset>
         <fieldset className="work-spreadsheet-sort-options">
           <legend>方向</legend>
+          {orientationLocked ? (
+            <p className="work-spreadsheet-sort-options-lock-note">
+              结构化数据区域仅支持按列排序，以保持字段、表头和筛选条件对应。
+            </p>
+          ) : null}
           <label>
             <input
               type="radio"
@@ -133,6 +140,7 @@ export function SpreadsheetSortOptionsDialog({
               type="radio"
               name="spreadsheet-sort-orientation"
               value="left-to-right"
+              disabled={orientationLocked}
               checked={draft.orientation === 'left-to-right'}
               data-autofocus={
                 draft.orientation === 'left-to-right' ? '' : undefined

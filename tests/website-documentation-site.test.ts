@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.37.4' ||
     version === '0.37.3' ||
     version === '0.37.2' ||
     version === '0.37.1' ||
@@ -66,6 +67,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.37.4',
     '0.37.3',
     '0.37.2',
     '0.37.1',
@@ -352,7 +354,7 @@ test('routes the concise README to release evidence while both documentation hom
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.37.3`');
+  expect(readme).toContain('Version `0.37.4`');
   expect(readme).toContain('[changelog](./CHANGELOG.md)');
   expect(readme).toContain('[capability roadmap](./ROADMAP.md)');
   expect(readme).toContain(
@@ -1052,6 +1054,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.37.4',
     '0.37.3',
     '0.37.2',
     '0.37.1',
@@ -1128,6 +1131,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.37.4',
     '0.37.3',
     '0.37.2',
     '0.37.1',
@@ -2650,7 +2654,7 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(discoverability).toContain('9 / 9 项');
 });
 
-test('publishes formula-safe Spreadsheet sorting and bounded custom-list preference management without rewriting 0.37.0', async () => {
+test('publishes formula-safe Spreadsheet sorting, owned-range reconciliation, and bounded custom-list preferences without rewriting 0.37.0', async () => {
   const [
     roadmap,
     changelog,
@@ -2667,6 +2671,9 @@ test('publishes formula-safe Spreadsheet sorting and bounded custom-list prefere
     structureCommand,
     e2e,
     rangeE2e,
+    ownedRangeE2e,
+    ownedRangeVisual,
+    filterReconciliation,
     customListModel,
     customListStore,
     core,
@@ -2748,6 +2755,24 @@ test('publishes formula-safe Spreadsheet sorting and bounded custom-list prefere
     ),
     readFile(
       path.join(repositoryRoot, 'tests/e2e/spreadsheet-sort-range.acl'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/spreadsheet-owned-range-sort.acl'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/spreadsheet-owned-range-sort.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-filter-reconciliation.ts',
+      ),
       'utf8',
     ),
     readFile(
@@ -2897,6 +2922,10 @@ test('publishes formula-safe Spreadsheet sorting and bounded custom-list prefere
   expect(roadmap).toContain('effective-color/conditional-icon sorting');
   expect(roadmap).toContain('left-to-right complete columns');
   expect(roadmap).toContain('pinyin/stroke comparison');
+  expect(roadmap).toContain('exact table/AutoFilter owner expansion');
+  expect(roadmap).not.toContain(
+    'table/AutoFilter-integrated custom sorting remain incomplete',
+  );
   expect(changelog).toContain('Data → Custom Sort');
   expect(changelog).toContain('coordinate-owned hyperlink');
   expect(changelog).toContain('Sort Warning');
@@ -2907,6 +2936,9 @@ test('publishes formula-safe Spreadsheet sorting and bounded custom-list prefere
   expect(changelog).toContain(
     'Spreadsheet **Custom Lists** preference manager',
   );
+  expect(changelog).toContain(
+    'native table and worksheet\n  AutoFilter ownership',
+  );
   expect(product).toContain('The forty-eighth milestone');
   expect(product).toContain('The forty-ninth milestone');
   expect(product).toContain('The fiftieth milestone');
@@ -2914,6 +2946,7 @@ test('publishes formula-safe Spreadsheet sorting and bounded custom-list prefere
   expect(product).toContain('The fifty-second milestone');
   expect(product).toContain('The fifty-third milestone');
   expect(product).toContain('The fifty-fourth milestone');
+  expect(product).toContain('The fifty-ninth milestone');
   expect(product).toContain('responsive, keyboard-accessible manager');
   expect(english).toContain('## Multi-key custom sort');
   expect(chinese).toContain('## 多关键字自定义排序');
@@ -2935,6 +2968,10 @@ test('publishes formula-safe Spreadsheet sorting and bounded custom-list prefere
   expect(english).toContain('**Custom Lists** opens a keyboard-accessible');
   expect(chinese).toContain('LocalStorageSpreadsheetSortCustomListStore');
   expect(chinese).toContain('可用键盘操作的偏好管理器');
+  expect(english).toContain('exactly one semantic ListObject or');
+  expect(english).toContain('opaque `caljs` state');
+  expect(chinese).toContain('唯一一张语义 ListObject');
+  expect(chinese).toContain('不透明 `caljs` 状态');
   expect(english).toContain(
     "element's `sortCustomListStore` JavaScript property",
   );
@@ -2956,6 +2993,8 @@ test('publishes formula-safe Spreadsheet sorting and bounded custom-list prefere
   );
   expect(architecture).toContain('`spreadsheet-current-region` model');
   expect(chineseArchitecture).toContain('`spreadsheet-current-region` 模型');
+  expect(architecture).toContain('`spreadsheet-filter-reconciliation`');
+  expect(chineseArchitecture).toContain('`spreadsheet-filter-reconciliation`');
   expect(quality).toContain('The thirty-eighth Spreadsheet slice');
   expect(chineseQuality).toContain('第三十八个 Spreadsheet 纵向切片');
   expect(quality).toContain('The thirty-ninth Spreadsheet slice');
@@ -2972,6 +3011,8 @@ test('publishes formula-safe Spreadsheet sorting and bounded custom-list prefere
   expect(chineseQuality).toContain('第四十四个 Spreadsheet 纵向切片');
   expect(quality).toContain('The fiftieth Spreadsheet slice');
   expect(chineseQuality).toContain('第五十个 Spreadsheet 纵向切片');
+  expect(quality).toContain('The fifty-first Spreadsheet slice');
+  expect(chineseQuality).toContain('第五十一个 Spreadsheet 纵向切片');
   expect(releaseEnglish).not.toContain('## Multi-key custom sort');
   expect(releaseChinese).not.toContain('## 多关键字自定义排序');
   expect(releaseEnglish).not.toContain('Traditional Office-style Sort Warning');
@@ -2988,6 +3029,18 @@ test('publishes formula-safe Spreadsheet sorting and bounded custom-list prefere
   expect(rangeE2e).toContain('expand-is-default');
   expect(rangeE2e).toContain('exact-range-has-no-header');
   expect(rangeE2e).toContain('expanded-formula-restored-in-one-step');
+  expect(ownedRangeE2e).toContain('single-cell-sort-is-disabled');
+  expect(ownedRangeE2e).toContain('row-orientation-disabled');
+  expect(ownedRangeVisual).toContain(
+    'reapplies AutoFilter criteria after an owned-range sort and undo',
+  );
+  expect(ownedRangeVisual).toContain('spreadsheet-auto-filter-owned-sort');
+  expect(filterReconciliation).toContain(
+    'reconcileSpreadsheetFiltersAfterSort',
+  );
+  expect(filterReconciliation).toContain(
+    'spreadsheetFilterWithRemappedOpaqueEntries',
+  );
   expect(customListModel).toContain(
     'MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRIES = 256',
   );
@@ -3065,12 +3118,17 @@ test('publishes formula-safe Spreadsheet sorting and bounded custom-list prefere
   expect(packageJson).toContain('test:e2e:spreadsheet-text-sort');
   expect(packageJson).toContain('playground:visual:spreadsheet-sort-range');
   expect(packageJson).toContain('test:e2e:spreadsheet-sort-range');
+  expect(packageJson).toContain(
+    'playground:visual:spreadsheet-owned-range-sort',
+  );
+  expect(packageJson).toContain('test:e2e:spreadsheet-owned-range-sort');
   expect(gate).toContain('tests/e2e/spreadsheet-custom-sort.acl');
   expect(gate).toContain('tests/e2e/spreadsheet-custom-list-sort.acl');
   expect(gate).toContain('tests/e2e/spreadsheet-appearance-sort.acl');
   expect(gate).toContain('tests/e2e/spreadsheet-row-sort.acl');
   expect(gate).toContain('tests/e2e/spreadsheet-text-sort.acl');
   expect(gate).toContain('tests/e2e/spreadsheet-sort-range.acl');
+  expect(gate).toContain('tests/e2e/spreadsheet-owned-range-sort.acl');
 });
 
 test('keeps the 0.8.0 native suggestion limitation frozen', async () => {

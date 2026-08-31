@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.37.3",
+  "version": "0.37.4",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -111,6 +111,7 @@
     "playground:visual:spreadsheet-row-sort": "playwright test visual-tests/spreadsheet-row-sort.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-text-sort": "playwright test visual-tests/spreadsheet-text-sort.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-sort-range": "playwright test visual-tests/spreadsheet-sort-range.functional.spec.ts --config playwright.config.ts",
+    "playground:visual:spreadsheet-owned-range-sort": "playwright test visual-tests/spreadsheet-owned-range-sort.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-font-dialog-shortcuts": "playwright test visual-tests/spreadsheet-font-dialog-shortcuts.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-diagonal-borders": "playwright test visual-tests/spreadsheet-diagonal-borders.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-font-colors-shortcuts": "playwright test visual-tests/spreadsheet-font-colors-shortcuts.functional.spec.ts --config playwright.config.ts",
@@ -202,6 +203,8 @@
     "test:e2e:spreadsheet-text-sort:check": "a3s-test check tests/e2e/spreadsheet-text-sort.acl --json",
     "test:e2e:spreadsheet-sort-range": "A3S_TEST_SUITE=tests/e2e/spreadsheet-sort-range.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:spreadsheet-sort-range:check": "a3s-test check tests/e2e/spreadsheet-sort-range.acl --json",
+    "test:e2e:spreadsheet-owned-range-sort": "A3S_TEST_SUITE=tests/e2e/spreadsheet-owned-range-sort.acl bash scripts/run-a3s-test-web-gate.sh",
+    "test:e2e:spreadsheet-owned-range-sort:check": "a3s-test check tests/e2e/spreadsheet-owned-range-sort.acl --json",
     "test:e2e:spreadsheet-cell-fill": "a3s-test run tests/e2e/spreadsheet-cell-fill.acl --json",
     "test:e2e:spreadsheet-cell-fill:check": "a3s-test check tests/e2e/spreadsheet-cell-fill.acl --json",
     "test:e2e:spreadsheet-auto-sum": "a3s-test run tests/e2e/spreadsheet-auto-sum.acl --json",

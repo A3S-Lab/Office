@@ -153,3 +153,20 @@ bun run playground:visual:spreadsheet-sort-range
 
 The companion A3S Test ACL adds accessibility-tree evidence and executes the
 same local release contract without adding A3S Test to GitHub Actions or Pages.
+
+## Focused Spreadsheet owned-range sort contract
+
+The functional regression starts from one cell inside a native table or active
+worksheet AutoFilter, requires the exact complete owner, locks the structural
+header and top-to-bottom direction, and checks responsive dialog containment.
+The table path verifies relative-formula translation and one-step Undo; the
+AutoFilter path applies a real native value selection and proves hidden-row
+ownership follows the sorted record and its Undo at desktop and compact widths:
+
+```bash
+bun run playground:visual:spreadsheet-owned-range-sort
+```
+
+The companion local-only A3S Test ACL records the table-owned warning, locked
+controls, focus restoration, accessibility, and browser diagnostics without
+adding A3S Test to GitHub Actions or Pages.

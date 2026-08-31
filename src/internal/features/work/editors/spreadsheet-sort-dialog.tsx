@@ -78,6 +78,7 @@ export function SpreadsheetSortDialog({
   const [verticalHasHeader, setVerticalHasHeader] = useState(
     source.value.hasHeader,
   );
+  const structuralScope = source.scope !== undefined;
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [customListManagerOpen, setCustomListManagerOpen] = useState(false);
   const [customLists, setCustomLists] = useState(() =>
@@ -205,6 +206,7 @@ export function SpreadsheetSortDialog({
 
   const applyOptions = (options: SpreadsheetSortOptions) => {
     setOptionsOpen(false);
+    if (structuralScope && options.orientation !== 'top-to-bottom') return;
     if (options.orientation === value.orientation) {
       setValue((current) => ({
         ...current,
@@ -325,7 +327,9 @@ export function SpreadsheetSortDialog({
             <OfficeCheckbox
               ariaLabel="数据包含标题"
               checked={value.hasHeader}
-              disabled={value.orientation === 'left-to-right'}
+              disabled={
+                structuralScope || value.orientation === 'left-to-right'
+              }
               onCheckedChange={(hasHeader) => {
                 const nextAppearanceFields = spreadsheetSortAppearanceFields(
                   source.appearanceRows,
@@ -483,7 +487,11 @@ export function SpreadsheetSortDialog({
             })}
           </div>
           <p className="work-spreadsheet-sort-note">
-            可按值、自定义序列、有效颜色或条件格式图标排序。文本值可按拼音或笔画比较，并可区分大小写；数字文本按字符顺序排列。按列排序移动整行；按行排序移动整列且不保留标题列。空白始终置于末尾，配置本地序列存储后新建序列可跨工作簿复用，否则仅保留于本次会话；每次排序作为一个可撤销操作提交。
+            {source.scope?.kind === 'auto-filter'
+              ? '当前范围由 AutoFilter 拥有：筛选表头保持固定，仅按列移动完整数据行；排序后会按原条件重新计算筛选结果并保留手动隐藏行。'
+              : source.scope?.kind === 'table'
+                ? '当前范围由表格拥有：表头与汇总行保持固定，仅按列移动完整表格数据行；排序后会按原条件重新计算表格筛选结果并保留手动隐藏行。'
+                : '可按值、自定义序列、有效颜色或条件格式图标排序。文本值可按拼音或笔画比较，并可区分大小写；数字文本按字符顺序排列。按列排序移动整行；按行排序移动整列且不保留标题列。空白始终置于末尾，配置本地序列存储后新建序列可跨工作簿复用，否则仅保留于本次会话；每次排序作为一个可撤销操作提交。'}
           </p>
         </form>
       </Dialog>
@@ -494,6 +502,7 @@ export function SpreadsheetSortDialog({
             caseSensitive: value.caseSensitive,
             textMethod: value.textMethod,
           }}
+          orientationLocked={structuralScope}
           restoreFocusTarget={() => optionsButtonRef.current}
           onApply={applyOptions}
           onClose={() => setOptionsOpen(false)}

@@ -4,6 +4,24 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.37.4 - 2026-08-31
+
+- Integrated Spreadsheet Custom Sort with native table and worksheet
+  AutoFilter ownership. A selection anywhere inside either structure now
+  expands to its exact sortable range, keeps the structural header fixed,
+  locks top-to-bottom movement, and excludes an enabled table totals row.
+- Reauthenticated the table ID or exact AutoFilter fingerprint immediately
+  before mutation. Active typed table and worksheet filters are recomputed
+  after row movement; opaque Fortune value/color filters remap their hidden-row
+  ownership through the stable sort permutation, while independently hidden
+  rows remain hidden. Filter-active sorts publish one controlled workbook
+  change and retain one-step Undo.
+- Added bounded dense/sparse fallback reads for filtered native views, a
+  one-million-cell filter-reconciliation budget, focused model/command/dialog
+  regressions, a local-only A3S Test contract, and desktop/compact Playwright
+  coverage for table formulas, native AutoFilter visibility, responsive dialog
+  containment, focus restoration, Undo, and clean browser diagnostics.
+
 ## 0.37.3 - 2026-08-31
 
 - Added an accessible Spreadsheet **Custom Lists** preference manager to

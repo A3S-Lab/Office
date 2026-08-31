@@ -18,6 +18,8 @@ import {
   type SpreadsheetSortRangeChoice,
   type SpreadsheetSortRangeDialogSource,
   type SpreadsheetSortRequest,
+  spreadsheetSortRowsFromSheet,
+  spreadsheetSortRowsMatchRange,
 } from './spreadsheet-sort';
 import { SpreadsheetSortDialog } from './spreadsheet-sort-dialog';
 import { createSpreadsheetSortAppearanceRows } from './spreadsheet-sort-appearance';
@@ -133,11 +135,16 @@ export function useSpreadsheetSort({
       const sheet = contentRef.current.sheets.find(
         (item) => item.id === request.sheetId,
       );
-      const rows = getRows({
+      if (!sheet) return null;
+      const liveRows = getRows({
         sheetId: request.sheetId,
         range: candidate.range,
       });
-      if (!sheet || !rows) return null;
+      const rows =
+        liveRows && spreadsheetSortRowsMatchRange(liveRows, candidate.range)
+          ? liveRows
+          : spreadsheetSortRowsFromSheet(sheet, candidate.range);
+      if (!rows) return null;
       const appearanceRows = createSpreadsheetSortAppearanceRows(
         sheet,
         candidate.range,
@@ -150,6 +157,7 @@ export function useSpreadsheetSort({
           range: candidate.range,
           activeColumn: request.activeColumn,
           activeRow: request.activeRow,
+          ...(candidate.scope ? { scope: candidate.scope } : {}),
         },
         rows,
         customLists,
@@ -217,6 +225,7 @@ export function useSpreadsheetSort({
           range: source.range,
           orientation: 'top-to-bottom',
           hasHeader: source.value.hasHeader,
+          ...(source.scope ? { scope: source.scope } : {}),
           keys: [
             {
               index: request.activeColumn,
@@ -329,6 +338,7 @@ export function useSpreadsheetSort({
           caseSensitive: value.caseSensitive,
           textMethod: value.textMethod,
           hasHeader: value.hasHeader,
+          ...(surface.source.scope ? { scope: surface.source.scope } : {}),
           keys: value.keys,
         },
         surface.selectedRange,

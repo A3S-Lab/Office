@@ -110,6 +110,28 @@ test('removes levels and exposes the compact header contract', () => {
   ).not.toBeChecked();
 });
 
+test('locks header and orientation controls for an AutoFilter-owned range', () => {
+  const source = sortSource();
+  render(
+    <SpreadsheetSortDialog
+      source={{
+        ...source,
+        scope: { kind: 'auto-filter', hasHeader: true },
+      }}
+      restoreFocusTarget={() => null}
+      onApply={() => true}
+      onClose={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('checkbox', { name: '数据包含标题' })).toBeDisabled();
+  expect(screen.getByText(/筛选表头保持固定/)).toBeVisible();
+
+  fireEvent.click(screen.getByRole('button', { name: '选项…' }));
+  expect(screen.getByRole('radio', { name: /^按行排序/ })).toBeDisabled();
+  expect(screen.getByText(/结构化数据区域仅支持按列排序/)).toBeVisible();
+});
+
 test('adds distinct appearance priorities on a one-column range', () => {
   const applied: SpreadsheetSortDialogValue[] = [];
   const source = sortSource();

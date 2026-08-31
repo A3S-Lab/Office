@@ -21,6 +21,7 @@ import {
   spreadsheetCellOperationCoordinates,
   spreadsheetCellOperationKey,
 } from './spreadsheet-operation-projection';
+import { reconcileSpreadsheetFiltersAfterFortune } from './spreadsheet-filter-reconciliation';
 import { reconcileSpreadsheetTablesAfterFortune } from './spreadsheet-table-reconciliation';
 
 export interface SpreadsheetSelectionSummary {
@@ -367,8 +368,12 @@ export function spreadsheetSheetsFromFortune(
         operationCount: operations.length,
       },
     );
-    return reconcileSpreadsheetTablesAfterFortune(
-      incremental.sheets,
+    return reconcileSpreadsheetFiltersAfterFortune(
+      reconcileSpreadsheetTablesAfterFortune(
+        incremental.sheets,
+        sourceSheets,
+        operations,
+      ),
       sourceSheets,
       operations,
     );
@@ -439,8 +444,8 @@ export function spreadsheetSheetsFromFortune(
       operationCount: operations.length,
     },
   );
-  return reconcileSpreadsheetTablesAfterFortune(
-    projected,
+  return reconcileSpreadsheetFiltersAfterFortune(
+    reconcileSpreadsheetTablesAfterFortune(projected, sourceSheets, operations),
     sourceSheets,
     operations,
   );

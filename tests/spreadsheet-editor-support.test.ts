@@ -15,6 +15,7 @@ import {
   spreadsheetMatrixProfile,
 } from '../src/internal/features/work/work-spreadsheet-matrix-profile';
 import { spreadsheetProtectionKey } from '../src/internal/features/work/work-spreadsheet-protection';
+import { workSpreadsheetSheetWithAutoFilterCriteria } from '../src/internal/features/work/work-spreadsheet-auto-filter';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 
 test('projects sparse workbook cells without cloning logical empty ranges', () => {
@@ -353,6 +354,57 @@ test('preserves consecutive controlled edits through incremental operations', ()
     fortuneReady: true,
     populatedCellCount: 2,
   });
+});
+
+test('reapplies AutoFilter criteria at the controlled Fortune boundary', () => {
+  const source = workSpreadsheetSheetWithAutoFilterCriteria(
+    {
+      id: 'sheet-filtered',
+      name: 'Filtered',
+      data: [
+        [{ v: 'Status' }],
+        [{ v: 'Keep' }],
+        [{ v: 'Drop' }],
+        [{ v: 'Keep' }],
+      ],
+      filter_select: { row: [0, 3], column: [0, 0] },
+      config: { rowhidden: { '3': 0 } },
+    },
+    0,
+    { type: 'equals', value: 'Keep' },
+  );
+  if (!source) throw new Error('Expected an AutoFilter fixture.');
+  const changed = {
+    ...source,
+    data: [
+      [{ v: 'Status' }],
+      [{ v: 'Drop' }],
+      [{ v: 'Keep' }],
+      [{ v: 'Keep' }],
+    ],
+  };
+
+  const [controlled] = spreadsheetSheetsFromFortune(
+    [changed],
+    [source],
+    [
+      {
+        id: 'sheet-filtered',
+        op: 'replace',
+        path: ['data', 1, 0],
+        value: changed.data[1]?.[0],
+      },
+      {
+        id: 'sheet-filtered',
+        op: 'replace',
+        path: ['data', 2, 0],
+        value: changed.data[2]?.[0],
+      },
+    ],
+  );
+
+  expect(controlled?.config?.rowhidden).toEqual({ '1': 0, '3': 0 });
+  expect(controlled?.filter?.['0']).toMatchObject({ rowhidden: { '1': 0 } });
 });
 
 test('reconstructs formula-bar rich text through the unregistered matrix fallback', () => {
