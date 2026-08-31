@@ -144,6 +144,7 @@ suites=(
   "tests/e2e/spreadsheet-gradient-fill.acl"
   "tests/e2e/spreadsheet-pattern-fill.acl"
   "tests/e2e/spreadsheet-date-time.acl"
+  "tests/e2e/spreadsheet-1904-date-system.acl"
   "tests/e2e/spreadsheet-copy-from-above.acl"
   "tests/e2e/spreadsheet-font-dialog-shortcuts.acl"
   "tests/e2e/spreadsheet-rich-text.acl"

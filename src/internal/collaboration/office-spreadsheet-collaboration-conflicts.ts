@@ -16,6 +16,12 @@ export function assertWorkOfficeSpreadsheetPatchSafe(
   shared: WorkSpreadsheetContent,
 ): void {
   assertCompatibleValue(
+    previous.dateSystem,
+    next.dateSystem,
+    shared.dateSystem,
+    'date system',
+  );
+  assertCompatibleValue(
     previous.calculation,
     next.calculation,
     shared.calculation,

@@ -305,9 +305,8 @@ test('Spreadsheet owns deterministic cell navigation, selection, editing, and cl
   await page.keyboard.press('Escape');
   await expectGridFocus(page);
 
-  await page.keyboard.press('A');
-  await page.keyboard.press('3');
-  await page.keyboard.press('S');
+  await page.keyboard.type('A3S', { delay: 20 });
+  await expect(page.locator('.luckysheet-cell-input')).toHaveText('A3S');
   await page.keyboard.press('Enter');
   await expect(nameBox).toHaveText('A2');
   await page.keyboard.press('ArrowUp');

@@ -96,6 +96,43 @@ test('recomputes table filters without moving the totals row or losing manual hi
   expect(reconciled?.tables?.[0]?.filters).toEqual(source.tables?.[0]?.filters);
 });
 
+test('reapplies dynamic filters with the workbook 1904 date system', () => {
+  const source = workSpreadsheetSheetWithAutoFilterCriteria(
+    {
+      id: 'sheet-1',
+      name: '1904 dates',
+      data: [
+        [{ v: 'Date' }],
+        [{ v: 0, ct: { fa: 'yyyy-MM-dd', t: 'd' } }],
+        [{ v: 31, ct: { fa: 'yyyy-MM-dd', t: 'd' } }],
+      ],
+      filter_select: { row: [0, 2], column: [0, 0] },
+    },
+    0,
+    { type: 'dynamic', kind: 'month-1' },
+    { dateSystem: '1904', now: new Date(2026, 5, 17) },
+  );
+  if (!source) throw new Error('Expected a 1904 AutoFilter fixture.');
+  const changed: WorkSpreadsheetSheet = {
+    ...source,
+    data: [
+      [{ v: 'Date' }],
+      [{ v: 31, ct: { fa: 'yyyy-MM-dd', t: 'd' } }],
+      [{ v: 0, ct: { fa: 'yyyy-MM-dd', t: 'd' } }],
+    ],
+  };
+
+  const [reconciled] = reconcileSpreadsheetFiltersAfterFortune(
+    [changed],
+    [source],
+    cellOperations('sheet-1', [1, 2]),
+    { dateSystem: '1904', now: new Date(2026, 5, 17) },
+  );
+
+  expect(reconciled?.filter?.['0']?.rowhidden).toEqual({ '1': 0 });
+  expect(reconciled?.config?.rowhidden).toEqual({ '1': 0 });
+});
+
 test('remaps opaque native value-filter ownership through the sorted row order', () => {
   const source: WorkSpreadsheetSheet = {
     id: 'sheet-1',

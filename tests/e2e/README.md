@@ -143,6 +143,14 @@ gate without the standalone adapter:
 A3S_TEST_BROWSER_DRIVER=a3s bash scripts/run-a3s-test-web-gate.sh
 ```
 
+The source-level Spreadsheet 1904 date-system path has a focused import,
+dynamic-filter, controlled-reopen, accessibility, and diagnostics gate:
+
+```bash
+bun run test:e2e:spreadsheet-1904-date-system:check
+bun run test:e2e:spreadsheet-1904-date-system
+```
+
 The first-open focus regression also has a focused gate:
 
 ```bash

@@ -1,4 +1,5 @@
 import type { Cell } from '@fortune-sheet/core';
+import type { WorkSpreadsheetDateSystem } from '../work-types';
 import { canMutateSpreadsheetCellRange } from './spreadsheet-cell-mutation-guard';
 import type { SpreadsheetCellRange } from './spreadsheet-cell-range';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
@@ -24,6 +25,7 @@ import {
 const MILLISECONDS_PER_DAY = 86_400_000;
 const MINUTES_PER_DAY = 1_440;
 const EXCEL_1900_EPOCH_UTC = Date.UTC(1899, 11, 30);
+const EXCEL_1904_EPOCH_UTC = Date.UTC(1904, 0, 1);
 
 export type SpreadsheetDateTimeKind = 'date' | 'time';
 
@@ -41,6 +43,7 @@ interface SpreadsheetDateTimeTarget {
 export function spreadsheetDateTimeEntry(
   kind: SpreadsheetDateTimeKind,
   now: Date,
+  dateSystem: WorkSpreadsheetDateSystem = '1900',
 ): SpreadsheetDateTimeEntry | null {
   if (!Number.isFinite(now.getTime())) return null;
 
@@ -48,9 +51,9 @@ export function spreadsheetDateTimeEntry(
     const year = now.getFullYear();
     const month = now.getMonth();
     const day = now.getDate();
-    const value =
-      (Date.UTC(year, month, day) - EXCEL_1900_EPOCH_UTC) /
-      MILLISECONDS_PER_DAY;
+    const epoch =
+      dateSystem === '1904' ? EXCEL_1904_EPOCH_UTC : EXCEL_1900_EPOCH_UTC;
+    const value = (Date.UTC(year, month, day) - epoch) / MILLISECONDS_PER_DAY;
     if (!Number.isFinite(value)) return null;
     return {
       format: { fa: 'yyyy-MM-dd', t: 'd' },
@@ -117,7 +120,11 @@ function insertCurrentSpreadsheetDateTime(
 ): boolean {
   if (!isSpreadsheetDateTimeKind(kind)) return false;
   const target = spreadsheetDateTimeTarget(context);
-  const entry = spreadsheetDateTimeEntry(kind, new Date());
+  const entry = spreadsheetDateTimeEntry(
+    kind,
+    new Date(),
+    context.content.dateSystem,
+  );
   if (!target || !entry || !context.workbook) return false;
 
   try {

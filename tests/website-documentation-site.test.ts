@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.37.5' ||
     version === '0.37.4' ||
     version === '0.37.3' ||
     version === '0.37.2' ||
@@ -67,6 +68,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.37.5',
     '0.37.4',
     '0.37.3',
     '0.37.2',
@@ -354,7 +356,7 @@ test('routes the concise README to release evidence while both documentation hom
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.37.4`');
+  expect(readme).toContain('Version `0.37.5`');
   expect(readme).toContain('[changelog](./CHANGELOG.md)');
   expect(readme).toContain('[capability roadmap](./ROADMAP.md)');
   expect(readme).toContain(
@@ -370,6 +372,9 @@ test('routes the concise README to release evidence while both documentation hom
   expect(englishHome).toContain('Character shading');
   expect(englishHome).toContain('Proofing languages');
   expect(englishHome).toContain('Data validation');
+  expect(englishHome).toContain(
+    'spreadsheet.html#xlsx-1904-date-system-retention',
+  );
   expect(englishHome).toContain('pdf.html#page-organization');
 
   expect(chineseHome).toContain('## `main` 最新能力');
@@ -380,6 +385,7 @@ test('routes the concise README to release evidence while both documentation hom
   expect(chineseHome).toContain('原生字符底纹');
   expect(chineseHome).toContain('原生校对语言');
   expect(chineseHome).toContain('spreadsheet.html#数据验证');
+  expect(chineseHome).toContain('spreadsheet.html#xlsx-1904-日期系统保留');
   expect(chineseHome).toContain('pdf.html#页面组织');
 });
 
@@ -1054,6 +1060,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.37.5',
     '0.37.4',
     '0.37.3',
     '0.37.2',
@@ -1131,6 +1138,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.37.5',
     '0.37.4',
     '0.37.3',
     '0.37.2',
@@ -3129,6 +3137,193 @@ test('publishes formula-safe Spreadsheet sorting, owned-range reconciliation, an
   expect(gate).toContain('tests/e2e/spreadsheet-text-sort.acl');
   expect(gate).toContain('tests/e2e/spreadsheet-sort-range.acl');
   expect(gate).toContain('tests/e2e/spreadsheet-owned-range-sort.acl');
+});
+
+test('publishes the workbook-owned 1900 and 1904 date-system contract', async () => {
+  const [
+    readme,
+    changelog,
+    roadmap,
+    product,
+    englishSpreadsheet,
+    chineseSpreadsheet,
+    englishArchitecture,
+    chineseArchitecture,
+    englishQuality,
+    chineseQuality,
+    englishRelease,
+    chineseRelease,
+    previousEnglishSpreadsheet,
+    workTypes,
+    dynamicFilter,
+    fileImport,
+    fileExport,
+    dateTimeCommand,
+    collaborationValidation,
+    xlsxTest,
+    dateTimeTest,
+    e2e,
+    playground,
+    fixtures,
+    gate,
+    packageJson,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/browser-editor-architecture.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/editor-quality-roadmap.md'),
+      'utf8',
+    ),
+    readFile(path.join(documentationRoot, '0.37.5/en/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, '0.37.5/zh/index.mdx'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, '0.37.4/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'src/internal/features/work/work-types.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/work-spreadsheet-dynamic-filter.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/work-spreadsheet-file-import.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/work-spreadsheet-file-export.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-date-time-command.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/collaboration/office-spreadsheet-collaboration-validation.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/spreadsheet-date-system-xlsx.test.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/spreadsheet-date-time-command.test.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/spreadsheet-1904-date-system.acl'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'playground/src/editor-workspace.tsx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'scripts/create-e2e-fixtures.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'scripts/run-a3s-test-web-gate.sh'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
+  ]);
+
+  expect(readme).toContain('Version `0.37.5`');
+  expect(readme).toContain("workbook's native 1900 or");
+  expect(changelog).toContain('## 0.37.5 - 2026-09-01');
+  expect(roadmap).toContain(
+    'exact source-level 1900/1904 date-system and typed numeric-serial retention',
+  );
+  expect(product).toContain('The sixtieth Spreadsheet milestone');
+
+  for (const document of [
+    englishSpreadsheet,
+    englishArchitecture,
+    englishQuality,
+  ]) {
+    expect(document).toContain('workbook');
+    expect(document).toContain('1904');
+    expect(document).toContain('serial zero');
+  }
+  for (const document of [
+    chineseSpreadsheet,
+    chineseArchitecture,
+    chineseQuality,
+  ]) {
+    expect(document).toContain('工作簿');
+    expect(document).toContain('1904');
+    expect(document).toContain('序列 0');
+  }
+  expect(englishSpreadsheet).toContain('## XLSX 1904 date-system retention');
+  expect(chineseSpreadsheet).toContain('## XLSX 1904 日期系统保留');
+  expect(englishRelease).toContain('# A3S Office 0.37.5 documentation');
+  expect(englishRelease).toContain('frozen documentation index');
+  expect(chineseRelease).toContain('# A3S Office 0.37.5 文档');
+  expect(chineseRelease).toContain('冻结文档索引');
+  expect(previousEnglishSpreadsheet).toContain('Source-level 1904');
+  expect(previousEnglishSpreadsheet).toContain(
+    'date-system retention and large aggregate/rank Worker/WASM offload remain',
+  );
+
+  expect(workTypes).toContain(
+    "export type WorkSpreadsheetDateSystem = '1900' | '1904';",
+  );
+  expect(workTypes).toContain('dateSystem?: WorkSpreadsheetDateSystem;');
+  expect(dynamicFilter).toContain('EXCEL_1904_EPOCH_UTC');
+  expect(fileImport).toContain('cellDates: false');
+  expect(fileImport).toContain("? '1904' : '1900'");
+  expect(fileExport).toContain("date1904: content.dateSystem === '1904'");
+  expect(dateTimeCommand).toContain('context.content.dateSystem');
+  expect(collaborationValidation).toContain('content.dateSystem');
+  expect(xlsxTest).toContain('retains a 1904 workbook');
+  expect(xlsxTest).toContain('expect(raw.Sheets.Dates?.A2?.v).toBe(0)');
+  expect(dateTimeTest).toContain('workbook-owned 1904 epoch');
+  expect(e2e).toContain('imported-1904-filter-state');
+  expect(e2e).toContain('reopened-1904-filter-state');
+  expect(playground).toContain('data-february-hidden');
+  expect(fixtures).toContain('createSpreadsheet1904DateSystemFixture');
+  expect(gate).toContain('tests/e2e/spreadsheet-1904-date-system.acl');
+  expect(packageJson).toContain('test:e2e:spreadsheet-1904-date-system');
 });
 
 test('keeps the 0.8.0 native suggestion limitation frozen', async () => {

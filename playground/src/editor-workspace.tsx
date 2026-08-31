@@ -131,6 +131,16 @@ export function EditorWorkspace({
   const spreadsheetDateTimeFixture =
     e2eFixture === SPREADSHEET_DATE_TIME_FIXTURE &&
     artifact.content.type === 'spreadsheet';
+  const spreadsheet1904DateSystemStatus =
+    e2eFixture === 'spreadsheet-1904-date-system' &&
+    artifact.content.type === 'spreadsheet'
+      ? {
+          dateSystem: artifact.content.dateSystem ?? '1900',
+          februaryHidden:
+            artifact.content.sheets[0]?.config?.rowhidden?.[2] === 0,
+          januarySerial: artifact.content.sheets[0]?.data?.[1]?.[0]?.v,
+        }
+      : null;
   const spreadsheetGradientFillFixture =
     e2eFixture === SPREADSHEET_GRADIENT_FILL_FIXTURE &&
     artifact.content.type === 'spreadsheet';
@@ -370,6 +380,22 @@ export function EditorWorkspace({
                   aria-live="polite"
                 >
                   日期与时间快捷输入 · 修订 {artifact.revision}
+                </output>
+              )}
+              {spreadsheet1904DateSystemStatus && (
+                <output
+                  className="playground-sparse-fixture-status"
+                  data-testid="spreadsheet-1904-date-system-status"
+                  data-date-system={spreadsheet1904DateSystemStatus.dateSystem}
+                  data-january-serial={String(
+                    spreadsheet1904DateSystemStatus.januarySerial ?? '',
+                  )}
+                  data-february-hidden={String(
+                    spreadsheet1904DateSystemStatus.februaryHidden,
+                  )}
+                  aria-live="polite"
+                >
+                  1904 日期系统 · 一月可见 · 二月已筛选
                 </output>
               )}
               {spreadsheetPatternFillFixture && (

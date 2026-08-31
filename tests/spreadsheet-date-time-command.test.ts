@@ -29,6 +29,21 @@ test('creates stable Excel 1900 date and minute-precision time entries', () => {
   expect(spreadsheetDateTimeEntry('date', new Date(Number.NaN))).toBeNull();
 });
 
+test('creates dates against the workbook-owned 1904 epoch', () => {
+  const now = new Date(2026, 7, 22, 9, 7, 58, 900);
+
+  expect(spreadsheetDateTimeEntry('date', now, '1904')).toEqual({
+    format: { fa: 'yyyy-MM-dd', t: 'd' },
+    formulaBarValue: '2026-08-22',
+    value: 44_794,
+  });
+  expect(spreadsheetDateTimeEntry('time', now, '1904')).toEqual({
+    format: { fa: 'hh:mm', t: 'd' },
+    formulaBarValue: '09:07',
+    value: (9 * 60 + 7) / 1_440,
+  });
+});
+
 test('renders Excel day-zero time fractions through the real Fortune formatter', () => {
   expect(formatFortuneCellValue('hh:mm', (9 * 60 + 7) / 1_440)).toBe('09:07');
   expect(formatFortuneCellValue('hh:mm', 0)).toBe('00:00');
@@ -87,6 +102,27 @@ test('inserts date and time through one native batch at the active cell', () => 
     ],
   ]);
   expect(fixture.formulaBarValues).toEqual(['2026-08-22', '09:07']);
+});
+
+test('inserts current dates with the controlled workbook date system', () => {
+  const fixture = dateTimeFixture();
+  fixture.context = {
+    ...fixture.context,
+    content: { ...fixture.context.content, dateSystem: '1904' },
+  };
+  const editor = createOfficeEditorRuntime(fixture.context, [
+    createSpreadsheetDateTimeExtension(),
+  ]);
+  rstest.useFakeTimers();
+  rstest.setSystemTime(new Date(2026, 7, 22, 9, 7, 58, 900));
+
+  try {
+    expect(editor.commands.insertCurrentDateTime('date')).toBe(true);
+  } finally {
+    rstest.useRealTimers();
+  }
+
+  expect(fixture.batches[0]?.[0]?.args[0]).toEqual([[44_794]]);
 });
 
 test('owns the WPS date and time shortcuts only on the editable grid', () => {

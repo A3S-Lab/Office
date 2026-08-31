@@ -676,6 +676,39 @@ describe('spreadsheet AutoFilter model', () => {
     expect(spreadsheetAutoFilterColumnIsNumeric(sheet, range, 2)).toBe(false);
   });
 
+  test('uses the workbook 1904 system for filtering and date-column profiling', () => {
+    const sheet: WorkSpreadsheetSheet = {
+      id: 'sheet-1',
+      name: '1904 dates',
+      data: [
+        [{ v: 'Date' }],
+        [{ v: 0, ct: { fa: 'yyyy-MM-dd', t: 'd' } }],
+        [{ v: 31, ct: { fa: 'yyyy-MM-dd', t: 'd' } }],
+      ],
+      filter: {},
+      filter_select: { row: [0, 2], column: [0, 0] },
+    };
+    const content: WorkSpreadsheetContent = {
+      type: 'spreadsheet',
+      dateSystem: '1904',
+      sheets: [sheet],
+    };
+    const range = { row: [0, 2], column: [0, 0] } as const;
+
+    const filtered = applySpreadsheetAutoFilterCriteria(content, 'sheet-1', 0, {
+      type: 'dynamic',
+      kind: 'month-1',
+    });
+
+    expect(filtered?.sheets[0]?.filter?.['0']?.rowhidden).toEqual({ '2': 0 });
+    expect(spreadsheetAutoFilterColumnIsDate(sheet, range, 0, '1904')).toBe(
+      true,
+    );
+    expect(spreadsheetAutoFilterColumnIsNumeric(sheet, range, 0, '1904')).toBe(
+      false,
+    );
+  });
+
   test('fails closed for inactive, header, and out-of-range filter columns', () => {
     const active: WorkSpreadsheetSheet = {
       ...quarterlySheet(),

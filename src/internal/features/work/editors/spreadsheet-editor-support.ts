@@ -5,7 +5,10 @@ import {
   attachSpreadsheetShownCommentCells,
   spreadsheetMatrixProfile,
 } from '../work-spreadsheet-matrix-profile';
-import type { WorkSpreadsheetContent } from '../work-types';
+import type {
+  WorkSpreadsheetContent,
+  WorkSpreadsheetDateSystem,
+} from '../work-types';
 import {
   reconcileSpreadsheetRichTextCellEdit,
   restoreSpreadsheetRichTextCellRuns,
@@ -351,8 +354,10 @@ export function spreadsheetSheetsFromFortune(
   sheets: WorkSpreadsheetContent['sheets'],
   sourceSheets: WorkSpreadsheetContent['sheets'],
   operations: readonly Op[] = [],
+  dateSystem: WorkSpreadsheetDateSystem = '1900',
 ): WorkSpreadsheetContent['sheets'] {
   const startedAt = spreadsheetProjectionNow();
+  const filterContext = { dateSystem, now: new Date() } as const;
   const incremental = projectSpreadsheetSheetsFromFortuneOperations(
     sheets,
     sourceSheets,
@@ -376,6 +381,7 @@ export function spreadsheetSheetsFromFortune(
       ),
       sourceSheets,
       operations,
+      filterContext,
     );
   }
 
@@ -448,6 +454,7 @@ export function spreadsheetSheetsFromFortune(
     reconcileSpreadsheetTablesAfterFortune(projected, sourceSheets, operations),
     sourceSheets,
     operations,
+    filterContext,
   );
 }
 

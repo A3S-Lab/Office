@@ -23,6 +23,7 @@ import {
 } from 'docx';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
 
 const fixtureDirectory = path.resolve(
   import.meta.dirname,
@@ -30,6 +31,10 @@ const fixtureDirectory = path.resolve(
 );
 const pdfPath = path.join(fixtureDirectory, 'pdf-thumbnail-keyboard.pdf');
 const picturePath = path.join(fixtureDirectory, 'word-picture.png');
+const spreadsheet1904DateSystemPath = path.join(
+  fixtureDirectory,
+  'spreadsheet-1904-date-system.xlsx',
+);
 const documentComparisonPath = path.join(
   fixtureDirectory,
   'word-document-comparison-revised.html',
@@ -95,6 +100,10 @@ await Bun.write(
   ].join(''),
 );
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
+await Bun.write(
+  spreadsheet1904DateSystemPath,
+  await createSpreadsheet1904DateSystemFixture(),
+);
 await Bun.write(longDocumentPath, await createLongWordNavigationFixture());
 await Bun.write(
   longRevisionDocumentPath,
@@ -133,6 +142,7 @@ await Bun.write(
 );
 
 console.log(`Created ${pdfPath}`);
+console.log(`Created ${spreadsheet1904DateSystemPath}`);
 console.log(`Created ${documentComparisonPath}`);
 console.log(`Created ${longDocumentPath}`);
 console.log(`Created ${longRevisionDocumentPath}`);
@@ -146,6 +156,42 @@ console.log(`Created ${wpsCjkFontMatrixDocumentPath}`);
 console.log(`Created ${wpsGridMatrixDocumentPath}`);
 console.log(`Created ${wpsScriptMatrixDocumentPath}`);
 console.log(`Created ${picturePath}`);
+
+async function createSpreadsheet1904DateSystemFixture(): Promise<ArrayBuffer> {
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.aoa_to_sheet([
+    ['Date'],
+    [0],
+    [31],
+    ['Filter boundary'],
+  ]);
+  worksheet.A2.z = 'yyyy-mm-dd';
+  worksheet.A3.z = 'yyyy-mm-dd';
+  worksheet['!autofilter'] = { ref: 'A1:A3' };
+  XLSX.utils.book_append_sheet(workbook, worksheet, '1904 Dates');
+  workbook.Workbook = { WBProps: { date1904: true } };
+  const bytes = XLSX.write(workbook, {
+    bookType: 'xlsx',
+    compression: true,
+    type: 'array',
+  }) as ArrayBuffer;
+  const archive = await JSZip.loadAsync(bytes);
+  const worksheetEntry = archive.file('xl/worksheets/sheet1.xml');
+  if (!worksheetEntry) throw new Error('Expected a Spreadsheet worksheet.');
+  const source = await worksheetEntry.async('text');
+  const withDynamicFilter = source.replace(
+    /<autoFilter ref="A1:A3"\s*\/>/,
+    '<autoFilter ref="A1:A3"><filterColumn colId="0"><dynamicFilter type="M1"/></filterColumn></autoFilter>',
+  );
+  if (withDynamicFilter === source) {
+    throw new Error('Expected the generated Spreadsheet AutoFilter.');
+  }
+  archive.file('xl/worksheets/sheet1.xml', withDynamicFilter);
+  return archive.generateAsync({
+    compression: 'DEFLATE',
+    type: 'arraybuffer',
+  });
+}
 
 async function createLongWordNavigationFixture(): Promise<Buffer> {
   const pageCount = 120;

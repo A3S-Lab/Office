@@ -4,6 +4,22 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.37.5 - 2026-09-01
+
+- Added a workbook-owned Spreadsheet date-system contract. XLSX import now
+  retains the native 1900 or 1904 epoch and exact numeric date serials,
+  including 1904 serial zero, while export restores `workbookPr date1904` and
+  preserves date-typed scalar and formula-cache values without timezone drift.
+- Applied the same epoch to dynamic AutoFilter date detection, relative,
+  month, and quarter criteria; menu profiling; filter reconciliation after
+  edits and owned-range sorts; and `Ctrl+;` current-date authoring. The 1900
+  path continues to reject Excel's fictional leap-day serial 60.
+- Carried the date system through controlled editor remounts and Yjs/Yrs
+  Spreadsheet collaboration with independent validation and conflict
+  semantics. Added real-package import/export/reopen tests, focused model and
+  command coverage, and a local A3S Test browser gate for import, filtering,
+  reopen persistence, accessibility, and clean browser diagnostics.
+
 ## 0.37.4 - 2026-08-31
 
 - Integrated Spreadsheet Custom Sort with native table and worksheet

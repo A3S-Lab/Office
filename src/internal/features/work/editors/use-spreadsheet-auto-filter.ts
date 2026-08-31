@@ -157,6 +157,7 @@ export function useSpreadsheetAutoFilter({
       container,
       activeSheet,
       keyboardInvokerRef.current,
+      contentRef.current.dateSystem,
     );
     const triggers = [
       ...container.querySelectorAll<HTMLElement>('.luckysheet-filter-options'),
@@ -166,7 +167,12 @@ export function useSpreadsheetAutoFilter({
     keyboardInvokerRef.current = trigger;
     restoreInvokerFocusRef.current = true;
     trigger.click();
-    enhanceSpreadsheetAutoFilterSurface(container, activeSheet, trigger);
+    enhanceSpreadsheetAutoFilterSurface(
+      container,
+      activeSheet,
+      trigger,
+      contentRef.current.dateSystem,
+    );
     focusSpreadsheetAutoFilterMenu(container);
     return true;
   }, [canvasRef]);
@@ -222,7 +228,12 @@ export function useSpreadsheetAutoFilter({
           column,
         ),
         criteria,
-        date: spreadsheetAutoFilterColumnIsDate(activeSheet, range, column),
+        date: spreadsheetAutoFilterColumnIsDate(
+          activeSheet,
+          range,
+          column,
+          contentRef.current.dateSystem,
+        ),
         filterRange: range,
         hasActiveFilter: Object.hasOwn(activeSheet.filter ?? {}, key),
         invoker,
@@ -230,6 +241,7 @@ export function useSpreadsheetAutoFilter({
           activeSheet,
           range,
           column,
+          contentRef.current.dateSystem,
         ),
         sheetId: activeSheet.id ?? sheetIdRef.current,
         sheetName: activeSheet.name,
@@ -264,6 +276,7 @@ export function useSpreadsheetAutoFilter({
         container,
         activeSheet,
         keyboardInvokerRef.current,
+        contentRef.current.dateSystem,
       );
       const menuOpen = Boolean(menu);
       if (
@@ -308,6 +321,7 @@ export function useSpreadsheetAutoFilter({
             (candidate) => candidate.id === sheetIdRef.current,
           ),
           trigger,
+          contentRef.current.dateSystem,
         );
         focusSpreadsheetAutoFilterMenu(container);
         return;

@@ -84,7 +84,8 @@ export async function importWorkSpreadsheetFile(
     : true;
   let readOptions = {
     type: 'array',
-    cellDates: true,
+    // Keep the source serial exact; `ct.t = 'd'` carries date semantics.
+    cellDates: false,
     cellFormula: true,
     cellHTML: false,
     cellStyles: initialRequiresCellStyles,
@@ -216,6 +217,8 @@ export async function importWorkSpreadsheetFile(
   ]);
   const XLSX = usesPlainXlsxFastPath ? null : await loadSheetJs();
   const [sheetFeatures, formulaFeatures, pivotFeatures] = importedFeatures;
+  const dateSystem = workbook.Workbook?.WBProps?.date1904 ? '1904' : '1900';
+  const dynamicFilterContext = { dateSystem, now: new Date() } as const;
   await context.controller.checkpoint('parsing', 0.2);
   await context.controller.checkpoint('parsing', 0.4);
   const conversionStartedAt = spreadsheetImportNow();
@@ -439,6 +442,7 @@ export async function importWorkSpreadsheetFile(
           formulaMetadata,
         },
         features?.autoFilterCriteria ?? [],
+        dynamicFilterContext,
       ),
     );
     await context.controller.checkpoint(
@@ -469,6 +473,7 @@ export async function importWorkSpreadsheetFile(
     {
       type: 'spreadsheet',
       sheets,
+      ...(dateSystem === '1904' ? { dateSystem } : {}),
       calculation: formulaFeatures?.calculation,
       ...workbookMetadata,
       pageBreaks: pageBreaks.length ? pageBreaks : undefined,
@@ -645,7 +650,7 @@ function fortuneCellFromXlsx(
   XLSX: typeof import('xlsx'),
   directStyle?: Partial<Cell>,
 ): Cell {
-  const cell: Cell = { ...fortuneCellStyle(source), ...directStyle };
+  const cell: Cell = { ...fortuneCellStyle(source, XLSX), ...directStyle };
   const orientation = spreadsheetExplicitTextOrientationFromCell(cell);
   if (orientation) {
     const orientationStyle = spreadsheetTextOrientationCellStyle(orientation);
@@ -670,7 +675,10 @@ function spreadsheetCellKey(row: number, column: number): string {
   return `${row}_${column}`;
 }
 
-function fortuneCellStyle(source: CellObject): Partial<Cell> {
+function fortuneCellStyle(
+  source: CellObject,
+  XLSX: typeof import('xlsx'),
+): Partial<Cell> {
   const style = source.s;
   const font =
     style && typeof style === 'object'
@@ -729,10 +737,23 @@ function fortuneCellStyle(source: CellObject): Partial<Cell> {
   if ((source.z && source.z !== 'General') || source.t === 'e') {
     target.ct = {
       fa: source.z && source.z !== 'General' ? String(source.z) : undefined,
-      t: source.t,
+      t: xlsxCellIsDate(source, XLSX) ? 'd' : source.t,
     };
   }
   return target;
+}
+
+function xlsxCellIsDate(
+  source: CellObject,
+  XLSX: typeof import('xlsx'),
+): boolean {
+  if (source.t === 'd') return true;
+  if (source.t !== 'n' || !source.z || source.z === 'General') return false;
+  try {
+    return Boolean(XLSX.SSF.is_date(String(source.z)));
+  } catch {
+    return false;
+  }
 }
 
 function fortuneCellDisplayText(

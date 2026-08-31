@@ -309,9 +309,13 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
-Version `0.37.4` keeps the release surface focused on local, testable
+Version `0.37.5` keeps the release surface focused on local, testable
 workflows:
 
+- Spreadsheet XLSX import/export now retains the workbook's native 1900 or
+  1904 date system, exact typed date serials, dynamic date filters, and
+  epoch-correct current-date authoring across controlled and collaborative
+  reopen flows.
 - Spreadsheet Custom Sort now recognizes native table and AutoFilter-owned
   ranges, keeps headers and totals structurally safe, and reapplies active
   filter visibility after one formula-safe, undoable sort.

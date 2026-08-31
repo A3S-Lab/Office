@@ -193,6 +193,27 @@ describe('spreadsheet dynamic AutoFilter evaluation', () => {
     expect(cells.map((cell) => matcher?.(cell))).toEqual([true, false, false]);
   });
 
+  test('evaluates typed numeric dates against the workbook 1904 epoch', () => {
+    const cells = [
+      dateSerialCell(0),
+      dateSerialCell(31),
+      dateSerialCell(excel1904Serial('2026-06-17')),
+    ];
+    const january = workSpreadsheetDynamicFilterMatcher('month-1', cells, {
+      dateSystem: '1904',
+      now: NOW,
+    });
+    const today = workSpreadsheetDynamicFilterMatcher('today', cells, {
+      dateSystem: '1904',
+      now: NOW,
+    });
+
+    expect(workSpreadsheetCellIsDate(cells[0] ?? null, '1904')).toBe(true);
+    expect(workSpreadsheetCellIsDate(cells[0] ?? null)).toBe(false);
+    expect(cells.map((cell) => january?.(cell))).toEqual([true, false, false]);
+    expect(cells.map((cell) => today?.(cell))).toEqual([false, false, true]);
+  });
+
   test('fails relative date evaluation closed for an invalid clock', () => {
     expect(
       workSpreadsheetDynamicFilterMatcher('today', [dateCell('2026-06-17')], {
@@ -228,16 +249,25 @@ function visibleDates(
 }
 
 function dateCell(value: string): Cell {
-  return {
-    v: excelSerial(value),
-    ct: { fa: 'yyyy-MM-dd', t: 'd' },
-  };
+  return dateSerialCell(excelSerial(value));
+}
+
+function dateSerialCell(value: number): Cell {
+  return { v: value, ct: { fa: 'yyyy-MM-dd', t: 'd' } };
 }
 
 function excelSerial(value: string): number {
   const [year, month, day] = value.split('-').map(Number);
   return (
     (Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1) - Date.UTC(1899, 11, 30)) /
+    86_400_000
+  );
+}
+
+function excel1904Serial(value: string): number {
+  const [year, month, day] = value.split('-').map(Number);
+  return (
+    (Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1) - Date.UTC(1904, 0, 1)) /
     86_400_000
   );
 }

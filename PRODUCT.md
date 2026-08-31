@@ -793,9 +793,9 @@ or negative patterns, while canonical leading/trailing-star forms continue to
 normalize to contains, begins-with, or ends-with criteria. Focused Rstest,
 desktop/compact Playwright, and local-only A3S Test coverage protect Unicode,
 escaping, compound authoring, XLSX reopen, Undo, accessibility, and clean
-diagnostics. Source-level 1904 date-system retention and large aggregate/rank
-Worker/WASM offload remain open; the fifty-ninth milestone below completes
-table/AutoFilter-owned Custom Sort.
+diagnostics. Large aggregate/rank Worker/WASM offload remains open; the
+fifty-ninth milestone below completes table/AutoFilter-owned Custom Sort and
+the sixtieth completes source-level 1904 date-system retention.
 
 The fifty-ninth milestone integrates Spreadsheet Custom Sort with native table
 and worksheet AutoFilter ownership. Selecting any cell or rectangle inside one
@@ -818,6 +818,23 @@ Focused model, command, Hook, and dialog Rstest plus a local-only A3S Test gate
 and desktop/compact Playwright cover table formulas, native AutoFilter
 visibility, focus, responsive containment, one-step Undo, accessibility, and
 clean browser diagnostics.
+
+The sixtieth Spreadsheet milestone makes the workbook date system an explicit
+controlled-model fact instead of an import-time assumption. Missing state
+means the standard 1900 system; imported 1904 workbooks retain an explicit
+`dateSystem: '1904'`, raw date-typed serials including zero, and native
+`workbookPr date1904` on export. Date-typed formula caches remain numeric, so a
+save and reopen cannot introduce local-time or historical-time-zone drift.
+
+Dynamic relative, month, and quarter AutoFilters, filter-menu profiling,
+filter reconciliation after edits or owned-range sorts, and `Ctrl+;`
+current-date authoring all consume that one workbook epoch. The 1900 path
+continues to reject the fictional leap-day serial 60, while 1904 serial zero
+maps to 1904-01-01. Collaboration validates and merges date-system changes
+independently from calculation settings. Focused model, command,
+collaboration, and real-package XLSX reopen tests plus a local A3S Test browser
+gate cover exact serial retention, imported filter visibility, controlled
+reopen, accessibility, and clean diagnostics.
 
 ## Current Presentation Milestone
 
