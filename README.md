@@ -1623,6 +1623,10 @@ bun run lint
 bun run typecheck
 bun run test
 bun run build
+bun run test:e2e:initial-focus:check
+bun run test:e2e:initial-focus
+bun run test:e2e:presentation-chinese-ime:check
+bun run test:e2e:presentation-chinese-ime
 bun run test:e2e:pdf-page-organization:check
 bun run test:e2e:pdf-page-organization
 bun run playground:visual:pdf-page-organization

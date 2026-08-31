@@ -65,7 +65,7 @@ test('keeps opener focus when first-open focus is disabled', async () => {
   await waitFor(() => expect(opener).toHaveFocus());
 });
 
-test('focuses the spreadsheet grid when the editor first opens', async () => {
+test('focuses the spreadsheet grid and starts editing on its first printable key', async () => {
   const view = render(<SpreadsheetOpeningHarness />);
 
   const opener = screen.getByRole('button', { name: 'Open spreadsheet' });
@@ -80,6 +80,16 @@ test('focuses the spreadsheet grid when the editor first opens', async () => {
     return target as HTMLElement;
   });
   await waitFor(() => expect(grid).toHaveFocus());
+
+  fireEvent.keyDown(grid, { key: 'x', code: 'KeyX' });
+
+  await waitFor(() => {
+    const target = view.container.querySelector<HTMLElement>(
+      '.luckysheet-cell-input',
+    );
+    expect(target).not.toBeNull();
+    expect(target).toHaveFocus();
+  });
 });
 
 test('focuses the empty title editor when a presentation first opens', async () => {
