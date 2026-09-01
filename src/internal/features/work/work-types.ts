@@ -170,7 +170,8 @@ export type WorkDocumentChangeKind =
   | 'insertion'
   | 'deletion'
   | 'formatting'
-  | 'paragraph-formatting';
+  | 'paragraph-formatting'
+  | 'numbering';
 
 export type WorkDocumentChangeDecisionAction = 'accept' | 'reject';
 

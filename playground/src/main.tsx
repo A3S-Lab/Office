@@ -22,6 +22,7 @@ import '@fontsource-variable/geist-mono';
 import '@a3s-lab/office/styles.css';
 import '../../website/theme/site-tokens.css';
 import { WorkEditorLoadingState } from '../../src/internal/features/work/components/work-editor-loading-state';
+import { serializeDocumentNumberingChange } from '../../src/internal/features/work/work-document-numbering-changes';
 import { serializeDocumentParagraphFormatting } from '../../src/internal/features/work/work-document-paragraph-format-changes';
 import { WORK_IMPORT_ACCEPT as OFFICE_FILE_ACCEPT } from '../../src/internal/features/work/work-file-contract';
 import { workKindForFile } from '../../src/internal/features/work/work-file-kind';
@@ -294,14 +295,24 @@ function Playground() {
     const paragraphFormattingBefore = escapeHtmlAttribute(
       serializeDocumentParagraphFormatting({}),
     );
+    const numberingBefore = escapeHtmlAttribute(
+      serializeDocumentNumberingChange({
+        start: 4,
+        type: 'I',
+        level: 0,
+        originalFormat: 1,
+        originalSuffix: '.',
+      }),
+    );
     const content: OfficeArtifactContent = {
       ...artifact.content,
       html: [
         '<section data-document-section="true">',
-        '<h1>字符与段落格式修订</h1>',
-        '<p>审阅者可以分别接受或拒绝字符格式与段落布局，正文内容始终独立保留。</p>',
+        '<h1>字符、段落与编号格式修订</h1>',
+        '<p>审阅者可以分别接受或拒绝字符格式、段落布局与列表编号，正文内容始终独立保留。</p>',
         '<p><span data-testid="character-formatting-revision-demo" data-document-change="true" data-change-kind="formatting" data-change-id="playground-formatting-review" data-change-author="Ada Reviewer" data-change-date="2026-08-17T14:30:00.000Z" data-change-before="[]"><strong>这段文字新增了粗体格式</strong></span>，正文内容本身没有变化。</p>',
         `<p data-testid="paragraph-formatting-revision-demo" data-document-change="true" data-change-kind="paragraph-formatting" data-change-id="playground-paragraph-formatting-review" data-change-author="Lin Reviewer" data-change-date="2026-08-18T09:15:00.000Z" data-change-before="${paragraphFormattingBefore}" data-office-indent-level="2" data-office-space-after="18" data-office-line-rule="auto" data-office-auto-line-height="1.5" style="text-align: right; margin-left: 48px; margin-bottom: 18pt; line-height: 1.5">这段文字调整为右对齐、两级缩进和 1.5 倍行距，正文内容本身没有变化。</p>`,
+        `<ol data-testid="numbering-revision-demo" start="4" type="a" data-document-change="true" data-change-kind="numbering" data-change-id="playground-numbering-review" data-change-author="Grace Reviewer" data-change-date="2026-09-01T09:30:00.000Z" data-change-before="${numberingBefore}"><li><p>第一项保留正文，只把编号从大写罗马数字改为小写字母。</p></li><li><p>第二项与第一项作为一个编号修订接受或拒绝。</p></li></ol>`,
         '</section>',
       ].join(''),
       model: undefined,
@@ -322,7 +333,7 @@ function Playground() {
     setCollaborationDemoArtifactId(null);
     setSuggestionDemoArtifactId(null);
     activateArtifact(artifact.id);
-    showNotice('已打开可接受或拒绝的字符与段落格式修订', 'success');
+    showNotice('已打开可接受或拒绝的字符、段落与编号格式修订', 'success');
   };
 
   const newArtifact = (templateId: string) => {

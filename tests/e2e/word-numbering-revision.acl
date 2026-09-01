@@ -1,0 +1,149 @@
+suite "word-numbering-revision" {
+    version = 1
+
+    scenario "reject-ordered-list-numbering" {
+        name = "Review and reject one atomic ordered-list numbering revision"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-formatting-revision-demo" {
+            target = role("button", "体验格式修订")
+        }
+
+        wait "numbering-revision-is-ready" {
+            visible = css(".ProseMirror ol[data-document-change='true'][data-change-kind='numbering'][start='4'][type='a']")
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        wait "review-toolbar-is-ready" {
+            visible = css("button[aria-label='查看修订（3）']")
+        }
+
+        click "open-revision-pane" {
+            target = role("button", "查看修订（3）")
+        }
+
+        wait "numbering-card-is-ready" {
+            visible = css(".work-document-change-item.numbering")
+        }
+
+        expect "numbering-card-is-labeled" {
+            text = "编号格式"
+        }
+
+        click "reject-numbering-revision" {
+            target = role("button", "拒绝修订 3")
+        }
+
+        wait "character-formatting-card-remains" {
+            visible = css(".work-document-change-item.formatting")
+        }
+
+        expect "numbering-text-is-preserved" {
+            text = "第一项保留正文，只把编号从大写罗马数字改为小写字母。"
+        }
+
+        expect "old-numbering-is-restored" {
+            visible = css(".ProseMirror ol[start='4'][type='I']:not([data-document-change])")
+        }
+
+        accessibility "rejected-numbering-accessibility" {
+            path = "evidence/numbering-revision-rejected.json"
+            interactive = false
+        }
+
+        console "numbering-revision-console" {
+            path = "diagnostics/numbering-revision-console.json"
+            clear = false
+        }
+
+        page_errors "numbering-revision-errors" {
+            path = "diagnostics/numbering-revision-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "review-numbering-on-phone" {
+        name = "Keep the atomic numbering card usable in the phone review dialog"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-phone-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-phone-formatting-revision-demo" {
+            target = role("button", "体验格式修订")
+        }
+
+        wait "phone-numbering-revision-is-ready" {
+            visible = css(".ProseMirror ol[data-document-change='true'][data-change-kind='numbering']")
+        }
+
+        click "open-phone-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-phone-review-dialog" {
+            target = role("button", "查看修订（3）")
+        }
+
+        expect "phone-review-surface-is-modal" {
+            visible = css(".work-document-changes-panel[role='dialog'][aria-modal='true']")
+        }
+
+        expect "phone-numbering-card-is-available" {
+            visible = css(".work-document-changes-panel .work-document-change-item.numbering")
+        }
+
+        expect "phone-numbering-card-label-is-readable" {
+            text = "编号格式"
+        }
+
+        screenshot "phone-numbering-review" {
+            path = "screenshots/word-numbering-revision-phone.png"
+        }
+
+        accessibility "phone-numbering-review-accessibility" {
+            path = "evidence/numbering-revision-phone.json"
+            interactive = true
+        }
+
+        click "close-phone-review-dialog" {
+            target = role("button", "关闭修订审阅")
+        }
+
+        expect "phone-review-focus-is-restored" {
+            visible = css("button[aria-label='查看修订（3）']:focus")
+        }
+
+        console "phone-numbering-revision-console" {
+            path = "diagnostics/numbering-revision-phone-console.json"
+            clear = false
+        }
+
+        page_errors "phone-numbering-revision-errors" {
+            path = "diagnostics/numbering-revision-phone-errors.json"
+            clear = false
+        }
+    }
+}

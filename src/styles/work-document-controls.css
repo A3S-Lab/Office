@@ -1943,6 +1943,10 @@
   border-left-color: #6d5bd0;
 }
 
+.work-document-change-item.numbering {
+  border-left-color: #0f7b78;
+}
+
 .work-document-change-summary {
   display: grid;
   min-width: 0;
@@ -1978,6 +1982,14 @@
   > span {
   background: #f0edff;
   color: #5746b5;
+}
+
+.work-document-change-list
+  .work-document-change-item.numbering
+  .work-document-change-summary
+  > span {
+  background: #e5f5f3;
+  color: #0f6663;
 }
 
 .work-document-change-summary strong {
@@ -2533,4 +2545,10 @@
     h6
   )[data-document-change][data-change-kind="paragraph-formatting"] {
   box-shadow: inset 3px 0 #8b5cf6;
+}
+
+.work-document-editor ol[data-document-change][data-change-kind="numbering"],
+.work-pdf-export-page.document
+  ol[data-document-change][data-change-kind="numbering"] {
+  box-shadow: inset 3px 0 #0f7b78;
 }

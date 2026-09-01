@@ -2,12 +2,13 @@ import type { WorkBook, WorkSheet } from 'xlsx';
 import { diagnoseDocxBookmarksAndLinks } from './work-docx-bookmark-diagnostics';
 import { diagnoseDocxCaptions } from './work-docx-caption-diagnostics';
 import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
-import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
 import { diagnoseDocxEmphasisMarks } from './work-docx-emphasis-diagnostics';
+import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
 import { diagnoseDocxHiddenText } from './work-docx-hidden-text-diagnostics';
 import { diagnoseDocxKerning } from './work-docx-kerning-diagnostics';
 import { diagnoseDocxLegacyTextEffects } from './work-docx-legacy-text-effects-diagnostics';
 import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
+import { isSupportedDocxNumberingChange } from './work-docx-numbering-change-import';
 import { diagnoseDocxOpenTypeTypography } from './work-docx-opentype-diagnostics';
 import { diagnoseDocxPageBorders } from './work-docx-page-borders-diagnostics';
 import { diagnoseDocxPageChrome } from './work-docx-page-chrome-diagnostics';
@@ -18,10 +19,10 @@ import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-defaul
 import { isSupportedDocxParagraphFormattingChange } from './work-docx-paragraph-format-change-import';
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { diagnoseDocxProofing } from './work-docx-proofing-diagnostics';
-import { diagnoseDocxRunFonts } from './work-docx-run-fonts-diagnostics';
 import { diagnoseDocxRunBorders } from './work-docx-run-border-diagnostics';
-import { diagnoseDocxRunShading } from './work-docx-run-shading-diagnostics';
+import { diagnoseDocxRunFonts } from './work-docx-run-fonts-diagnostics';
 import { isSupportedDocxRunFormattingChange } from './work-docx-run-formatting-import';
+import { diagnoseDocxRunShading } from './work-docx-run-shading-diagnostics';
 import {
   attribute,
   contentTypeForPart,
@@ -305,6 +306,7 @@ export async function analyzeDocxCompatibility(
       ];
       const runFormattingRevisions = descendants(document, 'rPrChange');
       const paragraphFormattingRevisions = descendants(document, 'pPrChange');
+      const numberingRevisions = descendants(document, 'numberingChange');
       const supportedRunFormattingRevisionCount = runFormattingRevisions.filter(
         isSupportedDocxRunFormattingChange,
       ).length;
@@ -312,6 +314,9 @@ export async function analyzeDocxCompatibility(
         paragraphFormattingRevisions.filter(
           isSupportedDocxParagraphFormattingChange,
         ).length;
+      const supportedNumberingRevisionCount = numberingRevisions.filter(
+        isSupportedDocxNumberingChange,
+      ).length;
       if (
         textRevisions.some(
           (revision) =>
@@ -348,6 +353,16 @@ export async function analyzeDocxCompatibility(
           ),
         );
       }
+      if (supportedNumberingRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.numbering',
+            'Numbering revisions',
+            `${supportedNumberingRevisionCount} bounded ordered-list numbering revision(s) preserve author, date, prior start, and common decimal, letter, or Roman formats. Contiguous list-item records remain reviewable as one Work change and round-trip as native w:numberingChange records.`,
+            'info',
+          ),
+        );
+      }
       if (
         textRevisions.some(
           (revision) =>
@@ -357,6 +372,7 @@ export async function analyzeDocxCompatibility(
         supportedRunFormattingRevisionCount !== runFormattingRevisions.length ||
         supportedParagraphFormattingRevisionCount !==
           paragraphFormattingRevisions.length ||
+        supportedNumberingRevisionCount !== numberingRevisions.length ||
         [
           'moveFrom',
           'moveTo',
@@ -364,14 +380,13 @@ export async function analyzeDocxCompatibility(
           'trPrChange',
           'tcPrChange',
           'sectPrChange',
-          'numberingChange',
         ].some((name) => descendants(document, name).length)
       ) {
         issues.push(
           issue(
             'docx.revisions.structural',
             'Structural revisions',
-            'Moved content plus unsupported character formatting, paragraph formatting, numbering, section, row, cell, and table-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded character- and paragraph-formatting subsets.',
+            'Moved content plus unsupported character formatting, paragraph formatting, numbering, section, row, cell, and table-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded character-, paragraph-, and ordered-list-numbering subsets.',
           ),
         );
       }

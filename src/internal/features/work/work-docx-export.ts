@@ -6,13 +6,17 @@ import type {
 } from 'docx';
 import { normalizeDocumentBookmarkReferencesHtml } from './work-document-bookmark-references';
 import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
-import { documentCharacterScalePercentFromElement } from './work-document-character-scale';
 import { documentCharacterPositionHalfPointsFromElement } from './work-document-character-position';
+import { documentCharacterScalePercentFromElement } from './work-document-character-scale';
 import { documentCharacterSpacingTwipsFromElement } from './work-document-character-spacing';
 import { documentEmphasisMarkFromElement } from './work-document-emphasis';
-import { documentKerningThresholdHalfPointsFromElement } from './work-document-kerning';
 import { documentHiddenTextFromElement } from './work-document-hidden-text';
+import {
+  DOCUMENT_HIGHLIGHT_ATTRIBUTE,
+  documentHighlightFromElement,
+} from './work-document-highlight';
 import { normalizeDocumentIndexesHtml } from './work-document-index';
+import { documentKerningThresholdHalfPointsFromElement } from './work-document-kerning';
 import {
   DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
   DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
@@ -30,10 +34,43 @@ import {
   type WorkDocumentNote,
   type WorkDocumentNoteKind,
 } from './work-document-notes';
+import {
+  DOCUMENT_OPEN_TYPE_ATTRIBUTE,
+  documentOpenTypeFeaturesFromElement,
+  type WorkDocumentOpenTypeFeatures,
+} from './work-document-opentype';
 import { normalizeDocumentPageChrome } from './work-document-page-chrome';
 import { documentPageMarginsForLayout } from './work-document-page-margins';
 import { documentPageGeometryForLayout } from './work-document-page-size';
+import {
+  DOCUMENT_NO_PROOF_ATTRIBUTE,
+  DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE,
+  documentNoProofFromElement,
+  documentProofingLanguagesFromElement,
+} from './work-document-proofing';
+import {
+  DOCUMENT_RUN_BORDER_ATTRIBUTE,
+  parseDocumentRunBorderElement,
+} from './work-document-run-border';
+import {
+  DOCUMENT_RUN_SHADING_ATTRIBUTE,
+  parseDocumentRunShadingElement,
+} from './work-document-run-shading';
+import {
+  documentScriptFontSlotFromElement,
+  documentScriptFontsFromElement,
+} from './work-document-script-fonts';
 import { documentSections } from './work-document-section';
+import {
+  DOCUMENT_STRIKE_STYLE_ATTRIBUTE,
+  documentStrikeFormattingFromElement,
+} from './work-document-strike';
+import { normalizeDocumentTextCase } from './work-document-text-case';
+import {
+  DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
+  documentUnderlineFormattingFromElement,
+  type WorkDocumentUnderlineFormatting,
+} from './work-document-underline';
 import { patchDocxBibliography } from './work-docx-bibliography';
 import {
   DocxBookmarkPatchCollector,
@@ -43,6 +80,12 @@ import {
   docxCaptionParagraph,
   docxCrossReferenceRuns,
 } from './work-docx-caption-export';
+import { docxCharacterPositionValue } from './work-docx-character-position';
+import { docxCharacterScaleValue } from './work-docx-character-scale';
+import {
+  docxCharacterSpacingValue,
+  patchDocxExplicitZeroCharacterSpacing,
+} from './work-docx-character-spacing';
 import {
   docxBibliographyParagraph,
   docxCitationRun,
@@ -50,26 +93,8 @@ import {
 import { docxSectionColumns } from './work-docx-column-export';
 import { createDocxCommentRecords } from './work-docx-comment-export';
 import { patchDocxCommentMetadata } from './work-docx-comment-metadata';
-import { docxCharacterScaleValue } from './work-docx-character-scale';
-import { docxCharacterPositionValue } from './work-docx-character-position';
-import {
-  docxCharacterSpacingValue,
-  patchDocxExplicitZeroCharacterSpacing,
-} from './work-docx-character-spacing';
-import {
-  docxKerningThresholdValue,
-  patchDocxExplicitZeroKerningThresholds,
-} from './work-docx-kerning';
-import { docxEmphasisMarkRunOptions } from './work-docx-emphasis';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
-import {
-  DocxHiddenTextPatchCollector,
-  patchDocxHiddenText,
-} from './work-docx-hidden-text-export';
-import {
-  DocxLegacyTextEffectsPatchCollector,
-  patchDocxLegacyTextEffects,
-} from './work-docx-legacy-text-effects-export';
+import { docxEmphasisMarkRunOptions } from './work-docx-emphasis';
 import {
   DocxEquationPatchCollector,
   patchDocxEquations,
@@ -91,15 +116,13 @@ import {
 import { imageToDocx } from './work-docx-export-image';
 import { docxDocumentFieldRun } from './work-docx-field-export';
 import {
-  DocxIndexPatchCollector,
-  docxDocumentIndex,
-  docxIndexEntryRun,
-  patchDocxIndexes,
-} from './work-docx-index-export';
-import {
   DocxRunFormattingChangePatchCollector,
   patchDocxRunFormattingChanges,
 } from './work-docx-format-change-export';
+import {
+  DocxHiddenTextPatchCollector,
+  patchDocxHiddenText,
+} from './work-docx-hidden-text-export';
 import {
   DocxImageCropPatchCollector,
   patchDocxImageCrops,
@@ -117,6 +140,20 @@ import {
   patchDocxImageWraps,
 } from './work-docx-image-wrap';
 import {
+  DocxIndexPatchCollector,
+  docxDocumentIndex,
+  docxIndexEntryRun,
+  patchDocxIndexes,
+} from './work-docx-index-export';
+import {
+  docxKerningThresholdValue,
+  patchDocxExplicitZeroKerningThresholds,
+} from './work-docx-kerning';
+import {
+  DocxLegacyTextEffectsPatchCollector,
+  patchDocxLegacyTextEffects,
+} from './work-docx-legacy-text-effects-export';
+import {
   type DocxListExportContext,
   listToDocxParagraphs,
 } from './work-docx-list-export';
@@ -126,7 +163,20 @@ import {
 } from './work-docx-note-comment-identity';
 import { patchDocxNoteImageRelationships } from './work-docx-note-image-relationships';
 import { patchDocxNumberingRestartRules } from './work-docx-numbering';
+import {
+  DocxNumberingChangePatchCollector,
+  patchDocxNumberingChanges,
+} from './work-docx-numbering-change-export';
+import {
+  DocxOpenTypePatchCollector,
+  patchDocxOpenTypeFeatures,
+} from './work-docx-opentype-export';
 import { patchDocxPageColor } from './work-docx-page-color';
+import {
+  DocxParagraphBorderPatchCollector,
+  documentParagraphBordersDocxOptions,
+  patchDocxParagraphBorders,
+} from './work-docx-paragraph-borders-export';
 import {
   DocxParagraphDefaultCollapsedPatchCollector,
   patchDocxParagraphDefaultCollapsed,
@@ -139,12 +189,22 @@ import {
   DocxParagraphIdentityPatchCollector,
   patchDocxParagraphIdentities,
 } from './work-docx-paragraph-identity';
-import {
-  DocxParagraphBorderPatchCollector,
-  documentParagraphBordersDocxOptions,
-  patchDocxParagraphBorders,
-} from './work-docx-paragraph-borders-export';
 import { documentParagraphShadingDocxOptions } from './work-docx-paragraph-shading-export';
+import { documentProofingLanguageDocxOptions } from './work-docx-proofing';
+import {
+  DocxRunBorderPatchCollector,
+  documentRunBorderDocxOptions,
+  patchDocxRunBorders,
+} from './work-docx-run-border-export';
+import {
+  DocxRunFontsPatchCollector,
+  patchDocxRunFonts,
+} from './work-docx-run-fonts-export';
+import {
+  DocxRunShadingPatchCollector,
+  documentRunShadingDocxOptions,
+  patchDocxRunShading,
+} from './work-docx-run-shading-export';
 import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
 import {
   DocxTableOfContentsPatchCollector,
@@ -162,62 +222,6 @@ import {
   patchDocxThemeReferences,
 } from './work-docx-theme-reference';
 import { preserveDocxSourcePackage } from './work-ooxml-package-preservation';
-import {
-  documentScriptFontsFromElement,
-  documentScriptFontSlotFromElement,
-} from './work-document-script-fonts';
-import {
-  DOCUMENT_NO_PROOF_ATTRIBUTE,
-  DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE,
-  documentNoProofFromElement,
-  documentProofingLanguagesFromElement,
-} from './work-document-proofing';
-import { documentProofingLanguageDocxOptions } from './work-docx-proofing';
-import {
-  DocxRunFontsPatchCollector,
-  patchDocxRunFonts,
-} from './work-docx-run-fonts-export';
-import { normalizeDocumentTextCase } from './work-document-text-case';
-import {
-  DOCUMENT_RUN_BORDER_ATTRIBUTE,
-  parseDocumentRunBorderElement,
-} from './work-document-run-border';
-import {
-  DocxRunBorderPatchCollector,
-  documentRunBorderDocxOptions,
-  patchDocxRunBorders,
-} from './work-docx-run-border-export';
-import {
-  DOCUMENT_RUN_SHADING_ATTRIBUTE,
-  parseDocumentRunShadingElement,
-} from './work-document-run-shading';
-import {
-  DocxRunShadingPatchCollector,
-  documentRunShadingDocxOptions,
-  patchDocxRunShading,
-} from './work-docx-run-shading-export';
-import {
-  DOCUMENT_HIGHLIGHT_ATTRIBUTE,
-  documentHighlightFromElement,
-} from './work-document-highlight';
-import {
-  DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
-  documentUnderlineFormattingFromElement,
-  type WorkDocumentUnderlineFormatting,
-} from './work-document-underline';
-import {
-  DOCUMENT_STRIKE_STYLE_ATTRIBUTE,
-  documentStrikeFormattingFromElement,
-} from './work-document-strike';
-import {
-  DOCUMENT_OPEN_TYPE_ATTRIBUTE,
-  documentOpenTypeFeaturesFromElement,
-  type WorkDocumentOpenTypeFeatures,
-} from './work-document-opentype';
-import {
-  DocxOpenTypePatchCollector,
-  patchDocxOpenTypeFeatures,
-} from './work-docx-opentype-export';
 import type {
   WorkDocumentComment,
   WorkDocumentContent,
@@ -254,6 +258,7 @@ interface DocxNoteContext extends DocxListExportContext {
   usedNativeTextEffectMarkers: Set<string>;
   usedOpenTypeMarkers: Set<string>;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
+  numberingChangePatches: DocxNumberingChangePatchCollector;
   tableOfContentsPatches: DocxTableOfContentsPatchCollector;
   indexPatches: DocxIndexPatchCollector;
   hasExplicitZeroCharacterSpacing: boolean;
@@ -348,11 +353,22 @@ export async function createDocxBlob(
     usedOpenTypeMarkers: new Set(),
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
+    numberingChangePatches: new DocxNumberingChangePatchCollector(),
     tableOfContentsPatches: new DocxTableOfContentsPatchCollector(),
     indexPatches: new DocxIndexPatchCollector(),
     hasExplicitZeroCharacterSpacing: false,
     hasExplicitZeroKerningThreshold: false,
   };
+  noteContext.numberingChangeMarker = (list, itemIndex) =>
+    noteContext.numberingChangePatches.register(
+      list,
+      itemIndex,
+      docxRevisionId(
+        list,
+        noteContext,
+        `numbering:${noteContext.numberingChangePatches.patches.length + 1}`,
+      ),
+    );
   const commentRecords = createDocxCommentRecords(
     commentThreads,
     docx,
@@ -530,8 +546,12 @@ export async function createDocxBlob(
       indexPatched,
       noteContext.paragraphFormattingChangePatches.patches,
     );
-  const equationPatched = await patchDocxEquations(
+  const numberingChangesPatched = await patchDocxNumberingChanges(
     paragraphFormattingChangesPatched,
+    noteContext.numberingChangePatches.patches,
+  );
+  const equationPatched = await patchDocxEquations(
+    numberingChangesPatched,
     noteContext.equationPatches.patches,
   );
   const patched = await patchDocxPageColor(
@@ -1415,9 +1435,11 @@ function docxTextRevision(
 function docxRevisionId(
   element: HTMLElement,
   context: DocxNoteContext,
+  suffix?: string,
 ): number {
-  const key =
+  const baseKey =
     element.dataset.changeId?.trim() || `change-${context.nextChangeId}`;
+  const key = suffix ? `${baseKey}:${suffix}` : baseKey;
   let id = context.changeIds.get(key);
   if (!id) {
     id = context.nextChangeId;
@@ -1431,7 +1453,7 @@ function documentHasTrackedChanges(html: string): boolean {
   const document = new DOMParser().parseFromString(html, 'text/html');
   return Boolean(
     document.body.querySelector(
-      'ins[data-document-change], del[data-document-change], span[data-document-change][data-change-kind="formatting"], [data-document-change][data-change-kind="paragraph-formatting"]',
+      'ins[data-document-change], del[data-document-change], span[data-document-change][data-change-kind="formatting"], [data-document-change][data-change-kind="paragraph-formatting"], [data-document-change][data-change-kind="numbering"]',
     ),
   );
 }

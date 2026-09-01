@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.40.0' ||
     version === '0.39.0' ||
     version === '0.38.1' ||
     version === '0.38.0' ||
@@ -71,6 +72,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.40.0',
     '0.39.0',
     '0.38.1',
     '0.38.0',
@@ -362,7 +364,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.39.0`');
+  expect(readme).toContain('Version `0.40.0`');
   expect(readme).toContain(
     "[What's new](https://a3s-lab.github.io/Office/docs/changelog.html)",
   );
@@ -372,8 +374,11 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.39.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.40.0)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
+  expect(englishHome).toContain(
+    'document.html#ordered-list-numbering-revisions',
+  );
   expect(englishHome).toContain(
     'presentation.html#entrance-and-exit-animations',
   );
@@ -382,11 +387,157 @@ test('routes the concise README and documentation homes to the current release s
     'spreadsheet.html#xlsx-1904-date-system-retention',
   );
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.39.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.40.0）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
+  expect(chineseHome).toContain('document.html#有序列表编号修订');
   expect(chineseHome).toContain('presentation.html#进入与退出动画');
   expect(chineseHome).toContain('document.html#原生-opentype-排版');
   expect(chineseHome).toContain('spreadsheet.html#xlsx-1904-日期系统保留');
+});
+
+test('publishes Writer numbering revisions across implementation, native collaboration, docs, and release evidence', async () => {
+  const [
+    changelog,
+    roadmap,
+    product,
+    englishDocument,
+    chineseDocument,
+    englishCollaboration,
+    chineseCollaboration,
+    releaseEnglishDocument,
+    releaseChineseDocument,
+    releaseEnglishHome,
+    releaseChineseHome,
+    tracking,
+    importer,
+    exporter,
+    nativeKinds,
+    nativeTests,
+    docxTests,
+    aclSuite,
+    packageManifest,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/collaboration.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/collaboration.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.40.0/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.40.0/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(path.join(documentationRoot, '0.40.0/en/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, '0.40.0/zh/index.mdx'), 'utf8'),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/work-document-numbering-change-tracking.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/work-docx-numbering-change-import.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/work-docx-numbering-change-export.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'crates/core/src/collaboration/types/mutation.rs',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'crates/core/src/collaboration/tests/document_suggestions.rs',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/docx-numbering-changes.test.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/word-numbering-revision.acl'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
+  ]);
+
+  expect(changelog).toContain('## 0.40.0 - 2026-09-02');
+  expect(changelog).toContain('Writer ordered-list numbering revisions');
+  expect(roadmap).toContain('common single-level `w:numberingChange`');
+  expect(product).toContain('The sixty-first Writer milestone');
+  expect(releaseEnglishHome).toContain('Released in 0.40.0');
+  expect(releaseEnglishHome).toContain(
+    'document.html#ordered-list-numbering-revisions',
+  );
+  expect(releaseChineseHome).toContain('0.40.0 发布');
+  expect(releaseChineseHome).toContain('document.html#有序列表编号修订');
+
+  for (const source of [
+    englishDocument,
+    chineseDocument,
+    englishCollaboration,
+    chineseCollaboration,
+    releaseEnglishDocument,
+    releaseChineseDocument,
+  ]) {
+    expect(source).toContain('w:numberingChange');
+    expect(source).toContain('changeKind: "numbering"');
+  }
+  for (const source of [
+    englishDocument,
+    chineseDocument,
+    releaseEnglishDocument,
+    releaseChineseDocument,
+  ]) {
+    expect(source).toContain('65,536');
+  }
+  expect(englishDocument).toContain('## Ordered-list numbering revisions');
+  expect(chineseDocument).toContain('## 有序列表编号修订');
+
+  expect(tracking).toContain('ReplaceAroundStep');
+  expect(importer).toContain('MAX_NUMBERING_CHANGES = 65_536');
+  expect(exporter).toContain('MAX_NUMBERING_CHANGE_PATCHES = 65_536');
+  expect(nativeKinds).toContain('Numbering');
+  expect(nativeKinds).toContain('Self::Numbering => "numbering"');
+  expect(nativeTests).toContain(
+    'browser_numbering_revisions_survive_restart_and_suggest_mode',
+  );
+  expect(docxTests).toContain(
+    'imports one contiguous native numbering revision as an atomic review card',
+  );
+  expect(aclSuite).toContain('suite "word-numbering-revision"');
+  expect(packageManifest).toContain('test:e2e:numbering-revision');
 });
 
 test('keeps every documentation index separate from the product home surface', async () => {
@@ -1065,6 +1216,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.40.0',
     '0.39.0',
     '0.38.1',
     '0.38.0',
@@ -1146,6 +1298,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.40.0',
     '0.39.0',
     '0.38.1',
     '0.38.0',
@@ -1480,7 +1633,7 @@ test('documents collaborative character-formatting revisions', async () => {
 });
 
 test('documents complete native Writer OpenType typography in both current locales', async () => {
-  for (const version of ['latest', '0.39.0', '0.38.1', '0.38.0']) {
+  for (const version of ['latest', '0.40.0', '0.39.0', '0.38.1', '0.38.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const source = await readFile(
         path.join(documentationRoot, version, lang, 'components/document.mdx'),
@@ -3285,7 +3438,7 @@ test('publishes the workbook-owned 1900 and 1904 date-system contract', async ()
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
   ]);
 
-  expect(readme).toContain('Version `0.39.0`');
+  expect(readme).toContain('Version `0.40.0`');
   expect(readme).toContain("workbook's native 1900 or");
   expect(changelog).toContain('## 0.37.5 - 2026-09-01');
   expect(roadmap).toContain(

@@ -5,13 +5,14 @@ import {
   createArtifact,
   createOfficeCollaborationSession,
   createOfficeDocumentCollaborationBinding,
-  type OfficeCollaborationOrigin,
   type DocumentContent,
   initializeOfficeDocumentCollaboration,
+  type OfficeCollaborationOrigin,
   readOfficeCollaborationMetadata,
   readOfficeDocumentCollaboration,
 } from '../src/core';
 import { createWorkDocumentModelFromContent } from '../src/internal/features/work/work-document-model-codec';
+import { serializeDocumentNumberingChange } from '../src/internal/features/work/work-document-numbering-changes';
 import { serializeDocumentParagraphFormatting } from '../src/internal/features/work/work-document-paragraph-format-changes';
 
 test('initializes a structured Document collaboration document', () => {
@@ -1212,6 +1213,85 @@ test('preserves paragraph-formatting revisions in suggest mode and converges imm
   suggestEditor.destroy();
   editEditor.destroy();
   suggestBinding.destroy();
+  editBinding.destroy();
+});
+
+test('converges an immutable ordered-list numbering decision', async () => {
+  const before = serializeDocumentNumberingChange({
+    start: 4,
+    type: 'I',
+    level: 0,
+    originalFormat: 1,
+    originalSuffix: '.',
+  });
+  const sharedDocument = new Y.Doc();
+  const bootstrap = createOfficeCollaborationSession({
+    artifactId: 'document-numbering-decision',
+    document: sharedDocument,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(bootstrap, {
+    ...documentFixture(),
+    html: `<section data-document-section="true"><ol start="4" type="a" data-document-change="true" data-change-kind="numbering" data-change-id="numbering-review-1" data-change-actor-id="ada" data-change-author="Ada Reviewer" data-change-date="2026-09-01T10:00:00.000Z" data-change-before='${before}'><li><p>Shared list</p></li></ol></section>`,
+    model: undefined,
+  });
+
+  const observerDocument = cloneDocument(sharedDocument);
+  const observerSession = createOfficeCollaborationSession({
+    actor: { id: 'lin', name: 'Lin Observer' },
+    artifactId: 'document-numbering-decision',
+    document: observerDocument,
+    kind: 'document',
+    mode: 'suggest',
+  });
+  const observerBinding =
+    createOfficeDocumentCollaborationBinding(observerSession);
+  const observerEditor = new Editor({ extensions: observerBinding.extensions });
+
+  const editorDocument = cloneDocument(sharedDocument);
+  const editSession = createOfficeCollaborationSession({
+    actor: { id: 'grace', name: 'Grace Editor' },
+    artifactId: 'document-numbering-decision',
+    document: editorDocument,
+    kind: 'document',
+    mode: 'edit',
+  });
+  const editBinding = createOfficeDocumentCollaborationBinding(editSession);
+  const editEditor = new Editor({ extensions: editBinding.extensions });
+  expect(
+    editBinding.decideChanges(editEditor, ['numbering-review-1'], 'reject', {
+      decidedAt: '2026-09-01T10:01:00.000Z',
+    }),
+  ).toBe(true);
+  expect(editEditor.getHTML()).toContain('type="I"');
+  expect(editEditor.getHTML()).not.toContain('numbering-review-1');
+  expect(editBinding.content().changeDecisions).toEqual([
+    {
+      id: 'numbering:numbering-review-1',
+      changeId: 'numbering-review-1',
+      changeKind: 'numbering',
+      suggestedByActorId: 'ada',
+      suggestedBy: 'Ada Reviewer',
+      suggestedAt: '2026-09-01T10:00:00.000Z',
+      text: 'Shared list',
+      decision: 'reject',
+      decidedByActorId: 'grace',
+      decidedBy: 'Grace Editor',
+      decidedAt: '2026-09-01T10:01:00.000Z',
+    },
+  ]);
+
+  exchangeUpdates(observerDocument, editorDocument);
+  await flushMicrotasks();
+  expect(observerEditor.getHTML()).toContain('type="I"');
+  expect(observerEditor.getHTML()).not.toContain('numbering-review-1');
+  expect(observerBinding.content().changeDecisions).toEqual(
+    editBinding.content().changeDecisions,
+  );
+
+  observerEditor.destroy();
+  editEditor.destroy();
+  observerBinding.destroy();
   editBinding.destroy();
 });
 

@@ -1,5 +1,5 @@
-import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
+import { Editor } from '@tiptap/core';
 import * as Y from 'yjs';
 import {
   createArtifact,
@@ -10,6 +10,7 @@ import {
   readOfficeDocumentCollaboration,
 } from '../src/core';
 import { collectDocumentChanges } from '../src/internal/features/work/work-document-changes';
+import { serializeDocumentNumberingChange } from '../src/internal/features/work/work-document-numbering-changes';
 import type { WorkDocumentChangeDecision } from '../src/internal/features/work/work-types';
 
 test('creates attributed deletion and replacement suggestions while preserving canonical text', () => {
@@ -219,6 +220,69 @@ test('keeps existing formatting revisions immutable while admitting text suggest
       expect.objectContaining({ kind: 'insertion', text: 'proposal' }),
     ]),
   );
+
+  editor.destroy();
+  binding.destroy();
+});
+
+test('keeps an existing numbering revision intact while admitting text suggestions', () => {
+  const before = serializeDocumentNumberingChange({
+    start: 4,
+    type: 'I',
+    level: 0,
+    originalFormat: 1,
+    originalSuffix: '.',
+  });
+  const document = new Y.Doc();
+  const bootstrap = createOfficeCollaborationSession({
+    artifactId: 'document-numbering-suggestion-boundary',
+    document,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(bootstrap, {
+    ...documentFixture(),
+    html: `<section data-document-section="true"><ol start="4" type="a" data-document-change="true" data-change-kind="numbering" data-change-before='${before}' data-change-id="numbering-review-1" data-change-actor-id="grace" data-change-author="Grace" data-change-date="2026-09-01T09:15:00.000Z"><li><p>Shared document</p></li></ol></section>`,
+    model: undefined,
+  });
+  const suggester = createOfficeCollaborationSession({
+    actor: { id: 'ada', name: 'Ada' },
+    artifactId: 'document-numbering-suggestion-boundary',
+    document,
+    kind: 'document',
+    mode: 'suggest',
+  });
+  const binding = createOfficeDocumentCollaborationBinding(suggester, {
+    workExtensions: {
+      createChange: (kind) => ({
+        actorId: 'ada',
+        author: 'Ada',
+        date: '2026-09-01T09:16:00.000Z',
+        id: `ada-${kind}`,
+      }),
+      isTracking: () => true,
+    },
+  });
+  const editor = new Editor({ extensions: binding.extensions });
+  const target = documentTextRange(editor, 'document');
+
+  expect(
+    editor.commands.replaceDocumentTextWithTrackedChange(
+      target.from,
+      target.to,
+      'proposal',
+    ),
+  ).toBe(true);
+  expect(collectDocumentChanges(editor.state.doc)).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        id: 'numbering-review-1',
+        kind: 'numbering',
+      }),
+      expect.objectContaining({ kind: 'deletion', text: 'document' }),
+      expect.objectContaining({ kind: 'insertion', text: 'proposal' }),
+    ]),
+  );
+  expect(editor.getHTML()).toContain('data-change-kind="numbering"');
 
   editor.destroy();
   binding.destroy();

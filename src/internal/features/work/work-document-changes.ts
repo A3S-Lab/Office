@@ -1,4 +1,5 @@
 import { type CommandProps, Mark, mergeAttributes } from '@tiptap/core';
+import { closeHistory } from '@tiptap/pm/history';
 import {
   Fragment,
   type Mark as ProseMirrorMark,
@@ -12,12 +13,16 @@ import {
   TextSelection,
   type Transaction,
 } from '@tiptap/pm/state';
-import { closeHistory } from '@tiptap/pm/history';
+import { trackDocumentFormattingTransaction } from './work-document-format-change-tracking';
 import {
   parseDocumentCharacterFormatting,
   restoreDocumentCharacterFormatting,
 } from './work-document-format-changes';
-import { trackDocumentFormattingTransaction } from './work-document-format-change-tracking';
+import {
+  clearDocumentNumberingChangeAttributes,
+  parseDocumentNumberingChange,
+  restoredDocumentNumberingAttributes,
+} from './work-document-numbering-changes';
 import {
   clearDocumentParagraphChangeAttributes,
   parseDocumentParagraphFormatting,
@@ -58,6 +63,15 @@ interface ChangeSegment {
 interface ParagraphChangeSegment {
   id: string;
   kind: 'paragraph-formatting';
+  position: number;
+  from: number;
+  to: number;
+  before: string;
+}
+
+interface NumberingChangeSegment {
+  id: string;
+  kind: 'numbering';
   position: number;
   from: number;
   to: number;
@@ -194,6 +208,32 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
           blockChangeActorId: blockChangeAttribute('actorId'),
           blockChangeAuthor: blockChangeAttribute('author'),
           blockChangeDate: blockChangeAttribute('date'),
+        },
+      },
+      {
+        types: ['orderedList'],
+        attributes: {
+          numberingChangeKind: numberingChangeAttribute(
+            'kind',
+            'data-change-kind',
+          ),
+          numberingChangeId: numberingChangeAttribute('id', 'data-change-id'),
+          numberingChangeActorId: numberingChangeAttribute(
+            'actorId',
+            'data-change-actor-id',
+          ),
+          numberingChangeAuthor: numberingChangeAttribute(
+            'author',
+            'data-change-author',
+          ),
+          numberingChangeDate: numberingChangeAttribute(
+            'date',
+            'data-change-date',
+          ),
+          numberingChangeBefore: numberingChangeAttribute(
+            'before',
+            'data-change-before',
+          ),
         },
       },
     ];
@@ -476,6 +516,37 @@ export function collectDocumentChanges(
         });
       }
     }
+    if (
+      node.type.name === 'orderedList' &&
+      node.attrs.numberingChangeKind === 'numbering'
+    ) {
+      const id =
+        stringAttribute(node.attrs.numberingChangeId) ||
+        `numbering-change-at-${position}`;
+      const key = `numbering:${id}`;
+      const from = position + 1;
+      const to = from + node.content.size;
+      const current = changes.get(key);
+      if (current) {
+        current.from = Math.min(current.from, from);
+        current.to = Math.max(current.to, to);
+        current.text = `${current.text}\n${node.textContent}`;
+      } else {
+        changes.set(key, {
+          id,
+          kind: 'numbering',
+          ...(stringAttribute(node.attrs.numberingChangeActorId)
+            ? { actorId: stringAttribute(node.attrs.numberingChangeActorId) }
+            : {}),
+          author:
+            stringAttribute(node.attrs.numberingChangeAuthor) || '未知审阅者',
+          date: stringAttribute(node.attrs.numberingChangeDate),
+          from,
+          to,
+          text: node.textContent,
+        });
+      }
+    }
     if (!node.isText || !node.text) return;
     const mark = documentChangeMark(node.marks);
     if (!mark) return;
@@ -558,14 +629,25 @@ function resolveDocumentChangesTransaction(
   const paragraphSegments = paragraphChangeSegments(state.doc).filter(
     (segment) => !ids || ids.has(segment.id),
   );
+  const numberingSegments = numberingChangeSegments(state.doc).filter(
+    (segment) => !ids || ids.has(segment.id),
+  );
   const blockSegments = blockChangeSegments(state.doc).filter(
     (segment) => !ids || ids.has(segment.id),
   );
-  if (!segments.length && !paragraphSegments.length && !blockSegments.length)
+  if (
+    !segments.length &&
+    !paragraphSegments.length &&
+    !numberingSegments.length &&
+    !blockSegments.length
+  )
     return 0;
   if (
     paragraphSegments.some(
       (segment) => !parseDocumentParagraphFormatting(segment.before),
+    ) ||
+    numberingSegments.some(
+      (segment) => !parseDocumentNumberingChange(segment.before),
     ) ||
     (decision === 'reject' &&
       segments.some(
@@ -625,6 +707,17 @@ function resolveDocumentChangesTransaction(
     if (!attributes) return 0;
     tr.setNodeMarkup(segment.position, undefined, attributes);
   }
+  for (const segment of numberingSegments) {
+    const position = tr.mapping.map(segment.position);
+    const node = tr.doc.nodeAt(position);
+    if (!node || node.type.name !== 'orderedList') return 0;
+    const attributes =
+      decision === 'reject'
+        ? restoredDocumentNumberingAttributes(node.attrs, segment.before)
+        : clearDocumentNumberingChangeAttributes(node.attrs);
+    if (!attributes) return 0;
+    tr.setNodeMarkup(position, undefined, attributes);
+  }
   for (const segment of blockSegments) {
     if (removedBlockIds.has(segment.id)) continue;
     const position = tr.mapping.map(segment.position);
@@ -664,9 +757,12 @@ function resolveDocumentChangesTransaction(
   }
   return tr.docChanged
     ? new Set(
-        [...segments, ...paragraphSegments, ...blockSegments].map(
-          (segment) => segment.id,
-        ),
+        [
+          ...segments,
+          ...paragraphSegments,
+          ...numberingSegments,
+          ...blockSegments,
+        ].map((segment) => segment.id),
       ).size
     : 0;
 }
@@ -791,6 +887,31 @@ function paragraphChangeSegments(
       from: position + 1,
       to: position + 1 + node.content.size,
       before: stringAttribute(node.attrs.paragraphChangeBefore),
+    });
+  });
+  return segments;
+}
+
+function numberingChangeSegments(
+  document: ProseMirrorNode,
+): NumberingChangeSegment[] {
+  const segments: NumberingChangeSegment[] = [];
+  document.descendants((node, position) => {
+    if (
+      node.type.name !== 'orderedList' ||
+      node.attrs.numberingChangeKind !== 'numbering'
+    ) {
+      return;
+    }
+    segments.push({
+      id:
+        stringAttribute(node.attrs.numberingChangeId) ||
+        `numbering-change-at-${position}`,
+      kind: 'numbering',
+      position,
+      from: position + 1,
+      to: position + 1 + node.content.size,
+      before: stringAttribute(node.attrs.numberingChangeBefore),
     });
   });
   return segments;
@@ -947,6 +1068,46 @@ function paragraphChangeAttribute(
         return {
           'data-document-change': 'true',
           'data-change-kind': 'paragraph-formatting',
+        };
+      }
+      const value = stringAttribute(attributes[modelName]);
+      return value ? { [htmlName]: value } : {};
+    },
+  };
+}
+
+function numberingChangeAttribute(
+  field: 'kind' | 'id' | 'actorId' | 'author' | 'date' | 'before',
+  htmlName:
+    | 'data-change-kind'
+    | 'data-change-id'
+    | 'data-change-actor-id'
+    | 'data-change-author'
+    | 'data-change-date'
+    | 'data-change-before',
+) {
+  const modelName = `numberingChange${field[0]?.toUpperCase() ?? ''}${field.slice(
+    1,
+  )}`;
+  return {
+    default: field === 'kind' ? null : '',
+    parseHTML: (element: HTMLElement) => {
+      if (
+        element.getAttribute('data-document-change') !== 'true' ||
+        element.getAttribute('data-change-kind') !== 'numbering'
+      ) {
+        return field === 'kind' ? null : '';
+      }
+      return field === 'kind'
+        ? 'numbering'
+        : (element.getAttribute(htmlName) ?? '');
+    },
+    renderHTML: (attributes: Record<string, unknown>) => {
+      if (attributes.numberingChangeKind !== 'numbering') return {};
+      if (field === 'kind') {
+        return {
+          'data-document-change': 'true',
+          'data-change-kind': 'numbering',
         };
       }
       const value = stringAttribute(attributes[modelName]);

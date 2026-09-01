@@ -252,13 +252,14 @@ function changeKind(value: unknown, shared: boolean): WorkDocumentChangeKind {
     value === 'insertion' ||
     value === 'deletion' ||
     value === 'formatting' ||
-    value === 'paragraph-formatting'
+    value === 'paragraph-formatting' ||
+    value === 'numbering'
   ) {
     return value;
   }
   if (shared) invalidSharedSidecars('tracked-change decision kind');
   invalidInputSidecars(
-    'an insertion, deletion, formatting, or paragraph-formatting tracked-change kind',
+    'an insertion, deletion, formatting, paragraph-formatting, or numbering tracked-change kind',
   );
 }
 

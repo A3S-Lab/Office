@@ -5,13 +5,14 @@ import type {
   WorkDocumentChange,
   WorkDocumentChangeIdentity,
 } from '../features/work/work-document-changes';
+import { parseDocumentCharacterFormatting } from '../features/work/work-document-format-changes';
+import { parseDocumentNumberingChange } from '../features/work/work-document-numbering-changes';
+import { parseDocumentParagraphFormatting } from '../features/work/work-document-paragraph-format-changes';
 import type {
   WorkDocumentChangeDecision,
   WorkDocumentChangeDecisionAction,
   WorkDocumentChangeKind,
 } from '../features/work/work-types';
-import { parseDocumentCharacterFormatting } from '../features/work/work-document-format-changes';
-import { parseDocumentParagraphFormatting } from '../features/work/work-document-paragraph-format-changes';
 import type { WorkOfficeCollaborationSession } from './office-collaboration';
 
 interface StrictDocumentChange extends WorkDocumentChangeIdentity {
@@ -116,6 +117,10 @@ function strictDocumentChanges(
         valid = false;
         return false;
       }
+    }
+    if (node.type.name === 'orderedList' && !strictNumberingChange(node)) {
+      valid = false;
+      return false;
     }
     if (!node.isText || !node.text) return;
     const marks = node.marks.filter(
@@ -276,5 +281,31 @@ function strictParagraphFormattingChange(node: ProseMirrorNode): boolean {
       strictString(node.attrs.paragraphChangeAuthor) &&
       strictString(node.attrs.paragraphChangeDate) &&
       parseDocumentParagraphFormatting(node.attrs.paragraphChangeBefore),
+  );
+}
+
+function strictNumberingChange(node: ProseMirrorNode): boolean {
+  const kind = node.attrs.numberingChangeKind;
+  const fields = [
+    node.attrs.numberingChangeId,
+    node.attrs.numberingChangeActorId,
+    node.attrs.numberingChangeAuthor,
+    node.attrs.numberingChangeDate,
+    node.attrs.numberingChangeBefore,
+  ];
+  if (kind !== 'numbering') {
+    return (
+      (kind === null || kind === undefined || kind === '') &&
+      fields.every(
+        (field) => field === null || field === undefined || field === '',
+      )
+    );
+  }
+  return Boolean(
+    strictString(node.attrs.numberingChangeId) &&
+      optionalStrictString(node.attrs.numberingChangeActorId) !== null &&
+      strictString(node.attrs.numberingChangeAuthor) &&
+      strictString(node.attrs.numberingChangeDate) &&
+      parseDocumentNumberingChange(node.attrs.numberingChangeBefore),
   );
 }

@@ -4,9 +4,10 @@ import {
   createOfficeCollaborationSession,
   readOfficeDocumentCollaboration,
 } from '../src/core';
-import browserDocumentFixtureBase64 from './fixtures/browser-document-suggestion-update.base64';
 import browserDocumentFormattingFixtureBase64 from './fixtures/browser-document-formatting-change-update.base64';
+import browserDocumentNumberingFixtureBase64 from './fixtures/browser-document-numbering-change-update.base64';
 import browserDocumentParagraphFormattingFixtureBase64 from './fixtures/browser-document-paragraph-formatting-change-update.base64';
+import browserDocumentFixtureBase64 from './fixtures/browser-document-suggestion-update.base64';
 import {
   NATIVE_DOCUMENT_SUGGESTION_DECISION_BASE64,
   NATIVE_DOCUMENT_SUGGESTION_PROPOSAL_BASE64,
@@ -132,6 +133,39 @@ test('projects browser paragraph-formatting revisions and decisions from the sha
       decidedBy: 'Browser Editor',
       suggestedBy: 'Browser Reviewer',
       text: 'Reviewed paragraph',
+    }),
+  ]);
+
+  session.destroy();
+  document.destroy();
+});
+
+test('projects browser numbering revisions and decisions from the shared Yjs schema', () => {
+  const document = new Y.Doc();
+  const session = createOfficeCollaborationSession({
+    artifactId: 'fixture-document-numbering',
+    document,
+    kind: 'document',
+    mode: 'edit',
+  });
+  Y.applyUpdate(
+    document,
+    decodeBase64(browserDocumentNumberingFixtureBase64.trim()),
+  );
+
+  const content = readOfficeDocumentCollaboration(session);
+  expect(content.html).toContain('data-change-kind="numbering"');
+  expect(content.html).toContain('data-change-id="browser-numbering-live"');
+  expect(content.html).toContain('start="4"');
+  expect(content.html).toContain('type="a"');
+  expect(content.changeDecisions).toEqual([
+    expect.objectContaining({
+      changeId: 'browser-numbering-decided',
+      changeKind: 'numbering',
+      decision: 'accept',
+      decidedBy: 'Browser Editor',
+      suggestedBy: 'Browser Reviewer',
+      text: 'Reviewed numbering',
     }),
   ]);
 

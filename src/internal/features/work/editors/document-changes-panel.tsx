@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Button, CollectionState } from '../../../design-system/primitives';
 import type { WorkDocumentChange } from '../work-document-changes';
+import type { WorkDocumentChangeDecision } from '../work-types';
 import {
   DOCUMENT_NAVIGATION_COLLECTION_WINDOW_LIMIT,
   type DocumentNavigationWindowSpacerEntry,
@@ -16,7 +17,6 @@ import {
 } from './document-navigation-window';
 import { DocumentTaskPane } from './document-task-pane';
 import { useOfficeDialog } from './office-controls';
-import type { WorkDocumentChangeDecision } from '../work-types';
 
 type DocumentChangeDecision = 'accept' | 'reject';
 
@@ -390,6 +390,7 @@ function documentChangeKindLabel(kind: WorkDocumentChange['kind']): string {
   if (kind === 'insertion') return '插入';
   if (kind === 'formatting') return '格式';
   if (kind === 'paragraph-formatting') return '段落格式';
+  if (kind === 'numbering') return '编号格式';
   return '删除';
 }
 

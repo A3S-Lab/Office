@@ -11,12 +11,13 @@ import {
   isDocumentCharacterFormatMark,
   serializeDocumentCharacterFormatting,
 } from './work-document-format-changes';
+import { trackDocumentNumberingChangeTransaction } from './work-document-numbering-change-tracking';
 import { trackDocumentParagraphFormattingTransaction } from './work-document-paragraph-format-change-tracking';
 
 interface DocumentFormattingChangeTrackingOptions {
   isTracking: () => boolean;
   createChange: (
-    kind: 'formatting' | 'paragraph-formatting',
+    kind: 'formatting' | 'paragraph-formatting' | 'numbering',
   ) => WorkDocumentChangeIdentity;
 }
 
@@ -85,10 +86,18 @@ export function trackDocumentFormattingTransaction(
       createChange: () => options.createChange('paragraph-formatting'),
     },
   );
-  if (identity || paragraphFormatting) {
+  const numbering = trackDocumentNumberingChangeTransaction(
+    transaction,
+    state,
+    {
+      createChange: () => options.createChange('numbering'),
+    },
+  );
+  if (identity || paragraphFormatting || numbering) {
     transaction.setMeta(pluginKey, {
       ...(identity ? { formatting: true } : {}),
       ...(paragraphFormatting ? { paragraphFormatting: true } : {}),
+      ...(numbering ? { numbering: true } : {}),
     });
   }
 }

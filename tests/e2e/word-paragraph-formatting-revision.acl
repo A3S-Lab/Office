@@ -29,11 +29,11 @@ suite "word-paragraph-formatting-revision" {
         }
 
         wait "review-toolbar-is-ready" {
-            visible = css("button[aria-label='查看修订（2）']")
+            visible = css("button[aria-label='查看修订（3）']")
         }
 
         click "open-revision-pane" {
-            target = role("button", "查看修订（2）")
+            target = role("button", "查看修订（3）")
         }
 
         wait "paragraph-formatting-card-is-ready" {

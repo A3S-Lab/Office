@@ -42,6 +42,62 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.40.0',
+    date: '2026-09-02',
+    kind: 'new',
+    surfaces: ['writer', 'shared', 'playground'],
+    title: {
+      en: 'Writer numbering changes are now reviewable',
+      zh: 'Writer 编号变化现在可以完整审阅',
+    },
+    summary: {
+      en: 'Ordered-list style and starting-number edits now form one atomic revision across review, collaboration, native DOCX, and Undo.',
+      zh: '有序列表样式与起始编号修改现在会形成一条原子修订，贯通审核、协作、原生 DOCX 与撤销。',
+    },
+    highlights: [
+      {
+        title: { en: 'One list, one intent', zh: '一个列表，一个意图' },
+        detail: {
+          en: 'The Numbering card accepts the current list or restores the complete original style and start without changing list text.',
+          zh: '“编号格式”卡可以接受当前列表，或恢复完整原样式与起始值，而不改动列表文字。',
+        },
+      },
+      {
+        title: { en: 'Native revision fidelity', zh: '原生修订保真' },
+        detail: {
+          en: 'Common single-level decimal, letter, and Roman w:numberingChange records import, export, and reopen with fail-closed diagnostics.',
+          zh: '常见单层十进制、字母与罗马数字 w:numberingChange 可导入、导出和重开，异常形式会失败关闭。',
+        },
+      },
+      {
+        title: { en: 'Protected collaboration', zh: '受保护的协作' },
+        detail: {
+          en: 'Yjs/Yrs retain live numbering metadata and immutable decisions across persistence while suggest mode rejects metadata tampering.',
+          zh: 'Yjs/Yrs 会跨持久化保留编号元数据与不可变决定，建议模式则拒绝篡改审核元数据。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#ordered-list-numbering-revisions',
+          zh: './components/document.html#有序列表编号修订',
+        },
+        label: {
+          en: 'Read the Writer numbering review guide',
+          zh: '阅读 Writer 编号修订指南',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.40.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.40.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.39.0',
     date: '2026-09-01',
     kind: 'new',

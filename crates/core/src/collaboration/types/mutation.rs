@@ -92,6 +92,7 @@ pub enum NativeOfficeCollaborationDocumentChangeKind {
     Deletion,
     Formatting,
     ParagraphFormatting,
+    Numbering,
 }
 
 impl NativeOfficeCollaborationDocumentChangeKind {
@@ -101,6 +102,7 @@ impl NativeOfficeCollaborationDocumentChangeKind {
             Self::Deletion => "deletion",
             Self::Formatting => "formatting",
             Self::ParagraphFormatting => "paragraph-formatting",
+            Self::Numbering => "numbering",
         }
     }
 }

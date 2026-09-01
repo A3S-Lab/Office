@@ -68,7 +68,7 @@ collaboration transport, and AI providers.
 | Capability | A3S Office status | Main gap or boundary | Priority |
 | --- | --- | --- | --- |
 | Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported**, including independent native `w:rFonts` ASCII, high ANSI, East Asian, and complex-script slots with exact direct/theme identity, mixed-run segmentation, one script-aware `Cmd/Ctrl+D` dialog, and one-step Undo; complete bounded Office 2010 OpenType ligature, numeral-form, numeral-spacing, style-set, and contextual-alternate controls shared with equations; independent native `w:lang` Latin, East Asian, and bidi proofing slots plus explicit `w:noProof` inclusion/exclusion; mutually exclusive native `w:caps` / `w:smallCaps`; signed native `w:spacing` and `w:position` with explicit zero; all five native `w:em` emphasis values with explicit `none` and direct-format clearing; native `w:vanish` hidden text with explicit visible resets, the standard `Cmd/Ctrl+Shift+H` shortcut, and an editing-only dotted reveal view; independent native `w:outline`, `w:shadow`, `w:emboss`, and `w:imprint` effects with explicit false resets and conflict-safe authoring; native `w:bdr` character borders with 25 visible line styles plus `nil` and `none`, direct/theme colors, bounded width/spacing, shadow, and frame semantics; all 18 native `w:u` values with direct or theme color identity and explicit resets; independent native `w:strike` / `w:dstrike` state with explicit resets; standard shortcuts where Traditional Office defines them; page chrome; formatting revisions; and exact DOCX reopen | Long-tail Word style and typography effects outside the declared typed models can still normalize | Maintain / P0 fidelity |
-| Bullets, numbering, nesting, restarts, RTL lists | **Supported** for common editable structures | Exotic numbering pictures and some inherited list metadata remain compatibility work | P1 |
+| Bullets, numbering, nesting, restarts, RTL lists | **Supported** for common editable structures, including bounded ordered-list style/start revisions, atomic review, and common single-level native `w:numberingChange` round trips | Exotic numbering pictures, multi-level numbering revisions, and some inherited list metadata remain compatibility work | P1 |
 | Page size, orientation, columns, section/page breaks | **Supported** per section | Browser line breaking and pagination are not yet desktop-engine exact | P0 |
 | Page margins (`w:pgMar`, `mirrorMargins`, `gutterAtTop`, `rtlGutter`) | **Supported** on current `main`: all seven native twip values, signed top/bottom overlap semantics, strict universal measures, header/footer distances, top/left/right gutters, facing-page swaps, multi-section inheritance, diagnostics, editing, PDF preview, and exact DOCX export | The continuous editing surface projects the first-page horizontal origin; physical-page PDF preview is authoritative for facing-page placement | Maintain / P0 regression gate |
 | Headers, footers, first/even/default variants, page numbers | **Supported** | Complex fields and application-specific placement settings remain partial | P0 |
@@ -78,7 +78,7 @@ collaboration transport, and AI providers.
 | Inline and floating pictures, crop, wrap contour, layer, identity, alt text | **Partial**, with strong DrawingML picture support | Broad shapes, connectors, text boxes, WordArt, SmartArt, charts, and unsupported drawings normalize | P0 safe preservation; P1 editable drawings |
 | OMML equations | **Partial**, with a large bounded structured model and strict/transitional import/export | Unbounded or unsupported OMML branches remain atomic/unsupported rather than fully editable | P0 no-clobber; P2 coverage |
 | Comments, replies, resolved state, anchors, modern IDs | **Supported** for editable review records and safe source preservation | Reactions, people sidecars, live presence, and server synchronization are absent/host-owned | P1 protocol |
-| Track changes review | **Partial**: body-text insertions/deletions plus bounded character- and paragraph-formatting revisions, native `w:rPrChange` and `w:pPrChange` round trips, navigation, accept/reject, immutable collaboration audit, and long-list virtualization | Moves plus numbering, section, table, row, and cell property revisions are not fully editable | P0 |
+| Track changes review | **Partial**: body-text insertions/deletions plus bounded character-, paragraph-formatting, and ordered-list numbering revisions; native `w:rPrChange`, `w:pPrChange`, and common single-level `w:numberingChange` round trips; navigation, atomic accept/reject, immutable collaboration audit, and long-list virtualization | Moves plus section, table, row, cell, and complex/multi-level numbering property revisions are not fully editable | P0 |
 | Bookmarks, links, captions, cross-references, citations, bibliography, footnotes/endnotes | **Partial**, with native identity and editable common paths | Wider field instructions, tables of authorities/figures, citation styles, and reference dialogs remain incomplete | P1 |
 | Table of contents and outline authoring | **Supported**: shared semantic-heading/native-outline model plus typed insert/customize/refresh, levels 1–9, hyperlinks, live page numbers, alignment, four leader styles, stable paragraph-identity targets, one-step Undo, and native DOCX `TOC` round trips | Custom style-to-level mappings, tables of figures, and deeper TOC style formatting remain open | Maintain / P1 fidelity |
 | Native index authoring | **Supported**: primary/secondary `XE` entries, cross-references, bold/italic page intent, stable marker targets, merged page numbers, typed insert/customize/refresh, 1–4 columns, indented/run-in layouts, four leader styles, one-step Undo, and native DOCX `XE`/`INDEX` round trips | Entry ranges, custom index types, letter-heading formats, authorities, and locale-specific collation controls remain open | Maintain / P1 fidelity |
@@ -177,12 +177,14 @@ a phase exits only when its evidence is complete.
   mixed custom-size and orientation transitions now paginate in the shared
   JS/Rust kernel, render as variable-size live sheets, and retain exact
   per-page geometry in thumbnails and PDF capture.
-- Treat bounded character and paragraph formatting as completed revision slices:
+- Treat bounded character, paragraph-formatting, and ordered-list numbering as
+  completed revision slices:
   retain accept/reject inversion, exact old-property snapshots, atomic
   multi-paragraph decisions, strict/transitional `w:rPrChange` and
-  `w:pPrChange`, browser/Yrs convergence, malformed-input diagnostics, and
-  Playground A3S Test coverage as permanent gates. Expand next to numbering,
-  section, table, row, cell, and move revisions.
+  `w:pPrChange`, common single-level `w:numberingChange`, browser/Yrs
+  convergence, malformed-input diagnostics, and Playground A3S Test coverage
+  as permanent gates. Expand next to section, table, row, cell, complex
+  numbering, and move revisions.
 - Treat native all-caps and small-caps as a completed character-effect slice:
   retain one mutually exclusive typed state, semantic source text, standard
   shortcuts, body/header/footer parity, formatting revision and Format Painter
