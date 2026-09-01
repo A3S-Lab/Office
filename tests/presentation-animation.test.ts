@@ -1,10 +1,14 @@
 import { expect, test } from '@rstest/core';
 import {
+  createWorkSlideAnimation,
   initialWorkSlideAnimationCueIndex,
   normalizeWorkSlideAnimation,
   remapWorkSlideAnimations,
   removeWorkSlideAnimationsForElements,
+  workSlideAnimationClass,
   workSlideAnimationCues,
+  workSlideAnimationForElement,
+  workSlideAnimationSequenceIssue,
 } from '../src/internal/features/work/work-presentation-animation';
 import { createWorkArtifact } from '../src/internal/features/work/work-templates';
 import type {
@@ -62,6 +66,43 @@ test('normalizes bounded timing and effect-specific direction', () => {
       direction: undefined,
     }),
   ).toMatchObject({ durationMs: 60_000, delayMs: 0, direction: 'left' });
+  expect(createWorkSlideAnimation('two', 'fly-out')).toMatchObject({
+    effect: 'fly-out',
+    direction: 'left',
+  });
+});
+
+test('keeps one entrance and one exit animation per object in one ordered model', () => {
+  const entrance = animation('entrance', 'one', 'on-click', 500, 0);
+  const exit = {
+    ...animation('exit', 'one', 'after-previous', 300, 0),
+    effect: 'fade-out' as const,
+  };
+  const slide: WorkSlide = {
+    id: 'slide',
+    name: 'Animated',
+    background: '#fff',
+    elements: [],
+    animations: [entrance, exit],
+  };
+
+  expect(workSlideAnimationClass(entrance.effect)).toBe('entrance');
+  expect(workSlideAnimationClass(exit.effect)).toBe('exit');
+  expect(workSlideAnimationForElement(slide, 'one', 'entrance')).toBe(entrance);
+  expect(workSlideAnimationForElement(slide, 'one', 'exit')).toBe(exit);
+  expect(workSlideAnimationSequenceIssue(slide.animations)).toBeUndefined();
+  expect(
+    workSlideAnimationSequenceIssue([
+      entrance,
+      { ...entrance, id: 'duplicate', effect: 'zoom' },
+    ]),
+  ).toBe('duplicate-class');
+  expect(
+    workSlideAnimationSequenceIssue([
+      entrance,
+      { ...exit, trigger: 'with-previous' },
+    ]),
+  ).toBe('overlapping-target');
 });
 
 test('removes deleted targets and remaps slide-copy animation identities', () => {
@@ -93,19 +134,23 @@ test('removes deleted targets and remaps slide-copy animation identities', () =>
   expect(remapped?.map(({ id }) => id)).not.toEqual(['a', 'b']);
 });
 
-test('publishes an editable Playground template for every supported entrance effect and trigger', () => {
+test('publishes an editable Playground template for every supported entrance and exit effect', () => {
   const artifact = createWorkArtifact('animated-deck');
   if (artifact.content.type !== 'presentation') {
     throw new Error('Expected the animated Presentation template.');
   }
   const animations = artifact.content.slides[0]?.animations ?? [];
 
-  expect(artifact.title).toBe('入场动画示例');
+  expect(artifact.title).toBe('进入与退出动画示例');
   expect(animations.map((animation) => animation.effect)).toEqual([
     'appear',
     'fade',
     'fly-in',
     'zoom',
+    'disappear',
+    'fade-out',
+    'fly-out',
+    'zoom-out',
   ]);
   expect(new Set(animations.map((animation) => animation.trigger))).toEqual(
     new Set(['on-click', 'with-previous', 'after-previous']),

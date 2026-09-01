@@ -173,14 +173,12 @@ export function presentationCommandsWithObjectFocus(
     distributeElements: afterSuccessfulCommand(commands.distributeElements),
     duplicateSlide: afterSuccessfulCommand(commands.duplicateSlide),
     groupElements: afterSuccessfulCommand(commands.groupElements),
-    moveEntranceAnimation: afterSuccessfulCommand(
-      commands.moveEntranceAnimation,
-    ),
+    moveAnimation: afterSuccessfulCommand(commands.moveAnimation),
     pasteSelection: afterSuccessfulCommand(commands.pasteSelection),
     redo: afterSuccessfulCommand(commands.redo),
     reorderElement: afterSuccessfulCommand(commands.reorderElement),
     setTransition: afterSuccessfulCommand(commands.setTransition),
-    setEntranceAnimation: afterSuccessfulCommand(commands.setEntranceAnimation),
+    setAnimation: afterSuccessfulCommand(commands.setAnimation),
     setViewMode: afterSuccessfulCommand(commands.setViewMode),
     toggleBold: afterSuccessfulCommand(commands.toggleBold),
     toggleItalic: afterSuccessfulCommand(commands.toggleItalic),
@@ -188,8 +186,6 @@ export function presentationCommandsWithObjectFocus(
     undo: afterSuccessfulCommand(commands.undo),
     ungroupElements: afterSuccessfulCommand(commands.ungroupElements),
     updateElement: afterSuccessfulCommand(commands.updateElement),
-    updateEntranceAnimation: afterSuccessfulCommand(
-      commands.updateEntranceAnimation,
-    ),
+    updateAnimation: afterSuccessfulCommand(commands.updateAnimation),
   };
 }

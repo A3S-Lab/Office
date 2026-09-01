@@ -131,24 +131,11 @@ export function usePresentationClipboard({
       showToast('没有可粘贴的演示内容。', 'info');
       return true;
     }
-    if (
-      clipboard.payload.kind === 'element' ||
-      clipboard.payload.kind === 'elements'
-    ) {
+    if (clipboard.payload.kind === 'elements') {
       if (!targetId) return false;
-      const sourceElements =
-        clipboard.payload.kind === 'element'
-          ? [clipboard.payload.element]
-          : clipboard.payload.elements;
-      const sourceAnimations =
-        clipboard.payload.kind === 'element'
-          ? clipboard.payload.animation
-            ? [clipboard.payload.animation]
-            : []
-          : (clipboard.payload.animations ?? []);
       const pasted = clonePresentationElementsAndAnimationsForPaste(
-        sourceElements,
-        sourceAnimations,
+        clipboard.payload.elements,
+        clipboard.payload.animations ?? [],
         clipboard.offset,
       );
       if (

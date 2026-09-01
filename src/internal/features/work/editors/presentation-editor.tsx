@@ -760,21 +760,20 @@ function PresentationEditingSurface({
   const presentationEditor = useOfficeEditorRuntime(
     {
       animations: {
-        canMoveEntranceAnimation: (direction) =>
+        canMoveAnimation: (animationClass, direction) =>
           designMode === 'slide' &&
-          presentationAnimations.canMoveEntranceAnimation(direction),
+          presentationAnimations.canMoveAnimation(animationClass, direction),
         canPreviewAnimations:
           designMode === 'slide' && Boolean(selectedSlide.animations?.length),
-        canSetEntranceAnimation:
+        canSetAnimation:
+          designMode === 'slide' && presentationAnimations.canSetAnimation,
+        canUpdateAnimation: (animationClass, patch) =>
           designMode === 'slide' &&
-          presentationAnimations.canSetEntranceAnimation,
-        canUpdateEntranceAnimation:
-          designMode === 'slide' &&
-          presentationAnimations.canUpdateEntranceAnimation,
-        moveEntranceAnimation: presentationAnimations.moveEntranceAnimation,
+          presentationAnimations.canUpdateAnimation(animationClass, patch),
+        moveAnimation: presentationAnimations.moveAnimation,
         previewAnimations: () => startPresentationSlideshow('current'),
-        setEntranceAnimation: presentationAnimations.setEntranceAnimation,
-        updateEntranceAnimation: presentationAnimations.updateEntranceAnimation,
+        setAnimation: presentationAnimations.setAnimation,
+        updateAnimation: presentationAnimations.updateAnimation,
       },
       clipboard: {
         canCopySelection:

@@ -18,7 +18,7 @@ import type {
   WorkSlideElement,
 } from '../src/internal/features/work/work-types';
 
-test('round-trips supported entrance animations through native PPTX timing trees', async () => {
+test('round-trips supported entrance and exit animations through native PPTX timing trees', async () => {
   const blob = await createPptxBlob(animatedArtifact(), PptxGenJS);
   const archive = await OoxmlPackage.load(await blob.arrayBuffer());
   const slide = await archive.xml('ppt/slides/slide1.xml');
@@ -37,11 +37,29 @@ test('round-trips supported entrance animations through native PPTX timing trees
     ),
   );
   expect(new Set(timeNodeIds).size).toBe(timeNodeIds.length);
+  const effectNodes = descendants(timing, 'cTn').filter((node) =>
+    ['entr', 'exit'].includes(attribute(node, 'presetClass') ?? ''),
+  );
   expect(
-    descendants(timing, 'cTn')
-      .filter((node) => attribute(node, 'presetClass') === 'entr')
-      .map((node) => attribute(node, 'nodeType')),
-  ).toEqual(['clickEffect', 'withEffect', 'afterEffect', 'clickEffect']);
+    effectNodes.map((node) => [
+      attribute(node, 'presetClass'),
+      attribute(node, 'nodeType'),
+    ]),
+  ).toEqual([
+    ['entr', 'clickEffect'],
+    ['entr', 'withEffect'],
+    ['entr', 'afterEffect'],
+    ['entr', 'clickEffect'],
+    ['exit', 'clickEffect'],
+    ['exit', 'withEffect'],
+    ['exit', 'afterEffect'],
+    ['exit', 'afterEffect'],
+  ]);
+  expect(
+    descendants(timing, 'animEffect')
+      .filter((node) => attribute(node, 'transition') === 'out')
+      .map((node) => attribute(node, 'filter')),
+  ).toEqual(['fade', 'slide(fromBottom)']);
   expect(targetIds).toHaveLength(4);
   expect(targetIds.every((id) => shapeIds.has(id))).toBe(true);
   expect(
@@ -69,6 +87,10 @@ test('round-trips supported entrance animations through native PPTX timing trees
     ['fade', 'with-previous', 600, 100, undefined],
     ['fly-in', 'after-previous', 700, 150, 'right'],
     ['zoom', 'on-click', 800, 200, undefined],
+    ['disappear', 'on-click', 200, 0, undefined],
+    ['fade-out', 'with-previous', 500, 100, undefined],
+    ['fly-out', 'after-previous', 650, 50, 'down'],
+    ['zoom-out', 'after-previous', 400, 0, undefined],
   ]);
   expect(imported.compatibility.issues).toContainEqual(
     expect.objectContaining({ code: 'pptx.animation', severity: 'info' }),
@@ -89,20 +111,28 @@ test('round-trips supported entrance animations through native PPTX timing trees
   );
 });
 
-test('imports the supported subset and diagnoses duplicate, unsupported, and missing targets', async () => {
+test('imports the supported entrance and exit subset and diagnoses duplicate, unsupported, and missing targets', async () => {
   const imported = await importPptxPresentation(
     await malformedAnimationPresentation(),
   );
-  const animation = imported.content.slides[0]?.animations?.[0];
+  const animations = imported.content.slides[0]?.animations ?? [];
 
-  expect(animation).toMatchObject({
-    effect: 'fade',
-    trigger: 'on-click',
-    durationMs: 700,
-    delayMs: 50,
-  });
-  expect(animation?.elementId).toBe(
-    imported.content.slides[0]?.elements[0]?.id,
+  expect(animations).toEqual([
+    expect.objectContaining({
+      effect: 'fade',
+      trigger: 'on-click',
+      durationMs: 700,
+      delayMs: 50,
+    }),
+    expect.objectContaining({
+      effect: 'fade-out',
+      trigger: 'after-previous',
+      durationMs: 400,
+      delayMs: 0,
+    }),
+  ]);
+  expect(new Set(animations.map(({ elementId }) => elementId))).toEqual(
+    new Set([imported.content.slides[0]?.elements[0]?.id]),
   );
   for (const code of [
     'pptx.animation.duplicate-target',
@@ -127,7 +157,7 @@ test('ignores namespace-spoofed animation timing instead of trusting local names
   );
 });
 
-test('rejects spoofed behavior nodes and unsupported fly-in filters inside valid timing', () => {
+test('rejects spoofed behavior nodes, unsupported filters, and mismatched transitions', () => {
   const document = parseXml(
     `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:evil="urn:not-presentation">
       <p:timing><p:tnLst><p:par><p:cTn id="1" nodeType="tmRoot"><p:childTnLst>
@@ -139,6 +169,10 @@ test('rejects spoofed behavior nodes and unsupported fly-in filters inside valid
           <p:childTnLst><p:set><p:cBhvr><p:tgtEl><p:spTgt spid="3"/></p:tgtEl></p:cBhvr></p:set>
           <p:animEffect filter="slide(fromTopLeft)"/></p:childTnLst>
         </p:cTn></p:par>
+        <p:par><p:cTn id="4" nodeType="clickEffect" presetClass="exit" presetID="10">
+          <p:childTnLst><p:set><p:cBhvr><p:tgtEl><p:spTgt spid="4"/></p:tgtEl></p:cBhvr></p:set>
+          <p:animEffect transition="in" filter="fade"/></p:childTnLst>
+        </p:cTn></p:par>
       </p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>
     </p:sld>`,
   );
@@ -147,13 +181,14 @@ test('rejects spoofed behavior nodes and unsupported fly-in filters inside valid
     new Map([
       ['2', 'first'],
       ['3', 'second'],
+      ['4', 'third'],
     ]),
   );
 
   expect(result.animations).toEqual([]);
   expect(
     result.diagnostics.filter(({ code }) => code === 'pptx.animation.effect'),
-  ).toHaveLength(2);
+  ).toHaveLength(3);
 });
 
 function animationProjection(
@@ -251,6 +286,41 @@ function animatedArtifact(): WorkArtifact {
               direction: 'right',
             },
             animation('zoom-table', 'table', 'zoom', 'on-click', 800, 200),
+            animation(
+              'disappear-title',
+              'title',
+              'disappear',
+              'on-click',
+              200,
+              0,
+            ),
+            animation(
+              'fade-out-message',
+              'message',
+              'fade-out',
+              'with-previous',
+              500,
+              100,
+            ),
+            {
+              ...animation(
+                'fly-out-picture',
+                'picture',
+                'fly-out',
+                'after-previous',
+                650,
+                50,
+              ),
+              direction: 'down',
+            },
+            animation(
+              'zoom-out-table',
+              'table',
+              'zoom-out',
+              'after-previous',
+              400,
+              0,
+            ),
           ],
         },
       ],
@@ -355,9 +425,10 @@ async function malformedAnimationPresentation(): Promise<File> {
         </p:spTree></p:cSld>
         <p:timing><p:tnLst><p:par><p:cTn id="1" nodeType="tmRoot"><p:childTnLst><p:seq><p:cTn id="2" nodeType="mainSeq"><p:childTnLst>
           ${fadeEffectXml(10, 2, 'entr', 'clickEffect', 700, 50)}
-          ${fadeEffectXml(20, 2, 'entr', 'afterEffect', 400, 0)}
-          ${fadeEffectXml(30, 3, 'exit', 'afterEffect', 400, 0)}
-          ${fadeEffectXml(40, 999, 'entr', 'afterEffect', 400, 0)}
+          ${fadeEffectXml(20, 2, 'exit', 'afterEffect', 400, 0)}
+          ${fadeEffectXml(30, 2, 'exit', 'clickEffect', 400, 0)}
+          ${fadeEffectXml(40, 3, 'emph', 'afterEffect', 400, 0)}
+          ${fadeEffectXml(50, 999, 'entr', 'afterEffect', 400, 0)}
         </p:childTnLst></p:cTn></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>
       </p:sld>`,
   );
@@ -377,10 +448,11 @@ function shapeXml(id: number, name: string, x: number): string {
 function fadeEffectXml(
   id: number,
   spid: number,
-  presetClass: 'entr' | 'exit',
+  presetClass: 'emph' | 'entr' | 'exit',
   nodeType: 'afterEffect' | 'clickEffect',
   durationMs: number,
   delayMs: number,
 ): string {
-  return `<p:par><p:cTn id="${id}" presetID="10" presetClass="${presetClass}" presetSubtype="0" nodeType="${nodeType}" dur="${durationMs}"><p:stCondLst><p:cond delay="${delayMs}"/></p:stCondLst><p:childTnLst><p:set><p:cBhvr><p:cTn id="${id + 1}" dur="1"/><p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl></p:cBhvr></p:set><p:animEffect transition="in" filter="fade"><p:cBhvr><p:cTn id="${id + 2}" dur="${durationMs}"/><p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl></p:cBhvr></p:animEffect></p:childTnLst></p:cTn></p:par>`;
+  const transition = presetClass === 'exit' ? 'out' : 'in';
+  return `<p:par><p:cTn id="${id}" presetID="10" presetClass="${presetClass}" presetSubtype="0" nodeType="${nodeType}" dur="${durationMs}"><p:stCondLst><p:cond delay="${delayMs}"/></p:stCondLst><p:childTnLst><p:set><p:cBhvr><p:cTn id="${id + 1}" dur="1"/><p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl></p:cBhvr></p:set><p:animEffect transition="${transition}" filter="fade"><p:cBhvr><p:cTn id="${id + 2}" dur="${durationMs}"/><p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl></p:cBhvr></p:animEffect></p:childTnLst></p:cTn></p:par>`;
 }

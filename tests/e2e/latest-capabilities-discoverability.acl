@@ -28,8 +28,8 @@ suite "latest-capabilities-discoverability" {
             text = "9 / 9 项"
         }
 
-        expect "entrance-animation-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：入场动画']")
+        expect "entrance-exit-animation-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：进入与退出动画'][data-release='0.39.0']")
         }
 
         expect "document-comparison-entry-is-visible" {
@@ -72,19 +72,19 @@ suite "latest-capabilities-discoverability" {
             visible = css("button[aria-label='打开最新能力：组织 PDF 页面']")
         }
 
-        click "open-entrance-animations" {
-            target = role("button", "打开最新能力：入场动画")
+        click "open-entrance-exit-animations" {
+            target = role("button", "打开最新能力：进入与退出动画")
         }
 
-        wait "entrance-animation-presentation-is-ready" {
-            text = "让信息按叙事顺序出现"
+        wait "entrance-exit-animation-presentation-is-ready" {
+            text = "让对象按叙事顺序登场与退场"
         }
 
-        expect "entrance-animation-title-is-visible" {
-            visible = css("input[aria-label='文件名'][value='入场动画示例']")
+        expect "entrance-exit-animation-title-is-visible" {
+            visible = css("input[aria-label='文件名'][value='进入与退出动画示例']")
         }
 
-        navigate "return-to-playground-home-after-entrance-animations" {
+        navigate "return-to-playground-home-after-entrance-exit-animations" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
@@ -243,19 +243,19 @@ suite "latest-capabilities-discoverability" {
             visible = css("main .rp-doc a[href*='components/document.html#']")
         }
 
-        navigate "open-entrance-animation-documentation" {
+        navigate "open-entrance-exit-animation-documentation" {
             url = "http://127.0.0.1:4175/docs/components/presentation.html"
         }
 
-        wait "entrance-animation-documentation-is-open" {
-            text = "一个对象最多拥有一条可编辑入场动画"
+        wait "entrance-exit-animation-documentation-is-open" {
+            text = "一个对象最多拥有一条可编辑进入动画和一条可编辑退出"
         }
 
-        expect "entrance-animation-is-documented" {
-            visible = css("main h2[id='入场动画']")
+        expect "entrance-exit-animation-is-documented" {
+            visible = css("main h2[id='进入与退出动画']")
         }
 
-        navigate "return-to-documentation-home-after-entrance-animation" {
+        navigate "return-to-documentation-home-after-entrance-exit-animation" {
             url = "http://127.0.0.1:4175/docs/"
         }
 
@@ -381,8 +381,8 @@ suite "latest-capabilities-discoverability" {
             visible = css(".playground-latest-capability-filters button[aria-controls='playground-latest-capability-list']")
         }
 
-        expect "phone-entrance-animation-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：入场动画']")
+        expect "phone-entrance-exit-animation-entry-is-visible" {
+            visible = css("button[aria-label='打开最新能力：进入与退出动画']")
         }
 
         expect "phone-document-comparison-entry-is-visible" {

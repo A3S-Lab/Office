@@ -7,7 +7,7 @@ import type {
   WorkSlideElement,
 } from '../src/internal/features/work/work-types';
 
-test('creates, updates, reorders, and removes one entrance animation per object', () => {
+test('creates, updates, reorders, and removes one entrance and exit animation per object', () => {
   const initial = presentation();
   const changes: WorkPresentationContent[] = [];
   const { result, rerender } = renderHook(
@@ -21,23 +21,49 @@ test('creates, updates, reorders, and removes one entrance animation per object'
     { initialProps: { content: initial, elementId: 'one' } },
   );
 
-  act(() => expect(result.current.setEntranceAnimation('fade')).toBe(true));
+  act(() => expect(result.current.setAnimation('entrance', 'fade')).toBe(true));
   expect(changes).toHaveLength(1);
   expect(changes[0].slides[0].animations).toEqual([
     expect.objectContaining({ elementId: 'one', effect: 'fade' }),
   ]);
 
-  rerender({ content: changes[0], elementId: 'two' });
-  act(() => expect(result.current.setEntranceAnimation('fly-in')).toBe(true));
-  const withTwo = changes[1];
+  rerender({ content: changes[0], elementId: 'one' });
+  act(() => expect(result.current.setAnimation('exit', 'fade-out')).toBe(true));
+  expect(changes[1].slides[0].animations).toEqual([
+    expect.objectContaining({ elementId: 'one', effect: 'fade' }),
+    expect.objectContaining({ elementId: 'one', effect: 'fade-out' }),
+  ]);
+
+  rerender({ content: changes[1], elementId: 'one' });
+  act(() =>
+    expect(
+      result.current.updateAnimation('exit', {
+        trigger: 'after-previous',
+        durationMs: 775,
+        delayMs: 250,
+      }),
+    ).toBe(true),
+  );
+  expect(changes[2].slides[0].animations?.[1]).toMatchObject({
+    effect: 'fade-out',
+    trigger: 'after-previous',
+    durationMs: 775,
+    delayMs: 250,
+  });
+
+  rerender({ content: changes[2], elementId: 'two' });
+  act(() =>
+    expect(result.current.setAnimation('entrance', 'fly-in')).toBe(true),
+  );
+  const withTwo = changes[3];
   expect(
     withTwo.slides[0].animations?.map(({ elementId }) => elementId),
-  ).toEqual(['one', 'two']);
+  ).toEqual(['one', 'one', 'two']);
 
   rerender({ content: withTwo, elementId: 'two' });
   act(() =>
     expect(
-      result.current.updateEntranceAnimation({
+      result.current.updateAnimation('entrance', {
         trigger: 'with-previous',
         durationMs: 775,
         delayMs: 250,
@@ -45,24 +71,66 @@ test('creates, updates, reorders, and removes one entrance animation per object'
       }),
     ).toBe(true),
   );
-  expect(changes[2].slides[0].animations?.[1]).toMatchObject({
+  expect(changes[4].slides[0].animations?.[2]).toMatchObject({
     trigger: 'with-previous',
     durationMs: 775,
     delayMs: 250,
     direction: 'right',
   });
 
-  rerender({ content: changes[2], elementId: 'two' });
-  act(() => expect(result.current.moveEntranceAnimation(-1)).toBe(true));
+  rerender({ content: changes[4], elementId: 'two' });
+  act(() => expect(result.current.moveAnimation('entrance', -1)).toBe(true));
   expect(
-    changes[3].slides[0].animations?.map(({ elementId }) => elementId),
-  ).toEqual(['two', 'one']);
+    changes[5].slides[0].animations?.map(({ elementId }) => elementId),
+  ).toEqual(['one', 'two', 'one']);
 
-  rerender({ content: changes[3], elementId: 'two' });
-  act(() => expect(result.current.setEntranceAnimation(undefined)).toBe(true));
-  expect(changes[4].slides[0].animations).toEqual([
-    expect.objectContaining({ elementId: 'one' }),
+  rerender({ content: changes[5], elementId: 'one' });
+  act(() => expect(result.current.setAnimation('exit', undefined)).toBe(true));
+  expect(changes[6].slides[0].animations).toEqual([
+    expect.objectContaining({ elementId: 'one', effect: 'fade' }),
+    expect.objectContaining({ elementId: 'two', effect: 'fly-in' }),
   ]);
+});
+
+test('rejects an overlapping animation on the same object and cue', () => {
+  const initial = presentation();
+  initial.slides[0].animations = [
+    {
+      id: 'entrance',
+      elementId: 'one',
+      effect: 'fade',
+      trigger: 'on-click',
+      durationMs: 500,
+      delayMs: 0,
+    },
+    {
+      id: 'exit',
+      elementId: 'one',
+      effect: 'fade-out',
+      trigger: 'after-previous',
+      durationMs: 300,
+      delayMs: 0,
+    },
+  ];
+  const changes: WorkPresentationContent[] = [];
+  const { result } = renderHook(() =>
+    usePresentationAnimationCommands({
+      content: initial,
+      selectedSlide: initial.slides[0],
+      selectedElementId: 'one',
+      onChange: (next) => changes.push(next),
+    }),
+  );
+
+  expect(
+    result.current.canUpdateAnimation('exit', { trigger: 'with-previous' }),
+  ).toBe(false);
+  act(() =>
+    expect(
+      result.current.updateAnimation('exit', { trigger: 'with-previous' }),
+    ).toBe(false),
+  );
+  expect(changes).toEqual([]);
 });
 
 test('does not publish no-op or unavailable animation intents', () => {
@@ -79,13 +147,19 @@ test('does not publish no-op or unavailable animation intents', () => {
     { initialProps: { elementId: undefined as string | undefined } },
   );
 
-  act(() => expect(result.current.setEntranceAnimation('appear')).toBe(false));
-  rerender({ elementId: 'missing' });
-  act(() => expect(result.current.setEntranceAnimation('appear')).toBe(false));
   act(() =>
-    expect(result.current.updateEntranceAnimation({ delayMs: 10 })).toBe(false),
+    expect(result.current.setAnimation('entrance', 'appear')).toBe(false),
   );
-  act(() => expect(result.current.moveEntranceAnimation(1)).toBe(false));
+  rerender({ elementId: 'missing' });
+  act(() =>
+    expect(result.current.setAnimation('entrance', 'appear')).toBe(false),
+  );
+  act(() =>
+    expect(result.current.updateAnimation('entrance', { delayMs: 10 })).toBe(
+      false,
+    ),
+  );
+  act(() => expect(result.current.moveAnimation('entrance', 1)).toBe(false));
   expect(changes).toEqual([]);
 });
 

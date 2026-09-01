@@ -42,6 +42,62 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.39.0',
+    date: '2026-09-01',
+    kind: 'new',
+    surfaces: ['presentation', 'playground'],
+    title: {
+      en: 'Presentation objects can now enter and exit',
+      zh: '演示对象现在可以完整登场与退场',
+    },
+    summary: {
+      en: 'A slide object can combine one entrance and one exit effect through the same ordered authoring, playback, collaboration, and native PPTX model.',
+      zh: '同一个幻灯片对象现在可以通过统一的排序、创作、放映、协作与原生 PPTX 模型组合一条进入和一条退出效果。',
+    },
+    highlights: [
+      {
+        title: { en: 'Object-centric authoring', zh: '对象式创作' },
+        detail: {
+          en: 'The Animation tab switches explicitly between Entrance and Exit, then keeps effects, directions, triggers, timing, ordering, and preview in context.',
+          zh: '动画选项卡可明确切换进入与退出，并在当前上下文中统一管理效果、方向、触发、计时、顺序和预览。',
+        },
+      },
+      {
+        title: { en: 'Composable playback', zh: '可组合放映' },
+        detail: {
+          en: 'Eight bounded effects share one cue model; sequential effects on the same object compose, while overlapping intervals fail closed.',
+          zh: '八种有界效果共用一套提示模型；同一对象的连续效果可以组合，重叠时间段则会在修改前拒绝。',
+        },
+      },
+      {
+        title: { en: 'Native PPTX evidence', zh: '原生 PPTX 证据' },
+        detail: {
+          en: 'Entrance and exit timing classes, in/out transitions, object targets, triggers, timing, and direction survive export, import, and a second reopen.',
+          zh: '进入/退出计时类型、in/out transition、对象目标、触发、计时和方向都能通过导出、导入与二次重开。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/presentation.html#entrance-and-exit-animations',
+          zh: './components/presentation.html#进入与退出动画',
+        },
+        label: {
+          en: 'Read the Presentation animation guide',
+          zh: '阅读演示文稿动画指南',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.39.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.39.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.38.1',
     date: '2026-09-01',
     kind: 'improved',

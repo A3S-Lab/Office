@@ -3,26 +3,42 @@ import {
   createWorkSlideAnimation,
   normalizeWorkSlideAnimation,
   WORK_SLIDE_ANIMATION_LIMIT,
+  workSlideAnimationEffectMatchesClass,
   workSlideAnimationForElement,
   workSlideAnimationIndex,
+  workSlideAnimationSequenceIssue,
 } from '../work-presentation-animation';
 import type {
   WorkPresentationContent,
   WorkSlide,
   WorkSlideAnimation,
+  WorkSlideAnimationClass,
   WorkSlideAnimationEffect,
 } from '../work-types';
 import { updateSlide } from './presentation-editor-operations';
 
 export interface PresentationAnimationCommands {
-  canMoveEntranceAnimation: (direction: -1 | 1) => boolean;
-  canSetEntranceAnimation: boolean;
-  canUpdateEntranceAnimation: boolean;
-  moveEntranceAnimation: (direction: -1 | 1) => boolean;
-  setEntranceAnimation: (
+  canMoveAnimation: (
+    animationClass: WorkSlideAnimationClass,
+    direction: -1 | 1,
+  ) => boolean;
+  canSetAnimation: boolean;
+  canUpdateAnimation: (
+    animationClass: WorkSlideAnimationClass,
+    patch: Partial<WorkSlideAnimation>,
+  ) => boolean;
+  moveAnimation: (
+    animationClass: WorkSlideAnimationClass,
+    direction: -1 | 1,
+  ) => boolean;
+  setAnimation: (
+    animationClass: WorkSlideAnimationClass,
     effect: WorkSlideAnimationEffect | undefined,
   ) => boolean;
-  updateEntranceAnimation: (patch: Partial<WorkSlideAnimation>) => boolean;
+  updateAnimation: (
+    animationClass: WorkSlideAnimationClass,
+    patch: Partial<WorkSlideAnimation>,
+  ) => boolean;
 }
 
 export function usePresentationAnimationCommands({
@@ -42,17 +58,16 @@ export function usePresentationAnimationCommands({
         (element) => element.id === selectedElementId,
       ),
   );
-  const selectedAnimation = workSlideAnimationForElement(
-    selectedSlide,
-    selectedElementId,
-  );
-
-  const setEntranceAnimation = useCallback(
-    (effect: WorkSlideAnimationEffect | undefined): boolean => {
+  const setAnimation = useCallback(
+    (
+      animationClass: WorkSlideAnimationClass,
+      effect: WorkSlideAnimationEffect | undefined,
+    ): boolean => {
       if (!selectedElementId || !selectedElementExists) return false;
       const current = workSlideAnimationForElement(
         selectedSlide,
         selectedElementId,
+        animationClass,
       );
       if (!effect) {
         if (!current) return false;
@@ -71,6 +86,9 @@ export function usePresentationAnimationCommands({
           onChange,
         );
         return true;
+      }
+      if (!workSlideAnimationEffectMatchesClass(effect, animationClass)) {
+        return false;
       }
       if (current?.effect === effect) return false;
       if (
@@ -109,14 +127,51 @@ export function usePresentationAnimationCommands({
     ],
   );
 
-  const updateEntranceAnimation = useCallback(
-    (patch: Partial<WorkSlideAnimation>): boolean => {
+  const canUpdateAnimation = useCallback(
+    (
+      animationClass: WorkSlideAnimationClass,
+      patch: Partial<WorkSlideAnimation>,
+    ): boolean => {
+      const selectedAnimation = workSlideAnimationForElement(
+        selectedSlide,
+        selectedElementId,
+        animationClass,
+      );
       if (!selectedAnimation) return false;
       const next = normalizeWorkSlideAnimation({
         ...selectedAnimation,
         ...patch,
         id: selectedAnimation.id,
         elementId: selectedAnimation.elementId,
+        effect: selectedAnimation.effect,
+      });
+      const animations = selectedSlide.animations?.map((animation) =>
+        animation.id === selectedAnimation.id ? next : animation,
+      );
+      return workSlideAnimationSequenceIssue(animations) === undefined;
+    },
+    [selectedElementId, selectedSlide],
+  );
+
+  const updateAnimation = useCallback(
+    (
+      animationClass: WorkSlideAnimationClass,
+      patch: Partial<WorkSlideAnimation>,
+    ): boolean => {
+      const selectedAnimation = workSlideAnimationForElement(
+        selectedSlide,
+        selectedElementId,
+        animationClass,
+      );
+      if (!selectedAnimation || !canUpdateAnimation(animationClass, patch)) {
+        return false;
+      }
+      const next = normalizeWorkSlideAnimation({
+        ...selectedAnimation,
+        ...patch,
+        id: selectedAnimation.id,
+        elementId: selectedAnimation.elementId,
+        effect: selectedAnimation.effect,
       });
       if (animationsEqual(selectedAnimation, next)) return false;
       updateSlide(
@@ -132,28 +187,46 @@ export function usePresentationAnimationCommands({
       );
       return true;
     },
-    [content, onChange, selectedAnimation, selectedSlide.id],
+    [canUpdateAnimation, content, onChange, selectedElementId, selectedSlide],
   );
 
-  const canMoveEntranceAnimation = useCallback(
-    (direction: -1 | 1): boolean => {
+  const canMoveAnimation = useCallback(
+    (animationClass: WorkSlideAnimationClass, direction: -1 | 1): boolean => {
+      const selectedAnimation = workSlideAnimationForElement(
+        selectedSlide,
+        selectedElementId,
+        animationClass,
+      );
       const index = workSlideAnimationIndex(
         selectedSlide,
         selectedAnimation?.id,
       );
       const target = index + direction;
-      return (
-        index >= 0 &&
-        target >= 0 &&
-        target < (selectedSlide.animations?.length ?? 0)
-      );
+      if (
+        index < 0 ||
+        target < 0 ||
+        target >= (selectedSlide.animations?.length ?? 0)
+      ) {
+        return false;
+      }
+      const animations = [...(selectedSlide.animations ?? [])];
+      [animations[index], animations[target]] = [
+        animations[target],
+        animations[index],
+      ];
+      return workSlideAnimationSequenceIssue(animations) === undefined;
     },
-    [selectedAnimation?.id, selectedSlide],
+    [selectedElementId, selectedSlide],
   );
 
-  const moveEntranceAnimation = useCallback(
-    (direction: -1 | 1): boolean => {
-      if (!selectedAnimation || !canMoveEntranceAnimation(direction)) {
+  const moveAnimation = useCallback(
+    (animationClass: WorkSlideAnimationClass, direction: -1 | 1): boolean => {
+      const selectedAnimation = workSlideAnimationForElement(
+        selectedSlide,
+        selectedElementId,
+        animationClass,
+      );
+      if (!selectedAnimation || !canMoveAnimation(animationClass, direction)) {
         return false;
       }
       updateSlide(
@@ -175,22 +248,16 @@ export function usePresentationAnimationCommands({
       );
       return true;
     },
-    [
-      canMoveEntranceAnimation,
-      content,
-      onChange,
-      selectedAnimation,
-      selectedSlide.id,
-    ],
+    [canMoveAnimation, content, onChange, selectedElementId, selectedSlide],
   );
 
   return {
-    canMoveEntranceAnimation,
-    canSetEntranceAnimation: selectedElementExists,
-    canUpdateEntranceAnimation: Boolean(selectedAnimation),
-    moveEntranceAnimation,
-    setEntranceAnimation,
-    updateEntranceAnimation,
+    canMoveAnimation,
+    canSetAnimation: selectedElementExists,
+    canUpdateAnimation,
+    moveAnimation,
+    setAnimation,
+    updateAnimation,
   };
 }
 

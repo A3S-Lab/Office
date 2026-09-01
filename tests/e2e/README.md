@@ -96,7 +96,7 @@ references; repeats the public discovery check at 390 px; and captures
 accessibility plus empty console/page-error diagnostics. A hidden `?e2e=`
 fixture or a deep documentation paragraph alone cannot satisfy this gate.
 
-Presentation entrance animations have a separate focused local gate:
+Presentation entrance and exit animations have a separate focused local gate:
 
 ```bash
 bun run test:e2e:presentation-animation:check
@@ -104,12 +104,13 @@ bun run test:e2e:presentation-animation
 bun run playground:visual:presentation-animation
 ```
 
-The ACL opens the public **入场动画** entry, selects the fly-in object, verifies
-effect, trigger, direction, timing, ordering, and preview controls, and consumes
-both click cues before the only slide can advance. The complementary Playwright
-workflow authors trigger and duration changes and verifies the ordered cue state
-in both desktop and compact projects. The release gate remains local-only and
-reuses the repository's existing Playwright Chromium.
+The ACL opens the public **进入与退出动画** entry, selects the fly-in/fly-out
+object, verifies class, effect, trigger, direction, timing, ordering, and preview
+controls, and consumes both click cues before the only slide can advance. The
+complementary Playwright workflow switches classes, authors exit direction and
+duration, and verifies entrance and final-hidden exit cue states in both desktop
+and compact projects. The release gate remains local-only and reuses the
+repository's existing Playwright Chromium.
 
 Presentation Chinese IME publication has a focused local gate:
 

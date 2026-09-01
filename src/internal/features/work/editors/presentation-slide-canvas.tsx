@@ -3,7 +3,11 @@ import {
   presentationSlideViewFromDesign,
   type WorkPresentationDesignContent,
 } from '../work-presentation-layouts';
-import { workSlideAnimationCues } from '../work-presentation-animation';
+import {
+  workSlideAnimationClass,
+  workSlideAnimationCues,
+  type WorkSlideAnimationCueItem,
+} from '../work-presentation-animation';
 import type {
   WorkPresentationContent,
   WorkSlide,
@@ -86,7 +90,26 @@ export function SlideElementPreview({
       className={`work-slide-element ${element.type} ${origin} ${showPlaceholder && element.placeholder ? 'placeholder' : ''}`.trim()}
       data-slide-preview-element-id={element.id}
       data-slide-element-origin={origin}
-      data-slide-animation-effect={animationPlayback?.animation.effect}
+      data-slide-animation-effect={
+        animationPlayback?.animations.at(-1)?.animation.effect
+      }
+      data-slide-animation-effects={animationPlayback?.animations
+        .map(({ animation }) => animation.effect)
+        .join(' ')}
+      data-slide-animation-final-visibility={
+        animationPlayback
+          ? animationPlayback.finallyVisible
+            ? 'visible'
+            : 'hidden'
+          : undefined
+      }
+      data-slide-animation-initial-visibility={
+        animationPlayback
+          ? animationPlayback.initiallyVisible
+            ? 'visible'
+            : 'hidden'
+          : undefined
+      }
       data-slide-animation-state={animationPlayback?.state}
       style={{
         ...slideElementStyle(element),
@@ -197,28 +220,49 @@ export function slideElementStyle(
 }
 
 interface SlideElementAnimationPlayback {
-  animation: WorkSlideAnimation;
-  startOffsetMs: number;
-  state: 'finished' | 'pending' | 'playing';
+  animations: WorkSlideAnimationCueItem[];
+  finallyVisible: boolean;
+  initiallyVisible: boolean;
+  state: 'hidden' | 'playing' | 'visible';
 }
 
 function slideAnimationPlayback(
   animations: readonly WorkSlideAnimation[] | undefined,
   activeCueIndex: number,
 ): Map<string, SlideElementAnimationPlayback> {
+  const cues = workSlideAnimationCues(animations);
   const playback = new Map<string, SlideElementAnimationPlayback>();
-  for (const [cueIndex, cue] of workSlideAnimationCues(animations).entries()) {
+  for (const animation of animations ?? []) {
+    if (playback.has(animation.elementId)) continue;
+    const visible = workSlideAnimationClass(animation.effect) === 'exit';
+    playback.set(animation.elementId, {
+      animations: [],
+      finallyVisible: visible,
+      initiallyVisible: visible,
+      state: visible ? 'visible' : 'hidden',
+    });
+  }
+
+  if (activeCueIndex < 0) return playback;
+  for (const [cueIndex, cue] of cues.entries()) {
+    if (cueIndex > activeCueIndex) break;
     for (const item of cue.items) {
-      playback.set(item.animation.elementId, {
-        animation: item.animation,
-        startOffsetMs: item.startOffsetMs,
-        state:
-          cueIndex < activeCueIndex
-            ? 'finished'
-            : cueIndex === activeCueIndex
-              ? 'playing'
-              : 'pending',
-      });
+      const state = playback.get(item.animation.elementId);
+      if (!state) continue;
+      const finallyVisible =
+        workSlideAnimationClass(item.animation.effect) === 'entrance';
+      if (cueIndex < activeCueIndex) {
+        state.finallyVisible = finallyVisible;
+        state.initiallyVisible = finallyVisible;
+        state.state = finallyVisible ? 'visible' : 'hidden';
+        continue;
+      }
+      if (!state.animations.length) {
+        state.initiallyVisible = state.finallyVisible;
+      }
+      state.animations.push(item);
+      state.finallyVisible = finallyVisible;
+      state.state = 'playing';
     }
   }
   return playback;
@@ -227,18 +271,35 @@ function slideAnimationPlayback(
 function slideElementAnimationStyle(
   playback: SlideElementAnimationPlayback | undefined,
 ): React.CSSProperties {
-  if (!playback) return {};
-  const direction = playback.animation.direction ?? 'left';
-  const translateX =
-    direction === 'left' ? '-18%' : direction === 'right' ? '18%' : '0';
-  const translateY =
-    direction === 'up' ? '-18%' : direction === 'down' ? '18%' : '0';
+  if (!playback?.animations.length) return {};
   return {
-    '--work-slide-animation-delay': `${playback.startOffsetMs}ms`,
-    '--work-slide-animation-duration': `${playback.animation.durationMs}ms`,
-    '--work-slide-animation-translate-x': translateX,
-    '--work-slide-animation-translate-y': translateY,
+    animationDelay: playback.animations
+      .map(({ startOffsetMs }) => `${startOffsetMs}ms`)
+      .join(', '),
+    animationDuration: playback.animations
+      .map(({ animation }) => `${animation.durationMs}ms`)
+      .join(', '),
+    animationFillMode: 'forwards',
+    animationName: playback.animations
+      .map(({ animation }) => slideAnimationName(animation))
+      .join(', '),
+    animationTimingFunction: playback.animations
+      .map(({ animation }) => slideAnimationTimingFunction(animation))
+      .join(', '),
   } as React.CSSProperties;
+}
+
+function slideAnimationName(animation: WorkSlideAnimation): string {
+  if (animation.effect === 'fly-in' || animation.effect === 'fly-out') {
+    return `work-slide-animation-${animation.effect}-${animation.direction ?? 'left'}`;
+  }
+  return `work-slide-animation-${animation.effect}`;
+}
+
+function slideAnimationTimingFunction(animation: WorkSlideAnimation): string {
+  if (animation.effect === 'appear') return 'steps(1, start)';
+  if (animation.effect === 'disappear') return 'steps(1, end)';
+  return 'cubic-bezier(0.16, 1, 0.3, 1)';
 }
 
 export function slideTextStyle(element: WorkSlideElement): React.CSSProperties {

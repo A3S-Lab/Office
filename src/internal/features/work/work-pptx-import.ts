@@ -326,7 +326,7 @@ async function parseSlide(
       context,
       'pptx.animation',
       'Animations',
-      `${animationResult.animations.length} supported object entrance animation(s) are preserved, editable, replayed, and exported.`,
+      `${animationResult.animations.length} supported object entrance or exit animation(s) are preserved, editable, replayed, and exported.`,
       'info',
     );
   }

@@ -784,7 +784,20 @@ export interface WorkSlideTransition {
   advanceAfterMs?: number;
 }
 
-export type WorkSlideAnimationEffect = 'appear' | 'fade' | 'fly-in' | 'zoom';
+export type WorkSlideAnimationClass = 'entrance' | 'exit';
+export type WorkSlideEntranceAnimationEffect =
+  | 'appear'
+  | 'fade'
+  | 'fly-in'
+  | 'zoom';
+export type WorkSlideExitAnimationEffect =
+  | 'disappear'
+  | 'fade-out'
+  | 'fly-out'
+  | 'zoom-out';
+export type WorkSlideAnimationEffect =
+  | WorkSlideEntranceAnimationEffect
+  | WorkSlideExitAnimationEffect;
 export type WorkSlideAnimationTrigger =
   | 'on-click'
   | 'with-previous'
@@ -792,8 +805,9 @@ export type WorkSlideAnimationTrigger =
 export type WorkSlideAnimationDirection = 'left' | 'right' | 'up' | 'down';
 
 /**
- * One bounded entrance animation applied to one slide-owned element.
- * Array order on `WorkSlide.animations` is the canonical playback order.
+ * One bounded entrance or exit animation applied to one slide-owned element.
+ * An element may own at most one animation from each class. Array order on
+ * `WorkSlide.animations` is the canonical playback order.
  */
 export interface WorkSlideAnimation {
   id: string;

@@ -13,6 +13,10 @@ import {
   WORK_SLIDE_ANIMATION_MAX_DURATION_MS,
   WORK_SLIDE_ANIMATION_MIN_DURATION_MS,
 } from '../features/work/work-presentation-animation-constraints';
+import {
+  workSlideAnimationClass,
+  workSlideAnimationSequenceIssue,
+} from '../features/work/work-presentation-animation';
 import { WorkOfficeCollaborationError } from './office-collaboration';
 import {
   cloneWorkOfficeCollaborationJson as cloneJsonValue,
@@ -134,9 +138,9 @@ function validateSlideAnimations(
     );
   }
   const animationIds = new Set<string>();
-  const targetIds = new Set<string>();
+  const classTargetIds = new Set<string>();
   const elementIds = new Set(slide.elements.map((element) => element.id));
-  return value.map((item) => {
+  const animations = value.map((item) => {
     const record = requiredInputRecord(item, 'slide animation');
     const animation = validateJsonRecord(
       record,
@@ -157,22 +161,28 @@ function validateSlideAnimations(
         `slide animation '${animation.id}' to reference an existing element`,
       );
     }
-    if (targetIds.has(animation.elementId)) {
-      invalidWorkOfficePresentationInput(
-        `at most one entrance animation for element '${animation.elementId}'`,
-      );
-    }
     if (
       record.effect !== 'appear' &&
       record.effect !== 'fade' &&
       record.effect !== 'fly-in' &&
-      record.effect !== 'zoom'
+      record.effect !== 'zoom' &&
+      record.effect !== 'disappear' &&
+      record.effect !== 'fade-out' &&
+      record.effect !== 'fly-out' &&
+      record.effect !== 'zoom-out'
     ) {
       invalidWorkOfficePresentationInput(
-        'a supported slide entrance animation effect',
+        'a supported slide entrance or exit animation effect',
       );
     }
     animation.effect = record.effect;
+    const animationClass = workSlideAnimationClass(animation.effect);
+    const classTargetId = `${animation.elementId}\u0000${animationClass}`;
+    if (classTargetIds.has(classTargetId)) {
+      invalidWorkOfficePresentationInput(
+        `at most one ${animationClass} animation for element '${animation.elementId}'`,
+      );
+    }
     if (
       record.trigger !== 'on-click' &&
       record.trigger !== 'with-previous' &&
@@ -193,7 +203,7 @@ function validateSlideAnimations(
       WORK_SLIDE_ANIMATION_MAX_DELAY_MS,
       'slide animation delay',
     );
-    if (animation.effect === 'fly-in') {
+    if (animation.effect === 'fly-in' || animation.effect === 'fly-out') {
       if (
         record.direction !== 'left' &&
         record.direction !== 'right' &&
@@ -201,19 +211,25 @@ function validateSlideAnimations(
         record.direction !== 'down'
       ) {
         invalidWorkOfficePresentationInput(
-          'a direction for each fly-in animation',
+          'a direction for each fly-in or fly-out animation',
         );
       }
       animation.direction = record.direction;
     } else if (record.direction !== undefined) {
       invalidWorkOfficePresentationInput(
-        'slide animation directions only on fly-in effects',
+        'slide animation directions only on fly-in or fly-out effects',
       );
     }
     animationIds.add(animation.id);
-    targetIds.add(animation.elementId);
+    classTargetIds.add(classTargetId);
     return animation;
   });
+  if (workSlideAnimationSequenceIssue(animations) === 'overlapping-target') {
+    invalidWorkOfficePresentationInput(
+      'animations for one element to avoid overlapping inside one playback cue',
+    );
+  }
+  return animations;
 }
 
 function validateMaster(value: unknown): WorkPresentationMaster {

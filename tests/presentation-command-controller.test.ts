@@ -67,12 +67,12 @@ describe('presentation editor extensions', () => {
       speed: 'medium',
       advanceOnClick: true,
     });
-    commands.setEntranceAnimation('fade');
-    commands.updateEntranceAnimation({
+    commands.setAnimation('entrance', 'fade');
+    commands.updateAnimation('entrance', {
       trigger: 'with-previous',
       durationMs: 750,
     });
-    commands.moveEntranceAnimation(-1);
+    commands.moveAnimation('entrance', -1);
     commands.previewAnimations();
     commands.selectSlide('slide-2', true);
     commands.selectElement('element-2', true);
@@ -88,9 +88,9 @@ describe('presentation editor extensions', () => {
       'clipboard.copy',
       'transition.set:fade',
       'transition.applyToAll:fade',
-      'animation.set:fade',
-      'animation.update:with-previous:750',
-      'animation.move:-1',
+      'animation.set:entrance:fade',
+      'animation.update:entrance:with-previous:750',
+      'animation.move:entrance:-1',
       'animation.preview',
       'slide.select:slide-2:true',
       'selection.select:element-2:true',
@@ -270,19 +270,19 @@ function presentationEditor(calls: string[]) {
 function presentationContext(calls: string[]): PresentationCommandContext {
   return {
     animations: {
-      canMoveEntranceAnimation: () => true,
+      canMoveAnimation: () => true,
       canPreviewAnimations: true,
-      canSetEntranceAnimation: true,
-      canUpdateEntranceAnimation: true,
-      moveEntranceAnimation: (direction) =>
-        record(calls, `animation.move:${direction}`),
+      canSetAnimation: true,
+      canUpdateAnimation: () => true,
+      moveAnimation: (animationClass, direction) =>
+        record(calls, `animation.move:${animationClass}:${direction}`),
       previewAnimations: () => calls.push('animation.preview'),
-      setEntranceAnimation: (effect) =>
-        record(calls, `animation.set:${effect ?? 'none'}`),
-      updateEntranceAnimation: (patch) =>
+      setAnimation: (animationClass, effect) =>
+        record(calls, `animation.set:${animationClass}:${effect ?? 'none'}`),
+      updateAnimation: (animationClass, patch) =>
         record(
           calls,
-          `animation.update:${patch.trigger ?? 'same'}:${patch.durationMs ?? 'same'}`,
+          `animation.update:${animationClass}:${patch.trigger ?? 'same'}:${patch.durationMs ?? 'same'}`,
         ),
     },
     clipboard: {

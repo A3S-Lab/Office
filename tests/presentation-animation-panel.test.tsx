@@ -5,37 +5,54 @@ import { PresentationAnimationPanel } from '../src/internal/features/work/editor
 import { createWorkSlideAnimation } from '../src/internal/features/work/work-presentation-animation';
 import type {
   WorkSlideAnimation,
+  WorkSlideAnimationClass,
   WorkSlideAnimationEffect,
 } from '../src/internal/features/work/work-types';
 
-test('authors a bounded entrance effect, trigger, direction, and timing', () => {
-  const updates: Array<Partial<WorkSlideAnimation>> = [];
-  render(<AnimationHarness onUpdate={(patch) => updates.push(patch)} />);
+test('authors bounded entrance and exit effects through one WPS-style panel', () => {
+  const updates: Array<[WorkSlideAnimationClass, Partial<WorkSlideAnimation>]> =
+    [];
+  render(
+    <AnimationHarness
+      onUpdate={(animationClass, patch) =>
+        updates.push([animationClass, patch])
+      }
+    />,
+  );
 
   expect(
-    screen.getByRole('combobox', { name: '对象入场动画触发方式' }),
+    screen.getByRole('combobox', { name: '对象动画触发方式' }),
   ).toBeDisabled();
-  fireEvent.click(screen.getByRole('combobox', { name: '对象入场动画效果' }));
+  expect(
+    screen.getByRole('combobox', { name: '对象动画类型' }),
+  ).toHaveTextContent('进入');
+  fireEvent.click(screen.getByRole('combobox', { name: '对象动画效果' }));
   fireEvent.click(screen.getByRole('option', { name: '飞入' }));
 
-  fireEvent.click(
-    screen.getByRole('combobox', { name: '对象入场动画触发方式' }),
-  );
+  fireEvent.click(screen.getByRole('combobox', { name: '对象动画触发方式' }));
   fireEvent.click(screen.getByRole('option', { name: '与上一动画同时' }));
-  fireEvent.click(screen.getByRole('combobox', { name: '对象飞入方向' }));
+  fireEvent.click(screen.getByRole('combobox', { name: '对象动画方向' }));
   fireEvent.click(screen.getByRole('option', { name: '从右侧' }));
   const duration = screen.getByRole('textbox', {
-    name: '对象入场动画持续秒数',
+    name: '对象动画持续秒数',
   });
   fireEvent.change(duration, { target: { value: '1.25' } });
   expect(updates).toEqual([
-    { trigger: 'with-previous' },
-    { direction: 'right' },
+    ['entrance', { trigger: 'with-previous' }],
+    ['entrance', { direction: 'right' }],
   ]);
   fireEvent.blur(duration);
 
   expect(duration).toHaveValue('1.3');
-  expect(updates.at(-1)).toEqual({ durationMs: 1300 });
+  expect(updates.at(-1)).toEqual(['entrance', { durationMs: 1300 }]);
+
+  fireEvent.click(screen.getByRole('combobox', { name: '对象动画类型' }));
+  fireEvent.click(screen.getByRole('option', { name: '退出' }));
+  fireEvent.click(screen.getByRole('combobox', { name: '对象动画效果' }));
+  fireEvent.click(screen.getByRole('option', { name: '飞出' }));
+  fireEvent.click(screen.getByRole('combobox', { name: '对象动画方向' }));
+  fireEvent.click(screen.getByRole('option', { name: '向下方' }));
+  expect(updates.at(-1)).toEqual(['exit', { direction: 'down' }]);
 });
 
 test('exposes truthful ordering and preview capabilities', () => {
@@ -44,16 +61,18 @@ test('exposes truthful ordering and preview capabilities', () => {
   const animation = createWorkSlideAnimation('element', 'fade');
   render(
     <PresentationAnimationPanel
-      animation={animation}
-      canMove={(direction) => direction === 1}
+      animations={{ entrance: animation, exit: undefined }}
+      canMove={(_animationClass, direction) => direction === 1}
       canPreview
       editable
-      onMove={(direction) => moves.push(direction)}
+      elementId="element"
+      onMove={(_animationClass, direction) => moves.push(direction)}
       onPreview={() => {
         previews += 1;
       }}
       onSetEffect={() => undefined}
       onUpdate={() => undefined}
+      canUpdate={() => true}
     />,
   );
 
@@ -67,24 +86,46 @@ test('exposes truthful ordering and preview capabilities', () => {
 function AnimationHarness({
   onUpdate,
 }: {
-  onUpdate: (patch: Partial<WorkSlideAnimation>) => void;
+  onUpdate: (
+    animationClass: WorkSlideAnimationClass,
+    patch: Partial<WorkSlideAnimation>,
+  ) => void;
 }) {
-  const [animation, setAnimation] = useState<WorkSlideAnimation>();
-  const setEffect = (effect: WorkSlideAnimationEffect | undefined) => {
-    setAnimation((current) =>
-      effect ? createWorkSlideAnimation('element', effect, current) : undefined,
-    );
+  const [animations, setAnimations] = useState<{
+    entrance?: WorkSlideAnimation;
+    exit?: WorkSlideAnimation;
+  }>({});
+  const setEffect = (
+    animationClass: WorkSlideAnimationClass,
+    effect: WorkSlideAnimationEffect | undefined,
+  ) => {
+    setAnimations((current) => ({
+      ...current,
+      [animationClass]: effect
+        ? createWorkSlideAnimation('element', effect, current[animationClass])
+        : undefined,
+    }));
   };
-  const update = (patch: Partial<WorkSlideAnimation>) => {
-    setAnimation((current) => (current ? { ...current, ...patch } : current));
-    onUpdate(patch);
+  const update = (
+    animationClass: WorkSlideAnimationClass,
+    patch: Partial<WorkSlideAnimation>,
+  ) => {
+    setAnimations((current) => ({
+      ...current,
+      [animationClass]: current[animationClass]
+        ? { ...current[animationClass], ...patch }
+        : undefined,
+    }));
+    onUpdate(animationClass, patch);
   };
   return (
     <PresentationAnimationPanel
-      animation={animation}
+      animations={animations}
       canMove={() => false}
-      canPreview={Boolean(animation)}
+      canPreview={Boolean(animations.entrance || animations.exit)}
+      canUpdate={() => true}
       editable
+      elementId="element"
       onMove={() => undefined}
       onPreview={() => undefined}
       onSetEffect={setEffect}

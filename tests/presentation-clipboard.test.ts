@@ -135,7 +135,7 @@ test('remaps slide animation identities and targets with copied objects', () => 
   ]);
 });
 
-test('remaps selected object animations without copying unrelated cues', () => {
+test('remaps both animation classes for selected objects without copying unrelated cues', () => {
   const elements = [
     presentationElement('first', 10, 20),
     presentationElement('second', 40, 50),
@@ -149,6 +149,14 @@ test('remaps selected object animations without copying unrelated cues', () => {
         effect: 'fade',
         trigger: 'on-click',
         durationMs: 500,
+        delayMs: 0,
+      },
+      {
+        id: 'animation-first-exit',
+        elementId: 'first',
+        effect: 'fade-out',
+        trigger: 'after-previous',
+        durationMs: 400,
         delayMs: 0,
       },
       {
@@ -169,8 +177,13 @@ test('remaps selected object animations without copying unrelated cues', () => {
       elementId: paste.elements[0].id,
       effect: 'fade',
     }),
+    expect.objectContaining({
+      elementId: paste.elements[0].id,
+      effect: 'fade-out',
+    }),
   ]);
   expect(paste.animations?.[0].id).not.toBe('animation-first');
+  expect(paste.animations?.[1].id).not.toBe('animation-first-exit');
 });
 
 function presentationElement(

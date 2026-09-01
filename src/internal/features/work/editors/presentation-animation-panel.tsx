@@ -7,6 +7,7 @@ import {
 } from '../work-presentation-animation-constraints';
 import type {
   WorkSlideAnimation,
+  WorkSlideAnimationClass,
   WorkSlideAnimationDirection,
   WorkSlideAnimationEffect,
   WorkSlideAnimationTrigger,
@@ -18,44 +19,103 @@ import {
 } from './work-office-chrome';
 
 export function PresentationAnimationPanel({
-  animation,
+  animations,
   canMove,
   canPreview,
+  canUpdate,
   editable,
+  elementId,
   onMove,
   onPreview,
   onSetEffect,
   onUpdate,
 }: {
-  animation: WorkSlideAnimation | undefined;
-  canMove: (direction: -1 | 1) => boolean;
+  animations: Record<WorkSlideAnimationClass, WorkSlideAnimation | undefined>;
+  canMove: (
+    animationClass: WorkSlideAnimationClass,
+    direction: -1 | 1,
+  ) => boolean;
   canPreview: boolean;
+  canUpdate: (
+    animationClass: WorkSlideAnimationClass,
+    patch: Partial<WorkSlideAnimation>,
+  ) => boolean;
   editable: boolean;
-  onMove: (direction: -1 | 1) => void;
+  elementId: string | undefined;
+  onMove: (animationClass: WorkSlideAnimationClass, direction: -1 | 1) => void;
   onPreview: () => void;
-  onSetEffect: (effect: WorkSlideAnimationEffect | undefined) => void;
-  onUpdate: (patch: Partial<WorkSlideAnimation>) => void;
+  onSetEffect: (
+    animationClass: WorkSlideAnimationClass,
+    effect: WorkSlideAnimationEffect | undefined,
+  ) => void;
+  onUpdate: (
+    animationClass: WorkSlideAnimationClass,
+    patch: Partial<WorkSlideAnimation>,
+  ) => void;
 }) {
+  const defaultClass = animations.entrance
+    ? 'entrance'
+    : animations.exit
+      ? 'exit'
+      : 'entrance';
+  const [selection, setSelection] = useState<{
+    animationClass: WorkSlideAnimationClass;
+    elementId: string | undefined;
+  }>({ animationClass: defaultClass, elementId });
+  const animationClass =
+    selection.elementId === elementId ? selection.animationClass : defaultClass;
+  const animation = animations[animationClass];
+  const flyEffect =
+    animation?.effect === 'fly-in' || animation?.effect === 'fly-out';
+  const effectOptions =
+    animationClass === 'entrance'
+      ? [
+          { value: 'none', label: '无' },
+          { value: 'appear', label: '出现' },
+          { value: 'fade', label: '淡入' },
+          { value: 'fly-in', label: '飞入' },
+          { value: 'zoom', label: '缩放' },
+        ]
+      : [
+          { value: 'none', label: '无' },
+          { value: 'disappear', label: '消失' },
+          { value: 'fade-out', label: '淡出' },
+          { value: 'fly-out', label: '飞出' },
+          { value: 'zoom-out', label: '缩小' },
+        ];
   return (
     <>
-      <WorkOfficeRibbonGroup label="入场动画">
-        <fieldset className="work-presentation-animation-options">
-          <legend className="sr-only">对象入场动画设置</legend>
+      <WorkOfficeRibbonGroup label="对象动画">
+        <fieldset
+          className="work-presentation-animation-options"
+          data-animation-class={animationClass}
+        >
+          <legend className="sr-only">对象动画设置</legend>
+          <div className="work-office-field animation-class">
+            <span>类型</span>
+            <OfficeSelect
+              ariaLabel="对象动画类型"
+              disabled={!editable}
+              value={animationClass}
+              options={[
+                { value: 'entrance', label: '进入', meta: '让对象出现' },
+                { value: 'exit', label: '退出', meta: '让对象消失' },
+              ]}
+              onValueChange={(nextClass) =>
+                setSelection({ animationClass: nextClass, elementId })
+              }
+            />
+          </div>
           <div className="work-office-field effect">
             <span>效果</span>
             <OfficeSelect
-              ariaLabel="对象入场动画效果"
+              ariaLabel="对象动画效果"
               disabled={!editable}
               value={animation?.effect ?? 'none'}
-              options={[
-                { value: 'none', label: '无' },
-                { value: 'appear', label: '出现' },
-                { value: 'fade', label: '淡入' },
-                { value: 'fly-in', label: '飞入' },
-                { value: 'zoom', label: '缩放' },
-              ]}
+              options={effectOptions}
               onValueChange={(effect) =>
                 onSetEffect(
+                  animationClass,
                   effect === 'none'
                     ? undefined
                     : (effect as WorkSlideAnimationEffect),
@@ -66,33 +126,69 @@ export function PresentationAnimationPanel({
           <div className="work-office-field trigger">
             <span>开始</span>
             <OfficeSelect
-              ariaLabel="对象入场动画触发方式"
+              ariaLabel="对象动画触发方式"
               disabled={!animation}
               value={animation?.trigger ?? 'on-click'}
               options={[
-                { value: 'on-click', label: '单击时' },
-                { value: 'with-previous', label: '与上一动画同时' },
-                { value: 'after-previous', label: '上一动画之后' },
+                {
+                  value: 'on-click',
+                  label: '单击时',
+                  disabled:
+                    Boolean(animation) &&
+                    !canUpdate(animationClass, { trigger: 'on-click' }),
+                },
+                {
+                  value: 'with-previous',
+                  label: '与上一动画同时',
+                  disabled:
+                    Boolean(animation) &&
+                    !canUpdate(animationClass, {
+                      trigger: 'with-previous',
+                    }),
+                },
+                {
+                  value: 'after-previous',
+                  label: '上一动画之后',
+                  disabled:
+                    Boolean(animation) &&
+                    !canUpdate(animationClass, {
+                      trigger: 'after-previous',
+                    }),
+                },
               ]}
               onValueChange={(trigger) =>
-                onUpdate({ trigger: trigger as WorkSlideAnimationTrigger })
+                onUpdate(animationClass, {
+                  trigger: trigger as WorkSlideAnimationTrigger,
+                })
               }
             />
           </div>
-          {animation?.effect === 'fly-in' && (
+          {flyEffect && (
             <div className="work-office-field direction">
               <span>方向</span>
               <OfficeSelect
-                ariaLabel="对象飞入方向"
+                ariaLabel="对象动画方向"
                 value={animation.direction ?? 'left'}
                 options={[
-                  { value: 'left', label: '从左侧' },
-                  { value: 'right', label: '从右侧' },
-                  { value: 'up', label: '从上方' },
-                  { value: 'down', label: '从下方' },
+                  {
+                    value: 'left',
+                    label: animationClass === 'entrance' ? '从左侧' : '向左侧',
+                  },
+                  {
+                    value: 'right',
+                    label: animationClass === 'entrance' ? '从右侧' : '向右侧',
+                  },
+                  {
+                    value: 'up',
+                    label: animationClass === 'entrance' ? '从上方' : '向上方',
+                  },
+                  {
+                    value: 'down',
+                    label: animationClass === 'entrance' ? '从下方' : '向下方',
+                  },
                 ]}
                 onValueChange={(direction) =>
-                  onUpdate({
+                  onUpdate(animationClass, {
                     direction: direction as WorkSlideAnimationDirection,
                   })
                 }
@@ -105,23 +201,31 @@ export function PresentationAnimationPanel({
         <div className="work-presentation-animation-timing">
           <AnimationTimingField
             animationId={animation?.id}
-            ariaLabel="对象入场动画持续秒数"
+            ariaLabel="对象动画持续秒数"
             disabled={!animation}
             label="持续"
             maximumMs={WORK_SLIDE_ANIMATION_MAX_DURATION_MS}
             minimumMs={WORK_SLIDE_ANIMATION_MIN_DURATION_MS}
             valueMs={animation?.durationMs ?? 500}
-            onCommit={(durationMs) => onUpdate({ durationMs })}
+            onCommit={(durationMs) => {
+              if (!canUpdate(animationClass, { durationMs })) return false;
+              onUpdate(animationClass, { durationMs });
+              return true;
+            }}
           />
           <AnimationTimingField
             animationId={animation?.id}
-            ariaLabel="对象入场动画延迟秒数"
+            ariaLabel="对象动画延迟秒数"
             disabled={!animation}
             label="延迟"
             maximumMs={WORK_SLIDE_ANIMATION_MAX_DELAY_MS}
             minimumMs={0}
             valueMs={animation?.delayMs ?? 0}
-            onCommit={(delayMs) => onUpdate({ delayMs })}
+            onCommit={(delayMs) => {
+              if (!canUpdate(animationClass, { delayMs })) return false;
+              onUpdate(animationClass, { delayMs });
+              return true;
+            }}
           />
         </div>
       </WorkOfficeRibbonGroup>
@@ -129,16 +233,16 @@ export function PresentationAnimationPanel({
         <WorkOfficeRibbonButton
           label="提前对象动画"
           visibleLabel="提前"
-          disabled={!canMove(-1)}
-          onClick={() => onMove(-1)}
+          disabled={!canMove(animationClass, -1)}
+          onClick={() => onMove(animationClass, -1)}
         >
           <ArrowUp size={19} />
         </WorkOfficeRibbonButton>
         <WorkOfficeRibbonButton
           label="推后对象动画"
           visibleLabel="推后"
-          disabled={!canMove(1)}
-          onClick={() => onMove(1)}
+          disabled={!canMove(animationClass, 1)}
+          onClick={() => onMove(animationClass, 1)}
         >
           <ArrowDown size={19} />
         </WorkOfficeRibbonButton>
@@ -173,7 +277,7 @@ function AnimationTimingField({
   label: string;
   maximumMs: number;
   minimumMs: number;
-  onCommit: (valueMs: number) => void;
+  onCommit: (valueMs: number) => boolean | void;
   valueMs: number;
 }) {
   const canonical = animationSecondsDraft(valueMs);
@@ -186,8 +290,12 @@ function AnimationTimingField({
       minimumMs,
       maximumMs,
     );
-    setDraft(animationSecondsDraft(next));
-    if (next !== valueMs) onCommit(next);
+    if (next === valueMs) {
+      setDraft(animationSecondsDraft(next));
+      return;
+    }
+    const accepted = onCommit(next);
+    setDraft(animationSecondsDraft(accepted === false ? valueMs : next));
   };
   return (
     <div className="work-office-field seconds">

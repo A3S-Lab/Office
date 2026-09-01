@@ -4,6 +4,27 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.39.0 - 2026-09-01
+
+- Added editable Presentation exit animations alongside the existing entrance
+  subset. One slide object can own one animation from each class, with
+  disappear, fade-out, fly-out, and zoom-out joining appear, fade, fly-in, and
+  zoom in one ordered trigger, duration, delay, direction, and Undo model.
+- Reworked the Animation ribbon into an object-centric workflow with explicit
+  **Entrance / Exit** selection, context-sensitive effects and directions,
+  disabled invalid timing choices, shared ordering, and current-slide preview.
+  Same-object effects may run sequentially in one cue; overlapping intervals
+  fail closed before a controlled update is published.
+- Added composited browser playback for sequential entrance and exit effects,
+  final-state reduced-motion behavior, clipboard and slide-copy identity
+  remapping, collaboration validation, and native PresentationML `entr` / `exit`
+  timing-tree import, export, and second-reopen fidelity. Inconsistent
+  transitions, duplicate classes, unsupported effects, ambiguous targets, and
+  malformed timing receive explicit diagnostics.
+- Upgraded the public **Entrance and exit animations** Playground story and
+  bilingual Presentation guide, then covered the complete workflow with focused
+  Rstest, responsive Playwright, and pinned local A3S Test 1.0.0 browser gates.
+
 ## 0.38.1 - 2026-09-01
 
 - Added a first-class bilingual **What's new / 更新日志** documentation route.

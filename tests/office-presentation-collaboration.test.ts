@@ -134,7 +134,7 @@ test('rejects duplicate comment identities before bootstrap writes metadata', ()
   expect(session.document.getMap(session.rootName('metadata')).size).toBe(0);
 });
 
-test('round-trips valid slide animations and rejects ambiguous targets', () => {
+test('round-trips valid entrance and exit animations and rejects ambiguous sequences', () => {
   const fixture = presentationFixture();
   const elementId = fixture.slides[0].elements[0].id;
   const animation = {
@@ -146,10 +146,20 @@ test('round-trips valid slide animations and rejects ambiguous targets', () => {
     delayMs: 100,
     direction: 'left' as const,
   };
+  const exitAnimation = {
+    id: 'animation-title-exit',
+    elementId,
+    effect: 'fade-out' as const,
+    trigger: 'after-previous' as const,
+    durationMs: 400,
+    delayMs: 0,
+  };
   const content = {
     ...fixture,
     slides: fixture.slides.map((slide, index) =>
-      index === 0 ? { ...slide, animations: [animation] } : slide,
+      index === 0
+        ? { ...slide, animations: [animation, exitAnimation] }
+        : slide,
     ),
   };
   const session = createOfficeCollaborationSession({
@@ -160,7 +170,7 @@ test('round-trips valid slide animations and rejects ambiguous targets', () => {
   initializeOfficePresentationCollaboration(session, content);
   expect(
     readOfficePresentationCollaboration(session).slides[0].animations,
-  ).toEqual([animation]);
+  ).toEqual([animation, exitAnimation]);
 
   for (const [artifactId, animations, message] of [
     [
@@ -170,8 +180,16 @@ test('round-trips valid slide animations and rejects ambiguous targets', () => {
     ],
     [
       'presentation-animation-duplicate-target',
-      [animation, { ...animation, id: 'animation-title-copy' }],
+      [
+        animation,
+        { ...animation, id: 'animation-title-copy', effect: 'zoom' as const },
+      ],
       /at most one entrance animation/,
+    ],
+    [
+      'presentation-animation-overlap',
+      [animation, { ...exitAnimation, trigger: 'with-previous' as const }],
+      /animations for one element to avoid overlapping/,
     ],
   ] as const) {
     const invalidSession = createOfficeCollaborationSession({

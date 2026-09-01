@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.39.0' ||
     version === '0.38.1' ||
     version === '0.38.0' ||
     version === '0.37.5' ||
@@ -70,6 +71,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.39.0',
     '0.38.1',
     '0.38.0',
     '0.37.5',
@@ -360,7 +362,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.38.1`');
+  expect(readme).toContain('Version `0.39.0`');
   expect(readme).toContain(
     "[What's new](https://a3s-lab.github.io/Office/docs/changelog.html)",
   );
@@ -370,19 +372,21 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.38.1)");
+  expect(englishHome).toContain("## What's new on `main` (0.39.0)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
+  expect(englishHome).toContain(
+    'presentation.html#entrance-and-exit-animations',
+  );
   expect(englishHome).toContain('document.html#native-opentype-typography');
   expect(englishHome).toContain(
     'spreadsheet.html#xlsx-1904-date-system-retention',
   );
-  expect(englishHome).toContain('document.html#ime-and-controlled-updates');
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.38.1）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.39.0）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
+  expect(chineseHome).toContain('presentation.html#进入与退出动画');
   expect(chineseHome).toContain('document.html#原生-opentype-排版');
   expect(chineseHome).toContain('spreadsheet.html#xlsx-1904-日期系统保留');
-  expect(chineseHome).toContain('document.html#输入法与受控更新');
 });
 
 test('keeps every documentation index separate from the product home surface', async () => {
@@ -417,7 +421,7 @@ test('keeps every documentation index separate from the product home surface', a
   }
 });
 
-test('publishes Presentation entrance animations across implementation, docs, Playground, and release evidence', async () => {
+test('publishes Presentation entrance and exit animations across implementation, docs, Playground, and release evidence', async () => {
   const [
     changelog,
     roadmap,
@@ -448,15 +452,15 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
       'utf8',
     ),
     readFile(
-      path.join(documentationRoot, '0.34.0/en/components/presentation.mdx'),
+      path.join(documentationRoot, '0.39.0/en/components/presentation.mdx'),
       'utf8',
     ),
     readFile(
-      path.join(documentationRoot, '0.34.0/zh/components/presentation.mdx'),
+      path.join(documentationRoot, '0.39.0/zh/components/presentation.mdx'),
       'utf8',
     ),
-    readFile(path.join(documentationRoot, '0.34.0/en/index.mdx'), 'utf8'),
-    readFile(path.join(documentationRoot, '0.34.0/zh/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, '0.39.0/en/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, '0.39.0/zh/index.mdx'), 'utf8'),
     readFile(
       path.join(repositoryRoot, 'src/internal/features/work/work-templates.ts'),
       'utf8',
@@ -490,14 +494,25 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
   ]);
 
-  expect(changelog).toContain('Work Presentation entrance-animation model');
-  expect(changelog).toContain('## 0.34.0 - 2026-08-25');
+  expect(changelog).toContain('Added editable Presentation exit animations');
+  expect(changelog).toContain('## 0.39.0 - 2026-09-01');
   expect(roadmap).toContain('| Object animations and triggers | **Partial**');
   expect(product).toContain('## Current Presentation Milestone');
 
   for (const document of [english, chinese, releaseEnglish, releaseChinese]) {
     expect(document).toContain('WorkSlide.animations');
-    expect(document).toContain("'appear' | 'fade' | 'fly-in' | 'zoom'");
+    for (const effect of [
+      'appear',
+      'fade',
+      'fly-in',
+      'zoom',
+      'disappear',
+      'fade-out',
+      'fly-out',
+      'zoom-out',
+    ]) {
+      expect(document).toContain(`'${effect}'`);
+    }
     expect(document).toContain("'on-click'");
     expect(document).toContain("'with-previous'");
     expect(document).toContain("'after-previous'");
@@ -505,33 +520,39 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
     expect(document).toContain('60,000');
     expect(document).toContain('PresentationML');
   }
-  expect(english).toContain('## Entrance animations');
-  expect(chinese).toContain('## 入场动画');
-  expect(releaseEnglishHome).toContain('Released in 0.34.0');
-  expect(releaseEnglishHome).toContain('presentation.html#entrance-animations');
-  expect(releaseChineseHome).toContain('0.34.0 发布');
-  expect(releaseChineseHome).toContain('presentation.html#入场动画');
+  expect(english).toContain('## Entrance and exit animations');
+  expect(chinese).toContain('## 进入与退出动画');
+  expect(releaseEnglishHome).toContain('Released in 0.39.0');
+  expect(releaseEnglishHome).toContain(
+    'presentation.html#entrance-and-exit-animations',
+  );
+  expect(releaseChineseHome).toContain('0.39.0 发布');
+  expect(releaseChineseHome).toContain('presentation.html#进入与退出动画');
 
   expect(templates).toContain("id: 'animated-deck'");
   expect(templates).toContain("effect: 'appear'");
   expect(templates).toContain("effect: 'fade'");
   expect(templates).toContain("effect: 'fly-in'");
   expect(templates).toContain("effect: 'zoom'");
+  expect(templates).toContain("effect: 'disappear'");
+  expect(templates).toContain("effect: 'fade-out'");
+  expect(templates).toContain("effect: 'fly-out'");
+  expect(templates).toContain("effect: 'zoom-out'");
   expect(playground).toContain(
-    "{ templateId: 'animated-deck', release: '0.34.0' }",
+    "{ templateId: 'animated-deck', release: '0.39.0' }",
   );
   expect(pptxTest).toContain(
-    'round-trips supported entrance animations through native PPTX timing trees',
+    'round-trips supported entrance and exit animations through native PPTX timing trees',
   );
   expect(visualSpec).toContain(
-    'Presentation entrance animations author and play ordered cues',
+    'Presentation entrance and exit animations author and play ordered cues',
   );
   expect(aclSuite).toContain('suite "office-presentation-animation"');
-  expect(discoverabilityAcl).toContain('打开最新能力：入场动画');
+  expect(discoverabilityAcl).toContain('打开最新能力：进入与退出动画');
   expect(discoverabilityAcl).toContain(
-    'navigate "open-entrance-animation-documentation"',
+    'navigate "open-entrance-exit-animation-documentation"',
   );
-  expect(discoverabilityAcl).toContain("main h2[id='入场动画']");
+  expect(discoverabilityAcl).toContain("main h2[id='进入与退出动画']");
   expect(packageManifest).toContain(
     '"playground:visual:presentation-animation"',
   );
@@ -1044,6 +1065,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.39.0',
     '0.38.1',
     '0.38.0',
     '0.37.5',
@@ -1124,6 +1146,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.39.0',
     '0.38.1',
     '0.38.0',
     '0.37.5',
@@ -1457,7 +1480,7 @@ test('documents collaborative character-formatting revisions', async () => {
 });
 
 test('documents complete native Writer OpenType typography in both current locales', async () => {
-  for (const version of ['latest', '0.38.1', '0.38.0']) {
+  for (const version of ['latest', '0.39.0', '0.38.1', '0.38.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const source = await readFile(
         path.join(documentationRoot, version, lang, 'components/document.mdx'),
@@ -3269,7 +3292,7 @@ test('publishes the workbook-owned 1900 and 1904 date-system contract', async ()
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
   ]);
 
-  expect(readme).toContain('Version `0.38.1`');
+  expect(readme).toContain('Version `0.39.0`');
   expect(readme).toContain("workbook's native 1900 or");
   expect(changelog).toContain('## 0.37.5 - 2026-09-01');
   expect(roadmap).toContain(
