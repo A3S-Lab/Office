@@ -21,11 +21,11 @@ suite "office-word-document-index" {
         }
 
         expect "latest-document-index-is-public" {
-            visible = css("button[aria-label='从模板新建：原生索引']")
+            visible = css("button[data-template-id='document-index']")
         }
 
         click "open-document-index-template" {
-            target = role("button", "从模板新建：原生索引")
+            target = css("button[data-template-id='document-index']")
         }
 
         wait "document-loaded" {
@@ -241,7 +241,7 @@ suite "office-word-document-index" {
         }
 
         click "open-document-index-template" {
-            target = role("button", "从模板新建：原生索引")
+            target = css("button[data-template-id='document-index']")
         }
 
         wait "document-loaded" {

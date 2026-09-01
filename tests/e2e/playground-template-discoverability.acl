@@ -21,35 +21,35 @@ suite "playground-template-discoverability" {
         }
 
         expect "entrance-exit-animation-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：进入与退出动画']")
+            visible = css("button[data-template-id='animated-deck']")
         }
 
         expect "document-comparison-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：文档比较']")
+            visible = css("button[data-template-id='document-comparison']")
         }
 
         expect "table-of-contents-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：可更新目录']")
+            visible = css("button[data-template-id='table-of-contents']")
         }
 
         expect "document-index-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：原生索引']")
+            visible = css("button[data-template-id='document-index']")
         }
 
         expect "character-shading-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：字符底纹']")
+            visible = css("button[data-template-id='run-shading']")
         }
 
         expect "proofing-language-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：校对语言']")
+            visible = css("button[data-template-id='proofing-languages']")
         }
 
         expect "data-validation-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：数据验证']")
+            visible = css("button[data-template-id='data-validation']")
         }
 
         expect "structured-reference-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：结构化引用']")
+            visible = css("button[data-template-id='structured-references']")
         }
 
         expect "structured-reference-calculated-column-fill-is-described" {
@@ -57,7 +57,7 @@ suite "playground-template-discoverability" {
         }
 
         click "open-entrance-exit-animations" {
-            target = role("button", "从模板新建：进入与退出动画")
+            target = css("button[data-template-id='animated-deck']")
         }
 
         wait "entrance-exit-animation-presentation-is-ready" {
@@ -73,7 +73,7 @@ suite "playground-template-discoverability" {
         }
 
         click "open-document-comparison" {
-            target = role("button", "从模板新建：文档比较")
+            target = css("button[data-template-id='document-comparison']")
         }
 
         wait "document-comparison-is-ready" {
@@ -89,7 +89,7 @@ suite "playground-template-discoverability" {
         }
 
         click "open-table-of-contents" {
-            target = role("button", "从模板新建：可更新目录")
+            target = css("button[data-template-id='table-of-contents']")
         }
 
         wait "table-of-contents-document-is-ready" {
@@ -109,7 +109,7 @@ suite "playground-template-discoverability" {
         }
 
         click "open-document-index" {
-            target = role("button", "从模板新建：原生索引")
+            target = css("button[data-template-id='document-index']")
         }
 
         wait "document-index-document-is-ready" {
@@ -129,7 +129,7 @@ suite "playground-template-discoverability" {
         }
 
         click "open-character-shading" {
-            target = role("button", "从模板新建：字符底纹")
+            target = css("button[data-template-id='run-shading']")
         }
 
         wait "character-shading-document-is-ready" {
@@ -145,7 +145,7 @@ suite "playground-template-discoverability" {
         }
 
         click "open-proofing-languages" {
-            target = role("button", "从模板新建：校对语言")
+            target = css("button[data-template-id='proofing-languages']")
         }
 
         wait "proofing-language-document-is-ready" {
@@ -161,7 +161,7 @@ suite "playground-template-discoverability" {
         }
 
         click "open-data-validation" {
-            target = role("button", "从模板新建：数据验证")
+            target = css("button[data-template-id='data-validation']")
         }
 
         wait "data-validation-workbook-is-ready" {
@@ -177,7 +177,7 @@ suite "playground-template-discoverability" {
         }
 
         click "open-structured-references" {
-            target = role("button", "从模板新建：结构化引用")
+            target = css("button[data-template-id='structured-references']")
         }
 
         wait "structured-reference-workbook-is-ready" {
@@ -362,27 +362,27 @@ suite "playground-template-discoverability" {
         }
 
         expect "phone-entrance-exit-animation-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：进入与退出动画']")
+            visible = css("button[data-template-id='animated-deck']")
         }
 
         expect "phone-document-comparison-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：文档比较']")
+            visible = css("button[data-template-id='document-comparison']")
         }
 
         expect "phone-table-of-contents-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：可更新目录']")
+            visible = css("button[data-template-id='table-of-contents']")
         }
 
         expect "phone-document-index-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：原生索引']")
+            visible = css("button[data-template-id='document-index']")
         }
 
         expect "phone-data-validation-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：数据验证']")
+            visible = css("button[data-template-id='data-validation']")
         }
 
         expect "phone-structured-reference-entry-is-visible" {
-            visible = css("button[aria-label='从模板新建：结构化引用']")
+            visible = css("button[data-template-id='structured-references']")
         }
 
         screenshot "phone-template-layout" {

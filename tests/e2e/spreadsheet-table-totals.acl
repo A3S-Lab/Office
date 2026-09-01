@@ -21,7 +21,7 @@ suite "office-spreadsheet-table-totals" {
         }
 
         click "open-structured-reference-template" {
-            target = role("button", "从模板新建：结构化引用")
+            target = css("button[data-template-id='structured-references']")
         }
 
         wait "spreadsheet-ready" {

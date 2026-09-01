@@ -21,7 +21,7 @@ suite "spreadsheet-data-validation" {
         }
 
         click "open-public-data-validation-template" {
-            target = role("button", "从模板新建：数据验证")
+            target = css("button[data-template-id='data-validation']")
         }
 
         wait "public-template-ready" {

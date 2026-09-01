@@ -11,7 +11,7 @@ test('Spreadsheet data validation is discoverable from the public Playground', a
 
   await page.goto('/playground/');
   await expect(page.getByRole('heading', { name: '我的文档' })).toBeVisible();
-  await page.getByRole('button', { name: '从模板新建：数据验证' }).click();
+  await page.locator("button[data-template-id='data-validation']").click();
   await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
   await expect(page.getByRole('textbox', { name: '文件名' })).toHaveValue(
     '数据验证示例',

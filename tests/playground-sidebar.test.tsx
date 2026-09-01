@@ -26,15 +26,19 @@ test('keeps examples in the template grid without a latest-capabilities promotio
   expect(screen.queryByRole('region', { name: '最新能力' })).toBeNull();
 
   const templates = screen.getByRole('region', { name: '新建' });
-  const dataValidation = within(templates).getByRole('button', {
-    name: '从模板新建：数据验证',
-  });
-  const structuredReferences = within(templates).getByRole('button', {
-    name: '从模板新建：结构化引用',
-  });
-  const objectAnimations = within(templates).getByRole('button', {
-    name: '从模板新建：进入与退出动画',
-  });
+  const dataValidation = templates.querySelector<HTMLButtonElement>(
+    "button[data-template-id='data-validation']",
+  );
+  const structuredReferences = templates.querySelector<HTMLButtonElement>(
+    "button[data-template-id='structured-references']",
+  );
+  const objectAnimations = templates.querySelector<HTMLButtonElement>(
+    "button[data-template-id='animated-deck']",
+  );
+  expect(dataValidation).not.toBeNull();
+  expect(structuredReferences).not.toBeNull();
+  expect(objectAnimations).not.toBeNull();
+  if (!dataValidation || !structuredReferences || !objectAnimations) return;
   fireEvent.click(dataValidation);
 
   expect(createdTemplates).toEqual(['data-validation']);

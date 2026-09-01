@@ -25,7 +25,7 @@ test('Writer compares an imported version and opens deterministic review respons
   }
 
   await page.goto('/playground/');
-  await page.getByRole('button', { name: '从模板新建：文档比较' }).click();
+  await page.locator("button[data-template-id='document-comparison']").click();
 
   const editor = page.getByRole('textbox', { name: '文档正文' });
   await expect(editor).toHaveAttribute('data-pagination-state', 'ready');

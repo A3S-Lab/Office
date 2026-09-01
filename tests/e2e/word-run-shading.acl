@@ -21,7 +21,7 @@ suite "office-word-run-shading" {
         }
 
         click "open-run-shading-template" {
-            target = role("button", "从模板新建：字符底纹")
+            target = css("button[data-template-id='run-shading']")
         }
 
         wait "document-loaded" {

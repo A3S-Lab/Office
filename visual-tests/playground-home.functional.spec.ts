@@ -17,9 +17,9 @@ test('Playground home omits the latest-capabilities promotion and keeps feature 
   ).toBeVisible();
   const templates = page.getByRole('region', { name: '新建', exact: true });
   await expect(templates).toBeVisible();
-  const animationTemplate = templates.getByRole('button', {
-    name: '从模板新建：进入与退出动画',
-  });
+  const animationTemplate = templates.locator(
+    "button[data-template-id='animated-deck']",
+  );
   await expect(animationTemplate).toBeVisible();
   await animationTemplate.click();
 

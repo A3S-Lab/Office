@@ -14,7 +14,7 @@ test('Writer authors and undoes exact native character shading', async ({
   }
 
   await page.goto('/playground/');
-  await page.getByRole('button', { name: '从模板新建：字符底纹' }).click();
+  await page.locator("button[data-template-id='run-shading']").click();
 
   const editor = page.getByRole('textbox', { name: '文档正文' });
   await expect(editor).toHaveAttribute('data-pagination-state', 'ready');

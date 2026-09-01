@@ -538,7 +538,7 @@ test('publishes Presentation entrance and exit animations across implementation,
   expect(templates).toContain("effect: 'fade-out'");
   expect(templates).toContain("effect: 'fly-out'");
   expect(templates).toContain("effect: 'zoom-out'");
-  expect(workspaceHome).toContain('从模板新建：${template.name}');
+  expect(workspaceHome).toContain('data-template-id={template.id}');
   expect(workspaceHome).not.toContain('playground-latest-capabilities');
   expect(pptxTest).toContain(
     'round-trips supported entrance and exit animations through native PPTX timing trees',
@@ -547,7 +547,9 @@ test('publishes Presentation entrance and exit animations across implementation,
     'Presentation entrance and exit animations author and play ordered cues',
   );
   expect(aclSuite).toContain('suite "office-presentation-animation"');
-  expect(discoverabilityAcl).toContain('从模板新建：进入与退出动画');
+  expect(discoverabilityAcl).toContain(
+    "button[data-template-id='animated-deck']",
+  );
   expect(discoverabilityAcl).toContain(
     'navigate "open-entrance-exit-animation-documentation"',
   );
@@ -2670,9 +2672,11 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(templates).toContain('=[@Units]*[@[Unit price]]');
   expect(templates).toContain('=SUM(Sales[Revenue])');
   expect(templates).toContain('插入表格正文行会自动补齐 Revenue');
-  expect(workspaceHome).toContain('从模板新建：${template.name}');
+  expect(workspaceHome).toContain('data-template-id={template.id}');
   expect(workspaceHome).not.toContain('data-release');
-  expect(discoverability).toContain('从模板新建：结构化引用');
+  expect(discoverability).toContain(
+    "button[data-template-id='structured-references']",
+  );
 });
 
 test('publishes formula-safe Spreadsheet sorting, owned-range reconciliation, and bounded custom-list preferences without rewriting 0.37.0', async () => {

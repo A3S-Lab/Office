@@ -21,11 +21,11 @@ suite "office-word-table-of-contents" {
         }
 
         expect "latest-table-of-contents-is-public" {
-            visible = css("button[aria-label='从模板新建：可更新目录']")
+            visible = css("button[data-template-id='table-of-contents']")
         }
 
         click "open-table-of-contents-template" {
-            target = role("button", "从模板新建：可更新目录")
+            target = css("button[data-template-id='table-of-contents']")
         }
 
         wait "document-loaded" {
@@ -181,7 +181,7 @@ suite "office-word-table-of-contents" {
         }
 
         click "open-table-of-contents-template" {
-            target = role("button", "从模板新建：可更新目录")
+            target = css("button[data-template-id='table-of-contents']")
         }
 
         wait "document-loaded" {

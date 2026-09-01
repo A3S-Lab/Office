@@ -6,7 +6,7 @@ All notable changes to A3S Office will be documented in this file.
 
 - Simplified the public Playground home by removing the redundant latest-
   capability gallery and routing feature examples through the existing New
-  template grid with explicit accessible names.
+  template grid with stable template identities for browser automation.
 
 ## 0.39.0 - 2026-09-01
 

@@ -276,7 +276,7 @@ function TemplateCard({
     <button
       type="button"
       className={`playground-template-card ${template.kind}`}
-      aria-label={`从模板新建：${template.name}`}
+      data-template-id={template.id}
       style={
         {
           '--template-accent': template.accent,

@@ -17,7 +17,7 @@ suite "office-presentation-animation" {
         }
 
         click "open-animation-template" {
-            target = role("button", "从模板新建：进入与退出动画")
+            target = css("button[data-template-id='animated-deck']")
         }
 
         wait "animation-template-loaded" {

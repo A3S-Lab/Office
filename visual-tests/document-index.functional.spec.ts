@@ -14,7 +14,7 @@ test('Writer edits and customizes a native document index responsively', async (
   }
 
   await page.goto('/playground/');
-  await page.getByRole('button', { name: '从模板新建：原生索引' }).click();
+  await page.locator("button[data-template-id='document-index']").click();
 
   const editor = page.getByRole('textbox', { name: '文档正文' });
   await expect(editor).toHaveAttribute('data-pagination-state', 'ready');
