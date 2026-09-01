@@ -4,6 +4,23 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.38.1 - 2026-09-01
+
+- Added a first-class bilingual **What's new / 更新日志** documentation route.
+  Recent releases now show their version and date, New/Improved/Fixed status,
+  affected editor surfaces, user outcome, three scannable highlights, detailed
+  documentation, and immutable GitHub Release evidence instead of relying on a
+  flat homepage link list or the repository-only changelog.
+- Backed the presentation with one typed localized release catalog and a pure
+  semantic-version cutoff. The `latest` site shows the complete curated feed,
+  while every frozen documentation version hides later releases and older
+  versions retain an explicit path to the exhaustive engineering archive.
+- Added semantic articles, time elements, labelled surface/status lists,
+  responsive desktop and phone layouts, inline SVG surface icons, keyboard
+  focus treatments, unit contracts, documentation route checks, Playwright
+  visual coverage, and desktop/phone A3S Test contracts without adding client
+  state or network work.
+
 ## 0.38.0 - 2026-09-01
 
 - Added editable Office 2010 OpenType typography for Writer body text and

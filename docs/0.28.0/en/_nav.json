@@ -2,17 +2,22 @@
   {
     "text": "Documentation",
     "link": "/",
-    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?(?:$|guide(?:/|$)|browser-editor-architecture|native-office-engine|editor-quality-roadmap|cli-reference)"
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?(?:$|guide(?:/|$)|browser-editor-architecture|native-office-engine|editor-quality-roadmap|cli-reference)"
+  },
+  {
+    "text": "What's new",
+    "link": "/changelog.html",
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?changelog(?:\\.html)?$"
   },
   {
     "text": "Components",
     "link": "/components/",
-    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?components/"
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?components/"
   },
   {
     "text": "CLI & Skill",
     "link": "/automation/",
-    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?automation/"
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?automation/"
   },
   {
     "text": "Resources",

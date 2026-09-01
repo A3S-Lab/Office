@@ -309,8 +309,13 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
-Version `0.38.0` keeps the release surface focused on local, testable
-workflows:
+Version `0.38.1` keeps the release surface focused on local, testable
+workflows and makes those changes easier to discover:
+
+- The documentation now includes a first-class bilingual, version-aware
+  [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline.
+  It presents editor scope, user outcome, compatibility evidence, and detailed
+  references while frozen documentation hides releases that did not yet exist.
 
 - Writer's shared advanced Font dialog now edits the complete bounded Office
   2010 OpenType typography set: 16 ligature combinations, numeral form and
@@ -340,8 +345,9 @@ workflows:
 - PDF page organization performs insert, delete, rotate, reorder, extract,
   merge, and split in a dedicated Worker with Blob-level Undo/Redo.
 
-Release notes live in the [changelog](./CHANGELOG.md). The Playground exposes
-recent workflows from one release-labelled capability gallery.
+Browse the product-focused [What's new](https://a3s-lab.github.io/Office/docs/changelog.html)
+page or the exhaustive engineering [changelog](./CHANGELOG.md). The Playground
+exposes recent workflows from one release-labelled capability gallery.
 
 ## Capabilities and boundaries
 
@@ -444,13 +450,14 @@ matrix.
 
 - [Live Playground](https://a3s-lab.github.io/Office/playground/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [What's new](https://a3s-lab.github.io/Office/docs/changelog.html)
 - [React, Vue, Web Component, and Core API](https://a3s-lab.github.io/Office/docs/components/)
 - [Real-time collaboration](https://a3s-lab.github.io/Office/docs/components/collaboration.html)
 - [CLI, MCP, and Office Skill](https://a3s-lab.github.io/Office/docs/automation/)
 - [Browser editor architecture](./docs/latest/en/browser-editor-architecture.md)
 - [Native Office engine](./docs/latest/en/native-office-engine.md)
 - [Editor quality roadmap](./docs/latest/en/editor-quality-roadmap.md)
-- [Changelog](./CHANGELOG.md)
+- [Engineering changelog](./CHANGELOG.md)
 
 ## Community and security
 
