@@ -116,8 +116,8 @@ package and one set of bounded contracts.
   formulas, tables, formatting, sort/filter, validation, pivots, charts, and
   print workflows.
 - **Presentation** (`PPTX`) — slides, typed scene objects, masters/layouts,
-  transitions, bounded entrance animations, notes, slideshow, and presenter
-  view.
+  transitions, bounded entrance/exit animations, notes, slideshow, and
+  presenter view.
 - **Markdown** (`MD`) — GFM source, visual mode, split preview, direct round
   trips, and native automation.
 - **PDF** — PDFium rendering, search, forms, annotations, history, save, and
@@ -309,8 +309,15 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
-Version `0.38.1` keeps the release surface focused on local, testable
-workflows and makes those changes easier to discover:
+Version `0.39.0` extends the local, testable Presentation workflow with a
+complete bounded object-animation story:
+
+- A slide object can now own one entrance and one exit animation. The shared
+  object-centric Animation tab authors appear/disappear, fade in/out, fly in/out,
+  and zoom in/out effects with one ordered trigger, timing, direction, preview,
+  collaboration, clipboard, and Undo model. Browser playback and native PPTX
+  timing-tree import/export retain both classes, while malformed or overlapping
+  sequences fail closed with diagnostics.
 
 - The documentation now includes a first-class bilingual, version-aware
   [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline.

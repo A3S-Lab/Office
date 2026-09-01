@@ -141,9 +141,15 @@ export function PresentationToolbar({
   const fontFamilyValue = presentationFontFamilyValue(
     selectedElement?.fontFamily,
   );
-  const selectedAnimation = workSlideAnimationForElement(
+  const selectedEntranceAnimation = workSlideAnimationForElement(
     selectedSlide,
     selectedElement?.id,
+    'entrance',
+  );
+  const selectedExitAnimation = workSlideAnimationForElement(
+    selectedSlide,
+    selectedElement?.id,
+    'exit',
   );
   useEffect(() => {
     const previous = selectedFontSizeRef.current;
@@ -552,14 +558,22 @@ export function PresentationToolbar({
           ),
           animations: (
             <PresentationAnimationPanel
-              animation={selectedAnimation}
-              canMove={can.moveEntranceAnimation}
+              animations={{
+                entrance: selectedEntranceAnimation,
+                exit: selectedExitAnimation,
+              }}
+              canMove={can.moveAnimation}
               canPreview={can.previewAnimations()}
-              editable={can.setEntranceAnimation(selectedAnimation?.effect)}
-              onMove={commands.moveEntranceAnimation}
+              canUpdate={can.updateAnimation}
+              editable={can.setAnimation(
+                'entrance',
+                selectedEntranceAnimation?.effect,
+              )}
+              elementId={selectedElement?.id}
+              onMove={commands.moveAnimation}
               onPreview={commands.previewAnimations}
-              onSetEffect={commands.setEntranceAnimation}
-              onUpdate={commands.updateEntranceAnimation}
+              onSetEffect={commands.setAnimation}
+              onUpdate={commands.updateAnimation}
             />
           ),
           slideshow: (

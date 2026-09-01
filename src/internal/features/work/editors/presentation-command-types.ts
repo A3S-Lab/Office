@@ -2,6 +2,7 @@ import type { OfficeKernelPresentationAlignment } from '../../../kernel/office-k
 import type {
   WorkPresentationContent,
   WorkSlideAnimation,
+  WorkSlideAnimationClass,
   WorkSlideAnimationEffect,
   WorkSlideElement,
   WorkSlideTransition,
@@ -60,7 +61,10 @@ export interface PresentationEditorCommands {
     slideId: string,
     commentId: string,
   ) => PresentationCommandResult;
-  moveEntranceAnimation: (direction: -1 | 1) => PresentationCommandResult;
+  moveAnimation: (
+    animationClass: WorkSlideAnimationClass,
+    direction: -1 | 1,
+  ) => PresentationCommandResult;
   nudgeSelection: (key: string, distance: number) => boolean;
   openComment: (commentId: string) => PresentationCommandResult;
   pasteSelection: () => boolean;
@@ -83,7 +87,8 @@ export interface PresentationEditorCommands {
     content: WorkPresentationContent,
   ) => PresentationCommandResult;
   setBackground: (color: string) => PresentationCommandResult;
-  setEntranceAnimation: (
+  setAnimation: (
+    animationClass: WorkSlideAnimationClass,
     effect: WorkSlideAnimationEffect | undefined,
   ) => PresentationCommandResult;
   setPresentationLayoutBackground: (
@@ -111,7 +116,8 @@ export interface PresentationEditorCommands {
     patch: Partial<WorkSlideElement>,
     options?: { restoreTextFocus?: boolean },
   ) => PresentationCommandResult;
-  updateEntranceAnimation: (
+  updateAnimation: (
+    animationClass: WorkSlideAnimationClass,
     patch: Partial<WorkSlideAnimation>,
   ) => PresentationCommandResult;
   updateNotes: (notes: string) => PresentationCommandResult;
@@ -176,16 +182,27 @@ export interface PresentationSlideCommandPort {
 }
 
 export interface PresentationAnimationCommandPort {
-  canMoveEntranceAnimation: (direction: -1 | 1) => boolean;
+  canMoveAnimation: (
+    animationClass: WorkSlideAnimationClass,
+    direction: -1 | 1,
+  ) => boolean;
   canPreviewAnimations: boolean;
-  canSetEntranceAnimation: boolean;
-  canUpdateEntranceAnimation: boolean;
-  moveEntranceAnimation: (direction: -1 | 1) => PresentationCommandResult;
+  canSetAnimation: boolean;
+  canUpdateAnimation: (
+    animationClass: WorkSlideAnimationClass,
+    patch: Partial<WorkSlideAnimation>,
+  ) => boolean;
+  moveAnimation: (
+    animationClass: WorkSlideAnimationClass,
+    direction: -1 | 1,
+  ) => PresentationCommandResult;
   previewAnimations: () => PresentationCommandResult;
-  setEntranceAnimation: (
+  setAnimation: (
+    animationClass: WorkSlideAnimationClass,
     effect: WorkSlideAnimationEffect | undefined,
   ) => PresentationCommandResult;
-  updateEntranceAnimation: (
+  updateAnimation: (
+    animationClass: WorkSlideAnimationClass,
     patch: Partial<WorkSlideAnimation>,
   ) => PresentationCommandResult;
 }

@@ -48,7 +48,7 @@ const chapterCopy: Record<HomeLanguage, Record<ChapterKind, ChapterCopy>> = {
       index: '04',
       label: '演示文稿',
       component: 'PresentationEditor',
-      title: '选中对象，设置入场动画。',
+      title: '选中对象，设置进入与退出动画。',
       detail:
         '幻灯片、对象、动画时间线和演讲者备注分别显示；编辑文字时再打开文字编辑器。',
       linkLabel: '查看 PresentationEditor',

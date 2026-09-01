@@ -7,6 +7,7 @@ import {
 import type {
   WorkSlide,
   WorkSlideAnimation,
+  WorkSlideAnimationClass,
   WorkSlideAnimationDirection,
   WorkSlideAnimationEffect,
 } from './work-types';
@@ -30,6 +31,10 @@ export interface WorkSlideAnimationCue {
   totalDurationMs: number;
 }
 
+export type WorkSlideAnimationSequenceIssue =
+  | 'duplicate-class'
+  | 'overlapping-target';
+
 export function createWorkSlideAnimation(
   elementId: string,
   effect: WorkSlideAnimationEffect,
@@ -42,8 +47,9 @@ export function createWorkSlideAnimation(
     trigger: previous?.trigger ?? 'on-click',
     durationMs: previous?.durationMs ?? 500,
     delayMs: previous?.delayMs ?? 0,
-    direction:
-      effect === 'fly-in' ? (previous?.direction ?? 'left') : undefined,
+    direction: isFlyAnimationEffect(effect)
+      ? (previous?.direction ?? 'left')
+      : undefined,
   });
 }
 
@@ -62,20 +68,40 @@ export function normalizeWorkSlideAnimation(
       0,
       WORK_SLIDE_ANIMATION_MAX_DELAY_MS,
     ),
-    direction:
-      animation.effect === 'fly-in'
-        ? normalizeWorkSlideAnimationDirection(animation.direction)
-        : undefined,
+    direction: isFlyAnimationEffect(animation.effect)
+      ? normalizeWorkSlideAnimationDirection(animation.direction)
+      : undefined,
   };
+}
+
+export function workSlideAnimationClass(
+  effect: WorkSlideAnimationEffect,
+): WorkSlideAnimationClass {
+  return effect === 'disappear' ||
+    effect === 'fade-out' ||
+    effect === 'fly-out' ||
+    effect === 'zoom-out'
+    ? 'exit'
+    : 'entrance';
+}
+
+export function workSlideAnimationEffectMatchesClass(
+  effect: WorkSlideAnimationEffect,
+  animationClass: WorkSlideAnimationClass,
+): boolean {
+  return workSlideAnimationClass(effect) === animationClass;
 }
 
 export function workSlideAnimationForElement(
   slide: WorkSlide,
   elementId: string | undefined,
+  animationClass: WorkSlideAnimationClass,
 ): WorkSlideAnimation | undefined {
   if (!elementId) return undefined;
   return slide.animations?.find(
-    (animation) => animation.elementId === elementId,
+    (animation) =>
+      animation.elementId === elementId &&
+      workSlideAnimationClass(animation.effect) === animationClass,
   );
 }
 
@@ -126,6 +152,39 @@ export function initialWorkSlideAnimationCueIndex(
   return cues[0]?.automatic ? 0 : -1;
 }
 
+export function workSlideAnimationSequenceIssue(
+  animations: readonly WorkSlideAnimation[] | undefined,
+): WorkSlideAnimationSequenceIssue | undefined {
+  const classTargets = new Set<string>();
+  for (const animation of animations ?? []) {
+    const key = `${animation.elementId}\u0000${workSlideAnimationClass(animation.effect)}`;
+    if (classTargets.has(key)) return 'duplicate-class';
+    classTargets.add(key);
+  }
+
+  for (const cue of workSlideAnimationCues(animations)) {
+    const rangesByTarget = new Map<
+      string,
+      Array<{ endOffsetMs: number; startOffsetMs: number }>
+    >();
+    for (const item of cue.items) {
+      const ranges = rangesByTarget.get(item.animation.elementId) ?? [];
+      if (
+        ranges.some(
+          (range) =>
+            item.startOffsetMs < range.endOffsetMs &&
+            item.endOffsetMs > range.startOffsetMs,
+        )
+      ) {
+        return 'overlapping-target';
+      }
+      ranges.push(item);
+      rangesByTarget.set(item.animation.elementId, ranges);
+    }
+  }
+  return undefined;
+}
+
 export function removeWorkSlideAnimationsForElements(
   slide: WorkSlide,
   elementIds: ReadonlySet<string>,
@@ -165,6 +224,10 @@ function normalizeWorkSlideAnimationDirection(
   return direction === 'right' || direction === 'up' || direction === 'down'
     ? direction
     : 'left';
+}
+
+function isFlyAnimationEffect(effect: WorkSlideAnimationEffect): boolean {
+  return effect === 'fly-in' || effect === 'fly-out';
 }
 
 function boundedInteger(value: number, minimum: number, maximum: number) {

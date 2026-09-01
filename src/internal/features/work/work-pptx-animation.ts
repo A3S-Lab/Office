@@ -10,11 +10,14 @@ import type { PptxGroupExportRegistry } from './work-pptx-groups';
 import {
   normalizeWorkSlideAnimation,
   WORK_SLIDE_ANIMATION_LIMIT,
+  workSlideAnimationClass,
+  workSlideAnimationSequenceIssue,
 } from './work-presentation-animation';
 import { createWorkId } from './work-templates';
 import type {
   WorkSlide,
   WorkSlideAnimation,
+  WorkSlideAnimationClass,
   WorkSlideAnimationDirection,
   WorkSlideAnimationEffect,
   WorkSlideAnimationTrigger,
@@ -69,7 +72,7 @@ export function readPptxAnimations(
   }
 
   const animations: WorkSlideAnimation[] = [];
-  const animatedElements = new Set<string>();
+  const animatedClasses = new Set<string>();
   const effectNodes = pptxDescendants(timing, 'cTn').filter((node) =>
     ['clickEffect', 'withEffect', 'afterEffect'].includes(
       attribute(node, 'nodeType') ?? '',
@@ -82,14 +85,17 @@ export function readPptxAnimations(
     });
   }
   for (const node of effectNodes.slice(0, WORK_SLIDE_ANIMATION_LIMIT)) {
-    if (attribute(node, 'presetClass') !== 'entr') {
+    const presetClass = attribute(node, 'presetClass');
+    if (presetClass !== 'entr' && presetClass !== 'exit') {
       diagnostics.push({
         code: 'pptx.animation.class',
         message:
-          'An emphasis, exit, motion-path, or malformed animation remains in the source PPTX only.',
+          'An emphasis, motion-path, or malformed animation remains in the source PPTX only.',
       });
       continue;
     }
+    const animationClass: WorkSlideAnimationClass =
+      presetClass === 'exit' ? 'exit' : 'entrance';
     const targets = Array.from(
       new Set(
         pptxDescendants(node, 'spTgt')
@@ -101,7 +107,7 @@ export function readPptxAnimations(
       diagnostics.push({
         code: 'pptx.animation.target',
         message:
-          'An entrance animation with a missing or ambiguous object target was ignored.',
+          'An object animation with a missing or ambiguous target was ignored.',
       });
       continue;
     }
@@ -110,24 +116,24 @@ export function readPptxAnimations(
       diagnostics.push({
         code: 'pptx.animation.target',
         message:
-          'An entrance animation points to an unavailable slide object and was ignored.',
+          'An object animation points to an unavailable slide object and was ignored.',
       });
       continue;
     }
-    if (animatedElements.has(elementId)) {
+    const animatedClass = `${elementId}\u0000${animationClass}`;
+    if (animatedClasses.has(animatedClass)) {
       diagnostics.push({
         code: 'pptx.animation.duplicate-target',
-        message:
-          'Only the first supported entrance animation for an object is editable; additional effects remain in the source PPTX only.',
+        message: `Only the first supported ${animationClass} animation for an object is editable; additional effects remain in the source PPTX only.`,
       });
       continue;
     }
-    const effectResult = readPptxAnimationEffect(node);
+    const effectResult = readPptxAnimationEffect(node, animationClass);
     if (!effectResult.effect) {
       diagnostics.push({
         code: 'pptx.animation.effect',
         message:
-          'An entrance animation uses an unsupported or malformed effect and remains in the source PPTX only.',
+          'An entrance or exit animation uses an unsupported or malformed effect and remains in the source PPTX only.',
       });
       continue;
     }
@@ -148,15 +154,26 @@ export function readPptxAnimations(
       delayMs: timingResult.delayMs,
       direction: effectResult.direction,
     });
+    if (
+      workSlideAnimationSequenceIssue([...animations, animation]) ===
+      'overlapping-target'
+    ) {
+      diagnostics.push({
+        code: 'pptx.animation.overlap',
+        message:
+          'Overlapping animations for one object in one playback cue remain in the source PPTX only.',
+      });
+      continue;
+    }
     animations.push(animation);
-    animatedElements.add(elementId);
+    animatedClasses.add(animatedClass);
   }
 
   if (!effectNodes.length) {
     diagnostics.push({
       code: 'pptx.animation.structure',
       message:
-        'The slide timing tree does not contain a supported object entrance sequence and remains in the source PPTX only.',
+        'The slide timing tree does not contain a supported object animation sequence and remains in the source PPTX only.',
     });
   }
   return { animations, diagnostics };
@@ -235,21 +252,37 @@ function clonePptxAnimationElement(
   return element;
 }
 
-function readPptxAnimationEffect(node: Element): PptxAnimationEffectResult {
+function readPptxAnimationEffect(
+  node: Element,
+  animationClass: WorkSlideAnimationClass,
+): PptxAnimationEffectResult {
   const presetId = attribute(node, 'presetID');
   const animationEffects = pptxDescendants(node, 'animEffect');
+  const expectedTransition = animationClass === 'exit' ? 'out' : 'in';
+  if (
+    animationEffects.some((effect) => {
+      const transition = attribute(effect, 'transition');
+      return transition !== null && transition !== expectedTransition;
+    })
+  ) {
+    return {};
+  }
   const filters = animationEffects
     .map((effect) => attribute(effect, 'filter')?.trim())
     .filter((filter): filter is string => Boolean(filter));
   const attributes = new Set(
     pptxDescendants(node, 'attrName').map((name) => name.textContent?.trim()),
   );
-  if (filters.some((filter) => filter === 'fade')) return { effect: 'fade' };
+  if (filters.some((filter) => filter === 'fade')) {
+    return {
+      effect: animationClass === 'exit' ? 'fade-out' : 'fade',
+    };
+  }
   for (const filter of filters) {
     const direction = directionFromPptxSlideFilter(filter);
     if (!direction) continue;
     return {
-      effect: 'fly-in',
+      effect: animationClass === 'exit' ? 'fly-out' : 'fly-in',
       direction,
     };
   }
@@ -258,14 +291,14 @@ function readPptxAnimationEffect(node: Element): PptxAnimationEffectResult {
     pptxDescendants(node, 'animScale').length > 0 ||
     (attributes.has('ppt_w') && attributes.has('ppt_h'))
   ) {
-    return { effect: 'zoom' };
+    return { effect: animationClass === 'exit' ? 'zoom-out' : 'zoom' };
   }
   if (
     presetId === '2' &&
     (attributes.has('ppt_x') || attributes.has('ppt_y'))
   ) {
     return {
-      effect: 'fly-in',
+      effect: animationClass === 'exit' ? 'fly-out' : 'fly-in',
       direction: directionFromPptxMotion(node),
     };
   }
@@ -276,7 +309,9 @@ function readPptxAnimationEffect(node: Element): PptxAnimationEffectResult {
     pptxDescendants(node, 'anim').length === 0 &&
     pptxDescendants(node, 'animScale').length === 0
   ) {
-    return { effect: 'appear' };
+    return {
+      effect: animationClass === 'exit' ? 'disappear' : 'appear',
+    };
   }
   return {};
 }
@@ -376,8 +411,8 @@ function pptxAnimationTimingXml(
       return `<p:par><p:cTn id="${outerId}" fill="hold"><p:stCondLst><p:cond delay="${delay}"/></p:stCondLst><p:childTnLst>${wrappers}</p:childTnLst></p:cTn></p:par>`;
     })
     .join('');
-  const builds = targets
-    .map(({ spid }) => `<p:bldP spid="${spid}" grpId="0" animBg="1"/>`)
+  const builds = Array.from(new Set(targets.map(({ spid }) => spid)))
+    .map((spid) => `<p:bldP spid="${spid}" grpId="0" animBg="1"/>`)
     .join('');
   return (
     `<p:timing xmlns:p="${PRESENTATIONML_NAMESPACE}"><p:tnLst><p:par>` +
@@ -416,16 +451,19 @@ function pptxAnimationEffectXml(
   nextId: () => number,
 ): string {
   const animation = normalizeWorkSlideAnimation(target.animation);
+  const animationClass = workSlideAnimationClass(animation.effect);
   const preset = pptxAnimationPreset(animation);
   const leafId = nextId();
   const visibilityId = nextId();
+  const visibilityDelay =
+    animationClass === 'exit' ? Math.max(0, animation.durationMs - 1) : 0;
   const visibility =
-    `<p:set><p:cBhvr><p:cTn id="${visibilityId}" dur="1" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst></p:cTn>` +
+    `<p:set><p:cBhvr><p:cTn id="${visibilityId}" dur="1" fill="hold"><p:stCondLst><p:cond delay="${visibilityDelay}"/></p:stCondLst></p:cTn>` +
     `<p:tgtEl><p:spTgt spid="${target.spid}"/></p:tgtEl><p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst>` +
-    '</p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>';
+    `</p:cBhvr><p:to><p:strVal val="${animationClass === 'exit' ? 'hidden' : 'visible'}"/></p:to></p:set>`;
   const behavior = pptxAnimationBehaviorXml(animation, target.spid, nextId);
   return (
-    `<p:par><p:cTn id="${leafId}" presetID="${preset.id}" presetClass="entr" presetSubtype="${preset.subtype}" ` +
+    `<p:par><p:cTn id="${leafId}" presetID="${preset.id}" presetClass="${animationClass === 'exit' ? 'exit' : 'entr'}" presetSubtype="${preset.subtype}" ` +
     `fill="hold" nodeType="${pptxAnimationNodeType(animation.trigger)}" dur="${animation.durationMs}">` +
     `<p:stCondLst><p:cond delay="${animation.delayMs}"/></p:stCondLst><p:childTnLst>${visibility}${behavior}</p:childTnLst>` +
     '</p:cTn></p:par>'
@@ -437,26 +475,31 @@ function pptxAnimationBehaviorXml(
   spid: number,
   nextId: () => number,
 ): string {
-  if (animation.effect === 'appear') return '';
-  if (animation.effect === 'zoom') {
+  const animationClass = workSlideAnimationClass(animation.effect);
+  if (animation.effect === 'appear' || animation.effect === 'disappear') {
+    return '';
+  }
+  if (animation.effect === 'zoom' || animation.effect === 'zoom-out') {
     return ['ppt_w', 'ppt_h']
       .map((attributeName) => {
         const id = nextId();
         return (
           `<p:anim calcMode="lin" valueType="num"><p:cBhvr><p:cTn id="${id}" dur="${animation.durationMs}" fill="hold"/>` +
           `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl><p:attrNameLst><p:attrName>${attributeName}</p:attrName></p:attrNameLst></p:cBhvr>` +
-          `<p:tavLst><p:tav tm="0"><p:val><p:fltVal val="0"/></p:val></p:tav><p:tav tm="100000"><p:val><p:strVal val="#${attributeName}"/></p:val></p:tav></p:tavLst></p:anim>`
+          (animationClass === 'exit'
+            ? `<p:tavLst><p:tav tm="0"><p:val><p:strVal val="#${attributeName}"/></p:val></p:tav><p:tav tm="100000"><p:val><p:fltVal val="0"/></p:val></p:tav></p:tavLst></p:anim>`
+            : `<p:tavLst><p:tav tm="0"><p:val><p:fltVal val="0"/></p:val></p:tav><p:tav tm="100000"><p:val><p:strVal val="#${attributeName}"/></p:val></p:tav></p:tavLst></p:anim>`)
         );
       })
       .join('');
   }
   const id = nextId();
   const filter =
-    animation.effect === 'fade'
+    animation.effect === 'fade' || animation.effect === 'fade-out'
       ? 'fade'
       : pptxSlideFilter(animation.direction ?? 'left');
   return (
-    `<p:animEffect transition="in" filter="${filter}"><p:cBhvr><p:cTn id="${id}" dur="${animation.durationMs}"/>` +
+    `<p:animEffect transition="${animationClass === 'exit' ? 'out' : 'in'}" filter="${filter}"><p:cBhvr><p:cTn id="${id}" dur="${animation.durationMs}"/>` +
     `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl></p:cBhvr></p:animEffect>`
   );
 }
@@ -465,9 +508,15 @@ function pptxAnimationPreset(animation: WorkSlideAnimation): {
   id: number;
   subtype: number;
 } {
-  if (animation.effect === 'appear') return { id: 1, subtype: 0 };
-  if (animation.effect === 'fade') return { id: 10, subtype: 0 };
-  if (animation.effect === 'zoom') return { id: 23, subtype: 16 };
+  if (animation.effect === 'appear' || animation.effect === 'disappear') {
+    return { id: 1, subtype: 0 };
+  }
+  if (animation.effect === 'fade' || animation.effect === 'fade-out') {
+    return { id: 10, subtype: 0 };
+  }
+  if (animation.effect === 'zoom' || animation.effect === 'zoom-out') {
+    return { id: 23, subtype: 16 };
+  }
   const subtypes: Record<WorkSlideAnimationDirection, number> = {
     up: 1,
     right: 2,

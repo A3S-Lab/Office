@@ -38,7 +38,7 @@ collaboration transport, and AI providers.
 | Shared shell | Five lazy browser surfaces, responsive ribbon and dialogs, keyboard/focus contracts, typed host ports | Bundled cloud workspace, live co-editing service, native desktop/mobile shells, large template marketplace | Keep services host-owned; deepen reusable integration protocols |
 | Writer | Strongest surface: structured editing, sections, tables, images, equations, comments, revisions, deterministic bounded compare/combine, fields, typed TOC and native index authoring, notes, page chrome, source-backed DOCX | Complete revision types, broad DrawingML objects, mail merge, structural/object compare, tables of figures/authorities, exact desktop pagination | Remains the first fidelity track |
 | Spreadsheet | Workbook editing, formulas, recalculation, native Tables/ListObjects, bounded structured-reference formulas, automatic calculated-column fill, complete common totals-row authoring, charts, pivots, conditional formatting, validation, protection, comments, print setup | Advanced pivots/slicers, external data, macros/add-ins, advanced analysis, and broader formula parity | Stabilize calculation and native workbook semantics before adding more UI |
-| Presentation | Editable scene graph, masters/layouts, text, shapes, images, tables, charts, groups, comments, transitions, bounded Work entrance animations with native PPTX timing-tree round trips, slideshow/presenter view | Broader native animation preservation, media, broad shape/SmartArt fidelity, full master authoring, richer views and video export | Build expressiveness on the typed scene graph |
+| Presentation | Editable scene graph, masters/layouts, text, shapes, images, tables, charts, groups, comments, transitions, composable bounded Work entrance/exit animations with native PPTX timing-tree round trips, slideshow/presenter view | Broader native animation preservation, emphasis/motion paths, media, broad shape/SmartArt fidelity, full master authoring, richer views and video export | Build expressiveness on the typed scene graph |
 | PDF | PDFium rendering, search, forms, annotations, navigation, bounded long-file rendering, save, and Worker-backed insert/delete/rotate/reorder/extract/merge/split page organization | Native text/object editing, document-level catalog rewriting, conversion, OCR, signatures, redaction, compression | Evolve from viewer/annotator into an optional PDF workbench |
 | Markdown | GFM source, visual editing, split preview, tables, task lists, links, images, code | No direct Traditional Office equivalent | Maintain as an A3S differentiator |
 | Automation | Rust CLI, MCP server, Office Skill, bounded typed mutations | Office-style macro/add-in ecosystem | Prefer deterministic, auditable automation; do not execute Office macros |
@@ -123,7 +123,7 @@ collaboration transport, and AI providers.
 | Multi-selection, grouping, move/resize/rotate, guides | **Supported** for the typed scene graph | Deep nested groups and exotic transforms need continued native parity tests | P0/P1 |
 | Masters, layouts, placeholders, inherited backgrounds/artwork | **Partial** import/export support | Full visual master/layout authoring UI and all placeholder inheritance rules are incomplete | P1 |
 | Slide transitions and timings | **Partial**: fade, push, wipe, split, cut; click/automatic advance | Traditional Office exposes a much broader transition catalog and controls | P2 |
-| Object animations and triggers | **Partial** | The Work model supports ordered entrance cues, three trigger modes, bounded timing, collaboration, playback, and native PPTX round trips for the supported entrance subset; broader PPTX preservation, motion paths, exit/emphasis effects, and a full timeline remain gaps | P1 |
+| Object animations and triggers | **Partial** | The Work model supports composable entrance/exit cues, eight effects, three trigger modes, bounded non-overlapping timing, collaboration, playback, and native PPTX round trips for the supported subset; broader PPTX preservation, emphasis, motion paths, trigger-on-object, and a full timeline remain gaps | P1 |
 | Audio, video, recording, and background music | **Gap** | No media timeline, playback policy, poster frame, trim, or relationship-safe export | P1/P2 |
 | Speaker notes, slideshow, current-slide start, presenter view, timer | **Supported** | Rehearsed timings, recording, ink/laser tools, and multi-display edge cases are partial | P1 |
 | Comments and review | **Supported** for slide comments and responsive review UI | Threads, mentions, assignments, live presence, and cloud synchronization are host-owned/incomplete | P1 protocol |
@@ -131,7 +131,7 @@ collaboration transport, and AI providers.
 | Views: normal, sorter, notes, reading, master | **Partial** | Normal editing, thumbnails, notes, slideshow, and presenter flows exist; dedicated sorter and master editing remain gaps | P1 |
 | Print layouts and PDF | **Partial**: slides, notes, and 2/3/6-slide handouts are modeled | Exact Traditional Office print options, headers/footers, and vector fidelity need more coverage | P1 |
 | Video export | **Gap** | Requires deterministic animation/media rendering and a host/native encoder | P3/provider-owned |
-| PPTX round trip | **Partial** | The bounded appear/fade/fly-in/zoom entrance subset round-trips through native timing trees; unsupported drawings, SmartArt, broader animations, media, and extensions may normalize | P0 continuous work |
+| PPTX round trip | **Partial** | The bounded appear/disappear, fade-in/out, fly-in/out, and zoom-in/out subset round-trips through native entrance/exit timing trees; unsupported drawings, SmartArt, broader animations, media, and extensions may normalize | P0 continuous work |
 
 ## PDF comparison
 
@@ -337,9 +337,11 @@ workbooks recalculate and round-trip with explicit, bounded diagnostics.
 
 ### R3 — Presentation expressiveness (P1)
 
-- Extend the bounded Work entrance-animation model with broader native PPTX
-  preservation, exit/emphasis effects, motion paths, and round-trip-safe
-  unsupported states.
+- Treat composable bounded entrance/exit effects, object-centric authoring,
+  browser playback, collaboration, and native PPTX timing-tree round trips as
+  a completed slice.
+- Extend the animation model with broader native PPTX preservation, emphasis,
+  motion paths, trigger-on-object, and round-trip-safe unsupported states.
 - Add safe audio/video relationships and deterministic playback policy.
 - Add visual master/layout editing and dedicated sorter/master workflows.
 - Expand shapes, connectors, effects, SmartArt fallback, and chart fidelity.

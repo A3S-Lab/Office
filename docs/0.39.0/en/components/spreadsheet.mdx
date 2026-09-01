@@ -1,0 +1,1435 @@
+---
+title: SpreadsheetEditor
+description: Spreadsheet content, calculation-kernel configuration, events, and host extension points.
+---
+
+# SpreadsheetEditor
+
+`SpreadsheetEditor` is a controlled workbook surface with worksheet, formula,
+table, chart, conditional-format, pivot, and print-layout models.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `content` | `SpreadsheetContent` | Yes | — | Controlled workbook content. |
+| `onChange` | `(content: SpreadsheetContent) => void` | Yes | — | Emits the complete next workbook. |
+| `collaboration` | `OfficeCollaborationSession` | No | none | Uses an initialized Yjs Spreadsheet as the canonical value. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Publishes ranges, projects native remote cell presence and roster navigation; requires the exact `collaboration` session. |
+| `preview` | `boolean` | No | `false` | Read-only workbook rendering. |
+| `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |
+| `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host save, export, history, and approval actions. |
+| `kernelWasmUrl` | `string` | No | packaged kernel | Formula and workbook-kernel resource URL. |
+| `sortCustomListStore` | `SpreadsheetSortCustomListStore` | No | none | Loads and saves up to 32 user sort sequences outside controlled workbook content; omitting it keeps authored lists in the mounted editor session. |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | No | — | Sends the active cell or range to the host AI flow. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+## Content contract
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `type` | `'spreadsheet'` | Content discriminator. |
+| `sheets` | `WorkSpreadsheetSheet[]` | Worksheets, cells, formulas, styles, tables, images, charts, and pivots. |
+| `sheets[].tables` | `WorkSpreadsheetTable[]` | Native ListObject identities, ranges, columns, filters, header/totals flags, and built-in styles. |
+| `calculation` | `WorkSpreadsheetCalculationSettings` | Calculation mode, iteration, precision, and load behavior. |
+| `namedRanges` | `WorkSpreadsheetNamedRange[]` | Workbook- and worksheet-scoped names. |
+| `printAreas`, `printTitles` | spreadsheet print fields | Print areas and repeated rows or columns. |
+| `pageBreaks`, `pageSetups` | spreadsheet page fields | Breaks, paper, orientation, scale, margins, headers, and footers. |
+
+## Sparse worksheets and virtual editing
+
+`row` and `column` describe the logical worksheet dimensions. `data` may be a
+sparse JavaScript matrix whose `length` reaches those dimensions while only
+populated row and cell indexes exist as own properties. A worksheet may also
+use Fortune Sheet's sparse `celldata` projection. Do not densify either form
+with `Array.from`, nested full-range loops, or JSON serialization that expands
+array holes.
+
+The editor renders and searches only materialized cells while retaining the
+full scroll range. Scrolling, including navigation to the maximum worksheet
+row or column, does not emit `onChange`. Typing into a virtual blank row
+materializes that row and the edited cell only; it does not allocate the rows
+between the previous data and the new coordinate. Formula dependency scans,
+selection summaries, conditional formatting, and host-side projections follow
+the same sparse contract.
+
+The supported XLSX limits are 1,048,576 rows and 16,384 columns (`XFD`). Import
+uses the worksheet dimension without allocating every blank cell. XLSX export
+writes the logical dimension and populated cells only, so a maximum-size sparse
+worksheet can round-trip without becoming a dense matrix.
+
+### Measured million-cell evidence
+
+On the documented Apple M2 Pro/16 GB reference machine with headless Chrome
+149, the 100,000-row × 10-column XLSX fixture reached an interactive editor in
+0.480 seconds median, scrolled continuously at 120.1 FPS with a 12.9 ms p95
+frame interval and no scroll Long Tasks, retained about 38.41 MiB and 903 DOM
+nodes, and reached `J100000` through `Ctrl+End` in 77.3 ms. Consecutive
+controlled edits completed in 52.5 ms and 45.9 ms wall time. Run
+`bun run performance:large-spreadsheets` and
+`bun run performance:large-spreadsheet-edits` against the local production
+preview to reproduce the current fixture. See the
+[complete methodology and ranges](../browser-editor-architecture.md#current-100000-unit-evidence).
+
+This is a rectangular one-million-populated-cell workbook fixture, not a
+semantic ListObject benchmark. It quantifies import, visible-range Canvas
+painting, navigation, and controlled cell publication. Structured-reference
+calculation has its own bounded kernel path, but this fixture does not publish
+its calculation latency. It also does not quantify calculated-column fill,
+totals-row recalculation, table conversion, or table-part export. It also does not
+authorize unbounded full-selection formatting:
+text orientation is capped at 10,000 cells, and one visibility command is
+capped at 10,000 rows or 1,000 columns before any native index array is built.
+
+## Native Tables and ListObjects
+
+Insert and Tables exposes Table. Press `Cmd/Ctrl+T` while the live worksheet
+grid has focus to open the same accessible creation dialog; browser tabs, host
+inputs, the formula bar, active cell editing, popovers, and modal controls keep
+their native shortcut behavior. A one-cell selection expands to its finite
+current region. An explicit multi-row selection remains exact. The dialog
+captures that range and whether its first row already contains headers.
+
+Each table is a semantic `WorkSpreadsheetTable`, not a cell-color convention:
+
+```ts
+const sheet = {
+  id: 'sheet-data',
+  tables: [
+    {
+      id: 'table-orders',
+      name: 'Orders',
+      range: { row: [2, 6], column: [0, 6] },
+      columns: [
+        { name: 'Order' },
+        { name: 'Owner' },
+        { name: 'January' },
+        { name: 'February' },
+        { name: 'March' },
+        { name: 'Completion' },
+        { name: 'Status' },
+      ],
+      filters: [],
+      headerRow: true,
+      totalsRow: false,
+      style: { family: 'medium', number: 2 },
+      showFirstColumn: false,
+      showLastColumn: false,
+      showRowStripes: true,
+      showColumnStripes: false,
+    },
+  ],
+};
+```
+
+Creation assigns a workbook-unique `TableN` name. Existing valid header text is
+retained; blank, invalid, or duplicate headings become unique canonical column
+names and are written back to the header cells. One table may contain at most
+100,000 cells. The editor rejects ranges that are empty, out of bounds,
+protected, merged, on a pivot worksheet, overlapping another table, or
+intersecting the worksheet-level AutoFilter. No rejected request changes
+cells, table records, selection, or history.
+
+Selecting a table activates the contextual Table Design ribbon. It edits the
+workbook-unique name and exposes all 60 native OOXML built-in appearances:
+Light 1–21, Medium 1–28, and Dark 1–11. The gallery uses grouped
+`menuitemradio` choices and two-dimensional Arrow, Home, and End navigation at
+desktop and compact widths. First Column, Last Column, Row Stripes, and Column
+Stripes update the semantic flags. Closing or choosing a style restores the
+exact gallery trigger; commands that return to worksheet editing restore the
+grid. Each accepted creation or design intent publishes one controlled value
+and creates one Undo record.
+
+Table appearance is resolved during Fortune's visible-cell Canvas callbacks.
+Only the current row and column viewport receives the header, body, stripe,
+emphasis, text, and border paint. The renderer does not stamp table colors into
+controlled cells and conditional formatting remains the higher-priority visual
+layer. This keeps ordinary table styling proportional to the visible viewport
+instead of the complete ListObject area.
+
+Convert to Range removes the semantic table record only after materializing
+the confirmed appearance into native cell fills, text emphasis, and borders.
+The conversion retains dense worksheets when their bounded footprint is safe
+and falls back to sparse `celldata` when a matrix expansion would exceed its
+one-million-slot guard. It never allocates unrelated rows or columns. A table
+referenced by a detected structured-reference formula, named range,
+validation, conditional-format rule, or chart fails closed rather than leaving
+a broken reference.
+
+Existing row and column insert/delete commands reconcile table ranges,
+relative filter columns, column definitions, and header names. They reject
+deletion of a required header, totals, or last body row. Merge commands and
+worksheet AutoFilter commands reject intersections with a table, so there is
+one structural authority for each covered range.
+
+When a table column contains one consistent current-row formula, the table
+model records it as a calculated-column rule. Inserting one or more rows inside
+the table body fills that rule into the new cells, including sparse
+`celldata` sheets. The fill is intentionally conservative: it touches only
+empty cells, preserves presentation metadata, and never overwrites an existing
+value or formula. A manually different current-row formula is treated as an
+exception; if multiple formulas conflict, the column loses its automatic rule
+until a consistent formula is authored again. Rows inserted outside the table
+body do not trigger a fill.
+
+### Native totals-row authoring
+
+The creation dialog can enable a totals row immediately. On an existing table,
+select any table cell and open **Table Design → Totals Row**. The same dialog
+enables or disables the row and assigns each column one of these states:
+
+| State | Controlled metadata | Worksheet cell |
+| --- | --- | --- |
+| No total | no totals field | Preserves a manual cell; a previously generated value is cleared |
+| Label | `totalsLabel` | Plain text, with `Total` added to the first eligible column when the row is first enabled |
+| Native aggregate | `totalsFunction` | Filter-aware `SUBTOTAL` over that table column |
+| Custom | `totalsFunction: 'custom'` plus `totalsFormula` | The validated leading-`=` formula |
+
+The native aggregate set is `sum`, `average`, `count`, `countNums`, `max`,
+`min`, `stdDev`, `stdDevP`, `var`, and `varP`. It maps to `SUBTOTAL` function
+codes 101–111, so rows removed by table filtering do not contribute. The shared
+Rust core, WebAssembly kernel, persistent Worker session, and JavaScript
+fallback accept `SUBTOTAL` with 2–255 arguments. A custom formula is limited to
+8,192 characters and rejects control characters, external references, and the
+unsafe dynamic/executable function set. Labels are trimmed, XML-safe, and
+limited to 255 Unicode code points.
+
+Enabling the row extends the ListObject by exactly one worksheet row. The
+operation fails before mutation when that row is occupied, merged, protected,
+outside worksheet or XLSX bounds, part of another table or AutoFilter, or when
+the resulting table exceeds its 100,000-cell limit. Disabling the row removes
+only generated totals content. Row and column structure commands move the
+totals row and its metadata together. A table rename rewrites formulas that
+still match the generated `SUBTOTAL` form but preserves custom or directly
+edited formulas. Directly typing into a totals cell reconciles the column back
+to a label, custom formula, or no-total state instead of leaving stale metadata.
+
+Dense `data` and sparse `celldata` worksheets use the same immutable path.
+Table style rendering includes the totals row without stamping colors into
+off-viewport cells. Yjs validates and synchronizes the per-column fields, and
+XLSX import/export round-trips `totalsRowCount`, `totalsRowFunction`,
+`totalsRowLabel`, and `totalsRowFormula` without flattening the ListObject.
+
+XLSX import reads native table parts, relationships, numeric OOXML identity,
+name/display name, range, columns, header/totals flags, built-in style identity,
+style options, the supported value/custom/top/dynamic filter criteria, and
+`<calculatedColumnFormula>` rules. Export regenerates table parts, worksheet
+relationships, content-type entries, `tableColumns`, `autoFilter`, and
+`tableStyleInfo` without flattening the table to cell colors. The controlled
+model stores calculated formulas with a leading `=`; table XML omits that
+character and import restores it. Unsafe, external, malformed, or overlong
+rules are omitted rather than emitted. Slicers, external/query tables, and
+advanced table integrations remain explicit boundaries; native tables must not
+be interpreted as complete Excel or Traditional Office table parity.
+
+Focused model, reconciliation, command, dialog, ribbon, Canvas, collaboration,
+and native XLSX tests cover this contract. Desktop and compact Playwright own
+the visual regression. The deterministic
+`tests/e2e/spreadsheet-table.acl` and
+`tests/e2e/spreadsheet-table-totals.acl` suites are checked and run through the local
+release gate with A3S Test 1.0.0, standalone agent-browser 0.26.0, Web protocol
+revision 15, and the already installed Playwright Chromium. GitHub Actions and
+Pages do not install or invoke A3S Test.
+
+## Structured-reference calculation
+
+The browser calculation kernel resolves a bounded, commonly authored subset of
+native table formulas. It accepts a table `name` or `displayName`, an optional
+worksheet qualifier, and contiguous column selections in these forms:
+
+```text
+=SUM(Sales[Revenue])
+=SUM(Sales[[Units]:[Unit price]])
+=COUNTA(Sales[#Headers])
+=SUM(Sales[#Data])
+=SUM(Sales[#Totals])
+=[@Units]*[@[Unit price]]
+```
+
+`#All`, `#Headers`, `#Data`, `#Totals`, and `#This Row` resolve against the
+table's explicit header and totals flags. A table-local `[@Column]` formula
+must be inside a data row. The same current-row formula can be authored in a
+calculated column one cell at a time or inferred from matching body formulas.
+A qualified form such as
+`=SUM(Sales!Sales[Revenue])` is checked against the owning worksheet instead of
+silently resolving a same-named table elsewhere.
+
+Rust/WASM and the JavaScript fallback share the same parser, table catalog,
+dependency edges, and projection semantics. Incremental sessions retain the
+catalog and recalculate only dirty dependents, while a structural table edit
+uses a checked replacement snapshot. Formula results are applied as
+no-history projection updates, so recalculation never creates a second Undo
+step or turns a cached value into user input.
+
+The calculation request accepts at most 1,024 tables and materializes at most
+100,000 cells for one structured range. Whole-row or whole-column expansion,
+three-dimensional references, external workbooks, reversed or disjoint column
+areas, missing tables/columns/rows, and ranges beyond the bound fail closed
+with a cell-scoped diagnostic. The public Playground **新建 → 结构化引用**
+template opens a `Sales` ListObject with a calculated `Revenue` column, a
+totals row, header/data/all examples, and a second sheet using a qualified
+reference. This is a real editable workbook, not a documentation-only fixture.
+
+Focused Rust, browser-kernel, session, XLSX, and Playground tests cover parser
+parity, dependency invalidation, stale-result rejection, and sparse bounds.
+The current million-cell performance table above remains a rectangular
+workbook baseline; a dedicated large-ListObject benchmark is still required
+before publishing table-specific latency or memory targets.
+
+## Multi-key custom sort
+
+**Data → Sort and Filter → Custom Sort** captures one normalized continuous
+selection and its worksheet identity when the dialog opens. The Traditional Office-compatible
+**Options** dialog switches between **Sort top to bottom**, whose column keys
+move complete rows, and **Sort left to right**, whose row keys move complete
+columns. The same dialog chooses Simplified Chinese **Pinyin** or **Stroke**
+text order and can enable case-sensitive comparison; pinyin and
+case-insensitive comparison are the defaults. Top-to-bottom mode detects a probable header row, keeps that choice
+editable, and starts with the active column. Left-to-right mode starts with the
+active row and disables header retention because every selected column moves.
+Users can add, remove, or reorder as many as 64 unique sort keys. Each value key
+sorts ascending or descending. Finite numbers use numeric order; text uses the
+selected local collation, and text containing digits stays lexical (`K1`,
+`K100`, `K11`, `K2`). Case-sensitive ascending order places a lowercase form
+before its uppercase form. Equal records retain their source order, and blank
+cells stay at the end in both directions.
+
+Each key can instead use one of seven built-in Chinese or English month and
+weekday sequences, or a user-authored sequence entered with one item per line
+or comma. A custom sequence accepts 2–256 unique entries, at most 128 Unicode
+code points per entry and 4,096 in total. Matching trims values and normalizes
+case plus full-/half-width forms. Listed values come first in the authored
+order; unlisted values then use natural ascending order, equal ranks remain
+stable for later keys, and blanks still stay last. Reverse order is expressed
+by reversing the authored sequence.
+
+The seven built-ins are immutable. **Custom Lists** opens a keyboard-accessible
+preference manager that keeps those built-ins read-only and lets users create,
+edit, delete, and reorder up to 32 user sequences. Edits are staged until
+**OK**, while **Cancel** discards the complete draft. Duplicate sequences and
+over-budget input fail locally. Editing a sequence already used by a sort key
+updates that captured key; deleting it deliberately returns the key to
+ascending value order. Confirming an unchanged manager performs no store write,
+and closing it restores the exact invoking button.
+
+User sequences are reusable while the current editor instance remains mounted.
+To retain their content and preference order across workbook changes, full-page
+reloads, and editor remounts, pass the explicit typed `sortCustomListStore`
+property. The editor never writes these preferences into controlled workbook
+content. Every accepted sort request carries its normalized sequence, so
+execution never depends on mutable dialog state.
+
+The package includes an opt-in browser store. Create it once in a browser-owned
+module so its identity stays stable across React renders:
+
+```tsx title="PersistentSpreadsheet.tsx"
+import { LocalStorageSpreadsheetSortCustomListStore } from '@a3s-lab/office/core';
+import { SpreadsheetEditor } from '@a3s-lab/office/react';
+
+const sortCustomListStore = new LocalStorageSpreadsheetSortCustomListStore(
+  window.localStorage,
+);
+
+<SpreadsheetEditor
+  content={content}
+  onChange={setContent}
+  sortCustomListStore={sortCustomListStore}
+/>;
+```
+
+`SpreadsheetSortCustomListStore` has synchronous `load()` and `save(lists)`
+methods, so a host can supply another local settings backend as a typed object.
+Vue accepts the same object as the `sortCustomListStore` prop; a Web Component
+host assigns it to the element's `sortCustomListStore` JavaScript property, not
+an HTML attribute.
+The provided implementation stores a versioned payload under
+`a3s-office.spreadsheet-sort-custom-lists.v1`, validates and deduplicates it on
+read, and ignores corrupt or unsupported data. If a write fails, the complete
+changed preference set remains available for the current session and the editor
+reports the failure.
+
+The same **Sort On** control can instead target an effective cell color,
+effective font color, or conditional-format icon. A visual target is placed at
+the top or bottom for row movement and at the left or right for column movement;
+adding another level expresses the next color or icon in the priority.
+Appearance levels remain stable, so later value, custom-list, or appearance
+keys resolve matching and non-matching ties without losing source order.
+
+Available targets come from a bounded snapshot of each selected key field.
+Calculated conditional formatting overrides direct presentation, while direct
+solid fill, no fill, explicit font color, and automatic font color retain
+distinct identities. Native gradient and pattern fills remain intact but are
+not exposed as a misleading single-color target. The command reconstructs and
+validates the effective snapshot immediately before the one native range batch,
+so it does not trust stale dialog state.
+
+A partial column, narrow rectangle, or single-cell selection first uses the
+same dense/sparse current-region model as AutoFilter. When adjacent data makes
+that region larger, Custom Sort and quick ascending/descending commands open an
+accessible Traditional Office-style Sort Warning. **Expand the selection** is
+the default; **Continue with the current selection** remains available when
+that exact rectangle is independently safe. A single cell cannot be sorted by
+itself, and protection or structural ownership can disable only the affected
+candidate.
+Automatic header detection accepts real non-formula text values, so formatted
+numbers and formula results are not mistaken for headers.
+
+Sorting moves complete rows or columns, including native formatting, comments,
+and other cell-owned metadata. A formula translates relative references along
+the axis on which its record moves; absolute references remain fixed. If any
+translated reference would leave the worksheet, the entire request fails
+before mutation. An unfiltered request uses one native range write. A
+filter-active owned sort uses one controlled workbook replacement so cell order
+and row visibility cannot diverge. Both paths create one Undo record. Closing
+or applying either dialog restores the exact ribbon invoker, after which the
+grid can continue keyboard navigation.
+
+When a selection lies anywhere inside exactly one semantic ListObject or
+worksheet AutoFilter, the Sort Warning offers only that structure's complete
+sortable range. A table range keeps its header in place and excludes an enabled
+totals row; an AutoFilter range keeps its filter header in place. Both lock
+top-to-bottom orientation and the structural header choice. The request carries
+the owner kind, table ID when applicable, and header state. Immediately before
+mutation, the command derives the owner again and requires the same exact range
+and fingerprint, so a replaced table, changed totals state, or moved filter
+fails without changing cells.
+
+After an owned row sort, typed worksheet and table conditions are evaluated
+again against the sorted dense or sparse cells. Native Fortune value/color
+filters that expose only opaque `caljs` state instead remap their hidden-row
+ownership through the stable source-row permutation. Independently hidden rows
+remain hidden, and the live grid receives the sorted cells plus reconciled
+visibility in the same controlled history step. Hidden native rows omitted by
+Fortune's range reader are recovered from the bounded controlled snapshot.
+
+The selected rectangle may contain at most 1,000,000 cells. Top-to-bottom mode
+must leave at least two data rows after the optional header; left-to-right mode
+requires at least two columns, accepts only in-range row keys, and cannot retain
+a header column. Read-only rows or columns, locked cells, merged ranges, pivot
+output, malformed matrices, duplicate or out-of-range keys, and over-budget
+requests fail closed. A selection that
+intersects a semantic ListObject or worksheet AutoFilter without resolving to
+that structure's exact sortable owner still fails closed. Intersections with
+coordinate-owned hyperlink maps, imported formula source/range metadata, or
+native border records fail for the same reason. Filter reconciliation is
+separately capped at 1,000,000 cell-condition visits. Sidecar migration and
+large-sort Worker/WASM execution remain explicit follow-up work.
+
+The warning freezes the original selection, both candidate rectangles, active
+row and column, worksheet, and sort intent. Applying an expanded range is authorized
+only while the controlled live selection still equals the original selection;
+a host remount or selection change invalidates the request before mutation.
+
+Focused model, dialog, command, ribbon, and formula-translation Rstest cover
+the bounded contract. Playwright exercises the real dialog and moved formula;
+`tests/e2e/spreadsheet-custom-sort.acl` uses the pinned local A3S Test gate to
+verify the two-key workflow, one-step Undo, accessibility, and empty console
+and page-error diagnostics. `tests/e2e/spreadsheet-sort-range.acl` additionally
+verifies the exact and expanded warning paths, focus restoration, formula-safe
+row movement, and Undo. `tests/e2e/spreadsheet-custom-list-sort.acl` covers
+invalid input, atomic preference editing, deletion and reordering, saved-list
+reuse after a full-page reload, formula-safe custom-list row movement, and Undo.
+The companion desktop/compact Playwright path also verifies the responsive
+manager, read-only built-ins, exact focus restoration, and clean browser
+diagnostics.
+`tests/e2e/spreadsheet-appearance-sort.acl` applies cell-color, font-color, and
+conditional-icon levels together, then verifies the moved formula, one-step
+Undo, focus, accessibility, and empty browser diagnostics.
+`tests/e2e/spreadsheet-row-sort.acl` switches direction through Sort Options,
+applies two row keys to complete columns, and verifies horizontal formula
+translation, one-step Undo, focus, accessibility, and empty diagnostics.
+`tests/e2e/spreadsheet-text-sort.acl` selects stroke and case-sensitive text
+comparison, verifies lowercase tie-breaking and a translated formula, then
+checks immediate post-remount keyboard focus, Undo, accessibility, and clean
+diagnostics.
+`tests/e2e/spreadsheet-owned-range-sort.acl` verifies the table-owned warning,
+locked header and direction, formula translation, focus, and one-step Undo. Its
+desktop/compact Playwright companion additionally exercises a real native
+AutoFilter value selection and proves hidden-row ownership follows the sorted
+records and the Undo result.
+GitHub Actions and Pages do not install or invoke A3S Test.
+
+## Worksheet AutoFilter conditions
+
+Enable **Data → Sort and Filter → Filter** or press `Cmd/Ctrl+Shift+L`, then
+open an active header and choose **Filter by condition**. The A3S-owned
+**Custom AutoFilter** dialog supports equal and not equal, contains and does
+not contain, begins/does-not-begin with, ends/does-not-end with,
+greater/greater-or-equal,
+less/less-or-equal, inclusive between/not-between, blanks, and nonblanks.
+Numeric conditions require finite bounds and reject a reversed range before
+the command can run.
+
+For common custom comparisons, **Add second condition** creates exactly one
+additional condition and joins the pair with **AND** or **OR**. The controlled
+model uses a fixed two-item tuple of nonrecursive conditions; ranges, blank
+selectors, Top/Bottom, and dynamic families cannot become nested predicates.
+
+**Wildcard match** and **Wildcard does not match** preserve one explicit native
+expression instead of changing the meaning of existing literal equality.
+`*` matches zero or more normalized Unicode characters, `?` matches one, and
+`~` escapes `*`, `?`, or `~`. Expressions share the 32,767-character filter
+operand ceiling and may be used in either position of the fixed AND/OR pair.
+
+For a numeric column, its filter menu also exposes **Top 10 Items**. The dialog
+supports top or bottom 1–500 items and 1–100 percent, accepts integers only, and
+keeps every value tied at the selected boundary. Percentage counts round up;
+text, Boolean, blank, and nonfinite cells are excluded from the ranking domain.
+
+The same dialog exposes **Above Average** and **Below Average** for numeric
+columns. Their arithmetic mean is compiled once per application; comparison is
+strict, so values equal to the mean stay hidden for both conditions. Typed date
+columns expose Today, Yesterday, Tomorrow, last/this/next week, month, quarter,
+and year, Year to Date, calendar quarters 1–4, and calendar months 1–12. These
+dynamic choices take no operand and cannot be combined with a second condition.
+
+Date evaluation accepts imported `Date` values and finite numeric serials whose
+native cell type is `ct.t='d'`; an ordinary unformatted number is never silently
+treated as a date. The workbook's `dateSystem` selects the 1900 or 1904 epoch
+for the complete dynamic family. The 1900 path rejects Excel's fictional serial
+60, while 1904 serial zero maps to 1904-01-01. Relative conditions use the
+user's local civil date, Sunday-start weeks, inclusive starts, and exclusive
+ends. Year to Date includes the current local day. The clock is an explicit
+pure-model input for deterministic tests, while editor commands supply the
+current local time.
+
+Each active column owns its own hidden-row set. Conditions on different
+columns therefore combine as an intersection of visible rows, and clearing one
+column removes only that column's ownership. Rows hidden independently through
+worksheet row visibility stay hidden when a condition is replaced, cleared, or
+when AutoFilter is disabled, including the case where a manual row and a
+condition overlap. Dense `data` and sparse `celldata` worksheets use the same
+evaluator without materializing unrelated cells.
+
+Applying or clearing a condition crosses the editor through the typed
+`spreadsheetAutoFilter` command extension. It rechecks editability, the active
+sheet, the exact live filter range, and the absolute target column immediately
+before one controlled workbook update and one Undo record. A host remount or
+stale menu target fails closed. The dialog preserves the frozen live selection
+through the controlled remount and restores focus to the originating filter
+header.
+
+Native worksheet `<autoFilter>` / `<filterColumn>` criteria use the same closed
+filter union as native tables and round-trip through XLSX import and export.
+Supported imported value and common custom conditions are recomputed in the
+browser, so their filter-owned rows are inferred from the current cells. OOXML
+cannot recover an imported manual hide that exactly overlaps such an inferred
+filter hide. Imported Top/Bottom item and percentage criteria are recomputed
+from finite numeric cells and written back as native `<top10>` elements.
+Imported dynamic criteria are recomputed from current numeric or typed-date
+cells and written back as native `<dynamicFilter>` elements. General two-item native
+`<customFilters and="1|0">` groups preserve
+their AND/OR relation, including negative prefix and suffix operators.
+Arbitrary positive and negative wildcard expressions retain their native
+`<customFilter>` values; canonical leading/trailing-star forms still normalize
+to contains, begins-with, or ends-with criteria. Owned Custom Sort now
+recomputes these typed conditions after row movement and remaps opaque native
+value/color filter rows by the stable sort permutation. Source-level 1900/1904
+date-system retention is exact; large aggregate/rank Worker/WASM offload remains
+an explicit boundary.
+
+Focused model, command, dialog, Hook, import, XLSX, and multi-time-zone Rstest
+cover the bounded contract. Desktop and compact Playwright exercise the real
+vendor header menu, owned dialog, dynamic-average authoring, selection
+retention, apply, and Undo. The local-only
+`tests/e2e/spreadsheet-ribbon-alignment.acl` A3S Test gate additionally checks
+accessibility and empty console/page-error diagnostics; GitHub Actions and
+Pages do not install or invoke A3S Test.
+
+## XLSX 1904 date-system retention
+
+`SpreadsheetContent.dateSystem` is the single workbook epoch. Omission and
+`'1900'` mean the standard Excel system; `'1904'` is retained explicitly from
+`workbookPr date1904`. XLSX import keeps date-formatted cells as their exact
+numeric serials instead of converting them through JavaScript `Date`, so 1904
+serial zero and historical civil dates cannot drift with the host time zone.
+Export writes the workbook flag and preserves date-typed scalar and formula
+cache values as native numbers.
+
+The same epoch drives dynamic AutoFilter detection and evaluation, column
+profiling, filter reconciliation after edits and owned-range sorts, and
+`Ctrl+;` current-date insertion. Controlled editor remounts retain the field;
+Yjs/Yrs collaboration validates it as a closed `1900 | 1904` choice and merges
+it independently from calculation settings. A real XLSX package regression
+covers import, filtering, export, and reopen, while
+`tests/e2e/spreadsheet-1904-date-system.acl` verifies the imported epoch,
+serial-zero visibility, hidden-row ownership, filter UI, controlled reopen,
+accessibility, and clean browser diagnostics.
+
+## Find and Go To
+
+Home and Editing exposes one Office-style Find and Select menu. Find keeps the
+editor-owned `Cmd/Ctrl+F` workflow for displayed values, raw values, formulas,
+and materialized sparse cells. Go To opens from the same menu, `Ctrl+G`, or
+`F5`. These shortcuts are owned only while the live workbook grid has focus;
+host inputs, the formula bar, active cell editing, popovers, and modal controls
+retain their native keyboard behavior.
+
+Go To accepts one direct A1 cell or continuous range, an optional quoted sheet
+qualifier such as `'Archive 2025'!$C$9:$E$12`, or a workbook- or
+worksheet-scoped name from `content.namedRanges`. Worksheet-scoped names take
+precedence over workbook names. Reversed and absolute references normalize to
+one increasing range. Multi-area references, formulas stored as names,
+ambiguous names, missing or hidden sheets, and coordinates outside both the
+worksheet and XLSX limits fail with field-level feedback before navigation.
+
+A successful command activates the target worksheet, selects the normalized
+range, scrolls the focused cell into view, and returns focus to the grid. It is
+a view operation: it does not call `onChange`, create an Undo record, write a
+selection into controlled content, or materialize a sparse row or cell. The
+same view-only navigation primitive is used when following a remote
+collaboration participant. Rstest and Playwright are the CI and Pages gates;
+the equivalent A3S Test ACL remains local-only.
+
+## Hyperlinks
+
+Insert and Links exposes the Office-style Hyperlink command. Press `Cmd/Ctrl+K`
+while the live workbook grid has focus to open the same accessible dialog for
+the exact active cell. The shortcut is not captured from host inputs, the
+formula bar, active cell editing, popovers, or modal controls. Cancel and
+Escape restore the exact ribbon button or grid node that opened the dialog.
+
+| Link type | Stored target | Accepted input |
+| --- | --- | --- |
+| Web page | Fortune `webpage` | An HTTP or HTTPS URL; a missing scheme normalizes to HTTPS |
+| Cell range | Fortune `cellrange` | One A1 cell or continuous range, optionally qualified by a quoted worksheet name |
+| Worksheet | Fortune `sheet` | One existing visible worksheet |
+
+The same surface edits an existing native link and exposes Remove. Display
+text is optional and changes only when explicitly submitted; formula cells keep
+their calculated display text. Unsafe schemes, missing or hidden worksheets,
+invalid or out-of-bounds ranges, read-only views, protected source cells, and
+pivot-output cells fail before any content change.
+
+Apply and Remove use an A3S-owned immutable path instead of Fortune's destructive
+hyperlink helpers. A single intent publishes one controlled workbook value and
+one Undo record while retaining the worksheet's existing dense `data` or sparse
+`celldata` representation, values, formulas, formatting, comments, unrelated
+hyperlinks, and malformed vendor records. The captured selection is restored
+after a controlled remount. Focused model, command, dialog, editor, desktop, and
+compact regressions cover the contract. The deterministic
+`tests/e2e/spreadsheet-hyperlink.acl` suite runs only through the local release
+gate with A3S Test 1.0.0, agent-browser 0.26.0, and Web protocol revision 15;
+GitHub Actions and Pages do not install or invoke A3S Test.
+
+## Paste Special and the rich clipboard
+
+Home and Clipboard exposes Paste as an Office-style split command. The primary
+button pastes All. The disclosure menu provides quick All, Values, Formulas,
+and Formatting actions plus Paste Special. Press `Cmd/Ctrl+Alt+V` while the
+workbook grid has focus to open the same dialog. Host inputs, the formula bar,
+active cell editing, popovers, and modal controls keep their native clipboard
+shortcuts.
+
+| Content mode | Copied state |
+| --- | --- |
+| All | Values, formulas, native formatting, comments, validation, protection, hyperlinks, borders, and complete in-range merges |
+| Formulas | Formulas when present, otherwise values |
+| Values | Displayed scalar values without formulas |
+| Formatting | Native cell styles, borders, and protection only |
+| Comments | Cell comments only |
+| Validation | Data-validation rules only |
+| All except borders | All supported state except native border records |
+| Formulas and number formats | Formulas or values plus native number formats |
+| Values and number formats | Scalar values plus native number formats |
+| Column widths | Source column widths only |
+
+The dialog can apply Add, Subtract, Multiply, or Divide to numeric content.
+Skip blanks leaves existing destination cells untouched where the source is
+blank. Transpose swaps rows and columns before planning the destination.
+Column-width mode deliberately disables arithmetic, Skip blanks, and
+Transpose. Divide rejects a zero source operand before any cell changes.
+
+Copying inside one mounted editor captures a versioned rich snapshot in
+addition to `text/plain`. The snapshot preserves the source range, exact cell
+records, border fragments, comments, validation, explicit protection,
+hyperlinks, complete merges, and column widths. If the browser denies or does
+not settle system clipboard access, the editor-local copy remains usable.
+Clipboard text that does not match the last rich copy is parsed as rectangular
+tab-separated text, so content copied from another application stays portable
+without being treated as trusted native formatting.
+
+Relative and mixed formula references translate by the source-to-destination
+offset; absolute rows and columns remain fixed. One successful paste produces
+one immutable workbook value, one `onChange`, and one Undo record for the
+complete destination. The selected pasted range remains active and dialog
+Apply restores the current grid node after a controlled remount. Planning is
+bounded to 50,000 destination cells and fails closed for pivot worksheets,
+partial merge intersections, conflicting destination merges, protected or
+read-only cells, worksheet/XLSX bounds, malformed snapshots, and unsupported
+external-workbook formula state. No rejected request partially changes cells,
+styles, widths, merges, or history.
+
+Focused model, controller, dialog, clipboard-fallback, desktop, and compact
+browser regressions cover the workflow. The deterministic
+`tests/e2e/spreadsheet-paste-special.acl` suite is part of the local release
+gate and captures accessibility, console, and page-error evidence. Playwright
+owns the bounded visual evidence while the pinned standalone adapter's CDP
+screenshot command remains unreliable.
+GitHub Actions and Pages use the equivalent Rstest and Playwright coverage and
+do not install or invoke A3S Test.
+
+## Data validation
+
+Data and Data Tools exposes the Office-style Data Validation command. It captures
+the active worksheet, focused cell, and every live selected range when the
+dialog opens. Cancel and Escape publish nothing. Apply and Remove each emit one
+controlled workbook value, create one Undo record, preserve every captured
+range through the controlled remount, and restore the exact ribbon invoker or
+current grid node.
+
+| Rule | Accepted boundary or source |
+| --- | --- |
+| List | Comma-separated values up to 255 characters, one continuous row or column, or a worksheet/workbook named range |
+| Whole number | Integer boundaries with between, comparison, and equality operators |
+| Decimal | Numeric boundaries with between, comparison, and equality operators; integers remain valid decimal inputs |
+| Date | `YYYY-MM-DD`, an integer Excel date serial, or `DATE(year,month,day)` |
+| Text length | Non-negative integer boundaries with between, comparison, and equality operators |
+
+### Input and error settings
+
+The same dialog owns the complete common validation metadata instead of keeping
+a second file-only settings path:
+
+| Model field | Dialog behavior | Native XLSX field |
+| --- | --- | --- |
+| `allowBlank` | Ignore or validate an empty cell | `allowBlank` |
+| `showDropdownArrow` | Show or hide the in-cell list arrow | inverse of `showDropDown` |
+| `hintShow`, `hintTitle`, `hintValue` | Show a titled message when the validated cell is selected | `showInputMessage`, `promptTitle`, `prompt` |
+| `prohibitInput` | Enable the invalid-value alert | `showErrorMessage` |
+| `errorStyle` | Store `stop`, `warning`, or `information` | `errorStyle` |
+| `errorTitle`, `errorMessage` | Supply the authored alert copy | `errorTitle`, `error` |
+
+Titles are limited to 32 Unicode code points, the input message to 255, and the
+error message to 225. Turning either message off keeps its inactive title and
+body so re-enabling it does not erase the draft. Missing legacy A3S fields
+normalize to Ignore blank enabled, dropdown arrow visible, and Stop style.
+
+Compact rules are resolved directly by the mounted grid. It honors
+`allowBlank`, hides the arrow when `showDropdownArrow` is false, displays the
+authored input title and message, and uses the authored error title/message for
+invalid input. Fortune currently exposes one blocking browser alert path for
+every enabled error alert. Warning and Information therefore retain exact XLSX
+semantics for native reopen, while their distinct confirm-or-cancel desktop
+flows remain a documented browser boundary.
+
+A list range may qualify a visible worksheet name and must resolve to exactly
+one row or one column. Between and not-between rules require an ordered second
+boundary. Date values normalize to ISO inside the browser so Fortune compares
+calendar dates rather than millisecond-like serial strings. XLSX import honors
+the workbook's 1900 or 1904 date system; export writes normalized dates as
+native `DATE(...)` formulas. Imported XLSX `decimal` validation maps to
+Fortune's general numeric rule instead of its decimal-only vendor mode, so an
+integer is not rejected incorrectly.
+
+One gesture may cover multiple non-overlapping selections and at most 10,000
+cells in total. The command rejects malformed or out-of-bounds ranges,
+two-dimensional list sources, invalid or reversed boundaries, protected or
+merged cells, pivot output, and read-only views before mutation. Accepted rules
+remain compact in `dataValidationRanges`; selected direct rules are removed,
+compact rules are split only around the edited regions, and unrelated rules or
+malformed vendor records remain unchanged. Blank cells are never materialized.
+From the public Playground home page, choose **新建 → 数据验证**. The template
+provides list, date, and priority examples with input messages and Stop,
+Warning, and Information metadata; it is not hidden behind an E2E query.
+
+Focused model, XLSX, command, dialog, editor-history, ribbon, desktop, and
+compact regressions cover the workflow. The deterministic
+`tests/e2e/spreadsheet-data-validation.acl` suite is checked and run only by the
+local release gate with A3S Test 1.0.0, agent-browser 0.26.0, and Web protocol
+revision 15. GitHub Actions and Pages use Rstest and Playwright and do not
+install or invoke A3S Test.
+
+## Compact validation, protection, and formatting
+
+Large data-validation regions live in `sheet.dataValidationRanges` as compact,
+zero-based inclusive ranges:
+
+```ts
+const sheet = {
+  row: 1_048_576,
+  column: 16_384,
+  dataValidationRanges: [
+    {
+      ranges: [
+        { row: [0, 1_048_575], column: [0, 16_383] },
+      ],
+      item: {
+        type: 'dropdown',
+        type2: '',
+        rangeTxt: 'A1:XFD1048576',
+        value1: 'Ready,Blocked',
+        value2: '',
+        validity: '',
+        remote: false,
+        prohibitInput: true,
+        hintShow: true,
+        hintValue: 'Choose a workflow state.',
+      },
+    },
+  ],
+};
+```
+
+Imported or vendor-authored small ranges can also appear in Fortune Sheet's
+direct `dataVerification` map. An exact direct cell entry takes precedence over
+a matching compact range. Applying or removing a rule through the A3S dialog
+clears selected direct entries and updates compact ranges without expanding
+blank cells.
+
+Worksheet protection remains under `config.authority`. Large locked or
+unlocked regions are kept in `cellProtectionRanges`, and passwordless editable
+ranges remain compact in `allowRangeList`; only populated cells receive direct
+cell protection flags. Conditional-format rules continue to use compact
+`luckysheet_conditionformat_save[].cellrange` regions and evaluate populated
+cells only. Import and export preserve these compact ranges in native XLSX
+`sqref`, protection, and conditional-format records.
+
+The public workbook extension context is not yet stable. Use `fileActions` for
+host workflows and `onAgentRequest` for structured AI actions. Do not import
+command runtime modules from internal package paths.
+
+## Built-in cell styles
+
+Home and Styles exposes 17 Office-familiar built-in choices. The gallery renders
+the actual font, foreground, fill, and emphasis for every choice instead of a
+generic swatch. It uses semantic groups and `menuitemradio` state; Home and End
+move to the first or last choice, Left and Right move between adjacent choices,
+and Up and Down follow the three-column desktop or two-column compact layout.
+
+| Group | Styles |
+| --- | --- |
+| Common | Normal, Good, Bad, Neutral |
+| Data and Model | Calculation, Check Cell, Explanatory Text, Input, Linked Cell, Note, Output, Warning Text |
+| Titles and Totals | Heading 1, Heading 2, Heading 3, Heading 4, Total |
+
+One command accepts at most 10,000 cells. It materializes only the selected
+blank cells and writes Fortune Sheet's native `bg`, `fc`, `ff`, `fs`, `bl`,
+`it`, `un`, and `cl` properties. Values, formulas, number formats, alignment,
+wrapping, comments, links, and merge geometry remain unchanged. Styles that
+include a rule or total border write the corresponding edge to every cell, as
+required by XLSX Cell XF semantics, rather than drawing only the outside of the
+selection. The complete selection emits one controlled `onChange` and one Undo
+record.
+
+The ribbon derives the current choice from the focused cell's native format
+and resolved borders. There is no parallel style ID or private marker, so Clear
+Formats, Format Painter, direct formatting, collaboration, and imported cells
+continue to share one workbook model. A partially edited appearance is shown
+as Custom rather than being mislabeled as a built-in choice.
+
+XLSX import and export retain direct font family, size, color, bold, italic,
+underline, strikethrough, solid fill, horizontal and vertical alignment,
+wrapping, rotation, four side borders, diagonal borders, and the original
+number-format XF. RGB, theme, indexed, automatic, and valid tint colors resolve
+to stable browser RGB values. Style-only blank cells are retained as sparse
+materialized cells; unrelated empty worksheet space remains unallocated.
+
+## Font-size and border shortcuts
+
+Home and Font exposes visible Grow Font and Shrink Font buttons. The same typed
+commands own the familiar Traditional Office keyboard aliases while the live worksheet grid
+has focus:
+
+| Intent | Shortcuts |
+| --- | --- |
+| Grow Font | `Cmd/Ctrl+Shift+.` or `Cmd/Ctrl+]` |
+| Shrink Font | `Cmd/Ctrl+Shift+,` or `Cmd/Ctrl+[` |
+| Outside Borders | `Cmd/Ctrl+Shift+&` |
+| Clear Borders | `Cmd/Ctrl+Shift+_` |
+
+Font stepping uses one shared native scale: 9, 10, 11, 12, 14, 16, 18, 20,
+22, 24, 28, 36, 48, and 72 points. Every selected cell advances from its own
+current size, so a mixed selection is not flattened to the focused cell.
+Unformatted blank cells start at 10 points. Custom sizes within Fortune's
+1–409 point range move to the next scale value; a cell already beyond the last
+available step remains unchanged.
+
+Equal results are compacted into native rectangles and sent through one
+`batchCallApis` operation, producing one controlled update and one Undo record.
+One gesture accepts at most 10,000 cells and reads only that live rectangle.
+Outside Borders applies a thin black outline through the existing immutable
+border model; Clear Borders removes the selected border geometry. The border
+menu displays both shortcut hints and exposes the same values through
+`aria-keyshortcuts`.
+
+These shortcuts do not run from host inputs, the formula bar, active cell text
+editing, popovers that opt out of editor shortcuts, or modal controls. Focused
+Rstest plus desktop and compact Playwright are the browser gates. The
+deterministic `tests/e2e/spreadsheet-font-size-border-shortcuts.acl` suite runs
+only through the local A3S Test 1.0.0 release gate; GitHub Actions and Pages do
+not install or invoke A3S Test.
+
+## Advanced underline styles
+
+Home and Font exposes Underline as an Office-style split control. The primary
+button toggles the current cell or selection, while More Underline opens five
+native states shared with the Font tab in Format Cells:
+
+| Style | Fortune `un` | XLSX font value |
+| --- | --- | --- |
+| None | `0` | no `<u>` child |
+| Single | `1` | `<u val="single">`; an omitted `val` also imports as single |
+| Double | `2` | `<u val="double">` |
+| Single accounting | `3` | `<u val="singleAccounting">` |
+| Double accounting | `4` | `<u val="doubleAccounting">` |
+
+`Cmd/Ctrl+U` turns any active variant off instead of converting double or
+accounting underline to single. When the current selection has no underline,
+the same shortcut enables single underline. Ribbon, menu, dialog, shortcut,
+Undo, and controlled-host updates all operate on Fortune's native `un` value;
+there is no parallel presentation marker. Mixed selections in Format Cells
+remain untouched until the underline selector is explicitly changed.
+
+Native XLSX import and export preserve the exact OOXML underline value, while
+the SheetJS fallback normalizes Boolean, numeric, and named variants into the
+same five-state model. Unsupported or explicit none values remain unformatted.
+The split menu uses `menuitemradio` state, focuses the first available choice
+on open, restores the worksheet grid after a command, and exposes the shortcut through
+`aria-keyshortcuts`. Focused Rstest and desktop/compact Playwright cover the
+browser and XLSX paths. The deterministic
+`tests/e2e/spreadsheet-underline-styles.acl` suite is a local-only A3S Test
+1.0.0 gate with captured accessibility, screenshot, console, and page-error
+evidence; GitHub Actions and Pages do not install or invoke A3S Test.
+
+## Direct color resets, Traditional Office font aliases, and XLSX color identity
+
+Home and Font exposes the two absence states that a direct RGB swatch cannot
+represent. **Automatic Color** removes Fortune `fc`, allowing the workbook's
+font style to supply the visible text color. **No Fill** removes Fortune `bg`
+instead of writing white, so inherited, table, conditional-format, and host
+appearance can remain authoritative. Both actions use the existing typed cell
+format command, create one controlled update and one Undo record, close the
+palette, and return the final Spreadsheet command focus to the worksheet grid.
+
+The same command catalog owns the common Traditional Office/Excel font-emphasis aliases:
+
+| Intent | Primary shortcut | Traditional Office alias | Direct Fortune field |
+| --- | --- | --- | --- |
+| Bold | `Cmd/Ctrl+B` | `Ctrl+2` | `bl` |
+| Italic | `Cmd/Ctrl+I` | `Ctrl+3` | `it` |
+| Underline | `Cmd/Ctrl+U` | `Ctrl+4` | `un` |
+
+The aliases are scoped to the active worksheet grid. Host inputs, the formula
+bar, active cell editing, dialogs, and popovers retain their native keys.
+Ribbon titles, `aria-keyshortcuts`, the editor keymap, command availability,
+one-step Undo, and desktop/compact pressed state all resolve through the same
+typed formatting path.
+
+Imported XLSX direct colors now keep a validated semantic origin beside their
+rendered Fortune RGB. The supported preservation surface is deliberately
+bounded to font colors, solid-fill foreground colors, native pattern-fill
+foreground/background colors, and visible border-line colors. It records
+theme, indexed, or automatic identity, the source palette color, the rendered
+color, and a valid tint. That nested metadata survives the same flat JSON/Yjs
+cell transport as the rest of the cell.
+
+On export, a semantic origin is reused only when the current visible RGB still
+matches the imported rendered color and its palette slot can be reconstructed
+without conflict. An unrelated edit such as Bold can therefore retain native
+references such as `<color theme="4" tint="0.5">`, `<fgColor indexed="0">`,
+or `<color auto="1">`. If the user changes the visible color, two imported
+workbooks claim different colors for the same palette slot, or the color comes
+from an unsupported differential style, export uses explicit RGB
+rather than emitting a false semantic reference.
+
+Focused Rstest includes a real XLSX import, unrelated edit, export, reopen, XML
+identity, and rendered-RGB round trip. The
+`tests/e2e/spreadsheet-font-colors-shortcuts.acl` suite validates both Ribbon
+densities with A3S Test 1.0.0, standalone agent-browser 0.26.0, accessibility,
+and empty console/page-error evidence. It is a local-only release gate;
+GitHub Actions and Pages use the equivalent desktop/compact Playwright test and
+do not install or invoke A3S Test.
+
+## Native XLSX pattern fills
+
+Spreadsheet preserves the complete non-solid OOXML `patternType` vocabulary:
+
+| Family | Native pattern types |
+| --- | --- |
+| Dark lines and grids | `darkDown`, `darkHorizontal`, `darkUp`, `darkVertical`, `darkGrid`, `darkTrellis` |
+| Light lines and grids | `lightDown`, `lightHorizontal`, `lightUp`, `lightVertical`, `lightGrid`, `lightTrellis` |
+| Density patterns | `gray0625`, `gray125`, `lightGray`, `mediumGray`, `darkGray` |
+
+Each imported cell stores one validated `a3sXlsxPatternFill` value containing
+the exact pattern type, rendered foreground/background colors, and optional
+theme, indexed, automatic, or tint origins. Fortune `bg` remains the ordinary
+background-color projection. Pattern metadata is active only while that
+projection still matches the imported background, so stale metadata can never
+override an explicit user color.
+
+Rendering follows the worksheet appearance stack: conditional-format fill,
+table style, native pattern fill, then ordinary cell background. The Canvas
+hook intercepts only Fortune's first background paint for each visible cell,
+draws the background and a procedural clipped overlay behind text, restores
+the context immediately, and does no work for hidden or off-viewport cells.
+
+Format Painter and Paste Special Formats copy the pattern field. Unrelated
+font, border, alignment, value, formula, or number-format edits preserve it,
+and Yjs collaboration transports it as a native cell property. Choosing a new
+fill, No Fill, Clear Formats, or a built-in Cell Style removes the pattern in
+the same controlled update. Export writes the exact native pattern and reuses
+semantic foreground/background identities only when their rendered colors and
+palette slots still agree; a conflict falls back to literal RGB. Missing color
+elements use OOXML's black/white defaults, while present but malformed colors
+fail closed.
+
+The Format Cells Fill tab authors the same native model. It offers None, Solid,
+and all 17 Pattern choices, editable foreground/background colors, and an exact
+Canvas preview. Switching to another fill family keeps the inactive pattern
+draft until the dialog closes. Apply emits one controlled workbook update and
+one Undo record; export and reopen retain the authored `patternType` and colors.
+
+Open `?e2e=spreadsheet-pattern-fill` in the Playground to inspect all 17
+patterns and edit the selected cell through Format Cells. Focused Rstest covers
+import, Canvas ordering, Format Painter, Paste
+Special, Yjs, palette conflicts, and import-edit-export-reopen fidelity.
+`visual-tests/spreadsheet-pattern-fill.functional.spec.ts` adds desktop and
+compact Canvas pixel evidence plus edit, Apply, reopen, and Undo coverage. The deterministic
+`tests/e2e/spreadsheet-pattern-fill.acl` suite captures accessibility, console,
+and page errors through the local A3S Test 1.0.0 gate;
+GitHub Actions and Pages do not install or invoke A3S Test.
+
+## Native XLSX gradient fills
+
+Spreadsheet preserves both OOXML gradient families without flattening them to
+a solid color:
+
+| Native type | Preserved geometry | Visible-cell renderer |
+| --- | --- | --- |
+| `linear` | Exact finite `degree`; OOXML 0° runs left to right and 90° runs top to bottom | One native Canvas linear gradient spanning the complete cell bounds |
+| `path` | `left`, `right`, `top`, and `bottom` inner-rectangle edges in the 0–1 interval | At most 96 nested rectangular contours from the inner rectangle to the cell edge |
+
+Each `a3sXlsxGradientFill` field contains two through 256 ordered stops. Every
+stop retains its position, rendered color, and any validated theme, indexed,
+automatic, or tint origin. Fortune `bg` projects the first stop so ordinary
+toolbar and table logic still has a deterministic background. The native field
+is active only while `bg` still matches that projection; stale metadata cannot
+override an explicit color change.
+
+Conditional-format and table fills remain above native gradients in the
+appearance stack. The shared Canvas hook intercepts only Fortune's first
+background paint for a visible cell, restores the original `fillRect`
+immediately, and never allocates gradient work for hidden or off-viewport
+cells. Path rendering has a fixed 96-contour ceiling even for very large cells.
+
+Format Painter and Paste Special Formats copy the gradient field. Unrelated
+font, border, alignment, value, formula, or number-format edits and Yjs
+collaboration preserve it. Choosing a new fill, No Fill, Clear Formats, or a
+built-in Cell Style removes both native pattern and gradient metadata in the
+same controlled update. Export writes exact linear/path geometry and stops,
+reusing semantic color identities only when the prepared palette agrees;
+conflicts use literal RGB. Unknown types, malformed colors, descending or
+out-of-range stops, invalid path edges, ambiguous fill children, and more than
+256 stops fail closed.
+
+The Format Cells Fill tab authors both gradient families. Linear mode exposes
+the exact angle; Path mode exposes all four inner-rectangle edges. Users can
+add, remove, recolor, and reposition two through 256 ordered stops, and a new
+stop is inserted into the largest interval with an interpolated color. A live
+Canvas preview uses the production renderer. Descending positions or crossed
+path edges mark the draft invalid and disable Apply before any workbook
+mutation. Inactive pattern, solid, and gradient drafts survive mode switches.
+
+Open `?e2e=spreadsheet-gradient-fill` in the Playground for linear 0°, 45°,
+90°, and 135° examples plus two path gradients, then use Format Cells to edit
+the focused example. Focused Rstest covers import,
+Canvas ordering, edit propagation, collaboration, palette conflicts, and
+import-edit-export-reopen fidelity.
+`visual-tests/spreadsheet-gradient-fill.functional.spec.ts` supplies desktop
+and compact Canvas pixel evidence plus authoring, responsive containment,
+Apply, reopen, and Undo coverage. The deterministic
+`tests/e2e/spreadsheet-gradient-fill.acl` suite captures accessibility, console,
+and page errors through the local A3S Test 1.0.0 gate;
+GitHub Actions and Pages do not install or invoke A3S Test.
+
+## Text orientation and row/column visibility
+
+Home and Alignment exposes six Office-familiar text-orientation choices through
+one keyboard-accessible `menuitemradio` surface. The browser model stores
+numeric rotation in Fortune `rt`; stacked vertical text is the sole exception
+and uses Fortune `tr='3'`.
+
+| Choice | Visible angle | Fortune style | XLSX `textRotation` |
+| --- | ---: | --- | ---: |
+| Horizontal | 0° | `rt: 0` | `0` |
+| Angle Counterclockwise | +45° | `rt: 45` | `45` |
+| Angle Clockwise | -45° | `rt: 135` | `135` |
+| Vertical | stacked glyphs | `tr: '3'` | `255` |
+| Rotate Up | +90° | `rt: 90` | `90` |
+| Rotate Down | -90° | `rt: 180` | `180` |
+
+The mapping is loss-preserving for custom Format Cells angles as well:
+`+30°` writes `30`, `-30°` writes `120`, `-45°` writes `135`, and `-90°`
+writes `180`. Import accepts native OOXML 0–180 and stacked 255, plus legacy
+Fortune `tr` presets 0–5 and numeric `tr` values 6–180. Direct `rt` wins when
+both vendor fields exist. A numeric command clears stale `tr`; Vertical clears
+stale `rt`. One accepted intent covers at most 10,000 selected cells, sends one
+`batchCallApis` batch, produces one controlled update and one Undo record, and
+restores grid focus.
+
+Home and Cells extends Rows and Columns with Hide and Unhide. The exact same
+typed commands own the grid-scoped shortcuts:
+
+| Intent | Shortcut | Per-intent bound |
+| --- | --- | ---: |
+| Hide selected rows | `Cmd/Ctrl+9` | 10,000 rows |
+| Hide selected columns | `Cmd/Ctrl+0` | 1,000 columns |
+| Unhide selected rows | `Cmd/Ctrl+Shift+9` | 10,000 rows |
+| Unhide selected columns | `Cmd/Ctrl+Shift+0` | 1,000 columns |
+
+The bound is checked before allocating native string indexes. Hiding every
+logical row or column is rejected, and no command runs from host inputs, the
+formula bar, active cell editing, popovers, modal controls, read-only views, or
+repeated keydown events. Focused Rstest and XLSX coverage, desktop and compact
+Playwright Canvas pixel assertions, and
+`tests/e2e/spreadsheet-ribbon-orientation-visibility.acl` protect the workflow.
+The ACL runs locally with A3S Test 1.0.0, agent-browser 0.26.0, and Web protocol
+revision 15; GitHub Actions and Pages neither install nor invoke A3S Test.
+
+## Cell borders
+
+Home and Font exposes a split border control for top, bottom, left, right, no,
+all, outside, inside, horizontal, vertical, diagonal-down, and diagonal-up
+borders. The two diagonal commands are independent; applying both creates a
+crossed border, and Format Cells exposes the same two pressed states. The
+dialog keeps the chosen target, exact color, and one of ten native line styles
+for the next primary-button command. Outside and No Border items also show
+their Traditional Office shortcut hints without changing their accessible names. Successful
+commands close the dialog, return focus to the workbook grid, emit one
+controlled `onChange`, and create one undoable workbook operation.
+
+Non-diagonal borders remain compact native range records. Reapplying a border
+subtracts the edited rectangle from overlapping records before adding the new
+record, so repeated formatting does not accumulate stale duplicate ranges.
+Unknown or malformed vendor records are preserved. A3S stores the two OOXML
+direction flags and their shared line in one canonical per-cell record, while
+retaining Fortune's legacy `border-slash` as diagonal-down. The visible-cell
+Canvas hook paints imported cell records because Fortune only paints native
+range slashes. Later slash and no-border ranges still override earlier cell
+metadata in source order. Paste Special All and Formatting, built-in styles,
+Yjs collaboration, row insertion, XLSX export, and reopen retain
+`diagonalDown` and `diagonalUp` exactly; All except borders removes both.
+
+Diagonal borders require one record per cell and therefore accept at most
+4,096 selected cells per command. Existing directions are indexed in one pass
+before a bulk write rather than rescanning every border record for every cell.
+Clear Formats and Clear All remove the selected border ranges without changing
+merge geometry. Focused Rstest and XLSX coverage plus desktop and compact
+Playwright Canvas assertions are CI gates. The deterministic
+`tests/e2e/spreadsheet-diagonal-borders.acl` suite runs only through the local
+A3S Test 1.0.0 release gate with standalone agent-browser 0.26.0 and Web
+protocol revision 15; GitHub Actions and Pages do not install or invoke A3S
+Test.
+
+## AutoSum and aggregate totals
+
+Home and Editing exposes an Office-style split command before Fill. The primary
+button inserts `SUM` and advertises the editor-scoped `Alt+=` shortcut. Its
+keyboard-operated menu inserts `SUM`, `AVERAGE`, `COUNT`, `MAX`, or `MIN` and
+supports Arrow, Home, End, Enter, and Escape navigation with exact focus
+restoration.
+
+For one blank selected cell, AutoSum first reads the contiguous numeric or
+formula block immediately above it and falls back to the contiguous block on
+its left. Text and blank cells are boundaries. An explicit selection that
+includes a blank totals row or totals column discovers every numeric/formula
+axis and can write multiple aggregate formulas in one gesture. Label and
+text-only axes remain unchanged, and non-consecutive outputs are compacted into
+the smallest consecutive native write ranges.
+
+AutoSum writes formula strings through one Fortune `batchCallApis` operation,
+then selects the complete output range and synchronizes the formula bar. It
+does not replace an occupied eligible target and preserves every target cell's
+existing style. A command requires one live range on the active editable
+worksheet and rejects merged targets, pivot sheets, read-only rows or columns,
+protected cells, invalid Excel coordinates, and more than 1,000 formula
+targets before mutation. Dense worksheets remain dense, sparse `celldata`
+worksheets remain sparse, one controlled `onChange` is emitted, and one Undo
+reverts the complete gesture.
+
+Rstest covers inference, multi-output compaction, sparse access, mutation
+guards, formula-bar synchronization, style preservation, controlled updates,
+and one-step Undo. Playwright exercises `Alt+=` and the aggregate menu at both
+desktop and compact widths. GitHub Actions and Pages use those Rstest and
+Playwright gates and do not install or run A3S Test.
+
+## Four-direction cell fill
+
+Home and Editing exposes Fill Down, Fill Right, Fill Up, and Fill Left in one
+keyboard-operated menu. Down and Up copy the selected range's top or bottom
+row; Right and Left copy its left or right column. Fortune Sheet retains its
+native relative-formula translation, number-series behavior, and complete cell
+style copying. `Cmd/Ctrl+D` runs Fill Down and `Cmd/Ctrl+R` runs Fill Right
+inside the focused grid, so the latter never becomes a browser refresh.
+
+A fill requires exactly one range on the active editable worksheet. It rejects
+merged intersections, pivot sheets, read-only rows or columns, protected cells,
+and commands with more than 50,000 target cells before mutation. A successful
+fill creates one workbook history entry and restores grid focus, so one Undo or
+Redo covers the complete target range.
+
+Fortune's native fill API assumes every selected row array exists even when the
+worksheet uses a sparse matrix. The A3S adapter therefore materializes only
+missing row arrays inside the selected range immediately before the native
+call; it does not allocate empty cells or rows outside that range. If the native
+call throws, the adapter restores the original array holes, length, and absent
+`data` property before returning a recoverable failure.
+
+## Common number formats
+
+Home and Number exposes the common Traditional Office format set as native Fortune cell-format
+codes. Applying a preset changes only `cell.ct.fa` and `cell.ct.t`; it does not
+rewrite `v`, `f`, comments, links, or merge geometry. One selection-level intent
+creates one controlled workbook update and one Undo record.
+
+| Preset | Native format code | Fortune type | Shortcut |
+| --- | --- | --- | --- |
+| General | `General` | `n` for numbers, otherwise `g` or `b` | `Cmd/Ctrl+Shift+~` |
+| Number | `#,##0.00` | `n` | `Cmd/Ctrl+Shift+!` |
+| CNY Currency | `[$¥-804]#,##0.00` | `n` | `Cmd/Ctrl+Shift+$` |
+| Accounting | CNY accounting alignment and negative-parenthesis sections | `n` | — |
+| Percentage | `0.00%` | `n` | `Cmd/Ctrl+Shift+%` |
+| Short Date | `yyyy-MM-dd` | `d` | `Cmd/Ctrl+Shift+#` |
+| Time | `hh:mm` | `d` | `Cmd/Ctrl+Shift+@` |
+| Scientific | `0.00E+00` | `n` | `Cmd/Ctrl+Shift+^` |
+| Fraction | `# ?/?` | `n` | — |
+| Text | `@` | `s` | — |
+
+The Currency and Percentage buttons execute the same typed command as the
+picker and shortcuts. Increase Decimal and Decrease Decimal retain grouping,
+currency, accounting, percentage, and scientific sections while ignoring date,
+time, fraction, text, and unrecognized custom formats. A mixed selection is
+adjusted cell by cell, so Currency, Percentage, Number, Accounting, and
+Scientific cells keep their original format family instead of inheriting the
+focused cell's format. Equal results are compacted into rectangular native
+calls and committed as one batch and one Undo record. The command is bounded to
+10,000 selected cells so formatting blank ranges cannot densify a maximum-size
+worksheet accidentally. Export and reopen tests verify the exact format codes
+across XLSX. The built-in currency choice is CNY because the current
+Spreadsheet chrome is `zh-CN`; host-selected preset currencies,
+locale-specific date presets, and combined date-time presets remain future
+compatibility work. Format Cells can author and retain a custom native format
+code. Imported unmodeled codes stay visible as Custom and are not silently
+replaced.
+
+### Static current date and time
+
+Home and Number exposes a Date and Time menu for the two Traditional Office/Excel entry
+shortcuts:
+
+| Intent | Shortcut | Stored value | Native format |
+| --- | --- | --- | --- |
+| Insert current date | `Ctrl+;` | Local calendar day in the workbook's 1900 or 1904 system | `yyyy-MM-dd`, type `d` |
+| Insert current time | `Ctrl+Shift+;` | Local hour and minute as a day fraction | `hh:mm`, type `d` |
+
+These are static entries, not volatile `TODAY()` or `NOW()` formulas. Date
+insertion uses the user's local year, month, and day. Time insertion discards
+seconds and milliseconds before storing the fraction. Recalculation therefore
+does not change either result.
+
+Only the active cell is written even when a larger selection is visible; the
+larger selection itself remains intact. One native `batchCallApis` operation
+writes the scalar through `setCellValuesByRange` and then applies only the
+native `ct` number format, so an old formula is replaced through Fortune's
+value path, unrelated styles remain untouched, and one Undo restores both the
+value and format.
+
+The command fails before mutation for read-only views, inactive worksheets,
+locked or protected cells, merged cells, pivot output, and coordinates outside
+1,048,576 rows or 16,384 columns. Both shortcuts are Control-only and are
+owned only by the live worksheet grid; host inputs, the formula bar, active
+cell editing, modal controls, composing events, and repeated keydown events
+keep their native behavior. Current-date insertion uses the controlled workbook
+`dateSystem`; the time-only fraction is identical in both systems.
+
+Focused command and Ribbon tests plus the deterministic Playground fixture and
+desktop/compact Playwright regression cover the dynamic local-clock result,
+format state, focus, and one-step history. The local-only
+`tests/e2e/spreadsheet-date-time.acl` release gate uses A3S Test 1.0.0 and
+revision evidence rather than hard-coding a real user's current date or time.
+GitHub Actions and Pages do not install or invoke A3S Test.
+
+### Copy a formula or value from above
+
+The live worksheet grid owns two focused copy-from-above shortcuts:
+
+| Intent | Shortcut | Result |
+| --- | --- | --- |
+| Copy formula from above | `Ctrl+'` | Copies the exact source formula text without translating relative references; copies the scalar when the source has no formula |
+| Copy value from above | `Ctrl+Shift+'` | Copies the calculated, cached, inline, or displayed source value and removes an existing target formula |
+
+Both commands modify only the active cell even when a wider selection remains
+visible. One native `setCellValuesByRange` call is submitted through one
+`batchCallApis` operation, so the host receives one controlled update and one
+Undo restores the previous cell. The target keeps its own font, emphasis,
+fill, borders, alignment, number format, comments, and other unrelated state;
+source formatting is never copied. The formula bar is synchronized after a
+successful mutation and cannot invalidate an already committed workbook
+change if its detached DOM surface fails.
+
+Targets on the first row, outside the XLSX row or column limits, on an inactive
+or read-only sheet, inside protected or merged ranges, or in pivot output fail
+before mutation. Formula copying also rejects malformed or external formulas
+and array, dynamic-array, data-table, or spill metadata; the value-only command
+may still copy the source's safe cached scalar. Host inputs, the formula bar,
+active cell text editing, popovers, modal controls, composing events, and
+repeated keydown keep their native behavior.
+
+Focused planner, command-runtime, catalog, keyboard, and focus tests plus the
+dedicated Playground fixture and desktop/compact Playwright regression verify
+exact formulas, value-only copies, target-style preservation, revision counts,
+and one-step Undo. The local-only
+`tests/e2e/spreadsheet-copy-from-above.acl` suite uses A3S Test 1.0.0 to capture
+accessibility evidence and empty console/page-error diagnostics. GitHub Actions
+and Pages do not install or invoke A3S Test.
+
+## Native XLSX rich-text cells
+
+Spreadsheet preserves native rich-text cells from both XLSX shared strings and
+inline strings. Import converts the ordered OOXML runs into Fortune's existing
+`ct.s` representation and keeps `ct.t='inlineStr'`; export writes the same
+ordered content as native inline-string runs, including
+`xml:space="preserve"` when a run begins or ends with whitespace.
+
+| Run property | Round-trip behavior |
+| --- | --- |
+| Font family and size | Preserved when the OOXML value is valid and within the declared bounds |
+| Bold, italic, and strikethrough | Preserved as native per-run flags |
+| Underline | Preserves single, double, single-accounting, and double-accounting variants |
+| Font color | Preserves explicit RGB and matching theme, indexed, automatic, or tint identity |
+
+Format Cells remains a cell-wide command. While the in-cell editor or formula
+bar contains a non-collapsed text selection, the Home ribbon applies font
+family, size, color, bold, italic, underline, or strikethrough only to that
+selection. Plain strings become native inline-string runs on the first partial
+format, and existing runs split and coalesce without flattening unaffected
+text. Direct ribbon actions restore the selection when the editor remains
+active. Whole-cell formatting and partial formatting both use one controlled
+workbook update so host history and collaboration retain ownership. A
+number-format change retains the inline-string type. Unchanged semantic color
+origins are emitted as their native palette reference; an edited run color
+falls back to explicit RGB rather than exporting stale theme or indexed
+metadata.
+
+Direct text insertion and deletion committed through the formula bar or the F2
+in-cell editor pass through the same bounded source-run reconciliation. A plain
+formula-bar value is rebuilt from the previous native runs; an F2 value is also
+rebuilt when Fortune drops source style or color metadata. Inserted text
+inherits the replaced run or the immediately preceding run, while unaffected
+runs keep their boundaries, font properties, and theme, indexed, automatic, or
+tint identities. Each commit publishes exactly one controlled revision and one
+Undo record. Exact cell-operation coordinates authenticate text changes.
+Operation-free text-stable callbacks may only restore the previous controlled
+runs, and structural row, column, or sheet operations never infer rich text
+from an old coordinate.
+
+Formatted rich-text paste into a formula-bar or F2 selection now keeps the
+common font run properties listed above. Before native paste mutates the editor, the
+controller captures a one-shot intent containing the exact worksheet object,
+cell coordinate, controlled source text, UTF-16 selection, plain clipboard
+text, and sanitized runs. An authenticated cell operation must then emit the
+exact predicted replacement. Unaffected prefix and suffix runs always come
+from the controlled cell, so theme, indexed, automatic, and tint identities
+cannot be flattened by browser markup; pasted colors use explicit RGB. Plain
+and empty text cells become native inline strings only after this proof. The
+clipboard parser accepts semantic emphasis tags and common inline font CSS,
+discards the HTML tree after parsing, and ignores script, style, metadata, and
+other non-content elements.
+
+Rich-text parsing is bounded before materialization: one cell may contain at
+most 32,767 characters and 512 runs, one import may materialize at most 10,000
+rich-text cells and 100,000 runs, and malformed or oversized candidates do not
+enter the rich-run model. Partial formatting also rejects collapsed selections,
+invalid UTF-16 surrogate boundaries, formula cells, and any result beyond the
+per-cell run limit. Formatted paste additionally caps clipboard HTML at 256,000
+characters and requires one exact selection replacement per commit. Plain,
+mismatched, malformed, or oversized clipboard markup cannot authorize runs;
+the browser's text paste remains available with inherited/plain formatting.
+Simultaneous disjoint edits and non-font run objects remain outside the public
+Spreadsheet surface.
+
+Focused import/export/reopen and formatting tests protect shared and inline
+strings, semantic colors, exact whitespace, immutable updates, and number-format
+retention. Desktop and compact Playwright exercise a real browser HTML
+clipboard paste through the controlled Playground fixture, whose header also
+exposes deterministic copy/paste samples for local inspection.
+`tests/e2e/spreadsheet-rich-text.acl` runs four scenarios only through the local
+A3S Test 1.0.0 gate and captures accessibility plus clean console and
+page-error evidence; GitHub Actions and Pages do not install or invoke A3S
+Test.
+
+## Format Cells
+
+Use the Home and Number launcher or `Cmd/Ctrl+1` while the workbook grid has
+focus. `Cmd/Ctrl+Shift+F` opens the same dialog on Font with the font-family
+control focused; `Cmd/Ctrl+Shift+P` opens Font with font size focused. The
+shortcuts are editor-scoped: host inputs, the formula bar, active cell editing,
+composing or repeated events, and modal controls retain their native behavior.
+
+| Tab | Supported settings |
+| --- | --- |
+| Number | Common categories and an exact custom native format code |
+| Alignment | Horizontal and vertical alignment, wrapping, and -90 to 90 degree rotation |
+| Font | Family, size, color, bold, italic, single/double/accounting underline, strikethrough, and a luminance-adaptive preview surface |
+| Border | Line style, color, top, bottom, left, right, diagonal, and no-border state |
+| Fill | Exact RGB fill or no fill |
+| Protection | Locked and hidden formula state, effective when worksheet protection is enabled |
+
+The dialog snapshots the exact worksheet, normalized range, focused cell, and
+cell matrix when it opens. Apply never follows a selection change made after
+that point. A mixed selection exposes an indeterminate state and keeps each
+untouched property unchanged; only fields the user explicitly changes are
+included in the patch. One Apply emits the complete next controlled workbook
+once and creates one Undo record. Cancel, the close button, and Escape do not
+publish content. Focus returns to the exact ribbon launcher or to the current
+grid node after a controlled workbook remount.
+
+All three entry points share one typed command and one open request. The
+font-family and font-size comboboxes expose their catalog-backed shortcuts
+through `aria-keyshortcuts`; malformed tab/focus routes fail before a dialog is
+created. The preview keeps the selected font color exact and switches only its
+canvas between a dark and light neutral using relative luminance, so light text
+does not disappear against a fixed light background.
+
+The command accepts at most 10,000 cells. Diagonal borders retain the stricter
+4,096-cell bound because the native renderer stores one diagonal record per
+cell. Values, formulas, comments, hyperlinks, merge geometry, and unrelated
+metadata remain unchanged. A worksheet that starts with `data` remains a
+matrix and one that starts with `celldata` remains sparse. Formatting a blank
+cell materializes that coordinate only; clearing a property that is already
+absent does not create a blank cell. Cell protection is compacted into
+`config.authority.cellProtectionRanges` rather than expanded across the
+selection.
+
+CI validates this workflow with Rstest and Playwright at desktop and compact
+widths. The deterministic
+`tests/e2e/spreadsheet-font-dialog-shortcuts.acl` suite runs only through the
+local A3S Test 1.0.0 gate and captures accessibility plus clean console and
+page-error evidence; GitHub Actions and Pages do not install or run A3S Test.
+
+## Collaboration and native cell mutations
+
+Pass an initialized Spreadsheet `OfficeCollaborationSession` through
+`collaboration` to make its field-addressed Yjs model canonical. The browser
+binding keeps sheets and populated cells ID-addressed, projects remote changes,
+and limits undo to the mounted client's own transactions. Table collections use
+their own ID-keyed records and explicit order arrays; creation claims prevent
+identity reuse, while independently edited name, style, option, column, and
+filter fields converge without replacing the sheet. Pair `presence` with the
+exact same session to publish ranges and show remote cell selections.
+
+Rust, CLI, standard MCP, and A3S Code use `spreadsheet-set-cell` to create or
+recursively patch one zero-based coordinate and `spreadsheet-delete-cell` to
+delete one exact complete cell. Use `spreadsheet-batch-cells` for one bounded
+paste, fill, or other gesture containing 1 to 4,096 distinct coordinates in
+one sheet. Every change must include `nextCell`; `nextCell: null` is an exact
+guarded deletion. `expectedCell: null` is the creation guard;
+otherwise the observed cell is compared recursively so unrelated concurrent
+leaves merge while stale same-leaf changes fail closed. Dense worksheets keep
+their matrix projection, while sparse and initially empty worksheets remain
+`celldata`. Batch guards are all evaluated against one shared snapshot and the
+complete result commits in one Yjs transaction, so one conflict produces no
+partial cell, presence, dimension, or durable-log change. See
+[Real-time collaboration](./collaboration.mdx) for the JSON contracts and
+lifecycle rules.

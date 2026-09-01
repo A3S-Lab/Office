@@ -9,9 +9,10 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(15);
-  await expect(cards.first()).toContainText('v0.38.1');
-  await expect(cards.nth(1)).toContainText('Writer 原生 OpenType 排版');
+  await expect(cards).toHaveCount(16);
+  await expect(cards.first()).toContainText('v0.39.0');
+  await expect(cards.first()).toContainText('演示对象现在可以完整登场与退场');
+  await expect(cards.nth(1)).toContainText('真正说明产品变化的更新日志');
   await expect(
     page.locator('.office-release-card[data-version="0.34.0"]'),
   ).toContainText('演示文稿入场动画');
@@ -62,6 +63,6 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: "What's new" }),
   ).toBeVisible();
   await expect(page.locator('.office-release-card').first()).toContainText(
-    'Release notes that explain the product change',
+    'Presentation objects can now enter and exit',
   );
 });

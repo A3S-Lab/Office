@@ -12,11 +12,6 @@ const PRESENTATION_CLIPBOARD_MAX_OFFSET = 20;
 
 export type WorkPresentationClipboardPayload =
   | {
-      kind: 'element';
-      element: WorkSlideElement;
-      animation?: WorkSlideAnimation;
-    }
-  | {
       kind: 'elements';
       elements: WorkSlideElement[];
       animations?: WorkSlideAnimation[];
@@ -36,21 +31,6 @@ let clipboard: {
 export interface WorkPresentationElementPaste {
   animations?: WorkSlideAnimation[];
   elements: WorkSlideElement[];
-}
-
-export function copyPresentationElement(
-  element: WorkSlideElement,
-  animation?: WorkSlideAnimation,
-): void {
-  clipboard = {
-    payload: {
-      kind: 'element',
-      element: structuredCopy(element),
-      ...(animation ? { animation: structuredCopy(animation) } : {}),
-    },
-    pasteCount: 0,
-  };
-  writeSystemClipboardText(presentationElementPlainText(element));
 }
 
 export function copyPresentationElements(

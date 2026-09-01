@@ -24,11 +24,11 @@ test('publishes the latest main capabilities as first-class Playground entries',
   );
 
   const latest = screen.getByRole('region', { name: '最新能力' });
-  const entranceAnimations = within(latest).getByRole('button', {
-    name: '打开最新能力：入场动画',
+  const objectAnimations = within(latest).getByRole('button', {
+    name: '打开最新能力：进入与退出动画',
   });
-  expect(entranceAnimations).toHaveTextContent('Presentation');
-  expect(entranceAnimations).toHaveTextContent('v0.34.0');
+  expect(objectAnimations).toHaveTextContent('Presentation');
+  expect(objectAnimations).toHaveTextContent('v0.39.0');
   expect(
     within(latest).getByRole('button', {
       name: '打开最新能力：文档比较',
@@ -75,7 +75,7 @@ test('publishes the latest main capabilities as first-class Playground entries',
     'data-validation',
     'structured-references',
   ]);
-  fireEvent.click(entranceAnimations);
+  fireEvent.click(objectAnimations);
   expect(createdTemplates).toEqual([
     'data-validation',
     'structured-references',
@@ -85,7 +85,7 @@ test('publishes the latest main capabilities as first-class Playground entries',
   fireEvent.click(within(latest).getByRole('button', { name: '文字 5' }));
   expect(
     within(latest).queryByRole('button', {
-      name: '打开最新能力：入场动画',
+      name: '打开最新能力：进入与退出动画',
     }),
   ).toBeNull();
   expect(

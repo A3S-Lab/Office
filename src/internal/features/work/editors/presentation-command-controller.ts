@@ -125,25 +125,26 @@ export function createPresentationEditorExtensions(): readonly OfficeEditorExten
     >({
       name: 'presentationAnimations',
       addCommands: () => ({
-        moveEntranceAnimation: {
-          canExecute: ({ animations }, direction) =>
-            animations.canMoveEntranceAnimation(direction),
-          execute: ({ animations }, direction) =>
-            animations.moveEntranceAnimation(direction),
+        moveAnimation: {
+          canExecute: ({ animations }, animationClass, direction) =>
+            animations.canMoveAnimation(animationClass, direction),
+          execute: ({ animations }, animationClass, direction) =>
+            animations.moveAnimation(animationClass, direction),
         },
         previewAnimations: {
           canExecute: ({ animations }) => animations.canPreviewAnimations,
           execute: ({ animations }) => animations.previewAnimations(),
         },
-        setEntranceAnimation: {
-          canExecute: ({ animations }) => animations.canSetEntranceAnimation,
-          execute: ({ animations }, effect) =>
-            animations.setEntranceAnimation(effect),
+        setAnimation: {
+          canExecute: ({ animations }) => animations.canSetAnimation,
+          execute: ({ animations }, animationClass, effect) =>
+            animations.setAnimation(animationClass, effect),
         },
-        updateEntranceAnimation: {
-          canExecute: ({ animations }) => animations.canUpdateEntranceAnimation,
-          execute: ({ animations }, patch) =>
-            animations.updateEntranceAnimation(patch),
+        updateAnimation: {
+          canExecute: ({ animations }, animationClass, patch) =>
+            animations.canUpdateAnimation(animationClass, patch),
+          execute: ({ animations }, animationClass, patch) =>
+            animations.updateAnimation(animationClass, patch),
         },
       }),
     }),

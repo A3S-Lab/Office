@@ -143,8 +143,8 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
   {
     id: 'animated-deck',
     kind: 'presentation',
-    name: '入场动画',
-    description: '出现、淡入、飞入、缩放与三种触发方式',
+    name: '进入与退出动画',
+    description: '进入、退出、触发、计时、排序与放映预览',
     accent: '#7657c8',
   },
 ];
@@ -188,7 +188,7 @@ function initialTitle(templateId: string, kind: WorkArtifactKind): string {
     'data-validation': '数据验证示例',
     'structured-references': '结构化引用示例',
     'strategy-deck': '业务策略汇报',
-    'animated-deck': '入场动画示例',
+    'animated-deck': '进入与退出动画示例',
   };
   if (titles[templateId]) return titles[templateId];
   if (kind === 'document') return '无标题文字';
@@ -1096,10 +1096,10 @@ function animatedPresentation(): WorkPresentationContent {
     slides: [
       {
         id: createWorkId('slide'),
-        name: '入场动画',
+        name: '进入与退出',
         background: '#17162b',
         notes:
-          '从“动画”选项卡编辑效果、触发方式、持续时间、延迟和顺序，再从头放映验证逐步播放。',
+          '从“动画”选项卡分别编辑进入与退出效果、触发方式、持续时间、延迟和顺序，再从头放映验证逐步播放。',
         elements: [
           {
             id: titleId,
@@ -1108,7 +1108,7 @@ function animatedPresentation(): WorkPresentationContent {
             y: 10,
             width: 76,
             height: 16,
-            text: '让信息按叙事顺序出现',
+            text: '让对象按叙事顺序登场与退场',
             fontSize: 34,
             color: '#ffffff',
             fill: 'transparent',
@@ -1122,7 +1122,7 @@ function animatedPresentation(): WorkPresentationContent {
             y: 28,
             width: 68,
             height: 9,
-            text: '单击开始，下一对象与标题同时淡入',
+            text: '一次单击完成入场，再次单击依次退场',
             fontSize: 16,
             color: '#b9b7dc',
             fill: 'transparent',
@@ -1136,7 +1136,7 @@ function animatedPresentation(): WorkPresentationContent {
             y: 46,
             width: 52,
             height: 20,
-            text: '上一动画完成后，从左侧飞入',
+            text: '从左侧飞入，再向右侧飞出',
             fontSize: 19,
             color: '#211f35',
             fill: '#d9d3ff',
@@ -1151,7 +1151,7 @@ function animatedPresentation(): WorkPresentationContent {
             y: 46,
             width: 26,
             height: 20,
-            text: '再次单击\n缩放结论',
+            text: '最后缩放\n进入与退出',
             fontSize: 17,
             color: '#ffffff',
             fill: '#7657c8',
@@ -1190,7 +1190,40 @@ function animatedPresentation(): WorkPresentationContent {
             id: createWorkId('slide-animation'),
             elementId: conclusionId,
             effect: 'zoom',
+            trigger: 'after-previous',
+            durationMs: 650,
+            delayMs: 0,
+          },
+          {
+            id: createWorkId('slide-animation'),
+            elementId: titleId,
+            effect: 'disappear',
             trigger: 'on-click',
+            durationMs: 300,
+            delayMs: 0,
+          },
+          {
+            id: createWorkId('slide-animation'),
+            elementId: subtitleId,
+            effect: 'fade-out',
+            trigger: 'with-previous',
+            durationMs: 600,
+            delayMs: 100,
+          },
+          {
+            id: createWorkId('slide-animation'),
+            elementId: sequenceId,
+            effect: 'fly-out',
+            trigger: 'after-previous',
+            durationMs: 700,
+            delayMs: 150,
+            direction: 'right',
+          },
+          {
+            id: createWorkId('slide-animation'),
+            elementId: conclusionId,
+            effect: 'zoom-out',
+            trigger: 'after-previous',
             durationMs: 650,
             delayMs: 0,
           },

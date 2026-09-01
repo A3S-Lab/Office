@@ -255,17 +255,25 @@ test('consumes ordered click animation cues before advancing the slide', () => {
   const advance = screen.getByRole('button', {
     name: '单击换到下一张幻灯片',
   });
-  expect(first).toHaveAttribute('data-slide-animation-state', 'pending');
-  expect(second).toHaveAttribute('data-slide-animation-state', 'pending');
+  expect(first).toHaveAttribute('data-slide-animation-state', 'hidden');
+  expect(second).toHaveAttribute('data-slide-animation-state', 'hidden');
 
   fireEvent.click(advance);
   expect(screen.getByText('1 / 2')).toBeVisible();
   expect(first).toHaveAttribute('data-slide-animation-state', 'playing');
-  expect(second).toHaveAttribute('data-slide-animation-state', 'pending');
+  expect(first).toHaveAttribute(
+    'data-slide-animation-effects',
+    'fade fade-out',
+  );
+  expect(first?.style.animationName).toBe(
+    'work-slide-animation-fade, work-slide-animation-fade-out',
+  );
+  expect(first?.style.animationDelay).toBe('0ms, 500ms');
+  expect(second).toHaveAttribute('data-slide-animation-state', 'hidden');
 
   fireEvent.click(advance);
   expect(screen.getByText('1 / 2')).toBeVisible();
-  expect(first).toHaveAttribute('data-slide-animation-state', 'finished');
+  expect(first).toHaveAttribute('data-slide-animation-state', 'hidden');
   expect(second).toHaveAttribute('data-slide-animation-state', 'playing');
 
   fireEvent.click(advance);
@@ -345,6 +353,14 @@ function animatedPresentation(): WorkPresentationContent {
           },
           {
             id: 'animation-two',
+            elementId: 'element-one',
+            effect: 'fade-out',
+            trigger: 'after-previous',
+            durationMs: 400,
+            delayMs: 0,
+          },
+          {
+            id: 'animation-three',
             elementId: 'element-two',
             effect: 'fly-in',
             trigger: 'on-click',
