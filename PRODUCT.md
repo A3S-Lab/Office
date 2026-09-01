@@ -873,8 +873,9 @@ work is explicit: emphasis effects, motion paths, trigger-on-object, the broader
 native animation catalog, audio and video, rehearsal and recording, and full
 preservation of unsupported timing trees.
 
-The public Playground exposes **进入与退出动画** with all eight effects and all
-three trigger modes in a two-cue entrance-then-exit story. Focused Rstest covers
+The public Playground exposes the **进入与退出动画** example in the New template
+grid, with all eight effects and all three trigger modes in a two-cue
+entrance-then-exit story. Focused Rstest covers
 the model, commands, ribbon, slideshow, collaboration, clipboard identity, and
 native PPTX export/import/reopen. A responsive Playwright workflow and the
 pinned local-only A3S Test suite complete the release evidence without

@@ -131,7 +131,7 @@ trap 'exit 143' TERM
 
 suites=(
   "tests/e2e/office-docs-navigation.acl"
-  "tests/e2e/latest-capabilities-discoverability.acl"
+  "tests/e2e/playground-template-discoverability.acl"
   "tests/e2e/presentation-animation.acl"
   "tests/e2e/pdf-page-organization.acl"
   "tests/e2e/spreadsheet-maximum-sparse.acl"

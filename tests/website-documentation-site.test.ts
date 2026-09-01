@@ -433,7 +433,7 @@ test('publishes Presentation entrance and exit animations across implementation,
     releaseEnglishHome,
     releaseChineseHome,
     templates,
-    playground,
+    workspaceHome,
     pptxTest,
     visualSpec,
     aclSuite,
@@ -466,7 +466,7 @@ test('publishes Presentation entrance and exit animations across implementation,
       'utf8',
     ),
     readFile(
-      path.join(repositoryRoot, 'playground/src/latest-capabilities.ts'),
+      path.join(repositoryRoot, 'playground/src/workspace-home.tsx'),
       'utf8',
     ),
     readFile(
@@ -487,7 +487,7 @@ test('publishes Presentation entrance and exit animations across implementation,
     readFile(
       path.join(
         repositoryRoot,
-        'tests/e2e/latest-capabilities-discoverability.acl',
+        'tests/e2e/playground-template-discoverability.acl',
       ),
       'utf8',
     ),
@@ -538,9 +538,8 @@ test('publishes Presentation entrance and exit animations across implementation,
   expect(templates).toContain("effect: 'fade-out'");
   expect(templates).toContain("effect: 'fly-out'");
   expect(templates).toContain("effect: 'zoom-out'");
-  expect(playground).toContain(
-    "{ templateId: 'animated-deck', release: '0.39.0' }",
-  );
+  expect(workspaceHome).toContain('data-template-id={template.id}');
+  expect(workspaceHome).not.toContain('playground-latest-capabilities');
   expect(pptxTest).toContain(
     'round-trips supported entrance and exit animations through native PPTX timing trees',
   );
@@ -548,7 +547,9 @@ test('publishes Presentation entrance and exit animations across implementation,
     'Presentation entrance and exit animations author and play ordered cues',
   );
   expect(aclSuite).toContain('suite "office-presentation-animation"');
-  expect(discoverabilityAcl).toContain('打开最新能力：进入与退出动画');
+  expect(discoverabilityAcl).toContain(
+    "button[data-template-id='animated-deck']",
+  );
   expect(discoverabilityAcl).toContain(
     'navigate "open-entrance-exit-animation-documentation"',
   );
@@ -568,7 +569,7 @@ test('publishes PDF page organization across docs, Playground, and release evide
     chinese,
     releaseEnglish,
     releaseChinese,
-    playground,
+    workspaceHome,
     visualSpec,
     aclSuite,
     discoverabilityAcl,
@@ -595,7 +596,7 @@ test('publishes PDF page organization across docs, Playground, and release evide
       'utf8',
     ),
     readFile(
-      path.join(repositoryRoot, 'playground/src/latest-capabilities.ts'),
+      path.join(repositoryRoot, 'playground/src/workspace-home.tsx'),
       'utf8',
     ),
     readFile(
@@ -612,7 +613,7 @@ test('publishes PDF page organization across docs, Playground, and release evide
     readFile(
       path.join(
         repositoryRoot,
-        'tests/e2e/latest-capabilities-discoverability.acl',
+        'tests/e2e/playground-template-discoverability.acl',
       ),
       'utf8',
     ),
@@ -642,9 +643,8 @@ test('publishes PDF page organization across docs, Playground, and release evide
   expect(chinese).toContain('原生 PDF 历史优先');
   expect(releaseChinese).toContain('## 页面组织');
 
-  expect(playground).toContain("id: 'pdf-page-organization'");
-  expect(playground).toContain('组织 PDF 页面');
-  expect(playground).toContain("release: '0.33.0'");
+  expect(workspaceHome).toContain('PDF 编辑器');
+  expect(workspaceHome).toContain('onClick={onOpenPdf}');
   expect(visualSpec).toContain('PDF page organization mutates, exports, saves');
   expect(aclSuite).toContain('suite "office-pdf-page-organization"');
   expect(discoverabilityAcl).toContain(
@@ -749,7 +749,7 @@ test('publishes Writer Table of Contents in docs, roadmap, and Playground guidan
   expect(english).toContain('## Native table of contents');
   expect(chinese).toContain('## 原生可更新目录');
   expect(templates).toContain("id: 'table-of-contents'");
-  expect(playground).toContain("'table-of-contents'");
+  expect(playground).toContain('officeTemplates.map((template) =>');
   for (const document of [english, chinese]) {
     expect(document).toContain('512');
     expect(document).toContain('`w:sdt`');
@@ -823,7 +823,7 @@ test('publishes native Writer indexes in docs, roadmap, and Playground guidance'
   expect(releaseEnglish).toContain('## Native document index');
   expect(releaseChinese).toContain('## 原生文档索引');
   expect(templates).toContain("id: 'document-index'");
-  expect(playground).toContain("'document-index'");
+  expect(playground).toContain('officeTemplates.map((template) =>');
   for (const document of [
     english,
     chinese,
@@ -926,7 +926,7 @@ test('publishes Writer document compare and combine across product and documenta
   );
   expect(e2eGuide).toContain('bun run test:e2e:writer-document-comparison');
   expect(templates).toContain("id: 'document-comparison'");
-  expect(playground).toContain("'document-comparison'");
+  expect(playground).toContain('officeTemplates.map((template) =>');
   expect(packageManifest).toContain('"playground:visual:document-comparison"');
   expect(packageManifest).toContain('"test:e2e:writer-document-comparison"');
 
@@ -2581,7 +2581,6 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
     releaseEnglish,
     releaseChinese,
     templates,
-    latestCapabilities,
     workspaceHome,
     discoverability,
   ] = await Promise.all([
@@ -2625,17 +2624,13 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
       'utf8',
     ),
     readFile(
-      path.join(repositoryRoot, 'playground/src/latest-capabilities.ts'),
-      'utf8',
-    ),
-    readFile(
       path.join(repositoryRoot, 'playground/src/workspace-home.tsx'),
       'utf8',
     ),
     readFile(
       path.join(
         repositoryRoot,
-        'tests/e2e/latest-capabilities-discoverability.acl',
+        'tests/e2e/playground-template-discoverability.acl',
       ),
       'utf8',
     ),
@@ -2677,13 +2672,11 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(templates).toContain('=[@Units]*[@[Unit price]]');
   expect(templates).toContain('=SUM(Sales[Revenue])');
   expect(templates).toContain('插入表格正文行会自动补齐 Revenue');
-  expect(latestCapabilities).toContain(
-    "{ templateId: 'structured-references', release: '0.37.0' }",
+  expect(workspaceHome).toContain('data-template-id={template.id}');
+  expect(workspaceHome).not.toContain('data-release');
+  expect(discoverability).toContain(
+    "button[data-template-id='structured-references']",
   );
-  expect(workspaceHome).toContain("templateId === 'structured-references'");
-  expect(workspaceHome).toContain('data-release={capability.release}');
-  expect(discoverability).toContain('打开最新能力：结构化引用');
-  expect(discoverability).toContain('9 / 9 项');
 });
 
 test('publishes formula-safe Spreadsheet sorting, owned-range reconciliation, and bounded custom-list preferences without rewriting 0.37.0', async () => {

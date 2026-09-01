@@ -25,13 +25,7 @@ test('Writer compares an imported version and opens deterministic review respons
   }
 
   await page.goto('/playground/');
-  const latestCapabilities = page.getByRole('region', { name: '最新能力' });
-  const comparisonEntry = latestCapabilities.getByRole('button', {
-    name: '打开最新能力：文档比较',
-  });
-  await expect(latestCapabilities).toBeInViewport();
-  await expect(comparisonEntry).toBeInViewport();
-  await comparisonEntry.click();
+  await page.locator("button[data-template-id='document-comparison']").click();
 
   const editor = page.getByRole('textbox', { name: '文档正文' });
   await expect(editor).toHaveAttribute('data-pagination-state', 'ready');

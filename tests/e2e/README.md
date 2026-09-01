@@ -79,22 +79,21 @@ bun run test:e2e:homepage:check
 bun run test:e2e:homepage
 ```
 
-The release-facing README, documentation hero, and Playground capability gallery
-share one focused discoverability gate:
+The release-facing documentation and Playground template grid share one focused
+discoverability gate:
 
 ```bash
-bun run test:e2e:latest-capabilities:check
-bun run test:e2e:latest-capabilities
+bun run test:e2e:playground-templates:check
+bun run test:e2e:playground-templates
 ```
 
-It opens the Writer table of contents, native document index, character
-shading, proofing languages, Spreadsheet data validation, and bounded
-Spreadsheet structured references from the
-filterable Playground gallery; verifies the PDF page-organization entry; follows
-the documentation-home links to the full Writer, Spreadsheet, and PDF
+It opens the Writer table of contents, native document index, character shading,
+proofing languages, Spreadsheet data validation, bounded Spreadsheet structured
+references, and Presentation animations from the Playground template grid;
+follows the documentation-home links to the full Writer, Spreadsheet, and PDF
 references; repeats the public discovery check at 390 px; and captures
-accessibility plus empty console/page-error diagnostics. A hidden `?e2e=`
-fixture or a deep documentation paragraph alone cannot satisfy this gate.
+accessibility plus empty console/page-error diagnostics. A hidden `?e2e=` fixture
+or a deep documentation paragraph alone cannot satisfy this gate.
 
 Presentation entrance and exit animations have a separate focused local gate:
 
