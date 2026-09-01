@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.38.1' ||
     version === '0.38.0' ||
     version === '0.37.5' ||
     version === '0.37.4' ||
@@ -69,6 +70,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.38.1',
     '0.38.0',
     '0.37.5',
     '0.37.4',
@@ -350,7 +352,7 @@ test('keeps the README focused on the five editor surfaces and their explicit bo
   expect(readme).not.toContain('Traditional Office baseline');
 });
 
-test('routes the concise README to release evidence while both documentation homes expose latest capabilities', async () => {
+test('routes the concise README and documentation homes to the current release story', async () => {
   const [readme, englishHome, chineseHome] = await Promise.all([
     readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
     readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
@@ -358,39 +360,29 @@ test('routes the concise README to release evidence while both documentation hom
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.38.0`');
+  expect(readme).toContain('Version `0.38.1`');
+  expect(readme).toContain(
+    "[What's new](https://a3s-lab.github.io/Office/docs/changelog.html)",
+  );
   expect(readme).toContain('[changelog](./CHANGELOG.md)');
   expect(readme).toContain('[capability roadmap](./ROADMAP.md)');
   expect(readme).toContain(
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain('## Latest capabilities on `main`');
+  expect(englishHome).toContain("## What's new on `main` (0.38.1)");
+  expect(englishHome).toContain("[What's new](./changelog.html)");
   expect(englishHome).toContain('document.html#native-opentype-typography');
-  expect(englishHome).toContain('presentation.html#entrance-animations');
-  expect(englishHome).toContain('Entrance animations');
-  expect(englishHome).toContain('Document compare');
-  expect(englishHome).toContain('Table of contents');
-  expect(englishHome).toContain('Document index');
-  expect(englishHome).toContain('Character shading');
-  expect(englishHome).toContain('Proofing languages');
-  expect(englishHome).toContain('Data validation');
   expect(englishHome).toContain(
     'spreadsheet.html#xlsx-1904-date-system-retention',
   );
-  expect(englishHome).toContain('pdf.html#page-organization');
+  expect(englishHome).toContain('document.html#ime-and-controlled-updates');
 
-  expect(chineseHome).toContain('## `main` 最新能力');
+  expect(chineseHome).toContain('## `main` 更新内容（0.38.1）');
+  expect(chineseHome).toContain('[更新日志](./changelog.html)');
   expect(chineseHome).toContain('document.html#原生-opentype-排版');
-  expect(chineseHome).toContain('presentation.html#入场动画');
-  expect(chineseHome).toContain('document.html#文档比较与合并');
-  expect(chineseHome).toContain('document.html#原生可更新目录');
-  expect(chineseHome).toContain('document.html#原生文档索引');
-  expect(chineseHome).toContain('原生字符底纹');
-  expect(chineseHome).toContain('原生校对语言');
-  expect(chineseHome).toContain('spreadsheet.html#数据验证');
   expect(chineseHome).toContain('spreadsheet.html#xlsx-1904-日期系统保留');
-  expect(chineseHome).toContain('pdf.html#页面组织');
+  expect(chineseHome).toContain('document.html#输入法与受控更新');
 });
 
 test('keeps every documentation index separate from the product home surface', async () => {
@@ -434,8 +426,6 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
     chinese,
     releaseEnglish,
     releaseChinese,
-    englishHome,
-    chineseHome,
     releaseEnglishHome,
     releaseChineseHome,
     templates,
@@ -465,8 +455,6 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
       path.join(documentationRoot, '0.34.0/zh/components/presentation.mdx'),
       'utf8',
     ),
-    readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
-    readFile(path.join(documentationRoot, 'latest/zh/index.mdx'), 'utf8'),
     readFile(path.join(documentationRoot, '0.34.0/en/index.mdx'), 'utf8'),
     readFile(path.join(documentationRoot, '0.34.0/zh/index.mdx'), 'utf8'),
     readFile(
@@ -519,8 +507,6 @@ test('publishes Presentation entrance animations across implementation, docs, Pl
   }
   expect(english).toContain('## Entrance animations');
   expect(chinese).toContain('## 入场动画');
-  expect(englishHome).toContain('presentation.html#entrance-animations');
-  expect(chineseHome).toContain('presentation.html#入场动画');
   expect(releaseEnglishHome).toContain('Released in 0.34.0');
   expect(releaseEnglishHome).toContain('presentation.html#entrance-animations');
   expect(releaseChineseHome).toContain('0.34.0 发布');
@@ -561,8 +547,6 @@ test('publishes PDF page organization across docs, Playground, and release evide
     chinese,
     releaseEnglish,
     releaseChinese,
-    englishHome,
-    chineseHome,
     playground,
     visualSpec,
     aclSuite,
@@ -589,8 +573,6 @@ test('publishes PDF page organization across docs, Playground, and release evide
       path.join(documentationRoot, '0.33.0/zh/components/pdf.mdx'),
       'utf8',
     ),
-    readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
-    readFile(path.join(documentationRoot, 'latest/zh/index.mdx'), 'utf8'),
     readFile(
       path.join(repositoryRoot, 'playground/src/latest-capabilities.ts'),
       'utf8',
@@ -639,8 +621,6 @@ test('publishes PDF page organization across docs, Playground, and release evide
   expect(chinese).toContain('原生 PDF 历史优先');
   expect(releaseChinese).toContain('## 页面组织');
 
-  expect(englishHome).toContain('pdf.html#page-organization');
-  expect(chineseHome).toContain('pdf.html#页面组织');
   expect(playground).toContain("id: 'pdf-page-organization'");
   expect(playground).toContain('组织 PDF 页面');
   expect(playground).toContain("release: '0.33.0'");
@@ -1064,6 +1044,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.38.1',
     '0.38.0',
     '0.37.5',
     '0.37.4',
@@ -1143,6 +1124,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.38.1',
     '0.38.0',
     '0.37.5',
     '0.37.4',
@@ -1475,7 +1457,7 @@ test('documents collaborative character-formatting revisions', async () => {
 });
 
 test('documents complete native Writer OpenType typography in both current locales', async () => {
-  for (const version of ['latest', '0.38.0']) {
+  for (const version of ['latest', '0.38.1', '0.38.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const source = await readFile(
         path.join(documentationRoot, version, lang, 'components/document.mdx'),
@@ -2575,8 +2557,6 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
     chineseQuality,
     releaseEnglish,
     releaseChinese,
-    englishHome,
-    chineseHome,
     templates,
     latestCapabilities,
     workspaceHome,
@@ -2617,8 +2597,6 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
       path.join(documentationRoot, '0.37.0/zh/components/spreadsheet.mdx'),
       'utf8',
     ),
-    readFile(path.join(documentationRoot, 'latest/en/index.mdx'), 'utf8'),
-    readFile(path.join(documentationRoot, 'latest/zh/index.mdx'), 'utf8'),
     readFile(
       path.join(repositoryRoot, 'src/internal/features/work/work-templates.ts'),
       'utf8',
@@ -2672,8 +2650,6 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(releaseEnglish).toContain('<calculatedColumnFormula>');
   expect(releaseChinese).toContain('计算列规则');
   expect(releaseChinese).toContain('calculatedColumnFormula');
-  expect(englishHome).toContain('Structured-reference calculation');
-  expect(chineseHome).toContain('结构化引用计算');
   expect(templates).toContain("id: 'structured-references'");
   expect(templates).toContain('=[@Units]*[@[Unit price]]');
   expect(templates).toContain('=SUM(Sales[Revenue])');
@@ -2682,6 +2658,7 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
     "{ templateId: 'structured-references', release: '0.37.0' }",
   );
   expect(workspaceHome).toContain("templateId === 'structured-references'");
+  expect(workspaceHome).toContain('data-release={capability.release}');
   expect(discoverability).toContain('打开最新能力：结构化引用');
   expect(discoverability).toContain('9 / 9 项');
 });
@@ -3292,7 +3269,7 @@ test('publishes the workbook-owned 1900 and 1904 date-system contract', async ()
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
   ]);
 
-  expect(readme).toContain('Version `0.38.0`');
+  expect(readme).toContain('Version `0.38.1`');
   expect(readme).toContain("workbook's native 1900 or");
   expect(changelog).toContain('## 0.37.5 - 2026-09-01');
   expect(roadmap).toContain(

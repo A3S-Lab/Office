@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.38.0",
+  "version": "0.38.1",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -88,6 +88,7 @@
     "playground:typecheck": "tsc --noEmit -p playground/tsconfig.json",
     "playground:ime:webkit": "playwright test --config playwright.ime.config.ts",
     "playground:visual": "playwright test --config playwright.config.ts",
+    "playground:visual:docs-changelog": "playwright test visual-tests/docs-changelog.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-emphasis": "playwright test visual-tests/document-emphasis.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-index": "playwright test visual-tests/document-index.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-comparison": "playwright test visual-tests/document-comparison.functional.spec.ts --config playwright.config.ts",

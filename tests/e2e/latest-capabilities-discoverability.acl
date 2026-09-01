@@ -61,7 +61,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         expect "structured-reference-entry-is-current-release" {
-            text = "v0.37.0"
+            visible = css("button[aria-label='打开最新能力：结构化引用'][data-release='0.37.0']")
         }
 
         expect "structured-reference-calculated-column-fill-is-described" {
@@ -236,7 +236,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         expect "latest-documentation-links-are-visible" {
-            text = "main 最新能力"
+            text = "main 更新内容"
         }
 
         expect "latest-documentation-covers-writer" {

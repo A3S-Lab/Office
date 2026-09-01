@@ -189,6 +189,7 @@ export function WorkspaceHome({
               type="button"
               className={`playground-latest-capability ${capability.kind}`}
               aria-label={`打开最新能力：${capability.name}`}
+              data-release={capability.release}
               key={capability.id}
               onFocus={() => warmPlaygroundEditor(capability.kind)}
               onClick={() => {

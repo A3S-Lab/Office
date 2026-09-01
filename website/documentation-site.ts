@@ -21,6 +21,7 @@ export const DOCUMENTATION_DEFAULT_VERSION = 'latest';
 
 export const DOCUMENTATION_VERSIONS = [
   'latest',
+  '0.38.1',
   '0.38.0',
   '0.37.5',
   '0.37.4',
@@ -74,6 +75,7 @@ export const DOCUMENTATION_VERSIONS = [
 
 export const DOCUMENTATION_REQUIRED_ROUTES = [
   'index.mdx',
+  'changelog.mdx',
   'guide/index.mdx',
   'components/index.mdx',
   'components/react.mdx',

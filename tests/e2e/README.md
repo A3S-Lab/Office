@@ -65,6 +65,10 @@ bun run test:e2e:collaboration-playground:check
 bun run test:e2e:collaboration-playground
 ```
 
+The documentation gate also opens the bilingual **What's new / 更新日志**
+timeline on desktop and at 390 px, verifies localized deep links, and proves
+that a frozen documentation version cannot expose later releases.
+
 The product home also has a focused visual and interaction gate. It waits for
 the shipped Document, Spreadsheet, and Presentation components, exercises the
 stage tabs on desktop and phone viewports, and records the live-editor

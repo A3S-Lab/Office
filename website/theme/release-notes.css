@@ -1,0 +1,496 @@
+.office-release-notes {
+  --office-release-accent: var(--ui-blue);
+  --office-release-accent-soft: color-mix(
+    in srgb,
+    var(--office-release-accent) 10%,
+    var(--ui-paper)
+  );
+  display: grid;
+  min-width: 0;
+  margin-top: 28px;
+  gap: 28px;
+}
+
+.rp-doc .office-release-notes :where(h2, h3, p, ol, ul, li) {
+  margin: 0;
+  padding: 0;
+}
+
+.rp-doc .office-release-notes :where(ol, ul) {
+  list-style: none;
+}
+
+.office-release-notes__scope {
+  display: flex;
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: 16px;
+  background: var(--ui-paper);
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.office-release-notes__scope-copy {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+}
+
+.office-release-notes__live {
+  display: inline-flex;
+  min-height: 30px;
+  flex: none;
+  padding: 0 11px;
+  border: 1px solid color-mix(in srgb, var(--ui-green) 28%, var(--ui-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-green) 9%, var(--ui-paper));
+  align-items: center;
+  gap: 7px;
+  color: var(--ui-green);
+  font-family: var(--ui-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.office-release-notes__live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentcolor;
+  box-shadow: 0 0 0 4px color-mix(in srgb, currentcolor 14%, transparent);
+}
+
+.office-release-notes__scope-copy strong,
+.office-release-notes__archive strong {
+  display: block;
+  color: var(--ui-ink);
+  font-size: 14px;
+  font-weight: 680;
+  line-height: 1.45;
+}
+
+.rp-doc .office-release-notes__scope-copy p,
+.rp-doc .office-release-notes__archive p {
+  margin-top: 2px;
+  color: var(--ui-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.office-release-notes__scope-links {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.rp-doc .office-release-notes__scope-links a,
+.rp-doc .office-release-card__links a,
+.rp-doc .office-release-notes__empty a,
+.rp-doc .office-release-notes__archive > a {
+  display: inline-flex;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: 9px;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-ink);
+  font-size: 13px;
+  font-weight: 630;
+  line-height: 1.35;
+  text-decoration: none;
+  transition:
+    border-color 140ms ease-out,
+    background-color 140ms ease-out,
+    color 140ms ease-out;
+}
+
+.rp-doc .office-release-notes__scope-links a:hover,
+.rp-doc .office-release-card__links a:hover,
+.rp-doc .office-release-notes__empty a:hover,
+.rp-doc .office-release-notes__archive > a:hover {
+  border-color: color-mix(in srgb, var(--ui-blue) 42%, var(--ui-line));
+  background: var(--ui-panel);
+  color: var(--ui-blue-deep);
+}
+
+.office-release-notes__timeline {
+  display: grid;
+  min-width: 0;
+  gap: 22px;
+}
+
+.office-release-notes__timeline > li {
+  min-width: 0;
+}
+
+.office-release-card {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  padding: 24px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: 20px;
+  background: var(--ui-paper);
+  box-shadow: 0 16px 34px -30px rgb(15 35 70 / 42%);
+}
+
+.office-release-card::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: var(--office-release-accent);
+  content: "";
+}
+
+.office-release-card--featured {
+  border-color: color-mix(in srgb, var(--ui-blue) 30%, var(--ui-line));
+  background:
+    radial-gradient(
+      circle at 96% 8%,
+      color-mix(in srgb, var(--ui-blue) 12%, transparent),
+      transparent 32%
+    ),
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--ui-blue) 5%, var(--ui-paper)),
+      var(--ui-paper) 58%
+    );
+  box-shadow: 0 24px 52px -38px
+    color-mix(in srgb, var(--ui-blue) 62%, transparent);
+}
+
+.office-release-card[data-surface="documentation"] {
+  --office-release-accent: var(--ui-purple);
+}
+
+.office-release-card[data-surface="writer"] {
+  --office-release-accent: var(--ui-blue);
+}
+
+.office-release-card[data-surface="spreadsheet"] {
+  --office-release-accent: var(--ui-green);
+}
+
+.office-release-card[data-surface="presentation"] {
+  --office-release-accent: var(--ui-amber);
+}
+
+.office-release-card[data-surface="markdown"] {
+  --office-release-accent: var(--ui-purple);
+}
+
+.office-release-card[data-surface="pdf"] {
+  --office-release-accent: var(--ui-red);
+}
+
+.office-release-card[data-surface="playground"] {
+  --office-release-accent: var(--ui-purple);
+}
+
+.office-release-card__header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 13px;
+}
+
+.office-release-card__icon,
+.office-release-notes__archive-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border: 1px solid
+    color-mix(in srgb, var(--office-release-accent) 24%, var(--ui-line));
+  border-radius: 13px;
+  background: var(--office-release-accent-soft);
+  color: var(--office-release-accent);
+  place-items: center;
+}
+
+.office-release-card__icon svg,
+.office-release-notes__archive-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.office-release-card__identity {
+  min-width: 0;
+}
+
+.office-release-card__version-row {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.office-release-card__version {
+  color: var(--office-release-accent);
+  font-family: var(--ui-mono);
+  font-size: 14px;
+  font-weight: 760;
+  letter-spacing: -0.02em;
+}
+
+.office-release-card__version-row time {
+  color: var(--ui-faint);
+  font-size: 12px;
+  font-weight: 540;
+}
+
+.office-release-card__surfaces {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 7px;
+  gap: 5px;
+}
+
+.rp-doc .office-release-card__surfaces li {
+  min-height: 23px;
+  padding: 3px 8px;
+  border: 1px solid var(--ui-line);
+  border-radius: 999px;
+  background: var(--ui-canvas);
+  color: var(--ui-muted);
+  font-size: 11px;
+  font-weight: 630;
+  line-height: 15px;
+}
+
+.rp-doc .office-release-card__surfaces li[data-kind="new"] {
+  border-color: color-mix(in srgb, var(--ui-green) 24%, var(--ui-line));
+  background: color-mix(in srgb, var(--ui-green) 8%, var(--ui-paper));
+  color: var(--ui-green);
+}
+
+.rp-doc .office-release-card__surfaces li[data-kind="improved"] {
+  border-color: color-mix(in srgb, var(--ui-blue) 24%, var(--ui-line));
+  background: color-mix(in srgb, var(--ui-blue) 8%, var(--ui-paper));
+  color: var(--ui-blue-deep);
+}
+
+.rp-doc .office-release-card__surfaces li[data-kind="fixed"] {
+  border-color: color-mix(in srgb, var(--ui-amber) 30%, var(--ui-line));
+  background: color-mix(in srgb, var(--ui-amber) 9%, var(--ui-paper));
+  color: var(--ui-amber);
+}
+
+.office-release-card__copy {
+  margin-top: 20px;
+}
+
+.rp-doc .office-release-card__copy h2 {
+  margin: 0;
+  color: var(--ui-ink);
+  font-size: clamp(21px, 3vw, 27px);
+  font-weight: 710;
+  letter-spacing: -0.03em;
+  line-height: 1.22;
+}
+
+.rp-doc .office-release-card__copy p {
+  max-width: 760px;
+  margin-top: 8px;
+  color: var(--ui-muted);
+  font-size: 15px;
+  line-height: 1.68;
+}
+
+.office-release-card__highlights {
+  display: grid;
+  margin-top: 21px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rp-doc .office-release-card__highlights li {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--ui-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ui-canvas) 72%, var(--ui-paper));
+}
+
+.office-release-card__highlights strong,
+.office-release-card__highlights span {
+  display: block;
+}
+
+.office-release-card__highlights strong {
+  color: var(--ui-ink);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.4;
+}
+
+.office-release-card__highlights span {
+  margin-top: 5px;
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.58;
+}
+
+.office-release-card__links {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  gap: 8px;
+}
+
+.rp-doc .office-release-card__links a {
+  gap: 8px;
+}
+
+.rp-doc .office-release-card__links a:first-child {
+  border-color: color-mix(
+    in srgb,
+    var(--office-release-accent) 34%,
+    var(--ui-line)
+  );
+  background: var(--office-release-accent-soft);
+  color: var(--office-release-accent);
+}
+
+.office-release-notes__empty {
+  display: flex;
+  padding: 22px;
+  border: 1px dashed var(--ui-line-strong);
+  border-radius: 18px;
+  background: var(--ui-paper);
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.rp-doc .office-release-notes__empty h2 {
+  margin: 0;
+  color: var(--ui-ink);
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.rp-doc .office-release-notes__empty p {
+  margin-top: 5px;
+  color: var(--ui-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.rp-doc .office-release-notes__empty a {
+  margin-top: 13px;
+}
+
+.office-release-notes__archive {
+  display: grid;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: 16px;
+  background: var(--ui-panel);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+}
+
+.office-release-notes__archive-icon {
+  --office-release-accent: var(--ui-blue);
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+  border-radius: 12px;
+  background: var(--ui-paper);
+}
+
+.rp-doc .office-release-notes__archive > a {
+  gap: 7px;
+  background: var(--ui-paper);
+}
+
+@media (max-width: 860px) {
+  .office-release-notes__scope {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .office-release-card__highlights {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .office-release-notes {
+    margin-top: 22px;
+    gap: 20px;
+  }
+
+  .office-release-notes__scope {
+    padding: 14px;
+  }
+
+  .office-release-notes__scope-copy {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .office-release-notes__scope-links,
+  .office-release-card__links {
+    width: 100%;
+  }
+
+  .rp-doc .office-release-notes__scope-links a,
+  .rp-doc .office-release-card__links a {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .office-release-card {
+    padding: 19px 17px 19px 20px;
+    border-radius: 16px;
+  }
+
+  .office-release-card__header {
+    align-items: flex-start;
+  }
+
+  .office-release-card__icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 12px;
+  }
+
+  .office-release-card__version-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .office-release-card__copy {
+    margin-top: 17px;
+  }
+
+  .office-release-card__highlights {
+    margin-top: 17px;
+  }
+
+  .office-release-notes__archive {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .rp-doc .office-release-notes__archive > a {
+    width: 100%;
+    grid-column: 1 / -1;
+  }
+}

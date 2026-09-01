@@ -89,15 +89,19 @@ suite "office-docs-navigation" {
         }
 
         expect "latest-main-capabilities-are-prominent" {
-            text = "main 最新能力"
+            text = "main 更新内容"
         }
 
         expect "latest-writer-capabilities-are-linked" {
-            text = "字符底纹"
+            text = "Writer 原生 OpenType 排版"
         }
 
         expect "latest-spreadsheet-capability-is-linked" {
             visible = css("main .rp-doc a[href*='components/spreadsheet.html#']")
+        }
+
+        expect "release-notes-entry-is-prominent" {
+            visible = css("main .rp-doc a[href$='/changelog.html']")
         }
 
         expect "documentation-index-table-is-visible" {
@@ -167,6 +171,132 @@ suite "office-docs-navigation" {
 
         page_errors "collaboration-discovery-errors" {
             path = "diagnostics/collaboration-discovery-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "scan-version-aware-release-notes" {
+        name = "Scan localized release outcomes and freeze the timeline by documentation version"
+        surface = "web"
+        timeout_ms = 90000
+
+        viewport "desktop-release-notes" {
+            width = 1440
+            height = 900
+            scale = 1
+        }
+
+        navigate "open-current-release-notes" {
+            url = "http://127.0.0.1:4175/docs/changelog.html"
+        }
+
+        wait "current-release-notes-hydrated" {
+            load = "networkidle"
+        }
+
+        expect "current-release-notes-ready" {
+            text = "真正说明产品变化的更新日志"
+        }
+
+        expect "current-release-timeline-is-semantic" {
+            visible = css("main ol.office-release-notes__timeline > li:first-child article[data-version='0.38.1'] time[datetime='2026-09-01']")
+        }
+
+        expect "current-release-has-scannable-outcomes" {
+            visible = css("main article[data-version='0.38.1'] .office-release-card__highlights > li:nth-child(3)")
+        }
+
+        expect "writer-evidence-link-is-localized" {
+            visible = css("main article[data-version='0.38.0'] a[href$='#原生-opentype-排版']")
+        }
+
+        accessibility "current-release-notes-accessibility" {
+            path = "evidence/release-notes-current.json"
+            interactive = true
+        }
+
+        navigate "open-frozen-release-notes" {
+            url = "http://127.0.0.1:4175/docs/0.38.0/changelog.html"
+        }
+
+        wait "frozen-release-notes-hydrated" {
+            load = "networkidle"
+        }
+
+        expect "frozen-release-timeline-stops-at-selected-version" {
+            visible = css("main ol.office-release-notes__timeline > li:first-child article[data-version='0.38.0']")
+        }
+
+        expect "later-releases-are-hidden-from-frozen-history" {
+            visible = css("main:not(:has(article[data-version='0.38.1']))")
+        }
+
+        navigate "open-english-release-notes" {
+            url = "http://127.0.0.1:4175/docs/en/changelog.html"
+        }
+
+        expect "english-release-notes-ready" {
+            text = "Release notes that explain the product change"
+        }
+
+        expect "english-writer-evidence-link-is-localized" {
+            visible = css("main article[data-version='0.38.0'] a[href$='#native-opentype-typography']")
+        }
+
+        console "release-notes-console" {
+            path = "diagnostics/release-notes-console.json"
+            clear = false
+        }
+
+        page_errors "release-notes-errors" {
+            path = "diagnostics/release-notes-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "scan-release-notes-on-phone" {
+        name = "Keep release cards and controls readable on a phone"
+        surface = "web"
+        timeout_ms = 90000
+
+        viewport "phone-release-notes" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-phone-release-notes" {
+            url = "http://127.0.0.1:4175/docs/changelog.html"
+        }
+
+        expect "phone-release-notes-ready" {
+            visible = css("main article[data-version='0.38.1']")
+        }
+
+        expect "phone-release-highlights-stack" {
+            visible = css("main article[data-version='0.38.1'] .office-release-card__highlights > li:nth-child(3)")
+        }
+
+        expect "phone-release-links-remain-available" {
+            visible = css("main article[data-version='0.38.0'] a[href$='#原生-opentype-排版']")
+        }
+
+        expect "phone-navigation-remains-accessible" {
+            visible = css("button.rp-nav-hamburger[aria-label='打开导航']")
+        }
+
+        accessibility "phone-release-notes-accessibility" {
+            path = "evidence/release-notes-phone.json"
+            interactive = true
+        }
+
+        console "phone-release-notes-console" {
+            path = "diagnostics/release-notes-phone-console.json"
+            clear = false
+        }
+
+        page_errors "phone-release-notes-errors" {
+            path = "diagnostics/release-notes-phone-errors.json"
             clear = false
         }
     }
@@ -317,6 +447,10 @@ suite "office-docs-navigation" {
 
         expect "phone-backend-guide-is-discoverable" {
             visible = css("main .rp-doc a[href$='/components/collaboration-server.html']")
+        }
+
+        expect "phone-release-notes-are-discoverable" {
+            visible = css("main .rp-doc a[href$='/changelog.html']")
         }
 
         accessibility "phone-documentation-accessibility" {

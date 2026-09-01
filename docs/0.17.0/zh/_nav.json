@@ -2,17 +2,22 @@
   {
     "text": "文档",
     "link": "/",
-    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?(?:$|guide(?:/|$)|browser-editor-architecture|native-office-engine|editor-quality-roadmap|cli-reference)"
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?(?:$|guide(?:/|$)|browser-editor-architecture|native-office-engine|editor-quality-roadmap|cli-reference)"
+  },
+  {
+    "text": "更新日志",
+    "link": "/changelog.html",
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?changelog(?:\\.html)?$"
   },
   {
     "text": "组件",
     "link": "/components/",
-    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?components/"
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?components/"
   },
   {
     "text": "CLI 与 Skill",
     "link": "/automation/",
-    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?automation/"
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?automation/"
   },
   {
     "text": "资源",
