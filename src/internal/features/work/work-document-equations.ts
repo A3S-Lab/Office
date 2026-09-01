@@ -7,6 +7,16 @@ import {
   type WorkDocumentEmphasisMark,
 } from './work-document-emphasis';
 import { normalizeDocumentKerningThresholdHalfPoints } from './work-document-kerning';
+import {
+  documentOpenTypeCssProperties,
+  normalizeDocumentOpenTypeLigatures,
+  normalizeDocumentOpenTypeNumberForm,
+  normalizeDocumentOpenTypeNumberSpacing,
+  normalizeDocumentOpenTypeStylisticSets,
+  type WorkDocumentOpenTypeLigatures,
+  type WorkDocumentOpenTypeNumberForm,
+  type WorkDocumentOpenTypeNumberSpacing,
+} from './work-document-opentype';
 
 export type WorkDocumentEquationDisplay = 'inline' | 'block';
 export type WorkDocumentEquationJustification =
@@ -529,33 +539,12 @@ export interface WorkDocumentEquationWordProperties3D {
   contourColor?: WorkDocumentEquationWordEffectColor;
 }
 
-export type WorkDocumentEquationWordLigatures =
-  | 'none'
-  | 'standard'
-  | 'contextual'
-  | 'historical'
-  | 'discretional'
-  | 'standardContextual'
-  | 'standardHistorical'
-  | 'contextualHistorical'
-  | 'standardDiscretional'
-  | 'contextualDiscretional'
-  | 'historicalDiscretional'
-  | 'standardContextualHistorical'
-  | 'standardContextualDiscretional'
-  | 'standardHistoricalDiscretional'
-  | 'contextualHistoricalDiscretional'
-  | 'all';
+export type WorkDocumentEquationWordLigatures = WorkDocumentOpenTypeLigatures;
 
-export type WorkDocumentEquationWordNumberForm =
-  | 'default'
-  | 'lining'
-  | 'oldStyle';
+export type WorkDocumentEquationWordNumberForm = WorkDocumentOpenTypeNumberForm;
 
 export type WorkDocumentEquationWordNumberSpacing =
-  | 'default'
-  | 'proportional'
-  | 'tabular';
+  WorkDocumentOpenTypeNumberSpacing;
 
 export interface WorkDocumentEquationWordLineDash {
   preset?: WorkDocumentEquationWordPresetLineDash;
@@ -1261,9 +1250,6 @@ const MAX_EQUATION_WORD_GRADIENT_STOPS = 10;
 const EQUATION_WORD_ANGLE_UNITS_PER_DEGREE = 60_000;
 const EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT = 1_000;
 const MAX_EQUATION_WORD_COLOR_TRANSFORMS = 64;
-const MAX_EQUATION_WORD_STYLISTIC_SET_ENTRIES = 4_096;
-const MIN_EQUATION_WORD_STYLISTIC_SET_ID = 1;
-const MAX_EQUATION_WORD_STYLISTIC_SET_ID = 20;
 const MIN_EQUATION_WORD_COLOR_PERCENTAGE = -2_147_483_648;
 const MAX_EQUATION_WORD_COLOR_PERCENTAGE = 2_147_483_647;
 const MAX_EQUATION_WORD_FIXED_COLOR_PERCENTAGE = 100_000;
@@ -1467,70 +1453,6 @@ const WORD_PROPERTIES_3D_MATERIAL_PRESETS =
     'softMetal',
     'none',
   ]);
-const WORD_LIGATURE_STANDARD = 1;
-const WORD_LIGATURE_CONTEXTUAL = 2;
-const WORD_LIGATURE_HISTORICAL = 4;
-const WORD_LIGATURE_DISCRETIONAL = 8;
-const WORD_LIGATURE_FLAGS = new Map<WorkDocumentEquationWordLigatures, number>([
-  ['none', 0],
-  ['standard', WORD_LIGATURE_STANDARD],
-  ['contextual', WORD_LIGATURE_CONTEXTUAL],
-  ['historical', WORD_LIGATURE_HISTORICAL],
-  ['discretional', WORD_LIGATURE_DISCRETIONAL],
-  ['standardContextual', WORD_LIGATURE_STANDARD | WORD_LIGATURE_CONTEXTUAL],
-  ['standardHistorical', WORD_LIGATURE_STANDARD | WORD_LIGATURE_HISTORICAL],
-  ['contextualHistorical', WORD_LIGATURE_CONTEXTUAL | WORD_LIGATURE_HISTORICAL],
-  ['standardDiscretional', WORD_LIGATURE_STANDARD | WORD_LIGATURE_DISCRETIONAL],
-  [
-    'contextualDiscretional',
-    WORD_LIGATURE_CONTEXTUAL | WORD_LIGATURE_DISCRETIONAL,
-  ],
-  [
-    'historicalDiscretional',
-    WORD_LIGATURE_HISTORICAL | WORD_LIGATURE_DISCRETIONAL,
-  ],
-  [
-    'standardContextualHistorical',
-    WORD_LIGATURE_STANDARD |
-      WORD_LIGATURE_CONTEXTUAL |
-      WORD_LIGATURE_HISTORICAL,
-  ],
-  [
-    'standardContextualDiscretional',
-    WORD_LIGATURE_STANDARD |
-      WORD_LIGATURE_CONTEXTUAL |
-      WORD_LIGATURE_DISCRETIONAL,
-  ],
-  [
-    'standardHistoricalDiscretional',
-    WORD_LIGATURE_STANDARD |
-      WORD_LIGATURE_HISTORICAL |
-      WORD_LIGATURE_DISCRETIONAL,
-  ],
-  [
-    'contextualHistoricalDiscretional',
-    WORD_LIGATURE_CONTEXTUAL |
-      WORD_LIGATURE_HISTORICAL |
-      WORD_LIGATURE_DISCRETIONAL,
-  ],
-  [
-    'all',
-    WORD_LIGATURE_STANDARD |
-      WORD_LIGATURE_CONTEXTUAL |
-      WORD_LIGATURE_HISTORICAL |
-      WORD_LIGATURE_DISCRETIONAL,
-  ],
-]);
-const WORD_NUMBER_FORMS = new Set<WorkDocumentEquationWordNumberForm>([
-  'default',
-  'lining',
-  'oldStyle',
-]);
-const WORD_NUMBER_SPACINGS = new Set<WorkDocumentEquationWordNumberSpacing>([
-  'default',
-  'proportional',
-  'tabular',
-]);
 const WORD_SCENE_3D_CAMERA_PRESETS =
   new Set<WorkDocumentEquationWordPresetCamera>([
     'legacyObliqueTopLeft',
@@ -3751,31 +3673,19 @@ function normalizeEquationWordRunProperties(
   const ligatures =
     source.ligatures === undefined
       ? undefined
-      : WORD_LIGATURE_FLAGS.has(
-            source.ligatures as WorkDocumentEquationWordLigatures,
-          )
-        ? (source.ligatures as WorkDocumentEquationWordLigatures)
-        : null;
+      : normalizeDocumentOpenTypeLigatures(source.ligatures);
   const numberForm =
     source.numberForm === undefined
       ? undefined
-      : WORD_NUMBER_FORMS.has(
-            source.numberForm as WorkDocumentEquationWordNumberForm,
-          )
-        ? (source.numberForm as WorkDocumentEquationWordNumberForm)
-        : null;
+      : normalizeDocumentOpenTypeNumberForm(source.numberForm);
   const numberSpacing =
     source.numberSpacing === undefined
       ? undefined
-      : WORD_NUMBER_SPACINGS.has(
-            source.numberSpacing as WorkDocumentEquationWordNumberSpacing,
-          )
-        ? (source.numberSpacing as WorkDocumentEquationWordNumberSpacing)
-        : null;
+      : normalizeDocumentOpenTypeNumberSpacing(source.numberSpacing);
   const stylisticSets =
     source.stylisticSets === undefined
       ? undefined
-      : normalizeEquationWordStylisticSets(source.stylisticSets);
+      : normalizeDocumentOpenTypeStylisticSets(source.stylisticSets);
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -3991,32 +3901,6 @@ function normalizeEquationWordRunProperties(
       : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
-}
-
-function normalizeEquationWordStylisticSets(source: unknown): number[] | null {
-  if (
-    !Array.isArray(source) ||
-    source.length > MAX_EQUATION_WORD_STYLISTIC_SET_ENTRIES
-  ) {
-    return null;
-  }
-  const normalized: number[] = [];
-  const seen = new Set<number>();
-  for (const id of source) {
-    if (
-      typeof id !== 'number' ||
-      !Number.isInteger(id) ||
-      id < MIN_EQUATION_WORD_STYLISTIC_SET_ID ||
-      id > MAX_EQUATION_WORD_STYLISTIC_SET_ID
-    ) {
-      return null;
-    }
-    if (!seen.has(id)) {
-      seen.add(id);
-      normalized.push(id);
-    }
-  }
-  return normalized;
 }
 
 function equationWordRunEffectsConflict(
@@ -5351,30 +5235,21 @@ function wordRunOpenTypeFeatureStyles(
   stylisticSets: number[] | undefined,
 ): string {
   if (ligatures === undefined && stylisticSets === undefined) return '';
-  const values: string[] = [];
-  const flags =
-    ligatures === undefined ? undefined : WORD_LIGATURE_FLAGS.get(ligatures);
-  if (flags !== undefined) {
-    values.push(
-      `"liga" ${flags & WORD_LIGATURE_STANDARD ? 1 : 0}`,
-      `"clig" ${flags & WORD_LIGATURE_CONTEXTUAL ? 1 : 0}`,
-      `"hlig" ${flags & WORD_LIGATURE_HISTORICAL ? 1 : 0}`,
-      `"dlig" ${flags & WORD_LIGATURE_DISCRETIONAL ? 1 : 0}`,
-    );
-  }
-  if (stylisticSets !== undefined) {
-    values.push(
-      ...stylisticSets.map((id) => `"ss${String(id).padStart(2, '0')}" 1`),
-    );
-  }
-  return `font-feature-settings:${values.length ? values.join(', ') : 'normal'}`;
+  const value = documentOpenTypeCssProperties({
+    ligatures,
+    stylisticSets,
+  }).fontFeatureSettings;
+  return value ? `font-feature-settings:${value}` : '';
 }
 
 function wordRunContextualAlternateStyles(
   contextualAlternates: boolean | undefined,
 ): string {
   if (contextualAlternates === undefined) return '';
-  return `font-variant-ligatures:${contextualAlternates ? 'contextual' : 'no-contextual'}`;
+  const value = documentOpenTypeCssProperties({
+    contextualAlternates,
+  }).fontVariantLigatures;
+  return value ? `font-variant-ligatures:${value}` : '';
 }
 
 function wordRunNumberStyles(
@@ -5382,19 +5257,11 @@ function wordRunNumberStyles(
   numberSpacing: WorkDocumentEquationWordNumberSpacing | undefined,
 ): string {
   if (numberForm === undefined && numberSpacing === undefined) return '';
-  const values = [
-    numberForm === 'lining'
-      ? 'lining-nums'
-      : numberForm === 'oldStyle'
-        ? 'oldstyle-nums'
-        : '',
-    numberSpacing === 'proportional'
-      ? 'proportional-nums'
-      : numberSpacing === 'tabular'
-        ? 'tabular-nums'
-        : '',
-  ].filter(Boolean);
-  return `font-variant-numeric:${values.length ? values.join(' ') : 'normal'}`;
+  const value = documentOpenTypeCssProperties({
+    numberForm,
+    numberSpacing,
+  }).fontVariantNumeric;
+  return value ? `font-variant-numeric:${value}` : '';
 }
 
 function wordRunTextFillMathMlColor(

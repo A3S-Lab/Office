@@ -16,6 +16,13 @@ import {
   type WorkDocumentScriptFontSlot,
 } from '../work-document-script-fonts';
 import { documentWordLineHeightFactor } from '../work-document-word-line-metrics';
+import {
+  isDocumentOpenTypeFeaturePatch,
+  parseDocumentOpenTypeFeatures,
+  patchDocumentOpenTypeFeatures,
+  serializeDocumentOpenTypeFeatures,
+  type WorkDocumentOpenTypeFeaturePatch,
+} from '../work-document-opentype';
 
 export interface DocumentFontFamilySource {
   mixed: boolean;
@@ -88,7 +95,30 @@ export function applyDocumentScriptFontPatch(
   scalarPatch: Readonly<Record<string, boolean | number | string | null>>,
   scriptFontPatch: WorkDocumentScriptFontPatch,
 ): boolean {
-  if (!validScriptFontPatch(scriptFontPatch)) return false;
+  return applyDocumentTextStylePatch(
+    editor,
+    selection,
+    scalarPatch,
+    scriptFontPatch,
+    {},
+  );
+}
+
+export function applyDocumentTextStylePatch(
+  editor: Editor,
+  selection: { from: number; to: number },
+  scalarPatch: Readonly<Record<string, boolean | number | string | null>>,
+  scriptFontPatch: WorkDocumentScriptFontPatch,
+  openTypePatch: WorkDocumentOpenTypeFeaturePatch,
+): boolean {
+  const hasScriptFontPatch = Object.keys(scriptFontPatch).length > 0;
+  const hasOpenTypePatch = Object.keys(openTypePatch).length > 0;
+  if (
+    (hasScriptFontPatch && !validScriptFontPatch(scriptFontPatch)) ||
+    (hasOpenTypePatch && !isDocumentOpenTypeFeaturePatch(openTypePatch))
+  ) {
+    return false;
+  }
   const { state } = editor;
   const textStyle = state.schema.marks.textStyle;
   if (!textStyle) return false;
@@ -107,6 +137,7 @@ export function applyDocumentScriptFontPatch(
       current,
       scalarPatch,
       scriptFontPatch,
+      openTypePatch,
       normalizeDocumentScriptFontSlot(current?.attrs.scriptFontSlot) ??
         documentScriptFontSlotFromHint(
           parseDocumentScriptFonts(current?.attrs.scriptFonts)?.hint,
@@ -138,6 +169,20 @@ export function applyDocumentScriptFontPatch(
       const to = Math.min(selection.to, position + node.nodeSize);
       if (to <= from) return;
       const current = node.marks.find((mark) => mark.type === textStyle);
+      if (!hasScriptFontPatch) {
+        updates.push({
+          from,
+          to,
+          current,
+          attributes: patchedTextStyleAttributes(
+            current,
+            scalarPatch,
+            scriptFontPatch,
+            openTypePatch,
+          ),
+        });
+        return;
+      }
       const currentFonts = parseDocumentScriptFonts(current?.attrs.scriptFonts);
       const nextFonts = patchDocumentScriptFonts(
         currentFonts,
@@ -155,6 +200,7 @@ export function applyDocumentScriptFontPatch(
             current,
             scalarPatch,
             scriptFontPatch,
+            openTypePatch,
             segment.slot,
             currentFonts,
             nextFonts,
@@ -185,7 +231,8 @@ function patchedTextStyleAttributes(
   current: Mark | undefined,
   scalarPatch: Readonly<Record<string, boolean | number | string | null>>,
   scriptFontPatch: WorkDocumentScriptFontPatch,
-  slot: WorkDocumentScriptFontSlot,
+  openTypePatch: WorkDocumentOpenTypeFeaturePatch,
+  slot?: WorkDocumentScriptFontSlot,
   currentFonts = parseDocumentScriptFonts(current?.attrs.scriptFonts),
   nextFonts = patchDocumentScriptFonts(
     currentFonts,
@@ -197,6 +244,15 @@ function patchedTextStyleAttributes(
     ...(current?.attrs ?? {}),
     ...scalarPatch,
   };
+  if (Object.keys(openTypePatch).length) {
+    const features = patchDocumentOpenTypeFeatures(
+      parseDocumentOpenTypeFeatures(current?.attrs.openTypeFeatures),
+      openTypePatch,
+    );
+    attributes.openTypeFeatures = serializeDocumentOpenTypeFeatures(features);
+  }
+  if (!Object.keys(scriptFontPatch).length) return attributes;
+  if (!slot) return attributes;
   const serialized = serializeDocumentScriptFonts(nextFonts);
   if (!nextFonts || !serialized) {
     attributes.scriptFonts = null;

@@ -4,6 +4,26 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.38.0 - 2026-09-01
+
+- Added editable Office 2010 OpenType typography for Writer body text and
+  static stories. The shared advanced Font dialog now authors every native
+  `w14:ligatures` combination, default/lining/old-style number forms,
+  default/proportional/tabular number spacing, style sets 1-20, and explicit
+  contextual-alternate enable/reset values with independent mixed-selection
+  safety and one-step Undo.
+- Preserved the same bounded model through style inheritance, Format Painter,
+  tracked character-format revisions, reject restoration, body, header,
+  footer, note, and comment package parts, exact DOCX export/reopen, and
+  canonical CSS projection. Malformed, duplicated, misplaced, out-of-range,
+  or namespace-spoofed values fail closed and receive dedicated compatibility
+  diagnostics.
+- Reused one OpenType feature model and CSS mapping for ordinary text and
+  structured equations, kept unsupported shaping on browser-authoritative
+  line measurement, and added focused Rstest, desktop/compact Playwright, and
+  local-only A3S Test coverage for dialog semantics, accessibility, focus,
+  tracking, Undo, native story output, and clean browser diagnostics.
+
 ## 0.37.5 - 2026-09-01
 
 - Added a workbook-owned Spreadsheet date-system contract. XLSX import now

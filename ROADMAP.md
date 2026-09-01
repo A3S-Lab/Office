@@ -1,6 +1,6 @@
 # A3S Office / Traditional Office Capability Gap Roadmap
 
-Last reviewed: 2026-08-31
+Last reviewed: 2026-09-01
 
 This roadmap compares the current `main` branch of A3S Office with the public
 capability surface of Traditional Office. It is a prioritization tool, not a
@@ -67,7 +67,7 @@ collaboration transport, and AI providers.
 
 | Capability | A3S Office status | Main gap or boundary | Priority |
 | --- | --- | --- | --- |
-| Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported**, including independent native `w:rFonts` ASCII, high ANSI, East Asian, and complex-script slots with exact direct/theme identity, mixed-run segmentation, one script-aware `Cmd/Ctrl+D` dialog, and one-step Undo; independent native `w:lang` Latin, East Asian, and bidi proofing slots plus explicit `w:noProof` inclusion/exclusion; mutually exclusive native `w:caps` / `w:smallCaps`; signed native `w:spacing` and `w:position` with explicit zero; all five native `w:em` emphasis values with explicit `none` and direct-format clearing; native `w:vanish` hidden text with explicit visible resets, the standard `Cmd/Ctrl+Shift+H` shortcut, and an editing-only dotted reveal view; independent native `w:outline`, `w:shadow`, `w:emboss`, and `w:imprint` effects with explicit false resets and conflict-safe authoring; native `w:bdr` character borders with 25 visible line styles plus `nil` and `none`, direct/theme colors, bounded width/spacing, shadow, and frame semantics; all 18 native `w:u` values with direct or theme color identity and explicit resets; independent native `w:strike` / `w:dstrike` state with explicit resets; standard shortcuts where Traditional Office defines them; page chrome; formatting revisions; and exact DOCX reopen | Long-tail Word style and typography effects outside the declared typed models can still normalize | Maintain / P0 fidelity |
+| Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported**, including independent native `w:rFonts` ASCII, high ANSI, East Asian, and complex-script slots with exact direct/theme identity, mixed-run segmentation, one script-aware `Cmd/Ctrl+D` dialog, and one-step Undo; complete bounded Office 2010 OpenType ligature, numeral-form, numeral-spacing, style-set, and contextual-alternate controls shared with equations; independent native `w:lang` Latin, East Asian, and bidi proofing slots plus explicit `w:noProof` inclusion/exclusion; mutually exclusive native `w:caps` / `w:smallCaps`; signed native `w:spacing` and `w:position` with explicit zero; all five native `w:em` emphasis values with explicit `none` and direct-format clearing; native `w:vanish` hidden text with explicit visible resets, the standard `Cmd/Ctrl+Shift+H` shortcut, and an editing-only dotted reveal view; independent native `w:outline`, `w:shadow`, `w:emboss`, and `w:imprint` effects with explicit false resets and conflict-safe authoring; native `w:bdr` character borders with 25 visible line styles plus `nil` and `none`, direct/theme colors, bounded width/spacing, shadow, and frame semantics; all 18 native `w:u` values with direct or theme color identity and explicit resets; independent native `w:strike` / `w:dstrike` state with explicit resets; standard shortcuts where Traditional Office defines them; page chrome; formatting revisions; and exact DOCX reopen | Long-tail Word style and typography effects outside the declared typed models can still normalize | Maintain / P0 fidelity |
 | Bullets, numbering, nesting, restarts, RTL lists | **Supported** for common editable structures | Exotic numbering pictures and some inherited list metadata remain compatibility work | P1 |
 | Page size, orientation, columns, section/page breaks | **Supported** per section | Browser line breaking and pagination are not yet desktop-engine exact | P0 |
 | Page margins (`w:pgMar`, `mirrorMargins`, `gutterAtTop`, `rtlGutter`) | **Supported** on current `main`: all seven native twip values, signed top/bottom overlap semantics, strict universal measures, header/footer distances, top/left/right gutters, facing-page swaps, multi-section inheritance, diagnostics, editing, PDF preview, and exact DOCX export | The continuous editing surface projects the first-page horizontal origin; physical-page PDF preview is authoritative for facing-page placement | Maintain / P0 regression gate |
@@ -199,6 +199,17 @@ a phase exits only when its evidence is complete.
   import-edit-export-reopen DOCX cycle as permanent gates. Keep browser-resolved
   families separate from native source identity so substitution cannot rewrite
   untouched theme references.
+- Treat Office 2010 OpenType run typography as a completed typography slice:
+  retain all 16 exact `w14:ligatures` combinations, default/lining/old-style
+  `w14:numForm`, default/proportional/tabular `w14:numSpacing`, canonical
+  `w14:stylisticSets` IDs 1-20, and explicit `w14:cntxtAlts` enable/reset
+  values. Keep independent inheritance and mixed-selection safety in the
+  shared `Cmd/Ctrl+D` dialog, partial per-run edits, one-step Undo, Format
+  Painter, formatting revisions and reject restoration, body/page-chrome/note
+  parity, exact namespace and `mc:Ignorable` export, reopen, dedicated
+  diagnostics, bounded CSS projection, browser-authoritative measurement for
+  active shaping, and the shared equation/text semantic model as permanent
+  gates.
 - Treat native character spacing as a completed typography slice: retain signed
   `w:spacing` values from -31,680 through 31,680 twips, explicit zero, mixed
   selection safety, `Cmd/Ctrl+D`, body/header/footer parity, Format Painter,

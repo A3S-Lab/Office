@@ -88,6 +88,13 @@ import {
   parseDocumentProofingLanguages,
   serializeDocumentProofingLanguages,
 } from './work-document-proofing';
+import {
+  DOCUMENT_OPEN_TYPE_ATTRIBUTE,
+  documentOpenTypeDomAttributes,
+  documentOpenTypeFeaturesFromElement,
+  parseDocumentOpenTypeFeatures,
+  serializeDocumentOpenTypeFeatures,
+} from './work-document-opentype';
 
 export const DOCUMENT_WORD_DEFAULT_SINGLE_LINE_HEIGHT = 1.15;
 
@@ -124,6 +131,7 @@ declare module '@tiptap/extension-text-style' {
     runShading?: string | null;
     proofingLanguages?: string | null;
     noProof?: boolean | null;
+    openTypeFeatures?: string | null;
     kerningThresholdHalfPoints?: number | null;
     scriptFonts?: string | null;
     scriptFontSlot?: WorkDocumentScriptFontSlot | null;
@@ -185,6 +193,10 @@ export const DocumentTextStyle = TextStyle.extend({
       },
       {
         tag: `span[${DOCUMENT_NO_PROOF_ATTRIBUTE}]`,
+        consuming: false,
+      },
+      {
+        tag: `span[${DOCUMENT_OPEN_TYPE_ATTRIBUTE}]`,
         consuming: false,
       },
     ];
@@ -318,6 +330,17 @@ export const DocumentTextStyle = TextStyle.extend({
             parseDocumentProofingLanguages(attributes.proofingLanguages),
             attributes.noProof,
             normalizeDocumentScriptFontSlot(attributes.scriptFontSlot),
+          ),
+      },
+      openTypeFeatures: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          serializeDocumentOpenTypeFeatures(
+            documentOpenTypeFeaturesFromElement(element),
+          ),
+        renderHTML: (attributes: Record<string, unknown>) =>
+          documentOpenTypeDomAttributes(
+            parseDocumentOpenTypeFeatures(attributes.openTypeFeatures),
           ),
       },
       kerningThresholdHalfPoints: {

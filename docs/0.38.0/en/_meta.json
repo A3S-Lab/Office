@@ -1,0 +1,39 @@
+[
+  "index",
+  {
+    "type": "section-header",
+    "label": "Start"
+  },
+  {
+    "type": "dir",
+    "name": "guide",
+    "label": "Getting started"
+  },
+  {
+    "type": "section-header",
+    "label": "Library"
+  },
+  {
+    "type": "dir",
+    "name": "components",
+    "label": "Components",
+    "collapsible": true
+  },
+  {
+    "type": "section-header",
+    "label": "Automation"
+  },
+  {
+    "type": "dir",
+    "name": "automation",
+    "label": "CLI and coding agents"
+  },
+  {
+    "type": "section-header",
+    "label": "Engineering reference"
+  },
+  "browser-editor-architecture",
+  "native-office-engine",
+  "editor-quality-roadmap",
+  "cli-reference"
+]

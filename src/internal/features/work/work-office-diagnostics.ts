@@ -8,6 +8,7 @@ import { diagnoseDocxHiddenText } from './work-docx-hidden-text-diagnostics';
 import { diagnoseDocxKerning } from './work-docx-kerning-diagnostics';
 import { diagnoseDocxLegacyTextEffects } from './work-docx-legacy-text-effects-diagnostics';
 import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
+import { diagnoseDocxOpenTypeTypography } from './work-docx-opentype-diagnostics';
 import { diagnoseDocxPageBorders } from './work-docx-page-borders-diagnostics';
 import { diagnoseDocxPageChrome } from './work-docx-page-chrome-diagnostics';
 import { diagnoseDocxPageMargins } from './work-docx-page-margins-diagnostics';
@@ -221,6 +222,7 @@ export async function analyzeDocxCompatibility(
     issues.push(...(await diagnoseDocxEquations(archive, document)));
     if (document) {
       issues.push(...(await diagnoseDocxKerning(archive, document)));
+      issues.push(...(await diagnoseDocxOpenTypeTypography(archive, document)));
       issues.push(...(await diagnoseDocxEmphasisMarks(archive, document)));
       issues.push(...(await diagnoseDocxHiddenText(archive, document)));
       issues.push(...(await diagnoseDocxLegacyTextEffects(archive, document)));
