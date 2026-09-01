@@ -836,6 +836,35 @@ collaboration, and real-package XLSX reopen tests plus a local A3S Test browser
 gate cover exact serial retention, imported filter visibility, controlled
 reopen, accessibility, and clean diagnostics.
 
+The sixty-first Writer milestone makes ordered-list numbering changes a
+first-class review intent. Changing a common decimal, lower/upper letter, or
+lower/upper Roman list style, or changing its starting value, stores one
+canonical snapshot on the ordered-list node. The review panel presents one
+Numbering card for the complete range. Accept keeps the current numbering;
+reject restores the original style, start value, and retained Office numbering
+identity without touching list text. The initial change, final decision, and
+Undo each remain one atomic transaction.
+
+Strict and transitional WordprocessingML `w:numberingChange` records import
+only when the paragraph numbering properties, revision metadata, original
+single-level definition, and contiguous per-item sequence are unambiguous.
+Export writes one native record per list item with sequential original values
+and enables native revision settings without leaking browser transport markers.
+The importer and diagnostics fail closed for malformed, duplicated,
+conflicting, namespace-spoofed, unsupported-format, or multi-level definitions.
+The model caps one snapshot at 64 KiB and one package at 65,536 numbering
+records; ordinary typing avoids numbering-tree scans because tracking runs only
+for structural list transactions.
+
+Browser Yjs and native Yrs carry the same live node metadata and immutable
+`changeKind: "numbering"` decision records. Native persistence reopens the
+browser fixture, authenticated text suggestions preserve the numbering intent,
+and attempted metadata removal is rejected before state changes. Focused
+Rstest, DOCX export/import/reopen, responsive browser coverage, and the pinned
+local A3S Test numbering suite cover review, rejection, Undo, accessibility,
+and clean diagnostics. Complex and multi-level numbering changes, move ranges,
+and section/table/row/cell property revisions remain explicit follow-up work.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

@@ -1,4 +1,3 @@
-import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import {
   fireEvent,
@@ -7,13 +6,14 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { Editor } from '@tiptap/core';
 import { DocumentChangesPanel } from '../src/internal/features/work/editors/document-changes-panel';
+import { DOCUMENT_NAVIGATION_COLLECTION_WINDOW_LIMIT } from '../src/internal/features/work/editors/document-navigation-window';
 import {
   collectDocumentChanges,
   type WorkDocumentChange,
   type WorkDocumentChangeKind,
 } from '../src/internal/features/work/work-document-changes';
-import { DOCUMENT_NAVIGATION_COLLECTION_WINDOW_LIMIT } from '../src/internal/features/work/editors/document-navigation-window';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 test('keeps the empty review pane aligned with the tracking state', () => {
@@ -145,6 +145,43 @@ test('labels and navigates paragraph-formatting revisions as a paragraph range',
       view.container.querySelector(
         '.work-document-change-item.paragraph-formatting',
       ),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '定位修订 1' }));
+    expect(editor.state.selection.from).toBe(range.from);
+    expect(editor.state.selection.to).toBe(range.to);
+  } finally {
+    editor.view.dom.remove();
+    editor.destroy();
+  }
+});
+
+test('labels and navigates ordered-list numbering revisions as one list range', () => {
+  const editor = createEditor();
+  document.body.append(editor.view.dom);
+  const range = textRange(editor, 'Alpha');
+  const numberingChange: WorkDocumentChange = {
+    id: 'numbering-1',
+    kind: 'numbering',
+    author: 'Ada Reviewer',
+    date: '2026-09-01T10:05:00.000Z',
+    from: range.from,
+    to: range.to,
+    text: 'Alpha',
+  };
+  try {
+    const view = render(
+      <DocumentChangesPanel
+        editor={editor}
+        changes={[numberingChange]}
+        trackChanges
+        onTrackChangesChange={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('编号格式')).toBeVisible();
+    expect(
+      view.container.querySelector('.work-document-change-item.numbering'),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '定位修订 1' }));
     expect(editor.state.selection.from).toBe(range.from);

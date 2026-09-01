@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 test('keeps curated release notes unique, localized, and newest first', () => {
   expect(OFFICE_RELEASE_NOTES.map(({ version }) => version)).toEqual([
+    '0.40.0',
     '0.39.0',
     '0.38.1',
     '0.38.0',
@@ -197,6 +198,9 @@ test('keeps the changelog semantic, responsive, static, and discoverable', async
 });
 
 test('keeps local evidence links aligned with each documentation language', () => {
+  const numberingRelease = OFFICE_RELEASE_NOTES.find(
+    ({ version }) => version === '0.40.0',
+  );
   const presentationRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.39.0',
   );
@@ -213,6 +217,10 @@ test('keeps local evidence links aligned with each documentation language', () =
     ({ version }) => version === '0.33.0',
   );
 
+  expect(numberingRelease?.links[0]?.href).toEqual({
+    en: './components/document.html#ordered-list-numbering-revisions',
+    zh: './components/document.html#有序列表编号修订',
+  });
   expect(presentationRelease?.links[0]?.href).toEqual({
     en: './components/presentation.html#entrance-and-exit-animations',
     zh: './components/presentation.html#进入与退出动画',

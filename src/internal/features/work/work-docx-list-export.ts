@@ -32,6 +32,10 @@ export interface DocxListExportContext {
   numberingSourceIdentities: Array<DocxSourceNumberingIdentity | null>;
   paragraphBorderPatches?: DocxParagraphBorderPatchCollector;
   themePatches?: DocxThemePatchCollector;
+  numberingChangeMarker?: (
+    list: HTMLElement,
+    itemIndex: number,
+  ) => string | null;
 }
 
 type InlineRuns = (element: HTMLElement) => Promise<ParagraphChild[]>;
@@ -53,7 +57,7 @@ export async function listToDocxParagraphs(
     (child): child is HTMLElement =>
       child instanceof HTMLElement && child.tagName.toLowerCase() === 'li',
   );
-  for (const item of items) {
+  for (const [itemIndex, item] of items.entries()) {
     const directBlocks = Array.from(item.children).filter(
       (child): child is HTMLElement =>
         child instanceof HTMLElement &&
@@ -74,9 +78,18 @@ export async function listToDocxParagraphs(
               ? docx.HeadingLevel.HEADING_3
               : undefined;
       const runs = await inlineRuns(block);
+      const numberingChangeMarker =
+        ordered && blockIndex === 0
+          ? context.numberingChangeMarker?.(list, itemIndex)
+          : null;
+      const paragraphChildren = numberingChangeMarker
+        ? [new docx.TextRun(numberingChangeMarker), ...runs]
+        : runs;
       paragraphs.push(
         new docx.Paragraph({
-          children: runs.length ? runs : [new docx.TextRun('')],
+          children: paragraphChildren.length
+            ? paragraphChildren
+            : [new docx.TextRun('')],
           heading,
           ...(blockIndex === 0
             ? { numbering }

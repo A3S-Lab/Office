@@ -4,6 +4,23 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.40.0 - 2026-09-02
+
+- Added atomic Writer ordered-list numbering revisions. Tracked list-style and
+  starting-number changes now capture one bounded canonical baseline, appear as
+  a dedicated Numbering review card, accept or reject as one list-range intent,
+  and retain independent Undo boundaries without rewriting list text.
+- Added strict and transitional WordprocessingML `w:numberingChange` import and
+  export for common single-level decimal, letter, and Roman numbering. Native
+  per-item records are grouped only when their identity and sequence are
+  contiguous; malformed, duplicated, conflicting, multi-level,
+  namespace-spoofed, or unsupported forms fail closed with compatibility
+  diagnostics instead of becoming editable state.
+- Carried numbering revisions and immutable `changeKind: "numbering"` decisions
+  through browser Yjs and native Yrs projection, persistence, restart, and
+  suggest-mode authorization. Added focused Rstest, native cross-runtime
+  fixtures, responsive browser coverage, and a pinned local A3S Test gate for
+  review, reject restoration, Undo, accessibility, and clean diagnostics.
 - Simplified the public Playground home by removing the redundant latest-
   capability gallery and routing feature examples through the existing New
   template grid with stable template identities for browser automation.

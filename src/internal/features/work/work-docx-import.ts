@@ -5,13 +5,18 @@ import { normalizeDocumentCaptionsHtml } from './work-document-captions';
 import { normalizeDocumentCitationsHtml } from './work-document-citations';
 import { normalizeDocumentFieldsHtml } from './work-document-fields';
 import { normalizeDocumentIndexesHtml } from './work-document-index';
-import { normalizeDocumentTableOfContentsHtml } from './work-document-table-of-contents';
 import { normalizeDocumentNotesHtml } from './work-document-notes';
+import {
+  documentPageMarginBody,
+  documentPageMarginsForLayout,
+} from './work-document-page-margins';
+import { applyDocumentPageGeometry } from './work-document-page-size';
 import {
   documentContentLayoutProperties,
   documentInitialSectionLayout,
   documentSectionDomAttributes,
 } from './work-document-section';
+import { normalizeDocumentTableOfContentsHtml } from './work-document-table-of-contents';
 import { readDocxBibliography } from './work-docx-bibliography';
 import {
   applyImportedDocxBookmarkMarkers,
@@ -56,24 +61,18 @@ import {
   markDocxBodyFields,
 } from './work-docx-field-import';
 import {
-  applyImportedDocxIndexMarkers,
-  hasImportedDocxIndexMarkers,
-  type ImportedDocxIndexMarkers,
-  markDocxIndexes,
-} from './work-docx-index-import';
-import {
-  applyImportedDocxTableOfContentsMarkers,
-  hasImportedDocxTableOfContentsMarkers,
-  type ImportedDocxTableOfContentsMarkers,
-  markDocxTablesOfContents,
-} from './work-docx-table-of-contents-import';
-import {
   applyImportedDocxImageLayoutMarkers,
   createImportedDocxImageLayoutMarkerState,
   hasImportedDocxImageLayoutMarkers,
   type ImportedDocxImageLayoutMarkers,
   markDocxImageLayouts,
 } from './work-docx-image-layout-import';
+import {
+  applyImportedDocxIndexMarkers,
+  hasImportedDocxIndexMarkers,
+  type ImportedDocxIndexMarkers,
+  markDocxIndexes,
+} from './work-docx-index-import';
 import {
   applyImportedDocxListMarkers,
   hasImportedDocxListMarkers,
@@ -86,19 +85,20 @@ import {
   placeMammothDocumentNotes,
 } from './work-docx-note-import';
 import {
+  applyImportedDocxNumberingChangeMarkers,
+  hasImportedDocxNumberingChangeMarkers,
+  type ImportedDocxNumberingChangeMarkers,
+  markDocxNumberingChanges,
+} from './work-docx-numbering-change-import';
+import { parseDocxPageBorders } from './work-docx-page-borders-import';
+import {
   documentUsesOddEvenPageChrome,
   importSectionPageChrome,
 } from './work-docx-page-chrome-import';
-import { parseDocxPageBorders } from './work-docx-page-borders-import';
 import { importDocxPageColor } from './work-docx-page-color';
 import {
-  documentPageMarginBody,
-  documentPageMarginsForLayout,
-} from './work-document-page-margins';
-import { applyDocumentPageGeometry } from './work-document-page-size';
-import {
-  inspectDocxPageMarginSettings,
   type InspectedDocxPageMarginSettings,
+  inspectDocxPageMarginSettings,
   parseDocxPageMargins,
 } from './work-docx-page-margins-import';
 import {
@@ -112,23 +112,29 @@ import {
   markDocxParagraphAlignments,
 } from './work-docx-paragraph-alignment-import';
 import {
+  applyImportedDocxParagraphBorderMarkers,
+  hasImportedDocxParagraphBorderMarkers,
+  type ImportedDocxParagraphBorderMarkers,
+  markDocxParagraphBorders,
+} from './work-docx-paragraph-borders-import';
+import {
   applyImportedDocxParagraphDirectionMarkers,
   hasImportedDocxParagraphDirectionMarkers,
   type ImportedDocxParagraphDirectionMarkers,
   markDocxParagraphDirections,
 } from './work-docx-paragraph-direction-import';
 import {
-  applyImportedDocxParagraphIdentityMarkers,
-  hasImportedDocxParagraphIdentityMarkers,
-  type ImportedDocxParagraphIdentityMarkers,
-  markDocxParagraphIdentities,
-} from './work-docx-paragraph-identity-import';
-import {
   applyImportedDocxParagraphFormattingChangeMarkers,
   hasImportedDocxParagraphFormattingChangeMarkers,
   type ImportedDocxParagraphFormattingChangeMarkers,
   markDocxParagraphFormattingChanges,
 } from './work-docx-paragraph-format-change-import';
+import {
+  applyImportedDocxParagraphIdentityMarkers,
+  hasImportedDocxParagraphIdentityMarkers,
+  type ImportedDocxParagraphIdentityMarkers,
+  markDocxParagraphIdentities,
+} from './work-docx-paragraph-identity-import';
 import {
   applyImportedDocxParagraphIndentMarkers,
   hasImportedDocxParagraphIndentMarkers,
@@ -141,12 +147,6 @@ import {
   type ImportedDocxParagraphPaginationMarkers,
   markDocxParagraphPagination,
 } from './work-docx-paragraph-pagination-import';
-import {
-  applyImportedDocxParagraphBorderMarkers,
-  hasImportedDocxParagraphBorderMarkers,
-  type ImportedDocxParagraphBorderMarkers,
-  markDocxParagraphBorders,
-} from './work-docx-paragraph-borders-import';
 import {
   applyImportedDocxParagraphShadingMarkers,
   hasImportedDocxParagraphShadingMarkers,
@@ -179,6 +179,12 @@ import {
   type ImportedDocxTableCellMarkers,
   markDocxTableCells,
 } from './work-docx-table-cell-import';
+import {
+  applyImportedDocxTableOfContentsMarkers,
+  hasImportedDocxTableOfContentsMarkers,
+  type ImportedDocxTableOfContentsMarkers,
+  markDocxTablesOfContents,
+} from './work-docx-table-of-contents-import';
 import {
   applyImportedDocxTableRowMarkers,
   hasImportedDocxTableRowMarkers,
@@ -227,6 +233,7 @@ export interface PreparedDocxImport {
   equationMarkers: ImportedDocxEquationMarkers;
   citationMarkers: ImportedDocxCitationMarkers;
   listMarkers: ImportedDocxListMarkers;
+  numberingChangeMarkers: ImportedDocxNumberingChangeMarkers;
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers;
   paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers;
   paragraphFormattingChangeMarkers: ImportedDocxParagraphFormattingChangeMarkers;
@@ -275,6 +282,7 @@ export async function prepareDocxImport(
       equationMarkers: { equations: [] },
       citationMarkers: { citations: [], bibliographies: [] },
       listMarkers: { lists: [] },
+      numberingChangeMarkers: { groups: [] },
       imageLayoutMarkers: { images: [] },
       paragraphIdentityMarkers: { paragraphs: [] },
       paragraphFormattingChangeMarkers: { paragraphs: [] },
@@ -318,6 +326,7 @@ export async function prepareDocxImport(
   const citationMarkers = markDocxCitationFields(document);
   const fieldMarkers = markDocxBodyFields(document);
   const listMarkers = markDocxLists(document, numbering);
+  const numberingChangeMarkers = markDocxNumberingChanges(document);
   const imageLayoutMarkerState = createImportedDocxImageLayoutMarkerState();
   const imageLayoutMarkers = markDocxImageLayouts(
     document,
@@ -424,6 +433,7 @@ export async function prepareDocxImport(
   const trackChanges =
     Boolean(settings && firstDescendant(settings, 'trackRevisions')) ||
     changeMarkers.changes.length > 0 ||
+    numberingChangeMarkers.groups.length > 0 ||
     paragraphFormattingChangeMarkers.paragraphs.length > 0 ||
     runFormattingMarkers.runs.some((run) => Boolean(run.change));
   const sectionElements = effectiveSectionProperties(document);
@@ -440,6 +450,7 @@ export async function prepareDocxImport(
         hasImportedDocxIndexMarkers(indexMarkers) ||
         equationMarkers.changed ||
         hasImportedDocxListMarkers(listMarkers) ||
+        hasImportedDocxNumberingChangeMarkers(numberingChangeMarkers) ||
         hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
         hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
         hasImportedDocxParagraphFormattingChangeMarkers(
@@ -471,6 +482,7 @@ export async function prepareDocxImport(
       equationMarkers: equationMarkers.markers,
       citationMarkers,
       listMarkers,
+      numberingChangeMarkers,
       imageLayoutMarkers,
       paragraphIdentityMarkers,
       paragraphFormattingChangeMarkers,
@@ -521,6 +533,7 @@ export async function prepareDocxImport(
       hasImportedDocxIndexMarkers(indexMarkers) ||
       equationMarkers.changed ||
       hasImportedDocxListMarkers(listMarkers) ||
+      hasImportedDocxNumberingChangeMarkers(numberingChangeMarkers) ||
       hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
       hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
       hasImportedDocxParagraphFormattingChangeMarkers(
@@ -552,6 +565,7 @@ export async function prepareDocxImport(
     equationMarkers: equationMarkers.markers,
     citationMarkers,
     listMarkers,
+    numberingChangeMarkers,
     imageLayoutMarkers,
     paragraphIdentityMarkers,
     paragraphFormattingChangeMarkers,
@@ -591,6 +605,7 @@ export function applyDocxSectionsToHtml(
     bibliographies: [],
   },
   listMarkers: ImportedDocxListMarkers = { lists: [] },
+  numberingChangeMarkers: ImportedDocxNumberingChangeMarkers = { groups: [] },
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers = { images: [] },
   paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers = {
     paragraphs: [],
@@ -643,6 +658,7 @@ export function applyDocxSectionsToHtml(
   applyImportedDocxFieldMarkers(document, fieldMarkers);
   applyImportedDocxEquationMarkers(document, equationMarkers);
   applyImportedDocxListMarkers(document, listMarkers);
+  applyImportedDocxNumberingChangeMarkers(document, numberingChangeMarkers);
   applyImportedDocxImageLayoutMarkers(document, imageLayoutMarkers);
   applyImportedDocxParagraphDirectionMarkers(
     document,

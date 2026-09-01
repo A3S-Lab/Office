@@ -309,8 +309,15 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
-Version `0.39.0` extends the local, testable Presentation workflow with a
-complete bounded object-animation story:
+Version `0.40.0` extends Writer's local, testable review workflow with atomic
+ordered-list numbering revisions:
+
+- Tracked numbering-style and starting-number changes now appear as one
+  Numbering review card per ordered-list range. Accept keeps the current list;
+  reject restores the exact bounded baseline; Undo, Yjs/Yrs collaboration, and
+  immutable decisions share the same intent identity. Common single-level
+  decimal, letter, and Roman `w:numberingChange` records round-trip through
+  DOCX, while malformed or structurally ambiguous records fail closed.
 
 - A slide object can now own one entrance and one exit animation. The shared
   object-centric Animation tab authors appear/disappear, fade in/out, fly in/out,

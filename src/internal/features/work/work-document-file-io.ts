@@ -180,6 +180,7 @@ export async function importWorkDocumentFile(
           prepared.equationMarkers,
           prepared.citationMarkers,
           prepared.listMarkers,
+          prepared.numberingChangeMarkers,
           prepared.imageLayoutMarkers,
           prepared.paragraphIdentityMarkers,
           prepared.paragraphFormattingChangeMarkers,
