@@ -14,13 +14,7 @@ test('Writer edits and customizes a native document index responsively', async (
   }
 
   await page.goto('/playground/');
-  const latestCapabilities = page.getByRole('region', { name: '最新能力' });
-  const documentIndexEntry = latestCapabilities.getByRole('button', {
-    name: '打开最新能力：原生索引',
-  });
-  await expect(latestCapabilities).toBeInViewport();
-  await expect(documentIndexEntry).toBeInViewport();
-  await documentIndexEntry.click();
+  await page.getByRole('button', { name: '从模板新建：原生索引' }).click();
 
   const editor = page.getByRole('textbox', { name: '文档正文' });
   await expect(editor).toHaveAttribute('data-pagination-state', 'ready');

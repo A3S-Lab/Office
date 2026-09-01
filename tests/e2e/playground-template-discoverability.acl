@@ -1,8 +1,8 @@
-suite "latest-capabilities-discoverability" {
+suite "playground-template-discoverability" {
     version = 1
 
-    scenario "open-latest-playground-capabilities" {
-        name = "Open every latest capability from the public Playground strip"
+    scenario "open-playground-feature-templates" {
+        name = "Open feature examples from the public Playground template grid"
         surface = "web"
         timeout_ms = 120000
 
@@ -16,64 +16,48 @@ suite "latest-capabilities-discoverability" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
-        expect "latest-capability-strip-is-visible" {
-            visible = css(".playground-latest-capabilities[aria-labelledby='playground-latest-capabilities-title']")
-        }
-
-        expect "latest-capability-filters-are-visible" {
-            visible = css(".playground-latest-capability-filters button[aria-pressed='true']")
-        }
-
-        expect "all-latest-capabilities-are-counted" {
-            text = "9 / 9 项"
+        expect "template-grid-is-visible" {
+            visible = css(".playground-template-section[aria-labelledby='playground-create-title']")
         }
 
         expect "entrance-exit-animation-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：进入与退出动画'][data-release='0.39.0']")
+            visible = css("button[aria-label='从模板新建：进入与退出动画']")
         }
 
         expect "document-comparison-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：文档比较']")
+            visible = css("button[aria-label='从模板新建：文档比较']")
         }
 
         expect "table-of-contents-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：可更新目录']")
+            visible = css("button[aria-label='从模板新建：可更新目录']")
         }
 
         expect "document-index-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：原生索引']")
+            visible = css("button[aria-label='从模板新建：原生索引']")
         }
 
         expect "character-shading-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：字符底纹']")
+            visible = css("button[aria-label='从模板新建：字符底纹']")
         }
 
         expect "proofing-language-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：校对语言']")
+            visible = css("button[aria-label='从模板新建：校对语言']")
         }
 
         expect "data-validation-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：数据验证']")
+            visible = css("button[aria-label='从模板新建：数据验证']")
         }
 
         expect "structured-reference-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：结构化引用']")
-        }
-
-        expect "structured-reference-entry-is-current-release" {
-            visible = css("button[aria-label='打开最新能力：结构化引用'][data-release='0.37.0']")
+            visible = css("button[aria-label='从模板新建：结构化引用']")
         }
 
         expect "structured-reference-calculated-column-fill-is-described" {
             text = "插入行自动填充"
         }
 
-        expect "pdf-page-organization-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：组织 PDF 页面']")
-        }
-
         click "open-entrance-exit-animations" {
-            target = role("button", "打开最新能力：进入与退出动画")
+            target = role("button", "从模板新建：进入与退出动画")
         }
 
         wait "entrance-exit-animation-presentation-is-ready" {
@@ -89,7 +73,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         click "open-document-comparison" {
-            target = role("button", "打开最新能力：文档比较")
+            target = role("button", "从模板新建：文档比较")
         }
 
         wait "document-comparison-is-ready" {
@@ -105,7 +89,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         click "open-table-of-contents" {
-            target = role("button", "打开最新能力：可更新目录")
+            target = role("button", "从模板新建：可更新目录")
         }
 
         wait "table-of-contents-document-is-ready" {
@@ -125,7 +109,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         click "open-document-index" {
-            target = role("button", "打开最新能力：原生索引")
+            target = role("button", "从模板新建：原生索引")
         }
 
         wait "document-index-document-is-ready" {
@@ -145,7 +129,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         click "open-character-shading" {
-            target = role("button", "打开最新能力：字符底纹")
+            target = role("button", "从模板新建：字符底纹")
         }
 
         wait "character-shading-document-is-ready" {
@@ -161,7 +145,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         click "open-proofing-languages" {
-            target = role("button", "打开最新能力：校对语言")
+            target = role("button", "从模板新建：校对语言")
         }
 
         wait "proofing-language-document-is-ready" {
@@ -177,7 +161,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         click "open-data-validation" {
-            target = role("button", "打开最新能力：数据验证")
+            target = role("button", "从模板新建：数据验证")
         }
 
         wait "data-validation-workbook-is-ready" {
@@ -193,7 +177,7 @@ suite "latest-capabilities-discoverability" {
         }
 
         click "open-structured-references" {
-            target = role("button", "打开最新能力：结构化引用")
+            target = role("button", "从模板新建：结构化引用")
         }
 
         wait "structured-reference-workbook-is-ready" {
@@ -204,18 +188,18 @@ suite "latest-capabilities-discoverability" {
             visible = css("input[aria-label='文件名'][value='结构化引用示例']")
         }
 
-        accessibility "latest-capability-accessibility" {
-            path = "evidence/latest-capabilities.json"
+        accessibility "template-grid-accessibility" {
+            path = "evidence/playground-templates.json"
             interactive = true
         }
 
-        console "latest-capability-console" {
-            path = "diagnostics/latest-capability-console.json"
+        console "template-grid-console" {
+            path = "diagnostics/playground-template-console.json"
             clear = false
         }
 
-        page_errors "latest-capability-errors" {
-            path = "diagnostics/latest-capability-errors.json"
+        page_errors "template-grid-errors" {
+            path = "diagnostics/playground-template-errors.json"
             clear = false
         }
     }
@@ -358,8 +342,8 @@ suite "latest-capabilities-discoverability" {
         }
     }
 
-    scenario "find-latest-capabilities-on-phone" {
-        name = "Find the latest capability strip on a phone"
+    scenario "find-feature-templates-on-phone" {
+        name = "Find feature examples in the template grid on a phone"
         surface = "web"
         timeout_ms = 90000
 
@@ -373,70 +357,50 @@ suite "latest-capabilities-discoverability" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
-        expect "phone-latest-capability-strip-is-visible" {
-            visible = css(".playground-latest-capabilities")
-        }
-
-        expect "phone-latest-capability-filters-are-reachable" {
-            visible = css(".playground-latest-capability-filters button[aria-controls='playground-latest-capability-list']")
+        expect "phone-template-grid-is-visible" {
+            visible = css(".playground-template-section")
         }
 
         expect "phone-entrance-exit-animation-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：进入与退出动画']")
+            visible = css("button[aria-label='从模板新建：进入与退出动画']")
         }
 
         expect "phone-document-comparison-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：文档比较']")
+            visible = css("button[aria-label='从模板新建：文档比较']")
         }
 
         expect "phone-table-of-contents-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：可更新目录']")
+            visible = css("button[aria-label='从模板新建：可更新目录']")
         }
 
         expect "phone-document-index-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：原生索引']")
+            visible = css("button[aria-label='从模板新建：原生索引']")
         }
 
         expect "phone-data-validation-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：数据验证']")
+            visible = css("button[aria-label='从模板新建：数据验证']")
         }
 
         expect "phone-structured-reference-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：结构化引用']")
+            visible = css("button[aria-label='从模板新建：结构化引用']")
         }
 
-        expect "phone-pdf-page-organization-entry-is-visible" {
-            visible = css("button[aria-label='打开最新能力：组织 PDF 页面']")
+        screenshot "phone-template-layout" {
+            path = "screenshots/phone-playground-templates.png"
         }
 
-        click "filter-phone-capabilities-to-writer" {
-            target = role("button", "文字 5")
-        }
-
-        expect "phone-writer-filter-is-active" {
-            visible = css(".playground-latest-capability-filters button[aria-pressed='true']")
-        }
-
-        expect "phone-writer-capabilities-are-counted" {
-            text = "5 / 9 项"
-        }
-
-        screenshot "phone-writer-capability-layout" {
-            path = "screenshots/phone-writer-capabilities.png"
-        }
-
-        accessibility "phone-writer-capability-accessibility" {
-            path = "evidence/phone-writer-capabilities.json"
+        accessibility "phone-template-accessibility" {
+            path = "evidence/phone-playground-templates.json"
             interactive = true
         }
 
-        console "phone-latest-capability-console" {
-            path = "diagnostics/phone-latest-capability-console.json"
+        console "phone-template-console" {
+            path = "diagnostics/phone-playground-template-console.json"
             clear = false
         }
 
-        page_errors "phone-latest-capability-errors" {
-            path = "diagnostics/phone-latest-capability-errors.json"
+        page_errors "phone-template-errors" {
+            path = "diagnostics/phone-playground-template-errors.json"
             clear = false
         }
     }

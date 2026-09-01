@@ -17,7 +17,7 @@ suite "word-document-comparison" {
         }
 
         click "open-comparison-template" {
-            target = role("button", "打开最新能力：文档比较")
+            target = role("button", "从模板新建：文档比较")
         }
 
         wait "writer-is-ready" {
@@ -110,7 +110,7 @@ suite "word-document-comparison" {
         }
 
         click "open-phone-comparison-template" {
-            target = role("button", "打开最新能力：文档比较")
+            target = role("button", "从模板新建：文档比较")
         }
 
         wait "phone-writer-is-ready" {

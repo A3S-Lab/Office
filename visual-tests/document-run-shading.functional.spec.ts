@@ -14,13 +14,7 @@ test('Writer authors and undoes exact native character shading', async ({
   }
 
   await page.goto('/playground/');
-  const latestCapabilities = page.getByRole('region', { name: '最新能力' });
-  const characterShadingEntry = latestCapabilities.getByRole('button', {
-    name: '打开最新能力：字符底纹',
-  });
-  await expect(latestCapabilities).toBeInViewport();
-  await expect(characterShadingEntry).toBeInViewport();
-  await characterShadingEntry.click();
+  await page.getByRole('button', { name: '从模板新建：字符底纹' }).click();
 
   const editor = page.getByRole('textbox', { name: '文档正文' });
   await expect(editor).toHaveAttribute('data-pagination-state', 'ready');

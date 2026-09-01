@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { SiteSidebar } from '../playground/src/site-sidebar';
 import { WorkspaceHome } from '../playground/src/workspace-home';
 
-test('publishes the latest main capabilities as first-class Playground entries', () => {
+test('keeps examples in the template grid without a latest-capabilities promotion', () => {
   const createdTemplates: string[] = [];
 
   render(
@@ -23,49 +23,17 @@ test('publishes the latest main capabilities as first-class Playground entries',
     />,
   );
 
-  const latest = screen.getByRole('region', { name: '最新能力' });
-  const objectAnimations = within(latest).getByRole('button', {
-    name: '打开最新能力：进入与退出动画',
+  expect(screen.queryByRole('region', { name: '最新能力' })).toBeNull();
+
+  const templates = screen.getByRole('region', { name: '新建' });
+  const dataValidation = within(templates).getByRole('button', {
+    name: '从模板新建：数据验证',
   });
-  expect(objectAnimations).toHaveTextContent('Presentation');
-  expect(objectAnimations).toHaveTextContent('v0.39.0');
-  expect(
-    within(latest).getByRole('button', {
-      name: '打开最新能力：文档比较',
-    }),
-  ).toBeInTheDocument();
-  expect(
-    within(latest).getByRole('button', {
-      name: '打开最新能力：可更新目录',
-    }),
-  ).toBeInTheDocument();
-  expect(
-    within(latest).getByRole('button', {
-      name: '打开最新能力：字符底纹',
-    }),
-  ).toBeInTheDocument();
-  expect(
-    within(latest).getByRole('button', {
-      name: '打开最新能力：校对语言',
-    }),
-  ).toBeInTheDocument();
-  expect(
-    within(latest).getByRole('button', {
-      name: '打开最新能力：原生索引',
-    }),
-  ).toBeInTheDocument();
-  const structuredReferences = within(latest).getByRole('button', {
-    name: '打开最新能力：结构化引用',
+  const structuredReferences = within(templates).getByRole('button', {
+    name: '从模板新建：结构化引用',
   });
-  expect(structuredReferences).toHaveTextContent('Spreadsheet');
-  expect(structuredReferences).toHaveTextContent('v0.37.0');
-  expect(structuredReferences).toHaveTextContent('插入行自动填充');
-  const pdfPageOrganization = within(latest).getByRole('button', {
-    name: '打开最新能力：组织 PDF 页面',
-  });
-  expect(pdfPageOrganization).toHaveTextContent('v0.33.0');
-  const dataValidation = within(latest).getByRole('button', {
-    name: '打开最新能力：数据验证',
+  const objectAnimations = within(templates).getByRole('button', {
+    name: '从模板新建：进入与退出动画',
   });
   fireEvent.click(dataValidation);
 
@@ -81,19 +49,6 @@ test('publishes the latest main capabilities as first-class Playground entries',
     'structured-references',
     'animated-deck',
   ]);
-
-  fireEvent.click(within(latest).getByRole('button', { name: '文字 5' }));
-  expect(
-    within(latest).queryByRole('button', {
-      name: '打开最新能力：进入与退出动画',
-    }),
-  ).toBeNull();
-  expect(
-    within(latest).getByRole('button', {
-      name: '打开最新能力：文档比较',
-    }),
-  ).toBeVisible();
-  expect(within(latest).getByText('5 / 9 项')).toBeVisible();
 });
 
 test('keeps Markdown last in the quick-create list', () => {

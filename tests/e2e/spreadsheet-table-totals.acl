@@ -17,11 +17,11 @@ suite "office-spreadsheet-table-totals" {
         }
 
         wait "playground-ready" {
-            visible = css(".playground-latest-capabilities")
+            visible = css(".playground-template-section")
         }
 
         click "open-structured-reference-template" {
-            target = role("button", "打开最新能力：结构化引用")
+            target = role("button", "从模板新建：结构化引用")
         }
 
         wait "spreadsheet-ready" {

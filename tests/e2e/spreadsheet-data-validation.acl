@@ -20,12 +20,8 @@ suite "spreadsheet-data-validation" {
             text = "我的文档"
         }
 
-        expect "latest-capabilities-are-prominent" {
-            visible = css(".playground-latest-capabilities[aria-labelledby='playground-latest-capabilities-title']")
-        }
-
         click "open-public-data-validation-template" {
-            target = role("button", "打开最新能力：数据验证")
+            target = role("button", "从模板新建：数据验证")
         }
 
         wait "public-template-ready" {

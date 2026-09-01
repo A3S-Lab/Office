@@ -10,7 +10,7 @@ test('Spreadsheet totals-row controls stay discoverable and usable', async ({
   page.on('pageerror', (error) => browserErrors.push(error.message));
 
   await page.goto('/playground/');
-  await page.getByRole('button', { name: '打开最新能力：结构化引用' }).click();
+  await page.getByRole('button', { name: '从模板新建：结构化引用' }).click();
   await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
   await expect(page.getByRole('textbox', { name: '文件名' })).toHaveValue(
     '结构化引用示例',

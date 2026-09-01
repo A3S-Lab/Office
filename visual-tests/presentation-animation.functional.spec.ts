@@ -5,7 +5,7 @@ test('Presentation entrance and exit animations author and play ordered cues', a
 }) => {
   await page.goto('/playground/');
   await page
-    .getByRole('button', { name: '打开最新能力：进入与退出动画' })
+    .getByRole('button', { name: '从模板新建：进入与退出动画' })
     .click();
 
   const canvas = page.locator('.work-slide-canvas.interactive');
