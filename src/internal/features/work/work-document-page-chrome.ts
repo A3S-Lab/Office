@@ -28,6 +28,11 @@ import {
   documentKerningThresholdHalfPointsFromElement,
 } from './work-document-kerning';
 import {
+  DOCUMENT_OPEN_TYPE_ATTRIBUTE,
+  documentOpenTypeDomAttributes,
+  documentOpenTypeFeaturesFromElement,
+} from './work-document-opentype';
+import {
   DOCUMENT_HIDDEN_TEXT_ATTRIBUTE,
   documentHiddenTextFromElement,
 } from './work-document-hidden-text';
@@ -518,6 +523,9 @@ function sanitizeAttributes(element: Element, tag: string) {
     kerningThreshold,
     fontSize,
   );
+  const openTypeFeatures =
+    tag === 'span' ? documentOpenTypeFeaturesFromElement(element) : null;
+  const openTypeAttributes = documentOpenTypeDomAttributes(openTypeFeatures);
   const emphasisMark =
     tag === 'span' ? documentEmphasisMarkFromElement(element) : null;
   const emphasisAttributes = documentEmphasisMarkDomAttributes(emphasisMark);
@@ -576,6 +584,7 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_CHARACTER_POSITION_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_CHARACTER_SPACING_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE);
+  element.removeAttribute(DOCUMENT_OPEN_TYPE_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_EMPHASIS_MARK_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_HIDDEN_TEXT_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_LEGACY_TEXT_OUTLINE_ATTRIBUTE);
@@ -601,6 +610,7 @@ function sanitizeAttributes(element: Element, tag: string) {
     characterPositionAttributes.style ?? '',
     characterSpacingAttributes.style ?? '',
     kerningAttributes.style ?? '',
+    openTypeAttributes.style ?? '',
     emphasisAttributes.style ?? '',
     underlineAttributes.style ?? '',
     strikeAttributes.style ?? '',
@@ -706,6 +716,10 @@ function sanitizeAttributes(element: Element, tag: string) {
     if (nativeHighlight) {
       element.setAttribute(DOCUMENT_HIGHLIGHT_ATTRIBUTE, nativeHighlight);
     }
+    const serializedOpenType = openTypeAttributes[DOCUMENT_OPEN_TYPE_ATTRIBUTE];
+    if (serializedOpenType) {
+      element.setAttribute(DOCUMENT_OPEN_TYPE_ATTRIBUTE, serializedOpenType);
+    }
   }
   if (tag === 'span' && scriptFonts) {
     for (const [name, value] of Object.entries(scriptFontAttributes)) {
@@ -756,6 +770,7 @@ function sanitizeAttributes(element: Element, tag: string) {
                           DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
                           DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
                           DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
+                          DOCUMENT_OPEN_TYPE_ATTRIBUTE,
                           DOCUMENT_EMPHASIS_MARK_ATTRIBUTE,
                           DOCUMENT_HIDDEN_TEXT_ATTRIBUTE,
                           DOCUMENT_LEGACY_TEXT_OUTLINE_ATTRIBUTE,

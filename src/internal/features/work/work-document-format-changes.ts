@@ -56,6 +56,11 @@ import {
   serializeDocumentProofingLanguages,
   type WorkDocumentProofingLanguages,
 } from './work-document-proofing';
+import {
+  parseDocumentOpenTypeFeatures,
+  serializeDocumentOpenTypeFeatures,
+  type WorkDocumentOpenTypeFeatures,
+} from './work-document-opentype';
 
 export const DOCUMENT_CHARACTER_FORMAT_MARKS = [
   'bold',
@@ -116,6 +121,7 @@ const ALLOWED_ATTRIBUTES: Readonly<
     'runShading',
     'proofingLanguages',
     'noProof',
+    'openTypeFeatures',
     'scriptFonts',
     'scriptFontSlot',
     'themeColor',
@@ -240,6 +246,7 @@ export function importedDocumentCharacterFormatting(formatting: {
   themeFill?: string;
   highlight?: WorkDocumentHighlight;
   textCase?: WorkDocumentTextCase;
+  openTypeFeatures?: WorkDocumentOpenTypeFeatures;
 }): string {
   const marks: DocumentCharacterFormatMark[] = [];
   for (const name of ['bold', 'italic', 'subscript', 'superscript'] as const) {
@@ -280,6 +287,9 @@ export function importedDocumentCharacterFormatting(formatting: {
       serializeDocumentProofingLanguages(formatting.proofingLanguages) ??
       undefined,
     noProof: formatting.noProof,
+    openTypeFeatures:
+      serializeDocumentOpenTypeFeatures(formatting.openTypeFeatures) ??
+      undefined,
     color: formatting.color,
     fontFamily: formatting.fontFamily,
     scriptFonts:
@@ -414,6 +424,16 @@ function normalizeCharacterFormatMark(
       const noProof = normalizeDocumentNoProof(candidate);
       if (noProof === null) return null;
       attrs[key] = noProof;
+      continue;
+    }
+    if (type === 'textStyle' && key === 'openTypeFeatures') {
+      const features = serializeDocumentOpenTypeFeatures(
+        typeof candidate === 'string'
+          ? parseDocumentOpenTypeFeatures(candidate)
+          : candidate,
+      );
+      if (!features) return null;
+      attrs[key] = features;
       continue;
     }
     if (type === 'highlight' && key === 'nativeHighlight') {

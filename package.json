@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.37.5",
+  "version": "0.38.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -101,6 +101,7 @@
     "playground:visual:document-character-position": "playwright test visual-tests/document-character-position.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-character-spacing": "playwright test visual-tests/document-character-spacing.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-script-fonts": "playwright test visual-tests/document-script-fonts.functional.spec.ts --config playwright.config.ts",
+    "playground:visual:document-opentype": "playwright test visual-tests/document-opentype.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-strike": "playwright test visual-tests/document-strike.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-data-validation": "playwright test visual-tests/spreadsheet-data-validation.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-date-time": "playwright test visual-tests/spreadsheet-date-time.functional.spec.ts --config playwright.config.ts",
@@ -267,6 +268,8 @@
     "test:e2e:writer-character-spacing:check": "a3s-test check tests/e2e/word-character-spacing.acl --json",
     "test:e2e:writer-script-fonts": "A3S_TEST_SUITE=tests/e2e/word-script-fonts.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:writer-script-fonts:check": "a3s-test check tests/e2e/word-script-fonts.acl --json",
+    "test:e2e:writer-opentype": "A3S_TEST_SUITE=tests/e2e/word-opentype-typography.acl bash scripts/run-a3s-test-web-gate.sh",
+    "test:e2e:writer-opentype:check": "a3s-test check tests/e2e/word-opentype-typography.acl --json",
     "test:e2e:writer-strike": "A3S_TEST_SUITE=tests/e2e/word-strike-styles.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:writer-strike:check": "a3s-test check tests/e2e/word-strike-styles.acl --json",
     "test:e2e:writer-layout": "a3s-test run tests/e2e/word-insert-page-layout.acl --json",

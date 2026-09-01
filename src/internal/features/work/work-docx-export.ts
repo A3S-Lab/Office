@@ -209,6 +209,15 @@ import {
   DOCUMENT_STRIKE_STYLE_ATTRIBUTE,
   documentStrikeFormattingFromElement,
 } from './work-document-strike';
+import {
+  DOCUMENT_OPEN_TYPE_ATTRIBUTE,
+  documentOpenTypeFeaturesFromElement,
+  type WorkDocumentOpenTypeFeatures,
+} from './work-document-opentype';
+import {
+  DocxOpenTypePatchCollector,
+  patchDocxOpenTypeFeatures,
+} from './work-docx-opentype-export';
 import type {
   WorkDocumentComment,
   WorkDocumentContent,
@@ -237,11 +246,13 @@ interface DocxNoteContext extends DocxListExportContext {
   runFontPatches: DocxRunFontsPatchCollector;
   hiddenTextPatches: DocxHiddenTextPatchCollector;
   legacyTextEffectsPatches: DocxLegacyTextEffectsPatchCollector;
+  openTypePatches: DocxOpenTypePatchCollector;
   runBorderPatches: DocxRunBorderPatchCollector;
   usedRunBorderMarkers: Set<string>;
   runShadingPatches: DocxRunShadingPatchCollector;
   usedRunShadingMarkers: Set<string>;
   usedNativeTextEffectMarkers: Set<string>;
+  usedOpenTypeMarkers: Set<string>;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
   tableOfContentsPatches: DocxTableOfContentsPatchCollector;
   indexPatches: DocxIndexPatchCollector;
@@ -256,10 +267,11 @@ interface DocxTextRevision {
   date: string;
 }
 
-interface DocxNativeTextEffectState {
+interface DocxRunStyleState {
   baseStyle?: string;
   hiddenText?: boolean;
   legacyTextEffects: WorkDocumentLegacyTextEffects;
+  openTypeFeatures?: WorkDocumentOpenTypeFeatures;
 }
 
 export async function createDocxBlob(
@@ -321,6 +333,9 @@ export async function createDocxBlob(
     legacyTextEffectsPatches: new DocxLegacyTextEffectsPatchCollector(
       JSON.stringify(normalizedContent),
     ),
+    openTypePatches: new DocxOpenTypePatchCollector(
+      JSON.stringify(normalizedContent),
+    ),
     runBorderPatches: new DocxRunBorderPatchCollector(
       JSON.stringify(normalizedContent),
     ),
@@ -330,6 +345,7 @@ export async function createDocxBlob(
     ),
     usedRunShadingMarkers: new Set(),
     usedNativeTextEffectMarkers: new Set(),
+    usedOpenTypeMarkers: new Set(),
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
     tableOfContentsPatches: new DocxTableOfContentsPatchCollector(),
@@ -411,8 +427,14 @@ export async function createDocxBlob(
     kerningPatched,
     noteContext.runFontPatches.patches,
   );
-  const hiddenTextPatched = await patchDocxHiddenText(
+  const openTypePatched = await patchDocxOpenTypeFeatures(
     runFontsPatched,
+    noteContext.openTypePatches.patches.filter((patch) =>
+      noteContext.usedOpenTypeMarkers.has(patch.marker),
+    ),
+  );
+  const hiddenTextPatched = await patchDocxHiddenText(
+    openTypePatched,
     noteContext.hiddenTextPatches.patches.filter((patch) =>
       noteContext.usedNativeTextEffectMarkers.has(patch.marker),
     ),
@@ -526,16 +548,23 @@ export async function createDocxBlob(
   });
 }
 
-function docxNativeTextEffectState(
+function docxRunStyleState(
   style: string | undefined,
   context: DocxNoteContext,
-): DocxNativeTextEffectState {
+): DocxRunStyleState {
   let current = style;
   let hiddenText: boolean | undefined;
+  let openTypeFeatures: WorkDocumentOpenTypeFeatures | undefined;
   const legacyTextEffects: WorkDocumentLegacyTextEffects = {};
   const seen = new Set<string>();
   while (current && !seen.has(current)) {
     seen.add(current);
+    const openTypePatch = context.openTypePatches.lookup(current);
+    if (openTypePatch) {
+      openTypeFeatures ??= openTypePatch.features;
+      current = openTypePatch.style;
+      continue;
+    }
     const hiddenPatch = context.hiddenTextPatches.lookup(current);
     if (hiddenPatch) {
       hiddenText ??= hiddenPatch.value;
@@ -558,11 +587,12 @@ function docxNativeTextEffectState(
   return {
     ...(current ? { baseStyle: current } : {}),
     ...(hiddenText !== undefined ? { hiddenText } : {}),
+    ...(openTypeFeatures ? { openTypeFeatures } : {}),
     legacyTextEffects,
   };
 }
 
-function markDocxNativeTextEffectStyleUsed(
+function markDocxRunStyleMarkersUsed(
   style: string | undefined,
   context: DocxNoteContext,
 ): void {
@@ -570,6 +600,12 @@ function markDocxNativeTextEffectStyleUsed(
   const seen = new Set<string>();
   while (current && !seen.has(current)) {
     seen.add(current);
+    const openTypePatch = context.openTypePatches.lookup(current);
+    if (openTypePatch) {
+      context.usedOpenTypeMarkers.add(current);
+      current = openTypePatch.style;
+      continue;
+    }
     const hiddenPatch = context.hiddenTextPatches.lookup(current);
     if (hiddenPatch) {
       context.usedNativeTextEffectMarkers.add(current);
@@ -908,7 +944,7 @@ async function inlineRuns(
   ): Promise<ParagraphChild[]> => {
     if (node.nodeType === Node.TEXT_NODE) {
       if (!node.textContent) return [];
-      markDocxNativeTextEffectStyleUsed(inherited.style, noteContext);
+      markDocxRunStyleMarkersUsed(inherited.style, noteContext);
       markDocxRunBorderUsed(inherited.border, noteContext);
       markDocxRunShadingUsed(inherited.shading, noteContext);
       if (revision?.kind === 'insertion') {
@@ -1052,6 +1088,14 @@ async function inlineRuns(
     if (hasExplicitNoProof && explicitNoProof === null) {
       throw new Error('Document contains invalid proofing state.');
     }
+    const hasExplicitOpenType =
+      tag === 'span' && node.hasAttribute(DOCUMENT_OPEN_TYPE_ATTRIBUTE);
+    const explicitOpenType = hasExplicitOpenType
+      ? documentOpenTypeFeaturesFromElement(node)
+      : null;
+    if (hasExplicitOpenType && !explicitOpenType) {
+      throw new Error('Document contains invalid OpenType typography.');
+    }
     const hasExplicitLegacyTextEffects =
       tag === 'span' &&
       [
@@ -1107,12 +1151,9 @@ async function inlineRuns(
         ? inherited.emphasisMark
         : docxEmphasisMarkRunOptions(explicitEmphasisMark);
     const textCaseOptions = docxTextCaseRunOptions(explicitTextCase, inherited);
-    const inheritedNativeTextEffects = docxNativeTextEffectState(
-      inherited.style,
-      noteContext,
-    );
+    const inheritedRunStyle = docxRunStyleState(inherited.style, noteContext);
     const legacyTextEffects = {
-      ...inheritedNativeTextEffects.legacyTextEffects,
+      ...inheritedRunStyle.legacyTextEffects,
       ...(explicitLegacyTextEffects ?? {}),
     };
     if (documentLegacyTextEffectsConflict(legacyTextEffects)) {
@@ -1120,21 +1161,31 @@ async function inlineRuns(
     }
     const hiddenText =
       explicitHiddenText === null
-        ? inheritedNativeTextEffects.hiddenText
+        ? inheritedRunStyle.hiddenText
         : explicitHiddenText;
-    let nativeTextEffectStyle = inherited.style;
-    if (hasExplicitLegacyTextEffects || explicitHiddenText !== null) {
-      nativeTextEffectStyle = inheritedNativeTextEffects.baseStyle;
+    const openTypeFeatures = hasExplicitOpenType
+      ? (explicitOpenType ?? undefined)
+      : inheritedRunStyle.openTypeFeatures;
+    let runStyle = inherited.style;
+    if (
+      hasExplicitLegacyTextEffects ||
+      explicitHiddenText !== null ||
+      hasExplicitOpenType
+    ) {
+      runStyle = inheritedRunStyle.baseStyle;
       if (Object.keys(legacyTextEffects).length) {
-        nativeTextEffectStyle = noteContext.legacyTextEffectsPatches.marker(
+        runStyle = noteContext.legacyTextEffectsPatches.marker(
           legacyTextEffects,
-          nativeTextEffectStyle,
+          runStyle,
         );
       }
       if (hiddenText !== undefined) {
-        nativeTextEffectStyle = noteContext.hiddenTextPatches.marker(
-          hiddenText,
-          nativeTextEffectStyle,
+        runStyle = noteContext.hiddenTextPatches.marker(hiddenText, runStyle);
+      }
+      if (openTypeFeatures) {
+        runStyle = noteContext.openTypePatches.marker(
+          openTypeFeatures,
+          runStyle,
         );
       }
     }
@@ -1163,7 +1214,7 @@ async function inlineRuns(
       : inherited.noProof;
     const style: IRunOptions = {
       ...inherited,
-      style: nativeTextEffectStyle,
+      style: runStyle,
       bold: inherited.bold || tag === 'strong' || tag === 'b',
       italics: inherited.italics || tag === 'em' || tag === 'i',
       underline,
@@ -1194,7 +1245,7 @@ async function inlineRuns(
       ...textCaseOptions,
     };
     if (tag === 'br') {
-      markDocxNativeTextEffectStyleUsed(style.style, noteContext);
+      markDocxRunStyleMarkersUsed(style.style, noteContext);
       markDocxRunBorderUsed(style.border, noteContext);
       markDocxRunShadingUsed(style.shading, noteContext);
       return [new docx.TextRun({ ...style, break: 1 })];

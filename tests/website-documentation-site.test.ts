@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.38.0' ||
     version === '0.37.5' ||
     version === '0.37.4' ||
     version === '0.37.3' ||
@@ -68,6 +69,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.38.0',
     '0.37.5',
     '0.37.4',
     '0.37.3',
@@ -356,7 +358,7 @@ test('routes the concise README to release evidence while both documentation hom
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.37.5`');
+  expect(readme).toContain('Version `0.38.0`');
   expect(readme).toContain('[changelog](./CHANGELOG.md)');
   expect(readme).toContain('[capability roadmap](./ROADMAP.md)');
   expect(readme).toContain(
@@ -364,6 +366,7 @@ test('routes the concise README to release evidence while both documentation hom
   );
 
   expect(englishHome).toContain('## Latest capabilities on `main`');
+  expect(englishHome).toContain('document.html#native-opentype-typography');
   expect(englishHome).toContain('presentation.html#entrance-animations');
   expect(englishHome).toContain('Entrance animations');
   expect(englishHome).toContain('Document compare');
@@ -378,6 +381,7 @@ test('routes the concise README to release evidence while both documentation hom
   expect(englishHome).toContain('pdf.html#page-organization');
 
   expect(chineseHome).toContain('## `main` 最新能力');
+  expect(chineseHome).toContain('document.html#原生-opentype-排版');
   expect(chineseHome).toContain('presentation.html#入场动画');
   expect(chineseHome).toContain('document.html#文档比较与合并');
   expect(chineseHome).toContain('document.html#原生可更新目录');
@@ -1060,6 +1064,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.38.0',
     '0.37.5',
     '0.37.4',
     '0.37.3',
@@ -1138,6 +1143,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.38.0',
     '0.37.5',
     '0.37.4',
     '0.37.3',
@@ -1464,6 +1470,24 @@ test('documents collaborative character-formatting revisions', async () => {
       expect(collaboration).toContain('changeKind: "formatting"');
       expect(server).toContain('document-suggestion-create');
       expect(server).toContain('document-suggestion-decide');
+    }
+  }
+});
+
+test('documents complete native Writer OpenType typography in both current locales', async () => {
+  for (const version of ['latest', '0.38.0']) {
+    for (const { lang } of DOCUMENTATION_LOCALES) {
+      const source = await readFile(
+        path.join(documentationRoot, version, lang, 'components/document.mdx'),
+        'utf8',
+      );
+      expect(source).toContain('w14:ligatures');
+      expect(source).toContain('w14:numForm');
+      expect(source).toContain('w14:numSpacing');
+      expect(source).toContain('w14:stylisticSets');
+      expect(source).toContain('w14:cntxtAlts');
+      expect(source).toContain('data-office-opentype-features');
+      expect(source).toContain('Cmd/Ctrl+D');
     }
   }
 });
@@ -3268,7 +3292,7 @@ test('publishes the workbook-owned 1900 and 1904 date-system contract', async ()
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
   ]);
 
-  expect(readme).toContain('Version `0.37.5`');
+  expect(readme).toContain('Version `0.38.0`');
   expect(readme).toContain("workbook's native 1900 or");
   expect(changelog).toContain('## 0.37.5 - 2026-09-01');
   expect(roadmap).toContain(

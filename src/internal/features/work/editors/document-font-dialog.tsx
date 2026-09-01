@@ -3,6 +3,7 @@ import { Button, Dialog } from '../../../design-system/primitives';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import { documentScriptFontSegments } from '../work-document-script-fonts';
 import { documentLegacyTextEffectsCss } from '../work-document-legacy-text-effects';
+import { documentOpenTypeCssProperties } from '../work-document-opentype';
 import {
   documentKerningIsEffective,
   DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS,
@@ -30,6 +31,14 @@ import {
 } from './document-font-dialog-run-border-section';
 import { DocumentFontDialogRunShadingSection } from './document-font-dialog-run-shading-section';
 import { documentFontDialogRunShadingPreviewStyle } from './document-font-dialog-run-shading-model';
+import {
+  documentFontDialogOpenTypePreviewFeatures,
+  type DocumentOpenTypeContextualAlternatesMode,
+  type DocumentOpenTypeLigaturesMode,
+  type DocumentOpenTypeNumberFormMode,
+  type DocumentOpenTypeNumberSpacingMode,
+  type DocumentOpenTypeStylisticSetsMode,
+} from './document-font-dialog-opentype-model';
 
 const characterSpacingModes: ReadonlyArray<{
   value: DocumentCharacterSpacingMode;
@@ -67,6 +76,81 @@ const emphasisMarkModes: ReadonlyArray<{
   { value: 'underDot', label: '下方圆点' },
 ];
 
+const openTypeLigatureModes: ReadonlyArray<{
+  value: DocumentOpenTypeLigaturesMode;
+  label: string;
+  disabled?: boolean;
+}> = [
+  { value: 'mixed', label: '混合（保持不变）', disabled: true },
+  { value: 'inherit', label: '跟随样式' },
+  { value: 'none', label: '无' },
+  { value: 'standard', label: '标准' },
+  { value: 'contextual', label: '上下文' },
+  { value: 'historical', label: '历史' },
+  { value: 'discretional', label: '任意' },
+  { value: 'standardContextual', label: '标准和上下文' },
+  { value: 'standardHistorical', label: '标准和历史' },
+  { value: 'contextualHistorical', label: '上下文和历史' },
+  { value: 'standardDiscretional', label: '标准和任意' },
+  { value: 'contextualDiscretional', label: '上下文和任意' },
+  { value: 'historicalDiscretional', label: '历史和任意' },
+  { value: 'standardContextualHistorical', label: '标准、上下文和历史' },
+  { value: 'standardContextualDiscretional', label: '标准、上下文和任意' },
+  { value: 'standardHistoricalDiscretional', label: '标准、历史和任意' },
+  { value: 'contextualHistoricalDiscretional', label: '上下文、历史和任意' },
+  { value: 'all', label: '全部' },
+];
+
+const openTypeNumberFormModes: ReadonlyArray<{
+  value: DocumentOpenTypeNumberFormMode;
+  label: string;
+  disabled?: boolean;
+}> = [
+  { value: 'mixed', label: '混合（保持不变）', disabled: true },
+  { value: 'inherit', label: '跟随样式' },
+  { value: 'default', label: '默认' },
+  { value: 'lining', label: '等高数字' },
+  { value: 'oldStyle', label: '旧式数字' },
+];
+
+const openTypeNumberSpacingModes: ReadonlyArray<{
+  value: DocumentOpenTypeNumberSpacingMode;
+  label: string;
+  disabled?: boolean;
+}> = [
+  { value: 'mixed', label: '混合（保持不变）', disabled: true },
+  { value: 'inherit', label: '跟随样式' },
+  { value: 'default', label: '默认' },
+  { value: 'proportional', label: '比例宽度' },
+  { value: 'tabular', label: '等宽' },
+];
+
+const openTypeStylisticSetModes: ReadonlyArray<{
+  value: DocumentOpenTypeStylisticSetsMode;
+  label: string;
+  disabled?: boolean;
+}> = [
+  { value: 'mixed', label: '混合（保持不变）', disabled: true },
+  { value: 'multiple', label: '多个样式集（保持不变）', disabled: true },
+  { value: 'inherit', label: '跟随样式' },
+  { value: 'none', label: '无' },
+  ...Array.from({ length: 20 }, (_, index) => ({
+    value: `set-${index + 1}` as const,
+    label: `样式集 ${index + 1}`,
+  })),
+];
+
+const openTypeContextualAlternatesModes: ReadonlyArray<{
+  value: DocumentOpenTypeContextualAlternatesMode;
+  label: string;
+  disabled?: boolean;
+}> = [
+  { value: 'mixed', label: '混合（保持不变）', disabled: true },
+  { value: 'inherit', label: '跟随样式' },
+  { value: 'enabled', label: '启用' },
+  { value: 'disabled', label: '禁用' },
+];
+
 export function DocumentFontDialog({
   source,
   layoutFonts = [],
@@ -102,6 +186,18 @@ export function DocumentFontDialog({
   const [eastAsiaFontTouched, setEastAsiaFontTouched] = useState(false);
   const [complexScriptFontTouched, setComplexScriptFontTouched] =
     useState(false);
+  const [openTypeLigaturesTouched, setOpenTypeLigaturesTouched] =
+    useState(false);
+  const [openTypeNumberFormTouched, setOpenTypeNumberFormTouched] =
+    useState(false);
+  const [openTypeNumberSpacingTouched, setOpenTypeNumberSpacingTouched] =
+    useState(false);
+  const [openTypeStylisticSetsTouched, setOpenTypeStylisticSetsTouched] =
+    useState(false);
+  const [
+    openTypeContextualAlternatesTouched,
+    setOpenTypeContextualAlternatesTouched,
+  ] = useState(false);
   const formId = useId();
   const error = documentFontDialogDraftError(draft);
   const patch = documentFontDialogPatch(source, draft, {
@@ -120,6 +216,11 @@ export function DocumentFontDialog({
     runShading: runShadingTouched,
     kerning: kerningTouched,
     latinFont: latinFontTouched,
+    openTypeLigatures: openTypeLigaturesTouched,
+    openTypeNumberForm: openTypeNumberFormTouched,
+    openTypeNumberSpacing: openTypeNumberSpacingTouched,
+    openTypeStylisticSets: openTypeStylisticSetsTouched,
+    openTypeContextualAlternates: openTypeContextualAlternatesTouched,
   });
   const hasChanges = Object.keys(patch).length > 0;
   const previewScale = previewCharacterScale(draft);
@@ -140,6 +241,9 @@ export function DocumentFontDialog({
   const previewRunShading = documentFontDialogRunShadingPreviewStyle(
     source.runShading,
     draft,
+  );
+  const previewOpenType = documentOpenTypeCssProperties(
+    documentFontDialogOpenTypePreviewFeatures(source, draft),
   );
 
   const submit = (event?: FormEvent<HTMLFormElement>) => {
@@ -523,6 +627,97 @@ export function DocumentFontDialog({
             }
             onTouched={() => setRunShadingTouched(true)}
           />
+          <fieldset className="work-document-font-dialog-opentype">
+            <legend>OpenType 排版</legend>
+            <div className="work-document-font-dialog-field">
+              <span>连字</span>
+              <OfficeSelect
+                ariaLabel="OpenType 连字"
+                value={draft.openTypeLigatures}
+                options={openTypeLigatureModes}
+                onValueChange={(openTypeLigatures) => {
+                  setDraft((current) => ({
+                    ...current,
+                    openTypeLigatures,
+                  }));
+                  setOpenTypeLigaturesTouched(true);
+                }}
+              />
+            </div>
+            <div className="work-document-font-dialog-field">
+              <span>数字字形</span>
+              <OfficeSelect
+                ariaLabel="OpenType 数字字形"
+                value={draft.openTypeNumberForm}
+                options={openTypeNumberFormModes}
+                onValueChange={(openTypeNumberForm) => {
+                  setDraft((current) => ({
+                    ...current,
+                    openTypeNumberForm,
+                  }));
+                  setOpenTypeNumberFormTouched(true);
+                }}
+              />
+            </div>
+            <div className="work-document-font-dialog-field">
+              <span>数字间距</span>
+              <OfficeSelect
+                ariaLabel="OpenType 数字间距"
+                value={draft.openTypeNumberSpacing}
+                options={openTypeNumberSpacingModes}
+                onValueChange={(openTypeNumberSpacing) => {
+                  setDraft((current) => ({
+                    ...current,
+                    openTypeNumberSpacing,
+                  }));
+                  setOpenTypeNumberSpacingTouched(true);
+                }}
+              />
+            </div>
+            <div className="work-document-font-dialog-field">
+              <span>样式集</span>
+              <OfficeSelect
+                ariaLabel="OpenType 样式集"
+                value={draft.openTypeStylisticSets}
+                options={openTypeStylisticSetModes}
+                onValueChange={(openTypeStylisticSets) => {
+                  setDraft((current) => ({
+                    ...current,
+                    openTypeStylisticSets,
+                  }));
+                  setOpenTypeStylisticSetsTouched(true);
+                }}
+              />
+            </div>
+            <div className="work-document-font-dialog-field">
+              <span>上下文替代</span>
+              <OfficeSelect
+                ariaLabel="OpenType 上下文替代"
+                value={draft.openTypeContextualAlternates}
+                options={openTypeContextualAlternatesModes}
+                onValueChange={(openTypeContextualAlternates) => {
+                  setDraft((current) => ({
+                    ...current,
+                    openTypeContextualAlternates,
+                  }));
+                  setOpenTypeContextualAlternatesTouched(true);
+                }}
+              />
+            </div>
+            {((source.openTypeLigatures.mixed && !openTypeLigaturesTouched) ||
+              (source.openTypeNumberForm.mixed && !openTypeNumberFormTouched) ||
+              (source.openTypeNumberSpacing.mixed &&
+                !openTypeNumberSpacingTouched) ||
+              (source.openTypeStylisticSets.mixed &&
+                !openTypeStylisticSetsTouched) ||
+              (source.openTypeContextualAlternates.mixed &&
+                !openTypeContextualAlternatesTouched)) && (
+              <p className="work-document-font-dialog-mixed" role="status">
+                当前选区包含不同的 OpenType
+                排版设置。仅修改所选项目，其他原生设置保持不变。
+              </p>
+            )}
+          </fieldset>
           {source.characterScale.mixed && !characterScaleTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
               当前选区包含多种字符缩放比例。输入缩放比例后才会统一修改。
@@ -572,7 +767,12 @@ export function DocumentFontDialog({
             legacyTextEmbossTouched ||
             legacyTextImprintTouched ||
             runBorderTouched ||
-            runShadingTouched) &&
+            runShadingTouched ||
+            openTypeLigaturesTouched ||
+            openTypeNumberFormTouched ||
+            openTypeNumberSpacingTouched ||
+            openTypeStylisticSetsTouched ||
+            openTypeContextualAlternatesTouched) &&
             error && (
               <p className="work-document-font-dialog-error" role="alert">
                 {error}
@@ -591,6 +791,7 @@ export function DocumentFontDialog({
               fontStretch: `${previewScale}%`,
               fontKerning: previewKerning,
               letterSpacing: `${previewSpacing}pt`,
+              ...previewOpenType,
             }}
           >
             <span
@@ -743,6 +944,6 @@ function previewScriptFontFamily(
 
 function fontDialogDescription(source: DocumentFontDialogSource): string {
   return source.selectedCharacters
-    ? `分别设置当前选中内容的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、着重号、隐藏文字、空心、阴影、阳文和阴文（${source.selectedCharacters} 个字符）。`
-    : '分别设置当前位置后续输入文字的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、着重号、隐藏文字、空心、阴影、阳文和阴文。';
+    ? `分别设置当前选中内容的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、文字效果和 OpenType 排版（${source.selectedCharacters} 个字符）。`
+    : '分别设置当前位置后续输入文字的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、文字效果和 OpenType 排版。';
 }

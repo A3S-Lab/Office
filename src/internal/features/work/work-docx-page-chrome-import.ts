@@ -5,10 +5,12 @@ import { documentCharacterPositionDomAttributes } from './work-document-characte
 import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
 import { documentEmphasisMarkDomAttributes } from './work-document-emphasis';
 import { documentKerningDomAttributes } from './work-document-kerning';
+import { documentOpenTypeDomAttributes } from './work-document-opentype';
 import { docxCharacterScalePercentFromProperties } from './work-docx-character-scale';
 import { docxCharacterPositionHalfPointsFromProperties } from './work-docx-character-position';
 import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
 import { resolveDocxKerningThresholdHalfPoints } from './work-docx-kerning';
+import { resolveDocxOpenTypeFeatures } from './work-docx-opentype-import';
 import { resolveDocxEmphasisMark } from './work-docx-emphasis';
 import { resolveDocxHiddenText } from './work-docx-hidden-text';
 import { documentHiddenTextDomAttributes } from './work-document-hidden-text';
@@ -468,6 +470,13 @@ async function runHtml(
       ...attributes,
       ...(styles.length ? { style: styles.join('; ') } : {}),
     })}>${content}</span>`;
+  }
+  const openTypeFeatures =
+    resolveDocxOpenTypeFeatures(propertySources).features;
+  if (openTypeFeatures) {
+    content = `<span${htmlAttributes(
+      documentOpenTypeDomAttributes(openTypeFeatures),
+    )}>${content}</span>`;
   }
   const characterPosition = docxCharacterPositionHalfPointsFromProperties(
     properties ?? run,

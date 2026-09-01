@@ -1,0 +1,134 @@
+suite "office-word-opentype-typography" {
+    version = 1
+
+    scenario "author-native-opentype-typography" {
+        name = "Author native Writer OpenType typography from the font dialog"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        click "focus-title" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-title-start" {
+            key = "Home"
+        }
+
+        press "select-title" {
+            key = "Shift+End"
+        }
+
+        press "open-font-dialog" {
+            key = "Control+d"
+        }
+
+        wait "font-dialog-visible" {
+            visible = css(".work-document-font-dialog[role='dialog']")
+        }
+
+        expect "opentype-controls-visible" {
+            visible = css(".work-document-font-dialog [role='combobox'][aria-label='OpenType 连字']")
+        }
+
+        click "open-ligature-options" {
+            target = role("combobox", "OpenType 连字")
+        }
+
+        click "choose-all-ligatures" {
+            target = role("option", "全部")
+        }
+
+        click "open-number-form-options" {
+            target = role("combobox", "OpenType 数字字形")
+        }
+
+        click "choose-old-style-numbers" {
+            target = role("option", "旧式数字")
+        }
+
+        click "open-number-spacing-options" {
+            target = role("combobox", "OpenType 数字间距")
+        }
+
+        click "choose-tabular-numbers" {
+            target = role("option", "等宽")
+        }
+
+        click "open-style-set-options" {
+            target = role("combobox", "OpenType 样式集")
+        }
+
+        click "choose-style-set-four" {
+            target = role("option", "样式集 4")
+        }
+
+        click "open-contextual-alternates-options" {
+            target = role("combobox", "OpenType 上下文替代")
+        }
+
+        click "disable-contextual-alternates" {
+            target = role("option", "禁用")
+        }
+
+        expect "exact-opentype-preview" {
+            visible = css(".work-document-font-dialog [aria-label='字符高级格式预览'] output[style*='font-feature-settings'][style*='font-variant-numeric: oldstyle-nums tabular-nums'][style*='font-variant-ligatures: no-contextual']")
+        }
+
+        click "apply-opentype-typography" {
+            target = role("button", "应用")
+        }
+
+        expect "native-opentype-applied" {
+            visible = css(".work-document-editable .ProseMirror h1 span[data-office-opentype-features][style*='font-feature-settings'][style*='font-variant-numeric: oldstyle-nums tabular-nums'][style*='font-variant-ligatures: no-contextual']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-opentype-typography" {
+            key = "Control+z"
+        }
+
+        expect "single-step-undo-restored-title" {
+            visible = css(".work-document-editable .ProseMirror h1:not(:has(span[data-office-opentype-features]))")
+        }
+
+        accessibility "opentype-accessibility" {
+            path = "evidence/opentype-accessibility.json"
+            interactive = true
+        }
+
+        console "opentype-console" {
+            path = "diagnostics/opentype-console.json"
+            clear = false
+        }
+
+        page_errors "opentype-page-errors" {
+            path = "diagnostics/opentype-page-errors.json"
+            clear = false
+        }
+    }
+}

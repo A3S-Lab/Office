@@ -98,6 +98,14 @@ import {
   type WorkDocumentProofingLanguages,
 } from './work-document-proofing';
 import { resolveDocxProofing } from './work-docx-proofing';
+import {
+  documentOpenTypeDomAttributes,
+  type WorkDocumentOpenTypeFeatures,
+} from './work-document-opentype';
+import {
+  DOCX_WORD_2010_NAMESPACE,
+  resolveDocxOpenTypeFeatures,
+} from './work-docx-opentype-import';
 
 export interface ImportedDocxRunFormatting {
   bold?: boolean;
@@ -132,6 +140,7 @@ export interface ImportedDocxRunFormatting {
   runShading?: DocumentRunShading;
   proofingLanguages?: WorkDocumentProofingLanguages;
   noProof?: boolean;
+  openTypeFeatures?: WorkDocumentOpenTypeFeatures;
 }
 
 export interface ImportedDocxRunFormattingMarker {
@@ -195,6 +204,13 @@ const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
   'lang',
   'vertAlign',
   'bdr',
+]);
+const SUPPORTED_OPEN_TYPE_PROPERTY_CHANGE_CHILDREN = new Set([
+  'ligatures',
+  'numForm',
+  'numSpacing',
+  'stylisticSets',
+  'cntxtAlts',
 ]);
 
 export function markDocxRunFormatting(
@@ -391,6 +407,8 @@ function resolvedRunFormatting(
   const runBorder = resolveDocxRunBorder(propertySources, theme).border;
   const runShading = resolveDocxRunShading(propertySources, theme).shading;
   const proofing = resolveDocxProofing(propertySources);
+  const openTypeFeatures =
+    resolveDocxOpenTypeFeatures(propertySources).features;
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
@@ -581,6 +599,7 @@ function resolvedRunFormatting(
     ...(runShading ? { runShading } : {}),
     ...(proofing.languages ? { proofingLanguages: proofing.languages } : {}),
     ...(proofing.noProof !== undefined ? { noProof: proofing.noProof } : {}),
+    ...(openTypeFeatures ? { openTypeFeatures } : {}),
   };
 }
 
@@ -630,6 +649,14 @@ function formattingMarkup(
         formatting.scriptFonts,
         formatting.scriptFontSlot,
       ),
+    )) {
+      if (name === 'style') span.style.cssText += `; ${value}`;
+      else span.setAttribute(name, value);
+    }
+  }
+  if (formatting.openTypeFeatures) {
+    for (const [name, value] of Object.entries(
+      documentOpenTypeDomAttributes(formatting.openTypeFeatures),
     )) {
       if (name === 'style') span.style.cssText += `; ${value}`;
       else span.setAttribute(name, value);
@@ -910,14 +937,30 @@ function supportedRunFormattingChangeElement(change: Element): {
   const source = properties[0];
   const names = new Set<string>();
   for (const child of Array.from(source.children)) {
+    const supportedWordProperty =
+      DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '') &&
+      SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN.has(child.localName);
+    const supportedOpenTypeProperty =
+      child.namespaceURI === DOCX_WORD_2010_NAMESPACE &&
+      SUPPORTED_OPEN_TYPE_PROPERTY_CHANGE_CHILDREN.has(child.localName);
+    const key = `${child.namespaceURI ?? ''}|${child.localName}`;
     if (
-      !DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '') ||
-      !SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN.has(child.localName) ||
-      names.has(child.localName)
+      (!supportedWordProperty && !supportedOpenTypeProperty) ||
+      names.has(key)
     ) {
       return null;
     }
-    names.add(child.localName);
+    names.add(key);
+  }
+  if (
+    Array.from(source.children).some(
+      (child) => child.namespaceURI === DOCX_WORD_2010_NAMESPACE,
+    )
+  ) {
+    const openType = resolveDocxOpenTypeFeatures([source]);
+    if (!openType.features || openType.invalidCount || openType.spoofedCount) {
+      return null;
+    }
   }
   const id = attribute(change, 'id')?.trim() ?? '';
   const author = attribute(change, 'author')?.trim() ?? '';

@@ -27,6 +27,8 @@ import {
   parseDocumentProofingLanguages,
 } from './work-document-proofing';
 import { setDocxRunShadingAttributes } from './work-docx-run-shading-export';
+import { parseDocumentOpenTypeFeatures } from './work-document-opentype';
+import { appendDocxOpenTypeProperties } from './work-docx-opentype-export';
 import {
   documentHighlightForCssColor,
   normalizeDocumentHighlight,
@@ -430,6 +432,16 @@ function appendFormattingProperties(
     prefix,
     byType.get('textStyle'),
   );
+  appendOpenTypeProperties(document, properties, byType.get('textStyle'));
+}
+
+function appendOpenTypeProperties(
+  document: Document,
+  properties: Element,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const features = parseDocumentOpenTypeFeatures(mark?.attrs?.openTypeFeatures);
+  if (features) appendDocxOpenTypeProperties(document, properties, features);
 }
 
 function appendNoProofProperty(

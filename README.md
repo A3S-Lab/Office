@@ -309,9 +309,14 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
-Version `0.37.5` keeps the release surface focused on local, testable
+Version `0.38.0` keeps the release surface focused on local, testable
 workflows:
 
+- Writer's shared advanced Font dialog now edits the complete bounded Office
+  2010 OpenType typography set: 16 ligature combinations, numeral form and
+  spacing, style sets 1-20, and contextual alternates. Mixed selections,
+  tracked formatting, Undo, body/page-chrome stories, exact DOCX reopen, and
+  malformed-input diagnostics share one model with structured equations.
 - Spreadsheet XLSX import/export now retains the workbook's native 1900 or
   1904 date system, exact typed date serials, dynamic date filters, and
   epoch-correct current-date authoring across controlled and collaborative

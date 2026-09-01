@@ -36,11 +36,23 @@ import type { WorkDocumentScriptFontPatch } from '../work-document-script-fonts'
 import {
   addDocumentScriptFontValues,
   appendDocumentFontDialogScriptFontPatch,
-  applyDocumentScriptFontPatch,
+  applyDocumentTextStylePatch,
   documentFontFamilyDraftValue,
   type DocumentFontDialogScriptFontPatch,
   type DocumentFontFamilySource,
 } from './document-font-dialog-script-font-model';
+import {
+  addDocumentFontDialogOpenTypeValues,
+  appendDocumentFontDialogOpenTypePatch,
+  createDocumentFontDialogOpenTypeDraft,
+  createDocumentFontDialogOpenTypeValueMaps,
+  documentFontDialogOpenTypeFeaturePatch,
+  selectedDocumentFontDialogOpenTypeSource,
+  type DocumentFontDialogOpenTypeDraft,
+  type DocumentFontDialogOpenTypePatch,
+  type DocumentFontDialogOpenTypeSource,
+  type DocumentFontDialogOpenTypeTouched,
+} from './document-font-dialog-opentype-model';
 import {
   addDocumentFontDialogRunBorderValue,
   createDocumentFontDialogRunBorderDraft,
@@ -91,7 +103,8 @@ export type DocumentEmphasisMarkMode =
   | 'mixed'
   | WorkDocumentEmphasisMark;
 
-export interface DocumentFontDialogSource {
+export interface DocumentFontDialogSource
+  extends DocumentFontDialogOpenTypeSource {
   characterScale: {
     mixed: boolean;
     value: number | null;
@@ -133,7 +146,8 @@ export interface DocumentFontDialogSource {
 
 export interface DocumentFontDialogDraft
   extends DocumentFontDialogRunBorderDraft,
-    DocumentFontDialogRunShadingDraft {
+    DocumentFontDialogRunShadingDraft,
+    DocumentFontDialogOpenTypeDraft {
   characterScaleMode: DocumentCharacterScaleMode;
   characterScalePercent: string;
   characterPositionMode: DocumentCharacterPositionMode;
@@ -156,7 +170,8 @@ export interface DocumentFontDialogDraft
 export interface DocumentFontDialogPatch
   extends DocumentFontDialogScriptFontPatch,
     DocumentFontDialogRunBorderPatch,
-    DocumentFontDialogRunShadingPatch {
+    DocumentFontDialogRunShadingPatch,
+    DocumentFontDialogOpenTypePatch {
   characterScalePercent?: number;
   characterPositionHalfPoints?: number;
   characterSpacingTwips?: number;
@@ -169,7 +184,8 @@ export interface DocumentFontDialogPatch
   legacyTextImprint?: boolean;
 }
 
-export interface DocumentFontDialogTouched {
+export interface DocumentFontDialogTouched
+  extends DocumentFontDialogOpenTypeTouched {
   characterPosition: boolean;
   characterScale: boolean;
   characterSpacing: boolean;
@@ -212,6 +228,7 @@ export function documentFontDialogSource(
   const latinFontValues = new Map<string, string | null>();
   const eastAsiaFontValues = new Map<string, string | null>();
   const complexScriptFontValues = new Map<string, string | null>();
+  const openTypeValues = createDocumentFontDialogOpenTypeValueMaps();
   const addValues = (attributes: Record<string, unknown>) => {
     addScaleValue(scaleValues, attributes.characterScalePercent);
     addPositionValue(positionValues, attributes.characterPositionHalfPoints);
@@ -245,6 +262,10 @@ export function documentFontDialogSource(
       eastAsiaFontValues,
       complexScriptFontValues,
       attributes,
+    );
+    addDocumentFontDialogOpenTypeValues(
+      openTypeValues,
+      attributes.openTypeFeatures,
     );
   };
   if (selection.empty) {
@@ -299,6 +320,7 @@ export function documentFontDialogSource(
   const latinFont = selectedValue(latinFontValues);
   const eastAsiaFont = selectedValue(eastAsiaFontValues);
   const complexScriptFont = selectedValue(complexScriptFontValues);
+  const openType = selectedDocumentFontDialogOpenTypeSource(openTypeValues);
   const textStyle = editor.getAttributes('textStyle');
   const selectedText = selection.empty
     ? ''
@@ -322,6 +344,7 @@ export function documentFontDialogSource(
     latinFont,
     eastAsiaFont,
     complexScriptFont,
+    ...openType,
     fontFamily:
       typeof textStyle.fontFamily === 'string' && textStyle.fontFamily.trim()
         ? textStyle.fontFamily
@@ -385,6 +408,7 @@ export function createDocumentFontDialogDraft(
     latinFont: documentFontFamilyDraftValue(source.latinFont),
     eastAsiaFont: documentFontFamilyDraftValue(source.eastAsiaFont),
     complexScriptFont: documentFontFamilyDraftValue(source.complexScriptFont),
+    ...createDocumentFontDialogOpenTypeDraft(source),
   };
 }
 
@@ -563,6 +587,7 @@ export function documentFontDialogPatch(
     draft.complexScriptFont,
     touched.complexScriptFont,
   );
+  appendDocumentFontDialogOpenTypePatch(patch, source, draft, touched);
   return patch;
 }
 
@@ -598,6 +623,8 @@ export function applyDocumentFontDialogPatch(
       : {}),
   };
   const hasScriptFonts = Object.keys(scriptFontPatch).length > 0;
+  const openTypePatch = documentFontDialogOpenTypeFeaturePatch(patch);
+  const hasOpenType = Object.keys(openTypePatch).length > 0;
   const scale = hasScale
     ? normalizeDocumentCharacterScalePercent(patch.characterScalePercent)
     : null;
@@ -639,7 +666,8 @@ export function applyDocumentFontDialogPatch(
       !hasLegacyTextEffects &&
       !hasRunBorder &&
       !hasRunShading &&
-      !hasScriptFonts) ||
+      !hasScriptFonts &&
+      !hasOpenType) ||
     (hasScale && scale === null) ||
     (hasPosition && position === null) ||
     (hasSpacing && spacing === null) ||
@@ -701,12 +729,13 @@ export function applyDocumentFontDialogPatch(
         ? null
         : (serializeDocumentRunShading(runShading) ?? null);
   }
-  if (hasScriptFonts) {
-    return applyDocumentScriptFontPatch(
+  if (hasScriptFonts || hasOpenType) {
+    return applyDocumentTextStylePatch(
       editor,
       selection,
       attributes,
       scriptFontPatch,
+      openTypePatch,
     );
   }
   return editor

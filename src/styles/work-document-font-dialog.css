@@ -62,7 +62,8 @@
 }
 
 .work-document-font-dialog-run-border,
-.work-document-font-dialog-run-shading {
+.work-document-font-dialog-run-shading,
+.work-document-font-dialog-opentype {
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -79,8 +80,13 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.work-document-font-dialog-opentype {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .work-document-font-dialog-run-border > legend,
-.work-document-font-dialog-run-shading > legend {
+.work-document-font-dialog-run-shading > legend,
+.work-document-font-dialog-opentype > legend {
   padding: 0 4px;
   color: var(--a3s-muted);
   font-size: 11px;
@@ -169,7 +175,8 @@
   }
 
   .work-document-font-dialog-run-border,
-  .work-document-font-dialog-run-shading {
+  .work-document-font-dialog-run-shading,
+  .work-document-font-dialog-opentype {
     grid-template-columns: minmax(0, 1fr);
   }
 

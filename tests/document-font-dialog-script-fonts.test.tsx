@@ -8,6 +8,7 @@ import {
   documentFontDialogSource,
 } from '../src/internal/features/work/editors/document-font-dialog-model';
 import type { WorkDocumentLayoutFont } from '../src/internal/features/work/work-document-fonts';
+import { parseDocumentOpenTypeFeatures } from '../src/internal/features/work/work-document-opentype';
 import {
   documentScriptFontsDomAttributes,
   normalizeDocumentScriptFonts,
@@ -104,6 +105,7 @@ test('applies three script fonts and scalar formatting in one undo step', async 
   await selectFont('拉丁文字字体', 'Project Latin');
   await selectFont('东亚文字字体', 'Project East');
   await selectFont('复杂文字字体', 'Project Complex');
+  await selectFont('OpenType 连字', '全部');
   fireEvent.change(screen.getByRole('textbox', { name: '字符缩放比例（%）' }), {
     target: { value: '80' },
   });
@@ -137,6 +139,9 @@ test('applies three script fonts and scalar formatting in one undo step', async 
       },
     });
     expect(element.dataset.officeCharacterScalePercent).toBe('80');
+    expect(
+      parseDocumentOpenTypeFeatures(element.dataset.officeOpentypeFeatures),
+    ).toEqual({ ligatures: 'all' });
   }
 
   expect(editor.commands.undo()).toBe(true);
@@ -149,6 +154,7 @@ test('applies three script fonts and scalar formatting in one undo step', async 
     value: 'Complex Old',
   });
   expect(restored.characterScale).toEqual({ mixed: false, value: null });
+  expect(restored.openTypeLigatures).toEqual({ mixed: false, value: null });
   expect(editor.commands.undo()).toBe(false);
   await waitFor(() => expect(editor?.view.dom).toHaveFocus());
 });
