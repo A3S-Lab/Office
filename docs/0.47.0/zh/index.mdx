@@ -1,0 +1,76 @@
+---
+title: A3S Office 0.47.0 文档
+description: 接入 A3S Office 0.47.0 的 Writer 常用实时字段、文本框和图片变换、表格验证与公式、多人实时协作及本地 Office 自动化能力。
+---
+
+# A3S Office 0.47.0 文档
+
+这是 A3S Office 0.47.0 的冻结文档索引，提供本版本可用的 API、接入步骤和工程参考。
+
+## 从这里开始
+
+| 目标 | 文档入口 |
+| --- | --- |
+| 在应用中挂载第一个受控编辑器 | [快速开始](./guide/index.html) |
+| 选择 React、Vue 或 Web Component | [组件接入](./components/index.html) |
+| 配置某一种编辑器和内容模型 | [编辑器 API](./components/document.html) |
+| 添加宿主操作或 TipTap Extension | [扩展机制](./components/extensions.html) |
+| 让多人和编码智能体编辑同一文件 | [多人实时协作](./components/collaboration.html) |
+| 部署带鉴权、广播和持久化的后端 | [A3S Boot 实时协作后端](./components/collaboration-server.html) |
+| 让编码智能体读取或修改 Office 文件 | [CLI 与 Skill](./automation/index.html) |
+| 查看近期版本发生了什么变化 | [更新日志](./changelog.html) |
+
+## 编辑器组件
+
+| 文件类型 | 公开组件 | 内容模型与实现 |
+| --- | --- | --- |
+| 文档 | [`DocumentEditor`](./components/document.html) | `DocumentContent`；TipTap / ProseMirror 与 A3S Office 排版内核 |
+| Markdown | [`MarkdownEditor`](./components/markdown.html) | `MarkdownContent`；可视化编辑与受控源码 |
+| 表格 | [`SpreadsheetEditor`](./components/spreadsheet.html) | `SpreadsheetContent`；稀疏工作簿与计算内核 |
+| 演示文稿 | [`PresentationEditor`](./components/presentation.html) | `PresentationContent`；场景图与按需文本编辑 |
+| PDF | [`PdfViewer`](./components/pdf.html) | `Blob` 输入/输出；PDFium WebAssembly 与批注控制器 |
+
+所有框架绑定共享受控组件约定。宿主持有内容、保存状态、文件权限和生命周期，编辑器
+通过类型化属性与事件返回状态变化。
+
+## 多人实时协作
+
+协作协议适用于全部五种编辑器和三种框架绑定。浏览器端使用 Yjs，原生智能体使用 Yrs，
+宿主负责房间、身份、权限、Provider、离线队列和持久化。
+
+- [协作协议与状态边界](./components/collaboration.html)
+- [完整 A3S Boot 后端示例](./components/collaboration-server.html)
+
+## `main` 更新内容（0.47.0）
+
+[更新日志](./changelog.html)会按版本、编辑器、用户收益、兼容性证据和详细参考来呈现近期
+发布内容。在该页面切换文档版本时，只会显示对应冻结版本当时已经存在的历史。
+
+当前产品重点：
+
+- [Writer 常用实时字段与书签目标页码](./components/document.html#常用实时字段)
+- [原生可编辑 Writer 文本框](./components/document.html#可编辑文本框)
+- [Writer 图片旋转与翻转](./components/document.html#图片属性)
+- [本地表格依赖下拉列表](./components/spreadsheet.html#依赖下拉列表)
+- [可编辑的本地表格公式条件格式](./components/spreadsheet.html#公式条件格式)
+- [有界的本地表格自定义公式验证](./components/spreadsheet.html#自定义公式)
+- [与 Office 一致的表格数据验证错误警告分支](./components/spreadsheet.html#与-office-一致的错误警告分支)
+- [原子化 Writer 有序列表编号修订](./components/document.html#有序列表编号修订)
+- [可组合的演示文稿进入与退出动画](./components/presentation.html#进入与退出动画)
+- [支持版本冻结的产品更新日志](./changelog.html)
+- [Writer 原生 OpenType 排版](./components/document.html#原生-opentype-排版)
+- [精确 XLSX 1900/1904 日期系统保留](./components/spreadsheet.html#xlsx-1904-日期系统保留)
+
+## 工程参考
+
+| 主题 | 参考文档 |
+| --- | --- |
+| 浏览器组件、Worker 与 WebAssembly 边界 | [浏览器编辑器架构](./browser-editor-architecture.html) |
+| Rust 核心、CLI、MCP 与本地文件 | [本地 Office 引擎](./native-office-engine.html) |
+| 质量门禁、性能指标与兼容性 | [编辑器质量路线图](./editor-quality-roadmap.html) |
+| 命令、选择器和 JSON 协议 | [CLI 参考](./cli-reference.html) |
+
+## 语言与版本
+
+使用页面顶部的语言和版本控件切换简体中文、English 或冻结版本。搜索结果始终限制在
+当前语言和版本，避免把不同版本的 API 混在一起。

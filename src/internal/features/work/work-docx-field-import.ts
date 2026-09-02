@@ -1,13 +1,17 @@
 import {
   docxDocumentFieldKind,
+  docxDocumentFieldTarget,
+  supportedDocxDocumentFieldInstruction,
   type WorkDocumentFieldKind,
 } from './work-document-fields';
+import type { ImportedDocxBookmarkMarker } from './work-docx-bookmark-import';
 import {
   type DocxFieldOccurrence,
   docxFieldOccurrenceIsInlineEditable,
   docxFieldOccurrences,
   docxFieldResultText,
 } from './work-docx-field-instructions';
+import { attribute, descendants } from './work-ooxml-package';
 
 export interface ImportedDocxFieldMarkers {
   fields: ImportedDocxFieldMarker[];
@@ -20,6 +24,9 @@ interface ImportedDocxFieldMarker {
   kind: WorkDocumentFieldKind;
   instruction: string;
   display: string;
+  targetId?: string;
+  targetName?: string;
+  orphaned?: boolean;
 }
 
 const WORD_NAMESPACE =
@@ -28,10 +35,29 @@ const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 
 export function markDocxBodyFields(
   document: Document,
+  bookmarks: readonly ImportedDocxBookmarkMarker[] = [],
 ): ImportedDocxFieldMarkers {
+  const bookmarkTargets = bookmarks.length
+    ? new Map(
+        bookmarks.map((bookmark) => [
+          bookmark.sourceName.trim().toLowerCase(),
+          { id: bookmark.id, name: bookmark.name },
+        ]),
+      )
+    : pairedBookmarkTargets(document);
   const fields = docxFieldOccurrences(document).flatMap((field, index) => {
     const kind = docxDocumentFieldKind(field.instruction);
-    if (!kind || !docxFieldOccurrenceIsInlineEditable(field)) return [];
+    if (
+      !kind ||
+      !supportedDocxDocumentFieldInstruction(field.instruction) ||
+      !docxFieldOccurrenceIsInlineEditable(field)
+    )
+      return [];
+    const targetName = docxDocumentFieldTarget(field.instruction) ?? undefined;
+    const target = targetName
+      ? bookmarkTargets.get(targetName.toLowerCase())
+      : undefined;
+    if (kind === 'pageReference' && !target) return [];
     const marker: ImportedDocxFieldMarker = {
       start: `__A3S_WORK_FIELD_START_${index + 1}__`,
       end: `__A3S_WORK_FIELD_END_${index + 1}__`,
@@ -39,11 +65,32 @@ export function markDocxBodyFields(
       kind,
       instruction: field.instruction,
       display: docxFieldResultText(field),
+      ...(target ? { targetId: target.id, targetName: target.name } : {}),
+      ...(kind === 'pageReference' ? { orphaned: !target } : {}),
     };
     insertFieldBoundaryMarkers(document, field, marker.start, marker.end);
     return [marker];
   });
   return { fields };
+}
+
+function pairedBookmarkTargets(
+  document: Document,
+): Map<string, { id: string; name: string }> {
+  const endIds = new Set(
+    descendants(document, 'bookmarkEnd')
+      .map((element) => attribute(element, 'id')?.trim() ?? '')
+      .filter(Boolean),
+  );
+  return new Map(
+    descendants(document, 'bookmarkStart').flatMap((element) => {
+      const id = attribute(element, 'id')?.trim() ?? '';
+      const name = attribute(element, 'name')?.trim() ?? '';
+      return id && name && endIds.has(id)
+        ? [[name.toLowerCase(), { id, name }] as const]
+        : [];
+    }),
+  );
 }
 
 export function applyImportedDocxFieldMarkers(
@@ -56,6 +103,9 @@ export function applyImportedDocxFieldMarkers(
     element.dataset.fieldId = field.id;
     element.dataset.fieldKind = field.kind;
     element.dataset.fieldInstruction = field.instruction;
+    if (field.targetId) element.dataset.fieldTargetId = field.targetId;
+    if (field.targetName) element.dataset.fieldTargetName = field.targetName;
+    if (field.orphaned) element.dataset.fieldOrphaned = 'true';
     const convertedDisplay = replaceMarkerRange(
       document.body,
       field.start,

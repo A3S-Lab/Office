@@ -267,8 +267,10 @@ test('Word page and reference commands keep the document ready for typing', asyn
   await page.getByRole('tab', { name: '插入' }).click();
   await page.getByRole('button', { name: '页码', exact: true }).click();
   await expect(body).toBeFocused();
-  await page.getByRole('combobox', { name: '插入页码或日期' }).click();
-  await expect(page.getByRole('option', { name: '页码或日期' })).toBeDisabled();
+  await page.getByRole('combobox', { name: '插入页码、日期或统计域' }).click();
+  await expect(
+    page.getByRole('option', { name: '页码、日期或统计' }),
+  ).toBeDisabled();
   await expect(
     page.getByRole('option', { name: '页码', exact: true }),
   ).toBeFocused();

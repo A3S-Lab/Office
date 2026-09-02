@@ -38,11 +38,11 @@ import {
 } from '../work-document-table-of-contents';
 import { selectedDocumentTableOfContentsOptions } from '../work-document-table-of-contents-node';
 import type { WorkDocumentContent } from '../work-types';
-import { OfficeTextField, useOfficeDialog } from './office-controls';
-import { readOfficeFileAsDataUrl } from './office-file-data';
-import { DocumentTableOfContentsDialog } from './document-table-of-contents-dialog';
 import { DocumentIndexDialog } from './document-index-dialog';
 import { DocumentIndexEntryDialog } from './document-index-entry-dialog';
+import { DocumentTableOfContentsDialog } from './document-table-of-contents-dialog';
+import { OfficeTextField, useOfficeDialog } from './office-controls';
+import { readOfficeFileAsDataUrl } from './office-file-data';
 
 type DocumentInsertDialog =
   | {
@@ -305,6 +305,28 @@ export function useDocumentInsertCommands({
     invokerRef.current = editor.view.dom;
     setInsertDialog(null);
   };
+  const submitPageReference = () => {
+    if (!editor || insertDialog?.kind !== 'crossReference') return;
+    const target = insertDialog.targets.find(
+      (candidate) => referenceTargetKey(candidate) === insertDialog.selectedKey,
+    );
+    if (!target || target.type !== 'bookmark') return;
+    const inserted = editor
+      .chain()
+      .focus()
+      .insertDocumentField('pageReference', {
+        targetId: target.id,
+        targetName: target.name,
+      })
+      .run();
+    if (!inserted) return;
+    editor.commands.refreshDocumentFields(contentRef.current, {
+      resolveContext: resolveFieldContext ?? undefined,
+      addToHistory: false,
+    });
+    invokerRef.current = editor.view.dom;
+    setInsertDialog(null);
+  };
   const submitTableOfContents = () => {
     if (!editor || insertDialog?.kind !== 'tableOfContents') return;
     const buildOptions = {
@@ -427,7 +449,7 @@ export function useDocumentInsertCommands({
       {insertDialog?.kind === 'crossReference' && (
         <Dialog
           title="插入交叉引用"
-          description="选择正文中已有的图片、表格题注或书签。"
+          description="选择正文中已有的图片、表格题注或书签；书签还可以插入实时目标页码。"
           className="work-document-reference-dialog"
           restoreFocusTarget={() => invokerRef.current}
           onClose={() => setInsertDialog(null)}
@@ -435,6 +457,20 @@ export function useDocumentInsertCommands({
             <>
               <Button tone="quiet" onClick={() => setInsertDialog(null)}>
                 取消
+              </Button>
+              <Button
+                tone="secondary"
+                disabled={
+                  !insertDialog.selectedKey ||
+                  insertDialog.targets.find(
+                    (candidate) =>
+                      referenceTargetKey(candidate) ===
+                      insertDialog.selectedKey,
+                  )?.type !== 'bookmark'
+                }
+                onClick={submitPageReference}
+              >
+                插入目标页码
               </Button>
               <Button
                 tone="primary"

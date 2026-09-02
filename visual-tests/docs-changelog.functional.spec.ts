@@ -9,11 +9,9 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(23);
-  await expect(cards.first()).toContainText('v0.46.0');
-  await expect(cards.first()).toContainText(
-    'Writer 文本框现在可编辑且原生往返',
-  );
+  await expect(cards).toHaveCount(24);
+  await expect(cards.first()).toContainText('v0.47.0');
+  await expect(cards.first()).toContainText('Writer 常用字段保持实时并可引用');
   await expect(
     page.locator('.office-release-card[data-version="0.41.0"]'),
   ).toContainText('表格数据验证警告现在与 Office 决策一致');
@@ -22,7 +20,7 @@ test('documentation changelog stays scannable, localized, and version-aware', as
   ).toContainText('演示文稿入场动画');
   await expect(cards.first().locator('time')).toHaveAttribute(
     'datetime',
-    '2026-09-02',
+    '2026-09-03',
   );
   await expect(
     cards.first().locator('.office-release-card__highlights > li'),

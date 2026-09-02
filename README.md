@@ -309,6 +309,17 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.47.0` adds a bounded common-field workflow for Writer without
+introducing a second document model or a remote service:
+
+- The Insert ribbon exposes live word and character counts. PAGE, NUMPAGES,
+  SECTION, SECTIONPAGES, DATE, and TIME continue to refresh from the measured
+  page model, while generated field results stay out of document statistics.
+- The Cross-reference dialog can insert a bookmark-backed `PAGEREF` with a
+  stable target identity. Supported native DOCX switches round-trip as fields;
+  unsupported, malformed, nested, or missing-target instructions remain cached
+  text with explicit compatibility diagnostics.
+
 Version `0.46.0` adds native, bounded Writer text boxes without introducing a
 second document model or a remote service:
 

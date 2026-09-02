@@ -68,12 +68,6 @@ import {
   markDocxImageLayouts,
 } from './work-docx-image-layout-import';
 import {
-  applyImportedDocxTextBoxMarkers,
-  hasImportedDocxTextBoxMarkers,
-  markDocxTextBoxes,
-  type ImportedDocxTextBoxMarkers,
-} from './work-docx-text-box-import';
-import {
   applyImportedDocxIndexMarkers,
   hasImportedDocxIndexMarkers,
   type ImportedDocxIndexMarkers,
@@ -205,6 +199,12 @@ import {
 } from './work-docx-table-sizing-import';
 import { createDocxTableStyleResolver } from './work-docx-table-styles';
 import {
+  applyImportedDocxTextBoxMarkers,
+  hasImportedDocxTextBoxMarkers,
+  type ImportedDocxTextBoxMarkers,
+  markDocxTextBoxes,
+} from './work-docx-text-box-import';
+import {
   createDocxThemeResolver,
   type DocxThemeResolver,
 } from './work-docx-theme';
@@ -333,7 +333,7 @@ export async function prepareDocxImport(
   const captionMarkers = markDocxCaptionFields(document);
   const bookmarkMarkers = markDocxBookmarks(document);
   const citationMarkers = markDocxCitationFields(document);
-  const fieldMarkers = markDocxBodyFields(document);
+  const fieldMarkers = markDocxBodyFields(document, bookmarkMarkers.bookmarks);
   const listMarkers = markDocxLists(document, numbering);
   const numberingChangeMarkers = markDocxNumberingChanges(document);
   const imageLayoutMarkerState = createImportedDocxImageLayoutMarkerState();

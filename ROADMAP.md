@@ -1,6 +1,6 @@
 # A3S Office / Traditional Office Capability Gap Roadmap
 
-Last reviewed: 2026-09-01
+Last reviewed: 2026-09-03
 
 This roadmap compares the current `main` branch of A3S Office with the public
 capability surface of Traditional Office. It is a prioritization tool, not a
@@ -83,7 +83,7 @@ collaboration transport, and AI providers.
 | Bookmarks, links, captions, cross-references, citations, bibliography, footnotes/endnotes | **Partial**, with native identity and editable common paths | Wider field instructions, tables of authorities/figures, citation styles, and reference dialogs remain incomplete | P1 |
 | Table of contents and outline authoring | **Supported**: shared semantic-heading/native-outline model plus typed insert/customize/refresh, levels 1–9, hyperlinks, live page numbers, alignment, four leader styles, stable paragraph-identity targets, one-step Undo, and native DOCX `TOC` round trips | Custom style-to-level mappings, tables of figures, and deeper TOC style formatting remain open | Maintain / P1 fidelity |
 | Native index authoring | **Supported**: primary/secondary `XE` entries, cross-references, bold/italic page intent, stable marker targets, merged page numbers, typed insert/customize/refresh, 1–4 columns, indented/run-in layouts, four leader styles, one-step Undo, and native DOCX `XE`/`INDEX` round trips | Entry ranges, custom index types, letter-heading formats, authorities, and locale-specific collation controls remain open | Maintain / P1 fidelity |
-| Fields | **Partial**: PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, TIME, and safe REF paths | Broader Word field grammar, nested fields, switches, mail fields, and document properties are incomplete | P1/P2 |
+| Fields | **Partial**: PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, TIME, NUMWORDS, NUMCHARS, safe REF paths, and bookmark-backed PAGEREF with bounded switch diagnostics | Broader Word field grammar, nested fields, switches outside the deterministic common subset, mail fields, document properties, and tables of figures/authorities remain incomplete | P1/P2 |
 | Mail merge | **Gap** | No data-source mapping, recipient filtering, preview, or batch generation | P2 |
 | Compare/combine documents | **Partial**: same-layout paragraphs/headings compare into deterministic insertion, deletion, character-formatting, and paragraph-formatting revisions; reviewed-copy combine requires an exact reject-all baseline match | Changed complex structures, native paragraph-mark revision fidelity, move ranges, layout changes, and multi-copy structural conflicts remain explicit fail-closed boundaries | P1 |
 | Content controls and forms | **Partial**: eligible static text controls can be preserved/reconstructed | Data binding, repeating sections, form controls, placeholders, and active behavior are intentionally limited | P1/P2 |

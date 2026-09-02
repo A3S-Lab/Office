@@ -5,6 +5,7 @@ import {
   CheckCheck,
   ChevronDown,
   ChevronUp,
+  Eye,
   FileDiff,
   FilePlus2,
   FileStack,
@@ -12,11 +13,10 @@ import {
   GitCompareArrows,
   Globe2,
   Hash,
-  Eye,
   Image as ImageIcon,
+  Languages,
   Link2,
   ListChecks,
-  Languages,
   MessageSquarePlus,
   MessagesSquare,
   PanelBottomOpen,
@@ -65,19 +65,13 @@ import {
 import { synchronizeDocumentEditorSelectionFromDom } from './document-dom-selection';
 import { documentHasRefreshableFields } from './document-editor-support';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
-import { DocumentProofingDialog } from './document-proofing-dialog';
-import {
-  applyDocumentProofingDialogPatch,
-  documentProofingDialogSource,
-  type DocumentProofingDialogSource,
-} from './document-proofing-dialog-model';
-import { DocumentHomeRibbon } from './document-home-ribbon';
 import { DocumentFontDialog } from './document-font-dialog';
 import {
   applyDocumentFontDialogPatch,
-  documentFontDialogSource,
   type DocumentFontDialogSource,
+  documentFontDialogSource,
 } from './document-font-dialog-model';
+import { DocumentHomeRibbon } from './document-home-ribbon';
 import type { DocumentLayoutPanelTab } from './document-layout-panel';
 import {
   type DocumentPageChromeEditingPart,
@@ -85,6 +79,12 @@ import {
 } from './document-page-chrome-ribbon';
 import { DocumentPageLayoutRibbon } from './document-page-layout-ribbon';
 import { DocumentPictureRibbon } from './document-picture-ribbon';
+import { DocumentProofingDialog } from './document-proofing-dialog';
+import {
+  applyDocumentProofingDialogPatch,
+  type DocumentProofingDialogSource,
+  documentProofingDialogSource,
+} from './document-proofing-dialog-model';
 import { DocumentReferencesRibbon } from './document-references-ribbon';
 import {
   actionableDocumentChangeIndex,
@@ -1205,16 +1205,18 @@ function DocumentFieldSelect({
 }) {
   return (
     <OfficeSelect
-      ariaLabel="插入页码或日期"
+      ariaLabel="插入页码、日期或统计域"
       value=""
       options={[
-        { value: '', label: '页码或日期', disabled: true },
+        { value: '', label: '页码、日期或统计', disabled: true },
         { value: 'page', label: '页码' },
         { value: 'numPages', label: '总页数' },
         { value: 'section', label: '当前节号' },
         { value: 'sectionPages', label: '本节页数' },
         { value: 'date', label: '当前日期' },
         { value: 'time', label: '当前时间' },
+        { value: 'wordCount', label: '字数' },
+        { value: 'characterCount', label: '字符数' },
       ]}
       onValueChange={(kind) => {
         if (kind) onInsertField(kind);

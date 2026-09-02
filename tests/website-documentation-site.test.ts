@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.47.0' ||
     version === '0.46.0' ||
     version === '0.45.0' ||
     version === '0.44.0' ||
@@ -78,6 +79,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.47.0',
     '0.46.0',
     '0.45.0',
     '0.44.0',
@@ -343,7 +345,7 @@ test('keeps public documentation on the neutral Traditional Office baseline', as
     'visual-tests/README.md',
   ].map((file) => path.join(repositoryRoot, file));
   const nativeTextBoxDocumentation = new Set(
-    ['latest', '0.46.0'].flatMap((version) =>
+    ['latest', '0.47.0', '0.46.0'].flatMap((version) =>
       DOCUMENTATION_LOCALES.map(({ lang }) =>
         path.join(documentationRoot, version, lang, 'components/document.mdx'),
       ),
@@ -388,6 +390,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
+  expect(readme).toContain('Version `0.47.0`');
   expect(readme).toContain('Version `0.46.0`');
   expect(readme).toContain('Version `0.45.0`');
   expect(readme).toContain('Version `0.44.0`');
@@ -401,7 +404,7 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.46.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.47.0)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
   expect(englishHome).toContain(
     'spreadsheet.html#formula-conditional-formatting',
@@ -422,8 +425,9 @@ test('routes the concise README and documentation homes to the current release s
   );
   expect(englishHome).toContain('document.html#built-in-picture-properties');
   expect(englishHome).toContain('document.html#built-in-editable-text-boxes');
+  expect(englishHome).toContain('document.html#common-live-fields');
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.46.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.47.0）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
   expect(chineseHome).toContain('spreadsheet.html#公式条件格式');
   expect(chineseHome).toContain('spreadsheet.html#依赖下拉列表');
@@ -436,6 +440,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(chineseHome).toContain('spreadsheet.html#xlsx-1904-日期系统保留');
   expect(chineseHome).toContain('document.html#图片属性');
   expect(chineseHome).toContain('document.html#可编辑文本框');
+  expect(chineseHome).toContain('document.html#常用实时字段');
 });
 
 test('publishes Writer numbering revisions across implementation, native collaboration, docs, and release evidence', async () => {
@@ -1830,6 +1835,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.47.0',
     '0.42.0',
     '0.41.0',
     '0.40.0',

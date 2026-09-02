@@ -1,5 +1,7 @@
-import { documentSections } from './work-document-section';
-import { resolveDocumentFieldsHtml } from './work-document-fields';
+import {
+  documentFieldStatisticsFromHtml,
+  resolveDocumentFieldsHtml,
+} from './work-document-fields';
 import {
   collectDocumentNotes,
   documentNoteKey,
@@ -7,6 +9,7 @@ import {
   removeDocumentNoteDefinitions,
   type WorkDocumentNote,
 } from './work-document-notes';
+import { documentSections } from './work-document-section';
 import type {
   WorkDocumentColumns,
   WorkDocumentContent,
@@ -137,6 +140,10 @@ function resolveDocumentPageFields(
       sectionPages.set(sectionId, (sectionPages.get(sectionId) ?? 0) + 1);
     }
   }
+  const statistics = documentFieldStatisticsFromHtml(
+    sections.map((section) => section.html).join('\n'),
+  );
+  const bookmarkPages = documentBookmarkPageNumbers(pages);
   const now = new Date();
   for (const page of pages) {
     for (const segment of page.segments) {
@@ -145,10 +152,41 @@ function resolveDocumentPageFields(
         totalPages: pages.length,
         sectionNumber: sectionNumbers.get(segment.sectionId) ?? 1,
         sectionPages: sectionPages.get(segment.sectionId) ?? 1,
+        wordCount: statistics.wordCount,
+        characterCount: statistics.characterCount,
+        bookmarkPageNumbers: bookmarkPages,
         now,
       });
     }
   }
+}
+
+function documentBookmarkPageNumbers(
+  pages: readonly WorkDocumentPageDescriptor[],
+): ReadonlyMap<string, number> {
+  const values = new Map<string, number>();
+  for (const page of pages) {
+    for (const segment of page.segments) {
+      const document = new DOMParser().parseFromString(
+        segment.html,
+        'text/html',
+      );
+      for (const boundary of Array.from(
+        document.body.querySelectorAll<HTMLElement>(
+          '[data-document-bookmark-boundary][data-bookmark-kind="start"]',
+        ),
+      )) {
+        const id = boundary.dataset.bookmarkId?.trim();
+        const name = boundary.dataset.bookmarkName?.trim();
+        if (id && !values.has(`id:${id}`))
+          values.set(`id:${id}`, page.pageNumber);
+        if (name && !values.has(`name:${name.toLowerCase()}`)) {
+          values.set(`name:${name.toLowerCase()}`, page.pageNumber);
+        }
+      }
+    }
+  }
+  return values;
 }
 
 function samePhysicalPageLayout(

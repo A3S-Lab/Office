@@ -69,6 +69,21 @@ describe('document bookmarks', () => {
     }
   });
 
+  test('inserts a bookmark into an empty document section', () => {
+    const editor = createEditor('<p></p>');
+    try {
+      expect(editor.commands.insertDocumentBookmark('Fields_target')).toBe(
+        true,
+      );
+      expect(editorDocumentBookmarks(editor)).toEqual([
+        expect.objectContaining({ name: 'Fields_target' }),
+      ]);
+      expect(boundaryKinds(editor)).toEqual(['start', 'end']);
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('keeps the original identity when a complete bookmark is copied before it', () => {
     const editor = createEditor('<p><a href="#Architecture">Alpha</a></p>');
     try {

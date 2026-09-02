@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@rstest/core';
+import { markDocxBookmarks } from '../src/internal/features/work/work-docx-bookmark-import';
 import { diagnoseDocxCaptions } from '../src/internal/features/work/work-docx-caption-diagnostics';
 import { markDocxBodyFields } from '../src/internal/features/work/work-docx-field-import';
 
@@ -73,6 +74,31 @@ describe('DOCX body field structure', () => {
     );
     expect(diagnostics.hasUnsupportedFields).toBe(true);
     expect(markDocxBodyFields(document).fields).toHaveLength(0);
+  });
+
+  test('keeps unsupported common-field switches and missing page targets cached', () => {
+    const document = wordDocument(
+      [
+        '<w:p>',
+        '<w:bookmarkStart w:id="7" w:name="Target"/><w:r><w:t>Target</w:t></w:r><w:bookmarkEnd w:id="7"/>',
+        '<w:fldSimple w:instr="NUMWORDS \\CardText"><w:r><w:t>two</w:t></w:r></w:fldSimple>',
+        '<w:fldSimple w:instr="PAGEREF Missing \\h"><w:r><w:t>9</w:t></w:r></w:fldSimple>',
+        '<w:fldSimple w:instr="PAGEREF Target \\p"><w:r><w:t>1</w:t></w:r></w:fldSimple>',
+        '<w:fldSimple w:instr="PAGEREF Target \\h"><w:r><w:t>1</w:t></w:r></w:fldSimple>',
+        '</w:p>',
+      ].join(''),
+    );
+
+    const diagnostics = diagnoseDocxCaptions(document);
+    expect(diagnostics.issues).toContainEqual(
+      expect.objectContaining({ code: 'docx.fields.instructions' }),
+    );
+    expect(diagnostics.hasUnsupportedFields).toBe(true);
+
+    const bookmarks = markDocxBookmarks(document);
+    expect(
+      markDocxBodyFields(document, bookmarks.bookmarks).fields,
+    ).toHaveLength(1);
   });
 });
 

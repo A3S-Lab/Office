@@ -104,6 +104,30 @@ test('offers a body bookmark as a cross-reference target', () => {
   }
 });
 
+test('offers a live target-page action for body bookmarks', () => {
+  const { editor, element } = createEditor();
+  editor.commands.setTextSelection(textRange(editor, 'Alpha'));
+  editor.commands.insertDocumentBookmark('Alpha_target');
+  editor.commands.setTextSelection(editor.state.doc.content.size - 1);
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开交叉引用' }));
+
+    const pageReference = screen.getByRole('button', { name: '插入目标页码' });
+    expect(pageReference).toBeEnabled();
+    fireEvent.click(pageReference);
+
+    expect(editor.getHTML()).toContain('data-field-kind="pageReference"');
+    expect(editor.getHTML()).toContain('data-field-target-name="Alpha_target"');
+    expect(screen.queryByRole('dialog', { name: '插入交叉引用' })).toBeNull();
+    expect(editor.view.dom).toHaveFocus();
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
 test('inserts a configured table of contents and restores document focus', async () => {
   const { editor, element } = createEditor();
   editor.commands.setTextSelection(textRange(editor, 'Alpha').from);
