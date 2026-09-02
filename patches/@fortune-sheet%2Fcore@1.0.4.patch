@@ -1,5 +1,18 @@
+diff --git a/dist/api/common.d.ts b/dist/api/common.d.ts
+index 978f927ea4b7f5c05acf990c6cb808187fbc5fd3..b67df58acc8dd11236c2f5ef9269d144bd8ea688 100644
+--- a/dist/api/common.d.ts
++++ b/dist/api/common.d.ts
+@@ -3,6 +3,8 @@ import { CellMatrix, CellWithRowAndCol, Sheet } from "../types";
+ export type CommonOptions = {
+     index?: number;
+     id?: string;
++    /** Allows a confirmed invalid data-validation value to be committed. */
++    skipDataValidation?: boolean;
+ };
+ export declare const dataToCelldata: (data: CellMatrix | undefined) => CellWithRowAndCol[];
+ export declare const celldataToData: (celldata: CellWithRowAndCol[], rowCount?: number, colCount?: number) => CellMatrix | null;
 diff --git a/dist/index.esm.js b/dist/index.esm.js
-index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99a72b556b 100644
+index 5c9820b1a261305d500e69eeaf350821872beaf4..a72e00f1436eda565f8a04ce6736650a6e1c51a7 100644
 --- a/dist/index.esm.js
 +++ b/dist/index.esm.js
 @@ -131,6 +131,7 @@ function _unsupportedIterableToArray(r, a) {
@@ -539,7 +552,14 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
      return null;
    }
    var value = d[row_index][col_index];
-@@ -60824,16 +61117,17 @@ function updateCell(ctx, r, c, $input, value, canvas) {
+@@ -60818,22 +61111,33 @@ function cancelNormalSelected(ctx) {
+   ctx.formulaCache.rangedrag_column_start = false;
+   ctx.formulaCache.rangedrag_row_start = false;
+ }
+-function updateCell(ctx, r, c, $input, value, canvas) {
++function updateCell(ctx, r, c, $input, value, canvas, options) {
+   var _inputText, _curv, _ctx$hooks$beforeUpda, _ctx$hooks, _curv2;
+   var inputText = $input === null || $input === void 0 ? void 0 : $input.innerText;
    var inputHtml = $input === null || $input === void 0 ? void 0 : $input.innerHTML;
    var flowdata = getFlowdata(ctx);
    if (!flowdata) return;
@@ -550,24 +570,32 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
 -    if (!_.isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, inputText)) {
 -      var failureText = getFailureText(ctx, dvItem);
 -      cancelNormalSelected(ctx);
--      ctx.warnDialog = failureText;
--      return;
--    }
 +  var logicalColumnCount = flowdata[0] ? flowdata[0].length : ctx.defaultcolumnNum;
 +  if (!flowdata[r]) {
 +    flowdata[r] = [];
 +  }
 +  flowdata[r].length = Math.max(flowdata[r].length, logicalColumnCount, c + 1);
++  var validationValue = value;
++  if (validationValue && typeof validationValue === "object" && "f" in validationValue) {
++    validationValue = validationValue.f;
++  }
++  if (validationValue === null || validationValue === void 0) {
++    validationValue = inputText === null || inputText === void 0 ? "" : inputText;
++  }
 +  var dvItem = getDataVerificationItem(ctx, r, c);
-+  if (!_.isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, inputText)) {
++  if (!(options === null || options === void 0 ? void 0 : options.skipDataValidation) && !_.isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, validationValue)) {
 +    var failureText = getFailureText(ctx, dvItem);
++    var validationDecision = (_ctx$hooks = ctx.hooks).beforeDataValidation === null || _ctx$hooks.beforeDataValidation === void 0 ? void 0 : _ctx$hooks.beforeDataValidation.call(_ctx$hooks, r, c, validationValue, dvItem, failureText, ctx.currentSheetId);
 +    cancelNormalSelected(ctx);
-+    ctx.warnDialog = failureText;
-+    return;
++    if (validationDecision === void 0) {
+       ctx.warnDialog = failureText;
+-      return;
+     }
++    if (validationDecision !== true) return;
    }
    var curv = flowdata[r][c];
    var oldValue = _.cloneDeep(curv);
-@@ -61075,7 +61369,7 @@ function getcellFormula(ctx, r, c, i, data) {
+@@ -61075,7 +61379,7 @@ function getcellFormula(ctx, r, c, i, data) {
    if (_.isNil(data)) {
      cell = getOrigincell(ctx, r, c, i);
    } else {
@@ -576,7 +604,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
    }
    if (_.isNil(cell)) {
      return null;
-@@ -63467,32 +63761,42 @@ function getFlowdata(ctx, id) {
+@@ -63467,32 +63771,42 @@ function getFlowdata(ctx, id) {
    return (_ctx$luckysheetfile = ctx.luckysheetfile) === null || _ctx$luckysheetfile === void 0 ? void 0 : (_ctx$luckysheetfile$i = _ctx$luckysheetfile[i]) === null || _ctx$luckysheetfile$i === void 0 ? void 0 : _ctx$luckysheetfile$i.data;
  }
  function calcRowColSize(ctx, rowCount, colCount) {
@@ -638,7 +666,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
      } else {
        var _flowdata$;
        if (flowdata === null || flowdata === void 0 ? void 0 : (_flowdata$ = flowdata[0]) === null || _flowdata$ === void 0 ? void 0 : _flowdata$[c]) {
-@@ -63502,22 +63806,23 @@ function calcRowColSize(ctx, rowCount, colCount) {
+@@ -63502,22 +63816,23 @@ function calcRowColSize(ctx, rowCount, colCount) {
            firstcolumnlen = ctx.defaultcollen;
          }
          if (firstcolumnlen !== ctx.defaultcollen) {
@@ -670,7 +698,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
  }
  function ensureSheetIndex(data, generateSheetId) {
    if ((data === null || data === void 0 ? void 0 : data.length) > 0) {
-@@ -66976,12 +67281,17 @@ function initSheetData(draftCtx, index, newData) {
+@@ -66976,12 +67291,17 @@ function initSheetData(draftCtx, index, newData) {
      lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
    }
    if (lastRowNum && lastColNum) {
@@ -693,7 +721,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
        expandedData[d.r][d.c] = d.v;
      });
      if (draftCtx.luckysheetfile[index] == null) {
-@@ -67067,24 +67377,25 @@ function copySheet(ctx, sheetId) {
+@@ -67067,24 +67387,25 @@ function copySheet(ctx, sheetId) {
  function calculateSheetFromula(ctx, id, range) {
    var index$1 = getSheetIndex(ctx, id);
    if (!ctx.luckysheetfile[index$1].data) return;
@@ -732,7 +760,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
        insertUpdateFunctionGroup(ctx, r, c, id);
      }
    }
-@@ -67225,8 +67536,23 @@ function updateSheet(ctx, newData) {
+@@ -67225,8 +67546,23 @@ function updateSheet(ctx, newData) {
        column = newDatum.column;
      var index = getSheetIndex(ctx, newDatum.id);
      if (data != null) {
@@ -757,7 +785,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
        if (row != null && column != null && row > 0 && column > 0) {
          lastRowNum = Math.max(lastRowNum, row);
          lastColNum = Math.max(lastColNum, column);
-@@ -67234,19 +67560,28 @@ function updateSheet(ctx, newData) {
+@@ -67234,19 +67570,28 @@ function updateSheet(ctx, newData) {
          lastRowNum = Math.max(lastRowNum, ctx.defaultrowNum);
          lastColNum = Math.max(lastColNum, ctx.defaultcolumnNum);
        }
@@ -795,7 +823,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
          }
        }
        newDatum.data = expandedData;
-@@ -67349,6 +67684,14 @@ function mergeCells(ctx, sheetId, ranges, type) {
+@@ -67349,6 +67694,14 @@ function mergeCells(ctx, sheetId, ranges, type) {
      cfg.merge = {};
    }
    var d = sheet.data;
@@ -810,7 +838,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
    if (type === "merge-cancel") {
      for (var i = 0; i < ranges.length; i += 1) {
        var range = ranges[i];
-@@ -72990,10 +73333,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -72990,10 +73343,7 @@ var Canvas = /*#__PURE__*/function () {
          var _startX = item.startX;
          var _endY = item.endY;
          var _endX = item.endX;
@@ -822,7 +850,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
            this.nullCellRender(_r, _c, _startY, _startX, _endY, _endX, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05);
          } else {
            var cell = flowdata[_r][_c];
-@@ -73191,8 +73531,10 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73191,8 +73541,10 @@ var Canvas = /*#__PURE__*/function () {
            continue;
          }
          var hasCellOver = false;
@@ -834,7 +862,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
            var cell = data[r][c];
            if (((_this$sheetCtx$config16 = this.sheetCtx.config) === null || _this$sheetCtx$config16 === void 0 ? void 0 : (_this$sheetCtx$config17 = _this$sheetCtx$config16.colhidden) === null || _this$sheetCtx$config17 === void 0 ? void 0 : _this$sheetCtx$config17[c]) != null) {
              continue;
-@@ -73274,6 +73616,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73274,6 +73626,7 @@ var Canvas = /*#__PURE__*/function () {
        var checksCF = checkCF(r, c, cfCompute);
        var flowdata = getFlowdata(this.sheetCtx);
        if (!flowdata) return;
@@ -842,7 +870,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
        var borderfix = getBorderFix();
        var fillStyle = normalizedAttr(flowdata, r, c, "bg");
        if (!_.isNil(checksCF) && !_.isNil(checksCF.cellColor)) {
-@@ -73285,7 +73628,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73285,7 +73638,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.fillStyle = fillStyle;
        }
        var cellsize = [startX + offsetLeft + borderfix[0], startY + offsetTop + borderfix[1], endX - startX + borderfix[2] - (isMerge ? 1 : 0), endY - startY + borderfix[3]];
@@ -851,7 +879,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
          row: r,
          column: c,
          startX: cellsize[0],
-@@ -73341,7 +73684,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73341,7 +73694,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.stroke();
          renderCtx.closePath();
        }
@@ -860,7 +888,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
          row: r,
          column: c,
          startY: cellsize[1],
-@@ -73353,7 +73696,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73353,7 +73706,7 @@ var Canvas = /*#__PURE__*/function () {
    }, {
      key: "cellRender",
      value: function cellRender(r, c, startY, startX, endY, endX, value, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05) {
@@ -869,7 +897,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
        var isMerge = arguments.length > 19 && arguments[19] !== undefined ? arguments[19] : false;
        var flowdata = getFlowdata(this.sheetCtx);
        if (!flowdata) {
-@@ -73390,9 +73733,8 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73390,9 +73743,8 @@ var Canvas = /*#__PURE__*/function () {
          return;
        }
        renderCtx.fillRect(cellsize[0], cellsize[1], cellsize[2], cellsize[3]);
@@ -881,7 +909,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
          var dv_w = 5 * this.sheetCtx.zoomRatio;
          var dv_h = 5 * this.sheetCtx.zoomRatio;
          renderCtx.beginPath();
-@@ -73433,7 +73775,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73433,7 +73785,7 @@ var Canvas = /*#__PURE__*/function () {
          } else {
            cellOverflow_bd_r_render = false;
          }
@@ -890,7 +918,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
          var pos_x = startX + offsetLeft;
          var pos_y = startY + offsetTop + 1;
          renderCtx.save();
-@@ -73469,7 +73811,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73469,7 +73821,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.lineWidth = 1;
          renderCtx.strokeStyle = "#000";
          renderCtx.strokeRect(horizonAlignPos, verticalAlignPos_checkbox, 10, 10);
@@ -899,7 +927,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
            renderCtx.beginPath();
            renderCtx.lineTo(horizonAlignPos + 1, verticalAlignPos_checkbox + 6);
            renderCtx.lineTo(horizonAlignPos + 4, verticalAlignPos_checkbox + 9);
-@@ -76066,8 +76408,12 @@ var dataToCelldata = function dataToCelldata(data) {
+@@ -76066,8 +76418,12 @@ var dataToCelldata = function dataToCelldata(data) {
    if (data == null) {
      return celldata;
    }
@@ -914,7 +942,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
        var v = data[r][c];
        if (v != null) {
          celldata.push({
-@@ -76076,8 +76422,8 @@ var dataToCelldata = function dataToCelldata(data) {
+@@ -76076,8 +76432,8 @@ var dataToCelldata = function dataToCelldata(data) {
            v: v
          });
        }
@@ -925,7 +953,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
    return celldata;
  };
  var celldataToData = function celldataToData(celldata, rowCount, colCount) {
-@@ -76091,13 +76437,18 @@ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
+@@ -76091,13 +76447,18 @@ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
      lastColNum = Math.max(lastColNum, colCount);
    }
    if (lastRowNum && lastColNum) {
@@ -950,7 +978,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
      });
      return expandedData;
    }
-@@ -76136,7 +76487,8 @@ function getCellValue$1(ctx, row, column) {
+@@ -76136,7 +76497,8 @@ function getCellValue$1(ctx, row, column) {
    if (!targetSheetData) {
      throw SHEET_NOT_FOUND;
    }
@@ -960,7 +988,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
    var ret;
    if (cellData && _.isPlainObject(cellData)) {
      var _cellData$ct;
-@@ -76159,6 +76511,19 @@ function getCellValue$1(ctx, row, column) {
+@@ -76159,6 +76521,19 @@ function getCellValue$1(ctx, row, column) {
    }
    return ret;
  }
@@ -980,7 +1008,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
  function setCellValue$1(ctx, row, column, value, cellInput) {
    var options = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : {};
    if (!_.isNumber(row) || !_.isNumber(column)) {
-@@ -76166,6 +76531,7 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
+@@ -76166,6 +76541,7 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
    }
    var sheet = getSheet(ctx, options);
    var data = sheet.data;
@@ -988,7 +1016,25 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
    var formatList = {
      bg: 1,
      ff: 1,
-@@ -76263,6 +76629,7 @@ function setCellFormat(ctx, row, column, attr, value) {
+@@ -76198,7 +76574,7 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
+       if (value.ct != null) {
+         curv.ct = value.ct;
+       }
+-      updateCell(ctx, row, column, cellInput, curv);
++      updateCell(ctx, row, column, cellInput, curv, undefined, options);
+     } else {
+       if (value.ct != null) {
+         curv.ct = value.ct;
+@@ -76227,7 +76603,7 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
+     data[row][column] = cell;
+   } else {
+     if (value.toString().substr(0, 1) === "=" || value.toString().substr(0, 5) === "<span") {
+-      updateCell(ctx, row, column, cellInput, value);
++      updateCell(ctx, row, column, cellInput, value, undefined, options);
+     } else {
+       delFunctionGroup(ctx, row, column);
+       setCellValue(ctx, row, column, data, value);
+@@ -76263,6 +76639,7 @@ function setCellFormat(ctx, row, column, attr, value) {
    }
    var sheet = getSheet(ctx, options);
    var targetSheetData = sheet.data;
@@ -996,7 +1042,7 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
    var cellData = (targetSheetData === null || targetSheetData === void 0 ? void 0 : (_targetSheetData$row = targetSheetData[row]) === null || _targetSheetData$row === void 0 ? void 0 : _targetSheetData$row[column]) || {};
    var cfg = sheet.config || {};
    if (attr === "ct" && (!value || value.fa == null || value.t == null)) {
-@@ -77702,12 +78069,8 @@ function handleCellAreaDoubleClick(ctx, globalCache, settings, e, container) {
+@@ -77702,12 +78079,8 @@ function handleCellAreaDoubleClick(ctx, globalCache, settings, e, container) {
    var row_index = row_location[2];
    var col_location = colLocation(x, ctx.visibledatacolumn);
    var col_index = col_location[2];
@@ -1011,14 +1057,14 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..3f7793f9489fc8adbcfa79fa763bec99
    var margeset = mergeBorder(ctx, flowdata, row_index, col_index);
    if (margeset) {
      var _margeset$row2 = _slicedToArray(margeset.row, 3);
-@@ -80366,4 +80729,4 @@ function handlePasteByClick(ctx, clipboardData, triggerType) {
+@@ -80366,4 +80739,4 @@ function handlePasteByClick(ctx, clipboardData, triggerType) {
    } else ;
  }
  
 -export { CFSplitRange, Canvas, FormulaCache, MAX_ZOOM_RATIO, MIN_ZOOM_RATIO, addSheet, index as api, applyLocation, attrToCssName, autoSelectionFormula, calcSelectionInfo, cancelActiveImgItem, cancelFunctionrangeSelected, cancelNormalSelected, cancelPaintModel, cellFocus, cfSplitRange, changeSheet, chatatABC, checkCF, checkCellIsLocked, checkProtectionAllSelected, checkProtectionFormatCells, checkProtectionSelectLockedOrUnLockedCells, checkboxChange, clearFilter, clearMeasureTextCache, colHasMerged, colLocation, colLocationByIndex, colors, columnCharToIndex, commentBoxProps, compute, computeRowlenArr, confirmMessage, convertCssToStyleList, convertSpanToShareString, copy, createDropCellRange, createFilter, createFilterOptions, createFormulaRangeSelect, createRangeHightlight, dataRangeSelection, datenum_local, defaultContext, defaultFont, defaultSettings, defaultStyle, delFunctionGroup, deleteCellInSave, deleteComment, deleteRowCol, deleteSelectedCellText, deleteSheet, diff, drawArrow, drawLineInfo, dropCellCache, editComment, editSheetName, ensureSheetIndex, error, escapeHTMLTag, escapeScriptTag, execFunctionGroup, execfunction, expandRowsAndColumns, extractFormulaCellOps, filterPatch, fixColumnStyleOverflowInFreeze, fixPositionOnFrozenCells, fixRowStyleOverflowInFreeze, functionCopy, functionHTMLGenerate, functionStrChange, genarate, generateRandomId, generateRandomSheetName, getAllFunctionGroup, getArrowCanvasSize, getBorderInfoCompute, getBorderInfoComputeRange, getCellHyperlink, getCellRowColumn, getCellTextInfo, getCellTopRightPostion, getCellValue, getColMerge, getColorGradation, getCommentBoxByRC, getCommentBoxPosition, getComputeMap, getCurrentRules, getDataArr, getDataBySelectionNoCopy, getDropdownList, getFailureText, getFilterColumnColors, getFilterColumnValues, getFlattenedRange, getFlowdata, getFontSet, getFontStyleByCell, getFrozenHandleLeft, getFrozenHandleTop, getHintText, getHistoryRules, getInlineStringHTML, getInlineStringNoStyle, getMeasureText, getNowDateTime, getNullData, getOptionValue, getOrigincell, getQKBorder, getRange, getRangeArr, getRangeByTxt, getRangetxt, getRealCellValue, getRegExpStr, getRegStr, getRowMerge, getSearchIndexArr, getSelectRange, getSheetByIndex, getSheetIdByName, getSheetIndex, getStyleByCell, getTypeItemHide, getcellFormula, getcellrange, getdatabyselection, getrangeseleciton, goToLink, groupValuesRefresh, handleArrowKey, handleBold, handleBorder, handleCellAreaDoubleClick, handleCellAreaMouseDown, handleClearFormat, handleColFreezeHandleMouseDown, handleColSizeHandleMouseDown, handleColumnHeaderMouseDown, handleContextMenu, handleCopy, handleCurrencyFormat, handleFormatPainter, handleFormulaInput, handleFreeze, handleGlobalEnter, handleGlobalKeyDown, handleGlobalWheel, handleHorizontalAlign, handleItalic, handleKeydownForZoom, handleLink, handleMerge, handleNumberDecrease, handleNumberIncrease, handleOverlayMouseMove, handleOverlayMouseUp, handleOverlayTouchEnd, handleOverlayTouchMove, handleOverlayTouchStart, handlePaste, handlePasteByClick, handlePercentageFormat, handleRowFreezeHandleMouseDown, handleRowHeaderMouseDown, handleRowSizeHandleMouseDown, handleScreenShot, handleSort, handleStrikeThrough, handleSum, handleTextBackground, handleTextColor, handleTextSize, handleUnderline, handleVerticalAlign, handleWithCtrlOrMetaKey, hasChinaword, hasPartMC, hideCRCount, hideDropCellSelection, hideSelected, imageProps, indexToColumnChar, initFreeze, initSheetIndex, inlineStyleAffectAttribute, inlineStyleAffectCssName, insertImage, insertRowCol, insertUpdateFunctionGroup, inverseRowColOptions, isAllSelectedCellsInStatus, isAllowEdit, isFormula, isFunctionRange, isInlineStringCT, isInlineStringCell, isLinkValid, isRealNull, isRealNum, isShowHidenCR, isSupportBoundingBox, is_date, iscelldata, isdatatype, isdatatypemulti, isdatetime, israngeseleciton, jfrefreshgrid, labelFilterOptionState, locale, luckysheetUpdateCell, mergeBorder, mergeCells, mergeMoveMain, mousePosition, moveHighlightCell, moveHighlightRange, moveToEnd, newComment, normalizeSelection, normalizedAttr, normalizedCellAttr, onCellsMove, onCellsMoveEnd, onCellsMoveStart, onCommentBoxMove, onCommentBoxMoveEnd, onCommentBoxMoveStart, onCommentBoxResize, onCommentBoxResizeEnd, onCommentBoxResizeStart, onDropCellSelect, onDropCellSelectEnd, onFormulaRangeDragEnd, onImageMove, onImageMoveEnd, onImageMoveStart, onImageResize, onImageResizeEnd, onImageResizeStart, onRangeSelectionModalMove, onRangeSelectionModalMoveEnd, onRangeSelectionModalMoveStart, onSearchDialogMove, onSearchDialogMoveEnd, onSearchDialogMoveStart, opToPatch, orderbydata, orderbydatafiler, overShowComment, pasteHandlerOfPaintModel, patchToOp, rangeDrag, rangeDragColumn, rangeDragRow, rangeHightlightselected, rangeSetValue, rangeValueToHtml, removeActiveImage, removeEditingComment, removeHyperlink, replace, replaceAll, replaceHtml, rgbToHex, rowHasMerged, rowLocation, rowLocationByIndex, saveFilter, saveHyperlink, saveImage, scrollToFrozenRowCol, scrollToHighlightCell, searchAll, searchNext, selectAll, selectIsOverlap, selectTextContent, selectTextContentCross, selectTitlesMap, selectTitlesRange, selectionCache, selectionCopyShow, seletedHighlistByindex, setCaretPosition, setCellValue, setConditionRules, setDropcownValue, setEditingComment, setFormulaCellInfoMap, showComments, showDropCellSelection, showHideAllComments, showHideComment, showImgChooser, showLinkCard, showSelected, sortDataRange, sortSelection, storeSheetParamALL, toolbarItemClickHandler, toolbarItemSelectedFunc, update, updateCell, updateContextWithCanvas, updateContextWithSheetData, updateDropCell, updateFormat, updateFormatCell, updateInlineStringFormat, updateInlineStringFormatOutside, updateItem, updateMoreCell, updateSheet, validateCellData, validateIdCard, valueIsError, valueShowEs };
 +export { CFSplitRange, Canvas, FormulaCache, MAX_ZOOM_RATIO, MIN_ZOOM_RATIO, addSheet, index as api, applyLocation, attrToCssName, autoSelectionFormula, calcSelectionInfo, cancelActiveImgItem, cancelFunctionrangeSelected, cancelNormalSelected, cancelPaintModel, cellFocus, cfSplitRange, changeSheet, chatatABC, checkCF, checkCellIsLocked, checkProtectionAllSelected, checkProtectionFormatCells, checkProtectionSelectLockedOrUnLockedCells, checkboxChange, clearFilter, clearMeasureTextCache, colHasMerged, colLocation, colLocationByIndex, colors, columnCharToIndex, commentBoxProps, compute, computeRowlenArr, confirmMessage, convertCssToStyleList, convertSpanToShareString, copy, createDropCellRange, createFilter, createFilterOptions, createFormulaRangeSelect, createRangeHightlight, dataRangeSelection, datenum_local, defaultContext, defaultFont, defaultSettings, defaultStyle, delFunctionGroup, deleteCellInSave, deleteComment, deleteRowCol, deleteSelectedCellText, deleteSheet, diff, drawArrow, drawLineInfo, dropCellCache, editComment, editSheetName, ensureSheetIndex, error, escapeHTMLTag, escapeScriptTag, execFunctionGroup, execfunction, expandRowsAndColumns, extractFormulaCellOps, filterPatch, fixColumnStyleOverflowInFreeze, fixPositionOnFrozenCells, fixRowStyleOverflowInFreeze, functionCopy, functionHTMLGenerate, functionStrChange, genarate, generateRandomId, generateRandomSheetName, getAllFunctionGroup, getArrowCanvasSize, getBorderInfoCompute, getBorderInfoComputeRange, getCellHyperlink, getCellRowColumn, getCellTextInfo, getCellTopRightPostion, getCellValue, getColMerge, getColorGradation, getCommentBoxByRC, getCommentBoxPosition, getComputeMap, getCurrentRules, getDataArr, getDataBySelectionNoCopy, getDataVerificationItem, getDropdownList, getFailureText, getFilterColumnColors, getFilterColumnValues, getFlattenedRange, getFlowdata, getFontSet, getFontStyleByCell, getFrozenHandleLeft, getFrozenHandleTop, getHintText, getHistoryRules, getInlineStringHTML, getInlineStringNoStyle, getMeasureText, getNowDateTime, getNullData, getOptionValue, getOrigincell, getQKBorder, getRange, getRangeArr, getRangeByTxt, getRangetxt, getRealCellValue, getRegExpStr, getRegStr, getRowMerge, getSearchIndexArr, getSelectRange, getSheetByIndex, getSheetIdByName, getSheetIndex, getStyleByCell, getTypeItemHide, getcellFormula, getcellrange, getdatabyselection, getrangeseleciton, goToLink, groupValuesRefresh, handleArrowKey, handleBold, handleBorder, handleCellAreaDoubleClick, handleCellAreaMouseDown, handleClearFormat, handleColFreezeHandleMouseDown, handleColSizeHandleMouseDown, handleColumnHeaderMouseDown, handleContextMenu, handleCopy, handleCurrencyFormat, handleFormatPainter, handleFormulaInput, handleFreeze, handleGlobalEnter, handleGlobalKeyDown, handleGlobalWheel, handleHorizontalAlign, handleItalic, handleKeydownForZoom, handleLink, handleMerge, handleNumberDecrease, handleNumberIncrease, handleOverlayMouseMove, handleOverlayMouseUp, handleOverlayTouchEnd, handleOverlayTouchMove, handleOverlayTouchStart, handlePaste, handlePasteByClick, handlePercentageFormat, handleRowFreezeHandleMouseDown, handleRowHeaderMouseDown, handleRowSizeHandleMouseDown, handleScreenShot, handleSort, handleStrikeThrough, handleSum, handleTextBackground, handleTextColor, handleTextSize, handleUnderline, handleVerticalAlign, handleWithCtrlOrMetaKey, hasChinaword, hasPartMC, hideCRCount, hideDropCellSelection, hideSelected, imageProps, indexToColumnChar, initFreeze, initSheetIndex, inlineStyleAffectAttribute, inlineStyleAffectCssName, insertImage, insertRowCol, insertUpdateFunctionGroup, inverseRowColOptions, isAllSelectedCellsInStatus, isAllowEdit, isFormula, isFunctionRange, isInlineStringCT, isInlineStringCell, isLinkValid, isRealNull, isRealNum, isShowHidenCR, isSupportBoundingBox, is_date, iscelldata, isdatatype, isdatatypemulti, isdatetime, israngeseleciton, jfrefreshgrid, labelFilterOptionState, locale, luckysheetUpdateCell, mergeBorder, mergeCells, mergeMoveMain, mousePosition, moveHighlightCell, moveHighlightRange, moveToEnd, newComment, normalizeSelection, normalizedAttr, normalizedCellAttr, onCellsMove, onCellsMoveEnd, onCellsMoveStart, onCommentBoxMove, onCommentBoxMoveEnd, onCommentBoxMoveStart, onCommentBoxResize, onCommentBoxResizeEnd, onCommentBoxResizeStart, onDropCellSelect, onDropCellSelectEnd, onFormulaRangeDragEnd, onImageMove, onImageMoveEnd, onImageMoveStart, onImageResize, onImageResizeEnd, onImageResizeStart, onRangeSelectionModalMove, onRangeSelectionModalMoveEnd, onRangeSelectionModalMoveStart, onSearchDialogMove, onSearchDialogMoveEnd, onSearchDialogMoveStart, opToPatch, orderbydata, orderbydatafiler, overShowComment, pasteHandlerOfPaintModel, patchToOp, rangeDrag, rangeDragColumn, rangeDragRow, rangeHightlightselected, rangeSetValue, rangeValueToHtml, removeActiveImage, removeEditingComment, removeHyperlink, replace, replaceAll, replaceHtml, rgbToHex, rowHasMerged, rowLocation, rowLocationByIndex, saveFilter, saveHyperlink, saveImage, scrollToFrozenRowCol, scrollToHighlightCell, searchAll, searchNext, selectAll, selectIsOverlap, selectTextContent, selectTextContentCross, selectTitlesMap, selectTitlesRange, selectionCache, selectionCopyShow, seletedHighlistByindex, setCaretPosition, setCellValue, setConditionRules, setDropcownValue, setEditingComment, setFormulaCellInfoMap, showComments, showDropCellSelection, showHideAllComments, showHideComment, showImgChooser, showLinkCard, showSelected, sortDataRange, sortSelection, storeSheetParamALL, toolbarItemClickHandler, toolbarItemSelectedFunc, update, updateCell, updateContextWithCanvas, updateContextWithSheetData, updateDropCell, updateFormat, updateFormatCell, updateInlineStringFormat, updateInlineStringFormatOutside, updateItem, updateMoreCell, updateSheet, validateCellData, validateIdCard, valueIsError, valueShowEs };
 diff --git a/dist/index.js b/dist/index.js
-index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a86694fd89 100644
+index 04113a18dee9feee28e9434ee3023626c800e7d3..da676e0a4d3deb4e361d5137563712bac86b3edd 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -141,6 +141,7 @@ function _unsupportedIterableToArray(r, a) {
@@ -1558,7 +1604,14 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
      return null;
    }
    var value = d[row_index][col_index];
-@@ -60834,16 +61127,17 @@ function updateCell(ctx, r, c, $input, value, canvas) {
+@@ -60828,22 +61121,33 @@ function cancelNormalSelected(ctx) {
+   ctx.formulaCache.rangedrag_column_start = false;
+   ctx.formulaCache.rangedrag_row_start = false;
+ }
+-function updateCell(ctx, r, c, $input, value, canvas) {
++function updateCell(ctx, r, c, $input, value, canvas, options) {
+   var _inputText, _curv, _ctx$hooks$beforeUpda, _ctx$hooks, _curv2;
+   var inputText = $input === null || $input === void 0 ? void 0 : $input.innerText;
    var inputHtml = $input === null || $input === void 0 ? void 0 : $input.innerHTML;
    var flowdata = getFlowdata(ctx);
    if (!flowdata) return;
@@ -1569,24 +1622,32 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
 -    if (!___default['default'].isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, inputText)) {
 -      var failureText = getFailureText(ctx, dvItem);
 -      cancelNormalSelected(ctx);
--      ctx.warnDialog = failureText;
--      return;
--    }
 +  var logicalColumnCount = flowdata[0] ? flowdata[0].length : ctx.defaultcolumnNum;
 +  if (!flowdata[r]) {
 +    flowdata[r] = [];
 +  }
 +  flowdata[r].length = Math.max(flowdata[r].length, logicalColumnCount, c + 1);
++  var validationValue = value;
++  if (validationValue && typeof validationValue === "object" && "f" in validationValue) {
++    validationValue = validationValue.f;
++  }
++  if (validationValue === null || validationValue === void 0) {
++    validationValue = inputText === null || inputText === void 0 ? "" : inputText;
++  }
 +  var dvItem = getDataVerificationItem(ctx, r, c);
-+  if (!___default['default'].isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, inputText)) {
++  if (!(options === null || options === void 0 ? void 0 : options.skipDataValidation) && !___default['default'].isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, validationValue)) {
 +    var failureText = getFailureText(ctx, dvItem);
++    var validationDecision = (_ctx$hooks = ctx.hooks).beforeDataValidation === null || _ctx$hooks.beforeDataValidation === void 0 ? void 0 : _ctx$hooks.beforeDataValidation.call(_ctx$hooks, r, c, validationValue, dvItem, failureText, ctx.currentSheetId);
 +    cancelNormalSelected(ctx);
-+    ctx.warnDialog = failureText;
-+    return;
++    if (validationDecision === void 0) {
+       ctx.warnDialog = failureText;
+-      return;
+     }
++    if (validationDecision !== true) return;
    }
    var curv = flowdata[r][c];
    var oldValue = ___default['default'].cloneDeep(curv);
-@@ -61085,7 +61379,7 @@ function getcellFormula(ctx, r, c, i, data) {
+@@ -61085,7 +61389,7 @@ function getcellFormula(ctx, r, c, i, data) {
    if (___default['default'].isNil(data)) {
      cell = getOrigincell(ctx, r, c, i);
    } else {
@@ -1595,7 +1656,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
    }
    if (___default['default'].isNil(cell)) {
      return null;
-@@ -63477,32 +63771,42 @@ function getFlowdata(ctx, id) {
+@@ -63477,32 +63781,42 @@ function getFlowdata(ctx, id) {
    return (_ctx$luckysheetfile = ctx.luckysheetfile) === null || _ctx$luckysheetfile === void 0 ? void 0 : (_ctx$luckysheetfile$i = _ctx$luckysheetfile[i]) === null || _ctx$luckysheetfile$i === void 0 ? void 0 : _ctx$luckysheetfile$i.data;
  }
  function calcRowColSize(ctx, rowCount, colCount) {
@@ -1657,7 +1718,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
      } else {
        var _flowdata$;
        if (flowdata === null || flowdata === void 0 ? void 0 : (_flowdata$ = flowdata[0]) === null || _flowdata$ === void 0 ? void 0 : _flowdata$[c]) {
-@@ -63512,22 +63816,23 @@ function calcRowColSize(ctx, rowCount, colCount) {
+@@ -63512,22 +63826,23 @@ function calcRowColSize(ctx, rowCount, colCount) {
            firstcolumnlen = ctx.defaultcollen;
          }
          if (firstcolumnlen !== ctx.defaultcollen) {
@@ -1689,7 +1750,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
  }
  function ensureSheetIndex(data, generateSheetId) {
    if ((data === null || data === void 0 ? void 0 : data.length) > 0) {
-@@ -66986,12 +67291,17 @@ function initSheetData(draftCtx, index, newData) {
+@@ -66986,12 +67301,17 @@ function initSheetData(draftCtx, index, newData) {
      lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
    }
    if (lastRowNum && lastColNum) {
@@ -1712,7 +1773,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
        expandedData[d.r][d.c] = d.v;
      });
      if (draftCtx.luckysheetfile[index] == null) {
-@@ -67077,24 +67387,25 @@ function copySheet(ctx, sheetId) {
+@@ -67077,24 +67397,25 @@ function copySheet(ctx, sheetId) {
  function calculateSheetFromula(ctx, id, range) {
    var index$1 = getSheetIndex(ctx, id);
    if (!ctx.luckysheetfile[index$1].data) return;
@@ -1751,7 +1812,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
        insertUpdateFunctionGroup(ctx, r, c, id);
      }
    }
-@@ -67235,8 +67546,23 @@ function updateSheet(ctx, newData) {
+@@ -67235,8 +67556,23 @@ function updateSheet(ctx, newData) {
        column = newDatum.column;
      var index = getSheetIndex(ctx, newDatum.id);
      if (data != null) {
@@ -1776,7 +1837,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
        if (row != null && column != null && row > 0 && column > 0) {
          lastRowNum = Math.max(lastRowNum, row);
          lastColNum = Math.max(lastColNum, column);
-@@ -67244,19 +67570,28 @@ function updateSheet(ctx, newData) {
+@@ -67244,19 +67580,28 @@ function updateSheet(ctx, newData) {
          lastRowNum = Math.max(lastRowNum, ctx.defaultrowNum);
          lastColNum = Math.max(lastColNum, ctx.defaultcolumnNum);
        }
@@ -1814,7 +1875,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
          }
        }
        newDatum.data = expandedData;
-@@ -67359,6 +67694,14 @@ function mergeCells(ctx, sheetId, ranges, type) {
+@@ -67359,6 +67704,14 @@ function mergeCells(ctx, sheetId, ranges, type) {
      cfg.merge = {};
    }
    var d = sheet.data;
@@ -1829,7 +1890,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
    if (type === "merge-cancel") {
      for (var i = 0; i < ranges.length; i += 1) {
        var range = ranges[i];
-@@ -73000,10 +73343,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73000,10 +73353,7 @@ var Canvas = /*#__PURE__*/function () {
          var _startX = item.startX;
          var _endY = item.endY;
          var _endX = item.endX;
@@ -1841,7 +1902,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
            this.nullCellRender(_r, _c, _startY, _startX, _endY, _endX, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05);
          } else {
            var cell = flowdata[_r][_c];
-@@ -73201,8 +73541,10 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73201,8 +73551,10 @@ var Canvas = /*#__PURE__*/function () {
            continue;
          }
          var hasCellOver = false;
@@ -1853,7 +1914,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
            var cell = data[r][c];
            if (((_this$sheetCtx$config16 = this.sheetCtx.config) === null || _this$sheetCtx$config16 === void 0 ? void 0 : (_this$sheetCtx$config17 = _this$sheetCtx$config16.colhidden) === null || _this$sheetCtx$config17 === void 0 ? void 0 : _this$sheetCtx$config17[c]) != null) {
              continue;
-@@ -73284,6 +73626,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73284,6 +73636,7 @@ var Canvas = /*#__PURE__*/function () {
        var checksCF = checkCF(r, c, cfCompute);
        var flowdata = getFlowdata(this.sheetCtx);
        if (!flowdata) return;
@@ -1861,7 +1922,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
        var borderfix = getBorderFix();
        var fillStyle = normalizedAttr(flowdata, r, c, "bg");
        if (!___default['default'].isNil(checksCF) && !___default['default'].isNil(checksCF.cellColor)) {
-@@ -73295,7 +73638,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73295,7 +73648,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.fillStyle = fillStyle;
        }
        var cellsize = [startX + offsetLeft + borderfix[0], startY + offsetTop + borderfix[1], endX - startX + borderfix[2] - (isMerge ? 1 : 0), endY - startY + borderfix[3]];
@@ -1870,7 +1931,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
          row: r,
          column: c,
          startX: cellsize[0],
-@@ -73351,7 +73694,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73351,7 +73704,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.stroke();
          renderCtx.closePath();
        }
@@ -1879,7 +1940,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
          row: r,
          column: c,
          startY: cellsize[1],
-@@ -73363,7 +73706,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73363,7 +73716,7 @@ var Canvas = /*#__PURE__*/function () {
    }, {
      key: "cellRender",
      value: function cellRender(r, c, startY, startX, endY, endX, value, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05) {
@@ -1888,7 +1949,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
        var isMerge = arguments.length > 19 && arguments[19] !== undefined ? arguments[19] : false;
        var flowdata = getFlowdata(this.sheetCtx);
        if (!flowdata) {
-@@ -73400,9 +73743,8 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73400,9 +73753,8 @@ var Canvas = /*#__PURE__*/function () {
          return;
        }
        renderCtx.fillRect(cellsize[0], cellsize[1], cellsize[2], cellsize[3]);
@@ -1900,7 +1961,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
          var dv_w = 5 * this.sheetCtx.zoomRatio;
          var dv_h = 5 * this.sheetCtx.zoomRatio;
          renderCtx.beginPath();
-@@ -73443,7 +73785,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73443,7 +73795,7 @@ var Canvas = /*#__PURE__*/function () {
          } else {
            cellOverflow_bd_r_render = false;
          }
@@ -1909,7 +1970,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
          var pos_x = startX + offsetLeft;
          var pos_y = startY + offsetTop + 1;
          renderCtx.save();
-@@ -73479,7 +73821,7 @@ var Canvas = /*#__PURE__*/function () {
+@@ -73479,7 +73831,7 @@ var Canvas = /*#__PURE__*/function () {
          renderCtx.lineWidth = 1;
          renderCtx.strokeStyle = "#000";
          renderCtx.strokeRect(horizonAlignPos, verticalAlignPos_checkbox, 10, 10);
@@ -1918,7 +1979,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
            renderCtx.beginPath();
            renderCtx.lineTo(horizonAlignPos + 1, verticalAlignPos_checkbox + 6);
            renderCtx.lineTo(horizonAlignPos + 4, verticalAlignPos_checkbox + 9);
-@@ -76076,8 +76418,12 @@ var dataToCelldata = function dataToCelldata(data) {
+@@ -76076,8 +76428,12 @@ var dataToCelldata = function dataToCelldata(data) {
    if (data == null) {
      return celldata;
    }
@@ -1933,7 +1994,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
        var v = data[r][c];
        if (v != null) {
          celldata.push({
-@@ -76086,8 +76432,8 @@ var dataToCelldata = function dataToCelldata(data) {
+@@ -76086,8 +76442,8 @@ var dataToCelldata = function dataToCelldata(data) {
            v: v
          });
        }
@@ -1944,7 +2005,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
    return celldata;
  };
  var celldataToData = function celldataToData(celldata, rowCount, colCount) {
-@@ -76101,13 +76447,18 @@ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
+@@ -76101,13 +76457,18 @@ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
      lastColNum = Math.max(lastColNum, colCount);
    }
    if (lastRowNum && lastColNum) {
@@ -1969,7 +2030,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
      });
      return expandedData;
    }
-@@ -76146,7 +76497,8 @@ function getCellValue$1(ctx, row, column) {
+@@ -76146,7 +76507,8 @@ function getCellValue$1(ctx, row, column) {
    if (!targetSheetData) {
      throw SHEET_NOT_FOUND;
    }
@@ -1979,7 +2040,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
    var ret;
    if (cellData && ___default['default'].isPlainObject(cellData)) {
      var _cellData$ct;
-@@ -76169,6 +76521,19 @@ function getCellValue$1(ctx, row, column) {
+@@ -76169,6 +76531,19 @@ function getCellValue$1(ctx, row, column) {
    }
    return ret;
  }
@@ -1999,7 +2060,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
  function setCellValue$1(ctx, row, column, value, cellInput) {
    var options = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : {};
    if (!___default['default'].isNumber(row) || !___default['default'].isNumber(column)) {
-@@ -76176,6 +76541,7 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
+@@ -76176,6 +76551,7 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
    }
    var sheet = getSheet(ctx, options);
    var data = sheet.data;
@@ -2007,7 +2068,25 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
    var formatList = {
      bg: 1,
      ff: 1,
-@@ -76273,6 +76639,7 @@ function setCellFormat(ctx, row, column, attr, value) {
+@@ -76208,7 +76584,7 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
+       if (value.ct != null) {
+         curv.ct = value.ct;
+       }
+-      updateCell(ctx, row, column, cellInput, curv);
++      updateCell(ctx, row, column, cellInput, curv, undefined, options);
+     } else {
+       if (value.ct != null) {
+         curv.ct = value.ct;
+@@ -76237,7 +76613,7 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
+     data[row][column] = cell;
+   } else {
+     if (value.toString().substr(0, 1) === "=" || value.toString().substr(0, 5) === "<span") {
+-      updateCell(ctx, row, column, cellInput, value);
++      updateCell(ctx, row, column, cellInput, value, undefined, options);
+     } else {
+       delFunctionGroup(ctx, row, column);
+       setCellValue(ctx, row, column, data, value);
+@@ -76273,6 +76649,7 @@ function setCellFormat(ctx, row, column, attr, value) {
    }
    var sheet = getSheet(ctx, options);
    var targetSheetData = sheet.data;
@@ -2015,7 +2094,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
    var cellData = (targetSheetData === null || targetSheetData === void 0 ? void 0 : (_targetSheetData$row = targetSheetData[row]) === null || _targetSheetData$row === void 0 ? void 0 : _targetSheetData$row[column]) || {};
    var cfg = sheet.config || {};
    if (attr === "ct" && (!value || value.fa == null || value.t == null)) {
-@@ -77712,12 +78079,8 @@ function handleCellAreaDoubleClick(ctx, globalCache, settings, e, container) {
+@@ -77712,12 +78089,8 @@ function handleCellAreaDoubleClick(ctx, globalCache, settings, e, container) {
    var row_index = row_location[2];
    var col_location = colLocation(x, ctx.visibledatacolumn);
    var col_index = col_location[2];
@@ -2030,7 +2109,7 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..53b1c34ed0da96b72495dd087a3ae0a8
    var margeset = mergeBorder(ctx, flowdata, row_index, col_index);
    if (margeset) {
      var _margeset$row2 = _slicedToArray(margeset.row, 3);
-@@ -80473,6 +80836,7 @@ exports.getComputeMap = getComputeMap;
+@@ -80473,6 +80846,7 @@ exports.getComputeMap = getComputeMap;
  exports.getCurrentRules = getCurrentRules;
  exports.getDataArr = getDataArr;
  exports.getDataBySelectionNoCopy = getDataBySelectionNoCopy;
@@ -2050,6 +2129,18 @@ index 08f8fb2d6ec2ab798cef57543a4037609ef66f18..f13de947131c300ace6a4a3b0b7327e3
  export declare function checkboxChange(ctx: Context, r: number, c: number): void;
  export declare function getFailureText(ctx: Context, item: any): string;
  export declare function getHintText(ctx: Context, item: any): any;
+diff --git a/dist/settings.d.ts b/dist/settings.d.ts
+index 3ba3d898d6d63cf031bf3fd1480538266b3e6a4e..b951f752cc8324b6c82762eb93d4b3d2bf7a1573 100644
+--- a/dist/settings.d.ts
++++ b/dist/settings.d.ts
+@@ -2,6 +2,7 @@ import React from "react";
+ import { Sheet, Selection, CellMatrix, Cell } from "./types";
+ export type Hooks = {
+     beforeUpdateCell?: (r: number, c: number, value: any) => boolean;
++    beforeDataValidation?: (r: number, c: number, value: any, item: any, failureText: string, sheetId?: string) => boolean | void;
+     afterUpdateCell?: (row: number, column: number, oldValue: any, newValue: any) => void;
+     afterSelectionChange?: (sheetId: string, selection: Selection) => void;
+     beforeRenderRowHeaderCell?: (rowNumber: string, rowIndex: number, top: number, width: number, height: number, ctx: CanvasRenderingContext2D) => boolean;
 diff --git a/dist/types.d.ts b/dist/types.d.ts
 index bb5111f305ce9783fff44e0f03432cd8d0d264fb..505c6e87bb4eea079186918d31bc957279c35e46 100644
 --- a/dist/types.d.ts

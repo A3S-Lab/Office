@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use base64::Engine as _;
 use yrs::types::Attrs;
 use yrs::{Any, Doc, Map, Text, Transact, Update, Xml, XmlFragment, XmlOut};
 

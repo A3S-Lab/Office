@@ -170,6 +170,97 @@ test('Spreadsheet data validation stays atomic and accessible at every layout', 
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet follows Traditional Office error-alert branches while editing', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+
+  await page.goto('/playground/');
+  await page.locator("button[data-template-id='data-validation']").click();
+  await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const formulaBar = page.locator('.fortune-fx-input');
+
+  await editSelectedCell('B2', 'Not a state');
+  let dialog = page.getByRole('dialog', { name: 'Invalid state' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('Choose a state from the list.');
+  await expect(dialog).toContainText('当前输入：Not a state');
+  await expect(dialog.getByRole('button', { name: '知道了' })).toBeVisible();
+  await dialog.getByRole('button', { name: '知道了' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(grid).toBeFocused();
+  await expect(nameBox).toHaveText('B2');
+  await expect(formulaBar).toHaveText('Ready');
+
+  await editSelectedCell('C2', '2027-01-01');
+  dialog = page.getByRole('dialog', { name: 'Date outside 2026' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('Enter a date in calendar year 2026.');
+  await expect(dialog).toContainText('当前输入：2027-01-01');
+  await expect(dialog.getByRole('button', { name: '返回修改' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: '保留输入' })).toBeVisible();
+  await dialog.getByRole('button', { name: '返回修改' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(grid).toBeFocused();
+  await expect(nameBox).toHaveText('C2');
+  await expect(formulaBar).toHaveText('2026-09-05');
+
+  await editSelectedCell('C2', '2027-01-01');
+  dialog = page.getByRole('dialog', { name: 'Date outside 2026' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: '保留输入' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(grid).toBeFocused();
+  await expect(nameBox).toHaveText('C2');
+  await expect(formulaBar).toHaveText('2027-01-01');
+
+  await editSelectedCell('D2', '9');
+  dialog = page.getByRole('dialog', { name: 'Priority outside range' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('Enter a whole number from 1 through 5.');
+  await expect(dialog.getByRole('button', { name: '取消' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: '继续输入' })).toBeVisible();
+  await dialog.getByRole('button', { name: '取消' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(grid).toBeFocused();
+  await expect(nameBox).toHaveText('D2');
+  await expect(formulaBar).toHaveText('2');
+
+  await editSelectedCell('D2', '9');
+  dialog = page.getByRole('dialog', { name: 'Priority outside range' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: '继续输入' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(grid).toBeFocused();
+  await expect(nameBox).toHaveText('D2');
+  await expect(formulaBar).toHaveText('9');
+
+  expect(browserErrors).toEqual([]);
+
+  async function editSelectedCell(reference: string, value: string) {
+    await grid.focus();
+    await page.keyboard.press('Control+Home');
+    const column = reference.charCodeAt(0) - 'A'.charCodeAt(0);
+    const row = Number(reference.slice(1)) - 1;
+    for (let index = 0; index < row; index += 1)
+      await page.keyboard.press('ArrowDown');
+    for (let index = 0; index < column; index += 1)
+      await page.keyboard.press('ArrowRight');
+    await expect(nameBox).toHaveText(reference);
+    await formulaBar.click();
+    await page.keyboard.press('Control+a');
+    await page.keyboard.insertText(value);
+    await formulaBar.press('Enter');
+  }
+});
+
 async function expectDialogInsideViewport(
   page: import('@playwright/test').Page,
   dialog: import('@playwright/test').Locator,

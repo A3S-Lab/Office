@@ -481,7 +481,7 @@ pub(super) fn canonical_map_without_key_sha256<T: ReadTxn>(
         .iter(transaction)
         .filter(|(key, _)| *key != omitted_key)
         .collect::<Vec<_>>();
-    entries.sort_by(|left, right| left.0.cmp(&right.0));
+    entries.sort_by(|left, right| left.0.cmp(right.0));
     write_var_uint(&mut bytes, entries.len() as u64);
     for (key, value) in entries {
         write_length_prefixed(&mut bytes, key.as_bytes());
@@ -557,10 +557,9 @@ fn write_canonical_out_without_comment_marks<T: ReadTxn>(
             write_canonical_xml_attributes(output, transaction, text);
             let mut chunks = Vec::<FilteredXmlTextChunk>::new();
             for chunk in text.diff(transaction, |_| ()) {
-                let attributes = filtered_text_attributes(
-                    chunk.attributes.as_ref().map(|value| &**value),
-                    |key, _| is_document_comment_attribute(key),
-                );
+                let attributes = filtered_text_attributes(chunk.attributes.as_deref(), |key, _| {
+                    is_document_comment_attribute(key)
+                });
                 match chunk.insert {
                     Out::Any(Any::String(value)) => {
                         if let Some(FilteredXmlTextChunk {
@@ -628,7 +627,7 @@ fn write_canonical_out_without_suggestion_effects<T: ReadTxn>(
             write_canonical_xml_attributes(output, transaction, text);
             let mut chunks = Vec::<FilteredXmlTextChunk>::new();
             for chunk in text.diff(transaction, |_| ()) {
-                let source_attributes = chunk.attributes.as_ref().map(|value| &**value);
+                let source_attributes = chunk.attributes.as_deref();
                 if document_change_chunk_kind(source_attributes)
                     == Some(DocumentChangeChunkKind::Insertion)
                 {

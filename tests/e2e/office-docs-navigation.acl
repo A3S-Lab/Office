@@ -195,19 +195,19 @@ suite "office-docs-navigation" {
         }
 
         expect "current-release-notes-ready" {
-            text = "Writer 编号变化现在可以完整审阅"
+            text = "表格数据验证警告现在与 Office 决策一致"
         }
 
         expect "current-release-timeline-is-semantic" {
-            visible = css("main ol.office-release-notes__timeline > li:first-child article[data-version='0.40.0'] time[datetime='2026-09-02']")
+            visible = css("main ol.office-release-notes__timeline > li:first-child article[data-version='0.41.0'] time[datetime='2026-09-02']")
         }
 
         expect "current-release-has-scannable-outcomes" {
-            visible = css("main article[data-version='0.40.0'] .office-release-card__highlights > li:nth-child(3)")
+            visible = css("main article[data-version='0.41.0'] .office-release-card__highlights > li:nth-child(3)")
         }
 
         expect "numbering-evidence-link-is-localized" {
-            visible = css("main article[data-version='0.40.0'] a[href$='#有序列表编号修订']")
+            visible = css("main article[data-version='0.41.0'] a[href$='#与-office-一致的错误警告分支']")
         }
 
         expect "writer-evidence-link-is-localized" {
@@ -232,7 +232,7 @@ suite "office-docs-navigation" {
         }
 
         expect "later-releases-are-hidden-from-frozen-history" {
-            visible = css("main:not(:has(article[data-version='0.40.0'])):not(:has(article[data-version='0.39.0'])):not(:has(article[data-version='0.38.1']))")
+            visible = css("main:not(:has(article[data-version='0.41.0'])):not(:has(article[data-version='0.40.0'])):not(:has(article[data-version='0.39.0'])):not(:has(article[data-version='0.38.1']))")
         }
 
         navigate "open-english-release-notes" {
@@ -240,11 +240,11 @@ suite "office-docs-navigation" {
         }
 
         expect "english-release-notes-ready" {
-            text = "Writer numbering changes are now reviewable"
+            text = "Spreadsheet validation alerts now match Office decisions"
         }
 
         expect "english-numbering-evidence-link-is-localized" {
-            visible = css("main article[data-version='0.40.0'] a[href$='#ordered-list-numbering-revisions']")
+            visible = css("main article[data-version='0.41.0'] a[href$='#office-style-error-alert-branches']")
         }
 
         expect "english-writer-evidence-link-is-localized" {
@@ -278,11 +278,11 @@ suite "office-docs-navigation" {
         }
 
         expect "phone-release-notes-ready" {
-            visible = css("main article[data-version='0.40.0']")
+            visible = css("main article[data-version='0.41.0']")
         }
 
         expect "phone-release-highlights-stack" {
-            visible = css("main article[data-version='0.40.0'] .office-release-card__highlights > li:nth-child(3)")
+            visible = css("main article[data-version='0.41.0'] .office-release-card__highlights > li:nth-child(3)")
         }
 
         expect "phone-release-links-remain-available" {

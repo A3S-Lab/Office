@@ -203,7 +203,7 @@ fn read_decision_record<T: ReadTxn>(
 ) -> UseResult<NativeOfficeCollaborationDocumentChangeDecision> {
     if record
         .keys(transaction)
-        .any(|key| !DECISION_FIELDS.contains(&key.as_ref()))
+        .any(|key| !DECISION_FIELDS.contains(&key))
     {
         return Err(invalid_decisions("record fields"));
     }

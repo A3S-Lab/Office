@@ -42,6 +42,65 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.41.0',
+    date: '2026-09-02',
+    kind: 'improved',
+    surfaces: ['spreadsheet', 'shared', 'playground'],
+    title: {
+      en: 'Spreadsheet validation alerts now match Office decisions',
+      zh: '表格数据验证警告现在与 Office 决策一致',
+    },
+    summary: {
+      en: 'Invalid Spreadsheet edits now explain the rule and offer the same Stop, Warning, or Information decision instead of silently taking one browser path.',
+      zh: '非法表格输入现在会解释规则，并提供与 Office 一致的停止、警告或信息决策，不再把所有情况合并成一条浏览器路径。',
+    },
+    highlights: [
+      {
+        title: { en: 'Stop means stop', zh: '停止就是阻止' },
+        detail: {
+          en: 'An accessible notice discards the invalid draft and keeps the original cell selected, including after Enter from the formula bar.',
+          zh: '可访问提示会丢弃非法草稿并保持原单元格选中，即使输入来自公式栏的 Enter 提交。',
+        },
+      },
+      {
+        title: {
+          en: 'Warning and Information are deliberate',
+          zh: '警告与信息可明确决策',
+        },
+        detail: {
+          en: 'Warning offers Continue input or Cancel; Information offers Keep input or Return to edit, with authored copy and the current value in context.',
+          zh: '警告提供“继续输入/取消”，信息提供“保留输入/返回修改”，并在上下文中展示自定义文案与当前值。',
+        },
+      },
+      {
+        title: { en: 'One controlled commit', zh: '一次受控提交' },
+        detail: {
+          en: 'A confirmed invalid value uses a typed, single-use bypass, so selection, focus, Undo, collaboration, and native XLSX errorStyle fidelity remain bounded.',
+          zh: '确认保留的非法值只使用一次类型化绕过，因此选区、焦点、撤销、协作和原生 XLSX errorStyle 保真度都保持有界。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/spreadsheet.html#office-style-error-alert-branches',
+          zh: './components/spreadsheet.html#与-office-一致的错误警告分支',
+        },
+        label: {
+          en: 'Read the Spreadsheet validation interaction guide',
+          zh: '阅读表格数据验证交互指南',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.41.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.41.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.40.0',
     date: '2026-09-02',
     kind: 'new',

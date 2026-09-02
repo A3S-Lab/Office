@@ -149,7 +149,7 @@ fn subtotal_numeric(values: &[ScalarValue], operation: SubtotalOperation) -> Sca
     for value in values {
         match value {
             ScalarValue::Number(number) => numbers.push(*number),
-            ScalarValue::Error(error) => return ScalarValue::Error(error.clone()),
+            ScalarValue::Error(error) => return ScalarValue::Error(*error),
             ScalarValue::Blank => {}
             _ => {}
         }

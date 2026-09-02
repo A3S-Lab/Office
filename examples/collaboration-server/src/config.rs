@@ -132,12 +132,12 @@ impl Validate for CollaborationConfig {
                 "max_awareness_payload_bytes must be between 1 and 1048576".to_string(),
             ));
         }
-        if self.ticket_secret.as_bytes().len() < MIN_SECRET_BYTES {
+        if self.ticket_secret.len() < MIN_SECRET_BYTES {
             return Err(BootError::BadRequest(format!(
                 "A3S_OFFICE_TICKET_SECRET must contain at least {MIN_SECRET_BYTES} bytes"
             )));
         }
-        if self.admin_token.as_bytes().len() < MIN_ADMIN_TOKEN_BYTES {
+        if self.admin_token.len() < MIN_ADMIN_TOKEN_BYTES {
             return Err(BootError::BadRequest(format!(
                 "A3S_OFFICE_ADMIN_TOKEN must contain at least {MIN_ADMIN_TOKEN_BYTES} bytes"
             )));

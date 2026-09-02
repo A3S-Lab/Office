@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.41.0 - 2026-09-02
+
+- Aligned Spreadsheet data-validation alerts with the common Traditional Office
+  interaction model. Stop blocks an invalid edit with an accessible notice;
+  Warning and Information expose explicit confirmation branches with the
+  authored title, message, and current input.
+- Confirmed Warning/Information values can be kept exactly once through the
+  shared controlled workbook API, while Cancel/Return restores the original
+  value, selection, focus, history boundary, and collaboration path. Native
+  XLSX `errorStyle` metadata remains lossless across export and reopen.
+- Added a typed Fortune validation hook and a bounded browser policy shared by
+  direct cell and formula-bar edits. Added interaction unit tests, desktop and
+  compact Playwright coverage, and a pinned local A3S Test gate covering all
+  three alert branches, accessibility, and clean browser diagnostics.
+
 ## 0.40.0 - 2026-09-02
 
 - Added atomic Writer ordered-list numbering revisions. Tracked list-style and

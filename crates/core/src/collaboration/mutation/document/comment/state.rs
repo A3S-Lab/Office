@@ -105,12 +105,13 @@ pub(super) fn read_comment_state<T: ReadTxn>(
         }
         None => None,
     };
-    if comments_present != Some(true) && order_root.len(transaction) == 0 {
-        if comments.len(transaction) > 0 {
-            return Err(invalid_shared_comments(
-                "The shared Document comment order and record set disagree.",
-            ));
-        }
+    if comments_present != Some(true)
+        && order_root.len(transaction) == 0
+        && comments.len(transaction) > 0
+    {
+        return Err(invalid_shared_comments(
+            "The shared Document comment order and record set disagree.",
+        ));
     }
 
     let order = validated_order(
@@ -367,7 +368,7 @@ fn read_comment_record<T: ReadTxn>(
     if record.len(transaction) != expected_fields
         || record.iter(transaction).any(|(key, _)| {
             !matches!(
-                key.as_ref(),
+                key,
                 "id" | "actorId"
                     | "author"
                     | "date"
@@ -431,9 +432,9 @@ fn read_comment_record<T: ReadTxn>(
             optional_identifier(reply.get(transaction, "actorId"), "comment reply actor")?;
         let expected_fields = if actor_id.is_some() { 5 } else { 4 };
         if reply.len(transaction) != expected_fields
-            || reply.iter(transaction).any(|(key, _)| {
-                !matches!(key.as_ref(), "id" | "actorId" | "author" | "date" | "text")
-            })
+            || reply
+                .iter(transaction)
+                .any(|(key, _)| !matches!(key, "id" | "actorId" | "author" | "date" | "text"))
         {
             return Err(invalid_shared_comments(
                 "A shared Document comment reply contains unsupported fields.",

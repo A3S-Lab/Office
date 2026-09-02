@@ -343,7 +343,7 @@ pub fn validate_client_id(client_id: u64) -> Result<()> {
 fn validated_identifier(value: String, label: &str) -> Result<String> {
     let value = value.trim().to_string();
     if value.is_empty()
-        || value.as_bytes().len() > MAX_IDENTIFIER_BYTES
+        || value.len() > MAX_IDENTIFIER_BYTES
         || !value
             .chars()
             .all(|character| character.is_ascii_alphanumeric() || "._-".contains(character))

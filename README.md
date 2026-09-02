@@ -309,6 +309,17 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.41.0` aligns Spreadsheet data-validation alerts with the local,
+testable interaction model used by Traditional Office:
+
+- Stop blocks an invalid edit with an accessible notice. Warning and
+  Information ask whether the invalid value should be kept, using the authored
+  title and message plus the current input so the decision is explicit.
+- Keeping a Warning or Information value commits it once through the controlled
+  workbook API; cancelling restores the original value. Selection, focus,
+  Undo, and collaboration remain on the same bounded edit path, and native
+  XLSX `errorStyle` metadata remains lossless on reopen.
+
 Version `0.40.0` extends Writer's local, testable review workflow with atomic
 ordered-list numbering revisions:
 

@@ -143,7 +143,7 @@ impl TicketService {
         claims.room_identity().map_err(|_| {
             BootError::Unauthorized("the collaboration ticket room identity is invalid".to_string())
         })?;
-        if claims.actor_id.trim().is_empty() || claims.actor_id.as_bytes().len() > 256 {
+        if claims.actor_id.trim().is_empty() || claims.actor_id.len() > 256 {
             return Err(BootError::Unauthorized(
                 "the collaboration ticket actor is invalid".to_string(),
             ));

@@ -304,7 +304,7 @@ export function SpreadsheetDataValidationDialog({
             <div className="work-spreadsheet-data-validation-message-grid">
               <Field
                 label="错误警告样式"
-                description="三种样式会写入原生文件；当前浏览器网格统一阻止无效值。"
+                description="停止会阻止无效输入；警告和信息会询问是否保留。三种样式都会写入原生文件。"
               >
                 <select
                   aria-label="错误警告样式"

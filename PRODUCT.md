@@ -198,7 +198,12 @@ and compact ranges outside the selection. Preflight rejects more than 10,000
 selected cells, malformed boundaries, two-dimensional list sources,
 out-of-bounds ranges, protection, merges, pivot output, and read-only views.
 Cancel, Escape, Apply, and Remove restore the exact ribbon invoker or current
-grid after a controlled remount.
+grid after a controlled remount. Version 0.41.0 aligns direct and formula-bar
+editing with the native error-alert contract: Stop blocks with an accessible
+notice, while Warning and Information offer explicit keep-or-return branches.
+The shared validation hook preserves authored titles, messages, and the current
+input, commits an accepted invalid value once through the controlled API, and
+keeps selection, focus, Undo, and collaboration on the same bounded path.
 The twenty-second milestone adds native Spreadsheet Tables/ListObjects under
 Insert and Tables with the grid-scoped `Cmd/Ctrl+T` shortcut. A single-cell
 selection expands to its finite current region, an explicit multi-row
