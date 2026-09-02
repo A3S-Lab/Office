@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.46.0' ||
     version === '0.45.0' ||
     version === '0.44.0' ||
     version === '0.43.0' ||
@@ -77,6 +78,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.46.0',
     '0.45.0',
     '0.44.0',
     '0.43.0',
@@ -340,10 +342,22 @@ test('keeps public documentation on the neutral Traditional Office baseline', as
     'tests/e2e/README.md',
     'visual-tests/README.md',
   ].map((file) => path.join(repositoryRoot, file));
+  const nativeTextBoxDocumentation = new Set(
+    ['latest', '0.46.0'].flatMap((version) =>
+      DOCUMENTATION_LOCALES.map(({ lang }) =>
+        path.join(documentationRoot, version, lang, 'components/document.mdx'),
+      ),
+    ),
+  );
 
   for (const file of [...repositoryDocumentation, ...versionedDocumentation]) {
     const contents = await readFile(file, 'utf8');
-    expect(contents).not.toMatch(/\bwps\b/i);
+    // The current text-box guide must name the native OOXML shape namespace;
+    // all other public prose stays vendor-neutral.
+    const neutralContents = nativeTextBoxDocumentation.has(file)
+      ? contents.replace(/`wps:wsp`/gi, '')
+      : contents;
+    expect(neutralContents).not.toMatch(/\bwps\b/i);
   }
 });
 
@@ -374,6 +388,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
+  expect(readme).toContain('Version `0.46.0`');
   expect(readme).toContain('Version `0.45.0`');
   expect(readme).toContain('Version `0.44.0`');
   expect(readme).toContain('Version `0.43.0`');
@@ -386,7 +401,7 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.45.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.46.0)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
   expect(englishHome).toContain(
     'spreadsheet.html#formula-conditional-formatting',
@@ -406,8 +421,9 @@ test('routes the concise README and documentation homes to the current release s
     'spreadsheet.html#xlsx-1904-date-system-retention',
   );
   expect(englishHome).toContain('document.html#built-in-picture-properties');
+  expect(englishHome).toContain('document.html#built-in-editable-text-boxes');
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.45.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.46.0）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
   expect(chineseHome).toContain('spreadsheet.html#公式条件格式');
   expect(chineseHome).toContain('spreadsheet.html#依赖下拉列表');
@@ -419,6 +435,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(chineseHome).toContain('document.html#原生-opentype-排版');
   expect(chineseHome).toContain('spreadsheet.html#xlsx-1904-日期系统保留');
   expect(chineseHome).toContain('document.html#图片属性');
+  expect(chineseHome).toContain('document.html#可编辑文本框');
 });
 
 test('publishes Writer numbering revisions across implementation, native collaboration, docs, and release evidence', async () => {
@@ -1554,6 +1571,84 @@ test('publishes Writer picture transforms across implementation, docs, and brows
   expect(unitTest).toContain('bounded image rotation and reflection');
   expect(visual).toContain('向右旋转');
   expect(acl).toContain('picture-transform-saved');
+});
+
+test('publishes Writer text boxes across implementation, docs, and browser evidence', async () => {
+  const [
+    changelog,
+    roadmap,
+    product,
+    readme,
+    english,
+    chinese,
+    frozenEnglish,
+    frozenChinese,
+    releaseData,
+    unitTest,
+    visual,
+    acl,
+    packageManifest,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(
+      path.join(repositoryRoot, 'docs/latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'docs/latest/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'docs/0.46.0/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'docs/0.46.0/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'website/theme/release-notes-data.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/document-text-box.test.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/document-text-box.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/word-text-box-phone.acl'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
+  ]);
+
+  expect(changelog).toContain('## Unreleased');
+  expect(changelog).toContain('bounded native Writer text-box workflow');
+  expect(roadmap).toContain('Editable text boxes and bounded shape geometry');
+  expect(product).toContain('The sixty-fifth Writer milestone');
+  expect(readme).toContain('Version `0.46.0`');
+  for (const source of [english, chinese, frozenEnglish, frozenChinese]) {
+    expect(source).toContain('wps:wsp');
+    expect(source).toContain('txBox');
+  }
+  expect(english).toContain('## Built-in editable text boxes');
+  expect(chinese).toContain('## 可编辑文本框');
+  expect(releaseData).toContain("version: '0.46.0'");
+  expect(releaseData).toContain('text-box');
+  expect(unitTest).toContain('exports native WPS shape geometry');
+  expect(visual).toContain('插入文本框');
+  expect(acl).toContain('scenario "author-native-text-box"');
+  expect(packageManifest).toContain('test:e2e:writer-text-box');
+  expect(packageManifest).toContain('playground:visual:document-text-box');
 });
 
 test('publishes editable formula conditional formatting across code, docs, and Playground', async () => {

@@ -42,6 +42,71 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.46.0',
+    date: '2026-09-02',
+    kind: 'new',
+    surfaces: ['writer', 'shared', 'playground'],
+    title: {
+      en: 'Writer text boxes are editable and native',
+      zh: 'Writer 文本框现在可编辑且原生往返',
+    },
+    summary: {
+      en: 'A bounded text-box node connects familiar Writer controls, deterministic page rendering, and isolated WPS DrawingML round trips without a second document model.',
+      zh: '有界文本框节点把熟悉的 Writer 控制、确定性的页面渲染与独立 WPS DrawingML 往返连接起来，无需第二套文档模型。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Insert once, edit in context',
+          zh: '一次插入，上下文内编辑',
+        },
+        detail: {
+          en: 'The Insert ribbon creates an isolated text box; its contextual ribbon edits inline or floating layout, millimeter geometry, offsets, fill, outline, padding, and vertical alignment with one Undo step per intent.',
+          zh: '“插入”功能区创建隔离文本框；上下文功能区编辑嵌入或浮动布局、毫米几何尺寸、偏移、填充、轮廓、内边距和垂直对齐，每个意图只产生一步撤销。',
+        },
+      },
+      {
+        title: {
+          en: 'One projection for page, preview, and PDF',
+          zh: '页面、预览与 PDF 共用一个投影',
+        },
+        detail: {
+          en: 'The same bounded dimensions and placement state drive live editing, read-only preview, PDF capture, and keep-together pagination behavior.',
+          zh: '同一套有界尺寸与位置状态驱动实时编辑、只读预览、PDF 捕获和保持整块分页行为。',
+        },
+      },
+      {
+        title: {
+          en: 'Native WPS shape with an honest boundary',
+          zh: '原生 WPS 形状并明确边界',
+        },
+        detail: {
+          en: 'Isolated `wps:wsp` shapes marked `txBox="1"` retain text, geometry, placement, fill, outline, body padding, vertical anchor, and drawing identity; mixed or malformed branches stay diagnosed on the normal compatibility path.',
+          zh: '带 `txBox="1"` 的独立 `wps:wsp` 形状会保留文字、几何尺寸、位置、填充、轮廓、内边距、垂直锚点和绘图身份；混合或损坏分支留在普通兼容路径并明确诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#built-in-editable-text-boxes',
+          zh: './components/document.html#可编辑文本框',
+        },
+        label: {
+          en: 'Read the text-box guide',
+          zh: '阅读文本框指南',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.46.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.46.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.45.0',
     date: '2026-09-02',
     kind: 'new',

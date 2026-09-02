@@ -1,0 +1,91 @@
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  [data-document-text-box] {
+  box-sizing: border-box;
+  display: flex;
+  width: var(--work-document-text-box-width, 120mm);
+  min-width: 20mm;
+  max-width: 100%;
+  height: var(--work-document-text-box-height, 45mm);
+  min-height: 10mm;
+  max-height: 558.7mm;
+  margin: 12px 0;
+  padding: var(--work-document-text-box-padding, 3mm);
+  overflow: hidden;
+  border: var(--work-document-text-box-border-width, 0.35mm) solid
+    var(--work-document-text-box-border-color, #4472c4);
+  border-radius: 3px;
+  background: var(--work-document-text-box-fill, #fff2cc);
+  color: inherit;
+  flex-direction: column;
+  justify-content: flex-start;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  [data-document-text-box][data-text-box-vertical-align="center"] {
+  justify-content: center;
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  [data-document-text-box][data-text-box-vertical-align="bottom"] {
+  justify-content: flex-end;
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  [data-document-text-box][data-text-box-layout="floating"] {
+  position: relative;
+  translate: var(--work-document-text-box-horizontal-offset, 0)
+    var(--work-document-text-box-vertical-offset, 0);
+  z-index: 1;
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  [data-document-text-box]
+  > p {
+  width: 100%;
+  margin: 0;
+}
+
+.work-document-page .tiptap [data-document-text-box].ProseMirror-selectednode {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 75%, transparent);
+  outline-offset: 3px;
+}
+
+.work-document-text-box-size-field,
+.work-document-text-box-offset-field {
+  width: 84px;
+}
+
+.work-document-text-box-position-field {
+  width: 96px;
+}
+
+.work-document-text-box-size-field > span,
+.work-document-text-box-offset-field > span,
+.work-document-text-box-position-field > span {
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

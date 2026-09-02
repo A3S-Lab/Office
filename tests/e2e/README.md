@@ -717,6 +717,9 @@ aspect-ratio locking, tight contour wrapping, wrap-side selection, alignment,
 text distance, quarter-turn rotation, horizontal/vertical reflection,
 alternative text,
 retained image selection, and exact invoker restoration after apply and cancel,
+plus a desktop and phone Writer text-box workflow covering isolated insertion,
+contextual layout/geometry/placement/fill/outline controls, accessibility,
+viewport containment, and clean browser diagnostics,
 and a
 phone tracked-changes workflow with in-pane recording controls, truthful empty
 states, exact decision focus, and close-to-invoker restoration, plus a real

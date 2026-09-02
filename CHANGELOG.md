@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.46.0 - 2026-09-02
+
+- Added a bounded native Writer text-box workflow. The Insert ribbon creates an
+  isolated editable block, while the contextual Text Box ribbon exposes
+  inline/floating layout, millimeter geometry, relative offsets, fill, outline,
+  padding, and vertical alignment with one controlled update and one Undo step.
+- Added native DOCX WordprocessingML text-box import/export for isolated drawings,
+  including text, geometry, placement, fill, outline, body padding, vertical
+  anchor, and stable drawing-property identity. Mixed or malformed shape
+  paragraphs remain on the normal compatibility path and receive explicit
+  diagnostics.
+- Added shared live/preview/PDF projections plus model, command, DOCX reopen,
+  responsive browser, and local A3S Test evidence for the declared text-box
+  boundary.
+
 ## 0.45.0 - 2026-09-02
 
 - Added a bounded Writer picture-transform workflow. The contextual Picture

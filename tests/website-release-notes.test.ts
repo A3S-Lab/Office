@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 test('keeps curated release notes unique, localized, and newest first', () => {
   expect(OFFICE_RELEASE_NOTES.map(({ version }) => version)).toEqual([
+    '0.46.0',
     '0.45.0',
     '0.44.0',
     '0.43.0',
@@ -206,6 +207,9 @@ test('keeps local evidence links aligned with each documentation language', () =
   const dependentListRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.44.0',
   );
+  const textBoxRelease = OFFICE_RELEASE_NOTES.find(
+    ({ version }) => version === '0.46.0',
+  );
   const pictureTransformRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.45.0',
   );
@@ -237,6 +241,10 @@ test('keeps local evidence links aligned with each documentation language', () =
   expect(dependentListRelease?.links[0]?.href).toEqual({
     en: './components/spreadsheet.html#dependent-dropdown-lists',
     zh: './components/spreadsheet.html#依赖下拉列表',
+  });
+  expect(textBoxRelease?.links[0]?.href).toEqual({
+    en: './components/document.html#built-in-editable-text-boxes',
+    zh: './components/document.html#可编辑文本框',
   });
   expect(pictureTransformRelease?.links[0]?.href).toEqual({
     en: './components/document.html#built-in-picture-properties',

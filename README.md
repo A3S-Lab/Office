@@ -309,6 +309,18 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.46.0` adds native, bounded Writer text boxes without introducing a
+second document model or a remote service:
+
+- The Insert ribbon adds an editable **Text Box** block. Its contextual ribbon
+  controls inline/floating placement, millimeter geometry, relative offsets,
+  fill, outline, padding, and vertical alignment with one controlled update and
+  one Undo record per intent.
+- Isolated WordprocessingML text boxes round-trip through native DOCX geometry,
+  body properties, and fill/outline state and share the same live, preview, and
+  PDF projection. Mixed or malformed drawings remain an explicit diagnostic
+  boundary instead of being silently flattened.
+
 Version `0.45.0` adds bounded Writer picture transforms without introducing a
 second document model or a remote service:
 

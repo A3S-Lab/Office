@@ -26,6 +26,7 @@ import {
   Ruler,
   Scan,
   StretchHorizontal,
+  TextCursorInput,
   Undo2,
   XCircle,
   ZoomIn,
@@ -58,6 +59,7 @@ import {
   documentPictureRibbonTab,
   documentRibbonTabs,
   documentTableRibbonTabs,
+  documentTextBoxRibbonTab,
   getDocumentCommandDefinition,
 } from './document-command-catalog';
 import { synchronizeDocumentEditorSelectionFromDom } from './document-dom-selection';
@@ -93,6 +95,7 @@ import {
   DocumentTableDesignRibbon,
   DocumentTableLayoutRibbon,
 } from './document-table-ribbon';
+import { DocumentTextBoxRibbon } from './document-text-box-ribbon';
 import { runDocumentWpsShortcut } from './document-wps-shortcuts';
 import {
   type DocumentZoomFit,
@@ -148,6 +151,7 @@ interface DocumentToolbarProps {
   pageChromeEditingPart: DocumentPageChromeEditingPart | null;
   pageChromeShowPageNumber: boolean;
   onRequestImage: () => void;
+  onInsertTextBox?: () => void;
   onPageChromeEditingPartChange: (part: DocumentPageChromeEditingPart) => void;
   onClosePageChrome: () => void;
   onTogglePageChromePageNumber: () => void;
@@ -222,6 +226,7 @@ export function DocumentToolbar({
   pageChromeEditingPart,
   pageChromeShowPageNumber,
   onRequestImage,
+  onInsertTextBox,
   onPageChromeEditingPartChange,
   onClosePageChrome,
   onTogglePageChromePageNumber,
@@ -279,6 +284,7 @@ export function DocumentToolbar({
   const officeDialog = useOfficeDialog();
   const prompt = officeDialog.prompt;
   const imageSelected = editor.isActive('image');
+  const textBoxSelected = editor.isActive('documentTextBox');
   const tableSelected = editor.isActive('table');
   const activeBookmark = activeDocumentBookmark(editor);
   const hasRefreshableFields = documentHasRefreshableFields(editor);
@@ -326,11 +332,13 @@ export function DocumentToolbar({
     ? documentRibbonTabs.filter(({ id }) => id === 'review' || id === 'view')
     : pageChromeEditor
       ? [...documentRibbonTabs, documentPageChromeRibbonTab]
-      : imageSelected
-        ? [...documentRibbonTabs, documentPictureRibbonTab]
-        : tableSelected
-          ? [...documentRibbonTabs, ...documentTableRibbonTabs]
-          : documentRibbonTabs;
+      : textBoxSelected
+        ? [...documentRibbonTabs, documentTextBoxRibbonTab]
+        : imageSelected
+          ? [...documentRibbonTabs, documentPictureRibbonTab]
+          : tableSelected
+            ? [...documentRibbonTabs, ...documentTableRibbonTabs]
+            : documentRibbonTabs;
   const toggleLink = useCallback(async () => {
     if (editor.isActive('link')) {
       editor.chain().focus().unsetLink().run();
@@ -380,6 +388,7 @@ export function DocumentToolbar({
     setActiveTab((current) => {
       if (reviewOnly) return current === 'view' ? 'view' : 'review';
       if (pageChromeEditor) return 'pageChrome';
+      if (textBoxSelected) return 'textBox';
       if (imageSelected) return 'picture';
       if (tableSelected) {
         return current === 'tableDesign' || current === 'tableLayout'
@@ -387,13 +396,20 @@ export function DocumentToolbar({
           : 'tableDesign';
       }
       return current === 'picture' ||
+        current === 'textBox' ||
         current === 'tableDesign' ||
         current === 'tableLayout' ||
         current === 'pageChrome'
         ? 'home'
         : current;
     });
-  }, [imageSelected, pageChromeEditor, reviewOnly, tableSelected]);
+  }, [
+    imageSelected,
+    pageChromeEditor,
+    reviewOnly,
+    tableSelected,
+    textBoxSelected,
+  ]);
 
   useEffect(() => {
     let editorDom: HTMLElement | null = null;
@@ -750,6 +766,13 @@ export function DocumentToolbar({
                 </ToolbarButton>
               </RibbonGroup>
               <RibbonGroup label="文本" priority="low">
+                <ToolbarButton
+                  label="插入文本框"
+                  displayLabel
+                  onClick={() => onInsertTextBox?.()}
+                >
+                  <TextCursorInput size={19} />
+                </ToolbarButton>
                 <DocumentFieldSelect onInsertField={onInsertField} />
               </RibbonGroup>
             </>
@@ -1040,6 +1063,9 @@ export function DocumentToolbar({
                 onClose={onClosePageChrome}
               />
             ) : null,
+          textBox: textBoxSelected ? (
+            <DocumentTextBoxRibbon editor={editor} />
+          ) : null,
         }}
       />
       {fontDialogRequest && (

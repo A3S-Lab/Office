@@ -68,6 +68,12 @@ import {
   markDocxImageLayouts,
 } from './work-docx-image-layout-import';
 import {
+  applyImportedDocxTextBoxMarkers,
+  hasImportedDocxTextBoxMarkers,
+  markDocxTextBoxes,
+  type ImportedDocxTextBoxMarkers,
+} from './work-docx-text-box-import';
+import {
   applyImportedDocxIndexMarkers,
   hasImportedDocxIndexMarkers,
   type ImportedDocxIndexMarkers,
@@ -235,6 +241,7 @@ export interface PreparedDocxImport {
   listMarkers: ImportedDocxListMarkers;
   numberingChangeMarkers: ImportedDocxNumberingChangeMarkers;
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers;
+  textBoxMarkers: ImportedDocxTextBoxMarkers;
   paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers;
   paragraphFormattingChangeMarkers: ImportedDocxParagraphFormattingChangeMarkers;
   paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers;
@@ -284,6 +291,7 @@ export async function prepareDocxImport(
       listMarkers: { lists: [] },
       numberingChangeMarkers: { groups: [] },
       imageLayoutMarkers: { images: [] },
+      textBoxMarkers: { textBoxes: [] },
       paragraphIdentityMarkers: { paragraphs: [] },
       paragraphFormattingChangeMarkers: { paragraphs: [] },
       paragraphAlignmentMarkers: { paragraphs: [] },
@@ -315,6 +323,7 @@ export async function prepareDocxImport(
   const pageColor = importDocxPageColor(document);
   const tableOfContentsMarkers = markDocxTablesOfContents(document);
   const indexMarkers = markDocxIndexes(document);
+  const textBoxMarkers = markDocxTextBoxes(document);
   const paragraphIdentityMarkers = markDocxParagraphIdentities(document);
   const numbering = archive.has('word/numbering.xml')
     ? await archive.xml('word/numbering.xml')
@@ -452,6 +461,7 @@ export async function prepareDocxImport(
         hasImportedDocxListMarkers(listMarkers) ||
         hasImportedDocxNumberingChangeMarkers(numberingChangeMarkers) ||
         hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
+        hasImportedDocxTextBoxMarkers(textBoxMarkers) ||
         hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
         hasImportedDocxParagraphFormattingChangeMarkers(
           paragraphFormattingChangeMarkers,
@@ -484,6 +494,7 @@ export async function prepareDocxImport(
       listMarkers,
       numberingChangeMarkers,
       imageLayoutMarkers,
+      textBoxMarkers,
       paragraphIdentityMarkers,
       paragraphFormattingChangeMarkers,
       paragraphAlignmentMarkers,
@@ -535,6 +546,7 @@ export async function prepareDocxImport(
       hasImportedDocxListMarkers(listMarkers) ||
       hasImportedDocxNumberingChangeMarkers(numberingChangeMarkers) ||
       hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
+      hasImportedDocxTextBoxMarkers(textBoxMarkers) ||
       hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
       hasImportedDocxParagraphFormattingChangeMarkers(
         paragraphFormattingChangeMarkers,
@@ -567,6 +579,7 @@ export async function prepareDocxImport(
     listMarkers,
     numberingChangeMarkers,
     imageLayoutMarkers,
+    textBoxMarkers,
     paragraphIdentityMarkers,
     paragraphFormattingChangeMarkers,
     paragraphAlignmentMarkers,
@@ -649,6 +662,7 @@ export function applyDocxSectionsToHtml(
   tableCellMarkers: ImportedDocxTableCellMarkers = { cells: [] },
   tableRowMarkers: ImportedDocxTableRowMarkers = { rows: [] },
   tableSizingMarkers: ImportedDocxTableSizingMarkers = { tables: [] },
+  textBoxMarkers: ImportedDocxTextBoxMarkers = { textBoxes: [] },
 ): string {
   const document = new DOMParser().parseFromString(html, 'text/html');
   applyImportedDocxRunFormattingMarkers(document, runFormattingMarkers);
@@ -687,6 +701,7 @@ export function applyDocxSectionsToHtml(
   applyImportedDocxChangeMarkers(document, changeMarkers);
   applyImportedDocxCommentMarkers(document, commentMarkers);
   applyImportedDocxParagraphIdentityMarkers(document, paragraphIdentityMarkers);
+  applyImportedDocxTextBoxMarkers(document, textBoxMarkers);
   applyImportedDocxTableOfContentsMarkers(document, tableOfContentsMarkers);
   applyImportedDocxIndexMarkers(document, indexMarkers);
   const notes = extractMammothDocumentNotes(document);
