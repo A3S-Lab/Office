@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 test('keeps curated release notes unique, localized, and newest first', () => {
   expect(OFFICE_RELEASE_NOTES.map(({ version }) => version)).toEqual([
+    '0.48.0',
     '0.47.0',
     '0.46.0',
     '0.45.0',
@@ -214,6 +215,9 @@ test('keeps local evidence links aligned with each documentation language', () =
   const commonFieldsRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.47.0',
   );
+  const contentControlRelease = OFFICE_RELEASE_NOTES.find(
+    ({ version }) => version === '0.48.0',
+  );
   const pictureTransformRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.45.0',
   );
@@ -253,6 +257,10 @@ test('keeps local evidence links aligned with each documentation language', () =
   expect(commonFieldsRelease?.links[0]?.href).toEqual({
     en: './components/document.html#common-live-fields',
     zh: './components/document.html#常用实时字段',
+  });
+  expect(contentControlRelease?.links[0]?.href).toEqual({
+    en: './components/document.html#built-in-content-controls',
+    zh: './components/document.html#原生内容控件',
   });
   expect(pictureTransformRelease?.links[0]?.href).toEqual({
     en: './components/document.html#built-in-picture-properties',

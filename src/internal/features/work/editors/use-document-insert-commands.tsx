@@ -17,6 +17,12 @@ import type {
   WorkDocumentCaptionKind,
   WorkDocumentCaptionTarget,
 } from '../work-document-captions';
+import {
+  DOCUMENT_CONTENT_CONTROL_DEFAULTS,
+  documentContentControlProperties,
+  normalizeDocumentContentControlProperties,
+  type WorkDocumentContentControlProperties,
+} from '../work-document-content-control';
 import type {
   WorkDocumentFieldContextResolver,
   WorkDocumentFieldKind,
@@ -38,6 +44,7 @@ import {
 } from '../work-document-table-of-contents';
 import { selectedDocumentTableOfContentsOptions } from '../work-document-table-of-contents-node';
 import type { WorkDocumentContent } from '../work-types';
+import { DocumentContentControlDialog } from './document-content-control-dialog';
 import { DocumentIndexDialog } from './document-index-dialog';
 import { DocumentIndexEntryDialog } from './document-index-entry-dialog';
 import { DocumentTableOfContentsDialog } from './document-table-of-contents-dialog';
@@ -69,6 +76,11 @@ type DocumentInsertDialog =
       kind: 'index';
       editing: boolean;
       options: WorkDocumentIndexOptions;
+    }
+  | {
+      kind: 'contentControl';
+      editing: boolean;
+      properties: WorkDocumentContentControlProperties;
     };
 
 type WorkDocumentCrossReferenceTarget =
@@ -83,6 +95,7 @@ export interface DocumentInsertCommands {
   insertImage: (file: File) => Promise<void>;
   insertNote: (kind: WorkDocumentNoteKind) => boolean;
   insertTextBox: () => boolean;
+  openContentControl: () => void;
   openIndexEntry: () => void;
   openIndex: () => void;
   openTableOfContents: () => void;
@@ -169,6 +182,21 @@ export function useDocumentInsertCommands({
     if (!editor || editor.isDestroyed) return false;
     return editor.chain().focus().insertDocumentTextBox().run();
   }, [editor]);
+
+  const openContentControl = useCallback(() => {
+    if (!editor || editor.isDestroyed) return;
+    rememberInvoker();
+    const active = editor.isActive('documentContentControl');
+    setInsertDialog({
+      kind: 'contentControl',
+      editing: active,
+      properties: active
+        ? documentContentControlProperties(editor)
+        : normalizeDocumentContentControlProperties(
+            DOCUMENT_CONTENT_CONTROL_DEFAULTS,
+          ),
+    });
+  }, [editor, rememberInvoker]);
 
   const insertCaption = useCallback(
     (kind: WorkDocumentCaptionKind) => {
@@ -362,6 +390,23 @@ export function useDocumentInsertCommands({
     const applied = insertDialog.editing
       ? editor.commands.updateDocumentIndex(insertDialog.options, buildOptions)
       : editor.commands.insertDocumentIndex(insertDialog.options, buildOptions);
+    if (!applied) return;
+    invokerRef.current = editor.view.dom;
+    setInsertDialog(null);
+  };
+  const submitContentControl = () => {
+    if (!editor || insertDialog?.kind !== 'contentControl') return;
+    const applied = insertDialog.editing
+      ? editor
+          .chain()
+          .focus()
+          .setDocumentContentControlProperties(insertDialog.properties)
+          .run()
+      : editor
+          .chain()
+          .focus()
+          .insertDocumentContentControl(insertDialog.properties)
+          .run();
     if (!applied) return;
     invokerRef.current = editor.view.dom;
     setInsertDialog(null);
@@ -564,6 +609,18 @@ export function useDocumentInsertCommands({
           onSubmit={submitIndex}
         />
       )}
+      {insertDialog?.kind === 'contentControl' && (
+        <DocumentContentControlDialog
+          editing={insertDialog.editing}
+          properties={insertDialog.properties}
+          restoreFocusTarget={() => invokerRef.current}
+          onCancel={() => setInsertDialog(null)}
+          onChange={(properties) =>
+            setInsertDialog({ ...insertDialog, properties })
+          }
+          onSubmit={submitContentControl}
+        />
+      )}
     </Fragment>
   );
 
@@ -575,6 +632,7 @@ export function useDocumentInsertCommands({
     insertImage,
     insertNote,
     insertTextBox,
+    openContentControl,
     openIndexEntry,
     openIndex,
     openTableOfContents,

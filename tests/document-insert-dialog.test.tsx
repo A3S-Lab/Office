@@ -128,6 +128,72 @@ test('offers a live target-page action for body bookmarks', () => {
   }
 });
 
+test('inserts a configured content control and returns focus to the document', async () => {
+  const { editor, element } = createEditor();
+  editor.commands.setTextSelection(textRange(editor, 'Alpha'));
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开内容控件' }));
+
+    const dialog = screen.getByRole('dialog', { name: '插入内容控件' });
+    const alias = within(dialog).getByRole('textbox', {
+      name: '内容控件显示名称',
+    });
+    expect(alias).toHaveFocus();
+    fireEvent.change(alias, { target: { value: '客户名称' } });
+    fireEvent.change(
+      within(dialog).getByRole('textbox', { name: '内容控件程序标签' }),
+      { target: { value: 'customer-name' } },
+    );
+    fireEvent.click(
+      within(dialog).getByRole('combobox', { name: '内容控件外观' }),
+    );
+    fireEvent.click(screen.getByRole('option', { name: '标签' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: '插入控件' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '插入内容控件' })).toBeNull(),
+    );
+    expect(editor.getHTML()).toContain('data-content-control-alias="客户名称"');
+    expect(editor.getHTML()).toContain(
+      'data-content-control-tag="customer-name"',
+    );
+    expect(editor.getHTML()).toContain(
+      'data-content-control-appearance="tags"',
+    );
+    expect(editor.view.dom).toHaveFocus();
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('does not submit the content-control dialog during IME composition', async () => {
+  const { editor, element } = createEditor();
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开内容控件' }));
+
+    const dialog = screen.getByRole('dialog', { name: '插入内容控件' });
+    const alias = within(dialog).getByRole('textbox', {
+      name: '内容控件显示名称',
+    });
+    fireEvent.change(alias, { target: { value: '客户名称' } });
+    fireEvent.keyDown(alias, { key: 'Enter', isComposing: true });
+    expect(screen.getByRole('dialog', { name: '插入内容控件' })).toBeTruthy();
+
+    fireEvent.keyDown(alias, { key: 'Enter', isComposing: false });
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '插入内容控件' })).toBeNull(),
+    );
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
 test('inserts a configured table of contents and restores document focus', async () => {
   const { editor, element } = createEditor();
   editor.commands.setTextSelection(textRange(editor, 'Alpha').from);
@@ -260,6 +326,9 @@ function InsertDialogHarness({ editor }: { editor: Editor }) {
       </button>
       <button type="button" onClick={commands.openIndex}>
         打开索引
+      </button>
+      <button type="button" onClick={commands.openContentControl}>
+        打开内容控件
       </button>
       {commands.dialog}
     </>

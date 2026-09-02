@@ -25,6 +25,7 @@ import {
   DocumentCitation,
 } from './work-document-citation-nodes';
 import { DocumentComment } from './work-document-comments';
+import { DocumentContentControl } from './work-document-content-control';
 import { DocumentEquation } from './work-document-equations';
 import { DocumentField } from './work-document-field-node';
 import { DocumentImage } from './work-document-image-layout';
@@ -42,26 +43,26 @@ import {
 import { DocumentPageBreak } from './work-document-page-break';
 import { DocumentParagraphFormatting } from './work-document-paragraph-formatting';
 import { DocumentParagraphIdentity } from './work-document-paragraph-identity';
-import { DocumentSection } from './work-document-section-node';
 import { DocumentScriptFontFormatting } from './work-document-script-font-extension';
+import { DocumentSection } from './work-document-section-node';
 import { DocumentStrike } from './work-document-strike';
 import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
-import { DocumentTableOfContents } from './work-document-table-of-contents-node';
-import { DocumentUnderline } from './work-document-underline';
-import { DocumentTextBox } from './work-document-text-box';
 import {
   DocumentTableCell,
   DocumentTableFormatting,
   DocumentTableHeader,
 } from './work-document-table-cell-formatting';
 import { DocumentTableCommands } from './work-document-table-commands';
+import { DocumentTableOfContents } from './work-document-table-of-contents-node';
 import { DocumentTableRow } from './work-document-table-row';
 import { DocumentTableRowIdentity } from './work-document-table-row-identity';
 import {
   DocumentTable,
   DocumentTableSizing,
 } from './work-document-table-sizing';
+import { DocumentTextBox } from './work-document-text-box';
+import { DocumentUnderline } from './work-document-underline';
 import {
   DocumentFontFamily,
   DocumentHighlight,
@@ -138,6 +139,7 @@ export function createWorkDocumentExtensions(
     DocumentIndexEntry,
     DocumentIndex,
     DocumentField,
+    DocumentContentControl,
     DocumentEquation,
     commentExtension,
     DocumentNoteReference,

@@ -2,6 +2,7 @@ import type { WorkBook, WorkSheet } from 'xlsx';
 import { diagnoseDocxBookmarksAndLinks } from './work-docx-bookmark-diagnostics';
 import { diagnoseDocxCaptions } from './work-docx-caption-diagnostics';
 import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
+import { inspectDocxContentControls } from './work-docx-content-control-import';
 import { diagnoseDocxEmphasisMarks } from './work-docx-emphasis-diagnostics';
 import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
 import { diagnoseDocxHiddenText } from './work-docx-hidden-text-diagnostics';
@@ -298,6 +299,26 @@ export async function analyzeDocxCompatibility(
             'docx.text-boxes.unsupported',
             'Text boxes',
             `${textBoxInspection.unsupported} WPS text box(es) mix a drawing with other paragraph content or have unsupported shape content. Only isolated text-box paragraphs are converted to editable text boxes; the rest may normalize during browser conversion.`,
+          ),
+        );
+      }
+      const contentControlInspection = inspectDocxContentControls(document);
+      if (contentControlInspection.supported) {
+        issues.push(
+          issue(
+            'docx.content-controls',
+            'Content controls',
+            `${contentControlInspection.supported} inline text or rich-text content control(s) remain editable with aliases, tags, bounded locking, multiline text, appearance, color, and native DOCX w:sdt round-tripping. Data bindings, placeholders, repeating sections, form controls, and block or relationship-bound controls remain outside the safe subset.`,
+            'info',
+          ),
+        );
+      }
+      if (contentControlInspection.unsupported) {
+        issues.push(
+          issue(
+            'docx.content-controls.unsupported',
+            'Content controls',
+            `${contentControlInspection.unsupported} body content control(s) use active bindings, placeholders, form semantics, unsupported structure, or malformed properties. They are flattened to safe editable text during browser conversion instead of being revived with incomplete behavior.`,
           ),
         );
       }

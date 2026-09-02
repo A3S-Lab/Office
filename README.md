@@ -309,6 +309,23 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.48.0` adds bounded native Writer content controls without
+introducing a second document model or a remote service:
+
+- The Insert ribbon and responsive dialog author inline plain-text or rich-text
+  controls with aliases, program tags, multiline text, border/tag/hidden
+  appearance, and an optional theme color. Each accepted change is one typed
+  update and one Undo step, and the control exposes an accessible textbox name.
+- Content and shell locks are enforced at the transaction boundary, including
+  direct editor transactions. Locked content cannot be changed accidentally;
+  typed unlock/delete commands remain explicit and auditable.
+- Direct paragraph DOCX `w:sdt` controls round-trip through strict and
+  transitional WordprocessingML with collision-free native IDs, rich run
+  formatting, lock/multiline metadata, and Word 2012 appearance/color. Active
+  bindings, placeholders, repeating regions, form controls, nested or
+  relationship-bound structures remain safe editable text with compatibility
+  diagnostics instead of an inexact editable promise.
+
 Version `0.47.0` adds a bounded common-field workflow for Writer without
 introducing a second document model or a remote service:
 

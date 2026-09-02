@@ -1,0 +1,145 @@
+.work-document-content-control {
+  --work-document-content-control-color: var(--a3s-accent);
+  --work-document-content-control-appearance: boundingBox;
+  position: relative;
+  display: inline-block;
+  min-width: 1.25em;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--work-document-content-control-color) 62%,
+      transparent
+    );
+  border-radius: 3px;
+  padding: 0 0.18em;
+  background: color-mix(
+    in srgb,
+    var(--work-document-content-control-color) 8%,
+    transparent
+  );
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.work-document-content-control:hover,
+.work-document-content-control.ProseMirror-selectednode {
+  border-color: var(--work-document-content-control-color);
+  background: color-mix(
+    in srgb,
+    var(--work-document-content-control-color) 14%,
+    transparent
+  );
+}
+
+.work-document-content-control[data-content-control-appearance="hidden"] {
+  border-color: transparent;
+  background: transparent;
+}
+
+.work-document-content-control[data-content-control-appearance="tags"]::before {
+  content: attr(data-content-control-label);
+  position: absolute;
+  top: -1.1em;
+  left: -1px;
+  max-width: 18em;
+  overflow: hidden;
+  color: var(--work-document-content-control-color);
+  font-size: 0.68em;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.work-document-content-control[data-content-control-lock="contentLocked"],
+.work-document-content-control[data-content-control-lock="sdtContentLocked"],
+.work-document-content-control[data-content-control-lock="sdtLocked"] {
+  background: color-mix(
+    in srgb,
+    var(--work-document-content-control-color) 5%,
+    transparent
+  );
+}
+
+.work-document-content-control:empty::after {
+  content: "输入内容";
+  color: color-mix(in srgb, currentColor 48%, transparent);
+  pointer-events: none;
+}
+
+.work-document-content-control[contenteditable="false"] {
+  cursor: not-allowed;
+}
+
+@media print {
+  .work-document-content-control {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .work-document-content-control[data-content-control-appearance="tags"]::before {
+    display: none;
+  }
+}
+
+.work-document-content-control-dialog-fields,
+.work-document-content-control-dialog-selects,
+.work-document-content-control-dialog-options {
+  display: grid;
+  gap: 12px;
+}
+
+.work-document-content-control-dialog-fields,
+.work-document-content-control-dialog-selects {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.work-document-content-control-dialog-fields label,
+.work-document-content-control-dialog-selects label,
+.work-document-content-control-dialog-field,
+.work-document-content-control-color {
+  display: grid;
+  gap: 5px;
+  color: var(--a3s-text-muted);
+  font-size: 12px;
+}
+
+.work-document-content-control-dialog-options {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  margin-top: 12px;
+}
+
+.work-document-content-control-color {
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+}
+
+.work-document-content-control-color input[type="color"] {
+  width: 28px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 5px;
+  background: transparent;
+}
+
+.work-document-content-control-color-reset {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: var(--a3s-accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+
+@media (max-width: 640px) {
+  .work-document-content-control-dialog-fields,
+  .work-document-content-control-dialog-selects,
+  .work-document-content-control-dialog-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

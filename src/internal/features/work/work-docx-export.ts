@@ -63,13 +63,13 @@ import {
 } from './work-document-script-fonts';
 import { documentSections } from './work-document-section';
 import {
-  documentTextBoxPropertiesFromElement,
-  type WorkDocumentTextBoxProperties,
-} from './work-document-text-box';
-import {
   DOCUMENT_STRIKE_STYLE_ATTRIBUTE,
   documentStrikeFormattingFromElement,
 } from './work-document-strike';
+import {
+  documentTextBoxPropertiesFromElement,
+  type WorkDocumentTextBoxProperties,
+} from './work-document-text-box';
 import { normalizeDocumentTextCase } from './work-document-text-case';
 import {
   DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
@@ -98,6 +98,11 @@ import {
 import { docxSectionColumns } from './work-docx-column-export';
 import { createDocxCommentRecords } from './work-docx-comment-export';
 import { patchDocxCommentMetadata } from './work-docx-comment-metadata';
+import {
+  DocxContentControlPatchCollector,
+  docxContentControlRuns,
+  patchDocxContentControls,
+} from './work-docx-content-control-export';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import { docxEmphasisMarkRunOptions } from './work-docx-emphasis';
 import {
@@ -221,14 +226,14 @@ import {
   patchDocxTableOfContents,
 } from './work-docx-table-of-contents-export';
 import {
-  DocxTextBoxIdentityPatchCollector,
-  patchDocxTextBoxIdentities,
-} from './work-docx-text-box-export';
-import {
   documentTableCellSizingDocxOptions,
   documentTableRowSizingDocxOptions,
   documentTableSizingDocxOptions,
 } from './work-docx-table-sizing-export';
+import {
+  DocxTextBoxIdentityPatchCollector,
+  patchDocxTextBoxIdentities,
+} from './work-docx-text-box-export';
 import {
   DocxThemePatchCollector,
   parseDocxThemeReference,
@@ -257,6 +262,7 @@ interface DocxNoteContext extends DocxListExportContext {
   imageWrapPatches: DocxImageWrapPatchCollector;
   imageTransformPatches: DocxImageTransformPatchCollector;
   textBoxIdentityPatches: DocxTextBoxIdentityPatchCollector;
+  contentControlPatches: DocxContentControlPatchCollector;
   paragraphBorderPatches: DocxParagraphBorderPatchCollector;
   paragraphDefaultCollapsedPatches: DocxParagraphDefaultCollapsedPatchCollector;
   paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
@@ -334,6 +340,7 @@ export async function createDocxBlob(
     imageWrapPatches: new DocxImageWrapPatchCollector(),
     imageTransformPatches: new DocxImageTransformPatchCollector(),
     textBoxIdentityPatches: new DocxTextBoxIdentityPatchCollector(),
+    contentControlPatches: new DocxContentControlPatchCollector(),
     paragraphBorderPatches: new DocxParagraphBorderPatchCollector(
       JSON.stringify(normalizedContent),
     ),
@@ -583,11 +590,15 @@ export async function createDocxBlob(
     equationPatched,
     normalizedContent.pageColor,
   );
+  const contentControlsPatched = await patchDocxContentControls(
+    patched,
+    noteContext.contentControlPatches.patches,
+  );
   const preserved = sourcePackage
-    ? await preserveDocxSourcePackage(patched, sourcePackage, {
+    ? await preserveDocxSourcePackage(contentControlsPatched, sourcePackage, {
         numberingIdentities: noteContext.numberingSourceIdentities,
       })
-    : patched;
+    : contentControlsPatched;
   return new Blob([preserved], {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   });
@@ -1181,6 +1192,18 @@ async function inlineRuns(
           ? new docx.FootnoteReferenceRun(noteId)
           : (new docx.EndnoteReferenceRun(noteId) as ParagraphChild),
       ];
+    }
+    if (node.hasAttribute('data-document-content-control')) {
+      const children: ParagraphChild[] = [];
+      for (const child of node.childNodes) {
+        children.push(...(await visit(child, inherited, revision)));
+      }
+      return docxContentControlRuns(
+        node,
+        docx,
+        noteContext.contentControlPatches,
+        children,
+      );
     }
     const textRevisionKind =
       tag === 'del' ? 'deletion' : tag === 'ins' ? 'insertion' : null;

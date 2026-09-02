@@ -30,12 +30,12 @@ import {
   collectDocumentChanges,
   type WorkDocumentChangeKind,
 } from '../work-document-changes';
+import { documentTransactionsOnlyHydrateChunks } from '../work-document-chunk-node';
 import { documentCitationCount } from '../work-document-citation-nodes';
 import {
   collectDocumentCommentAnchors,
   retainAnchoredDocumentComments,
 } from '../work-document-comments';
-import { documentTransactionsOnlyHydrateChunks } from '../work-document-chunk-node';
 import { createWorkDocumentExtensions } from '../work-document-extensions';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import { millimetersToPixels } from '../work-document-layout';
@@ -1474,6 +1474,7 @@ function DocumentEditorSurface({
           pageChromeShowPageNumber={visibleChrome.showPageNumber}
           onRequestImage={() => imageInputRef.current?.click()}
           onInsertTextBox={documentInsert.insertTextBox}
+          onInsertContentControl={documentInsert.openContentControl}
           onPageChromeEditingPartChange={editPageChrome}
           onClosePageChrome={closePageChrome}
           onTogglePageChromePageNumber={toggleVisiblePageNumber}

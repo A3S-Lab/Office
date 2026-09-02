@@ -86,7 +86,7 @@ collaboration transport, and AI providers.
 | Fields | **Partial**: PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, TIME, NUMWORDS, NUMCHARS, safe REF paths, and bookmark-backed PAGEREF with bounded switch diagnostics | Broader Word field grammar, nested fields, switches outside the deterministic common subset, mail fields, document properties, and tables of figures/authorities remain incomplete | P1/P2 |
 | Mail merge | **Gap** | No data-source mapping, recipient filtering, preview, or batch generation | P2 |
 | Compare/combine documents | **Partial**: same-layout paragraphs/headings compare into deterministic insertion, deletion, character-formatting, and paragraph-formatting revisions; reviewed-copy combine requires an exact reject-all baseline match | Changed complex structures, native paragraph-mark revision fidelity, move ranges, layout changes, and multi-copy structural conflicts remain explicit fail-closed boundaries | P1 |
-| Content controls and forms | **Partial**: eligible static text controls can be preserved/reconstructed | Data binding, repeating sections, form controls, placeholders, and active behavior are intentionally limited | P1/P2 |
+| Content controls and forms | **Partial**: inline plain-text and rich-text controls are editable with aliases, tags, bounded locks, multiline text, appearance/color, and direct-paragraph DOCX `w:sdt` round trips; static controls in note/comment preservation remain separately bounded | Data binding, repeating sections, date/dropdown/picture/form controls, block controls, nested or relationship-bound semantics, placeholders, and active behavior are intentionally limited | P1/P2 |
 | Spelling, grammar, language, translation | **Partial**: native Latin/East Asian/bidi `w:lang` metadata, explicit `w:noProof` authoring and round trips, browser spellcheck, and host actions | No suite-grade proofing dictionaries, grammar engine, or bundled translation service | Host/provider-owned; P2 adapter |
 | Find, navigation, physical thumbnails, long-document review | **Supported** with transferable Worker import, bounded auxiliary-pane virtualization, model-level text/table-row NodeView windows for eligible structurally plain large DOCX files, and model-boundary keyboard navigation | Rich-feature giant DOCX fallback paths still need the same bounded body rendering and broader performance fixtures | P0 |
 | PDF output | **Partial**: live browser pages share editor pagination | Output is currently rasterized; searchable text, tagged output, and vector fidelity remain gaps | P0/P1 |
@@ -313,7 +313,9 @@ conflicts remain follow-up work rather than silent approximations.
 - Add editable text boxes and a bounded DrawingML shape/connector model before
   expanding to WordArt, charts, and SmartArt.
 - Complete common field instructions and reference workflows.
-- Add richer content-control/form semantics with an explicit safe subset.
+- Extend the bounded content-control slice beyond direct inline text and rich
+  text only after block, form, and data-binding semantics have independent
+  typed models and fail-closed native fixtures.
 - Add mail merge only after fields and data-source contracts are stable.
 
 Exit criteria: the most common Traditional Office Writer report, contract,
