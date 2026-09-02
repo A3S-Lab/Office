@@ -24,6 +24,11 @@ import {
   type WorkDocumentBookmarkReferenceTarget,
 } from './work-document-bookmark-references';
 import {
+  documentPageReferenceInstruction,
+  docxDocumentFieldKind,
+  docxDocumentFieldTarget,
+} from './work-document-fields';
+import {
   DOCUMENT_INTEGRITY_BOOKMARK,
   documentHasIntegrityFeature,
 } from './work-document-integrity-index';
@@ -310,6 +315,13 @@ export function normalizeDocumentBookmarksHtml(source: string): string {
         previous,
         identity,
       );
+      retargetDomPageReferences(
+        document.body,
+        pair.start,
+        pair.end,
+        previous,
+        identity,
+      );
     }
   }
   synchronizeDomInternalLinks(document.body, registry.names);
@@ -467,6 +479,7 @@ function normalizeDocumentBookmarks(
   }
   synchronizeInternalLinkMarks(state, tr, effectivePairs, renames);
   synchronizeDocumentBookmarkReferenceNodes(state, tr, effectivePairs, renames);
+  synchronizeDocumentPageReferenceNodes(state, tr, effectivePairs, renames);
   for (const orphan of [...collection.orphans].sort(
     (left, right) => right.position - left.position,
   )) {
@@ -851,6 +864,105 @@ function synchronizeDomInternalLinks(
   }
 }
 
+function synchronizeDocumentPageReferenceNodes(
+  state: EditorState,
+  tr: Transaction,
+  bookmarks: readonly BookmarkPairAtPosition[],
+  renames: readonly BookmarkRename[],
+): void {
+  state.doc.descendants((node, position) => {
+    if (node.type.name !== 'documentField') return;
+    const kind =
+      node.attrs.kind === 'pageReference'
+        ? 'pageReference'
+        : docxDocumentFieldKind(stringAttribute(node.attrs.instruction));
+    if (kind !== 'pageReference') return;
+    let targetId = stringAttribute(node.attrs.targetId);
+    let targetName =
+      stringAttribute(node.attrs.targetName) ||
+      docxDocumentFieldTarget(stringAttribute(node.attrs.instruction)) ||
+      '';
+    const rename = renames
+      .filter(
+        (candidate) =>
+          position > candidate.from &&
+          position < candidate.to &&
+          ((targetId && targetId === candidate.previousId) ||
+            (targetName &&
+              targetName.toLowerCase() ===
+                candidate.previousName.toLowerCase())),
+      )
+      .sort((left, right) => left.to - left.from - (right.to - right.from))[0];
+    if (rename) {
+      targetId = rename.nextId;
+      targetName = rename.nextName;
+    }
+    const target =
+      bookmarks.find(
+        (bookmark) =>
+          (targetId && bookmark.id === targetId) ||
+          (targetName &&
+            bookmark.name.toLowerCase() === targetName.toLowerCase()),
+      ) ?? null;
+    const nextTargetId = target?.id ?? targetId;
+    const nextTargetName = target?.name ?? targetName;
+    const instruction = target
+      ? documentPageReferenceInstruction(
+          nextTargetName,
+          stringAttribute(node.attrs.instruction),
+        )
+      : stringAttribute(node.attrs.instruction);
+    const orphaned = !target;
+    if (
+      node.attrs.targetId === nextTargetId &&
+      node.attrs.targetName === nextTargetName &&
+      node.attrs.instruction === instruction &&
+      node.attrs.orphaned === orphaned
+    ) {
+      return;
+    }
+    tr.setNodeMarkup(position, undefined, {
+      ...node.attrs,
+      targetId: nextTargetId,
+      targetName: nextTargetName,
+      instruction,
+      orphaned,
+    });
+  });
+}
+
+function retargetDomPageReferences(
+  root: HTMLElement,
+  start: HTMLElement,
+  end: HTMLElement,
+  previous: { id: string; name: string },
+  next: { id: string; name: string },
+): void {
+  const range = root.ownerDocument.createRange();
+  range.setStartAfter(start);
+  range.setEndBefore(end);
+  for (const field of root.querySelectorAll<HTMLElement>(
+    'span[data-document-field][data-field-kind="pageReference"]',
+  )) {
+    if (!range.intersectsNode(field)) continue;
+    const id = field.dataset.fieldTargetId?.trim() ?? '';
+    const name = field.dataset.fieldTargetName?.trim() ?? '';
+    if (
+      id !== previous.id &&
+      name.toLowerCase() !== previous.name.toLowerCase()
+    ) {
+      continue;
+    }
+    field.dataset.fieldTargetId = next.id;
+    field.dataset.fieldTargetName = next.name;
+    field.dataset.fieldInstruction = documentPageReferenceInstruction(
+      next.name,
+      field.dataset.fieldInstruction,
+    );
+    delete field.dataset.fieldOrphaned;
+  }
+}
+
 function normalizedClass(value: unknown): string {
   return typeof value === 'string'
     ? value.trim().split(/\s+/).filter(Boolean).join(' ')
@@ -866,4 +978,8 @@ function toggleClassToken(
   if (enabled) tokens.add(token);
   else tokens.delete(token);
   return Array.from(tokens).join(' ');
+}
+
+function stringAttribute(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
 }

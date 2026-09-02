@@ -12,6 +12,12 @@ import type {
   WorkDocumentFieldContext,
   WorkDocumentFieldKind,
 } from '../src/internal/features/work/work-document-fields';
+import {
+  documentFieldDisplay,
+  documentFieldStatisticsFromHtml,
+  docxDocumentFieldKind,
+  supportedDocxDocumentFieldInstruction,
+} from '../src/internal/features/work/work-document-fields';
 import type { WorkDocumentContent } from '../src/internal/features/work/work-types';
 
 describe('document fields', () => {
@@ -174,6 +180,151 @@ describe('document fields', () => {
     }
   });
 
+  test('resolves common statistics and bookmark page-reference fields', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<section data-document-section="true"><p>',
+        '<span data-document-bookmark-boundary="true" data-bookmark-kind="start" data-bookmark-id="target" data-bookmark-name="Target"></span>',
+        'Alpha beta 中文',
+        '<span data-document-bookmark-boundary="true" data-bookmark-kind="end" data-bookmark-id="target" data-bookmark-name="Target"></span>',
+        '</p><p>',
+        field('wordCount', 'words', 'NUMWORDS', 'stale'),
+        field('characterCount', 'chars', 'NUMCHARS', 'stale'),
+        field('pageReference', 'target-page', 'PAGEREF Target \\h', 'stale'),
+        '</p></section>',
+      ].join(''),
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: (position) => ({
+            pageNumber: position < 20 ? 3 : 9,
+            totalPages: 9,
+            sectionNumber: 1,
+            sectionPages: 9,
+          }),
+        }),
+      ).toBe(true);
+      expect(fieldDisplays(editor)).toMatchObject({
+        words: '4',
+        chars: '13',
+        'target-page': '3',
+      });
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('keeps the bounded instruction grammar explicit', () => {
+    expect(docxDocumentFieldKind('NUMWORDS \\* MERGEFORMAT')).toBe('wordCount');
+    expect(docxDocumentFieldKind('NUMCHARS')).toBe('characterCount');
+    expect(docxDocumentFieldKind('PAGEREF Target \\h')).toBe('pageReference');
+    expect(supportedDocxDocumentFieldInstruction('PAGEREF Target \\h')).toBe(
+      true,
+    );
+    expect(
+      supportedDocxDocumentFieldInstruction(
+        'PAGEREF Target \\h \\* MERGEFORMAT',
+      ),
+    ).toBe(true);
+    expect(supportedDocxDocumentFieldInstruction('PAGEREF Target \\p')).toBe(
+      false,
+    );
+    expect(supportedDocxDocumentFieldInstruction('NUMWORDS unexpected')).toBe(
+      false,
+    );
+    expect(
+      supportedDocxDocumentFieldInstruction(
+        'DATE \\@ "yyyy-MM-dd" \\* MERGEFORMAT',
+      ),
+    ).toBe(true);
+    expect(supportedDocxDocumentFieldInstruction('DATE \\@ "yyyy" extra')).toBe(
+      false,
+    );
+    expect(
+      documentFieldStatisticsFromHtml(
+        '<p>Alpha <span data-document-field="true">99</span> 中文</p>',
+      ),
+    ).toEqual({
+      wordCount: 3,
+      characterCount: 9,
+    });
+    expect(
+      documentFieldStatisticsFromHtml(
+        '<p>Alpha<span data-document-field="true">99</span>beta</p>',
+      ),
+    ).toEqual({ wordCount: 2, characterCount: 9 });
+    expect(
+      documentFieldDisplay(
+        'pageReference',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          bookmarkPageNumbers: new Map([['name:target', 7]]),
+        },
+        'PAGEREF Target \\h',
+        'stale',
+      ),
+    ).toBe('7');
+    expect(
+      documentFieldDisplay(
+        'pageReference',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          referencePageNumber: null,
+        },
+        'PAGEREF Target \\h',
+        '9',
+      ),
+    ).toBe('引用缺失');
+  });
+
+  test('retargets a page reference when its bookmark identity is normalized', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<p>',
+        '<span data-document-bookmark-boundary="true" data-bookmark-kind="start" data-bookmark-id="bookmark-target" data-bookmark-name="Target"></span>',
+        'Target text',
+        '<span data-document-bookmark-boundary="true" data-bookmark-kind="end" data-bookmark-id="bookmark-target" data-bookmark-name="Target"></span>',
+        '</p><p>',
+        field(
+          'pageReference',
+          'page-reference',
+          'PAGEREF Target \\h',
+          '1',
+        ).replace(
+          'data-field-instruction="PAGEREF Target \\h"',
+          'data-field-instruction="PAGEREF Target \\h" data-field-target-id="bookmark-target" data-field-target-name="Target"',
+        ),
+        '</p>',
+      ].join(''),
+    });
+    try {
+      const start = documentBookmarkBoundary(editor, 'start');
+      expect(start).toBeDefined();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(start?.position ?? 0, undefined, {
+          ...start?.node.attrs,
+          name: 'Renamed',
+        }),
+      );
+      const pageReference = documentFields(editor)[0];
+      expect(pageReference).toMatchObject({
+        instruction: 'PAGEREF Renamed \\h',
+      });
+      expect(editor.getHTML()).toContain('data-field-target-name="Renamed"');
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('round-trips all supported body fields through native DOCX twice', async () => {
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document') {
@@ -222,6 +373,61 @@ describe('document fields', () => {
 
     await expectNativeFields(await createArtifactBlob(imported));
   });
+
+  test('round-trips NUMWORDS, NUMCHARS, and bookmark-backed PAGEREF natively', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      '<span data-document-bookmark-boundary="true" data-bookmark-kind="start" data-bookmark-id="bookmark-target" data-bookmark-name="Target"></span>',
+      '目标内容',
+      '<span data-document-bookmark-boundary="true" data-bookmark-kind="end" data-bookmark-id="bookmark-target" data-bookmark-name="Target"></span>',
+      '</p><p>',
+      field('wordCount', 'words', 'NUMWORDS', '2'),
+      field('characterCount', 'chars', 'NUMCHARS', '4'),
+      field('pageReference', 'page', 'PAGEREF Target \\h', '1'),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('NUMWORDS');
+    expect(documentXml).toContain('NUMCHARS');
+    expect(documentXml).toContain('PAGEREF Target \\h');
+
+    const imported = await importOfficeFile(
+      new File([first], 'common-fields.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedFields = Array.from(
+      importedDocument.body.querySelectorAll<HTMLElement>(
+        '[data-document-field]',
+      ),
+    );
+    expect(importedFields.map(({ dataset }) => dataset.fieldKind)).toEqual([
+      'wordCount',
+      'characterCount',
+      'pageReference',
+    ]);
+    expect(importedFields[2]?.dataset).toMatchObject({
+      fieldTargetName: 'Target',
+      fieldTargetId: expect.any(String),
+    });
+    expect(imported.compatibility.issues).toContainEqual(
+      expect.objectContaining({ code: 'docx.fields.body', severity: 'info' }),
+    );
+    await expectNativeCommonFields(await createArtifactBlob(imported));
+  });
 });
 
 async function expectNativeFields(blob: Blob): Promise<void> {
@@ -242,6 +448,15 @@ async function expectNativeFields(blob: Blob): Promise<void> {
   expect(instructions).toContain('DATE \\@ "yyyy-MM-dd"');
   expect(instructions).toContain('TIME \\@ "HH:mm:ss"');
   expect(settingsXml).toMatch(/<w:updateFields(?:\s[^>]*)?\/>/);
+}
+
+async function expectNativeCommonFields(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const documentXml =
+    (await archive.file('word/document.xml')?.async('string')) ?? '';
+  expect(documentXml).toContain('NUMWORDS');
+  expect(documentXml).toContain('NUMCHARS');
+  expect(documentXml).toContain('PAGEREF Target \\h');
 }
 
 function decodeXmlAttribute(value: string): string {
@@ -269,6 +484,9 @@ function fieldInstruction(kind: WorkDocumentFieldKind): string {
     sectionPages: 'SECTIONPAGES',
     date: 'DATE',
     time: 'TIME',
+    wordCount: 'NUMWORDS',
+    characterCount: 'NUMCHARS',
+    pageReference: 'PAGEREF Target \\h',
   }[kind];
 }
 
@@ -307,6 +525,22 @@ function documentFields(editor: Editor): Array<{
     });
   });
   return fields;
+}
+
+function documentBookmarkBoundary(
+  editor: Editor,
+  kind: 'start' | 'end',
+):
+  | { node: ReturnType<Editor['state']['doc']['nodeAt']>; position: number }
+  | undefined {
+  let found:
+    | { node: ReturnType<Editor['state']['doc']['nodeAt']>; position: number }
+    | undefined;
+  editor.state.doc.descendants((node, position) => {
+    if (found || node.type.name !== 'documentBookmarkBoundary') return;
+    if (node.attrs.kind === kind) found = { node, position };
+  });
+  return found;
 }
 
 function sectionIdAt(editor: Editor, position: number): string {

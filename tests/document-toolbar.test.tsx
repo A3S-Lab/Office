@@ -143,10 +143,12 @@ test('wires every Insert and Page Layout action to document state or its owner',
   );
 
   const fieldSelect = screen.getByRole('combobox', {
-    name: '插入页码或日期',
+    name: '插入页码、日期或统计域',
   });
   fireEvent.click(fieldSelect);
-  expect(screen.getByRole('option', { name: '页码或日期' })).toBeDisabled();
+  expect(
+    screen.getByRole('option', { name: '页码、日期或统计' }),
+  ).toBeDisabled();
   await waitFor(() =>
     expect(screen.getByRole('option', { name: '页码' })).toHaveFocus(),
   );

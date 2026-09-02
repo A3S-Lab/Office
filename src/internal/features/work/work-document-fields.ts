@@ -1,16 +1,29 @@
+import { documentWordCount } from './work-document-text-statistics';
+
 export type WorkDocumentFieldKind =
   | 'page'
   | 'numPages'
   | 'section'
   | 'sectionPages'
   | 'date'
-  | 'time';
+  | 'time'
+  | 'wordCount'
+  | 'characterCount'
+  | 'pageReference';
 
 export interface WorkDocumentFieldContext {
   pageNumber: number;
   totalPages: number;
   sectionNumber: number;
   sectionPages: number;
+  /** Number of visible body words, excluding generated field results. */
+  wordCount?: number;
+  /** Number of visible body characters, including spaces. */
+  characterCount?: number;
+  /** Page number resolved for a PAGEREF target, when the target is present. */
+  referencePageNumber?: number | null;
+  /** Page numbers keyed by `id:<bookmark-id>` or `name:<bookmark-name>`. */
+  bookmarkPageNumbers?: ReadonlyMap<string, number>;
   now?: Date;
 }
 
@@ -25,7 +38,15 @@ export interface WorkDocumentFieldRefreshOptions {
   updateClock?: boolean;
 }
 
+export interface WorkDocumentFieldInsertOptions {
+  /** Bookmark identity used to keep a page reference stable across renames. */
+  targetId?: string;
+  /** Bookmark name emitted in the native PAGEREF instruction. */
+  targetName?: string;
+}
+
 const FIELD_SELECTOR = 'span[data-document-field]';
+const FIELD_TEXT_BOUNDARY = '\uFFFC';
 
 const FIELD_COMMANDS: Record<WorkDocumentFieldKind, string> = {
   page: 'PAGE',
@@ -34,6 +55,9 @@ const FIELD_COMMANDS: Record<WorkDocumentFieldKind, string> = {
   sectionPages: 'SECTIONPAGES',
   date: 'DATE \\@ "yyyy年M月d日"',
   time: 'TIME \\@ "HH:mm"',
+  wordCount: 'NUMWORDS',
+  characterCount: 'NUMCHARS',
+  pageReference: 'PAGEREF',
 };
 
 const FIELD_LABELS: Record<WorkDocumentFieldKind, string> = {
@@ -43,6 +67,9 @@ const FIELD_LABELS: Record<WorkDocumentFieldKind, string> = {
   sectionPages: '本节页数',
   date: '当前日期',
   time: '当前时间',
+  wordCount: '字数',
+  characterCount: '字符数',
+  pageReference: '目标页码',
 };
 
 export function documentFieldKind(
@@ -54,7 +81,10 @@ export function documentFieldKind(
     value === 'section' ||
     value === 'sectionPages' ||
     value === 'date' ||
-    value === 'time'
+    value === 'time' ||
+    value === 'wordCount' ||
+    value === 'characterCount' ||
+    value === 'pageReference'
   ) {
     return value;
   }
@@ -73,11 +103,37 @@ export function docxDocumentFieldKind(
   if (command === 'SECTIONPAGES') return 'sectionPages';
   if (command === 'DATE') return 'date';
   if (command === 'TIME') return 'time';
+  if (command === 'NUMWORDS') return 'wordCount';
+  if (command === 'NUMCHARS') return 'characterCount';
+  if (command === 'PAGEREF') return 'pageReference';
   return null;
 }
 
-export function documentFieldInstruction(kind: WorkDocumentFieldKind): string {
+export function documentFieldInstruction(
+  kind: WorkDocumentFieldKind,
+  options: WorkDocumentFieldInsertOptions = {},
+): string {
+  if (kind === 'pageReference') {
+    return documentPageReferenceInstruction(options.targetName, '', true);
+  }
   return FIELD_COMMANDS[kind];
+}
+
+/** Builds a stable PAGEREF instruction while retaining the supported switches. */
+export function documentPageReferenceInstruction(
+  targetName: unknown,
+  source = '',
+  defaultHyperlink = false,
+): string {
+  const target = normalizeFieldTarget(targetName);
+  if (!target) return FIELD_COMMANDS.pageReference;
+  const switches: string[] = [];
+  if (/(?:^|\s)\\h(?:\s|$)/i.test(source)) switches.push('\\h');
+  if (/(?:^|\s)\\\*\s+MERGEFORMAT(?:\s|$)/i.test(source)) {
+    switches.push('\\* MERGEFORMAT');
+  }
+  if (!switches.length && defaultHyperlink) switches.push('\\h');
+  return `PAGEREF ${target}${switches.length ? ` ${switches.join(' ')}` : ''}`;
 }
 
 export function documentFieldLabel(kind: WorkDocumentFieldKind): string {
@@ -95,6 +151,26 @@ export function documentFieldDisplay(
   if (kind === 'section') return String(positiveInteger(context.sectionNumber));
   if (kind === 'sectionPages')
     return String(positiveInteger(context.sectionPages));
+  if (kind === 'wordCount')
+    return String(nonNegativeInteger(context.wordCount, cachedValue));
+  if (kind === 'characterCount')
+    return String(nonNegativeInteger(context.characterCount, cachedValue));
+  if (kind === 'pageReference') {
+    const target = docxDocumentFieldTarget(instruction);
+    const hasResolutionContext =
+      context.referencePageNumber !== undefined ||
+      context.bookmarkPageNumbers !== undefined;
+    const page =
+      context.referencePageNumber ??
+      (target
+        ? context.bookmarkPageNumbers?.get(`name:${target.toLowerCase()}`)
+        : undefined);
+    return page && Number.isSafeInteger(page) && page > 0
+      ? String(page)
+      : hasResolutionContext
+        ? '引用缺失'
+        : cachedValue.trim() || '引用缺失';
+  }
   const now = validDate(context.now) ?? new Date();
   const format =
     dateFormatSwitch(instruction) ??
@@ -130,6 +206,22 @@ export function normalizeDocumentFieldsHtml(source: string): string {
     element.dataset.fieldKind = kind;
     element.dataset.fieldInstruction =
       instruction || documentFieldInstruction(kind);
+    if (kind === 'pageReference') {
+      const targetName =
+        normalizeFieldTarget(element.dataset.fieldTargetName) ??
+        docxDocumentFieldTarget(instruction);
+      if (targetName) {
+        element.dataset.fieldTargetName = targetName;
+        element.dataset.fieldInstruction = documentPageReferenceInstruction(
+          targetName,
+          instruction,
+        );
+        delete element.dataset.fieldOrphaned;
+      } else {
+        delete element.dataset.fieldTargetName;
+        element.dataset.fieldOrphaned = 'true';
+      }
+    }
     element.dataset.fieldDisplay = display;
     element.classList.add('work-document-field');
     element.textContent = display;
@@ -150,9 +242,18 @@ export function resolveDocumentFieldsHtml(
   )) {
     const kind = documentFieldKind(element.dataset.fieldKind);
     if (!kind) continue;
+    const referencePageNumber =
+      kind === 'pageReference'
+        ? (context.referencePageNumber ??
+          (element.dataset.fieldTargetId
+            ? context.bookmarkPageNumbers?.get(
+                `id:${element.dataset.fieldTargetId.trim()}`,
+              )
+            : undefined))
+        : context.referencePageNumber;
     const display = documentFieldDisplay(
       kind,
-      context,
+      { ...context, referencePageNumber },
       element.dataset.fieldInstruction,
       element.dataset.fieldDisplay,
     );
@@ -181,6 +282,87 @@ function uniqueFieldId(
 
 function dateFormatSwitch(instruction: string): string | null {
   return /\\@\s+"([^"]+)"/i.exec(instruction)?.[1] ?? null;
+}
+
+/** Returns the bookmark name used by a bounded PAGEREF instruction. */
+export function docxDocumentFieldTarget(instruction: string): string | null {
+  const kind = docxDocumentFieldKind(instruction);
+  if (kind !== 'pageReference') return null;
+  return normalizeFieldTarget(
+    /^\s*PAGEREF\s+([^\s\\]+)/i.exec(instruction)?.[1],
+  );
+}
+
+/**
+ * The editor intentionally accepts only switches whose result can be
+ * represented by one deterministic inline atom.  Unknown switches remain
+ * cached text instead of being presented as an editable field with altered
+ * semantics.
+ */
+export function supportedDocxDocumentFieldInstruction(
+  instruction: string,
+): boolean {
+  const kind = docxDocumentFieldKind(instruction);
+  if (!kind) return false;
+  const source = instruction.trim();
+  if (kind === 'pageReference') {
+    const match = /^PAGEREF\s+([^\s\\]+)([\s\S]*)$/i.exec(source);
+    const target = normalizeFieldTarget(match?.[1]);
+    if (!target || !match) return false;
+    let rest = match[2] ?? '';
+    const hyperlink = /^\s+\\h\b/i.exec(rest);
+    if (hyperlink) rest = rest.slice(hyperlink[0].length);
+    return onlyMergeFormatSwitch(rest);
+  }
+  if (kind === 'date' || kind === 'time') {
+    const command = kind === 'date' ? 'DATE' : 'TIME';
+    const match = new RegExp(`^${command}\\b([\\s\\S]*)$`, 'i').exec(source);
+    if (!match) return false;
+    let rest = match[1] ?? '';
+    const format = /^\s+\\@\s+"[^"\r\n]{1,128}"/i.exec(rest);
+    if (format) rest = rest.slice(format[0].length);
+    return onlyMergeFormatSwitch(rest);
+  }
+  const command = FIELD_COMMANDS[kind];
+  const match = new RegExp(`^${command}\\b([\\s\\S]*)$`, 'i').exec(source);
+  return Boolean(match && onlyMergeFormatSwitch(match[1] ?? ''));
+}
+
+function onlyMergeFormatSwitch(source: string): boolean {
+  return /^(?:\s+\\\*\s+MERGEFORMAT)?\s*$/i.test(source);
+}
+
+export function documentFieldStatisticsFromText(source: string): {
+  wordCount: number;
+  characterCount: number;
+} {
+  const normalized = source.replace(/\r\n?/g, '\n');
+  let characterCount = 0;
+  for (let index = 0; index < normalized.length; index += 1) {
+    const codePoint = normalized.codePointAt(index);
+    if (codePoint === undefined) continue;
+    if (codePoint > 0xffff) index += 1;
+    if (codePoint === 0x0a || codePoint === 0xfffc) continue;
+    characterCount += 1;
+  }
+  return {
+    wordCount: documentWordCount(normalized),
+    characterCount,
+  };
+}
+
+/** Computes bounded body statistics while excluding generated field results. */
+export function documentFieldStatisticsFromHtml(source: string): {
+  wordCount: number;
+  characterCount: number;
+} {
+  const document = new DOMParser().parseFromString(source, 'text/html');
+  for (const field of Array.from(
+    document.body.querySelectorAll('[data-document-field]'),
+  )) {
+    field.replaceWith(document.createTextNode(FIELD_TEXT_BOUNDARY));
+  }
+  return documentFieldStatisticsFromText(document.body.textContent ?? '');
 }
 
 function formatWordDate(date: Date, format: string): string {
@@ -215,6 +397,23 @@ function formatWordDate(date: Date, format: string): string {
 
 function positiveInteger(value: number): number {
   return Number.isSafeInteger(value) && value > 0 ? value : 1;
+}
+
+function nonNegativeInteger(
+  value: number | undefined,
+  cachedValue: string,
+): number {
+  if (value !== undefined && Number.isSafeInteger(value) && value >= 0) {
+    return value;
+  }
+  const cached = Number(cachedValue.trim());
+  return Number.isSafeInteger(cached) && cached >= 0 ? cached : 0;
+}
+
+function normalizeFieldTarget(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const target = value.trim();
+  return /^[\p{L}_][\p{L}\p{N}_]*$/u.test(target) ? target : null;
 }
 
 function validDate(value: Date | undefined): Date | null {

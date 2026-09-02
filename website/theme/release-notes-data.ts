@@ -42,6 +42,71 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.47.0',
+    date: '2026-09-03',
+    kind: 'new',
+    surfaces: ['writer', 'shared', 'playground', 'documentation'],
+    title: {
+      en: 'Writer common fields stay live and referenceable',
+      zh: 'Writer 常用字段保持实时并可引用',
+    },
+    summary: {
+      en: 'Word counts, character counts, and bookmark page references now share one bounded field model, one measured pagination source, and an honest native DOCX boundary.',
+      zh: '字数、字符数和书签目标页码现在共享一个有界字段模型、一套实测分页来源，以及明确的原生 DOCX 边界。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Statistics exclude generated results',
+          zh: '统计不把生成结果算入正文',
+        },
+        detail: {
+          en: 'Insert exposes Word-compatible NUMWORDS and NUMCHARS fields. They count visible body text, preserve word boundaries around inline atoms, include spaces in character totals, and refresh with PAGE-family fields in one controlled update.',
+          zh: '“插入”功能区提供兼容 Word 的 NUMWORDS 与 NUMCHARS 字段：统计可见正文、保留行内原子两侧的字边界、把空格计入字符数，并与 PAGE 系列字段在一次受控更新中刷新。',
+        },
+      },
+      {
+        title: {
+          en: 'A bookmark can become a live target page',
+          zh: '书签可以变成实时目标页码',
+        },
+        detail: {
+          en: 'The Cross-reference dialog offers Insert target page for bookmarks. PAGEREF stores the stable bookmark identity and current name, follows normalization, and changes to an explicit missing state when the target disappears.',
+          zh: '“交叉引用”弹窗为书签提供“插入目标页码”。PAGEREF 保存书签稳定身份和当前名称，跟随规范化更新，目标消失时切换为明确的缺失状态。',
+        },
+      },
+      {
+        title: {
+          en: 'Native round trips fail closed',
+          zh: '原生往返坚持安全失败',
+        },
+        detail: {
+          en: 'The importer/exporter atomizes only complete inline common fields with the bounded switch grammar. Unsupported switches, missing targets, nested structures, and malformed fields remain cached text and receive compatibility diagnostics.',
+          zh: '导入/导出只把完整行内常用字段和有界开关语法恢复为原子字段；不支持的开关、缺失目标、嵌套结构和损坏字段保留缓存文字并进入兼容性诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#common-live-fields',
+          zh: './components/document.html#常用实时字段',
+        },
+        label: {
+          en: 'Read the common-fields guide',
+          zh: '阅读常用字段指南',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.47.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.47.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.46.0',
     date: '2026-09-02',
     kind: 'new',

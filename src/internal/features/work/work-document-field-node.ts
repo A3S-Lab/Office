@@ -11,8 +11,13 @@ import {
   documentFieldInstruction,
   documentFieldKind,
   documentFieldLabel,
+  documentFieldStatisticsFromText,
+  documentPageReferenceInstruction,
   docxDocumentFieldKind,
+  docxDocumentFieldTarget,
   type WorkDocumentFieldContext,
+  type WorkDocumentFieldContextResolver,
+  type WorkDocumentFieldInsertOptions,
   type WorkDocumentFieldKind,
   type WorkDocumentFieldRefreshOptions,
 } from './work-document-fields';
@@ -24,7 +29,10 @@ import type { WorkDocumentContent } from './work-types';
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     documentField: {
-      insertDocumentField: (kind: WorkDocumentFieldKind) => ReturnType;
+      insertDocumentField: (
+        kind: WorkDocumentFieldKind,
+        options?: WorkDocumentFieldInsertOptions,
+      ) => ReturnType;
       refreshDocumentFields: (
         content: WorkDocumentContent,
         options?: WorkDocumentFieldRefreshOptions,
@@ -46,8 +54,10 @@ export const DocumentField = Node.create({
 
   addCommands() {
     return {
-      insertDocumentField: (kind) => (props) =>
-        insertDocumentFieldCommand(props, kind),
+      insertDocumentField:
+        (kind, options = {}) =>
+        (props) =>
+          insertDocumentFieldCommand(props, kind, options),
       refreshDocumentFields: (content, options) => (props) =>
         refreshDocumentFieldsCommand(props, content, options),
     };
@@ -59,6 +69,9 @@ export const DocumentField = Node.create({
       kind: hiddenAttribute('page'),
       instruction: hiddenAttribute('PAGE'),
       display: hiddenAttribute('1'),
+      targetId: hiddenAttribute(''),
+      targetName: hiddenAttribute(''),
+      orphaned: hiddenAttribute(false),
     };
   },
 
@@ -73,14 +86,24 @@ export const DocumentField = Node.create({
             documentFieldKind(node.dataset.fieldKind) ??
             docxDocumentFieldKind(instruction) ??
             'page';
+          const targetName =
+            node.dataset.fieldTargetName ??
+            docxDocumentFieldTarget(instruction) ??
+            '';
           return {
             id: node.dataset.fieldId ?? '',
             kind,
-            instruction: instruction || documentFieldInstruction(kind),
+            instruction:
+              kind === 'pageReference' && targetName
+                ? documentPageReferenceInstruction(targetName, instruction)
+                : instruction || documentFieldInstruction(kind),
             display:
               node.dataset.fieldDisplay?.trim() ||
               node.textContent?.trim() ||
               documentFieldLabel(kind),
+            targetId: node.dataset.fieldTargetId ?? '',
+            targetName,
+            orphaned: node.dataset.fieldOrphaned === 'true',
           };
         },
       },
@@ -100,14 +123,31 @@ export const DocumentField = Node.create({
       typeof node.attrs.display === 'string' && node.attrs.display.trim()
         ? node.attrs.display.trim()
         : documentFieldLabel(kind);
+    const targetName =
+      typeof node.attrs.targetName === 'string' ? node.attrs.targetName : '';
+    const normalizedInstruction =
+      kind === 'pageReference' && targetName
+        ? documentPageReferenceInstruction(targetName, instruction)
+        : instruction || documentFieldInstruction(kind);
     return [
       'span',
       mergeAttributes(HTMLAttributes, {
         'data-document-field': 'true',
         'data-field-id': typeof node.attrs.id === 'string' ? node.attrs.id : '',
         'data-field-kind': kind,
-        'data-field-instruction': instruction || documentFieldInstruction(kind),
+        'data-field-instruction': normalizedInstruction,
         'data-field-display': display,
+        ...(kind === 'pageReference' &&
+        typeof node.attrs.targetId === 'string' &&
+        node.attrs.targetId
+          ? { 'data-field-target-id': node.attrs.targetId }
+          : {}),
+        ...(kind === 'pageReference' &&
+        typeof node.attrs.targetName === 'string' &&
+        node.attrs.targetName
+          ? { 'data-field-target-name': node.attrs.targetName }
+          : {}),
+        'data-field-orphaned': node.attrs.orphaned ? 'true' : undefined,
         class: 'work-document-field',
         title: documentFieldLabel(kind),
       }),
@@ -126,17 +166,32 @@ export const DocumentField = Node.create({
 function insertDocumentFieldCommand(
   { dispatch, editor, state, tr }: CommandProps,
   kind: WorkDocumentFieldKind,
+  options: WorkDocumentFieldInsertOptions,
 ): boolean {
   const fieldType = editor.schema.nodes.documentField;
   if (!fieldType) return false;
+  const targetName =
+    typeof options.targetName === 'string' ? options.targetName.trim() : '';
+  if (kind === 'pageReference' && !targetName) return false;
   if (!dispatch) return true;
-  const instruction = documentFieldInstruction(kind);
+  const instruction = documentFieldInstruction(kind, options);
+  const statistics = documentFieldStatisticsFromText(
+    state.doc.textBetween(0, state.doc.content.size, '\n', '\uFFFC'),
+  );
+  const context = {
+    ...fallbackContext(state),
+    ...statistics,
+  } satisfies WorkDocumentFieldContext;
   tr.replaceSelectionWith(
     fieldType.create({
       id: createWorkId('field'),
       kind,
       instruction,
-      display: documentFieldDisplay(kind, fallbackContext(state), instruction),
+      display: documentFieldDisplay(kind, context, instruction),
+      targetId: options.targetId?.trim() ?? '',
+      targetName,
+      orphaned:
+        kind === 'pageReference' && !documentBookmarkExists(state, options),
     }),
     false,
   );
@@ -176,6 +231,9 @@ function refreshDocumentFieldsCommand(
     fallbackFields.flatMap(({ id, display }) => (id ? [[id, display]] : [])),
   );
   const now = validDate(options.now) ?? new Date();
+  const statistics = documentFieldStatisticsFromText(
+    state.doc.textBetween(0, state.doc.content.size, '\n', '\uFFFC'),
+  );
   let fieldIndex = 0;
   state.doc.descendants((node, position) => {
     if (node.type.name !== 'documentField') return;
@@ -192,13 +250,42 @@ function refreshDocumentFieldsCommand(
     const display = context
       ? documentFieldDisplay(
           kind,
-          { ...context, now: validDate(context.now) ?? now },
+          {
+            ...context,
+            wordCount: context.wordCount ?? statistics.wordCount,
+            characterCount: context.characterCount ?? statistics.characterCount,
+            referencePageNumber:
+              kind === 'pageReference'
+                ? resolveBookmarkPageNumber(state, node, options.resolveContext)
+                : context.referencePageNumber,
+            now: validDate(context.now) ?? now,
+          },
           stringAttribute(node.attrs.instruction),
           stringAttribute(node.attrs.display),
         )
       : (fallbackById.get(stringAttribute(node.attrs.id)) ?? fallback);
-    if (!display || node.attrs.display === display) return;
-    tr.setNodeMarkup(position, undefined, { ...node.attrs, display });
+    if (!display) return;
+    const targetName =
+      stringAttribute(node.attrs.targetName) ||
+      docxDocumentFieldTarget(stringAttribute(node.attrs.instruction)) ||
+      '';
+    const orphaned =
+      kind === 'pageReference'
+        ? !bookmarkBoundaryForField(state, node, targetName)
+        : false;
+    if (
+      node.attrs.display === display &&
+      node.attrs.targetName === targetName &&
+      node.attrs.orphaned === orphaned
+    ) {
+      return;
+    }
+    tr.setNodeMarkup(position, undefined, {
+      ...node.attrs,
+      display,
+      targetName,
+      orphaned,
+    });
   });
   if (tr.docChanged && options.addToHistory === false) {
     tr.setMeta('addToHistory', false);
@@ -270,4 +357,90 @@ function validDate(value: Date | undefined): Date | null {
 
 function stringAttribute(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function documentBookmarkExists(
+  state: Editor['state'],
+  options: WorkDocumentFieldInsertOptions,
+): boolean {
+  const targetId = stringAttribute(options.targetId);
+  const targetName = stringAttribute(options.targetName).toLowerCase();
+  let found = false;
+  state.doc.descendants((node) => {
+    if (
+      node.type.name === 'documentBookmarkBoundary' &&
+      node.attrs.kind === 'start' &&
+      ((targetId && stringAttribute(node.attrs.id) === targetId) ||
+        (targetName &&
+          stringAttribute(node.attrs.name).toLowerCase() === targetName))
+    ) {
+      found = true;
+      return false;
+    }
+    return !found;
+  });
+  return found;
+}
+
+function bookmarkBoundaryForField(
+  state: Editor['state'],
+  node: ProseMirrorNode,
+  targetName: string,
+): ProseMirrorNode | null {
+  const targetId = stringAttribute(node.attrs.targetId);
+  const normalizedName = targetName.toLowerCase();
+  let found: ProseMirrorNode | null = null;
+  state.doc.descendants((candidate) => {
+    if (
+      found ||
+      candidate.type.name !== 'documentBookmarkBoundary' ||
+      candidate.attrs.kind !== 'start'
+    ) {
+      return found === null;
+    }
+    if (
+      (targetId && stringAttribute(candidate.attrs.id) === targetId) ||
+      (normalizedName &&
+        stringAttribute(candidate.attrs.name).toLowerCase() === normalizedName)
+    ) {
+      found = candidate;
+      return false;
+    }
+    return true;
+  });
+  return found;
+}
+
+function resolveBookmarkPageNumber(
+  state: Editor['state'],
+  node: ProseMirrorNode,
+  resolveContext: WorkDocumentFieldContextResolver | undefined,
+): number | null {
+  if (!resolveContext) return null;
+  const targetId = stringAttribute(node.attrs.targetId);
+  const targetName =
+    stringAttribute(node.attrs.targetName).toLowerCase() ||
+    (
+      docxDocumentFieldTarget(stringAttribute(node.attrs.instruction)) ?? ''
+    ).toLowerCase();
+  let page: number | null = null;
+  state.doc.descendants((candidate, position) => {
+    if (
+      page !== null ||
+      candidate.type.name !== 'documentBookmarkBoundary' ||
+      candidate.attrs.kind !== 'start'
+    ) {
+      return page === null;
+    }
+    if (
+      (targetId && stringAttribute(candidate.attrs.id) === targetId) ||
+      (targetName &&
+        stringAttribute(candidate.attrs.name).toLowerCase() === targetName)
+    ) {
+      page = resolveContext(position)?.pageNumber ?? null;
+      return false;
+    }
+    return true;
+  });
+  return page;
 }

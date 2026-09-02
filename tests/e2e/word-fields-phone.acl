@@ -21,28 +21,20 @@ suite "office-word-fields-phone" {
         }
 
         click "open-document" {
-            target = text("项目方案", true)
+            target = text("空白文字", true)
         }
 
         wait "document-loaded" {
-            text = "明确不在本期范围内的事项"
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
         }
 
         focus "focus-document" {
             target = css(".work-document-editable .ProseMirror")
         }
 
-        press "select-document" {
-            key = "Control+a"
-        }
-
-        press "clear-document" {
-            key = "Backspace"
-        }
-
         type "write-one-page-fixture" {
             target = css(".work-document-editable .ProseMirror")
-            value = "字段第一页"
+            value = "Alpha beta"
         }
 
         wait "one-page-layout-ready" {
@@ -57,12 +49,49 @@ suite "office-word-fields-phone" {
             target = role("tab", "插入")
         }
 
+        click "open-bookmark-dialog" {
+            target = role("button", "添加书签")
+        }
+
+        fill "enter-page-reference-target" {
+            target = label("书签名称")
+            value = "Fields_target"
+        }
+
+        click "add-page-reference-target" {
+            target = css("[role='dialog'] button.ds-button.primary")
+        }
+
+        expect "page-reference-target-created" {
+            visible = css(".work-document-editable .ProseMirror:has(span[data-bookmark-kind='start'][data-bookmark-name='Fields_target']):has(span[data-bookmark-kind='end'][data-bookmark-name='Fields_target'])")
+        }
+
+        click "open-references-tab-for-page-reference" {
+            target = role("tab", "引用")
+        }
+
+        click "open-page-reference-dialog" {
+            target = role("button", "插入交叉引用")
+        }
+
+        click "insert-live-page-reference" {
+            target = role("button", "插入目标页码")
+        }
+
+        expect "page-reference-is-live" {
+            visible = css(".work-document-field[data-field-kind='pageReference'][data-field-display='1'][data-field-target-name='Fields_target']")
+        }
+
+        click "return-to-insert-tab-after-reference" {
+            target = role("tab", "插入")
+        }
+
         click "show-field-tools" {
             target = role("button", "向右查看更多插入工具")
         }
 
         click "open-first-field-menu" {
-            target = role("combobox", "插入页码或日期")
+            target = role("combobox", "插入页码、日期或统计域")
         }
 
         click "insert-first-page-field" {
@@ -71,6 +100,26 @@ suite "office-word-fields-phone" {
 
         expect "first-page-field-is-live" {
             visible = css(".work-document-field[data-field-kind='page'][data-field-display='1']")
+        }
+
+        click "open-statistics-field-menu" {
+            target = role("combobox", "插入页码、日期或统计域")
+        }
+
+        click "insert-word-count-field" {
+            target = role("option", "字数")
+        }
+
+        click "open-character-field-menu" {
+            target = role("combobox", "插入页码、日期或统计域")
+        }
+
+        click "insert-character-count-field" {
+            target = role("option", "字符数")
+        }
+
+        expect "statistics-fields-are-live" {
+            visible = css(".work-document-editable .ProseMirror:has(.work-document-field[data-field-kind='wordCount'][data-field-display='2']):has(.work-document-field[data-field-kind='characterCount'][data-field-display='10'])")
         }
 
         press "insert-page-break" {
@@ -82,7 +131,7 @@ suite "office-word-fields-phone" {
         }
 
         click "open-second-field-menu" {
-            target = role("combobox", "插入页码或日期")
+            target = role("combobox", "插入页码、日期或统计域")
         }
 
         click "insert-second-page-field" {
@@ -90,7 +139,7 @@ suite "office-word-fields-phone" {
         }
 
         click "open-total-pages-menu" {
-            target = role("combobox", "插入页码或日期")
+            target = role("combobox", "插入页码、日期或统计域")
         }
 
         click "insert-total-pages-field" {

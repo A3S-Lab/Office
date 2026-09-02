@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.47.0 - 2026-09-03
+
+- Added bounded live Writer common fields: `NUMWORDS` and `NUMCHARS` count
+  visible body text without counting generated field results, while PAGE,
+  NUMPAGES, SECTION, SECTIONPAGES, DATE, and TIME continue to share the measured
+  pagination resolver.
+- Added bookmark-backed `PAGEREF` insertion from the Cross-reference dialog.
+  Stable bookmark identities follow normalization and deletion becomes an
+  explicit missing state instead of silently retaining a stale page number.
+- Added strict native DOCX import/export and compatibility diagnostics for the
+  supported common-field instruction subset, plus model, UI, native round-trip,
+  responsive browser, accessibility, and local A3S Test coverage.
+
 ## 0.46.0 - 2026-09-02
 
 - Added a bounded native Writer text-box workflow. The Insert ribbon creates an

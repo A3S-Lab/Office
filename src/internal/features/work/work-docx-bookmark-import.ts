@@ -22,7 +22,7 @@ export interface ImportedDocxBookmarkMarkers {
   references: ImportedDocxBookmarkReferenceMarker[];
 }
 
-interface ImportedDocxBookmarkMarker {
+export interface ImportedDocxBookmarkMarker {
   start: string;
   end: string;
   id: string;

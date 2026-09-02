@@ -1,6 +1,10 @@
 import { docxBookmarkReferenceTarget } from './work-document-bookmark-references';
 import { documentCitationTagsFromInstruction } from './work-document-citations';
-import { docxDocumentFieldKind } from './work-document-fields';
+import {
+  docxDocumentFieldKind,
+  docxDocumentFieldTarget,
+  supportedDocxDocumentFieldInstruction,
+} from './work-document-fields';
 import {
   docxCaptionBookmark,
   docxCaptionSequenceKind,
@@ -11,13 +15,13 @@ import {
   docxFieldOccurrences,
   hasInvalidDocxFieldStructure,
 } from './work-docx-field-instructions';
-import { attribute, descendants } from './work-ooxml-package';
-import type { WorkCompatibilityIssue } from './work-types';
 import {
   supportedDocxIndexEntryField,
   supportedDocxIndexField,
 } from './work-docx-index-import';
 import { supportedDocxTableOfContentsField } from './work-docx-table-of-contents-import';
+import { attribute, descendants } from './work-ooxml-package';
+import type { WorkCompatibilityIssue } from './work-types';
 
 export interface DocxCaptionDiagnostics {
   issues: WorkCompatibilityIssue[];
@@ -58,21 +62,27 @@ export function diagnoseDocxCaptions(
   const sequences = fields.filter((field) =>
     docxCaptionSequenceKind(field.instruction),
   );
+  const bookmarkNames = new Set([
+    ...captionBookmarkNames(sequences),
+    ...pairedBookmarkNames(document),
+  ]);
   const bodyFields = fields.filter(
     (field) =>
       field.syntax !== 'orphan' &&
       Boolean(docxDocumentFieldKind(field.instruction)),
   );
-  const editableBodyFields = bodyFields.filter(
+  const supportedBodyFields = bodyFields.filter((field) =>
+    supportedBodyField(field, bookmarkNames),
+  );
+  const unsupportedBodyFields = bodyFields.filter(
+    (field) => !supportedBodyField(field, bookmarkNames),
+  );
+  const editableBodyFields = supportedBodyFields.filter(
     docxFieldOccurrenceIsInlineEditable,
   );
   const hasUnsupportedFieldStructure =
     hasInvalidDocxFieldStructure(document, isSupportedBlockField) ||
     bodyFields.some((field) => !docxFieldOccurrenceIsInlineEditable(field));
-  const bookmarkNames = new Set([
-    ...captionBookmarkNames(sequences),
-    ...pairedBookmarkNames(document),
-  ]);
   return {
     issues: [
       ...(sequences.length
@@ -92,8 +102,19 @@ export function diagnoseDocxCaptions(
               code: 'docx.fields.body',
               feature: 'Body fields',
               message:
-                'PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, and TIME fields remain live, editable body fields and update in preview, PDF, and native DOCX output.',
+                'PAGE, NUMPAGES, SECTION, SECTIONPAGES, NUMWORDS, NUMCHARS, DATE, TIME, and bookmark-backed PAGEREF fields remain live, editable body fields and update in preview, PDF, and native DOCX output.',
               severity: 'info',
+            } satisfies WorkCompatibilityIssue,
+          ]
+        : []),
+      ...(unsupportedBodyFields.length
+        ? [
+            {
+              code: 'docx.fields.instructions',
+              feature: 'Field instructions',
+              message:
+                'Unsupported field switches or PAGEREF targets remain at their cached displayed value; only the bounded common instruction subset is made editable.',
+              severity: 'warning',
             } satisfies WorkCompatibilityIssue,
           ]
         : []),
@@ -164,10 +185,38 @@ function isSupportedCaptionField(
   ) {
     return true;
   }
-  if (docxDocumentFieldKind(instruction)) return true;
+  if (docxDocumentFieldKind(instruction)) {
+    return (
+      supportedDocxDocumentFieldInstruction(instruction) &&
+      (docxDocumentFieldKind(instruction) !== 'pageReference' ||
+        Boolean(
+          docxDocumentFieldTarget(instruction) &&
+            bookmarkNames.has(
+              docxDocumentFieldTarget(instruction)?.toLowerCase() ?? '',
+            ),
+        ))
+    );
+  }
   if (docxCaptionSequenceKind(instruction)) return true;
   const target = docxBookmarkReferenceTarget(instruction);
   return Boolean(target && bookmarkNames.has(target.toLowerCase()));
+}
+
+function supportedBodyField(
+  field: DocxFieldOccurrence,
+  bookmarkNames: Set<string>,
+): boolean {
+  if (!supportedDocxDocumentFieldInstruction(field.instruction)) return false;
+  const kind = docxDocumentFieldKind(field.instruction);
+  return (
+    kind !== 'pageReference' ||
+    Boolean(
+      docxDocumentFieldTarget(field.instruction) &&
+        bookmarkNames.has(
+          docxDocumentFieldTarget(field.instruction)?.toLowerCase() ?? '',
+        ),
+    )
+  );
 }
 
 function pairedBookmarkNames(document: Document): Set<string> {
