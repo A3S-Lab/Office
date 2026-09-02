@@ -287,6 +287,10 @@ export interface WorkSpreadsheetDataValidationItem {
   type: string;
   type2: string;
   rangeTxt: string;
+  /**
+   * List values, a bounded range/name reference, or a local `=INDIRECT(...)`
+   * source formula for dependent dropdowns.
+   */
   value1: string;
   value2: string;
   validity: string;

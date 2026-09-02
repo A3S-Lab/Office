@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 test('keeps curated release notes unique, localized, and newest first', () => {
   expect(OFFICE_RELEASE_NOTES.map(({ version }) => version)).toEqual([
+    '0.44.0',
     '0.43.0',
     '0.42.0',
     '0.41.0',
@@ -201,6 +202,9 @@ test('keeps the changelog semantic, responsive, static, and discoverable', async
 });
 
 test('keeps local evidence links aligned with each documentation language', () => {
+  const dependentListRelease = OFFICE_RELEASE_NOTES.find(
+    ({ version }) => version === '0.44.0',
+  );
   const customFormulaRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.43.0',
   );
@@ -226,6 +230,10 @@ test('keeps local evidence links aligned with each documentation language', () =
     ({ version }) => version === '0.33.0',
   );
 
+  expect(dependentListRelease?.links[0]?.href).toEqual({
+    en: './components/spreadsheet.html#dependent-dropdown-lists',
+    zh: './components/spreadsheet.html#依赖下拉列表',
+  });
   expect(customFormulaRelease?.links[0]?.href).toEqual({
     en: './components/spreadsheet.html#formula-conditional-formatting',
     zh: './components/spreadsheet.html#公式条件格式',

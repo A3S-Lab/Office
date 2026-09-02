@@ -252,6 +252,62 @@ describe('spreadsheet data-validation XLSX interop', () => {
       }),
     ]);
   });
+
+  test('exports and reopens dependent list formulas as native list formulas', async () => {
+    const content: WorkSpreadsheetContent = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Rules',
+          dataValidationRanges: [
+            {
+              ranges: [{ row: [1, 4], column: [1, 1] }],
+              item: {
+                type: 'dropdown',
+                type2: '',
+                rangeTxt: 'B2:B5',
+                value1: '=INDIRECT($A2)',
+                value2: '',
+                validity: '',
+                remote: false,
+                allowBlank: true,
+                showDropdownArrow: true,
+                prohibitInput: true,
+                errorStyle: 'stop',
+                errorTitle: '',
+                errorMessage: '',
+                hintShow: false,
+                hintTitle: '',
+                hintValue: '',
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const patched = await patchXlsxSheetFeatures(
+      await validationWorkbook(),
+      content,
+    );
+    const zip = await JSZip.loadAsync(patched);
+    const worksheet =
+      (await zip.file('xl/worksheets/sheet1.xml')?.async('text')) ?? '';
+    expect(worksheet).toContain('type="list"');
+    expect(worksheet).toContain('<formula1>INDIRECT($A2)</formula1>');
+    const reopened = await readXlsxSheetFeaturesFromPackage(
+      await OoxmlPackage.load(patched),
+    );
+    expect(reopened.get('Rules')?.validations).toEqual([
+      expect.objectContaining({
+        references: ['B2:B5'],
+        item: expect.objectContaining({
+          type: 'dropdown',
+          value1: '=INDIRECT($A2)',
+        }),
+      }),
+    ]);
+  });
 });
 
 async function validationWorkbook(): Promise<ArrayBuffer> {

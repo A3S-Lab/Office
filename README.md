@@ -309,6 +309,23 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.44.0` adds dependent local dropdowns to Spreadsheet Data Validation
+without introducing a remote service:
+
+- **Data → Data Tools → Data Validation** accepts a bounded
+  `=INDIRECT(...)` source composed of quoted text and single-cell references.
+  Relative drivers are re-evaluated for every target cell, so a Region column
+  can drive a Regional owner list through workbook-local named ranges or
+  one-row/one-column areas.
+- Empty drivers show an empty list. External books, whole-row/column ranges,
+  missing sheets, uncached formulas, and malformed expressions fail closed;
+  formulas stay within 255 Unicode characters and local range reads stay
+  bounded.
+- The controlled model keeps the authored formula compact while the grid gets
+  a bounded runtime projection. Native XLSX import/export/reopen preserves the
+  list formula and names, and the public **新建 → 数据验证** template includes
+  the Region → Regional owner example.
+
 Version `0.43.0` makes Spreadsheet formula conditional formatting a local,
 editable workflow instead of a file-only preservation path:
 
@@ -402,7 +419,7 @@ ordered-list numbering revisions:
 
 Browse the product-focused [What's new](https://a3s-lab.github.io/Office/docs/changelog.html)
 page or the exhaustive engineering [changelog](./CHANGELOG.md). The Playground
-exposes recent workflows from one release-labelled capability gallery.
+exposes these workflows from the release-labelled template grid.
 
 ## Capabilities and boundaries
 

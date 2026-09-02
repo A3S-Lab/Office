@@ -1,0 +1,58 @@
+---
+title: 组件接入
+description: 选择框架绑定，并了解所有编辑器共用的受控组件约定。
+---
+
+# 组件接入
+
+所有框架绑定都使用同一套受控内容模型。适配层只转换属性和事件约定，不会维护
+第二份编辑器实现。
+
+## 框架绑定
+
+| 框架 | 导入路径 | 内容绑定 |
+| --- | --- | --- |
+| [React](./react.mdx) | `@a3s-lab/office/react` | `content` 与 `onChange` |
+| [Vue](./vue.mdx) | `@a3s-lab/office/vue` | `v-model:content`，或 `content` 与 `@change` |
+| [Web Component](./web-component.mdx) | `@a3s-lab/office/web-component` | `.content` 与 `change` 事件 |
+
+## 多人实时协作
+
+[多人实时协作](./collaboration.mdx)适用于全部五种编辑器和三种框架绑定。同一个
+宿主拥有的 Yjs 会话可以连接两台浏览器、在线成员与远端位置，也可以让 CLI、MCP
+或 A3S Code 的 Yrs 副本加入。Document 审阅者可以创建实名选区评论、回复、解决或
+重开，并删除自己的记录，同时保持正文只读。经过认证的建议者还可以提交署名插入、
+删除和替换提案，但不能获得规范格式或最终决定权限；编辑者接受或拒绝后会形成不可变
+审计记录。文档还说明房间认证、权限边界、首次初始化、断线重连、离线收敛和当前原生
+智能体限制。
+
+需要把这些宿主职责直接落地时，可以运行
+[A3S Boot 实时协作后端](./collaboration-server.mdx)。它包含鉴权 WebSocket 房间、
+Yrs 持久化、Awareness 转发、浏览器适配器和绑定参与者身份的房间协议。
+
+| 接入对象 | 公开边界 | 宿主仍然负责 |
+| --- | --- | --- |
+| 共享内容 | `collaboration` | 房间、Provider、`Y.Doc` 与持久化 |
+| 在线成员和位置 | `presence` | Awareness 传输与成员身份 |
+| 原生智能体 | CLI / MCP 协作副本 | 授权、投递与审计策略 |
+
+## 可用编辑器
+
+| 产品 | 组件 | 内容类型 |
+| --- | --- | --- |
+| 文档 | [`DocumentEditor`](./document.mdx) | `DocumentContent` |
+| Markdown | [`MarkdownEditor`](./markdown.mdx) | `MarkdownContent` |
+| 表格 | [`SpreadsheetEditor`](./spreadsheet.mdx) | `SpreadsheetContent` |
+| 演示文稿 | [`PresentationEditor`](./presentation.mdx) | `PresentationContent` |
+| PDF | [`PdfViewer`](./pdf.mdx) | 输入、输出均为 `Blob` |
+
+## 通用界面属性
+
+| 属性 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `theme` | `'light' \| 'dark' \| 'system'` | `'system'` | 编辑器配色模式。 |
+| `className` | `string` | — | React 宿主元素类名；Vue 与 Web Component 使用普通 `class`。 |
+| `style` | `CSSProperties` | — | React 宿主元素行内样式；编辑器会填满该元素。 |
+| `preview` | `boolean` | `false` | 受控编辑器的只读模式。 |
+| `saveStatus` | `string` | 各编辑器不同 | 由宿主提供的保存状态。 |
+| `fileActions` | `readonly OfficeFileAction[]` | `[]` | 保存、导出、历史记录或审批等宿主文件操作。 |

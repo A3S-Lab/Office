@@ -103,6 +103,11 @@
   gap: 8px;
 }
 
+.work-spreadsheet-data-validation-list-source {
+  display: grid;
+  gap: 8px;
+}
+
 .work-spreadsheet-data-validation-custom-formula {
   display: grid;
   gap: 8px;
@@ -165,6 +170,21 @@
 
 .work-spreadsheet-data-validation-remove {
   margin-right: auto;
+}
+
+/* Fortune positions validation affordances from the unscrolled grid origin.
+ * Keep them inside the visible sheet on compact layouts so clipped columns
+ * remain actionable without requiring an internal horizontal scroll first. */
+@media (max-width: 900px) {
+  .work-spreadsheet-canvas #luckysheet-dataVerification-dropdown-btn {
+    left: calc(100% - 24px) !important;
+  }
+
+  .work-spreadsheet-canvas #luckysheet-dataVerification-dropdown-List {
+    right: 4px !important;
+    left: auto !important;
+    max-width: calc(100% - 8px);
+  }
 }
 
 @media (max-width: 560px) {

@@ -4,6 +4,25 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.44.0 - 2026-09-02
+
+- Added local dependent dropdown lists to Spreadsheet Data Validation. The
+  shared dialog accepts a bounded `=INDIRECT(...)` source made from quoted
+  text and single-cell references, re-evaluates relative drivers for every
+  validated cell, and resolves only workbook-local named ranges or one-row /
+  one-column areas. Empty drivers produce an empty list; malformed, external,
+  whole-row/column, missing-sheet, and uncached-formula references fail closed.
+- Kept the controlled workbook compact while projecting resolved list values
+  to Fortune within explicit 1,024-cell reference and 10,000-cell materialized
+  budgets. Driver edits refresh the visible options without changing the
+  authored formula, and the projection is restored across history and
+  controlled remounts.
+- Preserved dependent list formulas and named ranges through native XLSX
+  import/export/reopen. The public **新建 → 数据验证** template now includes a
+  Region → Regional owner example, and the UI, model, editor, native package,
+  responsive browser, accessibility, and local A3S Test contracts document
+  the complete local workflow.
+
 ## 0.43.0 - 2026-09-02
 
 - Added an editable Spreadsheet formula-conditional-format workflow. The Home

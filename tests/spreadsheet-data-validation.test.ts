@@ -453,6 +453,16 @@ describe('spreadsheet data validation', () => {
       );
     }
     expect(artifact.content.sheets).toHaveLength(2);
+    expect(artifact.content.namedRanges).toEqual([
+      expect.objectContaining({
+        name: 'North',
+        reference: "'Lists'!B1:B3",
+      }),
+      expect.objectContaining({
+        name: 'South',
+        reference: "'Lists'!C1:C3",
+      }),
+    ]);
     expect(artifact.content.sheets[0]?.dataValidationRanges).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -475,6 +485,14 @@ describe('spreadsheet data validation', () => {
           item: expect.objectContaining({
             type: 'number_integer',
             errorStyle: 'warning',
+          }),
+        }),
+        expect.objectContaining({
+          ranges: [{ row: [1, 5], column: [6, 6] }],
+          item: expect.objectContaining({
+            type: 'dropdown',
+            value1: '=INDIRECT($F2)',
+            hintTitle: 'Dependent list',
           }),
         }),
       ]),

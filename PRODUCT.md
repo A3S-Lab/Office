@@ -896,6 +896,21 @@ boundary inspectable without a remote service. Formula-function breadth,
 large-range Worker evaluation, and advanced visual rule families remain
 explicit follow-up work.
 
+The sixty-third Spreadsheet milestone adds dependent local dropdown lists to
+the existing Data Validation dialog. A list source may use a bounded
+`=INDIRECT(...)` expression composed of quoted text, single-cell references,
+and concatenation. Relative drivers are re-evaluated from each selected
+range's top-left anchor, so a Region column can select a workbook-local named
+range or one-dimensional area for the next column. Empty drivers show an empty
+list; external books, whole-row/column references, missing or hidden sheets,
+uncached formulas, and two-dimensional results fail closed. The authored rule
+remains compact in `WorkSpreadsheetContent`, while the Fortune projection is
+limited to 1,024 source cells and 10,000 materialized cells. Native XLSX list
+formulas and names survive import, export, and reopen, and the public Data
+Validation template demonstrates the Region → Regional owner workflow. The
+dialog's source field, formula note, and Sigma affordance keep the dependency
+visible without introducing a second settings model or a remote service.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

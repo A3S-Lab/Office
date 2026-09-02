@@ -21,6 +21,7 @@ import {
   type SpreadsheetDataValidationOperator,
   type SpreadsheetDataValidationType,
 } from './spreadsheet-data-validation';
+import { isSpreadsheetDependentListFormula } from './spreadsheet-data-validation-list';
 
 const validationTypes: readonly {
   label: string;
@@ -220,25 +221,39 @@ export function SpreadsheetDataValidationDialog({
           </div>
 
           {value.type === 'dropdown' ? (
-            <Field
-              label="来源"
-              required
-              description="输入逗号分隔项目，或单行/单列区域，例如 Ready,Blocked 或 Lists!A1:A8。"
-              error={visibleError ?? undefined}
-            >
-              <input
-                type="text"
-                aria-label="来源"
-                autoCapitalize="none"
-                spellCheck={false}
-                value={value.value1}
-                onBlur={() => setTouched(true)}
-                onChange={(event) => {
-                  update({ value1: event.currentTarget.value });
-                  setTouched(true);
-                }}
-              />
-            </Field>
+            <div className="work-spreadsheet-data-validation-list-source">
+              <Field
+                label="来源"
+                required
+                description={
+                  isSpreadsheetDependentListFormula(value.value1)
+                    ? '动态来源支持 =INDIRECT(单元格或文本拼接)，驱动单元格需返回区域或已定义名称。'
+                    : '输入逗号分隔项目，或单行/单列区域，例如 Ready,Blocked 或 Lists!A1:A8。'
+                }
+                error={visibleError ?? undefined}
+              >
+                <input
+                  type="text"
+                  aria-label="来源"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  value={value.value1}
+                  onBlur={() => setTouched(true)}
+                  onChange={(event) => {
+                    update({ value1: event.currentTarget.value });
+                    setTouched(true);
+                  }}
+                />
+              </Field>
+              {isSpreadsheetDependentListFormula(value.value1) && (
+                <p className="work-spreadsheet-data-validation-formula-note">
+                  <Sigma size={14} aria-hidden="true" />
+                  <span>
+                    每个受验证单元格会按相对引用重新解析来源；空驱动值会显示为空列表，引用范围限制为本地有限区域。
+                  </span>
+                </p>
+              )}
+            </div>
           ) : value.type === 'custom' ? (
             <SpreadsheetDataValidationCustomFormulaField
               value={value.value1}

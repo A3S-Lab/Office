@@ -73,6 +73,81 @@ test('Spreadsheet data validation is discoverable from the public Playground', a
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet dependent dropdowns follow local driver values', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+
+  await page.goto('/playground/');
+  await page.locator("button[data-template-id='data-validation']").click();
+  await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  await grid.focus();
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('ArrowDown');
+  for (let index = 0; index < 6; index += 1)
+    await page.keyboard.press('ArrowRight');
+  await expect(page.locator('.fortune-name-box')).toHaveText('G2');
+  // Fortune reveals its native validation affordance on the cell pointer
+  // focus path; click the already-selected cell so the browser evidence
+  // follows the same interaction a user uses before opening the list.
+  const selectedCell = page.locator('#luckysheet-cell-selected');
+  const selectedCellBox = await selectedCell.boundingBox();
+  if (!selectedCellBox)
+    throw new Error('Selected spreadsheet cell is missing.');
+  // In the compact layout the selected cell can be clipped at the right edge;
+  // keep the pointer inside the visible portion so Fortune follows its native
+  // pointer-focus path instead of dispatching the click outside the viewport.
+  const viewportWidth = page.viewportSize()?.width ?? 1280;
+  const visibleLeft = Math.max(selectedCellBox.x, 0);
+  const visibleRight = Math.min(
+    selectedCellBox.x + selectedCellBox.width,
+    viewportWidth,
+  );
+  const clickX =
+    visibleLeft < visibleRight
+      ? (visibleLeft + visibleRight) / 2
+      : Math.min(
+          selectedCellBox.x + selectedCellBox.width / 2,
+          viewportWidth - 8,
+        );
+  await page.mouse.click(
+    clickX,
+    selectedCellBox.y + selectedCellBox.height / 2,
+  );
+
+  const dropdownButton = page.locator(
+    '#luckysheet-dataVerification-dropdown-btn',
+  );
+  await expect(dropdownButton).toBeVisible();
+  await dropdownButton.click();
+  const dropdown = page.locator('#luckysheet-dataVerification-dropdown-List');
+  await expect(dropdown).toBeVisible();
+  await expect(dropdown).toContainText('Avery');
+  await expect(dropdown).toContainText('Jordan');
+  await expect(dropdown).toContainText('Cara');
+
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  await ribbon.getByRole('tab', { name: '数据' }).click();
+  await ribbon.getByRole('button', { name: '数据验证' }).click();
+  const dialog = page.getByRole('dialog', { name: '数据验证' });
+  await expect(dialog).toContainText('Inputs!G2');
+  await expect(dialog.getByRole('textbox', { name: '来源' })).toHaveValue(
+    '=INDIRECT($F2)',
+  );
+  await expect(dialog).toContainText('动态来源支持 =INDIRECT');
+  await expect(dialog).toContainText(
+    '每个受验证单元格会按相对引用重新解析来源',
+  );
+
+  expect(browserErrors).toEqual([]);
+});
+
 test('Spreadsheet data validation stays atomic and accessible at every layout', async ({
   page,
 }, testInfo) => {

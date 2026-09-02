@@ -24,6 +24,7 @@ import type {
   WorkPresentationContent,
   WorkSlide,
   WorkSpreadsheetDataValidationItem,
+  WorkSpreadsheetNamedRange,
   WorkSpreadsheetSheet,
   WorkTemplate,
 } from './work-types';
@@ -469,7 +470,11 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
     return { type: 'spreadsheet', sheets: quarterlyPlanSheets() };
   }
   if (templateId === 'data-validation') {
-    return { type: 'spreadsheet', sheets: dataValidationTemplateSheets() };
+    return {
+      type: 'spreadsheet',
+      sheets: dataValidationTemplateSheets(),
+      namedRanges: dataValidationTemplateNamedRanges(),
+    };
   }
   if (templateId === 'conditional-format') {
     return { type: 'spreadsheet', sheets: conditionalFormatTemplateSheets() };
@@ -598,18 +603,33 @@ function quarterlyPlanSheets(): Sheet[] {
 
 function dataValidationTemplateSheets(): WorkSpreadsheetSheet[] {
   const inputs = emptyMatrix(24, 8);
-  ['Task', 'State', 'Due date', 'Priority', 'Owner'].forEach(
-    (value, column) => {
-      inputs[0][column] = headerCell(value);
-    },
-  );
-  const rows: Array<[string, string, string, number, string]> = [
-    ['Confirm requirements', 'Ready', '2026-09-05', 2, 'Avery'],
-    ['Review integration', 'In review', '2026-09-12', 3, 'Morgan'],
-    ['Resolve blockers', 'Blocked', '2026-09-18', 5, 'Riley'],
-    ['Publish preview', 'Ready', '2026-09-24', 1, 'Jordan'],
-    ['Ship release', 'In review', '2026-09-30', 4, 'Taylor'],
-  ];
+  [
+    'Task',
+    'State',
+    'Due date',
+    'Priority',
+    'Owner',
+    'Region',
+    'Regional owner',
+  ].forEach((value, column) => {
+    inputs[0][column] = headerCell(value);
+  });
+  const rows: Array<[string, string, string, number, string, string, string]> =
+    [
+      ['Confirm requirements', 'Ready', '2026-09-05', 2, 'Avery', 'North', ''],
+      [
+        'Review integration',
+        'In review',
+        '2026-09-12',
+        3,
+        'Morgan',
+        'South',
+        '',
+      ],
+      ['Resolve blockers', 'Blocked', '2026-09-18', 5, 'Riley', 'North', ''],
+      ['Publish preview', 'Ready', '2026-09-24', 1, 'Jordan', 'South', ''],
+      ['Ship release', 'In review', '2026-09-30', 4, 'Taylor', 'North', ''],
+    ];
   rows.forEach((row, rowIndex) => {
     row.forEach((value, columnIndex) => {
       inputs[rowIndex + 1][columnIndex] = styledCell(value, {
@@ -692,6 +712,23 @@ function dataValidationTemplateSheets(): WorkSpreadsheetSheet[] {
             hintValue: 'The custom formula checks that this cell is not blank.',
           }),
         },
+        {
+          ranges: [{ row: [1, 5], column: [6, 6] }],
+          item: dataValidationTemplateItem({
+            type: 'dropdown',
+            rangeTxt: 'G2:G6',
+            value1: '=INDIRECT($F2)',
+            allowBlank: true,
+            showDropdownArrow: true,
+            errorStyle: 'stop',
+            errorTitle: 'Regional owner required',
+            errorMessage: 'Choose an owner from the selected region.',
+            hintShow: true,
+            hintTitle: 'Dependent list',
+            hintValue:
+              'The options follow the Region column through a local INDIRECT formula.',
+          }),
+        },
       ],
       luckysheet_select_save: [
         {
@@ -702,7 +739,15 @@ function dataValidationTemplateSheets(): WorkSpreadsheetSheet[] {
         },
       ],
       config: {
-        columnlen: { 0: 190, 1: 110, 2: 118, 3: 84, 4: 104 },
+        columnlen: {
+          0: 190,
+          1: 110,
+          2: 118,
+          3: 84,
+          4: 104,
+          5: 92,
+          6: 132,
+        },
         rowlen: { 0: 30 },
       },
     },
@@ -714,11 +759,26 @@ function dataValidationTemplateSheets(): WorkSpreadsheetSheet[] {
       row: 12,
       column: 3,
       data: [
-        [styledCell('Ready')],
-        [styledCell('Blocked')],
-        [styledCell('In review')],
+        [styledCell('Ready'), styledCell('Avery'), styledCell('Morgan')],
+        [styledCell('Blocked'), styledCell('Jordan'), styledCell('Taylor')],
+        [styledCell('In review'), styledCell('Cara'), styledCell('Quinn')],
       ],
-      config: { columnlen: { 0: 120 } },
+      config: { columnlen: { 0: 120, 1: 110, 2: 110 } },
+    },
+  ];
+}
+
+function dataValidationTemplateNamedRanges(): WorkSpreadsheetNamedRange[] {
+  return [
+    {
+      id: 'data-validation-north',
+      name: 'North',
+      reference: "'Lists'!B1:B3",
+    },
+    {
+      id: 'data-validation-south',
+      name: 'South',
+      reference: "'Lists'!C1:C3",
     },
   ];
 }

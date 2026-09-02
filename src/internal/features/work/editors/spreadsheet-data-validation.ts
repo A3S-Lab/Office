@@ -27,6 +27,11 @@ import {
 } from './spreadsheet-cell-range';
 import { resolveSpreadsheetGoToTarget } from './spreadsheet-go-to';
 import { spreadsheetSheetBounds } from './spreadsheet-keyboard-navigation';
+import {
+  isSpreadsheetDependentListFormula,
+  normalizeSpreadsheetDependentListFormula,
+  resolveSpreadsheetDependentListReference,
+} from './spreadsheet-data-validation-list';
 
 export const MAX_SPREADSHEET_DATA_VALIDATION_CELLS = 10_000;
 
@@ -104,6 +109,7 @@ export type SpreadsheetDataValidationResult =
 export type SpreadsheetDataValidationErrorCode =
   | 'invalid-custom-formula'
   | 'invalid-date'
+  | 'invalid-list-formula'
   | 'invalid-list-source'
   | 'invalid-number'
   | 'invalid-operator'
@@ -353,6 +359,7 @@ function normalizeSpreadsheetDataValidationItem(
   const normalizedValues = normalizeSpreadsheetDataValidationValues(
     content,
     sheet,
+    ranges,
     value.type,
     type2,
     value.value1,
@@ -403,6 +410,7 @@ function normalizeSpreadsheetDataValidationItem(
 function normalizeSpreadsheetDataValidationValues(
   content: WorkSpreadsheetContent,
   sheet: WorkSpreadsheetSheet,
+  ranges: readonly SpreadsheetCellRange[],
   type: SpreadsheetDataValidationType,
   type2: SpreadsheetDataValidationOperator | '',
   rawValue1: string,
@@ -414,7 +422,7 @@ function normalizeSpreadsheetDataValidationValues(
   const value2 = rawValue2.trim();
   if (!value1) return spreadsheetDataValidationError('missing-value');
   if (type === 'dropdown') {
-    return normalizeSpreadsheetListValidation(content, sheet, value1);
+    return normalizeSpreadsheetListValidation(content, sheet, ranges, value1);
   }
   if (type === 'custom') {
     const formula = value1.replace(/^=/, '').trim();
@@ -475,10 +483,32 @@ function normalizeSpreadsheetDataValidationValues(
 function normalizeSpreadsheetListValidation(
   content: WorkSpreadsheetContent,
   sheet: WorkSpreadsheetSheet,
+  ranges: readonly SpreadsheetCellRange[],
   value: string,
 ):
   | { ok: true; value1: string; value2: string }
   | Extract<SpreadsheetDataValidationResult, { ok: false }> {
+  if (isSpreadsheetDependentListFormula(value)) {
+    const normalized = normalizeSpreadsheetDependentListFormula(value);
+    if (!normalized.ok || !normalized.formula) {
+      return spreadsheetDataValidationError('invalid-list-formula');
+    }
+    for (const range of ranges) {
+      const resolved = resolveSpreadsheetDependentListReference(
+        content,
+        sheet.id ?? '',
+        range.row[0],
+        range.column[0],
+        range.row[0],
+        range.column[0],
+        normalized.formula,
+      );
+      if (!resolved.ok) {
+        return spreadsheetDataValidationError('invalid-list-formula');
+      }
+    }
+    return { ok: true, value1: normalized.formula, value2: '' };
+  }
   const looksLikeReference =
     value.startsWith('=') ||
     value.includes('!') ||
@@ -542,7 +572,7 @@ function spreadsheetDataValidationSelectionState(
   return { hasValidation, mixed: false };
 }
 
-function spreadsheetDataValidationItemAt(
+export function spreadsheetDataValidationItemAt(
   sheet: WorkSpreadsheetSheet,
   row: number,
   column: number,
@@ -908,6 +938,8 @@ function spreadsheetDataValidationError(
     'invalid-custom-formula':
       '自定义公式必须是 255 个字符以内的本地公式，且不能包含控制字符。',
     'invalid-date': '请输入有效的日期、Excel 日期序号或 DATE(...) 表达式。',
+    'invalid-list-formula':
+      '动态下拉公式必须是本地 =INDIRECT(单元格或文本拼接)，并解析为当前工作簿内的一行或一列区域。',
     'invalid-list-source':
       '请输入不超过 255 个字符的逗号分隔列表，或有效的单行/单列区域。',
     'invalid-number': '请输入有效的数字；整数验证不能使用小数边界。',
