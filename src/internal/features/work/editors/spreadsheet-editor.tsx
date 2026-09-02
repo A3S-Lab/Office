@@ -175,6 +175,7 @@ import {
   spreadsheetDataValidationInteraction,
   type SpreadsheetDataValidationEditRequest,
 } from './spreadsheet-data-validation-interaction';
+import { evaluateSpreadsheetCustomValidation } from './spreadsheet-data-validation-custom';
 import {
   type SpreadsheetFormatPainterMode,
   useSpreadsheetFormatPainter,
@@ -592,6 +593,37 @@ function SpreadsheetEditorSurface({
         return pendingDataValidationRef.current ? false : undefined;
       }
       const validationItem = item as WorkSpreadsheetDataValidationItem;
+      if (validationItem.type === 'custom') {
+        const evaluation = evaluateSpreadsheetCustomValidation(
+          contentRef.current,
+          requestSheetId,
+          row,
+          column,
+          validationItem,
+          value,
+        );
+        if (evaluation.supported && evaluation.valid) return true;
+        const displayItem = cloneSpreadsheetDataValidationItem(validationItem);
+        if (!displayItem.errorMessage?.trim() && evaluation.message) {
+          displayItem.errorMessage = evaluation.message;
+        }
+        const style = spreadsheetDataValidationErrorStyle(displayItem);
+        const request: SpreadsheetDataValidationEditRequest = {
+          column,
+          failureText: evaluation.message ?? failureText,
+          interaction: spreadsheetDataValidationInteraction(style),
+          item: displayItem,
+          row,
+          sheetId: requestSheetId,
+          value,
+        };
+        pendingDataValidationRef.current = request;
+        queueMicrotask(() => {
+          if (pendingDataValidationRef.current === request)
+            setPendingDataValidation(request);
+        });
+        return false;
+      }
       const style = spreadsheetDataValidationErrorStyle(validationItem);
       const request: SpreadsheetDataValidationEditRequest = {
         column,

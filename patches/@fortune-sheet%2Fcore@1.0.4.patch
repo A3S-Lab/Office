@@ -583,15 +583,16 @@ index 5c9820b1a261305d500e69eeaf350821872beaf4..a72e00f1436eda565f8a04ce6736650a
 +    validationValue = inputText === null || inputText === void 0 ? "" : inputText;
 +  }
 +  var dvItem = getDataVerificationItem(ctx, r, c);
-+  if (!(options === null || options === void 0 ? void 0 : options.skipDataValidation) && !_.isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, validationValue)) {
++  var validationFailed = !_.isNil(dvItem) && !validateCellData(ctx, dvItem, validationValue), customValidation = !_.isNil(dvItem) && dvItem.type === "custom";
++  if (!(options === null || options === void 0 ? void 0 : options.skipDataValidation) && !_.isNil(dvItem) && dvItem.prohibitInput && (validationFailed || customValidation)) {
 +    var failureText = getFailureText(ctx, dvItem);
 +    var validationDecision = (_ctx$hooks = ctx.hooks).beforeDataValidation === null || _ctx$hooks.beforeDataValidation === void 0 ? void 0 : _ctx$hooks.beforeDataValidation.call(_ctx$hooks, r, c, validationValue, dvItem, failureText, ctx.currentSheetId);
-+    cancelNormalSelected(ctx);
-+    if (validationDecision === void 0) {
-       ctx.warnDialog = failureText;
++    if (validationDecision !== true) { cancelNormalSelected(ctx);
++      if (validationDecision === void 0) ctx.warnDialog = failureText;
+-      ctx.warnDialog = failureText;
 -      return;
++      return;
      }
-+    if (validationDecision !== true) return;
    }
    var curv = flowdata[r][c];
    var oldValue = _.cloneDeep(curv);
@@ -1635,15 +1636,16 @@ index 04113a18dee9feee28e9434ee3023626c800e7d3..da676e0a4d3deb4e361d5137563712ba
 +    validationValue = inputText === null || inputText === void 0 ? "" : inputText;
 +  }
 +  var dvItem = getDataVerificationItem(ctx, r, c);
-+  if (!(options === null || options === void 0 ? void 0 : options.skipDataValidation) && !___default['default'].isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, validationValue)) {
++  var validationFailed = !___default['default'].isNil(dvItem) && !validateCellData(ctx, dvItem, validationValue), customValidation = !___default['default'].isNil(dvItem) && dvItem.type === "custom";
++  if (!(options === null || options === void 0 ? void 0 : options.skipDataValidation) && !___default['default'].isNil(dvItem) && dvItem.prohibitInput && (validationFailed || customValidation)) {
 +    var failureText = getFailureText(ctx, dvItem);
 +    var validationDecision = (_ctx$hooks = ctx.hooks).beforeDataValidation === null || _ctx$hooks.beforeDataValidation === void 0 ? void 0 : _ctx$hooks.beforeDataValidation.call(_ctx$hooks, r, c, validationValue, dvItem, failureText, ctx.currentSheetId);
-+    cancelNormalSelected(ctx);
-+    if (validationDecision === void 0) {
-       ctx.warnDialog = failureText;
++    if (validationDecision !== true) { cancelNormalSelected(ctx);
++      if (validationDecision === void 0) ctx.warnDialog = failureText;
+-      ctx.warnDialog = failureText;
 -      return;
++      return;
      }
-+    if (validationDecision !== true) return;
    }
    var curv = flowdata[r][c];
    var oldValue = ___default['default'].cloneDeep(curv);

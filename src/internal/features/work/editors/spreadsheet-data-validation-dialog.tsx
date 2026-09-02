@@ -1,9 +1,16 @@
-import { Info, ListChecks, ShieldCheck, TriangleAlert } from 'lucide-react';
+import {
+  Info,
+  ListChecks,
+  ShieldCheck,
+  Sigma,
+  TriangleAlert,
+} from 'lucide-react';
 import { type FormEvent, useId, useState } from 'react';
 import { Button, Dialog, Field } from '../../../design-system/primitives';
 import { OfficeCheckbox } from './office-controls';
 import {
   SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT,
+  SPREADSHEET_DATA_VALIDATION_FORMULA_LIMIT,
   SPREADSHEET_DATA_VALIDATION_HINT_LIMIT,
   SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
 } from '../work-spreadsheet-data-validation';
@@ -19,6 +26,7 @@ const validationTypes: readonly {
   label: string;
   value: SpreadsheetDataValidationType;
 }[] = [
+  { value: 'custom', label: '自定义公式' },
   { value: 'dropdown', label: '序列' },
   { value: 'number_integer', label: '整数' },
   { value: 'number', label: '小数' },
@@ -164,7 +172,7 @@ export function SpreadsheetDataValidationDialog({
               </select>
             </Field>
 
-            {value.type !== 'dropdown' && (
+            {value.type !== 'dropdown' && value.type !== 'custom' && (
               <Field label="数据">
                 <select
                   value={value.type2}
@@ -231,6 +239,13 @@ export function SpreadsheetDataValidationDialog({
                 }}
               />
             </Field>
+          ) : value.type === 'custom' ? (
+            <SpreadsheetDataValidationCustomFormulaField
+              value={value.value1}
+              error={visibleError}
+              onTouched={() => setTouched(true)}
+              onValueChange={(value1) => update({ value1 })}
+            />
           ) : (
             <SpreadsheetDataValidationBoundaryFields
               type={value.type}
@@ -361,6 +376,50 @@ export function SpreadsheetDataValidationDialog({
   );
 }
 
+function SpreadsheetDataValidationCustomFormulaField({
+  error,
+  onTouched,
+  onValueChange,
+  value,
+}: {
+  error: string | null;
+  onTouched: () => void;
+  onValueChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <div className="work-spreadsheet-data-validation-custom-formula">
+      <Field
+        label="公式"
+        required
+        description="公式必须返回 TRUE；相对引用以每个选定区域的左上角为基准。仅计算本地单元格和区域，不访问网络。"
+        error={error ?? undefined}
+      >
+        <textarea
+          aria-label="公式"
+          rows={2}
+          maxLength={SPREADSHEET_DATA_VALIDATION_FORMULA_LIMIT}
+          placeholder={'例如：=AND(A1<>"",A1<=100)'}
+          autoCapitalize="none"
+          spellCheck={false}
+          value={value}
+          onBlur={onTouched}
+          onChange={(event) => {
+            onValueChange(event.currentTarget.value);
+            onTouched();
+          }}
+        />
+      </Field>
+      <p className="work-spreadsheet-data-validation-formula-note">
+        <Sigma size={14} aria-hidden="true" />
+        <span>
+          支持常用 Excel 函数、单元格引用和区域引用；无法安全求值时会阻止输入。
+        </span>
+      </p>
+    </div>
+  );
+}
+
 function SpreadsheetDataValidationBoundaryFields({
   error,
   onTouched,
@@ -373,7 +432,7 @@ function SpreadsheetDataValidationBoundaryFields({
   error: string | null;
   onTouched: () => void;
   onValueChange: (value: Partial<SpreadsheetDataValidationDialogValue>) => void;
-  type: Exclude<SpreadsheetDataValidationType, 'dropdown'>;
+  type: Exclude<SpreadsheetDataValidationType, 'custom' | 'dropdown'>;
   type2: SpreadsheetDataValidationDialogValue['type2'];
   value1: string;
   value2: string;

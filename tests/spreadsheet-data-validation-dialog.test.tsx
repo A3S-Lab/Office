@@ -120,6 +120,41 @@ test('switches to date validation and normalizes its visible error state', () =>
   expect(screen.getByRole('button', { name: '确定' })).toBeEnabled();
 });
 
+test('authors an accessible custom formula without exposing numeric operators', () => {
+  const source = dialogSource();
+  const values: SpreadsheetDataValidationDialogValue[] = [];
+  render(
+    <SpreadsheetDataValidationDialog
+      source={source}
+      restoreFocusTarget={() => null}
+      onApply={(value) => {
+        values.push(value);
+        return true;
+      }}
+      onClose={() => undefined}
+      onRemove={() => false}
+      onValidate={(value) => validationMessage(source, value)}
+    />,
+  );
+
+  fireEvent.change(screen.getByRole('combobox', { name: '允许' }), {
+    target: { value: 'custom' },
+  });
+  expect(screen.queryByRole('combobox', { name: '数据' })).toBeNull();
+  expect(screen.getByRole('textbox', { name: '公式' })).toBeVisible();
+  fireEvent.change(screen.getByRole('textbox', { name: '公式' }), {
+    target: { value: '=AND(A1<>"",A1<=100)' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(values[0]).toMatchObject({
+    type: 'custom',
+    type2: '',
+    value1: '=AND(A1<>"",A1<=100)',
+    value2: '',
+  });
+});
+
 test('clears existing rules and restores the exact trigger', () => {
   render(<DataValidationDialogHarness />);
   const trigger = screen.getByRole('button', { name: '打开数据验证' });

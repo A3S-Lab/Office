@@ -56,6 +56,14 @@ describe('spreadsheet data-validation XLSX interop', () => {
           hintValue: 'Choose a state.',
         }),
       },
+      {
+        references: ['E1:E4'],
+        item: expect.objectContaining({
+          type: 'custom',
+          value1: 'AND(E1<>"",E1<=100)',
+          allowBlank: false,
+        }),
+      },
     ]);
   });
 
@@ -185,6 +193,65 @@ describe('spreadsheet data-validation XLSX interop', () => {
         ?.validations.map((validation) => validation.item.value1),
     ).toEqual(['WorkflowStates', 'Ready']);
   });
+
+  test('exports and reopens custom validation formulas without rewriting references', async () => {
+    const content: WorkSpreadsheetContent = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Rules',
+          dataValidationRanges: [
+            {
+              ranges: [{ row: [0, 3], column: [4, 4] }],
+              item: {
+                type: 'custom',
+                type2: '',
+                rangeTxt: 'E1:E4',
+                value1: 'AND(E1<>"",E1<=100)',
+                value2: '',
+                validity: '',
+                remote: false,
+                allowBlank: false,
+                showDropdownArrow: true,
+                prohibitInput: true,
+                errorStyle: 'stop',
+                errorTitle: 'Invalid score',
+                errorMessage: 'Enter a score from 1 to 100.',
+                hintShow: false,
+                hintTitle: '',
+                hintValue: '',
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const patched = await patchXlsxSheetFeatures(
+      await validationWorkbook(),
+      content,
+    );
+    const zip = await JSZip.loadAsync(patched);
+    const worksheet =
+      (await zip.file('xl/worksheets/sheet1.xml')?.async('text')) ?? '';
+    expect(worksheet).toContain('type="custom"');
+    expect(worksheet).toContain('sqref="E1:E4"');
+    expect(worksheet).toContain(
+      '<formula1>AND(E1&lt;&gt;"",E1&lt;=100)</formula1>',
+    );
+    const reopened = await readXlsxSheetFeaturesFromPackage(
+      await OoxmlPackage.load(patched),
+    );
+    expect(reopened.get('Rules')?.validations).toEqual([
+      expect.objectContaining({
+        references: ['E1:E4'],
+        item: expect.objectContaining({
+          type: 'custom',
+          value1: 'AND(E1<>"",E1<=100)',
+        }),
+      }),
+    ]);
+  });
 });
 
 async function validationWorkbook(): Promise<ArrayBuffer> {
@@ -214,7 +281,7 @@ async function validationWorkbook(): Promise<ArrayBuffer> {
     [
       '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">',
       '<dimension ref="A1:D4"/><sheetData/>',
-      '<dataValidations count="4">',
+      '<dataValidations count="5">',
       '<dataValidation type="decimal" operator="greaterThan" sqref="A1:A4">',
       '<formula1>1.5</formula1></dataValidation>',
       '<dataValidation type="date" operator="greaterThanOrEqual" sqref="B1:B4">',
@@ -227,6 +294,9 @@ async function validationWorkbook(): Promise<ArrayBuffer> {
       ' error="Choose Ready or Blocked." showInputMessage="1"',
       ' promptTitle="Workflow state" prompt="Choose a state." sqref="D1:D4">',
       '<formula1>"Ready,Blocked"</formula1></dataValidation>',
+      '<dataValidation type="custom" allowBlank="0" showErrorMessage="1"',
+      ' errorTitle="Invalid score" error="Enter a score from 1 to 100."',
+      ' sqref="E1:E4"><formula1>AND(E1&lt;&gt;"",E1&lt;=100)</formula1></dataValidation>',
       '</dataValidations>',
       '</worksheet>',
     ].join(''),

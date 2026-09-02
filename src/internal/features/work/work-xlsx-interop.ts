@@ -762,6 +762,7 @@ function parseListFormula(value: string): string {
 
 function fortuneValidationType(value: string | null): string | null {
   const types: Record<string, string> = {
+    custom: 'custom',
     list: 'dropdown',
     whole: 'number_integer',
     decimal: 'number',
@@ -773,6 +774,7 @@ function fortuneValidationType(value: string | null): string | null {
 
 function xlsxValidationType(value: string): string | null {
   const types: Record<string, string> = {
+    custom: 'custom',
     dropdown: 'list',
     number: 'decimal',
     number_integer: 'whole',

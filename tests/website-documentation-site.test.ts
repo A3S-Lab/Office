@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.42.0' ||
     version === '0.41.0' ||
     version === '0.40.0' ||
     version === '0.39.0' ||
@@ -73,6 +74,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.42.0',
     '0.41.0',
     '0.40.0',
     '0.39.0',
@@ -366,7 +368,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.41.0`');
+  expect(readme).toContain('Version `0.42.0`');
   expect(readme).toContain(
     "[What's new](https://a3s-lab.github.io/Office/docs/changelog.html)",
   );
@@ -376,8 +378,9 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.41.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.42.0)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
+  expect(englishHome).toContain('spreadsheet.html#custom-formulas');
   expect(englishHome).toContain(
     'spreadsheet.html#office-style-error-alert-branches',
   );
@@ -392,8 +395,9 @@ test('routes the concise README and documentation homes to the current release s
     'spreadsheet.html#xlsx-1904-date-system-retention',
   );
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.41.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.42.0）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
+  expect(chineseHome).toContain('spreadsheet.html#自定义公式');
   expect(chineseHome).toContain(
     'spreadsheet.html#与-office-一致的错误警告分支',
   );
@@ -658,6 +662,108 @@ test('publishes Spreadsheet validation alert branches across implementation, doc
   );
   expect(aclSuite).toContain('scenario "follow-error-alert-branches"');
   expect(packageManifest).toContain('test:e2e:spreadsheet-data-validation');
+});
+
+test('publishes Spreadsheet custom-formula validation across the current and frozen release', async () => {
+  const [
+    changelog,
+    roadmap,
+    product,
+    readme,
+    english,
+    chinese,
+    releaseData,
+    frozenEnglish,
+    frozenChinese,
+    evaluator,
+    dialog,
+    xlsx,
+    visual,
+    acl,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'website/theme/release-notes-data.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.42.0/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.42.0/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-data-validation-custom.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-data-validation-dialog.tsx',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/work-xlsx-interop.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/spreadsheet-data-validation.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/spreadsheet-data-validation.acl'),
+      'utf8',
+    ),
+  ]);
+
+  expect(changelog).toContain('## 0.42.0 - 2026-09-02');
+  expect(roadmap).toContain('bounded local custom-formula rules');
+  expect(product).toContain(
+    'Version 0.42.0 adds the follow-up custom-formula rule',
+  );
+  expect(readme).toContain('Version `0.42.0`');
+  for (const source of [english, chinese, frozenEnglish, frozenChinese]) {
+    expect(source).toContain('1,024');
+    expect(source).toContain('255');
+  }
+  expect(english).toContain('Custom formula');
+  expect(frozenEnglish).toContain('Custom formula');
+  expect(chinese).toContain('自定义公式');
+  expect(frozenChinese).toContain('自定义公式');
+  expect(english).toContain('## Custom formulas');
+  expect(chinese).toContain('## 自定义公式');
+  expect(releaseData).toContain("version: '0.42.0'");
+  expect(releaseData).toContain('custom-formulas');
+  expect(evaluator).toContain(
+    'MAX_SPREADSHEET_CUSTOM_VALIDATION_REFERENCED_CELLS',
+  );
+  expect(dialog).toContain('SpreadsheetDataValidationCustomFormulaField');
+  expect(xlsx).toContain("custom: 'custom'");
+  expect(visual).toContain("'LEN(E2)>0'");
+  expect(acl).toContain('custom-formula');
 });
 
 test('keeps every documentation index separate from the product home surface', async () => {
@@ -1336,6 +1442,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.42.0',
     '0.41.0',
     '0.40.0',
     '0.39.0',
@@ -1419,6 +1526,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.42.0',
     '0.41.0',
     '0.40.0',
     '0.39.0',
@@ -1757,6 +1865,7 @@ test('documents collaborative character-formatting revisions', async () => {
 test('documents complete native Writer OpenType typography in both current locales', async () => {
   for (const version of [
     'latest',
+    '0.42.0',
     '0.41.0',
     '0.40.0',
     '0.39.0',
