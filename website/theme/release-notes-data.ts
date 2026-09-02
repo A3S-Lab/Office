@@ -42,6 +42,71 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.48.0',
+    date: '2026-09-03',
+    kind: 'new',
+    surfaces: ['writer', 'shared', 'playground', 'documentation'],
+    title: {
+      en: 'Writer content controls stay bounded and native',
+      zh: 'Writer 内容控件保持有界并原生往返',
+    },
+    summary: {
+      en: 'Inline plain-text and rich-text content controls now share one typed editor node, one lock boundary, and a strict native DOCX contract without a remote service.',
+      zh: '行内纯文本和富文本内容控件现在共享一个类型化编辑器节点、一条锁定边界和严格的原生 DOCX 合同，不引入远程服务。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Author the whole intent in one dialog',
+          zh: '在一个弹窗中完成完整意图',
+        },
+        detail: {
+          en: 'The Insert ribbon and responsive dialog create or edit inline controls with aliases, program tags, plain or rich text, multiline behavior, border/tag/hidden appearance, and an optional color. Each accepted intent is one typed update and one Undo step.',
+          zh: '“插入”功能区和响应式弹窗可以创建或编辑行内控件：显示名称、程序标签、纯文本或富文本、多行行为、边框/标签/隐藏外观以及可选颜色都在一次意图中完成；每次确定只产生一条类型化更新和一步撤销。',
+        },
+      },
+      {
+        title: {
+          en: 'Locks are enforced below the UI',
+          zh: '锁定在 UI 之下的事务边界生效',
+        },
+        detail: {
+          en: 'Content and shell locks reject accidental typing, paste, replacement, deletion, and generic metadata writes. Explicit typed commands are required for unlock-sensitive operations, while accessible names follow the control alias or tag.',
+          zh: '内容锁和控件锁会拒绝意外输入、粘贴、替换、删除和普通元数据写入；需要解锁的操作必须通过显式类型化命令完成，可访问名称会跟随控件显示名称或程序标签。',
+        },
+      },
+      {
+        title: {
+          en: 'Native DOCX stays honest',
+          zh: '原生 DOCX 边界保持诚实',
+        },
+        detail: {
+          en: 'Direct paragraph `w:sdt` controls round-trip through strict and transitional WordprocessingML with collision-free IDs, rich runs, locks, multiline text, and Word 2012 appearance/color. Bindings, placeholders, repeating regions, form controls, nested structures, and relationship-bound content remain diagnosed safe text.',
+          zh: '直接位于段落的 `w:sdt` 控件会在严格或过渡 WordprocessingML 中往返无冲突身份、富文本运行、锁定、多行文字及 Word 2012 外观/颜色。绑定、占位符、重复区域、表单控件、嵌套结构和关系绑定内容会被诊断并保留为安全文字。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#built-in-content-controls',
+          zh: './components/document.html#原生内容控件',
+        },
+        label: {
+          en: 'Read the content-control guide',
+          zh: '阅读内容控件指南',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.48.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.48.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.47.0',
     date: '2026-09-03',
     kind: 'new',

@@ -413,6 +413,11 @@ export const documentCommandCatalog = {
     label: '插入文本框',
     location: { area: 'ribbon', tab: 'insert', group: 'text' },
   },
+  insertContentControl: {
+    id: 'insert.contentControl',
+    label: '插入内容控件',
+    location: { area: 'ribbon', tab: 'insert', group: 'text' },
+  },
   hyperlink: {
     id: 'insert.hyperlink',
     label: '添加链接',

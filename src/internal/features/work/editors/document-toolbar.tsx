@@ -27,6 +27,7 @@ import {
   Scan,
   StretchHorizontal,
   TextCursorInput,
+  TextSelect,
   Undo2,
   XCircle,
   ZoomIn,
@@ -152,6 +153,7 @@ interface DocumentToolbarProps {
   pageChromeShowPageNumber: boolean;
   onRequestImage: () => void;
   onInsertTextBox?: () => void;
+  onInsertContentControl?: () => void;
   onPageChromeEditingPartChange: (part: DocumentPageChromeEditingPart) => void;
   onClosePageChrome: () => void;
   onTogglePageChromePageNumber: () => void;
@@ -227,6 +229,7 @@ export function DocumentToolbar({
   pageChromeShowPageNumber,
   onRequestImage,
   onInsertTextBox,
+  onInsertContentControl,
   onPageChromeEditingPartChange,
   onClosePageChrome,
   onTogglePageChromePageNumber,
@@ -772,6 +775,13 @@ export function DocumentToolbar({
                   onClick={() => onInsertTextBox?.()}
                 >
                   <TextCursorInput size={19} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label="插入内容控件"
+                  displayLabel
+                  onClick={() => onInsertContentControl?.()}
+                >
+                  <TextSelect size={19} />
                 </ToolbarButton>
                 <DocumentFieldSelect onInsertField={onInsertField} />
               </RibbonGroup>

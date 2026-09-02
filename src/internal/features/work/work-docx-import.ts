@@ -50,6 +50,12 @@ import {
   markDocxComments,
 } from './work-docx-comment-import';
 import {
+  applyImportedDocxContentControlMarkers,
+  hasImportedDocxContentControlMarkers,
+  type ImportedDocxContentControlMarkers,
+  markDocxContentControls,
+} from './work-docx-content-control-import';
+import {
   applyImportedDocxEquationMarkers,
   type ImportedDocxEquationMarkers,
   markDocxPackageEquations,
@@ -242,6 +248,7 @@ export interface PreparedDocxImport {
   numberingChangeMarkers: ImportedDocxNumberingChangeMarkers;
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers;
   textBoxMarkers: ImportedDocxTextBoxMarkers;
+  contentControlMarkers: ImportedDocxContentControlMarkers;
   paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers;
   paragraphFormattingChangeMarkers: ImportedDocxParagraphFormattingChangeMarkers;
   paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers;
@@ -292,6 +299,7 @@ export async function prepareDocxImport(
       numberingChangeMarkers: { groups: [] },
       imageLayoutMarkers: { images: [] },
       textBoxMarkers: { textBoxes: [] },
+      contentControlMarkers: { controls: [], unsupported: 0 },
       paragraphIdentityMarkers: { paragraphs: [] },
       paragraphFormattingChangeMarkers: { paragraphs: [] },
       paragraphAlignmentMarkers: { paragraphs: [] },
@@ -323,6 +331,7 @@ export async function prepareDocxImport(
   const pageColor = importDocxPageColor(document);
   const tableOfContentsMarkers = markDocxTablesOfContents(document);
   const indexMarkers = markDocxIndexes(document);
+  const contentControlMarkers = markDocxContentControls(document);
   const textBoxMarkers = markDocxTextBoxes(document);
   const paragraphIdentityMarkers = markDocxParagraphIdentities(document);
   const numbering = archive.has('word/numbering.xml')
@@ -462,6 +471,7 @@ export async function prepareDocxImport(
         hasImportedDocxNumberingChangeMarkers(numberingChangeMarkers) ||
         hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
         hasImportedDocxTextBoxMarkers(textBoxMarkers) ||
+        hasImportedDocxContentControlMarkers(contentControlMarkers) ||
         hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
         hasImportedDocxParagraphFormattingChangeMarkers(
           paragraphFormattingChangeMarkers,
@@ -495,6 +505,7 @@ export async function prepareDocxImport(
       numberingChangeMarkers,
       imageLayoutMarkers,
       textBoxMarkers,
+      contentControlMarkers,
       paragraphIdentityMarkers,
       paragraphFormattingChangeMarkers,
       paragraphAlignmentMarkers,
@@ -547,6 +558,7 @@ export async function prepareDocxImport(
       hasImportedDocxNumberingChangeMarkers(numberingChangeMarkers) ||
       hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
       hasImportedDocxTextBoxMarkers(textBoxMarkers) ||
+      hasImportedDocxContentControlMarkers(contentControlMarkers) ||
       hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
       hasImportedDocxParagraphFormattingChangeMarkers(
         paragraphFormattingChangeMarkers,
@@ -580,6 +592,7 @@ export async function prepareDocxImport(
     numberingChangeMarkers,
     imageLayoutMarkers,
     textBoxMarkers,
+    contentControlMarkers,
     paragraphIdentityMarkers,
     paragraphFormattingChangeMarkers,
     paragraphAlignmentMarkers,
@@ -663,6 +676,10 @@ export function applyDocxSectionsToHtml(
   tableRowMarkers: ImportedDocxTableRowMarkers = { rows: [] },
   tableSizingMarkers: ImportedDocxTableSizingMarkers = { tables: [] },
   textBoxMarkers: ImportedDocxTextBoxMarkers = { textBoxes: [] },
+  contentControlMarkers: ImportedDocxContentControlMarkers = {
+    controls: [],
+    unsupported: 0,
+  },
 ): string {
   const document = new DOMParser().parseFromString(html, 'text/html');
   applyImportedDocxRunFormattingMarkers(document, runFormattingMarkers);
@@ -704,6 +721,7 @@ export function applyDocxSectionsToHtml(
   applyImportedDocxTextBoxMarkers(document, textBoxMarkers);
   applyImportedDocxTableOfContentsMarkers(document, tableOfContentsMarkers);
   applyImportedDocxIndexMarkers(document, indexMarkers);
+  applyImportedDocxContentControlMarkers(document, contentControlMarkers);
   const notes = extractMammothDocumentNotes(document);
   const sourceNodes = Array.from(document.body.childNodes);
   document.body.replaceChildren();

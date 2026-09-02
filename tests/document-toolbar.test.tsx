@@ -39,6 +39,7 @@ interface ToolbarCalls {
   crossReferences: number;
   imageRequests: number;
   textBoxInserts: number;
+  contentControlOpens: number;
   insertComments: number;
   indexEntries: number;
   indexes: number;
@@ -219,6 +220,18 @@ test('inserts a text box and exposes its contextual WPS controls', () => {
   expect(editor.getHTML()).toContain('data-text-box-vertical-align="bottom"');
   fireEvent.click(screen.getByRole('button', { name: '删除文本框' }));
   expect(nodeCount(editor, 'documentTextBox')).toBe(0);
+});
+
+test('exposes the content-control action in the Insert ribbon', () => {
+  editor = createEditor();
+  const calls = createCalls();
+  render(toolbar(editor, calls));
+
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  const button = screen.getByRole('button', { name: '插入内容控件' });
+  expect(button).toBeEnabled();
+  fireEvent.click(button);
+  expect(calls.contentControlOpens).toBe(1);
 });
 
 test('orders References, Review, and View groups like WPS Writer', () => {
@@ -861,6 +874,9 @@ function toolbar(
         calls.textBoxInserts += 1;
         currentEditor.chain().focus().insertDocumentTextBox().run();
       }}
+      onInsertContentControl={() => {
+        calls.contentControlOpens += 1;
+      }}
       onPageChromeEditingPartChange={(part) => calls.pageChromeParts.push(part)}
       onClosePageChrome={() => {
         calls.closePageChrome += 1;
@@ -967,6 +983,7 @@ function createCalls(): ToolbarCalls {
     crossReferences: 0,
     imageRequests: 0,
     textBoxInserts: 0,
+    contentControlOpens: 0,
     insertComments: 0,
     indexEntries: 0,
     indexes: 0,

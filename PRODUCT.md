@@ -939,6 +939,24 @@ on the normal compatibility path and receive explicit diagnostics. Focused
 model, command, UI, DOCX reopen, responsive browser, and local A3S Test gates
 cover the declared boundary without adding a remote service.
 
+The sixty-sixth Writer milestone adds a bounded native content-control slice.
+The Insert ribbon and responsive dialog author inline plain-text or rich-text
+controls with aliases, program tags, multiline behavior, border/tag/hidden
+appearance, optional theme color, and independent content or shell locks. The
+control is a typed inline node, so selection, editing, preview, pagination, and
+Undo stay on the existing document model and each accepted intent remains one
+controlled update.
+
+Direct paragraph WordprocessingML `w:sdt` controls round-trip through strict and
+transitional namespaces with native IDs, aliases, tags, lock state, multiline
+text, rich run formatting, and Word 2012 appearance/color. Duplicate native
+IDs are allocated afresh without merging browser identities. Data bindings,
+placeholders, repeating regions, dates, dropdowns, pictures, block or nested
+controls, form semantics, and relationship-bound content remain explicit
+fail-closed boundaries and receive compatibility diagnostics. Focused model,
+lock-guard, UI, DOCX reopen, responsive browser, accessibility, and local A3S
+Test gates cover the safe subset without adding a remote service.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

@@ -1,0 +1,208 @@
+suite "office-word-content-controls" {
+    version = 1
+
+    scenario "author-safe-content-control" {
+        name = "Author and round-trip a bounded Writer content control"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=word-content-controls"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-blank-document" {
+            target = text("空白文字", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        focus "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        type "write-control-value" {
+            target = css(".work-document-editable .ProseMirror")
+            value = "客户名称"
+        }
+
+        press "select-control-value" {
+            key = "Control+a"
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "open-content-control-dialog" {
+            target = role("button", "插入内容控件")
+        }
+
+        wait "content-control-dialog-open" {
+            visible = role("dialog", "插入内容控件")
+        }
+
+        fill "set-control-alias" {
+            target = css(".work-document-content-control-dialog input[aria-label='内容控件显示名称']")
+            value = "客户名称"
+        }
+
+        fill "set-control-tag" {
+            target = css(".work-document-content-control-dialog input[aria-label='内容控件程序标签']")
+            value = "customer-name"
+        }
+
+        click "choose-rich-text" {
+            target = role("combobox", "内容控件类型")
+        }
+
+        click "select-rich-text" {
+            target = role("option", "富文本")
+        }
+
+        click "choose-tag-appearance" {
+            target = role("combobox", "内容控件外观")
+        }
+
+        click "select-tag-appearance" {
+            target = role("option", "标签")
+        }
+
+        click "apply-content-control" {
+            target = role("button", "插入控件")
+        }
+
+        wait "content-control-visible" {
+            visible = css(".work-document-editable [data-document-content-control][data-content-control-alias='客户名称'][data-content-control-tag='customer-name'][data-content-control-type='richText'][data-content-control-appearance='tags']")
+        }
+
+        expect "content-control-remains-editable" {
+            text = "客户名称"
+        }
+
+        press "undo-content-control" {
+            key = "Control+z"
+        }
+
+        expect "undo-removes-control-wrapper" {
+            visible = css(".work-document-editable .ProseMirror:not(:has([data-document-content-control]))")
+        }
+
+        press "redo-content-control" {
+            key = "Control+y"
+        }
+
+        expect "redo-restores-control-wrapper" {
+            visible = css(".work-document-editable [data-document-content-control][data-content-control-tag='customer-name']")
+        }
+
+        screenshot "content-control-desktop" {
+            path = "screenshots/word-content-controls-desktop.png"
+        }
+
+        accessibility "content-control-accessibility" {
+            path = "evidence/content-control-accessibility.json"
+            interactive = true
+        }
+
+        console "content-control-console" {
+            path = "diagnostics/content-control-console.json"
+            clear = false
+        }
+
+        page_errors "content-control-page-errors" {
+            path = "diagnostics/content-control-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "discover-content-control-dialog-on-phone" {
+        name = "Discover the content-control dialog on a phone viewport"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-phone-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=word-content-controls-phone"
+        }
+
+        expect "phone-playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-phone-blank-document" {
+            target = text("空白文字", true)
+        }
+
+        wait "phone-document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        click "focus-phone-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        click "open-phone-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "scroll-phone-insert-tools" {
+            target = role("button", "向右查看更多插入工具")
+        }
+
+        expect "phone-content-control-button" {
+            visible = role("button", "插入内容控件")
+        }
+
+        click "open-phone-content-control-dialog" {
+            target = role("button", "插入内容控件")
+        }
+
+        wait "phone-content-control-dialog" {
+            visible = role("dialog", "插入内容控件")
+        }
+
+        expect "phone-dialog-fields-visible" {
+            visible = role("textbox", "内容控件显示名称")
+        }
+
+        expect "phone-dialog-tag-visible" {
+            visible = role("textbox", "内容控件程序标签")
+        }
+
+        screenshot "content-control-phone" {
+            path = "screenshots/word-content-controls-phone.png"
+        }
+
+        accessibility "content-control-phone-accessibility" {
+            path = "evidence/content-control-phone-accessibility.json"
+            interactive = true
+        }
+
+        console "content-control-phone-console" {
+            path = "diagnostics/content-control-phone-console.json"
+            clear = false
+        }
+
+        page_errors "content-control-phone-page-errors" {
+            path = "diagnostics/content-control-phone-page-errors.json"
+            clear = false
+        }
+    }
+}

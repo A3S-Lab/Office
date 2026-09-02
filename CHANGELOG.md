@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.48.0 - 2026-09-03
+
+- Added a bounded Writer content-control workflow for inline plain-text and
+  rich-text controls. The Insert ribbon and responsive dialog author aliases,
+  tags, multiline behavior, appearance, color, and independent content/shell
+  locks while keeping each accepted intent in one undoable transaction.
+- Added strict native DOCX `w:sdt` import/export for direct paragraph controls,
+  including transitional and strict namespaces, native IDs, rich run
+  formatting, locking, multiline text, Word 2012 appearance, and color. Native
+  ID collisions, malformed properties, active bindings, placeholders, forms,
+  repeating regions, nested controls, and relationship-bound content fail
+  closed or remain safe editable text with explicit diagnostics.
+- Added model, UI, DOCX round-trip, lock-guard, collision, responsive visual,
+  accessibility, and local A3S Test coverage for the declared safe subset.
+
 ## 0.47.0 - 2026-09-03
 
 - Added bounded live Writer common fields: `NUMWORDS` and `NUMCHARS` count

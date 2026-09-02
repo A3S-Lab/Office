@@ -198,6 +198,7 @@ export async function importWorkDocumentFile(
           prepared.tableRowMarkers,
           prepared.tableSizingMarkers,
           prepared.textBoxMarkers,
+          prepared.contentControlMarkers,
         )
       : result.value;
     recordDocumentImportMeasure(

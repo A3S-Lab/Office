@@ -23,6 +23,7 @@
 @import "./work-document-text-box.css";
 @import "./work-document-citations.css";
 @import "./work-document-fields.css";
+@import "./work-document-content-controls.css";
 @import "./work-document-table-of-contents.css";
 @import "./work-document-index.css";
 @import "./work-document-equations.css";
