@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.48.1' ||
     version === '0.48.0' ||
     version === '0.47.0' ||
     version === '0.46.0' ||
@@ -80,6 +81,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.48.1',
     '0.48.0',
     '0.47.0',
     '0.46.0',
@@ -347,7 +349,7 @@ test('keeps public documentation on the neutral Traditional Office baseline', as
     'visual-tests/README.md',
   ].map((file) => path.join(repositoryRoot, file));
   const nativeTextBoxDocumentation = new Set(
-    ['latest', '0.48.0', '0.47.0', '0.46.0'].flatMap((version) =>
+    ['latest', '0.48.1', '0.48.0', '0.47.0', '0.46.0'].flatMap((version) =>
       DOCUMENTATION_LOCALES.map(({ lang }) =>
         path.join(documentationRoot, version, lang, 'components/document.mdx'),
       ),
@@ -392,6 +394,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
+  expect(readme).toContain('Version `0.48.1`');
   expect(readme).toContain('Version `0.48.0`');
   expect(readme).toContain('Version `0.47.0`');
   expect(readme).toContain('Version `0.46.0`');
@@ -407,7 +410,7 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.48.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.48.1)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
   expect(englishHome).toContain(
     'spreadsheet.html#formula-conditional-formatting',
@@ -431,7 +434,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(englishHome).toContain('document.html#common-live-fields');
   expect(englishHome).toContain('document.html#built-in-content-controls');
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.48.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.48.1）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
   expect(chineseHome).toContain('spreadsheet.html#公式条件格式');
   expect(chineseHome).toContain('spreadsheet.html#依赖下拉列表');
@@ -1921,6 +1924,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.48.1',
     '0.48.0',
     '0.47.0',
     '0.42.0',

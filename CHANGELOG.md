@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.48.1 - 2026-09-03
+
+- Fixed the Writer floating selection toolbar's underline and strikethrough
+  split controls so browser-native button borders no longer leak into the
+  compact UI. The controls now share the toolbar's themed reset, hover,
+  pressed, focus, and single-divider states without changing formatting
+  behavior or keyboard semantics.
+
 ## 0.48.0 - 2026-09-03
 
 - Added a bounded Writer content-control workflow for inline plain-text and
