@@ -22,6 +22,10 @@ All notable changes to A3S Office will be documented in this file.
   Region → Regional owner example, and the UI, model, editor, native package,
   responsive browser, accessibility, and local A3S Test contracts document
   the complete local workflow.
+- Hardened PDF source replacement during page organization so a late EmbedPDF
+  registry from an older source generation cannot expose stale pages or
+  rotations while the new document is loading. Added a stable selection
+  assertion to the desktop export contract.
 
 ## 0.43.0 - 2026-09-02
 
