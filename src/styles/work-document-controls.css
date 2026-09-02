@@ -1058,6 +1058,7 @@
 .work-document-picture-properties-section.position,
 .work-document-picture-properties-section.layer,
 .work-document-picture-properties-section.crop,
+.work-document-picture-properties-section.transform,
 .work-document-picture-properties-alt-text {
   grid-column: 1 / -1;
 }
@@ -1122,6 +1123,34 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px 12px;
+}
+
+.work-document-picture-properties-transform-row {
+  display: grid;
+  min-height: 34px;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+}
+
+.work-document-picture-properties-transform-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+
+.work-document-picture-properties-transform-options .work-office-checkbox {
+  min-height: 34px;
+  padding: 5px 6px;
+  border-radius: 6px;
+}
+
+.work-document-picture-properties-transform-help {
+  color: var(--a3s-faint);
+  font-size: 10px;
+  line-height: 1.4;
 }
 
 .work-document-picture-properties-layer-options {

@@ -6,20 +6,22 @@ import {
   type WorkDocumentImageIdentityRegistry,
 } from './work-document-image-identity';
 import {
-  applyDocumentImageLayerToElement,
   applyDocumentImageCropToElement,
+  applyDocumentImageLayerToElement,
+  applyDocumentImageTransformToElement,
   isContourImageLayout,
   normalizeDocumentImageAlignment,
+  normalizeDocumentImageCrop,
   normalizeDocumentImageLayer,
   normalizeDocumentImageLayoutOptions,
-  normalizeDocumentImageCrop,
   normalizeDocumentImagePosition,
-  wrapsBesideImage,
-  type WorkDocumentImageLayout,
   type WorkDocumentImageCrop,
   type WorkDocumentImageLayer,
+  type WorkDocumentImageLayout,
   type WorkDocumentImageLayoutOptions,
   type WorkDocumentImagePosition,
+  type WorkDocumentImageTransform,
+  wrapsBesideImage,
 } from './work-document-image-layout';
 import {
   applyDocumentImageWrapContourToElement,
@@ -27,6 +29,7 @@ import {
   normalizeDocumentImageWrapSide,
   type WorkDocumentImageWrapContour,
 } from './work-document-image-wrap-contour';
+import { readDocxImageTransform } from './work-docx-image-transform';
 import {
   attribute,
   descendants,
@@ -40,6 +43,7 @@ export interface ImportedDocxImageLayoutMarker {
   options: WorkDocumentImageLayoutOptions;
   position: WorkDocumentImagePosition | null;
   crop: WorkDocumentImageCrop | null;
+  transform: WorkDocumentImageTransform | null;
   contour: WorkDocumentImageWrapContour | null;
   layer: WorkDocumentImageLayer | null;
   identity: WorkDocumentImageIdentity;
@@ -83,6 +87,7 @@ export function markDocxImageLayouts(
     const run = closestAncestor(anchor, 'r');
     if (!run || markedRuns.has(run)) continue;
     const crop = anchorCrop(anchor);
+    const transform = anchorTransform(anchor);
     const layout =
       anchor.localName === 'inline' ? 'inline' : anchorLayout(anchor);
     if (!layout) continue;
@@ -107,6 +112,7 @@ export function markDocxImageLayouts(
       }),
       position: anchorPosition(anchor),
       crop,
+      transform,
       contour: isContourImageLayout(layout)
         ? anchorWrapContour(anchor, layout)
         : null,
@@ -159,6 +165,7 @@ export function applyImportedDocxImageLayoutMarkers(
         state.active.options,
         state.active.position,
         state.active.crop,
+        state.active.transform,
         state.active.contour,
         state.active.layer,
         state.active.identity,
@@ -283,6 +290,10 @@ function anchorCrop(anchor: Element): WorkDocumentImageCrop | null {
   });
 }
 
+function anchorTransform(anchor: Element): WorkDocumentImageTransform | null {
+  return readDocxImageTransform(anchor).transform;
+}
+
 function anchorLayer(anchor: Element): WorkDocumentImageLayer {
   return normalizeDocumentImageLayer({
     relativeHeight: attribute(anchor, 'relativeHeight'),
@@ -338,6 +349,7 @@ function applyImageLayout(
   options: WorkDocumentImageLayoutOptions,
   position: WorkDocumentImagePosition | null,
   crop: WorkDocumentImageCrop | null,
+  transform: WorkDocumentImageTransform | null,
   contour: WorkDocumentImageWrapContour | null,
   layer: WorkDocumentImageLayer | null,
   identity: WorkDocumentImageIdentity,
@@ -378,6 +390,7 @@ function applyImageLayout(
     image.dataset.officeImageVerticalReference = position.verticalReference;
   }
   applyDocumentImageCropToElement(image, crop);
+  applyDocumentImageTransformToElement(image, transform);
   applyDocumentImageWrapContourToElement(image, contour);
   if (layer) applyDocumentImageLayerToElement(image, layer);
 }

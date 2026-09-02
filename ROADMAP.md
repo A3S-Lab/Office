@@ -75,7 +75,7 @@ collaboration transport, and AI providers.
 | Page borders (`w:pgBorders`) | **Supported** on current `main`: four ordered edges, 197 styles, theme/direct colors, page/text offsets, first/not-first display, front/back order, strict namespaces, diagnostics, exact DOCX export | Art borders and document-wide compatibility modifiers use bounded browser approximations | Maintain / P0 regression gate |
 | Document grid and script-aware typography | **Supported** for section grid, run snap overrides, bundled/host/imported font choices, four native script-font slots, theme/style inheritance, mixed-script spans, and Traditional Office layout fixtures | Font substitution, missing glyphs, and browser shaping can still alter pagination | P0 |
 | Tables, merges, sizing, margins, styles, row pagination, nested tables | **Partial**, with broad editable geometry and style inheritance | Full Word border conflict rules, every conditional property, floating tables, formulas, and advanced table tools are incomplete | P0/P1 |
-| Inline and floating pictures, crop, wrap contour, layer, identity, alt text | **Partial**, with strong DrawingML picture support | Broad shapes, connectors, text boxes, WordArt, SmartArt, charts, and unsupported drawings normalize | P0 safe preservation; P1 editable drawings |
+| Inline and floating pictures, crop, wrap contour, layer, identity, alt text, quarter-turn transforms | **Partial**, with strong DrawingML picture support plus editable 90-degree rotation and horizontal/vertical reflection | Arbitrary-angle transforms, broad shapes, connectors, text boxes, WordArt, SmartArt, charts, and unsupported drawings normalize | P0 safe preservation; P1 editable drawings |
 | OMML equations | **Partial**, with a large bounded structured model and strict/transitional import/export | Unbounded or unsupported OMML branches remain atomic/unsupported rather than fully editable | P0 no-clobber; P2 coverage |
 | Comments, replies, resolved state, anchors, modern IDs | **Supported** for editable review records and safe source preservation | Reactions, people sidecars, live presence, and server synchronization are absent/host-owned | P1 protocol |
 | Track changes review | **Partial**: body-text insertions/deletions plus bounded character-, paragraph-formatting, and ordered-list numbering revisions; native `w:rPrChange`, `w:pPrChange`, and common single-level `w:numberingChange` round trips; navigation, atomic accept/reject, immutable collaboration audit, and long-list virtualization | Moves plus section, table, row, cell, and complex/multi-level numbering property revisions are not fully editable | P0 |
@@ -306,6 +306,9 @@ format revisions; Combine admits a reviewed copy only when rejecting every
 imported revision exactly reconstructs the current baseline. Complex structural
 changes, native paragraph-mark revision fidelity, move ranges, and multi-copy
 conflicts remain follow-up work rather than silent approximations.
+- Keep the bounded Writer picture transform slice native: quarter-turn rotation
+  and horizontal/vertical reflection round-trip through DrawingML `a:xfrm`;
+  arbitrary angles remain an explicit diagnostic boundary.
 - Add editable text boxes and a bounded DrawingML shape/connector model before
   expanding to WordArt, charts, and SmartArt.
 - Complete common field instructions and reference workflows.

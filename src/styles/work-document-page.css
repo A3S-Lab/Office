@@ -896,6 +896,10 @@
   width: fit-content;
   max-width: 100%;
   margin-block: 18px;
+  rotate: var(--work-document-image-rotation, 0deg);
+  scale: var(--work-document-image-flip-x, 1)
+    var(--work-document-image-flip-y, 1);
+  transform-origin: center;
 }
 
 .work-document-page

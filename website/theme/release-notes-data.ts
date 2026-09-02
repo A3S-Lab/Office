@@ -42,6 +42,71 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.45.0',
+    date: '2026-09-02',
+    kind: 'new',
+    surfaces: ['writer', 'shared', 'playground'],
+    title: {
+      en: 'Writer pictures can rotate and reflect locally',
+      zh: 'Writer 图片现在可以在本地旋转和翻转',
+    },
+    summary: {
+      en: 'A bounded picture-transform model brings quarter-turn rotation and reflection into the same controlled editor and native DOCX workflow.',
+      zh: '有界的图片变换模型把 90° 旋转和翻转纳入同一个受控编辑器与原生 DOCX 工作流。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One familiar Picture ribbon',
+          zh: '一个熟悉的“图片”功能区',
+        },
+        detail: {
+          en: 'Accessible rotate-left, rotate-right, horizontal-flip, and vertical-flip actions sit beside existing wrap and alignment commands.',
+          zh: '可访问的向左旋转、向右旋转、水平翻转和垂直翻转操作，与现有环绕和对齐命令放在一起。',
+        },
+      },
+      {
+        title: {
+          en: 'The dialog keeps the full intent together',
+          zh: '弹窗保留完整编辑意图',
+        },
+        detail: {
+          en: 'Picture Properties exposes the same quarter-turn and reflection controls in a phone-safe layout; Apply is one controlled update and one Undo step.',
+          zh: '“图片属性”在适配手机的布局中提供同样的 90° 旋转与翻转控制；确定只产生一次受控更新和一步撤销。',
+        },
+      },
+      {
+        title: {
+          en: 'Native round trip with an honest boundary',
+          zh: '原生往返并明确边界',
+        },
+        detail: {
+          en: 'DOCX `a:xfrm` rotation and reflection values reopen as editable state; arbitrary-angle or malformed transforms are diagnosed and normalized safely.',
+          zh: 'DOCX `a:xfrm` 的旋转与翻转值会重开为可编辑状态；任意角度或格式错误的变换会被诊断并安全归一化。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#built-in-picture-properties',
+          zh: './components/document.html#图片属性',
+        },
+        label: {
+          en: 'Read the picture-transform guide',
+          zh: '阅读图片变换指南',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.45.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.45.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.44.0',
     date: '2026-09-02',
     kind: 'new',

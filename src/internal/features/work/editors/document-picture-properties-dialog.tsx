@@ -22,8 +22,9 @@ import {
   type WorkDocumentImageAlignment,
   type WorkDocumentImageHorizontalReference,
   type WorkDocumentImageLayout,
-  type WorkDocumentImageWrapSide,
+  type WorkDocumentImageRotation,
   type WorkDocumentImageVerticalReference,
+  type WorkDocumentImageWrapSide,
 } from '../work-document-image-layout';
 import {
   createDocumentPicturePropertiesDraft,
@@ -98,6 +99,13 @@ const verticalReferenceOptions = [
   value: WorkDocumentImageVerticalReference;
   label: string;
 }[];
+
+const rotationOptions = [
+  { value: '0', label: '0°（原始）' },
+  { value: '90', label: '90°' },
+  { value: '180', label: '180°' },
+  { value: '270', label: '270°' },
+] as const;
 
 export function DocumentPicturePropertiesControl({
   editor,
@@ -222,6 +230,7 @@ function DocumentPicturePropertiesDialog({
           errors={errors}
           onDraftChange={setDraft}
         />
+        <PictureTransformSection draft={draft} onDraftChange={setDraft} />
         <label
           className="work-document-picture-properties-alt-text"
           htmlFor={alternativeTextId}
@@ -600,6 +609,59 @@ function PictureCropSection({
         ))}
       </div>
       {errors.crop && <p role="alert">{errors.crop}</p>}
+    </fieldset>
+  );
+}
+
+function PictureTransformSection({
+  draft,
+  onDraftChange,
+}: {
+  draft: DocumentPicturePropertiesDraft;
+  onDraftChange: React.Dispatch<
+    React.SetStateAction<DocumentPicturePropertiesDraft>
+  >;
+}) {
+  return (
+    <fieldset className="work-document-picture-properties-section transform">
+      <legend>变换</legend>
+      <div className="work-document-picture-properties-transform-row">
+        <span>旋转</span>
+        <OfficeSelect
+          ariaLabel="图片旋转角度"
+          value={String(draft.rotation)}
+          options={rotationOptions}
+          onValueChange={(value) =>
+            onDraftChange((current) => ({
+              ...current,
+              rotation: Number(value) as WorkDocumentImageRotation,
+            }))
+          }
+        />
+      </div>
+      <div className="work-document-picture-properties-transform-options">
+        <OfficeCheckbox
+          ariaLabel="水平翻转图片"
+          checked={draft.flipHorizontal}
+          onCheckedChange={(flipHorizontal) =>
+            onDraftChange((current) => ({ ...current, flipHorizontal }))
+          }
+        >
+          水平翻转
+        </OfficeCheckbox>
+        <OfficeCheckbox
+          ariaLabel="垂直翻转图片"
+          checked={draft.flipVertical}
+          onCheckedChange={(flipVertical) =>
+            onDraftChange((current) => ({ ...current, flipVertical }))
+          }
+        >
+          垂直翻转
+        </OfficeCheckbox>
+      </div>
+      <small className="work-document-picture-properties-transform-help">
+        旋转以 90° 为单位；每次确认作为一次可撤销操作保存。
+      </small>
     </fieldset>
   );
 }

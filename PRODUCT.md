@@ -911,6 +911,17 @@ Validation template demonstrates the Region → Regional owner workflow. The
 dialog's source field, formula note, and Sigma affordance keep the dependency
 visible without introducing a second settings model or a remote service.
 
+The sixty-fourth Writer milestone adds a bounded native picture-transform slice.
+The contextual Picture ribbon and responsive Picture Properties dialog expose
+90-degree rotation plus horizontal and vertical reflection as one typed
+per-image state. Each command is one controlled TipTap update and one Undo
+record, and the same CSS projection is consumed by editing, preview, and PDF
+capture. DOCX `a:xfrm` `rot`, `flipH`, and `flipV` values import, export, and
+reopen for the supported quarter-turn/reflection subset; arbitrary-angle,
+malformed, and unsupported DrawingML values receive explicit diagnostics and
+normalize safely. Focused model, UI, DOCX round-trip, responsive browser, and
+local A3S Test coverage document the boundary without adding a remote service.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

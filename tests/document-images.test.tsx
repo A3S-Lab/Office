@@ -1,14 +1,13 @@
-import { Editor } from '@tiptap/core';
-import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Editor } from '@tiptap/core';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import JSZip from 'jszip';
 import {
   createArtifact,
   createArtifactBlob,
   importOfficeFile,
 } from '../src/core';
-import { DocumentPictureRibbon } from '../src/internal/features/work/editors/document-picture-ribbon';
 import {
   createDocumentPicturePropertiesDraft,
   documentPicturePropertiesErrors,
@@ -16,6 +15,7 @@ import {
   withDocumentPictureAspectRatioLock,
   withDocumentPictureDimension,
 } from '../src/internal/features/work/editors/document-picture-properties-dialog-model';
+import { DocumentPictureRibbon } from '../src/internal/features/work/editors/document-picture-ribbon';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import {
   documentImageIdentityFromAttributes,
@@ -24,18 +24,24 @@ import {
   type WorkDocumentImageIdentity,
 } from '../src/internal/features/work/work-document-image-identity';
 import {
+  defaultDocumentImageTransform,
   documentImageAlternativeText,
   documentImageLayerCssZIndex,
   documentImageLayoutOptions,
   documentImageProperties,
+  documentImageTransformCss,
+  documentImageTransformFromElement,
   normalizeDocumentImageLayer,
   normalizeDocumentImageLayoutOptions,
+  normalizeDocumentImageRotation,
 } from '../src/internal/features/work/work-document-image-layout';
 import {
   documentImageWrapContourCss,
   normalizeDocumentImageWrapContour,
 } from '../src/internal/features/work/work-document-image-wrap-contour';
 import { measureDocumentLayoutBlocks } from '../src/internal/features/work/work-document-pagination';
+import { readDocxImageTransform } from '../src/internal/features/work/work-docx-image-transform';
+import { analyzeDocxCompatibility } from '../src/internal/features/work/work-office-diagnostics';
 
 const pixelPng =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC' +
@@ -105,6 +111,98 @@ test('keeps typed image layout in the TipTap model and live node view', () => {
     'none',
   );
   editor.destroy();
+});
+
+test('keeps bounded image rotation and reflection in the model and node view', () => {
+  const editor = createImageEditor(
+    [
+      `<img src="${pixelPng}" alt="Transform" width="120" height="80"`,
+      ' data-office-image-rotation="90"',
+      ' data-office-image-flip-horizontal="true">',
+    ].join(''),
+  );
+  selectFirstImage(editor);
+
+  expect(documentImageProperties(editor).transform).toEqual({
+    rotation: 90,
+    flipHorizontal: true,
+    flipVertical: false,
+  });
+  const container = editor.view.dom.querySelector<HTMLElement>(
+    '[data-resize-container][data-node="image"]',
+  );
+  const image = container?.querySelector<HTMLElement>('img');
+  expect(container?.dataset.officeImageRotation).toBe('90');
+  expect(container?.dataset.officeImageFlipHorizontal).toBe('true');
+  expect(image?.dataset.officeImageRotation).toBe('90');
+  expect(
+    container?.style.getPropertyValue('--work-document-image-rotation'),
+  ).toBe('90deg');
+  expect(
+    container?.style.getPropertyValue('--work-document-image-flip-x'),
+  ).toBe('-1');
+  expect(documentImageTransformFromElement(image as HTMLElement)).toEqual({
+    rotation: 90,
+    flipHorizontal: true,
+    flipVertical: false,
+  });
+  expect(documentImageTransformCss(defaultDocumentImageTransform())).toBe('');
+  expect(normalizeDocumentImageRotation(450)).toBe(90);
+  expect(normalizeDocumentImageRotation(45)).toBe(0);
+
+  expect(
+    editor.commands.setDocumentImageProperties({
+      transform: {
+        rotation: 180,
+        flipHorizontal: false,
+        flipVertical: true,
+      },
+    }),
+  ).toBe(true);
+  expect(documentImageProperties(editor).transform).toEqual({
+    rotation: 180,
+    flipHorizontal: false,
+    flipVertical: true,
+  });
+  expect(container?.dataset.officeImageRotation).toBe('180');
+  expect(container?.dataset.officeImageFlipHorizontal).toBeUndefined();
+  expect(container?.dataset.officeImageFlipVertical).toBe('true');
+  expect(editor.commands.undo()).toBe(true);
+  expect(documentImageProperties(editor).transform).toEqual({
+    rotation: 90,
+    flipHorizontal: true,
+    flipVertical: false,
+  });
+  editor.destroy();
+});
+
+test('reads only exact quarter-turn picture transforms from DrawingML', () => {
+  const document = new DOMParser().parseFromString(
+    [
+      '<wp:anchor xmlns:wp="urn:wp" xmlns:pic="urn:pic" xmlns:a="urn:a">',
+      '<pic:pic><pic:spPr><a:xfrm rot="16200000" flipH="1" flipV="0"/></pic:spPr></pic:pic>',
+      '</wp:anchor>',
+    ].join(''),
+    'application/xml',
+  );
+  const supported = readDocxImageTransform(document.documentElement);
+  expect(supported).toEqual({
+    transform: { rotation: 270, flipHorizontal: true, flipVertical: false },
+    supported: true,
+  });
+
+  const malformed = new DOMParser().parseFromString(
+    [
+      '<wp:anchor xmlns:wp="urn:wp" xmlns:pic="urn:pic" xmlns:a="urn:a">',
+      '<pic:pic><pic:spPr><a:xfrm rot="123" flipH="maybe"/></pic:spPr></pic:pic>',
+      '</wp:anchor>',
+    ].join(''),
+    'application/xml',
+  );
+  expect(readDocxImageTransform(malformed.documentElement)).toEqual({
+    transform: null,
+    supported: false,
+  });
 });
 
 test('keeps edited image wrap contours in the model and live presentation', () => {
@@ -728,6 +826,20 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
     fireEvent.click(screen.getByRole('button', { name: label }));
     expect(documentImageLayoutOptions(editor).alignment).toBe(alignment);
   }
+  fireEvent.click(screen.getByRole('button', { name: '向右旋转' }));
+  fireEvent.click(screen.getByRole('button', { name: '向右旋转' }));
+  fireEvent.click(screen.getByRole('button', { name: '水平翻转' }));
+  fireEvent.click(screen.getByRole('button', { name: '垂直翻转' }));
+  expect(documentImageProperties(editor).transform).toEqual({
+    rotation: 180,
+    flipHorizontal: true,
+    flipVertical: true,
+  });
+  view.rerender(<DocumentPictureRibbon editor={editor} />);
+  expect(screen.getByRole('button', { name: '水平翻转' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   fireEvent.click(screen.getByRole('combobox', { name: '图片与文字距离' }));
   fireEvent.click(screen.getByRole('option', { name: '10 毫米' }));
   expect(documentImageLayoutOptions(editor).wrapDistance).toBe(10);
@@ -760,6 +872,11 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
     '2.12',
   );
   expect(screen.getByRole('checkbox', { name: '锁定纵横比' })).toBeChecked();
+  const rotation = screen.getByRole('combobox', { name: '图片旋转角度' });
+  expect(rotation).toHaveTextContent('180°');
+  fireEvent.click(rotation);
+  fireEvent.click(screen.getByRole('option', { name: '90°' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '垂直翻转图片' }));
 
   fireEvent.change(screen.getByRole('textbox', { name: '图片宽度（厘米）' }), {
     target: { value: '6' },
@@ -850,6 +967,11 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
       verticalReference: 'margin',
     },
     crop: { top: 12.5, right: 5, bottom: 2.25, left: 10 },
+    transform: {
+      rotation: 90,
+      flipHorizontal: true,
+      flipVertical: false,
+    },
     layer: {
       relativeHeight: 50_331_648,
       behindDocument: true,
@@ -942,6 +1064,9 @@ test('round-trips supported floating image anchors through DOCX', async () => {
     ' data-office-image-alignment="right"',
     ' data-office-image-wrap-distance="5"',
     ' data-office-image-wrap-side="right"',
+    ' data-office-image-rotation="90"',
+    ' data-office-image-flip-horizontal="true"',
+    ' data-office-image-flip-vertical="true"',
     ' data-office-image-relative-height="50331648"',
     ' data-office-image-behind-document="false"',
     ' data-office-image-allow-overlap="true"',
@@ -1069,6 +1194,9 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   );
   expect(documentXml).toMatch(
     /<a:srcRect\b(?=[^>]*t="12500")(?=[^>]*r="5000")(?=[^>]*b="2250")(?=[^>]*l="10000")/,
+  );
+  expect(documentXml).toMatch(
+    /<a:xfrm\b(?=[^>]*rot="5400000")(?=[^>]*flipH="1")(?=[^>]*flipV="1")/,
   );
   expect(documentXml).toMatch(
     /<a:srcRect\b(?=[^>]*b="10000")(?=[^>]*l="20000")/,
@@ -1200,6 +1328,9 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   expect(alignedImage?.dataset.officeImageDocPropertiesId).toBe('42');
   expect(alignedImage?.dataset.officeImageAnchorId).toBe('1A2B3C4D');
   expect(alignedImage?.dataset.officeImageEditId).toBe('0A0B0C0D');
+  expect(alignedImage?.dataset.officeImageRotation).toBe('90');
+  expect(alignedImage?.dataset.officeImageFlipHorizontal).toBe('true');
+  expect(alignedImage?.dataset.officeImageFlipVertical).toBe('true');
   expect(
     alignedImage?.style.getPropertyValue('--work-document-image-z-index'),
   ).toBe('11720');
@@ -1227,6 +1358,9 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   expect(regeneratedXml).toMatch(
     /<a:srcRect\b(?=[^>]*t="12500")(?=[^>]*r="5000")(?=[^>]*b="2250")(?=[^>]*l="10000")/,
   );
+  expect(regeneratedXml).toMatch(
+    /<a:xfrm\b(?=[^>]*rot="5400000")(?=[^>]*flipH="1")(?=[^>]*flipV="1")/,
+  );
   expect(regeneratedXml).toMatch(/<wp:wrapTight\b(?=[^>]*wrapText="largest")/);
   expect(regeneratedXml).toMatch(/<wp:wrapThrough\b(?=[^>]*wrapText="left")/);
   expect(regeneratedXml).toContain('<wp:wrapNone');
@@ -1242,6 +1376,32 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   );
   expect(regeneratedXml).toMatch(
     /<wp:inline\b(?=[^>]*wp14:anchorId="0BADF00D")(?=[^>]*wp14:editId="10203040")[\s\S]*?<wp:docPr\b(?=[^>]*id="77")(?=[^>]*name="Inline crop")/,
+  );
+});
+
+test('reports arbitrary native picture transforms as a visible compatibility boundary', async () => {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document')
+    throw new Error('Expected a document artifact.');
+  artifact.content.html = `<img src="${pixelPng}" alt="Rotated" width="120" height="80">`;
+  const blob = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const documentEntry = archive.file('word/document.xml');
+  if (!documentEntry) throw new Error('Expected a document XML part.');
+  const documentXml = await documentEntry.async('string');
+  archive.file(
+    'word/document.xml',
+    documentXml.replace('<a:xfrm>', '<a:xfrm rot="123">'),
+  );
+  const mutated = await archive.generateAsync({ type: 'arraybuffer' });
+  const report = await analyzeDocxCompatibility(
+    new File([mutated], 'arbitrary-transform.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    }),
+    [],
+  );
+  expect(report.issues).toContainEqual(
+    expect.objectContaining({ code: 'docx.images.transform' }),
   );
 });
 

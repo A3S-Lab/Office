@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.45.0' ||
     version === '0.44.0' ||
     version === '0.43.0' ||
     version === '0.42.0' ||
@@ -76,6 +77,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.45.0',
     '0.44.0',
     '0.43.0',
     '0.42.0',
@@ -372,6 +374,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
+  expect(readme).toContain('Version `0.45.0`');
   expect(readme).toContain('Version `0.44.0`');
   expect(readme).toContain('Version `0.43.0`');
   expect(readme).toContain(
@@ -383,7 +386,7 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.44.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.45.0)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
   expect(englishHome).toContain(
     'spreadsheet.html#formula-conditional-formatting',
@@ -402,8 +405,9 @@ test('routes the concise README and documentation homes to the current release s
   expect(englishHome).toContain(
     'spreadsheet.html#xlsx-1904-date-system-retention',
   );
+  expect(englishHome).toContain('document.html#built-in-picture-properties');
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.44.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.45.0）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
   expect(chineseHome).toContain('spreadsheet.html#公式条件格式');
   expect(chineseHome).toContain('spreadsheet.html#依赖下拉列表');
@@ -414,6 +418,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(chineseHome).toContain('presentation.html#进入与退出动画');
   expect(chineseHome).toContain('document.html#原生-opentype-排版');
   expect(chineseHome).toContain('spreadsheet.html#xlsx-1904-日期系统保留');
+  expect(chineseHome).toContain('document.html#图片属性');
 });
 
 test('publishes Writer numbering revisions across implementation, native collaboration, docs, and release evidence', async () => {
@@ -1475,6 +1480,80 @@ test('publishes Spreadsheet dependent dropdowns across implementation, docs, and
     'Spreadsheet dependent dropdowns follow local driver values',
   );
   expect(acl).toContain('scenario "follow-dependent-dropdown-drivers"');
+});
+
+test('publishes Writer picture transforms across implementation, docs, and browser evidence', async () => {
+  const [
+    changelog,
+    roadmap,
+    product,
+    readme,
+    english,
+    chinese,
+    frozenEnglish,
+    frozenChinese,
+    releaseData,
+    unitTest,
+    visual,
+    acl,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(
+      path.join(repositoryRoot, 'docs/latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'docs/latest/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'docs/0.45.0/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'docs/0.45.0/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'website/theme/release-notes-data.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/document-images.test.tsx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/document-picture.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/word-picture-alt-text-phone.acl'),
+      'utf8',
+    ),
+  ]);
+
+  expect(changelog).toContain('## 0.45.0 - 2026-09-02');
+  expect(changelog).toContain('bounded Writer picture-transform workflow');
+  expect(roadmap).toContain('quarter-turn transforms');
+  expect(product).toContain('The sixty-fourth Writer milestone');
+  expect(readme).toContain('Version `0.45.0`');
+  for (const source of [english, chinese, frozenEnglish, frozenChinese]) {
+    expect(source).toContain('a:xfrm');
+    expect(source).toContain('90');
+  }
+  expect(english).toContain('## Built-in picture properties');
+  expect(chinese).toContain('## 图片属性');
+  expect(releaseData).toContain("version: '0.45.0'");
+  expect(releaseData).toContain('picture-transform');
+  expect(unitTest).toContain('bounded image rotation and reflection');
+  expect(visual).toContain('向右旋转');
+  expect(acl).toContain('picture-transform-saved');
 });
 
 test('publishes editable formula conditional formatting across code, docs, and Playground', async () => {

@@ -5,6 +5,7 @@ import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
 import { diagnoseDocxEmphasisMarks } from './work-docx-emphasis-diagnostics';
 import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
 import { diagnoseDocxHiddenText } from './work-docx-hidden-text-diagnostics';
+import { readDocxImageTransform } from './work-docx-image-transform';
 import { diagnoseDocxKerning } from './work-docx-kerning-diagnostics';
 import { diagnoseDocxLegacyTextEffects } from './work-docx-legacy-text-effects-diagnostics';
 import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
@@ -292,13 +293,24 @@ export async function analyzeDocxCompatibility(
         descendants(document, 'drawing').length ||
         descendants(document, 'pict').length
       ) {
+        const unsupportedImageTransforms =
+          docxUnsupportedImageTransformCount(document);
         issues.push(
           issue(
             'docx.images',
             'Images',
-            'Inline images and supported square, tight, through, top-and-bottom, or no-wrap free-floating images remain embedded with editable size, alternative text, alignment, wrap side and distance where applicable, signed horizontal or vertical offsets relative to the column, paragraph, margin, or page, four-edge percentage cropping, and drawing-layer options. Aligned and precise DOCX anchors retain their distinct position semantics; inline and floating crop geometry round-trips as DrawingML source rectangles; tight or through anchors retain their ordered wrap polygons; no-wrap anchors remain outside the body text flow and use behind-text placement to choose their side of the text; and supported floating images preserve relative Z-order, overlap and cell-layout policy, and anchor locking. Inline and floating pictures retain unique drawing-property and anchor IDs together with their edit IDs. Copies receive independent identities while move, delete, undo, and relationship regeneration retain the original object identity. Unsupported drawing types may be normalized.',
+            'Inline images and supported square, tight, through, top-and-bottom, or no-wrap free-floating images remain embedded with editable size, alternative text, alignment, wrap side and distance where applicable, signed horizontal or vertical offsets relative to the column, paragraph, margin, or page, four-edge percentage cropping, 90-degree rotation, horizontal or vertical reflection, and drawing-layer options. Aligned and precise DOCX anchors retain their distinct position semantics; inline and floating crop geometry round-trips as DrawingML source rectangles; tight or through anchors retain their ordered wrap polygons; no-wrap anchors remain outside the body text flow and use behind-text placement to choose their side of the text; and supported floating images preserve relative Z-order, overlap and cell-layout policy, and anchor locking. Inline and floating pictures retain unique drawing-property and anchor IDs together with their edit IDs. Copies receive independent identities while move, delete, undo, and relationship regeneration retain the original object identity. Arbitrary-angle or malformed picture transforms and unsupported drawing types may be normalized.',
           ),
         );
+        if (unsupportedImageTransforms) {
+          issues.push(
+            issue(
+              'docx.images.transform',
+              'Image transforms',
+              `${unsupportedImageTransforms} picture transform(s) use an arbitrary angle or malformed rotation/reflection value. Work imports the editable 90-degree/reflection subset and normalizes the unsupported transform instead of exposing an inexact control.`,
+            ),
+          );
+        }
       }
       const textRevisions = [
         ...descendants(document, 'ins'),
@@ -945,6 +957,18 @@ async function inspectXlsxPackage(
       );
     }
   }
+}
+
+function docxUnsupportedImageTransformCount(document: Document): number {
+  const drawings = [
+    ...descendants(document, 'anchor'),
+    ...descendants(document, 'inline'),
+  ];
+  return drawings.filter(
+    (drawing) =>
+      descendants(drawing, 'pic').length > 0 &&
+      !readDocxImageTransform(drawing).supported,
+  ).length;
 }
 
 function report(
