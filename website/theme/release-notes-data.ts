@@ -42,6 +42,68 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.43.0',
+    date: '2026-09-02',
+    kind: 'new',
+    surfaces: ['spreadsheet', 'shared', 'playground'],
+    title: {
+      en: 'Spreadsheet conditional formatting is now formula-editable',
+      zh: '表格条件格式现在支持公式编辑',
+    },
+    summary: {
+      en: 'A local, bounded formula rule closes the most common conditional-format gap while keeping precedence, blank ranges, and native XLSX semantics inspectable.',
+      zh: '本地有界公式规则补上最常用的条件格式缺口，同时让优先级、空白区域和原生 XLSX 语义保持可检查。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Author in one rule manager',
+          zh: '在同一个规则管理器中编辑',
+        },
+        detail: {
+          en: 'Home → Conditional Formatting exposes a first-class Custom formula editor with relative/absolute references, cross-sheet cells, independent text/fill colors, and Stop-if-true ordering.',
+          zh: '开始 → 条件格式提供一等自定义公式编辑器，支持相对/绝对引用、跨表单元格、独立文字/填充颜色和匹配后停止的优先级。',
+        },
+      },
+      {
+        title: { en: 'Local and bounded', zh: '本地且有界' },
+        detail: {
+          en: 'Only cached workbook values are read: formulas are capped at 255 Unicode characters and 1,024 referenced cells, with bounded blank-cell scans and fail-closed unsafe references.',
+          zh: '只读取工作簿缓存值：公式最多 255 个 Unicode 字符、每次最多读取 1,024 个单元格，有界扫描空白单元格，遇到不安全引用会安全失败。',
+        },
+      },
+      {
+        title: {
+          en: 'Native round trip and a real template',
+          zh: '原生往返与真实模板',
+        },
+        detail: {
+          en: 'XLSX expression records, differential styles, sqref, and priorities survive export and reopen; the public formula conditional-format template shows the workflow without a remote service.',
+          zh: 'XLSX expression 条件记录、差异样式、sqref 和优先级可在导出与重开后保留；公开公式条件格式模板展示了无需远程服务的完整流程。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/spreadsheet.html#formula-conditional-formatting',
+          zh: './components/spreadsheet.html#公式条件格式',
+        },
+        label: {
+          en: 'Read the formula conditional-format guide',
+          zh: '阅读公式条件格式指南',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.43.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.43.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.42.0',
     date: '2026-09-02',
     kind: 'new',

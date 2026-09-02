@@ -667,7 +667,15 @@ function SpreadsheetEditorSurface({
       new Map(
         materializedContent.sheets.flatMap((sheet) =>
           sheet.id
-            ? [[sheet.id, spreadsheetConditionalFormatStyles(sheet)] as const]
+            ? [
+                [
+                  sheet.id,
+                  spreadsheetConditionalFormatStyles(
+                    sheet,
+                    materializedContent.sheets,
+                  ),
+                ] as const,
+              ]
             : [],
         ),
       ),

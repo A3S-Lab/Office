@@ -29,6 +29,14 @@ import type {
   FortuneConditionalFormatRule,
   FortuneConditionalFormatStyle,
 } from './work-xlsx-conditional-format';
+import {
+  evaluateSpreadsheetLocalFormula,
+  spreadsheetLocalFormulaBoolean,
+  type SpreadsheetFormulaSheet,
+} from './work-spreadsheet-local-formula';
+
+/** Full formula-rule scans stay bounded; larger ranges use materialized cells. */
+export const MAX_SPREADSHEET_CONDITIONAL_FORMULA_SCAN_CELLS = 10_000;
 
 export interface SpreadsheetConditionalCellStyle {
   textColor?: string;
@@ -44,12 +52,14 @@ interface CellPosition {
 
 export function spreadsheetConditionalFormatStyles(
   sheet: Sheet,
+  formulaSheets?: readonly Sheet[],
 ): Map<string, SpreadsheetConditionalCellStyle> {
   const styles = new Map<string, SpreadsheetConditionalCellStyle>();
   const data = sheet.data ?? [];
-  if (!data.length) return styles;
+  const rules = conditionalRules(sheet);
+  if (!data.length && !rules.some(isFormulaConditionalRule)) return styles;
   const blocked = new Set<string>();
-  for (const rule of conditionalRules(sheet)) {
+  for (const rule of rules) {
     const matched = new Set<string>();
     if (rule.type === 'colorGradation')
       applyColorScale(styles, data, rule, blocked, matched);
@@ -57,10 +67,23 @@ export function spreadsheetConditionalFormatStyles(
       applyDataBars(styles, data, rule, blocked, matched);
     else if (rule.type === 'icons')
       applyIconSet(styles, data, rule, blocked, matched);
-    else applyDefaultRule(styles, data, rule, blocked, matched);
+    else
+      applyDefaultRule(
+        styles,
+        data,
+        rule,
+        blocked,
+        matched,
+        formulaSheets,
+        sheet,
+      );
     if (rule.stopIfTrue) for (const key of matched) blocked.add(key);
   }
   return styles;
+}
+
+function isFormulaConditionalRule(rule: FortuneConditionalFormatRule): boolean {
+  return rule.type === 'default' && rule.conditionName === 'formula';
 }
 
 function applyDefaultRule(
@@ -69,6 +92,8 @@ function applyDefaultRule(
   rule: FortuneConditionalFormatRule,
   blocked: Set<string>,
   matched: Set<string>,
+  formulaSheets: readonly Sheet[] | undefined,
+  currentSheet: Sheet,
 ) {
   if (
     rule.type !== 'default' ||
@@ -80,8 +105,17 @@ function applyDefaultRule(
   const style = rule.format;
   if (rule.conditionName === 'formula' && values[0]) {
     for (const range of rule.cellrange) {
-      forEachCell(data, [range], ({ row, column }) => {
-        if (evaluateFormula(values[0], row, column, range, data)) {
+      forEachFormulaCell(data, [range], ({ row, column }) => {
+        if (
+          evaluateFormula(
+            values[0],
+            row,
+            column,
+            range,
+            currentSheet,
+            formulaSheets,
+          )
+        ) {
           applyDifferentialStyle(styles, blocked, matched, row, column, style);
         }
       });
@@ -380,78 +414,24 @@ function evaluateFormula(
   row: number,
   column: number,
   baseRange: FortuneConditionalFormatRange,
-  data: CellMatrix,
+  currentSheet: Sheet,
+  formulaSheets: readonly Sheet[] | undefined,
 ): boolean {
-  const formula = source.trim().replace(/^=/, '').replace(/\s+/g, '');
-  if (/^TRUE\(\)?$/i.test(formula)) return true;
-  if (/^FALSE\(\)?$/i.test(formula)) return false;
-  const parity = /^MOD\((ROW|COLUMN)\(\),(\d+)\)(=|<>|>=|<=|>|<)(-?\d+)$/i.exec(
-    formula,
-  );
-  if (parity) {
-    const value = parity[1].toUpperCase() === 'ROW' ? row + 1 : column + 1;
-    return compareWithOperator(
-      value % Number(parity[2]),
-      parity[3],
-      Number(parity[4]),
-    );
-  }
-  const blank =
-    /^(NOT\()?ISBLANK\((\$?)([A-Z]{1,3})(\$?)([1-9]\d*)\)\)?$/i.exec(formula);
-  if (blank) {
-    const target = formulaReference(
-      blank[2],
-      blank[3],
-      blank[4],
-      blank[5],
-      row,
-      column,
-      baseRange,
-    );
-    const empty =
-      cellValue(data, target.row, target.column) == null ||
-      cellValue(data, target.row, target.column) === '';
-    return blank[1] ? !empty : empty;
-  }
-  const comparison =
-    /^(\$?)([A-Z]{1,3})(\$?)([1-9]\d*)(=|<>|>=|<=|>|<)(?:"((?:[^"]|"")*)"|(-?\d+(?:\.\d+)?))$/i.exec(
-      formula,
-    );
-  if (!comparison) return false;
-  const target = formulaReference(
-    comparison[1],
-    comparison[2],
-    comparison[3],
-    comparison[4],
+  const sheets: SpreadsheetFormulaSheet[] = [
+    toFormulaSheet(currentSheet),
+    ...(formulaSheets ?? [])
+      .filter((sheet) => sheet.id && sheet.id !== currentSheet.id)
+      .map(toFormulaSheet),
+  ];
+  const result = evaluateSpreadsheetLocalFormula(source, {
+    sheets,
+    sheetId: currentSheet.id ?? '',
     row,
     column,
-    baseRange,
-  );
-  const left = cellValue(data, target.row, target.column);
-  const right =
-    comparison[6] !== undefined
-      ? comparison[6].replaceAll('""', '"')
-      : Number(comparison[7]);
-  return compareWithOperator(left, comparison[5], right);
-}
-
-function formulaReference(
-  absoluteColumn: string,
-  columnName: string,
-  absoluteRow: string,
-  rowNumber: string,
-  row: number,
-  column: number,
-  baseRange: FortuneConditionalFormatRange,
-): CellPosition {
-  const sourceColumn = decodeColumn(columnName);
-  const sourceRow = Number(rowNumber) - 1;
-  return {
-    row: absoluteRow ? sourceRow : sourceRow + row - baseRange.row[0],
-    column: absoluteColumn
-      ? sourceColumn
-      : sourceColumn + column - baseRange.column[0],
-  };
+    anchorRow: baseRange.row[0],
+    anchorColumn: baseRange.column[0],
+  });
+  return result.supported && spreadsheetLocalFormulaBoolean(result.value);
 }
 
 function applyDifferentialStyle(
@@ -564,6 +544,31 @@ function forEachCell(
   }
 }
 
+function forEachFormulaCell(
+  data: CellMatrix,
+  ranges: FortuneConditionalFormatRange[],
+  visit: (position: CellPosition) => void,
+) {
+  for (const range of ranges) {
+    const area =
+      (range.row[1] - range.row[0] + 1) *
+      (range.column[1] - range.column[0] + 1);
+    if (area > 0 && area <= MAX_SPREADSHEET_CONDITIONAL_FORMULA_SCAN_CELLS) {
+      for (let row = range.row[0]; row <= range.row[1]; row += 1) {
+        for (
+          let column = range.column[0];
+          column <= range.column[1];
+          column += 1
+        ) {
+          visit({ row, column });
+        }
+      }
+      continue;
+    }
+    forEachCell(data, [range], visit);
+  }
+}
+
 function cellValue(data: CellMatrix, row: number, column: number): unknown {
   return data[row]?.[column]?.v ?? null;
 }
@@ -595,23 +600,11 @@ function compareValues(left: unknown, right: unknown): number {
   return String(left).localeCompare(String(right));
 }
 
-function compareWithOperator(
-  left: unknown,
-  operator: string,
-  right: unknown,
-): boolean {
-  const comparison = compareValues(left, right);
-  if (operator === '=') return comparison === 0;
-  if (operator === '<>') return comparison !== 0;
-  if (operator === '>') return comparison > 0;
-  if (operator === '<') return comparison < 0;
-  if (operator === '>=') return comparison >= 0;
-  return operator === '<=' && comparison <= 0;
-}
-
-function decodeColumn(value: string): number {
-  let result = 0;
-  for (const character of value.toUpperCase())
-    result = result * 26 + character.charCodeAt(0) - 64;
-  return result - 1;
+function toFormulaSheet(sheet: Sheet): SpreadsheetFormulaSheet {
+  return {
+    id: sheet.id ?? '',
+    name: sheet.name,
+    data: sheet.data,
+    celldata: sheet.celldata as SpreadsheetFormulaSheet['celldata'],
+  };
 }

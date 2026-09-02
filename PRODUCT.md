@@ -880,6 +880,22 @@ local A3S Test numbering suite cover review, rejection, Undo, accessibility,
 and clean diagnostics. Complex and multi-level numbering changes, move ranges,
 and section/table/row/cell property revisions remain explicit follow-up work.
 
+The sixty-second Spreadsheet milestone completes the first editable formula
+conditional-format path. Home → Conditional Formatting authors bounded local
+rules with relative/absolute references, finite worksheet-qualified references,
+independent text/fill colors, ordered precedence, and Stop-if-true behavior;
+imported XLSX `expression` rules use the same editor instead of becoming a
+file-only record. A shared synchronous evaluator reads only cached values,
+limits each formula to 255 Unicode characters and 1,024 referenced cells, scans
+bounded blank ranges without densifying the workbook, and fails closed for
+external, whole-row/column, missing-sheet, or uncached-formula references.
+Native differential styles, `sqref`, priorities, and formulas survive export
+and reopen. The public **新建 → 公式条件格式** template and focused Rstest,
+desktop/compact Playwright, accessibility, and local A3S Test gates make this
+boundary inspectable without a remote service. Formula-function breadth,
+large-range Worker evaluation, and advanced visual rule families remain
+explicit follow-up work.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

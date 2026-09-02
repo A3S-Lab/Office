@@ -9,12 +9,10 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(19);
-  await expect(cards.first()).toContainText('v0.42.0');
-  await expect(cards.first()).toContainText(
-    '表格验证规则现在支持本地自定义公式',
-  );
-  await expect(cards.nth(1)).toContainText(
+  await expect(cards).toHaveCount(20);
+  await expect(cards.first()).toContainText('v0.43.0');
+  await expect(cards.first()).toContainText('表格条件格式现在支持公式编辑');
+  await expect(cards.nth(2)).toContainText(
     '表格数据验证警告现在与 Office 决策一致',
   );
   await expect(
@@ -52,8 +50,8 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     path: testInfo.outputPath('docs-changelog.png'),
   });
 
-  await page.getByRole('link', { name: '阅读自定义公式验证指南' }).click();
-  await expect(page.locator('h3#自定义公式')).toBeInViewport();
+  await page.getByRole('link', { name: '阅读公式条件格式指南' }).click();
+  await expect(page.locator('h2#公式条件格式')).toBeInViewport();
 
   await page.goto('/docs/0.38.0/changelog.html');
   await expect(page.locator('.office-release-card')).toHaveCount(14);
@@ -66,7 +64,10 @@ test('documentation changelog stays scannable, localized, and version-aware', as
   await expect(
     page.getByRole('heading', { level: 1, name: "What's new" }),
   ).toBeVisible();
-  await expect(page.locator('.office-release-card').first()).toContainText(
-    'Spreadsheet rules can now be local custom formulas',
-  );
+  await expect(
+    page.locator('.office-release-card[data-version="0.43.0"]'),
+  ).toContainText('Spreadsheet conditional formatting is now formula-editable');
+  await expect(
+    page.locator('.office-release-card[data-version="0.42.0"]'),
+  ).toContainText('Spreadsheet rules can now be local custom formulas');
 });

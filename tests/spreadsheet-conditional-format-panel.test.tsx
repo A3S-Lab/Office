@@ -117,3 +117,32 @@ test('keeps a newly saved conditional rule stable until controlled content catch
   );
   expect(screen.getByRole('button', { name: '保存规则' })).toBeDisabled();
 });
+
+test('authors an accessible local formula rule with an explicit style', () => {
+  const changes: WorkSpreadsheetContent[] = [];
+  render(
+    <SpreadsheetConditionalFormatPanel
+      content={{
+        type: 'spreadsheet',
+        sheets: [{ id: 'sheet-1', name: '工作表 1', status: 1, data: [] }],
+      }}
+      onChange={(next) => changes.push(next)}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('combobox', { name: '条件格式规则类型' }));
+  fireEvent.click(screen.getByRole('option', { name: '自定义公式' }));
+  const formula = screen.getByRole('textbox', { name: '条件格式公式' });
+  expect(formula).toHaveAttribute('maxlength', '256');
+  fireEvent.change(formula, { target: { value: '=A2>0' } });
+  fireEvent.click(screen.getByRole('button', { name: '保存规则' }));
+
+  expect(changes).toHaveLength(1);
+  expect(changes[0]?.sheets[0]?.luckysheet_conditionformat_save).toEqual([
+    expect.objectContaining({
+      conditionName: 'formula',
+      conditionValue: ['=A2>0'],
+      cellrange: [{ row: [0, 9], column: [0, 0] }],
+    }),
+  ]);
+});

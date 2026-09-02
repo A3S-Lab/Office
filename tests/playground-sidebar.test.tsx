@@ -32,24 +32,38 @@ test('keeps examples in the template grid without a latest-capabilities promotio
   const structuredReferences = templates.querySelector<HTMLButtonElement>(
     "button[data-template-id='structured-references']",
   );
+  const conditionalFormat = templates.querySelector<HTMLButtonElement>(
+    "button[data-template-id='conditional-format']",
+  );
   const objectAnimations = templates.querySelector<HTMLButtonElement>(
     "button[data-template-id='animated-deck']",
   );
   expect(dataValidation).not.toBeNull();
+  expect(conditionalFormat).not.toBeNull();
   expect(structuredReferences).not.toBeNull();
   expect(objectAnimations).not.toBeNull();
-  if (!dataValidation || !structuredReferences || !objectAnimations) return;
+  if (
+    !dataValidation ||
+    !conditionalFormat ||
+    !structuredReferences ||
+    !objectAnimations
+  )
+    return;
   fireEvent.click(dataValidation);
 
   expect(createdTemplates).toEqual(['data-validation']);
+  fireEvent.click(conditionalFormat);
+  expect(createdTemplates).toEqual(['data-validation', 'conditional-format']);
   fireEvent.click(structuredReferences);
   expect(createdTemplates).toEqual([
     'data-validation',
+    'conditional-format',
     'structured-references',
   ]);
   fireEvent.click(objectAnimations);
   expect(createdTemplates).toEqual([
     'data-validation',
+    'conditional-format',
     'structured-references',
     'animated-deck',
   ]);

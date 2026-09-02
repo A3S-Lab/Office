@@ -16,6 +16,7 @@ import {
 } from './work-document-run-shading';
 import type { WorkDocumentScriptFontSlot } from './work-document-script-fonts';
 import { documentTableOfContentsHtml } from './work-document-table-of-contents';
+import type { FortuneConditionalFormatRule } from './work-xlsx-conditional-format';
 import type {
   WorkArtifact,
   WorkArtifactContent,
@@ -120,6 +121,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     accent: '#13795b',
   },
   {
+    id: 'conditional-format',
+    kind: 'spreadsheet',
+    name: '公式条件格式',
+    description: '相对引用、跨表阈值、停止后续规则与本地实时强调',
+    accent: '#2f6fed',
+  },
+  {
     id: 'structured-references',
     kind: 'spreadsheet',
     name: '结构化引用',
@@ -186,6 +194,7 @@ function initialTitle(templateId: string, kind: WorkArtifactKind): string {
     'proofing-languages': '校对语言示例',
     'quarterly-plan': '季度执行计划',
     'data-validation': '数据验证示例',
+    'conditional-format': '公式条件格式示例',
     'structured-references': '结构化引用示例',
     'strategy-deck': '业务策略汇报',
     'animated-deck': '进入与退出动画示例',
@@ -462,6 +471,9 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
   if (templateId === 'data-validation') {
     return { type: 'spreadsheet', sheets: dataValidationTemplateSheets() };
   }
+  if (templateId === 'conditional-format') {
+    return { type: 'spreadsheet', sheets: conditionalFormatTemplateSheets() };
+  }
   if (templateId === 'structured-references') {
     return { type: 'spreadsheet', sheets: structuredReferenceTemplateSheets() };
   }
@@ -707,6 +719,120 @@ function dataValidationTemplateSheets(): WorkSpreadsheetSheet[] {
         [styledCell('In review')],
       ],
       config: { columnlen: { 0: 120 } },
+    },
+  ];
+}
+
+function conditionalFormatTemplateSheets(): WorkSpreadsheetSheet[] {
+  const status = emptyMatrix(18, 8);
+  status[0][0] = styledCell('公式条件格式 · 发布看板', {
+    bl: 1,
+    fs: 16,
+    fc: '#ffffff',
+    bg: '#2f6fed',
+  });
+  status[1][0] = styledCell(
+    '公式以 A2:H7 左上角为锚点；先标记阻塞项，再强调达到阈值的任务。',
+    { fc: '#49617f', fs: 10 },
+  );
+  ['任务', '负责人', '完成率', '状态', '预算', '实际', '偏差', '备注'].forEach(
+    (value, column) => {
+      status[2][column] = headerCell(value);
+    },
+  );
+  const rows: Array<
+    [string, string, number, string, number, number, string, string]
+  > = [
+    ['需求确认', 'Avery', 1, '完成', 12000, 11800, '按期', '可发布'],
+    ['接口联调', 'Morgan', 0.82, '进行中', 18000, 20100, '超支', '关注预算'],
+    ['回归测试', 'Riley', 0.54, '阻塞', 15000, 7600, '暂停', '等待依赖'],
+    ['文档发布', 'Jordan', 0.76, '进行中', 9000, 8800, '按期', '待审阅'],
+    ['版本发布', 'Taylor', 0.38, '未开始', 22000, 0, '未开始', '尚未排期'],
+    ['复盘会议', 'Avery', 0.9, '进行中', 4000, 3500, '按期', '本周完成'],
+  ];
+  rows.forEach((row, rowIndex) => {
+    row.forEach((value, columnIndex) => {
+      status[rowIndex + 3][columnIndex] = styledCell(value, {
+        bg: rowIndex % 2 ? '#f6f9ff' : '#ffffff',
+        ...(columnIndex === 2
+          ? {
+              ct: { fa: '0%', t: 'n' },
+              m: `${Math.round(Number(value) * 100)}%`,
+            }
+          : {}),
+        ...(columnIndex === 4 || columnIndex === 5
+          ? { ct: { fa: '#,##0', t: 'n' }, m: Number(value).toLocaleString() }
+          : {}),
+      });
+    });
+  });
+  status[11][0] = styledCell('本地规则示例', {
+    bl: 1,
+    fc: '#244b9b',
+  });
+  status[12][0] = styledCell('阻塞项（停止后续规则）');
+  status[12][1] = styledCell('=$D4="阻塞"');
+  status[13][0] = styledCell('达标项（跨表阈值）');
+  status[13][1] = styledCell('=AND($C4>=Limits!$A$2,$D4<>"阻塞")');
+
+  const blockRule: FortuneConditionalFormatRule = {
+    type: 'default',
+    cellrange: [{ row: [3, 8], column: [0, 7] }],
+    format: { textColor: '#9c0006', cellColor: '#ffc7ce' },
+    conditionName: 'formula',
+    conditionRange: [],
+    conditionValue: ['=$D4="阻塞"'],
+    stopIfTrue: true,
+  };
+  const completedRule: FortuneConditionalFormatRule = {
+    type: 'default',
+    cellrange: [{ row: [3, 8], column: [0, 7] }],
+    format: { textColor: '#006100', cellColor: '#c6efce' },
+    conditionName: 'formula',
+    conditionRange: [],
+    conditionValue: ['=AND($C4>=Limits!$A$2,$D4<>"阻塞")'],
+  };
+
+  return [
+    {
+      id: createWorkId('sheet'),
+      name: 'Status',
+      status: 1,
+      order: 0,
+      row: 18,
+      column: 8,
+      data: status,
+      luckysheet_conditionformat_save: [blockRule, completedRule],
+      config: {
+        columnlen: {
+          0: 132,
+          1: 92,
+          2: 84,
+          3: 86,
+          4: 92,
+          5: 92,
+          6: 84,
+          7: 116,
+        },
+        rowlen: { 0: 34, 1: 26, 2: 28, 12: 24, 13: 24 },
+        merge: { '0_0': { r: 0, c: 0, rs: 1, cs: 8 } },
+      },
+    },
+    {
+      id: createWorkId('sheet'),
+      name: 'Limits',
+      status: 0,
+      order: 1,
+      row: 8,
+      column: 4,
+      data: [
+        [headerCell('完成率阈值'), styledCell('说明')],
+        [
+          styledCell(0.8, { ct: { fa: '0%', t: 'n' }, m: '80%' }),
+          styledCell('达到阈值并且未阻塞的任务使用绿色强调。'),
+        ],
+      ],
+      config: { columnlen: { 0: 120, 1: 300 }, rowlen: { 0: 28, 1: 36 } },
     },
   ];
 }

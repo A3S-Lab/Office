@@ -309,6 +309,21 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.43.0` makes Spreadsheet formula conditional formatting a local,
+editable workflow instead of a file-only preservation path:
+
+- **Home → Conditional Formatting → Custom formula** authors rules with
+  relative/absolute references, finite cross-sheet references, independent
+  text/fill colors, ordered precedence, and Stop-if-true behavior. Imported
+  XLSX expression rules reopen in the same editor.
+- The shared synchronous evaluator reads only cached workbook values, caps
+  formulas at 255 Unicode characters and each decision at 1,024 cells, scans
+  bounded blank ranges without densifying the workbook, and fails closed for
+  external, whole-row/column, missing-sheet, or uncached-formula references.
+- Native XLSX differential styles, `sqref`, priorities, and formulas round-trip
+  through export/reopen. The public **新建 → 公式条件格式** template shows a
+  blocking rule and a cross-sheet threshold without any remote service.
+
 Version `0.42.0` extends Spreadsheet data validation with a local custom-formula
 workflow that remains bounded, inspectable, and native-file compatible:
 
