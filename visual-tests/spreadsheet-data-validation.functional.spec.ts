@@ -44,6 +44,32 @@ test('Spreadsheet data validation is discoverable from the public Playground', a
   await expect(
     dialog.getByRole('textbox', { name: '错误警告标题' }),
   ).toHaveValue('Invalid state');
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  const grid = page.locator('.fortune-sheet-overlay');
+  await grid.focus();
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('ArrowDown');
+  for (let index = 0; index < 4; index += 1)
+    await page.keyboard.press('ArrowRight');
+  await expect(page.locator('.fortune-name-box')).toHaveText('E2');
+  await ribbon.getByRole('button', { name: '数据验证' }).click();
+
+  const customDialog = page.getByRole('dialog', { name: '数据验证' });
+  await expect(customDialog).toContainText('Inputs!E2');
+  await expect(
+    customDialog.getByRole('combobox', { name: '允许' }),
+  ).toHaveValue('custom');
+  await expect(customDialog.getByRole('textbox', { name: '公式' })).toHaveValue(
+    'LEN(E2)>0',
+  );
+  await expect(
+    customDialog.getByRole('combobox', { name: '数据' }),
+  ).toHaveCount(0);
+  await expect(
+    customDialog.getByRole('textbox', { name: '错误警告标题' }),
+  ).toHaveValue('Owner required');
   expect(browserErrors).toEqual([]);
 });
 
@@ -242,10 +268,22 @@ test('Spreadsheet follows Traditional Office error-alert branches while editing'
   await expect(nameBox).toHaveText('D2');
   await expect(formulaBar).toHaveText('9');
 
+  await editSelectedCell('E2', '');
+  dialog = page.getByRole('dialog', { name: 'Owner required' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('Enter an owner for every task.');
+  await expect(dialog.getByRole('button', { name: '知道了' })).toBeVisible();
+  await dialog.getByRole('button', { name: '知道了' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(grid).toBeFocused();
+  await expect(nameBox).toHaveText('E2');
+  await expect(formulaBar).toHaveText('Avery');
+
   expect(browserErrors).toEqual([]);
 
   async function editSelectedCell(reference: string, value: string) {
     await grid.focus();
+    await expect(grid).toBeFocused();
     await page.keyboard.press('Control+Home');
     const column = reference.charCodeAt(0) - 'A'.charCodeAt(0);
     const row = Number(reference.slice(1)) - 1;
@@ -256,7 +294,11 @@ test('Spreadsheet follows Traditional Office error-alert branches while editing'
     await expect(nameBox).toHaveText(reference);
     await formulaBar.click();
     await page.keyboard.press('Control+a');
-    await page.keyboard.insertText(value);
+    if (value) await page.keyboard.insertText(value);
+    else {
+      await formulaBar.fill('');
+      await expect(formulaBar).toBeEmpty();
+    }
     await formulaBar.press('Enter');
   }
 });

@@ -103,6 +103,27 @@
   gap: 8px;
 }
 
+.work-spreadsheet-data-validation-custom-formula {
+  display: grid;
+  gap: 8px;
+}
+
+.work-spreadsheet-data-validation-formula-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: -2px 0 0;
+  color: var(--a3s-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.work-spreadsheet-data-validation-formula-note svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--work-spreadsheet-accent, #159469);
+}
+
 .work-spreadsheet-data-validation-inline-error {
   grid-column: 1 / -1;
   color: var(--a3s-danger, #c23535);

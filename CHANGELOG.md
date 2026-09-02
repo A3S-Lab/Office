@@ -4,6 +4,22 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.42.0 - 2026-09-02
+
+- Added Office-style Spreadsheet custom-formula validation. The shared Data
+  Validation dialog now authors bounded local formulas with an optional `=`
+  prefix, hides irrelevant numeric operators, and keeps the formula visible as
+  a first-class rule instead of a file-only escape hatch.
+- Added a synchronous, fail-closed browser evaluator for common local formula
+  functions, cell/range references, sheet-qualified references, and relative
+  references anchored to each selected range. It substitutes the proposed
+  value for the edited cell and caps evaluation at 1,024 referenced cells;
+  whole-row/column, external, missing-sheet, and uncached-formula references
+  remain explicit boundaries.
+- Preserved custom formulas through native XLSX import/export and the public
+  Data Validation template. Added focused model, editor, dialog, XLSX,
+  desktop, compact, accessibility, and local A3S Test coverage.
+
 ## 0.41.0 - 2026-09-02
 
 - Aligned Spreadsheet data-validation alerts with the common Traditional Office

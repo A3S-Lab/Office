@@ -58,6 +58,105 @@ test('commits data validation once, restores focus, and undoes in one step', asy
   await waitFor(() => expect(undo).toBeDisabled());
 });
 
+test('evaluates custom formulas for formula-bar edits before committing', async () => {
+  const changes: SpreadsheetContent[] = [];
+  const initial: SpreadsheetContent = {
+    type: 'spreadsheet',
+    sheets: [
+      {
+        id: 'sheet-1',
+        name: 'Inputs',
+        status: 1,
+        row: 4,
+        column: 4,
+        data: [[{ v: 'Ready', m: 'Ready' }]],
+        dataValidationRanges: [
+          {
+            ranges: [{ row: [0, 0], column: [0, 0] }],
+            item: {
+              type: 'custom',
+              type2: '',
+              rangeTxt: 'A1',
+              value1: 'A1="Ready"',
+              value2: '',
+              validity: '',
+              remote: false,
+              allowBlank: false,
+              showDropdownArrow: true,
+              prohibitInput: true,
+              errorStyle: 'stop',
+              errorTitle: 'State must be Ready',
+              errorMessage: 'Use Ready for this controlled field.',
+              hintShow: false,
+              hintTitle: '',
+              hintValue: '',
+            },
+          },
+        ],
+      },
+    ],
+  };
+  function Harness() {
+    const [content, setContent] = useState(initial);
+    return (
+      <>
+        <SpreadsheetEditor
+          content={content}
+          onChange={(next) => {
+            changes.push(next);
+            setContent(next);
+          }}
+          theme="light"
+        />
+        <output data-testid="custom-validation-value">
+          {String(content.sheets[0]?.data?.[0]?.[0]?.v ?? '')}
+        </output>
+      </>
+    );
+  }
+
+  render(<Harness />);
+  const grid = await waitFor(() => {
+    const element = document.querySelector<HTMLElement>(
+      '.fortune-sheet-overlay',
+    );
+    if (!element) throw new Error('Expected the spreadsheet grid.');
+    return element;
+  });
+  const formulaBar = document.querySelector<HTMLElement>('.fortune-fx-input');
+  if (!formulaBar) throw new Error('Expected the spreadsheet formula bar.');
+  grid.focus();
+  await waitFor(() => expect(formulaBar).toHaveTextContent('Ready'));
+  fireEvent.click(formulaBar);
+  fireEvent.keyDown(formulaBar, { key: 'Control', code: 'ControlLeft' });
+  fireEvent.keyDown(formulaBar, { key: 'a', code: 'KeyA', ctrlKey: true });
+  fireEvent.keyUp(formulaBar, { key: 'a', code: 'KeyA', ctrlKey: true });
+  fireEvent.keyUp(formulaBar, { key: 'Control', code: 'ControlLeft' });
+  Object.defineProperty(formulaBar, 'innerText', {
+    configurable: true,
+    value: 'Blocked',
+  });
+  formulaBar.textContent = 'Blocked';
+  fireEvent.input(formulaBar);
+  fireEvent.keyDown(formulaBar, { key: 'Enter', code: 'Enter' });
+
+  await waitFor(() =>
+    expect(
+      screen.getByRole('dialog', { name: 'State must be Ready' }),
+    ).toBeVisible(),
+  );
+  expect(screen.getByRole('dialog')).toHaveTextContent(
+    'Use Ready for this controlled field.',
+  );
+  fireEvent.click(screen.getByRole('button', { name: '知道了' }));
+  await waitFor(() =>
+    expect(screen.getByTestId('custom-validation-value')).toHaveTextContent(
+      'Ready',
+    ),
+  );
+  expect(changes).toHaveLength(0);
+});
+
 function ControlledSpreadsheet({ changes }: { changes: SpreadsheetContent[] }) {
   const [content, setContent] = useState<SpreadsheetContent>(() => ({
     type: 'spreadsheet',

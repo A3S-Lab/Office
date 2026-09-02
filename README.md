@@ -309,6 +309,21 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.42.0` extends Spreadsheet data validation with a local custom-formula
+workflow that remains bounded, inspectable, and native-file compatible:
+
+- Author a formula with an optional `=` prefix in the same accessible dialog;
+  relative references are anchored per selected range and the proposed value
+  is evaluated before it enters the controlled workbook.
+- Common local functions, cell/range references, and sheet-qualified references
+  are evaluated synchronously with a 255-character formula and 1,024-cell read
+  budget. External, whole-row/column, missing-sheet, and uncached-formula
+  references fail closed instead of silently accepting an unsafe edit.
+- Custom rules round-trip through XLSX and are demonstrated in the public
+  **新建 → 数据验证** template, alongside the existing list, date, and alert
+  branches. Paste and object-level batch writes remain separate preflight
+  boundaries.
+
 Version `0.41.0` aligns Spreadsheet data-validation alerts with the local,
 testable interaction model used by Traditional Office:
 

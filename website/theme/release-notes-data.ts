@@ -42,6 +42,65 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.42.0',
+    date: '2026-09-02',
+    kind: 'new',
+    surfaces: ['spreadsheet', 'shared', 'playground'],
+    title: {
+      en: 'Spreadsheet rules can now be local custom formulas',
+      zh: '表格验证规则现在支持本地自定义公式',
+    },
+    summary: {
+      en: 'A bounded custom-formula rule brings dependent local checks into the same accessible Data Validation workflow without introducing a remote service.',
+      zh: '有界的自定义公式规则把本地依赖检查纳入同一个可访问数据验证流程，不引入远程服务。',
+    },
+    highlights: [
+      {
+        title: { en: 'Author where you validate', zh: '在验证处直接编写' },
+        detail: {
+          en: 'The shared dialog accepts an optional = prefix, hides irrelevant numeric operators, and keeps the authored formula visible as a first-class rule.',
+          zh: '共享弹窗支持可选的 = 前缀，隐藏无关的数值运算符，并把公式作为一等规则持续展示。',
+        },
+      },
+      {
+        title: { en: 'Relative and local by design', zh: '相对且本地可控' },
+        detail: {
+          en: 'The proposed value is substituted before evaluation; references anchor to each selected range and common sheet-qualified cells or ranges stay inside the workbook.',
+          zh: '求值前会替换为待提交值；引用以每个选定区域为锚点，常用的带工作表单元格或区域引用始终留在工作簿内。',
+        },
+      },
+      {
+        title: {
+          en: 'Fail closed, round-trip native',
+          zh: '失败关闭，原生往返',
+        },
+        detail: {
+          en: 'A 255-character formula and 1,024-cell read budget reject unsafe or uncached references, while native XLSX import/export and the public template retain the rule.',
+          zh: '255 个字符和 1,024 个单元格读取上限会拒绝不安全或无缓存引用，同时原生 XLSX 导入/导出和公开模板都会保留规则。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/spreadsheet.html#custom-formulas',
+          zh: './components/spreadsheet.html#自定义公式',
+        },
+        label: {
+          en: 'Read the custom-formula validation guide',
+          zh: '阅读自定义公式验证指南',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.42.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.42.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.41.0',
     date: '2026-09-02',
     kind: 'improved',

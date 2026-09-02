@@ -7,6 +7,7 @@ import {
   removeSpreadsheetDataValidation,
   validateSpreadsheetDataValidationRequest,
 } from '../src/internal/features/work/editors/spreadsheet-data-validation';
+import { evaluateSpreadsheetCustomValidation } from '../src/internal/features/work/editors/spreadsheet-data-validation-custom';
 import {
   createWorkArtifact,
   WORK_TEMPLATES,
@@ -299,6 +300,141 @@ describe('spreadsheet data validation', () => {
         },
       }),
     ).toMatchObject({ ok: false, code: 'invalid-date' });
+  });
+
+  test('evaluates bounded custom formulas with range-relative references', () => {
+    const content: WorkSpreadsheetContent = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Inputs',
+          row: 10,
+          column: 6,
+          data: [
+            [{ v: 'Ready' }, { v: 1 }],
+            [{ v: 'Blocked' }, { v: 0 }],
+          ],
+        },
+      ],
+    };
+    const item = {
+      type: 'custom',
+      type2: '',
+      rangeTxt: 'A1:A2',
+      value1: '=AND(A1="Ready",B1>0)',
+      value2: '',
+      validity: '',
+      remote: false,
+      allowBlank: false,
+      prohibitInput: true,
+      hintShow: false,
+      hintValue: '',
+    };
+    expect(
+      evaluateSpreadsheetCustomValidation(
+        content,
+        'sheet-1',
+        0,
+        0,
+        item,
+        'Ready',
+      ),
+    ).toEqual({ supported: true, valid: true });
+    expect(
+      evaluateSpreadsheetCustomValidation(
+        content,
+        'sheet-1',
+        1,
+        0,
+        item,
+        'Ready',
+      ),
+    ).toEqual({ supported: true, valid: false });
+    expect(
+      evaluateSpreadsheetCustomValidation(
+        content,
+        'sheet-1',
+        0,
+        0,
+        { ...item, value1: 'LEN(A1)>0' },
+        'Ready',
+      ),
+    ).toEqual({ supported: true, valid: true });
+    expect(
+      evaluateSpreadsheetCustomValidation(
+        content,
+        'sheet-1',
+        0,
+        0,
+        { ...item, value1: 'LEN(A1)>0' },
+        '\n',
+      ),
+    ).toEqual({ supported: true, valid: false });
+  });
+
+  test('fails closed for unsupported custom references and honours blank policy', () => {
+    const content = validationContent();
+    const base = {
+      type: 'custom',
+      type2: '',
+      rangeTxt: 'A1:A2',
+      value2: '',
+      validity: '',
+      remote: false,
+      allowBlank: false,
+      prohibitInput: true,
+      hintShow: false,
+      hintValue: '',
+    };
+    expect(
+      evaluateSpreadsheetCustomValidation(
+        content,
+        'sheet-1',
+        0,
+        0,
+        {
+          ...base,
+          value1: '=A:A',
+        },
+        'Ready',
+      ),
+    ).toMatchObject({ supported: false, valid: false });
+    expect(
+      evaluateSpreadsheetCustomValidation(
+        content,
+        'sheet-1',
+        0,
+        0,
+        {
+          ...base,
+          value1: '=TRUE',
+          allowBlank: true,
+        },
+        '',
+      ),
+    ).toEqual({ supported: true, valid: true });
+  });
+
+  test('normalizes and round-trips a custom formula through the request model', () => {
+    const result = validateSpreadsheetDataValidationRequest(
+      validationContent(),
+      {
+        sheetId: 'sheet-1',
+        ranges: [{ row: [1, 2], column: [1, 1] }],
+        activeCell: { row: 1, column: 1 },
+        value: {
+          ...dropdownValue('unused'),
+          type: 'custom',
+          type2: '',
+          value1: '=A1<>""',
+        },
+      },
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      item: { type: 'custom', type2: '', value1: 'A1<>""', value2: '' },
+    });
   });
 
   test('publishes a Playground template for complete input and error settings', () => {

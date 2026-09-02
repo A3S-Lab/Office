@@ -64,6 +64,62 @@ suite "spreadsheet-data-validation" {
             key = "Escape"
         }
 
+        focus "focus-public-template-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-public-template-home" {
+            key = "Control+Home"
+        }
+
+        press "select-public-template-owner-row" {
+            key = "ArrowDown"
+        }
+
+        press "select-public-template-owner-column-1" {
+            key = "ArrowRight"
+        }
+
+        press "select-public-template-owner-column-2" {
+            key = "ArrowRight"
+        }
+
+        press "select-public-template-owner-column-3" {
+            key = "ArrowRight"
+        }
+
+        press "select-public-template-owner-column-4" {
+            key = "ArrowRight"
+        }
+
+        expect "public-template-owner-selected" {
+            text = "E2"
+        }
+
+        click "open-public-template-custom-validation" {
+            target = role("button", "数据验证")
+        }
+
+        expect "public-template-custom-range-visible" {
+            text = "Inputs!E2"
+        }
+
+        expect "public-template-custom-type-visible" {
+            visible = css(".work-spreadsheet-data-validation-dialog select:has(option[value='custom']:checked)")
+        }
+
+        expect "public-template-custom-formula-visible" {
+            visible = css(".work-spreadsheet-data-validation-dialog textarea[aria-label='公式']")
+        }
+
+        expect "public-template-custom-formula-value-visible" {
+            visible = css(".work-spreadsheet-data-validation-dialog textarea[aria-label='公式']")
+        }
+
+        press "close-public-template-custom-dialog" {
+            key = "Escape"
+        }
+
         accessibility "public-template-accessibility" {
             path = "evidence/public-template-accessibility.json"
             interactive = true
@@ -442,6 +498,46 @@ suite "spreadsheet-data-validation" {
 
         expect "warning-branch-kept-text" {
             text = "9"
+        }
+
+        press "select-owner-cell" {
+            key = "ArrowRight"
+        }
+
+        focus "refocus-owner-formula-bar" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "select-owner-value" {
+            key = "Control+a"
+        }
+
+        press "clear-owner-value" {
+            key = "Backspace"
+        }
+
+        press "commit-invalid-owner" {
+            key = "Enter"
+        }
+
+        expect "custom-formula-stop-branch-visible" {
+            visible = css(".work-office-dialog[role='dialog']")
+        }
+
+        expect "custom-formula-stop-branch-title" {
+            text = "Owner required"
+        }
+
+        expect "custom-formula-stop-branch-message" {
+            text = "Enter an owner for every task."
+        }
+
+        click "dismiss-custom-formula-stop-branch" {
+            target = role("button", "知道了")
+        }
+
+        expect "custom-formula-restores-owner" {
+            visible = css(".fortune-fx-input")
         }
 
         accessibility "error-alert-branches-accessibility" {

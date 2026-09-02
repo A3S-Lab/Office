@@ -204,6 +204,16 @@ notice, while Warning and Information offer explicit keep-or-return branches.
 The shared validation hook preserves authored titles, messages, and the current
 input, commits an accepted invalid value once through the controlled API, and
 keeps selection, focus, Undo, and collaboration on the same bounded path.
+Version 0.42.0 adds the follow-up custom-formula rule to that same dialog and
+controlled edit boundary. Authors can enter a local formula with an optional
+`=` prefix; relative references are anchored to each selected range, the
+proposed value replaces the active cell during evaluation, and common local
+functions plus sheet-qualified cell/range references are checked synchronously.
+The 255-character formula and 1,024-referenced-cell limits, fail-closed
+handling for external/whole-row/column/missing-sheet/uncached-formula inputs,
+and native XLSX round trip are explicit. The public Data Validation template
+now includes a required-owner custom rule, while paste and object-level batch
+writes retain their separate preflight boundary.
 The twenty-second milestone adds native Spreadsheet Tables/ListObjects under
 Insert and Tables with the grid-scoped `Cmd/Ctrl+T` shortcut. A single-cell
 selection expands to its finite current region, an explicit multi-row
