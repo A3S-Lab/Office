@@ -1,0 +1,92 @@
+suite "office-spreadsheet-conditional-format" {
+    version = 1
+
+    scenario "author-local-formula-rules" {
+        name = "Author and reorder local formula conditional-format rules"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        wait "playground-ready" {
+            visible = css(".playground-template-section")
+        }
+
+        click "open-conditional-format-template" {
+            target = css("button[data-template-id='conditional-format']")
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "template-title-visible" {
+            visible = css("input[aria-label='文件名'][value='公式条件格式示例']")
+        }
+
+        click "open-conditional-format-panel" {
+            target = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) .work-office-ribbon-group[aria-label='样式'] button[aria-label^='条件格式']")
+        }
+
+        expect "formula-rule-panel-visible" {
+            visible = css(".work-spreadsheet-conditional-manager input[aria-label='条件格式公式'][value='=$D4=\"阻塞\"']")
+        }
+
+        expect "formula-rule-range-visible" {
+            target = css(".work-spreadsheet-conditional-list button.active small")
+            rendered_text = "A4:H9"
+        }
+
+        fill "edit-formula-rule" {
+            target = css("input[aria-label='条件格式公式']")
+            value = "=AND($D4=\"阻塞\",$C4<1)"
+        }
+
+        click "save-formula-rule" {
+            target = role("button", "保存规则")
+        }
+
+        wait "formula-rule-saved" {
+            visible = css("input[aria-label='条件格式公式'][value='=AND($D4=\"阻塞\",$C4<1)']")
+        }
+
+        click "select-cross-sheet-rule" {
+            target = css(".work-spreadsheet-conditional-list button:nth-of-type(2)")
+        }
+
+        expect "cross-sheet-formula-visible" {
+            visible = css("input[aria-label='条件格式公式'][value='=AND($C4>=Limits!$A$2,$D4<>\"阻塞\")']")
+        }
+
+        click "raise-cross-sheet-rule-priority" {
+            target = role("button", "提高优先级")
+        }
+
+        wait "cross-sheet-rule-reordered" {
+            visible = css(".work-spreadsheet-conditional-list button:first-of-type.active")
+        }
+
+        accessibility "conditional-format-accessibility" {
+            path = "evidence/spreadsheet-conditional-format-accessibility.json"
+            interactive = true
+        }
+
+        console "conditional-format-console" {
+            path = "diagnostics/spreadsheet-conditional-format-console.json"
+            clear = false
+        }
+
+        page_errors "conditional-format-page-errors" {
+            path = "diagnostics/spreadsheet-conditional-format-page-errors.json"
+            clear = false
+        }
+    }
+}

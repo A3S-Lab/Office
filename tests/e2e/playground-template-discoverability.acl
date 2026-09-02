@@ -48,6 +48,10 @@ suite "playground-template-discoverability" {
             visible = css("button[data-template-id='data-validation']")
         }
 
+        expect "conditional-format-entry-is-visible" {
+            visible = css("button[data-template-id='conditional-format']")
+        }
+
         expect "structured-reference-entry-is-visible" {
             visible = css("button[data-template-id='structured-references']")
         }
@@ -379,6 +383,10 @@ suite "playground-template-discoverability" {
 
         expect "phone-data-validation-entry-is-visible" {
             visible = css("button[data-template-id='data-validation']")
+        }
+
+        expect "phone-conditional-format-entry-is-visible" {
+            visible = css("button[data-template-id='conditional-format']")
         }
 
         expect "phone-structured-reference-entry-is-visible" {

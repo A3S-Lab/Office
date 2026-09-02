@@ -158,6 +158,7 @@ suites=(
   "tests/e2e/spreadsheet-sort-range.acl"
   "tests/e2e/spreadsheet-owned-range-sort.acl"
   "tests/e2e/spreadsheet-data-validation.acl"
+  "tests/e2e/spreadsheet-conditional-format.acl"
   "tests/e2e/spreadsheet-hyperlink.acl"
   "tests/e2e/spreadsheet-paste-special.acl"
   "tests/e2e/collaboration-playground-entry.acl"

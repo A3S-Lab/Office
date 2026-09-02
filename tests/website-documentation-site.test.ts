@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.43.0' ||
     version === '0.42.0' ||
     version === '0.41.0' ||
     version === '0.40.0' ||
@@ -74,6 +75,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.43.0',
     '0.42.0',
     '0.41.0',
     '0.40.0',
@@ -368,7 +370,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.42.0`');
+  expect(readme).toContain('Version `0.43.0`');
   expect(readme).toContain(
     "[What's new](https://a3s-lab.github.io/Office/docs/changelog.html)",
   );
@@ -378,9 +380,11 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.42.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.43.0)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
-  expect(englishHome).toContain('spreadsheet.html#custom-formulas');
+  expect(englishHome).toContain(
+    'spreadsheet.html#formula-conditional-formatting',
+  );
   expect(englishHome).toContain(
     'spreadsheet.html#office-style-error-alert-branches',
   );
@@ -395,9 +399,9 @@ test('routes the concise README and documentation homes to the current release s
     'spreadsheet.html#xlsx-1904-date-system-retention',
   );
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.42.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.43.0）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
-  expect(chineseHome).toContain('spreadsheet.html#自定义公式');
+  expect(chineseHome).toContain('spreadsheet.html#公式条件格式');
   expect(chineseHome).toContain(
     'spreadsheet.html#与-office-一致的错误警告分支',
   );
@@ -1355,6 +1359,100 @@ test('publishes complete Spreadsheet data-validation settings in product documen
     expect(document).toContain('`errorStyle`');
     expect(document).toContain('`hintTitle`');
   }
+});
+
+test('publishes editable formula conditional formatting across code, docs, and Playground', async () => {
+  const [
+    changelog,
+    roadmap,
+    product,
+    readme,
+    english,
+    chinese,
+    frozenEnglish,
+    frozenChinese,
+    releaseData,
+    templates,
+    unitTest,
+    visualTest,
+    aclSuite,
+    packageManifest,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.43.0/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.43.0/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'website/theme/release-notes-data.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'src/internal/features/work/work-templates.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'tests/spreadsheet-conditional-format-formula.test.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/spreadsheet-conditional-format.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/spreadsheet-conditional-format.acl'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
+  ]);
+
+  expect(changelog).toContain('## 0.43.0 - 2026-09-02');
+  expect(changelog).toContain(
+    'editable Spreadsheet formula-conditional-format',
+  );
+  expect(roadmap).toContain('bounded local formula rules');
+  expect(product).toContain('The sixty-second Spreadsheet milestone');
+  expect(readme).toContain('Version `0.43.0`');
+  for (const document of [english, chinese, frozenEnglish, frozenChinese]) {
+    expect(document).toContain('1,024');
+    expect(document).toContain('255');
+  }
+  expect(english).toContain('## Formula conditional formatting');
+  expect(chinese).toContain('## 公式条件格式');
+  expect(english).toContain('Stop if true');
+  expect(chinese).toContain('匹配后停止');
+  expect(releaseData).toContain("version: '0.43.0'");
+  expect(releaseData).toContain('formula-conditional-formatting');
+  expect(templates).toContain("id: 'conditional-format'");
+  expect(templates).toContain('Limits!$A$2');
+  expect(unitTest).toContain('publishes a formula conditional-format template');
+  expect(visualTest).toContain('authors local formula conditional formatting');
+  expect(aclSuite).toContain('suite "office-spreadsheet-conditional-format"');
+  expect(packageManifest).toContain('test:e2e:spreadsheet-conditional-format');
+  expect(packageManifest).toContain(
+    'playground:visual:spreadsheet-conditional-format',
+  );
 });
 
 test('documents the complete native Writer underline contract', async () => {

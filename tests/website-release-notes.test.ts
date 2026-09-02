@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 test('keeps curated release notes unique, localized, and newest first', () => {
   expect(OFFICE_RELEASE_NOTES.map(({ version }) => version)).toEqual([
+    '0.43.0',
     '0.42.0',
     '0.41.0',
     '0.40.0',
@@ -201,7 +202,7 @@ test('keeps the changelog semantic, responsive, static, and discoverable', async
 
 test('keeps local evidence links aligned with each documentation language', () => {
   const customFormulaRelease = OFFICE_RELEASE_NOTES.find(
-    ({ version }) => version === '0.42.0',
+    ({ version }) => version === '0.43.0',
   );
   const validationRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.41.0',
@@ -226,8 +227,8 @@ test('keeps local evidence links aligned with each documentation language', () =
   );
 
   expect(customFormulaRelease?.links[0]?.href).toEqual({
-    en: './components/spreadsheet.html#custom-formulas',
-    zh: './components/spreadsheet.html#自定义公式',
+    en: './components/spreadsheet.html#formula-conditional-formatting',
+    zh: './components/spreadsheet.html#公式条件格式',
   });
   expect(numberingRelease?.links[0]?.href).toEqual({
     en: './components/document.html#ordered-list-numbering-revisions',

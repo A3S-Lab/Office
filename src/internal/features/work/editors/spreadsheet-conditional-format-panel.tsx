@@ -40,6 +40,7 @@ import {
 } from './spreadsheet-conditional-format-model';
 import { SpreadsheetConditionalThresholdFields } from './spreadsheet-conditional-threshold-fields';
 import { useOfficeDraft } from './use-office-draft';
+import { MAX_SPREADSHEET_LOCAL_FORMULA_LENGTH } from '../work-spreadsheet-local-formula';
 
 export { managedConditionalFormatCount } from './spreadsheet-conditional-format-model';
 
@@ -321,6 +322,7 @@ export function SpreadsheetConditionalFormatPanel({
               { value: 'colorGradation', label: '色阶' },
               { value: 'dataBar', label: '数据条' },
               { value: 'icons', label: '图标集' },
+              { value: 'formula', label: '自定义公式' },
               ...(draft.type === 'toolbarRule'
                 ? [{ value: 'toolbarRule' as const, label: '工具栏规则' }]
                 : []),
@@ -363,6 +365,68 @@ export function SpreadsheetConditionalFormatPanel({
             draft={draft}
             onChange={(patch) => setDraft({ ...draft, ...patch })}
           />
+        ) : draft.type === 'formula' ? (
+          <>
+            <div className="work-office-field reference">
+              <span>公式</span>
+              <OfficeTextField
+                aria-label="条件格式公式"
+                value={draft.formula}
+                maxLength={MAX_SPREADSHEET_LOCAL_FORMULA_LENGTH + 1}
+                placeholder="=A2>0"
+                onChange={(event) =>
+                  setDraft({ ...draft, formula: event.target.value })
+                }
+              />
+              <small>
+                以应用范围左上角为相对锚点；只读取本地缓存值。{' '}
+                {Array.from(draft.formula.replace(/^=/, '')).length}/
+                {MAX_SPREADSHEET_LOCAL_FORMULA_LENGTH}
+              </small>
+            </div>
+            <p className="work-office-field-hint">
+              支持常用 Excel
+              函数、相对/绝对引用和有限区域；无法本地求值时保持原样。
+            </p>
+            <OfficeCheckbox
+              className="toggle"
+              ariaLabel="公式规则使用文字颜色"
+              checked={draft.formulaUseTextColor}
+              onCheckedChange={(formulaUseTextColor) =>
+                setDraft({ ...draft, formulaUseTextColor })
+              }
+            >
+              使用文字颜色
+            </OfficeCheckbox>
+            {draft.formulaUseTextColor && (
+              <ColorField
+                label="文字颜色"
+                value={draft.formulaTextColor}
+                onChange={(formulaTextColor) =>
+                  setDraft({ ...draft, formulaTextColor })
+                }
+              />
+            )}
+            <OfficeCheckbox
+              className="toggle"
+              ariaLabel="公式规则使用填充颜色"
+              checked={draft.formulaUseCellColor}
+              onCheckedChange={(formulaUseCellColor) =>
+                setDraft({ ...draft, formulaUseCellColor })
+              }
+            >
+              使用填充颜色
+            </OfficeCheckbox>
+            {draft.formulaUseCellColor && (
+              <ColorField
+                label="填充颜色"
+                value={draft.formulaCellColor}
+                onChange={(formulaCellColor) =>
+                  setDraft({ ...draft, formulaCellColor })
+                }
+              />
+            )}
+          </>
         ) : draft.type === 'colorGradation' ? (
           <>
             <div className="work-office-field">

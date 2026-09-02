@@ -30,6 +30,7 @@ import type {
   FortuneConditionalFormatStyle,
 } from '../work-xlsx-conditional-format';
 import type { WorkSpreadsheetContent } from '../work-types';
+import { MAX_SPREADSHEET_LOCAL_FORMULA_LENGTH } from '../work-spreadsheet-local-formula';
 
 export interface SpreadsheetConditionalThresholdDraft {
   type: SpreadsheetConditionalThreshold['type'];
@@ -64,6 +65,7 @@ export interface ConditionalRuleDraft {
     | 'colorGradation'
     | 'dataBar'
     | 'icons'
+    | 'formula'
     | 'toolbarRule';
   reference: string;
   stopIfTrue: boolean;
@@ -75,6 +77,11 @@ export interface ConditionalRuleDraft {
   comparisonCellColor: string;
   comparisonUseTextColor: boolean;
   comparisonUseCellColor: boolean;
+  formula: string;
+  formulaTextColor: string;
+  formulaCellColor: string;
+  formulaUseTextColor: boolean;
+  formulaUseCellColor: boolean;
   scaleSize: '2' | '3';
   minimumColor: string;
   midpointColor: string;
@@ -202,6 +209,11 @@ export function newConditionalRuleDraft(sheetId: string): ConditionalRuleDraft {
     comparisonCellColor: DEFAULT_COLORS.comparisonCell,
     comparisonUseTextColor: true,
     comparisonUseCellColor: true,
+    formula: '=A1>0',
+    formulaTextColor: DEFAULT_COLORS.comparisonText,
+    formulaCellColor: DEFAULT_COLORS.comparisonCell,
+    formulaUseTextColor: true,
+    formulaUseCellColor: true,
     scaleSize: '3',
     minimumColor: DEFAULT_COLORS.minimum,
     midpointColor: DEFAULT_COLORS.midpoint,
@@ -248,6 +260,25 @@ export function conditionalRuleDraftForRule(
       DEFAULT_COLORS.comparisonText,
     );
     draft.comparisonCellColor = colorInputValue(
+      style.cellColor,
+      DEFAULT_COLORS.comparisonCell,
+    );
+  } else if (
+    rule.type === 'default' &&
+    rule.conditionName === 'formula' &&
+    !Array.isArray(rule.format)
+  ) {
+    const style = rule.format as FortuneConditionalFormatStyle;
+    const values = (rule.conditionValue ?? []).map(String);
+    draft.type = 'formula';
+    draft.formula = values[0] ?? '';
+    draft.formulaUseTextColor = Boolean(style.textColor);
+    draft.formulaUseCellColor = Boolean(style.cellColor);
+    draft.formulaTextColor = colorInputValue(
+      style.textColor,
+      DEFAULT_COLORS.comparisonText,
+    );
+    draft.formulaCellColor = colorInputValue(
       style.cellColor,
       DEFAULT_COLORS.comparisonCell,
     );
@@ -366,6 +397,30 @@ export function buildConditionalRule(
       conditionName: draft.comparisonOperator,
       conditionRange: [],
       conditionValue: needsUpperValue ? [value, upperValue] : [value],
+    };
+  } else if (draft.type === 'formula') {
+    const formula = draft.formula.trim();
+    if (!formula) return { error: '请输入条件格式公式。' };
+    const formulaSource = formula.replace(/^=/, '').trim();
+    if (!formulaSource) return { error: '请输入条件格式公式，例如 =A2>0。' };
+    if (
+      Array.from(formulaSource).length > MAX_SPREADSHEET_LOCAL_FORMULA_LENGTH
+    ) {
+      return { error: '条件格式公式不能超过 255 个字符。' };
+    }
+    if (!draft.formulaUseTextColor && !draft.formulaUseCellColor) {
+      return { error: '至少启用一种文字或填充颜色。' };
+    }
+    rule = {
+      type: 'default',
+      cellrange,
+      format: {
+        textColor: draft.formulaUseTextColor ? draft.formulaTextColor : null,
+        cellColor: draft.formulaUseCellColor ? draft.formulaCellColor : null,
+      },
+      conditionName: 'formula',
+      conditionRange: [],
+      conditionValue: [`=${formulaSource}`],
     };
   } else if (draft.type === 'dataBar') {
     const thresholds = savedVisualThresholds(draft.barThresholds);

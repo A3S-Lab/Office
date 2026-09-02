@@ -4,6 +4,25 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.43.0 - 2026-09-02
+
+- Added an editable Spreadsheet formula-conditional-format workflow. The Home
+  rule manager now authors local formulas with relative/absolute and finite
+  cross-sheet references, independent text/fill colors, ordered rules, and an
+  explicit Stop-if-true boundary; imported `expression` rules open in the same
+  first-class editor.
+- Added one bounded, fail-closed local formula evaluator shared by validation
+  and conditional formatting. Formula source is limited to 255 Unicode
+  characters and each decision reads at most 1,024 cached cells; whole-row or
+  whole-column, external, missing-sheet, and uncached-formula references stay
+  unchanged with a visible diagnostic. Bounded formula ranges include blank
+  cells without materializing the workbook, while large ranges remain sparse.
+- Preserved differential styles, `sqref`, formula priority, and stop-if-true
+  semantics through native XLSX import/export and reopen. Added the public
+  **新建 → 公式条件格式** workbook template, model/parser/Canvas/UI coverage,
+  desktop and compact visual contracts, accessibility evidence, and a pinned
+  local A3S Test workflow.
+
 ## 0.42.0 - 2026-09-02
 
 - Added Office-style Spreadsheet custom-formula validation. The shared Data
