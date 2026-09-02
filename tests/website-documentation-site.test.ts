@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.41.0' ||
     version === '0.40.0' ||
     version === '0.39.0' ||
     version === '0.38.1' ||
@@ -72,6 +73,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.41.0',
     '0.40.0',
     '0.39.0',
     '0.38.1',
@@ -364,7 +366,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.40.0`');
+  expect(readme).toContain('Version `0.41.0`');
   expect(readme).toContain(
     "[What's new](https://a3s-lab.github.io/Office/docs/changelog.html)",
   );
@@ -374,8 +376,11 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.40.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.41.0)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
+  expect(englishHome).toContain(
+    'spreadsheet.html#office-style-error-alert-branches',
+  );
   expect(englishHome).toContain(
     'document.html#ordered-list-numbering-revisions',
   );
@@ -387,8 +392,11 @@ test('routes the concise README and documentation homes to the current release s
     'spreadsheet.html#xlsx-1904-date-system-retention',
   );
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.40.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.41.0）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
+  expect(chineseHome).toContain(
+    'spreadsheet.html#与-office-一致的错误警告分支',
+  );
   expect(chineseHome).toContain('document.html#有序列表编号修订');
   expect(chineseHome).toContain('presentation.html#进入与退出动画');
   expect(chineseHome).toContain('document.html#原生-opentype-排版');
@@ -538,6 +546,118 @@ test('publishes Writer numbering revisions across implementation, native collabo
   );
   expect(aclSuite).toContain('suite "word-numbering-revision"');
   expect(packageManifest).toContain('test:e2e:numbering-revision');
+});
+
+test('publishes Spreadsheet validation alert branches across implementation, docs, and release evidence', async () => {
+  const [
+    changelog,
+    roadmap,
+    product,
+    readme,
+    english,
+    chinese,
+    releaseData,
+    frozenEnglish,
+    frozenChinese,
+    helper,
+    editor,
+    fortunePatch,
+    unitTest,
+    visualTest,
+    aclSuite,
+    packageManifest,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'website/theme/release-notes-data.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.41.0/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.41.0/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-data-validation-interaction.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-editor.tsx',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'patches/@fortune-sheet%2Fcore@1.0.4.patch'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'tests/spreadsheet-data-validation-interaction.test.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/spreadsheet-data-validation.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/spreadsheet-data-validation.acl'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
+  ]);
+
+  expect(changelog).toContain('## 0.41.0 - 2026-09-02');
+  expect(changelog).toContain('Aligned Spreadsheet data-validation alerts');
+  expect(roadmap).toContain('Warning/Information confirmation branches');
+  expect(product).toContain('Version 0.41.0 aligns direct and formula-bar');
+  expect(readme).toContain('Version `0.41.0`');
+
+  for (const source of [english, chinese, frozenEnglish, frozenChinese]) {
+    expect(source).toContain('errorStyle');
+    expect(source).toContain('Warning');
+    expect(source).toContain('Information');
+    expect(source).toContain('Undo');
+  }
+  expect(english).toContain('## Office-style error-alert branches');
+  expect(chinese).toContain('## 与 Office 一致的错误警告分支');
+  expect(releaseData).toContain("version: '0.41.0'");
+  expect(releaseData).toContain('office-style-error-alert-branches');
+  expect(helper).toContain('spreadsheetDataValidationConfirmLabels');
+  expect(helper).toContain('cloneSpreadsheetDataValidationItem');
+  expect(editor).toContain('beforeDataValidation: queueDataValidationEdit');
+  expect(editor).toContain('skipDataValidation: true');
+  expect(fortunePatch).toContain('skipDataValidation?: boolean');
+  expect(fortunePatch).toContain('beforeDataValidation');
+  expect(unitTest).toContain('maps Office error styles');
+  expect(visualTest).toContain(
+    'follows Traditional Office error-alert branches',
+  );
+  expect(aclSuite).toContain('scenario "follow-error-alert-branches"');
+  expect(packageManifest).toContain('test:e2e:spreadsheet-data-validation');
 });
 
 test('keeps every documentation index separate from the product home surface', async () => {
@@ -1216,6 +1336,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.41.0',
     '0.40.0',
     '0.39.0',
     '0.38.1',
@@ -1298,6 +1419,7 @@ test('removes broken online Playground actions from frozen documentation indexes
 
 test('uses deployable HTML targets in current release documentation indexes', async () => {
   for (const version of [
+    '0.41.0',
     '0.40.0',
     '0.39.0',
     '0.38.1',
@@ -1633,7 +1755,14 @@ test('documents collaborative character-formatting revisions', async () => {
 });
 
 test('documents complete native Writer OpenType typography in both current locales', async () => {
-  for (const version of ['latest', '0.40.0', '0.39.0', '0.38.1', '0.38.0']) {
+  for (const version of [
+    'latest',
+    '0.41.0',
+    '0.40.0',
+    '0.39.0',
+    '0.38.1',
+    '0.38.0',
+  ]) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const source = await readFile(
         path.join(documentationRoot, version, lang, 'components/document.mdx'),
@@ -3438,7 +3567,7 @@ test('publishes the workbook-owned 1900 and 1904 date-system contract', async ()
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
   ]);
 
-  expect(readme).toContain('Version `0.40.0`');
+  expect(readme).toContain('Version `0.41.0`');
   expect(readme).toContain("workbook's native 1900 or");
   expect(changelog).toContain('## 0.37.5 - 2026-09-01');
   expect(roadmap).toContain(

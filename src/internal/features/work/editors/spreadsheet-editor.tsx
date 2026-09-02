@@ -60,7 +60,10 @@ import {
   spreadsheetPivotOutputContains,
 } from '../work-spreadsheet-pivots';
 import { spreadsheetProtectionKey } from '../work-spreadsheet-protection';
-import type { WorkSpreadsheetContent } from '../work-types';
+import type {
+  WorkSpreadsheetContent,
+  WorkSpreadsheetDataValidationItem,
+} from '../work-types';
 import { activeXlsxNativeFill } from '../work-xlsx-native-fill';
 import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
@@ -163,6 +166,15 @@ import {
   useSpreadsheetCollaboration,
 } from './use-spreadsheet-collaboration';
 import { useSpreadsheetDataValidation } from './use-spreadsheet-data-validation';
+import {
+  cloneSpreadsheetDataValidationItem,
+  spreadsheetDataValidationConfirmLabels,
+  spreadsheetDataValidationDialogDescription,
+  spreadsheetDataValidationDialogTitle,
+  spreadsheetDataValidationErrorStyle,
+  spreadsheetDataValidationInteraction,
+  type SpreadsheetDataValidationEditRequest,
+} from './spreadsheet-data-validation-interaction';
 import {
   type SpreadsheetFormatPainterMode,
   useSpreadsheetFormatPainter,
@@ -557,6 +569,48 @@ function SpreadsheetEditorSurface({
       : contentActiveSheetId;
   const activeSheetIdRef = useRef(activeSheetId);
   const focusedSheetIdRef = useRef<string | null>(null);
+  const pendingDataValidationRef =
+    useRef<SpreadsheetDataValidationEditRequest | null>(null);
+  const [pendingDataValidation, setPendingDataValidation] =
+    useState<SpreadsheetDataValidationEditRequest | null>(null);
+  const queueDataValidationEdit = useCallback(
+    (
+      row: number,
+      column: number,
+      value: unknown,
+      item: unknown,
+      failureText: string,
+      sheetId?: string,
+    ): boolean | undefined => {
+      const requestSheetId = sheetId ?? activeSheetIdRef.current;
+      if (
+        !requestSheetId ||
+        !item ||
+        typeof item !== 'object' ||
+        pendingDataValidationRef.current
+      ) {
+        return pendingDataValidationRef.current ? false : undefined;
+      }
+      const validationItem = item as WorkSpreadsheetDataValidationItem;
+      const style = spreadsheetDataValidationErrorStyle(validationItem);
+      const request: SpreadsheetDataValidationEditRequest = {
+        column,
+        failureText,
+        interaction: spreadsheetDataValidationInteraction(style),
+        item: cloneSpreadsheetDataValidationItem(validationItem),
+        row,
+        sheetId: requestSheetId,
+        value,
+      };
+      pendingDataValidationRef.current = request;
+      queueMicrotask(() => {
+        if (pendingDataValidationRef.current === request)
+          setPendingDataValidation(request);
+      });
+      return false;
+    },
+    [],
+  );
   contentRef.current = materializedContent;
   previewRef.current = preview;
   const controlledHistory = useOfficeHistory({
@@ -629,6 +683,100 @@ function SpreadsheetEditorSurface({
   useEffect(() => {
     activeSheetIdRef.current = activeSheetId;
   }, [activeSheetId]);
+  useEffect(() => {
+    const request = pendingDataValidation;
+    if (!request) return;
+    let cancelled = false;
+    const style = spreadsheetDataValidationErrorStyle(request.item);
+    const description = spreadsheetDataValidationDialogDescription(
+      request.failureText,
+      request.value,
+      request.item,
+    );
+    const restoreValidationSelection = (): void => {
+      const selection = {
+        row: [request.row, request.row],
+        column: [request.column, request.column],
+        row_focus: request.row,
+        column_focus: request.column,
+      };
+      const nextSelection = {
+        sheetId: request.sheetId,
+        selection,
+      };
+      selectionStateRef.current.current = nextSelection;
+      selectionStateRef.current.requested = {
+        sheetId: request.sheetId,
+        selection: {
+          ...selection,
+          row: [...selection.row],
+          column: [...selection.column],
+        },
+      };
+      setSelectionState(nextSelection);
+      try {
+        workbookRef.current?.setSelection(
+          [{ row: selection.row, column: selection.column }],
+          { id: request.sheetId },
+        );
+      } catch {
+        // Focus restoration remains useful even when the imperative selection
+        // API is unavailable during a controlled workbook remount.
+      }
+    };
+    const finish = (accepted: boolean): void => {
+      if (cancelled || pendingDataValidationRef.current !== request) return;
+      pendingDataValidationRef.current = null;
+      setPendingDataValidation(null);
+      if (accepted) {
+        try {
+          workbookRef.current?.setCellValue(
+            request.row,
+            request.column,
+            request.value,
+            {
+              id: request.sheetId,
+              skipDataValidation: true,
+            },
+          );
+        } catch {
+          showToast('无法保留此输入，请重试。', 'error');
+        }
+      }
+      restoreValidationSelection();
+    };
+    const showValidationDialog = async (): Promise<void> => {
+      if (request.interaction === 'notice') {
+        await officeDialog.notice({
+          title: spreadsheetDataValidationDialogTitle(request.item),
+          description,
+          confirmLabel: '知道了',
+          restoreFocusTarget: getSpreadsheetDialogGridFocusTarget,
+        });
+        finish(false);
+        return;
+      }
+      const labels = spreadsheetDataValidationConfirmLabels(style);
+      const accepted = await officeDialog.confirm({
+        title: spreadsheetDataValidationDialogTitle(request.item),
+        description,
+        confirmLabel: labels.confirmLabel,
+        cancelLabel: labels.cancelLabel,
+        confirmTone: style === 'warning' ? 'primary' : 'secondary',
+        restoreFocusTarget: getSpreadsheetDialogGridFocusTarget,
+      });
+      finish(accepted);
+    };
+    void showValidationDialog();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    getSpreadsheetDialogGridFocusTarget,
+    officeDialog.confirm,
+    officeDialog.notice,
+    pendingDataValidation,
+  ]);
   useEffect(() => {
     if (
       preview ||
@@ -725,6 +873,7 @@ function SpreadsheetEditorSurface({
         );
         return !sheet || !spreadsheetPivotOutputContains(sheet, row, column);
       },
+      beforeDataValidation: queueDataValidationEdit,
       beforePaste: (selections) => {
         const sheet = contentRef.current.sheets.find(
           (candidate) => candidate.id === activeSheetIdRef.current,
@@ -813,7 +962,7 @@ function SpreadsheetEditorSurface({
         }
       },
     }),
-    [collaborationView],
+    [collaborationView, queueDataValidationEdit],
   );
   const conditionalFormatKey = useMemo(
     () =>

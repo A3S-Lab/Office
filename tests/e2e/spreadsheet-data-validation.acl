@@ -285,4 +285,178 @@ suite "spreadsheet-data-validation" {
             clear = false
         }
     }
+
+    scenario "follow-error-alert-branches" {
+        name = "Follow Traditional Office data-validation error-alert branches"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-data-validation-template" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-template" {
+            target = css("button[data-template-id='data-validation']")
+        }
+
+        wait "grid-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-first-cell" {
+            key = "Control+Home"
+        }
+
+        press "select-state-cell" {
+            key = "ArrowDown"
+        }
+
+        press "select-state-column" {
+            key = "ArrowRight"
+        }
+
+        focus "focus-formula-bar" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "select-formula-bar-value" {
+            key = "Control+a"
+        }
+
+        type "enter-invalid-state" {
+            target = css(".fortune-fx-input")
+            value = "Not a state"
+        }
+
+        press "commit-invalid-state" {
+            key = "Enter"
+        }
+
+        expect "stop-branch-visible" {
+            visible = css(".work-office-dialog[role='dialog']")
+        }
+
+        expect "stop-branch-message" {
+            text = "Choose a state from the list."
+        }
+
+        click "dismiss-stop-branch" {
+            target = role("button", "知道了")
+        }
+
+        expect "stop-branch-restores-value" {
+            visible = css(".fortune-fx-input")
+        }
+
+        expect "stop-branch-restored-text" {
+            text = "Ready"
+        }
+
+        press "select-date-cell" {
+            key = "ArrowRight"
+        }
+
+        focus "refocus-date-formula-bar" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "select-date-value" {
+            key = "Control+a"
+        }
+
+        type "enter-invalid-date" {
+            target = css(".fortune-fx-input")
+            value = "2027-01-01"
+        }
+
+        press "commit-invalid-date" {
+            key = "Enter"
+        }
+
+        expect "information-branch-visible" {
+            visible = css(".work-office-dialog[role='dialog']")
+        }
+
+        expect "information-branch-message" {
+            text = "Enter a date in calendar year 2026."
+        }
+
+        click "keep-information-value" {
+            target = role("button", "保留输入")
+        }
+
+        expect "information-branch-keeps-value" {
+            visible = css(".fortune-fx-input")
+        }
+
+        expect "information-branch-kept-text" {
+            text = "2027-01-01"
+        }
+
+        press "select-priority-cell" {
+            key = "ArrowRight"
+        }
+
+        focus "refocus-priority-formula-bar" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "select-priority-value" {
+            key = "Control+a"
+        }
+
+        type "enter-invalid-priority" {
+            target = css(".fortune-fx-input")
+            value = "9"
+        }
+
+        press "commit-invalid-priority" {
+            key = "Enter"
+        }
+
+        expect "warning-branch-visible" {
+            visible = css(".work-office-dialog[role='dialog']")
+        }
+
+        expect "warning-branch-message" {
+            text = "Enter a whole number from 1 through 5."
+        }
+
+        click "keep-warning-value" {
+            target = role("button", "继续输入")
+        }
+
+        expect "warning-branch-keeps-value" {
+            visible = css(".fortune-fx-input")
+        }
+
+        expect "warning-branch-kept-text" {
+            text = "9"
+        }
+
+        accessibility "error-alert-branches-accessibility" {
+            path = "evidence/error-alert-branches-accessibility.json"
+            interactive = true
+        }
+
+        console "error-alert-branches-console" {
+            path = "diagnostics/error-alert-branches-console.json"
+            clear = false
+        }
+
+        page_errors "error-alert-branches-page-errors" {
+            path = "diagnostics/error-alert-branches-page-errors.json"
+            clear = false
+        }
+    }
 }

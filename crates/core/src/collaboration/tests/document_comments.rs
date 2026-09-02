@@ -1,4 +1,3 @@
-use base64::Engine as _;
 use yrs::types::Attrs;
 use yrs::types::ToJson;
 use yrs::{Any, Array, Doc, Map, Out, Text, Transact, Update, XmlFragment, XmlOut};

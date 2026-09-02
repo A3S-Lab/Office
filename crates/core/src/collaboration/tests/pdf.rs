@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use base64::engine::general_purpose::STANDARD;
-use base64::Engine as _;
 use yrs::updates::decoder::Decode;
 use yrs::{Any, Array, Doc, Map, Out, Transact, Update};
 
