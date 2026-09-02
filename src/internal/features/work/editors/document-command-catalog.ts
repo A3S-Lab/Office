@@ -17,6 +17,12 @@ export const documentPictureRibbonTab = {
   contextual: true,
 } as const;
 
+export const documentTextBoxRibbonTab = {
+  id: 'textBox',
+  label: '文本框',
+  contextual: true,
+} as const;
+
 export const documentTableRibbonTabs = [
   {
     id: 'tableDesign',
@@ -45,6 +51,7 @@ export type DocumentStandardRibbonTabId =
 export type DocumentRibbonTabId =
   | DocumentStandardRibbonTabId
   | typeof documentPictureRibbonTab.id
+  | typeof documentTextBoxRibbonTab.id
   | (typeof documentTableRibbonTabs)[number]['id']
   | typeof documentPageChromeRibbonTab.id;
 
@@ -400,6 +407,11 @@ export const documentCommandCatalog = {
       aria: 'Control+Enter Meta+Enter',
       editor: ['Mod-Enter'],
     },
+  },
+  insertTextBox: {
+    id: 'insert.textBox',
+    label: '插入文本框',
+    location: { area: 'ribbon', tab: 'insert', group: 'text' },
   },
   hyperlink: {
     id: 'insert.hyperlink',

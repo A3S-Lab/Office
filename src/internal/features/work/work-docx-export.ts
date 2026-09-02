@@ -2,6 +2,7 @@ import type {
   FileChild,
   IRunOptions,
   ISectionOptions,
+  IWpsShapeOptions,
   ParagraphChild,
 } from 'docx';
 import { normalizeDocumentBookmarkReferencesHtml } from './work-document-bookmark-references';
@@ -61,6 +62,10 @@ import {
   documentScriptFontsFromElement,
 } from './work-document-script-fonts';
 import { documentSections } from './work-document-section';
+import {
+  documentTextBoxPropertiesFromElement,
+  type WorkDocumentTextBoxProperties,
+} from './work-document-text-box';
 import {
   DOCUMENT_STRIKE_STYLE_ATTRIBUTE,
   documentStrikeFormattingFromElement,
@@ -216,6 +221,10 @@ import {
   patchDocxTableOfContents,
 } from './work-docx-table-of-contents-export';
 import {
+  DocxTextBoxIdentityPatchCollector,
+  patchDocxTextBoxIdentities,
+} from './work-docx-text-box-export';
+import {
   documentTableCellSizingDocxOptions,
   documentTableRowSizingDocxOptions,
   documentTableSizingDocxOptions,
@@ -247,6 +256,7 @@ interface DocxNoteContext extends DocxListExportContext {
   imageLayerPatches: DocxImageLayerPatchCollector;
   imageWrapPatches: DocxImageWrapPatchCollector;
   imageTransformPatches: DocxImageTransformPatchCollector;
+  textBoxIdentityPatches: DocxTextBoxIdentityPatchCollector;
   paragraphBorderPatches: DocxParagraphBorderPatchCollector;
   paragraphDefaultCollapsedPatches: DocxParagraphDefaultCollapsedPatchCollector;
   paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
@@ -323,6 +333,7 @@ export async function createDocxBlob(
     imageLayerPatches: new DocxImageLayerPatchCollector(),
     imageWrapPatches: new DocxImageWrapPatchCollector(),
     imageTransformPatches: new DocxImageTransformPatchCollector(),
+    textBoxIdentityPatches: new DocxTextBoxIdentityPatchCollector(),
     paragraphBorderPatches: new DocxParagraphBorderPatchCollector(
       JSON.stringify(normalizedContent),
     ),
@@ -530,8 +541,12 @@ export async function createDocxBlob(
     imageTransformPatched,
     noteContext.imageIdentityPatches.patches,
   );
-  const bookmarkPatched = await patchDocxBookmarks(
+  const textBoxIdentityPatched = await patchDocxTextBoxIdentities(
     imageIdentityPatched,
+    noteContext.textBoxIdentityPatches.patches,
+  );
+  const bookmarkPatched = await patchDocxBookmarks(
+    textBoxIdentityPatched,
     noteContext.bookmarkPatches.patches,
   );
   const paragraphDefaultCollapsedPatched =
@@ -846,6 +861,13 @@ async function blockToFileChildren(
       ),
     ];
   }
+  if (element.hasAttribute('data-document-text-box')) {
+    return [
+      new docx.Paragraph({
+        children: [await textBoxToDocx(element, docx, noteContext)],
+      }),
+    ];
+  }
   if (tag === 'table')
     return [await tableToDocx(element as HTMLTableElement, docx, noteContext)];
   if (tag === 'img') {
@@ -889,6 +911,135 @@ async function blockToFileChildren(
       ...documentParagraphShadingDocxOptions(element, noteContext.themePatches),
     }),
   ];
+}
+
+async function textBoxToDocx(
+  element: HTMLElement,
+  docx: typeof import('docx'),
+  noteContext: DocxNoteContext,
+): Promise<InstanceType<typeof docx.WpsShapeRun>> {
+  const properties = documentTextBoxPropertiesFromElement(element);
+  const identity = noteContext.textBoxIdentityPatches.register(properties);
+  const runs = await paragraphRuns(element, docx, noteContext);
+  const paragraph = new docx.Paragraph({
+    children: runs.length ? runs : [new docx.TextRun('')],
+    alignment: paragraphAlignment(element, docx),
+    ...paragraphDirectionOptions(element),
+  });
+  const shapeOptions: IWpsShapeOptions = {
+    type: 'wps',
+    transformation: {
+      width: millimetersToPixels(properties.width),
+      height: millimetersToPixels(properties.height),
+    },
+    children: [paragraph],
+    nonVisualProperties: { txBox: '1' },
+    bodyProperties: {
+      verticalAnchor: textBoxVerticalAnchor(properties, docx),
+      margins: {
+        top: millimetersToEmus(properties.padding),
+        right: millimetersToEmus(properties.padding),
+        bottom: millimetersToEmus(properties.padding),
+        left: millimetersToEmus(properties.padding),
+      },
+      noAutoFit: true,
+    },
+    altText: {
+      name: `A3S Text Box ${properties.id || 'text-box'} ${identity.marker}`,
+      description: 'A3S editable text box',
+      title: 'Text box',
+      ...(identity.docPropertiesId === null
+        ? {}
+        : { id: String(identity.docPropertiesId) }),
+    },
+    ...(properties.fill === 'transparent'
+      ? {}
+      : {
+          solidFill: {
+            type: 'rgb' as const,
+            value: properties.fill.slice(1),
+          },
+        }),
+    outline:
+      properties.borderColor === 'none' || properties.borderWidth <= 0
+        ? { type: 'noFill' as const }
+        : {
+            type: 'solidFill' as const,
+            solidFillType: 'rgb' as const,
+            value: properties.borderColor.slice(1),
+            width: millimetersToEmus(properties.borderWidth),
+          },
+    ...(properties.layout === 'floating'
+      ? { floating: textBoxFloatingOptions(properties, docx) }
+      : {}),
+  };
+  return new docx.WpsShapeRun(shapeOptions);
+}
+
+function textBoxVerticalAnchor(
+  properties: WorkDocumentTextBoxProperties,
+  docx: typeof import('docx'),
+) {
+  if (properties.verticalAlign === 'center') return docx.VerticalAnchor.CENTER;
+  if (properties.verticalAlign === 'bottom') return docx.VerticalAnchor.BOTTOM;
+  return docx.VerticalAnchor.TOP;
+}
+
+function textBoxFloatingOptions(
+  properties: WorkDocumentTextBoxProperties,
+  docx: typeof import('docx'),
+) {
+  return {
+    horizontalPosition: {
+      relative: textBoxHorizontalReference(properties, docx),
+      offset: millimetersToEmus(properties.horizontalOffset ?? 0),
+    },
+    verticalPosition: {
+      relative: textBoxVerticalReference(properties, docx),
+      offset: millimetersToEmus(properties.verticalOffset ?? 0),
+    },
+    allowOverlap: true,
+    behindDocument: false,
+    layoutInCell: true,
+    lockAnchor: false,
+    zIndex: 0,
+    margins: { top: 0, right: 0, bottom: 0, left: 0 },
+    wrap: { type: docx.TextWrappingType.SQUARE },
+  };
+}
+
+function textBoxHorizontalReference(
+  properties: WorkDocumentTextBoxProperties,
+  docx: typeof import('docx'),
+) {
+  if (properties.horizontalReference === 'margin') {
+    return docx.HorizontalPositionRelativeFrom.MARGIN;
+  }
+  if (properties.horizontalReference === 'page') {
+    return docx.HorizontalPositionRelativeFrom.PAGE;
+  }
+  return docx.HorizontalPositionRelativeFrom.COLUMN;
+}
+
+function textBoxVerticalReference(
+  properties: WorkDocumentTextBoxProperties,
+  docx: typeof import('docx'),
+) {
+  if (properties.verticalReference === 'margin') {
+    return docx.VerticalPositionRelativeFrom.MARGIN;
+  }
+  if (properties.verticalReference === 'page') {
+    return docx.VerticalPositionRelativeFrom.PAGE;
+  }
+  return docx.VerticalPositionRelativeFrom.PARAGRAPH;
+}
+
+function millimetersToPixels(value: number): number {
+  return (value * 96) / 25.4;
+}
+
+function millimetersToEmus(value: number): number {
+  return Math.round(value * 36_000);
 }
 
 function paragraphHeadingLevel(tag: string, docx: typeof import('docx')) {

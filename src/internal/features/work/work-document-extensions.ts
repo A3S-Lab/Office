@@ -49,6 +49,7 @@ import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
 import { DocumentTableOfContents } from './work-document-table-of-contents-node';
 import { DocumentUnderline } from './work-document-underline';
+import { DocumentTextBox } from './work-document-text-box';
 import {
   DocumentTableCell,
   DocumentTableFormatting,
@@ -155,6 +156,7 @@ export function createWorkDocumentExtensions(
         minHeight: 40,
       },
     }),
+    DocumentTextBox,
     TableKit.configure({
       table: false,
       tableCell: false,

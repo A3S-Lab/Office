@@ -922,6 +922,23 @@ malformed, and unsupported DrawingML values receive explicit diagnostics and
 normalize safely. Focused model, UI, DOCX round-trip, responsive browser, and
 local A3S Test coverage document the boundary without adding a remote service.
 
+The sixty-fifth Writer milestone adds a bounded native text-box slice. The
+Insert ribbon creates an isolated editable text-box node, and its contextual
+Text Box ribbon exposes inline or floating layout, millimeter width and height,
+page/column/margin or paragraph-relative offsets, fill, outline, padding, and
+vertical alignment. Each accepted intent is one controlled TipTap update and
+one Undo record; the live editor, preview, PDF capture, and pagination resolver
+consume the same dimensions and placement model.
+
+DOCX import and export support isolated WordprocessingML shapes marked with
+`txBox="1"`, retaining geometry, inline/floating placement, offsets, fill,
+outline, body padding, vertical anchor, text, and stable drawing-property IDs.
+Paragraphs that mix a text-box drawing with other runs, malformed shape
+content, unsupported DrawingML branches, and relationship-bound drawings stay
+on the normal compatibility path and receive explicit diagnostics. Focused
+model, command, UI, DOCX reopen, responsive browser, and local A3S Test gates
+cover the declared boundary without adding a remote service.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

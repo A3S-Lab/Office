@@ -38,6 +38,7 @@ interface ToolbarCalls {
   comments: number;
   crossReferences: number;
   imageRequests: number;
+  textBoxInserts: number;
   insertComments: number;
   indexEntries: number;
   indexes: number;
@@ -194,6 +195,28 @@ test('orders Insert and Page Layout groups like WPS Writer', () => {
   fireEvent.click(screen.getByRole('tab', { name: '页面布局' }));
   expect(activeRibbonGroupLabels()).toEqual(['页面设置', '段落', '页面背景']);
   expect(screen.queryByRole('button', { name: '页码' })).toBeNull();
+});
+
+test('inserts a text box and exposes its contextual WPS controls', () => {
+  editor = createEditor();
+  const calls = createCalls();
+  const view = render(toolbar(editor, calls));
+
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  fireEvent.click(screen.getByRole('button', { name: '插入文本框' }));
+  expect(calls.textBoxInserts).toBe(1);
+  expect(nodeCount(editor, 'documentTextBox')).toBe(1);
+
+  view.rerender(toolbar(editor, calls));
+  expect(screen.getByRole('tab', { name: '文本框' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '浮于文字上方' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: '浮于文字上方' }));
+  expect(editor.getHTML()).toContain('data-text-box-layout="floating"');
+
+  fireEvent.click(screen.getByRole('button', { name: '底端' }));
+  expect(editor.getHTML()).toContain('data-text-box-vertical-align="bottom"');
+  fireEvent.click(screen.getByRole('button', { name: '删除文本框' }));
+  expect(nodeCount(editor, 'documentTextBox')).toBe(0);
 });
 
 test('orders References, Review, and View groups like WPS Writer', () => {
@@ -832,6 +855,10 @@ function toolbar(
       onRequestImage={() => {
         calls.imageRequests += 1;
       }}
+      onInsertTextBox={() => {
+        calls.textBoxInserts += 1;
+        currentEditor.chain().focus().insertDocumentTextBox().run();
+      }}
       onPageChromeEditingPartChange={(part) => calls.pageChromeParts.push(part)}
       onClosePageChrome={() => {
         calls.closePageChrome += 1;
@@ -937,6 +964,7 @@ function createCalls(): ToolbarCalls {
     comments: 0,
     crossReferences: 0,
     imageRequests: 0,
+    textBoxInserts: 0,
     insertComments: 0,
     indexEntries: 0,
     indexes: 0,

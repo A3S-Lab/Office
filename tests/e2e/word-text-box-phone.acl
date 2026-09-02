@@ -1,0 +1,237 @@
+suite "office-word-text-box" {
+    version = 1
+
+    scenario "author-native-text-box" {
+        name = "Author and round-trip a native Writer text box"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=word-text-box"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        click "place-text-box-after-paragraph" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "insert-text-box" {
+            target = role("button", "插入文本框")
+        }
+
+        wait "text-box-inserted" {
+            visible = css(".work-document-editable [data-document-text-box]")
+        }
+
+        type "write-text-box-content" {
+            target = css(".work-document-editable [data-document-text-box]")
+            value = "季度计划重点"
+        }
+
+        wait "text-box-contextual-tools-ready" {
+            visible = css(".work-document-ribbon[data-contextual-active='true']")
+        }
+
+        expect "text-box-contextual-tools" {
+            visible = css(".work-document-ribbon[data-contextual-active='true']")
+        }
+
+        fill "set-text-box-width" {
+            target = css("input[aria-label='文本框宽度（毫米）']")
+            value = "76.2"
+        }
+
+        fill "set-text-box-height" {
+            target = css("input[aria-label='文本框高度（毫米）']")
+            value = "25.4"
+        }
+
+        click "use-floating-text-box" {
+            target = role("button", "浮于文字上方")
+        }
+
+        click "choose-page-horizontal-reference" {
+            target = role("combobox", "文本框水平相对于")
+        }
+
+        click "use-page-horizontal-reference" {
+            target = role("option", "页面")
+        }
+
+        click "choose-margin-vertical-reference" {
+            target = role("combobox", "文本框垂直相对于")
+        }
+
+        click "use-margin-vertical-reference" {
+            target = role("option", "页边距")
+        }
+
+        fill "set-horizontal-offset" {
+            target = css("input[aria-label='文本框水平偏移（毫米）']")
+            value = "12.7"
+        }
+
+        fill "set-vertical-offset" {
+            target = css("input[aria-label='文本框垂直偏移（毫米）']")
+            value = "-6.35"
+        }
+
+        click "align-text-box-bottom" {
+            target = role("button", "底端")
+        }
+
+        click "open-text-box-fill" {
+            target = role("button", "文本框填充颜色")
+        }
+
+        click "choose-text-box-fill" {
+            target = role("option", "颜色 #d9ead3")
+        }
+
+        click "open-text-box-border" {
+            target = role("button", "文本框边框颜色")
+        }
+
+        click "choose-text-box-border" {
+            target = role("option", "颜色 #0070c0")
+        }
+
+        click "open-text-box-border-width" {
+            target = role("combobox", "文本框边框粗细")
+        }
+
+        click "choose-medium-border" {
+            target = role("option", "中（0.7 mm）")
+        }
+
+        expect "text-box-properties-saved" {
+            visible = css(".work-document-editable [data-document-text-box][data-text-box-width='76.2'][data-text-box-height='25.4'][data-text-box-layout='floating'][data-text-box-horizontal-reference='page'][data-text-box-vertical-reference='margin'][data-text-box-horizontal-offset='12.7'][data-text-box-vertical-offset='-6.35'][data-text-box-fill='#d9ead3'][data-text-box-border-color='#0070c0'][data-text-box-border-width='0.7'][data-text-box-vertical-align='bottom']")
+        }
+
+        expect "text-box-content-remains-editable" {
+            text = "季度计划重点"
+        }
+
+        screenshot "text-box-desktop" {
+            path = "screenshots/word-text-box-desktop.png"
+        }
+
+        accessibility "text-box-accessibility" {
+            path = "evidence/text-box-accessibility.json"
+            interactive = true
+        }
+
+        console "text-box-console" {
+            path = "diagnostics/text-box-console.json"
+            clear = false
+        }
+
+        page_errors "text-box-page-errors" {
+            path = "diagnostics/text-box-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "discover-text-box-tools-on-phone" {
+        name = "Discover Writer text-box controls on a phone viewport"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-phone-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=word-text-box-phone"
+        }
+
+        expect "phone-playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-phone-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "phone-document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        click "place-phone-text-box" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        click "open-phone-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "scroll-insert-tools" {
+            target = role("button", "向右查看更多插入工具")
+        }
+
+        click "insert-phone-text-box" {
+            target = role("button", "插入文本框")
+        }
+
+        wait "phone-text-box-inserted" {
+            visible = css(".work-document-editable [data-document-text-box]")
+        }
+
+        wait "phone-text-box-contextual-tools-ready" {
+            visible = css(".work-document-ribbon[data-contextual-active='true']")
+        }
+
+        expect "phone-text-box-tab-selected" {
+            visible = css(".work-document-ribbon[data-contextual-active='true']")
+        }
+
+        click "scroll-text-box-tools" {
+            target = role("button", "向右查看更多文本框工具")
+        }
+
+        expect "phone-text-box-size-control-visible" {
+            visible = css("input[aria-label='文本框宽度（毫米）']")
+        }
+
+        expect "phone-text-box-inside-viewport" {
+            visible = css(".work-document-editable [data-document-text-box]")
+        }
+
+        screenshot "text-box-phone" {
+            path = "screenshots/word-text-box-phone.png"
+        }
+
+        console "phone-text-box-console" {
+            path = "diagnostics/phone-text-box-console.json"
+            clear = false
+        }
+
+        page_errors "phone-text-box-page-errors" {
+            path = "diagnostics/phone-text-box-page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -24,6 +24,7 @@ import { diagnoseDocxRunBorders } from './work-docx-run-border-diagnostics';
 import { diagnoseDocxRunFonts } from './work-docx-run-fonts-diagnostics';
 import { isSupportedDocxRunFormattingChange } from './work-docx-run-formatting-import';
 import { diagnoseDocxRunShading } from './work-docx-run-shading-diagnostics';
+import { inspectDocxTextBoxes } from './work-docx-text-box-import';
 import {
   attribute,
   contentTypeForPart,
@@ -280,6 +281,26 @@ export async function analyzeDocxCompatibility(
       issues.push(...(await diagnoseDocxCitations(archive, document)));
       const captionDiagnostics = diagnoseDocxCaptions(document);
       issues.push(...captionDiagnostics.issues);
+      const textBoxInspection = inspectDocxTextBoxes(document);
+      if (textBoxInspection.supported) {
+        issues.push(
+          issue(
+            'docx.text-boxes',
+            'Text boxes',
+            `${textBoxInspection.supported} isolated WPS text box(es) remain editable with native DrawingML geometry, inline or floating layout, safe page-relative offsets, fill, outline, padding, and vertical alignment. Mixed paragraphs are intentionally kept on the normal DOCX compatibility path.`,
+            'info',
+          ),
+        );
+      }
+      if (textBoxInspection.unsupported) {
+        issues.push(
+          issue(
+            'docx.text-boxes.unsupported',
+            'Text boxes',
+            `${textBoxInspection.unsupported} WPS text box(es) mix a drawing with other paragraph content or have unsupported shape content. Only isolated text-box paragraphs are converted to editable text boxes; the rest may normalize during browser conversion.`,
+          ),
+        );
+      }
       if (descendants(document, 'tbl').length) {
         issues.push(
           issue(
@@ -289,8 +310,11 @@ export async function analyzeDocxCompatibility(
           ),
         );
       }
+      const drawingCount = descendants(document, 'drawing').length;
+      const textBoxDrawingCount =
+        textBoxInspection.supported + textBoxInspection.unsupported;
       if (
-        descendants(document, 'drawing').length ||
+        drawingCount > textBoxDrawingCount ||
         descendants(document, 'pict').length
       ) {
         const unsupportedImageTransforms =
