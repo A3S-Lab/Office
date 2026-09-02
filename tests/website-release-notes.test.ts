@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 test('keeps curated release notes unique, localized, and newest first', () => {
   expect(OFFICE_RELEASE_NOTES.map(({ version }) => version)).toEqual([
+    '0.45.0',
     '0.44.0',
     '0.43.0',
     '0.42.0',
@@ -205,6 +206,9 @@ test('keeps local evidence links aligned with each documentation language', () =
   const dependentListRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.44.0',
   );
+  const pictureTransformRelease = OFFICE_RELEASE_NOTES.find(
+    ({ version }) => version === '0.45.0',
+  );
   const customFormulaRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.43.0',
   );
@@ -233,6 +237,10 @@ test('keeps local evidence links aligned with each documentation language', () =
   expect(dependentListRelease?.links[0]?.href).toEqual({
     en: './components/spreadsheet.html#dependent-dropdown-lists',
     zh: './components/spreadsheet.html#依赖下拉列表',
+  });
+  expect(pictureTransformRelease?.links[0]?.href).toEqual({
+    en: './components/document.html#built-in-picture-properties',
+    zh: './components/document.html#图片属性',
   });
   expect(customFormulaRelease?.links[0]?.href).toEqual({
     en: './components/spreadsheet.html#formula-conditional-formatting',

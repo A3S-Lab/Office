@@ -3,12 +3,15 @@ import type {
   WorkDocumentImageHorizontalReference,
   WorkDocumentImageLayout,
   WorkDocumentImageProperties,
-  WorkDocumentImageWrapSide,
+  WorkDocumentImageRotation,
   WorkDocumentImageVerticalReference,
+  WorkDocumentImageWrapSide,
 } from '../work-document-image-layout';
 import {
+  defaultDocumentImageTransform,
   MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT,
   normalizeDocumentImageLayer,
+  normalizeDocumentImageTransform,
 } from '../work-document-image-layout';
 import { normalizeDocumentImageWrapSide } from '../work-document-image-wrap-contour';
 
@@ -39,6 +42,9 @@ export interface DocumentPicturePropertiesDraft {
   cropRight: string;
   cropBottom: string;
   cropLeft: string;
+  rotation: WorkDocumentImageRotation;
+  flipHorizontal: boolean;
+  flipVertical: boolean;
   relativeHeight: string;
   behindDocument: boolean;
   allowOverlap: boolean;
@@ -102,6 +108,10 @@ export function createDocumentPicturePropertiesDraft(
     cropRight: formatNumber(source.properties.crop?.right ?? 0),
     cropBottom: formatNumber(source.properties.crop?.bottom ?? 0),
     cropLeft: formatNumber(source.properties.crop?.left ?? 0),
+    rotation: (source.properties.transform ?? defaultDocumentImageTransform())
+      .rotation,
+    flipHorizontal: Boolean(source.properties.transform?.flipHorizontal),
+    flipVertical: Boolean(source.properties.transform?.flipVertical),
     relativeHeight: String(layer.relativeHeight),
     behindDocument: layer.behindDocument,
     allowOverlap: layer.allowOverlap,
@@ -260,6 +270,23 @@ export function documentPicturePropertyChanges(
       left: Number(current.cropLeft),
     };
     changes.crop = Object.values(crop).some((edge) => edge > 0) ? crop : null;
+  }
+  if (
+    initial.rotation !== current.rotation ||
+    initial.flipHorizontal !== current.flipHorizontal ||
+    initial.flipVertical !== current.flipVertical
+  ) {
+    const transform = normalizeDocumentImageTransform({
+      rotation: current.rotation,
+      flipHorizontal: current.flipHorizontal,
+      flipVertical: current.flipVertical,
+    });
+    changes.transform =
+      transform.rotation === 0 &&
+      !transform.flipHorizontal &&
+      !transform.flipVertical
+        ? null
+        : transform;
   }
   if (
     !sameDraftNumber(initial.relativeHeight, current.relativeHeight) ||

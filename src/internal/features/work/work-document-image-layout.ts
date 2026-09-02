@@ -53,6 +53,14 @@ export interface WorkDocumentImageCrop {
   left: number;
 }
 
+export type WorkDocumentImageRotation = 0 | 90 | 180 | 270;
+
+export interface WorkDocumentImageTransform {
+  rotation: WorkDocumentImageRotation;
+  flipHorizontal: boolean;
+  flipVertical: boolean;
+}
+
 export interface WorkDocumentImageLayer {
   relativeHeight: number;
   behindDocument: boolean;
@@ -76,6 +84,7 @@ export interface WorkDocumentImageProperties
   alternativeText: string;
   position?: WorkDocumentImagePosition | null;
   crop?: WorkDocumentImageCrop | null;
+  transform?: WorkDocumentImageTransform | null;
   contour?: WorkDocumentImageWrapContour | null;
   layer?: WorkDocumentImageLayer | null;
 }
@@ -114,6 +123,9 @@ const DEFAULT_IMAGE_ALIGNMENT: WorkDocumentImageAlignment = 'center';
 const DEFAULT_WRAP_DISTANCE_MILLIMETERS = 3;
 const MAX_WRAP_DISTANCE_MILLIMETERS = 25;
 const DEFAULT_LOCK_ASPECT_RATIO = true;
+const DEFAULT_IMAGE_ROTATION: WorkDocumentImageRotation = 0;
+const DEFAULT_IMAGE_FLIP_HORIZONTAL = false;
+const DEFAULT_IMAGE_FLIP_VERTICAL = false;
 const DEFAULT_HORIZONTAL_REFERENCE: WorkDocumentImageHorizontalReference =
   'column';
 const DEFAULT_VERTICAL_REFERENCE: WorkDocumentImageVerticalReference =
@@ -310,6 +322,15 @@ export const DocumentImage = Image.extend({
       cropRight: imageCropNumberAttribute('right'),
       cropBottom: imageCropNumberAttribute('bottom'),
       cropLeft: imageCropNumberAttribute('left'),
+      rotation: imageTransformRotationAttribute(),
+      flipHorizontal: imageTransformBooleanAttribute(
+        'flipHorizontal',
+        'data-office-image-flip-horizontal',
+      ),
+      flipVertical: imageTransformBooleanAttribute(
+        'flipVertical',
+        'data-office-image-flip-vertical',
+      ),
       wrapPolygon: imageWrapPolygonAttribute(),
       wrapPolygonEdited: {
         default: false,
@@ -429,6 +450,7 @@ export function documentImageProperties(
   const layout = normalizeDocumentImageLayoutOptions(attributes);
   const position = normalizeDocumentImagePosition(attributes);
   const crop = normalizeDocumentImageCrop(attributes);
+  const transform = normalizeDocumentImageTransform(attributes);
   const contour = effectiveDocumentImageWrapContour(attributes);
   return {
     ...layout,
@@ -440,6 +462,7 @@ export function documentImageProperties(
     alternativeText: documentImageAlternativeText(editor),
     ...(position ? { position } : {}),
     ...(crop ? { crop } : {}),
+    ...(documentImageTransformIsDefault(transform) ? {} : { transform }),
     ...(contour ? { contour } : {}),
     ...(layout.layout === 'inline'
       ? {}
@@ -523,6 +546,17 @@ export function documentImageCropFromElement(
     cropBottom: element.getAttribute('data-office-image-crop-bottom'),
     cropLeft: element.getAttribute('data-office-image-crop-left'),
   });
+}
+
+export function documentImageTransformFromElement(
+  element: Element,
+): WorkDocumentImageTransform | null {
+  const transform = normalizeDocumentImageTransform({
+    rotation: element.getAttribute('data-office-image-rotation'),
+    flipHorizontal: element.getAttribute('data-office-image-flip-horizontal'),
+    flipVertical: element.getAttribute('data-office-image-flip-vertical'),
+  });
+  return documentImageTransformIsDefault(transform) ? null : transform;
 }
 
 export function documentImageLayerFromElement(
@@ -669,6 +703,108 @@ export function normalizeDocumentImageCropEdge(value: unknown): number {
   return Math.round(Math.min(99.99, Math.max(0, number)) * 100) / 100;
 }
 
+export function defaultDocumentImageTransform(): WorkDocumentImageTransform {
+  return {
+    rotation: DEFAULT_IMAGE_ROTATION,
+    flipHorizontal: DEFAULT_IMAGE_FLIP_HORIZONTAL,
+    flipVertical: DEFAULT_IMAGE_FLIP_VERTICAL,
+  };
+}
+
+export function normalizeDocumentImageTransform(
+  value: Partial<Record<keyof WorkDocumentImageTransform, unknown>>,
+): WorkDocumentImageTransform {
+  return {
+    rotation: normalizeDocumentImageRotation(value.rotation),
+    flipHorizontal: normalizeDocumentImageTransformBoolean(
+      value.flipHorizontal,
+      DEFAULT_IMAGE_FLIP_HORIZONTAL,
+    ),
+    flipVertical: normalizeDocumentImageTransformBoolean(
+      value.flipVertical,
+      DEFAULT_IMAGE_FLIP_VERTICAL,
+    ),
+  };
+}
+
+export function normalizeDocumentImageRotation(
+  value: unknown,
+): WorkDocumentImageRotation {
+  const number =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim()
+        ? Number(value)
+        : DEFAULT_IMAGE_ROTATION;
+  if (!Number.isFinite(number)) return DEFAULT_IMAGE_ROTATION;
+  const normalized = ((Math.round(number) % 360) + 360) % 360;
+  return normalized === 90 || normalized === 180 || normalized === 270
+    ? normalized
+    : DEFAULT_IMAGE_ROTATION;
+}
+
+export function documentImageTransformIsDefault(
+  transform: WorkDocumentImageTransform,
+): boolean {
+  return (
+    transform.rotation === DEFAULT_IMAGE_ROTATION &&
+    !transform.flipHorizontal &&
+    !transform.flipVertical
+  );
+}
+
+export function documentImageTransformCss(
+  transform: WorkDocumentImageTransform,
+): string {
+  const normalized = normalizeDocumentImageTransform(transform);
+  if (documentImageTransformIsDefault(normalized)) return '';
+  return [
+    `--work-document-image-rotation:${normalized.rotation}deg`,
+    `--work-document-image-flip-x:${normalized.flipHorizontal ? -1 : 1}`,
+    `--work-document-image-flip-y:${normalized.flipVertical ? -1 : 1}`,
+  ].join(';');
+}
+
+export function applyDocumentImageTransformToElement(
+  element: HTMLElement,
+  transform: WorkDocumentImageTransform | null,
+): void {
+  const normalized = normalizeDocumentImageTransform(transform ?? {});
+  if (normalized.rotation === DEFAULT_IMAGE_ROTATION) {
+    delete element.dataset.officeImageRotation;
+  } else {
+    element.dataset.officeImageRotation = String(normalized.rotation);
+  }
+  if (normalized.flipHorizontal) {
+    element.dataset.officeImageFlipHorizontal = 'true';
+  } else {
+    delete element.dataset.officeImageFlipHorizontal;
+  }
+  if (normalized.flipVertical) {
+    element.dataset.officeImageFlipVertical = 'true';
+  } else {
+    delete element.dataset.officeImageFlipVertical;
+  }
+  if (documentImageTransformIsDefault(normalized)) {
+    element.style.removeProperty('--work-document-image-rotation');
+    element.style.removeProperty('--work-document-image-flip-x');
+    element.style.removeProperty('--work-document-image-flip-y');
+    return;
+  }
+  element.style.setProperty(
+    '--work-document-image-rotation',
+    `${normalized.rotation}deg`,
+  );
+  element.style.setProperty(
+    '--work-document-image-flip-x',
+    normalized.flipHorizontal ? '-1' : '1',
+  );
+  element.style.setProperty(
+    '--work-document-image-flip-y',
+    normalized.flipVertical ? '-1' : '1',
+  );
+}
+
 export function normalizeDocumentImageLayer(
   value: Partial<Record<keyof WorkDocumentImageLayer, unknown>>,
 ): WorkDocumentImageLayer {
@@ -781,6 +917,14 @@ function documentImageAttributesForChanges(
     attributes.cropBottom = crop?.bottom ?? 0;
     attributes.cropLeft = crop?.left ?? 0;
   }
+  if (Object.hasOwn(value, 'transform')) {
+    const transform = value.transform
+      ? normalizeDocumentImageTransform(value.transform)
+      : defaultDocumentImageTransform();
+    attributes.rotation = transform.rotation;
+    attributes.flipHorizontal = transform.flipHorizontal;
+    attributes.flipVertical = transform.flipVertical;
+  }
   if (Object.hasOwn(value, 'contour')) {
     const contour = value.contour
       ? normalizeDocumentImageWrapContour(value.contour)
@@ -855,6 +999,7 @@ function syncDocumentImageNodeView(
   );
   const position = normalizeDocumentImagePosition(attributes);
   const crop = normalizeDocumentImageCrop(attributes);
+  const transform = normalizeDocumentImageTransform(attributes);
   const wrapSide = normalizeDocumentImageWrapSide(attributes.wrapSide);
   const contour = effectiveDocumentImageWrapContour(attributes);
   const layer = normalizeDocumentImageLayer(attributes);
@@ -870,6 +1015,7 @@ function syncDocumentImageNodeView(
   element.dataset.officeImageWrapSide = wrapSide;
   syncDocumentImagePosition(element, position);
   applyDocumentImageCropToElement(element, crop);
+  applyDocumentImageTransformToElement(element, transform);
   applyDocumentImageWrapContourToElement(element, contour);
   applyDocumentImageLayerToElement(element, layer);
   if (identity) applyDocumentImageIdentityToElement(element, identity);
@@ -888,6 +1034,7 @@ function syncDocumentImageNodeView(
   container.dataset.officeImageWrapSide = wrapSide;
   syncDocumentImagePosition(container, position);
   applyDocumentImageCropToElement(container, crop);
+  applyDocumentImageTransformToElement(container, transform);
   applyDocumentImageWrapContourToElement(container, contour);
   applyDocumentImageLayerToElement(container, layer);
   if (identity) applyDocumentImageIdentityToElement(container, identity);
@@ -937,6 +1084,47 @@ function imageCropNumberAttribute(edge: keyof WorkDocumentImageCrop) {
       });
       if (crop) result.style = documentImageCropStyle(crop);
       return result;
+    },
+  };
+}
+
+function imageTransformRotationAttribute() {
+  return {
+    default: DEFAULT_IMAGE_ROTATION,
+    parseHTML: (element: Element) =>
+      normalizeDocumentImageRotation(
+        element.getAttribute('data-office-image-rotation'),
+      ),
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const transform = normalizeDocumentImageTransform(attributes);
+      const result: Record<string, string> = {};
+      if (transform.rotation !== DEFAULT_IMAGE_ROTATION) {
+        result['data-office-image-rotation'] = String(transform.rotation);
+      }
+      const style = documentImageTransformCss(transform);
+      if (style) result.style = style;
+      return result;
+    },
+  };
+}
+
+function imageTransformBooleanAttribute(
+  key: keyof Pick<
+    WorkDocumentImageTransform,
+    'flipHorizontal' | 'flipVertical'
+  >,
+  name: string,
+) {
+  return {
+    default: false,
+    parseHTML: (element: Element) =>
+      normalizeDocumentImageTransformBoolean(element.getAttribute(name), false),
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const value = normalizeDocumentImageTransformBoolean(
+        attributes[key],
+        false,
+      );
+      return value ? { [name]: 'true' } : {};
     },
   };
 }
@@ -1102,6 +1290,19 @@ export function applyDocumentImageLayerToElement(
 }
 
 function normalizeDocumentImageLayerBoolean(
+  value: unknown,
+  fallback: boolean,
+): boolean {
+  if (value === true || value === 1 || value === '1' || value === 'true') {
+    return true;
+  }
+  if (value === false || value === 0 || value === '0' || value === 'false') {
+    return false;
+  }
+  return fallback;
+}
+
+function normalizeDocumentImageTransformBoolean(
   value: unknown,
   fallback: boolean,
 ): boolean {

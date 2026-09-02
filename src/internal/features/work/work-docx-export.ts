@@ -136,6 +136,10 @@ import {
   patchDocxImageLayers,
 } from './work-docx-image-layer';
 import {
+  DocxImageTransformPatchCollector,
+  patchDocxImageTransforms,
+} from './work-docx-image-transform';
+import {
   DocxImageWrapPatchCollector,
   patchDocxImageWraps,
 } from './work-docx-image-wrap';
@@ -242,6 +246,7 @@ interface DocxNoteContext extends DocxListExportContext {
   imageIdentityPatches: DocxImageIdentityPatchCollector;
   imageLayerPatches: DocxImageLayerPatchCollector;
   imageWrapPatches: DocxImageWrapPatchCollector;
+  imageTransformPatches: DocxImageTransformPatchCollector;
   paragraphBorderPatches: DocxParagraphBorderPatchCollector;
   paragraphDefaultCollapsedPatches: DocxParagraphDefaultCollapsedPatchCollector;
   paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
@@ -317,6 +322,7 @@ export async function createDocxBlob(
     imageIdentityPatches: new DocxImageIdentityPatchCollector(),
     imageLayerPatches: new DocxImageLayerPatchCollector(),
     imageWrapPatches: new DocxImageWrapPatchCollector(),
+    imageTransformPatches: new DocxImageTransformPatchCollector(),
     paragraphBorderPatches: new DocxParagraphBorderPatchCollector(
       JSON.stringify(normalizedContent),
     ),
@@ -516,8 +522,12 @@ export async function createDocxBlob(
     imageWrapPatched,
     noteContext.imageLayerPatches.patches,
   );
-  const imageIdentityPatched = await patchDocxImageIdentities(
+  const imageTransformPatched = await patchDocxImageTransforms(
     imageLayerPatched,
+    noteContext.imageTransformPatches.patches,
+  );
+  const imageIdentityPatched = await patchDocxImageIdentities(
+    imageTransformPatched,
     noteContext.imageIdentityPatches.patches,
   );
   const bookmarkPatched = await patchDocxBookmarks(
@@ -849,6 +859,7 @@ async function blockToFileChildren(
             noteContext.imageWrapPatches,
             noteContext.imageLayerPatches,
             noteContext.imageIdentityPatches,
+            noteContext.imageTransformPatches,
           ),
         ],
       }),
@@ -1279,6 +1290,7 @@ async function inlineRuns(
           noteContext.imageWrapPatches,
           noteContext.imageLayerPatches,
           noteContext.imageIdentityPatches,
+          noteContext.imageTransformPatches,
         ),
       ];
     if (tag === 'span' && node.dataset.documentBookmarkBoundary === 'true') {

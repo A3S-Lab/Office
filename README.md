@@ -309,6 +309,18 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.45.0` adds bounded Writer picture transforms without introducing a
+second document model or a remote service:
+
+- The contextual **Picture** ribbon now exposes quarter-turn rotation plus
+  horizontal and vertical reflection with accessible Lucide icons. **Picture
+  Properties** keeps the same controls in a responsive dialog, and each
+  confirmed change is one undoable, controlled update.
+- The transform is projected consistently into editing, preview, PDF capture,
+  and the native DOCX `a:xfrm` fields (`rot`, `flipH`, and `flipV`). Imported
+  90-degree/reflection values reopen as editable state, while arbitrary-angle
+  or malformed values produce a compatibility diagnostic and normalize safely.
+
 Version `0.44.0` adds dependent local dropdowns to Spreadsheet Data Validation
 without introducing a remote service:
 

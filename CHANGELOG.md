@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.45.0 - 2026-09-02
+
+- Added a bounded Writer picture-transform workflow. The contextual Picture
+  ribbon now offers 90-degree left/right rotation and horizontal/vertical
+  reflection with accessible icons; Picture Properties exposes the same state
+  in a responsive dialog, and each confirmed intent is one controlled update
+  and one Undo record.
+- Projected the transform consistently into the live editor, read-only
+  preview, and PDF capture. DOCX `a:xfrm` `rot`, `flipH`, and `flipV` values
+  import, export, and reopen for the supported quarter-turn/reflection subset.
+- Added fail-closed compatibility diagnostics for arbitrary-angle or malformed
+  DrawingML transforms, which normalize to the bounded model instead of
+  presenting an inexact editable value. Added model, UI, DOCX round-trip,
+  responsive browser, accessibility, and local A3S Test coverage.
+
 ## 0.44.0 - 2026-09-02
 
 - Added local dependent dropdown lists to Spreadsheet Data Validation. The

@@ -4,12 +4,14 @@ import {
   documentImageLayerFromElement,
   documentImageLayoutFromElement,
   documentImagePositionFromElement,
+  documentImageTransformFromElement,
   wrapsBesideImage,
 } from './work-document-image-layout';
 import { documentImageWrapContourFromElement } from './work-document-image-wrap-contour';
 import type { DocxImageCropPatchCollector } from './work-docx-image-crop';
 import type { DocxImageIdentityPatchCollector } from './work-docx-image-identity';
 import type { DocxImageLayerPatchCollector } from './work-docx-image-layer';
+import type { DocxImageTransformPatchCollector } from './work-docx-image-transform';
 import type { DocxImageWrapPatchCollector } from './work-docx-image-wrap';
 
 export async function imageToDocx(
@@ -19,6 +21,7 @@ export async function imageToDocx(
   wrapPatches?: DocxImageWrapPatchCollector,
   layerPatches?: DocxImageLayerPatchCollector,
   identityPatches?: DocxImageIdentityPatchCollector,
+  transformPatches?: DocxImageTransformPatchCollector,
 ): Promise<ParagraphChild> {
   const source = element.getAttribute('src');
   const alt =
@@ -49,6 +52,9 @@ export async function imageToDocx(
     );
     const layer = documentImageLayerFromElement(element);
     const layerMarker = layerPatches?.marker(imageLayout.layout, layer);
+    const transformMarker = transformPatches?.marker(
+      documentImageTransformFromElement(element),
+    );
     return new docx.ImageRun({
       type,
       data: await blob.arrayBuffer(),
@@ -57,7 +63,7 @@ export async function imageToDocx(
         height: Math.max(24, Math.round(dimensions.height * scale)),
       },
       altText: {
-        name: `${alt}${cropMarker ?? ''}${wrapMarker ?? ''}${layerMarker ?? ''}${identity?.marker ?? ''}`,
+        name: `${alt}${cropMarker ?? ''}${wrapMarker ?? ''}${layerMarker ?? ''}${identity?.marker ?? ''}${transformMarker ?? ''}`,
         description: alt,
         title: alt,
         id: identity ? String(identity.docPropertiesId) : undefined,

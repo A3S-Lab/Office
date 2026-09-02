@@ -3,14 +3,21 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  FlipHorizontal2,
+  FlipVertical2,
+  RotateCcw,
+  RotateCw,
   Rows3,
   TextWrap,
   Trash2,
 } from 'lucide-react';
 import {
+  defaultDocumentImageTransform,
   documentImageLayoutOptions,
+  documentImageProperties,
   type WorkDocumentImageAlignment,
   type WorkDocumentImageLayout,
+  type WorkDocumentImageRotation,
 } from '../work-document-image-layout';
 import { DocumentPicturePropertiesControl } from './document-picture-properties-dialog';
 import { OfficeSelect } from './office-controls';
@@ -29,12 +36,27 @@ const imageWrapDistanceOptions = [
 
 export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
   const image = documentImageLayoutOptions(editor);
+  const transform =
+    documentImageProperties(editor).transform ??
+    defaultDocumentImageTransform();
   const imageSelected = editor.isActive('image');
   const wrapDistanceValue = String(image.wrapDistance);
   const updateLayout = (layout: WorkDocumentImageLayout) =>
     editor.commands.setDocumentImageLayoutOptions({ layout });
   const updateAlignment = (alignment: WorkDocumentImageAlignment) =>
     editor.commands.setDocumentImageLayoutOptions({ alignment });
+  const updateTransform = (
+    next: (
+      current: ReturnType<typeof defaultDocumentImageTransform>,
+    ) => Partial<ReturnType<typeof defaultDocumentImageTransform>>,
+  ) => {
+    const current =
+      documentImageProperties(editor).transform ??
+      defaultDocumentImageTransform();
+    return editor.commands.setDocumentImageProperties({
+      transform: { ...current, ...next(current) },
+    });
+  };
 
   return (
     <>
@@ -114,6 +136,54 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <AlignRight size={18} />
         </PictureButton>
       </WorkOfficeRibbonGroup>
+      <WorkOfficeRibbonGroup label="变换">
+        <PictureButton
+          label="向左旋转"
+          disabled={!imageSelected}
+          onClick={() =>
+            updateTransform((current) => ({
+              rotation: rotateImage(current.rotation, -90),
+            }))
+          }
+        >
+          <RotateCcw size={18} />
+        </PictureButton>
+        <PictureButton
+          label="向右旋转"
+          disabled={!imageSelected}
+          onClick={() =>
+            updateTransform((current) => ({
+              rotation: rotateImage(current.rotation, 90),
+            }))
+          }
+        >
+          <RotateCw size={18} />
+        </PictureButton>
+        <PictureButton
+          label="水平翻转"
+          active={transform.flipHorizontal}
+          disabled={!imageSelected}
+          onClick={() =>
+            updateTransform((current) => ({
+              flipHorizontal: !current.flipHorizontal,
+            }))
+          }
+        >
+          <FlipHorizontal2 size={18} />
+        </PictureButton>
+        <PictureButton
+          label="垂直翻转"
+          active={transform.flipVertical}
+          disabled={!imageSelected}
+          onClick={() =>
+            updateTransform((current) => ({
+              flipVertical: !current.flipVertical,
+            }))
+          }
+        >
+          <FlipVertical2 size={18} />
+        </PictureButton>
+      </WorkOfficeRibbonGroup>
       <WorkOfficeRibbonGroup label="与文字距离">
         <OfficeSelect
           ariaLabel="图片与文字距离"
@@ -143,6 +213,14 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
       </WorkOfficeRibbonGroup>
     </>
   );
+}
+
+function rotateImage(
+  rotation: WorkDocumentImageRotation,
+  delta: -90 | 90,
+): WorkDocumentImageRotation {
+  const next = (rotation + delta + 360) % 360;
+  return next as WorkDocumentImageRotation;
 }
 
 function imageWrapDistanceOptionsForValue(value: string) {

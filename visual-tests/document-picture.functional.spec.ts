@@ -43,6 +43,23 @@ test('picture contextual ribbon keeps properties, focus, and cleanup coherent', 
     'right',
   );
 
+  await page.getByRole('button', { name: '向右旋转' }).click();
+  await expect(imageContainer).toHaveAttribute(
+    'data-office-image-rotation',
+    '90',
+  );
+  await page.getByRole('button', { name: '水平翻转' }).click();
+  await page.getByRole('button', { name: '垂直翻转' }).click();
+  await expect(imageContainer).toHaveAttribute(
+    'data-office-image-flip-horizontal',
+    'true',
+  );
+  await expect(imageContainer).toHaveAttribute(
+    'data-office-image-flip-vertical',
+    'true',
+  );
+  await expect(body).toBeFocused();
+
   const distance = page.getByRole('combobox', { name: '图片与文字距离' });
   await distance.click();
   await page.getByRole('option', { name: '10 毫米' }).click();
