@@ -166,6 +166,7 @@ import {
   useSpreadsheetCollaboration,
 } from './use-spreadsheet-collaboration';
 import { useSpreadsheetDataValidation } from './use-spreadsheet-data-validation';
+import { spreadsheetDataValidationItemAt } from './spreadsheet-data-validation';
 import {
   cloneSpreadsheetDataValidationItem,
   spreadsheetDataValidationConfirmLabels,
@@ -476,6 +477,71 @@ function SpreadsheetEditorSurface({
     null,
   );
   const formatCellsApplyingRef = useRef(false);
+  useEffect(() => {
+    const container = spreadsheetCanvasRef.current;
+    if (!container || preview || !selectionState) return;
+
+    const frame = requestAnimationFrame(() => {
+      const button = container.querySelector<HTMLElement>(
+        '#luckysheet-dataVerification-dropdown-btn',
+      );
+      const selectedCell = container.querySelector<HTMLElement>(
+        '#luckysheet-cell-selected',
+      );
+      const cellArea = selectedCell?.closest<HTMLElement>('.fortune-cell-area');
+      const sheet = materializedContent.sheets.find(
+        (candidate) => candidate.id === selectionState.sheetId,
+      );
+      const row = selectionState.selection.row[0];
+      const column = selectionState.selection.column[0];
+      const item =
+        sheet && row != null && column != null
+          ? spreadsheetDataValidationItemAt(sheet, row, column)
+          : null;
+      if (
+        !button ||
+        !selectedCell ||
+        !cellArea ||
+        !item ||
+        item.type !== 'dropdown' ||
+        item.showDropdownArrow === false
+      ) {
+        if (button) button.style.display = 'none';
+        return;
+      }
+
+      button.setAttribute('role', 'button');
+      button.setAttribute('aria-label', '打开下拉列表');
+      button.setAttribute('aria-haspopup', 'listbox');
+      button.setAttribute('title', '打开下拉列表');
+      const cellBounds = selectedCell.getBoundingClientRect();
+      const areaBounds = cellArea.getBoundingClientRect();
+      const buttonWidth = 20;
+      const buttonHeight = 20;
+      const maxLeft = Math.max(0, areaBounds.width - buttonWidth);
+      const maxTop = Math.max(0, areaBounds.height - buttonHeight);
+      const left = Math.max(
+        0,
+        Math.min(cellBounds.right - areaBounds.left - buttonWidth, maxLeft),
+      );
+      const top = Math.max(
+        0,
+        Math.min(
+          cellBounds.top -
+            areaBounds.top +
+            (cellBounds.height - buttonHeight) / 2 -
+            2,
+          maxTop,
+        ),
+      );
+      button.style.display = 'block';
+      button.style.maxWidth = `${Math.max(0, cellBounds.width)}px`;
+      button.style.maxHeight = `${Math.max(0, cellBounds.height)}px`;
+      button.style.left = `${left}px`;
+      button.style.top = `${top}px`;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [materializedContent, preview, selectionState, workbookMountRevision]);
   const focusSpreadsheetDialogGrid = useCallback(
     (focusOrigin: Element | null) =>
       focusSpreadsheetGrid(spreadsheetCanvasRef.current, { focusOrigin }),
@@ -1036,8 +1102,12 @@ function SpreadsheetEditorSurface({
     );
   }, [materializedContent, requestedWorkbookSelection]);
   const workbookSheets = useMemo(
-    () => spreadsheetSheetsForFortune(renderedWorkbookSheets),
-    [renderedWorkbookSheets],
+    () =>
+      spreadsheetSheetsForFortune(
+        renderedWorkbookSheets,
+        materializedContent.namedRanges,
+      ),
+    [materializedContent.namedRanges, renderedWorkbookSheets],
   );
   const displayedWorkbookSheets = useMemo(
     () =>

@@ -342,6 +342,117 @@ suite "spreadsheet-data-validation" {
         }
     }
 
+    scenario "follow-dependent-dropdown-drivers" {
+        name = "Follow local Spreadsheet dependent dropdown drivers"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-dependent-dropdown-template" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "select-dependent-dropdown-template" {
+            target = css("button[data-template-id='data-validation']")
+        }
+
+        wait "dependent-dropdown-grid-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-dependent-dropdown-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "select-dependent-row" {
+            key = "ArrowDown"
+        }
+
+        press "select-dependent-column-1" {
+            key = "ArrowRight"
+        }
+
+        press "select-dependent-column-2" {
+            key = "ArrowRight"
+        }
+
+        press "select-dependent-column-3" {
+            key = "ArrowRight"
+        }
+
+        press "select-dependent-column-4" {
+            key = "ArrowRight"
+        }
+
+        press "select-dependent-column-5" {
+            key = "ArrowRight"
+        }
+
+        press "select-dependent-column-6" {
+            key = "ArrowRight"
+        }
+
+        expect "dependent-cell-selected" {
+            text = "G2"
+        }
+
+        expect "dependent-dropdown-trigger-visible" {
+            visible = css("#luckysheet-dataVerification-dropdown-btn")
+        }
+
+        click "open-dependent-data-tab" {
+            target = role("tab", "数据")
+        }
+
+        click "open-dependent-validation-dialog" {
+            target = role("button", "数据验证")
+        }
+
+        expect "dependent-range-visible" {
+            text = "Inputs!G2"
+        }
+
+        expect "dependent-formula-visible" {
+            visible = css(".work-spreadsheet-data-validation-dialog input[aria-label='来源'][value='=INDIRECT($F2)']")
+        }
+
+        expect "dependent-formula-description-visible" {
+            text = "动态来源支持 =INDIRECT"
+        }
+
+        expect "dependent-formula-note-visible" {
+            visible = css(".work-spreadsheet-data-validation-formula-note")
+        }
+
+        press "close-dependent-validation-dialog" {
+            key = "Escape"
+        }
+
+        accessibility "dependent-dropdown-accessibility" {
+            path = "evidence/dependent-dropdown-accessibility.json"
+            interactive = true
+        }
+
+        console "dependent-dropdown-console" {
+            path = "diagnostics/dependent-dropdown-console.json"
+            clear = false
+        }
+
+        page_errors "dependent-dropdown-page-errors" {
+            path = "diagnostics/dependent-dropdown-page-errors.json"
+            clear = false
+        }
+    }
+
     scenario "follow-error-alert-branches" {
         name = "Follow Traditional Office data-validation error-alert branches"
         surface = "web"

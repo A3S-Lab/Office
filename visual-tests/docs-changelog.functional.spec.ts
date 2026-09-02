@@ -9,12 +9,14 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(20);
-  await expect(cards.first()).toContainText('v0.43.0');
-  await expect(cards.first()).toContainText('表格条件格式现在支持公式编辑');
-  await expect(cards.nth(2)).toContainText(
-    '表格数据验证警告现在与 Office 决策一致',
+  await expect(cards).toHaveCount(21);
+  await expect(cards.first()).toContainText('v0.44.0');
+  await expect(cards.first()).toContainText(
+    '表格下拉列表现在可以跟随本地驱动值',
   );
+  await expect(
+    page.locator('.office-release-card[data-version="0.41.0"]'),
+  ).toContainText('表格数据验证警告现在与 Office 决策一致');
   await expect(
     page.locator('.office-release-card[data-version="0.34.0"]'),
   ).toContainText('演示文稿入场动画');

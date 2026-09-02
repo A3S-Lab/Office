@@ -18,6 +18,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.44.0' ||
     version === '0.43.0' ||
     version === '0.42.0' ||
     version === '0.41.0' ||
@@ -75,6 +76,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.44.0',
     '0.43.0',
     '0.42.0',
     '0.41.0',
@@ -370,6 +372,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
+  expect(readme).toContain('Version `0.44.0`');
   expect(readme).toContain('Version `0.43.0`');
   expect(readme).toContain(
     "[What's new](https://a3s-lab.github.io/Office/docs/changelog.html)",
@@ -380,11 +383,12 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.43.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.44.0)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
   expect(englishHome).toContain(
     'spreadsheet.html#formula-conditional-formatting',
   );
+  expect(englishHome).toContain('spreadsheet.html#dependent-dropdown-lists');
   expect(englishHome).toContain(
     'spreadsheet.html#office-style-error-alert-branches',
   );
@@ -399,9 +403,10 @@ test('routes the concise README and documentation homes to the current release s
     'spreadsheet.html#xlsx-1904-date-system-retention',
   );
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.43.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.44.0）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
   expect(chineseHome).toContain('spreadsheet.html#公式条件格式');
+  expect(chineseHome).toContain('spreadsheet.html#依赖下拉列表');
   expect(chineseHome).toContain(
     'spreadsheet.html#与-office-一致的错误警告分支',
   );
@@ -1346,10 +1351,16 @@ test('publishes complete Spreadsheet data-validation settings in product documen
 
   expect(changelog).toContain('input titles and messages');
   expect(changelog).toContain('home-page **新建 → 数据验证**');
+  expect(changelog).toContain('dependent dropdown lists');
   expect(roadmap).toContain('input and error-alert settings');
+  expect(roadmap).toContain('bounded `=INDIRECT(...)`');
   expect(english).toContain('### Input and error settings');
+  expect(english).toContain('### Dependent dropdown lists');
+  expect(english).toContain('`=INDIRECT($F2)`');
   expect(english).toContain('**新建 → 数据验证**');
   expect(chinese).toContain('## 数据验证');
+  expect(chinese).toContain('### 依赖下拉列表');
+  expect(chinese).toContain('`=INDIRECT($F2)`');
   expect(chinese).toContain('### 输入信息与错误警告设置');
   expect(chinese).toContain('**新建 → 数据验证**');
   expect(templates).toContain("id: 'data-validation'");
@@ -1359,6 +1370,111 @@ test('publishes complete Spreadsheet data-validation settings in product documen
     expect(document).toContain('`errorStyle`');
     expect(document).toContain('`hintTitle`');
   }
+});
+
+test('publishes Spreadsheet dependent dropdowns across implementation, docs, and browser evidence', async () => {
+  const [
+    changelog,
+    roadmap,
+    product,
+    readme,
+    english,
+    chinese,
+    frozenEnglish,
+    frozenChinese,
+    releaseData,
+    template,
+    model,
+    xlsx,
+    unitTest,
+    visual,
+    acl,
+  ] = await Promise.all([
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.44.0/en/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.44.0/zh/components/spreadsheet.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'website/theme/release-notes-data.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'src/internal/features/work/work-templates.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/editors/spreadsheet-data-validation-list.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/work-xlsx-interop.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'tests/spreadsheet-data-validation-list.test.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/spreadsheet-data-validation.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/spreadsheet-data-validation.acl'),
+      'utf8',
+    ),
+  ]);
+
+  expect(changelog).toContain('## 0.44.0 - 2026-09-02');
+  expect(changelog).toContain('local dependent dropdown lists');
+  expect(roadmap).toContain('bounded `=INDIRECT(...)`');
+  expect(product).toContain('The sixty-third Spreadsheet milestone');
+  expect(readme).toContain('Version `0.44.0`');
+  for (const source of [english, chinese, frozenEnglish, frozenChinese]) {
+    expect(source).toContain('INDIRECT');
+    expect(source).toContain('1,024');
+    expect(source).toContain('10,000');
+  }
+  expect(english).toContain('### Dependent dropdown lists');
+  expect(chinese).toContain('### 依赖下拉列表');
+  expect(releaseData).toContain("version: '0.44.0'");
+  expect(releaseData).toContain('dependent-dropdown-lists');
+  expect(template).toContain("value1: '=INDIRECT($F2)'");
+  expect(model).toContain('MAX_SPREADSHEET_DEPENDENT_LIST_FORMULA_LENGTH');
+  expect(model).toContain('MAX_SPREADSHEET_DEPENDENT_LIST_REFERENCE_CELLS');
+  expect(xlsx).toContain('isSpreadsheetDependentListFormula');
+  expect(unitTest).toContain('materializes runtime references');
+  expect(visual).toContain(
+    'Spreadsheet dependent dropdowns follow local driver values',
+  );
+  expect(acl).toContain('scenario "follow-dependent-dropdown-drivers"');
 });
 
 test('publishes editable formula conditional formatting across code, docs, and Playground', async () => {

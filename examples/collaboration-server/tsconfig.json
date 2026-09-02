@@ -4,6 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noEmit": true,
+    "jsx": "react-jsx",
     "paths": {
       "@a3s-lab/office/core": ["../../src/core.ts"]
     },
@@ -11,5 +12,5 @@
     "strict": true,
     "target": "ES2022"
   },
-  "include": ["client.ts"]
+  "include": ["client.ts", "../../src/fortune-sheet-formula-parser.d.ts"]
 }

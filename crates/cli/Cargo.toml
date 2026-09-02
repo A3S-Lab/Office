@@ -21,7 +21,7 @@ default = ["browser"]
 browser = ["dep:a3s-use-browser"]
 
 [dependencies]
-a3s-office = { path = "../core", version = "0.43.0" }
+a3s-office = { path = "../core", version = "0.44.0" }
 a3s-use-browser = { workspace = true, optional = true }
 a3s-use-core.workspace = true
 axum.workspace = true

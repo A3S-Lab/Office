@@ -42,6 +42,71 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.44.0',
+    date: '2026-09-02',
+    kind: 'new',
+    surfaces: ['spreadsheet', 'shared', 'playground'],
+    title: {
+      en: 'Spreadsheet dropdowns can follow a local driver',
+      zh: '表格下拉列表现在可以跟随本地驱动值',
+    },
+    summary: {
+      en: 'Bounded local INDIRECT sources bring dependent dropdowns into the same controlled Data Validation workflow without a remote service.',
+      zh: '有界的本地 INDIRECT 来源把依赖下拉纳入同一个受控数据验证流程，不引入远程服务。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Author the dependency in the dialog',
+          zh: '在弹窗中直接编写依赖关系',
+        },
+        detail: {
+          en: 'The list source field accepts a bounded =INDIRECT(...) grammar made from quoted text, single-cell references, and concatenation, with a formula note and Sigma affordance.',
+          zh: '序列来源字段支持由带引号文本、单元格引用和拼接组成的有界 =INDIRECT(...) 语法，并提供公式说明和 Sigma 图标提示。',
+        },
+      },
+      {
+        title: {
+          en: 'Each row gets the right options',
+          zh: '每一行都得到正确选项',
+        },
+        detail: {
+          en: 'Relative drivers re-evaluate from each selected range anchor; named ranges and one-dimensional local areas resolve per cell, while an empty driver shows an empty list.',
+          zh: '相对驱动值会从每个选定区域锚点逐单元格重新求值；工作簿名称和一维本地区域按单元格解析，驱动值为空时显示空列表。',
+        },
+      },
+      {
+        title: {
+          en: 'Native and fail-closed',
+          zh: '原生往返且安全失败',
+        },
+        detail: {
+          en: 'The authored formula stays compact, runtime projection is capped at 1,024 source cells and 10,000 materialized cells, and native XLSX export/reopen keeps the list formula and names.',
+          zh: '原始公式保持紧凑，运行时投影限制为最多 1,024 个来源单元格和 10,000 个物化单元格，原生 XLSX 导出/重开保留公式和名称。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/spreadsheet.html#dependent-dropdown-lists',
+          zh: './components/spreadsheet.html#依赖下拉列表',
+        },
+        label: {
+          en: 'Read the dependent-dropdown guide',
+          zh: '阅读依赖下拉指南',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.44.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.44.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.43.0',
     date: '2026-09-02',
     kind: 'new',

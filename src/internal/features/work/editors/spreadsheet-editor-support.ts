@@ -26,6 +26,10 @@ import {
 } from './spreadsheet-operation-projection';
 import { reconcileSpreadsheetFiltersAfterFortune } from './spreadsheet-filter-reconciliation';
 import { reconcileSpreadsheetTablesAfterFortune } from './spreadsheet-table-reconciliation';
+import {
+  materializeSpreadsheetDependentListsForFortune,
+  restoreSpreadsheetDependentListProjections,
+} from './spreadsheet-data-validation-list';
 
 export interface SpreadsheetSelectionSummary {
   average: number | null;
@@ -199,6 +203,7 @@ export function spreadsheetSheetsWithFiniteSelections(
 
 export function spreadsheetSheetsForFortune(
   sheets: WorkSpreadsheetContent['sheets'],
+  namedRanges: WorkSpreadsheetContent['namedRanges'] = [],
 ): WorkSpreadsheetContent['sheets'] {
   const startedAt = spreadsheetProjectionNow();
   let populatedCellCount = 0;
@@ -225,7 +230,10 @@ export function spreadsheetSheetsForFortune(
     populatedCellCount,
     sheetCount: sheets.length,
   });
-  return projectedSheets;
+  return materializeSpreadsheetDependentListsForFortune(
+    projectedSheets,
+    namedRanges,
+  );
 }
 
 function spreadsheetMatrixForFortune(
@@ -373,15 +381,17 @@ export function spreadsheetSheetsFromFortune(
         operationCount: operations.length,
       },
     );
-    return reconcileSpreadsheetFiltersAfterFortune(
-      reconcileSpreadsheetTablesAfterFortune(
-        incremental.sheets,
+    return restoreSpreadsheetDependentListProjections(
+      reconcileSpreadsheetFiltersAfterFortune(
+        reconcileSpreadsheetTablesAfterFortune(
+          incremental.sheets,
+          sourceSheets,
+          operations,
+        ),
         sourceSheets,
         operations,
+        filterContext,
       ),
-      sourceSheets,
-      operations,
-      filterContext,
     );
   }
 
@@ -450,11 +460,17 @@ export function spreadsheetSheetsFromFortune(
       operationCount: operations.length,
     },
   );
-  return reconcileSpreadsheetFiltersAfterFortune(
-    reconcileSpreadsheetTablesAfterFortune(projected, sourceSheets, operations),
-    sourceSheets,
-    operations,
-    filterContext,
+  return restoreSpreadsheetDependentListProjections(
+    reconcileSpreadsheetFiltersAfterFortune(
+      reconcileSpreadsheetTablesAfterFortune(
+        projected,
+        sourceSheets,
+        operations,
+      ),
+      sourceSheets,
+      operations,
+      filterContext,
+    ),
   );
 }
 

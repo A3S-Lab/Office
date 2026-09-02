@@ -103,6 +103,7 @@ export function PdfViewer({
   const [saveState, setSaveState] = useState<PdfSaveState>('idle');
   const [retryCount, setRetryCount] = useState(0);
   const [registry, setRegistry] = useState<PluginRegistry | null>(null);
+  const activeSourceUrlRef = useRef<string | null>(null);
   const [, refreshCollaborationHistory] = useState(0);
   const [hostSourceGeneration, setHostSourceGeneration] = useState(0);
   const [pageOrganizerOpen, setPageOrganizerOpen] = useState(false);
@@ -178,7 +179,9 @@ export function PdfViewer({
   );
   const annotation = usePdfAnnotationController(registry);
   const viewerReady =
-    viewerController.state.ready && viewerController.state.documentOpen;
+    Boolean(registry) &&
+    viewerController.state.ready &&
+    viewerController.state.documentOpen;
   const mobilePageNavigationModal = usePdfMobilePageNavigationModal();
   const mobilePageNavigationModalOpen =
     mobilePageNavigationOpen && mobilePageNavigationModal;
@@ -253,6 +256,17 @@ export function PdfViewer({
     setSourceUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
   }, [sourceBlob]);
+
+  // EmbedPDF may finish initializing an unmounted viewer after its source has
+  // already been replaced. Ignore that late callback so the controller cannot
+  // bind to a previous PDF generation.
+  activeSourceUrlRef.current = sourceUrl;
+  const handleViewerReady = useCallback(
+    (nextRegistry: PluginRegistry) => {
+      if (activeSourceUrlRef.current === sourceUrl) setRegistry(nextRegistry);
+    },
+    [sourceUrl],
+  );
 
   useEffect(() => {
     if (controller.state.error) {
@@ -571,7 +585,7 @@ export function PdfViewer({
                 ? undefined
                 : ['annotation', 'redaction', 'form', 'history'],
             }}
-            onReady={setRegistry}
+            onReady={handleViewerReady}
           />
           {viewerReady && viewerController.state.currentPage > 0 && (
             <PdfCollaborationPresenceLayer

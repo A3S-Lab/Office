@@ -21,6 +21,7 @@ import {
   SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT,
   spreadsheetDateValidationFormula,
 } from './work-spreadsheet-data-validation';
+import { isSpreadsheetDependentListFormula } from './editors/spreadsheet-data-validation-list';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetDataValidationItem,
@@ -744,6 +745,7 @@ function xlsxValidationFormula(
   if (item.type === 'date') return spreadsheetDateValidationFormula(value);
   if (item.type !== 'dropdown') return value;
   const formula = value.replace(/^=/, '');
+  if (isSpreadsheetDependentListFormula(value)) return formula;
   if (
     /^=?[^,]+![A-Z]+\d+(?::[A-Z]+\d+)?$/i.test(value) ||
     /^=?\$?[A-Z]+\$?\d+(?::\$?[A-Z]+\$?\d+)?$/i.test(value) ||
@@ -757,7 +759,8 @@ function xlsxValidationFormula(
 function parseListFormula(value: string): string {
   if (value.startsWith('"') && value.endsWith('"'))
     return value.slice(1, -1).replaceAll('""', '"');
-  return value.replace(/^=/, '');
+  const formula = value.replace(/^=/, '');
+  return isSpreadsheetDependentListFormula(formula) ? `=${formula}` : formula;
 }
 
 function fortuneValidationType(value: string | null): string | null {
