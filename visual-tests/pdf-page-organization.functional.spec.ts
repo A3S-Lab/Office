@@ -68,6 +68,9 @@ test('PDF page organization mutates, exports, saves, and restores exact history'
 
   organizer = await openPageOrganizer(page);
   await organizer.getByRole('button', { name: '选择第 2 页' }).click();
+  await expect(
+    organizer.getByRole('button', { name: '选择第 2 页' }),
+  ).toHaveAttribute('aria-pressed', 'true');
   await page.screenshot({
     path: testInfo.outputPath('pdf-page-organization-desktop.png'),
     fullPage: false,

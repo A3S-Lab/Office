@@ -124,6 +124,7 @@ export function usePdfViewerController(
   historyOverride?: PdfViewerHistoryOverride,
 ): PdfViewerController {
   const capabilitiesRef = useRef<PdfViewerCapabilities | null>(null);
+  const stateRegistryRef = useRef<PluginRegistry | null>(null);
   const pendingPageRef = useRef<PendingPdfPageNavigation>({
     page: null,
     retryTimer: null,
@@ -138,6 +139,7 @@ export function usePdfViewerController(
     let disposed = false;
     const unsubscribe: Array<() => void> = [];
     capabilitiesRef.current = null;
+    stateRegistryRef.current = null;
     clearPendingPdfPageNavigation(pendingPageRef);
     setState(initialPdfViewerControllerState);
     if (!registry) return;
@@ -148,6 +150,7 @@ export function usePdfViewerController(
         if (disposed) return;
         const capabilities = readCapabilities(registry);
         capabilitiesRef.current = capabilities;
+        stateRegistryRef.current = registry;
 
         const sync = () => {
           if (!disposed) {
@@ -198,6 +201,7 @@ export function usePdfViewerController(
       })
       .catch((error: unknown) => {
         if (disposed) return;
+        stateRegistryRef.current = registry;
         setState({
           ...initialPdfViewerControllerState,
           error: errorMessage(error),
@@ -207,6 +211,7 @@ export function usePdfViewerController(
     return () => {
       disposed = true;
       capabilitiesRef.current = null;
+      stateRegistryRef.current = null;
       clearPendingPdfPageNavigation(pendingPageRef);
       for (const stop of unsubscribe) stop();
     };
@@ -359,17 +364,25 @@ export function usePdfViewerController(
     return new Blob([buffer], { type: 'application/pdf' });
   }, []);
 
+  // A registry replacement invalidates the previous snapshot immediately. The
+  // effect above resets the controller asynchronously, so bind the exposed
+  // state to the registry that produced it to keep an old document from being
+  // treated as ready while a new PDF source is loading.
+  const boundState =
+    stateRegistryRef.current === registry
+      ? state
+      : initialPdfViewerControllerState;
   const projectedState = useMemo(
     () =>
       historyOverride
         ? {
-            ...state,
+            ...boundState,
             canRedo: historyOverride.canRedo,
             canUndo: historyOverride.canUndo,
-            features: { ...state.features, history: true },
+            features: { ...boundState.features, history: true },
           }
-        : state,
-    [historyOverride, state],
+        : boundState,
+    [boundState, historyOverride],
   );
 
   return useMemo(
