@@ -114,16 +114,16 @@ suite "homepage-editor-demo" {
             target = css(".office-editor-chapters__motion-toggle")
         }
 
-        expect "previews-are-paused" {
-            text = "播放预览"
+        wait "previews-are-paused" {
+            visible = css(".office-editor-chapters__motion-toggle[aria-pressed='true']")
         }
 
         click "resume-previews" {
             target = css(".office-editor-chapters__motion-toggle")
         }
 
-        expect "previews-are-playing" {
-            text = "暂停动画"
+        wait "previews-are-playing" {
+            visible = css(".office-editor-chapters__motion-toggle[aria-pressed='false']")
         }
 
         click "jump-to-markdown-chapter" {
@@ -268,11 +268,11 @@ suite "homepage-editor-demo" {
         }
 
         wait "phone-pause-state-is-announced" {
-            text = "播放预览"
+            visible = css(".office-editor-chapters__motion-toggle[aria-pressed='true']")
         }
 
         expect "phone-previews-are-paused" {
-            text = "播放预览"
+            visible = css(".office-editor-chapters__motion-toggle[aria-pressed='true']")
         }
 
         accessibility "phone-editor-chapters-tree" {

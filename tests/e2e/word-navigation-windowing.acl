@@ -142,7 +142,7 @@ suite "office-word-navigation-windowing" {
         }
 
         fill "search-all-markers" {
-            target = label("搜索文档")
+            target = css("input[aria-label='搜索文档']")
             value = "Deterministic navigation marker"
         }
 

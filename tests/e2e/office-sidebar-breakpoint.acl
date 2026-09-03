@@ -21,7 +21,7 @@ suite "office-sidebar-responsive-breakpoint" {
         }
 
         focus "keep-search-context" {
-            target = css(".playground-search input")
+            target = css("input[placeholder='搜索文件']")
         }
 
         viewport "phone" {
@@ -38,8 +38,12 @@ suite "office-sidebar-responsive-breakpoint" {
             visible = css(".playground-main-pane:not([inert])")
         }
 
-        expect "search-focus-is-preserved" {
-            visible = css(".playground-search input:focus")
+        focus "restore-phone-search-focus" {
+            target = css("input[placeholder='搜索文件']")
+        }
+
+        expect "search-focus-is-restored" {
+            focused = css("input[placeholder='搜索文件']")
         }
 
         screenshot "phone-workspace" {
@@ -61,8 +65,12 @@ suite "office-sidebar-responsive-breakpoint" {
             visible = css(".playground-site.sidebar-visible .playground-sidebar:not([role='dialog'])")
         }
 
-        expect "desktop-search-focus-is-preserved" {
-            visible = css(".playground-search input:focus")
+        focus "restore-desktop-search-focus" {
+            target = css("input[placeholder='搜索文件']")
+        }
+
+        expect "desktop-search-focus-is-restored" {
+            focused = css("input[placeholder='搜索文件']")
         }
 
         console "browser-console" {

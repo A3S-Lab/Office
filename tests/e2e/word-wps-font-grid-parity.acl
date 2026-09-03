@@ -17,7 +17,7 @@ suite "office-word-wps-font-grid-parity" {
         }
 
         expect "playground-ready" {
-            visible = css("input[type='file'][accept*='.docx']")
+            text = "我的文档"
         }
 
         upload "open-font-matrix" {
@@ -80,7 +80,7 @@ suite "office-word-wps-font-grid-parity" {
         }
 
         expect "playground-ready" {
-            visible = css("input[type='file'][accept*='.docx']")
+            text = "我的文档"
         }
 
         upload "open-cjk-font-matrix" {
@@ -139,7 +139,7 @@ suite "office-word-wps-font-grid-parity" {
         }
 
         expect "playground-ready" {
-            visible = css("input[type='file'][accept*='.docx']")
+            text = "我的文档"
         }
 
         upload "open-grid-matrix" {
@@ -198,7 +198,7 @@ suite "office-word-wps-font-grid-parity" {
         }
 
         expect "playground-ready" {
-            visible = css("input[type='file'][accept*='.docx']")
+            text = "我的文档"
         }
 
         upload "open-script-matrix" {

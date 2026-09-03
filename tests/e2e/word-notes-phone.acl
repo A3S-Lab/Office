@@ -53,6 +53,10 @@ suite "office-word-notes-phone" {
             target = css(".work-document-editable .ProseMirror")
         }
 
+        click "place-caret-at-document-start" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
         press "move-to-document-start" {
             key = "Control+Home"
         }
@@ -64,6 +68,10 @@ suite "office-word-notes-phone" {
         type "write-earlier-footnote" {
             target = css(".work-document-note[data-note-number='1'] p")
             value = "开头脚注"
+        }
+
+        wait "document-is-mounted-after-renumber" {
+            visible = css(".work-document-editable .ProseMirror")
         }
 
         expect "references-and-definitions-renumber-together" {

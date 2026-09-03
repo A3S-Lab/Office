@@ -6,9 +6,9 @@ import {
   type EditorAgentRequest,
   type GetDocumentSelectionMenuItems,
   type GetMarkdownSelectionMenuItems,
+  LocalStorageSpreadsheetSortCustomListStore,
   type MarkdownContent,
   type MarkdownSelectionContext,
-  LocalStorageSpreadsheetSortCustomListStore,
   type OfficeArtifact,
   type OfficeArtifactContent,
   type PresentationContent,
@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import {
   type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
@@ -57,11 +58,6 @@ import {
   usePlaygroundPdfCollaborationFixture,
 } from './pdf-collaboration-fixture';
 import type { NoticeTone } from './playground-types';
-import { SPREADSHEET_DATE_TIME_FIXTURE } from './spreadsheet-date-time-fixture';
-import { SPREADSHEET_COPY_FROM_ABOVE_FIXTURE } from './spreadsheet-copy-from-above-fixture';
-import { SPREADSHEET_GRADIENT_FILL_FIXTURE } from './spreadsheet-gradient-fill-fixture';
-import { SPREADSHEET_PATTERN_FILL_FIXTURE } from './spreadsheet-pattern-fill-fixture';
-import { SPREADSHEET_RICH_TEXT_FIXTURE } from './spreadsheet-rich-text-fixture';
 import {
   type PlaygroundPresentationElementStage,
   usePlaygroundPresentationCollaborationFixture,
@@ -70,6 +66,12 @@ import {
   type PlaygroundSpreadsheetCellStage,
   usePlaygroundSpreadsheetCollaborationFixture,
 } from './spreadsheet-collaboration-fixture';
+import { SPREADSHEET_COPY_FROM_ABOVE_FIXTURE } from './spreadsheet-copy-from-above-fixture';
+import { SPREADSHEET_DATE_TIME_FIXTURE } from './spreadsheet-date-time-fixture';
+import { SPREADSHEET_GRADIENT_FILL_FIXTURE } from './spreadsheet-gradient-fill-fixture';
+import { SPREADSHEET_PATTERN_FILL_FIXTURE } from './spreadsheet-pattern-fill-fixture';
+import { SPREADSHEET_RICH_TEXT_FIXTURE } from './spreadsheet-rich-text-fixture';
+import { A3STestBoundary } from './testkit';
 
 const assistantMinimumWidth = 340;
 const assistantMaximumWidth = 680;
@@ -769,24 +771,31 @@ export function EditorWorkspace({
             !documentSuggestionFixtureEnabled &&
             (!collaborationPresenceFixtureEnabled ||
               collaborationPresenceFixture) && (
-              <DocumentEditor
-                artifactId={artifact.id}
-                collaboration={collaborationPresenceFixture?.collaboration}
-                content={artifact.content}
-                getSelectionMenuItems={getDocumentSelectionMenuItems}
-                onAgentRequest={handleAgentRequest}
-                onChange={(content: DocumentContent) => onChange(content)}
-                onReviewConflict={(event) =>
-                  onNotice(
-                    `检测到 ${event.conflicts.length} 个审阅冲突`,
-                    'neutral',
-                  )
-                }
+              <OfficeEditorTestBoundary
+                boundaryId="office-editor-document"
+                boundaryName="Office Document editor"
+                artifact={artifact}
                 preview={preview}
-                presence={collaborationPresenceFixture?.presence}
-                saveStatus="本次会话已保存"
-                theme="light"
-              />
+              >
+                <DocumentEditor
+                  artifactId={artifact.id}
+                  collaboration={collaborationPresenceFixture?.collaboration}
+                  content={artifact.content}
+                  getSelectionMenuItems={getDocumentSelectionMenuItems}
+                  onAgentRequest={handleAgentRequest}
+                  onChange={(content: DocumentContent) => onChange(content)}
+                  onReviewConflict={(event) =>
+                    onNotice(
+                      `检测到 ${event.conflicts.length} 个审阅冲突`,
+                      'neutral',
+                    )
+                  }
+                  preview={preview}
+                  presence={collaborationPresenceFixture?.presence}
+                  saveStatus="本次会话已保存"
+                  theme="light"
+                />
+              </OfficeEditorTestBoundary>
             )}
           {artifact.content.type === 'document' &&
             !documentSuggestionFixtureEnabled &&
@@ -814,15 +823,22 @@ export function EditorWorkspace({
                     </div>
                     <small>只能提交或撤回自己的文字建议</small>
                   </header>
-                  <DocumentEditor
-                    artifactId={documentSuggestionFixture.artifactId}
-                    collaboration={documentSuggestionFixture.suggester}
-                    content={documentSuggestionFixture.content}
-                    onChange={documentSuggestionFixture.updateContent}
+                  <OfficeEditorTestBoundary
+                    boundaryId="office-editor-document-suggester"
+                    boundaryName="Office Document suggester editor"
+                    artifact={artifact}
                     preview={false}
-                    saveStatus="建议已同步"
-                    theme="light"
-                  />
+                  >
+                    <DocumentEditor
+                      artifactId={documentSuggestionFixture.artifactId}
+                      collaboration={documentSuggestionFixture.suggester}
+                      content={documentSuggestionFixture.content}
+                      onChange={documentSuggestionFixture.updateContent}
+                      preview={false}
+                      saveStatus="建议已同步"
+                      theme="light"
+                    />
+                  </OfficeEditorTestBoundary>
                 </section>
                 <section
                   className="playground-suggestion-peer editor"
@@ -842,21 +858,28 @@ export function EditorWorkspace({
                           : '可接受或拒绝建议'}
                     </small>
                   </header>
-                  <DocumentEditor
-                    artifactId={documentSuggestionFixture.artifactId}
-                    collaboration={documentSuggestionFixture.editor}
-                    content={documentSuggestionFixture.content}
-                    onChange={documentSuggestionFixture.updateContent}
-                    onReviewConflict={(event) =>
-                      onNotice(
-                        `检测到 ${event.conflicts.length} 个建议决定冲突`,
-                        'neutral',
-                      )
-                    }
+                  <OfficeEditorTestBoundary
+                    boundaryId="office-editor-document-editor"
+                    boundaryName="Office Document decision editor"
+                    artifact={artifact}
                     preview={false}
-                    saveStatus="决定已同步"
-                    theme="light"
-                  />
+                  >
+                    <DocumentEditor
+                      artifactId={documentSuggestionFixture.artifactId}
+                      collaboration={documentSuggestionFixture.editor}
+                      content={documentSuggestionFixture.content}
+                      onChange={documentSuggestionFixture.updateContent}
+                      onReviewConflict={(event) =>
+                        onNotice(
+                          `检测到 ${event.conflicts.length} 个建议决定冲突`,
+                          'neutral',
+                        )
+                      }
+                      preview={false}
+                      saveStatus="决定已同步"
+                      theme="light"
+                    />
+                  </OfficeEditorTestBoundary>
                 </section>
               </section>
             )}
@@ -866,28 +889,42 @@ export function EditorWorkspace({
               <div role="status">正在准备双人建议协作</div>
             )}
           {artifact.content.type === 'markdown' && (
-            <MarkdownEditor
-              content={artifact.content}
-              getSelectionMenuItems={getMarkdownSelectionMenuItems}
-              onChange={(content: MarkdownContent) => onChange(content)}
+            <OfficeEditorTestBoundary
+              boundaryId="office-editor-markdown"
+              boundaryName="Office Markdown editor"
+              artifact={artifact}
               preview={preview}
-              saveStatus="本次会话已保存"
-              theme="light"
-            />
+            >
+              <MarkdownEditor
+                content={artifact.content}
+                getSelectionMenuItems={getMarkdownSelectionMenuItems}
+                onChange={(content: MarkdownContent) => onChange(content)}
+                preview={preview}
+                saveStatus="本次会话已保存"
+                theme="light"
+              />
+            </OfficeEditorTestBoundary>
           )}
           {artifact.content.type === 'spreadsheet' &&
             (!spreadsheetCollaborationFixtureEnabled ||
               spreadsheetCollaborationFixture) && (
-              <SpreadsheetEditor
-                collaboration={spreadsheetCollaborationFixture?.collaboration}
-                content={artifact.content}
-                onAgentRequest={handleAgentRequest}
-                onChange={(content: SpreadsheetContent) => onChange(content)}
+              <OfficeEditorTestBoundary
+                boundaryId="office-editor-spreadsheet"
+                boundaryName="Office Spreadsheet editor"
+                artifact={artifact}
                 preview={preview}
-                saveStatus="本次会话已保存"
-                sortCustomListStore={spreadsheetSortCustomListStore}
-                theme="light"
-              />
+              >
+                <SpreadsheetEditor
+                  collaboration={spreadsheetCollaborationFixture?.collaboration}
+                  content={artifact.content}
+                  onAgentRequest={handleAgentRequest}
+                  onChange={(content: SpreadsheetContent) => onChange(content)}
+                  preview={preview}
+                  saveStatus="本次会话已保存"
+                  sortCustomListStore={spreadsheetSortCustomListStore}
+                  theme="light"
+                />
+              </OfficeEditorTestBoundary>
             )}
           {artifact.content.type === 'spreadsheet' &&
             spreadsheetCollaborationFixtureEnabled &&
@@ -897,15 +934,24 @@ export function EditorWorkspace({
           {artifact.content.type === 'presentation' &&
             (!presentationCollaborationFixtureEnabled ||
               presentationCollaborationFixture) && (
-              <PresentationEditor
-                collaboration={presentationCollaborationFixture?.collaboration}
-                content={artifact.content}
-                onAgentRequest={handleAgentRequest}
-                onChange={(content: PresentationContent) => onChange(content)}
+              <OfficeEditorTestBoundary
+                boundaryId="office-editor-presentation"
+                boundaryName="Office Presentation editor"
+                artifact={artifact}
                 preview={preview}
-                saveStatus="本次会话已保存"
-                theme="light"
-              />
+              >
+                <PresentationEditor
+                  collaboration={
+                    presentationCollaborationFixture?.collaboration
+                  }
+                  content={artifact.content}
+                  onAgentRequest={handleAgentRequest}
+                  onChange={(content: PresentationContent) => onChange(content)}
+                  preview={preview}
+                  saveStatus="本次会话已保存"
+                  theme="light"
+                />
+              </OfficeEditorTestBoundary>
             )}
           {artifact.content.type === 'presentation' &&
             presentationCollaborationFixtureEnabled &&
@@ -914,17 +960,24 @@ export function EditorWorkspace({
             )}
           {artifact.content.type === 'pdf' &&
             (!pdfCollaborationFixtureEnabled || pdfCollaborationFixture) && (
-              <PdfViewer
-                collaboration={pdfCollaborationFixture?.collaboration}
-                fileName={
-                  artifact.source?.name ??
-                  `${artifact.title.toLocaleLowerCase()}.pdf`
-                }
-                loadSource={loadPdf}
-                onSave={savePdf}
-                sourceKey={`${artifact.id}:${artifact.revision}`}
-                theme="light"
-              />
+              <OfficeEditorTestBoundary
+                boundaryId="office-editor-pdf"
+                boundaryName="Office PDF viewer"
+                artifact={artifact}
+                preview={preview}
+              >
+                <PdfViewer
+                  collaboration={pdfCollaborationFixture?.collaboration}
+                  fileName={
+                    artifact.source?.name ??
+                    `${artifact.title.toLocaleLowerCase()}.pdf`
+                  }
+                  loadSource={loadPdf}
+                  onSave={savePdf}
+                  sourceKey={`${artifact.id}:${artifact.revision}`}
+                  theme="light"
+                />
+              </OfficeEditorTestBoundary>
             )}
           {artifact.content.type === 'pdf' &&
             pdfCollaborationFixtureEnabled &&
@@ -958,6 +1011,37 @@ export function EditorWorkspace({
         )}
       </div>
     </section>
+  );
+}
+
+function OfficeEditorTestBoundary({
+  artifact,
+  boundaryId,
+  boundaryName,
+  children,
+  preview,
+}: {
+  artifact: OfficeArtifact;
+  boundaryId: string;
+  boundaryName: string;
+  children: ReactNode;
+  preview: boolean;
+}) {
+  return (
+    <A3STestBoundary
+      id={boundaryId}
+      name={boundaryName}
+      source={{ file: 'playground/src/editor-workspace.tsx' }}
+      facts={() => ({
+        artifactId: artifact.id,
+        editorKind: artifact.content.type,
+        preview,
+      })}
+      as="div"
+      style={{ display: 'contents' }}
+    >
+      {children}
+    </A3STestBoundary>
   );
 }
 

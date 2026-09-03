@@ -189,8 +189,12 @@ suite "office-spreadsheet-owned-range-sort" {
             text = "当前范围由表格拥有"
         }
 
-        expect "header-is-locked" {
-            visible = css(".work-spreadsheet-sort-dialog input[aria-label='数据包含标题']:checked:disabled")
+        expect "header-is-checked" {
+            checked = css(".work-spreadsheet-sort-dialog input[aria-label='数据包含标题']")
+        }
+
+        expect "header-is-disabled" {
+            disabled = css(".work-spreadsheet-sort-dialog input[aria-label='数据包含标题']")
         }
 
         click "open-sort-options" {
@@ -210,7 +214,7 @@ suite "office-spreadsheet-owned-range-sort" {
         }
 
         click "close-sort-options" {
-            target = role("button", "取消")
+            target = css(".work-spreadsheet-sort-options-dialog[role='dialog'] footer button:first-child")
         }
 
         select "choose-completion-descending" {
@@ -224,11 +228,11 @@ suite "office-spreadsheet-owned-range-sort" {
         }
 
         click "apply-owned-sort" {
-            target = role("button", "确定")
+            target = css(".work-spreadsheet-sort-dialog[role='dialog'] footer button:last-child")
         }
 
         expect "sort-invoker-focus-restored" {
-            visible = css(".work-spreadsheet-ribbon button[aria-label='自定义排序']:focus")
+            focused = role("button", "自定义排序")
         }
 
         focus "inspect-grid" {

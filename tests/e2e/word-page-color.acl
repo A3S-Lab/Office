@@ -45,7 +45,7 @@ suite "office-word-page-color" {
         }
 
         fill "custom-color" {
-            target = label("自定义颜色值")
+            target = css("input[aria-label='自定义颜色值']")
             value = "#fff2cc"
         }
 

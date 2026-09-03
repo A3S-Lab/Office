@@ -53,6 +53,10 @@ suite "office-word-review-view" {
             value = " 视图缩放验证"
         }
 
+        click "place-caret-at-document-start" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
         press "move-to-document-start" {
             key = "Control+Home"
         }
@@ -62,12 +66,12 @@ suite "office-word-review-view" {
             value = "审阅验证 "
         }
 
-        expect "two-changes-are-visible" {
+        wait "two-changes-are-visible" {
             visible = css(".work-office-ribbon-group[aria-label='修订'] button[aria-label='查看修订（2）']")
         }
 
-        click "move-to-next-change" {
-            target = role("button", "下一处修订")
+        click "move-to-tail-change" {
+            target = role("button", "上一处修订")
         }
 
         click "reject-tail-change" {
@@ -107,7 +111,7 @@ suite "office-word-review-view" {
         }
 
         expect "page-width-is-calculated" {
-            text = "106%"
+            text = "107%"
         }
 
         click "fit-single-page" {

@@ -56,6 +56,45 @@ to `tests/e2e/`.
 - Let A3S Test own and clean up each browser surface. Do not terminate shared
   browser processes by name.
 
+## Test Kit UI gate
+
+The Playground publishes the dev-only `@a3s-lab/testkit@0.6.2` page-context
+bridge. It is the source of UI-understanding evidence for the five editor
+surfaces: component boundaries and ownership, computed style/layout, motion,
+responsive conditions, and state diffs after an interaction. The bridge is
+disabled in the production bundle, so this gate intentionally runs against the
+development Playground on port `3000`.
+
+Run the bridge tests and the standalone A3S Test Kit gate with:
+
+```bash
+bun run playground:testkit
+bun run test:e2e:testkit:check
+bun run test:e2e:testkit
+```
+
+`playground:testkit` is a Playwright functional/visual suite with desktop and
+compact projects. It asserts the live handshake, SDK and protocol versions,
+component facts, bounded UI snapshots, toolbar/grid/view interactions, dialog
+geometry, focus, and responsive layout. `test:e2e:testkit` runs
+`tests/e2e/office-testkit-ui.acl` with the repository-compatible `a3s-test`
+binary and standalone `agent-browser 0.26.0`, then verifies every captured page
+context, UI-understanding protocol, component boundary, screenshot,
+accessibility tree, and browser diagnostics. The ACL covers the home, Writer,
+Spreadsheet, Presentation, Markdown, and PDF surfaces; the PDF stability path
+uses the A3S Test accessibility/screenshot evidence while the Playwright bridge
+test additionally proves organizer state changes.
+
+The gate prewarms the lazy editor chunks before ACL execution. This keeps the
+first Rsbuild development compilation (and its possible HMR reload) outside a
+scenario's interaction and readiness assertions.
+
+The regular static Web gate skips this dev-only suite because the `4175`
+production preview aliases Test Kit to its no-op implementation. The
+`test:e2e` script chains the static release suites and this dedicated live UI
+gate. Set `A3S_TEST_INCLUDE_TESTKIT=true` only when a compatible dev bridge is
+available to the static runner.
+
 The documentation navigation and collaboration homepage have focused gates:
 
 ```bash

@@ -81,7 +81,7 @@ suite "office-presentation-phone-chart-pane" {
         }
 
         fill "enter-invalid-series-draft" {
-            target = label("演示图表系列 1 数据")
+            target = css(".work-presentation-chart-panel textarea[aria-label='演示图表系列 1 数据']")
             value = "32, wrong, 61"
         }
 

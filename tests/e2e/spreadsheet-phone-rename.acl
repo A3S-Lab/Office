@@ -21,7 +21,7 @@ suite "office-spreadsheet-phone-rename" {
         }
 
         click "create-spreadsheet" {
-            target = role("button", "表格")
+            target = css("[data-template-id='blank-spreadsheet']")
         }
 
         wait "spreadsheet-loaded" {
@@ -57,7 +57,7 @@ suite "office-spreadsheet-phone-rename" {
         }
 
         fill "invalid-name" {
-            target = label("重命名工作表 2")
+            target = css("[aria-label='重命名工作表 2']")
             value = "Bad/Name"
         }
 
@@ -78,7 +78,7 @@ suite "office-spreadsheet-phone-rename" {
         }
 
         fill "valid-name" {
-            target = label("重命名工作表 2")
+            target = css("[aria-label='重命名工作表 2']")
             value = "移动端看板"
         }
 
@@ -95,7 +95,7 @@ suite "office-spreadsheet-phone-rename" {
         }
 
         fill "cancelled-name" {
-            target = label("重命名移动端看板")
+            target = css("[aria-label='重命名移动端看板']")
             value = "不应保存"
         }
 

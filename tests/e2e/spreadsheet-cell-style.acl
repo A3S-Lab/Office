@@ -37,7 +37,7 @@ suite "office-spreadsheet-cell-style" {
         }
 
         fill "enter-value" {
-            target = label("当前单元格输入")
+            target = css("[aria-label='当前单元格输入']")
             value = "Ready"
         }
 

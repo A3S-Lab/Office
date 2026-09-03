@@ -425,6 +425,27 @@ items below exist:
    visual/layout fidelity matters.
 9. TypeScript, unit/component tests, lint, Rust/WASM, and production builds pass.
 
+## UI evidence and regression gates
+
+The shared editor shell now has a dedicated A3S Test Kit UI gate. Every active
+editor publishes an explicit component boundary with typed facts, while the
+development Playground exposes bounded style/layout/motion snapshots and
+state diffs through `@a3s-lab/testkit@0.6.2`. The gate exercises desktop and
+compact interactions for the home, Writer, Spreadsheet, Presentation,
+Markdown, and PDF surfaces, and verifies focus, dialog geometry, responsive
+conditions, accessibility evidence, screenshots, and clean browser
+diagnostics. Playwright validates the live bridge and visual assertions; the
+ACL suite validates the same contract through the standalone `a3s-test`
+runner. Production preview intentionally aliases the SDK to a no-op, so this
+dev-only evidence is kept separate from the static release gate and is chained
+by `bun run test:e2e`.
+
+The gate is a permanent P0 regression requirement for new editor-shell or
+responsive UI work. A feature is not considered UI-complete until it has a
+stable semantic target, a component owner, a typed state transition, and
+desktop/compact evidence in `tests/e2e/office-testkit-ui.acl` or the matching
+Playwright Test Kit spec.
+
 ## Evidence and source baseline
 
 A3S Office status is derived from the current repository, especially

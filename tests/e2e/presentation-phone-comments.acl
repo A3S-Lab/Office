@@ -86,7 +86,7 @@ suite "office-presentation-phone-comments" {
         }
 
         fill "enter-uncommitted-comment-draft" {
-            target = label("编辑演示批注 1")
+            target = css(".work-presentation-comments-panel textarea[aria-label='编辑演示批注 1']")
             value = "尚未提交的批注草稿"
         }
 

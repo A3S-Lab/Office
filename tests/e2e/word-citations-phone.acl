@@ -106,8 +106,12 @@ suite "office-word-citations-phone" {
             text = "(Agentic Office Workflows, n.d.)"
         }
 
+        wait "library-invoker-is-mounted" {
+            visible = css("button[aria-label='文献库（1）']")
+        }
+
         expect "library-invoker-focus-is-restored" {
-            visible = css(".work-office-ribbon-group[aria-label='文献'] button[aria-label='文献库（1）']:focus")
+            focused = css("button[aria-label='文献库（1）']")
         }
 
         accessibility "citation-semantics" {
