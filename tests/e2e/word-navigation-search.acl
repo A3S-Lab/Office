@@ -37,7 +37,7 @@ suite "office-word-navigation-search" {
         }
 
         fill "search-body" {
-            target = label("搜索文档")
+            target = css("input[aria-label='搜索文档']")
             value = "尚未解决"
         }
 
@@ -116,7 +116,7 @@ suite "office-word-navigation-search" {
         }
 
         fill "search-body" {
-            target = label("搜索文档")
+            target = css("input[aria-label='搜索文档']")
             value = "尚未解决"
         }
 

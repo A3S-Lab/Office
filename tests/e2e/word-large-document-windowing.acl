@@ -49,12 +49,11 @@ suite "office-word-large-document-windowing" {
             text = "Line 100000 - A3S Office 100k text benchmark."
         }
 
-        type "edit-final-line" {
-            target = css("[data-document-chunk-id='document-chunk-1-782'] p:last-child")
+        insert_text "edit-final-line" {
             value = " ACL-TEXT-END-EDIT"
         }
 
-        expect "final-line-edit-is-visible" {
+        wait "final-line-edit-is-visible" {
             text = "ACL-TEXT-END-EDIT"
         }
 
@@ -117,12 +116,11 @@ suite "office-word-large-document-windowing" {
             text = "Record 100000"
         }
 
-        type "edit-final-table-cell" {
-            target = css("[data-document-chunk-id='document-chunk-1-6250'] tbody > tr:last-child > td:last-child p")
+        insert_text "edit-final-table-cell" {
             value = " ACL-TABLE-END-EDIT"
         }
 
-        expect "final-table-edit-is-visible" {
+        wait "final-table-edit-is-visible" {
             text = "ACL-TABLE-END-EDIT"
         }
 

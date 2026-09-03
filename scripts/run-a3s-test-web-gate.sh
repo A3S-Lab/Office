@@ -5,6 +5,7 @@ repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 artifact_root="${A3S_TEST_ARTIFACT_ROOT:-$repository_root/.a3s-test/web-gate}"
 preview_log="$artifact_root/preview.log"
 fixture_log="$artifact_root/fixtures.log"
+performance_fixture_log="$artifact_root/performance-fixtures.log"
 preview_pid=""
 
 cd "$repository_root"
@@ -21,7 +22,62 @@ require_executable() {
   printf '%s' "$executable_path"
 }
 
-a3s_test="${A3S_TEST_BIN:-$(require_executable a3s-test)}"
+resolve_a3s_test() {
+  local configured_test="${A3S_TEST_BIN:-}"
+  local candidate
+  if [[ -n "$configured_test" ]]; then
+    printf '%s' "$configured_test"
+    return 0
+  fi
+
+  for candidate in \
+    "$repository_root/../../crates/test/target/release/a3s-test" \
+    "$repository_root/../../crates/test/target/debug/a3s-test"; do
+    if [[ -x "$candidate" ]]; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+
+  candidate="$(command -v a3s-test || true)"
+  if [[ -n "$candidate" && -x "$candidate" ]]; then
+    printf '%s' "$candidate"
+    return 0
+  fi
+
+  echo "Required executable not found: a3s-test" >&2
+  return 1
+}
+
+find_agent_browser() {
+  local configured_browser="${A3S_TEST_AGENT_BROWSER:-}"
+  local user_home="${HOME:-}"
+  local candidate
+
+  if [[ -n "$configured_browser" ]]; then
+    printf '%s' "$configured_browser"
+    return 0
+  fi
+
+  candidate="$(command -v agent-browser || true)"
+  if [[ -n "$candidate" ]]; then
+    printf '%s' "$candidate"
+    return 0
+  fi
+
+  # Bun's global bin directory is not always exported by non-interactive
+  # shells (for example, when a package script is launched from an IDE).
+  # Resolve the pinned adapter without mutating the user's shell profile.
+  if [[ -n "$user_home" && -x "$user_home/.bun/bin/agent-browser" ]]; then
+    printf '%s' "$user_home/.bun/bin/agent-browser"
+    return 0
+  fi
+
+  echo "Required executable not found: agent-browser" >&2
+  return 1
+}
+
+a3s_test="$(resolve_a3s_test)"
 browser_driver="${A3S_TEST_BROWSER_DRIVER:-standalone}"
 browser_arguments=(--browser-driver "$browser_driver")
 required_a3s_test_version="a3s-test 1.0.0"
@@ -47,7 +103,7 @@ case "$browser_driver" in
   a3s)
     ;;
   standalone)
-    agent_browser="${A3S_TEST_AGENT_BROWSER:-$(require_executable agent-browser)}"
+    agent_browser="$(find_agent_browser)"
     require_executable node >/dev/null
 
     if [[ ! -x "$agent_browser" ]]; then
@@ -182,12 +238,97 @@ suites=(
   "tests/e2e/word-strike-styles.acl"
 )
 
-if [[ -n "${A3S_TEST_SUITE:-}" ]]; then
-  if [[ "$A3S_TEST_SUITE" != tests/e2e/*.acl || ! -f "$A3S_TEST_SUITE" ]]; then
-    echo "A3S_TEST_SUITE must name an existing tests/e2e/*.acl file." >&2
+validate_suite() {
+  local suite="$1"
+  if [[ "$suite" != tests/e2e/*.acl || ! -f "$suite" ]]; then
+    echo "Invalid A3S Test suite: $suite" >&2
+    echo "Suites must be existing tests/e2e/*.acl files." >&2
     exit 1
   fi
-  suites=("$A3S_TEST_SUITE")
+}
+
+load_all_suites() {
+  suites=()
+  while IFS= read -r suite; do
+    if [[ "$(basename "$suite")" == "office-testkit-ui.acl" && "${A3S_TEST_INCLUDE_TESTKIT:-false}" != "true" ]]; then
+      continue
+    fi
+    suites+=("$suite")
+  done < <(find tests/e2e -maxdepth 1 -type f -name '*.acl' | sort)
+}
+
+load_requested_suites() {
+  local requested="$1"
+  local suite
+  local normalized
+  suites=()
+  while IFS= read -r normalized; do
+    suite="${normalized#${normalized%%[![:space:]]*}}"
+    suite="${suite%${suite##*[![:space:]]}}"
+    [[ -z "$suite" ]] && continue
+    [[ "$suite" == \#* ]] && continue
+    if [[ "$suite" != tests/e2e/* ]]; then
+      suite="tests/e2e/$suite"
+    fi
+    validate_suite "$suite"
+    suites+=("$suite")
+  done < <(printf '%s\n' "$requested" | tr ',' '\n')
+  if ((${#suites[@]} == 0)); then
+    echo "A3S_TEST_SUITE did not select any suites." >&2
+    exit 1
+  fi
+}
+
+if [[ -n "${A3S_TEST_SUITES_FILE:-}" ]]; then
+  if [[ ! -f "$A3S_TEST_SUITES_FILE" ]]; then
+    echo "A3S_TEST_SUITES_FILE does not exist: $A3S_TEST_SUITES_FILE" >&2
+    exit 1
+  fi
+  load_requested_suites "$(<"$A3S_TEST_SUITES_FILE")"
+elif [[ "${A3S_TEST_SUITE:-}" == "all" ]]; then
+  load_all_suites
+elif [[ -n "${A3S_TEST_SUITE:-}" ]]; then
+  load_requested_suites "$A3S_TEST_SUITE"
+fi
+
+for suite in "${suites[@]}"; do
+  validate_suite "$suite"
+done
+
+if [[ "${A3S_TEST_INCLUDE_PERFORMANCE:-auto}" != "false" ]]; then
+  needs_documents=false
+  needs_pdf=false
+  needs_presentations=false
+  needs_spreadsheets=false
+  for suite in "${suites[@]}"; do
+    case "$(basename "$suite")" in
+      word-large-document-windowing.acl)
+        needs_documents=true
+        ;;
+      pdf-large-windowing.acl)
+        needs_pdf=true
+        ;;
+      presentation-large-windowing.acl)
+        needs_presentations=true
+        ;;
+      spreadsheet-large-controlled-editing.acl)
+        needs_spreadsheets=true
+        ;;
+    esac
+  done
+
+  if [[ "$needs_documents" == true ]]; then
+    bun .a3s-test/performance/generate-fixtures.ts --documents-only >"$performance_fixture_log" 2>&1
+  fi
+  if [[ "$needs_spreadsheets" == true ]]; then
+    bun .a3s-test/performance/generate-fixtures.ts --spreadsheets-only >"$performance_fixture_log" 2>&1
+  fi
+  if [[ "$needs_presentations" == true ]]; then
+    bun .a3s-test/performance/generate-fixtures.ts --presentations-only >"$performance_fixture_log" 2>&1
+  fi
+  if [[ "$needs_pdf" == true ]]; then
+    bun .a3s-test/performance/generate-fixtures.ts --pdf-only >"$performance_fixture_log" 2>&1
+  fi
 fi
 
 for suite in "${suites[@]}"; do
@@ -280,6 +421,19 @@ run_suite() {
   fi
 }
 
+failed_suites=()
 for suite in "${suites[@]}"; do
-  run_suite "$suite"
+  if run_suite "$suite"; then
+    continue
+  fi
+  failed_suites+=("$suite")
+  if [[ "${A3S_TEST_CONTINUE_ON_FAILURE:-false}" != "true" ]]; then
+    exit 1
+  fi
 done
+
+if ((${#failed_suites[@]} > 0)); then
+  echo "A3S Test failed suites:" >&2
+  printf '  %s\n' "${failed_suites[@]}" >&2
+  exit 1
+fi

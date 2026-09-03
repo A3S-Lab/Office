@@ -65,7 +65,7 @@ suite "office-word-cross-reference-phone" {
             target = role("button", "插入交叉引用")
         }
 
-        expect "caption-is-selected-for-reference" {
+        wait "caption-is-selected-for-reference" {
             visible = css(".work-document-reference-list input[type='radio']:checked")
         }
 

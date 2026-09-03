@@ -45,7 +45,7 @@ suite "office-spreadsheet-phone-find" {
         }
 
         fill "find-customer-insight-report" {
-            target = label("查找当前工作表")
+            target = css("[aria-label='查找当前工作表']")
             value = "客户洞察报告"
         }
 

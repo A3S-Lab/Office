@@ -1,0 +1,350 @@
+suite "office-testkit-ui" {
+    version = 1
+
+    scenario "home-publishes-ui-context" {
+        name = "Publish bounded Test Kit UI evidence for the Office home"
+        surface = "web"
+        timeout_ms = 45000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:3000/playground/"
+        }
+
+        wait "home-ready" {
+            text = "我的文档"
+        }
+
+        snapshot "home-ui-understanding" {
+            interactive = true
+        }
+
+        screenshot "home-ui" {
+            path = "screenshots/home-testkit-ui.png"
+        }
+
+        accessibility "home-semantics" {
+            path = "evidence/home-accessibility.json"
+            interactive = true
+        }
+
+        console "home-console" {
+            path = "diagnostics/home-console.json"
+            clear = false
+        }
+
+        page_errors "home-errors" {
+            path = "diagnostics/home-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "document-tracks-toolbar-state" {
+        name = "Track Writer toolbar state and component ownership"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:3000/playground/"
+        }
+
+        click "open-document" {
+            target = css("button[data-template-id='project-brief']")
+        }
+
+        wait "document-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        snapshot "document-before-toolbar" {
+            interactive = true
+        }
+
+        click "open-page-layout" {
+            target = role("tab", "页面布局")
+        }
+
+        click "open-page-color" {
+            target = role("button", "页面颜色")
+        }
+
+        wait "page-color-open" {
+            visible = css("[role='dialog'][aria-label='页面颜色']")
+        }
+
+        snapshot "document-page-color" {
+            interactive = true
+        }
+
+        press "close-page-color" {
+            key = "Escape"
+        }
+
+        screenshot "document-page-color-ui" {
+            path = "screenshots/document-page-color-testkit-ui.png"
+        }
+
+        accessibility "document-semantics" {
+            path = "evidence/document-accessibility.json"
+            interactive = true
+        }
+
+        console "document-console" {
+            path = "diagnostics/document-console.json"
+            clear = false
+        }
+
+        page_errors "document-errors" {
+            path = "diagnostics/document-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "spreadsheet-tracks-ribbon-state" {
+        name = "Track Spreadsheet grid focus and ribbon state"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:3000/playground/"
+        }
+
+        click "open-spreadsheet" {
+            target = css("button[data-template-id='quarterly-plan']")
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        snapshot "spreadsheet-before-ribbon" {
+            interactive = true
+        }
+
+        click "open-data-ribbon" {
+            target = role("tab", "数据")
+        }
+
+        wait "data-ribbon-open" {
+            visible = role("button", "升序")
+        }
+
+        focus "focus-spreadsheet-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        snapshot "spreadsheet-data-ribbon" {
+            interactive = true
+        }
+
+        screenshot "spreadsheet-ribbon-ui" {
+            path = "screenshots/spreadsheet-ribbon-testkit-ui.png"
+        }
+
+        accessibility "spreadsheet-semantics" {
+            path = "evidence/spreadsheet-accessibility.json"
+            interactive = true
+        }
+
+        console "spreadsheet-console" {
+            path = "diagnostics/spreadsheet-console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-errors" {
+            path = "diagnostics/spreadsheet-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "presentation-tracks-responsive-state" {
+        name = "Track Presentation selection and responsive UI state"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:3000/playground/"
+        }
+
+        click "open-presentation" {
+            target = css("button[data-template-id='strategy-deck']")
+        }
+
+        wait "presentation-ready" {
+            visible = css(".work-presentation-editor")
+        }
+
+        snapshot "presentation-before-selection" {
+            interactive = true
+        }
+
+        click "select-first-slide" {
+            target = css("[data-slide-thumbnail]:first-of-type")
+        }
+
+        click "open-design-ribbon" {
+            target = role("tab", "设计")
+        }
+
+        snapshot "presentation-responsive-ui" {
+            interactive = true
+        }
+
+        screenshot "presentation-responsive-screenshot" {
+            path = "screenshots/presentation-responsive-testkit-ui.png"
+        }
+
+        accessibility "presentation-semantics" {
+            path = "evidence/presentation-accessibility.json"
+            interactive = true
+        }
+
+        console "presentation-console" {
+            path = "diagnostics/presentation-console.json"
+            clear = false
+        }
+
+        page_errors "presentation-errors" {
+            path = "diagnostics/presentation-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "markdown-tracks-view-state" {
+        name = "Track Markdown source and visual editing state"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:3000/playground/"
+        }
+
+        click "open-markdown" {
+            target = css("button[data-template-id='blank-markdown']")
+        }
+
+        wait "markdown-ready" {
+            visible = css("textarea[aria-label='Markdown 源码']")
+        }
+
+        snapshot "markdown-source-ui" {
+            interactive = true
+        }
+
+        click "open-view-ribbon" {
+            target = role("tab", "视图")
+        }
+
+        click "open-visual-editor" {
+            target = role("button", "可视化编辑")
+        }
+
+        wait "visual-editor-ready" {
+            visible = css("[aria-label='Markdown 编辑区']")
+        }
+
+        snapshot "markdown-visual-ui" {
+            interactive = true
+        }
+
+        screenshot "markdown-visual-screenshot" {
+            path = "screenshots/markdown-visual-testkit-ui.png"
+        }
+
+        accessibility "markdown-semantics" {
+            path = "evidence/markdown-accessibility.json"
+            interactive = true
+        }
+
+        console "markdown-console" {
+            path = "diagnostics/markdown-console.json"
+            clear = false
+        }
+
+        page_errors "markdown-errors" {
+            path = "diagnostics/markdown-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "pdf-publishes-ui-context" {
+        name = "Publish PDF UI context and geometry"
+        surface = "web"
+        timeout_ms = 90000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:3000/playground/"
+        }
+
+        upload "open-pdf" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/pdf-thumbnail-keyboard.pdf"]
+        }
+
+        wait "pdf-ready" {
+            visible = css(".work-pdf-embed[data-ready='true']")
+        }
+
+        wait "pdf-toolbar-stable" {
+            visible = css(".work-pdf-toolbar")
+        }
+
+        snapshot "pdf-ui-understanding" {
+            interactive = false
+        }
+
+        screenshot "pdf-surface-screenshot" {
+            path = "screenshots/pdf-surface-testkit-ui.png"
+        }
+
+        accessibility "pdf-semantics" {
+            path = "evidence/pdf-accessibility.json"
+            interactive = true
+        }
+
+        console "pdf-console" {
+            path = "diagnostics/pdf-console.json"
+            clear = false
+        }
+
+        page_errors "pdf-errors" {
+            path = "diagnostics/pdf-errors.json"
+            clear = false
+        }
+    }
+}

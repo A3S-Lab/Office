@@ -61,7 +61,7 @@ suite "office-word-comment-windowing" {
             visible = css("[data-document-comment-item='120'] button[aria-label='定位批注 120']:focus")
         }
 
-        expect "last-comment-page-is-current" {
+        wait "last-comment-page-is-current" {
             text = "第 15 页，共 15 页"
         }
 
@@ -103,6 +103,10 @@ suite "office-word-comment-windowing" {
 
         expect "first-comment-is-focused" {
             visible = css("[data-document-comment-item='1'] button[aria-label='定位批注 1']:focus")
+        }
+
+        click "locate-first-comment-page" {
+            target = css("[data-document-comment-item='1'] button[aria-label='定位批注 1']")
         }
 
         expect "first-comment-page-is-current" {

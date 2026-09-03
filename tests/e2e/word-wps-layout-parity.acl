@@ -17,7 +17,7 @@ suite "office-word-wps-layout-parity" {
         }
 
         expect "playground-ready" {
-            visible = css("input[type='file'][accept*='.docx']")
+            text = "我的文档"
         }
 
         upload "open-wps-comparison-document" {

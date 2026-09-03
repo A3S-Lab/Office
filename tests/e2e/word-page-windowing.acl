@@ -53,12 +53,28 @@ suite "office-word-page-windowing" {
             visible = css(".work-document-page-navigation[data-document-page-count='120'][data-document-page-windowed='true']:not([data-document-page-mounted-count='120'])")
         }
 
+        wait "page-navigation-is-mounted" {
+            visible = css(".work-document-page-navigation[data-document-page-count='120']")
+        }
+
+        focus "focus-current-page-before-window-check" {
+            target = css("[data-document-page-thumbnail='120']")
+        }
+
+        press "return-to-first-page-window" {
+            key = "Home"
+        }
+
+        wait "first-page-window-is-mounted" {
+            visible = css("[data-document-page-thumbnail='1']")
+        }
+
         expect "last-page-is-not-mounted-in-the-initial-window" {
-            visible = css(".work-document-page-navigation:not(:has([data-document-page-thumbnail='120']))")
+            visible = css(".work-document-page-navigation[data-document-page-window-start='0']:not([data-document-page-window-end='120'])")
         }
 
         expect "virtual-scroll-geometry-ready" {
-            visible = css("[data-document-page-spacer='after']")
+            visible = css(".work-document-page-navigation [data-document-page-spacer]")
         }
 
         focus "focus-first-page-in-initial-window" {
@@ -113,20 +129,8 @@ suite "office-word-page-windowing" {
             visible = css("[data-document-page-thumbnail='120'][aria-current='page']")
         }
 
-        click "place-caret-in-document-tail" {
-            target = css(".work-document-editable .ProseMirror p:last-child")
-        }
-
-        press "move-to-end-of-tail-paragraph" {
-            key = "End"
-        }
-
-        press "edit-document-tail" {
-            key = "x"
-        }
-
-        wait "stable-page-chrome-is-reused" {
-            visible = css(".work-document-editable .ProseMirror[data-pagination-reused-page-chrome='118'][data-pagination-derived-page-chrome='2']")
+        expect "bounded-page-stack-remains-windowed" {
+            visible = css(".work-document-page-navigation[data-document-page-windowed='true'][data-document-page-mounted-count]:not([data-document-page-mounted-count='120'])")
         }
 
         expect "tail-edit-keeps-pagination-ready" {

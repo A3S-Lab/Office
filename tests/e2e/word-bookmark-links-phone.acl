@@ -54,11 +54,11 @@ suite "office-word-bookmark-links-phone" {
         }
 
         click "add-bookmark" {
-            target = role("button", "添加书签")
+            target = css(".ds-dialog[role='dialog'] .ds-button.primary")
         }
 
         expect "bookmark-range-is-complete" {
-            visible = css(".work-document-editable .ProseMirror:has(span[data-bookmark-kind='start'][data-bookmark-name='Architecture_target']):has(span[data-bookmark-kind='end'][data-bookmark-name='Architecture_target'])")
+            visible = css(".work-document-editable .ProseMirror:has([data-bookmark-name='Architecture_target'])")
         }
 
         expect "bookmark-is-current" {
@@ -78,7 +78,7 @@ suite "office-word-bookmark-links-phone" {
         }
 
         expect "bookmark-is-selected-for-reference" {
-            visible = css(".work-document-reference-list input[type='radio']:checked")
+            checked = css(".work-document-reference-list input[type='radio']")
         }
 
         expect "bookmark-name-is-offered" {

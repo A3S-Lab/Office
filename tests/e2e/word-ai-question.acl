@@ -60,7 +60,7 @@ suite "word-ai-question" {
         }
 
         fill "write-question" {
-            target = label("向 AI 助手提问")
+            target = css("textarea[aria-label='向 AI 助手提问']")
             value = "这段结论有哪些依据？"
         }
 

@@ -86,10 +86,10 @@ suite "office-word-page-setup-phone" {
         }
 
         press "center-header-with-wps-shortcut" {
-            key = "Control+e"
+            key = "Meta+e"
         }
 
-        expect "header-shortcut-is-executable" {
+        wait "header-shortcut-is-executable" {
             visible = css("[role='textbox'][aria-label='默认页页眉'] p[style*='text-align: center']")
         }
 

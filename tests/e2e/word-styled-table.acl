@@ -94,7 +94,7 @@ suite "office-word-styled-table" {
         }
 
         fill "change-left-cell-margin" {
-            target = label("单元格左边距（厘米）")
+            target = css("input[aria-label='单元格左边距（厘米）']")
             value = "0.5"
         }
 
@@ -157,7 +157,7 @@ suite "office-word-styled-table" {
         }
 
         fill "change-table-width" {
-            target = label("表格宽度（百分比）")
+            target = css("input[aria-label='表格宽度（百分比）']")
             value = "72"
         }
 
@@ -166,7 +166,7 @@ suite "office-word-styled-table" {
         }
 
         fill "change-table-indent" {
-            target = label("表格左缩进（厘米）")
+            target = css("input[aria-label='表格左缩进（厘米）']")
             value = "0.5"
         }
 
@@ -179,11 +179,11 @@ suite "office-word-styled-table" {
         }
 
         check "enable-exact-row-height" {
-            target = label("指定行高")
+            target = css("input[type='checkbox'][aria-label='指定行高']")
         }
 
         fill "change-current-row-height" {
-            target = label("当前行高（厘米）")
+            target = css("input[aria-label='当前行高（厘米）']")
             value = "1.2"
         }
 
@@ -212,7 +212,7 @@ suite "office-word-styled-table" {
         }
 
         fill "change-current-column-width" {
-            target = label("当前列宽（厘米）")
+            target = css("input[aria-label='当前列宽（厘米）']")
             value = "4"
         }
 
@@ -233,7 +233,7 @@ suite "office-word-styled-table" {
         }
 
         fill "change-current-cell-left-margin" {
-            target = label("当前单元格左边距（厘米）")
+            target = css("input[aria-label='当前单元格左边距（厘米）']")
             value = "0.4"
         }
 
@@ -274,7 +274,7 @@ suite "office-word-styled-table" {
         }
 
         fill "draft-cancelled-table-width" {
-            target = label("表格宽度（百分比）")
+            target = css("input[aria-label='表格宽度（百分比）']")
             value = "80"
         }
 
@@ -295,7 +295,7 @@ suite "office-word-styled-table" {
         }
 
         fill "draft-escaped-table-width" {
-            target = label("表格宽度（百分比）")
+            target = css("input[aria-label='表格宽度（百分比）']")
             value = "84"
         }
 

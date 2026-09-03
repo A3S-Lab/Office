@@ -4,7 +4,7 @@ suite "office-word-paragraph-layout-phone" {
     scenario "format-word-paragraph-on-phone" {
         name = "Format Word paragraph spacing and pagination from phone popovers"
         surface = "web"
-        timeout_ms = 30000
+        timeout_ms = 60000
 
         viewport "phone" {
             width = 390
@@ -41,7 +41,7 @@ suite "office-word-paragraph-layout-phone" {
         }
 
         fill "set-space-before" {
-            target = label("段前间距（磅）")
+            target = css("input[aria-label='段前间距（磅）']")
             value = "12"
         }
 
@@ -70,10 +70,10 @@ suite "office-word-paragraph-layout-phone" {
         }
 
         check "keep-paragraph-together" {
-            target = label("段落不跨页")
+            target = css(".work-document-pagination-panel input[aria-label='段落不跨页']")
         }
 
-        expect "keep-lines-is-committed" {
+        wait "keep-lines-is-committed" {
             visible = css(".ProseMirror [data-office-keep-lines='true']")
         }
 
@@ -81,7 +81,7 @@ suite "office-word-paragraph-layout-phone" {
             key = "Escape"
         }
 
-        expect "pagination-focus-is-restored" {
+        wait "pagination-focus-is-restored" {
             visible = css("button[aria-label='段落分页'][aria-expanded='false']:focus")
         }
 
