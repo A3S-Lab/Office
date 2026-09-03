@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 import {
   openDocumentFixture,
   stabilizeVisualSurface,
@@ -305,6 +305,30 @@ test('document selection toolbar keeps formatting and review in context', async 
     name: '文本快捷工具栏',
   });
   await expect(toolbar).toBeVisible();
+  const splitButtonStyles = await toolbar
+    .locator(
+      '.work-document-underline-split-root > button, .work-document-strike-split-root > button',
+    )
+    .evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const style = getComputedStyle(button);
+        return {
+          appearance: style.appearance,
+          backgroundColor: style.backgroundColor,
+          borderTopStyle: style.borderTopStyle,
+          borderTopWidth: style.borderTopWidth,
+          display: style.display,
+        };
+      }),
+    );
+  expect(splitButtonStyles).toHaveLength(4);
+  for (const style of splitButtonStyles) {
+    expect(style.appearance).toBe('none');
+    expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(style.borderTopStyle).toBe('solid');
+    expect(style.borderTopWidth).toBe('1px');
+    expect(style.display).toBe('grid');
+  }
   const toolbarGeometry = await toolbar.evaluate((element) => {
     const rect = element.getBoundingClientRect();
     return {

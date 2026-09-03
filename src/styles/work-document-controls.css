@@ -233,6 +233,74 @@
   min-width: 12px;
 }
 
+.work-document-selection-toolbar .work-document-underline-split-root > button,
+.work-document-selection-toolbar .work-document-strike-split-root > button {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  margin: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--a3s-muted);
+  cursor: pointer;
+  appearance: none;
+  touch-action: manipulation;
+}
+
+.work-document-selection-toolbar
+  .work-document-underline-split-root
+  > button:hover,
+.work-document-selection-toolbar
+  .work-document-strike-split-root
+  > button:hover {
+  border-color: var(--a3s-line);
+  background: var(--a3s-panel-soft);
+  color: var(--a3s-ink);
+}
+
+.work-document-selection-toolbar
+  .work-document-underline-split-root
+  > button[aria-pressed="true"],
+.work-document-selection-toolbar
+  .work-document-strike-split-root
+  > button[aria-pressed="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-accent) 28%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-office-accent) 11%,
+    var(--a3s-panel)
+  );
+  color: var(--work-office-accent);
+}
+
+.work-document-selection-toolbar
+  .work-document-underline-split-root
+  > .work-document-underline-primary,
+.work-document-selection-toolbar
+  .work-document-strike-split-root
+  > .work-document-strike-primary {
+  border-right-color: transparent;
+}
+
+.work-document-selection-toolbar
+  .work-document-underline-split-root
+  > .work-document-underline-primary:hover,
+.work-document-selection-toolbar
+  .work-document-strike-split-root
+  > .work-document-strike-primary:hover,
+.work-document-selection-toolbar
+  .work-document-underline-split-root
+  > .work-document-underline-primary[aria-pressed="true"],
+.work-document-selection-toolbar
+  .work-document-strike-split-root
+  > .work-document-strike-primary[aria-pressed="true"] {
+  border-right-color: transparent;
+}
+
 .work-document-selection-toolbar > .work-document-underline-control {
   height: 28px;
   gap: 0;

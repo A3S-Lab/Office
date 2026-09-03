@@ -309,6 +309,16 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.48.1` fixes the Writer floating selection toolbar's split emphasis
+controls without changing the document model or public command contract:
+
+- Underline and strikethrough controls now reset browser-native button
+  appearance and use the same compact themed states as the surrounding
+  actions, including one-pixel grouping dividers and keyboard focus treatment.
+- The fix is covered by a browser visual contract in both desktop and compact
+  viewports; formatting commands, accessibility names, and split menus remain
+  unchanged.
+
 Version `0.48.0` adds bounded native Writer content controls without
 introducing a second document model or a remote service:
 

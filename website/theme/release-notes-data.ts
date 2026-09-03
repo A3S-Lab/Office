@@ -42,6 +42,71 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.48.1',
+    date: '2026-09-03',
+    kind: 'fixed',
+    surfaces: ['writer', 'shared', 'playground', 'documentation'],
+    title: {
+      en: 'Writer selection controls keep their compact visual contract',
+      zh: 'Writer 选区控件恢复紧凑视觉契约',
+    },
+    summary: {
+      en: 'The floating selection toolbar no longer exposes browser-native outset borders on its underline and strikethrough split controls.',
+      zh: '浮动选区工具栏的下划线和删除线拆分控件不再暴露浏览器原生 outset 边框。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Native defaults are reset',
+          zh: '重置浏览器原生默认样式',
+        },
+        detail: {
+          en: 'The two split controls now use the toolbar button baseline, including explicit appearance, border, background, spacing, and icon alignment rules.',
+          zh: '两个拆分控件现在使用工具栏按钮基线，显式统一 appearance、边框、背景、间距和图标对齐规则。',
+        },
+      },
+      {
+        title: {
+          en: 'One group, one divider',
+          zh: '一个组合，一条分隔线',
+        },
+        detail: {
+          en: 'The primary action and disclosure remain visually grouped with a single-pixel divider while hover, pressed, and focus states stay readable.',
+          zh: '主操作和下拉入口保持视觉分组，只显示一条像素分隔线，同时保留清晰的悬停、按下和焦点状态。',
+        },
+      },
+      {
+        title: {
+          en: 'Formatting semantics are unchanged',
+          zh: '格式语义保持不变',
+        },
+        detail: {
+          en: 'Underline and strikethrough commands, accessible labels, keyboard behavior, and their advanced style menus continue to use the existing typed contract.',
+          zh: '下划线和删除线命令、可访问名称、键盘行为及高级样式菜单继续使用既有类型化合同。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#selection-toolbar-controls',
+          zh: './components/document.html#选择工具栏控件',
+        },
+        label: {
+          en: 'Read the selection-toolbar guide',
+          zh: '阅读选区工具栏说明',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.48.1',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.48.1',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.48.0',
     date: '2026-09-03',
     kind: 'new',
