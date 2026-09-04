@@ -188,7 +188,7 @@ export function DocumentCompareDialog({
                 setAuthor(event.currentTarget.value);
               }}
             />
-            <small>该名称会显示在生成的插入、删除与格式修订中。</small>
+            <small>该名称会显示在生成的插入、删除、移动与格式修订中。</small>
           </label>
         )}
 
@@ -221,7 +221,7 @@ function ComparisonBoundary({ mode }: { mode: DocumentComparisonMode }) {
       <strong>{mode === 'compare' ? '确定性比较边界' : '安全合并边界'}</strong>
       <p>
         {mode === 'compare'
-          ? '支持同一分节布局中的段落、标题、文字和格式差异；复杂对象或节布局变化会明确停止。'
+          ? '支持同一分节布局中的段落、标题、文字、格式差异，以及同一段内可安全识别的文本移动；复杂对象或节布局变化会明确停止。'
           : '审阅副本必须包含修订，且拒绝全部修订后与当前文档一致；现有修订须先处理。'}
       </p>
     </div>

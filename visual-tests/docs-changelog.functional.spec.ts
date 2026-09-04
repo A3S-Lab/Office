@@ -9,14 +9,15 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(27);
-  await expect(cards.first()).toContainText('v0.49.0');
-  await expect(cards.first()).toContainText(
-    'Writer 移动修订保持成对并原生往返',
-  );
-  await expect(cards.nth(1)).toContainText('v0.48.1');
-  await expect(cards.nth(1)).toContainText('Writer 选区控件恢复紧凑视觉契约');
-  await expect(cards.nth(1)).toContainText('浏览器原生默认样式');
+  await expect(cards).toHaveCount(28);
+  await expect(cards.first()).toContainText('v0.50.0');
+  await expect(cards.first()).toContainText('Writer 比较识别有界文字移动');
+  await expect(cards.first()).toContainText('一个对齐移动，一项决定');
+  await expect(cards.nth(1)).toContainText('v0.49.0');
+  await expect(cards.nth(1)).toContainText('Writer 移动修订保持成对并原生往返');
+  await expect(cards.nth(2)).toContainText('v0.48.1');
+  await expect(cards.nth(2)).toContainText('Writer 选区控件恢复紧凑视觉契约');
+  await expect(cards.nth(2)).toContainText('浏览器原生默认样式');
   await expect(
     page.locator('.office-release-card[data-version="0.41.0"]'),
   ).toContainText('表格数据验证警告现在与 Office 决策一致');

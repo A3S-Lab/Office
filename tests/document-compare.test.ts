@@ -1,16 +1,16 @@
-import { type Content, Editor } from '@tiptap/core';
 import { describe, expect, test } from '@rstest/core';
+import { type Content, Editor } from '@tiptap/core';
 import JSZip from 'jszip';
 import {
   createArtifact,
   createArtifactBlob,
   importOfficeFile,
 } from '../src/core';
+import { collectDocumentChanges } from '../src/internal/features/work/work-document-changes';
 import {
   applyDocumentComparison,
   type DocumentComparisonApplyResult,
 } from '../src/internal/features/work/work-document-compare';
-import { collectDocumentChanges } from '../src/internal/features/work/work-document-changes';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 const comparisonIdentity = {
@@ -119,6 +119,80 @@ describe('document compare and combine', () => {
     expect(editor.getHTML()).toBe(originalHtml);
 
     editor.destroy();
+  });
+
+  test('infers a bounded text move and round-trips native move revisions', async () => {
+    const original = documentHtml('<p>Alpha beta gamma.</p>');
+    const revised = documentHtml('<p>Alpha gamma beta.</p>');
+    const editor = createEditor(original);
+    const result = applyCompare(editor, revised);
+
+    expect(result.status).toBe('applied');
+    expect(result.summary).toEqual({
+      deletions: 0,
+      formatting: 0,
+      insertions: 0,
+      moves: 1,
+      paragraphFormatting: 0,
+    });
+    const move = collectDocumentChanges(editor.state.doc).find(
+      (change) => change.kind === 'move',
+    );
+    expect(move).toEqual(
+      expect.objectContaining({
+        author: 'Morgan',
+        text: ' beta',
+      }),
+    );
+    expect(
+      collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'move',
+      ),
+    ).toHaveLength(1);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a Writer artifact.');
+    }
+    artifact.content.html = editor.getHTML();
+    artifact.content.trackChanges = true;
+    const exported = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await exported.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(documentXml).toContain('<w:moveFrom');
+    expect(documentXml).toContain('<w:moveTo');
+    expect(documentXml).not.toContain('data-change-move-role');
+
+    const reopened = await importOfficeFile(
+      new File([exported], 'comparison-move.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened Writer artifact.');
+    }
+    const reopenedEditor = createEditor(reopened.content.html);
+    expect(
+      collectDocumentChanges(reopenedEditor.state.doc).filter(
+        (change) => change.kind === 'move',
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        author: 'Morgan',
+        kind: 'move',
+        text: ' beta',
+      }),
+    ]);
+
+    expect(reopenedEditor.commands.rejectAllDocumentChanges()).toBe(true);
+    expect(normalizedText(reopenedEditor)).toBe('Alpha beta gamma.');
+    expect(reopenedEditor.commands.undo()).toBe(true);
+    expect(reopenedEditor.commands.acceptAllDocumentChanges()).toBe(true);
+    expect(normalizedText(reopenedEditor)).toBe('Alpha gamma beta.');
+
+    editor.destroy();
+    reopenedEditor.destroy();
   });
 
   test('fails closed for changed complex structures and leaves the document untouched', () => {

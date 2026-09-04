@@ -1,6 +1,6 @@
-import { pluginReact } from '@rsbuild/plugin-react';
-import { defineConfig } from '@rsbuild/core';
 import { resolve } from 'node:path';
+import { defineConfig } from '@rsbuild/core';
+import { pluginReact } from '@rsbuild/plugin-react';
 import {
   playgroundBaseFromSiteBase,
   siteBaseFromEnvironment,
@@ -57,6 +57,9 @@ export default defineConfig(({ command, env }) => {
     plugins: [pluginReact()],
     resolve: {
       alias: {
+        // Match the extensionless imports before resolver extension expansion;
+        // production must keep the testkit runtime out of the initial bundle.
+        './testkit': testKitImplementation,
         [testKitModule]: testKitImplementation,
       },
     },

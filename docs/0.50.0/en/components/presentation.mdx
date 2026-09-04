@@ -1,0 +1,236 @@
+---
+title: PresentationEditor
+description: Presentation content, collaboration, slideshow events, geometry kernel, and host extension points.
+---
+
+# PresentationEditor
+
+`PresentationEditor` uses a typed scene graph for slides and mounts TipTap only
+while a text box is being edited. Chinese and other IME pre-edit text stays
+local during composition; `onChange` receives only the committed value, and
+editor shortcuts yield to composition keyboard events.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `content` | `PresentationContent` | Yes | — | Controlled presentation content. |
+| `onChange` | `(content: PresentationContent) => void` | Yes | — | Emits the complete next presentation. |
+| `collaboration` | `OfficeCollaborationSession` | No | none | Uses an initialized Yjs Presentation as the canonical value. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Publishes slide/object selection, projects remote object frames and roster navigation; requires the exact `collaboration` session. |
+| `preview` | `boolean` | No | `false` | Read-only presentation surface. |
+| `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |
+| `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host file actions. |
+| `kernelWasmUrl` | `string` | No | packaged kernel | Snapping, alignment, and geometry-kernel URL. |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | No | — | Sends slide or object context to the host AI flow. |
+| `onStartSlideshow` | `() => void` | No | — | Notifies the host after built-in playback starts. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+## Content contract
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `type` | `'presentation'` | Content discriminator. |
+| `slides` | `WorkSlide[]` | Slides, elements, notes, comments, transitions, and object animations. |
+| `width`, `height` | `number` | Presentation canvas dimensions. |
+| `masters` | `WorkPresentationMaster[]` | Master backgrounds and elements. |
+| `layouts` | `WorkPresentationLayout[]` | Master-linked layouts, placeholders, and inherited elements. |
+
+Use `fileActions`, `onAgentRequest`, and `onStartSlideshow` for stable host
+integration. The internal scene-command runtime is not a public extension API.
+
+## Entrance and exit animations
+
+`WorkSlide.animations` is the canonical ordered object-animation sequence for
+one slide. Each record targets one slide-owned element by stable ID. One object
+may have at most one editable entrance and one editable exit animation, and one
+slide accepts at most 256 records.
+
+```ts
+type WorkSlideAnimationClass = 'entrance' | 'exit';
+type WorkSlideEntranceAnimationEffect =
+  | 'appear'
+  | 'fade'
+  | 'fly-in'
+  | 'zoom';
+type WorkSlideExitAnimationEffect =
+  | 'disappear'
+  | 'fade-out'
+  | 'fly-out'
+  | 'zoom-out';
+type WorkSlideAnimationEffect =
+  | WorkSlideEntranceAnimationEffect
+  | WorkSlideExitAnimationEffect;
+type WorkSlideAnimationTrigger =
+  | 'on-click'
+  | 'with-previous'
+  | 'after-previous';
+type WorkSlideAnimationDirection = 'left' | 'right' | 'up' | 'down';
+
+interface WorkSlideAnimation {
+  id: string;
+  elementId: string;
+  effect: WorkSlideAnimationEffect;
+  trigger: WorkSlideAnimationTrigger;
+  durationMs: number;
+  delayMs: number;
+  direction?: WorkSlideAnimationDirection;
+}
+
+const slide = {
+  id: 'launch',
+  name: 'Launch',
+  background: '#ffffff',
+  elements: [
+    {
+      id: 'headline',
+      type: 'text',
+      x: 8,
+      y: 10,
+      width: 80,
+      height: 16,
+      text: 'Launch plan',
+      fontSize: 34,
+      color: '#111827',
+      fill: 'transparent',
+      bold: true,
+      align: 'left',
+    },
+  ],
+  animations: [
+    {
+      id: 'headline-entrance',
+      elementId: 'headline',
+      effect: 'fade',
+      trigger: 'on-click',
+      durationMs: 600,
+      delayMs: 100,
+    },
+    {
+      id: 'headline-exit',
+      elementId: 'headline',
+      effect: 'fade-out',
+      trigger: 'on-click',
+      durationMs: 400,
+      delayMs: 0,
+    },
+  ],
+};
+```
+
+Select an object and open the **Animation** ribbon tab to set or remove its
+entrance or exit effect, choose the trigger, edit duration and delay, choose a
+fly direction, move the selected class earlier or later, or preview the current
+slide. The class selector mirrors the object-centric workflow and keeps the matching
+effect and direction choices in context. Duration is normalized to 100–60,000
+milliseconds and delay to 0–60,000 milliseconds. Invalid trigger or timing
+choices that would overlap the same object's effects in one cue are disabled or
+rejected before mutation. Each accepted edit produces one controlled `onChange`
+value and one Undo record.
+
+Deleting an object removes both animation classes; copying objects or slides
+creates fresh object and animation IDs while preserving every target mapping.
+Collaboration accepts only bounded sequences with unique animation IDs,
+available object targets, at most one effect per object and class, normalized
+timing, and no overlapping intervals for one object in one cue.
+
+### Cue and playback semantics
+
+| Trigger | Playback behavior |
+| --- | --- |
+| `on-click` | Starts a new cue. Slideshow navigation consumes this cue before it advances to the next slide. |
+| `with-previous` | Starts from the previous item's start time plus its own delay. |
+| `after-previous` | Starts from the previous item's end time plus its own delay. |
+
+If a slide begins with `with-previous` or `after-previous`, its first cue starts
+automatically when the slide opens. Entrance and exit effects for one object can
+compose inside a cue when their intervals are sequential. Audience and
+presenter modes render the same hidden, playing, and visible object state, so
+switching views does not skip an effect. In a
+`prefers-reduced-motion: reduce` environment, each cue jumps to its final
+visibility without decorative movement while order remains unchanged.
+
+### Native PPTX boundary
+
+The supported subset exports as native PresentationML timing trees with
+`presetClass="entr"` or `presetClass="exit"` and matching effect transitions.
+Import maps the timing target's `cNvPr` shape ID back to the stable browser
+element ID, and a second export and reopen retain class, effect, order, trigger,
+duration, delay, and fly direction. Text inside an animated shape remains one
+PPTX object, grouped animated objects keep valid targets, and the build list
+contains each target shape only once even when it owns both classes.
+
+Import is deliberately bounded. Emphasis effects, motion paths, unsupported
+presets, duplicate per-class effects, overlapping same-object intervals,
+missing or ambiguous targets, inconsistent in/out transitions, malformed
+timing, and namespace-spoofed timing trees do not become editable records.
+Compatibility diagnostics report each skipped or normalized item. Export writes
+the supported editable sequence; it does not claim lossless preservation of an
+unsupported source timing tree. Audio, video, rehearsal, recording,
+trigger-on-object behavior, and the broader animation catalog remain future
+work.
+
+Open **New → 进入与退出动画** in the Playground to inspect all eight effects and
+all three trigger modes in an entrance-then-exit story. Edit either class from
+the Animation tab and verify both cues in the built-in slideshow. Focused model,
+command, component, collaboration, clipboard, slideshow, native PPTX reopen,
+responsive Playwright, and local A3S Test gates keep this public contract
+synchronized with the implementation.
+
+## Large decks
+
+Decks above 60 slides window thumbnail buttons in both normal and sorter
+views. A separate intersection window mounts full slide scenes only for the
+selected slide and the viewport overscan. `Home`, `End`, arrows, deletion, and
+external selection use absolute slide positions, so every slide remains
+keyboard reachable even when its thumbnail is not mounted.
+
+The deterministic 1,000-slide fixture mounts 18 buttons and 13 complete
+thumbnail scenes at a 1440 × 1000 viewport. Master and layout metadata is
+prepared once per controlled value, while each thumbnail resolves only its own
+slide. `content-visibility: auto` is intentionally not enabled on the rail: an
+interleaved five-process benchmark showed no retained-memory benefit and made
+median object commits 31% slower. Reproduce the product and diagnostic modes
+with `bun run test:e2e:large-presentation` and
+`bun run performance:presentation`.
+
+## Real-time collaboration
+
+Pass an initialized `presentation` collaboration session to make its Yjs scene
+graph canonical. Slide, master, and layout order live separately from ID-keyed
+records; each container owns ordered, ID-keyed scene elements. Append-only
+creation claims reject conflicting same-ID records, and deletion writes a
+durable tombstone that reserves the ID. Local undo tracks only the mounted
+binding's origin, while `presence` publishes slide/object selection and renders
+remote object frames.
+
+Rust, CLI, MCP, and A3S Code use the closed
+`presentation-create-element`, `presentation-update-element`,
+`presentation-move-element`, and `presentation-delete-element` mutations.
+Creation may place a complete element after one active stable ID. Update
+compares complete expected/current/next elements and writes only changed
+top-level fields, so unrelated concurrent geometry, text, or style edits merge
+while a stale same-field edit fails without a durable update. Move compares the
+stable observed and requested predecessor IDs instead of array indexes;
+`null` means the first element-order position. It is idempotent at the requested
+destination and otherwise fails atomically on a stale source position or an
+unavailable anchor. Only the moved element's order entry changes. Delete
+requires the exact complete current element and tombstones it. Element `id` and
+`type` are immutable across all four operations. See
+[Real-time collaboration](./collaboration.mdx) for session setup and mutation
+examples.
+
+## Built-in slideshow
+
+The slideshow keeps one shared navigation strip in audience and presenter
+modes. Arrow keys and Page Up/Page Down move between slides, Space advances,
+Home and End jump to the deck boundaries, and Escape exits playback. These
+commands remain active when a slideshow control has focus, while text inputs
+and editable content retain their normal keyboard behavior.
+
+Presenter mode shows the current slide, next-slide cue, speaker notes, and a
+pauseable timer. The timer belongs to the playback session, so switching
+between audience and presenter modes does not reset elapsed time. At phone
+widths, the current slide stays full-width, the next-slide preview compacts to
+its title cue, notes remain scrollable, and the same navigation strip remains
+available.

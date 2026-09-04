@@ -365,13 +365,13 @@ bun run test:e2e:writer-document-comparison
 ```
 
 It opens the public **文档比较** template, imports a revised HTML file through
-Review, and proves that insertion, deletion, paragraph-formatting, and inserted
-block revisions appear in the normal Changes pane. The desktop scenario makes
-one real review decision; the 390 px scenario verifies the same comparison
-dialog remains usable. Both capture accessibility and empty console/page-error
-diagnostics through pinned local A3S Test 1.0.0, agent-browser 0.26.0, and
-protocol revision 15. GitHub Actions and Pages never install or invoke A3S
-Test.
+Review, and proves that insertion, deletion, paragraph-formatting, inserted
+block, and bounded same-paragraph move revisions appear in the normal Changes
+pane. The desktop scenario makes one real review decision; the 390 px scenario
+verifies the same comparison dialog remains usable. Both capture accessibility
+and empty console/page-error diagnostics through pinned local A3S Test 1.0.0,
+agent-browser 0.26.0, and protocol revision 15. GitHub Actions and Pages never
+install or invoke A3S Test.
 
 The Writer native character-scale workflow has a focused local gate:
 

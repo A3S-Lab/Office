@@ -85,7 +85,8 @@ export function useDocumentComparison({
       result.summary.insertions +
       result.summary.deletions +
       result.summary.formatting +
-      result.summary.paragraphFormatting;
+      result.summary.paragraphFormatting +
+      (result.summary.moves ?? 0);
     close();
     onApplied();
     showToast(`已生成 ${count} 项可审阅修订`, 'success');

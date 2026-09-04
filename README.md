@@ -309,6 +309,23 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.50.0` extends Writer Compare with a bounded, WPS-referenced text
+move workflow:
+
+- Deterministic lexical ranges that move within one simple paragraph or heading
+  become one paired `move` review item. Separators travel with the range, and
+  accepting, rejecting, undoing, or reopening the DOCX preserves exact source
+  and revised text.
+- The Review ribbon and Changes pane expose one localized **移动** card with
+  source/destination marks, destination navigation, updated author guidance,
+  and move-aware toast counts. Ambiguous duplicates, rich or relationship-bound
+  content, cross-paragraph moves, and over-limit inputs remain fail-closed
+  boundaries.
+- The WPS 12.0 COM/UIA probe observed `CompareDocuments` returning ordinary
+  delete/insert records for the tested reorder. A3S therefore documents its
+  paired inference as a bounded local enhancement, with no claim that WPS
+  exposed a native move type through that API.
+
 Version `0.49.0` adds bounded native Writer move revisions and hardens the
 local PDF workflow:
 

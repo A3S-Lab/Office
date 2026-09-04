@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.50.0',
+    date: '2026-09-04',
+    kind: 'new',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer Compare recognizes bounded text moves',
+      zh: 'Writer 比较识别有界文字移动',
+    },
+    summary: {
+      en: 'Same-paragraph lexical moves now appear as one deterministic review card while ambiguous or structurally rich edits remain safely explicit.',
+      zh: '同一段落中的词法移动现在显示为一张确定性审核卡，含糊或结构复杂的编辑仍保持明确安全边界。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One aligned move, one decision',
+          zh: '一个对齐移动，一项决定',
+        },
+        detail: {
+          en: 'Compare pairs a unique lexical range found once in each aligned delete/insert chunk inside a simple paragraph or heading. Separators travel with the range, so one move card accepts, rejects, undoes, and reopens exactly.',
+          zh: '比较会在简单段落或标题的对齐删除/插入块中，为各出现一次的唯一词法范围配对；分隔空白随范围移动，因此一张移动卡的接受、拒绝、撤销和重开都保持精确。',
+        },
+      },
+      {
+        title: {
+          en: 'Fail closed where identity is unclear',
+          zh: '身份不清时安全失败',
+        },
+        detail: {
+          en: 'Duplicate candidates, rich or relationship-bound runs, cross-paragraph ranges, and over-limit text remain ordinary revisions or diagnostics instead of guessed moves.',
+          zh: '重复候选、富文本或关系绑定运行、跨段范围和超出上限的文字会保留为普通修订或诊断，不会被猜测成移动。',
+        },
+      },
+      {
+        title: {
+          en: 'WPS-referenced responsive review',
+          zh: '参考 WPS 的响应式审阅',
+        },
+        detail: {
+          en: 'The installed WPS 12.0 COM/UIA probe exposed the tested reorder as delete/insert records; A3S documents that evidence and verifies the local paired enhancement in desktop and 390 px browser flows with clean diagnostics.',
+          zh: '本机 WPS 12.0 COM/UIA 探针将测试中的重排暴露为删除/插入记录；A3S 记录该证据，并在桌面和 390px 浏览器流程中验证本地成对增强与干净诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#document-compare-and-combine',
+          zh: './components/document.html#文档比较与合并',
+        },
+        label: {
+          en: 'Read the Compare guide',
+          zh: '阅读比较指南',
+        },
+      },
+      {
+        href: {
+          en: './components/collaboration.html#synchronize-move-revisions',
+          zh: './components/collaboration.html#同步移动修订',
+        },
+        label: {
+          en: 'Read the move contract',
+          zh: '阅读移动协作合同',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.50.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.50.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.49.0',
     date: '2026-09-04',
     kind: 'new',

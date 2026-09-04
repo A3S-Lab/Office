@@ -1,27 +1,37 @@
-import { createNodeFromContent, type Content, type Editor } from '@tiptap/core';
+import { type Content, createNodeFromContent, type Editor } from '@tiptap/core';
+import { closeHistory } from '@tiptap/pm/history';
 import {
   Fragment,
   type Mark as ProseMirrorMark,
   Node as ProseMirrorNode,
-  type Schema,
 } from '@tiptap/pm/model';
-import { closeHistory } from '@tiptap/pm/history';
-import {
-  boundedDocumentSequenceAlignment,
-  boundedDocumentSequenceDiff,
-} from './work-document-compare-diff';
-import {
-  boundedMetadata,
-  normalizedDate,
-  stableHash,
-  stableJson,
-  wordParagraphId,
-} from './work-document-compare-stability';
 import {
   collectDocumentChanges,
   resolveAllDocumentChanges,
   type WorkDocumentChangeIdentity,
 } from './work-document-changes';
+import {
+  boundedDocumentSequenceAlignment,
+  boundedDocumentSequenceDiff,
+} from './work-document-compare-diff';
+import {
+  type ComparisonIdentityFactory,
+  createComparisonIdentityFactory,
+  type DocumentComparisonOptions,
+  type DocumentComparisonSummary,
+  emptyComparisonSummary,
+  summarizeComparisonChanges,
+} from './work-document-compare-identities';
+import {
+  appendComparisonRevisionUnits,
+  appendRevisionUnits,
+  MAX_INFERRED_MOVE_TEXT,
+  type InlineDiffStep,
+  type InlineMoveAssignment,
+  type InlineUnit,
+  inferInlineMovePairs,
+} from './work-document-compare-moves';
+import { boundedMetadata, stableJson } from './work-document-compare-stability';
 import {
   isDocumentCharacterFormatMark,
   serializeDocumentCharacterFormatting,
@@ -33,7 +43,11 @@ import {
 } from './work-document-paragraph-format-changes';
 import type { WorkDocumentChangeKind } from './work-types';
 
-export type DocumentComparisonMode = 'compare' | 'combine';
+export type {
+  DocumentComparisonMode,
+  DocumentComparisonOptions,
+  DocumentComparisonSummary,
+} from './work-document-compare-identities';
 
 export type DocumentComparisonDiagnosticCode =
   | 'changed-complex-structure'
@@ -56,20 +70,6 @@ export interface DocumentComparisonDiagnostic {
   block?: number;
 }
 
-export interface DocumentComparisonSummary {
-  insertions: number;
-  deletions: number;
-  formatting: number;
-  paragraphFormatting: number;
-}
-
-export interface DocumentComparisonOptions {
-  mode: DocumentComparisonMode;
-  author: string;
-  date: string;
-  sourceName: string;
-}
-
 export interface DocumentComparisonApplyResult {
   status: 'applied' | 'unchanged' | 'unsupported';
   summary: DocumentComparisonSummary;
@@ -78,20 +78,6 @@ export interface DocumentComparisonApplyResult {
 
 interface DocumentComparisonPlan extends DocumentComparisonApplyResult {
   document?: ProseMirrorNode;
-}
-
-interface InlineUnit {
-  text: string;
-  marks: readonly ProseMirrorMark[];
-}
-
-interface ComparisonIdentityFactory {
-  create(
-    kind: WorkDocumentChangeKind,
-    before?: string,
-  ): WorkDocumentChangeIdentity;
-  paragraphIdentity(channel: string): { paragraphId: string; textId: string };
-  summary: DocumentComparisonSummary;
 }
 
 const MAX_COMPARISON_BLOCKS = 1_024;
@@ -183,7 +169,11 @@ function planDocumentCompare(
   if (limits) return unsupportedResult(limits);
 
   const diagnostics: DocumentComparisonDiagnostic[] = [];
-  const factory = comparisonIdentityFactory(current, revised, options);
+  const factory = createComparisonIdentityFactory(
+    comparisonSemanticSignature(current),
+    comparisonSemanticSignature(revised),
+    options,
+  );
   const comparedSections: ProseMirrorNode[] = [];
   for (
     let sectionIndex = 0;
@@ -302,7 +292,7 @@ function planDocumentCombine(
   return {
     status: 'applied',
     document,
-    summary: summarizeChanges(reviewedChanges),
+    summary: summarizeComparisonChanges(reviewedChanges),
     diagnostics: [],
   };
 }
@@ -431,8 +421,8 @@ function compareInlineContent(
   revised: ProseMirrorNode,
   factory: ComparisonIdentityFactory,
 ): Fragment | null {
-  const currentUnits = inlineUnits(current);
-  const revisedUnits = inlineUnits(revised);
+  let currentUnits = inlineUnits(current);
+  let revisedUnits = inlineUnits(revised);
   if (!currentUnits || !revisedUnits) return null;
   const diff = boundedDocumentSequenceDiff(
     currentUnits,
@@ -440,29 +430,84 @@ function compareInlineContent(
     (left, right) => left.text === right.text,
     MAX_INLINE_DIFF_CELLS,
   );
-  const changes = diff ?? [
+  let changes: InlineDiffStep[] = diff ?? [
     { kind: 'delete' as const, left: currentUnits, right: [] as [] },
     { kind: 'insert' as const, left: [] as [], right: revisedUnits },
   ];
+  const baseMovePairs = inferInlineMovePairs(changes, marksEqual);
+  // Keep the long-standing comparison boundaries for ordinary edits, but
+  // rerun the bounded diff with leading separators attached to lexical units
+  // when that exposes a real move. This mirrors Word's move range (the same
+  // leading space travels with the phrase) without changing deletion text for
+  // documents that contain no inferred move.
+  const moveCurrentUnits = inlineUnits(current, true);
+  const moveRevisedUnits = inlineUnits(revised, true);
+  if (
+    moveCurrentUnits &&
+    moveRevisedUnits &&
+    current.textContent.length + revised.textContent.length <=
+      MAX_INFERRED_MOVE_TEXT * 2
+  ) {
+    const moveDiff = boundedDocumentSequenceDiff(
+      moveCurrentUnits,
+      moveRevisedUnits,
+      (left, right) => left.text === right.text,
+      MAX_INLINE_DIFF_CELLS,
+    );
+    if (moveDiff) {
+      const moveChanges = moveDiff as InlineDiffStep[];
+      const movePairs = inferInlineMovePairs(moveChanges, marksEqual);
+      if (movePairs.length >= baseMovePairs.length && movePairs.length > 0) {
+        currentUnits = moveCurrentUnits;
+        revisedUnits = moveRevisedUnits;
+        changes = moveChanges;
+      }
+    }
+  }
+  const movePairs = inferInlineMovePairs(changes, marksEqual);
+  const movesByStep = new Map<number, InlineMoveAssignment[]>();
+  for (const pair of movePairs) {
+    const identity = factory.create('move');
+    const deletion = movesByStep.get(pair.deletion.stepIndex) ?? [];
+    deletion.push({
+      role: 'from',
+      candidate: pair.deletion,
+      identity,
+    });
+    movesByStep.set(pair.deletion.stepIndex, deletion);
+    const insertion = movesByStep.get(pair.insertion.stepIndex) ?? [];
+    insertion.push({
+      role: 'to',
+      candidate: pair.insertion,
+      identity,
+    });
+    movesByStep.set(pair.insertion.stepIndex, insertion);
+  }
   const nodes: ProseMirrorNode[] = [];
-  for (const change of changes) {
+  for (const [stepIndex, change] of changes.entries()) {
     if (change.kind === 'delete') {
-      appendRevisionUnits(
+      appendComparisonRevisionUnits(
         nodes,
         change.left,
         'deletion',
-        factory.create('deletion'),
         current.type.schema,
+        factory,
+        withoutReviewMarks,
+        appendRevisionUnits,
+        movesByStep.get(stepIndex),
       );
       continue;
     }
     if (change.kind === 'insert') {
-      appendRevisionUnits(
+      appendComparisonRevisionUnits(
         nodes,
         change.right,
         'insertion',
-        factory.create('insertion'),
         current.type.schema,
+        factory,
+        withoutReviewMarks,
+        appendRevisionUnits,
+        movesByStep.get(stepIndex),
       );
       continue;
     }
@@ -501,6 +546,7 @@ function compareInlineContent(
         'deletion',
         deletion,
         current.type.schema,
+        withoutReviewMarks,
       );
       appendRevisionUnits(
         nodes,
@@ -508,6 +554,7 @@ function compareInlineContent(
         'insertion',
         insertion,
         current.type.schema,
+        withoutReviewMarks,
       );
       formattingIdentity = null;
       formattingSignature = '';
@@ -533,7 +580,14 @@ function structuralChangeBlock(
         };
   const nodes: ProseMirrorNode[] = [];
   for (const unit of inlineUnits(block) ?? []) {
-    appendRevisionUnits(nodes, [unit], kind, identity, block.type.schema);
+    appendRevisionUnits(
+      nodes,
+      [unit],
+      kind,
+      identity,
+      block.type.schema,
+      withoutReviewMarks,
+    );
   }
   return block.type.create(
     {
@@ -547,30 +601,6 @@ function structuralChangeBlock(
     },
     Fragment.fromArray(nodes),
   );
-}
-
-function appendRevisionUnits(
-  target: ProseMirrorNode[],
-  units: readonly InlineUnit[],
-  kind: 'insertion' | 'deletion',
-  identity: WorkDocumentChangeIdentity,
-  schema: Schema,
-): void {
-  for (const unit of units) {
-    target.push(
-      schema.text(unit.text, [
-        ...withoutReviewMarks(unit.marks),
-        schema.marks.documentChange.create({
-          kind,
-          id: identity.id,
-          actorId: identity.actorId ?? '',
-          author: identity.author,
-          date: identity.date,
-          before: '',
-        }),
-      ]),
-    );
-  }
 }
 
 function comparisonMark(
@@ -726,14 +756,34 @@ function hasStructuralBlockRevisions(document: ProseMirrorNode): boolean {
   return found;
 }
 
-function inlineUnits(node: ProseMirrorNode): InlineUnit[] | null {
+function inlineUnits(
+  node: ProseMirrorNode,
+  attachLeadingWhitespace = false,
+): InlineUnit[] | null {
   if (!isSimpleTextBlock(node)) return null;
   const units: InlineUnit[] = [];
   node.forEach((child) => {
     const text = child.text ?? '';
+    let pendingWhitespace = '';
     for (const part of text.match(/\s+|[\p{L}\p{N}_]+|[^\s\p{L}\p{N}_]/gu) ??
       []) {
-      units.push({ text: part, marks: child.marks });
+      if (attachLeadingWhitespace && part.trim() === '') {
+        pendingWhitespace += part;
+        continue;
+      }
+      units.push({
+        text: attachLeadingWhitespace ? `${pendingWhitespace}${part}` : part,
+        marks: child.marks,
+        ...(attachLeadingWhitespace ? { leadingWhitespaceAttached: true } : {}),
+      });
+      pendingWhitespace = '';
+    }
+    if (attachLeadingWhitespace && pendingWhitespace) {
+      units.push({
+        text: pendingWhitespace,
+        marks: child.marks,
+        leadingWhitespaceAttached: true,
+      });
     }
   });
   return units;
@@ -868,54 +918,6 @@ function transferCombineIdentities(
       );
 }
 
-function comparisonIdentityFactory(
-  current: ProseMirrorNode,
-  revised: ProseMirrorNode,
-  options: DocumentComparisonOptions,
-): ComparisonIdentityFactory {
-  const seed = stableHash(
-    `${options.mode}\u0000${comparisonSemanticSignature(current)}\u0000${comparisonSemanticSignature(revised)}`,
-  );
-  const author = boundedMetadata(options.author, 256) || 'A3S Work user';
-  const date = normalizedDate(options.date);
-  const summary = emptyComparisonSummary();
-  let sequence = 0;
-  return {
-    summary,
-    create(kind) {
-      sequence += 1;
-      if (kind === 'insertion') summary.insertions += 1;
-      else if (kind === 'deletion') summary.deletions += 1;
-      else if (kind === 'formatting') summary.formatting += 1;
-      else summary.paragraphFormatting += 1;
-      return {
-        id: `compare-${seed}-${kind}-${sequence.toString(36)}`,
-        author,
-        date,
-      };
-    },
-    paragraphIdentity(channel) {
-      return {
-        paragraphId: wordParagraphId(`${seed}:${channel}:paragraph`),
-        textId: wordParagraphId(`${seed}:${channel}:text`),
-      };
-    },
-  };
-}
-
-function summarizeChanges(
-  changes: ReturnType<typeof collectDocumentChanges>,
-): DocumentComparisonSummary {
-  const summary = emptyComparisonSummary();
-  for (const change of changes) {
-    if (change.kind === 'insertion') summary.insertions += 1;
-    else if (change.kind === 'deletion') summary.deletions += 1;
-    else if (change.kind === 'formatting') summary.formatting += 1;
-    else summary.paragraphFormatting += 1;
-  }
-  return summary;
-}
-
 function structuralBlockDiagnostic(
   block: ProseMirrorNode,
   section: number,
@@ -944,15 +946,6 @@ function unsupportedResult(
     status: 'unsupported',
     summary: emptyComparisonSummary(),
     diagnostics: [diagnostic],
-  };
-}
-
-function emptyComparisonSummary(): DocumentComparisonSummary {
-  return {
-    deletions: 0,
-    formatting: 0,
-    insertions: 0,
-    paragraphFormatting: 0,
   };
 }
 

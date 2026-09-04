@@ -970,8 +970,21 @@ Rich runs, range markers, relationship-bound objects, malformed metadata,
 duplicate identities, and unpaired sides remain structural diagnostics. The
 bounded importer/exporter, browser/Yrs decision projection, focused Rstest,
 responsive review-panel coverage, and native DOCX reopen fixture cover the
-declared subset. Move-range inference in Compare and broader structural moves
-remain explicit follow-up work.
+declared subset.
+
+The sixty-eighth Writer milestone extends Compare with bounded same-paragraph
+move inference. A deterministic lexical range that appears once in a delete
+chunk and once in an insert chunk, with matching marks and safely carried
+separators, becomes one paired `move` identity. Accept/reject keeps the same
+atomic source/destination semantics as imported native moves; DOCX export and
+reopen retain native records. WPS 12.0 COM/UIA probing observed the tested
+reorder as ordinary delete/insert revisions, so this local inference is
+explicitly bounded and does not claim an unobserved WPS move API.
+
+Cross-paragraph, section, table, row, cell, rich/relationship-bound, duplicate,
+and complex-numbering moves remain explicit follow-up boundaries. Focused model,
+editor, DOCX, desktop/compact browser, WPS reference, and documentation tests
+cover the admitted path.
 
 ## Current Presentation Milestone
 

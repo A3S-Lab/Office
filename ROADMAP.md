@@ -79,13 +79,13 @@ collaboration transport, and AI providers.
 | Editable text boxes and bounded shape geometry | **Partial**, with isolated native WordprocessingML text boxes editable through inline/floating layout, bounded geometry, fill, outline, padding, vertical alignment, and native DOCX round trips | Mixed paragraphs, connectors, arbitrary shapes, WordArt, SmartArt, charts, and unsupported DrawingML branches remain explicit compatibility boundaries | P1 editable drawings |
 | OMML equations | **Partial**, with a large bounded structured model and strict/transitional import/export | Unbounded or unsupported OMML branches remain atomic/unsupported rather than fully editable | P0 no-clobber; P2 coverage |
 | Comments, replies, resolved state, anchors, modern IDs | **Supported** for editable review records and safe source preservation | Reactions, people sidecars, live presence, and server synchronization are absent/host-owned | P1 protocol |
-| Track changes review | **Partial**: body-text insertions/deletions plus bounded character-, paragraph-formatting, ordered-list numbering, and text-only move revisions; native `w:rPrChange`, `w:pPrChange`, `w:numberingChange`, `w:moveFrom`, and `w:moveTo` round trips; navigation, atomic accept/reject, immutable collaboration audit, and long-list virtualization | Move ranges, rich/relationship-bound moves, plus section, table, row, cell, and complex/multi-level numbering property revisions are not fully editable | P0 |
+| Track changes review | **Partial**: body-text insertions/deletions plus bounded character-, paragraph-formatting, ordered-list numbering, and text-only move revisions; native `w:rPrChange`, `w:pPrChange`, `w:numberingChange`, `w:moveFrom`, and `w:moveTo` round trips; navigation, atomic accept/reject, immutable collaboration audit, and long-list virtualization | Cross-paragraph/range moves, rich/relationship-bound moves, plus section, table, row, cell, and complex/multi-level numbering property revisions are not fully editable | P0 |
 | Bookmarks, links, captions, cross-references, citations, bibliography, footnotes/endnotes | **Partial**, with native identity and editable common paths | Wider field instructions, tables of authorities/figures, citation styles, and reference dialogs remain incomplete | P1 |
 | Table of contents and outline authoring | **Supported**: shared semantic-heading/native-outline model plus typed insert/customize/refresh, levels 1–9, hyperlinks, live page numbers, alignment, four leader styles, stable paragraph-identity targets, one-step Undo, and native DOCX `TOC` round trips | Custom style-to-level mappings, tables of figures, and deeper TOC style formatting remain open | Maintain / P1 fidelity |
 | Native index authoring | **Supported**: primary/secondary `XE` entries, cross-references, bold/italic page intent, stable marker targets, merged page numbers, typed insert/customize/refresh, 1–4 columns, indented/run-in layouts, four leader styles, one-step Undo, and native DOCX `XE`/`INDEX` round trips | Entry ranges, custom index types, letter-heading formats, authorities, and locale-specific collation controls remain open | Maintain / P1 fidelity |
 | Fields | **Partial**: PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, TIME, NUMWORDS, NUMCHARS, safe REF paths, and bookmark-backed PAGEREF with bounded switch diagnostics | Broader Word field grammar, nested fields, switches outside the deterministic common subset, mail fields, document properties, and tables of figures/authorities remain incomplete | P1/P2 |
 | Mail merge | **Gap** | No data-source mapping, recipient filtering, preview, or batch generation | P2 |
-| Compare/combine documents | **Partial**: same-layout paragraphs/headings compare into deterministic insertion, deletion, character-formatting, and paragraph-formatting revisions; reviewed-copy combine requires an exact reject-all baseline match | Changed complex structures, native paragraph-mark revision fidelity, move-range generation, layout changes, and multi-copy structural conflicts remain explicit fail-closed boundaries | P1 |
+| Compare/combine documents | **Partial**: same-layout paragraphs/headings compare into deterministic insertion, deletion, character-formatting, paragraph-formatting, and bounded same-paragraph text-move revisions; reviewed-copy combine requires an exact reject-all baseline match | Changed complex structures, native paragraph-mark revision fidelity, cross-paragraph/range move generation, layout changes, and multi-copy structural conflicts remain explicit fail-closed boundaries | P1 |
 | Content controls and forms | **Partial**: inline plain-text and rich-text controls are editable with aliases, tags, bounded locks, multiline text, appearance/color, and direct-paragraph DOCX `w:sdt` round trips; static controls in note/comment preservation remain separately bounded | Data binding, repeating sections, date/dropdown/picture/form controls, block controls, nested or relationship-bound semantics, placeholders, and active behavior are intentionally limited | P1/P2 |
 | Spelling, grammar, language, translation | **Partial**: native Latin/East Asian/bidi `w:lang` metadata, explicit `w:noProof` authoring and round trips, browser spellcheck, and host actions | No suite-grade proofing dictionaries, grammar engine, or bundled translation service | Host/provider-owned; P2 adapter |
 | Find, navigation, physical thumbnails, long-document review | **Supported** with transferable Worker import, bounded auxiliary-pane virtualization, model-level text/table-row NodeView windows for eligible structurally plain large DOCX files, and model-boundary keyboard navigation | Rich-feature giant DOCX fallback paths still need the same bounded body rendering and broader performance fixtures | P0 |
@@ -178,8 +178,8 @@ a phase exits only when its evidence is complete.
   mixed custom-size and orientation transitions now paginate in the shared
   JS/Rust kernel, render as variable-size live sheets, and retain exact
   per-page geometry in thumbnails and PDF capture.
-- Treat bounded character, paragraph-formatting, ordered-list numbering, and
-  text-only move revisions as
+- Treat bounded character, paragraph-formatting, ordered-list numbering,
+  imported text-only move revisions, and same-paragraph Compare move inference as
   completed revision slices:
   retain accept/reject inversion, exact old-property snapshots, atomic
   multi-paragraph decisions, strict/transitional `w:rPrChange` and
@@ -188,8 +188,10 @@ a phase exits only when its evidence is complete.
   as permanent gates. Move pairs additionally require strict/transitional
   `w:moveFrom`/`w:moveTo` identity matching, atomic editor decisions, native
   export/reopen, immutable collaboration audit, and a diagnosed rich/range/
-  relationship-bound fallback. Expand next to section, table, row, cell,
-  complex numbering, and move-range generation.
+  relationship-bound fallback. Compare inference remains limited to one simple
+  paragraph or heading with deterministic unique lexical matches; expand next to
+  cross-paragraph/section, table, row, cell, complex numbering, and broader
+  move-range generation.
 - Treat native all-caps and small-caps as a completed character-effect slice:
   retain one mutually exclusive typed state, semantic source text, standard
   shortcuts, body/header/footer parity, formatting revision and Format Painter
