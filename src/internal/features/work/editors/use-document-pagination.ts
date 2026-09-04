@@ -69,9 +69,11 @@ export interface DocumentPaginationPageDescriptorDerivation {
 }
 
 export interface UseDocumentPaginationOptions {
+  compositionRevision?: number;
   editor: Editor | null;
   documentRevision: number;
   enabled: boolean;
+  isComposing?: () => boolean;
   layoutKey: string;
   page: OfficeKernelPageMetrics;
   selectionVersion: number;
@@ -91,10 +93,16 @@ export interface UseDocumentPaginationValue {
 
 const MAX_DOCUMENT_BLOCK_RESIZE_OBSERVATIONS = 4_096;
 
+function neverComposing(): boolean {
+  return false;
+}
+
 export function useDocumentPagination({
+  compositionRevision = 0,
   editor,
   documentRevision,
   enabled,
+  isComposing = neverComposing,
   layoutKey,
   page,
   selectionVersion,
@@ -276,6 +284,10 @@ export function useDocumentPagination({
     };
 
     const run = async (signal: AbortSignal) => {
+      if (isComposing()) {
+        measurementRange.ensureDirty();
+        return;
+      }
       stopObservingBlocks();
       const nextRevision = ++revision.current;
       editor.commands.clearDocumentPagination(nextRevision);
@@ -335,7 +347,8 @@ export function useDocumentPagination({
                 disposed ||
                 signal.aborted ||
                 nextRevision !== revision.current ||
-                editor.isDestroyed
+                editor.isDestroyed ||
+                isComposing()
               ) {
                 return;
               }
@@ -359,6 +372,7 @@ export function useDocumentPagination({
           } catch (error) {
             if (
               signal.aborted ||
+              isComposing() ||
               (error instanceof DOMException && error.name === 'AbortError')
             ) {
               return;
@@ -394,6 +408,15 @@ export function useDocumentPagination({
           1_000_000,
           { signal },
         );
+        if (
+          disposed ||
+          signal.aborted ||
+          nextRevision !== revision.current ||
+          editor.isDestroyed ||
+          isComposing()
+        ) {
+          return;
+        }
         measurementCache.current = snapshot;
         editorDom.dataset.paginationBlocks = String(snapshot.blocks.length);
         editorDom.dataset.paginationFlows = String(
@@ -450,7 +473,8 @@ export function useDocumentPagination({
             disposed ||
             signal.aborted ||
             nextRevision !== revision.current ||
-            editor.isDestroyed
+            editor.isDestroyed ||
+            isComposing()
           ) {
             return;
           }
@@ -542,6 +566,7 @@ export function useDocumentPagination({
           if (
             disposed ||
             signal.aborted ||
+            isComposing() ||
             (error instanceof DOMException && error.name === 'AbortError')
           ) {
             return;
@@ -570,7 +595,7 @@ export function useDocumentPagination({
         updateDiagnostic('coalescedRequests', 'paginationCoalescedRequests'),
       onError: (error) => {
         measurementRange.restoreActive();
-        if (disposed || editor.isDestroyed) return;
+        if (disposed || editor.isDestroyed || isComposing()) return;
         editorDom.dataset.paginationState = 'error';
         editorDom.dataset.paginationError =
           error instanceof Error
@@ -590,6 +615,7 @@ export function useDocumentPagination({
       run,
     });
     const schedule = (invalidateActive = false) => {
+      if (isComposing()) return;
       coordinator.request({ invalidateActive });
     };
     const markDirty = (position: number) => {
@@ -609,6 +635,16 @@ export function useDocumentPagination({
       }
       updateDiagnostic('documentTriggers', 'paginationDocumentTriggers');
       markDirty(earliestChangedPosition(transaction));
+      schedule(true);
+    };
+    const handleCompositionStart = () => {
+      measurementRange.ensureDirty();
+      coordinator.request({ invalidateActive: true });
+    };
+    const handleCompositionEnd = () => {
+      // ControlledEditorComposition remains blocking until it has consumed a
+      // late WebKit commit. compositionRevision restarts this effect after the
+      // owner has normalized and published that transaction.
       schedule(true);
     };
     const handleLoadedAsset = (event: Event) => {
@@ -634,6 +670,8 @@ export function useDocumentPagination({
     };
     const fonts = document.fonts;
     editor.on('update', handleDocumentUpdate);
+    editorDom.addEventListener('compositionstart', handleCompositionStart);
+    editorDom.addEventListener('compositionend', handleCompositionEnd);
     editorDom.addEventListener('load', handleLoadedAsset, true);
     fonts?.addEventListener('loadingdone', handleFontLoading);
     window.addEventListener('resize', handleWindowResize);
@@ -643,6 +681,8 @@ export function useDocumentPagination({
       disposed = true;
       stopObservingBlocks();
       editor.off('update', handleDocumentUpdate);
+      editorDom.removeEventListener('compositionstart', handleCompositionStart);
+      editorDom.removeEventListener('compositionend', handleCompositionEnd);
       editorDom.removeEventListener('load', handleLoadedAsset, true);
       fonts?.removeEventListener('loadingdone', handleFontLoading);
       window.removeEventListener('resize', handleWindowResize);
@@ -650,6 +690,7 @@ export function useDocumentPagination({
     };
   }, [
     client,
+    compositionRevision,
     documentRevision,
     editor,
     editorMounted,
@@ -659,6 +700,7 @@ export function useDocumentPagination({
     layoutFonts,
     loadedLayoutFontKey,
     loadedLayoutFontIds,
+    isComposing,
     pageKey,
   ]);
 
