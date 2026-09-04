@@ -7,7 +7,13 @@ const chromiumExecutablePath =
 
 export default defineConfig({
   testDir: './visual-tests',
-  testIgnore: '**/*.webkit.spec.ts',
+  // Test Kit needs the development bridge. The regular visual gate runs
+  // against the production preview, where that bridge is intentionally a
+  // no-op; keep the bridge suite on playwright.testkit.config.ts instead.
+  testIgnore: [
+    '**/*.webkit.spec.ts',
+    '**/office-testkit-ui.functional.spec.ts',
+  ],
   timeout: 60_000,
   outputDir: './test-results/visual',
   fullyParallel: false,
