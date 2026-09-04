@@ -21,6 +21,8 @@ export type InlineDiffStep =
   | { kind: 'insert'; left: []; right: InlineUnit[] };
 
 export interface InlineMoveCandidate {
+  /** Stable comparison scope (for example, the containing paragraph). */
+  scope?: string;
   stepIndex: number;
   kind: 'delete' | 'insert';
   units: InlineUnit[];
@@ -34,6 +36,11 @@ export interface InlineMoveCandidate {
 export interface InlineMovePair {
   deletion: InlineMoveCandidate;
   insertion: InlineMoveCandidate;
+}
+
+export interface InlineMoveComparison {
+  scope: string;
+  changes: readonly InlineDiffStep[];
 }
 
 export interface InlineMoveAssignment {
@@ -93,49 +100,75 @@ export function appendRevisionUnits(
 }
 
 /**
- * Pairs only deterministic same-text ranges inside one block. Duplicate
- * candidates and ranges whose marks differ are deliberately left as ordinary
- * insertions/deletions so Compare never guesses at an ambiguous move.
+ * Pairs deterministic same-text ranges. A comparison may contain several
+ * simple blocks, which lets Compare represent a bounded move between
+ * paragraphs while still rejecting duplicate or mark-mismatched candidates.
  */
 export function inferInlineMovePairs(
   changes: readonly InlineDiffStep[],
   marksEqual: MarksEqual,
 ): InlineMovePair[] {
+  return inferInlineMovePairsAcrossScopes([{ scope: '', changes }], marksEqual);
+}
+
+/**
+ * Infers moves across a bounded set of simple-block diffs. Candidate scopes
+ * are retained on each side so callers can put the resulting marks back into
+ * the right paragraph without flattening the document tree.
+ */
+export function inferInlineMovePairsAcrossScopes(
+  comparisons: readonly InlineMoveComparison[],
+  marksEqual: MarksEqual,
+): InlineMovePair[] {
   const fullCandidates: InlineMoveCandidate[] = [];
-  for (const [stepIndex, change] of changes.entries()) {
-    if (change.kind === 'equal') continue;
-    const units = change.kind === 'delete' ? change.left : change.right;
-    const candidate = inlineMoveCandidate(stepIndex, change.kind, units);
-    if (candidate) fullCandidates.push(candidate);
+  for (const comparison of comparisons) {
+    for (const [stepIndex, change] of comparison.changes.entries()) {
+      if (change.kind === 'equal') continue;
+      const units = change.kind === 'delete' ? change.left : change.right;
+      const candidate = inlineMoveCandidate(
+        stepIndex,
+        change.kind,
+        units,
+        comparison.scope,
+      );
+      if (candidate) fullCandidates.push(candidate);
+    }
   }
   const fullPairs = pairInlineMoveCandidates(fullCandidates, marksEqual);
-  const consumedSteps = new Set<number>();
+  const consumedSteps = new Set<string>();
   for (const pair of fullPairs) {
-    consumedSteps.add(pair.deletion.stepIndex);
-    consumedSteps.add(pair.insertion.stepIndex);
+    consumedSteps.add(moveStepKey(pair.deletion));
+    consumedSteps.add(moveStepKey(pair.insertion));
   }
 
   // A sequence diff can coalesce adjacent reordered words into one delete and
   // one insert chunk. Pair unique lexical units in that case; duplicate words
   // remain ordinary revisions instead of being assigned to an arbitrary side.
   const tokenCandidates: InlineMoveCandidate[] = [];
-  for (const [stepIndex, change] of changes.entries()) {
-    if (change.kind === 'equal' || consumedSteps.has(stepIndex)) continue;
-    const units = change.kind === 'delete' ? change.left : change.right;
-    tokenCandidates.push(
-      ...inlineMoveTokenCandidates(stepIndex, change.kind, units),
-    );
+  for (const comparison of comparisons) {
+    for (const [stepIndex, change] of comparison.changes.entries()) {
+      if (
+        change.kind === 'equal' ||
+        consumedSteps.has(moveStepKey({ scope: comparison.scope, stepIndex }))
+      ) {
+        continue;
+      }
+      const units = change.kind === 'delete' ? change.left : change.right;
+      tokenCandidates.push(
+        ...inlineMoveTokenCandidates(
+          stepIndex,
+          change.kind,
+          units,
+          comparison.scope,
+        ),
+      );
+    }
   }
   return [
     ...fullPairs,
     ...pairInlineMoveCandidates(tokenCandidates, marksEqual),
   ]
-    .sort(
-      (left, right) =>
-        left.deletion.stepIndex - right.deletion.stepIndex ||
-        left.insertion.stepIndex - right.insertion.stepIndex ||
-        left.deletion.start - right.deletion.start,
-    )
+    .sort(compareMovePairs)
     .slice(0, MAX_INFERRED_MOVES);
 }
 
@@ -268,11 +301,7 @@ function pairInlineMoveCandidates(
       deletion: deletion[0] as InlineMoveCandidate,
       insertion: insertion[0] as InlineMoveCandidate,
     }))
-    .sort(
-      (left, right) =>
-        left.deletion.stepIndex - right.deletion.stepIndex ||
-        left.insertion.stepIndex - right.insertion.stepIndex,
-    )
+    .sort(compareMovePairs)
     .slice(0, MAX_INFERRED_MOVES);
 }
 
@@ -280,6 +309,7 @@ function inlineMoveCandidate(
   stepIndex: number,
   kind: 'delete' | 'insert',
   units: InlineUnit[],
+  scope = '',
 ): InlineMoveCandidate | null {
   let start = 0;
   while (start < units.length && isWhitespaceUnit(units[start] as InlineUnit)) {
@@ -315,6 +345,7 @@ function inlineMoveCandidate(
     return null;
   }
   return {
+    ...(scope ? { scope } : {}),
     stepIndex,
     kind,
     units,
@@ -330,6 +361,7 @@ function inlineMoveTokenCandidates(
   stepIndex: number,
   kind: 'delete' | 'insert',
   units: InlineUnit[],
+  scope = '',
 ): InlineMoveCandidate[] {
   const candidates: InlineMoveCandidate[] = [];
   for (const [index, unit] of units.entries()) {
@@ -343,6 +375,7 @@ function inlineMoveTokenCandidates(
       continue;
     }
     candidates.push({
+      ...(scope ? { scope } : {}),
       stepIndex,
       kind,
       units,
@@ -354,6 +387,22 @@ function inlineMoveTokenCandidates(
     });
   }
   return candidates;
+}
+
+function moveStepKey(
+  candidate: Pick<InlineMoveCandidate, 'scope' | 'stepIndex'>,
+): string {
+  return `${candidate.scope ?? ''}\u0000${candidate.stepIndex}`;
+}
+
+function compareMovePairs(left: InlineMovePair, right: InlineMovePair): number {
+  return (
+    (left.deletion.scope ?? '').localeCompare(right.deletion.scope ?? '') ||
+    left.deletion.stepIndex - right.deletion.stepIndex ||
+    (left.insertion.scope ?? '').localeCompare(right.insertion.scope ?? '') ||
+    left.insertion.stepIndex - right.insertion.stepIndex ||
+    left.deletion.start - right.deletion.start
+  );
 }
 
 function inlineMoveCandidatesEqual(

@@ -21,8 +21,8 @@ import {
   VerticalAlignTable,
   WidthType,
 } from 'docx';
-import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
+import JSZip from 'jszip';
 import * as XLSX from 'xlsx';
 
 const fixtureDirectory = path.resolve(
@@ -38,6 +38,10 @@ const spreadsheet1904DateSystemPath = path.join(
 const documentComparisonPath = path.join(
   fixtureDirectory,
   'word-document-comparison-revised.html',
+);
+const crossParagraphDocumentComparisonPath = path.join(
+  fixtureDirectory,
+  'word-document-comparison-cross-paragraph-revised.html',
 );
 const longDocumentPath = path.join(
   fixtureDirectory,
@@ -99,6 +103,19 @@ await Bun.write(
     '<p>发布前必须逐项接受或拒绝所有确定性修订。</p>',
   ].join(''),
 );
+await Bun.write(
+  crossParagraphDocumentComparisonPath,
+  [
+    '<h1>发布审阅基线</h1>',
+    '<p><strong>基线版本：</strong>1.0</p>',
+    '<h2>比较步骤</h2>',
+    '<p>打开“审阅”，选择“比较文档”，再导入 TXT 修订版本。</p>',
+    '<h2>审阅范围</h2>',
+    '<p>当前基线包含架构说明与发布说明。</p>',
+    '<h2>决策要求</h2>',
+    '<p>发布前必须逐项接受 DOCX、HTML 或拒绝所有生成的修订。</p>',
+  ].join(''),
+);
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
 await Bun.write(
   spreadsheet1904DateSystemPath,
@@ -144,6 +161,7 @@ await Bun.write(
 console.log(`Created ${pdfPath}`);
 console.log(`Created ${spreadsheet1904DateSystemPath}`);
 console.log(`Created ${documentComparisonPath}`);
+console.log(`Created ${crossParagraphDocumentComparisonPath}`);
 console.log(`Created ${longDocumentPath}`);
 console.log(`Created ${longRevisionDocumentPath}`);
 console.log(`Created ${longCommentDocumentPath}`);

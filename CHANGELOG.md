@@ -4,6 +4,25 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.51.0 - 2026-09-04
+
+- Extended bounded Writer Compare move inference across simple text paragraphs
+  and headings within one document section. A unique lexical range that appears
+  once in an aligned delete block and once in an aligned insert block now forms
+  one paired `move` review item, carrying its separators with the source and
+  destination marks. Accept, reject, Undo, native DOCX export, and reopen keep
+  the two sides atomic and reconstruct the exact original or revised text.
+- Kept the comparison planner fail-closed for duplicate or mark-mismatched
+  candidates, section-boundary moves, rich or relationship-bound content,
+  tables, and over-limit inputs. Those cases remain deterministic ordinary
+  revisions or explicit diagnostics instead of guessed move identities.
+- Added controlled editor coverage plus desktop and 390 px browser flows for
+  cross-paragraph review cards, containment, focus, accessibility, clean
+  diagnostics, atomic rejection, and native DOCX round trips. The WPS 12.0
+  COM/UIA reference probe still observes ordinary delete/insert records for the
+  tested reorder; this release documents the paired inference as a bounded A3S
+  enhancement without claiming a native WPS move type.
+
 ## 0.50.0 - 2026-09-04
 
 - Added bounded same-paragraph move inference to Writer Compare. Deterministic

@@ -25,11 +25,13 @@ import {
 import {
   appendComparisonRevisionUnits,
   appendRevisionUnits,
-  MAX_INFERRED_MOVE_TEXT,
   type InlineDiffStep,
   type InlineMoveAssignment,
+  type InlineMovePair,
   type InlineUnit,
   inferInlineMovePairs,
+  inferInlineMovePairsAcrossScopes,
+  MAX_INFERRED_MOVE_TEXT,
 } from './work-document-compare-moves';
 import { boundedMetadata, stableJson } from './work-document-compare-stability';
 import {
@@ -93,6 +95,28 @@ const BLOCK_CHANGE_ATTRIBUTE_NAMES = [
 ] as const;
 const PARAGRAPH_IDENTITY_ATTRIBUTE_NAMES = ['paragraphId', 'textId'] as const;
 const REVIEW_ONLY_MARK_NAMES = new Set(['documentChange', 'documentComment']);
+
+interface InlineComparisonVariant {
+  currentUnits: InlineUnit[];
+  revisedUnits: InlineUnit[];
+  changes: InlineDiffStep[];
+}
+
+interface PreparedInlineComparison {
+  variant: InlineComparisonVariant;
+  attached?: InlineComparisonVariant;
+}
+
+interface PreparedPairedBlock {
+  current: ProseMirrorNode;
+  revised: ProseMirrorNode;
+  scope: string;
+  inline: PreparedInlineComparison;
+}
+
+type ComparisonBlockSlot =
+  | { kind: 'node'; node: ProseMirrorNode }
+  | { kind: 'paired'; comparison: PreparedPairedBlock };
 
 export function applyDocumentComparison(
   editor: Editor,
@@ -321,10 +345,10 @@ function compareSectionBlocks(
     });
     return null;
   }
-  const result: ProseMirrorNode[] = [];
+  const slots: ComparisonBlockSlot[] = [];
   for (const [blockIndex, step] of alignment.entries()) {
     if (step.kind === 'equal') {
-      result.push(step.left);
+      slots.push({ kind: 'node', node: step.left });
       continue;
     }
     if (step.kind === 'delete') {
@@ -334,7 +358,7 @@ function compareSectionBlocks(
         factory,
         `section-${sectionIndex}-delete-${blockIndex}`,
       );
-      if (deleted) result.push(deleted);
+      if (deleted) slots.push({ kind: 'node', node: deleted });
       else
         diagnostics.push(
           structuralBlockDiagnostic(step.left, sectionIndex, blockIndex),
@@ -348,16 +372,20 @@ function compareSectionBlocks(
         factory,
         `section-${sectionIndex}-insert-${blockIndex}`,
       );
-      if (inserted) result.push(inserted);
+      if (inserted) slots.push({ kind: 'node', node: inserted });
       else
         diagnostics.push(
           structuralBlockDiagnostic(step.right, sectionIndex, blockIndex),
         );
       continue;
     }
-    const compared = comparePairedBlocks(step.left, step.right, factory);
-    if (compared) {
-      result.push(compared);
+    const prepared = preparePairedBlock(
+      step.left,
+      step.right,
+      `section-${sectionIndex}-block-${blockIndex}`,
+    );
+    if (prepared) {
+      slots.push({ kind: 'paired', comparison: prepared });
       continue;
     }
     const deleted = structuralChangeBlock(
@@ -372,20 +400,102 @@ function compareSectionBlocks(
       factory,
       `section-${sectionIndex}-replace-insert-${blockIndex}`,
     );
-    if (deleted && inserted) result.push(deleted, inserted);
-    else
+    if (deleted) slots.push({ kind: 'node', node: deleted });
+    if (inserted) slots.push({ kind: 'node', node: inserted });
+    if (!deleted || !inserted)
       diagnostics.push(
         structuralBlockDiagnostic(step.left, sectionIndex, blockIndex),
       );
   }
-  return result;
+
+  const pairedSlots = slots.filter(
+    (slot): slot is Extract<ComparisonBlockSlot, { kind: 'paired' }> =>
+      slot.kind === 'paired',
+  );
+  const initialComparisons = pairedSlots.map(({ comparison }) => ({
+    scope: comparison.scope,
+    changes: comparison.inline.variant.changes,
+  }));
+  const initialMovePairs = inferInlineMovePairsAcrossScopes(
+    initialComparisons,
+    marksEqual,
+  );
+  const attachedComparisons = pairedSlots.map(({ comparison }) => ({
+    scope: comparison.scope,
+    changes:
+      comparison.inline.attached?.changes ?? comparison.inline.variant.changes,
+  }));
+  const attachedMovePairs = inferInlineMovePairsAcrossScopes(
+    attachedComparisons,
+    marksEqual,
+  );
+  const pairedByScope = new Map(
+    pairedSlots.map((slot) => [slot.comparison.scope, slot.comparison]),
+  );
+  const attachedScopes = new Set<string>();
+  for (const pair of [...initialMovePairs, ...attachedMovePairs]) {
+    const deletionScope = pair.deletion.scope ?? '';
+    const insertionScope = pair.insertion.scope ?? '';
+    if (deletionScope === insertionScope) continue;
+    const deletionBlock = pairedByScope.get(deletionScope);
+    const insertionBlock = pairedByScope.get(insertionScope);
+    if (deletionBlock?.inline.attached && insertionBlock?.inline.attached) {
+      attachedScopes.add(deletionScope);
+      attachedScopes.add(insertionScope);
+    }
+  }
+  const selectedComparisons = pairedSlots.map(({ comparison }) => ({
+    scope: comparison.scope,
+    changes:
+      (attachedScopes.has(comparison.scope)
+        ? comparison.inline.attached
+        : comparison.inline.variant
+      )?.changes ?? comparison.inline.variant.changes,
+  }));
+  const movePairs = inferInlineMovePairsAcrossScopes(
+    selectedComparisons,
+    marksEqual,
+  );
+  const useAttachedVariants =
+    attachedScopes.size > 0 && movePairs.length >= initialMovePairs.length;
+  const movesByScope = new Map<string, InlineMoveAssignment[]>();
+  for (const pair of useAttachedVariants ? movePairs : initialMovePairs) {
+    const identity = factory.create('move');
+    appendMoveAssignment(movesByScope, pair.deletion, 'from', identity);
+    appendMoveAssignment(movesByScope, pair.insertion, 'to', identity);
+  }
+
+  return slots.flatMap((slot) => {
+    if (slot.kind === 'node') return [slot.node];
+    const compared = renderPairedBlock(
+      slot.comparison,
+      factory,
+      movesByScope.get(slot.comparison.scope),
+      useAttachedVariants && attachedScopes.has(slot.comparison.scope)
+        ? (slot.comparison.inline.attached ?? slot.comparison.inline.variant)
+        : slot.comparison.inline.variant,
+    );
+    return compared ? [compared] : [];
+  });
 }
 
-function comparePairedBlocks(
+function appendMoveAssignment(
+  target: Map<string, InlineMoveAssignment[]>,
+  candidate: InlineMovePair['deletion'],
+  role: InlineMoveAssignment['role'],
+  identity: WorkDocumentChangeIdentity,
+): void {
+  const scope = candidate.scope ?? '';
+  const assignments = target.get(scope) ?? [];
+  assignments.push({ role, candidate, identity });
+  target.set(scope, assignments);
+}
+
+function preparePairedBlock(
   current: ProseMirrorNode,
   revised: ProseMirrorNode,
-  factory: ComparisonIdentityFactory,
-): ProseMirrorNode | null {
+  scope: string,
+): PreparedPairedBlock | null {
   if (!isSimpleTextBlock(current) || !isSimpleTextBlock(revised)) return null;
   if (
     current.type !== revised.type ||
@@ -393,7 +503,18 @@ function comparePairedBlocks(
   ) {
     return null;
   }
-  const inline = compareInlineContent(current, revised, factory);
+  const comparison = prepareInlineComparison(current, revised);
+  return comparison ? { current, revised, scope, inline: comparison } : null;
+}
+
+function renderPairedBlock(
+  comparison: PreparedPairedBlock,
+  factory: ComparisonIdentityFactory,
+  moves: readonly InlineMoveAssignment[] | undefined,
+  variant: InlineComparisonVariant,
+): ProseMirrorNode | null {
+  const { current, revised } = comparison;
+  const inline = renderInlineComparison(current, variant, factory, moves);
   if (!inline) return null;
   const before = serializeDocumentParagraphFormatting(current.attrs);
   const after = serializeDocumentParagraphFormatting(revised.attrs);
@@ -416,25 +537,29 @@ function comparePairedBlocks(
   return current.type.create(attributes, inline);
 }
 
-function compareInlineContent(
+function prepareInlineComparison(
   current: ProseMirrorNode,
   revised: ProseMirrorNode,
-  factory: ComparisonIdentityFactory,
-): Fragment | null {
-  let currentUnits = inlineUnits(current);
-  let revisedUnits = inlineUnits(revised);
-  if (!currentUnits || !revisedUnits) return null;
+): PreparedInlineComparison | null {
+  const baseCurrentUnits = inlineUnits(current);
+  const baseRevisedUnits = inlineUnits(revised);
+  if (!baseCurrentUnits || !baseRevisedUnits) return null;
   const diff = boundedDocumentSequenceDiff(
-    currentUnits,
-    revisedUnits,
+    baseCurrentUnits,
+    baseRevisedUnits,
     (left, right) => left.text === right.text,
     MAX_INLINE_DIFF_CELLS,
   );
-  let changes: InlineDiffStep[] = diff ?? [
-    { kind: 'delete' as const, left: currentUnits, right: [] as [] },
-    { kind: 'insert' as const, left: [] as [], right: revisedUnits },
-  ];
-  const baseMovePairs = inferInlineMovePairs(changes, marksEqual);
+  const baseVariant: InlineComparisonVariant = {
+    currentUnits: baseCurrentUnits,
+    revisedUnits: baseRevisedUnits,
+    changes: diff ?? [
+      { kind: 'delete' as const, left: baseCurrentUnits, right: [] as [] },
+      { kind: 'insert' as const, left: [] as [], right: baseRevisedUnits },
+    ],
+  };
+  const variant = baseVariant;
+  const baseMovePairs = inferInlineMovePairs(variant.changes, marksEqual);
   // Keep the long-standing comparison boundaries for ordinary edits, but
   // rerun the bounded diff with leading separators attached to lexical units
   // when that exposes a real move. This mirrors Word's move range (the same
@@ -456,33 +581,28 @@ function compareInlineContent(
     );
     if (moveDiff) {
       const moveChanges = moveDiff as InlineDiffStep[];
+      const moveVariant: InlineComparisonVariant = {
+        currentUnits: moveCurrentUnits,
+        revisedUnits: moveRevisedUnits,
+        changes: moveChanges,
+      };
       const movePairs = inferInlineMovePairs(moveChanges, marksEqual);
       if (movePairs.length >= baseMovePairs.length && movePairs.length > 0) {
-        currentUnits = moveCurrentUnits;
-        revisedUnits = moveRevisedUnits;
-        changes = moveChanges;
+        return { variant: moveVariant, attached: moveVariant };
       }
+      return { variant, attached: moveVariant };
     }
   }
-  const movePairs = inferInlineMovePairs(changes, marksEqual);
-  const movesByStep = new Map<number, InlineMoveAssignment[]>();
-  for (const pair of movePairs) {
-    const identity = factory.create('move');
-    const deletion = movesByStep.get(pair.deletion.stepIndex) ?? [];
-    deletion.push({
-      role: 'from',
-      candidate: pair.deletion,
-      identity,
-    });
-    movesByStep.set(pair.deletion.stepIndex, deletion);
-    const insertion = movesByStep.get(pair.insertion.stepIndex) ?? [];
-    insertion.push({
-      role: 'to',
-      candidate: pair.insertion,
-      identity,
-    });
-    movesByStep.set(pair.insertion.stepIndex, insertion);
-  }
+  return { variant };
+}
+
+function renderInlineComparison(
+  current: ProseMirrorNode,
+  variant: InlineComparisonVariant,
+  factory: ComparisonIdentityFactory,
+  moves: readonly InlineMoveAssignment[] | undefined,
+): Fragment | null {
+  const { changes } = variant;
   const nodes: ProseMirrorNode[] = [];
   for (const [stepIndex, change] of changes.entries()) {
     if (change.kind === 'delete') {
@@ -494,7 +614,7 @@ function compareInlineContent(
         factory,
         withoutReviewMarks,
         appendRevisionUnits,
-        movesByStep.get(stepIndex),
+        moves?.filter((move) => move.candidate.stepIndex === stepIndex),
       );
       continue;
     }
@@ -507,7 +627,7 @@ function compareInlineContent(
         factory,
         withoutReviewMarks,
         appendRevisionUnits,
-        movesByStep.get(stepIndex),
+        moves?.filter((move) => move.candidate.stepIndex === stepIndex),
       );
       continue;
     }

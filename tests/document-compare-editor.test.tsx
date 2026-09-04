@@ -186,3 +186,84 @@ test('surfaces a compared text move as one review card and resolves both sides',
   );
   expect(editor).toHaveTextContent('Alpha gamma beta.');
 });
+
+test('surfaces a cross-paragraph move as one review card with atomic rejection', async () => {
+  const initial: DocumentContent = {
+    type: 'document',
+    pageSize: 'a4',
+    html: '<p>Intro move phrase remains.</p><p>Destination tail remains.</p>',
+  };
+  function ControlledCrossParagraphEditor() {
+    const [content, setContent] = useState(initial);
+    return (
+      <DocumentEditor
+        artifactId="document-comparison-cross-paragraph-integration"
+        content={content}
+        onChange={setContent}
+        theme="light"
+      />
+    );
+  }
+  render(<ControlledCrossParagraphEditor />);
+
+  const editor = await screen.findByRole('textbox', { name: '文档正文' });
+  await waitFor(() =>
+    expect(editor).toHaveAttribute('data-document-editor-mount-ms'),
+  );
+  const reviewTab = screen.getByRole('tab', { name: '审阅' });
+  fireEvent.click(reviewTab);
+  const compareButton = await screen.findByRole('button', {
+    name: '比较文档',
+  });
+  compareButton.focus();
+  fireEvent.click(compareButton);
+
+  const dialog = await screen.findByRole('dialog', {
+    name: '比较与合并文档',
+  });
+  fireEvent.change(within(dialog).getByLabelText('选择修订版本文件'), {
+    target: {
+      files: [
+        new File(
+          ['<p>Intro remains.</p><p>Destination move phrase tail remains.</p>'],
+          'cross-paragraph-move-review.html',
+          { type: 'text/html' },
+        ),
+      ],
+    },
+  });
+  fireEvent.change(
+    within(dialog).getByRole('textbox', {
+      name: '比较结果修订者名称',
+    }),
+    { target: { value: 'Cross Paragraph Reviewer' } },
+  );
+  fireEvent.click(within(dialog).getByRole('button', { name: '生成比较结果' }));
+
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '比较与合并文档' })).toBeNull(),
+  );
+  const revisionList = screen.getByRole('list', { name: '待处理修订' });
+  expect(revisionList).toHaveAttribute('data-document-change-count', '1');
+  const moveCard = revisionList.querySelector(
+    '.work-document-change-item.move',
+  );
+  expect(moveCard).not.toBeNull();
+  expect(moveCard).toHaveTextContent('移动');
+  expect(moveCard).toHaveTextContent('move phrase');
+  expect(moveCard).toHaveTextContent('Cross Paragraph Reviewer');
+  expect(editor.querySelectorAll('[data-change-kind="move"]')).toHaveLength(2);
+  expect(editor.querySelector('[data-change-move-role="from"]')).not.toBeNull();
+  expect(editor.querySelector('[data-change-move-role="to"]')).not.toBeNull();
+
+  fireEvent.click(
+    within(moveCard as HTMLElement).getByRole('button', {
+      name: '拒绝修订 1',
+    }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole('list', { name: '待处理修订' })).toBeNull(),
+  );
+  expect(editor).toHaveTextContent('Intro move phrase remains.');
+  expect(editor).toHaveTextContent('Destination tail remains.');
+});

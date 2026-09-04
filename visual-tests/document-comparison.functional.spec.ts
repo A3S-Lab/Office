@@ -23,6 +23,11 @@ const movedRevisionDocument = [
   '<p>发布前必须逐项接受或拒绝所有生成的修订。</p>',
 ].join('');
 
+const crossParagraphMovedRevisionDocument = [
+  '<p>Intro remains.</p>',
+  '<p>Destination move phrase tail remains.</p>',
+].join('');
+
 test('Writer compares an imported version and opens deterministic review responsively', async ({
   page,
 }, testInfo) => {
@@ -168,6 +173,76 @@ test('Writer surfaces inferred text moves as native review cards', async ({
   expect(browserErrors).toEqual([]);
 });
 
+test('Writer keeps a cross-paragraph move atomic and contained on compact review layouts', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+  if (testInfo.project.name === 'compact-768') {
+    await page.setViewportSize({ width: 390, height: 844 });
+  }
+
+  await page.goto('/playground/');
+  await page.locator("button[data-template-id='blank-document']").click();
+  const editor = page.getByRole('textbox', { name: '文档正文' });
+  await expect(editor).toHaveAttribute('data-pagination-state', 'ready');
+  await editor.fill('Intro move phrase remains.');
+  await editor.press('End');
+  await editor.press('Enter');
+  await page.keyboard.insertText('Destination tail remains.');
+  await expect(editor).toContainText('Intro move phrase remains.');
+  await expect(editor).toContainText('Destination tail remains.');
+  await page.getByRole('tab', { name: '审阅' }).click();
+  const compareButton = page.getByRole('button', { name: '比较文档' });
+  await compareButton.click();
+
+  const dialog = page.getByRole('dialog', { name: '比较与合并文档' });
+  await expectDialogInsideViewport(dialog);
+  await dialog.getByLabel('选择修订版本文件').setInputFiles({
+    name: 'cross-paragraph-move-review.html',
+    mimeType: 'text/html',
+    buffer: Buffer.from(crossParagraphMovedRevisionDocument),
+  });
+  await dialog
+    .getByLabel('比较结果修订者名称')
+    .fill('Cross Paragraph Reviewer');
+  await dialog.getByRole('button', { name: '生成比较结果' }).click();
+
+  await expect(dialog).toBeHidden();
+  const changes = page.getByRole('list', { name: '待处理修订' });
+  await expect(changes).toBeVisible();
+  await expect(changes).toHaveAttribute('data-document-change-count', '1');
+  const moveCard = changes.locator('.work-document-change-item.move');
+  await expect(moveCard).toHaveCount(1);
+  await expect(moveCard).toContainText('移动');
+  await expect(moveCard).toContainText('move phrase');
+  await expect(moveCard).toContainText('Cross Paragraph Reviewer');
+  await expect(
+    editor.locator('[data-change-kind="move"][data-change-move-role="from"]'),
+  ).toHaveCount(1);
+  await expect(
+    editor.locator('[data-change-kind="move"][data-change-move-role="to"]'),
+  ).toHaveCount(1);
+  await expectContainedInViewport(changes);
+  await page.screenshot({
+    path: testInfo.outputPath(
+      `writer-document-comparison-cross-paragraph-${testInfo.project.name}.png`,
+    ),
+    animations: 'disabled',
+  });
+
+  await moveCard
+    .getByRole('button', { name: '拒绝修订 1', exact: true })
+    .click();
+  await expect(changes).toBeHidden();
+  await expect(editor).toContainText('Intro move phrase remains.');
+  await expect(editor).toContainText('Destination tail remains.');
+  expect(browserErrors).toEqual([]);
+});
+
 async function expectDialogInsideViewport(dialog: Locator): Promise<void> {
   const geometry = await dialog.evaluate((element) => {
     const bounds = element.getBoundingClientRect();
@@ -186,4 +261,22 @@ async function expectDialogInsideViewport(dialog: Locator): Promise<void> {
   expect(geometry.top).toBeGreaterThanOrEqual(8);
   expect(geometry.bottom).toBeLessThanOrEqual(geometry.viewportHeight - 8);
   expect(geometry.centerX).toBeCloseTo(geometry.viewportWidth / 2, 0);
+}
+
+async function expectContainedInViewport(element: Locator): Promise<void> {
+  const geometry = await element.evaluate((node) => {
+    const bounds = node.getBoundingClientRect();
+    return {
+      bottom: bounds.bottom,
+      left: bounds.left,
+      right: bounds.right,
+      top: bounds.top,
+      viewportHeight: document.documentElement.clientHeight,
+      viewportWidth: document.documentElement.clientWidth,
+    };
+  });
+  expect(geometry.left).toBeGreaterThanOrEqual(0);
+  expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth);
+  expect(geometry.top).toBeGreaterThanOrEqual(0);
+  expect(geometry.bottom).toBeLessThanOrEqual(geometry.viewportHeight);
 }

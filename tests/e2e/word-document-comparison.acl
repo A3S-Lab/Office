@@ -148,4 +148,85 @@ suite "word-document-comparison" {
             clear = false
         }
     }
+
+    scenario "review-cross-paragraph-move" {
+        name = "Review a cross-paragraph move as one atomic Writer change"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-cross-paragraph-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-cross-paragraph-template" {
+            target = css("button[data-template-id='document-comparison']")
+        }
+
+        wait "cross-paragraph-writer-is-ready" {
+            text = "发布审阅基线"
+        }
+
+        click "open-cross-paragraph-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-cross-paragraph-comparison-dialog" {
+            target = role("button", "比较文档")
+        }
+
+        upload "select-cross-paragraph-revised-version" {
+            target = css("input[aria-label='选择修订版本文件']")
+            paths = [".a3s-test/fixtures/word-document-comparison-cross-paragraph-revised.html"]
+        }
+
+        fill "cross-paragraph-reviewer" {
+            target = css(".work-document-compare-dialog input[aria-label='比较结果修订者名称']")
+            value = "A3S Cross Paragraph Reviewer"
+        }
+
+        click "generate-cross-paragraph-move" {
+            target = role("button", "生成比较结果")
+        }
+
+        expect "one-cross-paragraph-change" {
+            visible = css("ol[aria-label='待处理修订'][data-document-change-count='1']")
+        }
+
+        expect "cross-paragraph-source-mark" {
+            visible = css(".work-document-editable [data-change-kind='move'][data-change-move-role='from']")
+        }
+
+        expect "cross-paragraph-destination-mark" {
+            visible = css(".work-document-editable [data-change-kind='move'][data-change-move-role='to']")
+        }
+
+        click "reject-cross-paragraph-move" {
+            target = css("button[aria-label='拒绝修订 1']")
+        }
+
+        expect "cross-paragraph-review-is-resolved" {
+            visible = css("body:not(:has(ol[aria-label='待处理修订']))")
+        }
+
+        accessibility "cross-paragraph-accessibility" {
+            path = "evidence/document-comparison-cross-paragraph.json"
+            interactive = true
+        }
+
+        console "cross-paragraph-console" {
+            path = "diagnostics/document-comparison-cross-paragraph-console.json"
+            clear = false
+        }
+
+        page_errors "cross-paragraph-errors" {
+            path = "diagnostics/document-comparison-cross-paragraph-errors.json"
+            clear = false
+        }
+    }
 }

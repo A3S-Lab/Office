@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { access, cp, mkdir, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const siteBase = normalizeBase(
@@ -22,11 +22,7 @@ if (siteBase !== '/') {
 const repositoryRoot = resolve(import.meta.dirname, '..');
 const siteOutput = resolve(repositoryRoot, 'playground-dist');
 const docsOutput = resolve(repositoryRoot, '.docs-build');
-const rspress = resolve(
-  import.meta.dirname,
-  '../node_modules/.bin',
-  process.platform === 'win32' ? 'rspress.cmd' : 'rspress',
-);
+const rspress = await resolveRspressBinary();
 
 await rm(docsOutput, { force: true, recursive: true });
 await rm(siteOutput, { force: true, recursive: true });
@@ -51,6 +47,27 @@ function runRspress(config: string) {
   if ((result.status ?? 1) !== 0) {
     process.exit(result.status ?? 1);
   }
+}
+
+async function resolveRspressBinary(): Promise<string> {
+  const binDirectory = resolve(import.meta.dirname, '../node_modules/.bin');
+  const candidates =
+    process.platform === 'win32'
+      ? ['rspress.cmd', 'rspress.exe', 'rspress.bunx']
+      : ['rspress'];
+  for (const candidate of candidates) {
+    const executable = resolve(binDirectory, candidate);
+    try {
+      await access(executable);
+      return executable;
+    } catch {
+      // Try the next package-manager shim.
+    }
+  }
+  return resolve(
+    import.meta.dirname,
+    '../node_modules/@rspress/core/bin/rspress.js',
+  );
 }
 
 function normalizeBase(value: string): string {

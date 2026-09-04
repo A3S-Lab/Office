@@ -981,10 +981,16 @@ reopen retain native records. WPS 12.0 COM/UIA probing observed the tested
 reorder as ordinary delete/insert revisions, so this local inference is
 explicitly bounded and does not claim an unobserved WPS move API.
 
-Cross-paragraph, section, table, row, cell, rich/relationship-bound, duplicate,
-and complex-numbering moves remain explicit follow-up boundaries. Focused model,
-editor, DOCX, desktop/compact browser, WPS reference, and documentation tests
-cover the admitted path.
+The sixty-ninth Writer milestone extends that planner across simple text
+paragraphs and headings within one document section. A unique lexical range in
+aligned delete and insert chunks retains its source and destination scopes,
+travels with safely attached separators, and remains one atomic move through
+review decisions, Undo, native DOCX export, and reopen. The planner keeps its
+deterministic block and text limits and fails closed for duplicate or
+mark-mismatched candidates, section-boundary moves, rich or relationship-bound
+content, tables, rows, cells, and complex numbering. Focused model, editor,
+DOCX, desktop/compact browser, WPS reference, and documentation tests cover the
+admitted path.
 
 ## Current Presentation Milestone
 

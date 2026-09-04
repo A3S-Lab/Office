@@ -27,6 +27,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.51.0' ||
     version === '0.50.0' ||
     version === '0.49.0' ||
     version === '0.48.1' ||
@@ -92,6 +93,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.51.0',
     '0.50.0',
     '0.49.0',
     '0.48.1',
@@ -364,6 +366,7 @@ test('keeps public documentation on the neutral Traditional Office baseline', as
   const nativeTextBoxDocumentation = new Set(
     [
       'latest',
+      '0.51.0',
       '0.50.0',
       '0.49.0',
       '0.48.1',
@@ -425,6 +428,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
+  expect(readme).toContain('Version `0.51.0`');
   expect(readme).toContain('Version `0.50.0`');
   expect(readme).toContain('Version `0.49.0`');
   expect(readme).toContain('Version `0.48.1`');
@@ -443,7 +447,7 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.50.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.51.0)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
   expect(englishHome).toContain('document.html#move-revisions');
   expect(englishHome).toContain(
@@ -468,7 +472,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(englishHome).toContain('document.html#common-live-fields');
   expect(englishHome).toContain('document.html#built-in-content-controls');
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.50.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.51.0）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
   expect(chineseHome).toContain('document.html#移动修订');
   expect(chineseHome).toContain('spreadsheet.html#公式条件格式');
@@ -838,10 +842,10 @@ test('publishes Writer move revisions across implementation, native collaboratio
   expect(moveTests).toContain(
     'round-trips native moveFrom and moveTo wrappers',
   );
-  expect(packageManifest).toContain('0.50.0');
+  expect(packageManifest).toContain('0.51.0');
 });
 
-test('publishes bounded Writer Compare moves in the 0.50.0 frozen documentation', async () => {
+test('publishes bounded Writer Compare moves in the 0.51.0 frozen documentation', async () => {
   const [
     latestEnglish,
     latestChinese,
@@ -862,15 +866,15 @@ test('publishes bounded Writer Compare moves in the 0.50.0 frozen documentation'
       'utf8',
     ),
     readFile(
-      path.join(documentationRoot, '0.50.0/en/components/document.mdx'),
+      path.join(documentationRoot, '0.51.0/en/components/document.mdx'),
       'utf8',
     ),
     readFile(
-      path.join(documentationRoot, '0.50.0/zh/components/document.mdx'),
+      path.join(documentationRoot, '0.51.0/zh/components/document.mdx'),
       'utf8',
     ),
-    readFile(path.join(documentationRoot, '0.50.0/en/index.mdx'), 'utf8'),
-    readFile(path.join(documentationRoot, '0.50.0/zh/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, '0.51.0/en/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, '0.51.0/zh/index.mdx'), 'utf8'),
     readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
     readFile(
       path.join(repositoryRoot, 'website/theme/release-notes-data.ts'),
@@ -883,25 +887,27 @@ test('publishes bounded Writer Compare moves in the 0.50.0 frozen documentation'
     expect(source).toContain('## Document compare and combine');
     expect(source).toContain('one paired `move` review item');
     expect(source).toContain(
-      'Compare can infer a move only inside one simple paragraph',
+      'Compare can infer a move inside a simple paragraph or heading',
     );
   }
   for (const source of [latestChinese, frozenChinese]) {
     expect(source).toContain('## 文档比较与合并');
     expect(source).toContain('成对的 `move` 移动修订');
-    expect(source).toContain('当前“比较文档”只会在同一简单段落或标题中');
+    expect(source).toContain(
+      '当前“比较文档”可以在同一简单段落或标题中推断移动',
+    );
   }
-  expect(frozenEnglishHome).toContain('# A3S Office 0.50.0 documentation');
+  expect(frozenEnglishHome).toContain('# A3S Office 0.51.0 documentation');
   expect(frozenEnglishHome.toLowerCase()).toContain(
     'frozen documentation index',
   );
-  expect(frozenChineseHome).toContain('# A3S Office 0.50.0 文档');
+  expect(frozenChineseHome).toContain('# A3S Office 0.51.0 文档');
   expect(frozenChineseHome).toContain('冻结文档索引');
-  expect(changelog).toContain('## 0.50.0 - 2026-09-04');
+  expect(changelog).toContain('## 0.51.0 - 2026-09-04');
   expect(changelog).toContain('WPS COM/UIA reference probe');
-  expect(releaseData).toContain("version: '0.50.0'");
+  expect(releaseData).toContain("version: '0.51.0'");
   expect(releaseData).toContain('document-compare-and-combine');
-  expect(packageManifest).toContain('"version": "0.50.0"');
+  expect(packageManifest).toContain('"version": "0.51.0"');
 });
 
 test('publishes Spreadsheet validation alert branches across implementation, docs, and release evidence', async () => {
@@ -2232,6 +2238,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.51.0',
     '0.50.0',
     '0.49.0',
     '0.48.1',

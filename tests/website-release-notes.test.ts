@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 test('keeps curated release notes unique, localized, and newest first', () => {
   expect(OFFICE_RELEASE_NOTES.map(({ version }) => version)).toEqual([
+    '0.51.0',
     '0.50.0',
     '0.49.0',
     '0.48.1',
@@ -210,7 +211,7 @@ test('keeps the changelog semantic, responsive, static, and discoverable', async
 
 test('keeps local evidence links aligned with each documentation language', () => {
   const compareRelease = OFFICE_RELEASE_NOTES.find(
-    ({ version }) => version === '0.50.0',
+    ({ version }) => version === '0.51.0',
   );
   const moveRevisionRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.49.0',
@@ -271,8 +272,8 @@ test('keeps local evidence links aligned with each documentation language', () =
     zh: './components/collaboration.html#同步移动修订',
   });
   expect(compareRelease?.links[2]?.href).toEqual({
-    en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.50.0',
-    zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.50.0',
+    en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.51.0',
+    zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.51.0',
   });
   expect(moveRevisionRelease?.links[0]?.href).toEqual({
     en: './components/document.html#move-revisions',

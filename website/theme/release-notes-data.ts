@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.51.0',
+    date: '2026-09-04',
+    kind: 'new',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer Compare pairs same-section text moves',
+      zh: 'Writer 比较配对同一分节内文字移动',
+    },
+    summary: {
+      en: 'Unique text ranges can now move between aligned simple paragraphs or headings in one section while remaining one atomic review decision.',
+      zh: '唯一文字范围现在可以在同一分节内对齐的简单段落或标题之间移动，并保持为一项原子审核决定。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Paragraph scopes stay intact',
+          zh: '段落范围保持完整',
+        },
+        detail: {
+          en: 'Compare retains source and destination paragraph scopes instead of flattening the document tree. A unique lexical range with matching marks and carried separators becomes one paired move card across aligned simple text blocks in the same section.',
+          zh: '比较会保留源段落和目标段落范围，不会压平文档树。同一分节内对齐简单文字块中，文字格式一致且分隔空白可携带的唯一词法范围会成为一张成对移动卡。',
+        },
+      },
+      {
+        title: {
+          en: 'One atomic decision and native reopen',
+          zh: '一项原子决定与原生重开',
+        },
+        detail: {
+          en: 'Accept, reject, Undo, DOCX export, and reopen keep both sides of a cross-paragraph move together, preserving exact original and revised text with native w:moveFrom/w:moveTo records.',
+          zh: '接受、拒绝、撤销、DOCX 导出和重开会保持跨段移动两侧同步，并通过原生 w:moveFrom/w:moveTo 记录保留精确的原稿和修订稿文字。',
+        },
+      },
+      {
+        title: {
+          en: 'Boundaries remain explicit and tested',
+          zh: '边界明确且经过测试',
+        },
+        detail: {
+          en: 'Duplicates, mark mismatches, section-boundary moves, rich or relationship-bound content, tables, and over-limit inputs stay ordinary revisions or diagnostics. Desktop and 390 px review flows verify containment, accessibility, and clean browser diagnostics; WPS COM/UIA evidence remains documented.',
+          zh: '重复候选、格式不一致、跨分节移动、富文本或关系绑定内容、表格及超出上限的输入仍保持普通修订或诊断。桌面和 390px 审阅流程验证容纳性、可访问性与干净浏览器诊断；WPS COM/UIA 证据继续记录在案。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#document-compare-and-combine',
+          zh: './components/document.html#文档比较与合并',
+        },
+        label: {
+          en: 'Read the Compare guide',
+          zh: '阅读比较指南',
+        },
+      },
+      {
+        href: {
+          en: './components/collaboration.html#synchronize-move-revisions',
+          zh: './components/collaboration.html#同步移动修订',
+        },
+        label: {
+          en: 'Read the move contract',
+          zh: '阅读移动协作合同',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.51.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.51.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.50.0',
     date: '2026-09-04',
     kind: 'new',

@@ -195,6 +195,160 @@ describe('document compare and combine', () => {
     reopenedEditor.destroy();
   });
 
+  test('infers a bounded move between simple paragraphs atomically', async () => {
+    const original = documentHtml(
+      '<p>Intro move phrase remains.</p><p>Destination tail remains.</p>',
+    );
+    const revised = documentHtml(
+      '<p>Intro remains.</p><p>Destination move phrase tail remains.</p>',
+    );
+    const editor = createEditor(original);
+
+    const result = applyCompare(editor, revised);
+
+    expect(result.status).toBe('applied');
+    expect(result.summary).toEqual({
+      deletions: 0,
+      formatting: 0,
+      insertions: 0,
+      moves: 1,
+      paragraphFormatting: 0,
+    });
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([
+      expect.objectContaining({ kind: 'move', text: ' move phrase' }),
+    ]);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a Writer artifact.');
+    }
+    artifact.content.html = editor.getHTML();
+    artifact.content.trackChanges = true;
+    const exported = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await exported.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(documentXml).toContain('<w:moveFrom');
+    expect(documentXml).toContain('<w:moveTo');
+    expect(documentXml).not.toContain('data-change-move-role');
+
+    const reopened = await importOfficeFile(
+      new File([exported], 'cross-paragraph-move.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened Writer artifact.');
+    }
+    const reopenedEditor = createEditor(reopened.content.html);
+    expect(
+      collectDocumentChanges(reopenedEditor.state.doc).filter(
+        (change) => change.kind === 'move',
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        author: 'Morgan',
+        kind: 'move',
+        text: ' move phrase',
+      }),
+    ]);
+
+    expect(editor.commands.rejectAllDocumentChanges()).toBe(true);
+    expect(paragraphTexts(editor)).toEqual([
+      'Intro move phrase remains.',
+      'Destination tail remains.',
+    ]);
+    expect(editor.commands.undo()).toBe(true);
+    expect(editor.commands.acceptAllDocumentChanges()).toBe(true);
+    expect(paragraphTexts(editor)).toEqual([
+      'Intro remains.',
+      'Destination move phrase tail remains.',
+    ]);
+
+    expect(reopenedEditor.commands.rejectAllDocumentChanges()).toBe(true);
+    expect(paragraphTexts(reopenedEditor)).toEqual([
+      'Intro move phrase remains.',
+      'Destination tail remains.',
+    ]);
+    expect(reopenedEditor.commands.undo()).toBe(true);
+    expect(reopenedEditor.commands.acceptAllDocumentChanges()).toBe(true);
+    expect(paragraphTexts(reopenedEditor)).toEqual([
+      'Intro remains.',
+      'Destination move phrase tail remains.',
+    ]);
+
+    editor.destroy();
+    reopenedEditor.destroy();
+  });
+
+  test('leaves ambiguous duplicate cross-paragraph ranges as ordinary revisions', () => {
+    const original = documentHtml(
+      '<p>Source A move phrase.</p><p>Source B move phrase.</p><p>Destination tail.</p>',
+    );
+    const revised = documentHtml(
+      '<p>Source A.</p><p>Source B.</p><p>Destination move phrase tail.</p>',
+    );
+    const editor = createEditor(original);
+
+    const result = applyCompare(editor, revised);
+
+    expect(result.status).toBe('applied');
+    expect(result.summary).toEqual({
+      deletions: 2,
+      formatting: 0,
+      insertions: 1,
+      paragraphFormatting: 0,
+    });
+    expect(
+      collectDocumentChanges(editor.state.doc).some(
+        (change) => change.kind === 'move',
+      ),
+    ).toBe(false);
+
+    expect(editor.commands.rejectAllDocumentChanges()).toBe(true);
+    expect(paragraphTexts(editor)).toEqual([
+      'Source A move phrase.',
+      'Source B move phrase.',
+      'Destination tail.',
+    ]);
+    expect(editor.commands.undo()).toBe(true);
+    expect(editor.commands.acceptAllDocumentChanges()).toBe(true);
+    expect(paragraphTexts(editor)).toEqual([
+      'Source A.',
+      'Source B.',
+      'Destination move phrase tail.',
+    ]);
+
+    editor.destroy();
+  });
+
+  test('does not pair move ranges across section boundaries', () => {
+    const original =
+      '<section data-document-section="true"><p>Intro move phrase remains.</p></section>' +
+      '<section data-document-section="true"><p>Destination tail remains.</p></section>';
+    const revised =
+      '<section data-document-section="true"><p>Intro remains.</p></section>' +
+      '<section data-document-section="true"><p>Destination move phrase tail remains.</p></section>';
+    const editor = createEditor(original);
+
+    const result = applyCompare(editor, revised);
+
+    expect(result.status).toBe('applied');
+    expect(result.summary).toEqual({
+      deletions: 1,
+      formatting: 0,
+      insertions: 1,
+      paragraphFormatting: 0,
+    });
+    expect(
+      collectDocumentChanges(editor.state.doc).some(
+        (change) => change.kind === 'move',
+      ),
+    ).toBe(false);
+
+    editor.destroy();
+  });
+
   test('fails closed for changed complex structures and leaves the document untouched', () => {
     const original = documentHtml(
       '<table><tbody><tr><td><p>Original cell</p></td></tr></tbody></table>',
