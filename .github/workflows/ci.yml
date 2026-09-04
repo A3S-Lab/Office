@@ -87,6 +87,19 @@ jobs:
           done
           bunx playwright install --with-deps chromium webkit
 
+      - name: Select isolated Chromium for native browser tests
+        shell: bash
+        run: |
+          chromium_path="$(find "${HOME}/.cache/ms-playwright" -type f -name chrome -print -quit)"
+          if [[ -z "${chromium_path}" || ! -x "${chromium_path}" ]]; then
+            echo "Playwright Chromium executable was not found after installation." >&2
+            exit 1
+          fi
+          echo "A3S_BROWSER_EXECUTABLE=${chromium_path}" >> "${GITHUB_ENV}"
+          # Some hosted runners expose a malformed DBus address; headless
+          # Chromium does not need a session bus for these native tests.
+          echo "DBUS_SESSION_BUS_ADDRESS=" >> "${GITHUB_ENV}"
+
       - name: Check controlled IME behavior in WebKit
         run: bun run playground:ime:webkit
 
