@@ -1,6 +1,10 @@
 import type { WorkBook, WorkSheet } from 'xlsx';
 import { diagnoseDocxBookmarksAndLinks } from './work-docx-bookmark-diagnostics';
 import { diagnoseDocxCaptions } from './work-docx-caption-diagnostics';
+import {
+  isSupportedDocxMoveChange,
+  supportedDocxMovePairCount,
+} from './work-docx-change-import';
 import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
 import { inspectDocxContentControls } from './work-docx-content-control-import';
 import { diagnoseDocxEmphasisMarks } from './work-docx-emphasis-diagnostics';
@@ -361,6 +365,15 @@ export async function analyzeDocxCompatibility(
         ...descendants(document, 'ins'),
         ...descendants(document, 'del'),
       ];
+      const moveFromRevisions = descendants(document, 'moveFrom');
+      const moveToRevisions = descendants(document, 'moveTo');
+      const moveRevisionCount =
+        moveFromRevisions.length + moveToRevisions.length;
+      const supportedMovePairCount = supportedDocxMovePairCount(document);
+      const supportedMoveRevisionCount = [
+        ...moveFromRevisions,
+        ...moveToRevisions,
+      ].filter(isSupportedDocxMoveChange).length;
       const runFormattingRevisions = descendants(document, 'rPrChange');
       const paragraphFormattingRevisions = descendants(document, 'pPrChange');
       const numberingRevisions = descendants(document, 'numberingChange');
@@ -420,6 +433,16 @@ export async function analyzeDocxCompatibility(
           ),
         );
       }
+      if (supportedMovePairCount) {
+        issues.push(
+          issue(
+            'docx.revisions.move',
+            'Move revisions',
+            `${supportedMovePairCount} bounded text move revision(s) preserve author, date, source and destination text, remain reviewable as one atomic Work change, and round-trip as native w:moveFrom and w:moveTo records. Rich content, range markers, and relationship-bound moves remain on the compatibility path.`,
+            'info',
+          ),
+        );
+      }
       if (
         textRevisions.some(
           (revision) =>
@@ -430,9 +453,13 @@ export async function analyzeDocxCompatibility(
         supportedParagraphFormattingRevisionCount !==
           paragraphFormattingRevisions.length ||
         supportedNumberingRevisionCount !== numberingRevisions.length ||
+        supportedMoveRevisionCount !== moveRevisionCount ||
+        supportedMoveRevisionCount !== supportedMovePairCount * 2 ||
         [
-          'moveFrom',
-          'moveTo',
+          'moveFromRangeStart',
+          'moveFromRangeEnd',
+          'moveToRangeStart',
+          'moveToRangeEnd',
           'tblPrChange',
           'trPrChange',
           'tcPrChange',
@@ -443,7 +470,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.structural',
             'Structural revisions',
-            'Moved content plus unsupported character formatting, paragraph formatting, numbering, section, row, cell, and table-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded character-, paragraph-, and ordered-list-numbering subsets.',
+            'Moved content plus unsupported character formatting, paragraph formatting, numbering, section, row, cell, and table-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded text moves, character-, paragraph-, and ordered-list-numbering subsets.',
           ),
         );
       }

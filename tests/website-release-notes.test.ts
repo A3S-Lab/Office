@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 test('keeps curated release notes unique, localized, and newest first', () => {
   expect(OFFICE_RELEASE_NOTES.map(({ version }) => version)).toEqual([
+    '0.49.0',
     '0.48.1',
     '0.48.0',
     '0.47.0',
@@ -207,6 +208,9 @@ test('keeps the changelog semantic, responsive, static, and discoverable', async
 });
 
 test('keeps local evidence links aligned with each documentation language', () => {
+  const moveRevisionRelease = OFFICE_RELEASE_NOTES.find(
+    ({ version }) => version === '0.49.0',
+  );
   const selectionToolbarRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.48.1',
   );
@@ -253,6 +257,14 @@ test('keeps local evidence links aligned with each documentation language', () =
   expect(selectionToolbarRelease?.links[0]?.href).toEqual({
     en: './components/document.html#selection-toolbar-controls',
     zh: './components/document.html#选择工具栏控件',
+  });
+  expect(moveRevisionRelease?.links[0]?.href).toEqual({
+    en: './components/document.html#move-revisions',
+    zh: './components/document.html#移动修订',
+  });
+  expect(moveRevisionRelease?.links[1]?.href).toEqual({
+    en: './components/collaboration.html#synchronize-move-revisions',
+    zh: './components/collaboration.html#同步移动修订',
   });
   expect(dependentListRelease?.links[0]?.href).toEqual({
     en: './components/spreadsheet.html#dependent-dropdown-lists',

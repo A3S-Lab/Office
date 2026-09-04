@@ -28,9 +28,15 @@ import {
   parseDocumentParagraphFormatting,
   restoredDocumentParagraphAttributes,
 } from './work-document-paragraph-format-changes';
-import type { WorkDocumentChangeKind } from './work-types';
+import type {
+  WorkDocumentChangeKind,
+  WorkDocumentMoveRole,
+} from './work-types';
 
-export type { WorkDocumentChangeKind } from './work-types';
+export type {
+  WorkDocumentChangeKind,
+  WorkDocumentMoveRole,
+} from './work-types';
 
 export interface WorkDocumentChangeIdentity {
   id: string;
@@ -41,6 +47,8 @@ export interface WorkDocumentChangeIdentity {
 
 export interface WorkDocumentChange extends WorkDocumentChangeIdentity {
   kind: WorkDocumentChangeKind;
+  /** Present when a change is one side of a native Word move revision. */
+  moveRole?: WorkDocumentMoveRole;
   from: number;
   to: number;
   text: string;
@@ -55,9 +63,22 @@ interface DocumentChangeOptions {
 interface ChangeSegment {
   id: string;
   kind: WorkDocumentChangeKind;
+  moveRole?: WorkDocumentMoveRole;
   from: number;
   to: number;
   before: string;
+  text: string;
+}
+
+interface MoveSideSummary {
+  text: string;
+  from: number;
+  to: number;
+}
+
+interface MoveChangeSummary {
+  from?: MoveSideSummary;
+  to?: MoveSideSummary;
 }
 
 interface ParagraphChangeSegment {
@@ -134,11 +155,23 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
         parseHTML: (element) => {
           const declared = element.getAttribute('data-change-kind');
           if (declared === 'formatting') return 'formatting';
+          if (declared === 'move') return 'move';
           return element.tagName.toLowerCase() === 'del'
             ? 'deletion'
             : 'insertion';
         },
         renderHTML: (attributes) => ({ 'data-change-kind': attributes.kind }),
+      },
+      moveRole: {
+        default: '',
+        parseHTML: (element) => {
+          const role = element.getAttribute('data-change-move-role');
+          return role === 'from' || role === 'to' ? role : '';
+        },
+        renderHTML: (attributes) =>
+          attributes.moveRole === 'from' || attributes.moveRole === 'to'
+            ? { 'data-change-move-role': attributes.moveRole }
+            : {},
       },
       id: {
         default: '',
@@ -253,9 +286,11 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
     const tag =
       mark.attrs.kind === 'deletion'
         ? 'del'
-        : mark.attrs.kind === 'formatting'
-          ? 'span'
-          : 'ins';
+        : mark.attrs.kind === 'move' && mark.attrs.moveRole === 'from'
+          ? 'del'
+          : mark.attrs.kind === 'formatting'
+            ? 'span'
+            : 'ins';
     return [
       tag,
       mergeAttributes(HTMLAttributes, { 'data-document-change': 'true' }),
@@ -456,6 +491,7 @@ export function collectDocumentChanges(
     string,
     Array<{ from: number; to: number }>
   >();
+  const moveTextParts = new Map<string, MoveChangeSummary>();
   document.descendants((node, position) => {
     if (
       (node.type.name === 'paragraph' || node.type.name === 'heading') &&
@@ -551,6 +587,7 @@ export function collectDocumentChanges(
     const mark = documentChangeMark(node.marks);
     if (!mark) return;
     const kind = changeKind(mark.attrs.kind);
+    const moveRole = documentMoveRole(mark.attrs.moveRole);
     const id = stringAttribute(mark.attrs.id) || `change-at-${position}`;
     const key = `${kind}:${id}`;
     if (
@@ -567,12 +604,40 @@ export function collectDocumentChanges(
     if (current) {
       current.from = Math.min(current.from, position);
       current.to = Math.max(current.to, position + node.nodeSize);
-      current.text += node.text;
+      if (kind === 'move' && moveRole) {
+        const parts = moveTextParts.get(key) ?? {};
+        const previous = parts[moveRole];
+        parts[moveRole] = previous
+          ? {
+              text: previous.text + node.text,
+              from: Math.min(previous.from, position),
+              to: Math.max(previous.to, position + node.nodeSize),
+            }
+          : { text: node.text, from: position, to: position + node.nodeSize };
+        moveTextParts.set(key, parts);
+        if (current.moveRole !== moveRole) {
+          // A paired move has one review identity but two physical ranges. Do
+          // not expose a misleading single-side role once both are collected.
+          delete current.moveRole;
+        }
+      } else {
+        current.text += node.text;
+      }
       return;
+    }
+    if (kind === 'move' && moveRole) {
+      const parts = moveTextParts.get(key) ?? {};
+      parts[moveRole] = {
+        text: node.text,
+        from: position,
+        to: position + node.nodeSize,
+      };
+      moveTextParts.set(key, parts);
     }
     changes.set(key, {
       id,
       kind,
+      ...(moveRole ? { moveRole } : {}),
       ...(stringAttribute(mark.attrs.actorId)
         ? { actorId: stringAttribute(mark.attrs.actorId) }
         : {}),
@@ -580,9 +645,33 @@ export function collectDocumentChanges(
       date: stringAttribute(mark.attrs.date),
       from: position,
       to: position + node.nodeSize,
-      text: node.text,
+      text: node.text ?? '',
     });
   });
+  for (const [key, parts] of moveTextParts) {
+    const change = changes.get(key);
+    if (!change) continue;
+    const source = parts.from;
+    const destination = parts.to;
+    if (source && destination) {
+      change.text =
+        source.text === destination.text
+          ? source.text
+          : `${source.text} → ${destination.text}`;
+      // A move has two disjoint ranges. Navigation targets the destination
+      // when available so the review pane never selects unrelated content in
+      // between the source and destination.
+      change.from = destination.from;
+      change.to = destination.to;
+    } else {
+      const only = source ?? destination;
+      if (only) {
+        change.text = only.text;
+        change.from = only.from;
+        change.to = only.to;
+      }
+    }
+  }
   return Array.from(changes.values()).sort(
     (left, right) => left.from - right.from,
   );
@@ -654,7 +743,14 @@ function resolveDocumentChangesTransaction(
         (segment) =>
           segment.kind === 'formatting' &&
           !parseDocumentCharacterFormatting(segment.before),
-      ))
+      )) ||
+    segments.some(
+      (segment) =>
+        segment.kind === 'move' &&
+        segment.moveRole !== 'from' &&
+        segment.moveRole !== 'to',
+    ) ||
+    !validMoveSegments(segments)
   ) {
     return 0;
   }
@@ -677,6 +773,12 @@ function resolveDocumentChangesTransaction(
     if (segment.kind === 'formatting') {
       markRemovals.push(segment);
       if (decision === 'reject') formattingRejections.push(segment);
+      continue;
+    }
+    if (segment.kind === 'move') {
+      const source = segment.moveRole === 'from';
+      const removeContent = decision === 'accept' ? source : !source;
+      (removeContent ? contentDeletions : markRemovals).push(segment);
       continue;
     }
     const removeMark =
@@ -856,15 +958,32 @@ function documentChangeSegments(
     if (!node.isText) return;
     const mark = node.marks.find((candidate) => candidate.type === type);
     if (!mark) return;
+    const moveRole = documentMoveRole(mark.attrs.moveRole);
     segments.push({
       id: stringAttribute(mark.attrs.id) || `change-at-${position}`,
       kind: changeKind(mark.attrs.kind),
+      ...(moveRole ? { moveRole } : {}),
       from: position,
       to: position + node.nodeSize,
       before: stringAttribute(mark.attrs.before),
+      text: node.text ?? '',
     });
   });
   return segments;
+}
+
+function validMoveSegments(segments: readonly ChangeSegment[]): boolean {
+  const moves = new Map<string, { from: string; to: string }>();
+  for (const segment of segments) {
+    if (segment.kind !== 'move') continue;
+    if (segment.moveRole !== 'from' && segment.moveRole !== 'to') return false;
+    const current = moves.get(segment.id) ?? { from: '', to: '' };
+    current[segment.moveRole] += segment.text;
+    moves.set(segment.id, current);
+  }
+  return Array.from(moves.values()).every(({ from, to }) =>
+    Boolean(from && to && from === to),
+  );
 }
 
 function paragraphChangeSegments(
@@ -1032,8 +1151,14 @@ function documentChangeMark(
 }
 
 function changeKind(value: unknown): WorkDocumentChangeKind {
-  if (value === 'deletion' || value === 'formatting') return value;
+  if (value === 'deletion' || value === 'formatting' || value === 'move') {
+    return value;
+  }
   return 'insertion';
+}
+
+function documentMoveRole(value: unknown): WorkDocumentMoveRole | null {
+  return value === 'from' || value === 'to' ? value : null;
 }
 
 function paragraphChangeAttribute(

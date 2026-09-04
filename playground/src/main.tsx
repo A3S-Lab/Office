@@ -336,6 +336,43 @@ function Playground() {
     showNotice('已打开可接受或拒绝的字符、段落与编号格式修订', 'success');
   };
 
+  const openMoveReviewDemo = () => {
+    const artifact = artifacts.find(({ kind }) => kind === 'document');
+    if (!artifact || artifact.content.type !== 'document') {
+      showNotice('请先新建一个文字文档，再打开移动修订演示。', 'danger');
+      return;
+    }
+    const content: OfficeArtifactContent = {
+      ...artifact.content,
+      html: [
+        '<section data-document-section="true">',
+        '<h1>移动修订</h1>',
+        '<p>移动修订把同一段文字的源位置与目标位置作为一条原子修订处理。</p>',
+        '<p><del data-testid="move-revision-from-demo" data-document-change="true" data-change-kind="move" data-change-move-role="from" data-change-id="playground-move-review" data-change-author="Nora Reviewer" data-change-date="2026-09-02T10:00:00.000Z">可复用的段落</del> 留在原位置的正文。</p>',
+        '<p>目标位置：<ins data-testid="move-revision-to-demo" data-document-change="true" data-change-kind="move" data-change-move-role="to" data-change-id="playground-move-review" data-change-author="Nora Reviewer" data-change-date="2026-09-02T10:00:00.000Z">可复用的段落</ins>。</p>',
+        '</section>',
+      ].join(''),
+      model: undefined,
+      trackChanges: true,
+    };
+    setArtifacts((current) =>
+      current.map((candidate) =>
+        candidate.id === artifact.id
+          ? {
+              ...candidate,
+              content,
+              revision: candidate.revision + 1,
+              updatedAt: Date.now(),
+            }
+          : candidate,
+      ),
+    );
+    setCollaborationDemoArtifactId(null);
+    setSuggestionDemoArtifactId(null);
+    activateArtifact(artifact.id);
+    showNotice('已打开可接受或拒绝的移动修订', 'success');
+  };
+
   const newArtifact = (templateId: string) => {
     const artifact = createArtifact(templateId);
     setCollaborationDemoArtifactId(null);
@@ -634,6 +671,7 @@ function Playground() {
               onOpen={openArtifact}
               onOpenCollaborationDemo={openCollaborationDemo}
               onOpenFormattingReviewDemo={openFormattingReviewDemo}
+              onOpenMoveReviewDemo={openMoveReviewDemo}
               onOpenSuggestionDemo={openSuggestionDemo}
               onOpenPdf={() => pdfInput.current?.click()}
               onOpenSidebar={() => setSidebarOpen(true)}

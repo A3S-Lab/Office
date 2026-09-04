@@ -391,6 +391,7 @@ function documentChangeKindLabel(kind: WorkDocumentChange['kind']): string {
   if (kind === 'formatting') return '格式';
   if (kind === 'paragraph-formatting') return '段落格式';
   if (kind === 'numbering') return '编号格式';
+  if (kind === 'move') return '移动';
   return '删除';
 }
 

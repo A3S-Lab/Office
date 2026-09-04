@@ -172,6 +172,11 @@ import {
   listToDocxParagraphs,
 } from './work-docx-list-export';
 import {
+  DocxMoveRevisionPatchCollector,
+  type DocxMoveRevisionRegistration,
+  patchDocxMoveRevisions,
+} from './work-docx-move-revision-export';
+import {
   assignDocxCommentThreads,
   assignDocxNoteIds,
 } from './work-docx-note-comment-identity';
@@ -280,6 +285,8 @@ interface DocxNoteContext extends DocxListExportContext {
   usedOpenTypeMarkers: Set<string>;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
   numberingChangePatches: DocxNumberingChangePatchCollector;
+  moveRevisionPatches: DocxMoveRevisionPatchCollector;
+  moveRevisionDefaultDate: string;
   tableOfContentsPatches: DocxTableOfContentsPatchCollector;
   indexPatches: DocxIndexPatchCollector;
   hasExplicitZeroCharacterSpacing: boolean;
@@ -287,10 +294,11 @@ interface DocxNoteContext extends DocxListExportContext {
 }
 
 interface DocxTextRevision {
-  kind: 'insertion' | 'deletion';
+  kind: 'insertion' | 'deletion' | 'move-from' | 'move-to';
   id: number;
   author: string;
   date: string;
+  wireId?: number;
 }
 
 interface DocxRunStyleState {
@@ -378,6 +386,8 @@ export async function createDocxBlob(
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
     numberingChangePatches: new DocxNumberingChangePatchCollector(),
+    moveRevisionPatches: new DocxMoveRevisionPatchCollector(),
+    moveRevisionDefaultDate: new Date().toISOString(),
     tableOfContentsPatches: new DocxTableOfContentsPatchCollector(),
     indexPatches: new DocxIndexPatchCollector(),
     hasExplicitZeroCharacterSpacing: false,
@@ -582,8 +592,12 @@ export async function createDocxBlob(
     paragraphFormattingChangesPatched,
     noteContext.numberingChangePatches.patches,
   );
-  const equationPatched = await patchDocxEquations(
+  const moveRevisionsPatched = await patchDocxMoveRevisions(
     numberingChangesPatched,
+    noteContext.moveRevisionPatches.patches,
+  );
+  const equationPatched = await patchDocxEquations(
+    moveRevisionsPatched,
     noteContext.equationPatches.patches,
   );
   const patched = await patchDocxPageColor(
@@ -1140,22 +1154,22 @@ async function inlineRuns(
       markDocxRunStyleMarkersUsed(inherited.style, noteContext);
       markDocxRunBorderUsed(inherited.border, noteContext);
       markDocxRunShadingUsed(inherited.shading, noteContext);
-      if (revision?.kind === 'insertion') {
+      if (revision?.kind === 'insertion' || revision?.kind === 'move-to') {
         return [
           new docx.InsertedTextRun({
             ...inherited,
-            id: revision.id,
+            id: revision.wireId ?? revision.id,
             author: revision.author,
             date: revision.date,
             text: node.textContent,
           }),
         ];
       }
-      if (revision?.kind === 'deletion') {
+      if (revision?.kind === 'deletion' || revision?.kind === 'move-from') {
         return [
           new docx.DeletedTextRun({
             ...inherited,
-            id: revision.id,
+            id: revision.wireId ?? revision.id,
             author: revision.author,
             date: revision.date,
             text: node.textContent,
@@ -1205,8 +1219,16 @@ async function inlineRuns(
         children,
       );
     }
-    const textRevisionKind =
-      tag === 'del' ? 'deletion' : tag === 'ins' ? 'insertion' : null;
+    const textRevisionKind: DocxTextRevision['kind'] | null =
+      tag === 'del'
+        ? node.dataset.changeKind === 'move'
+          ? 'move-from'
+          : 'deletion'
+        : tag === 'ins'
+          ? node.dataset.changeKind === 'move'
+            ? 'move-to'
+            : 'insertion'
+          : null;
     const change =
       node.hasAttribute('data-document-change') && textRevisionKind
         ? docxTextRevision(node, textRevisionKind, noteContext)
@@ -1608,14 +1630,25 @@ function docxTextRevision(
   const id = docxRevisionId(element, context);
   const sourceDate = element.dataset.changeDate?.trim() ?? '';
   const time = Date.parse(sourceDate);
-  return {
+  const revision: DocxTextRevision = {
     kind,
     id,
     author: element.dataset.changeAuthor?.trim() || 'A3S Work',
     date: Number.isFinite(time)
       ? new Date(time).toISOString()
-      : new Date().toISOString(),
+      : kind === 'move-from' || kind === 'move-to'
+        ? context.moveRevisionDefaultDate
+        : new Date().toISOString(),
   };
+  if (kind === 'move-from' || kind === 'move-to') {
+    const registration: DocxMoveRevisionRegistration | null =
+      context.moveRevisionPatches.register(element, id, revision.date);
+    if (!registration) {
+      throw new Error('Document contains an invalid move revision.');
+    }
+    revision.wireId = registration.wireId;
+  }
+  return revision;
 }
 
 function docxRevisionId(
@@ -1639,7 +1672,7 @@ function documentHasTrackedChanges(html: string): boolean {
   const document = new DOMParser().parseFromString(html, 'text/html');
   return Boolean(
     document.body.querySelector(
-      'ins[data-document-change], del[data-document-change], span[data-document-change][data-change-kind="formatting"], [data-document-change][data-change-kind="paragraph-formatting"], [data-document-change][data-change-kind="numbering"]',
+      'ins[data-document-change], del[data-document-change], span[data-document-change][data-change-kind="formatting"], [data-document-change][data-change-kind="paragraph-formatting"], [data-document-change][data-change-kind="numbering"], [data-document-change][data-change-kind="move"]',
     ),
   );
 }

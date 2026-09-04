@@ -43,6 +43,7 @@ function runRspress(config: string) {
   const result = spawnSync(rspress, ['build', '-c', config], {
     cwd: repositoryRoot,
     env: environment,
+    shell: process.platform === 'win32',
     stdio: 'inherit',
   });
 

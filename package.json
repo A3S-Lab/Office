@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.48.1",
+  "version": "0.49.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -94,6 +94,7 @@
     "playground:visual:document-emphasis": "playwright test visual-tests/document-emphasis.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-index": "playwright test visual-tests/document-index.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-comparison": "playwright test visual-tests/document-comparison.functional.spec.ts --config playwright.config.ts",
+    "playground:visual:document-move-revision": "playwright test visual-tests/document-move-revision.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-hidden-text": "playwright test visual-tests/document-hidden-text.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-legacy-text-effects": "playwright test visual-tests/document-legacy-text-effects.functional.spec.ts --config playwright.config.ts",
     "playground:visual:document-proofing-languages": "playwright test visual-tests/document-proofing-languages.functional.spec.ts --config playwright.config.ts",
@@ -298,6 +299,8 @@
     "test:e2e:writer-formatting-revision:check": "a3s-test check tests/e2e/word-formatting-revision.acl --json",
     "test:e2e:writer-paragraph-formatting-revision": "a3s-test run tests/e2e/word-paragraph-formatting-revision.acl --json",
     "test:e2e:writer-paragraph-formatting-revision:check": "a3s-test check tests/e2e/word-paragraph-formatting-revision.acl --json",
+    "test:e2e:writer-move-revision": "a3s-test run tests/e2e/word-move-revision.acl --json",
+    "test:e2e:writer-move-revision:check": "a3s-test check tests/e2e/word-move-revision.acl --json",
     "test:e2e:writer-status": "a3s-test run tests/e2e/word-status-bar.acl --json",
     "test:e2e:writer-status:check": "a3s-test check tests/e2e/word-status-bar.acl --json",
     "test:wps-layout": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-wps-layout-parity.ps1",

@@ -15,6 +15,22 @@ const BROWSER_DOCUMENT_PARAGRAPH_FORMATTING_UPDATE_BASE64: &str = include_str!(
 );
 
 #[test]
+fn native_move_change_kind_is_distinct_from_text_suggestion_kinds() {
+    assert_eq!(
+        NativeOfficeCollaborationDocumentChangeKind::Move.as_str(),
+        "move"
+    );
+    assert_eq!(
+        serde_json::to_string(&NativeOfficeCollaborationDocumentChangeKind::Move).unwrap(),
+        "\"move\""
+    );
+    assert_ne!(
+        NativeOfficeCollaborationDocumentChangeKind::Move,
+        NativeOfficeCollaborationDocumentChangeKind::Insertion
+    );
+}
+
+#[test]
 fn browser_numbering_revisions_survive_restart_and_suggest_mode() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().join("browser-numbering-revision-server");

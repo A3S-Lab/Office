@@ -93,6 +93,7 @@ pub enum NativeOfficeCollaborationDocumentChangeKind {
     Formatting,
     ParagraphFormatting,
     Numbering,
+    Move,
 }
 
 impl NativeOfficeCollaborationDocumentChangeKind {
@@ -103,6 +104,7 @@ impl NativeOfficeCollaborationDocumentChangeKind {
             Self::Formatting => "formatting",
             Self::ParagraphFormatting => "paragraph-formatting",
             Self::Numbering => "numbering",
+            Self::Move => "move",
         }
     }
 }

@@ -199,11 +199,15 @@ suite "office-docs-navigation" {
         }
 
         expect "current-release-timeline-is-semantic" {
-            visible = css("main ol.office-release-notes__timeline > li:first-child article[data-version='0.48.1'] time[datetime='2026-09-03']")
+            visible = css("main ol.office-release-notes__timeline > li:first-child article[data-version='0.49.0'] time[datetime='2026-09-04']")
         }
 
         expect "current-release-has-scannable-outcomes" {
-            visible = css("main article[data-version='0.48.1'] .office-release-card__highlights > li:nth-child(3)")
+            visible = css("main article[data-version='0.49.0'] .office-release-card__highlights > li:nth-child(3)")
+        }
+
+        expect "current-release-move-evidence-link-is-localized" {
+            visible = css("main article[data-version='0.49.0'] a[href$='#移动修订']")
         }
 
         expect "custom-formula-evidence-link-is-localized" {
@@ -247,6 +251,10 @@ suite "office-docs-navigation" {
             visible = css("main article[data-version='0.42.0'] a[href$='#custom-formulas']")
         }
 
+        expect "english-move-evidence-link-is-localized" {
+            visible = css("main article[data-version='0.49.0'] a[href$='#move-revisions']")
+        }
+
         expect "english-writer-evidence-link-is-localized" {
             visible = css("main article[data-version='0.38.0'] a[href$='#native-opentype-typography']")
         }
@@ -278,11 +286,11 @@ suite "office-docs-navigation" {
         }
 
         expect "phone-release-notes-ready" {
-            visible = css("main article[data-version='0.48.1']")
+            visible = css("main article[data-version='0.49.0']")
         }
 
         expect "phone-release-highlights-stack" {
-            visible = css("main article[data-version='0.48.1'] .office-release-card__highlights > li:nth-child(3)")
+            visible = css("main article[data-version='0.49.0'] .office-release-card__highlights > li:nth-child(3)")
         }
 
         expect "phone-release-links-remain-available" {

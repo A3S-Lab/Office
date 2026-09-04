@@ -1,0 +1,145 @@
+suite "word-move-revision" {
+    version = 1
+
+    scenario "review-and-accept-paired-move" {
+        name = "Review and accept one atomic Writer move revision"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-move-revision-demo" {
+            target = role("button", "体验移动修订")
+        }
+
+        wait "paired-move-is-ready" {
+            visible = css(".ProseMirror [data-document-change='true'][data-change-kind='move'][data-change-move-role='from']")
+        }
+
+        expect "destination-side-is-ready" {
+            visible = css(".ProseMirror [data-document-change='true'][data-change-kind='move'][data-change-move-role='to']")
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-review-pane" {
+            target = role("button", "查看修订（1）")
+        }
+
+        expect "move-card-is-one-atomic-change" {
+            visible = css(".work-document-change-list[data-document-change-count='1'] .work-document-change-item.move")
+        }
+
+        expect "move-card-is-labeled" {
+            text = "移动"
+        }
+
+        click "accept-paired-move" {
+            target = role("button", "接受修订 1")
+        }
+
+        expect "source-is-removed" {
+            visible = css(".ProseMirror p:has-text('留在原位置的正文'):not(:has([data-change-kind='move']))")
+        }
+
+        expect "destination-text-is-kept" {
+            text = "目标位置：可复用的段落。"
+        }
+
+        expect "all-move-marks-are-resolved" {
+            visible = css(".ProseMirror:not(:has([data-change-kind='move']))")
+        }
+
+        accessibility "accepted-move-accessibility" {
+            path = "evidence/move-revision-accepted.json"
+            interactive = false
+        }
+
+        console "move-revision-console" {
+            path = "diagnostics/move-revision-console.json"
+            clear = false
+        }
+
+        page_errors "move-revision-errors" {
+            path = "diagnostics/move-revision-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "review-move-on-phone" {
+        name = "Keep the atomic move card usable in the phone review dialog"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-phone-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-phone-move-revision-demo" {
+            target = role("button", "体验移动修订")
+        }
+
+        wait "phone-move-is-ready" {
+            visible = css(".ProseMirror [data-change-kind='move'][data-change-move-role='to']")
+        }
+
+        click "open-phone-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-phone-review-dialog" {
+            target = role("button", "查看修订（1）")
+        }
+
+        expect "phone-review-surface-is-modal" {
+            visible = css(".work-document-changes-panel[role='dialog'][aria-modal='true']")
+        }
+
+        expect "phone-move-card-is-available" {
+            visible = css(".work-document-changes-panel .work-document-change-item.move")
+        }
+
+        screenshot "phone-move-review" {
+            path = "screenshots/word-move-revision-phone.png"
+        }
+
+        accessibility "phone-move-review-accessibility" {
+            path = "evidence/move-revision-phone.json"
+            interactive = true
+        }
+
+        click "close-phone-review-dialog" {
+            target = role("button", "关闭修订审阅")
+        }
+
+        expect "phone-review-focus-is-restored" {
+            visible = css("button[aria-label='查看修订（1）']:focus")
+        }
+
+        console "phone-move-revision-console" {
+            path = "diagnostics/move-revision-phone-console.json"
+            clear = false
+        }
+
+        page_errors "phone-move-revision-errors" {
+            path = "diagnostics/move-revision-phone-errors.json"
+            clear = false
+        }
+    }
+}

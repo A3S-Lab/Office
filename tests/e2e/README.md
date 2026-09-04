@@ -229,6 +229,13 @@ bun run test:e2e:writer-paragraph-formatting-revision:check
 bun run test:e2e:writer-paragraph-formatting-revision
 ```
 
+The Writer paired move-revision workflow has a focused desktop/phone gate:
+
+```bash
+bun run test:e2e:writer-move-revision:check
+bun run test:e2e:writer-move-revision
+```
+
 The Writer native character-spacing workflow has a focused local gate:
 
 ```bash

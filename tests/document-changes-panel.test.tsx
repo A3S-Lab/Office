@@ -192,6 +192,43 @@ test('labels and navigates ordered-list numbering revisions as one list range', 
   }
 });
 
+test('labels and navigates paired move revisions as one review item', () => {
+  const editor = createEditor();
+  document.body.append(editor.view.dom);
+  const range = textRange(editor, 'Alpha');
+  const moveChange: WorkDocumentChange = {
+    id: 'move-1',
+    kind: 'move',
+    author: 'Ada Reviewer',
+    date: '2026-09-01T10:05:00.000Z',
+    from: range.from,
+    to: range.to,
+    text: 'Alpha',
+  };
+  try {
+    const view = render(
+      <DocumentChangesPanel
+        editor={editor}
+        changes={[moveChange]}
+        trackChanges
+        onTrackChangesChange={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('移动')).toBeVisible();
+    expect(
+      view.container.querySelector('.work-document-change-item.move'),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '定位修订 1' }));
+    expect(editor.state.selection.from).toBe(range.from);
+    expect(editor.state.selection.to).toBe(range.to);
+  } finally {
+    editor.view.dom.remove();
+    editor.destroy();
+  }
+});
+
 test('observes the revision viewport when changes arrive after the empty state', () => {
   const editor = createEditor();
   document.body.append(editor.view.dom);

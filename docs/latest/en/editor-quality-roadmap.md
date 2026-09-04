@@ -515,8 +515,11 @@ reconstructs the current baseline. The public **文档比较** Playground templa
 bilingual references, focused Rstest, responsive Playwright, native
 `w:ins`/`w:del`/`w:rPrChange`/`w:pPrChange` reopen coverage, and local-only
 A3S Test gate cover the shipped path. Native paragraph-mark revisions, changed
-complex structures, move ranges, and multi-copy structural conflict resolution
-remain explicit fail-closed follow-up work.
+complex structures, move-range generation, and multi-copy structural conflict
+resolution remain explicit fail-closed follow-up work. Existing strict or
+transitional text-only `w:moveFrom`/`w:moveTo` pairs now import as one atomic
+review item and round-trip natively; rich, range-marker, relationship-bound, or
+unpaired moves remain diagnosed instead of being flattened.
 Writer character baseline position now uses one signed `w:position` value from
 -3,168 to 3,168 half-points, including explicit zero. The same advanced font
 dialog exposes Normal, Raised, and Lowered modes while tracking mixed scale,
@@ -827,6 +830,13 @@ converges the distinct immutable decision kind and prevents `suggest` peers
 from changing paragraph-revision metadata. Focused A3S Test suites prove both
 rejection paths against the public Playground with screenshots, accessibility,
 and empty console/page-error evidence.
+Text-only move revisions now form one paired review kind with explicit source
+and destination roles. Accept/reject resolves both sides atomically, navigation
+targets only the destination, browser/Yrs records one immutable
+`changeKind: "move"` decision,
+and strict/transitional DOCX export/reopen retains native
+`w:moveFrom`/`w:moveTo` wrappers without private marker leakage. Focused model,
+collaboration, diagnostics, panel, and DOCX tests cover the bounded subset.
 Comment collections above 48 items now mount at most 32 contiguous cards while
 the active comment and comments with unsent replies remain pinned. Anchor
 geometry is collected in one linear pass, connector rendering is limited to

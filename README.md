@@ -309,6 +309,22 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.49.0` adds bounded native Writer move revisions and hardens the
+local PDF workflow:
+
+- Strict and transitional DOCX `w:moveFrom`/`w:moveTo` text pairs import as one
+  atomic `move` review item. Accept/reject resolves both source and destination
+  sides together, the immutable collaboration audit records the single final
+  decision, and export/reopen restores native move records with no private
+  marker leakage.
+- Rich, range-marker, relationship-bound, malformed, and unpaired moves remain
+  visible as diagnosed compatibility boundaries. The review pane labels moves
+  distinctly and navigates to the destination range without selecting the text
+  between the two sides.
+- The Playground now serves the pinned PDFium WebAssembly asset from a stable
+  origin-relative path, keeping direct PDF imports ready in desktop and compact
+  layouts.
+
 Version `0.48.1` fixes the Writer floating selection toolbar's split emphasis
 controls without changing the document model or public command contract:
 

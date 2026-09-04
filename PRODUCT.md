@@ -957,6 +957,22 @@ fail-closed boundaries and receive compatibility diagnostics. Focused model,
 lock-guard, UI, DOCX reopen, responsive browser, accessibility, and local A3S
 Test gates cover the safe subset without adding a remote service.
 
+The sixty-seventh Writer milestone adds a bounded native move-revision slice.
+Strict and transitional `w:moveFrom`/`w:moveTo` records with matching numeric
+identity, author, UTC date, and text import as one paired `move` review intent.
+The review pane keeps the destination as its navigation target; accept removes
+the source and reject removes the destination, with both sides resolved in one
+transaction and one immutable collaboration decision. DOCX export rewrites
+transient wrappers to native move records and reopen restores the same paired
+identity without browser markers or negative IDs.
+
+Rich runs, range markers, relationship-bound objects, malformed metadata,
+duplicate identities, and unpaired sides remain structural diagnostics. The
+bounded importer/exporter, browser/Yrs decision projection, focused Rstest,
+responsive review-panel coverage, and native DOCX reopen fixture cover the
+declared subset. Move-range inference in Compare and broader structural moves
+remain explicit follow-up work.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

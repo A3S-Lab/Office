@@ -110,8 +110,8 @@ Redis/NATS fan-out plus a distributed writer/lock policy.
 
 Status: browser collaboration foundation, participant roster, remote
 selection/caret projection, participant navigation, durable review-only
-comment and suggestion modes, character- and paragraph-formatting revisions,
-immutable decision audit, and native text/options/bounded structural
+comment and suggestion modes, character-, paragraph-formatting, numbering, and
+text-only move revisions, immutable decision audit, and native text/options/bounded structural
 paragraph/comment/suggestion mutations implemented; rich native mutation
 parity remains pending.
 
@@ -182,6 +182,14 @@ parity remains pending.
   level, tab stops, borders, shading, and collapsed state without changing
   text. Supported strict or transitional DOCX `w:pPrChange` records use the
   same model and export natively.
+- Text-only move revisions create one paired `move` identity with `from` and
+  `to` roles. Matching strict/transitional `w:moveFrom`/`w:moveTo` records are
+  imported and exported natively; accept removes the source, reject removes the
+  destination, and one immutable decision audit record covers both sides. The
+  browser review binding and Yrs projection validate exact text, identity,
+  author, and date, while rich/range/relationship-bound or unpaired moves fail
+  closed as structural diagnostics. The closed native suggestion mutations
+  remain insertion/deletion-only.
 - Rust, CLI, MCP, and A3S Code expose `document-comment-create`,
   `document-comment-reply`, `document-comment-set-resolved`,
   `document-comment-delete`, `document-suggestion-create`, and
@@ -199,10 +207,10 @@ parity remains pending.
   content, structure, options, non-suggestion formatting, authorship, order,
   claims, anchors, foreign deletion, or foreign suggestion changes fail before
   the durable store changes.
-- Native Yrs validation admits only the bounded character- and
-  paragraph-formatting schemas, preserves them across restart and
-  duplicate/reordered delivery, exposes `formatting` and
-  `paragraph-formatting` in immutable decision projections, and makes
+- Native Yrs validation admits only the bounded character-, paragraph-formatting,
+  numbering, and move schemas, preserves them across restart and
+  duplicate/reordered delivery, exposes `formatting`, `paragraph-formatting`,
+  `numbering`, and `move` in immutable decision projections, and makes
   `suggest` updates retain existing formatting revisions byte-semantically.
   Formatting revisions are Document change kinds, not native
   insertion/deletion suggestion kinds; the current closed

@@ -2044,6 +2044,10 @@
   border-left-color: #0f7b78;
 }
 
+.work-document-change-item.move {
+  border-left-color: #b06a1f;
+}
+
 .work-document-change-summary {
   display: grid;
   min-width: 0;
@@ -2087,6 +2091,14 @@
   > span {
   background: #e5f5f3;
   color: #0f6663;
+}
+
+.work-document-change-list
+  .work-document-change-item.move
+  .work-document-change-summary
+  > span {
+  background: #fff3df;
+  color: #8a4f0f;
 }
 
 .work-document-change-summary strong {

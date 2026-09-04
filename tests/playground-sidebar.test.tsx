@@ -6,6 +6,7 @@ import { WorkspaceHome } from '../playground/src/workspace-home';
 
 test('keeps examples in the template grid without a latest-capabilities promotion', () => {
   const createdTemplates: string[] = [];
+  let moveReviewRequests = 0;
 
   render(
     <WorkspaceHome
@@ -19,6 +20,9 @@ test('keeps examples in the template grid without a latest-capabilities promotio
       onOpenCollaborationDemo={() => undefined}
       onOpenSuggestionDemo={() => undefined}
       onOpenFormattingReviewDemo={() => undefined}
+      onOpenMoveReviewDemo={() => {
+        moveReviewRequests += 1;
+      }}
       onOpenPdf={() => undefined}
     />,
   );
@@ -67,6 +71,8 @@ test('keeps examples in the template grid without a latest-capabilities promotio
     'structured-references',
     'animated-deck',
   ]);
+  fireEvent.click(screen.getByRole('button', { name: '体验移动修订' }));
+  expect(moveReviewRequests).toBe(1);
 });
 
 test('keeps Markdown last in the quick-create list', () => {

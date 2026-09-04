@@ -30,6 +30,14 @@ export default defineConfig(({ command, env }) => {
           to: 'pdfium.LICENSE.txt',
         },
         {
+          // The internal PDF viewer resolves its default worker asset from
+          // this stable origin-relative path. Keep the dev Playground and
+          // production bundle on the same asset contract so a direct PDF
+          // import never remains stuck in the loading state.
+          from: '../node_modules/@embedpdf/pdfium/dist/pdfium.wasm',
+          to: 'vendor/embedpdf/pdfium.wasm',
+        },
+        {
           from: '../node_modules/pptxgenjs/LICENSE',
           to: 'pptxgen.LICENSE.txt',
         },

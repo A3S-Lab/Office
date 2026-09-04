@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.49.0 - 2026-09-04
+
+- Added bounded native Writer move revisions. Strict and transitional DOCX
+  `w:moveFrom`/`w:moveTo` pairs with text-only runs, matching identity, author,
+  and timestamp now import as one atomic `move` review item, support accept or
+  reject on both physical sides, and export back to native move records without
+  leaking private markers or transient IDs.
+- Added immutable collaboration audit support for `move` decisions and a
+  review-pane badge/label that keeps the destination range as the navigation
+  target. Rich-content, range-marker, relationship-bound, malformed, and
+  unpaired moves remain explicitly diagnosed compatibility boundaries.
+- Fixed the Playground PDF viewer asset contract by copying the pinned PDFium
+  WebAssembly binary to a stable origin-relative path, so direct PDF imports no
+  longer remain stuck in the loading state in desktop or compact layouts.
+
 ## 0.48.1 - 2026-09-03
 
 - Fixed the Writer floating selection toolbar's underline and strikethrough

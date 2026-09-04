@@ -4,7 +4,7 @@
 *.html linguist-detectable=false
 *.js linguist-detectable=false
 *.rs linguist-detectable=false
-*.sh linguist-detectable=false
+*.sh linguist-detectable=false text eol=lf
 *.ts linguist-detectable=false
 *.tsx linguist-detectable=false
 *.gleam linguist-detectable=true

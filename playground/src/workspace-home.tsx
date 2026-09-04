@@ -5,6 +5,7 @@ import type {
 } from '@a3s-lab/office/core';
 import {
   ArrowRight,
+  ArrowRightLeft,
   FileDiff,
   FilePlus2,
   PanelLeftOpen,
@@ -34,6 +35,7 @@ export function WorkspaceHome({
   onOpenCollaborationDemo,
   onOpenSuggestionDemo,
   onOpenFormattingReviewDemo,
+  onOpenMoveReviewDemo,
   onOpenPdf,
 }: {
   artifacts: OfficeArtifact[];
@@ -46,6 +48,7 @@ export function WorkspaceHome({
   onOpenCollaborationDemo: () => void;
   onOpenSuggestionDemo: () => void;
   onOpenFormattingReviewDemo: () => void;
+  onOpenMoveReviewDemo: () => void;
   onOpenPdf: () => void;
 }) {
   const [query, setQuery] = useState('');
@@ -116,7 +119,7 @@ export function WorkspaceHome({
         <div className="playground-collaboration-copy">
           <h2 id="playground-collaboration-title">多人实时协作</h2>
           <p>
-            体验评论线程、文字建议、字符、段落与编号格式修订；在实时视图中提交、
+            体验评论线程、文字建议、字符、段落、编号与移动修订；在实时视图中提交、
             接受、拒绝和审计改动，同时查看参与者、远端选区和在线状态。
           </p>
           <span className="playground-collaboration-backend-note">
@@ -147,6 +150,14 @@ export function WorkspaceHome({
           >
             <FileDiff size={15} />
             体验格式修订
+          </button>
+          <button
+            type="button"
+            className="playground-secondary-button"
+            onClick={onOpenMoveReviewDemo}
+          >
+            <ArrowRightLeft size={15} />
+            体验移动修订
           </button>
           <a
             className="playground-secondary-button"

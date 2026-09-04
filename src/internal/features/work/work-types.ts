@@ -171,7 +171,11 @@ export type WorkDocumentChangeKind =
   | 'deletion'
   | 'formatting'
   | 'paragraph-formatting'
-  | 'numbering';
+  | 'numbering'
+  | 'move';
+
+/** The side of a native Word move revision represented by a text mark. */
+export type WorkDocumentMoveRole = 'from' | 'to';
 
 export type WorkDocumentChangeDecisionAction = 'accept' | 'reject';
 

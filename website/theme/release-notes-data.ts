@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.49.0',
+    date: '2026-09-04',
+    kind: 'new',
+    surfaces: ['writer', 'shared', 'playground', 'documentation'],
+    title: {
+      en: 'Writer move revisions stay paired and native',
+      zh: 'Writer 移动修订保持成对并原生往返',
+    },
+    summary: {
+      en: 'Bounded text-only Word move pairs now form one review decision, round-trip as native move records, and keep unsupported structures explicitly diagnosed.',
+      zh: '有界纯文字 Word 移动修订现在形成一条审核决定，以原生移动记录往返，并明确诊断不支持的结构。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One move, one review item',
+          zh: '一次移动，一张审核卡',
+        },
+        detail: {
+          en: 'Strict and transitional w:moveFrom/w:moveTo pairs with matching identity, author, date, and text import as one atomic move change. Accepting or rejecting it resolves both source and destination sides together.',
+          zh: '严格或过渡命名空间中身份、作者、日期和文字一致的 w:moveFrom/w:moveTo 会导入为一条原子移动修订；接受或拒绝会同时处理源位置和目标位置。',
+        },
+      },
+      {
+        title: {
+          en: 'Native output stays honest',
+          zh: '原生输出保持诚实',
+        },
+        detail: {
+          en: 'DOCX export rewrites transient wrappers into native moveFrom and moveTo elements, preserves review attribution, and reopens without private markers or negative IDs.',
+          zh: 'DOCX 导出会把临时包装改写为原生 moveFrom 和 moveTo 元素，保留审核归属，重开时不泄露私有标记或负数身份。',
+        },
+      },
+      {
+        title: {
+          en: 'Unsupported shapes fail closed',
+          zh: '不支持的形态失败关闭',
+        },
+        detail: {
+          en: 'Rich or relationship-bound content, range markers, malformed metadata, and unpaired moves remain compatibility diagnostics instead of being presented as editable semantics. The PDFium asset path is also stable for direct desktop and compact imports.',
+          zh: '富内容、关系绑定内容、范围标记、格式错误元数据和未配对移动会保留为兼容性诊断，不会伪装成可编辑语义；PDFium 资源路径也已稳定，桌面和紧凑布局的直接导入都能就绪。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#move-revisions',
+          zh: './components/document.html#移动修订',
+        },
+        label: {
+          en: 'Read the move-revision guide',
+          zh: '阅读移动修订指南',
+        },
+      },
+      {
+        href: {
+          en: './components/collaboration.html#synchronize-move-revisions',
+          zh: './components/collaboration.html#同步移动修订',
+        },
+        label: {
+          en: 'Read the collaboration contract',
+          zh: '阅读协作合同',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.49.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.49.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.48.1',
     date: '2026-09-03',
     kind: 'fixed',
