@@ -117,6 +117,141 @@ test('defers an authoritative controlled replacement until IME composition settl
   );
 });
 
+test('normalizes a WebKit commit that arrives after compositionend', async () => {
+  let editor: Editor | null = null;
+  const publications: DocumentContent[] = [];
+  const captureEditor = Extension.create({
+    name: 'captureLateControlledCompositionEditor',
+    onCreate() {
+      editor = this.editor;
+    },
+  });
+  const initial: DocumentContent = {
+    type: 'document',
+    html: '<p></p>',
+    pageSize: 'a4',
+  };
+
+  function ControlledDocumentEditor() {
+    const [content, setContent] = useState(initial);
+    return (
+      <DocumentEditor
+        content={content}
+        extensions={[captureEditor]}
+        onChange={(next) => {
+          publications.push(next);
+          setContent(next);
+        }}
+        theme="light"
+      />
+    );
+  }
+
+  render(<ControlledDocumentEditor />);
+  const surface = await screen.findByRole('textbox', { name: '文档正文' });
+  await waitFor(() => expect(editor).not.toBeNull());
+  const current = editor as Editor;
+
+  fireEvent.compositionStart(surface, { data: 'ni hao' });
+  act(() => {
+    current.commands.insertContent('ni hao');
+  });
+  expect(surface).toHaveTextContent('ni hao');
+  expect(publications).toEqual([]);
+
+  fireEvent.compositionEnd(surface, { data: '你好' });
+  // WebKit's late insertFromComposition path can append the committed text
+  // after compositionend has already reached the editor.
+  const committedInput = new Event('beforeinput', { bubbles: true });
+  Object.defineProperties(committedInput, {
+    data: { value: '你好' },
+    inputType: { value: 'insertFromComposition' },
+  });
+  surface.dispatchEvent(committedInput);
+  // The browser's `input` event still precedes ProseMirror's mutation
+  // observer flush. The tracker must not freeze the range until that flush
+  // has produced its transaction.
+  const committedInputEvent = new Event('input', { bubbles: true });
+  Object.defineProperties(committedInputEvent, {
+    data: { value: '你好' },
+    inputType: { value: 'insertFromComposition' },
+  });
+  surface.dispatchEvent(committedInputEvent);
+  act(() => {
+    current.commands.insertContent('你好');
+  });
+
+  await waitFor(() => expect(publications).toHaveLength(1), { timeout: 1_000 });
+  await waitFor(() => expect(surface).toHaveTextContent('你好'));
+  expect(surface).not.toHaveTextContent('ni hao');
+  expect(current.getText()).not.toContain('ni hao');
+  expect(current.getText()).toContain('你好');
+  expect(publications).toHaveLength(1);
+  expect(publications[0]?.html).toContain('你好');
+  expect(publications[0]?.html).not.toContain('ni hao');
+});
+
+test('folds a duplicate WebKit commit when the range already contains Chinese', async () => {
+  let editor: Editor | null = null;
+  const publications: DocumentContent[] = [];
+  const captureEditor = Extension.create({
+    name: 'captureAlreadyCommittedCompositionEditor',
+    onCreate() {
+      editor = this.editor;
+    },
+  });
+  const initial: DocumentContent = {
+    type: 'document',
+    html: '<p></p>',
+    pageSize: 'a4',
+  };
+
+  function ControlledDocumentEditor() {
+    const [content, setContent] = useState(initial);
+    return (
+      <DocumentEditor
+        content={content}
+        extensions={[captureEditor]}
+        onChange={(next) => {
+          publications.push(next);
+          setContent(next);
+        }}
+        theme="light"
+      />
+    );
+  }
+
+  render(<ControlledDocumentEditor />);
+  const surface = await screen.findByRole('textbox', { name: '文档正文' });
+  await waitFor(() => expect(editor).not.toBeNull());
+  const current = editor as Editor;
+
+  fireEvent.compositionStart(surface, { data: 'ni hao' });
+  act(() => {
+    current.commands.insertContent('你好');
+  });
+  fireEvent.compositionEnd(surface, { data: '你好' });
+
+  // Some WebKit builds expose the committed text once, then report the same
+  // commit again after compositionend. The second transaction must be folded
+  // into the tracked range rather than leaving "你好你好" in the document.
+  const committedInput = new Event('input', { bubbles: true });
+  Object.defineProperties(committedInput, {
+    data: { value: '你好' },
+    inputType: { value: 'insertFromComposition' },
+  });
+  surface.dispatchEvent(committedInput);
+  act(() => {
+    current.commands.insertContent('你好');
+  });
+
+  await waitFor(() => expect(publications).toHaveLength(1), { timeout: 1_000 });
+  expect(current.getText()).toContain('你好');
+  expect(current.getText()).not.toContain('你好你好');
+  expect(publications[0]?.html).toContain('你好');
+  expect(publications[0]?.html).not.toContain('你好你好');
+});
+
 test('keeps a local formatting publication until the controlled host acknowledges it', async () => {
   let editor: Editor | null = null;
   let published: DocumentContent | null = null;

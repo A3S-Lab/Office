@@ -1,6 +1,7 @@
 import type { Editor, Extensions } from '@tiptap/core';
 import Placeholder from '@tiptap/extension-placeholder';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
+import type { Transaction } from '@tiptap/pm/state';
 import { EditorContent, useEditor } from '@tiptap/react';
 import {
   type CSSProperties,
@@ -86,7 +87,10 @@ import { documentParagraphTabStops } from '../work-document-tab-stops';
 import { documentModelUsesWindowing } from '../work-document-windowing';
 import { createWorkId } from '../work-templates';
 import type { WorkDocumentContent, WorkDocumentNode } from '../work-types';
-import { ControlledEditorComposition } from './controlled-editor-composition';
+import {
+  ControlledEditorComposition,
+  type ControlledCompositionSnapshot,
+} from './controlled-editor-composition';
 import { DocumentChangesPanel } from './document-changes-panel';
 import { DocumentCitationsPanel } from './document-citations-panel';
 import { DocumentCommentsPanel } from './document-comments-panel';
@@ -364,9 +368,9 @@ function DocumentEditorSurface({
   const compositionRef = useRef<ControlledEditorComposition | null>(null);
   compositionRef.current ??= new ControlledEditorComposition();
   const composition = compositionRef.current;
-  const settleCompositionRef = useRef<(editor: Editor) => void>(
-    () => undefined,
-  );
+  const settleCompositionRef = useRef<
+    (editor: Editor, snapshot: ControlledCompositionSnapshot) => void
+  >(() => undefined);
   const trackChangesRef = useRef(
     suggestionOnly || Boolean(effectiveContent.trackChanges),
   );
@@ -499,14 +503,29 @@ function DocumentEditorSurface({
       },
       handleDOMEvents: {
         compositionstart: () => {
-          composition.start();
+          composition.start(editorRef.current);
           return false;
         },
-        compositionend: () => {
+        compositionupdate: () => {
+          composition.start(editorRef.current);
+          return false;
+        },
+        beforeinput: (_view: unknown, event: Event) => {
+          composition.noteInput(event);
+          return false;
+        },
+        input: (_view: unknown, event: Event) => {
+          composition.noteInput(event);
+          return false;
+        },
+        compositionend: (_view: unknown, event: Event) => {
           const current = editorRef.current;
           if (current) {
-            composition.end(current, (settled) =>
-              settleCompositionRef.current(settled),
+            composition.end(
+              current,
+              (event as CompositionEvent).data ?? null,
+              (settled, snapshot) =>
+                settleCompositionRef.current(settled, snapshot),
             );
           }
           return false;
@@ -631,7 +650,32 @@ function DocumentEditorSurface({
     },
     [publishDocumentUpdate, queueLazyDocumentPublication],
   );
-  settleCompositionRef.current = (current) => {
+  settleCompositionRef.current = (current, snapshot) => {
+    if (snapshot.text !== null && snapshot.range && !current.isDestroyed) {
+      const maximum = current.state.doc.content.size;
+      const from = Math.max(0, Math.min(maximum, snapshot.range.from));
+      const to = Math.max(0, Math.min(maximum, snapshot.range.to));
+      const start = Math.min(from, to);
+      const end = Math.max(from, to);
+      const currentText = current.state.doc.textBetween(start, end, '\n', '\n');
+      if (currentText !== snapshot.text) {
+        if (trackChangesRef.current) {
+          current.commands.replaceDocumentTextWithTrackedChange(
+            start,
+            end,
+            snapshot.text,
+          );
+        } else {
+          current.view.dispatch(
+            current.state.tr
+              .insertText(snapshot.text, start, end)
+              .setMeta('composition', snapshot.id)
+              .setMeta('uiEvent', 'input'),
+          );
+        }
+        current.view.dom.dataset.documentCompositionNormalized = 'true';
+      }
+    }
     const pending = pendingLazyPublicationRef.current;
     if (pending) {
       pending.cancel();
@@ -720,6 +764,10 @@ function DocumentEditorSurface({
       composition.destroy();
     },
     onTransaction: ({ appendedTransactions, editor: current, transaction }) => {
+      composition.recordTransaction(transaction);
+      for (const appended of appendedTransactions ?? []) {
+        composition.recordTransaction(appended as Transaction);
+      }
       if (
         documentTransactionsOnlyHydrateChunks([
           transaction,
@@ -1160,10 +1208,16 @@ function DocumentEditorSurface({
       layout.pageSize,
     ],
   );
+  const documentCompositionIsActive = useCallback(
+    () => composition.isBlocking(editor),
+    [composition, editor],
+  );
   const pagination = useDocumentPagination({
+    compositionRevision,
     editor,
     documentRevision: editorInput.revision,
     enabled: Boolean(editor && viewMode === 'page'),
+    isComposing: documentCompositionIsActive,
     layoutKey: [
       layout.breakAfter,
       layout.columns.count,
