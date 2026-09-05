@@ -169,7 +169,9 @@ program
 
 program
   .command('wps-fields-probe')
-  .description('Capture WPS Writer COM field-switch reference output (Windows).')
+  .description(
+    'Capture WPS Writer COM field-switch reference output (Windows).',
+  )
   .option('--output <docx>', 'exact output DOCX path')
   .option('--json', 'reserved for the probe JSON receipt')
   .action((options: WpsFieldsProbeOption) => {

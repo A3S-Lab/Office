@@ -893,9 +893,7 @@ async function createWpsNumericFieldsWordFixture(): Promise<Buffer> {
       {
         children: [
           new Paragraph({
-            children: [
-              new TextRun({ text: 'WPS numeric fields placeholder' }),
-            ],
+            children: [new TextRun({ text: 'WPS numeric fields placeholder' })],
           }),
         ],
       },

@@ -360,9 +360,11 @@ export function supportedDocxDocumentFieldInstruction(
 
 /** Returns the supported numeric display switch, preserving its source case. */
 export function numericFieldFormatSwitch(source: string): string | null {
-  return /(?:^|\s)(\\\*\s+(?:Arabic|ROMAN|roman|ALPHABETIC|alphabetic|Ordinal)\b)/i.exec(
-    source,
-  )?.[1] ?? null;
+  return (
+    /(?:^|\s)(\\\*\s+(?:Arabic|ROMAN|roman|ALPHABETIC|alphabetic|Ordinal)\b)/i.exec(
+      source,
+    )?.[1] ?? null
+  );
 }
 
 function isNumericFieldKind(kind: WorkDocumentFieldKind): boolean {
@@ -380,9 +382,10 @@ function onlyNumericFieldSwitches(source: string): boolean {
   let formatSeen = false;
   let mergeFormatSeen = false;
   while (rest) {
-    const format = /^\\\*\s+(Arabic|ROMAN|roman|ALPHABETIC|alphabetic|Ordinal)\b/i.exec(
-      rest,
-    );
+    const format =
+      /^\\\*\s+(Arabic|ROMAN|roman|ALPHABETIC|alphabetic|Ordinal)\b/i.exec(
+        rest,
+      );
     if (format && !formatSeen) {
       formatSeen = true;
       rest = rest.slice(format[0].length).trim();
@@ -407,9 +410,7 @@ function formatNumericFieldValue(value: number, instruction: string): string {
   }
   if (format === 'alphabetic' || format === 'alphabeticLower') {
     const alphabetic = toAlphabetic(value);
-    return format === 'alphabeticLower'
-      ? alphabetic.toLowerCase()
-      : alphabetic;
+    return format === 'alphabeticLower' ? alphabetic.toLowerCase() : alphabetic;
   }
   if (format === 'ordinal') return ordinal(value);
   return String(value);
@@ -418,9 +419,10 @@ function formatNumericFieldValue(value: number, instruction: string): string {
 function numericFieldFormatSwitchValue(
   instruction: string,
 ): WorkDocumentNumericFieldFormat {
-  const token = /\\\*\s+(Arabic|ROMAN|roman|ALPHABETIC|alphabetic|Ordinal)\b/i.exec(
-    instruction,
-  )?.[1];
+  const token =
+    /\\\*\s+(Arabic|ROMAN|roman|ALPHABETIC|alphabetic|Ordinal)\b/i.exec(
+      instruction,
+    )?.[1];
   if (token === 'ROMAN') return 'roman';
   if (token && token.toLowerCase() === 'roman') return 'romanLower';
   if (token === 'ALPHABETIC') return 'alphabetic';
@@ -476,9 +478,9 @@ function ordinal(value: number): string {
   const suffix =
     mod100 >= 11 && mod100 <= 13
       ? 'th'
-      : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[
-            value % 10
-          ] ?? 'th';
+      : (({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[
+          value % 10
+        ] ?? 'th');
   return `${value}${suffix}`;
 }
 

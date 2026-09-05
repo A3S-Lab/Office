@@ -294,17 +294,21 @@ describe('document fields', () => {
       sectionNumber: 4,
       sectionPages: 42,
     };
-    expect(
-      documentFieldDisplay('page', context, 'PAGE \\* ROMAN'),
-    ).toBe('XLII');
-    expect(
-      documentFieldDisplay('page', context, 'PAGE \\* roman'),
-    ).toBe('xlii');
+    expect(documentFieldDisplay('page', context, 'PAGE \\* ROMAN')).toBe(
+      'XLII',
+    );
+    expect(documentFieldDisplay('page', context, 'PAGE \\* roman')).toBe(
+      'xlii',
+    );
     expect(
       documentFieldDisplay('numPages', context, 'NUMPAGES \\* ALPHABETIC'),
     ).toBe('AP');
     expect(
-      documentFieldDisplay('sectionPages', context, 'SECTIONPAGES \\* alphabetic'),
+      documentFieldDisplay(
+        'sectionPages',
+        context,
+        'SECTIONPAGES \\* alphabetic',
+      ),
     ).toBe('ap');
     expect(
       documentFieldDisplay(
@@ -319,14 +323,14 @@ describe('document fields', () => {
       supportedDocxDocumentFieldInstruction('PAGE \\* ROMAN \\* MERGEFORMAT'),
     ).toBe(true);
     expect(
-      supportedDocxDocumentFieldInstruction('PAGEREF Target \\h \\* alphabetic'),
+      supportedDocxDocumentFieldInstruction(
+        'PAGEREF Target \\h \\* alphabetic',
+      ),
     ).toBe(true);
     expect(
       supportedDocxDocumentFieldInstruction('PAGE \\* ROMAN \\* Arabic'),
     ).toBe(false);
-    expect(
-      supportedDocxDocumentFieldInstruction('PAGE \\# "000"'),
-    ).toBe(false);
+    expect(supportedDocxDocumentFieldInstruction('PAGE \\# "000"')).toBe(false);
   });
 
   test('retargets a page reference when its bookmark identity is normalized', () => {

@@ -661,9 +661,7 @@ test('publishes the WPS VML connector boundary across code, docs, and A3S Test e
   expect(changelog).toContain('Commander-based `office-ui-ops` local CLI');
   expect(changelog).toContain('WPS VML connectors');
   expect(product).toContain('The seventy-second Writer milestone');
-  expect(roadmap).toContain(
-    'straight, elbow, and curved connector subset',
-  );
+  expect(roadmap).toContain('straight, elbow, and curved connector subset');
   expect(readme).toContain('Version `0.54.0`');
   expect(releaseData).toContain("version: '0.54.0'");
   expect(diagnostics).toContain("'docx.connectors'");
