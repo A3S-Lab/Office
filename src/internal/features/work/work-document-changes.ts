@@ -487,10 +487,6 @@ export function collectDocumentChanges(
   document: ProseMirrorNode,
 ): WorkDocumentChange[] {
   const changes = new Map<string, WorkDocumentChange>();
-  const blockChangeRanges = new Map<
-    string,
-    Array<{ from: number; to: number }>
-  >();
   const moveTextParts = new Map<string, MoveChangeSummary>();
   document.descendants((node, position) => {
     if (
@@ -517,9 +513,6 @@ export function collectDocumentChanges(
         to,
         text: node.textContent,
       });
-      const ranges = blockChangeRanges.get(key) ?? [];
-      ranges.push({ from, to });
-      blockChangeRanges.set(key, ranges);
     }
     if (
       (node.type.name === 'paragraph' || node.type.name === 'heading') &&
@@ -590,14 +583,11 @@ export function collectDocumentChanges(
     const moveRole = documentMoveRole(mark.attrs.moveRole);
     const id = stringAttribute(mark.attrs.id) || `change-at-${position}`;
     const key = `${kind}:${id}`;
-    if (
-      blockChangeRanges
-        .get(key)
-        ?.some(
-          (range) =>
-            position >= range.from && position + node.nodeSize <= range.to,
-        )
-    ) {
+    // WPS/Word may assign a different revision id to the paragraph mark and
+    // to the text wrapper inside that paragraph.  Once a text node is inside
+    // any native block-change range, expose the block as the single review
+    // item instead of leaking a duplicate inline change with the other id.
+    if (positionIsInsideBlockChange(document, position)) {
       return;
     }
     const current = changes.get(key);
@@ -677,6 +667,25 @@ export function collectDocumentChanges(
   );
 }
 
+function positionIsInsideBlockChange(
+  document: ProseMirrorNode,
+  position: number,
+): boolean {
+  const resolved = document.resolve(position);
+  for (let depth = resolved.depth; depth > 0; depth -= 1) {
+    const ancestor = resolved.node(depth);
+    if (
+      (ancestor.type.name === 'paragraph' ||
+        ancestor.type.name === 'heading') &&
+      (ancestor.attrs.blockChangeKind === 'insertion' ||
+        ancestor.attrs.blockChangeKind === 'deletion')
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Resolves every revision on an immutable document snapshot. A malformed
  * formatting snapshot returns `null` instead of approximating the baseline.
@@ -712,16 +721,20 @@ function resolveDocumentChangesTransaction(
   decision: 'accept' | 'reject',
   ids?: Set<string>,
 ): number {
-  const segments = documentChangeSegments(state.doc, type).filter(
+  const allBlockSegments = blockChangeSegments(state.doc);
+  const blockSegments = allBlockSegments.filter(
     (segment) => !ids || ids.has(segment.id),
+  );
+  const segments = documentChangeSegments(state.doc, type).filter(
+    (segment) =>
+      !ids ||
+      ids.has(segment.id) ||
+      blockSegments.some((block) => segmentIsInsideBlock(segment, block)),
   );
   const paragraphSegments = paragraphChangeSegments(state.doc).filter(
     (segment) => !ids || ids.has(segment.id),
   );
   const numberingSegments = numberingChangeSegments(state.doc).filter(
-    (segment) => !ids || ids.has(segment.id),
-  );
-  const blockSegments = blockChangeSegments(state.doc).filter(
     (segment) => !ids || ids.has(segment.id),
   );
   if (
@@ -768,8 +781,16 @@ function resolveDocumentChangesTransaction(
       )
       .map((segment) => segment.id),
   );
+  const removedBlockSegments = blockSegments.filter((segment) =>
+    removedBlockIds.has(segment.id),
+  );
   for (const segment of segments) {
-    if (removedBlockIds.has(segment.id)) continue;
+    if (
+      removedBlockIds.has(segment.id) ||
+      removedBlockSegments.some((block) => segmentIsInsideBlock(segment, block))
+    ) {
+      continue;
+    }
     if (segment.kind === 'formatting') {
       markRemovals.push(segment);
       if (decision === 'reject') formattingRejections.push(segment);
@@ -867,6 +888,13 @@ function resolveDocumentChangesTransaction(
         ].map((segment) => segment.id),
       ).size
     : 0;
+}
+
+function segmentIsInsideBlock(
+  segment: Pick<ChangeSegment, 'from' | 'to'>,
+  block: Pick<BlockChangeSegment, 'from' | 'to'>,
+): boolean {
+  return segment.from >= block.from && segment.to <= block.to;
 }
 
 function trackedReplacement(

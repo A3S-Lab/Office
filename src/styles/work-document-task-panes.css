@@ -1227,6 +1227,17 @@
     width: 100%;
   }
 
+  .work-document-changes-panel > .work-document-changes-bulk-actions .ds-button,
+  .work-document-changes-panel .work-document-change-item > div .ds-button {
+    height: 44px;
+    min-height: 44px;
+    padding-inline: 12px;
+  }
+
+  .work-document-changes-panel .work-document-change-summary {
+    min-height: 44px;
+  }
+
   .work-document-citation-manager > form {
     grid-template-columns: 1fr;
   }

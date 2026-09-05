@@ -23,6 +23,7 @@ import { diagnoseDocxPageSize } from './work-docx-page-size-diagnostics';
 import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diagnostics';
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import { isSupportedDocxParagraphFormattingChange } from './work-docx-paragraph-format-change-import';
+import { isSupportedDocxParagraphMarkChange } from './work-docx-paragraph-mark-change-import';
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { diagnoseDocxProofing } from './work-docx-proofing-diagnostics';
 import { diagnoseDocxRunBorders } from './work-docx-run-border-diagnostics';
@@ -376,6 +377,15 @@ export async function analyzeDocxCompatibility(
       ].filter(isSupportedDocxMoveChange).length;
       const runFormattingRevisions = descendants(document, 'rPrChange');
       const paragraphFormattingRevisions = descendants(document, 'pPrChange');
+      const paragraphMarkRevisions = [
+        ...descendants(document, 'ins'),
+        ...descendants(document, 'del'),
+      ].filter(
+        (revision) =>
+          revision.parentElement?.localName === 'rPr' &&
+          revision.parentElement.parentElement?.localName === 'pPr' &&
+          revision.parentElement.parentElement.parentElement?.localName === 'p',
+      );
       const numberingRevisions = descendants(document, 'numberingChange');
       const supportedRunFormattingRevisionCount = runFormattingRevisions.filter(
         isSupportedDocxRunFormattingChange,
@@ -384,6 +394,11 @@ export async function analyzeDocxCompatibility(
         paragraphFormattingRevisions.filter(
           isSupportedDocxParagraphFormattingChange,
         ).length;
+      const supportedParagraphMarkRevisions = paragraphMarkRevisions.filter(
+        isSupportedDocxParagraphMarkChange,
+      );
+      const supportedParagraphMarkRevisionCount =
+        supportedParagraphMarkRevisions.length;
       const supportedNumberingRevisionCount = numberingRevisions.filter(
         isSupportedDocxNumberingChange,
       ).length;
@@ -433,6 +448,16 @@ export async function analyzeDocxCompatibility(
           ),
         );
       }
+      if (supportedParagraphMarkRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.paragraph-mark',
+            'Paragraph-mark revisions',
+            `${supportedParagraphMarkRevisionCount} bounded paragraph-mark insertion/deletion revision(s) preserve author, date, and whole-paragraph accept/reject semantics through Work and native DOCX w:pPr/w:rPr/w:ins or w:del round trips.`,
+            'info',
+          ),
+        );
+      }
       if (supportedMovePairCount) {
         issues.push(
           issue(
@@ -446,12 +471,14 @@ export async function analyzeDocxCompatibility(
       if (
         textRevisions.some(
           (revision) =>
+            !supportedParagraphMarkRevisions.includes(revision) &&
             !descendants(revision, 't').length &&
             !descendants(revision, 'delText').length,
         ) ||
         supportedRunFormattingRevisionCount !== runFormattingRevisions.length ||
         supportedParagraphFormattingRevisionCount !==
           paragraphFormattingRevisions.length ||
+        supportedParagraphMarkRevisionCount !== paragraphMarkRevisions.length ||
         supportedNumberingRevisionCount !== numberingRevisions.length ||
         supportedMoveRevisionCount !== moveRevisionCount ||
         supportedMoveRevisionCount !== supportedMovePairCount * 2 ||
@@ -470,7 +497,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.structural',
             'Structural revisions',
-            'Moved content plus unsupported character formatting, paragraph formatting, numbering, section, row, cell, and table-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded text moves, character-, paragraph-, and ordered-list-numbering subsets.',
+            'Moved content plus unsupported paragraph-break, character formatting, paragraph formatting, numbering, section, row, cell, and table-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded whole-paragraph mark, text-move, character-, paragraph-, and ordered-list-numbering subsets.',
           ),
         );
       }

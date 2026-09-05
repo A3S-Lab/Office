@@ -148,6 +148,12 @@ import {
   markDocxParagraphIndents,
 } from './work-docx-paragraph-indent-import';
 import {
+  applyImportedDocxParagraphMarkChangeMarkers,
+  hasImportedDocxParagraphMarkChangeMarkers,
+  type ImportedDocxParagraphMarkChangeMarkers,
+  markDocxParagraphMarkChanges,
+} from './work-docx-paragraph-mark-change-import';
+import {
   applyImportedDocxParagraphPaginationMarkers,
   hasImportedDocxParagraphPaginationMarkers,
   type ImportedDocxParagraphPaginationMarkers,
@@ -251,6 +257,7 @@ export interface PreparedDocxImport {
   contentControlMarkers: ImportedDocxContentControlMarkers;
   paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers;
   paragraphFormattingChangeMarkers: ImportedDocxParagraphFormattingChangeMarkers;
+  paragraphMarkChangeMarkers: ImportedDocxParagraphMarkChangeMarkers;
   paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers;
   paragraphDirectionMarkers: ImportedDocxParagraphDirectionMarkers;
   paragraphIndentMarkers: ImportedDocxParagraphIndentMarkers;
@@ -302,6 +309,7 @@ export async function prepareDocxImport(
       contentControlMarkers: { controls: [], unsupported: 0 },
       paragraphIdentityMarkers: { paragraphs: [] },
       paragraphFormattingChangeMarkers: { paragraphs: [] },
+      paragraphMarkChangeMarkers: { paragraphs: [] },
       paragraphAlignmentMarkers: { paragraphs: [] },
       paragraphDirectionMarkers: { paragraphs: [] },
       paragraphIndentMarkers: { paragraphs: [] },
@@ -329,6 +337,7 @@ export async function prepareDocxImport(
 
   const document = await archive.xml('word/document.xml');
   const pageColor = importDocxPageColor(document);
+  const paragraphMarkChangeMarkers = markDocxParagraphMarkChanges(document);
   const tableOfContentsMarkers = markDocxTablesOfContents(document);
   const indexMarkers = markDocxIndexes(document);
   const contentControlMarkers = markDocxContentControls(document);
@@ -451,6 +460,7 @@ export async function prepareDocxImport(
   const trackChanges =
     Boolean(settings && firstDescendant(settings, 'trackRevisions')) ||
     changeMarkers.changes.length > 0 ||
+    paragraphMarkChangeMarkers.paragraphs.length > 0 ||
     numberingChangeMarkers.groups.length > 0 ||
     paragraphFormattingChangeMarkers.paragraphs.length > 0 ||
     runFormattingMarkers.runs.some((run) => Boolean(run.change));
@@ -476,6 +486,7 @@ export async function prepareDocxImport(
         hasImportedDocxParagraphFormattingChangeMarkers(
           paragraphFormattingChangeMarkers,
         ) ||
+        hasImportedDocxParagraphMarkChangeMarkers(paragraphMarkChangeMarkers) ||
         hasImportedDocxParagraphAlignmentMarkers(paragraphAlignmentMarkers) ||
         hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
         hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
@@ -508,6 +519,7 @@ export async function prepareDocxImport(
       contentControlMarkers,
       paragraphIdentityMarkers,
       paragraphFormattingChangeMarkers,
+      paragraphMarkChangeMarkers,
       paragraphAlignmentMarkers,
       paragraphDirectionMarkers,
       paragraphIndentMarkers,
@@ -563,6 +575,7 @@ export async function prepareDocxImport(
       hasImportedDocxParagraphFormattingChangeMarkers(
         paragraphFormattingChangeMarkers,
       ) ||
+      hasImportedDocxParagraphMarkChangeMarkers(paragraphMarkChangeMarkers) ||
       hasImportedDocxParagraphAlignmentMarkers(paragraphAlignmentMarkers) ||
       hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
       hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
@@ -595,6 +608,7 @@ export async function prepareDocxImport(
     contentControlMarkers,
     paragraphIdentityMarkers,
     paragraphFormattingChangeMarkers,
+    paragraphMarkChangeMarkers,
     paragraphAlignmentMarkers,
     paragraphDirectionMarkers,
     paragraphIndentMarkers,
@@ -637,6 +651,9 @@ export function applyDocxSectionsToHtml(
     paragraphs: [],
   },
   paragraphFormattingChangeMarkers: ImportedDocxParagraphFormattingChangeMarkers = {
+    paragraphs: [],
+  },
+  paragraphMarkChangeMarkers: ImportedDocxParagraphMarkChangeMarkers = {
     paragraphs: [],
   },
   paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers = {
@@ -711,6 +728,10 @@ export function applyDocxSectionsToHtml(
   applyImportedDocxParagraphFormattingChangeMarkers(
     document,
     paragraphFormattingChangeMarkers,
+  );
+  applyImportedDocxParagraphMarkChangeMarkers(
+    document,
+    paragraphMarkChangeMarkers,
   );
   applyImportedDocxTableCellMarkers(document, tableCellMarkers);
   applyImportedDocxTableSizingMarkers(document, tableSizingMarkers);

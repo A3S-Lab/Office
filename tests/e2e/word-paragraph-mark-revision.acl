@@ -1,0 +1,171 @@
+suite "word-paragraph-mark-revision" {
+    version = 1
+
+    scenario "review-wps-whole-paragraph-revisions" {
+        name = "Review WPS whole-paragraph revisions as two atomic changes"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=paragraph-mark-revision"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-wps-paragraph-mark-document" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-paragraph-mark-revisions.docx"]
+        }
+
+        wait "native-block-revisions-are-ready" {
+            visible = css(".ProseMirror [data-document-block-change='true'][data-block-change-kind='insertion']")
+        }
+
+        expect "native-deletion-is-ready" {
+            visible = css(".ProseMirror [data-document-block-change='true'][data-block-change-kind='deletion']")
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-review-pane" {
+            target = role("button", "查看修订（2）")
+        }
+
+        wait "two-review-cards-are-ready" {
+            visible = css(".work-document-change-list[data-document-change-count='2']")
+        }
+
+        expect "one-insertion-card-is-visible" {
+            visible = css(".work-document-change-item.insertion")
+        }
+
+        expect "one-deletion-card-is-visible" {
+            visible = css(".work-document-change-item.deletion")
+        }
+
+        expect "wps-author-is-visible" {
+            text = "WPS Reference"
+        }
+
+        click "accept-whole-paragraph-insertion" {
+            target = role("button", "接受修订 1")
+        }
+
+        wait "only-deletion-remains" {
+            visible = css(".work-document-change-list[data-document-change-count='1'] .work-document-change-item.deletion")
+        }
+
+        expect "accepted-insertion-stays-without-review-markup" {
+            visible = css(".ProseMirror p:not([data-document-block-change])")
+        }
+
+        click "accept-whole-paragraph-deletion" {
+            target = role("button", "接受修订 1")
+        }
+
+        expect "deleted-paragraph-is-gone" {
+            visible = css(".ProseMirror:not(:has([data-document-block-change])):not(:has(del[data-document-change]))")
+        }
+
+        expect "stable-paragraph-remains" {
+            text = "Stable paragraph outside both native revisions."
+        }
+
+        accessibility "resolved-paragraph-mark-accessibility" {
+            path = "evidence/word-paragraph-mark-revision-resolved.json"
+            interactive = false
+        }
+
+        console "paragraph-mark-console" {
+            path = "diagnostics/word-paragraph-mark-console.json"
+            clear = false
+        }
+
+        page_errors "paragraph-mark-page-errors" {
+            path = "diagnostics/word-paragraph-mark-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "review-wps-paragraph-mark-revisions-on-phone" {
+        name = "Keep WPS paragraph revision decisions touch-sized on phone"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-phone-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=paragraph-mark-revision-phone"
+        }
+
+        upload "open-phone-wps-paragraph-mark-document" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-paragraph-mark-revisions.docx"]
+        }
+
+        wait "phone-native-block-revisions-are-ready" {
+            visible = css(".ProseMirror [data-document-block-change='true']")
+        }
+
+        click "open-phone-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-phone-review-dialog" {
+            target = role("button", "查看修订（2）")
+        }
+
+        expect "phone-review-is-modal" {
+            visible = css(".work-document-changes-panel[role='dialog'][aria-modal='true']")
+        }
+
+        expect "phone-review-has-two-cards" {
+            visible = css(".work-document-change-list[data-document-change-count='2']")
+        }
+
+        expect "phone-accept-action-is-touch-sized" {
+            visible = css(".work-document-change-item button[aria-label='接受修订 1']")
+        }
+
+        screenshot "phone-paragraph-mark-review" {
+            path = "screenshots/word-paragraph-mark-revision-phone.png"
+        }
+
+        accessibility "phone-paragraph-mark-accessibility" {
+            path = "evidence/word-paragraph-mark-revision-phone.json"
+            interactive = true
+        }
+
+        click "close-phone-review-dialog" {
+            target = role("button", "关闭修订审阅")
+        }
+
+        expect "phone-review-focus-is-restored" {
+            visible = css("button[aria-label='查看修订（2）']:focus")
+        }
+
+        console "phone-paragraph-mark-console" {
+            path = "diagnostics/word-paragraph-mark-phone-console.json"
+            clear = false
+        }
+
+        page_errors "phone-paragraph-mark-page-errors" {
+            path = "diagnostics/word-paragraph-mark-phone-page-errors.json"
+            clear = false
+        }
+    }
+}

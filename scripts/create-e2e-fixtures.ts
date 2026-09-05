@@ -24,6 +24,7 @@ import {
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
 import * as XLSX from 'xlsx';
+import { createWordParagraphMarkRevisionFixture } from '../tests/fixtures/word-paragraph-mark-revision';
 
 const fixtureDirectory = path.resolve(
   import.meta.dirname,
@@ -50,6 +51,10 @@ const longDocumentPath = path.join(
 const longRevisionDocumentPath = path.join(
   fixtureDirectory,
   'word-revisions-120.docx',
+);
+const paragraphMarkRevisionDocumentPath = path.join(
+  fixtureDirectory,
+  'word-paragraph-mark-revisions.docx',
 );
 const longCommentDocumentPath = path.join(
   fixtureDirectory,
@@ -121,6 +126,10 @@ await Bun.write(
   spreadsheet1904DateSystemPath,
   await createSpreadsheet1904DateSystemFixture(),
 );
+await Bun.write(
+  paragraphMarkRevisionDocumentPath,
+  await createWordParagraphMarkRevisionFixture(),
+);
 await Bun.write(longDocumentPath, await createLongWordNavigationFixture());
 await Bun.write(
   longRevisionDocumentPath,
@@ -164,6 +173,7 @@ console.log(`Created ${documentComparisonPath}`);
 console.log(`Created ${crossParagraphDocumentComparisonPath}`);
 console.log(`Created ${longDocumentPath}`);
 console.log(`Created ${longRevisionDocumentPath}`);
+console.log(`Created ${paragraphMarkRevisionDocumentPath}`);
 console.log(`Created ${longCommentDocumentPath}`);
 console.log(`Created ${multiPageTableDocumentPath}`);
 console.log(`Created ${themeTableDocumentPath}`);

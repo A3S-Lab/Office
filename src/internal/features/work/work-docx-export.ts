@@ -208,6 +208,10 @@ import {
   DocxParagraphIdentityPatchCollector,
   patchDocxParagraphIdentities,
 } from './work-docx-paragraph-identity';
+import {
+  DocxParagraphMarkChangePatchCollector,
+  patchDocxParagraphMarkChanges,
+} from './work-docx-paragraph-mark-change-export';
 import { documentParagraphShadingDocxOptions } from './work-docx-paragraph-shading-export';
 import { documentProofingLanguageDocxOptions } from './work-docx-proofing';
 import {
@@ -284,6 +288,7 @@ interface DocxNoteContext extends DocxListExportContext {
   usedNativeTextEffectMarkers: Set<string>;
   usedOpenTypeMarkers: Set<string>;
   paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
+  paragraphMarkChangePatches: DocxParagraphMarkChangePatchCollector;
   numberingChangePatches: DocxNumberingChangePatchCollector;
   moveRevisionPatches: DocxMoveRevisionPatchCollector;
   moveRevisionDefaultDate: string;
@@ -385,6 +390,7 @@ export async function createDocxBlob(
     usedOpenTypeMarkers: new Set(),
     paragraphFormattingChangePatches:
       new DocxParagraphFormattingChangePatchCollector(),
+    paragraphMarkChangePatches: new DocxParagraphMarkChangePatchCollector(),
     numberingChangePatches: new DocxNumberingChangePatchCollector(),
     moveRevisionPatches: new DocxMoveRevisionPatchCollector(),
     moveRevisionDefaultDate: new Date().toISOString(),
@@ -588,8 +594,12 @@ export async function createDocxBlob(
       indexPatched,
       noteContext.paragraphFormattingChangePatches.patches,
     );
-  const numberingChangesPatched = await patchDocxNumberingChanges(
+  const paragraphMarkChangesPatched = await patchDocxParagraphMarkChanges(
     paragraphFormattingChangesPatched,
+    noteContext.paragraphMarkChangePatches.patches,
+  );
+  const numberingChangesPatched = await patchDocxNumberingChanges(
+    paragraphMarkChangesPatched,
     noteContext.numberingChangePatches.patches,
   );
   const moveRevisionsPatched = await patchDocxMoveRevisions(
@@ -1129,10 +1139,25 @@ async function paragraphRuns(
           docxRevisionId(element, noteContext),
         )
       : null;
+  const paragraphMarkChangeMarker = element.hasAttribute(
+    'data-document-block-change',
+  )
+    ? noteContext.paragraphMarkChangePatches.register(
+        element,
+        docxRevisionIdForKey(
+          element.dataset.blockChangeId?.trim() ?? '',
+          noteContext,
+          'paragraph-mark',
+        ),
+      )
+    : null;
   return [
     new docx.TextRun(identityMarker),
     ...(paragraphFormattingChangeMarker
       ? [new docx.TextRun(paragraphFormattingChangeMarker)]
+      : []),
+    ...(paragraphMarkChangeMarker
+      ? [new docx.TextRun(paragraphMarkChangeMarker)]
       : []),
     ...(await inlineRuns(element, docx, noteContext)),
   ];
@@ -1658,6 +1683,14 @@ function docxRevisionId(
 ): number {
   const baseKey =
     element.dataset.changeId?.trim() || `change-${context.nextChangeId}`;
+  return docxRevisionIdForKey(baseKey, context, suffix);
+}
+
+function docxRevisionIdForKey(
+  baseKey: string,
+  context: DocxNoteContext,
+  suffix?: string,
+): number {
   const key = suffix ? `${baseKey}:${suffix}` : baseKey;
   let id = context.changeIds.get(key);
   if (!id) {
@@ -1672,7 +1705,7 @@ function documentHasTrackedChanges(html: string): boolean {
   const document = new DOMParser().parseFromString(html, 'text/html');
   return Boolean(
     document.body.querySelector(
-      'ins[data-document-change], del[data-document-change], span[data-document-change][data-change-kind="formatting"], [data-document-change][data-change-kind="paragraph-formatting"], [data-document-change][data-change-kind="numbering"], [data-document-change][data-change-kind="move"]',
+      'ins[data-document-change], del[data-document-change], span[data-document-change][data-change-kind="formatting"], [data-document-change][data-change-kind="paragraph-formatting"], [data-document-change][data-change-kind="numbering"], [data-document-change][data-change-kind="move"], [data-document-block-change="true"]',
     ),
   );
 }

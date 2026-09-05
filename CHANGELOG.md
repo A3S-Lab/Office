@@ -4,6 +4,27 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.52.0 - 2026-09-05
+
+- Added bounded native Writer whole-paragraph insertion and deletion
+  revisions. Exact text-only paragraphs with matching body and paragraph-mark
+  `w:ins` or `w:del` metadata now import as one atomic review item, retain
+  author and date, accept or reject the complete block, and export/reopen with
+  native `w:pPr/w:rPr` paragraph-mark records without private markers.
+- Kept paragraph-break semantics fail-closed. Isolated merge/split marks,
+  mixed or relationship-bound content, malformed or spoofed namespaces,
+  conflicting metadata, and over-limit inputs remain structural diagnostics
+  instead of being guessed as whole-paragraph changes. WPS Office
+  12.1.0.22215 COM inspection confirmed that its whole-paragraph revisions use
+  separate native IDs for the paragraph mark and body wrapper while sharing
+  author and timestamp; UI Automation exposed the custom Writer shell but not
+  an inspectable ribbon tree.
+- Added deterministic WPS-shaped DOCX fixtures, focused import/export and
+  atomic-decision tests, desktop and 390 px Playwright review flows, a
+  local-only A3S Test suite, and 44 px compact review actions. The browser
+  checks cover keyboard navigation, modal containment, focus restoration,
+  accessibility, screenshots, and clean console/page-error diagnostics.
+
 ## 0.51.0 - 2026-09-04
 
 - Extended bounded Writer Compare move inference across simple text paragraphs

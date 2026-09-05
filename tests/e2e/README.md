@@ -236,6 +236,20 @@ bun run test:e2e:writer-move-revision:check
 bun run test:e2e:writer-move-revision
 ```
 
+The Writer whole-paragraph mark-revision workflow has a focused desktop/phone
+gate:
+
+```bash
+bun run test:e2e:writer-paragraph-mark-revision:check
+bun run test:e2e:writer-paragraph-mark-revision
+```
+
+It imports the deterministic native DOCX fixture, verifies one inserted and one
+deleted whole-paragraph card, resolves both as complete blocks, and checks the
+390 px modal review surface, focus restoration, accessibility, screenshots,
+and empty console/page-error diagnostics. The suite is local-only and is not
+installed or invoked by GitHub Actions or Pages.
+
 The Writer native character-spacing workflow has a focused local gate:
 
 ```bash

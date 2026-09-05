@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.52.0',
+    date: '2026-09-05',
+    kind: 'new',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer whole-paragraph changes stay native and atomic',
+      zh: 'Writer 整段修订保持原生与原子语义',
+    },
+    summary: {
+      en: 'Bounded text-only paragraph insertions and deletions now review as one complete block and round-trip through native paragraph-mark records.',
+      zh: '有界纯文字整段插入与删除现在作为一个完整块审核，并通过原生段落标记记录往返。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One paragraph, one decision',
+          zh: '一个段落，一项决定',
+        },
+        detail: {
+          en: 'Matching body and paragraph-mark insertions or deletions import as one review card. Accept, reject, Undo, export, and reopen preserve the complete block, author, date, and native tracked-change state.',
+          zh: '正文与段落标记相匹配的插入或删除会导入为一张审核卡。接受、拒绝、撤销、导出和重开都会保留完整块、作者、日期和原生修订状态。',
+        },
+      },
+      {
+        title: {
+          en: 'Native identities stay truthful',
+          zh: '原生身份保持真实',
+        },
+        detail: {
+          en: 'The bounded recognizer validates body and paragraph-mark IDs independently, matching the separate identities observed in the installed WPS reference while requiring the same author, timestamp, kind, and exact text-only structure.',
+          zh: '有界识别器会分别校验正文和段落标记 ID，以匹配本机 WPS 参考中观察到的独立身份，同时要求作者、时间、类型和准确纯文字结构一致。',
+        },
+      },
+      {
+        title: {
+          en: 'Responsive review with explicit limits',
+          zh: '边界明确的响应式审核',
+        },
+        detail: {
+          en: 'Isolated paragraph-break merges or splits, mixed content, malformed metadata, and over-limit input remain diagnostics. Desktop and 390 px real-DOCX flows cover touch sizing, keyboard navigation, focus, accessibility, screenshots, and clean browser diagnostics.',
+          zh: '孤立段落分隔符合并或拆分、混合内容、格式错误元数据和超限输入仍进入诊断。桌面和 390px 真实 DOCX 流程覆盖触控尺寸、键盘导航、焦点、可访问性、截图与干净浏览器诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#whole-paragraph-mark-revisions',
+          zh: './components/document.html#整段段落标记修订',
+        },
+        label: {
+          en: 'Read the paragraph-mark guide',
+          zh: '阅读段落标记指南',
+        },
+      },
+      {
+        href: {
+          en: './components/document.html#document-compare-and-combine',
+          zh: './components/document.html#文档比较与合并',
+        },
+        label: {
+          en: 'Read the Compare boundary',
+          zh: '阅读比较边界',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.52.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.52.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.51.0',
     date: '2026-09-04',
     kind: 'new',

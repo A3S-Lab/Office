@@ -992,6 +992,23 @@ content, tables, rows, cells, and complex numbering. Focused model, editor,
 DOCX, desktop/compact browser, WPS reference, and documentation tests cover the
 admitted path.
 
+The seventieth Writer milestone adds bounded native whole-paragraph revision
+fidelity. Strict and transitional text-only paragraphs whose direct body
+`w:ins` or `w:del` and `w:pPr/w:rPr` paragraph-mark record agree on author and
+timestamp import as one insertion or deletion review intent. Accept and reject
+resolve the complete block atomically; DOCX export and reopen restore the
+native paragraph mark without leaking browser metadata. Separate body and
+paragraph-mark IDs remain valid because WPS Office 12.1.0.22215 emitted that
+shape for the COM-observed `Bravo\r` deletion and `Delta\r` insertion ranges.
+
+The recognizer deliberately excludes isolated paragraph-break merge/split
+revisions, mixed or relationship-bound content, malformed or namespace-spoofed
+metadata, identity conflicts, and over-limit inputs. Those cases remain
+structural diagnostics. Deterministic WPS-shaped fixtures, focused Rstest,
+desktop and 390 px Playwright, compact 44 px review actions, accessibility,
+clean browser diagnostics, and a local-only A3S Test suite cover the admitted
+path without adding the GUI runner to Actions or Pages.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

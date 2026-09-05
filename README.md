@@ -309,6 +309,22 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.52.0` adds bounded, WPS-referenced whole-paragraph revision
+fidelity to Writer:
+
+- Exact text-only paragraph insertions and deletions now import as one atomic
+  review item, preserve author and date, accept or reject the complete block,
+  and round-trip through native `w:pPr/w:rPr` paragraph-mark records.
+- The importer accepts the separate paragraph-mark and body revision IDs used
+  by WPS when author, timestamp, and structure agree. Isolated paragraph-break
+  merges/splits, mixed or relationship-bound content, malformed metadata, and
+  over-limit input remain explicit fail-closed diagnostics.
+- The WPS Office 12.1.0.22215 COM probe confirmed `Bravo\r` deletion and
+  `Delta\r` insertion ranges for the reference document. Desktop and 390 px
+  review flows add real DOCX import, atomic decisions, keyboard and focus
+  checks, accessibility evidence, clean diagnostics, and touch-sized compact
+  actions.
+
 Version `0.51.0` extends Writer Compare with bounded, WPS-referenced
 cross-paragraph text moves:
 

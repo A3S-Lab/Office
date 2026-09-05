@@ -27,6 +27,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.52.0' ||
     version === '0.51.0' ||
     version === '0.50.0' ||
     version === '0.49.0' ||
@@ -93,6 +94,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.52.0',
     '0.51.0',
     '0.50.0',
     '0.49.0',
@@ -366,6 +368,7 @@ test('keeps public documentation on the neutral Traditional Office baseline', as
   const nativeTextBoxDocumentation = new Set(
     [
       'latest',
+      '0.52.0',
       '0.51.0',
       '0.50.0',
       '0.49.0',
@@ -428,6 +431,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
+  expect(readme).toContain('Version `0.52.0`');
   expect(readme).toContain('Version `0.51.0`');
   expect(readme).toContain('Version `0.50.0`');
   expect(readme).toContain('Version `0.49.0`');
@@ -447,8 +451,9 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.51.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.52.0)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
+  expect(englishHome).toContain('document.html#whole-paragraph-mark-revisions');
   expect(englishHome).toContain('document.html#move-revisions');
   expect(englishHome).toContain(
     'spreadsheet.html#formula-conditional-formatting',
@@ -472,8 +477,9 @@ test('routes the concise README and documentation homes to the current release s
   expect(englishHome).toContain('document.html#common-live-fields');
   expect(englishHome).toContain('document.html#built-in-content-controls');
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.51.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.52.0）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
+  expect(chineseHome).toContain('document.html#整段段落标记修订');
   expect(chineseHome).toContain('document.html#移动修订');
   expect(chineseHome).toContain('spreadsheet.html#公式条件格式');
   expect(chineseHome).toContain('spreadsheet.html#依赖下拉列表');
@@ -842,7 +848,130 @@ test('publishes Writer move revisions across implementation, native collaboratio
   expect(moveTests).toContain(
     'round-trips native moveFrom and moveTo wrappers',
   );
-  expect(packageManifest).toContain('0.51.0');
+  expect(packageManifest).toContain('0.52.0');
+});
+
+test('publishes bounded Writer whole-paragraph revisions in the 0.52.0 frozen documentation', async () => {
+  const [
+    latestEnglish,
+    latestChinese,
+    frozenEnglish,
+    frozenChinese,
+    frozenEnglishHome,
+    frozenChineseHome,
+    changelog,
+    roadmap,
+    product,
+    readme,
+    releaseData,
+    importer,
+    exporter,
+    diagnostics,
+    unitTest,
+    visualTest,
+    aclSuite,
+    packageManifest,
+  ] = await Promise.all([
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.52.0/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.52.0/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(path.join(documentationRoot, '0.52.0/en/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, '0.52.0/zh/index.mdx'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'ROADMAP.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'PRODUCT.md'), 'utf8'),
+    readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    readFile(
+      path.join(repositoryRoot, 'website/theme/release-notes-data.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/work-docx-paragraph-mark-change-import.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/work-docx-paragraph-mark-change-export.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'src/internal/features/work/work-office-diagnostics.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/docx-paragraph-mark-changes.test.ts'),
+      'utf8',
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        'visual-tests/document-paragraph-mark-revision.functional.spec.ts',
+      ),
+      'utf8',
+    ),
+    readFile(
+      path.join(repositoryRoot, 'tests/e2e/word-paragraph-mark-revision.acl'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
+  ]);
+
+  for (const source of [latestEnglish, frozenEnglish]) {
+    expect(source).toContain('## Whole-paragraph mark revisions');
+    expect(source).toContain('`w:pPr/w:rPr`');
+    expect(source).toContain('paragraph-break merge or split');
+  }
+  for (const source of [latestChinese, frozenChinese]) {
+    expect(source).toContain('## 整段段落标记修订');
+    expect(source).toContain('`w:pPr/w:rPr`');
+    expect(source).toContain('段落分隔符合并或拆分');
+  }
+  expect(frozenEnglishHome).toContain('# A3S Office 0.52.0 documentation');
+  expect(frozenEnglishHome.toLowerCase()).toContain(
+    'frozen documentation index',
+  );
+  expect(frozenChineseHome).toContain('# A3S Office 0.52.0 文档');
+  expect(frozenChineseHome).toContain('冻结文档索引');
+  expect(changelog).toContain('## 0.52.0 - 2026-09-05');
+  expect(changelog).toContain('12.1.0.22215 COM inspection confirmed');
+  expect(roadmap).toContain('whole-paragraph mark insertion/deletion');
+  expect(product).toContain('The seventieth Writer milestone');
+  expect(readme).toContain('Version `0.52.0`');
+  expect(releaseData).toContain("version: '0.52.0'");
+  expect(releaseData).toContain('whole-paragraph-mark-revisions');
+  expect(importer).toContain('markDocxParagraphMarkChanges');
+  expect(exporter).toContain('DocxParagraphMarkChangePatchCollector');
+  expect(diagnostics).toContain("'docx.revisions.paragraph-mark'");
+  expect(unitTest).toContain(
+    'exports and reopens paragraph-mark %s revisions with atomic block decisions',
+  );
+  expect(visualTest).toContain('writer-paragraph-mark-review-');
+  expect(aclSuite).toContain(
+    'scenario "review-wps-paragraph-mark-revisions-on-phone"',
+  );
+  expect(packageManifest).toContain('"version": "0.52.0"');
+  expect(packageManifest).toContain('test:e2e:writer-paragraph-mark-revision');
 });
 
 test('publishes bounded Writer Compare moves in the 0.51.0 frozen documentation', async () => {
@@ -907,7 +1036,7 @@ test('publishes bounded Writer Compare moves in the 0.51.0 frozen documentation'
   expect(changelog).toContain('WPS COM/UIA reference probe');
   expect(releaseData).toContain("version: '0.51.0'");
   expect(releaseData).toContain('document-compare-and-combine');
-  expect(packageManifest).toContain('"version": "0.51.0"');
+  expect(packageManifest).toContain('"version": "0.52.0"');
 });
 
 test('publishes Spreadsheet validation alert branches across implementation, docs, and release evidence', async () => {
@@ -2238,6 +2367,7 @@ test('documents the complete native Writer strikethrough contract', async () => 
 
 test('keeps published documentation indexes frozen and visibly versioned', async () => {
   for (const version of [
+    '0.52.0',
     '0.51.0',
     '0.50.0',
     '0.49.0',

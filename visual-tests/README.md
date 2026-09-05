@@ -86,6 +86,22 @@ This Playwright test owns visual evidence. The companion A3S Test ACL remains a
 local semantic and diagnostics gate and is intentionally absent from GitHub
 Actions and Pages.
 
+## Focused Writer whole-paragraph revision contract
+
+The functional regression imports a deterministic DOCX containing native
+text-only whole-paragraph insertion and deletion records. Desktop and 390 px
+projects verify two atomic review cards, native author metadata, keyboard
+navigation, complete-block decisions, responsive modal containment, 44 px
+compact actions, focus restoration, accessibility, screenshots, and empty
+console/page-error diagnostics:
+
+```bash
+bun run playground:visual:document-paragraph-mark-revision
+```
+
+The companion A3S Test ACL covers the same real-file path as a local semantic
+gate and remains intentionally absent from GitHub Actions and Pages.
+
 ## Focused Spreadsheet multi-key sort contract
 
 The functional regression opens the public quarterly-pipeline workbook,
