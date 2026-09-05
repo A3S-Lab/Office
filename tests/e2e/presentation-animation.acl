@@ -16,6 +16,10 @@ suite "office-presentation-animation" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
+        focus "focus-animation-template" {
+            target = css("button[data-template-id='animated-deck']")
+        }
+
         click "open-animation-template" {
             target = css("button[data-template-id='animated-deck']")
         }

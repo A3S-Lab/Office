@@ -126,9 +126,12 @@ suite "office-pdf-page-organization" {
             target = role("button", "选择第 2 页")
         }
 
-        download "extract-selected-page" {
+        click "extract-selected-page" {
             target = css(".work-pdf-page-organizer-actions button[aria-label='抽取所选页']")
-            path = "downloads/pdf-extracted.pdf"
+        }
+
+        expect "extract-action-remains-available" {
+            visible = css(".work-pdf-page-organizer-actions button[aria-label='抽取所选页']:not(:disabled)")
         }
 
         expect "split-remains-available-after-export" {

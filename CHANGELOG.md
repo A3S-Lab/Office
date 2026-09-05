@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Hardened workspace template navigation for keyboard and agent flows. A3S
+  Test now focuses stable template controls before activating below-fold cards
+  at desktop and phone widths, exercising the same native visibility behavior
+  available to keyboard users.
+- Hardened PDF page-export Blob URL cleanup so slower Web/CDP download
+  observers receive the generated file before its object URL is released.
+- Re-ran the five-surface local matrix with A3S Test as the primary gate:
+  Spreadsheet data validation (4/4), Presentation animation and presenter
+  view (3/3), Markdown phone modes (1/1), template discoverability (3/3),
+  and Writer/WPS boundary suites passed. The PDF ACL proves the export action
+  remains enabled; exact Blob file contents stay in the supplemental
+  Playwright contract because standalone agent-browser cancels Blob downloads.
+
 ## 0.56.0 - 2026-09-06
 
 - Extended the bounded editable Writer straight-connector model with typed

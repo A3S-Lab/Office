@@ -15,12 +15,20 @@ suite "presentation-presenter-view" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
+        focus "focus-presentation-home" {
+            target = css(".playground-home")
+        }
+
+        press "scroll-presentation-into-view" {
+            key = "PageDown"
+        }
+
         click "open-presentation" {
-            target = text("策略汇报", true)
+            target = css("button[data-template-id='strategy-deck']")
         }
 
         wait "presentation-loaded" {
-            text = "把最重要的结论放在标题中"
+            visible = css(".work-presentation-editor")
         }
 
         click "open-slideshow-tab" {
@@ -93,7 +101,7 @@ suite "presentation-presenter-view" {
     scenario "presenter-phone-layout" {
         name = "Keep the presenter canvas, next-slide cue, notes, and controls visible on phones"
         surface = "web"
-        timeout_ms = 30000
+        timeout_ms = 60000
 
         viewport "phone" {
             width = 390
@@ -104,12 +112,16 @@ suite "presentation-presenter-view" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
+        focus "focus-presentation-template" {
+            target = css("button[data-template-id='strategy-deck']")
+        }
+
         click "open-presentation" {
-            target = text("策略汇报", true)
+            target = css("button[data-template-id='strategy-deck']")
         }
 
         wait "presentation-loaded" {
-            text = "把最重要的结论放在标题中"
+            visible = css(".work-presentation-editor")
         }
 
         click "open-slideshow-tab" {

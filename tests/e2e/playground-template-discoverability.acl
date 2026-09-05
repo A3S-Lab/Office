@@ -60,6 +60,10 @@ suite "playground-template-discoverability" {
             text = "插入行自动填充"
         }
 
+        focus "focus-entrance-exit-animations" {
+            target = css("button[data-template-id='animated-deck']")
+        }
+
         click "open-entrance-exit-animations" {
             target = css("button[data-template-id='animated-deck']")
         }
@@ -76,6 +80,10 @@ suite "playground-template-discoverability" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
+        focus "focus-document-comparison" {
+            target = css("button[data-template-id='document-comparison']")
+        }
+
         click "open-document-comparison" {
             target = css("button[data-template-id='document-comparison']")
         }
@@ -90,6 +98,10 @@ suite "playground-template-discoverability" {
 
         navigate "return-to-playground-home-after-document-comparison" {
             url = "http://127.0.0.1:4175/playground/"
+        }
+
+        focus "focus-table-of-contents" {
+            target = css("button[data-template-id='table-of-contents']")
         }
 
         click "open-table-of-contents" {
@@ -112,6 +124,10 @@ suite "playground-template-discoverability" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
+        focus "focus-document-index" {
+            target = css("button[data-template-id='document-index']")
+        }
+
         click "open-document-index" {
             target = css("button[data-template-id='document-index']")
         }
@@ -132,6 +148,10 @@ suite "playground-template-discoverability" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
+        focus "focus-character-shading" {
+            target = css("button[data-template-id='run-shading']")
+        }
+
         click "open-character-shading" {
             target = css("button[data-template-id='run-shading']")
         }
@@ -146,6 +166,10 @@ suite "playground-template-discoverability" {
 
         navigate "return-to-playground-home-after-shading" {
             url = "http://127.0.0.1:4175/playground/"
+        }
+
+        focus "focus-proofing-languages" {
+            target = css("button[data-template-id='proofing-languages']")
         }
 
         click "open-proofing-languages" {
@@ -164,6 +188,10 @@ suite "playground-template-discoverability" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
+        focus "focus-data-validation" {
+            target = css("button[data-template-id='data-validation']")
+        }
+
         click "open-data-validation" {
             target = css("button[data-template-id='data-validation']")
         }
@@ -178,6 +206,10 @@ suite "playground-template-discoverability" {
 
         navigate "return-to-playground-home-after-data-validation" {
             url = "http://127.0.0.1:4175/playground/"
+        }
+
+        focus "focus-structured-references" {
+            target = css("button[data-template-id='structured-references']")
         }
 
         click "open-structured-references" {

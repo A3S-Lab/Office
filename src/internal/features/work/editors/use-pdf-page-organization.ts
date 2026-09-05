@@ -308,7 +308,10 @@ function downloadPdfExports(
     document.body.append(anchor);
     anchor.click();
     anchor.remove();
-    queueMicrotask(() => URL.revokeObjectURL(url));
+    // Let the browser dispatch the download before releasing the object URL.
+    // A microtask can revoke it before slower Web/CDP drivers observe the
+    // anchor click, which surfaces as a cancelled download in A3S Test.
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
   }
   return true;
 }

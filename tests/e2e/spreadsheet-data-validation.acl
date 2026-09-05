@@ -20,6 +20,10 @@ suite "spreadsheet-data-validation" {
             text = "我的文档"
         }
 
+        focus "focus-public-data-validation-template" {
+            target = css("button[data-template-id='data-validation']")
+        }
+
         click "open-public-data-validation-template" {
             target = css("button[data-template-id='data-validation']")
         }
@@ -357,6 +361,14 @@ suite "spreadsheet-data-validation" {
             url = "http://127.0.0.1:4175/playground/"
         }
 
+        expect "dependent-dropdown-home-ready" {
+            text = "我的文档"
+        }
+
+        focus "focus-dependent-dropdown-template" {
+            target = css("button[data-template-id='data-validation']")
+        }
+
         click "select-dependent-dropdown-template" {
             target = css("button[data-template-id='data-validation']")
         }
@@ -466,6 +478,14 @@ suite "spreadsheet-data-validation" {
 
         navigate "open-data-validation-template" {
             url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "error-alert-home-ready" {
+            text = "我的文档"
+        }
+
+        focus "focus-error-alert-template" {
+            target = css("button[data-template-id='data-validation']")
         }
 
         click "open-template" {

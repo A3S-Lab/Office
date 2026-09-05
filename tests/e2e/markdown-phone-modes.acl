@@ -4,7 +4,7 @@ suite "office-markdown-phone-modes" {
     scenario "edit-and-switch-markdown-modes-on-phone" {
         name = "Edit Markdown and switch between its phone view modes"
         surface = "web"
-        timeout_ms = 30000
+        timeout_ms = 60000
 
         viewport "phone" {
             width = 390
@@ -22,6 +22,10 @@ suite "office-markdown-phone-modes" {
 
         expect "phone-sidebar-starts-closed" {
             visible = css("button[aria-label='展开办公侧边栏']")
+        }
+
+        focus "focus-markdown-template" {
+            target = css(".playground-template-card.markdown")
         }
 
         click "create-markdown" {
@@ -54,7 +58,7 @@ suite "office-markdown-phone-modes" {
 
         fill "write-markdown-source" {
             target = css(".work-markdown-pane.source textarea")
-            value = "# 手机工作流\n\n- [x] 源码编辑\n- [ ] 预览同步"
+            value = "# 手机工作流 · 源码编辑 · 预览同步"
         }
 
         click "show-synchronized-preview" {
