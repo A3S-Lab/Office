@@ -125,10 +125,7 @@ export const DocumentTextBox = Node.create({
   addAttributes() {
     return {
       id: dataAttribute('id', ''),
-      shapeType: dataAttribute(
-        'shape',
-        DOCUMENT_TEXT_BOX_DEFAULTS.shapeType,
-      ),
+      shapeType: dataAttribute('shape', DOCUMENT_TEXT_BOX_DEFAULTS.shapeType),
       width: dataAttribute('width', DOCUMENT_TEXT_BOX_DEFAULTS.width),
       height: dataAttribute('height', DOCUMENT_TEXT_BOX_DEFAULTS.height),
       layout: dataAttribute('layout', DOCUMENT_TEXT_BOX_DEFAULTS.layout),

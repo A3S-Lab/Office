@@ -98,12 +98,7 @@ export function markDocxTextBoxes(
     const marker = nextTextBoxMarker(document, nextMarker);
     nextMarker += 1;
     const properties = textBoxProperties(drawing, shape, textBoxes.length + 1);
-    replaceDrawingRunWithTextBoxRuns(
-      document,
-      run,
-      shape.content,
-      marker,
-    );
+    replaceDrawingRunWithTextBoxRuns(document, run, shape.content, marker);
     textBoxes.push({ marker, properties });
   }
   return { textBoxes };
@@ -337,8 +332,8 @@ function runContainsDrawing(element: Element | undefined): boolean {
   if (!element) return false;
   if (element.localName === 'drawing') return isWordElement(element, 'drawing');
   if (element.localName !== 'AlternateContent') return false;
-  return descendants(element, 'drawing').some(
-    (drawing) => isWordElement(drawing, 'drawing'),
+  return descendants(element, 'drawing').some((drawing) =>
+    isWordElement(drawing, 'drawing'),
   );
 }
 

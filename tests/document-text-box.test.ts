@@ -210,9 +210,10 @@ describe('document text boxes', () => {
       'text/html',
     );
     applyImportedDocxTextBoxMarkers(html, markers);
-    expect(
-      html.body.querySelector('[data-document-text-box]'),
-    ).toHaveAttribute('data-text-box-shape', 'ellipse');
+    expect(html.body.querySelector('[data-document-text-box]')).toHaveAttribute(
+      'data-text-box-shape',
+      'ellipse',
+    );
   });
 
   test.each([
@@ -405,9 +406,7 @@ describe('document text boxes', () => {
     if (reopened.content.type !== 'document') {
       throw new Error('Expected a reopened document artifact.');
     }
-    expect(reopened.content.html).toContain(
-      'data-text-box-shape="ellipse"',
-    );
+    expect(reopened.content.html).toContain('data-text-box-shape="ellipse"');
   });
 
   test('assigns unique drawing-property IDs to repeated text boxes', async () => {

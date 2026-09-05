@@ -344,12 +344,12 @@ export function DocumentToolbar({
       : connectorSelected
         ? [...documentRibbonTabs, documentConnectorRibbonTab]
         : textBoxSelected
-        ? [...documentRibbonTabs, documentTextBoxRibbonTab]
-        : imageSelected
-          ? [...documentRibbonTabs, documentPictureRibbonTab]
-          : tableSelected
-            ? [...documentRibbonTabs, ...documentTableRibbonTabs]
-            : documentRibbonTabs;
+          ? [...documentRibbonTabs, documentTextBoxRibbonTab]
+          : imageSelected
+            ? [...documentRibbonTabs, documentPictureRibbonTab]
+            : tableSelected
+              ? [...documentRibbonTabs, ...documentTableRibbonTabs]
+              : documentRibbonTabs;
   const toggleLink = useCallback(async () => {
     if (editor.isActive('link')) {
       editor.chain().focus().unsetLink().run();
