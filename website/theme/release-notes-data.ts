@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.54.1',
+    date: '2026-09-05',
+    kind: 'fixed',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Windows editor runs stay deterministic',
+      zh: 'Windows 编辑器运行保持确定性',
+    },
+    summary: {
+      en: 'The local A3S Test loop now completes pinned CDP runs reliably and records responsive Writer discovery as part of the user-visible contract.',
+      zh: '本地 A3S Test 流程现在可以可靠完成锁定版本的 CDP 运行，并把响应式 Writer 操作发现纳入用户可见契约。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Direct CDP lifecycle',
+          zh: '直接 CDP 生命周期',
+        },
+        detail: {
+          en: 'The Windows adapter invokes the standalone browser with the requested CDP port and resolves on process exit, avoiding detached-session port polling and inherited stdio hangs.',
+          zh: 'Windows 适配器以请求的 CDP 端口直接调用独立浏览器，并在进程退出时完成，避免分离 session 端口轮询和继承 stdio 导致的挂起。',
+        },
+      },
+      {
+        title: {
+          en: 'Responsive discovery is tested',
+          zh: '测试响应式操作发现',
+        },
+        detail: {
+          en: 'The Writer text-box ACL observes the desktop toolbar overflow and phone template scrolling before semantic clicks, matching controls a user can actually reach.',
+          zh: 'Writer 文本框 ACL 会在语义点击前观察桌面工具栏溢出并滚动手机模板页面，对齐用户实际能够触达的控件。',
+        },
+      },
+      {
+        title: {
+          en: 'Evidence stays bounded',
+          zh: '证据保持有界',
+        },
+        detail: {
+          en: 'Four desktop/phone scenarios pass with screenshots, accessibility, console, and page-error evidence; Windows CUA remains honestly marked unsupported by the locked 0.10.0 matrix.',
+          zh: '四个桌面/手机场景均通过并保留截图、可访问性、控制台和页面错误证据；锁定的 0.10.0 矩阵仍如实将 Windows CUA 标记为 unsupported。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './automation.html',
+          zh: './automation.html',
+        },
+        label: {
+          en: 'Read the editor automation guide',
+          zh: '阅读编辑器自动化指南',
+        },
+      },
+      {
+        href: {
+          en: './components/document.html#built-in-editable-text-boxes',
+          zh: './components/document.html#可编辑文本框',
+        },
+        label: {
+          en: 'Review the responsive Writer contract',
+          zh: '查看响应式 Writer 契约',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.54.1',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.54.1',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.54.0',
     date: '2026-09-05',
     kind: 'new',

@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.54.1 - 2026-09-05
+
+- Hardened the Windows A3S Test CDP adapter around the pinned standalone
+  browser driver. Commands now attach directly to the requested CDP port and
+  resolve on process exit, avoiding detached-session port polling and the
+  persistent stdio handles that could make an otherwise completed run hang.
+- Stabilized the Writer text-box A3S Test contract at desktop and phone
+  widths. The ACL now observes the compact toolbar overflow before opening
+  fill/border controls and scrolls the phone template surface before selecting
+  a document, matching the actions a user can actually discover.
+- Re-ran the four-scenario text-box matrix with screenshots, accessibility,
+  console, and page-error evidence; all scenarios pass without a product UI
+  workaround. Windows CUA remains fail-closed as `unsupported` under the
+  locked CUA Driver 0.10.0 matrix.
+
 ## 0.54.0 - 2026-09-05
 
 - Added a bounded editable Writer straight-connector model. Isolated WPS VML

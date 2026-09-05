@@ -335,6 +335,18 @@ runtime.
 
 ## Current release
 
+Version `0.54.1` hardens the local editor-testing loop around the bounded
+Commander operator and A3S Test contract:
+
+- The Windows CDP adapter invokes the pinned standalone browser directly and
+  resolves on process exit, so completed ACL actions do not wait on detached
+  agent-browser session handles or port-file polling.
+- The Writer text-box matrix explicitly discovers responsive overflow before
+  opening fill/border controls and scrolls the phone template surface before
+  opening a document. Four desktop/phone scenarios retain screenshot,
+  accessibility, console, and page-error evidence with no product UI
+  workaround.
+
 Version `0.54.0` adds a bounded editable straight-connector workflow and a
 single local operator for all five editor surfaces:
 

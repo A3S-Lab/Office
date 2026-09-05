@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -44,25 +44,10 @@ childEnvironment.AGENT_BROWSER_SOCKET_DIR = socketDirectory;
 childEnvironment.AGENT_BROWSER_NAMESPACE = runtimeNamespace;
 childEnvironment.AGENT_BROWSER_ALLOWED_DOMAINS = '127.0.0.1';
 
-const connect = await startConnection();
-if (debug) {
-  process.stderr.write(
-    `[a3s-test-cdp] connect status=${connect.status ?? 'null'} error=${connect.error?.message ?? ''}\n`,
-  );
-}
-if (connect.error || connect.status !== 0) {
-  process.stderr.write(
-    connect.stderr ||
-      connect.stdout ||
-      `Unable to connect agent-browser session to CDP port ${cdpPort}.\n`,
-  );
-  process.exit(connect.status && connect.status > 0 ? connect.status : 1);
-}
-
 const result = await runNative(forwardedArguments);
 if (debug) {
   process.stderr.write(
-    `[a3s-test-cdp] command=${forwardedArguments.join(' ')} status=${result.status ?? 'null'} error=${result.error?.message ?? ''}\n`,
+    `[a3s-test-cdp] cdp=${cdpPort} command=${forwardedArguments.join(' ')} status=${result.status ?? 'null'} error=${result.error?.message ?? ''}\n`,
   );
 }
 if (result.stdout) process.stdout.write(result.stdout);
@@ -97,57 +82,18 @@ function runNative(arguments_: string[]): Promise<{
     child.once('error', (error) => {
       resolve({ status: null, stdout, stderr, error });
     });
-    child.once('close', (status) => {
+    // agent-browser may leave a persistent session daemon holding the child
+    // stdio handles open on Windows. Resolve on process exit instead of the
+    // `close` event, which waits for every inherited handle to be released.
+    child.once('exit', (status) => {
+      child.stdout?.destroy();
+      child.stderr?.destroy();
       resolve({ status, stdout, stderr });
     });
     setTimeout(() => {
       if (!child.killed) child.kill();
     }, 60_000).unref();
   });
-}
-
-async function startConnection(): Promise<{
-  status: number | null;
-  stdout: string;
-  stderr: string;
-  error?: Error;
-}> {
-  let child: ReturnType<typeof spawn>;
-  try {
-    child = spawn(
-      nativeExecutable,
-      ['connect', cdpPort, '--session', session],
-      {
-        cwd: process.cwd(),
-        env: childEnvironment,
-        stdio: 'ignore',
-        detached: true,
-        windowsHide: true,
-      },
-    );
-    child.unref();
-  } catch (error) {
-    return {
-      status: null,
-      stdout: '',
-      stderr: '',
-      error: error instanceof Error ? error : new Error(String(error)),
-    };
-  }
-  const portFile = path.join(socketDirectory, `${session}.port`);
-  const deadline = Date.now() + 30_000;
-  while (Date.now() < deadline) {
-    if (existsSync(portFile)) {
-      const port = readFileSync(portFile, 'utf8').trim();
-      if (port) return { status: 0, stdout: '', stderr: '' };
-    }
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
-  }
-  return {
-    status: null,
-    stdout: '',
-    stderr: `Timed out waiting for agent-browser session ${session}.`,
-  };
 }
 
 function findOptionValue(
@@ -163,7 +109,7 @@ function findOptionValue(
 }
 
 function stripAutoLaunchOptions(arguments_: string[]): string[] {
-  const stripped: string[] = [];
+  const stripped: string[] = ['--cdp', cdpPort];
   for (let index = 0; index < arguments_.length; index += 1) {
     const value = arguments_[index];
     if (value === '--headed') {
@@ -174,9 +120,14 @@ function stripAutoLaunchOptions(arguments_: string[]): string[] {
       index += 1;
       continue;
     }
+    if (value === '--cdp') {
+      index += 1;
+      continue;
+    }
     if (
       value.startsWith('--allowed-domains=') ||
-      value.startsWith('--engine=')
+      value.startsWith('--engine=') ||
+      value.startsWith('--cdp=')
     ) {
       continue;
     }

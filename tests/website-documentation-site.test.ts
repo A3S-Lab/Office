@@ -27,6 +27,7 @@ function documentationComponentHref(
 ): string {
   const extension =
     version === 'latest' ||
+    version === '0.54.1' ||
     version === '0.54.0' ||
     version === '0.53.1' ||
     version === '0.53.0' ||
@@ -97,6 +98,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.54.1',
     '0.54.0',
     '0.53.1',
     '0.53.0',
@@ -374,6 +376,7 @@ test('keeps public documentation on the neutral Traditional Office baseline', as
   const nativeTextBoxDocumentation = new Set(
     [
       'latest',
+      '0.54.1',
       '0.54.0',
       '0.53.1',
       '0.53.0',
@@ -404,6 +407,12 @@ test('keeps public documentation on the neutral Traditional Office baseline', as
       'docs/latest/zh/automation/index.mdx',
       'docs/latest/en/components/document.mdx',
       'docs/latest/zh/components/document.mdx',
+      'docs/0.54.1/en/index.mdx',
+      'docs/0.54.1/zh/index.mdx',
+      'docs/0.54.1/en/automation/index.mdx',
+      'docs/0.54.1/zh/automation/index.mdx',
+      'docs/0.54.1/en/components/document.mdx',
+      'docs/0.54.1/zh/components/document.mdx',
       'docs/0.54.0/en/index.mdx',
       'docs/0.54.0/zh/index.mdx',
       'docs/0.54.0/en/automation/index.mdx',
@@ -464,6 +473,7 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
+  expect(readme).toContain('Version `0.54.1`');
   expect(readme).toContain('Version `0.54.0`');
   expect(readme).toContain('Version `0.53.1`');
   expect(readme).toContain('Version `0.53.0`');
@@ -487,7 +497,7 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.54.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.54.1)");
   expect(englishHome).toContain("[What's new](./changelog.html)");
   expect(englishHome).toContain('document.html#whole-paragraph-mark-revisions');
   expect(englishHome).toContain('document.html#move-revisions');
@@ -513,7 +523,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(englishHome).toContain('document.html#common-live-fields');
   expect(englishHome).toContain('document.html#built-in-content-controls');
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.54.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.54.1）');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
   expect(chineseHome).toContain('document.html#整段段落标记修订');
   expect(chineseHome).toContain('document.html#移动修订');
@@ -613,7 +623,7 @@ test('publishes the WPS VML connector boundary across code, docs, and A3S Test e
   expect(connectorTest).toContain('WPS connector compatibility boundary');
   expect(connectorAcl).toContain('scenario "edit-wps-vml-connector-boundary"');
   expect(packageManifest).toContain('test:e2e:writer-wps-connector:check');
-  expect(packageManifest).toContain('"version": "0.54.0"');
+  expect(packageManifest).toContain('"version": "0.54.1"');
 });
 
 test('publishes Writer numbering revisions across implementation, native collaboration, docs, and release evidence', async () => {
@@ -968,7 +978,7 @@ test('publishes Writer move revisions across implementation, native collaboratio
   expect(moveTests).toContain(
     'round-trips native moveFrom and moveTo wrappers',
   );
-  expect(packageManifest).toContain('0.54.0');
+  expect(packageManifest).toContain('0.54.1');
 });
 
 test('publishes bounded Writer whole-paragraph revisions in the 0.52.0 frozen documentation', async () => {
@@ -1090,7 +1100,7 @@ test('publishes bounded Writer whole-paragraph revisions in the 0.52.0 frozen do
   expect(aclSuite).toContain(
     'scenario "review-wps-paragraph-mark-revisions-on-phone"',
   );
-  expect(packageManifest).toContain('"version": "0.54.0"');
+  expect(packageManifest).toContain('"version": "0.54.1"');
   expect(packageManifest).toContain('test:e2e:writer-paragraph-mark-revision');
 });
 
@@ -1156,7 +1166,7 @@ test('publishes bounded Writer Compare moves in the 0.51.0 frozen documentation'
   expect(changelog).toContain('WPS COM/UIA reference probe');
   expect(releaseData).toContain("version: '0.51.0'");
   expect(releaseData).toContain('document-compare-and-combine');
-  expect(packageManifest).toContain('"version": "0.54.0"');
+  expect(packageManifest).toContain('"version": "0.54.1"');
 });
 
 test('publishes Spreadsheet validation alert branches across implementation, docs, and release evidence', async () => {

@@ -109,6 +109,10 @@ suite "office-word-text-box" {
             target = role("button", "底端")
         }
 
+        click "scroll-text-box-tools" {
+            target = role("button", "向右查看更多文本框工具")
+        }
+
         click "open-text-box-fill" {
             target = role("button", "文本框填充颜色")
         }
@@ -178,6 +182,10 @@ suite "office-word-text-box" {
 
         expect "phone-playground-ready" {
             text = "我的文档"
+        }
+
+        wheel "scroll-phone-home" {
+            delta_y = 520
         }
 
         click "open-phone-document" {
