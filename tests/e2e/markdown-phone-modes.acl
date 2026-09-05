@@ -58,7 +58,25 @@ suite "office-markdown-phone-modes" {
 
         fill "write-markdown-source" {
             target = css(".work-markdown-pane.source textarea")
-            value = "# 手机工作流 · 源码编辑 · 预览同步"
+            value = "# 手机工作流"
+        }
+
+        press "insert-markdown-line-break-1" {
+            key = "Enter"
+        }
+
+        type "append-markdown-check-item" {
+            target = css(".work-markdown-pane.source textarea")
+            value = "- [x] 源码编辑"
+        }
+
+        press "insert-markdown-line-break-2" {
+            key = "Enter"
+        }
+
+        type "append-markdown-preview-item" {
+            target = css(".work-markdown-pane.source textarea")
+            value = "- [ ] 预览同步"
         }
 
         click "show-synchronized-preview" {
