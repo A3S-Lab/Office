@@ -1,9 +1,9 @@
 import { attribute, descendants } from './work-ooxml-package';
 
 /**
- * WPS Writer writes connectors as legacy VML shapes. They are deliberately
- * kept out of the editable text-box model until their anchor, routing, and
- * arrow semantics have a typed owner.
+ * WPS Writer writes connectors as legacy VML shapes. The importer owns the
+ * isolated straight subset; this inspection remains package-level evidence so
+ * diagnostics can explain which native records may normalize on edit.
  */
 export interface DocxConnectorInspection {
   detected: number;

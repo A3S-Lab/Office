@@ -26,6 +26,7 @@ import {
 } from './work-document-citation-nodes';
 import { DocumentComment } from './work-document-comments';
 import { DocumentContentControl } from './work-document-content-control';
+import { DocumentConnector } from './work-document-connector';
 import { DocumentEquation } from './work-document-equations';
 import { DocumentField } from './work-document-field-node';
 import { DocumentImage } from './work-document-image-layout';
@@ -159,6 +160,7 @@ export function createWorkDocumentExtensions(
       },
     }),
     DocumentTextBox,
+    DocumentConnector,
     TableKit.configure({
       table: false,
       tableCell: false,

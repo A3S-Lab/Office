@@ -199,6 +199,7 @@ export async function importWorkDocumentFile(
           prepared.tableRowMarkers,
           prepared.tableSizingMarkers,
           prepared.textBoxMarkers,
+          prepared.connectorMarkers,
           prepared.contentControlMarkers,
         )
       : result.value;

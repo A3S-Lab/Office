@@ -1,8 +1,8 @@
 suite "office-word-wps-connector-boundary" {
     version = 1
 
-    scenario "keep-vml-connector-out-of-text-box-model" {
-        name = "Keep a WPS VML connector out of the editable text-box model"
+    scenario "edit-wps-vml-connector-boundary" {
+        name = "Import a WPS VML connector as a bounded editable straight line"
         surface = "web"
         timeout_ms = 120000
 
@@ -25,30 +25,42 @@ suite "office-word-wps-connector-boundary" {
             visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
         }
 
+        expect "connector-is-visible" {
+            visible = css(".work-document-editable .ProseMirror [data-document-connector]")
+        }
+
         expect "connector-is-not-a-text-box" {
             visible = css(".work-document-editable .ProseMirror:not(:has([data-document-text-box]))")
+        }
+
+        click "select-connector" {
+            target = css(".work-document-editable [data-document-connector]")
+        }
+
+        expect "connector-contextual-tab" {
+            visible = css("[role='tab'][aria-selected='true']")
         }
 
         expect "connector-import-keeps-editor-usable" {
             visible = css(".work-document-editable .ProseMirror[contenteditable='true']")
         }
 
-        screenshot "wps-connector-boundary" {
-            path = "screenshots/word-wps-connector-boundary.png"
+        screenshot "wps-connector-editable" {
+            path = "screenshots/word-wps-connector-editable.png"
         }
 
-        accessibility "wps-connector-boundary-accessibility" {
-            path = "evidence/word-wps-connector-boundary-accessibility.json"
+        accessibility "wps-connector-editable-accessibility" {
+            path = "evidence/word-wps-connector-editable-accessibility.json"
             interactive = true
         }
 
-        console "wps-connector-boundary-console" {
-            path = "diagnostics/word-wps-connector-boundary-console.json"
+        console "wps-connector-editable-console" {
+            path = "diagnostics/word-wps-connector-editable-console.json"
             clear = false
         }
 
-        page_errors "wps-connector-boundary-page-errors" {
-            path = "diagnostics/word-wps-connector-boundary-page-errors.json"
+        page_errors "wps-connector-editable-page-errors" {
+            path = "diagnostics/word-wps-connector-editable-page-errors.json"
             clear = false
         }
     }

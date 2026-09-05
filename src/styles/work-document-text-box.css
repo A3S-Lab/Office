@@ -125,3 +125,69 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  [data-document-connector] {
+  box-sizing: border-box;
+  display: block;
+  width: var(--work-document-connector-width, 120mm);
+  min-width: 10mm;
+  max-width: 100%;
+  height: var(--work-document-connector-height, 25mm);
+  min-height: 0.5mm;
+  margin: 12px 0;
+  overflow: visible;
+  position: relative;
+  line-height: 0;
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  [data-document-connector] > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  [data-document-connector][data-connector-layout="floating"] {
+  translate: var(--work-document-connector-horizontal-offset, 0)
+    var(--work-document-connector-vertical-offset, 0);
+  z-index: 1;
+}
+
+.work-document-page .tiptap [data-document-connector].ProseMirror-selectednode {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 75%, transparent);
+  outline-offset: 3px;
+}
+
+.work-document-connector-size-field,
+.work-document-connector-offset-field {
+  width: 84px;
+}
+
+.work-document-connector-endpoint-field {
+  width: 72px;
+}
+
+.work-document-connector-size-field > span,
+.work-document-connector-offset-field > span,
+.work-document-connector-endpoint-field > span {
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

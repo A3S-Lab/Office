@@ -66,6 +66,7 @@
         "@testing-library/react": "^16.3.2",
         "@types/react": "^19.2.17",
         "@types/react-dom": "^19.2.3",
+        "commander": "15.0.0",
         "happy-dom": "^20.10.6",
         "prism-react-renderer": "2.4.1",
         "react": "^19.2.7",
@@ -560,6 +561,8 @@
     "collapse-white-space": ["collapse-white-space@2.1.0", "https://mirrors.tencent.com/npm/collapse-white-space/-/collapse-white-space-2.1.0.tgz", {}, "sha512-loKTxY1zCOuG4j9f6EPnuyyYkf58RnhhWTvRoZEokgB+WbdXehfjFviyOVYkqzEWz1Q5kRiZdBYS5SwxbQYwzw=="],
 
     "comma-separated-tokens": ["comma-separated-tokens@2.0.3", "https://mirrors.tencent.com/npm/comma-separated-tokens/-/comma-separated-tokens-2.0.3.tgz", {}, "sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg=="],
+
+    "commander": ["commander@15.0.0", "", {}, "sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg=="],
 
     "compute-scroll-into-view": ["compute-scroll-into-view@3.1.1", "https://mirrors.tencent.com/npm/compute-scroll-into-view/-/compute-scroll-into-view-3.1.1.tgz", {}, "sha512-VRhuHOLoKYOy4UbilLbUzbYg93XLjv2PncJC50EuTWPA3gaja1UjBsUP/D/9/juV3vQFr6XBEzn9KCAHdUvOHw=="],
 

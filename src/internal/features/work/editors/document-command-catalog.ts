@@ -23,6 +23,12 @@ export const documentTextBoxRibbonTab = {
   contextual: true,
 } as const;
 
+export const documentConnectorRibbonTab = {
+  id: 'connector',
+  label: '连接符',
+  contextual: true,
+} as const;
+
 export const documentTableRibbonTabs = [
   {
     id: 'tableDesign',
@@ -52,6 +58,7 @@ export type DocumentRibbonTabId =
   | DocumentStandardRibbonTabId
   | typeof documentPictureRibbonTab.id
   | typeof documentTextBoxRibbonTab.id
+  | typeof documentConnectorRibbonTab.id
   | (typeof documentTableRibbonTabs)[number]['id']
   | typeof documentPageChromeRibbonTab.id;
 
@@ -411,6 +418,11 @@ export const documentCommandCatalog = {
   insertTextBox: {
     id: 'insert.textBox',
     label: '插入文本框',
+    location: { area: 'ribbon', tab: 'insert', group: 'text' },
+  },
+  insertConnector: {
+    id: 'insert.connector',
+    label: '插入连接符',
     location: { area: 'ribbon', tab: 'insert', group: 'text' },
   },
   insertContentControl: {

@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import {
   Bookmark as BookmarkIcon,
+  ArrowUpRight,
   Check,
   CheckCheck,
   ChevronDown,
@@ -60,6 +61,7 @@ import {
   documentPictureRibbonTab,
   documentRibbonTabs,
   documentTableRibbonTabs,
+  documentConnectorRibbonTab,
   documentTextBoxRibbonTab,
   getDocumentCommandDefinition,
 } from './document-command-catalog';
@@ -97,6 +99,7 @@ import {
   DocumentTableLayoutRibbon,
 } from './document-table-ribbon';
 import { DocumentTextBoxRibbon } from './document-text-box-ribbon';
+import { DocumentConnectorRibbon } from './document-connector-ribbon';
 import { runDocumentWpsShortcut } from './document-wps-shortcuts';
 import {
   type DocumentZoomFit,
@@ -153,6 +156,7 @@ interface DocumentToolbarProps {
   pageChromeShowPageNumber: boolean;
   onRequestImage: () => void;
   onInsertTextBox?: () => void;
+  onInsertConnector?: () => void;
   onInsertContentControl?: () => void;
   onPageChromeEditingPartChange: (part: DocumentPageChromeEditingPart) => void;
   onClosePageChrome: () => void;
@@ -229,6 +233,7 @@ export function DocumentToolbar({
   pageChromeShowPageNumber,
   onRequestImage,
   onInsertTextBox,
+  onInsertConnector,
   onInsertContentControl,
   onPageChromeEditingPartChange,
   onClosePageChrome,
@@ -288,6 +293,7 @@ export function DocumentToolbar({
   const prompt = officeDialog.prompt;
   const imageSelected = editor.isActive('image');
   const textBoxSelected = editor.isActive('documentTextBox');
+  const connectorSelected = editor.isActive('documentConnector');
   const tableSelected = editor.isActive('table');
   const activeBookmark = activeDocumentBookmark(editor);
   const hasRefreshableFields = documentHasRefreshableFields(editor);
@@ -335,7 +341,9 @@ export function DocumentToolbar({
     ? documentRibbonTabs.filter(({ id }) => id === 'review' || id === 'view')
     : pageChromeEditor
       ? [...documentRibbonTabs, documentPageChromeRibbonTab]
-      : textBoxSelected
+      : connectorSelected
+        ? [...documentRibbonTabs, documentConnectorRibbonTab]
+        : textBoxSelected
         ? [...documentRibbonTabs, documentTextBoxRibbonTab]
         : imageSelected
           ? [...documentRibbonTabs, documentPictureRibbonTab]
@@ -391,6 +399,7 @@ export function DocumentToolbar({
     setActiveTab((current) => {
       if (reviewOnly) return current === 'view' ? 'view' : 'review';
       if (pageChromeEditor) return 'pageChrome';
+      if (connectorSelected) return 'connector';
       if (textBoxSelected) return 'textBox';
       if (imageSelected) return 'picture';
       if (tableSelected) {
@@ -400,6 +409,7 @@ export function DocumentToolbar({
       }
       return current === 'picture' ||
         current === 'textBox' ||
+        current === 'connector' ||
         current === 'tableDesign' ||
         current === 'tableLayout' ||
         current === 'pageChrome'
@@ -408,6 +418,7 @@ export function DocumentToolbar({
     });
   }, [
     imageSelected,
+    connectorSelected,
     pageChromeEditor,
     reviewOnly,
     tableSelected,
@@ -777,6 +788,13 @@ export function DocumentToolbar({
                   <TextCursorInput size={19} />
                 </ToolbarButton>
                 <ToolbarButton
+                  label="插入连接符"
+                  displayLabel
+                  onClick={() => onInsertConnector?.()}
+                >
+                  <ArrowUpRight size={19} />
+                </ToolbarButton>
+                <ToolbarButton
                   label="插入内容控件"
                   displayLabel
                   onClick={() => onInsertContentControl?.()}
@@ -1075,6 +1093,9 @@ export function DocumentToolbar({
             ) : null,
           textBox: textBoxSelected ? (
             <DocumentTextBoxRibbon editor={editor} />
+          ) : null,
+          connector: connectorSelected ? (
+            <DocumentConnectorRibbon editor={editor} />
           ) : null,
         }}
       />

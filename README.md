@@ -307,10 +307,49 @@ PDF mutations without interpreting Office's private CRDT schema.
 Read the [automation guide](https://a3s-lab.github.io/Office/docs/automation/)
 and [CLI reference](./docs/latest/en/cli-reference.md).
 
+For browser-editor work, use the repository's local operator instead of
+assembling ad-hoc shell conditionals. It is a Commander-based CLI with one
+declarative matrix for Writer, Spreadsheet, Presentation, Markdown, and PDF:
+
+```bash
+bun run office:ops -- capabilities --json
+bun run office:ops -- doctor --json
+bun run office:ops -- gate writer --run \
+  --browser-driver standalone \
+  --browser-executable scripts/a3s-test-cdp-browser.cmd \
+  --cdp-port 9345
+bun run office:ops -- visual spreadsheet --project compact-768
+```
+
+The declarative operator checks the focused A3S Test ACLs; `gate --run`
+executes them as the primary interaction contract, while Playwright is only a
+supplemental desktop/compact pixel baseline. Screenshots and diagnostics stay
+below `.a3s-test/office-ops/`. It never polls CI or changes a committed visual
+baseline. Use `a3s agent start/observe/act/finish` for bounded exploratory
+sessions and `a3s cua certification --json` before native GUI work. The locked
+CUA Driver 0.10.0 Windows profiles are currently unsupported, so Windows
+browser-editor evidence uses A3S Test Web/CDP. On Windows,
+`bun run office:ops -- wps-probe --connector` captures the bounded WPS COM
+reference used for UI/OOXML parity; that probe is evidence, not a product
+runtime.
+
 ## Current release
 
-Version `0.53.1` closes the next WPS drawing boundary without pretending that
-legacy VML connectors are editable text boxes:
+Version `0.54.0` adds a bounded editable straight-connector workflow and a
+single local operator for all five editor surfaces:
+
+- Isolated WPS VML straight connectors are imported into a typed Writer model
+  with endpoint percentages, inline/floating layout, line color/width, and
+  triangle arrowheads. Native DOCX export writes a bounded DrawingML line and
+  preserves stable drawing identity; mixed paragraphs and routed/unsupported
+  connectors remain fail-closed diagnostics.
+- The contextual Writer ribbon exposes connector insertion and editing, while
+  the Commander-based `office:ops` CLI routes fixtures, primary A3S Test ACL
+  runs, supplemental visual evidence, WPS COM reference capture, and the
+  observe-decide-act agent lifecycle through one declarative editor matrix.
+  Local gates cover desktop and compact viewports without waiting on CI.
+
+Version `0.53.1` recorded the WPS drawing boundary before the editable slice:
 
 - A Windows WPS 12.0 COM probe records `Shapes.AddConnector` as a VML
   `v:shape` (`o:spt="32"`, `#_x0000_t32`). A dedicated `docx.connectors`

@@ -56,6 +56,12 @@ import {
   markDocxContentControls,
 } from './work-docx-content-control-import';
 import {
+  applyImportedDocxConnectorMarkers,
+  hasImportedDocxConnectorMarkers,
+  type ImportedDocxConnectorMarkers,
+  markDocxConnectors,
+} from './work-docx-connector-import';
+import {
   applyImportedDocxEquationMarkers,
   type ImportedDocxEquationMarkers,
   markDocxPackageEquations,
@@ -254,6 +260,7 @@ export interface PreparedDocxImport {
   numberingChangeMarkers: ImportedDocxNumberingChangeMarkers;
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers;
   textBoxMarkers: ImportedDocxTextBoxMarkers;
+  connectorMarkers: ImportedDocxConnectorMarkers;
   contentControlMarkers: ImportedDocxContentControlMarkers;
   paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers;
   paragraphFormattingChangeMarkers: ImportedDocxParagraphFormattingChangeMarkers;
@@ -306,6 +313,7 @@ export async function prepareDocxImport(
       numberingChangeMarkers: { groups: [] },
       imageLayoutMarkers: { images: [] },
       textBoxMarkers: { textBoxes: [] },
+      connectorMarkers: { connectors: [] },
       contentControlMarkers: { controls: [], unsupported: 0 },
       paragraphIdentityMarkers: { paragraphs: [] },
       paragraphFormattingChangeMarkers: { paragraphs: [] },
@@ -342,6 +350,7 @@ export async function prepareDocxImport(
   const indexMarkers = markDocxIndexes(document);
   const contentControlMarkers = markDocxContentControls(document);
   const textBoxMarkers = markDocxTextBoxes(document);
+  const connectorMarkers = markDocxConnectors(document);
   const paragraphIdentityMarkers = markDocxParagraphIdentities(document);
   const numbering = archive.has('word/numbering.xml')
     ? await archive.xml('word/numbering.xml')
@@ -481,6 +490,7 @@ export async function prepareDocxImport(
         hasImportedDocxNumberingChangeMarkers(numberingChangeMarkers) ||
         hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
         hasImportedDocxTextBoxMarkers(textBoxMarkers) ||
+        hasImportedDocxConnectorMarkers(connectorMarkers) ||
         hasImportedDocxContentControlMarkers(contentControlMarkers) ||
         hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
         hasImportedDocxParagraphFormattingChangeMarkers(
@@ -516,6 +526,7 @@ export async function prepareDocxImport(
       numberingChangeMarkers,
       imageLayoutMarkers,
       textBoxMarkers,
+      connectorMarkers,
       contentControlMarkers,
       paragraphIdentityMarkers,
       paragraphFormattingChangeMarkers,
@@ -570,6 +581,7 @@ export async function prepareDocxImport(
       hasImportedDocxNumberingChangeMarkers(numberingChangeMarkers) ||
       hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
       hasImportedDocxTextBoxMarkers(textBoxMarkers) ||
+      hasImportedDocxConnectorMarkers(connectorMarkers) ||
       hasImportedDocxContentControlMarkers(contentControlMarkers) ||
       hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
       hasImportedDocxParagraphFormattingChangeMarkers(
@@ -605,6 +617,7 @@ export async function prepareDocxImport(
     numberingChangeMarkers,
     imageLayoutMarkers,
     textBoxMarkers,
+    connectorMarkers,
     contentControlMarkers,
     paragraphIdentityMarkers,
     paragraphFormattingChangeMarkers,
@@ -693,6 +706,7 @@ export function applyDocxSectionsToHtml(
   tableRowMarkers: ImportedDocxTableRowMarkers = { rows: [] },
   tableSizingMarkers: ImportedDocxTableSizingMarkers = { tables: [] },
   textBoxMarkers: ImportedDocxTextBoxMarkers = { textBoxes: [] },
+  connectorMarkers: ImportedDocxConnectorMarkers = { connectors: [] },
   contentControlMarkers: ImportedDocxContentControlMarkers = {
     controls: [],
     unsupported: 0,
@@ -740,6 +754,7 @@ export function applyDocxSectionsToHtml(
   applyImportedDocxCommentMarkers(document, commentMarkers);
   applyImportedDocxParagraphIdentityMarkers(document, paragraphIdentityMarkers);
   applyImportedDocxTextBoxMarkers(document, textBoxMarkers);
+  applyImportedDocxConnectorMarkers(document, connectorMarkers);
   applyImportedDocxTableOfContentsMarkers(document, tableOfContentsMarkers);
   applyImportedDocxIndexMarkers(document, indexMarkers);
   applyImportedDocxContentControlMarkers(document, contentControlMarkers);

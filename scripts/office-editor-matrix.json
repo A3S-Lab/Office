@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "description": "The local evidence matrix used by the Codex Office operator.",
+  "surfaces": [
+    {
+      "id": "writer",
+      "label": "Writer",
+      "kind": "document",
+      "formats": ["docx", "html", "txt"],
+      "visual": [
+        "visual-tests/document-connector.functional.spec.ts",
+        "visual-tests/document-text-box.functional.spec.ts"
+      ],
+      "acl": [
+        "tests/e2e/word-connector-editor.acl",
+        "tests/e2e/word-wps-connector-boundary.acl",
+        "tests/e2e/word-text-box-phone.acl"
+      ],
+      "fixtures": ["word-wps-connector.docx", "word-wps-shape.docx"],
+      "wpsReference": true,
+      "agent": {
+        "goal": "Inspect the Writer connector editing surface",
+        "success": "The Writer connector ribbon is visible and editable"
+      }
+    },
+    {
+      "id": "spreadsheet",
+      "label": "Spreadsheet",
+      "kind": "spreadsheet",
+      "formats": ["xlsx", "xls", "ods", "csv"],
+      "visual": [
+        "visual-tests/spreadsheet-data-validation.functional.spec.ts",
+        "visual-tests/spreadsheet-custom-sort.functional.spec.ts"
+      ],
+      "acl": [
+        "tests/e2e/spreadsheet-data-validation.acl",
+        "tests/e2e/spreadsheet-custom-sort.acl"
+      ],
+      "fixtures": ["spreadsheet-1904-date-system.xlsx"],
+      "agent": {
+        "goal": "Inspect the Spreadsheet editing surface",
+        "success": "The Spreadsheet editor is loaded"
+      }
+    },
+    {
+      "id": "presentation",
+      "label": "Presentation",
+      "kind": "presentation",
+      "formats": ["pptx"],
+      "visual": [
+        "visual-tests/presentation-animation.functional.spec.ts",
+        "visual-tests/presentation-task-panes.functional.spec.ts"
+      ],
+      "acl": [
+        "tests/e2e/presentation-animation.acl",
+        "tests/e2e/presentation-presenter-view.acl"
+      ],
+      "fixtures": [],
+      "agent": {
+        "goal": "Inspect the Presentation editing surface",
+        "success": "The Presentation editor is loaded"
+      }
+    },
+    {
+      "id": "markdown",
+      "label": "Markdown",
+      "kind": "markdown",
+      "formats": ["md", "markdown"],
+      "visual": ["visual-tests/markdown-menu.functional.spec.ts"],
+      "acl": ["tests/e2e/markdown-phone-modes.acl"],
+      "fixtures": [],
+      "agent": {
+        "goal": "Inspect the Markdown editing surface",
+        "success": "The Markdown editor is loaded"
+      }
+    },
+    {
+      "id": "pdf",
+      "label": "PDF",
+      "kind": "pdf",
+      "formats": ["pdf"],
+      "visual": [
+        "visual-tests/pdf-page-organization.functional.spec.ts",
+        "visual-tests/pdf-menu.functional.spec.ts"
+      ],
+      "acl": ["tests/e2e/pdf-page-organization.acl"],
+      "fixtures": ["pdf-thumbnail-keyboard.pdf"],
+      "agent": {
+        "goal": "Inspect the PDF editing surface",
+        "success": "The PDF editor is loaded"
+      }
+    }
+  ],
+  "shared": {
+    "visualConfig": "playwright.config.ts",
+    "testkitAcl": "tests/e2e/office-testkit-ui.acl",
+    "fixtureCommand": "bun run test:e2e:fixtures",
+    "previewUrl": "http://127.0.0.1:4175/playground/",
+    "developmentUrl": "http://127.0.0.1:3000/playground/",
+    "evidenceRoot": ".a3s-test/office-ops"
+  }
+}

@@ -4,6 +4,34 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.54.0 - 2026-09-05
+
+- Added a bounded editable Writer straight-connector model. Isolated WPS VML
+  connectors now import with endpoint percentages, inline/floating layout,
+  line color and width, and triangle arrowheads; native DOCX export writes a
+  DrawingML line and retains stable drawing identity. Mixed paragraphs,
+  routed connectors, and unsupported drawing branches remain explicit
+  fail-closed boundaries.
+- Added a contextual Connector ribbon and insertion command with responsive
+  desktop/compact controls, one-step Undo/Redo, focused model/import/export
+  coverage, and clean browser diagnostics.
+- Added the Commander-based `office-ui-ops` local CLI and declarative five-
+  surface editor matrix. `a3s run` makes A3S Test ACL execution the primary
+  interaction gate, `a3s agent start/observe/act/finish` exposes the bounded
+  external-planner lifecycle, and `a3s cua certification/certify` records the
+  locked CUA Driver/MCP contract. Playwright remains a supplemental pixel
+  baseline, while the Windows-only `wps-probe` command keeps WPS reference
+  capture explicit. The local loop never polls CI.
+- Added a focused A3S Test connector-editor ACL plus a Windows CDP adapter for
+  the pinned standalone browser driver. The verified run creates a connector,
+  opens its contextual ribbon, changes width from 120 mm to 150 mm, captures
+  screenshot/accessibility evidence, and records empty console/page errors.
+  CUA Driver 0.10.0 currently marks Windows profiles `unsupported`, which is
+  reported as a fail-closed capability instead of a fabricated GUI pass.
+- Updated the packaged `a3s-office` Skill with the native-CLI versus editor-UI
+  boundary, observe-act-prove contract, failure classification, and bounded
+  WPS COM reference workflow.
+
 ## 0.53.1 - 2026-09-05
 
 - Added an explicit DOCX compatibility diagnostic for WPS VML connectors. The

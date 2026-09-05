@@ -95,6 +95,7 @@ export interface DocumentInsertCommands {
   insertImage: (file: File) => Promise<void>;
   insertNote: (kind: WorkDocumentNoteKind) => boolean;
   insertTextBox: () => boolean;
+  insertConnector: () => boolean;
   openContentControl: () => void;
   openIndexEntry: () => void;
   openIndex: () => void;
@@ -181,6 +182,11 @@ export function useDocumentInsertCommands({
   const insertTextBox = useCallback(() => {
     if (!editor || editor.isDestroyed) return false;
     return editor.chain().focus().insertDocumentTextBox().run();
+  }, [editor]);
+
+  const insertConnector = useCallback(() => {
+    if (!editor || editor.isDestroyed) return false;
+    return editor.chain().focus().insertDocumentConnector().run();
   }, [editor]);
 
   const openContentControl = useCallback(() => {
@@ -632,6 +638,7 @@ export function useDocumentInsertCommands({
     insertImage,
     insertNote,
     insertTextBox,
+    insertConnector,
     openContentControl,
     openIndexEntry,
     openIndex,

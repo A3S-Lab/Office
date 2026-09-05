@@ -1528,6 +1528,7 @@ function DocumentEditorSurface({
           pageChromeShowPageNumber={visibleChrome.showPageNumber}
           onRequestImage={() => imageInputRef.current?.click()}
           onInsertTextBox={documentInsert.insertTextBox}
+          onInsertConnector={documentInsert.insertConnector}
           onInsertContentControl={documentInsert.openContentControl}
           onPageChromeEditingPartChange={editPageChrome}
           onClosePageChrome={closePageChrome}

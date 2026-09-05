@@ -1030,13 +1030,21 @@ Undo/Redo without adding a second document model or a remote service.
 The seventy-second Writer milestone records the next boundary from the same
 installed WPS reference. `Shapes.AddConnector` emits a legacy VML `v:shape`
 with `o:spt="32"` and `#_x0000_t32`, so it is not promoted into the editable
-text-box model. `docx.connectors` now reports the observed connector count and
-explains that endpoint, routing, arrowhead, and floating-anchor semantics may
-normalize on edit. A deterministic WPS-shaped DOCX fixture, focused Rstest,
-and a local A3S Test ACL prove that the editor remains usable, no text-box node
-is fabricated, and accessibility, screenshot, console, and page-error evidence
-are captured. A typed connector model remains a future milestone with its own
-native fixture and UI contract.
+text-box model. `docx.connectors` reports the observed connector count and
+keeps routed or unsupported semantics fail-closed.
+
+The seventy-third Writer milestone promotes the isolated straight subset into
+an explicit connector model. Endpoint percentages, inline/floating placement,
+line color and width, triangle arrowheads, contextual ribbon commands,
+Undo/Redo, WPS VML import, DrawingML export, and native reopen share one typed
+value. Mixed paragraphs, routed connectors, arbitrary shapes, malformed bodies,
+and unsupported branches remain diagnostics. A Commander-based local editor
+operator now owns the five-surface UI evidence matrix, primary A3S Test ACL
+runs, the bounded external-planner lifecycle, CUA Driver/MCP certification,
+supplemental desktop/compact Playwright pixels, and bounded WPS COM reference
+capture without turning CI, CUA, or WPS into product dependencies. The locked
+CUA Driver 0.10.0 Windows profiles remain explicitly unsupported; Windows
+browser evidence uses the standalone A3S Test Web/CDP adapter instead.
 
 ## Current Presentation Milestone
 

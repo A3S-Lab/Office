@@ -39,6 +39,7 @@ interface ToolbarCalls {
   crossReferences: number;
   imageRequests: number;
   textBoxInserts: number;
+  connectorInserts: number;
   contentControlOpens: number;
   insertComments: number;
   indexEntries: number;
@@ -220,6 +221,25 @@ test('inserts a text box and exposes its contextual WPS controls', () => {
   expect(editor.getHTML()).toContain('data-text-box-vertical-align="bottom"');
   fireEvent.click(screen.getByRole('button', { name: '删除文本框' }));
   expect(nodeCount(editor, 'documentTextBox')).toBe(0);
+});
+
+test('inserts a straight connector and exposes its contextual controls', () => {
+  editor = createEditor();
+  const calls = createCalls();
+  const view = render(toolbar(editor, calls));
+
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  fireEvent.click(screen.getByRole('button', { name: '插入连接符' }));
+  expect(calls.connectorInserts).toBe(1);
+  expect(nodeCount(editor, 'documentConnector')).toBe(1);
+
+  view.rerender(toolbar(editor, calls));
+  expect(screen.getByRole('tab', { name: '连接符' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '浮于文字上方' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: '浮于文字上方' }));
+  expect(editor.getHTML()).toContain('data-connector-layout="floating"');
+  fireEvent.click(screen.getByRole('button', { name: '删除连接符' }));
+  expect(nodeCount(editor, 'documentConnector')).toBe(0);
 });
 
 test('exposes the content-control action in the Insert ribbon', () => {
@@ -874,6 +894,10 @@ function toolbar(
         calls.textBoxInserts += 1;
         currentEditor.chain().focus().insertDocumentTextBox().run();
       }}
+      onInsertConnector={() => {
+        calls.connectorInserts += 1;
+        currentEditor.chain().focus().insertDocumentConnector().run();
+      }}
       onInsertContentControl={() => {
         calls.contentControlOpens += 1;
       }}
@@ -983,6 +1007,7 @@ function createCalls(): ToolbarCalls {
     crossReferences: 0,
     imageRequests: 0,
     textBoxInserts: 0,
+    connectorInserts: 0,
     contentControlOpens: 0,
     insertComments: 0,
     indexEntries: 0,

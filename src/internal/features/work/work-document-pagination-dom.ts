@@ -166,6 +166,7 @@ export function shouldKeepDocumentBlockTogether(
     node.type.name === 'codeBlock' ||
     node.type.name === 'image' ||
     node.type.name === 'documentTextBox' ||
+    node.type.name === 'documentConnector' ||
     node.type.name === 'documentNote'
   );
 }

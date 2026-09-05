@@ -314,7 +314,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.connectors',
             'Connectors',
-            `${connectorInspection.detected} WPS VML connector(s) were detected. Their endpoints, routing, arrowheads, and floating anchor are not yet represented by the editable Writer model, so they remain on the compatibility path instead of being misclassified as text boxes; editing or regenerating the document may normalize them.`,
+            `${connectorInspection.detected} WPS VML straight connector(s) were detected. Isolated connectors are converted to the bounded editable Writer model with explicit endpoints, line color/width, and optional triangle arrows; elbow or curved routing, relationship-bound anchors, and unsupported mixed paragraphs remain on the compatibility path and may normalize when edited or regenerated.`,
           ),
         );
       }

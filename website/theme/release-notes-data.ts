@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.54.0',
+    date: '2026-09-05',
+    kind: 'new',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'A3S Test becomes the primary editor interaction contract',
+      zh: 'A3S Test 成为编辑器交互主契约',
+    },
+    summary: {
+      en: 'A bounded Commander operator now drives deterministic editor ACLs, exploratory agent sessions, WPS reference capture, and supplemental visual evidence from one matrix.',
+      zh: '有界的 Commander 操作器现在通过同一份矩阵驱动确定性的编辑器 ACL、探索式智能体会话、WPS 参考采集和补充视觉证据。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'A declarative five-surface CLI',
+          zh: '声明式五编辑器 CLI',
+        },
+        detail: {
+          en: 'Commander subcommands route fixtures, ACL checks and runs, visual baselines, WPS COM probes, and bounded agent lifecycle actions without a switch-based parser.',
+          zh: 'Commander 子命令统一路由夹具、ACL 检查与执行、视觉基线、WPS COM 探针和有界智能体生命周期，不再依赖 switch/if-else 解析器。',
+        },
+      },
+      {
+        title: {
+          en: 'Observed Writer connector editing',
+          zh: '已观测的 Writer 连接符编辑',
+        },
+        detail: {
+          en: 'The A3S Test agent and ACL create a straight connector, open its contextual ribbon, change width from 120 mm to 150 mm, and retain screenshot, accessibility, console, and page-error evidence.',
+          zh: 'A3S Test 智能体与 ACL 创建直线连接符、打开上下文功能区、将宽度从 120 mm 改为 150 mm，并保留截图、可访问性、控制台和页面错误证据。',
+        },
+      },
+      {
+        title: {
+          en: 'CUA capability is reported honestly',
+          zh: '如实报告 CUA 能力',
+        },
+        detail: {
+          en: 'The locked CUA Driver 0.10.0 matrix reports Windows GUI profiles as unsupported; browser/CDP evidence is kept separate from native WPS GUI claims, while the WPS COM probe remains an explicit reference workflow.',
+          zh: '锁定的 CUA Driver 0.10.0 能力矩阵将 Windows GUI profile 如实标记为 unsupported；浏览器/CDP 证据与 WPS 原生 GUI 结论分开，WPS COM 探针仍是明确的参考流程。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './automation.html',
+          zh: './automation.html',
+        },
+        label: {
+          en: 'Read the editor automation guide',
+          zh: '阅读编辑器自动化指南',
+        },
+      },
+      {
+        href: {
+          en: './components/document.html#built-in-editable-text-boxes',
+          zh: './components/document.html#可编辑文本框',
+        },
+        label: {
+          en: 'Review the connector boundary',
+          zh: '查看连接符边界',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.54.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.54.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.53.1',
     date: '2026-09-05',
     kind: 'improved',

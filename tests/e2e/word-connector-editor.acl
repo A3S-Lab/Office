@@ -1,0 +1,71 @@
+suite "office-word-connector-editor" {
+    version = 1
+
+    scenario "create-and-adjust-straight-connector" {
+        name = "Create a straight connector and keep its contextual ribbon editable"
+        surface = "web"
+        timeout_ms = 90000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        click "open-blank-writer" {
+            target = css("button[data-template-id='blank-document']")
+        }
+
+        wait "writer-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        click "open-insert-ribbon" {
+            target = role("tab", "插入")
+        }
+
+        click "insert-connector" {
+            target = role("button", "插入连接符")
+        }
+
+        wait "connector-ribbon-ready" {
+            visible = css("[role='tab'][aria-label='连接符'][aria-selected='true']")
+        }
+
+        expect "connector-is-editable" {
+            visible = css(".work-document-editable [data-document-connector]")
+        }
+
+        fill "set-connector-width" {
+            target = css("input[aria-label='连接符宽度（毫米）']")
+            value = "150"
+        }
+
+        expect "connector-width-is-visible" {
+            visible = css("input[aria-label='连接符宽度（毫米）'][value='150']")
+        }
+
+        screenshot "connector-editor" {
+            path = "screenshots/word-connector-editor.png"
+        }
+
+        accessibility "connector-editor-accessibility" {
+            path = "evidence/word-connector-editor-accessibility.json"
+            interactive = true
+        }
+
+        console "connector-editor-console" {
+            path = "diagnostics/word-connector-editor-console.json"
+            clear = false
+        }
+
+        page_errors "connector-editor-page-errors" {
+            path = "diagnostics/word-connector-editor-page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -21,6 +21,17 @@ Use the host surface that is already available:
   repairing, or falling back to a shell.
 - In a CLI-only agent host, use the `a3s use office native ...` commands below.
 
+For browser-editor UI/UX work, read [references/editor-ui.md](references/editor-ui.md)
+and use the source-checkout operator (`bun run office:ops -- ...`). It routes
+the same bounded workflow across Writer, Spreadsheet, Presentation, Markdown,
+and PDF, owns local fixtures and evidence, and keeps A3S Test interaction
+proof separate from native file mutations. Playwright is a supplemental pixel
+baseline, not the interaction authority. On Windows, its `wps-probe` command
+is the approved bounded WPS COM reference path. Before native GUI work, run
+`bun run office:ops -- a3s cua certification --json`; the locked CUA Driver
+0.10.0 Windows profiles are currently `unsupported`, so use the A3S Test
+Web/CDP route for browser editors and fail closed for Windows CUA claims.
+
 ## Workflow
 
 1. Identify and inspect the document before changing it.
@@ -56,6 +67,12 @@ Use the host surface that is already available:
 
 5. Report the exact output path and any remaining issue records. Do not claim
    Microsoft Office layout fidelity from a semantic preview.
+
+When the request includes editor interaction, add a focused UI pass after the
+native readback: inspect the target surface, perform the smallest user-level
+action, assert state/focus/responsive behavior, and retain screenshot plus
+console/page-error evidence. Do not use a successful `validate` result as a
+substitute for that pass.
 
 For an iterative visual loop, run the foreground watch in a separate process:
 
@@ -204,7 +221,10 @@ available.
 ## Safety Rules
 
 - Do not invoke LibreOffice, Microsoft Office, Python, Node.js, or .NET as an
-  implicit runtime. LibreOffice is only an optional external CI oracle.
+  implicit product runtime. LibreOffice is only an optional external CI
+  oracle. The explicit Windows-only WPS COM probe documented in
+  `references/editor-ui.md` is a bounded reference experiment, never a
+  dependency of native CLI execution or CI.
 - Do not use `raw-set` when a typed operation exists. When raw XML replacement
   is unavoidable, inspect the exact part, preserve its root QName, write to a
   distinct output, and validate the result.
