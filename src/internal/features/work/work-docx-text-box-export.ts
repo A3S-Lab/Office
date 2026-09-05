@@ -1,10 +1,14 @@
 import JSZip from 'jszip';
-import { descendants, parseXml } from './work-ooxml-package';
-import type { WorkDocumentTextBoxProperties } from './work-document-text-box';
+import type {
+  WorkDocumentShapeType,
+  WorkDocumentTextBoxProperties,
+} from './work-document-text-box';
+import { descendants, directChild, parseXml } from './work-ooxml-package';
 
 interface DocxTextBoxIdentityPatch {
   marker: string;
   preferredId: number | null;
+  shapeType: WorkDocumentShapeType;
 }
 
 export interface DocxTextBoxIdentityRegistration {
@@ -33,7 +37,11 @@ export class DocxTextBoxIdentityPatchCollector {
   ): DocxTextBoxIdentityRegistration {
     const marker = `__A3S_TEXT_BOX_ID_${this.nextMarker}__`;
     this.nextMarker += 1;
-    this.patches.push({ marker, preferredId: properties.docPropertiesId });
+    this.patches.push({
+      marker,
+      preferredId: properties.docPropertiesId,
+      shapeType: properties.shapeType,
+    });
     return { marker, docPropertiesId: properties.docPropertiesId };
   }
 }
@@ -93,6 +101,7 @@ export async function patchDocxTextBoxIdentities(
     used.add(preferred);
     nextId = preferred + 1;
     property.setAttribute('id', String(preferred));
+    patchShapeGeometry(property, patch.shapeType);
     changedDocuments.add(property.ownerDocument);
   }
 
@@ -102,6 +111,37 @@ export async function patchDocxTextBoxIdentities(
     }
   }
   return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+const SHAPE_PRESETS: Readonly<Record<WorkDocumentShapeType, string>> = {
+  rectangle: 'rect',
+  roundedRectangle: 'roundRect',
+  ellipse: 'ellipse',
+  diamond: 'diamond',
+  triangle: 'triangle',
+};
+
+function patchShapeGeometry(
+  documentProperty: Element,
+  shapeType: WorkDocumentShapeType,
+): void {
+  const preset = SHAPE_PRESETS[shapeType];
+  if (!preset) return;
+  let ancestor = documentProperty.parentElement;
+  while (ancestor) {
+    const shape = descendants(ancestor, 'wsp').find(
+      (candidate) => candidate.localName === 'wsp',
+    );
+    if (shape) {
+      const properties = directChild(shape, 'spPr');
+      const geometry = properties
+        ? directChild(properties, 'prstGeom')
+        : undefined;
+      geometry?.setAttribute('prst', preset);
+      return;
+    }
+    ancestor = ancestor.parentElement;
+  }
 }
 
 function textBoxIdentityPatch(

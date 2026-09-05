@@ -76,7 +76,7 @@ collaboration transport, and AI providers.
 | Document grid and script-aware typography | **Supported** for section grid, run snap overrides, bundled/host/imported font choices, four native script-font slots, theme/style inheritance, mixed-script spans, and Traditional Office layout fixtures | Font substitution, missing glyphs, and browser shaping can still alter pagination | P0 |
 | Tables, merges, sizing, margins, styles, row pagination, nested tables | **Partial**, with broad editable geometry and style inheritance | Full Word border conflict rules, every conditional property, floating tables, formulas, and advanced table tools are incomplete | P0/P1 |
 | Inline and floating pictures, crop, wrap contour, layer, identity, alt text, quarter-turn transforms | **Partial**, with strong DrawingML picture support plus editable 90-degree rotation and horizontal/vertical reflection | Arbitrary-angle transforms, broad shapes, connectors, text boxes, WordArt, SmartArt, charts, and unsupported drawings normalize | P0 safe preservation; P1 editable drawings |
-| Editable text boxes and bounded shape geometry | **Partial**, with isolated native WordprocessingML text boxes editable through inline/floating layout, bounded geometry, fill, outline, padding, vertical alignment, and native DOCX round trips | Mixed paragraphs, connectors, arbitrary shapes, WordArt, SmartArt, charts, and unsupported DrawingML branches remain explicit compatibility boundaries | P1 editable drawings |
+| Editable text boxes and bounded shape geometry | **Partial**, with isolated native WordprocessingML text boxes editable through inline/floating layout, five explicit presets (rectangle, rounded rectangle, ellipse, diamond, triangle), bounded geometry, fill, outline, padding, vertical alignment, WPS `mc:AlternateContent` import, and native DOCX round trips | Mixed paragraphs, VML-only connectors, arbitrary shapes, WordArt, SmartArt, charts, malformed bodies, and unsupported DrawingML branches remain explicit compatibility boundaries | P1 editable drawings |
 | OMML equations | **Partial**, with a large bounded structured model and strict/transitional import/export | Unbounded or unsupported OMML branches remain atomic/unsupported rather than fully editable | P0 no-clobber; P2 coverage |
 | Comments, replies, resolved state, anchors, modern IDs | **Supported** for editable review records and safe source preservation | Reactions, people sidecars, live presence, and server synchronization are absent/host-owned | P1 protocol |
 | Track changes review | **Partial**: body-text insertions/deletions plus bounded whole-paragraph mark insertion/deletion, character-, paragraph-formatting, ordered-list numbering, and text-only move revisions; native `w:pPr/w:rPr/w:ins`/`w:del`, `w:rPrChange`, `w:pPrChange`, `w:numberingChange`, `w:moveFrom`, and `w:moveTo` round trips; navigation, atomic accept/reject, immutable collaboration audit, and long-list virtualization | Isolated paragraph-break merge/split revisions, mixed/complex paragraph-mark changes, cross-section/range moves, rich/relationship-bound moves, plus section, table, row, cell, and complex/multi-level numbering property revisions are not fully editable | P0 |
@@ -323,8 +323,10 @@ work rather than silent approximations.
 - Keep the bounded Writer picture transform slice native: quarter-turn rotation
   and horizontal/vertical reflection round-trip through DrawingML `a:xfrm`;
   arbitrary angles remain an explicit diagnostic boundary.
-- Add editable text boxes and a bounded DrawingML shape/connector model before
-  expanding to WordArt, charts, and SmartArt.
+- Extend the bounded text-box preset model to a typed DrawingML shape/connector
+  model before expanding to WordArt, charts, and SmartArt. Keep mixed
+  paragraphs, connectors, and unsupported branches fail-closed until each has
+  an independent native fixture and editor contract.
 - Complete common field instructions and reference workflows.
 - Extend the bounded content-control slice beyond direct inline text and rich
   text only after block, form, and data-binding semantics have independent

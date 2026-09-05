@@ -5,24 +5,26 @@ import {
   AlignVerticalJustifyStart,
   Move,
   Rows3,
+  Shapes,
   SquareDashedMousePointer,
   Trash2,
 } from 'lucide-react';
 import {
-  CommittedOfficeNumberField,
-  OfficeColorPicker,
-  OfficeSelect,
-} from './office-controls';
-import {
   DOCUMENT_TEXT_BOX_DEFAULTS,
   DOCUMENT_TEXT_BOX_LIMITS,
   documentTextBoxProperties,
+  type WorkDocumentShapeType,
   type WorkDocumentTextBoxHorizontalReference,
   type WorkDocumentTextBoxLayout,
   type WorkDocumentTextBoxProperties,
   type WorkDocumentTextBoxVerticalAlign,
   type WorkDocumentTextBoxVerticalReference,
 } from '../work-document-text-box';
+import {
+  CommittedOfficeNumberField,
+  OfficeColorPicker,
+  OfficeSelect,
+} from './office-controls';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
@@ -35,6 +37,17 @@ const layoutOptions = [
   value: WorkDocumentTextBoxLayout;
   label: string;
   icon: typeof Rows3;
+}[];
+
+const shapeOptions = [
+  { value: 'rectangle', label: '矩形' },
+  { value: 'roundedRectangle', label: '圆角矩形' },
+  { value: 'ellipse', label: '椭圆' },
+  { value: 'diamond', label: '菱形' },
+  { value: 'triangle', label: '三角形' },
+] as const satisfies readonly {
+  value: WorkDocumentShapeType;
+  label: string;
 }[];
 
 const horizontalReferenceOptions = [
@@ -98,6 +111,16 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
 
   return (
     <>
+      <WorkOfficeRibbonGroup label="形状" priority="high">
+        <OfficeSelect<WorkDocumentShapeType>
+          ariaLabel="文本框形状"
+          value={properties.shapeType}
+          options={shapeOptions}
+          disabled={!selected}
+          onValueChange={(shapeType) => update({ shapeType })}
+        />
+        <Shapes size={18} aria-hidden="true" />
+      </WorkOfficeRibbonGroup>
       <WorkOfficeRibbonGroup label="布局" priority="high">
         {layoutOptions.map((option) => {
           const Icon = option.icon;
@@ -289,6 +312,7 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
             update({
               width: DOCUMENT_TEXT_BOX_DEFAULTS.width,
               height: DOCUMENT_TEXT_BOX_DEFAULTS.height,
+              shapeType: DOCUMENT_TEXT_BOX_DEFAULTS.shapeType,
               layout: DOCUMENT_TEXT_BOX_DEFAULTS.layout,
               horizontalOffset: DOCUMENT_TEXT_BOX_DEFAULTS.horizontalOffset,
               verticalOffset: DOCUMENT_TEXT_BOX_DEFAULTS.verticalOffset,

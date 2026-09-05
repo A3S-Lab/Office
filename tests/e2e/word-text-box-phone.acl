@@ -57,6 +57,14 @@ suite "office-word-text-box" {
             visible = css(".work-document-ribbon[data-contextual-active='true']")
         }
 
+        click "choose-ellipse-shape" {
+            target = role("combobox", "文本框形状")
+        }
+
+        click "use-ellipse-shape" {
+            target = role("option", "椭圆")
+        }
+
         fill "set-text-box-width" {
             target = css("input[aria-label='文本框宽度（毫米）']")
             value = "76.2"
@@ -126,7 +134,7 @@ suite "office-word-text-box" {
         }
 
         expect "text-box-properties-saved" {
-            visible = css(".work-document-editable [data-document-text-box][data-text-box-width='76.2'][data-text-box-height='25.4'][data-text-box-layout='floating'][data-text-box-horizontal-reference='page'][data-text-box-vertical-reference='margin'][data-text-box-horizontal-offset='12.7'][data-text-box-vertical-offset='-6.35'][data-text-box-fill='#d9ead3'][data-text-box-border-color='#0070c0'][data-text-box-border-width='0.7'][data-text-box-vertical-align='bottom']")
+            visible = css(".work-document-editable [data-document-text-box][data-text-box-shape='ellipse'][data-text-box-width='76.2'][data-text-box-height='25.4'][data-text-box-layout='floating'][data-text-box-horizontal-reference='page'][data-text-box-vertical-reference='margin'][data-text-box-horizontal-offset='12.7'][data-text-box-vertical-offset='-6.35'][data-text-box-fill='#d9ead3'][data-text-box-border-color='#0070c0'][data-text-box-border-width='0.7'][data-text-box-vertical-align='bottom']")
         }
 
         expect "text-box-content-remains-editable" {
@@ -216,6 +224,10 @@ suite "office-word-text-box" {
             visible = css("input[aria-label='文本框宽度（毫米）']")
         }
 
+        expect "phone-text-box-shape-control-visible" {
+            visible = css("button[aria-label='文本框形状']")
+        }
+
         expect "phone-text-box-inside-viewport" {
             visible = css(".work-document-editable [data-document-text-box]")
         }
@@ -232,6 +244,139 @@ suite "office-word-text-box" {
         page_errors "phone-text-box-page-errors" {
             path = "diagnostics/phone-text-box-page-errors.json"
             clear = false
+        }
+    }
+
+    scenario "import-and-edit-wps-shape" {
+        name = "Import a WPS shape and keep its contextual controls understandable"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-wps-shape-fixture" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        upload "import-wps-shape" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-wps-shape.docx"]
+        }
+
+        wait "wps-shape-imported" {
+            visible = css(".work-document-editable [data-document-text-box][data-text-box-shape='roundedRectangle']")
+        }
+
+        expect "wps-shape-text-remains-editable" {
+            text = "WPS native shape"
+        }
+
+        click "select-imported-wps-shape" {
+            target = css(".work-document-editable [data-document-text-box]")
+        }
+
+        wait "imported-shape-contextual-ribbon" {
+            visible = css(".work-document-ribbon[data-contextual-active='true']")
+        }
+
+        expect "imported-shape-contextual-controls" {
+            visible = css("button[aria-label='文本框形状']")
+        }
+
+        click "open-imported-shape-selector" {
+            target = role("combobox", "文本框形状")
+        }
+
+        expect "shape-selector-options" {
+            visible = css("[role='option'][aria-label='椭圆']")
+        }
+
+        click "change-imported-shape-to-ellipse" {
+            target = role("option", "椭圆")
+        }
+
+        expect "ellipse-selection-is-visible" {
+            visible = css(".work-document-editable [data-document-text-box][data-text-box-shape='ellipse']")
+        }
+
+        press "undo-shape-change" {
+            key = "Control+z"
+        }
+
+        wait "undo-restores-wps-shape" {
+            visible = css(".work-document-editable [data-document-text-box][data-text-box-shape='roundedRectangle']")
+        }
+
+        press "redo-shape-change" {
+            key = "Control+Shift+z"
+        }
+
+        wait "redo-restores-ellipse" {
+            visible = css(".work-document-editable [data-document-text-box][data-text-box-shape='ellipse']")
+        }
+
+        accessibility "imported-wps-shape-accessibility" {
+            path = "evidence/word-wps-shape-accessibility.json"
+            interactive = true
+        }
+
+        console "imported-wps-shape-console" {
+            path = "diagnostics/word-wps-shape-console.json"
+            clear = false
+        }
+
+        page_errors "imported-wps-shape-page-errors" {
+            path = "diagnostics/word-wps-shape-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "discover-imported-shape-tools-on-phone" {
+        name = "Keep imported WPS shape tools discoverable on a phone viewport"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-wps-shape-phone" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        upload "import-wps-shape-phone" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-wps-shape.docx"]
+        }
+
+        wait "phone-wps-shape-imported" {
+            visible = css(".work-document-editable [data-document-text-box][data-text-box-shape='roundedRectangle']")
+        }
+
+        click "select-phone-wps-shape" {
+            target = css(".work-document-editable [data-document-text-box]")
+        }
+
+        wait "phone-wps-contextual-ribbon" {
+            visible = css(".work-document-ribbon[data-contextual-active='true']")
+        }
+
+        click "scroll-phone-wps-tools" {
+            target = role("button", "向右查看更多文本框工具")
+        }
+
+        expect "phone-wps-shape-control" {
+            visible = css("button[aria-label='文本框形状']")
+        }
+
+        screenshot "imported-wps-shape-phone" {
+            path = "screenshots/word-wps-shape-phone.png"
         }
     }
 }

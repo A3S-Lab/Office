@@ -36,6 +36,22 @@ test('Writer authors a native text box through the contextual ribbon', async ({
   await page.keyboard.type('季度计划重点');
   await expect(textBox).toContainText('季度计划重点');
 
+  const shapeOptions = [
+    ['圆角矩形', 'roundedRectangle'],
+    ['椭圆', 'ellipse'],
+    ['菱形', 'diamond'],
+    ['三角形', 'triangle'],
+    ['矩形', 'rectangle'],
+  ] as const;
+  for (const [label, value] of shapeOptions) {
+    await page.getByRole('combobox', { name: '文本框形状' }).click();
+    await page.getByRole('option', { name: label, exact: true }).click();
+    await expect(textBox).toHaveAttribute('data-text-box-shape', value);
+  }
+  await page.getByRole('combobox', { name: '文本框形状' }).click();
+  await page.getByRole('option', { name: '椭圆', exact: true }).click();
+  await expect(textBox).toHaveAttribute('data-text-box-shape', 'ellipse');
+
   await page
     .getByRole('textbox', { name: '文本框宽度（毫米）', exact: true })
     .fill('76.2');
@@ -115,5 +131,54 @@ test('Writer authors a native text box through the contextual ribbon', async ({
     'aria-selected',
     'true',
   );
+  expect(browserErrors).toEqual([]);
+});
+
+test('Writer keeps imported WPS shape controls discoverable and undoable', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+
+  await page.goto('/playground/');
+  await page
+    .locator('input[aria-label="打开 Office 或 PDF 文件"]')
+    .setInputFiles('.a3s-test/fixtures/word-wps-shape.docx');
+
+  const textBox = page.locator(
+    '.work-document-editable [data-document-text-box]',
+  );
+  await expect(textBox).toHaveAttribute(
+    'data-text-box-shape',
+    'roundedRectangle',
+  );
+  await expect(textBox).toContainText('WPS native shape');
+
+  await textBox.click();
+  await expect(page.getByRole('tab', { name: '文本框' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  const shapeSelect = page.getByRole('combobox', { name: '文本框形状' });
+  await expect(shapeSelect).toBeVisible();
+  await shapeSelect.click();
+  await page.getByRole('option', { name: '椭圆', exact: true }).click();
+  await expect(textBox).toHaveAttribute('data-text-box-shape', 'ellipse');
+
+  await page.keyboard.press('Control+z');
+  await expect(textBox).toHaveAttribute(
+    'data-text-box-shape',
+    'roundedRectangle',
+  );
+  await page.keyboard.press('Control+Shift+z');
+  await expect(textBox).toHaveAttribute('data-text-box-shape', 'ellipse');
+
+  await page.screenshot({
+    path: testInfo.outputPath(`writer-wps-shape-${testInfo.project.name}.png`),
+    animations: 'disabled',
+  });
   expect(browserErrors).toEqual([]);
 });

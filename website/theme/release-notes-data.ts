@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.53.0',
+    date: '2026-09-05',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer text boxes speak the same shape language as WPS',
+      zh: 'Writer 文本框与 WPS 使用同一套有界形状语义',
+    },
+    summary: {
+      en: 'Five bounded shape presets now survive WPS import, the structured editor model, responsive controls, Undo/Redo, and native DOCX export.',
+      zh: '五种有界形状现在可以穿过 WPS 导入、结构化编辑器模型、响应式控件、撤销/重做和原生 DOCX 导出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Five shapes, one typed state',
+          zh: '五种形状，一个类型化状态',
+        },
+        detail: {
+          en: 'Rectangle, rounded rectangle, ellipse, diamond, and triangle share one bounded model. The contextual ribbon, live page, preview, PDF capture, and DOCX geometry stay aligned.',
+          zh: '矩形、圆角矩形、椭圆、菱形和三角形共享一个有界模型。上下文功能区、实时页面、预览、PDF 捕获和 DOCX 几何保持一致。',
+        },
+      },
+      {
+        title: {
+          en: 'Real WPS import stays editable',
+          zh: '真实 WPS 导入后仍可编辑',
+        },
+        detail: {
+          en: 'Isolated WPS mc:AlternateContent text-bearing shapes retain placement, fill, outline, padding, vertical anchor, text, and drawing identity. Mixed paragraphs and connectors remain diagnosed boundaries.',
+          zh: '独立的 WPS mc:AlternateContent 文本形状保留位置、填充、轮廓、内边距、垂直锚点、文字和绘图身份。混合段落与连接符继续作为明确诊断边界。',
+        },
+      },
+      {
+        title: {
+          en: 'Deep UI/UX evidence, not feature count',
+          zh: '深度 UI/UX 证据，而不是功能堆砌',
+        },
+        detail: {
+          en: 'Desktop and compact browser flows exercise every preset, contextual discovery, focus, accessibility, viewport containment, clean diagnostics, and WPS import Undo/Redo. The local A3S Test ACL records the same contract.',
+          zh: '桌面与紧凑浏览器流程逐一测试每种形状、上下文发现性、焦点、可访问性、视口容纳、干净诊断以及 WPS 导入后的撤销/重做。本地 A3S Test ACL 记录同一契约。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#built-in-editable-text-boxes',
+          zh: './components/document.html#可编辑文本框',
+        },
+        label: {
+          en: 'Read the text-box guide',
+          zh: '阅读文本框指南',
+        },
+      },
+      {
+        href: {
+          en: './components/document.html#built-in-editable-text-boxes',
+          zh: './components/document.html#可编辑文本框',
+        },
+        label: {
+          en: 'Review the compatibility boundary',
+          zh: '查看兼容性边界',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.53.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.53.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.52.0',
     date: '2026-09-05',
     kind: 'new',

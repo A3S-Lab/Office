@@ -778,7 +778,8 @@ text distance, quarter-turn rotation, horizontal/vertical reflection,
 alternative text,
 retained image selection, and exact invoker restoration after apply and cancel,
 plus a desktop and phone Writer text-box workflow covering isolated insertion,
-contextual layout/geometry/placement/fill/outline controls, accessibility,
+all five bounded shape presets, WPS `mc:AlternateContent` import, contextual
+layout/geometry/placement/fill/outline controls, Undo/Redo, accessibility,
 viewport containment, and clean browser diagnostics,
 plus a desktop and phone Writer content-control workflow covering the
 responsive Insert dialog, plain/rich type and appearance metadata, direct

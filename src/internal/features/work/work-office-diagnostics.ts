@@ -292,8 +292,8 @@ export async function analyzeDocxCompatibility(
         issues.push(
           issue(
             'docx.text-boxes',
-            'Text boxes',
-            `${textBoxInspection.supported} isolated WPS text box(es) remain editable with native DrawingML geometry, inline or floating layout, safe page-relative offsets, fill, outline, padding, and vertical alignment. Mixed paragraphs are intentionally kept on the normal DOCX compatibility path.`,
+            'Text boxes and shapes',
+            `${textBoxInspection.supported} isolated WPS text box or common shape(s) remain editable with bounded DrawingML geometry (rectangle, rounded rectangle, ellipse, diamond, or triangle), inline or floating layout, safe page-relative offsets, fill, outline, padding, and vertical alignment. Mixed paragraphs and connectors remain on the normal DOCX compatibility path.`,
             'info',
           ),
         );
@@ -302,8 +302,8 @@ export async function analyzeDocxCompatibility(
         issues.push(
           issue(
             'docx.text-boxes.unsupported',
-            'Text boxes',
-            `${textBoxInspection.unsupported} WPS text box(es) mix a drawing with other paragraph content or have unsupported shape content. Only isolated text-box paragraphs are converted to editable text boxes; the rest may normalize during browser conversion.`,
+            'Text boxes and shapes',
+            `${textBoxInspection.unsupported} WPS text box or shape(s) mix a drawing with other paragraph content, use unsupported geometry, or have malformed shape content. Only isolated text-bearing paragraphs in the bounded preset set are converted to editable shapes; connectors and the rest may normalize during browser conversion.`,
           ),
         );
       }

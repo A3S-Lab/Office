@@ -55,6 +55,23 @@ const TEXT_BOX_RUN_CONTENT_NAMES = new Set([
   'tab',
   't',
 ]);
+const PARAGRAPH_BOUNDARY_METADATA_NAMES = new Set([
+  'bookmarkStart',
+  'bookmarkEnd',
+  'commentRangeStart',
+  'commentRangeEnd',
+  'customXmlInsRangeStart',
+  'customXmlInsRangeEnd',
+  'customXmlDelRangeStart',
+  'customXmlDelRangeEnd',
+  'customXmlMoveFromRangeStart',
+  'customXmlMoveFromRangeEnd',
+  'customXmlMoveToRangeStart',
+  'customXmlMoveToRangeEnd',
+  'permStart',
+  'permEnd',
+  'proofErr',
+]);
 
 /**
  * Rewrites supported WPS text boxes into ordinary Word runs for Mammoth.
@@ -81,7 +98,12 @@ export function markDocxTextBoxes(
     const marker = nextTextBoxMarker(document, nextMarker);
     nextMarker += 1;
     const properties = textBoxProperties(drawing, shape, textBoxes.length + 1);
-    replaceParagraphWithTextBoxRuns(document, paragraph, shape.content, marker);
+    replaceDrawingRunWithTextBoxRuns(
+      document,
+      run,
+      shape.content,
+      marker,
+    );
     textBoxes.push({ marker, properties });
   }
   return { textBoxes };
@@ -172,7 +194,19 @@ export function hasImportedDocxTextBoxMarkers(
 interface TextBoxShape {
   shape: Element;
   content: Element;
+  shapeType: WorkDocumentTextBoxProperties['shapeType'];
 }
+
+const SUPPORTED_PRESET_GEOMETRIES = new Map<
+  string,
+  WorkDocumentTextBoxProperties['shapeType']
+>([
+  ['rect', 'rectangle'],
+  ['roundRect', 'roundedRectangle'],
+  ['ellipse', 'ellipse'],
+  ['diamond', 'diamond'],
+  ['triangle', 'triangle'],
+]);
 
 /**
  * Recognize the explicit WPS text-box declaration independently from its
@@ -202,13 +236,16 @@ function textBoxShapeCandidate(drawing: Element): Element | null {
   const txBox = attribute(nonVisual ?? shape, 'txBox')
     ?.trim()
     .toLowerCase();
-  if (txBox !== '1' && txBox !== 'true') return null;
+  const hasTextBoxBody = Boolean(directChild(shape, 'txbx'));
+  if (txBox !== '1' && txBox !== 'true' && !hasTextBoxBody) return null;
   return shape;
 }
 
 function supportedTextBoxShape(drawing: Element): TextBoxShape | null {
   const shape = textBoxShapeCandidate(drawing);
   if (!shape) return null;
+  const shapeType = shapePresetGeometry(shape);
+  if (!shapeType) return null;
   const txbx = directChild(shape, 'txbx');
   if (txbx && !WORDPROCESSING_SHAPE_NAMESPACES.has(txbx.namespaceURI ?? '')) {
     return null;
@@ -217,7 +254,7 @@ function supportedTextBoxShape(drawing: Element): TextBoxShape | null {
   return content &&
     isWordElement(content, 'txbxContent') &&
     isSupportedTextBoxContent(content)
-    ? { shape, content }
+    ? { shape, content, shapeType }
     : null;
 }
 
@@ -276,24 +313,43 @@ function docxDrawings(document: Document): Element[] {
 
 function isSoleDrawingParagraph(paragraph: Element, run: Element): boolean {
   const meaningful = directChildren(paragraph).filter(
-    (element) => element.localName !== 'pPr',
+    (element) =>
+      element.localName !== 'pPr' && !isParagraphBoundaryMetadata(element),
   );
   if (meaningful.length !== 1 || meaningful[0] !== run) return false;
   const runContent = directChildren(run).filter(
     (element) => element.localName !== 'rPr',
   );
-  return runContent.length === 1 && runContent[0]?.localName === 'drawing';
+  return runContent.length === 1 && runContainsDrawing(runContent[0]);
 }
 
-function replaceParagraphWithTextBoxRuns(
+function isParagraphBoundaryMetadata(element: Element): boolean {
+  return PARAGRAPH_BOUNDARY_METADATA_NAMES.has(element.localName);
+}
+
+/**
+ * WPS wraps native DrawingML shapes in mc:AlternateContent so Word can fall
+ * back to the VML branch. The drawing is still the only meaningful child of
+ * the run, but it is one level below mc:Choice rather than directly under
+ * w:r. Treat that wrapper as a drawing for the isolated-shape gate.
+ */
+function runContainsDrawing(element: Element | undefined): boolean {
+  if (!element) return false;
+  if (element.localName === 'drawing') return isWordElement(element, 'drawing');
+  if (element.localName !== 'AlternateContent') return false;
+  return descendants(element, 'drawing').some(
+    (drawing) => isWordElement(drawing, 'drawing'),
+  );
+}
+
+function replaceDrawingRunWithTextBoxRuns(
   document: Document,
-  paragraph: Element,
+  drawingRun: Element,
   content: Element,
   marker: string,
 ): void {
-  const namespace = paragraph.namespaceURI || WORD_NAMESPACE;
-  const prefix = paragraph.prefix ? `${paragraph.prefix}:` : 'w:';
-  const paragraphProperties = directChild(paragraph, 'pPr');
+  const namespace = drawingRun.namespaceURI || WORD_NAMESPACE;
+  const prefix = drawingRun.prefix ? `${drawingRun.prefix}:` : 'w:';
   const runs: Element[] = [];
   const sourceParagraphs = directChildren(content, 'p');
   for (const [paragraphIndex, sourceParagraph] of sourceParagraphs.entries()) {
@@ -305,11 +361,7 @@ function replaceParagraphWithTextBoxRuns(
     }
   }
   const markerRun = createTextRun(document, namespace, prefix, marker);
-  paragraph.replaceChildren(
-    ...(paragraphProperties ? [paragraphProperties] : []),
-    markerRun,
-    ...runs,
-  );
+  drawingRun.replaceWith(markerRun, ...runs);
 }
 
 function createTextRun(
@@ -389,7 +441,29 @@ function textBoxProperties(
     padding: bodyPadding(bodyProperties),
     verticalAlign: bodyVerticalAlign(bodyProperties),
     docPropertiesId,
+    shapeType: shape.shapeType,
   });
+}
+
+function shapePresetGeometry(
+  shape: Element,
+): WorkDocumentTextBoxProperties['shapeType'] | null {
+  const shapeProperties = directChild(shape, 'spPr');
+  const geometry = shapeProperties
+    ? directChild(shapeProperties, 'prstGeom')
+    : undefined;
+  const preset = attributeOptional(geometry, 'prst')?.trim();
+  // Older WPS text boxes omit a preset geometry. Their implicit geometry is
+  // rectangular, while ordinary text-bearing shapes must declare one of the
+  // bounded presets above to avoid reviving arbitrary DrawingML semantics.
+  if (!preset) {
+    const nonVisual = directChild(shape, 'cNvSpPr');
+    const txBox = attribute(nonVisual ?? shape, 'txBox')
+      ?.trim()
+      .toLowerCase();
+    return txBox === '1' || txBox === 'true' ? 'rectangle' : null;
+  }
+  return SUPPORTED_PRESET_GEOMETRIES.get(preset) ?? null;
 }
 
 function shapeFill(shapeProperties: Element | undefined): string {

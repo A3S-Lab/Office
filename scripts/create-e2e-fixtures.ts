@@ -92,6 +92,10 @@ const wpsScriptMatrixDocumentPath = path.join(
   fixtureDirectory,
   'word-wps-script-matrix.docx',
 );
+const wpsShapeDocumentPath = path.join(
+  fixtureDirectory,
+  'word-wps-shape.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(
@@ -159,6 +163,7 @@ await Bun.write(
   wpsScriptMatrixDocumentPath,
   await createWpsScriptMatrixWordFixture(),
 );
+await Bun.write(wpsShapeDocumentPath, await createWpsShapeWordFixture());
 await Bun.write(
   picturePath,
   Buffer.from(
@@ -183,6 +188,7 @@ console.log(`Created ${wpsFontMatrixDocumentPath}`);
 console.log(`Created ${wpsCjkFontMatrixDocumentPath}`);
 console.log(`Created ${wpsGridMatrixDocumentPath}`);
 console.log(`Created ${wpsScriptMatrixDocumentPath}`);
+console.log(`Created ${wpsShapeDocumentPath}`);
 console.log(`Created ${picturePath}`);
 
 async function createSpreadsheet1904DateSystemFixture(): Promise<ArrayBuffer> {
@@ -683,6 +689,75 @@ async function createStyledTableWordFixture(): Promise<Buffer> {
           '<Relationship Id="rIdA3SStyledTableTheme" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/></Relationships>',
         ),
   );
+  return archive.generateAsync({ type: 'nodebuffer' });
+}
+
+async function createWpsShapeWordFixture(): Promise<Buffer> {
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic WPS native shape import and editing fixture',
+    title: 'A3S Office WPS shape fixture',
+    sections: [
+      {
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: 'WPS shape fixture placeholder' })],
+          }),
+        ],
+      },
+    ],
+  });
+  const archive = await JSZip.loadAsync(await Packer.toBuffer(document));
+  const documentXmlFile = archive.file('word/document.xml');
+  if (!documentXmlFile) {
+    throw new Error('Expected a document XML part for the WPS shape fixture.');
+  }
+  const source = await documentXmlFile.async('string');
+  const shapeParagraph = `
+    <w:p>
+      <w:bookmarkStart w:id="0" w:name="_GoBack"/><w:bookmarkEnd w:id="0"/>
+      <w:r><w:rPr><w:sz w:val="21"/></w:rPr>
+        <mc:AlternateContent>
+          <mc:Choice Requires="wps">
+            <w:drawing>
+              <wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="251659264" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1">
+                <wp:simplePos x="0" y="0"/>
+                <wp:positionH relativeFrom="column"><wp:posOffset>-228600</wp:posOffset></wp:positionH>
+                <wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV>
+                <wp:extent cx="1828800" cy="914400"/>
+                <wp:effectExtent l="6350" t="6350" r="6350" b="6350"/>
+                <wp:wrapNone/>
+                <wp:docPr id="1" name="A3S WPS Shape"/>
+                <wp:cNvGraphicFramePr/>
+                <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+                  <a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+                    <wps:wsp>
+                      <wps:cNvSpPr/>
+                      <wps:spPr>
+                        <a:xfrm><a:off x="0" y="0"/><a:ext cx="1828800" cy="914400"/></a:xfrm>
+                        <a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom>
+                        <a:solidFill><a:srgbClr val="D9EAD3"/></a:solidFill>
+                        <a:ln w="25200"><a:solidFill><a:srgbClr val="4472C4"/></a:solidFill></a:ln>
+                      </wps:spPr>
+                      <wps:txbx><w:txbxContent><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t>WPS native shape</w:t></w:r></w:p></w:txbxContent></wps:txbx>
+                      <wps:bodyPr anchor="ctr" lIns="91440" tIns="45720" rIns="91440" bIns="45720"><a:noAutofit/></wps:bodyPr>
+                    </wps:wsp>
+                  </a:graphicData>
+                </a:graphic>
+              </wp:anchor>
+            </w:drawing>
+          </mc:Choice>
+          <mc:Fallback>
+            <w:pict><v:rect id="A3S WPS Shape" style="position:absolute;left:0pt;top:0pt;width:144pt;height:72pt" fillcolor="#D9EAD3" stroked="t"><v:fill/><v:stroke/><v:textbox><w:txbxContent><w:p><w:r><w:t>WPS native shape</w:t></w:r></w:p></w:txbxContent></v:textbox></v:rect></w:pict>
+          </mc:Fallback>
+        </mc:AlternateContent>
+      </w:r>
+    </w:p>`;
+  const replaced = source.replace(/<w:p>[\s\S]*?<\/w:p>/, shapeParagraph);
+  if (replaced === source) {
+    throw new Error('Failed to replace the placeholder paragraph in the WPS shape fixture.');
+  }
+  archive.file('word/document.xml', replaced);
   return archive.generateAsync({ type: 'nodebuffer' });
 }
 

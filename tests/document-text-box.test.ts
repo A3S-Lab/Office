@@ -3,6 +3,7 @@ import { Editor } from '@tiptap/core';
 import JSZip from 'jszip';
 import { createArtifact, importOfficeFile } from '../src/core';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import { createWorkDocumentModelFromContent } from '../src/internal/features/work/work-document-model-codec';
 import {
   DOCUMENT_TEXT_BOX_LIMITS,
   normalizeDocumentTextBoxProperties,
@@ -15,13 +16,13 @@ import {
   inspectDocxTextBoxes,
   markDocxTextBoxes,
 } from '../src/internal/features/work/work-docx-text-box-import';
+import { analyzeDocxCompatibility } from '../src/internal/features/work/work-office-diagnostics';
 import {
   attribute,
   descendants,
   directChild,
   parseXml,
 } from '../src/internal/features/work/work-ooxml-package';
-import { analyzeDocxCompatibility } from '../src/internal/features/work/work-office-diagnostics';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -60,6 +61,7 @@ describe('document text boxes', () => {
       }),
     ).toEqual({
       id: 'box-1',
+      shapeType: 'rectangle',
       width: DOCUMENT_TEXT_BOX_LIMITS.width.min,
       height: DOCUMENT_TEXT_BOX_LIMITS.height.max,
       layout: 'floating',
@@ -187,6 +189,73 @@ describe('document text boxes', () => {
     expect(markDocxTextBoxes(document).textBoxes).toHaveLength(0);
   });
 
+  test('imports a WPS ellipse shape with text as the bounded shape subset', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:bookmarkStart w:id="0" w:name="_GoBack"/><w:bookmarkEnd w:id="0"/>
+        <w:r>${wpsAlternateShapeDrawing('Ellipse text', 'ellipse')}</w:r>
+      </w:p>
+    `);
+
+    const markers = markDocxTextBoxes(document);
+    expect(markers.textBoxes).toHaveLength(1);
+    expect(markers.textBoxes[0]?.properties).toMatchObject({
+      shapeType: 'ellipse',
+      width: 76.2,
+      height: 25.4,
+    });
+
+    const html = new DOMParser().parseFromString(
+      `<p>${markers.textBoxes[0]?.marker}Ellipse text</p>`,
+      'text/html',
+    );
+    applyImportedDocxTextBoxMarkers(html, markers);
+    expect(
+      html.body.querySelector('[data-document-text-box]'),
+    ).toHaveAttribute('data-text-box-shape', 'ellipse');
+  });
+
+  test.each([
+    ['rect', 'rectangle'],
+    ['roundRect', 'roundedRectangle'],
+    ['ellipse', 'ellipse'],
+    ['diamond', 'diamond'],
+    ['triangle', 'triangle'],
+  ] as const)('maps the supported WPS %s preset to %s', (preset, shapeType) => {
+    const document = wordXml(`
+      <w:p>
+        <w:r><w:drawing>${shapeDrawing('Preset text', preset)}</w:drawing></w:r>
+      </w:p>
+    `);
+
+    const markers = markDocxTextBoxes(document);
+    expect(markers.textBoxes).toHaveLength(1);
+    expect(markers.textBoxes[0]?.properties.shapeType).toBe(shapeType);
+  });
+
+  test('preserves imported text-box attributes in the structured document model', () => {
+    const content = createWorkDocumentModelFromContent({
+      type: 'document',
+      html: `<section data-document-section="true"><div data-document-text-box="true" data-text-box-id="wps-box" data-text-box-shape="roundedRectangle" data-text-box-width="50.8" data-text-box-height="25.4" data-text-box-layout="floating" data-text-box-horizontal-offset="-6.35" data-text-box-vertical-offset="0" data-text-box-horizontal-reference="column" data-text-box-vertical-reference="paragraph" data-text-box-fill="#d9ead3" data-text-box-border-color="#4472c4" data-text-box-border-width="0.7" data-text-box-padding="1.27" data-text-box-vertical-align="center" data-text-box-doc-properties-id="1">WPS native shape</div></section>`,
+      pageSize: 'a4',
+    });
+    const textBox = content.model?.root.content?.[0]?.content?.[0];
+    expect(textBox).toMatchObject({
+      type: 'documentTextBox',
+      attrs: expect.objectContaining({
+        id: 'wps-box',
+        shapeType: 'roundedRectangle',
+        width: '50.8',
+        height: '25.4',
+        layout: 'floating',
+        fill: '#d9ead3',
+        padding: '1.27',
+        verticalAlign: 'center',
+        docPropertiesId: '1',
+      }),
+    });
+  });
+
   test('surfaces malformed text boxes in compatibility diagnostics', async () => {
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document') {
@@ -263,6 +332,12 @@ describe('document text boxes', () => {
     expect(source).toContain('val="2f5597"');
     expect(source).toContain('anchor="b"');
 
+    expect(
+      descendants(document, 'prstGeom').map((geometry) =>
+        attribute(geometry, 'prst'),
+      ),
+    ).toContain('rect');
+
     const reopened = await importOfficeFile(
       new File([blob], 'text-box.docx', { type: blob.type }),
     );
@@ -303,6 +378,38 @@ describe('document text boxes', () => {
     );
   });
 
+  test('exports the selected WPS preset geometry and reopens it', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const properties = normalizeDocumentTextBoxProperties({
+      id: 'ellipse-box',
+      shapeType: 'ellipse',
+      width: 80,
+      height: 40,
+    });
+    const attributes = Object.entries(textBoxDomAttributes(properties))
+      .filter((entry): entry is [string, string] => entry[1] !== undefined)
+      .map(([name, value]) => `${name}="${value}"`)
+      .join(' ');
+    artifact.content.html = `<div ${attributes} style="${textBoxCss(properties)}">Ellipse</div>`;
+    const blob = await createDocxBlob(artifact.content);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const source =
+      (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(source).toContain('<a:prstGeom prst="ellipse"');
+    const reopened = await importOfficeFile(
+      new File([blob], 'ellipse-shape.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain(
+      'data-text-box-shape="ellipse"',
+    );
+  });
+
   test('assigns unique drawing-property IDs to repeated text boxes', async () => {
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document') {
@@ -317,14 +424,16 @@ describe('document text boxes', () => {
     const source =
       (await archive.file('word/document.xml')?.async('text')) ?? '';
     const document = parseXml(source);
+    const docProperties = descendants(document, 'docPr');
     const ids = descendants(document, 'wsp')
       .map((shape) =>
         attribute(directChild(shape, 'cNvSpPr') ?? shape, 'txBox'),
       )
       .filter((value) => value === '1')
-      .map((_, index) =>
-        attribute(descendants(document, 'docPr')[index]!, 'id'),
-      );
+      .flatMap((_, index) => {
+        const docProperty = docProperties[index];
+        return docProperty ? [attribute(docProperty, 'id')] : [];
+      });
     expect(ids).toHaveLength(2);
     expect(new Set(ids).size).toBe(2);
     expect(ids).toContain('12');
@@ -359,6 +468,41 @@ function textBoxDrawing(text: string): string {
         </a:graphicData>
       </a:graphic>
     </wp:anchor>
+  `;
+}
+
+function shapeDrawing(text: string, preset: string): string {
+  return textBoxDrawing(text).replace(
+    /<wps:cNvSpPr txBox="1"\s*\/>\s*<wps:spPr>/,
+    `<wps:cNvSpPr/><wps:spPr><a:prstGeom prst="${preset}"><a:avLst/></a:prstGeom>`,
+  );
+}
+
+function wpsAlternateShapeDrawing(text: string, preset: string): string {
+  return `
+    <mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+      <mc:Choice Requires="wps">
+        <w:drawing><wp:anchor>
+          <wp:extent cx="2743200" cy="914400"/>
+          <wp:docPr id="22" name="WPS ${preset}"/>
+          <a:graphic>
+            <a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+              <wps:wsp>
+                <wps:cNvSpPr/>
+                <wps:spPr>
+                  <a:xfrm><a:ext cx="2743200" cy="914400"/></a:xfrm>
+                  <a:prstGeom prst="${preset}"><a:avLst/></a:prstGeom>
+                  <a:solidFill><a:srgbClr val="D9EAD3"/></a:solidFill>
+                </wps:spPr>
+                <wps:txbx><w:txbxContent><w:p><w:r><w:t>${text}</w:t></w:r></w:p></w:txbxContent></wps:txbx>
+                <wps:bodyPr anchor="ctr"/>
+              </wps:wsp>
+            </a:graphicData>
+          </a:graphic>
+        </wp:anchor></w:drawing>
+      </mc:Choice>
+      <mc:Fallback><w:pict/></mc:Fallback>
+    </mc:AlternateContent>
   `;
 }
 

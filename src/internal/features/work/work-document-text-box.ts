@@ -10,8 +10,14 @@ import { NodeSelection, Plugin, TextSelection } from '@tiptap/pm/state';
 import { activeDocumentSectionFromState } from './work-document-section-editor';
 import { createWorkId } from './work-templates';
 
-/** The intentionally small text-box surface supported by Writer. */
+/** The intentionally bounded text-box and WPS shape surface supported by Writer. */
 export type WorkDocumentTextBoxLayout = 'inline' | 'floating';
+export type WorkDocumentShapeType =
+  | 'rectangle'
+  | 'roundedRectangle'
+  | 'ellipse'
+  | 'diamond'
+  | 'triangle';
 export type WorkDocumentTextBoxHorizontalReference =
   | 'column'
   | 'margin'
@@ -24,6 +30,7 @@ export type WorkDocumentTextBoxVerticalAlign = 'top' | 'center' | 'bottom';
 
 export interface WorkDocumentTextBoxProperties {
   id: string;
+  shapeType: WorkDocumentShapeType;
   width: number;
   height: number;
   layout: WorkDocumentTextBoxLayout;
@@ -63,6 +70,7 @@ declare module '@tiptap/core' {
 
 export const DOCUMENT_TEXT_BOX_DEFAULTS: WorkDocumentTextBoxProperties = {
   id: '',
+  shapeType: 'rectangle',
   width: 120,
   height: 45,
   layout: 'inline',
@@ -90,6 +98,7 @@ const TEXT_BOX_ID_MAX_LENGTH = 160;
 const TEXT_BOX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 const TEXT_BOX_MARKER_ATTRIBUTES = [
   'id',
+  'shapeType',
   'width',
   'height',
   'layout',
@@ -115,24 +124,39 @@ export const DocumentTextBox = Node.create({
 
   addAttributes() {
     return {
-      id: dataAttribute(''),
-      width: dataAttribute(DOCUMENT_TEXT_BOX_DEFAULTS.width),
-      height: dataAttribute(DOCUMENT_TEXT_BOX_DEFAULTS.height),
-      layout: dataAttribute(DOCUMENT_TEXT_BOX_DEFAULTS.layout),
-      horizontalOffset: nullableDataAttribute(),
-      verticalOffset: nullableDataAttribute(),
+      id: dataAttribute('id', ''),
+      shapeType: dataAttribute(
+        'shape',
+        DOCUMENT_TEXT_BOX_DEFAULTS.shapeType,
+      ),
+      width: dataAttribute('width', DOCUMENT_TEXT_BOX_DEFAULTS.width),
+      height: dataAttribute('height', DOCUMENT_TEXT_BOX_DEFAULTS.height),
+      layout: dataAttribute('layout', DOCUMENT_TEXT_BOX_DEFAULTS.layout),
+      horizontalOffset: nullableDataAttribute('horizontal-offset'),
+      verticalOffset: nullableDataAttribute('vertical-offset'),
       horizontalReference: dataAttribute(
+        'horizontal-reference',
         DOCUMENT_TEXT_BOX_DEFAULTS.horizontalReference,
       ),
       verticalReference: dataAttribute(
+        'vertical-reference',
         DOCUMENT_TEXT_BOX_DEFAULTS.verticalReference,
       ),
-      fill: dataAttribute(DOCUMENT_TEXT_BOX_DEFAULTS.fill),
-      borderColor: dataAttribute(DOCUMENT_TEXT_BOX_DEFAULTS.borderColor),
-      borderWidth: dataAttribute(DOCUMENT_TEXT_BOX_DEFAULTS.borderWidth),
-      padding: dataAttribute(DOCUMENT_TEXT_BOX_DEFAULTS.padding),
-      verticalAlign: dataAttribute(DOCUMENT_TEXT_BOX_DEFAULTS.verticalAlign),
-      docPropertiesId: nullableDataAttribute(),
+      fill: dataAttribute('fill', DOCUMENT_TEXT_BOX_DEFAULTS.fill),
+      borderColor: dataAttribute(
+        'border-color',
+        DOCUMENT_TEXT_BOX_DEFAULTS.borderColor,
+      ),
+      borderWidth: dataAttribute(
+        'border-width',
+        DOCUMENT_TEXT_BOX_DEFAULTS.borderWidth,
+      ),
+      padding: dataAttribute('padding', DOCUMENT_TEXT_BOX_DEFAULTS.padding),
+      verticalAlign: dataAttribute(
+        'vertical-align',
+        DOCUMENT_TEXT_BOX_DEFAULTS.verticalAlign,
+      ),
+      docPropertiesId: nullableDataAttribute('doc-properties-id'),
     };
   },
 
@@ -278,6 +302,7 @@ export function normalizeDocumentTextBoxProperties(
 ): WorkDocumentTextBoxProperties {
   return {
     id: normalizeDocumentTextBoxId(value.id),
+    shapeType: documentShapeType(value.shapeType),
     width: boundedNumber(
       value.width,
       DOCUMENT_TEXT_BOX_DEFAULTS.width,
@@ -327,6 +352,7 @@ export function textBoxCss(
 ): string {
   const properties = normalizeDocumentTextBoxProperties(value);
   return [
+    `--work-document-text-box-shape:${properties.shapeType}`,
     `--work-document-text-box-width:${formatNumber(properties.width)}mm`,
     `--work-document-text-box-height:${formatNumber(properties.height)}mm`,
     `--work-document-text-box-padding:${formatNumber(properties.padding)}mm`,
@@ -350,6 +376,7 @@ export function textBoxDomAttributes(
   return {
     'data-document-text-box': 'true',
     'data-text-box-id': properties.id || undefined,
+    'data-text-box-shape': properties.shapeType,
     'data-text-box-width': formatNumber(properties.width),
     'data-text-box-height': formatNumber(properties.height),
     'data-text-box-layout': properties.layout,
@@ -456,6 +483,7 @@ function textBoxAttributesFromElement(
 ): Record<string, unknown> {
   return {
     id: element.dataset.textBoxId ?? '',
+    shapeType: element.dataset.textBoxShape,
     width: element.dataset.textBoxWidth,
     height: element.dataset.textBoxHeight,
     layout: element.dataset.textBoxLayout,
@@ -477,6 +505,7 @@ export function documentTextBoxPropertiesFromElement(
 ): WorkDocumentTextBoxProperties {
   return normalizeDocumentTextBoxProperties({
     id: element.getAttribute('data-text-box-id'),
+    shapeType: element.getAttribute('data-text-box-shape'),
     width: element.getAttribute('data-text-box-width'),
     height: element.getAttribute('data-text-box-height'),
     layout: element.getAttribute('data-text-box-layout'),
@@ -495,18 +524,20 @@ export function documentTextBoxPropertiesFromElement(
   });
 }
 
-function dataAttribute(defaultValue: unknown) {
+function dataAttribute(dataName: string, defaultValue: unknown) {
   return {
     default: defaultValue,
-    parseHTML: () => defaultValue,
+    parseHTML: (element: Element) =>
+      element.getAttribute(`data-text-box-${dataName}`) ?? defaultValue,
     rendered: false,
   };
 }
 
-function nullableDataAttribute() {
+function nullableDataAttribute(dataName: string) {
   return {
     default: null,
-    parseHTML: () => null,
+    parseHTML: (element: Element) =>
+      element.getAttribute(`data-text-box-${dataName}`),
     rendered: false,
   };
 }
@@ -515,6 +546,15 @@ function normalizeDocumentTextBoxId(value: unknown): string {
   return typeof value === 'string'
     ? value.trim().slice(0, TEXT_BOX_ID_MAX_LENGTH)
     : '';
+}
+
+function documentShapeType(value: unknown): WorkDocumentShapeType {
+  return value === 'roundedRectangle' ||
+    value === 'ellipse' ||
+    value === 'diamond' ||
+    value === 'triangle'
+    ? value
+    : 'rectangle';
 }
 
 function normalizeTextBoxFill(value: unknown): string {

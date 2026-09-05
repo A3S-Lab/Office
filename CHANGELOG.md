@@ -4,6 +4,28 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.53.0 - 2026-09-05
+
+- Extended the bounded Writer text-box surface with five explicit shape
+  presets: rectangle, rounded rectangle, ellipse, diamond, and triangle. The
+  same shape state now drives the contextual ribbon, live page, preview, PDF
+  capture, Undo/Redo, and native DOCX geometry.
+- Added native WPS `mc:AlternateContent` shape import for isolated text-bearing
+  `wps:wsp` drawings, including geometry, fill, outline, padding, vertical
+  alignment, floating placement, and stable drawing-property IDs. Unsupported
+  mixed paragraphs, connectors, arbitrary shapes, malformed bodies, and other
+  DrawingML branches remain explicit compatibility diagnostics.
+- Fixed structured-document parsing so imported text-box `data-text-box-*`
+  attributes survive the TipTap model boundary instead of being replaced by
+  defaults. Deterministic WPS fixtures now cover all five bounded presets and
+  the browser import/edit/Undo/Redo loop.
+- Added a Windows-only WPS COM shape probe and responsive desktop/compact
+  Playwright plus local A3S Test ACL evidence for discoverability, focus,
+  accessibility, viewport containment, clean console/page-error state, and
+  native WPS import behavior. The local ACL is statically checked; runtime
+  execution remains dependent on the pinned A3S Test 1.0.0/Web protocol 15
+  toolchain.
+
 ## 0.52.0 - 2026-09-05
 
 - Added bounded native Writer whole-paragraph insertion and deletion

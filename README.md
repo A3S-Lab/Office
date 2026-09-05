@@ -309,6 +309,22 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.53.0` extends Writer's bounded native text-box workflow with
+WPS-referenced shape geometry and closes the import-to-editor model loop:
+
+- The contextual Text Box ribbon exposes rectangle, rounded rectangle, ellipse,
+  diamond, and triangle presets. One typed shape value drives the live page,
+  preview, PDF capture, native DOCX export, and one-step Undo/Redo.
+- Isolated WPS `mc:AlternateContent` text-bearing shapes preserve their native
+  geometry, placement, fill, outline, padding, vertical anchor, and drawing
+  identity. Mixed paragraphs, connectors, arbitrary shapes, malformed bodies,
+  and unsupported DrawingML branches stay diagnosed compatibility boundaries.
+- A structured-model parsing regression was fixed so imported shape attributes
+  are not replaced by default text-box values. Desktop and 390/768 px browser
+  flows cover all five shape controls, WPS import, contextual discovery,
+  accessibility, viewport containment, and clean diagnostics; the local A3S
+  Test ACL is checked against the pinned release contract.
+
 Version `0.52.0` adds bounded, WPS-referenced whole-paragraph revision
 fidelity to Writer:
 

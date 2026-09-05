@@ -1009,6 +1009,24 @@ desktop and 390 px Playwright, compact 44 px review actions, accessibility,
 clean browser diagnostics, and a local-only A3S Test suite cover the admitted
 path without adding the GUI runner to Actions or Pages.
 
+The seventy-first Writer milestone extends the bounded native text-box slice
+with an explicit five-shape geometry model: rectangle, rounded rectangle,
+ellipse, diamond, and triangle. The shape value is shared by the contextual
+ribbon, live page, preview, PDF capture, structured document model, and native
+DOCX `a:prstGeom` projection. Imported WPS `mc:AlternateContent` drawings keep
+their geometry, floating placement, fill, outline, body padding, vertical
+anchor, text, and stable drawing-property identity when the shape is an
+isolated text-bearing `wps:wsp`.
+
+The importer remains deliberately fail-closed for mixed paragraphs, VML-only
+connectors, arbitrary or unsupported presets, malformed bodies, and other
+relationship-bound DrawingML. A model-boundary regression test prevents valid
+`data-text-box-*` attributes from falling back to default values. COM-generated
+WPS evidence, deterministic DOCX fixtures, all-five-preset Rstest coverage,
+desktop and compact Playwright flows, accessibility/diagnostic assertions, and
+the local A3S Test ACL cover discoverability, focus, viewport containment, and
+Undo/Redo without adding a second document model or a remote service.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with
