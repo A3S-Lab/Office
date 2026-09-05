@@ -12,7 +12,9 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # The frozen documentation build plus the 460-case visual contract suite
+    # can consume nearly 30 minutes before native workspace tests begin.
+    timeout-minutes: 45
 
     steps:
       - name: Check out repository
