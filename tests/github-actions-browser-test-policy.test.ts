@@ -21,9 +21,11 @@ describe('GitHub Actions browser test policy', () => {
     expect(actionSource).not.toMatch(/a3s[-_ ]?test/i);
     expect(actionSource).not.toMatch(/test:e2e/i);
     for (const workflowName of ['ci.yml', 'pages.yml']) {
-      expect(
-        workflows.find(({ name }) => name === workflowName)?.source,
-      ).toContain('bun run playground:visual');
+      const workflowSource = workflows.find(
+        ({ name }) => name === workflowName,
+      )?.source;
+      expect(workflowSource).toContain('bun run playground:visual');
+      expect(workflowSource).toContain('bun scripts/create-e2e-fixtures.ts');
     }
   });
 });
