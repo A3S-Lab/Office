@@ -9,27 +9,28 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(31);
-  await expect(cards.first()).toContainText('v0.53.0');
-  await expect(cards.first()).toContainText(
+  await expect(cards).toHaveCount(32);
+  await expect(cards.first()).toContainText('v0.53.1');
+  await expect(cards.first()).toContainText('Writer 明确记录 WPS 连接符边界');
+  await expect(cards.first()).toContainText('COM 证据决定边界');
+  await expect(cards.nth(1)).toContainText('v0.53.0');
+  await expect(cards.nth(1)).toContainText(
     'Writer 文本框与 WPS 使用同一套有界形状语义',
   );
-  await expect(cards.first()).toContainText('五种形状，一个类型化状态');
-  await expect(cards.nth(1)).toContainText('v0.52.0');
-  await expect(cards.nth(1)).toContainText(
-    'Writer 整段修订保持原生与原子语义',
-  );
-  await expect(cards.nth(2)).toContainText('v0.51.0');
-  await expect(cards.nth(1)).toContainText('一个段落，一项决定');
-  await expect(cards.nth(2)).toContainText('Writer 比较配对同一分节内文字移动');
-  await expect(cards.nth(2)).toContainText('段落范围保持完整');
-  await expect(cards.nth(3)).toContainText('v0.50.0');
-  await expect(cards.nth(3)).toContainText('Writer 比较识别有界文字移动');
-  await expect(cards.nth(4)).toContainText('v0.49.0');
-  await expect(cards.nth(4)).toContainText('Writer 移动修订保持成对并原生往返');
-  await expect(cards.nth(5)).toContainText('v0.48.1');
-  await expect(cards.nth(5)).toContainText('Writer 选区控件恢复紧凑视觉契约');
-  await expect(cards.nth(5)).toContainText('浏览器原生默认样式');
+  await expect(cards.nth(1)).toContainText('五种形状，一个类型化状态');
+  await expect(cards.nth(2)).toContainText('v0.52.0');
+  await expect(cards.nth(2)).toContainText('Writer 整段修订保持原生与原子语义');
+  await expect(cards.nth(3)).toContainText('v0.51.0');
+  await expect(cards.nth(2)).toContainText('一个段落，一项决定');
+  await expect(cards.nth(3)).toContainText('Writer 比较配对同一分节内文字移动');
+  await expect(cards.nth(3)).toContainText('段落范围保持完整');
+  await expect(cards.nth(4)).toContainText('v0.50.0');
+  await expect(cards.nth(4)).toContainText('Writer 比较识别有界文字移动');
+  await expect(cards.nth(5)).toContainText('v0.49.0');
+  await expect(cards.nth(5)).toContainText('Writer 移动修订保持成对并原生往返');
+  await expect(cards.nth(6)).toContainText('v0.48.1');
+  await expect(cards.nth(6)).toContainText('Writer 选区控件恢复紧凑视觉契约');
+  await expect(cards.nth(6)).toContainText('浏览器原生默认样式');
   await expect(
     page.locator('.office-release-card[data-version="0.41.0"]'),
   ).toContainText('表格数据验证警告现在与 Office 决策一致');

@@ -1,0 +1,42 @@
+---
+title: Web Component
+description: Register A3S Office custom elements for framework-neutral hosts.
+---
+
+# Web Component
+
+Register the elements once, then set structured values as JavaScript
+properties. Complex values are not serialized through HTML attributes.
+
+```ts title="document-editor.ts"
+import {
+  defineA3SOfficeElements,
+} from '@a3s-lab/office/web-component';
+import '@a3s-lab/office/styles.css';
+
+defineA3SOfficeElements();
+
+const editor = document.querySelector('a3s-document-editor');
+
+editor.content = {
+  type: 'document',
+  html: '<h1>Project brief</h1><p>Start editing here.</p>',
+  pageSize: 'a4',
+};
+
+editor.addEventListener('change', (event) => {
+  editor.content = event.detail;
+});
+
+editor.addEventListener('review-conflict', (event) => {
+  reportReviewConflict(event.detail);
+});
+```
+
+Use attributes for primitive values such as `theme`, `preview`, and
+`save-status`. Use element properties for content, callbacks, file actions,
+extensions, and source loaders.
+
+For `a3s-document-editor`, `review-conflict` is a bubbling, composed custom
+event whose detail is a `DocumentReviewConflictEvent`. The external content is
+already applied when the event fires.

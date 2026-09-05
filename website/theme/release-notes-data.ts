@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.53.1',
+    date: '2026-09-05',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer names the WPS connector boundary honestly',
+      zh: 'Writer 明确记录 WPS 连接符边界',
+    },
+    summary: {
+      en: 'Legacy VML connectors are diagnosed as compatibility records instead of being mistaken for editable text boxes or images.',
+      zh: '传统 VML 连接符现在作为兼容性记录诊断，不会被误认为可编辑文本框或图片。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'COM evidence drives the boundary',
+          zh: 'COM 证据决定边界',
+        },
+        detail: {
+          en: 'The installed WPS 12.0 probe records Shapes.AddConnector as a VML v:shape with o:spt="32" and #_x0000_t32, not as a text-bearing wps:wsp.',
+          zh: '本机 WPS 12.0 探针记录 Shapes.AddConnector 为带 o:spt="32" 和 #_x0000_t32 的 VML v:shape，而不是带文字主体的 wps:wsp。',
+        },
+      },
+      {
+        title: {
+          en: 'Fail-closed diagnostics',
+          zh: '失败即明确诊断',
+        },
+        detail: {
+          en: 'docx.connectors reports endpoint, routing, arrowhead, and floating-anchor semantics that the editable Writer model does not yet own, while connector-only pict containers avoid the generic image warning.',
+          zh: 'docx.connectors 会报告可编辑 Writer 模型尚未负责的端点、路由、箭头和浮动锚点语义；只有连接符的 pict 容器也不会再触发泛化图片警告。',
+        },
+      },
+      {
+        title: {
+          en: 'A bounded UI contract',
+          zh: '有界的 UI 契约',
+        },
+        detail: {
+          en: 'A deterministic DOCX fixture, focused Rstest, and local A3S Test ACL prove that import keeps the Writer editor usable, creates no text-box node, and captures accessibility plus browser diagnostics.',
+          zh: '确定性的 DOCX 夹具、聚焦 Rstest 和本地 A3S Test ACL 证明导入后 Writer 仍可用、不创建文本框节点，并捕获可访问性与浏览器诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#built-in-editable-text-boxes',
+          zh: './components/document.html#可编辑文本框',
+        },
+        label: {
+          en: 'Read the connector boundary',
+          zh: '阅读连接符边界',
+        },
+      },
+      {
+        href: {
+          en: './components/document.html#built-in-editable-text-boxes',
+          zh: './components/document.html#可编辑文本框',
+        },
+        label: {
+          en: 'Review the text-box model',
+          zh: '查看文本框模型',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.53.1',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.53.1',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.53.0',
     date: '2026-09-05',
     kind: 'improved',

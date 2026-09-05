@@ -1,0 +1,55 @@
+suite "office-word-wps-connector-boundary" {
+    version = 1
+
+    scenario "keep-vml-connector-out-of-text-box-model" {
+        name = "Keep a WPS VML connector out of the editable text-box model"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        upload "import-wps-connector" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-wps-connector.docx"]
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "connector-is-not-a-text-box" {
+            visible = css(".work-document-editable .ProseMirror:not(:has([data-document-text-box]))")
+        }
+
+        expect "connector-import-keeps-editor-usable" {
+            visible = css(".work-document-editable .ProseMirror[contenteditable='true']")
+        }
+
+        screenshot "wps-connector-boundary" {
+            path = "screenshots/word-wps-connector-boundary.png"
+        }
+
+        accessibility "wps-connector-boundary-accessibility" {
+            path = "evidence/word-wps-connector-boundary-accessibility.json"
+            interactive = true
+        }
+
+        console "wps-connector-boundary-console" {
+            path = "diagnostics/word-wps-connector-boundary-console.json"
+            clear = false
+        }
+
+        page_errors "wps-connector-boundary-page-errors" {
+            path = "diagnostics/word-wps-connector-boundary-page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -309,6 +309,19 @@ and [CLI reference](./docs/latest/en/cli-reference.md).
 
 ## Current release
 
+Version `0.53.1` closes the next WPS drawing boundary without pretending that
+legacy VML connectors are editable text boxes:
+
+- A Windows WPS 12.0 COM probe records `Shapes.AddConnector` as a VML
+  `v:shape` (`o:spt="32"`, `#_x0000_t32`). A dedicated `docx.connectors`
+  diagnostic reports that evidence and keeps endpoint, routing, arrowhead, and
+  floating-anchor semantics on the compatibility path.
+- A deterministic connector DOCX fixture, focused Rstest, and local A3S Test
+  ACL verify that import keeps the Writer editor usable, does not create a
+  `data-document-text-box` node, and captures accessibility plus clean browser
+  diagnostics. The live browser run remains dependent on the pinned local
+  adapter; static ACL validation is part of the release contract.
+
 Version `0.53.0` extends Writer's bounded native text-box workflow with
 WPS-referenced shape geometry and closes the import-to-editor model loop:
 

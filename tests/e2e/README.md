@@ -781,6 +781,12 @@ plus a desktop and phone Writer text-box workflow covering isolated insertion,
 all five bounded shape presets, WPS `mc:AlternateContent` import, contextual
 layout/geometry/placement/fill/outline controls, Undo/Redo, accessibility,
 viewport containment, and clean browser diagnostics,
+plus a focused desktop WPS VML-connector boundary workflow. The connector
+fixture reflects the installed WPS COM shape (`v:shape` with `o:spt="32"`),
+keeps the import out of the editable text-box model, and records accessibility,
+screenshot, console, and page-error evidence through
+`tests/e2e/word-wps-connector-boundary.acl`,
+`bun run test:e2e:writer-wps-connector:check`, and the matching local gate,
 plus a desktop and phone Writer content-control workflow covering the
 responsive Insert dialog, plain/rich type and appearance metadata, direct
 paragraph editing, one-step Undo/Redo, accessibility, and clean browser

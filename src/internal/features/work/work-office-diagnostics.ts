@@ -6,6 +6,7 @@ import {
   supportedDocxMovePairCount,
 } from './work-docx-change-import';
 import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
+import { inspectDocxConnectors } from './work-docx-connector-diagnostics';
 import { inspectDocxContentControls } from './work-docx-content-control-import';
 import { diagnoseDocxEmphasisMarks } from './work-docx-emphasis-diagnostics';
 import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
@@ -288,6 +289,7 @@ export async function analyzeDocxCompatibility(
       const captionDiagnostics = diagnoseDocxCaptions(document);
       issues.push(...captionDiagnostics.issues);
       const textBoxInspection = inspectDocxTextBoxes(document);
+      const connectorInspection = inspectDocxConnectors(document);
       if (textBoxInspection.supported) {
         issues.push(
           issue(
@@ -304,6 +306,15 @@ export async function analyzeDocxCompatibility(
             'docx.text-boxes.unsupported',
             'Text boxes and shapes',
             `${textBoxInspection.unsupported} WPS text box or shape(s) mix a drawing with other paragraph content, use unsupported geometry, or have malformed shape content. Only isolated text-bearing paragraphs in the bounded preset set are converted to editable shapes; connectors and the rest may normalize during browser conversion.`,
+          ),
+        );
+      }
+      if (connectorInspection.detected) {
+        issues.push(
+          issue(
+            'docx.connectors',
+            'Connectors',
+            `${connectorInspection.detected} WPS VML connector(s) were detected. Their endpoints, routing, arrowheads, and floating anchor are not yet represented by the editable Writer model, so they remain on the compatibility path instead of being misclassified as text boxes; editing or regenerating the document may normalize them.`,
           ),
         );
       }
@@ -339,9 +350,10 @@ export async function analyzeDocxCompatibility(
       const drawingCount = descendants(document, 'drawing').length;
       const textBoxDrawingCount =
         textBoxInspection.supported + textBoxInspection.unsupported;
+      const pictCount = descendants(document, 'pict').length;
       if (
         drawingCount > textBoxDrawingCount ||
-        descendants(document, 'pict').length
+        pictCount > connectorInspection.connectorPictContainers
       ) {
         const unsupportedImageTransforms =
           docxUnsupportedImageTransformCount(document);

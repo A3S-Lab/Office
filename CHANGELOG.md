@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.53.1 - 2026-09-05
+
+- Added an explicit DOCX compatibility diagnostic for WPS VML connectors. The
+  installed WPS 12.0 COM probe records `Shapes.AddConnector` as a legacy
+  `v:shape` with `o:spt="32"`/`#_x0000_t32`, not as an editable `wps:wsp` text
+  box. Endpoint, routing, arrowhead, and floating-anchor semantics therefore
+  remain fail-closed instead of being misclassified as a text box or image.
+- Added a deterministic WPS-shaped connector fixture, focused Rstest coverage,
+  and a local A3S Test ACL that proves import keeps the Writer editor usable,
+  never creates a text-box node, and records accessibility, screenshot,
+  console, and page-error evidence. Runtime execution still depends on the
+  pinned local browser adapter; the ACL is statically checked in CI.
+
 ## 0.53.0 - 2026-09-05
 
 - Extended the bounded Writer text-box surface with five explicit shape

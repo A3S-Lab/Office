@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.53.0",
+  "version": "0.53.1",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -151,6 +151,8 @@
     "test:e2e:all:check": "bun run test:e2e:check",
     "test:e2e:writer-text-box": "bun run test:e2e:fixtures && A3S_TEST_SUITE=tests/e2e/word-text-box-phone.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:writer-text-box:check": "a3s-test check tests/e2e/word-text-box-phone.acl --json",
+    "test:e2e:writer-wps-connector": "bun run test:e2e:fixtures && A3S_TEST_SUITE=tests/e2e/word-wps-connector-boundary.acl bash scripts/run-a3s-test-web-gate.sh",
+    "test:e2e:writer-wps-connector:check": "a3s-test check tests/e2e/word-wps-connector-boundary.acl --json",
     "test:e2e:writer-content-control": "bun run test:e2e:fixtures && A3S_TEST_SUITE=tests/e2e/word-content-controls-phone.acl bash scripts/run-a3s-test-web-gate.sh",
     "test:e2e:writer-content-control:check": "a3s-test check tests/e2e/word-content-controls-phone.acl --json",
     "test:e2e:fixtures": "bun scripts/create-e2e-fixtures.ts",

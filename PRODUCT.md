@@ -1027,6 +1027,17 @@ desktop and compact Playwright flows, accessibility/diagnostic assertions, and
 the local A3S Test ACL cover discoverability, focus, viewport containment, and
 Undo/Redo without adding a second document model or a remote service.
 
+The seventy-second Writer milestone records the next boundary from the same
+installed WPS reference. `Shapes.AddConnector` emits a legacy VML `v:shape`
+with `o:spt="32"` and `#_x0000_t32`, so it is not promoted into the editable
+text-box model. `docx.connectors` now reports the observed connector count and
+explains that endpoint, routing, arrowhead, and floating-anchor semantics may
+normalize on edit. A deterministic WPS-shaped DOCX fixture, focused Rstest,
+and a local A3S Test ACL prove that the editor remains usable, no text-box node
+is fabricated, and accessibility, screenshot, console, and page-error evidence
+are captured. A typed connector model remains a future milestone with its own
+native fixture and UI contract.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 test('keeps curated release notes unique, localized, and newest first', () => {
   expect(OFFICE_RELEASE_NOTES.map(({ version }) => version)).toEqual([
+    '0.53.1',
     '0.53.0',
     '0.52.0',
     '0.51.0',
@@ -212,6 +213,9 @@ test('keeps the changelog semantic, responsive, static, and discoverable', async
 });
 
 test('keeps local evidence links aligned with each documentation language', () => {
+  const connectorRelease = OFFICE_RELEASE_NOTES.find(
+    ({ version }) => version === '0.53.1',
+  );
   const paragraphMarkRelease = OFFICE_RELEASE_NOTES.find(
     ({ version }) => version === '0.52.0',
   );
@@ -270,6 +274,14 @@ test('keeps local evidence links aligned with each documentation language', () =
   expect(selectionToolbarRelease?.links[0]?.href).toEqual({
     en: './components/document.html#selection-toolbar-controls',
     zh: './components/document.html#选择工具栏控件',
+  });
+  expect(connectorRelease?.links[0]?.href).toEqual({
+    en: './components/document.html#built-in-editable-text-boxes',
+    zh: './components/document.html#可编辑文本框',
+  });
+  expect(connectorRelease?.links[2]?.href).toEqual({
+    en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.53.1',
+    zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.53.1',
   });
   expect(shapeRelease?.links[0]?.href).toEqual({
     en: './components/document.html#built-in-editable-text-boxes',
