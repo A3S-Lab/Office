@@ -45,6 +45,14 @@ export interface WorkDocumentFieldInsertOptions {
   targetName?: string;
 }
 
+type WorkDocumentNumericFieldFormat =
+  | 'arabic'
+  | 'roman'
+  | 'romanLower'
+  | 'alphabetic'
+  | 'alphabeticLower'
+  | 'ordinal';
+
 const FIELD_SELECTOR = 'span[data-document-field]';
 const FIELD_TEXT_BOUNDARY = '\uFFFC';
 
@@ -129,6 +137,8 @@ export function documentPageReferenceInstruction(
   if (!target) return FIELD_COMMANDS.pageReference;
   const switches: string[] = [];
   if (/(?:^|\s)\\h(?:\s|$)/i.test(source)) switches.push('\\h');
+  const numericFormat = numericFieldFormatSwitch(source);
+  if (numericFormat) switches.push(numericFormat);
   if (/(?:^|\s)\\\*\s+MERGEFORMAT(?:\s|$)/i.test(source)) {
     switches.push('\\* MERGEFORMAT');
   }
@@ -146,11 +156,26 @@ export function documentFieldDisplay(
   instruction = documentFieldInstruction(kind),
   cachedValue = '',
 ): string {
-  if (kind === 'page') return String(positiveInteger(context.pageNumber));
-  if (kind === 'numPages') return String(positiveInteger(context.totalPages));
-  if (kind === 'section') return String(positiveInteger(context.sectionNumber));
+  if (kind === 'page')
+    return formatNumericFieldValue(
+      positiveInteger(context.pageNumber),
+      instruction,
+    );
+  if (kind === 'numPages')
+    return formatNumericFieldValue(
+      positiveInteger(context.totalPages),
+      instruction,
+    );
+  if (kind === 'section')
+    return formatNumericFieldValue(
+      positiveInteger(context.sectionNumber),
+      instruction,
+    );
   if (kind === 'sectionPages')
-    return String(positiveInteger(context.sectionPages));
+    return formatNumericFieldValue(
+      positiveInteger(context.sectionPages),
+      instruction,
+    );
   if (kind === 'wordCount')
     return String(nonNegativeInteger(context.wordCount, cachedValue));
   if (kind === 'characterCount')
@@ -166,7 +191,7 @@ export function documentFieldDisplay(
         ? context.bookmarkPageNumbers?.get(`name:${target.toLowerCase()}`)
         : undefined);
     return page && Number.isSafeInteger(page) && page > 0
-      ? String(page)
+      ? formatNumericFieldValue(page, instruction)
       : hasResolutionContext
         ? '引用缺失'
         : cachedValue.trim() || '引用缺失';
@@ -312,7 +337,7 @@ export function supportedDocxDocumentFieldInstruction(
     let rest = match[2] ?? '';
     const hyperlink = /^\s+\\h\b/i.exec(rest);
     if (hyperlink) rest = rest.slice(hyperlink[0].length);
-    return onlyMergeFormatSwitch(rest);
+    return onlyNumericFieldSwitches(rest);
   }
   if (kind === 'date' || kind === 'time') {
     const command = kind === 'date' ? 'DATE' : 'TIME';
@@ -325,7 +350,136 @@ export function supportedDocxDocumentFieldInstruction(
   }
   const command = FIELD_COMMANDS[kind];
   const match = new RegExp(`^${command}\\b([\\s\\S]*)$`, 'i').exec(source);
-  return Boolean(match && onlyMergeFormatSwitch(match[1] ?? ''));
+  return Boolean(
+    match &&
+      (isNumericFieldKind(kind)
+        ? onlyNumericFieldSwitches(match[1] ?? '')
+        : onlyMergeFormatSwitch(match[1] ?? '')),
+  );
+}
+
+/** Returns the supported numeric display switch, preserving its source case. */
+export function numericFieldFormatSwitch(source: string): string | null {
+  return /(?:^|\s)(\\\*\s+(?:Arabic|ROMAN|roman|ALPHABETIC|alphabetic|Ordinal)\b)/i.exec(
+    source,
+  )?.[1] ?? null;
+}
+
+function isNumericFieldKind(kind: WorkDocumentFieldKind): boolean {
+  return (
+    kind === 'page' ||
+    kind === 'numPages' ||
+    kind === 'section' ||
+    kind === 'sectionPages' ||
+    kind === 'pageReference'
+  );
+}
+
+function onlyNumericFieldSwitches(source: string): boolean {
+  let rest = source.trim();
+  let formatSeen = false;
+  let mergeFormatSeen = false;
+  while (rest) {
+    const format = /^\\\*\s+(Arabic|ROMAN|roman|ALPHABETIC|alphabetic|Ordinal)\b/i.exec(
+      rest,
+    );
+    if (format && !formatSeen) {
+      formatSeen = true;
+      rest = rest.slice(format[0].length).trim();
+      continue;
+    }
+    const mergeFormat = /^\\\*\s+MERGEFORMAT\b/i.exec(rest);
+    if (mergeFormat && !mergeFormatSeen) {
+      mergeFormatSeen = true;
+      rest = rest.slice(mergeFormat[0].length).trim();
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
+
+function formatNumericFieldValue(value: number, instruction: string): string {
+  const format = numericFieldFormatSwitchValue(instruction);
+  if (format === 'roman' || format === 'romanLower') {
+    const roman = toRoman(value);
+    return format === 'romanLower' ? roman.toLowerCase() : roman;
+  }
+  if (format === 'alphabetic' || format === 'alphabeticLower') {
+    const alphabetic = toAlphabetic(value);
+    return format === 'alphabeticLower'
+      ? alphabetic.toLowerCase()
+      : alphabetic;
+  }
+  if (format === 'ordinal') return ordinal(value);
+  return String(value);
+}
+
+function numericFieldFormatSwitchValue(
+  instruction: string,
+): WorkDocumentNumericFieldFormat {
+  const token = /\\\*\s+(Arabic|ROMAN|roman|ALPHABETIC|alphabetic|Ordinal)\b/i.exec(
+    instruction,
+  )?.[1];
+  if (token === 'ROMAN') return 'roman';
+  if (token && token.toLowerCase() === 'roman') return 'romanLower';
+  if (token === 'ALPHABETIC') return 'alphabetic';
+  if (token && token.toLowerCase() === 'alphabetic') {
+    return 'alphabeticLower';
+  }
+  if (token && token.toLowerCase() === 'ordinal') {
+    return 'ordinal';
+  }
+  return 'arabic';
+}
+
+function toRoman(value: number): string {
+  const digits: Array<[number, string]> = [
+    [1000, 'M'],
+    [900, 'CM'],
+    [500, 'D'],
+    [400, 'CD'],
+    [100, 'C'],
+    [90, 'XC'],
+    [50, 'L'],
+    [40, 'XL'],
+    [10, 'X'],
+    [9, 'IX'],
+    [5, 'V'],
+    [4, 'IV'],
+    [1, 'I'],
+  ];
+  let remaining = Math.max(1, Math.min(3999, Math.trunc(value)));
+  let result = '';
+  for (const [unit, symbol] of digits) {
+    while (remaining >= unit) {
+      result += symbol;
+      remaining -= unit;
+    }
+  }
+  return result;
+}
+
+function toAlphabetic(value: number): string {
+  let remaining = Math.max(1, Math.trunc(value));
+  let result = '';
+  while (remaining > 0) {
+    remaining -= 1;
+    result = String.fromCharCode(65 + (remaining % 26)) + result;
+    remaining = Math.floor(remaining / 26);
+  }
+  return result;
+}
+
+function ordinal(value: number): string {
+  const mod100 = value % 100;
+  const suffix =
+    mod100 >= 11 && mod100 <= 13
+      ? 'th'
+      : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[
+            value % 10
+          ] ?? 'th';
+  return `${value}${suffix}`;
 }
 
 function onlyMergeFormatSwitch(source: string): boolean {

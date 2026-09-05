@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.58.0 - 2026-09-06
+
+- Extended bounded Writer `PAGE`, `NUMPAGES`, `SECTION`, `SECTIONPAGES`, and
+  bookmark-backed `PAGEREF` fields with WPS/Word numeric switches: Arabic,
+  uppercase/lowercase Roman, uppercase/lowercase alphabetic, and Ordinal.
+  WPS `\\* MERGEFORMAT` tails remain native and unknown switches still fail
+  closed to cached text.
+- Added a deterministic WPS COM field probe and Commander `wps-fields-probe`
+  command. The probe records installed WPS field instructions, including the
+  native complex-field form, while the Playground and A3S Test fixture cover
+  live refresh, accessible results, F9 focus restoration, screenshots,
+  accessibility, and clean console/page-error evidence.
+
 ## 0.57.0 - 2026-09-06
 
 - Extended the bounded Writer connector model to WPS VML shape types 32, 33,

@@ -149,6 +149,7 @@ export const DocumentField = Node.create({
           : {}),
         'data-field-orphaned': node.attrs.orphaned ? 'true' : undefined,
         class: 'work-document-field',
+        'aria-label': documentFieldLabel(kind),
         title: documentFieldLabel(kind),
       }),
       display,

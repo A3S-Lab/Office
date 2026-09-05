@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.58.0',
+    date: '2026-09-06',
+    kind: 'new',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer fields gain bounded WPS numeric-switch parity',
+      zh: 'Writer 字段补齐有界 WPS 数字开关对齐',
+    },
+    summary: {
+      en: 'Common PAGE, NUMPAGES, SECTION, and PAGEREF fields now preserve the WPS numeric switches that are safe to evaluate, with a typed COM probe and browser-editor evidence.',
+      zh: '常用 PAGE、NUMPAGES、SECTION 与 PAGEREF 字段现在保留可安全求值的 WPS 数字开关，并配套类型化 COM 探针与浏览器编辑器证据。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Switches stay typed and bounded',
+          zh: '开关保持类型化且有界',
+        },
+        detail: {
+          en: 'ROMAN, ALPHABETIC, Ordinal, hyperlink, and MERGEFORMAT combinations are parsed explicitly; unknown or malformed switches remain cached and diagnosed.',
+          zh: '显式解析 ROMAN、ALPHABETIC、Ordinal、超链接与 MERGEFORMAT 组合；未知或格式错误的开关保持缓存并进入诊断。',
+        },
+      },
+      {
+        title: {
+          en: 'WPS COM output is inspectable',
+          zh: 'WPS COM 输出可检查',
+        },
+        detail: {
+          en: 'The Commander CLI captures the installed WPS field instructions and version into an exact DOCX artifact without making COM a runtime or CI dependency.',
+          zh: 'Commander CLI 将本机 WPS 字段指令与版本写入精确 DOCX 夹具，不把 COM 变成运行时或 CI 依赖。',
+        },
+      },
+      {
+        title: {
+          en: 'A3S Test proves the editor path',
+          zh: 'A3S Test 证明编辑器路径',
+        },
+        detail: {
+          en: 'The numeric-field ACL checks visible results, focus, screenshots, accessibility, and empty console/page-error diagnostics; Windows CUA remains fail-closed.',
+          zh: '数字字段 ACL 检查可见结果、焦点、截图、可访问性及空控制台/页面错误诊断；Windows CUA 继续失败即关闭。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#common-live-fields',
+          zh: './components/document.html#常用实时字段',
+        },
+        label: {
+          en: 'Read the field guide',
+          zh: '阅读字段指南',
+        },
+      },
+      {
+        href: {
+          en: './automation/index.html',
+          zh: './automation/index.html',
+        },
+        label: {
+          en: 'Run the WPS field probe',
+          zh: '运行 WPS 字段探针',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.58.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.58.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.57.0',
     date: '2026-09-06',
     kind: 'new',

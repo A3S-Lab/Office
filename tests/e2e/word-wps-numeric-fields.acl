@@ -1,0 +1,125 @@
+suite "office-word-wps-numeric-fields" {
+    version = 1
+
+    scenario "import-and-refresh-wps-numeric-fields" {
+        name = "Keep WPS numeric page switches live, readable, and native"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=word-wps-numeric-fields"
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "roman-page-field-is-live" {
+            visible = css(".work-document-field[data-field-kind='page'][data-field-display='I']")
+        }
+
+        expect "alphabetic-total-pages-field-is-live" {
+            visible = css(".work-document-field[data-field-kind='numPages'][data-field-display='A']")
+        }
+
+        expect "ordinal-section-field-is-live" {
+            visible = css(".work-document-field[data-field-kind='section'][data-field-display='1st']")
+        }
+
+        expect "ordinal-page-reference-is-live" {
+            visible = css(".work-document-field[data-field-kind='pageReference'][data-field-display='1st'][data-field-target-name='Fields_target']")
+        }
+
+        expect "field-results-have-accessible-labels" {
+            visible = css(".work-document-field[aria-label='当前页码']")
+        }
+
+        press "refresh-fields" {
+            key = "F9"
+        }
+
+        expect "refresh-restores-document-focus" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        screenshot "wps-numeric-fields" {
+            path = "screenshots/word-wps-numeric-fields.png"
+        }
+
+        accessibility "wps-numeric-fields-accessibility" {
+            path = "evidence/word-wps-numeric-fields-accessibility.json"
+            interactive = true
+        }
+
+        console "wps-numeric-fields-console" {
+            path = "diagnostics/word-wps-numeric-fields-console.json"
+            clear = false
+        }
+
+        page_errors "wps-numeric-fields-page-errors" {
+            path = "diagnostics/word-wps-numeric-fields-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "keep-wps-numeric-fields-readable-on-phone" {
+        name = "Keep WPS numeric field results discoverable in the compact editor"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-compact-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=word-wps-numeric-fields"
+        }
+
+        wait "compact-document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "compact-roman-page-field" {
+            visible = css(".work-document-field[data-field-kind='page'][data-field-display='I'][aria-label='当前页码']")
+        }
+
+        expect "compact-alphabetic-total-pages-field" {
+            visible = css(".work-document-field[data-field-kind='numPages'][data-field-display='A'][aria-label='总页数']")
+        }
+
+        expect "compact-ordinal-section-field" {
+            visible = css(".work-document-field[data-field-kind='section'][data-field-display='1st'][aria-label='当前节号']")
+        }
+
+        expect "compact-page-reference-field" {
+            visible = css(".work-document-field[data-field-kind='pageReference'][data-field-display='1st'][data-field-target-name='Fields_target'][aria-label='目标页码']")
+        }
+
+        screenshot "wps-numeric-fields-phone" {
+            path = "screenshots/word-wps-numeric-fields-phone.png"
+        }
+
+        accessibility "wps-numeric-fields-phone-accessibility" {
+            path = "evidence/word-wps-numeric-fields-phone-accessibility.json"
+            interactive = true
+        }
+
+        console "wps-numeric-fields-phone-console" {
+            path = "diagnostics/word-wps-numeric-fields-phone-console.json"
+            clear = false
+        }
+
+        page_errors "wps-numeric-fields-phone-page-errors" {
+            path = "diagnostics/word-wps-numeric-fields-phone-page-errors.json"
+            clear = false
+        }
+    }
+}

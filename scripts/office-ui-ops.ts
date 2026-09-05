@@ -32,6 +32,9 @@ type WpsProbeOption = JsonOption & {
   connector?: boolean;
   connectorType?: 'straight' | 'elbow' | 'curved';
 };
+type WpsFieldsProbeOption = JsonOption & {
+  output?: string;
+};
 type A3sRunOption = JsonOption & {
   browserDriver?: 'a3s' | 'standalone';
   browserExecutable?: string;
@@ -162,6 +165,15 @@ program
   .option('--json', 'reserved for the probe JSON receipt')
   .action((options: WpsProbeOption) => {
     runWpsProbe(options);
+  });
+
+program
+  .command('wps-fields-probe')
+  .description('Capture WPS Writer COM field-switch reference output (Windows).')
+  .option('--output <docx>', 'exact output DOCX path')
+  .option('--json', 'reserved for the probe JSON receipt')
+  .action((options: WpsFieldsProbeOption) => {
+    runWpsFieldsProbe(options);
   });
 
 const a3s = program
@@ -762,6 +774,29 @@ function runWpsProbe(options: WpsProbeOption): void {
     );
   }
   run('powershell.exe', commandArgs);
+}
+
+function runWpsFieldsProbe(options: WpsFieldsProbeOption): void {
+  if (process.platform !== 'win32') {
+    throw new Error('WPS COM probing is only available on Windows.');
+  }
+  const target = options.output
+    ? path.resolve(repositoryRoot, options.output)
+    : path.join(
+        repositoryRoot,
+        matrix.shared.evidenceRoot,
+        'wps',
+        'numeric-fields.docx',
+      );
+  run('powershell.exe', [
+    '-NoProfile',
+    '-ExecutionPolicy',
+    'Bypass',
+    '-File',
+    path.join(repositoryRoot, 'scripts', 'probe-wps-fields.ps1'),
+    '-OutputPath',
+    target,
+  ]);
 }
 
 async function runGate(surfaceId: string, options: GateOption): Promise<void> {

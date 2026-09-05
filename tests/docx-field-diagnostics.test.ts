@@ -100,6 +100,32 @@ describe('DOCX body field structure', () => {
       markDocxBodyFields(document, bookmarks.bookmarks).fields,
     ).toHaveLength(1);
   });
+
+  test('accepts WPS complex numeric switches with merge-format tails', () => {
+    const document = wordDocument(
+      [
+        '<w:p>',
+        '<w:r><w:fldChar w:fldCharType="begin"/></w:r>',
+        '<w:r><w:instrText> PAGE \\* ROMAN \\* MERGEFORMAT </w:instrText></w:r>',
+        '<w:r><w:fldChar w:fldCharType="separate"/></w:r>',
+        '<w:r><w:t>I</w:t></w:r>',
+        '<w:r><w:fldChar w:fldCharType="end"/></w:r>',
+        '<w:r><w:fldChar w:fldCharType="begin"/></w:r>',
+        '<w:r><w:instrText> NUMPAGES \\* ALPHABETIC \\* MERGEFORMAT </w:instrText></w:r>',
+        '<w:r><w:fldChar w:fldCharType="separate"/></w:r>',
+        '<w:r><w:t>A</w:t></w:r>',
+        '<w:r><w:fldChar w:fldCharType="end"/></w:r>',
+        '</w:p>',
+      ].join(''),
+    );
+
+    const diagnostics = diagnoseDocxCaptions(document);
+    expect(diagnostics.hasUnsupportedFields).toBe(false);
+    expect(diagnostics.issues).toContainEqual(
+      expect.objectContaining({ code: 'docx.fields.body', severity: 'info' }),
+    );
+    expect(markDocxBodyFields(document).fields).toHaveLength(2);
+  });
 });
 
 function wordDocument(body: string): Document {

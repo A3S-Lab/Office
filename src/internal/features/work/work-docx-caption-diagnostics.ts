@@ -102,7 +102,7 @@ export function diagnoseDocxCaptions(
               code: 'docx.fields.body',
               feature: 'Body fields',
               message:
-                'PAGE, NUMPAGES, SECTION, SECTIONPAGES, NUMWORDS, NUMCHARS, DATE, TIME, and bookmark-backed PAGEREF fields remain live, editable body fields and update in preview, PDF, and native DOCX output.',
+                'PAGE, NUMPAGES, SECTION, SECTIONPAGES, NUMWORDS, NUMCHARS, DATE, TIME, and bookmark-backed PAGEREF fields remain live, editable body fields and update in preview, PDF, and native DOCX output; common numeric switches (Arabic, ROMAN, alphabetic, and Ordinal) are retained.',
               severity: 'info',
             } satisfies WorkCompatibilityIssue,
           ]

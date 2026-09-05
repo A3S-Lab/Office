@@ -101,6 +101,10 @@ const wpsConnectorKindsDocumentPath = path.join(
   fixtureDirectory,
   'word-wps-connector-kinds.docx',
 );
+const wpsNumericFieldsDocumentPath = path.join(
+  fixtureDirectory,
+  'word-wps-numeric-fields.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(
@@ -178,6 +182,10 @@ await Bun.write(
   await createWpsConnectorKindsWordFixture(),
 );
 await Bun.write(
+  wpsNumericFieldsDocumentPath,
+  await createWpsNumericFieldsWordFixture(),
+);
+await Bun.write(
   picturePath,
   Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAPAAAAB4CAYAAADMtn8nAAAB+klEQVR4nO3bwQnCUBRFwZRjT25TidUKukoDsQARMfj5OTCL2V94nOVbLut9B5qW2QOA4wQMYQKGsLeAn9sOnJSAIUzAECZgCBMwhAkYwgQMYQKGMAFDmIAhTMAQJmAIEzCECRjChgX86xvUbLMPAUcIWMCECVjAhAlYwIQJWMCECVjAhAlYwIQJWMCECVjAhAlYwIQJ+E8BX28P+EjAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwCcPGGYQsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACRsWMDCegCFMwBAmYAgTMIQJGMIEDGEChjABQ5iAIUzAECZgCBMwhAkYwr4GDHQIGMIEDGEChrAXam5Zu0ZEGKIAAAAASUVORK5CYII=',
@@ -204,6 +212,7 @@ console.log(`Created ${wpsScriptMatrixDocumentPath}`);
 console.log(`Created ${wpsShapeDocumentPath}`);
 console.log(`Created ${wpsConnectorDocumentPath}`);
 console.log(`Created ${wpsConnectorKindsDocumentPath}`);
+console.log(`Created ${wpsNumericFieldsDocumentPath}`);
 console.log(`Created ${picturePath}`);
 
 async function createSpreadsheet1904DateSystemFixture(): Promise<ArrayBuffer> {
@@ -869,6 +878,58 @@ async function createWpsConnectorKindsWordFixture(): Promise<Buffer> {
   if (replaced === source) {
     throw new Error(
       'Failed to replace the placeholder paragraph in the WPS connector kinds fixture.',
+    );
+  }
+  archive.file('word/document.xml', replaced);
+  return archive.generateAsync({ type: 'nodebuffer' });
+}
+
+async function createWpsNumericFieldsWordFixture(): Promise<Buffer> {
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic WPS numeric field switch compatibility fixture',
+    title: 'A3S Office WPS numeric fields fixture',
+    sections: [
+      {
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({ text: 'WPS numeric fields placeholder' }),
+            ],
+          }),
+        ],
+      },
+    ],
+  });
+  const archive = await JSZip.loadAsync(await Packer.toBuffer(document));
+  const documentXmlFile = archive.file('word/document.xml');
+  if (!documentXmlFile) {
+    throw new Error(
+      'Expected a document XML part for the WPS numeric fields fixture.',
+    );
+  }
+  const source = await documentXmlFile.async('string');
+  const numericFieldParagraph = `
+    <w:p>
+      <w:r><w:t>Page: </w:t></w:r>
+      <w:fldSimple w:instr="PAGE \\* ROMAN"><w:r><w:t>XLII</w:t></w:r></w:fldSimple>
+      <w:r><w:t> / total: </w:t></w:r>
+      <w:fldSimple w:instr="NUMPAGES \\* ALPHABETIC"><w:r><w:t>AP</w:t></w:r></w:fldSimple>
+    </w:p>
+    <w:p>
+      <w:bookmarkStart w:id="42" w:name="Fields_target"/>
+      <w:r><w:t>Target section</w:t></w:r>
+      <w:bookmarkEnd w:id="42"/>
+      <w:r><w:t> on page </w:t></w:r>
+      <w:fldSimple w:instr="PAGEREF Fields_target \\h \\* Ordinal"><w:r><w:t>7th</w:t></w:r></w:fldSimple>
+    </w:p>`;
+  const replaced = source.replace(
+    /<w:p>[\s\S]*?<\/w:p>/,
+    numericFieldParagraph,
+  );
+  if (replaced === source) {
+    throw new Error(
+      'Failed to replace the placeholder paragraph in the WPS numeric fields fixture.',
     );
   }
   archive.file('word/document.xml', replaced);

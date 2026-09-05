@@ -332,11 +332,15 @@ browser-editor evidence uses A3S Test Web/CDP. On Windows,
 `bun run office:ops -- wps-probe --connector` captures the bounded WPS COM
 reference used for UI/OOXML parity; that probe is evidence, not a product
 runtime. Use `--connector-type straight|elbow|curved` to select the typed WPS
-reference shape through the Commander CLI.
+reference shape through the Commander CLI. `wps-fields-probe --json` records
+the installed WPS numeric field switches and feeds the `word-wps-numeric-fields`
+A3S Test fixture; it is likewise an explicit local reference capture, never a
+CI prerequisite.
 
 ## Current release
 
-Version `0.57.0` extends the bounded Writer connector workflow to the WPS
+Version `0.58.0` extends bounded Writer fields with WPS numeric switches and
+continues the Writer connector workflow to the WPS
 straight, elbow, and curved shape subset:
 
 - The Connector ribbon exposes one typed connector-kind control. The same
@@ -349,6 +353,11 @@ straight, elbow, and curved shape subset:
   console, and page-error evidence. Desktop and compact Playwright checks
   assert the distinct SVG geometry. Windows CUA remains fail-closed while the
   locked profile is not contract-tested.
+
+The same release keeps common page, section, and bookmark page-reference
+fields live when WPS emits numeric switches such as `\\* ROMAN`,
+`\\* ALPHABETIC`, or `\\* Ordinal`; unknown switches remain cached and
+diagnosed instead of being approximated.
 
 Version `0.56.1` makes the A3S Test five-surface editor matrix the daily UI/UX
 contract:

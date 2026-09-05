@@ -15,11 +15,13 @@
         "tests/e2e/word-connector-editor.acl",
         "tests/e2e/word-wps-connector-boundary.acl",
         "tests/e2e/word-wps-connector-kinds.acl",
+        "tests/e2e/word-wps-numeric-fields.acl",
         "tests/e2e/word-text-box-phone.acl"
       ],
       "fixtures": [
         "word-wps-connector.docx",
         "word-wps-connector-kinds.docx",
+        "word-wps-numeric-fields.docx",
         "word-wps-shape.docx"
       ],
       "wpsReference": true,

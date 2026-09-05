@@ -16,6 +16,7 @@ import {
   documentFieldDisplay,
   documentFieldStatisticsFromHtml,
   docxDocumentFieldKind,
+  numericFieldFormatSwitch,
   supportedDocxDocumentFieldInstruction,
 } from '../src/internal/features/work/work-document-fields';
 import type { WorkDocumentContent } from '../src/internal/features/work/work-types';
@@ -75,6 +76,7 @@ describe('document fields', () => {
         'page-2': '11',
         'section-2': '2',
       });
+      expect(editor.getHTML()).toContain('aria-label="当前页码"');
 
       expect(editor.commands.undo()).toBe(true);
       expect(new Set(Object.values(fieldDisplays(editor)))).toEqual(
@@ -285,6 +287,48 @@ describe('document fields', () => {
     ).toBe('引用缺失');
   });
 
+  test('resolves common numeric field switches without widening the grammar', () => {
+    const context = {
+      pageNumber: 42,
+      totalPages: 42,
+      sectionNumber: 4,
+      sectionPages: 42,
+    };
+    expect(
+      documentFieldDisplay('page', context, 'PAGE \\* ROMAN'),
+    ).toBe('XLII');
+    expect(
+      documentFieldDisplay('page', context, 'PAGE \\* roman'),
+    ).toBe('xlii');
+    expect(
+      documentFieldDisplay('numPages', context, 'NUMPAGES \\* ALPHABETIC'),
+    ).toBe('AP');
+    expect(
+      documentFieldDisplay('sectionPages', context, 'SECTIONPAGES \\* alphabetic'),
+    ).toBe('ap');
+    expect(
+      documentFieldDisplay(
+        'pageReference',
+        { ...context, referencePageNumber: 7 },
+        'PAGEREF Target \\* Ordinal',
+        '7',
+      ),
+    ).toBe('7th');
+    expect(numericFieldFormatSwitch('PAGE \\* ROMAN')).toBe('\\* ROMAN');
+    expect(
+      supportedDocxDocumentFieldInstruction('PAGE \\* ROMAN \\* MERGEFORMAT'),
+    ).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('PAGEREF Target \\h \\* alphabetic'),
+    ).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('PAGE \\* ROMAN \\* Arabic'),
+    ).toBe(false);
+    expect(
+      supportedDocxDocumentFieldInstruction('PAGE \\# "000"'),
+    ).toBe(false);
+  });
+
   test('retargets a page reference when its bookmark identity is normalized', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions(),
@@ -297,11 +341,11 @@ describe('document fields', () => {
         field(
           'pageReference',
           'page-reference',
-          'PAGEREF Target \\h',
+          'PAGEREF Target \\h \\* ROMAN',
           '1',
         ).replace(
-          'data-field-instruction="PAGEREF Target \\h"',
-          'data-field-instruction="PAGEREF Target \\h" data-field-target-id="bookmark-target" data-field-target-name="Target"',
+          'data-field-instruction="PAGEREF Target \\h \\* ROMAN"',
+          'data-field-instruction="PAGEREF Target \\h \\* ROMAN" data-field-target-id="bookmark-target" data-field-target-name="Target"',
         ),
         '</p>',
       ].join(''),
@@ -317,7 +361,7 @@ describe('document fields', () => {
       );
       const pageReference = documentFields(editor)[0];
       expect(pageReference).toMatchObject({
-        instruction: 'PAGEREF Renamed \\h',
+        instruction: 'PAGEREF Renamed \\h \\* ROMAN',
       });
       expect(editor.getHTML()).toContain('data-field-target-name="Renamed"');
     } finally {
@@ -428,6 +472,62 @@ describe('document fields', () => {
     );
     await expectNativeCommonFields(await createArtifactBlob(imported));
   });
+
+  test('round-trips WPS numeric page switches as live native fields', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      field('page', 'roman-page', 'PAGE \\* ROMAN', 'XLII'),
+      ' ',
+      field('numPages', 'alpha-pages', 'NUMPAGES \\* ALPHABETIC', 'AP'),
+      '</p><p>',
+      '<span data-document-bookmark-boundary="true" data-bookmark-kind="start" data-bookmark-id="bookmark-target" data-bookmark-name="Target"></span>',
+      '目标内容',
+      '<span data-document-bookmark-boundary="true" data-bookmark-kind="end" data-bookmark-id="bookmark-target" data-bookmark-name="Target"></span>',
+      ' ',
+      field(
+        'pageReference',
+        'ordinal-page',
+        'PAGEREF Target \\h \\* Ordinal',
+        '7th',
+      ),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('PAGE \\* ROMAN');
+    expect(documentXml).toContain('NUMPAGES \\* ALPHABETIC');
+    expect(documentXml).toContain('PAGEREF Target \\h \\* Ordinal');
+
+    const imported = await importOfficeFile(
+      new File([first], 'wps-numeric-fields.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      Array.from(
+        importedDocument.body.querySelectorAll<HTMLElement>(
+          '[data-document-field]',
+        ),
+      ).map(({ dataset }) => dataset.fieldInstruction),
+    ).toEqual([
+      'PAGE \\* ROMAN',
+      'NUMPAGES \\* ALPHABETIC',
+      'PAGEREF Target \\h \\* Ordinal',
+    ]);
+    await expectNativeFieldsWithSwitches(await createArtifactBlob(imported));
+  });
 });
 
 async function expectNativeFields(blob: Blob): Promise<void> {
@@ -457,6 +557,15 @@ async function expectNativeCommonFields(blob: Blob): Promise<void> {
   expect(documentXml).toContain('NUMWORDS');
   expect(documentXml).toContain('NUMCHARS');
   expect(documentXml).toContain('PAGEREF Target \\h');
+}
+
+async function expectNativeFieldsWithSwitches(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const documentXml =
+    (await archive.file('word/document.xml')?.async('string')) ?? '';
+  expect(documentXml).toContain('PAGE \\* ROMAN');
+  expect(documentXml).toContain('NUMPAGES \\* ALPHABETIC');
+  expect(documentXml).toContain('PAGEREF Target \\h \\* Ordinal');
 }
 
 function decodeXmlAttribute(value: string): string {

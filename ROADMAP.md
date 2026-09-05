@@ -83,7 +83,7 @@ collaboration transport, and AI providers.
 | Bookmarks, links, captions, cross-references, citations, bibliography, footnotes/endnotes | **Partial**, with native identity and editable common paths | Wider field instructions, tables of authorities/figures, citation styles, and reference dialogs remain incomplete | P1 |
 | Table of contents and outline authoring | **Supported**: shared semantic-heading/native-outline model plus typed insert/customize/refresh, levels 1–9, hyperlinks, live page numbers, alignment, four leader styles, stable paragraph-identity targets, one-step Undo, and native DOCX `TOC` round trips | Custom style-to-level mappings, tables of figures, and deeper TOC style formatting remain open | Maintain / P1 fidelity |
 | Native index authoring | **Supported**: primary/secondary `XE` entries, cross-references, bold/italic page intent, stable marker targets, merged page numbers, typed insert/customize/refresh, 1–4 columns, indented/run-in layouts, four leader styles, one-step Undo, and native DOCX `XE`/`INDEX` round trips | Entry ranges, custom index types, letter-heading formats, authorities, and locale-specific collation controls remain open | Maintain / P1 fidelity |
-| Fields | **Partial**: PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, TIME, NUMWORDS, NUMCHARS, safe REF paths, and bookmark-backed PAGEREF with bounded switch diagnostics | Broader Word field grammar, nested fields, switches outside the deterministic common subset, mail fields, document properties, and tables of figures/authorities remain incomplete | P1/P2 |
+| Fields | **Partial**: PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, TIME, NUMWORDS, NUMCHARS, safe REF paths, and bookmark-backed PAGEREF with WPS numeric switches and bounded diagnostics | Broader Word field grammar, nested fields, switches outside the deterministic common subset, mail fields, document properties, and tables of figures/authorities remain incomplete | P1/P2 |
 | Mail merge | **Gap** | No data-source mapping, recipient filtering, preview, or batch generation | P2 |
 | Compare/combine documents | **Partial**: same-layout paragraphs/headings compare into deterministic insertion, deletion, character-formatting, paragraph-formatting, and bounded text-move revisions within one section; exact text-only whole-paragraph changes round-trip with native paragraph-mark records; reviewed-copy combine requires an exact reject-all baseline match | Changed complex structures, isolated paragraph-break merge/split or mixed-content paragraph-mark revisions, cross-section/range move generation, layout changes, and multi-copy structural conflicts remain explicit fail-closed boundaries | P1 |
 | Content controls and forms | **Partial**: inline plain-text and rich-text controls are editable with aliases, tags, bounded locks, multiline text, appearance/color, and direct-paragraph DOCX `w:sdt` round trips; static controls in note/comment preservation remain separately bounded | Data binding, repeating sections, date/dropdown/picture/form controls, block controls, nested or relationship-bound semantics, placeholders, and active behavior are intentionally limited | P1/P2 |
@@ -329,7 +329,9 @@ work rather than silent approximations.
   fixtures, typed SVG/DrawingML projections, and editor contracts. Keep
   arbitrary routing, mixed paragraphs, and unsupported branches fail-closed
   until each has its own native fixture and editor contract.
-- Complete common field instructions and reference workflows.
+- Extend common field instructions and reference workflows beyond the bounded
+  numeric-switch subset; keep nested fields, document properties, mail fields,
+  and unsupported switches fail-closed until each has a native contract.
 - Extend the bounded content-control slice beyond direct inline text and rich
   text only after block, form, and data-binding semantics have independent
   typed models and fail-closed native fixtures.

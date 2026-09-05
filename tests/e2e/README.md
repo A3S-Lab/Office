@@ -790,6 +790,14 @@ accessibility, screenshot, console, and page-error evidence through
 `tests/e2e/word-wps-connector-boundary.acl`,
 `tests/e2e/word-wps-connector-kinds.acl`,
 `bun run test:e2e:writer-wps-connector:check`, and the matching local gate,
+plus a desktop WPS numeric-field workflow. The typed Commander
+`wps-fields-probe --json` command records the installed WPS `PAGE`, `NUMPAGES`,
+`SECTION`, and `PAGEREF` instructions, including bounded numeric and
+`MERGEFORMAT` switches; `tests/e2e/word-wps-numeric-fields.acl` checks their
+visible results, focus, accessibility, screenshot, console, and page-error
+evidence through the same browser editor. Unknown switches remain cached and
+diagnosed. Windows CUA is recorded separately as unsupported until its locked
+profile has a reviewed application backend,
 plus a desktop and phone Writer content-control workflow covering the
 responsive Insert dialog, plain/rich type and appearance metadata, direct
 paragraph editing, one-step Undo/Redo, accessibility, and clean browser
