@@ -12,7 +12,13 @@ import { createWorkId } from './work-templates';
 
 /** The bounded straight connector subset shared by the Writer and DOCX paths. */
 export type WorkDocumentConnectorLayout = 'inline' | 'floating';
-export type WorkDocumentConnectorArrow = 'none' | 'triangle';
+export type WorkDocumentConnectorArrow =
+  | 'none'
+  | 'triangle'
+  | 'stealth'
+  | 'diamond'
+  | 'oval'
+  | 'open';
 export type WorkDocumentConnectorLineStyle =
   | 'solid'
   | 'dash'
@@ -208,11 +214,23 @@ export const DocumentConnector = Node.create({
         },
         [
           'defs',
-          ...(properties.startArrow === 'triangle'
-            ? [connectorMarker(startMarker, properties.lineColor)]
+          ...(properties.startArrow !== 'none'
+            ? [
+                connectorMarker(
+                  startMarker,
+                  properties.lineColor,
+                  properties.startArrow,
+                ),
+              ]
             : []),
-          ...(properties.endArrow === 'triangle'
-            ? [connectorMarker(endMarker, properties.lineColor)]
+          ...(properties.endArrow !== 'none'
+            ? [
+                connectorMarker(
+                  endMarker,
+                  properties.lineColor,
+                  properties.endArrow,
+                ),
+              ]
             : []),
         ],
         [
@@ -228,13 +246,11 @@ export const DocumentConnector = Node.create({
             'stroke-linecap': 'round',
             'stroke-dasharray': connectorStrokeDasharray(properties.lineStyle),
             'marker-start':
-              properties.startArrow === 'triangle'
+              properties.startArrow !== 'none'
                 ? `url(#${startMarker})`
                 : undefined,
             'marker-end':
-              properties.endArrow === 'triangle'
-                ? `url(#${endMarker})`
-                : undefined,
+              properties.endArrow !== 'none' ? `url(#${endMarker})` : undefined,
           },
         ],
       ],
@@ -587,7 +603,11 @@ function connectorAttributesFromElement(
   };
 }
 
-function connectorMarker(marker: string, color: string) {
+function connectorMarker(
+  marker: string,
+  color: string,
+  arrow: WorkDocumentConnectorArrow,
+) {
   return [
     'marker',
     {
@@ -600,8 +620,24 @@ function connectorMarker(marker: string, color: string) {
       markerUnits: 'strokeWidth',
       viewBox: '0 0 6 6',
     },
-    ['path', { d: 'M 0 0 L 6 3 L 0 6 z', fill: color }],
+    [
+      'path',
+      {
+        d: connectorArrowPath(arrow),
+        fill: arrow === 'open' ? 'none' : color,
+        stroke: arrow === 'open' ? color : undefined,
+        'stroke-width': arrow === 'open' ? '1.2' : undefined,
+      },
+    ],
   ];
+}
+
+function connectorArrowPath(arrow: WorkDocumentConnectorArrow): string {
+  if (arrow === 'stealth') return 'M 0 0 L 6 3 L 0 6 L 2.5 3 z';
+  if (arrow === 'diamond') return 'M 0 3 L 3 0 L 6 3 L 3 6 z';
+  if (arrow === 'oval') return 'M 0 3 A 3 3 0 1 0 6 3 A 3 3 0 1 0 0 3 z';
+  if (arrow === 'open') return 'M 0 0 L 6 3 L 0 6';
+  return 'M 0 0 L 6 3 L 0 6 z';
 }
 
 function connectorMarkerId(id: string): string {
@@ -632,7 +668,13 @@ function connectorVerticalReference(
 }
 
 function connectorArrow(value: unknown): WorkDocumentConnectorArrow {
-  return value === 'triangle' ? 'triangle' : 'none';
+  return value === 'triangle' ||
+    value === 'stealth' ||
+    value === 'diamond' ||
+    value === 'oval' ||
+    value === 'open'
+    ? value
+    : 'none';
 }
 
 function connectorLineStyle(value: unknown): WorkDocumentConnectorLineStyle {

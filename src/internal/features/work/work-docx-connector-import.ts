@@ -422,7 +422,12 @@ function percentage(
 
 function vmlArrow(value: string | null): WorkDocumentConnectorArrow {
   const normalized = value?.trim().toLowerCase();
-  return normalized && normalized !== 'none' ? 'triangle' : 'none';
+  if (normalized === 'block' || normalized === 'triangle') return 'triangle';
+  if (normalized === 'classic' || normalized === 'stealth') return 'stealth';
+  if (normalized === 'diamond') return 'diamond';
+  if (normalized === 'oval') return 'oval';
+  if (normalized === 'open') return 'open';
+  return 'none';
 }
 
 function drawingMlArrow(
@@ -431,7 +436,16 @@ function drawingMlArrow(
   const value = element
     ? attribute(element, 'type')?.trim().toLowerCase()
     : null;
-  return value && value !== 'none' ? 'triangle' : 'none';
+  if (
+    value === 'triangle' ||
+    value === 'stealth' ||
+    value === 'diamond' ||
+    value === 'oval' ||
+    value === 'open'
+  ) {
+    return value;
+  }
+  return 'none';
 }
 
 function vmlLineStyle(value: string | null): WorkDocumentConnectorLineStyle {

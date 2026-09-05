@@ -783,8 +783,9 @@ layout/geometry/placement/fill/outline controls, Undo/Redo, accessibility,
 viewport containment, and clean browser diagnostics,
 plus a focused desktop WPS VML-connector workflow. The connector fixture
 reflects the installed WPS COM shape (`v:shape` with `o:spt="32"` and native
-`DashStyle=4`), imports the dashed line style into the bounded editable
-connector model, and records accessibility, screenshot, console, and page-error
+`DashStyle=4` plus the bounded COM 3/4 arrow reference), imports the dashed
+line and open/stealth arrow styles into the bounded editable connector model,
+and records accessibility, screenshot, console, and page-error
 evidence through
 `tests/e2e/word-wps-connector-boundary.acl`,
 `bun run test:e2e:writer-wps-connector:check`, and the matching local gate,

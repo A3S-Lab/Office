@@ -4,6 +4,23 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.56.0 - 2026-09-06
+
+- Extended the bounded editable Writer straight-connector model with typed
+  arrow styles: none, triangle, stealth, diamond, oval, and open. The
+  contextual ribbon, live SVG markers, Undo/Redo, and native DrawingML
+  `a:headEnd`/`a:tailEnd` export now share the same value.
+- Added WPS VML arrow mapping for `block`, `classic`, `open`, `diamond`, and
+  `oval`, with unknown values normalized to `none`. The Windows WPS 12.0 COM
+  probe records the bounded `BeginArrowheadStyle=3`/
+  `EndArrowheadStyle=4` reference, which emits VML `startarrow="open"` and
+  `endarrow="classic"` and reopens as `open`/`stealth`.
+- Added A3S Test ACL and responsive visual assertions for authoring and WPS
+  import. The real Windows CDP runs passed with screenshots, accessibility
+  snapshots, and empty console/page-error diagnostics. CUA is still exercised
+  through the locked certification matrix; its Windows 0.10.0 profiles remain
+  fail-closed as `unsupported` until a reviewed native backend is available.
+
 ## 0.55.0 - 2026-09-05
 
 - Extended the bounded editable Writer straight-connector model with native

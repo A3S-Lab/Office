@@ -335,7 +335,21 @@ runtime.
 
 ## Current release
 
-Version `0.55.0` extends the bounded Writer straight-connector workflow with
+Version `0.56.0` extends the bounded Writer straight-connector workflow with
+native arrow-style parity:
+
+- The Connector ribbon exposes none, triangle, stealth, diamond, oval, and
+  open arrow styles. One typed value drives the live SVG markers, compact
+  controls, undoable updates, and native DOCX `a:headEnd`/`a:tailEnd` export.
+- WPS VML `startarrow`/`endarrow` values import into the same model, including
+  `classic`, `open`, `diamond`, and `oval`; unknown values normalize to none.
+  The Windows WPS 12.0 COM probe records the bounded 3/4 reference and its
+  emitted `open`/`classic` VML pair.
+- A3S Test ACLs cover authoring and real WPS fixture import, while desktop and
+  compact visual runs retain screenshot, accessibility, console, and
+  page-error evidence.
+
+Version `0.55.0` extended the bounded Writer straight-connector workflow with
 native line-style parity:
 
 - The Connector ribbon exposes solid, dash, dot, and dash-dot styles. One

@@ -39,6 +39,10 @@ const layoutOptions = [
 const arrowOptions = [
   { value: 'none', label: '无箭头' },
   { value: 'triangle', label: '三角箭头' },
+  { value: 'stealth', label: '隐形箭头' },
+  { value: 'diamond', label: '菱形箭头' },
+  { value: 'oval', label: '圆形箭头' },
+  { value: 'open', label: '开放箭头' },
 ] as const satisfies readonly {
   value: WorkDocumentConnectorArrow;
   label: string;

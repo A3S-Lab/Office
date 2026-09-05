@@ -9,9 +9,14 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(35);
+  await expect(cards).toHaveCount(36);
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.56.0')).toContainText(
+    'Writer 连接符补齐 WPS 箭头样式对齐',
+  );
+  await expect(releaseCard('0.56.0')).toContainText('一个类型化箭头样式模型');
+  await expect(releaseCard('0.56.0')).toContainText('Windows COM 3/4 参考');
   await expect(releaseCard('0.55.0')).toContainText(
     'Writer 连接符补齐 WPS 线型对齐',
   );
@@ -57,12 +62,12 @@ test('documentation changelog stays scannable, localized, and version-aware', as
   await expect(
     page.locator('.office-release-card[data-version="0.34.0"]'),
   ).toContainText('演示文稿入场动画');
-  await expect(releaseCard('0.55.0').locator('time')).toHaveAttribute(
+  await expect(releaseCard('0.56.0').locator('time')).toHaveAttribute(
     'datetime',
-    '2026-09-05',
+    '2026-09-06',
   );
   await expect(
-    releaseCard('0.55.0').locator('.office-release-card__highlights > li'),
+    releaseCard('0.56.0').locator('.office-release-card__highlights > li'),
   ).toHaveCount(3);
 
   const geometry = await page.evaluate(() => {

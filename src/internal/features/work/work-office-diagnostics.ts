@@ -314,7 +314,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.connectors',
             'Connectors',
-            `${connectorInspection.detected} WPS VML straight connector(s) were detected. Isolated connectors are converted to the bounded editable Writer model with explicit endpoints, line color/width, and optional triangle arrows; elbow or curved routing, relationship-bound anchors, and unsupported mixed paragraphs remain on the compatibility path and may normalize when edited or regenerated.`,
+            `${connectorInspection.detected} WPS VML straight connector(s) were detected. Isolated connectors are converted to the bounded editable Writer model with explicit endpoints, line color/width, and optional arrow styles; elbow or curved routing, relationship-bound anchors, and unsupported mixed paragraphs remain on the compatibility path and may normalize when edited or regenerated.`,
           ),
         );
       }

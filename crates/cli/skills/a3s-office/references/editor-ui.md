@@ -159,7 +159,8 @@ bun run office:ops -- wps-probe --connector --output .a3s-test/office-ops/wps/co
 
 The checked-in `scripts/probe-wps-shapes.ps1` starts the installed WPS Writer
 COM server in a hidden, bounded session, creates a rectangle and optionally a
-straight connector, saves a DOCX, and closes every COM object. Inspect the
+straight connector with the bounded line/arrow reference, saves a DOCX, and
+closes every COM object. Inspect the
 OOXML or open the result through the A3S editor; do not infer browser fidelity
 from COM properties alone. Remove only the exact temporary probe artifacts
 after the comparison.

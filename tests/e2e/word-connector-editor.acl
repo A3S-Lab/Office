@@ -48,8 +48,28 @@ suite "office-word-connector-editor" {
             target = role("option", "虚线")
         }
 
+        click "open-connector-start-arrow" {
+            target = role("combobox", "连接符起点箭头")
+        }
+
+        click "choose-connector-open-arrow" {
+            target = role("option", "开放箭头")
+        }
+
+        click "open-connector-end-arrow" {
+            target = role("combobox", "连接符终点箭头")
+        }
+
+        click "choose-connector-stealth-arrow" {
+            target = role("option", "隐形箭头")
+        }
+
         expect "connector-line-style-is-visible" {
             visible = css(".work-document-editable [data-document-connector][data-connector-line-style='dash']")
+        }
+
+        expect "connector-arrow-styles-are-visible" {
+            visible = css(".work-document-editable [data-document-connector][data-connector-start-arrow='open'][data-connector-end-arrow='stealth']")
         }
 
         fill "set-connector-width" {

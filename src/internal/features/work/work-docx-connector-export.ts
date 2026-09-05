@@ -1,5 +1,8 @@
 import JSZip from 'jszip';
-import type { WorkDocumentConnectorProperties } from './work-document-connector';
+import type {
+  WorkDocumentConnectorArrow,
+  WorkDocumentConnectorProperties,
+} from './work-document-connector';
 import { descendants, directChild, parseXml } from './work-ooxml-package';
 
 interface DocxConnectorPatch {
@@ -228,9 +231,9 @@ function connectorLine(
   if (properties.lineStyle !== 'solid')
     line.append(lineDash(document, properties.lineStyle));
   if (properties.startArrow !== 'none')
-    line.append(arrowEnd(document, 'a:headEnd'));
+    line.append(arrowEnd(document, 'a:headEnd', properties.startArrow));
   if (properties.endArrow !== 'none')
-    line.append(arrowEnd(document, 'a:tailEnd'));
+    line.append(arrowEnd(document, 'a:tailEnd', properties.endArrow));
   return line;
 }
 
@@ -243,9 +246,13 @@ function lineDash(
   return dash;
 }
 
-function arrowEnd(document: Document, name: string): Element {
+function arrowEnd(
+  document: Document,
+  name: string,
+  arrowType: WorkDocumentConnectorArrow,
+): Element {
   const arrow = document.createElementNS(DRAWING_NAMESPACE, name);
-  arrow.setAttribute('type', 'triangle');
+  arrow.setAttribute('type', arrowType);
   arrow.setAttribute('w', 'med');
   arrow.setAttribute('len', 'med');
   return arrow;

@@ -49,8 +49,8 @@ describe('document connectors', () => {
         lineColor: '#ABCDEF',
         lineWidth: 50,
         lineStyle: 'dashDot',
-        startArrow: 'triangle',
-        endArrow: 'triangle',
+        startArrow: 'open',
+        endArrow: 'diamond',
       }),
     ).toEqual({
       id: 'connector-1',
@@ -68,8 +68,8 @@ describe('document connectors', () => {
       lineColor: '#abcdef',
       lineWidth: DOCUMENT_CONNECTOR_LIMITS.lineWidth.max,
       lineStyle: 'dashDot',
-      startArrow: 'triangle',
-      endArrow: 'triangle',
+      startArrow: 'open',
+      endArrow: 'diamond',
       docPropertiesId: null,
     });
   });
@@ -139,6 +139,8 @@ describe('document connectors', () => {
       horizontalOffset: -6.35,
       lineColor: '#c00000',
       lineStyle: 'dash',
+      startArrow: 'open',
+      endArrow: 'stealth',
       endY: 50,
     });
     expect(markers.connectors[0]?.properties.verticalOffset).toBeCloseTo(
@@ -153,6 +155,8 @@ describe('document connectors', () => {
     const connector = html.body.querySelector('[data-document-connector]');
     expect(connector).toHaveAttribute('data-connector-width', '50.8');
     expect(connector).toHaveAttribute('data-connector-layout', 'floating');
+    expect(connector).toHaveAttribute('data-connector-start-arrow', 'open');
+    expect(connector).toHaveAttribute('data-connector-end-arrow', 'stealth');
     expect(html.body.querySelector('[data-document-text-box]')).toBeNull();
   });
 
@@ -177,8 +181,8 @@ describe('document connectors', () => {
       lineColor: '#2f5597',
       lineWidth: 0.7,
       lineStyle: 'dash',
-      startArrow: 'triangle',
-      endArrow: 'triangle',
+      startArrow: 'open',
+      endArrow: 'diamond',
       docPropertiesId: 12,
     });
     const attributes = Object.entries(connectorDomAttributes(properties))
@@ -194,6 +198,8 @@ describe('document connectors', () => {
     expect(source).toContain('custGeom');
     expect(source).toContain('headEnd');
     expect(source).toContain('tailEnd');
+    expect(source).toContain('<a:headEnd type="open"');
+    expect(source).toContain('<a:tailEnd type="diamond"');
     expect(source).toContain('<a:prstDash val="dash"');
     expect(source).toContain('val="2F5597"');
     expect(source).not.toContain('__A3S_CONNECTOR_ID_');
@@ -209,7 +215,10 @@ describe('document connectors', () => {
       'data-connector-line-color="#2f5597"',
     );
     expect(reopened.content.html).toContain(
-      'data-connector-start-arrow="triangle"',
+      'data-connector-start-arrow="open"',
+    );
+    expect(reopened.content.html).toContain(
+      'data-connector-end-arrow="diamond"',
     );
     expect(reopened.content.html).toContain('data-connector-line-style="dash"');
     expect(reopened.content.html).not.toContain('data-document-text-box');
@@ -226,7 +235,7 @@ function vmlConnector(): string {
   return `
     <v:shape id="A3S Connector" o:spid="_x0000_s1026" o:spt="32" type="#_x0000_t32" style="position:absolute;left:0pt;margin-left:-18pt;margin-top:128pt;height:1pt;width:144pt" filled="f" stroked="f" coordsize="21600,21600">
       <v:path arrowok="t"/>
-      <v:stroke on="f" color="#C00000" weight="1pt" dashstyle="dash"/>
+      <v:stroke on="f" color="#C00000" weight="1pt" dashstyle="dash" startarrow="open" endarrow="classic"/>
     </v:shape>
   `;
 }

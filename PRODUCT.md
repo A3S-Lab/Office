@@ -1055,6 +1055,16 @@ routed connectors, mixed paragraphs, arbitrary drawings, and malformed bodies
 remain explicit compatibility diagnostics; A3S Test Web/CDP and responsive
 visual evidence are the primary browser UI contract.
 
+The seventy-fifth Writer milestone adds native arrow-style parity to the same
+straight connector subset. None, triangle, stealth, diamond, oval, and open
+are one typed value shared by the contextual ribbon, live SVG markers,
+Undo/Redo, WPS VML `startarrow`/`endarrow` import, and DrawingML
+`a:headEnd`/`a:tailEnd` export. The WPS 12.0 COM reference records the bounded
+3/4 pair as VML `open`/`classic`, reopening as `open`/`stealth`; unknown arrow
+values, routed connectors, mixed paragraphs, arbitrary drawings, and malformed
+bodies remain explicit compatibility diagnostics. A3S Test Web/CDP and
+responsive visual evidence remain the primary browser UI contract.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

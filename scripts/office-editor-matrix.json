@@ -20,7 +20,7 @@
       "wpsReference": true,
       "agent": {
         "goal": "Inspect the Writer connector editing surface",
-        "success": "The Writer connector ribbon is visible, editable, and exposes line styles"
+        "success": "The Writer connector ribbon is visible, editable, and exposes line and arrow styles"
       }
     },
     {

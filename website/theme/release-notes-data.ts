@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.56.0',
+    date: '2026-09-06',
+    kind: 'new',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer connectors gain WPS arrow-style parity',
+      zh: 'Writer 连接符补齐 WPS 箭头样式对齐',
+    },
+    summary: {
+      en: 'Straight connectors now preserve typed none, triangle, stealth, diamond, oval, and open endpoint-arrow intent through the responsive Writer ribbon and DOCX round trip.',
+      zh: '直线连接符现在可以把无箭头、三角、隐形、菱形、圆形和开放端点箭头意图穿过响应式 Writer 功能区与 DOCX 往返。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One typed arrow-style model',
+          zh: '一个类型化箭头样式模型',
+        },
+        detail: {
+          en: 'The Connector ribbon, live SVG markers, compact controls, Undo/Redo, VML import, and DrawingML headEnd/tailEnd export share six bounded values.',
+          zh: '连接符功能区、实时 SVG 标记、紧凑控件、撤销/重做、VML 导入和 DrawingML headEnd/tailEnd 导出共享六种有界值。',
+        },
+      },
+      {
+        title: {
+          en: 'Windows COM 3/4 reference',
+          zh: 'Windows COM 3/4 参考',
+        },
+        detail: {
+          en: 'The installed WPS 12.0 probe emits VML startarrow=open and endarrow=classic for the bounded COM pair; classic reopens as the typed stealth arrow.',
+          zh: '本机 WPS 12.0 探针在有界 COM 配对下生成 VML startarrow=open、endarrow=classic；classic 重新打开为类型化隐形箭头。',
+        },
+      },
+      {
+        title: {
+          en: 'A3S Test evidence stays primary',
+          zh: 'A3S Test 证据保持主导',
+        },
+        detail: {
+          en: 'Real Windows CDP runs cover authoring and WPS import with screenshots, accessibility snapshots, and empty console/page-error diagnostics; the locked CUA matrix remains fail-closed on Windows.',
+          zh: '真实 Windows CDP 运行覆盖创建与 WPS 导入并保留截图、可访问性快照及空控制台/页面错误诊断；锁定的 CUA 矩阵在 Windows 上继续失败即关闭。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#built-in-editable-text-boxes',
+          zh: './components/document.html#可编辑文本框',
+        },
+        label: {
+          en: 'Read the connector arrow-style guide',
+          zh: '阅读连接符箭头样式指南',
+        },
+      },
+      {
+        href: {
+          en: './automation/index.html',
+          zh: './automation/index.html',
+        },
+        label: {
+          en: 'Review the A3S Test and CUA workflow',
+          zh: '查看 A3S Test 与 CUA 流程',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.56.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.56.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.55.0',
     date: '2026-09-05',
     kind: 'new',

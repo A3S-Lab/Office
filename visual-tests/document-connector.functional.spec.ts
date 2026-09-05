@@ -27,8 +27,10 @@ test('Writer edits an imported WPS straight connector through its contextual rib
 
   await page.getByRole('combobox', { name: '连接符线条样式' }).click();
   await page.getByRole('option', { name: '虚线', exact: true }).click();
+  await page.getByRole('combobox', { name: '连接符起点箭头' }).click();
+  await page.getByRole('option', { name: '开放箭头', exact: true }).click();
   await page.getByRole('combobox', { name: '连接符终点箭头' }).click();
-  await page.getByRole('option', { name: '三角箭头', exact: true }).click();
+  await page.getByRole('option', { name: '隐形箭头', exact: true }).click();
   await page.getByRole('button', { name: '浮于文字上方' }).click();
   await page
     .getByRole('textbox', { name: '连接符终点 Y（百分比）', exact: true })
@@ -36,9 +38,10 @@ test('Writer edits an imported WPS straight connector through its contextual rib
   await page.getByRole('button', { name: '连接符线条颜色' }).click();
   await page.getByRole('option', { name: '颜色 #0070c0' }).click();
 
+  await expect(connector).toHaveAttribute('data-connector-start-arrow', 'open');
   await expect(connector).toHaveAttribute(
     'data-connector-end-arrow',
-    'triangle',
+    'stealth',
   );
   await expect(connector).toHaveAttribute('data-connector-line-style', 'dash');
   await expect(connector).toHaveAttribute('data-connector-end-y', '20');

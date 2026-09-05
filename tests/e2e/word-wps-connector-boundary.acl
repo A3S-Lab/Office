@@ -33,6 +33,10 @@ suite "office-word-wps-connector-boundary" {
             visible = css(".work-document-editable .ProseMirror [data-document-connector][data-connector-line-style='dash']")
         }
 
+        expect "wps-connector-arrow-styles-are-preserved" {
+            visible = css(".work-document-editable .ProseMirror [data-document-connector][data-connector-start-arrow='open'][data-connector-end-arrow='stealth']")
+        }
+
         expect "connector-is-not-a-text-box" {
             visible = css(".work-document-editable .ProseMirror:not(:has([data-document-text-box]))")
         }

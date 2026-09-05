@@ -94,6 +94,11 @@ try {
         # MsoLineDashStyle.msoLineDash (4) is the native WPS dashed stroke
         # used to verify the browser connector line-style mapping.
         $connector.Line.DashStyle = 4
+        # The installed WPS COM bridge emits VML `open`/`classic` for this
+        # bounded reference pair; the importer maps those native names to
+        # the open/stealth model values.
+        $connector.Line.BeginArrowheadStyle = 3
+        $connector.Line.EndArrowheadStyle = 4
     }
 
     $document.SaveAs2($resolvedOutput, 16)
@@ -103,6 +108,8 @@ try {
         version = [string]$application.Version
         shapeCount = [int]$document.Shapes.Count
         connectorDashStyle = if ($IncludeConnector) { [int]$connector.Line.DashStyle } else { $null }
+        connectorBeginArrowheadStyle = if ($IncludeConnector) { [int]$connector.Line.BeginArrowheadStyle } else { $null }
+        connectorEndArrowheadStyle = if ($IncludeConnector) { [int]$connector.Line.EndArrowheadStyle } else { $null }
     } | ConvertTo-Json -Compress
 } finally {
     if ($null -ne $document) { try { $document.Close(0) } catch {} }
