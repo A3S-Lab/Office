@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.56.1 - 2026-09-06
+
 - Hardened workspace template navigation for keyboard and agent flows. A3S
   Test now focuses stable template controls before activating below-fold cards
   at desktop and phone widths, exercising the same native visibility behavior

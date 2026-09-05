@@ -1,0 +1,155 @@
+---
+title: Office CLI 与编码智能体 Skill
+description: 安装本地 CLI，并让 Codex 等编码智能体通过类型化流程处理 Office 文件。
+---
+
+# Office CLI 与编码智能体 Skill
+
+CLI 在本机确定性地处理文件。Skill 告诉编码智能体何时调用 CLI、怎样读取结构化结果、
+如何保留源文件，以及怎样验证输出。两者属于同一条工作流，因此安装与用法集中在本页。
+
+## 1. 安装 CLI
+
+```bash
+cargo install \
+  --git https://github.com/A3S-Lab/Office.git \
+  --locked a3s-office-cli
+```
+
+确认命令可用，并以只读方式检查文件。
+
+```bash
+a3s-office --version
+a3s-office validate report.docx --json
+a3s-office view report.docx outline --json
+```
+
+编码智能体应使用 `--json`。结构化结果可以稳定地用于决策和断言；终端说明文字主要
+面向人工阅读。
+
+## 2. 为编码智能体安装 Skill
+
+<PlaygroundLink path="downloads/a3s-office-skill.tar.gz" download>下载 A3S Office Skill</PlaygroundLink>
+
+下载后解压到智能体的个人 Skill 目录。
+
+```bash
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+tar -xzf a3s-office-skill.tar.gz \
+  -C "${CODEX_HOME:-$HOME/.codex}/skills"
+```
+
+压缩包包含 `SKILL.md`，以及文档、表格、演示文稿和 MCP 的独立参考资料。
+
+<PlaygroundLink path="downloads/a3s-office-skill/SKILL.md">查看打包后的 Skill 源码</PlaygroundLink>
+
+## 3. 执行修改并验证
+
+```bash
+a3s-office set report.docx /body \
+  --find Draft \
+  --replace Final \
+  --json
+
+a3s-office validate report.docx --json
+a3s-office view report.docx outline --json
+```
+
+修改之后应执行语义读取或校验命令。退出码为零只说明命令完成，不能单独证明文件已经
+达到用户要求的状态。
+
+## 4. 交给编码智能体
+
+一次说明清楚 Skill、源文件、目标修改和验证要求。
+
+```text
+使用 $a3s-office 检查这份季度报告，修正报告年份，另存为新文件，
+并验证最终目录结构和校验结果。
+```
+
+Skill 不替代应用逻辑，也不会自动上传文件。它只围绕本地 CLI 提供边界明确的工作流；
+编码智能体仍需遵循自己的权限与沙箱规则。
+
+## 5. 操作五种浏览器编辑器
+
+原生 CLI 负责已保存 Office 文件的类型化修改；浏览器交互需要独立、可观察的契约。
+在 Office 源码仓库中，使用基于 Commander 的本地操作 CLI，不要临时拼接 shell 条件：
+
+```bash
+bun run office:ops -- capabilities --json
+bun run office:ops -- doctor --json
+bun run office:ops -- gate writer --run \
+  --browser-driver standalone \
+  --browser-executable scripts/a3s-test-cdp-browser.cmd \
+  --cdp-port 9345
+bun run office:ops -- visual spreadsheet --project compact-768
+```
+
+声明式矩阵覆盖 Writer、Spreadsheet、Presentation、Markdown 和 PDF。聚焦 gate 会重新生成
+被忽略的夹具并解析选定的 A3S Test ACL；传入 `--run` 时由 A3S Test 承担主交互门禁，
+Playwright 仅作为桌面与紧凑视口的补充像素基线。证据写入 `.a3s-test/office-ops/`，不会改动
+已提交的视觉基线，也不会等待 CI。
+
+在 Windows 上，CDP 适配器直接以 `--cdp <port>` 调用锁定版本的独立
+`agent-browser` 驱动，不再分离第二个连接守护进程或轮询 session 端口文件；原生进程退出后
+即完成命令，避免继承的 stdio 句柄让已经结束的 ACL 操作继续挂起。Writer 文本框契约也会在
+语义点击前先观察工具栏溢出和手机页面滚动；这是真实可发现的用户路径，而不是产品层焦点绕过。
+
+定位单个失败时直接运行主 A3S Test ACL：
+
+```bash
+bun run office:ops -- a3s run tests/e2e/word-connector-editor.acl \
+  --base-url http://127.0.0.1:4175/playground/ \
+  --browser-driver standalone \
+  --browser-executable scripts/a3s-test-cdp-browser.cmd \
+  --cdp-port 9345 --json
+```
+
+Writer 连接符 ACL 也会验证与 WPS 对齐的线型和箭头样式控件：通过上下文功能区创建实线、虚线、点线和点划线，
+并设置开放与隐形端点箭头，再用 WPS 夹具确认 VML `dashstyle`、`startarrow`/`endarrow` 导入。本机 COM 探针记录
+`DashStyle=4` 与有界 3/4 箭头参考；它是映射证据，不是 CI 前置条件。
+
+探索式 UI 会话必须遵循有界生命周期：`start → observe → 一次 act → observe → finish/abort`。
+使用类型化 action schema，状态变化后不要复用旧 ref。原生 GUI 前先检查 CUA Driver/MCP 锁定矩阵：
+
+```bash
+bun run office:ops -- a3s agent start writer --url http://127.0.0.1:4175/playground/ \
+  --browser-executable scripts/a3s-test-cdp-browser.cmd --cdp-port 9345 --json
+bun run office:ops -- a3s cua certification --json
+```
+
+锁定的 CUA Driver 0.10.0 Windows profile 当前为 `unsupported`（没有经过审查的 Windows 应用后端）。
+因此操作 CLI 对 Windows CUA 声明采取 fail-closed，并使用 A3S Test Web/CDP 证明浏览器编辑器；
+`a3s cua certify` 仅供已通过契约测试的平台配合显式 CUA policy/proxy 使用。
+
+定位问题时可以只运行一段：
+
+```bash
+bun run office:ops -- fixtures
+bun run office:ops -- check writer
+bun run office:ops -- visual visual-tests/markdown-menu.functional.spec.ts
+```
+
+修改产品代码前先分类失败：编辑器已加载但语义、焦点、响应式几何或诊断断言错误，是产品
+失败；选择器、夹具或路由过时，是测试契约失败；预览、浏览器、CDP 连接或锁定 CUA profile 不可用，
+属于基础设施分类。
+
+在 Windows 上，WPS COM 参考探针必须显式调用，并与产品运行时隔离：
+
+```powershell
+bun run office:ops -- wps-probe --connector
+```
+
+记录精确 DOCX 路径和 WPS 版本，通过 A3S Office 检查结果，比较结束后只删除精确的临时探针
+文件。不要把 WPS COM 当作 CI 前置条件，也不要把 COM 属性当作浏览器布局证明。
+
+## 职责边界
+
+| 层 | 负责内容 |
+| --- | --- |
+| Office CLI | 文件准入、语义读取、类型化修改、序列化、校验与 JSON 结果。 |
+| Skill | 工具选择、安全执行顺序、验证要求与智能体示例。 |
+| 编码智能体 | 用户意图、文件选择、授权、失败恢复与最终报告。 |
+| 编辑器操作 CLI | 五种编辑器的本地 UI 矩阵、主 A3S Test 证据、补充 Playwright 像素基线与有界 WPS 参考采集。 |
+
+全部命令与本地修改协议见 [CLI 参考](../cli-reference.md)。

@@ -1,0 +1,180 @@
+---
+title: Office CLI and coding-agent Skill
+description: Install one native CLI and expose its typed Office workflow to Codex and other coding agents.
+---
+
+# Office CLI and coding-agent Skill
+
+The CLI performs deterministic local file work. The Skill teaches a coding
+agent when and how to call that CLI, inspect structured results, preserve the
+source file, and verify the output. They are one workflow, so setup and usage
+live on this page instead of in separate product documents.
+
+## 1. Install the CLI
+
+```bash
+cargo install \
+  --git https://github.com/A3S-Lab/Office.git \
+  --locked a3s-office-cli
+```
+
+Confirm the executable and inspect a file without changing it.
+
+```bash
+a3s-office --version
+a3s-office validate report.docx --json
+a3s-office view report.docx outline --json
+```
+
+Use `--json` for coding-agent workflows. Structured results are stable inputs
+for decisions and assertions; terminal prose is for people.
+
+## 2. Install the Skill when an agent needs Office access
+
+<PlaygroundLink path="downloads/a3s-office-skill.tar.gz" download>Download the A3S Office Skill</PlaygroundLink>
+
+Download and extract it into the agent's personal Skill directory.
+
+```bash
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+tar -xzf a3s-office-skill.tar.gz \
+  -C "${CODEX_HOME:-$HOME/.codex}/skills"
+```
+
+The archive includes `SKILL.md` and focused references for documents,
+spreadsheets, presentations, and MCP operation.
+
+<PlaygroundLink path="downloads/a3s-office-skill/SKILL.md">Read the packaged Skill source before installing it.</PlaygroundLink>
+
+## 3. Run an exact mutation and verify it
+
+```bash
+a3s-office set report.docx /body \
+  --find Draft \
+  --replace Final \
+  --json
+
+a3s-office validate report.docx --json
+a3s-office view report.docx outline --json
+```
+
+A mutation should be followed by a semantic read or validation command. The
+agent should not treat a zero exit code as proof that the requested document
+state exists.
+
+## 4. Ask a coding agent
+
+Reference the Skill, source file, desired change, and verification outcome in
+one request.
+
+```text
+Use $a3s-office to inspect this quarterly report, correct the reporting year,
+save the result as a new file, and verify the final outline and validation
+report.
+```
+
+The Skill does not replace application logic or upload files automatically. It
+provides a bounded workflow around the local CLI. The agent still follows its
+normal permissions and sandbox policy.
+
+## 5. Operate the five browser editors
+
+Native CLI commands mutate saved Office artifacts. Browser interaction needs a
+separate, observable contract. From an Office source checkout, use the
+Commander-based local operator instead of composing shell conditionals:
+
+```bash
+bun run office:ops -- capabilities --json
+bun run office:ops -- doctor --json
+bun run office:ops -- gate writer --run \
+  --browser-driver standalone \
+  --browser-executable scripts/a3s-test-cdp-browser.cmd \
+  --cdp-port 9345
+bun run office:ops -- visual spreadsheet --project compact-768
+```
+
+The declarative matrix covers Writer, Spreadsheet, Presentation, Markdown, and
+PDF. A focused gate regenerates ignored fixtures and parses the selected A3S
+Test ACLs. With `--run`, A3S Test is the primary interaction gate; Playwright
+is only a supplemental desktop/compact pixel baseline. Evidence is written to
+`.a3s-test/office-ops/`; committed visual baselines are never changed and the
+command never waits for CI.
+
+On Windows, the CDP adapter calls the pinned standalone `agent-browser`
+driver directly with `--cdp <port>`. It does not detach a second connection
+daemon or poll a session port file, and it resolves after the native process
+exits so completed ACL actions cannot be held open by inherited stdio handles.
+The Writer text-box contract also observes toolbar overflow and phone-surface
+scrolling before semantic clicks; this is part of the tested user path rather
+than a product-level focus workaround.
+
+Run one primary ACL directly when narrowing a failure:
+
+```bash
+bun run office:ops -- a3s run tests/e2e/word-connector-editor.acl \
+  --base-url http://127.0.0.1:4175/playground/ \
+  --browser-driver standalone \
+  --browser-executable scripts/a3s-test-cdp-browser.cmd \
+  --cdp-port 9345 --json
+```
+
+The Writer connector ACL also exercises the WPS-aligned line and arrow-style
+controls: solid, dash, dot, and dash-dot values plus open and stealth endpoint
+arrows are authored through the contextual ribbon, while the WPS fixture
+verifies VML `dashstyle` and `startarrow`/`endarrow` import. The Windows COM
+probe records `DashStyle=4` and the bounded 3/4 arrow reference; it is evidence
+for the mapping, not a CI prerequisite.
+
+Exploratory sessions use the bounded A3S Test agent lifecycle:
+`start → observe → one act → observe → finish/abort`. Use the typed action
+schema and never reuse a ref after a state-changing action. Inspect the CUA
+Driver/MCP lock before native GUI work:
+
+```bash
+bun run office:ops -- a3s agent start writer --url http://127.0.0.1:4175/playground/ \
+  --browser-executable scripts/a3s-test-cdp-browser.cmd --cdp-port 9345 --json
+bun run office:ops -- a3s cua certification --json
+```
+
+The locked CUA Driver 0.10.0 Windows profiles are currently `unsupported`
+(there is no reviewed Windows application backend). The operator fails closed
+for Windows CUA claims and uses A3S Test Web/CDP for browser-editor evidence;
+`a3s cua certify` is reserved for a contract-tested platform and explicit CUA
+policy/proxy configuration.
+
+Use the narrower commands while diagnosing a failure:
+
+```bash
+bun run office:ops -- fixtures
+bun run office:ops -- check writer
+bun run office:ops -- visual visual-tests/markdown-menu.functional.spec.ts
+```
+
+Classify failures before changing product code. A loaded editor with a wrong
+semantic, focus, responsive, or diagnostic assertion is a product failure. A
+stale selector, fixture, or route is a test-contract failure. A missing preview,
+browser, CDP attachment, or unsupported locked CUA profile is an infrastructure
+classification.
+
+On Windows, the bounded WPS COM reference is explicit and isolated from the
+product runtime:
+
+```powershell
+bun run office:ops -- wps-probe --connector
+```
+
+Record the exact DOCX output and WPS version, inspect it through A3S Office, and
+remove only exact temporary probe files after comparison. Do not use WPS COM as
+a CI prerequisite or treat COM properties as browser-layout proof.
+
+## Responsibilities
+
+| Layer | Owns |
+| --- | --- |
+| Office CLI | Package admission, semantic reads, typed mutations, serialization, validation, and JSON results. |
+| Skill | Tool selection, safe workflow order, verification expectations, and agent-facing examples. |
+| Coding agent | User intent, file choice, approval, failure recovery, and final reporting. |
+| Editor operator | Local five-surface UI matrix, primary A3S Test evidence, supplemental Playwright pixels, and bounded WPS reference capture. |
+
+For every command and native mutation contract, use the complete
+[CLI reference](../cli-reference.md).

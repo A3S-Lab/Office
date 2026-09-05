@@ -335,6 +335,20 @@ runtime.
 
 ## Current release
 
+Version `0.56.1` makes the A3S Test five-surface editor matrix the daily UI/UX
+contract:
+
+- Spreadsheet, Presentation, Markdown, template discovery, and PDF workflows
+  are checked with typed A3S Test actions at desktop and phone widths. Stable
+  template controls are focused before activation so keyboard and agent flows
+  share the same discoverability behavior.
+- PDF Blob exports leave their object URL alive for slower Web/CDP observers;
+  the ACL proves extraction leaves the remaining page actions enabled, while
+  exact PDF bytes stay in the supplemental Playwright contract.
+- Screenshots, accessibility snapshots, empty console/page-error diagnostics,
+  and explicit standalone-driver classifications are retained as evidence.
+  Windows CUA remains fail-closed until its locked profile is contract-tested.
+
 Version `0.56.0` extends the bounded Writer straight-connector workflow with
 native arrow-style parity:
 

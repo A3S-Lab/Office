@@ -42,6 +42,88 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.56.1',
+    date: '2026-09-06',
+    kind: 'improved',
+    surfaces: [
+      'documentation',
+      'spreadsheet',
+      'presentation',
+      'markdown',
+      'pdf',
+      'playground',
+    ],
+    title: {
+      en: 'A3S Test gates become the daily editor contract',
+      zh: 'A3S Test 门禁成为日常编辑器契约',
+    },
+    summary: {
+      en: 'The five-surface local matrix now proves discoverable workflows at desktop and phone widths, with the browser/CDP evidence kept separate from the fail-closed Windows CUA capability.',
+      zh: '五大编辑器本地矩阵现在覆盖桌面与手机宽度下的可发现工作流，并将浏览器/CDP 证据与 Windows CUA 失败即关闭能力明确分离。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Stable keyboard-first discovery',
+          zh: '稳定的键盘优先发现路径',
+        },
+        detail: {
+          en: 'Template cards are focused before activation, so below-fold Spreadsheet, Presentation, Markdown, and phone workflows use the same visibility behavior as keyboard users.',
+          zh: '模板卡片在激活前先获得焦点，折叠线下的表格、演示、Markdown 与手机工作流因此与键盘用户使用相同的可见性行为。',
+        },
+      },
+      {
+        title: {
+          en: 'PDF export survives slower observers',
+          zh: 'PDF 导出兼容较慢观察器',
+        },
+        detail: {
+          en: 'Blob URLs remain alive long enough for Web/CDP download observers, while the PDF ACL proves every page operation stays enabled after extraction.',
+          zh: 'Blob URL 会保持足够长时间供 Web/CDP 下载观察器读取，同时 PDF ACL 证明抽取后所有页面操作仍保持可用。',
+        },
+      },
+      {
+        title: {
+          en: 'Evidence is typed and auditable',
+          zh: '证据具备类型与可审计性',
+        },
+        detail: {
+          en: 'A3S Test retains screenshots, accessibility snapshots, empty console/page-error diagnostics, and explicit standalone-driver classifications; exact PDF bytes stay in the supplemental Playwright contract.',
+          zh: 'A3S Test 保留截图、可访问性快照、空控制台/页面错误诊断及明确的 standalone 驱动分类；精确 PDF 字节内容继续由补充 Playwright 契约覆盖。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './automation/index.html',
+          zh: './automation/index.html',
+        },
+        label: {
+          en: 'Run the A3S Test editor matrix',
+          zh: '运行 A3S Test 编辑器矩阵',
+        },
+      },
+      {
+        href: {
+          en: './components/pdf.html#page-organization',
+          zh: './components/pdf.html#页面组织',
+        },
+        label: {
+          en: 'Review PDF page organization',
+          zh: '查看 PDF 页面组织',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.56.1',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.56.1',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.56.0',
     date: '2026-09-06',
     kind: 'new',
