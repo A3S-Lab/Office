@@ -89,6 +89,9 @@ jobs:
           done
           bunx playwright install --with-deps chromium webkit
 
+      - name: Generate visual-test fixtures
+        run: bun scripts/create-e2e-fixtures.ts
+
       - name: Select isolated Chromium for native browser tests
         shell: bash
         run: |
