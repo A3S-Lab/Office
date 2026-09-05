@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.57.0',
+    date: '2026-09-06',
+    kind: 'new',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer connectors gain typed WPS shape parity',
+      zh: 'Writer 连接符补齐 WPS 类型化形状对齐',
+    },
+    summary: {
+      en: 'WPS connector shape types 32, 33, and 37 now share a bounded straight, elbow, and curved model across the Writer ribbon, live SVG, and DOCX round trip.',
+      zh: 'WPS 连接符形状类型 32、33、37 现在在 Writer 功能区、实时 SVG 与 DOCX 往返之间共享有界的直线、肘形和曲线模型。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One connector-kind control',
+          zh: '一个连接符类型控件',
+        },
+        detail: {
+          en: 'Straight, elbow, and curved values are edited through the contextual ribbon and retained by Undo/Redo and compact layouts.',
+          zh: '直线、肘形和曲线值通过上下文功能区编辑，并由撤销/重做与紧凑布局保持一致。',
+        },
+      },
+      {
+        title: {
+          en: 'Native geometry stays typed',
+          zh: '原生几何保持类型化',
+        },
+        detail: {
+          en: 'WPS VML imports by o:spt value; DOCX export uses line, routed custom geometry, or quadratic geometry without claiming arbitrary route editing.',
+          zh: 'WPS VML 按 o:spt 值导入；DOCX 导出使用直线、路由自定义几何或二次曲线几何，不虚构任意路由点编辑。',
+        },
+      },
+      {
+        title: {
+          en: 'A3S Test proves the boundary',
+          zh: 'A3S Test 证明边界',
+        },
+        detail: {
+          en: 'The WPS kind matrix retains screenshots, accessibility snapshots, empty console/page-error diagnostics, and distinct SVG checks; Windows CUA remains fail-closed.',
+          zh: 'WPS 类型矩阵保留截图、可访问性快照、空控制台/页面错误诊断及不同 SVG 检查；Windows CUA 继续失败即关闭。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#built-in-editable-text-boxes',
+          zh: './components/document.html#可编辑文本框',
+        },
+        label: {
+          en: 'Read the connector kind guide',
+          zh: '阅读连接符类型指南',
+        },
+      },
+      {
+        href: {
+          en: './automation/index.html',
+          zh: './automation/index.html',
+        },
+        label: {
+          en: 'Run the WPS connector A3S Test',
+          zh: '运行 WPS 连接符 A3S Test',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.57.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.57.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.56.1',
     date: '2026-09-06',
     kind: 'improved',

@@ -54,6 +54,7 @@ describe('document connectors', () => {
       }),
     ).toEqual({
       id: 'connector-1',
+      connectorKind: 'straight',
       width: DOCUMENT_CONNECTOR_LIMITS.width.min,
       height: DOCUMENT_CONNECTOR_LIMITS.height.max,
       layout: 'inline',
@@ -134,6 +135,7 @@ describe('document connectors', () => {
     const markers = markDocxConnectors(document);
     expect(markers.connectors).toHaveLength(1);
     expect(markers.connectors[0]?.properties).toMatchObject({
+      connectorKind: 'straight',
       width: 50.8,
       layout: 'floating',
       horizontalOffset: -6.35,
@@ -154,10 +156,26 @@ describe('document connectors', () => {
     applyImportedDocxConnectorMarkers(html, markers);
     const connector = html.body.querySelector('[data-document-connector]');
     expect(connector).toHaveAttribute('data-connector-width', '50.8');
+    expect(connector).toHaveAttribute('data-connector-kind', 'straight');
     expect(connector).toHaveAttribute('data-connector-layout', 'floating');
     expect(connector).toHaveAttribute('data-connector-start-arrow', 'open');
     expect(connector).toHaveAttribute('data-connector-end-arrow', 'stealth');
     expect(html.body.querySelector('[data-document-text-box]')).toBeNull();
+  });
+
+  test('maps WPS VML shape types to typed connector kinds', () => {
+    const document = wordXml(
+      [32, 33, 37]
+        .map(
+          (shapeType) =>
+            `<w:p><w:r><w:pict>${vmlConnector(shapeType)}</w:pict></w:r></w:p>`,
+        )
+        .join(''),
+    );
+    const markers = markDocxConnectors(document);
+    expect(
+      markers.connectors.map(({ properties }) => properties.connectorKind),
+    ).toEqual(['straight', 'elbow', 'curved']);
   });
 
   test('exports a DrawingML connector and reopens its native properties', async () => {
@@ -178,6 +196,7 @@ describe('document connectors', () => {
       startY: 20,
       endX: 90,
       endY: 80,
+      connectorKind: 'elbow',
       lineColor: '#2f5597',
       lineWidth: 0.7,
       lineStyle: 'dash',
@@ -196,6 +215,7 @@ describe('document connectors', () => {
     const source =
       (await archive.file('word/document.xml')?.async('text')) ?? '';
     expect(source).toContain('custGeom');
+    expect(source).toContain('<a:lnTo>');
     expect(source).toContain('headEnd');
     expect(source).toContain('tailEnd');
     expect(source).toContain('<a:headEnd type="open"');
@@ -211,6 +231,7 @@ describe('document connectors', () => {
       throw new Error('Expected a reopened document artifact.');
     }
     expect(reopened.content.html).toContain('data-document-connector="true"');
+    expect(reopened.content.html).toContain('data-connector-kind="elbow"');
     expect(reopened.content.html).toContain(
       'data-connector-line-color="#2f5597"',
     );
@@ -223,6 +244,38 @@ describe('document connectors', () => {
     expect(reopened.content.html).toContain('data-connector-line-style="dash"');
     expect(reopened.content.html).not.toContain('data-document-text-box');
   });
+
+  test('exports curved connector geometry as a native quadratic path', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const properties = normalizeDocumentConnectorProperties({
+      id: 'curved-connector',
+      connectorKind: 'curved',
+      startX: 10,
+      startY: 20,
+      endX: 90,
+      endY: 80,
+    });
+    const attributes = Object.entries(connectorDomAttributes(properties))
+      .filter((entry): entry is [string, string] => entry[1] !== undefined)
+      .map(([name, value]) => `${name}="${value}"`)
+      .join(' ');
+    artifact.content.html = `<p>Before</p><div ${attributes} style="${connectorCss(properties)}"></div><p>After</p>`;
+    const blob = await createDocxBlob(artifact.content);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const source =
+      (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(source).toContain('<a:quadBezTo>');
+    const reopened = await importOfficeFile(
+      new File([blob], 'curved-connector.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain('data-connector-kind="curved"');
+  });
 });
 
 function wordXml(body: string): Document {
@@ -231,9 +284,9 @@ function wordXml(body: string): Document {
   );
 }
 
-function vmlConnector(): string {
+function vmlConnector(shapeType = 32): string {
   return `
-    <v:shape id="A3S Connector" o:spid="_x0000_s1026" o:spt="32" type="#_x0000_t32" style="position:absolute;left:0pt;margin-left:-18pt;margin-top:128pt;height:1pt;width:144pt" filled="f" stroked="f" coordsize="21600,21600">
+    <v:shape id="A3S Connector" o:spid="_x0000_s1026" o:spt="${shapeType}" type="#_x0000_t${shapeType}" style="position:absolute;left:0pt;margin-left:-18pt;margin-top:128pt;height:1pt;width:144pt" filled="f" stroked="f" coordsize="21600,21600">
       <v:path arrowok="t"/>
       <v:stroke on="f" color="#C00000" weight="1pt" dashstyle="dash" startarrow="open" endarrow="classic"/>
     </v:shape>

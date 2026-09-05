@@ -10,8 +10,9 @@ import { NodeSelection, Plugin, TextSelection } from '@tiptap/pm/state';
 import { activeDocumentSectionFromState } from './work-document-section-editor';
 import { createWorkId } from './work-templates';
 
-/** The bounded straight connector subset shared by the Writer and DOCX paths. */
+/** The bounded connector subset shared by the Writer and DOCX paths. */
 export type WorkDocumentConnectorLayout = 'inline' | 'floating';
+export type WorkDocumentConnectorKind = 'straight' | 'elbow' | 'curved';
 export type WorkDocumentConnectorArrow =
   | 'none'
   | 'triangle'
@@ -32,6 +33,7 @@ export type WorkDocumentConnectorVerticalReference =
 
 export interface WorkDocumentConnectorProperties {
   id: string;
+  connectorKind: WorkDocumentConnectorKind;
   width: number;
   height: number;
   layout: WorkDocumentConnectorLayout;
@@ -49,6 +51,11 @@ export interface WorkDocumentConnectorProperties {
   startArrow: WorkDocumentConnectorArrow;
   endArrow: WorkDocumentConnectorArrow;
   docPropertiesId: number | null;
+}
+
+export interface WorkDocumentConnectorPoint {
+  x: number;
+  y: number;
 }
 
 export interface DocumentConnectorCommandOptions {
@@ -74,6 +81,7 @@ declare module '@tiptap/core' {
 
 export const DOCUMENT_CONNECTOR_DEFAULTS: WorkDocumentConnectorProperties = {
   id: '',
+  connectorKind: 'straight',
   width: 120,
   height: 25,
   layout: 'inline',
@@ -105,6 +113,7 @@ const CONNECTOR_ID_MAX_LENGTH = 160;
 const CONNECTOR_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 const CONNECTOR_MARKER_ATTRIBUTES = [
   'id',
+  'connectorKind',
   'width',
   'height',
   'layout',
@@ -136,6 +145,10 @@ export const DocumentConnector = Node.create({
   addAttributes() {
     return {
       id: dataAttribute('id', ''),
+      connectorKind: dataAttribute(
+        'kind',
+        DOCUMENT_CONNECTOR_DEFAULTS.connectorKind,
+      ),
       width: dataAttribute('width', DOCUMENT_CONNECTOR_DEFAULTS.width),
       height: dataAttribute('height', DOCUMENT_CONNECTOR_DEFAULTS.height),
       layout: dataAttribute('layout', DOCUMENT_CONNECTOR_DEFAULTS.layout),
@@ -201,7 +214,7 @@ export const DocumentConnector = Node.create({
         contenteditable: undefined,
         style: connectorCss(properties),
         role: 'img',
-        'aria-label': '直线连接符',
+        'aria-label': connectorAriaLabel(properties.connectorKind),
       }),
       [
         'svg',
@@ -233,26 +246,7 @@ export const DocumentConnector = Node.create({
               ]
             : []),
         ],
-        [
-          'line',
-          {
-            class: 'work-document-connector-line',
-            x1: formatNumber(properties.startX),
-            y1: formatNumber(properties.startY),
-            x2: formatNumber(properties.endX),
-            y2: formatNumber(properties.endY),
-            stroke: properties.lineColor,
-            'stroke-width': connectorStrokeWidth(properties.lineWidth),
-            'stroke-linecap': 'round',
-            'stroke-dasharray': connectorStrokeDasharray(properties.lineStyle),
-            'marker-start':
-              properties.startArrow !== 'none'
-                ? `url(#${startMarker})`
-                : undefined,
-            'marker-end':
-              properties.endArrow !== 'none' ? `url(#${endMarker})` : undefined,
-          },
-        ],
+        connectorSvgPath(properties, startMarker, endMarker),
       ],
     ];
   },
@@ -364,6 +358,7 @@ export function normalizeDocumentConnectorProperties(
 ): WorkDocumentConnectorProperties {
   return {
     id: normalizeDocumentConnectorId(value.id),
+    connectorKind: connectorKind(value.connectorKind),
     width: boundedNumber(
       value.width,
       DOCUMENT_CONNECTOR_DEFAULTS.width,
@@ -454,6 +449,7 @@ export function connectorDomAttributes(
   return {
     'data-document-connector': 'true',
     'data-connector-id': properties.id || undefined,
+    'data-connector-kind': properties.connectorKind,
     'data-connector-width': formatNumber(properties.width),
     'data-connector-height': formatNumber(properties.height),
     'data-connector-layout': properties.layout,
@@ -488,6 +484,7 @@ export function documentConnectorPropertiesFromElement(
 ): WorkDocumentConnectorProperties {
   return normalizeDocumentConnectorProperties({
     id: element.getAttribute('data-connector-id'),
+    connectorKind: element.getAttribute('data-connector-kind'),
     width: element.getAttribute('data-connector-width'),
     height: element.getAttribute('data-connector-height'),
     layout: element.getAttribute('data-connector-layout'),
@@ -510,6 +507,42 @@ export function documentConnectorPropertiesFromElement(
     endArrow: element.getAttribute('data-connector-end-arrow'),
     docPropertiesId: element.getAttribute('data-connector-doc-properties-id'),
   });
+}
+
+/** Returns deterministic route points for the editable connector subset. */
+export function connectorRoutePoints(
+  value: Partial<Record<keyof WorkDocumentConnectorProperties, unknown>>,
+): WorkDocumentConnectorPoint[] {
+  const properties = normalizeDocumentConnectorProperties(value);
+  const start = { x: properties.startX, y: properties.startY };
+  const end = { x: properties.endX, y: properties.endY };
+  if (properties.connectorKind !== 'elbow') return [start, end];
+  const route =
+    Math.abs(end.x - start.x) >= Math.abs(end.y - start.y)
+      ? { x: end.x, y: start.y }
+      : { x: start.x, y: end.y };
+  if (
+    (route.x === start.x && route.y === start.y) ||
+    (route.x === end.x && route.y === end.y)
+  ) {
+    return [start, end];
+  }
+  return [start, route, end];
+}
+
+export function connectorCurveControlPoint(
+  value: Partial<Record<keyof WorkDocumentConnectorProperties, unknown>>,
+): WorkDocumentConnectorPoint {
+  const properties = normalizeDocumentConnectorProperties(value);
+  const dx = properties.endX - properties.startX;
+  const dy = properties.endY - properties.startY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const bend = Math.min(24, Math.max(8, distance * 0.18));
+  const length = distance || 1;
+  return {
+    x: (properties.startX + properties.endX) / 2 - (dy / length) * bend,
+    y: (properties.startY + properties.endY) / 2 + (dx / length) * bend,
+  };
 }
 
 function insertDocumentConnectorCommand(
@@ -583,6 +616,7 @@ function connectorAttributesFromElement(
 ): Record<string, unknown> {
   return {
     id: element.dataset.connectorId ?? '',
+    connectorKind: element.dataset.connectorKind,
     width: element.dataset.connectorWidth,
     height: element.dataset.connectorHeight,
     layout: element.dataset.connectorLayout,
@@ -632,6 +666,63 @@ function connectorMarker(
   ];
 }
 
+function connectorSvgPath(
+  properties: WorkDocumentConnectorProperties,
+  startMarker: string,
+  endMarker: string,
+) {
+  const common = {
+    class: 'work-document-connector-line',
+    stroke: properties.lineColor,
+    'stroke-width': connectorStrokeWidth(properties.lineWidth),
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+    'stroke-dasharray': connectorStrokeDasharray(properties.lineStyle),
+    'marker-start':
+      properties.startArrow !== 'none' ? `url(#${startMarker})` : undefined,
+    'marker-end':
+      properties.endArrow !== 'none' ? `url(#${endMarker})` : undefined,
+  };
+  if (properties.connectorKind === 'curved') {
+    const control = connectorCurveControlPoint(properties);
+    return [
+      'path',
+      {
+        ...common,
+        d: `M ${formatNumber(properties.startX)} ${formatNumber(properties.startY)} Q ${formatNumber(control.x)} ${formatNumber(control.y)} ${formatNumber(properties.endX)} ${formatNumber(properties.endY)}`,
+      },
+    ];
+  }
+  if (properties.connectorKind === 'elbow') {
+    return [
+      'polyline',
+      {
+        ...common,
+        fill: 'none',
+        points: connectorRoutePoints(properties)
+          .map((point) => `${formatNumber(point.x)},${formatNumber(point.y)}`)
+          .join(' '),
+      },
+    ];
+  }
+  return [
+    'line',
+    {
+      ...common,
+      x1: formatNumber(properties.startX),
+      y1: formatNumber(properties.startY),
+      x2: formatNumber(properties.endX),
+      y2: formatNumber(properties.endY),
+    },
+  ];
+}
+
+function connectorAriaLabel(kind: WorkDocumentConnectorKind): string {
+  if (kind === 'elbow') return '肘形连接符';
+  if (kind === 'curved') return '曲线连接符';
+  return '直线连接符';
+}
+
 function connectorArrowPath(arrow: WorkDocumentConnectorArrow): string {
   if (arrow === 'stealth') return 'M 0 0 L 6 3 L 0 6 L 2.5 3 z';
   if (arrow === 'diamond') return 'M 0 3 L 3 0 L 6 3 L 3 6 z';
@@ -653,6 +744,10 @@ function normalizeDocumentConnectorId(value: unknown): string {
   return typeof value === 'string'
     ? value.trim().slice(0, CONNECTOR_ID_MAX_LENGTH)
     : '';
+}
+
+function connectorKind(value: unknown): WorkDocumentConnectorKind {
+  return value === 'elbow' || value === 'curved' ? value : 'straight';
 }
 
 function connectorHorizontalReference(

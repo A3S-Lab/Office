@@ -4,7 +4,10 @@ param(
 
     [string]$WpsPath,
 
-    [switch]$IncludeConnector
+    [switch]$IncludeConnector,
+
+    [ValidateRange(1, 3)]
+    [int]$ConnectorType = 1
 )
 
 $ErrorActionPreference = 'Stop'
@@ -43,6 +46,7 @@ function Invoke-In32BitPowerShell {
         )
         if ($WpsPath) { $arguments += @('-WpsPath', $WpsPath) }
         if ($IncludeConnector) { $arguments += '-IncludeConnector' }
+        if ($ConnectorType -ne 1) { $arguments += @('-ConnectorType', $ConnectorType) }
         & $powershell32 @arguments
         exit $LASTEXITCODE
     }
@@ -88,7 +92,7 @@ try {
     $rectangle.TextFrame.TextRange.Text = 'WPS shape'
 
     if ($IncludeConnector) {
-        $connector = $document.Shapes.AddConnector(1, 72, 200, 216, 200)
+        $connector = $document.Shapes.AddConnector($ConnectorType, 72, 200, 216, 200)
         $connector.Name = 'A3S Connector'
         $connector.Line.ForeColor.RGB = [int]0xC00000
         # MsoLineDashStyle.msoLineDash (4) is the native WPS dashed stroke
@@ -110,6 +114,7 @@ try {
         connectorDashStyle = if ($IncludeConnector) { [int]$connector.Line.DashStyle } else { $null }
         connectorBeginArrowheadStyle = if ($IncludeConnector) { [int]$connector.Line.BeginArrowheadStyle } else { $null }
         connectorEndArrowheadStyle = if ($IncludeConnector) { [int]$connector.Line.EndArrowheadStyle } else { $null }
+        connectorType = if ($IncludeConnector) { $ConnectorType } else { $null }
     } | ConvertTo-Json -Compress
 } finally {
     if ($null -ne $document) { try { $document.Close(0) } catch {} }

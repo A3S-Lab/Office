@@ -18,6 +18,7 @@ test('Writer edits an imported WPS straight connector through its contextual rib
     '.work-document-editable [data-document-connector]',
   );
   await expect(connector).toHaveCount(1);
+  await expect(connector).toHaveAttribute('data-connector-kind', 'straight');
   await expect(connector).toHaveAttribute('data-connector-layout', 'floating');
   await connector.click();
   await expect(page.getByRole('tab', { name: '连接符' })).toHaveAttribute(
@@ -64,6 +65,51 @@ test('Writer edits an imported WPS straight connector through its contextual rib
   await page.screenshot({
     path: testInfo.outputPath(
       `writer-wps-connector-${testInfo.project.name}.png`,
+    ),
+    animations: 'disabled',
+  });
+  expect(browserErrors).toEqual([]);
+});
+
+test('Writer renders the WPS connector kind subset as distinct SVG geometry', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+
+  await page.goto('/playground/');
+  await page
+    .locator('input[aria-label="打开 Office 或 PDF 文件"]')
+    .setInputFiles('.a3s-test/fixtures/word-wps-connector-kinds.docx');
+  const connectors = page.locator(
+    '.work-document-editable [data-document-connector]',
+  );
+  await expect(connectors).toHaveCount(3);
+  await expect(
+    page.locator('[data-document-connector][data-connector-kind="straight"]'),
+  ).toHaveCount(1);
+  await expect(
+    page.locator('[data-document-connector][data-connector-kind="elbow"]'),
+  ).toHaveCount(1);
+  await expect(
+    page.locator(
+      '[data-document-connector][data-connector-kind="elbow"] polyline',
+    ),
+  ).toHaveCount(1);
+  await expect(
+    page.locator('[data-document-connector][data-connector-kind="curved"]'),
+  ).toHaveCount(1);
+  await expect(
+    page.locator(
+      '[data-document-connector][data-connector-kind="curved"] path.work-document-connector-line',
+    ),
+  ).toHaveCount(1);
+  await page.screenshot({
+    path: testInfo.outputPath(
+      `writer-wps-connector-kinds-${testInfo.project.name}.png`,
     ),
     animations: 'disabled',
   });

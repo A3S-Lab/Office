@@ -1,0 +1,87 @@
+suite "office-word-wps-connector-kinds" {
+    version = 1
+
+    scenario "edit-wps-connector-kinds" {
+        name = "Import WPS straight, elbow, and curved connectors as typed editable shapes"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        upload "import-wps-connector-kinds" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-wps-connector-kinds.docx"]
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "straight-connector-kind-is-visible" {
+            visible = css("[data-document-connector][data-connector-kind='straight']")
+        }
+
+        expect "elbow-connector-kind-is-visible" {
+            visible = css("[data-document-connector][data-connector-kind='elbow']")
+        }
+
+        expect "curved-connector-kind-is-visible" {
+            visible = css("[data-document-connector][data-connector-kind='curved']")
+        }
+
+        expect "elbow-renders-as-routed-polyline" {
+            visible = css("[data-document-connector][data-connector-kind='elbow'] svg polyline")
+        }
+
+        expect "curved-renders-as-path" {
+            visible = css("[data-document-connector][data-connector-kind='curved'] svg path.work-document-connector-line")
+        }
+
+        click "select-elbow-connector" {
+            target = css("[data-document-connector][data-connector-kind='elbow']")
+        }
+
+        expect "connector-kind-control-is-discoverable" {
+            visible = css("[aria-label='连接符类型']")
+        }
+
+        click "open-connector-kind" {
+            target = role("combobox", "连接符类型")
+        }
+
+        click "choose-curved-connector" {
+            target = role("option", "曲线连接符")
+        }
+
+        expect "connector-kind-is-editable" {
+            visible = css("[data-document-connector][data-connector-kind='curved']")
+        }
+
+        screenshot "wps-connector-kinds" {
+            path = "screenshots/word-wps-connector-kinds.png"
+        }
+
+        accessibility "wps-connector-kinds-accessibility" {
+            path = "evidence/word-wps-connector-kinds-accessibility.json"
+            interactive = true
+        }
+
+        console "wps-connector-kinds-console" {
+            path = "diagnostics/word-wps-connector-kinds-console.json"
+            clear = false
+        }
+
+        page_errors "wps-connector-kinds-page-errors" {
+            path = "diagnostics/word-wps-connector-kinds-page-errors.json"
+            clear = false
+        }
+    }
+}

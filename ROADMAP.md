@@ -36,7 +36,7 @@ collaboration transport, and AI providers.
 | Surface | A3S Office today | Largest Traditional Office gaps | Direction |
 | --- | --- | --- | --- |
 | Shared shell | Five lazy browser surfaces, responsive ribbon and dialogs, keyboard/focus contracts, typed host ports | Bundled cloud workspace, live co-editing service, native desktop/mobile shells, large template marketplace | Keep services host-owned; deepen reusable integration protocols |
-| Writer | Strongest surface: structured editing, sections, tables, images, bounded editable text boxes and straight connectors with typed line/arrow styles, equations, comments, revisions, deterministic bounded compare/combine, fields, typed TOC and native index authoring, notes, page chrome, source-backed DOCX | Complete revision types, routed/arbitrary DrawingML objects, mail merge, structural/object compare, tables of figures/authorities, exact desktop pagination | Remains the first fidelity track |
+| Writer | Strongest surface: structured editing, sections, tables, images, bounded editable text boxes and typed straight/elbow/curved connectors with line/arrow styles, equations, comments, revisions, deterministic bounded compare/combine, fields, typed TOC and native index authoring, notes, page chrome, source-backed DOCX | Complete routed/custom DrawingML objects, mail merge, structural/object compare, tables of figures/authorities, exact desktop pagination | Remains the first fidelity track |
 | Spreadsheet | Workbook editing, formulas, recalculation, native Tables/ListObjects, bounded structured-reference formulas, automatic calculated-column fill, complete common totals-row authoring, charts, pivots, conditional formatting, validation, protection, comments, print setup | Advanced pivots/slicers, external data, macros/add-ins, advanced analysis, and broader formula parity | Stabilize calculation and native workbook semantics before adding more UI |
 | Presentation | Editable scene graph, masters/layouts, text, shapes, images, tables, charts, groups, comments, transitions, composable bounded Work entrance/exit animations with native PPTX timing-tree round trips, slideshow/presenter view | Broader native animation preservation, emphasis/motion paths, media, broad shape/SmartArt fidelity, full master authoring, richer views and video export | Build expressiveness on the typed scene graph |
 | PDF | PDFium rendering, search, forms, annotations, navigation, bounded long-file rendering, save, and Worker-backed insert/delete/rotate/reorder/extract/merge/split page organization | Native text/object editing, document-level catalog rewriting, conversion, OCR, signatures, redaction, compression | Evolve from viewer/annotator into an optional PDF workbench |
@@ -324,11 +324,11 @@ work rather than silent approximations.
   and horizontal/vertical reflection round-trip through DrawingML `a:xfrm`;
   arbitrary angles remain an explicit diagnostic boundary.
 - Extend the bounded text-box preset model to a typed DrawingML shape/connector
-  model before expanding to WordArt, charts, and SmartArt. Keep mixed
-  paragraphs, connectors, and unsupported branches fail-closed until each has
-  an independent native fixture and editor contract. The current WPS VML
-  connector fixture and `docx.connectors` diagnostic are the evidence baseline;
-  they do not claim editable endpoint or routing semantics.
+  model before expanding to WordArt, charts, and SmartArt. The isolated WPS
+  straight, elbow, and curved connector subset now has independent native
+  fixtures, typed SVG/DrawingML projections, and editor contracts. Keep
+  arbitrary routing, mixed paragraphs, and unsupported branches fail-closed
+  until each has its own native fixture and editor contract.
 - Complete common field instructions and reference workflows.
 - Extend the bounded content-control slice beyond direct inline text and rich
   text only after block, form, and data-binding semantics have independent

@@ -3,6 +3,7 @@ import {
   connectorDomAttributes,
   normalizeDocumentConnectorProperties,
   type WorkDocumentConnectorArrow,
+  type WorkDocumentConnectorKind,
   type WorkDocumentConnectorLineStyle,
   type WorkDocumentConnectorProperties,
 } from './work-document-connector';
@@ -143,7 +144,10 @@ export function applyImportedDocxConnectorMarkers(
     }
     wrapper.className = 'work-document-connector';
     wrapper.setAttribute('role', 'img');
-    wrapper.setAttribute('aria-label', '直线连接符');
+    wrapper.setAttribute(
+      'aria-label',
+      connectorAriaLabel(connector.properties.connectorKind),
+    );
     wrapper.setAttribute('style', connectorCss(connector.properties));
     block.replaceWith(wrapper);
   }
@@ -207,7 +211,14 @@ function isDrawingMlConnector(drawing: Element): boolean {
   const properties = shape ? directChild(shape, 'spPr') : undefined;
   if (!properties) return false;
   const preset = properties ? directChild(properties, 'prstGeom') : undefined;
-  if (attribute(preset ?? shape, 'prst') === 'line') return true;
+  const presetName = attribute(preset ?? shape, 'prst');
+  if (
+    presetName === 'line' ||
+    presetName?.startsWith('bentConnector') ||
+    presetName?.startsWith('curvedConnector')
+  ) {
+    return true;
+  }
   return Boolean(properties && directChild(properties, 'custGeom'));
 }
 
@@ -217,7 +228,14 @@ function isVmlConnector(element: Element): boolean {
   if (element.localName !== 'shape') return false;
   const shapeType = attribute(element, 'spt')?.trim();
   const type = attribute(element, 'type')?.trim().toLowerCase();
-  return shapeType === '32' || type === '#_x0000_t32';
+  return (
+    shapeType === '32' ||
+    shapeType === '33' ||
+    shapeType === '37' ||
+    type === '#_x0000_t32' ||
+    type === '#_x0000_t33' ||
+    type === '#_x0000_t37'
+  );
 }
 
 function connectorProperties(
@@ -256,6 +274,7 @@ function vmlConnectorProperties(
   );
   return normalizeDocumentConnectorProperties({
     id: attribute(element, 'id')?.trim() || `docx-connector-${index}`,
+    connectorKind: vmlConnectorKind(element),
     width,
     height,
     layout: style.position === 'static' ? 'inline' : 'floating',
@@ -305,6 +324,7 @@ function drawingMlConnectorProperties(
     id:
       (docProperties ? attribute(docProperties, 'name') : null)?.trim() ||
       `docx-connector-${index}`,
+    connectorKind: drawingMlConnectorKind(properties),
     width,
     height,
     layout: drawing.localName === 'anchor' ? 'floating' : 'inline',
@@ -338,15 +358,50 @@ function drawingMlEndpoints(
 > {
   const path = geometry ? descendants(geometry, 'path')[0] : undefined;
   const move = path ? descendants(path, 'moveTo')[0] : undefined;
-  const end = path ? descendants(path, 'lnTo')[0] : undefined;
+  const lineEnds = path ? descendants(path, 'lnTo') : [];
+  const curveEnds = path ? descendants(path, 'quadBezTo') : [];
+  const end = lineEnds.at(-1) ?? curveEnds.at(-1);
   const first = move ? directChild(move, 'pt') : undefined;
-  const second = end ? directChild(end, 'pt') : undefined;
+  const endPoints = end ? descendants(end, 'pt') : [];
+  const second = endPoints.at(-1);
   return {
     startX: percentage(first ? attribute(first, 'x') : null, 0),
     startY: percentage(first ? attribute(first, 'y') : null, 50),
     endX: percentage(second ? attribute(second, 'x') : null, 100),
     endY: percentage(second ? attribute(second, 'y') : null, 50),
   };
+}
+
+function vmlConnectorKind(element: Element): WorkDocumentConnectorKind {
+  const shapeType =
+    attribute(element, 'spt')?.trim() ??
+    attribute(element, 'type')?.trim().toLowerCase();
+  if (shapeType === '33' || shapeType === '#_x0000_t33') return 'elbow';
+  if (shapeType === '37' || shapeType === '#_x0000_t37') return 'curved';
+  return 'straight';
+}
+
+function drawingMlConnectorKind(
+  properties: Element | undefined,
+): WorkDocumentConnectorKind {
+  if (!properties) return 'straight';
+  const preset = directChild(properties, 'prstGeom');
+  const presetName = attribute(preset ?? properties, 'prst')?.trim();
+  if (presetName?.toLowerCase().startsWith('bentconnector')) return 'elbow';
+  if (presetName?.toLowerCase().startsWith('curvedconnector')) return 'curved';
+  const path = descendants(
+    directChild(properties, 'custGeom') ?? properties,
+    'path',
+  )[0];
+  if (path && descendants(path, 'quadBezTo').length > 0) return 'curved';
+  if (path && descendants(path, 'lnTo').length > 1) return 'elbow';
+  return 'straight';
+}
+
+function connectorAriaLabel(kind: WorkDocumentConnectorKind): string {
+  if (kind === 'elbow') return '肘形连接符';
+  if (kind === 'curved') return '曲线连接符';
+  return '直线连接符';
 }
 
 function parseVmlEndpoints(

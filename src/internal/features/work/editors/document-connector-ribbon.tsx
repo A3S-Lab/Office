@@ -11,6 +11,7 @@ import {
   DOCUMENT_CONNECTOR_LIMITS,
   documentConnectorProperties,
   type WorkDocumentConnectorArrow,
+  type WorkDocumentConnectorKind,
   type WorkDocumentConnectorLayout,
   type WorkDocumentConnectorLineStyle,
   type WorkDocumentConnectorProperties,
@@ -45,6 +46,15 @@ const arrowOptions = [
   { value: 'open', label: '开放箭头' },
 ] as const satisfies readonly {
   value: WorkDocumentConnectorArrow;
+  label: string;
+}[];
+
+const connectorKindOptions = [
+  { value: 'straight', label: '直线连接符' },
+  { value: 'elbow', label: '肘形连接符' },
+  { value: 'curved', label: '曲线连接符' },
+] as const satisfies readonly {
+  value: WorkDocumentConnectorKind;
   label: string;
 }[];
 
@@ -106,6 +116,13 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
   return (
     <>
       <WorkOfficeRibbonGroup label="连接线" priority="high">
+        <OfficeSelect<WorkDocumentConnectorKind>
+          ariaLabel="连接符类型"
+          value={properties.connectorKind}
+          options={connectorKindOptions}
+          disabled={!selected}
+          onValueChange={(connectorKind) => update({ connectorKind })}
+        />
         <OfficeColorPicker
           ariaLabel="连接符线条颜色"
           triggerLabel="线条颜色"
@@ -275,6 +292,7 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
             update({
               width: DOCUMENT_CONNECTOR_DEFAULTS.width,
               height: DOCUMENT_CONNECTOR_DEFAULTS.height,
+              connectorKind: DOCUMENT_CONNECTOR_DEFAULTS.connectorKind,
               layout: DOCUMENT_CONNECTOR_DEFAULTS.layout,
               horizontalOffset: DOCUMENT_CONNECTOR_DEFAULTS.horizontalOffset,
               verticalOffset: DOCUMENT_CONNECTOR_DEFAULTS.verticalOffset,

@@ -4,6 +4,18 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.57.0 - 2026-09-06
+
+- Extended the bounded Writer connector model to WPS VML shape types 32, 33,
+  and 37: straight, elbow, and curved. One typed connector-kind value now
+  drives the contextual ribbon, live SVG geometry, Undo/Redo, WPS import, and
+  DOCX DrawingML custom-geometry export/reopen.
+- Added deterministic WPS connector-kind fixtures, focused model/import tests,
+  and A3S Test Web/CDP evidence with screenshots, accessibility snapshots,
+  empty console/page-error diagnostics, and distinct SVG geometry checks in
+  desktop and compact Playwright runs. Arbitrary route-point editing remains
+  an explicit compatibility boundary.
+
 ## 0.56.1 - 2026-09-06
 
 - Hardened workspace template navigation for keyboard and agent flows. A3S

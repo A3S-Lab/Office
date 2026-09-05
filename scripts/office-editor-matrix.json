@@ -14,13 +14,18 @@
       "acl": [
         "tests/e2e/word-connector-editor.acl",
         "tests/e2e/word-wps-connector-boundary.acl",
+        "tests/e2e/word-wps-connector-kinds.acl",
         "tests/e2e/word-text-box-phone.acl"
       ],
-      "fixtures": ["word-wps-connector.docx", "word-wps-shape.docx"],
+      "fixtures": [
+        "word-wps-connector.docx",
+        "word-wps-connector-kinds.docx",
+        "word-wps-shape.docx"
+      ],
       "wpsReference": true,
       "agent": {
         "goal": "Inspect the Writer connector editing surface",
-        "success": "The Writer connector ribbon is visible, editable, and exposes line and arrow styles"
+        "success": "The Writer connector ribbon is visible, editable, and exposes typed straight, elbow, and curved geometry plus line and arrow styles"
       }
     },
     {

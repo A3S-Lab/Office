@@ -19,8 +19,8 @@ const OFFICE_NAMESPACE = 'urn:schemas-microsoft-com:office:office';
 
 /**
  * Counts only VML connector records, not ordinary VML pictures or text
- * boxes. WPS currently emits `o:spt="32"` and `type="#_x0000_t32"` for the
- * connector shape created by `Shapes.AddConnector`.
+ * boxes. WPS emits shape types 32 (straight), 33 (elbow), and 37 (curved)
+ * for connectors created by `Shapes.AddConnector`.
  */
 export function inspectDocxConnectors(
   document: Document,
@@ -52,7 +52,12 @@ function isVmlConnector(element: Element): boolean {
     element.getAttributeNS(OFFICE_NAMESPACE, 'spt') ??
     attribute(element, 'o:spt');
   const type = attribute(element, 'type');
-  return shapeType?.trim() === '32' || type?.trim() === '#_x0000_t32';
+  return (
+    ['32', '33', '37'].includes(shapeType?.trim() ?? '') ||
+    ['#_x0000_t32', '#_x0000_t33', '#_x0000_t37'].includes(
+      type?.trim().toLowerCase() ?? '',
+    )
+  );
 }
 
 function isWordElement(element: Element): boolean {

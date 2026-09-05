@@ -1065,6 +1065,16 @@ values, routed connectors, mixed paragraphs, arbitrary drawings, and malformed
 bodies remain explicit compatibility diagnostics. A3S Test Web/CDP and
 responsive visual evidence remain the primary browser UI contract.
 
+The seventy-sixth Writer milestone promotes the WPS VML connector shape types
+32, 33, and 37 into one bounded typed model: straight, elbow, and curved.
+The contextual ribbon, live SVG (`line`, `polyline`, and quadratic `path`),
+WPS VML import, native DrawingML custom geometry, and DOCX reopen share one
+`connectorKind` value. Deterministic WPS fixtures cover all three native
+records, while A3S Test Web/CDP and desktop/compact Playwright checks prove
+discoverability, geometry projection, accessibility, and clean diagnostics.
+Arbitrary route-point editing, mixed paragraphs, and unsupported DrawingML
+branches remain explicit compatibility boundaries.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

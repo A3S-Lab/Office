@@ -3,6 +3,10 @@ import type {
   WorkDocumentConnectorArrow,
   WorkDocumentConnectorProperties,
 } from './work-document-connector';
+import {
+  connectorCurveControlPoint,
+  connectorRoutePoints,
+} from './work-document-connector';
 import { descendants, directChild, parseXml } from './work-ooxml-package';
 
 interface DocxConnectorPatch {
@@ -193,8 +197,21 @@ function connectorGeometry(
   path.setAttribute('h', String(GEOMETRY_SCALE));
   path.append(
     connectorPoint(document, 'a:moveTo', properties.startX, properties.startY),
-    connectorPoint(document, 'a:lnTo', properties.endX, properties.endY),
   );
+  if (properties.connectorKind === 'curved') {
+    const control = connectorCurveControlPoint(properties);
+    const curve = document.createElementNS(DRAWING_NAMESPACE, 'a:quadBezTo');
+    curve.append(
+      connectorPointElement(document, control.x, control.y),
+      connectorPointElement(document, properties.endX, properties.endY),
+    );
+    path.append(curve);
+  } else {
+    const points = connectorRoutePoints(properties);
+    for (const point of points.slice(1)) {
+      path.append(connectorPoint(document, 'a:lnTo', point.x, point.y));
+    }
+  }
   pathList.append(path);
   geometry.append(pathList);
   return geometry;
@@ -212,6 +229,17 @@ function connectorPoint(
   point.setAttribute('y', String(Math.round((y / 100) * GEOMETRY_SCALE)));
   wrapper.append(point);
   return wrapper;
+}
+
+function connectorPointElement(
+  document: Document,
+  x: number,
+  y: number,
+): Element {
+  const point = document.createElementNS(DRAWING_NAMESPACE, 'a:pt');
+  point.setAttribute('x', String(Math.round((x / 100) * GEOMETRY_SCALE)));
+  point.setAttribute('y', String(Math.round((y / 100) * GEOMETRY_SCALE)));
+  return point;
 }
 
 function connectorLine(

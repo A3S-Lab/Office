@@ -331,9 +331,24 @@ CUA Driver 0.10.0 Windows profiles are currently unsupported, so Windows
 browser-editor evidence uses A3S Test Web/CDP. On Windows,
 `bun run office:ops -- wps-probe --connector` captures the bounded WPS COM
 reference used for UI/OOXML parity; that probe is evidence, not a product
-runtime.
+runtime. Use `--connector-type straight|elbow|curved` to select the typed WPS
+reference shape through the Commander CLI.
 
 ## Current release
+
+Version `0.57.0` extends the bounded Writer connector workflow to the WPS
+straight, elbow, and curved shape subset:
+
+- The Connector ribbon exposes one typed connector-kind control. The same
+  value drives the live line, routed polyline, or quadratic path SVG, compact
+  controls, and undoable edits.
+- WPS VML o:spt=32, 33, and 37 import as straight, elbow, and curved
+  connectors. Native DrawingML custom geometry preserves the selected kind on
+  DOCX export and reopen; arbitrary route-point editing remains fail-closed.
+- A3S Test covers the three WPS records with screenshot, accessibility,
+  console, and page-error evidence. Desktop and compact Playwright checks
+  assert the distinct SVG geometry. Windows CUA remains fail-closed while the
+  locked profile is not contract-tested.
 
 Version `0.56.1` makes the A3S Test five-surface editor matrix the daily UI/UX
 contract:

@@ -30,6 +30,7 @@ type VisualOption = JsonOption & {
 type WpsProbeOption = JsonOption & {
   output?: string;
   connector?: boolean;
+  connectorType?: 'straight' | 'elbow' | 'curved';
 };
 type A3sRunOption = JsonOption & {
   browserDriver?: 'a3s' | 'standalone';
@@ -82,6 +83,12 @@ type GateOption = JsonOption &
     run?: boolean;
     visual?: boolean;
   };
+
+const wpsConnectorTypeCodes = {
+  straight: '1',
+  elbow: '2',
+  curved: '3',
+} as const;
 
 const program = new Command()
   .name('office-ui-ops')
@@ -144,7 +151,14 @@ program
   .command('wps-probe')
   .description('Capture a bounded WPS Writer COM reference document (Windows).')
   .option('--output <docx>', 'exact output DOCX path')
-  .option('--connector', 'include a straight connector')
+  .option('--connector', 'include a connector of the selected type')
+  .addOption(
+    new Option('--connector-type <kind>', 'WPS connector shape kind').choices([
+      'straight',
+      'elbow',
+      'curved',
+    ]),
+  )
   .option('--json', 'reserved for the probe JSON receipt')
   .action((options: WpsProbeOption) => {
     runWpsProbe(options);
@@ -740,7 +754,13 @@ function runWpsProbe(options: WpsProbeOption): void {
     '-OutputPath',
     target,
   ];
-  if (options.connector) commandArgs.push('-IncludeConnector');
+  if (options.connector || options.connectorType) {
+    commandArgs.push('-IncludeConnector');
+    commandArgs.push(
+      '-ConnectorType',
+      wpsConnectorTypeCodes[options.connectorType ?? 'straight'],
+    );
+  }
   run('powershell.exe', commandArgs);
 }
 

@@ -97,6 +97,10 @@ const wpsConnectorDocumentPath = path.join(
   fixtureDirectory,
   'word-wps-connector.docx',
 );
+const wpsConnectorKindsDocumentPath = path.join(
+  fixtureDirectory,
+  'word-wps-connector-kinds.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(
@@ -170,6 +174,10 @@ await Bun.write(
   await createWpsConnectorWordFixture(),
 );
 await Bun.write(
+  wpsConnectorKindsDocumentPath,
+  await createWpsConnectorKindsWordFixture(),
+);
+await Bun.write(
   picturePath,
   Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAPAAAAB4CAYAAADMtn8nAAAB+klEQVR4nO3bwQnCUBRFwZRjT25TidUKukoDsQARMfj5OTCL2V94nOVbLut9B5qW2QOA4wQMYQKGsLeAn9sOnJSAIUzAECZgCBMwhAkYwgQMYQKGMAFDmIAhTMAQJmAIEzCECRjChgX86xvUbLMPAUcIWMCECVjAhAlYwIQJWMCECVjAhAlYwIQJWMCECVjAhAlYwIQJ+E8BX28P+EjAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwCcPGGYQsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACRsWMDCegCFMwBAmYAgTMIQJGMIEDGEChjABQ5iAIUzAECZgCBMwhAkYwr4GDHQIGMIEDGEChrAXam5Zu0ZEGKIAAAAASUVORK5CYII=',
@@ -195,6 +203,7 @@ console.log(`Created ${wpsGridMatrixDocumentPath}`);
 console.log(`Created ${wpsScriptMatrixDocumentPath}`);
 console.log(`Created ${wpsShapeDocumentPath}`);
 console.log(`Created ${wpsConnectorDocumentPath}`);
+console.log(`Created ${wpsConnectorKindsDocumentPath}`);
 console.log(`Created ${picturePath}`);
 
 async function createSpreadsheet1904DateSystemFixture(): Promise<ArrayBuffer> {
@@ -812,6 +821,54 @@ async function createWpsConnectorWordFixture(): Promise<Buffer> {
   if (replaced === source) {
     throw new Error(
       'Failed to replace the placeholder paragraph in the WPS connector fixture.',
+    );
+  }
+  archive.file('word/document.xml', replaced);
+  return archive.generateAsync({ type: 'nodebuffer' });
+}
+
+async function createWpsConnectorKindsWordFixture(): Promise<Buffer> {
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic WPS VML connector kind compatibility fixture',
+    title: 'A3S Office WPS connector kinds fixture',
+    sections: [
+      {
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({ text: 'WPS connector kinds placeholder' }),
+            ],
+          }),
+        ],
+      },
+    ],
+  });
+  const archive = await JSZip.loadAsync(await Packer.toBuffer(document));
+  const documentXmlFile = archive.file('word/document.xml');
+  if (!documentXmlFile) {
+    throw new Error(
+      'Expected a document XML part for the WPS connector kinds fixture.',
+    );
+  }
+  const source = await documentXmlFile.async('string');
+  const connectorParagraphs = [32, 33, 37]
+    .map(
+      (shapeType, index) => `
+    <w:p>
+      <w:r><w:pict>
+        <v:shape id="A3S Connector ${shapeType}" o:spid="_x0000_s${1026 + index}" o:spt="${shapeType}" type="#_x0000_t${shapeType}" style="position:absolute;left:0pt;top:${index * 36}pt;height:1pt;width:144pt" filled="f" stroked="f" coordsize="21600,21600">
+          <v:path arrowok="t"/>
+          <v:stroke on="f" color="#C00000"/>
+        </v:shape>
+      </w:pict></w:r>
+    </w:p>`,
+    )
+    .join('');
+  const replaced = source.replace(/<w:p>[\s\S]*?<\/w:p>/, connectorParagraphs);
+  if (replaced === source) {
+    throw new Error(
+      'Failed to replace the placeholder paragraph in the WPS connector kinds fixture.',
     );
   }
   archive.file('word/document.xml', replaced);
