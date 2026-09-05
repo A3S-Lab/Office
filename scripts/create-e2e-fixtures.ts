@@ -802,7 +802,7 @@ async function createWpsConnectorWordFixture(): Promise<Buffer> {
           <v:shape id="A3S Connector" o:spid="_x0000_s1026" o:spt="32" type="#_x0000_t32" style="position:absolute;left:0pt;margin-left:-18pt;margin-top:128pt;height:1pt;width:144pt;z-index:251660288;mso-width-relative:page;mso-height-relative:page;" filled="f" stroked="f" coordsize="21600,21600">
             <v:path arrowok="t"/>
             <v:fill on="f" focussize="0,0"/>
-            <v:stroke on="f"/>
+            <v:stroke on="f" dashstyle="dash"/>
             <o:lock v:ext="edit" aspectratio="f"/>
           </v:shape>
         </w:pict>

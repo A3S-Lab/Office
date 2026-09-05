@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.55.0',
+    date: '2026-09-05',
+    kind: 'new',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer connectors gain WPS line-style parity',
+      zh: 'Writer 连接符补齐 WPS 线型对齐',
+    },
+    summary: {
+      en: 'Straight connectors now preserve native solid, dash, dot, and dash-dot intent from WPS through the responsive Writer ribbon and DOCX round trip.',
+      zh: '直线连接符现在可以把 WPS 的实线、虚线、点线和点划线意图穿过响应式 Writer 功能区与 DOCX 往返。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One typed line-style model',
+          zh: '一个类型化线型模型',
+        },
+        detail: {
+          en: 'The Connector ribbon, live SVG, compact controls, Undo/Redo, VML import, and DrawingML a:prstDash export share solid, dash, dot, and dash-dot values.',
+          zh: '连接符功能区、实时 SVG、紧凑控件、撤销/重做、VML 导入和 DrawingML a:prstDash 导出共享实线、虚线、点线和点划线值。',
+        },
+      },
+      {
+        title: {
+          en: 'WPS COM evidence is recorded',
+          zh: '记录 WPS COM 证据',
+        },
+        detail: {
+          en: 'The installed WPS 12.0 probe records DashStyle=4 for a native dashed Shapes.AddConnector result; unsupported long-tail styles normalize fail-closed.',
+          zh: '本机 WPS 12.0 探针记录原生虚线 Shapes.AddConnector 的 DashStyle=4；不支持的长尾线型会失败即归一化。',
+        },
+      },
+      {
+        title: {
+          en: 'UI/UX evidence stays deep',
+          zh: 'UI/UX 证据保持深入',
+        },
+        detail: {
+          en: 'A3S Test ACLs cover authoring and WPS import with screenshots, accessibility snapshots, and empty console/page-error diagnostics; Playwright covers desktop and compact widths.',
+          zh: 'A3S Test ACL 覆盖创建与 WPS 导入并保留截图、可访问性快照及空控制台/页面错误诊断；Playwright 覆盖桌面与紧凑视口。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#built-in-editable-text-boxes',
+          zh: './components/document.html#可编辑文本框',
+        },
+        label: {
+          en: 'Read the connector line-style guide',
+          zh: '阅读连接符线型指南',
+        },
+      },
+      {
+        href: {
+          en: './automation/index.html',
+          zh: './automation/index.html',
+        },
+        label: {
+          en: 'Review the A3S Test workflow',
+          zh: '查看 A3S Test 流程',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.55.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.55.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.54.1',
     date: '2026-09-05',
     kind: 'fixed',

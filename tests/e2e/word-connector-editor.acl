@@ -40,6 +40,18 @@ suite "office-word-connector-editor" {
             visible = css(".work-document-editable [data-document-connector]")
         }
 
+        click "open-connector-line-style" {
+            target = role("combobox", "连接符线条样式")
+        }
+
+        click "choose-connector-dash" {
+            target = role("option", "虚线")
+        }
+
+        expect "connector-line-style-is-visible" {
+            visible = css(".work-document-editable [data-document-connector][data-connector-line-style='dash']")
+        }
+
         fill "set-connector-width" {
             target = css("input[aria-label='连接符宽度（毫米）']")
             value = "150"

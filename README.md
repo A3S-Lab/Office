@@ -335,6 +335,20 @@ runtime.
 
 ## Current release
 
+Version `0.55.0` extends the bounded Writer straight-connector workflow with
+native line-style parity:
+
+- The Connector ribbon exposes solid, dash, dot, and dash-dot styles. One
+  typed value drives the live SVG, compact controls, undoable updates, and
+  native DOCX `a:prstDash` export.
+- WPS VML `dashstyle` and DrawingML `a:prstDash` import into the same model.
+  The Windows WPS 12.0 COM probe records the native dashed `DashStyle=4`
+  reference; unsupported long-tail styles remain normalized rather than being
+  presented as exact edits.
+- A3S Test ACLs cover authoring and real WPS fixture import, while desktop and
+  compact visual runs retain screenshot, accessibility, console, and
+  page-error evidence.
+
 Version `0.54.1` hardens the local editor-testing loop around the bounded
 Commander operator and A3S Test contract:
 

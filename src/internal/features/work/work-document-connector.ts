@@ -13,6 +13,11 @@ import { createWorkId } from './work-templates';
 /** The bounded straight connector subset shared by the Writer and DOCX paths. */
 export type WorkDocumentConnectorLayout = 'inline' | 'floating';
 export type WorkDocumentConnectorArrow = 'none' | 'triangle';
+export type WorkDocumentConnectorLineStyle =
+  | 'solid'
+  | 'dash'
+  | 'dot'
+  | 'dashDot';
 export type WorkDocumentConnectorReference = 'column' | 'margin' | 'page';
 export type WorkDocumentConnectorVerticalReference =
   | 'paragraph'
@@ -34,6 +39,7 @@ export interface WorkDocumentConnectorProperties {
   endY: number;
   lineColor: string;
   lineWidth: number;
+  lineStyle: WorkDocumentConnectorLineStyle;
   startArrow: WorkDocumentConnectorArrow;
   endArrow: WorkDocumentConnectorArrow;
   docPropertiesId: number | null;
@@ -75,6 +81,7 @@ export const DOCUMENT_CONNECTOR_DEFAULTS: WorkDocumentConnectorProperties = {
   endY: 50,
   lineColor: '#c00000',
   lineWidth: 0.35,
+  lineStyle: 'solid',
   startArrow: 'none',
   endArrow: 'none',
   docPropertiesId: null,
@@ -105,6 +112,7 @@ const CONNECTOR_MARKER_ATTRIBUTES = [
   'endY',
   'lineColor',
   'lineWidth',
+  'lineStyle',
   'startArrow',
   'endArrow',
   'docPropertiesId',
@@ -146,6 +154,10 @@ export const DocumentConnector = Node.create({
       lineWidth: dataAttribute(
         'line-width',
         DOCUMENT_CONNECTOR_DEFAULTS.lineWidth,
+      ),
+      lineStyle: dataAttribute(
+        'line-style',
+        DOCUMENT_CONNECTOR_DEFAULTS.lineStyle,
       ),
       startArrow: dataAttribute(
         'start-arrow',
@@ -214,6 +226,7 @@ export const DocumentConnector = Node.create({
             stroke: properties.lineColor,
             'stroke-width': connectorStrokeWidth(properties.lineWidth),
             'stroke-linecap': 'round',
+            'stroke-dasharray': connectorStrokeDasharray(properties.lineStyle),
             'marker-start':
               properties.startArrow === 'triangle'
                 ? `url(#${startMarker})`
@@ -393,6 +406,7 @@ export function normalizeDocumentConnectorProperties(
       DOCUMENT_CONNECTOR_LIMITS.lineWidth.min,
       DOCUMENT_CONNECTOR_LIMITS.lineWidth.max,
     ),
+    lineStyle: connectorLineStyle(value.lineStyle),
     startArrow: connectorArrow(value.startArrow),
     endArrow: connectorArrow(value.endArrow),
     docPropertiesId: nullableInteger(value.docPropertiesId, 0, 0xffff_ffff),
@@ -443,6 +457,7 @@ export function connectorDomAttributes(
     'data-connector-end-y': formatNumber(properties.endY),
     'data-connector-line-color': properties.lineColor,
     'data-connector-line-width': formatNumber(properties.lineWidth),
+    'data-connector-line-style': properties.lineStyle,
     'data-connector-start-arrow': properties.startArrow,
     'data-connector-end-arrow': properties.endArrow,
     'data-connector-doc-properties-id':
@@ -474,6 +489,7 @@ export function documentConnectorPropertiesFromElement(
     endY: element.getAttribute('data-connector-end-y'),
     lineColor: element.getAttribute('data-connector-line-color'),
     lineWidth: element.getAttribute('data-connector-line-width'),
+    lineStyle: element.getAttribute('data-connector-line-style'),
     startArrow: element.getAttribute('data-connector-start-arrow'),
     endArrow: element.getAttribute('data-connector-end-arrow'),
     docPropertiesId: element.getAttribute('data-connector-doc-properties-id'),
@@ -564,6 +580,7 @@ function connectorAttributesFromElement(
     endY: element.dataset.connectorEndY,
     lineColor: element.dataset.connectorLineColor,
     lineWidth: element.dataset.connectorLineWidth,
+    lineStyle: element.dataset.connectorLineStyle,
     startArrow: element.dataset.connectorStartArrow,
     endArrow: element.dataset.connectorEndArrow,
     docPropertiesId: element.dataset.connectorDocPropertiesId,
@@ -616,6 +633,21 @@ function connectorVerticalReference(
 
 function connectorArrow(value: unknown): WorkDocumentConnectorArrow {
   return value === 'triangle' ? 'triangle' : 'none';
+}
+
+function connectorLineStyle(value: unknown): WorkDocumentConnectorLineStyle {
+  return value === 'dash' || value === 'dot' || value === 'dashDot'
+    ? value
+    : 'solid';
+}
+
+function connectorStrokeDasharray(
+  style: WorkDocumentConnectorLineStyle,
+): string | undefined {
+  if (style === 'dash') return '7 4';
+  if (style === 'dot') return '1 4';
+  if (style === 'dashDot') return '7 4 1 4';
+  return undefined;
 }
 
 function normalizeConnectorColor(value: unknown): string {

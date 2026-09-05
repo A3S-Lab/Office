@@ -3,6 +3,7 @@ import {
   connectorDomAttributes,
   normalizeDocumentConnectorProperties,
   type WorkDocumentConnectorArrow,
+  type WorkDocumentConnectorLineStyle,
   type WorkDocumentConnectorProperties,
 } from './work-document-connector';
 import {
@@ -265,6 +266,7 @@ function vmlConnectorProperties(
     ...endpoints,
     lineColor: color,
     lineWidth,
+    lineStyle: vmlLineStyle(stroke ? attribute(stroke, 'dashstyle') : null),
     startArrow: vmlArrow(stroke ? attribute(stroke, 'startarrow') : null),
     endArrow: vmlArrow(stroke ? attribute(stroke, 'endarrow') : null),
   });
@@ -313,6 +315,9 @@ function drawingMlConnectorProperties(
     ...endpoints,
     lineColor: color,
     lineWidth: emuMillimeters(line ? attribute(line, 'w') : null, 0.35),
+    lineStyle: drawingMlLineStyle(
+      line ? directChild(line, 'prstDash') : undefined,
+    ),
     startArrow: drawingMlArrow(line ? directChild(line, 'headEnd') : undefined),
     endArrow: drawingMlArrow(line ? directChild(line, 'tailEnd') : undefined),
     docPropertiesId: integerAttribute(docProperties, 'id'),
@@ -423,8 +428,28 @@ function vmlArrow(value: string | null): WorkDocumentConnectorArrow {
 function drawingMlArrow(
   element: Element | undefined,
 ): WorkDocumentConnectorArrow {
-  const value = element ? attribute(element, 'type')?.trim().toLowerCase() : null;
+  const value = element
+    ? attribute(element, 'type')?.trim().toLowerCase()
+    : null;
   return value && value !== 'none' ? 'triangle' : 'none';
+}
+
+function vmlLineStyle(value: string | null): WorkDocumentConnectorLineStyle {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === 'dash') return 'dash';
+  if (normalized === 'dot') return 'dot';
+  if (normalized === 'dashdot' || normalized === 'dash-dot') return 'dashDot';
+  return 'solid';
+}
+
+function drawingMlLineStyle(
+  element: Element | undefined,
+): WorkDocumentConnectorLineStyle {
+  const value = element ? attribute(element, 'val')?.trim() : undefined;
+  if (value === 'dash') return 'dash';
+  if (value === 'dot') return 'dot';
+  if (value === 'dashDot') return 'dashDot';
+  return 'solid';
 }
 
 function vmlLength(value: string | null | undefined, fallback: number): number {

@@ -1,0 +1,95 @@
+---
+title: MarkdownEditor
+description: Markdown content, split-view behavior, selection menus, and TipTap extensions.
+---
+
+# MarkdownEditor
+
+`MarkdownEditor` opens in a resizable source-and-visual split view. The
+Markdown string remains the single persistence source while TipTap provides
+the visual editing surface.
+
+On desktop and tablet widths, Source and Preview remain side by side with a
+keyboard-adjustable divider. The preview is a flat reading surface rather than
+a card nested inside the workspace. Its bounded line length and shared heading,
+quotation, code, table, and task-list styles keep long documents readable.
+
+At phone widths, the split view starts on Source and exposes a touch-sized
+Source/Preview switch. Each pane receives the full remaining workspace; using
+the switch does not change the selected editing mode or the controlled content.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `content` | `MarkdownContent` | Yes | — | Controlled Markdown value. |
+| `onChange` | `(content: MarkdownContent) => void` | Yes | — | Emits the complete next value. |
+| `collaboration` | `OfficeCollaborationSession` | No | none | Uses an initialized Yjs Markdown document as the canonical value. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Publishes source/visual selection, projects remote carets/selections and roster navigation; requires the exact `collaboration` session. |
+| `preview` | `boolean` | No | `false` | Read-only rendering. |
+| `saveStatus` | `string` | No | — | Host-owned save status. |
+| `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host file actions. |
+| `extensions` | `Extensions` | No | `[]` | Additional TipTap extensions. |
+| `getSelectionMenuItems` | `GetMarkdownSelectionMenuItems` | No | built-in menu | Replaces the selected-text menu in source and visual surfaces. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+## Content contract
+
+```ts
+interface MarkdownContent {
+  type: 'markdown';
+  markdown: string;
+}
+```
+
+The controlled source history coalesces typing, keeps explicit commands as
+separate records, restores source selection on undo and redo, and rebases when
+the host replaces the value.
+
+When `collaboration` is present, the synchronized Yjs document becomes
+canonical and undo/redo tracks only local collaborative transactions. See
+[Real-time collaboration](./collaboration.mdx) for initialization, ownership,
+permission, and framework-binding rules.
+
+## Visual-editor IME behavior
+
+The TipTap visual surface keeps composition pre-edit text local. It serializes
+and publishes Markdown once, after ProseMirror has settled the committed
+`compositionend` value. A controlled Markdown replacement received during
+composition is deferred and reconciled after that final publication, so a host
+echo cannot preserve raw Pinyin beside the committed Chinese text. Source mode
+continues to use the browser-native textarea input lifecycle.
+
+## Responsive split behavior
+
+- The desktop divider is pointer-draggable from 30% to 70%, supports arrow,
+  Home, End, and Enter keys, and synchronizes proportional scrolling.
+- The phone switch exposes explicit pressed state and at least 44 px targets.
+- Source-only and visual-only modes continue to use the complete workspace and
+  do not display the split switch.
+
+## Selection menu
+
+The host menu covers both source and visual selections. The snapshot identifies
+`selection.surface` and includes exact selected text, adjacent context, the
+complete Markdown source, rendered plain text, and safe replace/insert
+commands.
+
+```tsx
+import type { GetMarkdownSelectionMenuItems } from '@a3s-lab/office/core';
+
+const getSelectionMenuItems: GetMarkdownSelectionMenuItems = (context) => [
+  {
+    id: 'summarize',
+    label: 'Summarize',
+    run: async () => {
+      const summary = await summarize(context.document.markdown);
+      await context.commands.replaceText(summary);
+    },
+  },
+];
+```
+
+Extensions that introduce new Nodes or Marks must provide matching Markdown
+parse and serialization rules. Otherwise the structure cannot survive a
+source-view round trip.

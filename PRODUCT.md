@@ -1046,6 +1046,15 @@ capture without turning CI, CUA, or WPS into product dependencies. The locked
 CUA Driver 0.10.0 Windows profiles remain explicitly unsupported; Windows
 browser evidence uses the standalone A3S Test Web/CDP adapter instead.
 
+The seventy-fourth Writer milestone adds native line-style parity to that
+straight connector subset. Solid, dash, dot, and dash-dot are one typed value
+shared by the contextual ribbon, live SVG, compact controls, Undo/Redo, WPS VML
+`dashstyle` import, and DrawingML `a:prstDash` export. The Windows WPS 12.0 COM
+probe records `DashStyle=4` for the dashed reference. Long-tail line styles,
+routed connectors, mixed paragraphs, arbitrary drawings, and malformed bodies
+remain explicit compatibility diagnostics; A3S Test Web/CDP and responsive
+visual evidence are the primary browser UI contract.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.55.0 - 2026-09-05
+
+- Extended the bounded editable Writer straight-connector model with native
+  line styles: solid, dash, dot, and dash-dot. The contextual ribbon, SVG
+  page projection, WPS VML import, and native DrawingML export now share one
+  typed value with fail-closed normalization for unsupported styles.
+- Added A3S Test coverage for creating a dashed connector and importing a WPS
+  dashed VML connector. Desktop and compact visual runs retain screenshots,
+  accessibility snapshots, and empty console/page-error diagnostics.
+- Updated the Windows WPS COM probe to record the native `DashStyle=4`
+  reference used by the VML-to-model mapping. CUA Driver 0.10.0 remains
+  unsupported for Windows GUI profiles; browser/CDP evidence stays separate.
+
 ## 0.54.1 - 2026-09-05
 
 - Hardened the Windows A3S Test CDP adapter around the pinned standalone

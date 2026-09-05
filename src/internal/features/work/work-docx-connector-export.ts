@@ -225,11 +225,22 @@ function connectorLine(
   color.setAttribute('val', properties.lineColor.slice(1).toUpperCase());
   fill.append(color);
   line.append(fill);
+  if (properties.lineStyle !== 'solid')
+    line.append(lineDash(document, properties.lineStyle));
   if (properties.startArrow !== 'none')
     line.append(arrowEnd(document, 'a:headEnd'));
   if (properties.endArrow !== 'none')
     line.append(arrowEnd(document, 'a:tailEnd'));
   return line;
+}
+
+function lineDash(
+  document: Document,
+  style: WorkDocumentConnectorProperties['lineStyle'],
+): Element {
+  const dash = document.createElementNS(DRAWING_NAMESPACE, 'a:prstDash');
+  dash.setAttribute('val', style);
+  return dash;
 }
 
 function arrowEnd(document: Document, name: string): Element {

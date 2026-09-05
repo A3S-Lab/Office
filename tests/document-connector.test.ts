@@ -2,24 +2,20 @@ import { afterEach, describe, expect, test } from '@rstest/core';
 import { Editor } from '@tiptap/core';
 import JSZip from 'jszip';
 import { createArtifact, importOfficeFile } from '../src/core';
-import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import {
-  DOCUMENT_CONNECTOR_LIMITS,
   connectorCss,
   connectorDomAttributes,
+  DOCUMENT_CONNECTOR_LIMITS,
   normalizeDocumentConnectorProperties,
 } from '../src/internal/features/work/work-document-connector';
-import { createDocxBlob } from '../src/internal/features/work/work-docx-export';
+import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import {
   applyImportedDocxConnectorMarkers,
   inspectDocxConnectorShapes,
   markDocxConnectors,
 } from '../src/internal/features/work/work-docx-connector-import';
-import {
-  attribute,
-  descendants,
-  parseXml,
-} from '../src/internal/features/work/work-ooxml-package';
+import { createDocxBlob } from '../src/internal/features/work/work-docx-export';
+import { parseXml } from '../src/internal/features/work/work-ooxml-package';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -52,6 +48,7 @@ describe('document connectors', () => {
         endY: 65,
         lineColor: '#ABCDEF',
         lineWidth: 50,
+        lineStyle: 'dashDot',
         startArrow: 'triangle',
         endArrow: 'triangle',
       }),
@@ -70,6 +67,7 @@ describe('document connectors', () => {
       endY: 65,
       lineColor: '#abcdef',
       lineWidth: DOCUMENT_CONNECTOR_LIMITS.lineWidth.max,
+      lineStyle: 'dashDot',
       startArrow: 'triangle',
       endArrow: 'triangle',
       docPropertiesId: null,
@@ -140,6 +138,7 @@ describe('document connectors', () => {
       layout: 'floating',
       horizontalOffset: -6.35,
       lineColor: '#c00000',
+      lineStyle: 'dash',
       endY: 50,
     });
     expect(markers.connectors[0]?.properties.verticalOffset).toBeCloseTo(
@@ -177,6 +176,7 @@ describe('document connectors', () => {
       endY: 80,
       lineColor: '#2f5597',
       lineWidth: 0.7,
+      lineStyle: 'dash',
       startArrow: 'triangle',
       endArrow: 'triangle',
       docPropertiesId: 12,
@@ -194,6 +194,7 @@ describe('document connectors', () => {
     expect(source).toContain('custGeom');
     expect(source).toContain('headEnd');
     expect(source).toContain('tailEnd');
+    expect(source).toContain('<a:prstDash val="dash"');
     expect(source).toContain('val="2F5597"');
     expect(source).not.toContain('__A3S_CONNECTOR_ID_');
 
@@ -210,6 +211,7 @@ describe('document connectors', () => {
     expect(reopened.content.html).toContain(
       'data-connector-start-arrow="triangle"',
     );
+    expect(reopened.content.html).toContain('data-connector-line-style="dash"');
     expect(reopened.content.html).not.toContain('data-document-text-box');
   });
 });
@@ -224,7 +226,7 @@ function vmlConnector(): string {
   return `
     <v:shape id="A3S Connector" o:spid="_x0000_s1026" o:spt="32" type="#_x0000_t32" style="position:absolute;left:0pt;margin-left:-18pt;margin-top:128pt;height:1pt;width:144pt" filled="f" stroked="f" coordsize="21600,21600">
       <v:path arrowok="t"/>
-      <v:stroke on="f" color="#C00000" weight="1pt"/>
+      <v:stroke on="f" color="#C00000" weight="1pt" dashstyle="dash"/>
     </v:shape>
   `;
 }

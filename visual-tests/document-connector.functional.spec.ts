@@ -25,6 +25,8 @@ test('Writer edits an imported WPS straight connector through its contextual rib
     'true',
   );
 
+  await page.getByRole('combobox', { name: '连接符线条样式' }).click();
+  await page.getByRole('option', { name: '虚线', exact: true }).click();
   await page.getByRole('combobox', { name: '连接符终点箭头' }).click();
   await page.getByRole('option', { name: '三角箭头', exact: true }).click();
   await page.getByRole('button', { name: '浮于文字上方' }).click();
@@ -38,6 +40,7 @@ test('Writer edits an imported WPS straight connector through its contextual rib
     'data-connector-end-arrow',
     'triangle',
   );
+  await expect(connector).toHaveAttribute('data-connector-line-style', 'dash');
   await expect(connector).toHaveAttribute('data-connector-end-y', '20');
   await expect(connector).toHaveAttribute(
     'data-connector-line-color',

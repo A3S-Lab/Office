@@ -91,6 +91,9 @@ try {
         $connector = $document.Shapes.AddConnector(1, 72, 200, 216, 200)
         $connector.Name = 'A3S Connector'
         $connector.Line.ForeColor.RGB = [int]0xC00000
+        # MsoLineDashStyle.msoLineDash (4) is the native WPS dashed stroke
+        # used to verify the browser connector line-style mapping.
+        $connector.Line.DashStyle = 4
     }
 
     $document.SaveAs2($resolvedOutput, 16)
@@ -99,6 +102,7 @@ try {
         wps = $resolvedWps
         version = [string]$application.Version
         shapeCount = [int]$document.Shapes.Count
+        connectorDashStyle = if ($IncludeConnector) { [int]$connector.Line.DashStyle } else { $null }
     } | ConvertTo-Json -Compress
 } finally {
     if ($null -ne $document) { try { $document.Close(0) } catch {} }

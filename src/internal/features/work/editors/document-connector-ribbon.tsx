@@ -11,8 +11,9 @@ import {
   DOCUMENT_CONNECTOR_LIMITS,
   documentConnectorProperties,
   type WorkDocumentConnectorArrow,
-  type WorkDocumentConnectorProperties,
   type WorkDocumentConnectorLayout,
+  type WorkDocumentConnectorLineStyle,
+  type WorkDocumentConnectorProperties,
   type WorkDocumentConnectorReference,
   type WorkDocumentConnectorVerticalReference,
 } from '../work-document-connector';
@@ -40,6 +41,16 @@ const arrowOptions = [
   { value: 'triangle', label: '三角箭头' },
 ] as const satisfies readonly {
   value: WorkDocumentConnectorArrow;
+  label: string;
+}[];
+
+const lineStyleOptions = [
+  { value: 'solid', label: '实线' },
+  { value: 'dash', label: '虚线' },
+  { value: 'dot', label: '点线' },
+  { value: 'dashDot', label: '点划线' },
+] as const satisfies readonly {
+  value: WorkDocumentConnectorLineStyle;
   label: string;
 }[];
 
@@ -104,6 +115,13 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           options={widthOptionsForValue(String(properties.lineWidth))}
           disabled={!selected}
           onValueChange={(value) => update({ lineWidth: Number(value) })}
+        />
+        <OfficeSelect<WorkDocumentConnectorLineStyle>
+          ariaLabel="连接符线条样式"
+          value={properties.lineStyle}
+          options={lineStyleOptions}
+          disabled={!selected}
+          onValueChange={(lineStyle) => update({ lineStyle })}
         />
         <OfficeSelect<WorkDocumentConnectorArrow>
           ariaLabel="连接符起点箭头"
@@ -265,6 +283,7 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
               endY: DOCUMENT_CONNECTOR_DEFAULTS.endY,
               lineColor: DOCUMENT_CONNECTOR_DEFAULTS.lineColor,
               lineWidth: DOCUMENT_CONNECTOR_DEFAULTS.lineWidth,
+              lineStyle: DOCUMENT_CONNECTOR_DEFAULTS.lineStyle,
               startArrow: DOCUMENT_CONNECTOR_DEFAULTS.startArrow,
               endArrow: DOCUMENT_CONNECTOR_DEFAULTS.endArrow,
             })
