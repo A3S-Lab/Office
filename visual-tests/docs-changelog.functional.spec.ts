@@ -9,9 +9,14 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(36);
+  await expect(cards).toHaveCount(39);
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.58.0')).toContainText(
+    'Writer 字段补齐有界 WPS 数字开关对齐',
+  );
+  await expect(releaseCard('0.58.0')).toContainText('开关保持类型化且有界');
+  await expect(releaseCard('0.58.0')).toContainText('WPS COM 输出可检查');
   await expect(releaseCard('0.56.0')).toContainText(
     'Writer 连接符补齐 WPS 箭头样式对齐',
   );
@@ -66,6 +71,13 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     'datetime',
     '2026-09-06',
   );
+  await expect(releaseCard('0.58.0').locator('time')).toHaveAttribute(
+    'datetime',
+    '2026-09-06',
+  );
+  await expect(
+    releaseCard('0.58.0').locator('.office-release-card__highlights > li'),
+  ).toHaveCount(3);
   await expect(
     releaseCard('0.56.0').locator('.office-release-card__highlights > li'),
   ).toHaveCount(3);
