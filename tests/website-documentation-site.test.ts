@@ -645,31 +645,38 @@ test('publishes the WPS VML connector boundary across code, docs, and A3S Test e
 });
 
 test('publishes Writer connector arrow-style parity across the current and frozen release', async () => {
-  const [latestEnglish, latestChinese, frozenEnglish, frozenChinese, changelog, releaseData, packageManifest] =
-    await Promise.all([
-      readFile(
-        path.join(documentationRoot, 'latest/en/components/document.mdx'),
-        'utf8',
-      ),
-      readFile(
-        path.join(documentationRoot, 'latest/zh/components/document.mdx'),
-        'utf8',
-      ),
-      readFile(
-        path.join(documentationRoot, '0.56.0/en/components/document.mdx'),
-        'utf8',
-      ),
-      readFile(
-        path.join(documentationRoot, '0.56.0/zh/components/document.mdx'),
-        'utf8',
-      ),
-      readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
-      readFile(
-        path.join(repositoryRoot, 'website/theme/release-notes-data.ts'),
-        'utf8',
-      ),
-      readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
-    ]);
+  const [
+    latestEnglish,
+    latestChinese,
+    frozenEnglish,
+    frozenChinese,
+    changelog,
+    releaseData,
+    packageManifest,
+  ] = await Promise.all([
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.56.0/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, '0.56.0/zh/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'CHANGELOG.md'), 'utf8'),
+    readFile(
+      path.join(repositoryRoot, 'website/theme/release-notes-data.ts'),
+      'utf8',
+    ),
+    readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
+  ]);
 
   for (const document of [
     latestEnglish,
