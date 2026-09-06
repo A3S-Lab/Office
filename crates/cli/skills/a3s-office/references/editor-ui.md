@@ -36,7 +36,11 @@ treated as runnable; stale 0.x binaries are surfaced as infrastructure failure.
 Interactive `run` and `agent start` apply the same version gate before opening
 a browser, while static `check` remains available for diagnosing ACL syntax
 with an older binary. Windows dispatch keeps selectors and action JSON in typed
-argv rather than shell tokenization.
+argv rather than shell tokenization. When `--cdp-port` is supplied on Windows,
+the operator compiles and uses a native `.exe` CDP adapter under
+`.a3s-test/office-ops/`; this avoids passing state-changing A3S Test arguments
+through a `.cmd` shim. Set `A3S_TEST_AGENT_BROWSER` only when an explicit
+reviewed adapter is required.
 
 Run one bounded surface gate while developing. `check` is the fast ACL parse;
 add `--run` when a configured A3S Test browser should execute the primary
@@ -45,7 +49,6 @@ interaction suite:
 ```bash
 bun run office:ops -- gate writer --run \
   --browser-driver standalone \
-  --browser-executable scripts/a3s-test-cdp-browser.cmd \
   --cdp-port 9345
 bun run office:ops -- gate spreadsheet
 bun run office:ops -- gate presentation
@@ -67,7 +70,6 @@ ignored manifest copy when the preview uses a different port:
 bun run office:ops -- a3s run tests/e2e/word-connector-editor.acl \
   --base-url http://127.0.0.1:4175/playground/ \
   --browser-driver standalone \
-  --browser-executable scripts/a3s-test-cdp-browser.cmd \
   --cdp-port 9345 --json
 ```
 
@@ -78,7 +80,7 @@ reused after a state-changing action:
 ```bash
 bun run office:ops -- a3s agent start writer \
   --url http://127.0.0.1:4175/playground/ \
-  --browser-executable scripts/a3s-test-cdp-browser.cmd --cdp-port 9345 --json
+  --cdp-port 9345 --json
 bun run office:ops -- a3s agent observe --session <id> --interactive --json
 bun run office:ops -- a3s agent act --session <id> --observation <n> \
   --action-json '{"type":"click","target":{"type":"ref","value":"@e7"}}' --json

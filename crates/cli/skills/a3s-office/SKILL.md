@@ -54,7 +54,10 @@ operation.
 `doctor --json` also fails closed for stale A3S Test binaries; the supported
 local gate line is A3S Test 1.x with the pinned standalone Web protocol.
 On Windows, the operator sends action JSON, selectors, and paths as typed child
-argv and does not pass them through `cmd.exe` shell parsing.
+argv and does not pass them through `cmd.exe` shell parsing. Supplying a CDP
+port automatically builds a native `.exe` browser adapter in the ignored
+`.a3s-test/office-ops/` directory; do not substitute a `.cmd` shim for an
+interactive A3S Test session unless an explicit adapter has been reviewed.
 
 ## Workflow
 

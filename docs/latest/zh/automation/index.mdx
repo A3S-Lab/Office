@@ -91,7 +91,6 @@ bun run office:ops -- capabilities --json
 bun run office:ops -- doctor --json
 bun run office:ops -- gate writer --run \
   --browser-driver standalone \
-  --browser-executable scripts/a3s-test-cdp-browser.cmd \
   --cdp-port 9345
 bun run office:ops -- visual spreadsheet --project compact-768
 ```
@@ -110,9 +109,11 @@ Writer 行还会公开快捷键、版式对齐、字体/网格套件及其生成
 `doctor --json` 会报告已安装的 A3S Test 版本；未选择受支持的 1.x 版本时会 fail-closed。
 Windows 派发会把选择器和智能体 action JSON 保留在类型化 argv 中，不经过 shell 分词。
 
-在 Windows 上，CDP 适配器直接以 `--cdp <port>` 调用锁定版本的独立
-`agent-browser` 驱动，不再分离第二个连接守护进程或轮询 session 端口文件；原生进程退出后
-即完成命令，避免继承的 stdio 句柄让已经结束的 ACL 操作继续挂起。Writer 文本框契约也会在
+在 Windows 上，提供 `--cdp-port` 后，操作 CLI 会编译并使用
+`.a3s-test/office-ops` 下的原生 `.exe` CDP 适配器，再以 `--cdp <port>` 调用锁定版本的独立
+`agent-browser` 驱动。这样选择器和 action JSON 不会经过 `.cmd` 参数解析；适配器不再分离第二个
+连接守护进程或轮询 session 端口文件，原生进程退出后即完成命令，避免继承的 stdio 句柄让已经结束的
+ACL 操作继续挂起。Writer 文本框契约也会在
 语义点击前先观察工具栏溢出和手机页面滚动；这是真实可发现的用户路径，而不是产品层焦点绕过。
 
 定位单个失败时直接运行主 A3S Test ACL：
@@ -121,7 +122,6 @@ Windows 派发会把选择器和智能体 action JSON 保留在类型化 argv �
 bun run office:ops -- a3s run tests/e2e/word-connector-editor.acl \
   --base-url http://127.0.0.1:4175/playground/ \
   --browser-driver standalone \
-  --browser-executable scripts/a3s-test-cdp-browser.cmd \
   --cdp-port 9345 --json
 ```
 
@@ -134,7 +134,7 @@ Writer 连接符 ACL 也会验证与 WPS 对齐的线型和箭头样式控件：
 
 ```bash
 bun run office:ops -- a3s agent start writer --url http://127.0.0.1:4175/playground/ \
-  --browser-executable scripts/a3s-test-cdp-browser.cmd --cdp-port 9345 --json
+  --cdp-port 9345 --json
 bun run office:ops -- a3s cua certification --json
 ```
 

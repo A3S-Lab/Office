@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.63.1 - 2026-09-06
+
+- Fixed Windows interactive A3S Test dispatch by compiling the CDP adapter to
+  a native `.exe` under `.a3s-test/office-ops` when `--cdp-port` is supplied;
+  selectors and action JSON no longer cross a `.cmd` argument boundary.
+- Made `doctor --json` report CUA certification only after a compatible A3S
+  Test capability probe succeeds, so stale local binaries cannot look like
+  native GUI evidence.
+- Captured a live A3S Test 1.0.1 Writer session through the Office CLI with
+  the required `start → observe → one action → observe → finish` lifecycle.
+
 ## 0.63.0 - 2026-09-06
 
 - Broadened the declarative UI/UX evidence matrix beyond Writer: Spreadsheet

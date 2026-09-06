@@ -119,3 +119,24 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
     ]),
   );
 });
+
+test('keeps the standalone browser plan on the typed CDP adapter path', () => {
+  const writerSurface = matrix.surfaces.find(
+    (surface) => surface.id === 'writer',
+  );
+  if (!writerSurface) throw new Error('Writer surface is missing from matrix');
+  const writerPlan = createSurfacePlan(writerSurface);
+  const gate = writerPlan.commands.find((command) => command.id === 'gate');
+  const agent = writerPlan.commands.find((command) => command.id === 'agent');
+  expect(gate?.args).toEqual(
+    expect.arrayContaining([
+      '--browser-driver',
+      'standalone',
+      '--cdp-port',
+      '9345',
+    ]),
+  );
+  expect(agent?.args).toEqual(expect.arrayContaining(['--cdp-port', '9345']));
+  expect(gate?.args).not.toContain('scripts/a3s-test-cdp-browser.cmd');
+  expect(agent?.args).not.toContain('scripts/a3s-test-cdp-browser.cmd');
+});

@@ -100,7 +100,6 @@ bun run office:ops -- capabilities --json
 bun run office:ops -- doctor --json
 bun run office:ops -- gate writer --run \
   --browser-driver standalone \
-  --browser-executable scripts/a3s-test-cdp-browser.cmd \
   --cdp-port 9345
 bun run office:ops -- visual spreadsheet --project compact-768
 ```
@@ -123,10 +122,13 @@ and their generated DOCX fixtures; use that inventory before changing UI code.
 the supported 1.x line is selected. Windows dispatch keeps selectors and agent
 action JSON in typed argv rather than shell tokenization.
 
-On Windows, the CDP adapter calls the pinned standalone `agent-browser`
-driver directly with `--cdp <port>`. It does not detach a second connection
-daemon or poll a session port file, and it resolves after the native process
-exits so completed ACL actions cannot be held open by inherited stdio handles.
+On Windows, supplying `--cdp-port` makes the operator compile and use the
+native `.exe` CDP adapter under `.a3s-test/office-ops`, which calls the pinned
+standalone `agent-browser` driver directly with `--cdp <port>`. This keeps
+selectors and action JSON out of `.cmd` argument parsing. It does not detach a
+second connection daemon or poll a session port file, and it resolves after the
+native process exits so completed ACL actions cannot be held open by inherited
+stdio handles.
 The Writer text-box contract also observes toolbar overflow and phone-surface
 scrolling before semantic clicks; this is part of the tested user path rather
 than a product-level focus workaround.
@@ -137,7 +139,6 @@ Run one primary ACL directly when narrowing a failure:
 bun run office:ops -- a3s run tests/e2e/word-connector-editor.acl \
   --base-url http://127.0.0.1:4175/playground/ \
   --browser-driver standalone \
-  --browser-executable scripts/a3s-test-cdp-browser.cmd \
   --cdp-port 9345 --json
 ```
 
@@ -155,7 +156,7 @@ Driver/MCP lock before native GUI work:
 
 ```bash
 bun run office:ops -- a3s agent start writer --url http://127.0.0.1:4175/playground/ \
-  --browser-executable scripts/a3s-test-cdp-browser.cmd --cdp-port 9345 --json
+  --cdp-port 9345 --json
 bun run office:ops -- a3s cua certification --json
 ```
 

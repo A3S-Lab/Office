@@ -1,5 +1,11 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { InvalidArgumentError, Option } from 'commander';
 
@@ -72,6 +78,17 @@ export type GuiProfile = {
 
 export const repositoryRoot = path.resolve(import.meta.dirname, '..');
 export const MIN_SUPPORTED_A3S_TEST_MAJOR = 1;
+const cdpBrowserSource = path.join(
+  repositoryRoot,
+  'scripts',
+  'a3s-test-cdp-browser.ts',
+);
+const cdpBrowserExecutable = path.join(
+  repositoryRoot,
+  '.a3s-test',
+  'office-ops',
+  'a3s-test-cdp-browser.exe',
+);
 export const matrix = readJson<Matrix>(
   path.join(repositoryRoot, 'scripts', 'office-editor-matrix.json'),
 );
@@ -104,8 +121,6 @@ export function createSurfacePlan(surface: Surface): SurfacePlan {
         '--run',
         '--browser-driver',
         'standalone',
-        '--browser-executable',
-        'scripts/a3s-test-cdp-browser.cmd',
         '--cdp-port',
         '9345',
         '--json',
@@ -139,8 +154,6 @@ export function createSurfacePlan(surface: Surface): SurfacePlan {
         surface.id,
         '--url',
         matrix.shared.previewUrl,
-        '--browser-executable',
-        'scripts/a3s-test-cdp-browser.cmd',
         '--cdp-port',
         '9345',
         '--json',
@@ -384,6 +397,30 @@ export function resolveA3sTest(): string | undefined {
     (candidate): candidate is string =>
       Boolean(candidate) && existsSync(candidate),
   );
+}
+
+export function resolveCdpBrowserExecutable(
+  cdpPort: string | undefined,
+): string | undefined {
+  const configured = process.env.A3S_TEST_AGENT_BROWSER?.trim();
+  if (configured) return configured;
+  if (!cdpPort) return undefined;
+  if (process.platform !== 'win32') return undefined;
+  const outputDirectory = path.dirname(cdpBrowserExecutable);
+  mkdirSync(outputDirectory, { recursive: true });
+  const shouldBuild =
+    !existsSync(cdpBrowserExecutable) ||
+    statSync(cdpBrowserSource).mtimeMs > statSync(cdpBrowserExecutable).mtimeMs;
+  if (shouldBuild) {
+    run('bun', [
+      'build',
+      cdpBrowserSource,
+      '--compile',
+      '--outfile',
+      cdpBrowserExecutable,
+    ]);
+  }
+  return cdpBrowserExecutable;
 }
 
 export function readA3sTestVersion(executable: string): string | undefined {

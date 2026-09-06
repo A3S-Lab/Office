@@ -19,6 +19,7 @@ import {
   readA3sTestVersion,
   repositoryRoot,
   resolveA3sTest,
+  resolveCdpBrowserExecutable,
   resolveSurface,
   run,
   startPreview,
@@ -486,9 +487,10 @@ function printDoctor(asJson: boolean): void {
   const a3sTest = resolveA3sTest();
   const a3sTestVersion = a3sTest ? readA3sTestVersion(a3sTest) : undefined;
   const a3sTestCompatible = isSupportedA3sTestVersion(a3sTestVersion);
-  const cuaProbe = a3sTest
-    ? capture(a3sTest, ['gui-certification', '--json'])
-    : undefined;
+  const cuaProbe =
+    a3sTest && a3sTestCompatible
+      ? capture(a3sTest, ['gui-certification', '--json'])
+      : undefined;
   const cuaCertification =
     cuaProbe?.status === 0
       ? parseJson<Record<string, unknown>>(cuaProbe.stdout)
@@ -504,7 +506,7 @@ function printDoctor(asJson: boolean): void {
     ),
     a3sTest: Boolean(a3sTest),
     a3sTestCompatible,
-    cuaCertification: cuaProbe?.status === 0,
+    cuaCertification: a3sTestCompatible && cuaProbe?.status === 0,
     wpsProbe:
       process.platform === 'win32' &&
       existsSync(path.join(repositoryRoot, 'scripts', 'probe-wps-shapes.ps1')),
@@ -596,7 +598,10 @@ async function runA3s(selection: string, options: A3sRunOption): Promise<void> {
   if (options.cdpPort) env.A3S_TEST_CDP_PORT = options.cdpPort;
   const browserDriver = options.browserDriver ?? 'standalone';
   const browserExecutable =
-    options.browserExecutable ?? process.env.A3S_TEST_AGENT_BROWSER;
+    options.browserExecutable ??
+    (browserDriver === 'standalone'
+      ? resolveCdpBrowserExecutable(options.cdpPort)
+      : undefined);
   const receipts: unknown[] = [];
   try {
     for (const suite of suites) {
@@ -701,9 +706,8 @@ async function runAgentStart(
   const browserDriver = options.browserDriver ?? 'standalone';
   const browserExecutable =
     options.browserExecutable ??
-    process.env.A3S_TEST_AGENT_BROWSER ??
-    (options.cdpPort
-      ? path.join(repositoryRoot, 'scripts', 'a3s-test-cdp-browser.cmd')
+    (browserDriver === 'standalone'
+      ? resolveCdpBrowserExecutable(options.cdpPort)
       : undefined);
   const env: NodeJS.ProcessEnv = { ...process.env };
   if (options.cdpPort) env.A3S_TEST_CDP_PORT = options.cdpPort;

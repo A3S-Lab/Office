@@ -44,7 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.63.0)
+## What's new on `main` (0.63.1)
+
+- Windows interactive A3S Test runs now compile a native `.exe` CDP adapter
+  under `.a3s-test/office-ops` when `--cdp-port` is provided, preserving typed
+  argv boundaries for selectors and action JSON.
+
+- `doctor --json` reports CUA certification only after a compatible A3S Test
+  capability probe; stale local binaries remain fail-closed.
 
 - The shared matrix now covers representative Spreadsheet ribbon/font,
   Presentation focus, and PDF keyboard/compact-drawer workflows alongside the

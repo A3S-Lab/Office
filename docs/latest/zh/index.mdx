@@ -41,7 +41,14 @@ description: 在应用中接入、扩展 A3S Office 编辑器，审阅有界原�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.63.0）
+## `main` 更新内容（0.63.1）
+
+- Windows 交互式 A3S Test 在提供 `--cdp-port` 时会编译
+  `.a3s-test/office-ops` 下的原生 `.exe` CDP 适配器，确保选择器和 action JSON
+  保持类型化 argv 边界。
+
+- `doctor --json` 只有在兼容的 A3S Test 能力探测通过后才报告 CUA certification；
+  过时的本地二进制仍会 fail-closed。
 
 - 共享矩阵现在在 Writer WPS 契约之外，进一步覆盖 Spreadsheet 功能区/字体、
   Presentation 焦点以及 PDF 键盘/紧凑页面抽屉流程；`plan all --json` 与

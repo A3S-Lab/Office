@@ -323,7 +323,6 @@ bun run office:ops -- capabilities --json
 bun run office:ops -- doctor --json
 bun run office:ops -- gate writer --run \
   --browser-driver standalone \
-  --browser-executable scripts/a3s-test-cdp-browser.cmd \
   --cdp-port 9345
 bun run office:ops -- visual spreadsheet --project compact-768
 ```
@@ -336,6 +335,8 @@ baseline. Use `a3s agent start/observe/act/finish` for bounded exploratory
 sessions and `a3s cua certification --json` before native GUI work. The locked
 CUA Driver 0.10.0 Windows profiles are currently unsupported, so Windows
 browser-editor evidence uses A3S Test Web/CDP. On Windows,
+supplying `--cdp-port` automatically compiles a native `.exe` adapter under
+`.a3s-test/office-ops/`, keeping interactive arguments out of `.cmd` parsing.
 `bun run office:ops -- wps-probe --connector` captures the bounded WPS COM
 reference used for UI/OOXML parity; that probe is evidence, not a product
 runtime. Use `--connector-type straight|elbow|curved` to select the typed WPS
@@ -360,16 +361,17 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.63.0` broadens the declarative WPS/UI evidence matrix across all five
-editor surfaces on top of the Writer completion shipped in `0.62.0`:
+Version `0.63.1` hardens the Windows A3S Test operator on top of the declarative
+WPS/UI evidence matrix shipped in `0.63.0`:
 
-- Spreadsheet ribbon/font shortcuts, Presentation cut/paste focus, and PDF
-  thumbnail keyboard/compact drawer workflows are now included in `plan` and
-  `check` output; Writer formatting and page-navigation visual contracts are
-  included as well.
-- Windows UI operations preserve typed argv boundaries instead of passing agent
-  action JSON and selectors through shell parsing. Browser execution rejects
-  stale A3S Test 0.x binaries before opening a gate.
+- On Windows, `--cdp-port` automatically compiles a native `.exe` adapter under
+  `.a3s-test/office-ops`, keeping selectors and action JSON out of `.cmd`
+  argument parsing while preserving the pinned standalone driver.
+- `doctor --json` only reports CUA certification after a compatible A3S Test
+  capability probe; stale 0.x binaries remain fail-closed and static ACL checks
+  remain available for diagnosis.
+- A live Writer session was verified through the Office CLI with the bounded
+  `start → observe → one action → observe → finish` lifecycle.
 
 Version `0.62.0` completes the Writer side of the declarative WPS evidence
 matrix on top of the typed workflow manifest shipped in `0.61.0`:
