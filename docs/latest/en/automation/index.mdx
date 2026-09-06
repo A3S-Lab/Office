@@ -41,10 +41,21 @@ tar -xzf a3s-office-skill.tar.gz \
   -C "${CODEX_HOME:-$HOME/.codex}/skills"
 ```
 
-The archive includes `SKILL.md` and focused references for documents,
-spreadsheets, presentations, and MCP operation.
+The archive includes `SKILL.md` and focused references for Writer,
+Spreadsheet, Presentation, Markdown, PDF, and MCP operation.
 
 <PlaygroundLink path="downloads/a3s-office-skill/SKILL.md">Read the packaged Skill source before installing it.</PlaygroundLink>
+
+When a CLI host already has a Skill cache, verify the exact package before
+using it:
+
+```bash
+a3s-office skills manifest a3s-office --json
+```
+
+The manifest exposes byte counts and SHA-256 values for `SKILL.md` and every
+bundled reference, so an agent can reload stale guidance instead of making a
+decision from an older cache.
 
 ## 3. Run an exact mutation and verify it
 

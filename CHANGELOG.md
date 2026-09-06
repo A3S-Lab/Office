@@ -13,6 +13,9 @@ All notable changes to A3S Office will be documented in this file.
   plus a five-surface Codex workflow that keeps native file mutations,
   browser interaction, WPS reference probes, and CUA capability boundaries
   separate.
+- Added `office skills manifest <name>`, a deterministic byte-count and
+  SHA-256 inventory for `SKILL.md` and bundled references so Codex can detect
+  stale Skill caches before operating an editor.
 
 ## 0.60.0 - 2026-09-06
 

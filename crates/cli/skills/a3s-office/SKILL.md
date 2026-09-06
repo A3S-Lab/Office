@@ -21,6 +21,17 @@ Use the host surface that is already available:
   repairing, or falling back to a shell.
 - In a CLI-only agent host, use the `a3s use office native ...` commands below.
 
+Before relying on cached guidance, verify the packaged Skill contract once per
+host session:
+
+```bash
+a3s use office skills manifest a3s-office --json
+```
+
+The manifest returns the byte count and SHA-256 for `SKILL.md` and every
+bundled reference. If a previously recorded hash differs, reload the Skill
+before choosing an editor operation.
+
 For browser-editor UI/UX work, read [references/editor-ui.md](references/editor-ui.md)
 and use the source-checkout operator (`bun run office:ops -- ...`). It routes
 the same bounded workflow across Writer, Spreadsheet, Presentation, Markdown,

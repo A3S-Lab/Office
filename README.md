@@ -307,6 +307,12 @@ PDF mutations without interpreting Office's private CRDT schema.
 Read the [automation guide](https://a3s-lab.github.io/Office/docs/automation/)
 and [CLI reference](./docs/latest/en/cli-reference.md).
 
+Before a coding agent uses cached guidance, verify the packaged Skill contract
+with `cargo run -p a3s-office-cli -- skills manifest a3s-office --json` (or
+`a3s-office skills manifest a3s-office --json` after installation). The
+manifest includes byte counts and SHA-256 values for `SKILL.md` and every
+bundled reference.
+
 For browser-editor work, use the repository's local operator instead of
 assembling ad-hoc shell conditionals. It is a Commander-based CLI with one
 declarative matrix for Writer, Spreadsheet, Presentation, Markdown, and PDF:

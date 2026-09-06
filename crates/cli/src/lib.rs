@@ -122,7 +122,7 @@ fn help() -> CommandOutput {
             "  a3s-office <command> [args]\n",
             "  a3s-office native <command> [args]\n",
             "  a3s-office collab <command> [args]\n",
-            "  a3s-office skills list|get|path [args]\n",
+            "  a3s-office skills list|get|manifest|path [args]\n",
             "  a3s-office mcp\n\n",
             "Run 'a3s-office native --help' for document commands or 'a3s-office collab --help' for collaboration commands."
         ),

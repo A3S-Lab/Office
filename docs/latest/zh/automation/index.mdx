@@ -39,9 +39,19 @@ tar -xzf a3s-office-skill.tar.gz \
   -C "${CODEX_HOME:-$HOME/.codex}/skills"
 ```
 
-压缩包包含 `SKILL.md`，以及文档、表格、演示文稿和 MCP 的独立参考资料。
+压缩包包含 `SKILL.md`，以及 Writer、Spreadsheet、Presentation、Markdown、PDF
+和 MCP 的独立参考资料。
 
 <PlaygroundLink path="downloads/a3s-office-skill/SKILL.md">查看打包后的 Skill 源码</PlaygroundLink>
+
+如果 CLI 主机已经缓存了 Skill，应先校验当前包：
+
+```bash
+a3s-office skills manifest a3s-office --json
+```
+
+manifest 会返回 `SKILL.md` 和每份引用文档的字节数与 SHA-256，便于智能体
+发现过期缓存并重新加载指导，而不是基于旧内容选择编辑器操作。
 
 ## 3. 执行修改并验证
 

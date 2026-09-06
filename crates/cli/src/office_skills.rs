@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use a3s_use_core::{UseError, UseResult};
+use sha2::{Digest, Sha256};
 use tokio::io::AsyncReadExt;
 
 use crate::CommandOutput;
@@ -8,6 +9,7 @@ use crate::CommandOutput;
 const SKILLS_ENV: &str = "A3S_USE_OFFICE_SKILLS_DIR";
 const PRIMARY_SKILL: &str = "a3s-office";
 const MAX_SKILLS: usize = 64;
+const MAX_REFERENCES: usize = 128;
 const MAX_SKILL_BYTES: u64 = 256 * 1024;
 const MAX_FULL_SKILL_BYTES: usize = 1024 * 1024;
 
@@ -31,6 +33,7 @@ pub(crate) async fn run(args: &[String]) -> UseResult<CommandOutput> {
     match *command {
         "list" => list(command_args).await,
         "get" => get(command_args).await,
+        "manifest" => manifest(command_args).await,
         "path" => path(command_args).await,
         "help" | "--help" | "-h" => Ok(help()),
         command => Err(skills_usage_error(format!(
@@ -110,6 +113,55 @@ async fn get(args: &[&str]) -> UseResult<CommandOutput> {
     ))
 }
 
+async fn manifest(args: &[&str]) -> UseResult<CommandOutput> {
+    if args.len() != 1 {
+        return Err(skills_usage_error(
+            "office skills manifest requires exactly one <name>",
+        ));
+    }
+    let skill = find_skill(args[0]).await?;
+    let content = read_bounded(&skill.skill_path, MAX_SKILL_BYTES).await?;
+    let references = reference_files(&skill).await?;
+    let content_sha256 = sha256_hex(content.as_bytes());
+    let mut reference_values = Vec::with_capacity(references.len());
+    let mut human = format!(
+        "{}  {}\nSKILL.md: {} bytes sha256 {}",
+        skill.name,
+        skill.description,
+        content.len(),
+        content_sha256
+    );
+    for path in references {
+        let reference = read_bounded(&path, MAX_SKILL_BYTES).await?;
+        let name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("reference.md")
+            .to_string();
+        let sha256 = sha256_hex(reference.as_bytes());
+        human.push_str(&format!(
+            "\nreferences/{name}: {} bytes sha256 {sha256}",
+            reference.len()
+        ));
+        reference_values.push(serde_json::json!({
+            "name": format!("references/{name}"),
+            "bytes": reference.len(),
+            "sha256": sha256
+        }));
+    }
+    Ok(CommandOutput::success(
+        human,
+        serde_json::json!({
+            "name": skill.name,
+            "description": skill.description,
+            "path": skill.skill_path,
+            "contentBytes": content.len(),
+            "contentSha256": content_sha256,
+            "references": reference_values
+        }),
+    ))
+}
+
 async fn path(args: &[&str]) -> UseResult<CommandOutput> {
     if args.len() > 1 {
         return Err(skills_usage_error(
@@ -136,10 +188,11 @@ fn help() -> CommandOutput {
             "usage:\n",
             "  a3s-office skills list [--json]\n",
             "  a3s-office skills get <name> [--full] [--json]\n",
+            "  a3s-office skills manifest <name> [--json]\n",
             "  a3s-office skills path [name] [--json]"
         ),
         serde_json::json!({
-            "commands": ["list", "get", "path"],
+            "commands": ["list", "get", "manifest", "path"],
             "primary": PRIMARY_SKILL
         }),
     )
@@ -288,29 +341,7 @@ async fn canonical_skills_root(
 }
 
 async fn append_references(skill: &OfficeSkill, content: &mut String) -> UseResult<()> {
-    let references = skill.directory.join("references");
-    match tokio::fs::symlink_metadata(&references).await {
-        Ok(metadata) if metadata.is_dir() && !metadata.file_type().is_symlink() => {}
-        Ok(_) => return Ok(()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
-        Err(error) => return Err(skills_io_error("inspect", &references, error)),
-    }
-    let mut entries = tokio::fs::read_dir(&references)
-        .await
-        .map_err(|error| skills_io_error("list", &references, error))?;
-    let mut paths = Vec::new();
-    while let Some(entry) = entries
-        .next_entry()
-        .await
-        .map_err(|error| skills_io_error("list", &references, error))?
-    {
-        let path = entry.path();
-        if path.extension().and_then(|extension| extension.to_str()) == Some("md") {
-            paths.push(path);
-        }
-    }
-    paths.sort();
-    for path in paths {
+    for path in reference_files(skill).await? {
         let metadata = tokio::fs::symlink_metadata(&path)
             .await
             .map_err(|error| skills_io_error("inspect", &path, error))?;
@@ -341,6 +372,45 @@ async fn append_references(skill: &OfficeSkill, content: &mut String) -> UseResu
         content.push_str(&reference);
     }
     Ok(())
+}
+
+async fn reference_files(skill: &OfficeSkill) -> UseResult<Vec<PathBuf>> {
+    let references = skill.directory.join("references");
+    match tokio::fs::symlink_metadata(&references).await {
+        Ok(metadata) if metadata.is_dir() && !metadata.file_type().is_symlink() => {}
+        Ok(_) => return Ok(Vec::new()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(error) => return Err(skills_io_error("inspect", &references, error)),
+    }
+    let mut entries = tokio::fs::read_dir(&references)
+        .await
+        .map_err(|error| skills_io_error("list", &references, error))?;
+    let mut paths = Vec::new();
+    while let Some(entry) = entries
+        .next_entry()
+        .await
+        .map_err(|error| skills_io_error("list", &references, error))?
+    {
+        let path = entry.path();
+        if path.extension().and_then(|extension| extension.to_str()) == Some("md") {
+            paths.push(path);
+            if paths.len() > MAX_REFERENCES {
+                return Err(UseError::new(
+                    "use.office.references_too_many",
+                    format!(
+                        "Office Skill '{}' contains more than {MAX_REFERENCES} references.",
+                        skill.name
+                    ),
+                ));
+            }
+        }
+    }
+    paths.sort();
+    Ok(paths)
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
 }
 
 async fn read_bounded(path: &Path, limit: u64) -> UseResult<String> {
@@ -529,5 +599,32 @@ mod tests {
         assert!(content.contains("## Bundled reference: references/pdf.md"));
         assert_eq!(output.json["data"]["full"], true);
         assert!(content.len() <= MAX_FULL_SKILL_BYTES);
+    }
+
+    #[tokio::test]
+    async fn manifest_exposes_stable_skill_and_reference_hashes() {
+        let first = manifest(&[PRIMARY_SKILL]).await.unwrap();
+        let second = manifest(&[PRIMARY_SKILL]).await.unwrap();
+        assert_eq!(first.json, second.json);
+        assert_eq!(first.json["data"]["name"], PRIMARY_SKILL);
+        assert_eq!(
+            first.json["data"]["contentBytes"].as_u64().unwrap() > 0,
+            true
+        );
+        assert_eq!(
+            first.json["data"]["contentSha256"].as_str().unwrap().len(),
+            64
+        );
+        let references = first.json["data"]["references"].as_array().unwrap();
+        assert!(references
+            .iter()
+            .any(|reference| reference["name"] == "references/markdown.md"));
+        assert!(references
+            .iter()
+            .any(|reference| reference["name"] == "references/pdf.md"));
+        assert!(references
+            .iter()
+            .all(|reference| reference["bytes"].as_u64().unwrap() > 0
+                && reference["sha256"].as_str().unwrap().len() == 64));
     }
 }
