@@ -361,6 +361,19 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.70.0` promotes Spreadsheet phone Find and worksheet-rename
+workflows into the shared WPS/UI evidence matrix on top of the native Windows
+A3S Test operator:
+
+- The declarative matrix now exposes 58 ACL contracts and 49 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Spreadsheet phone evidence now covers touch-sized Find controls, matching-cell
+  selection, invalid worksheet-name feedback, cancelled renames, and restored
+  worksheet-menu focus.
+- A3S Test 1.0.1 validated all 58 ACL files; four new Spreadsheet phone visual
+  cases passed at desktop and compact layouts, and a live Find session restored
+  grid focus without page errors or console messages.
+
 Version `0.69.0` promotes Spreadsheet phone task-pane and context-menu
 workflows into the shared WPS/UI evidence matrix on top of the native Windows
 A3S Test operator:

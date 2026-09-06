@@ -4,6 +4,18 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.70.0 - 2026-09-06
+
+- Promoted two existing Spreadsheet phone workflows into the shared
+  WPS-informed matrix: touch-sized Find controls with matching-cell selection
+  and worksheet-name validation/cancellation with tab-menu focus restoration.
+  The matrix now exposes 58 ACL contracts and 49 visual contracts across all
+  five editors.
+- Ran four Spreadsheet phone visual cases across the desktop and compact
+  Playwright projects, plus a bounded live A3S Test 1.0.1 session that selected
+  a matching cell, restored grid focus, and reported no page errors or console
+  messages.
+
 ## 0.69.0 - 2026-09-06
 
 - Promoted two existing Spreadsheet phone workflows into the shared
