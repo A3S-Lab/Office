@@ -42,6 +42,60 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.69.0',
+    date: '2026-09-06',
+    kind: 'improved',
+    surfaces: ['spreadsheet', 'playground', 'documentation'],
+    title: {
+      en: 'Spreadsheet phone workflows join the WPS evidence matrix',
+      zh: 'Spreadsheet 手机端流程进入 WPS 证据矩阵',
+    },
+    summary: {
+      en: 'The shared operator now inventories 56 ACL and 47 visual contracts, with focused phone task-pane and context-menu evidence.',
+      zh: '共享操作器现在公开 56 个 ACL 和 47 个视觉契约，深入覆盖手机端任务面板与上下文菜单证据。',
+    },
+    highlights: [
+      {
+        title: { en: 'Phone task pane', zh: '手机端任务面板' },
+        detail: {
+          en: 'The data-pivot pane keeps focus inside the modal, supports forward and reverse keyboard traversal, and restores the ribbon invoker on Escape.',
+          zh: '数据透视表面板保持模态焦点隔离，支持正向与反向键盘遍历，并在 Escape 后恢复功能区触发器焦点。',
+        },
+      },
+      {
+        title: { en: 'Phone context menu', zh: '手机端上下文菜单' },
+        detail: {
+          en: 'The touch-sized selection menu exposes a focused first action and returns focus to the Spreadsheet grid after dismissal.',
+          zh: '触控尺寸的选区菜单聚焦首个操作，并在关闭后将焦点恢复到 Spreadsheet 网格。',
+        },
+      },
+      {
+        title: { en: 'Browser proof', zh: '浏览器证据' },
+        detail: {
+          en: 'Four Spreadsheet phone visual cases passed at desktop and compact layouts, plus a live A3S Test 1.0.1 task-pane session with no page errors or console messages.',
+          zh: '4 个 Spreadsheet 手机端视觉用例在桌面与紧凑布局通过，并完成无页面错误或控制台消息的 A3S Test 1.0.1 实时任务面板会话。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.69.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.69.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.68.0',
     date: '2026-09-06',
     kind: 'improved',

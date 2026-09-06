@@ -361,6 +361,18 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.69.0` promotes Spreadsheet phone task-pane and context-menu
+workflows into the shared WPS/UI evidence matrix on top of the native Windows
+A3S Test operator:
+
+- The declarative matrix now exposes 56 ACL contracts and 47 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Spreadsheet phone evidence now covers data-pivot modal focus containment,
+  keyboard traversal, context-menu dismissal, and grid-focus restoration.
+- A3S Test 1.0.1 validated all 56 ACL files; four new Spreadsheet phone visual
+  cases passed at desktop and compact layouts, and a live task-pane session
+  restored the ribbon invoker without page errors or console messages.
+
 Version `0.68.0` promotes Presentation phone review workflows into the shared
 WPS/UI evidence matrix on top of the native Windows A3S Test operator:
 

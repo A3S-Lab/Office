@@ -127,6 +127,8 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
       'tests/e2e/spreadsheet-diagonal-borders.acl',
       'tests/e2e/spreadsheet-gradient-fill.acl',
       'tests/e2e/spreadsheet-pattern-fill.acl',
+      'tests/e2e/spreadsheet-phone-task-pane.acl',
+      'tests/e2e/spreadsheet-phone-context-menu.acl',
     ]),
   );
   expect(
@@ -160,6 +162,8 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
       'visual-tests/spreadsheet-diagonal-borders.functional.spec.ts',
       'visual-tests/spreadsheet-gradient-fill.functional.spec.ts',
       'visual-tests/spreadsheet-pattern-fill.functional.spec.ts',
+      'visual-tests/spreadsheet-phone-task-pane.functional.spec.ts',
+      'visual-tests/spreadsheet-phone-context-menu.functional.spec.ts',
     ]),
   );
   expect(

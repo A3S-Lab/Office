@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.69.0 - 2026-09-06
+
+- Promoted two existing Spreadsheet phone workflows into the shared
+  WPS-informed matrix: data-pivot task-pane focus containment and context-menu
+  dismissal with grid-focus restoration. The matrix now exposes 56 ACL
+  contracts and 47 visual contracts across all five editors.
+- Ran four Spreadsheet phone visual cases across the desktop and compact
+  Playwright projects, plus a bounded live A3S Test 1.0.1 session that opened
+  the data-pivot pane, verified keyboard containment, restored the ribbon
+  invoker, and reported no page errors or console messages.
+
 ## 0.68.0 - 2026-09-06
 
 - Promoted two existing Presentation phone workflows into the shared
