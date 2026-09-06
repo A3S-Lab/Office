@@ -95,9 +95,10 @@ bun run office:ops -- gate writer --run \
 bun run office:ops -- visual spreadsheet --project compact-768
 ```
 
-声明式矩阵覆盖 Writer、Spreadsheet、Presentation、Markdown 和 PDF，目前公开 33 个确定性 ACL
-契约和 24 个视觉契约，包括 Spreadsheet 自动求和、选择性粘贴、条件格式、日期时间、单元格样式、
-富文本、表格汇总、方向与可见性，以及 Presentation IME/大窗口和 PDF 大文件流程。聚焦 gate 会重新生成
+声明式矩阵覆盖 Writer、Spreadsheet、Presentation、Markdown 和 PDF，目前公开 43 个确定性 ACL
+契约和 34 个视觉契约。Writer 包括字符位置、缩放、间距、着重号、隐藏文字、OpenType、内容控件、
+审阅冲突、成对移动修订和手机端修订；Spreadsheet 包括自动求和、选择性粘贴、条件格式、日期时间、
+单元格样式、富文本、表格汇总、方向与可见性，以及 Presentation IME/大窗口和 PDF 大文件流程。聚焦 gate 会重新生成
 被忽略的夹具并解析选定的 A3S Test ACL；传入 `--run` 时由 A3S Test 承担主交互门禁，
 Playwright 仅作为桌面与紧凑视口的补充像素基线。证据写入 `.a3s-test/office-ops/`，不会改动
 已提交的视觉基线，也不会等待 CI。

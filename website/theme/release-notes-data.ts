@@ -42,6 +42,60 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.65.0',
+    date: '2026-09-06',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer typography and review paths join the WPS matrix',
+      zh: 'Writer 排版与审阅路径进入 WPS 矩阵',
+    },
+    summary: {
+      en: 'The shared operator now exposes 43 ACL and 34 visual contracts, with deep Writer font, hidden-text, content-control, and review evidence.',
+      zh: '共享操作器现在公开 43 个 ACL 和 34 个视觉契约，深入覆盖 Writer 字体、隐藏文字、内容控件与审阅证据。',
+    },
+    highlights: [
+      {
+        title: { en: 'WPS typography paths', zh: 'WPS 排版路径' },
+        detail: {
+          en: 'Character position, scale, spacing, emphasis, hidden text, and OpenType controls are now first-class Writer matrix contracts.',
+          zh: '字符位置、缩放、间距、着重号、隐藏文字和 OpenType 控件现在都是 Writer 矩阵的一等契约。',
+        },
+      },
+      {
+        title: { en: 'Review-safe authoring', zh: '安全审阅编辑' },
+        detail: {
+          en: 'Controlled review conflicts, content controls, paired move revisions, and phone track-changes paths are checked beside the existing WPS suites.',
+          zh: '受控审阅冲突、内容控件、成对移动修订和手机端修订路径与既有 WPS 套件一起接受检查。',
+        },
+      },
+      {
+        title: { en: 'Live focus evidence', zh: '实时焦点证据' },
+        detail: {
+          en: 'Forty-one Writer visual cases passed across desktop and compact layouts, with one platform-conditional case skipped; a live typed font-dialog edit passed without page errors.',
+          zh: 'Writer 桌面与紧凑布局共 41 个视觉用例通过，另有 1 个平台条件用例跳过；实时字体对话框类型化编辑通过且无页面错误。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.65.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.65.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.64.0',
     date: '2026-09-06',
     kind: 'improved',

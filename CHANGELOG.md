@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.65.0 - 2026-09-06
+
+- Expanded the WPS-informed Writer row with ten focused visual contracts and
+  ten deterministic ACL contracts for advanced character typography, hidden
+  text, content controls, review conflicts, paired move revisions, and phone
+  track changes. The shared matrix now exposes 43 ACL contracts and 34 visual
+  contracts across all five editors.
+- Updated the plan test to derive Writer visual command IDs from the matrix,
+  so future evidence expansion does not leave a stale fixed-count assertion.
+- Ran 42 Writer visual cases across desktop and compact layouts: 41 passed and
+  one platform-conditional case skipped. A live A3S Test 1.0.1 Writer session
+  committed a typed font-dialog scale edit without page errors.
+
 ## 0.64.0 - 2026-09-06
 
 - Expanded the WPS-informed evidence matrix from 20 to 33 deterministic A3S

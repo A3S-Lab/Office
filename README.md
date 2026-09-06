@@ -361,17 +361,19 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.64.0` deepens the WPS/UI evidence matrix on top of the native Windows
-A3S Test operator shipped in `0.63.1`:
+Version `0.65.0` deepens the Writer WPS/UI evidence matrix on top of the native
+Windows A3S Test operator:
 
-- The declarative matrix now exposes 33 ACL contracts and 24 visual contracts
+- The declarative matrix now exposes 43 ACL contracts and 34 visual contracts
   across Writer, Spreadsheet, Presentation, Markdown, and PDF.
-- Spreadsheet evidence now includes AutoSum, Paste Special, conditional
-  formatting, date/time, cell styles, rich text, table totals,
-  orientation/visibility, and direct-color shortcuts; Presentation and PDF
-  add IME/slideshow/large-window contracts.
-- A3S Test 1.0.1 validated all 33 ACL files, while 16 Spreadsheet visual tests
-  passed at both desktop and compact layouts.
+- Writer evidence now includes character position, scale, spacing, emphasis,
+  hidden text, OpenType, content controls, review conflicts, paired move
+  revisions, and phone track changes alongside the existing WPS suites.
+- A3S Test 1.0.1 validated all 43 ACL files; 41 Writer visual cases passed at
+  desktop and compact layouts, with one platform-conditional case skipped.
+
+Version `0.64.0` deepened the WPS/UI evidence matrix on top of the native Windows
+A3S Test operator shipped in `0.63.1`:
 
 Version `0.63.1` hardens the Windows A3S Test operator on top of the native
 Windows adapter:

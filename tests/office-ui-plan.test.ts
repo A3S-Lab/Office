@@ -31,11 +31,7 @@ test('derives a WPS-aware Writer workflow from the declarative matrix', () => {
     'fixtures',
     'check',
     'gate',
-    'visual-1',
-    'visual-2',
-    'visual-3',
-    'visual-4',
-    'visual-5',
+    ...writerSurfaceVisualCommandIds(plan.surface.visual.length),
     'agent',
     'wps-ui',
     'wps-fields',
@@ -62,6 +58,10 @@ test('derives a WPS-aware Writer workflow from the declarative matrix', () => {
     args: expect.arrayContaining(['--project', 'desktop-1280', 'compact-768']),
   });
 });
+
+function writerSurfaceVisualCommandIds(count: number): string[] {
+  return Array.from({ length: count }, (_, index) => `visual-${index + 1}`);
+}
 
 test('keeps all five editor plans aligned with the shared evidence root', () => {
   const plans = matrix.surfaces.map(createSurfacePlan);
@@ -97,6 +97,11 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
     expect.arrayContaining([
       'visual-tests/document-formatting.functional.spec.ts',
       'visual-tests/document-page-navigation.functional.spec.ts',
+      'visual-tests/document-character-position.functional.spec.ts',
+      'visual-tests/document-character-spacing.functional.spec.ts',
+      'visual-tests/document-opentype.functional.spec.ts',
+      'visual-tests/document-hidden-text.functional.spec.ts',
+      'visual-tests/document-content-control.functional.spec.ts',
     ]),
   );
   expect(
@@ -113,6 +118,20 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
       'tests/e2e/spreadsheet-rich-text.acl',
       'tests/e2e/spreadsheet-table-totals.acl',
       'tests/e2e/spreadsheet-ribbon-orientation-visibility.acl',
+    ]),
+  );
+  expect(
+    plans.find((plan) => plan.surface.id === 'writer')?.surface.acl,
+  ).toEqual(
+    expect.arrayContaining([
+      'tests/e2e/word-character-position.acl',
+      'tests/e2e/word-character-spacing.acl',
+      'tests/e2e/word-emphasis.acl',
+      'tests/e2e/word-hidden-text.acl',
+      'tests/e2e/word-opentype-typography.acl',
+      'tests/e2e/word-review-conflict-phone.acl',
+      'tests/e2e/word-content-controls-phone.acl',
+      'tests/e2e/word-move-revision.acl',
     ]),
   );
   expect(

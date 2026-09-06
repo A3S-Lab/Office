@@ -12,7 +12,17 @@
         "visual-tests/document-text-box.functional.spec.ts",
         "visual-tests/document-field-settings.functional.spec.ts",
         "visual-tests/document-formatting.functional.spec.ts",
-        "visual-tests/document-page-navigation.functional.spec.ts"
+        "visual-tests/document-page-navigation.functional.spec.ts",
+        "visual-tests/document-menu.functional.spec.ts",
+        "visual-tests/document-character-position.functional.spec.ts",
+        "visual-tests/document-character-scale.functional.spec.ts",
+        "visual-tests/document-character-spacing.functional.spec.ts",
+        "visual-tests/document-emphasis.functional.spec.ts",
+        "visual-tests/document-hidden-text.functional.spec.ts",
+        "visual-tests/document-opentype.functional.spec.ts",
+        "visual-tests/document-review-conflict.functional.spec.ts",
+        "visual-tests/document-content-control.functional.spec.ts",
+        "visual-tests/document-move-revision.functional.spec.ts"
       ],
       "acl": [
         "tests/e2e/word-connector-editor.acl",
@@ -23,7 +33,17 @@
         "tests/e2e/word-text-box-phone.acl",
         "tests/e2e/word-wps-shortcuts.acl",
         "tests/e2e/word-wps-layout-parity.acl",
-        "tests/e2e/word-wps-font-grid-parity.acl"
+        "tests/e2e/word-wps-font-grid-parity.acl",
+        "tests/e2e/word-character-position.acl",
+        "tests/e2e/word-character-scale.acl",
+        "tests/e2e/word-character-spacing.acl",
+        "tests/e2e/word-emphasis.acl",
+        "tests/e2e/word-hidden-text.acl",
+        "tests/e2e/word-opentype-typography.acl",
+        "tests/e2e/word-review-conflict-phone.acl",
+        "tests/e2e/word-content-controls-phone.acl",
+        "tests/e2e/word-move-revision.acl",
+        "tests/e2e/word-track-changes-phone.acl"
       ],
       "fixtures": [
         "word-wps-connector.docx",
