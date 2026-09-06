@@ -361,6 +361,17 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.67.0` promotes Spreadsheet appearance workflows into the shared
+WPS/UI evidence matrix on top of the native Windows A3S Test operator:
+
+- The declarative matrix now exposes 52 ACL contracts and 43 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Spreadsheet now has explicit diagonal-border, linear/path-gradient, and
+  pattern-fill contracts with responsive dialog and Undo coverage.
+- A3S Test 1.0.1 validated all 52 ACL files; all 10 new Spreadsheet visual
+  cases passed at desktop and compact layouts, and a live path-gradient edit
+  restored grid focus without page errors.
+
 Version `0.66.0` promotes Spreadsheet sorting and AutoFilter workflows into the
 shared WPS/UI evidence matrix on top of the native Windows A3S Test operator:
 

@@ -42,6 +42,60 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.67.0',
+    date: '2026-09-06',
+    kind: 'improved',
+    surfaces: ['spreadsheet', 'playground', 'documentation'],
+    title: {
+      en: 'Spreadsheet appearance editing joins the WPS evidence matrix',
+      zh: 'Spreadsheet 外观编辑进入 WPS 证据矩阵',
+    },
+    summary: {
+      en: 'The shared operator now inventories 52 ACL and 43 visual contracts, with deep border and fill evidence.',
+      zh: '共享操作器现在公开 52 个 ACL 和 43 个视觉契约，深入覆盖边框与填充证据。',
+    },
+    highlights: [
+      {
+        title: { en: 'Native border controls', zh: '原生边框控件' },
+        detail: {
+          en: 'Diagonal-up and diagonal-down borders remain editable, reversible, and responsive through Format Cells.',
+          zh: '斜上与斜下边框可通过“设置单元格格式”编辑、撤销并适配紧凑布局。',
+        },
+      },
+      {
+        title: { en: 'Gradient and pattern fills', zh: '渐变与图案填充' },
+        detail: {
+          en: 'Linear/path gradients and seventeen native pattern styles are explicit contracts with editable dialogs and Undo.',
+          zh: '线性/路径渐变与 17 种原生图案样式成为显式契约，支持可编辑对话框与撤销。',
+        },
+      },
+      {
+        title: { en: 'Browser proof', zh: '浏览器证据' },
+        detail: {
+          en: 'Ten Spreadsheet visual cases passed at desktop and compact layouts, plus a bounded live path-gradient edit with no page errors.',
+          zh: '10 个 Spreadsheet 视觉用例在桌面与紧凑布局通过，并完成无页面错误的有界路径渐变实时编辑。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.67.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.67.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.66.0',
     date: '2026-09-06',
     kind: 'improved',

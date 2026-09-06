@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.67.0 - 2026-09-06
+
+- Promoted three existing Spreadsheet appearance workflows into the shared
+  WPS-informed matrix: diagonal borders, native linear/path gradient fills,
+  and native pattern fills. The matrix now exposes 52 ACL contracts and 43
+  visual contracts across all five editors.
+- Ran 10 Spreadsheet visual cases across desktop and compact layouts, plus a
+  bounded live A3S Test 1.0.1 session that edited a path-gradient boundary,
+  applied it, restored grid focus, and reported no page errors.
+
 ## 0.66.0 - 2026-09-06
 
 - Promoted six existing Spreadsheet sorting and AutoFilter workflows into the

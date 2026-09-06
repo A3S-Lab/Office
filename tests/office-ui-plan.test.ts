@@ -124,6 +124,9 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
       'tests/e2e/spreadsheet-row-sort.acl',
       'tests/e2e/spreadsheet-sort-range.acl',
       'tests/e2e/spreadsheet-text-sort.acl',
+      'tests/e2e/spreadsheet-diagonal-borders.acl',
+      'tests/e2e/spreadsheet-gradient-fill.acl',
+      'tests/e2e/spreadsheet-pattern-fill.acl',
     ]),
   );
   expect(
@@ -154,6 +157,9 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
       'visual-tests/spreadsheet-row-sort.functional.spec.ts',
       'visual-tests/spreadsheet-sort-range.functional.spec.ts',
       'visual-tests/spreadsheet-text-sort.functional.spec.ts',
+      'visual-tests/spreadsheet-diagonal-borders.functional.spec.ts',
+      'visual-tests/spreadsheet-gradient-fill.functional.spec.ts',
+      'visual-tests/spreadsheet-pattern-fill.functional.spec.ts',
     ]),
   );
   expect(
