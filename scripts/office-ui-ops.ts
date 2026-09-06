@@ -11,10 +11,12 @@ import {
   commandExists,
   createSurfacePlan,
   findGuiProfile,
+  isSupportedA3sTestVersion,
   materializeManifest,
   matrix,
   normalizeRelative,
   parseJson,
+  readA3sTestVersion,
   repositoryRoot,
   resolveA3sTest,
   resolveSurface,
@@ -482,6 +484,8 @@ function printPlan(selection: string, asJson: boolean): void {
 
 function printDoctor(asJson: boolean): void {
   const a3sTest = resolveA3sTest();
+  const a3sTestVersion = a3sTest ? readA3sTestVersion(a3sTest) : undefined;
+  const a3sTestCompatible = isSupportedA3sTestVersion(a3sTestVersion);
   const cuaProbe = a3sTest
     ? capture(a3sTest, ['gui-certification', '--json'])
     : undefined;
@@ -499,6 +503,7 @@ function printDoctor(asJson: boolean): void {
       path.join(repositoryRoot, 'playground-dist', 'playground', 'index.html'),
     ),
     a3sTest: Boolean(a3sTest),
+    a3sTestCompatible,
     cuaCertification: cuaProbe?.status === 0,
     wpsProbe:
       process.platform === 'win32' &&
@@ -508,6 +513,13 @@ function printDoctor(asJson: boolean): void {
     schemaVersion: 1,
     ok: Object.values(checks).every(Boolean),
     checks,
+    a3sTest: {
+      version: a3sTestVersion ?? 'unknown',
+      minimumMajor: 1,
+      note: a3sTestCompatible
+        ? undefined
+        : 'Build or select A3S Test 1.x via A3S_TEST_BIN before running browser gates.',
+    },
     cua: {
       windows: windowsCua?.status ?? 'unknown',
       note:
@@ -522,6 +534,8 @@ function printDoctor(asJson: boolean): void {
     for (const [name, available] of Object.entries(checks)) {
       console.log(`${available ? '✓' : '✗'} ${name}`);
     }
+    console.log(`! a3s-test=${payload.a3sTest.version}`);
+    if (payload.a3sTest.note) console.log(`  ${payload.a3sTest.note}`);
     console.log(`! cua.windows=${payload.cua.windows}`);
     if (payload.cua.note) console.log(`  ${payload.cua.note}`);
   }

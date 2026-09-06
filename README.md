@@ -360,7 +360,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.61.0` adds a declarative, typed workflow manifest for the five editor
+Version `0.62.0` completes the Writer side of the declarative WPS evidence
+matrix on top of the typed workflow manifest shipped in `0.61.0`:
+
+- Writer's shared matrix now includes the existing WPS shortcut, layout-parity,
+  and font/grid A3S Test suites plus all generated DOCX fixtures. `check all`,
+  `gate writer`, and `plan writer --json` therefore expose the same bounded
+  local UI/UX contract instead of leaving those suites as separate scripts.
+
+Version `0.61.0` added a declarative, typed workflow manifest for the five editor
 surfaces on top of the WPS Writer UI/UX reference workflow shipped in `0.60.0`:
 
 - `office:ops:plan` / `office-ui-ops plan <surface> --json` expands the shared

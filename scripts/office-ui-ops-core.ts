@@ -41,7 +41,18 @@ export type PlanCommand = {
 
 export type SurfacePlan = {
   schemaVersion: 1;
-  surface: Pick<Surface, 'id' | 'label' | 'kind' | 'formats' | 'wpsReference'>;
+  surface: Pick<
+    Surface,
+    | 'id'
+    | 'label'
+    | 'kind'
+    | 'formats'
+    | 'visual'
+    | 'acl'
+    | 'fixtures'
+    | 'wpsReference'
+    | 'agent'
+  >;
   evidenceRoot: string;
   commands: PlanCommand[];
 };
@@ -60,6 +71,7 @@ export type GuiProfile = {
 };
 
 export const repositoryRoot = path.resolve(import.meta.dirname, '..');
+export const MIN_SUPPORTED_A3S_TEST_MAJOR = 1;
 export const matrix = readJson<Matrix>(
   path.join(repositoryRoot, 'scripts', 'office-editor-matrix.json'),
 );
@@ -160,7 +172,11 @@ export function createSurfacePlan(surface: Surface): SurfacePlan {
       label: surface.label,
       kind: surface.kind,
       formats: surface.formats,
+      visual: surface.visual,
+      acl: surface.acl,
+      fixtures: surface.fixtures,
       ...(surface.wpsReference ? { wpsReference: true } : {}),
+      ...(surface.agent ? { agent: surface.agent } : {}),
     },
     evidenceRoot: path.join(matrix.shared.evidenceRoot, surface.id),
     commands,
@@ -363,6 +379,24 @@ export function resolveA3sTest(): string | undefined {
   return [...candidates, pathCandidate].find(
     (candidate): candidate is string =>
       Boolean(candidate) && existsSync(candidate),
+  );
+}
+
+export function readA3sTestVersion(executable: string): string | undefined {
+  const result = spawnSync(executable, ['--version'], {
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+  if (result.status !== 0) return undefined;
+  return (result.stdout ?? '').trim().split(/\r?\n/u)[0] || undefined;
+}
+
+export function isSupportedA3sTestVersion(
+  version: string | undefined,
+): boolean {
+  const match = version?.match(/\ba3s-test\s+(\d+)\./iu);
+  return Boolean(
+    match && Number.parseInt(match[1], 10) >= MIN_SUPPORTED_A3S_TEST_MAJOR,
   );
 }
 

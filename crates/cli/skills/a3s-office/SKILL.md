@@ -46,6 +46,11 @@ Start each UI/UX pass with `bun run office:ops -- plan <surface> --json` (or
 `plan all --json`). The plan is generated from the shared editor matrix and
 emits typed fixture, ACL, A3S Test, visual, agent, and WPS-reference commands;
 do not hand-author per-surface shell conditionals.
+The Writer row includes the WPS shortcut, layout-parity, and font/grid ACLs plus
+their generated DOCX fixtures, so use its returned inventory before choosing a
+native or browser operation.
+`doctor --json` also fails closed for stale A3S Test binaries; the supported
+local gate line is A3S Test 1.x with the pinned standalone Web protocol.
 
 ## Workflow
 

@@ -115,6 +115,10 @@ command never waits for CI.
 `plan <surface> --json` is the machine-readable handoff for Codex. It expands
 one matrix row into typed fixture, ACL, gate, visual, agent, and (for Writer)
 WPS reference commands, so the runner does not need per-surface shell logic.
+The Writer row also exposes the shortcut, layout-parity, and font/grid suites
+and their generated DOCX fixtures; use that inventory before changing UI code.
+`doctor --json` reports the installed A3S Test version and fails closed unless
+the supported 1.x line is selected.
 
 On Windows, the CDP adapter calls the pinned standalone `agent-browser`
 driver directly with `--cdp <port>`. It does not detach a second connection

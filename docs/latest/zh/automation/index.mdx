@@ -104,6 +104,8 @@ Playwright 仅作为桌面与紧凑视口的补充像素基线。证据写入 `.
 `plan <surface> --json` 是交给 Codex 的机器可读工作流清单。它把一行矩阵展开为类型化的
 夹具、ACL、门禁、视觉、智能体以及（Writer 专用）WPS 参考命令，运行器无需为每个编辑器
 编写独立的 shell 条件。
+Writer 行还会公开快捷键、版式对齐、字体/网格套件及其生成的 DOCX 夹具；修改 UI 代码前应先检查这份清单。
+`doctor --json` 会报告已安装的 A3S Test 版本；未选择受支持的 1.x 版本时会 fail-closed。
 
 在 Windows 上，CDP 适配器直接以 `--cdp <port>` 调用锁定版本的独立
 `agent-browser` 驱动，不再分离第二个连接守护进程或轮询 session 端口文件；原生进程退出后

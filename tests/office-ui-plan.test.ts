@@ -14,6 +14,18 @@ test('derives a WPS-aware Writer workflow from the declarative matrix', () => {
     id: 'writer',
     kind: 'document',
     wpsReference: true,
+    acl: expect.arrayContaining([
+      'tests/e2e/word-wps-shortcuts.acl',
+      'tests/e2e/word-wps-layout-parity.acl',
+      'tests/e2e/word-wps-font-grid-parity.acl',
+    ]),
+    fixtures: expect.arrayContaining([
+      'word-wps-layout.docx',
+      'word-wps-font-matrix.docx',
+      'word-wps-cjk-font-matrix.docx',
+      'word-wps-grid-matrix.docx',
+      'word-wps-script-matrix.docx',
+    ]),
   });
   expect(commandIds).toEqual([
     'fixtures',

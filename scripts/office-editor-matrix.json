@@ -18,14 +18,22 @@
         "tests/e2e/word-wps-connector-kinds.acl",
         "tests/e2e/word-wps-numeric-fields.acl",
         "tests/e2e/word-field-settings.acl",
-        "tests/e2e/word-text-box-phone.acl"
+        "tests/e2e/word-text-box-phone.acl",
+        "tests/e2e/word-wps-shortcuts.acl",
+        "tests/e2e/word-wps-layout-parity.acl",
+        "tests/e2e/word-wps-font-grid-parity.acl"
       ],
       "fixtures": [
         "word-wps-connector.docx",
         "word-wps-connector-kinds.docx",
         "word-wps-numeric-fields.docx",
         "word-field-settings.docx",
-        "word-wps-shape.docx"
+        "word-wps-shape.docx",
+        "word-wps-layout.docx",
+        "word-wps-font-matrix.docx",
+        "word-wps-cjk-font-matrix.docx",
+        "word-wps-grid-matrix.docx",
+        "word-wps-script-matrix.docx"
       ],
       "wpsReference": true,
       "agent": {

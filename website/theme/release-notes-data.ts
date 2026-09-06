@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.62.0',
+    date: '2026-09-06',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer WPS evidence becomes one complete matrix',
+      zh: 'Writer WPS 证据统一进入完整矩阵',
+    },
+    summary: {
+      en: 'Existing WPS shortcut, layout-parity, and font/grid suites now flow through the same declarative operator as every other editor surface.',
+      zh: '已有的 WPS 快捷键、版式对齐和字体/网格套件现在与其他编辑器共享同一个声明式操作矩阵。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No hidden Writer contracts',
+          zh: 'Writer 契约不再隐藏',
+        },
+        detail: {
+          en: '`check all`, `gate writer`, and `plan writer --json` now include shortcut, layout, and font/grid ACLs that were previously only reachable through standalone scripts.',
+          zh: '`check all`、`gate writer` 和 `plan writer --json` 现在包含此前只能通过独立脚本运行的快捷键、版式和字体/网格 ACL。',
+        },
+      },
+      {
+        title: {
+          en: 'Fixture inventory is explicit',
+          zh: '夹具清单显式化',
+        },
+        detail: {
+          en: 'The Writer plan reports every WPS layout and font-matrix DOCX fixture before an agent chooses an interaction path.',
+          zh: 'Writer 清单会在智能体选择交互路径前报告全部 WPS 版式和字体矩阵 DOCX 夹具。',
+        },
+      },
+      {
+        title: {
+          en: 'Metadata travels with the plan',
+          zh: '计划携带完整元数据',
+        },
+        detail: {
+          en: 'Machine-readable plans now carry visual, ACL, fixture, and agent metadata while retaining the observe → one action → observe boundary.',
+          zh: '机器可读计划现在携带视觉、ACL、夹具和智能体元数据，同时保留 observe → 一次动作 → observe 边界。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './automation/index.html',
+          zh: './automation/index.html',
+        },
+        label: {
+          en: 'Run the Writer matrix',
+          zh: '运行 Writer 矩阵',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.62.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.62.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: {
+          en: './cli-reference.html',
+          zh: './cli-reference.html',
+        },
+        label: {
+          en: 'CLI reference',
+          zh: 'CLI 参考',
+        },
+      },
+    ],
+  },
+  {
     version: '0.61.0',
     date: '2026-09-06',
     kind: 'new',

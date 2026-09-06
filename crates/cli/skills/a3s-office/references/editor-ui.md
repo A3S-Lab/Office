@@ -21,7 +21,7 @@ Test ACLs, deterministic fixtures, and the WPS reference flag:
 
 | Surface | Focused local contract | Typical evidence |
 | --- | --- | --- |
-| Writer | `writer` | ribbon state, imported DOCX, pagination, undo/redo, WPS drawing boundary |
+| Writer | `writer` | ribbon state, WPS shortcuts, imported DOCX, pagination, font/grid metrics, undo/redo, WPS drawing boundary |
 | Spreadsheet | `spreadsheet` | grid selection, formula/validation dialogs, sorting, compact layout |
 | Presentation | `presentation` | object selection, animation/task panes, keyboard focus, compact canvas |
 | Markdown | `markdown` | source/visual/split modes, link dialogs, read-only preview, focus return |
@@ -31,6 +31,8 @@ Test ACLs, deterministic fixtures, and the WPS reference flag:
 the selected matrix row into typed fixture, ACL, A3S Test gate, desktop/compact
 visual, exploratory-agent, and (for Writer) WPS COM reference commands. Keep
 the manifest as the handoff between Codex/CLI and the UI evidence runner.
+`doctor --json` must report `a3sTestCompatible: true` before a browser gate is
+treated as runnable; stale 0.x binaries are surfaced as infrastructure failure.
 
 Run one bounded surface gate while developing. `check` is the fast ACL parse;
 add `--run` when a configured A3S Test browser should execute the primary

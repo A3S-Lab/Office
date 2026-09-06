@@ -4,6 +4,20 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.62.0 - 2026-09-06
+
+- Expanded the declarative five-surface matrix with Writer WPS shortcut,
+  layout-parity, and font/grid A3S Test suites plus their deterministic DOCX
+  fixtures. `check all`, `gate writer`, and `plan writer --json` now expose the
+  complete bounded WPS UI/UX evidence set instead of silently omitting these
+  existing contracts.
+- Extended the machine-readable surface plan with each surface's visual,
+  ACL, fixture, and agent metadata so Codex can inspect the exact contract
+  inventory before choosing a typed action.
+- Made `office-ui-ops doctor --json` report the A3S Test version and reject
+  stale 0.x binaries before browser gates, preventing infrastructure drift from
+  being mistaken for UI evidence.
+
 ## 0.61.0 - 2026-09-06
 
 - Added typed `office-ui-ops a3s agent` action subcommands for common editor
