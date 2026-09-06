@@ -42,6 +42,60 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.66.0',
+    date: '2026-09-06',
+    kind: 'improved',
+    surfaces: ['spreadsheet', 'playground', 'documentation'],
+    title: {
+      en: 'Spreadsheet sorting becomes a first-class WPS matrix slice',
+      zh: 'Spreadsheet 排序进入 WPS 一等证据矩阵',
+    },
+    summary: {
+      en: 'The shared operator now inventories 49 ACL and 40 visual contracts, with deep sort and AutoFilter evidence.',
+      zh: '共享操作器现在公开 49 个 ACL 和 40 个视觉契约，深入覆盖排序与自动筛选证据。',
+    },
+    highlights: [
+      {
+        title: { en: 'Sort semantics', zh: '排序语义' },
+        detail: {
+          en: 'Appearance/color, custom-list, table-owned, left-to-right, partial-range, and Simplified Chinese text sorting are now explicit contracts.',
+          zh: '外观/颜色、自定义序列、表格所有者、左右、部分范围和简体中文文本排序现在都是显式契约。',
+        },
+      },
+      {
+        title: { en: 'Filter-safe ranges', zh: '筛选安全范围' },
+        detail: {
+          en: 'Owned-range sorting re-applies AutoFilter criteria and preserves Undo/focus behavior across responsive layouts.',
+          zh: '所有者范围排序会重新应用自动筛选条件，并在响应式布局中保持撤销/焦点行为。',
+        },
+      },
+      {
+        title: { en: 'Browser proof', zh: '浏览器证据' },
+        detail: {
+          en: 'Fourteen Spreadsheet visual cases passed at desktop and compact layouts, plus a bounded live A3S Test 1.0.1 sort session.',
+          zh: '14 个 Spreadsheet 视觉用例在桌面与紧凑布局通过，并完成有界 A3S Test 1.0.1 实时排序会话。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.66.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.66.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.65.0',
     date: '2026-09-06',
     kind: 'improved',

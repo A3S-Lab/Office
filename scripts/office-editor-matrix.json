@@ -80,7 +80,13 @@
         "visual-tests/spreadsheet-date-time.functional.spec.ts",
         "visual-tests/spreadsheet-cell-style.functional.spec.ts",
         "visual-tests/spreadsheet-rich-text.functional.spec.ts",
-        "visual-tests/spreadsheet-table-totals.functional.spec.ts"
+        "visual-tests/spreadsheet-table-totals.functional.spec.ts",
+        "visual-tests/spreadsheet-appearance-sort.functional.spec.ts",
+        "visual-tests/spreadsheet-custom-list-sort.functional.spec.ts",
+        "visual-tests/spreadsheet-owned-range-sort.functional.spec.ts",
+        "visual-tests/spreadsheet-row-sort.functional.spec.ts",
+        "visual-tests/spreadsheet-sort-range.functional.spec.ts",
+        "visual-tests/spreadsheet-text-sort.functional.spec.ts"
       ],
       "acl": [
         "tests/e2e/spreadsheet-data-validation.acl",
@@ -96,7 +102,13 @@
         "tests/e2e/spreadsheet-table.acl",
         "tests/e2e/spreadsheet-table-totals.acl",
         "tests/e2e/spreadsheet-ribbon-orientation-visibility.acl",
-        "tests/e2e/spreadsheet-font-colors-shortcuts.acl"
+        "tests/e2e/spreadsheet-font-colors-shortcuts.acl",
+        "tests/e2e/spreadsheet-appearance-sort.acl",
+        "tests/e2e/spreadsheet-custom-list-sort.acl",
+        "tests/e2e/spreadsheet-owned-range-sort.acl",
+        "tests/e2e/spreadsheet-row-sort.acl",
+        "tests/e2e/spreadsheet-sort-range.acl",
+        "tests/e2e/spreadsheet-text-sort.acl"
       ],
       "fixtures": ["spreadsheet-1904-date-system.xlsx"],
       "agent": {

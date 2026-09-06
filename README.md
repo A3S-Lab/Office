@@ -361,6 +361,17 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.66.0` promotes Spreadsheet sorting and AutoFilter workflows into the
+shared WPS/UI evidence matrix on top of the native Windows A3S Test operator:
+
+- The declarative matrix now exposes 49 ACL contracts and 40 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Spreadsheet now has explicit appearance/color, custom-list, table-owned,
+  left-to-right, partial-range, and Simplified Chinese text sorting contracts.
+- A3S Test 1.0.1 validated all 49 ACL files; all 14 Spreadsheet visual cases
+  passed at desktop and compact layouts, and a live sort dialog session showed
+  color-sort controls without page errors.
+
 Version `0.65.0` deepens the Writer WPS/UI evidence matrix on top of the native
 Windows A3S Test operator:
 

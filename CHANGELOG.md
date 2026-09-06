@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.66.0 - 2026-09-06
+
+- Promoted six existing Spreadsheet sorting and AutoFilter workflows into the
+  shared WPS-informed matrix: appearance/color, custom-list, table-owned,
+  left-to-right, partial-range expansion, and Simplified Chinese text sorting.
+  The matrix now exposes 49 ACL contracts and 40 visual contracts across all
+  five editors.
+- Ran 14 Spreadsheet visual cases across desktop and compact layouts, plus a
+  bounded live A3S Test 1.0.1 Spreadsheet sort session with no page errors.
+
 ## 0.65.0 - 2026-09-06
 
 - Expanded the WPS-informed Writer row with ten focused visual contracts and
