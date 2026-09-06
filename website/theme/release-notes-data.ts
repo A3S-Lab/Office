@@ -42,6 +42,69 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.64.0',
+    date: '2026-09-06',
+    kind: 'improved',
+    surfaces: [
+      'spreadsheet',
+      'presentation',
+      'pdf',
+      'playground',
+      'documentation',
+    ],
+    title: {
+      en: 'The WPS evidence matrix gets deep Spreadsheet coverage',
+      zh: 'WPS 证据矩阵深入覆盖 Spreadsheet 等编辑器',
+    },
+    summary: {
+      en: 'A3S Test now inventories 33 ACL and 24 visual contracts across the five editors, with live Spreadsheet focus evidence.',
+      zh: 'A3S Test 现在为五种编辑器清晰列出 33 个 ACL 和 24 个视觉契约，并提供实时 Spreadsheet 焦点证据。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Deeper Spreadsheet paths',
+          zh: '更深入的 Spreadsheet 路径',
+        },
+        detail: {
+          en: 'AutoSum, Paste Special, conditional formatting, date/time, cell styles, rich text, table totals, orientation/visibility, and direct-color shortcuts are now matrix contracts.',
+          zh: '自动求和、选择性粘贴、条件格式、日期时间、单元格样式、富文本、表格汇总、方向/可见性和直接颜色快捷键现在都进入矩阵契约。',
+        },
+      },
+      {
+        title: { en: 'Cross-surface regression', zh: '跨编辑器回归' },
+        detail: {
+          en: 'Presentation IME/large-window and PDF large-file ACLs join the Writer, Markdown, and existing Spreadsheet workflows.',
+          zh: 'Presentation IME/大窗口与 PDF 大文件 ACL 加入 Writer、Markdown 以及既有 Spreadsheet 流程。',
+        },
+      },
+      {
+        title: { en: 'Real browser evidence', zh: '真实浏览器证据' },
+        detail: {
+          en: 'Sixteen Spreadsheet visual tests passed at desktop and compact layouts; a bounded A3S Test 1.0.1 session restored grid selection after a typed edit.',
+          zh: '16 个 Spreadsheet 视觉测试在桌面和紧凑布局通过；有界 A3S Test 1.0.1 会话在类型化编辑后恢复了网格选区。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.64.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.64.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.63.1',
     date: '2026-09-06',
     kind: 'improved',

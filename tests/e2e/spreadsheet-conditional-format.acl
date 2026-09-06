@@ -41,8 +41,7 @@ suite "office-spreadsheet-conditional-format" {
         }
 
         expect "formula-rule-range-visible" {
-            target = css(".work-spreadsheet-conditional-list button.active small")
-            rendered_text = "A4:H9"
+            text = "A4:H9"
         }
 
         fill "edit-formula-rule" {

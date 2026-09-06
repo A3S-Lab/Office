@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.64.0 - 2026-09-06
+
+- Expanded the WPS-informed evidence matrix from 20 to 33 deterministic A3S
+  Test ACL contracts and from 15 to 24 visual contracts. Spreadsheet now
+  covers AutoSum, Paste Special, conditional formatting, date/time, cell
+  styles, rich text, table totals, orientation/visibility, and direct-color
+  shortcuts; Presentation adds IME and large-window evidence; PDF adds the
+  large-file windowing contract.
+- Repaired the conditional-format ACL to use the supported A3S Test text
+  expectation grammar, keeping the rule-range assertion executable on the
+  locked 1.0.1 runner.
+- Ran 16 Spreadsheet visual tests across desktop and compact layouts, plus a
+  live A3S Test Spreadsheet session that committed a typed edit and restored
+  grid selection without page errors.
+
 ## 0.63.1 - 2026-09-06
 
 - Fixed Windows interactive A3S Test dispatch by compiling the CDP adapter to

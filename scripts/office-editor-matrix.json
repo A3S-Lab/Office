@@ -52,13 +52,31 @@
         "visual-tests/spreadsheet-data-validation.functional.spec.ts",
         "visual-tests/spreadsheet-custom-sort.functional.spec.ts",
         "visual-tests/spreadsheet-ribbon.functional.spec.ts",
-        "visual-tests/spreadsheet-font-dialog-shortcuts.functional.spec.ts"
+        "visual-tests/spreadsheet-font-dialog-shortcuts.functional.spec.ts",
+        "visual-tests/spreadsheet-auto-sum.functional.spec.ts",
+        "visual-tests/spreadsheet-format-cells.functional.spec.ts",
+        "visual-tests/spreadsheet-paste-special.functional.spec.ts",
+        "visual-tests/spreadsheet-conditional-format.functional.spec.ts",
+        "visual-tests/spreadsheet-date-time.functional.spec.ts",
+        "visual-tests/spreadsheet-cell-style.functional.spec.ts",
+        "visual-tests/spreadsheet-rich-text.functional.spec.ts",
+        "visual-tests/spreadsheet-table-totals.functional.spec.ts"
       ],
       "acl": [
         "tests/e2e/spreadsheet-data-validation.acl",
         "tests/e2e/spreadsheet-custom-sort.acl",
         "tests/e2e/spreadsheet-ribbon-alignment.acl",
-        "tests/e2e/spreadsheet-font-dialog-shortcuts.acl"
+        "tests/e2e/spreadsheet-font-dialog-shortcuts.acl",
+        "tests/e2e/spreadsheet-auto-sum.acl",
+        "tests/e2e/spreadsheet-paste-special.acl",
+        "tests/e2e/spreadsheet-conditional-format.acl",
+        "tests/e2e/spreadsheet-date-time.acl",
+        "tests/e2e/spreadsheet-cell-style.acl",
+        "tests/e2e/spreadsheet-rich-text.acl",
+        "tests/e2e/spreadsheet-table.acl",
+        "tests/e2e/spreadsheet-table-totals.acl",
+        "tests/e2e/spreadsheet-ribbon-orientation-visibility.acl",
+        "tests/e2e/spreadsheet-font-colors-shortcuts.acl"
       ],
       "fixtures": ["spreadsheet-1904-date-system.xlsx"],
       "agent": {
@@ -74,12 +92,15 @@
       "visual": [
         "visual-tests/presentation-animation.functional.spec.ts",
         "visual-tests/presentation-task-panes.functional.spec.ts",
-        "visual-tests/presentation-menu.functional.spec.ts"
+        "visual-tests/presentation-menu.functional.spec.ts",
+        "visual-tests/presentation-slideshow.functional.spec.ts"
       ],
       "acl": [
         "tests/e2e/presentation-animation.acl",
         "tests/e2e/presentation-presenter-view.acl",
-        "tests/e2e/presentation-cut-paste-focus.acl"
+        "tests/e2e/presentation-cut-paste-focus.acl",
+        "tests/e2e/presentation-chinese-ime.acl",
+        "tests/e2e/presentation-large-windowing.acl"
       ],
       "fixtures": [],
       "agent": {
@@ -112,7 +133,8 @@
       "acl": [
         "tests/e2e/pdf-page-organization.acl",
         "tests/e2e/pdf-thumbnail-keyboard.acl",
-        "tests/e2e/pdf-page-drawer-phone.acl"
+        "tests/e2e/pdf-page-drawer-phone.acl",
+        "tests/e2e/pdf-large-windowing.acl"
       ],
       "fixtures": ["pdf-thumbnail-keyboard.pdf"],
       "agent": {

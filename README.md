@@ -361,8 +361,20 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.63.1` hardens the Windows A3S Test operator on top of the declarative
-WPS/UI evidence matrix shipped in `0.63.0`:
+Version `0.64.0` deepens the WPS/UI evidence matrix on top of the native Windows
+A3S Test operator shipped in `0.63.1`:
+
+- The declarative matrix now exposes 33 ACL contracts and 24 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Spreadsheet evidence now includes AutoSum, Paste Special, conditional
+  formatting, date/time, cell styles, rich text, table totals,
+  orientation/visibility, and direct-color shortcuts; Presentation and PDF
+  add IME/slideshow/large-window contracts.
+- A3S Test 1.0.1 validated all 33 ACL files, while 16 Spreadsheet visual tests
+  passed at both desktop and compact layouts.
+
+Version `0.63.1` hardens the Windows A3S Test operator on top of the native
+Windows adapter:
 
 - On Windows, `--cdp-port` automatically compiles a native `.exe` adapter under
   `.a3s-test/office-ops`, keeping selectors and action JSON out of `.cmd`
@@ -370,8 +382,6 @@ WPS/UI evidence matrix shipped in `0.63.0`:
 - `doctor --json` only reports CUA certification after a compatible A3S Test
   capability probe; stale 0.x binaries remain fail-closed and static ACL checks
   remain available for diagnosis.
-- A live Writer session was verified through the Office CLI with the bounded
-  `start → observe → one action → observe → finish` lifecycle.
 
 Version `0.62.0` completes the Writer side of the declarative WPS evidence
 matrix on top of the typed workflow manifest shipped in `0.61.0`:

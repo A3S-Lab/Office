@@ -41,7 +41,15 @@ description: 在应用中接入、扩展 A3S Office 编辑器，审阅有界原�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.63.1）
+## `main` 更新内容（0.64.0）
+
+- 基于 WPS 的证据矩阵现在公开 33 个 A3S Test ACL 契约和 24 个视觉契约。
+  Spreadsheet 覆盖自动求和、选择性粘贴、条件格式、日期时间、单元格样式、
+  富文本、表格汇总以及键盘可见性/颜色路径；Presentation 和 PDF 增加 IME、
+  放映与大文件窗口证据。
+
+- 16 个 Spreadsheet 视觉测试在桌面和紧凑布局全部通过；A3S Test 1.0.1
+  实时 Spreadsheet 会话提交了类型化编辑、恢复网格选区且没有页面错误。
 
 - Windows 交互式 A3S Test 在提供 `--cdp-port` 时会编译
   `.a3s-test/office-ops` 下的原生 `.exe` CDP 适配器，确保选择器和 action JSON

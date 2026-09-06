@@ -105,17 +105,40 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
     expect.arrayContaining([
       'tests/e2e/spreadsheet-ribbon-alignment.acl',
       'tests/e2e/spreadsheet-font-dialog-shortcuts.acl',
+      'tests/e2e/spreadsheet-auto-sum.acl',
+      'tests/e2e/spreadsheet-paste-special.acl',
+      'tests/e2e/spreadsheet-conditional-format.acl',
+      'tests/e2e/spreadsheet-date-time.acl',
+      'tests/e2e/spreadsheet-cell-style.acl',
+      'tests/e2e/spreadsheet-rich-text.acl',
+      'tests/e2e/spreadsheet-table-totals.acl',
+      'tests/e2e/spreadsheet-ribbon-orientation-visibility.acl',
+    ]),
+  );
+  expect(
+    plans.find((plan) => plan.surface.id === 'spreadsheet')?.surface.visual,
+  ).toEqual(
+    expect.arrayContaining([
+      'visual-tests/spreadsheet-auto-sum.functional.spec.ts',
+      'visual-tests/spreadsheet-format-cells.functional.spec.ts',
+      'visual-tests/spreadsheet-paste-special.functional.spec.ts',
+      'visual-tests/spreadsheet-rich-text.functional.spec.ts',
     ]),
   );
   expect(
     plans.find((plan) => plan.surface.id === 'presentation')?.surface.acl,
   ).toEqual(
-    expect.arrayContaining(['tests/e2e/presentation-cut-paste-focus.acl']),
+    expect.arrayContaining([
+      'tests/e2e/presentation-cut-paste-focus.acl',
+      'tests/e2e/presentation-chinese-ime.acl',
+      'tests/e2e/presentation-large-windowing.acl',
+    ]),
   );
   expect(plans.find((plan) => plan.surface.id === 'pdf')?.surface.acl).toEqual(
     expect.arrayContaining([
       'tests/e2e/pdf-thumbnail-keyboard.acl',
       'tests/e2e/pdf-page-drawer-phone.acl',
+      'tests/e2e/pdf-large-windowing.acl',
     ]),
   );
 });
