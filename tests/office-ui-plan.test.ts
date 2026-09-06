@@ -131,6 +131,8 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
       'tests/e2e/spreadsheet-phone-context-menu.acl',
       'tests/e2e/spreadsheet-phone-find.acl',
       'tests/e2e/spreadsheet-phone-rename.acl',
+      'tests/e2e/spreadsheet-hyperlink.acl',
+      'tests/e2e/spreadsheet-underline-styles.acl',
     ]),
   );
   expect(
@@ -168,6 +170,8 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
       'visual-tests/spreadsheet-phone-context-menu.functional.spec.ts',
       'visual-tests/spreadsheet-phone-find.functional.spec.ts',
       'visual-tests/spreadsheet-phone-rename.functional.spec.ts',
+      'visual-tests/spreadsheet-hyperlink.functional.spec.ts',
+      'visual-tests/spreadsheet-underline.functional.spec.ts',
     ]),
   );
   expect(

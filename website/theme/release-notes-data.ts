@@ -42,6 +42,60 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.71.0',
+    date: '2026-09-07',
+    kind: 'improved',
+    surfaces: ['spreadsheet', 'playground', 'documentation'],
+    title: {
+      en: 'Spreadsheet hyperlink safety and underline parity become explicit',
+      zh: 'Spreadsheet 超链接安全与下划线对齐成为显式证据',
+    },
+    summary: {
+      en: 'The shared operator now inventories 60 ACL and 51 visual contracts, with focused hyperlink, underline, and shell-asset evidence.',
+      zh: '共享操作器现在公开 60 个 ACL 和 51 个视觉契约，深入覆盖超链接、下划线与外壳资源证据。',
+    },
+    highlights: [
+      {
+        title: { en: 'Hyperlink safety', zh: '超链接安全' },
+        detail: {
+          en: 'The dialog rejects javascript URLs, protects hidden worksheets, normalizes HTTPS addresses, and returns focus to the grid after removal.',
+          zh: '对话框拒绝 javascript URL、保护隐藏工作表、规范化 HTTPS 地址，并在移除后将焦点返回网格。',
+        },
+      },
+      {
+        title: { en: 'Underline parity', zh: '下划线对齐' },
+        detail: {
+          en: 'Advanced underline styles stay aligned across the ribbon menu, cell-format dialog, keyboard shortcuts, and undo history.',
+          zh: '高级下划线样式在功能区菜单、单元格格式对话框、键盘快捷键和撤销历史之间保持一致。',
+        },
+      },
+      {
+        title: { en: 'Browser proof', zh: '浏览器证据' },
+        detail: {
+          en: 'Four Spreadsheet visual cases passed at desktop and compact layouts, plus a live A3S Test 1.0.1 hyperlink session with no page errors or console messages; shared shell assets remove the logo 404.',
+          zh: '4 个 Spreadsheet 视觉用例在桌面与紧凑布局通过，并完成无页面错误或控制台消息的 A3S Test 1.0.1 实时超链接会话；共享外壳资源消除了 logo 404。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.71.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.71.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.70.0',
     date: '2026-09-06',
     kind: 'improved',

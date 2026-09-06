@@ -26,6 +26,16 @@ export default defineConfig(({ command, env }) => {
       cleanDistPath: true,
       copy: [
         {
+          // Keep the Playground shell's navigation logo available in the
+          // production bundle so every editor session starts without a 404.
+          from: '../docs/public/a3s-logo.png',
+          to: 'a3s-logo.png',
+        },
+        {
+          from: '../docs/public/favicon.svg',
+          to: 'favicon.svg',
+        },
+        {
           from: '../node_modules/@embedpdf/pdfium/LICENSE.pdfium',
           to: 'pdfium.LICENSE.txt',
         },

@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.71.0 - 2026-09-07
+
+- Promoted two existing Spreadsheet workflows into the shared WPS-informed
+  matrix: hyperlink insertion/edit/removal with unsafe-URL rejection and
+  advanced underline styles across the ribbon, cell-format dialog, shortcuts,
+  and undo. The matrix now exposes 60 ACL contracts and 51 visual contracts
+  across all five editors.
+- Fixed the production Playground shell's missing logo/favicon assets so editor
+  sessions no longer emit a 404 console error. Ran four Spreadsheet visual cases
+  across desktop and compact layouts, plus a bounded live A3S Test 1.0.1
+  hyperlink session that restored grid focus and reported no page errors or
+  console messages.
+
 ## 0.70.0 - 2026-09-06
 
 - Promoted two existing Spreadsheet phone workflows into the shared

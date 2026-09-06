@@ -361,6 +361,20 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.71.0` promotes Spreadsheet hyperlink and advanced underline
+workflows into the shared WPS/UI evidence matrix on top of the native Windows
+A3S Test operator:
+
+- The declarative matrix now exposes 60 ACL contracts and 51 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Spreadsheet evidence now covers unsafe-URL rejection, hidden-sheet link
+  protection, normalized HTTPS addresses, advanced underline styles, cell-format
+  parity, keyboard shortcuts, and undo semantics.
+- A3S Test 1.0.1 validated all 60 ACL files; four Spreadsheet visual cases passed
+  at desktop and compact layouts, and a live hyperlink session restored grid
+  focus without page errors or console messages. The production Playground
+  shell also ships its shared logo and favicon assets.
+
 Version `0.70.0` promotes Spreadsheet phone Find and worksheet-rename
 workflows into the shared WPS/UI evidence matrix on top of the native Windows
 A3S Test operator:

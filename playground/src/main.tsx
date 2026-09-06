@@ -102,16 +102,6 @@ import {
   SPREADSHEET_RICH_TEXT_FIXTURE,
 } from './spreadsheet-rich-text-fixture';
 import {
-  createWordWpsNumericFieldsArtifact,
-  WORD_WPS_NUMERIC_FIELDS_ARTIFACT_ID,
-  WORD_WPS_NUMERIC_FIELDS_FIXTURE,
-} from './word-wps-numeric-fields-fixture';
-import {
-  createWordFieldSettingsArtifact,
-  WORD_FIELD_SETTINGS_ARTIFACT_ID,
-  WORD_FIELD_SETTINGS_FIXTURE,
-} from './word-field-settings-fixture';
-import {
   createSpreadsheetRowSortArtifact,
   SPREADSHEET_ROW_SORT_ARTIFACT_ID,
   SPREADSHEET_ROW_SORT_FIXTURE,
@@ -123,6 +113,16 @@ import {
 } from './spreadsheet-text-sort-fixture';
 import { useMediaQuery } from './use-media-query';
 import { usePlaygroundSidebarState } from './use-playground-sidebar-state';
+import {
+  createWordFieldSettingsArtifact,
+  WORD_FIELD_SETTINGS_ARTIFACT_ID,
+  WORD_FIELD_SETTINGS_FIXTURE,
+} from './word-field-settings-fixture';
+import {
+  createWordWpsNumericFieldsArtifact,
+  WORD_WPS_NUMERIC_FIELDS_ARTIFACT_ID,
+  WORD_WPS_NUMERIC_FIELDS_FIXTURE,
+} from './word-wps-numeric-fields-fixture';
 import { WorkspaceHome } from './workspace-home';
 import './playground.css';
 import './workspace.css';
@@ -144,7 +144,7 @@ function playgroundBrandLinks(): { homeUrl: string; logoUrl: string } {
   const homeRoute = officeSiteNavigationItems(english ? 'en' : 'zh')[0].route;
   return {
     homeUrl: navigationHref(homeRoute),
-    logoUrl: navigationHref('/a3s-logo.png'),
+    logoUrl: navigationHref('/playground/a3s-logo.png'),
   };
 }
 
