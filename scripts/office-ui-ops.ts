@@ -36,6 +36,11 @@ type WpsFieldsProbeOption = JsonOption & {
   output?: string;
   profile?: 'numeric' | 'common';
 };
+type WpsUiProbeOption = JsonOption & {
+  output?: string;
+  profile?: 'shell' | 'fields' | 'all';
+  wpsPath?: string;
+};
 type A3sRunOption = JsonOption & {
   browserDriver?: 'a3s' | 'standalone';
   browserExecutable?: string;
@@ -182,6 +187,23 @@ program
   .option('--json', 'reserved for the probe JSON receipt')
   .action((options: WpsFieldsProbeOption) => {
     runWpsFieldsProbe(options);
+  });
+
+program
+  .command('wps-ui-probe')
+  .description(
+    'Capture a bounded WPS Writer COM UI reference profile (Windows).',
+  )
+  .option('--output <json>', 'exact output JSON path')
+  .addOption(
+    new Option('--profile <profile>', 'bounded WPS UI reference profile')
+      .choices(['shell', 'fields', 'all'])
+      .default('shell'),
+  )
+  .option('--wps-path <exe>', 'exact WPS Writer executable path')
+  .option('--json', 'emit the captured JSON receipt')
+  .action((options: WpsUiProbeOption) => {
+    runWpsUiProbe(options);
   });
 
 const a3s = program
@@ -807,6 +829,36 @@ function runWpsFieldsProbe(options: WpsFieldsProbeOption): void {
     '-Profile',
     options.profile ?? 'numeric',
   ]);
+}
+
+function runWpsUiProbe(options: WpsUiProbeOption): void {
+  if (process.platform !== 'win32') {
+    throw new Error('WPS COM probing is only available on Windows.');
+  }
+  const target = options.output
+    ? path.resolve(repositoryRoot, options.output)
+    : path.join(
+        repositoryRoot,
+        matrix.shared.evidenceRoot,
+        'wps',
+        'ui',
+        'writer-shell.json',
+      );
+  const commandArgs = [
+    '-NoProfile',
+    '-ExecutionPolicy',
+    'Bypass',
+    '-File',
+    path.join(repositoryRoot, 'scripts', 'probe-wps-ui.ps1'),
+    '-OutputPath',
+    target,
+    '-Profile',
+    options.profile ?? 'shell',
+  ];
+  if (options.wpsPath)
+    commandArgs.push('-WpsPath', path.resolve(options.wpsPath));
+  if (options.json) commandArgs.push('-Json');
+  run('powershell.exe', commandArgs);
 }
 
 async function runGate(surfaceId: string, options: GateOption): Promise<void> {

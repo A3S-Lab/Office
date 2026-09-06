@@ -335,6 +335,12 @@ work rather than silent approximations.
   responsive discovery, and A3S Test desktop/390px phone evidence. Keep
   nested fields, document properties, mail fields, and unsupported switches
   fail-closed until each has a native contract.
+- The local WPS UI-reference slice is complete: typed `shell`, `fields`, and
+  `all` COM profiles record the real Writer window, Ribbon/status shell, field
+  command bars, command IDs, and WPS build metadata as deterministic JSON.
+  These receipts inform accessible command naming and discoverable field
+  workflows; A3S Test Web/CDP remains the primary browser UI contract and the
+  locked Windows CUA profile remains unsupported.
 - Extend common field instructions and reference workflows beyond this bounded
   authoring slice only with independent native fixtures and typed contracts.
 - Extend the bounded content-control slice beyond direct inline text and rich

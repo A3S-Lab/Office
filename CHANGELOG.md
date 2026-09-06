@@ -4,6 +4,20 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.60.0 - 2026-09-06
+
+- Added the typed Commander `wps-ui-probe --profile shell|fields|all` workflow.
+  It opens an isolated WPS Writer COM instance, records the installed Writer
+  window, Ribbon/status shell, field-related command bars, command IDs, and
+  WPS build metadata, then closes only that owned instance.
+- Added deterministic JSON receipts for WPS UI/UX reference work. The probe is
+  explicitly local evidence, never a product runtime or CI prerequisite, and
+  remains fail-closed when the WPS executable or COM automation server is not
+  available.
+- Documented the WPS UI reference workflow alongside the A3S Test Web/CDP
+  contract. Native Windows CUA remains unsupported by the locked CUA Driver
+  profile and is not represented as a passing GUI test.
+
 ## 0.59.0 - 2026-09-06
 
 - Added a typed Writer field-settings dialog for bounded WPS-compatible page,

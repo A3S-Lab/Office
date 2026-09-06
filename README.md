@@ -336,10 +336,27 @@ reference shape through the Commander CLI. `wps-fields-probe --profile
 numeric|common --json` records the installed WPS numeric or common field
 instructions and feeds the corresponding A3S Test fixtures; it is likewise an
 explicit local reference capture, never a CI prerequisite.
+`wps-ui-probe --profile shell|fields|all --json` records the installed WPS
+Writer window shell, Ribbon/status bars, and field-related command IDs as a
+typed JSON UX reference. It starts and closes one owned COM instance, so the
+receipt can guide UI decisions without turning WPS into a product runtime or
+CI dependency.
 
 ## Current release
 
-Version `0.59.0` adds a typed Writer field-settings workflow on top of the WPS
+Version `0.60.0` adds a typed WPS Writer UI/UX reference workflow on top of the
+WPS field-settings and numeric-switch parity already shipped:
+
+- The Commander `wps-ui-probe` captures a bounded `shell`, `fields`, or `all`
+  profile from an isolated WPS Writer COM instance. It records the real WPS
+  version/build, window bounds, visible shell bars, field command IDs, and
+  accessibility-relevant command captions without claiming that COM is browser
+  layout evidence.
+- A3S Test Web/CDP remains the primary desktop/compact browser interaction
+  contract. The locked Windows CUA profile remains explicitly unsupported, and
+  the probe receipt is local reference evidence only.
+
+Version `0.59.0` added a typed Writer field-settings workflow on top of the WPS
 numeric-switch and connector parity already shipped:
 
 - The Insert ribbon opens one bounded field-settings dialog for page, section,

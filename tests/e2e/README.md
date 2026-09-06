@@ -801,6 +801,10 @@ responsive ribbon discovery, preview, F9 refresh, focus, accessibility,
 screenshots, and clean diagnostics at desktop and 390px. Windows CUA is
 recorded separately as unsupported until its locked
 profile has a reviewed application backend,
+and the typed `wps-ui-probe --profile shell|fields|all --json` records the
+installed WPS Writer window shell and native field command IDs as local UI/UX
+reference evidence. It owns and closes one hidden COM instance and is not a
+CI prerequisite or a browser-layout assertion,
 plus a desktop and phone Writer content-control workflow covering the
 responsive Insert dialog, plain/rich type and appearance metadata, direct
 paragraph editing, one-step Undo/Redo, accessibility, and clean browser

@@ -1086,6 +1086,14 @@ probe now has numeric and common profiles, while deterministic Playground and
 A3S Test desktop/390px phone evidence cover preview, live refresh, focus
 restoration, accessibility, and clean browser diagnostics.
 
+The seventy-ninth Writer milestone adds a typed local UI-reference workflow to
+the same evidence boundary. `wps-ui-probe --profile shell|fields|all` opens one
+owned WPS Writer COM instance, records the actual WPS build, window geometry,
+Ribbon/status shell, field command bars, and command IDs as JSON, then closes
+that instance. The receipt informs accessible command naming and discoverable
+field workflows; A3S Test Web/CDP remains the primary browser UI contract,
+while the locked Windows CUA profile remains explicitly unsupported.
+
 ## Current Presentation Milestone
 
 The second Presentation-animation milestone extends the bounded sequence with

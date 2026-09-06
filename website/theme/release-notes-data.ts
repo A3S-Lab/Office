@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.60.0',
+    date: '2026-09-06',
+    kind: 'new',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'WPS UI references become typed evidence',
+      zh: 'WPS UI 参考升级为类型化证据',
+    },
+    summary: {
+      en: 'A typed Commander probe now captures an isolated WPS Writer shell and field command inventory so UI decisions can be grounded in the installed build.',
+      zh: '类型化 Commander 探针现在可以捕获隔离的 WPS Writer 外壳与字段命令清单，让 UI 决策基于本机实际版本。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Three explicit profiles',
+          zh: '三个明确 profile',
+        },
+        detail: {
+          en: '`shell`, `fields`, and `all` keep the receipt bounded for everyday UX review while preserving a complete inventory when needed.',
+          zh: '`shell`、`fields` 和 `all` 让日常 UX 复核保持有界，并在需要时保留完整命令清单。',
+        },
+      },
+      {
+        title: {
+          en: 'Owned COM lifecycle',
+          zh: 'COM 生命周期可控',
+        },
+        detail: {
+          en: 'Each probe starts one hidden WPS Writer instance, records version, window bounds, Ribbon/status bars, and native command IDs, then closes only that instance.',
+          zh: '每次探针启动一个隐藏的 WPS Writer 实例，记录版本、窗口几何、Ribbon/状态栏和原生命令 ID，然后只关闭该实例。',
+        },
+      },
+      {
+        title: {
+          en: 'Evidence stays honest',
+          zh: '证据边界保持诚实',
+        },
+        detail: {
+          en: 'A3S Test Web/CDP remains the browser UI contract; the locked Windows CUA profile remains unsupported and the COM receipt is never a CI dependency.',
+          zh: 'A3S Test Web/CDP 仍是浏览器 UI 契约；锁定的 Windows CUA profile 仍不支持，COM 结果也不是 CI 依赖。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './automation/index.html',
+          zh: './automation/index.html',
+        },
+        label: {
+          en: 'Run the WPS UI probe',
+          zh: '运行 WPS UI 探针',
+        },
+      },
+      {
+        href: {
+          en: './components/document.html#common-live-fields',
+          zh: './components/document.html#常用实时字段',
+        },
+        label: {
+          en: 'Review field command evidence',
+          zh: '查看字段命令证据',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.60.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.60.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.59.0',
     date: '2026-09-06',
     kind: 'new',

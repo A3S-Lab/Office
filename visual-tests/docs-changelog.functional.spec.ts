@@ -9,9 +9,15 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(40);
+  await expect(cards).toHaveCount(41);
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.60.0')).toContainText(
+    'WPS UI 参考升级为类型化证据',
+  );
+  await expect(releaseCard('0.60.0')).toContainText('三个明确 profile');
+  await expect(releaseCard('0.60.0')).toContainText('COM 生命周期可控');
+  await expect(releaseCard('0.60.0')).toContainText('证据边界保持诚实');
   await expect(releaseCard('0.59.0')).toContainText(
     'Writer 新增类型化字段设置',
   );
@@ -84,6 +90,13 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     'datetime',
     '2026-09-06',
   );
+  await expect(releaseCard('0.60.0').locator('time')).toHaveAttribute(
+    'datetime',
+    '2026-09-06',
+  );
+  await expect(
+    releaseCard('0.60.0').locator('.office-release-card__highlights > li'),
+  ).toHaveCount(3);
   await expect(
     releaseCard('0.59.0').locator('.office-release-card__highlights > li'),
   ).toHaveCount(3);
