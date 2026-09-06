@@ -1,6 +1,6 @@
 ---
 name: a3s-office
-description: Inspect, create, edit, validate, merge, render, live-preview, and collaboratively synchronize .docx, .xlsx, and .pptx Office artifacts through the A3S Use native CLI or standard MCP server, with explicit fallback to its pinned OfficeCLI compatibility route for unpromoted operations. Use when an agent needs to work with Microsoft Office OOXML documents, participate in durable Yjs collaboration, automate Word, Spreadsheet, or Presentation changes, diagnose document issues, preview saved changes, or choose between native and compatibility Office capabilities.
+description: Inspect, create, edit, validate, merge, render, live-preview, and collaboratively synchronize A3S Office Writer (.docx), Spreadsheet (.xlsx), Presentation (.pptx), Markdown, and PDF artifacts through the typed native CLI, standard MCP server, and bounded browser-editor operator, with explicit fallback to its pinned OfficeCLI compatibility route for unpromoted operations. Use when an agent needs to work with Office OOXML documents, durable Yjs collaboration, editor UI/UX flows, WPS-referenced behavior, or saved artifact diagnostics.
 ---
 
 # A3S Office
@@ -52,9 +52,11 @@ Web/CDP route for browser editors and fail closed for Windows CUA claims.
    An A3S Code `use` worker cannot read Skill reference files; rely on this
    guidance and the available MCP tool schemas instead.
 
-   - Read [references/word.md](references/word.md) for `.docx`.
-   - Read [references/spreadsheet.md](references/spreadsheet.md) for `.xlsx`.
-   - Read [references/presentation.md](references/presentation.md) for `.pptx`.
+   - Read [references/word.md](references/word.md) for `.docx` and Writer.
+   - Read [references/spreadsheet.md](references/spreadsheet.md) for `.xlsx` and Spreadsheet.
+   - Read [references/presentation.md](references/presentation.md) for `.pptx` and Presentation.
+   - Read [references/markdown.md](references/markdown.md) for Markdown.
+   - Read [references/pdf.md](references/pdf.md) for PDF.
 
 3. Prefer a typed `office native` operation. Use `--output` for a distinct
    result when the command supports it; otherwise work on an intentional copy.
@@ -73,6 +75,30 @@ native readback: inspect the target surface, perform the smallest user-level
 action, assert state/focus/responsive behavior, and retain screenshot plus
 console/page-error evidence. Do not use a successful `validate` result as a
 substitute for that pass.
+
+The browser operator exposes typed A3S Test agent actions so a Codex host does
+not need to hand-author action JSON for common editor work. Start with
+`observe`, then dispatch exactly one action and observe again:
+
+```bash
+bun run office:ops -- a3s agent click --session <id> --observation <n> \
+  --target 'role=button|保存' --json
+bun run office:ops -- a3s agent fill --session <id> \
+  --target 'label=标题' --value 'A3S Office' --json
+bun run office:ops -- a3s agent press --session <id> --key Enter --json
+bun run office:ops -- a3s agent screenshot --session <id> \
+  --path evidence/final.png --json
+```
+
+Targets use one stable grammar: `@e7` for the latest observation ref,
+`css=<selector>`, `role=<role>|<name>`, `label=<text>`,
+`placeholder=<text>`, `testid=<id>`, `automation=<id>`, or `text=<text>`.
+Refs always require the latest `--observation`; never reuse a ref after an
+action or another observation. The typed wrappers cover click, hover, focus,
+double-click, context-click, fill, type, check, uncheck, select, drag, press,
+wheel, viewport, wait, assertions, screenshot, accessibility, console, and
+page-error evidence. Use `a3s agent act --action-json` only for a schema action
+not represented by a wrapper.
 
 For an iterative visual loop, run the foreground watch in a separate process:
 

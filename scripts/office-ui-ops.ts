@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { Command, CommanderError, Option } from 'commander';
+import { registerAgentActionCommands } from './office-ui-agent-commands';
 import {
   browserDriverOption,
   capture,
@@ -330,6 +331,8 @@ agent
       ...(options.json ? ['--json'] : []),
     ]);
   });
+
+registerAgentActionCommands(agent, runAgentPassthrough);
 
 const cua = a3s
   .command('cua')

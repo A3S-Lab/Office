@@ -136,6 +136,26 @@ bun run office:ops -- a3s agent start writer --url http://127.0.0.1:4175/playgro
 bun run office:ops -- a3s cua certification --json
 ```
 
+The operator also provides typed agent subcommands for common actions, so a
+Codex host does not need to hand-escape action JSON. Targets use
+`@e7`, `css=<selector>`, `role=<role>|<name>`, `label=<text>`,
+`placeholder=<text>`, `testid=<id>`, `automation=<id>`, or `text=<text>`:
+
+```bash
+bun run office:ops -- a3s agent click --session <id> \
+  --observation <n> --target 'role=button|Save' --json
+bun run office:ops -- a3s agent fill --session <id> \
+  --target 'label=Title' --value 'A3S Office' --json
+bun run office:ops -- a3s agent viewport --session <id> \
+  --width 390 --height 844 --scale 1 --json
+bun run office:ops -- a3s agent screenshot --session <id> \
+  --path evidence/final.png --json
+```
+
+Each wrapper dispatches exactly one A3S Test action. Observe again after every
+state-changing action, and only use `a3s agent act --action-json` for an action
+outside the typed wrapper set.
+
 The locked CUA Driver 0.10.0 Windows profiles are currently `unsupported`
 (there is no reviewed Windows application backend). The operator fails closed
 for Windows CUA claims and uses A3S Test Web/CDP for browser-editor evidence;

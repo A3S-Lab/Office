@@ -525,6 +525,8 @@ mod tests {
         assert!(content.contains("## Bundled reference: references/spreadsheet.md"));
         assert!(content.contains("## Bundled reference: references/presentation.md"));
         assert!(content.contains("## Bundled reference: references/mcp.md"));
+        assert!(content.contains("## Bundled reference: references/markdown.md"));
+        assert!(content.contains("## Bundled reference: references/pdf.md"));
         assert_eq!(output.json["data"]["full"], true);
         assert!(content.len() <= MAX_FULL_SKILL_BYTES);
     }

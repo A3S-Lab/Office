@@ -342,6 +342,15 @@ typed JSON UX reference. It starts and closes one owned COM instance, so the
 receipt can guide UI decisions without turning WPS into a product runtime or
 CI dependency.
 
+For exploratory browser work, the same Commander operator exposes typed A3S
+Test agent actions: `click`, `hover`, `focus`, `double-click`, `context-click`,
+`fill`, `type`, `check`, `uncheck`, `select`, `drag`, `press`, `wheel`,
+`viewport`, waits, assertions, screenshots, accessibility, console, and page
+errors. Use the explicit target grammar (`@e7`, `css=...`, `role=role|name`,
+`label=...`, `placeholder=...`, `testid=...`, `automation=...`, or `text=...`)
+and keep the A3S Test `observe → one action → observe` lifecycle. This keeps
+Codex editor operations typed and reproducible across all five surfaces.
+
 ## Current release
 
 Version `0.60.0` adds a typed WPS Writer UI/UX reference workflow on top of the

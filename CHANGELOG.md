@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added typed `office-ui-ops a3s agent` action subcommands for common editor
+  interactions, waits, assertions, responsive viewports, and evidence capture.
+  The wrappers use one explicit target grammar and preserve A3S Test's latest
+  observation/ref safety boundary while retaining `act --action-json` for
+  advanced actions.
+- Expanded the packaged `a3s-office` Skill with Markdown and PDF references,
+  plus a five-surface Codex workflow that keeps native file mutations,
+  browser interaction, WPS reference probes, and CUA capability boundaries
+  separate.
+
 ## 0.60.0 - 2026-09-06
 
 - Added the typed Commander `wps-ui-probe --profile shell|fields|all` workflow.

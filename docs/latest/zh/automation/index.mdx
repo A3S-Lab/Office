@@ -118,6 +118,24 @@ bun run office:ops -- a3s agent start writer --url http://127.0.0.1:4175/playgro
 bun run office:ops -- a3s cua certification --json
 ```
 
+操作 CLI 还提供常用动作的类型化子命令，因此 Codex 不需要手写和转义 action JSON。目标语法统一为
+`@e7`、`css=<selector>`、`role=<role>|<name>`、`label=<text>`、
+`placeholder=<text>`、`testid=<id>`、`automation=<id>` 或 `text=<text>`：
+
+```bash
+bun run office:ops -- a3s agent click --session <id> \
+  --observation <n> --target 'role=button|保存' --json
+bun run office:ops -- a3s agent fill --session <id> \
+  --target 'label=标题' --value 'A3S Office' --json
+bun run office:ops -- a3s agent viewport --session <id> \
+  --width 390 --height 844 --scale 1 --json
+bun run office:ops -- a3s agent screenshot --session <id> \
+  --path evidence/final.png --json
+```
+
+每个封装命令只派发一个 A3S Test action。每次状态变化后都要重新 observe；只有当动作不在类型化封装范围内时，才使用
+`a3s agent act --action-json`。
+
 锁定的 CUA Driver 0.10.0 Windows profile 当前为 `unsupported`（没有经过审查的 Windows 应用后端）。
 因此操作 CLI 对 Windows CUA 声明采取 fail-closed，并使用 A3S Test Web/CDP 证明浏览器编辑器；
 `a3s cua certify` 仅供已通过契约测试的平台配合显式 CUA policy/proxy 使用。

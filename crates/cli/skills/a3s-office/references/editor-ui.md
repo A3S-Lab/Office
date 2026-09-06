@@ -74,6 +74,29 @@ bun run office:ops -- a3s agent finish --session <id> --status passed \
   --summary "Observed the editor and captured the final state." --json
 ```
 
+For common actions, use the typed wrappers instead of manually escaping JSON.
+They forward one schema-validated A3S Test action and preserve the same
+observation/ref safety boundary:
+
+```bash
+bun run office:ops -- a3s agent click --session <id> \
+  --observation <n> --target 'role=button|保存' --json
+bun run office:ops -- a3s agent fill --session <id> \
+  --target 'label=标题' --value 'A3S Office' --json
+bun run office:ops -- a3s agent select --session <id> \
+  --target 'css=#status' --value draft --value review --json
+bun run office:ops -- a3s agent viewport --session <id> \
+  --width 390 --height 844 --scale 1 --json
+bun run office:ops -- a3s agent assert-visible --session <id> \
+  --target 'css=.work-markdown-workspace' --json
+```
+
+The target grammar is `@e7`, `css=<selector>`, `role=<role>|<name>`,
+`label=<text>`, `placeholder=<text>`, `testid=<id>`, `automation=<id>`, or
+`text=<text>`. This grammar is intentionally explicit so a malformed target
+fails before dispatch rather than silently selecting a different editor
+control. Use `--action-json` only for an action outside the typed wrapper set.
+
 Inspect the locked CUA Driver/MCP matrix before attempting native GUI testing:
 
 ```bash
