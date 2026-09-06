@@ -318,6 +318,7 @@ assembling ad-hoc shell conditionals. It is a Commander-based CLI with one
 declarative matrix for Writer, Spreadsheet, Presentation, Markdown, and PDF:
 
 ```bash
+bun run office:ops -- plan all --json
 bun run office:ops -- capabilities --json
 bun run office:ops -- doctor --json
 bun run office:ops -- gate writer --run \
@@ -359,7 +360,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.60.0` adds a typed WPS Writer UI/UX reference workflow on top of the
+Version `0.61.0` adds a declarative, typed workflow manifest for the five editor
+surfaces on top of the WPS Writer UI/UX reference workflow shipped in `0.60.0`:
+
+- `office:ops:plan` / `office-ui-ops plan <surface> --json` expands the shared
+  matrix into deterministic fixtures, ACL checks, A3S Test gates, desktop and
+  compact visual contracts, bounded agent sessions, and WPS reference probes.
+  Codex can consume the JSON handoff without inventing per-surface shell logic.
+
+Version `0.60.0` added a typed WPS Writer UI/UX reference workflow on top of the
 WPS field-settings and numeric-switch parity already shipped:
 
 - The Commander `wps-ui-probe` captures a bounded `shell`, `fields`, or `all`

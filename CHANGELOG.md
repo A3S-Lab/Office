@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.61.0 - 2026-09-06
+
 - Added typed `office-ui-ops a3s agent` action subcommands for common editor
   interactions, waits, assertions, responsive viewports, and evidence capture.
   The wrappers use one explicit target grammar and preserve A3S Test's latest
@@ -16,6 +18,11 @@ All notable changes to A3S Office will be documented in this file.
 - Added `office skills manifest <name>`, a deterministic byte-count and
   SHA-256 inventory for `SKILL.md` and bundled references so Codex can detect
   stale Skill caches before operating an editor.
+
+- Added `office-ui-ops plan <surface> --json`, a declarative workflow manifest
+  generated from the five-surface editor matrix. It emits typed fixture, ACL,
+  A3S Test gate, desktop/compact visual, exploratory-agent, and WPS reference
+  commands without per-surface shell conditionals.
 
 ## 0.60.0 - 2026-09-06
 

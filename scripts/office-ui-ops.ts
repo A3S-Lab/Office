@@ -9,6 +9,7 @@ import {
   collectProject,
   collectValue,
   commandExists,
+  createSurfacePlan,
   findGuiProfile,
   materializeManifest,
   matrix,
@@ -115,6 +116,17 @@ program
   .option('--json', 'emit a machine-readable result')
   .action((surface: string | undefined, options: JsonOption) => {
     printCapabilities(surface, options.json === true);
+  });
+
+program
+  .command('plan')
+  .description(
+    'Emit typed fixtures, ACL, visual, agent, and WPS commands from the matrix.',
+  )
+  .argument('[selection]', 'surface id or all', 'all')
+  .option('--json', 'emit a machine-readable result')
+  .action((selection: string, options: JsonOption) => {
+    printPlan(selection, options.json === true);
   });
 
 program
@@ -442,6 +454,29 @@ function printCapabilities(
         `visual=${surface.visual.length} acl=${surface.acl.length} ` +
         `formats=${surface.formats.join(',')}`,
     );
+  }
+}
+
+function printPlan(selection: string, asJson: boolean): void {
+  const surfaces =
+    selection === 'all' ? matrix.surfaces : [resolveSurface(selection)];
+  const plans = surfaces.map(createSurfacePlan);
+  const payload = {
+    schemaVersion: 1,
+    selection,
+    plans,
+  };
+  if (asJson) {
+    console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+  for (const plan of plans) {
+    console.log(`${plan.surface.id}: ${plan.surface.label}`);
+    for (const command of plan.commands) {
+      console.log(
+        `  ${command.id}: ${command.executable} ${command.args.join(' ')}`,
+      );
+    }
   }
 }
 

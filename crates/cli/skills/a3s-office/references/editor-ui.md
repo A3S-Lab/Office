@@ -11,6 +11,7 @@ UI regression with a semantic file preview.
 From an Office source checkout, discover the matrix first:
 
 ```bash
+bun run office:ops -- plan all --json
 bun run office:ops -- capabilities --json
 bun run office:ops -- doctor --json
 ```
@@ -25,6 +26,11 @@ Test ACLs, deterministic fixtures, and the WPS reference flag:
 | Presentation | `presentation` | object selection, animation/task panes, keyboard focus, compact canvas |
 | Markdown | `markdown` | source/visual/split modes, link dialogs, read-only preview, focus return |
 | PDF | `pdf` | thumbnail rail, page organization, keyboard navigation, save/reopen |
+
+`plan <surface> --json` is the machine-readable workflow manifest. It expands
+the selected matrix row into typed fixture, ACL, A3S Test gate, desktop/compact
+visual, exploratory-agent, and (for Writer) WPS COM reference commands. Keep
+the manifest as the handoff between Codex/CLI and the UI evidence runner.
 
 Run one bounded surface gate while developing. `check` is the fast ACL parse;
 add `--run` when a configured A3S Test browser should execute the primary

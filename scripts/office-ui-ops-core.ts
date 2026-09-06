@@ -32,6 +32,20 @@ export type Matrix = {
   };
 };
 
+export type PlanCommand = {
+  id: string;
+  executable: string;
+  args: string[];
+  purpose: string;
+};
+
+export type SurfacePlan = {
+  schemaVersion: 1;
+  surface: Pick<Surface, 'id' | 'label' | 'kind' | 'formats' | 'wpsReference'>;
+  evidenceRoot: string;
+  commands: PlanCommand[];
+};
+
 export type CapturedProcess = {
   status: number | null;
   stdout: string;
@@ -49,6 +63,109 @@ export const repositoryRoot = path.resolve(import.meta.dirname, '..');
 export const matrix = readJson<Matrix>(
   path.join(repositoryRoot, 'scripts', 'office-editor-matrix.json'),
 );
+
+export function createSurfacePlan(surface: Surface): SurfacePlan {
+  const officeOps = ['run', 'office:ops', '--'];
+  const [fixtureExecutable, ...fixtureArgs] = matrix.shared.fixtureCommand
+    .trim()
+    .split(/\s+/u);
+  const commands: PlanCommand[] = [
+    {
+      id: 'fixtures',
+      executable: fixtureExecutable,
+      args: fixtureArgs,
+      purpose: 'Generate deterministic ignored fixtures before UI work.',
+    },
+    {
+      id: 'check',
+      executable: 'bun',
+      args: [...officeOps, 'check', surface.id, '--json'],
+      purpose: 'Parse the focused A3S Test ACL contract without a browser.',
+    },
+    {
+      id: 'gate',
+      executable: 'bun',
+      args: [
+        ...officeOps,
+        'gate',
+        surface.id,
+        '--run',
+        '--browser-driver',
+        'standalone',
+        '--browser-executable',
+        'scripts/a3s-test-cdp-browser.cmd',
+        '--cdp-port',
+        '9345',
+        '--json',
+      ],
+      purpose:
+        'Run A3S Test as the primary interaction gate; retain evidence on failure.',
+    },
+    ...surface.visual.map((spec, index) => ({
+      id: `visual-${index + 1}`,
+      executable: 'bun',
+      args: [
+        ...officeOps,
+        'visual',
+        spec,
+        '--project',
+        'desktop-1280',
+        '--project',
+        'compact-768',
+      ],
+      purpose:
+        'Run supplemental desktop and compact pixel contracts without changing baselines.',
+    })),
+    {
+      id: 'agent',
+      executable: 'bun',
+      args: [
+        ...officeOps,
+        'a3s',
+        'agent',
+        'start',
+        surface.id,
+        '--url',
+        matrix.shared.previewUrl,
+        '--browser-executable',
+        'scripts/a3s-test-cdp-browser.cmd',
+        '--cdp-port',
+        '9345',
+        '--json',
+      ],
+      purpose:
+        'Start the observe → one typed action → observe evidence lifecycle.',
+    },
+  ];
+  if (surface.wpsReference) {
+    commands.push(
+      {
+        id: 'wps-ui',
+        executable: 'bun',
+        args: [...officeOps, 'wps-ui-probe', '--profile', 'all', '--json'],
+        purpose: 'Capture the bounded local WPS Writer UI reference receipt.',
+      },
+      {
+        id: 'wps-fields',
+        executable: 'bun',
+        args: [...officeOps, 'wps-fields-probe', '--profile', 'common'],
+        purpose: 'Capture the bounded WPS field-instruction reference fixture.',
+      },
+    );
+  }
+  return {
+    schemaVersion: 1,
+    surface: {
+      id: surface.id,
+      label: surface.label,
+      kind: surface.kind,
+      formats: surface.formats,
+      ...(surface.wpsReference ? { wpsReference: true } : {}),
+    },
+    evidenceRoot: path.join(matrix.shared.evidenceRoot, surface.id),
+    commands,
+  };
+}
 
 export async function startPreview(
   url: string,

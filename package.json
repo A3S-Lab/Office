@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.60.0",
+  "version": "0.61.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -138,6 +138,7 @@
     "playground:visual:pdf-page-organization": "playwright test visual-tests/pdf-page-organization.functional.spec.ts --config playwright.config.ts",
     "playground:visual:update": "playwright test --config playwright.config.ts --update-snapshots",
     "office:ops": "bun scripts/office-ui-ops.ts",
+    "office:ops:plan": "bun scripts/office-ui-ops.ts plan",
     "office:ops:capabilities": "bun scripts/office-ui-ops.ts capabilities",
     "office:ops:doctor": "bun scripts/office-ui-ops.ts doctor",
     "office:ops:writer": "bun scripts/office-ui-ops.ts gate writer",

@@ -95,6 +95,7 @@ separate, observable contract. From an Office source checkout, use the
 Commander-based local operator instead of composing shell conditionals:
 
 ```bash
+bun run office:ops -- plan all --json
 bun run office:ops -- capabilities --json
 bun run office:ops -- doctor --json
 bun run office:ops -- gate writer --run \
@@ -110,6 +111,10 @@ Test ACLs. With `--run`, A3S Test is the primary interaction gate; Playwright
 is only a supplemental desktop/compact pixel baseline. Evidence is written to
 `.a3s-test/office-ops/`; committed visual baselines are never changed and the
 command never waits for CI.
+
+`plan <surface> --json` is the machine-readable handoff for Codex. It expands
+one matrix row into typed fixture, ACL, gate, visual, agent, and (for Writer)
+WPS reference commands, so the runner does not need per-surface shell logic.
 
 On Windows, the CDP adapter calls the pinned standalone `agent-browser`
 driver directly with `--cdp <port>`. It does not detach a second connection

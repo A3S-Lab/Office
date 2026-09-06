@@ -42,6 +42,89 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.61.0',
+    date: '2026-09-06',
+    kind: 'new',
+    surfaces: [
+      'documentation',
+      'playground',
+      'writer',
+      'spreadsheet',
+      'presentation',
+      'markdown',
+      'pdf',
+    ],
+    title: {
+      en: 'One typed plan for every editor surface',
+      zh: '五种编辑器共享一份类型化工作流清单',
+    },
+    summary: {
+      en: 'The Commander operator now emits a deterministic JSON workflow manifest so Codex can run UI/UX evidence without ad-hoc per-surface shell logic.',
+      zh: 'Commander 操作 CLI 现在可以输出确定性的 JSON 工作流清单，让 Codex 无需临时拼接各编辑器的 shell 条件即可执行 UI/UX 证据流程。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Matrix-driven commands',
+          zh: '矩阵驱动命令',
+        },
+        detail: {
+          en: '`plan all --json` expands fixtures, ACL checks, A3S Test gates, visual projects, and bounded agent sessions for Writer, Spreadsheet, Presentation, Markdown, and PDF.',
+          zh: '`plan all --json` 为 Writer、Spreadsheet、Presentation、Markdown 和 PDF 展开夹具、ACL、A3S Test 门禁、视觉项目和有界智能体会话。',
+        },
+      },
+      {
+        title: {
+          en: 'Desktop and compact evidence',
+          zh: '桌面与紧凑视口证据',
+        },
+        detail: {
+          en: 'Each visual command carries both desktop-1280 and compact-768 projects, while the primary interaction authority remains A3S Test.',
+          zh: '每个视觉命令同时携带 desktop-1280 与 compact-768 项目，主交互权威仍然是 A3S Test。',
+        },
+      },
+      {
+        title: {
+          en: 'WPS reference stays bounded',
+          zh: 'WPS 参考保持有界',
+        },
+        detail: {
+          en: 'Writer plans include the isolated WPS COM UI and field probes; Windows CUA remains fail-closed when the locked driver is unsupported.',
+          zh: 'Writer 清单包含隔离的 WPS COM UI 与字段探针；锁定驱动不支持时，Windows CUA 仍保持 fail-closed。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './automation/index.html',
+          zh: './automation/index.html',
+        },
+        label: {
+          en: 'Run the editor workflow plan',
+          zh: '运行编辑器工作流清单',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.61.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.61.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: {
+          en: './cli-reference.html',
+          zh: './cli-reference.html',
+        },
+        label: {
+          en: 'CLI reference',
+          zh: 'CLI 参考',
+        },
+      },
+    ],
+  },
+  {
     version: '0.60.0',
     date: '2026-09-06',
     kind: 'new',

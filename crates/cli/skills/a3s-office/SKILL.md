@@ -42,6 +42,10 @@ is the approved bounded WPS COM reference path. Before native GUI work, run
 `bun run office:ops -- a3s cua certification --json`; the locked CUA Driver
 0.10.0 Windows profiles are currently `unsupported`, so use the A3S Test
 Web/CDP route for browser editors and fail closed for Windows CUA claims.
+Start each UI/UX pass with `bun run office:ops -- plan <surface> --json` (or
+`plan all --json`). The plan is generated from the shared editor matrix and
+emits typed fixture, ACL, A3S Test, visual, agent, and WPS-reference commands;
+do not hand-author per-surface shell conditionals.
 
 ## Workflow
 
