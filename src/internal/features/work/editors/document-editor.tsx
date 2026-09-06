@@ -1562,6 +1562,7 @@ function DocumentEditorSurface({
           citationSourceCount={currentContent.bibliography?.sources.length ?? 0}
           onToggleCitations={() => void toggleTaskPane('citations')}
           onInsertField={documentInsert.insertField}
+          onOpenField={documentInsert.openField}
           onRefreshFields={refreshDocumentFields}
           onRefreshIndex={refreshDocumentIndex}
           onRefreshTableOfContents={refreshDocumentTableOfContents}

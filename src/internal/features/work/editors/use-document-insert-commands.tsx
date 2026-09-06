@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core';
+import { NodeSelection } from '@tiptap/pm/state';
 import {
   Fragment,
   type KeyboardEvent,
@@ -25,7 +26,14 @@ import {
 } from '../work-document-content-control';
 import type {
   WorkDocumentFieldContextResolver,
+  WorkDocumentFieldDraft,
   WorkDocumentFieldKind,
+} from '../work-document-fields';
+import {
+  documentFieldDisplay,
+  documentFieldDraftFromAttributes,
+  documentFieldInstruction,
+  documentFieldOptionsFromDraft,
 } from '../work-document-fields';
 import {
   DEFAULT_DOCUMENT_INDEX_OPTIONS,
@@ -45,6 +53,10 @@ import {
 import { selectedDocumentTableOfContentsOptions } from '../work-document-table-of-contents-node';
 import type { WorkDocumentContent } from '../work-types';
 import { DocumentContentControlDialog } from './document-content-control-dialog';
+import {
+  DocumentFieldDialog,
+  type DocumentFieldTargetOption,
+} from './document-field-dialog';
 import { DocumentIndexDialog } from './document-index-dialog';
 import { DocumentIndexEntryDialog } from './document-index-entry-dialog';
 import { DocumentTableOfContentsDialog } from './document-table-of-contents-dialog';
@@ -81,6 +93,12 @@ type DocumentInsertDialog =
       kind: 'contentControl';
       editing: boolean;
       properties: WorkDocumentContentControlProperties;
+    }
+  | {
+      kind: 'field';
+      editing: boolean;
+      draft: WorkDocumentFieldDraft;
+      targets: DocumentFieldTargetOption[];
     };
 
 type WorkDocumentCrossReferenceTarget =
@@ -92,6 +110,7 @@ export interface DocumentInsertCommands {
   insertCaption: (kind: WorkDocumentCaptionKind) => void;
   insertCrossReference: () => void;
   insertField: (kind: WorkDocumentFieldKind) => void;
+  openField: () => void;
   insertImage: (file: File) => Promise<void>;
   insertNote: (kind: WorkDocumentNoteKind) => boolean;
   insertTextBox: () => boolean;
@@ -248,6 +267,36 @@ export function useDocumentInsertCommands({
     },
     [contentRef, editor, resolveFieldContext],
   );
+
+  const openField = useCallback(() => {
+    if (!editor) return;
+    const selectedNode =
+      editor.state.selection instanceof NodeSelection
+        ? editor.state.selection.node
+        : null;
+    const selectedDraft =
+      selectedNode?.type.name === 'documentField'
+        ? documentFieldDraftFromAttributes(selectedNode.attrs)
+        : null;
+    const draft = selectedDraft ?? defaultDocumentFieldDraft();
+    const targets = editorDocumentBookmarkReferenceTargets(editor).map(
+      ({ id, name }) => ({ id, name }),
+    );
+    if (
+      draft.kind === 'pageReference' &&
+      draft.targetName &&
+      !targets.some((target) => target.id === draft.targetId)
+    ) {
+      targets.unshift({ id: draft.targetId, name: draft.targetName });
+    }
+    rememberInvoker();
+    setInsertDialog({
+      kind: 'field',
+      editing: Boolean(selectedDraft),
+      draft,
+      targets,
+    });
+  }, [editor, rememberInvoker]);
 
   const openTableOfContents = useCallback(() => {
     if (!editor) return;
@@ -417,6 +466,26 @@ export function useDocumentInsertCommands({
     invokerRef.current = editor.view.dom;
     setInsertDialog(null);
   };
+  const submitField = () => {
+    if (!editor || insertDialog?.kind !== 'field') return;
+    const applied = insertDialog.editing
+      ? editor.chain().focus().updateDocumentField(insertDialog.draft).run()
+      : editor
+          .chain()
+          .focus()
+          .insertDocumentField(
+            insertDialog.draft.kind,
+            documentFieldOptionsFromDraft(insertDialog.draft),
+          )
+          .run();
+    if (!applied) return;
+    editor.commands.refreshDocumentFields(contentRef.current, {
+      resolveContext: resolveFieldContext ?? undefined,
+      addToHistory: false,
+    });
+    invokerRef.current = editor.view.dom;
+    setInsertDialog(null);
+  };
   const moveReferenceSelection = (
     event: KeyboardEvent<HTMLInputElement>,
     currentIndex: number,
@@ -448,6 +517,18 @@ export function useDocumentInsertCommands({
   const dialog = (
     <Fragment>
       {officeDialog.dialog}
+      {insertDialog?.kind === 'field' && (
+        <DocumentFieldDialog
+          editing={insertDialog.editing}
+          draft={insertDialog.draft}
+          preview={documentFieldPreview(insertDialog.draft)}
+          targets={insertDialog.targets}
+          restoreFocusTarget={() => invokerRef.current}
+          onCancel={() => setInsertDialog(null)}
+          onChange={(draft) => setInsertDialog({ ...insertDialog, draft })}
+          onSubmit={submitField}
+        />
+      )}
       {insertDialog?.kind === 'caption' && (
         <Dialog
           title={
@@ -635,6 +716,7 @@ export function useDocumentInsertCommands({
     insertCaption,
     insertCrossReference,
     insertField,
+    openField,
     insertImage,
     insertNote,
     insertTextBox,
@@ -651,4 +733,35 @@ export function useDocumentInsertCommands({
 
 function referenceTargetKey(target: WorkDocumentCrossReferenceTarget): string {
   return `${target.type}:${target.id}`;
+}
+
+function defaultDocumentFieldDraft(): WorkDocumentFieldDraft {
+  return {
+    kind: 'page',
+    format: { kind: 'numeric', value: 'arabic' },
+    targetId: '',
+    targetName: '',
+    hyperlink: true,
+    mergeFormat: false,
+  };
+}
+
+function documentFieldPreview(draft: WorkDocumentFieldDraft): string {
+  if (draft.kind === 'pageReference' && !draft.targetName) {
+    return '请选择引用目标';
+  }
+  return documentFieldDisplay(
+    draft.kind,
+    {
+      pageNumber: 1,
+      totalPages: 2,
+      sectionNumber: 1,
+      sectionPages: 1,
+      wordCount: 12,
+      characterCount: 24,
+      referencePageNumber: 1,
+      now: new Date(2026, 8, 6, 14, 5, 9),
+    },
+    documentFieldInstruction(draft.kind, documentFieldOptionsFromDraft(draft)),
+  );
 }

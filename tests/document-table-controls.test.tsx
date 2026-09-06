@@ -974,6 +974,7 @@ function documentToolbar(
       citationSourceCount={0}
       onToggleCitations={noop}
       onInsertField={noop}
+      onOpenField={noop}
       onRefreshFields={noop}
       onRefreshIndex={noop}
       onRefreshTableOfContents={noop}

@@ -5,18 +5,21 @@ import {
   Node,
 } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
+import { NodeSelection } from '@tiptap/pm/state';
 import { createDocumentFieldIdentityPlugin } from './work-document-field-identity';
 import {
   documentFieldDisplay,
   documentFieldInstruction,
   documentFieldKind,
   documentFieldLabel,
+  documentFieldOptionsFromDraft,
   documentFieldStatisticsFromText,
   documentPageReferenceInstruction,
   docxDocumentFieldKind,
   docxDocumentFieldTarget,
   type WorkDocumentFieldContext,
   type WorkDocumentFieldContextResolver,
+  type WorkDocumentFieldDraft,
   type WorkDocumentFieldInsertOptions,
   type WorkDocumentFieldKind,
   type WorkDocumentFieldRefreshOptions,
@@ -33,6 +36,7 @@ declare module '@tiptap/core' {
         kind: WorkDocumentFieldKind,
         options?: WorkDocumentFieldInsertOptions,
       ) => ReturnType;
+      updateDocumentField: (draft: WorkDocumentFieldDraft) => ReturnType;
       refreshDocumentFields: (
         content: WorkDocumentContent,
         options?: WorkDocumentFieldRefreshOptions,
@@ -58,6 +62,8 @@ export const DocumentField = Node.create({
         (kind, options = {}) =>
         (props) =>
           insertDocumentFieldCommand(props, kind, options),
+      updateDocumentField: (draft) => (props) =>
+        updateDocumentFieldCommand(props, draft),
       refreshDocumentFields: (content, options) => (props) =>
         refreshDocumentFieldsCommand(props, content, options),
     };
@@ -196,6 +202,43 @@ function insertDocumentFieldCommand(
     }),
     false,
   );
+  tr.scrollIntoView();
+  return true;
+}
+
+function updateDocumentFieldCommand(
+  { dispatch, editor, state, tr }: CommandProps,
+  draft: WorkDocumentFieldDraft,
+): boolean {
+  const fieldType = editor.schema.nodes.documentField;
+  if (!fieldType) return false;
+  const selectionNode =
+    state.selection instanceof NodeSelection ? state.selection.node : null;
+  if (!selectionNode || selectionNode.type !== fieldType) return false;
+  const options = documentFieldOptionsFromDraft(draft);
+  if (draft.kind === 'pageReference' && !draft.targetName) return false;
+  if (!dispatch) return true;
+  const instruction = documentFieldInstruction(draft.kind, options);
+  const statistics = documentFieldStatisticsFromText(
+    state.doc.textBetween(0, state.doc.content.size, '\n', '\uFFFC'),
+  );
+  const context = {
+    ...fallbackContext(state),
+    ...statistics,
+  } satisfies WorkDocumentFieldContext;
+  const position = state.selection.from;
+  const node = state.doc.nodeAt(position);
+  if (!node || node.type !== fieldType) return false;
+  tr.setNodeMarkup(position, undefined, {
+    ...node.attrs,
+    kind: draft.kind,
+    instruction,
+    display: documentFieldDisplay(draft.kind, context, instruction),
+    targetId: draft.targetId,
+    targetName: draft.targetName,
+    orphaned:
+      draft.kind === 'pageReference' && !documentBookmarkExists(state, options),
+  });
   tr.scrollIntoView();
   return true;
 }

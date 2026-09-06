@@ -107,6 +107,11 @@ import {
   WORD_WPS_NUMERIC_FIELDS_FIXTURE,
 } from './word-wps-numeric-fields-fixture';
 import {
+  createWordFieldSettingsArtifact,
+  WORD_FIELD_SETTINGS_ARTIFACT_ID,
+  WORD_FIELD_SETTINGS_FIXTURE,
+} from './word-field-settings-fixture';
+import {
   createSpreadsheetRowSortArtifact,
   SPREADSHEET_ROW_SORT_ARTIFACT_ID,
   SPREADSHEET_ROW_SORT_FIXTURE,
@@ -183,7 +188,9 @@ function Playground() {
                               ? SPREADSHEET_RICH_TEXT_ARTIFACT_ID
                               : e2eFixture === WORD_WPS_NUMERIC_FIELDS_FIXTURE
                                 ? WORD_WPS_NUMERIC_FIELDS_ARTIFACT_ID
-                                : null,
+                                : e2eFixture === WORD_FIELD_SETTINGS_FIXTURE
+                                  ? WORD_FIELD_SETTINGS_ARTIFACT_ID
+                                  : null,
   );
   const [collaborationDemoArtifactId, setCollaborationDemoArtifactId] =
     useState<string | null>(null);
@@ -798,6 +805,9 @@ function createInitialArtifacts(e2eFixture: string | null): OfficeArtifact[] {
   }
   if (e2eFixture === WORD_WPS_NUMERIC_FIELDS_FIXTURE) {
     return [createWordWpsNumericFieldsArtifact(), ...artifacts];
+  }
+  if (e2eFixture === WORD_FIELD_SETTINGS_FIXTURE) {
+    return [createWordFieldSettingsArtifact(), ...artifacts];
   }
   return artifacts;
 }

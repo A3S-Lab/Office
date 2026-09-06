@@ -14,6 +14,9 @@ import type {
 } from '../src/internal/features/work/work-document-fields';
 import {
   documentFieldDisplay,
+  documentFieldDraftFromAttributes,
+  documentFieldInstruction,
+  documentFieldOptionsFromDraft,
   documentFieldStatisticsFromHtml,
   docxDocumentFieldKind,
   numericFieldFormatSwitch,
@@ -331,6 +334,54 @@ describe('document fields', () => {
       supportedDocxDocumentFieldInstruction('PAGE \\* ROMAN \\* Arabic'),
     ).toBe(false);
     expect(supportedDocxDocumentFieldInstruction('PAGE \\# "000"')).toBe(false);
+  });
+
+  test('builds typed field settings without dropping native switches', () => {
+    const draft = documentFieldDraftFromAttributes({
+      kind: 'pageReference',
+      instruction: 'PAGEREF WpsTarget \\h \\* ROMAN \\* MERGEFORMAT',
+      targetId: 'bookmark-1',
+      targetName: 'WpsTarget',
+    });
+    expect(draft).toEqual({
+      kind: 'pageReference',
+      format: { kind: 'numeric', value: 'roman' },
+      targetId: 'bookmark-1',
+      targetName: 'WpsTarget',
+      hyperlink: true,
+      mergeFormat: true,
+    });
+    if (!draft) throw new Error('Expected a page-reference draft.');
+    expect(
+      documentFieldInstruction(
+        'pageReference',
+        documentFieldOptionsFromDraft({
+          ...draft,
+          format: { kind: 'numeric', value: 'ordinal' },
+        }),
+      ),
+    ).toBe('PAGEREF WpsTarget \\h \\* Ordinal \\* MERGEFORMAT');
+    expect(
+      documentFieldInstruction('date', {
+        format: { kind: 'clock', value: 'yyyy-MM-dd' },
+      }),
+    ).toBe('DATE \\@ "yyyy-MM-dd"');
+    expect(
+      documentFieldDraftFromAttributes({
+        instruction: 'DATE \\@ "HH:mm:ss"',
+      }),
+    ).toMatchObject({
+      kind: 'date',
+      format: { kind: 'clock', value: 'yyyy年M月d日', source: 'HH:mm:ss' },
+    });
+    expect(
+      documentFieldDraftFromAttributes({
+        instruction: 'TIME \\@ "yyyy-MM-dd"',
+      }),
+    ).toMatchObject({
+      kind: 'time',
+      format: { kind: 'clock', value: 'HH:mm', source: 'yyyy-MM-dd' },
+    });
   });
 
   test('retargets a page reference when its bookmark identity is normalized', () => {

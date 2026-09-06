@@ -27,6 +27,7 @@ import {
   Ruler,
   Scan,
   StretchHorizontal,
+  SlidersHorizontal,
   TextCursorInput,
   TextSelect,
   Undo2,
@@ -184,6 +185,7 @@ interface DocumentToolbarProps {
   citationSourceCount: number;
   onToggleCitations: () => void;
   onInsertField: (kind: WorkDocumentFieldKind) => void;
+  onOpenField: () => void;
   onRefreshFields: () => void;
   onRefreshIndex: () => void;
   onRefreshTableOfContents: () => void;
@@ -261,6 +263,7 @@ export function DocumentToolbar({
   citationSourceCount,
   onToggleCitations,
   onInsertField,
+  onOpenField,
   onRefreshFields,
   onRefreshIndex,
   onRefreshTableOfContents,
@@ -802,6 +805,14 @@ export function DocumentToolbar({
                   <TextSelect size={19} />
                 </ToolbarButton>
                 <DocumentFieldSelect onInsertField={onInsertField} />
+                <ToolbarButton
+                  label="字段设置"
+                  title="插入或编辑字段格式"
+                  displayLabel
+                  onClick={onOpenField}
+                >
+                  <SlidersHorizontal size={19} />
+                </ToolbarButton>
               </RibbonGroup>
             </>
           ),

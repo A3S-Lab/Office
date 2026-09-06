@@ -42,6 +42,81 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.59.0',
+    date: '2026-09-06',
+    kind: 'new',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer gains typed field settings',
+      zh: 'Writer 新增类型化字段设置',
+    },
+    summary: {
+      en: 'A bounded field-settings dialog now authors and edits WPS-compatible page, section, and bookmark page-reference formats with responsive A3S Test evidence.',
+      zh: '有界字段设置弹窗现在可以插入和编辑兼容 WPS 的页码、节号与书签目标页码格式，并配套响应式 A3S Test 证据。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One typed insert/edit path',
+          zh: '一条类型化插入/编辑路径',
+        },
+        detail: {
+          en: 'Numeric page and section formats, date/time presets, bookmark targets, hyperlinks, and MERGEFORMAT retention share one controlled dialog and one undoable document update.',
+          zh: '页码与节号数字格式、日期/时间预设、书签目标、超链接和 MERGEFORMAT 保留共享同一个受控弹窗与一次可撤销文档更新。',
+        },
+      },
+      {
+        title: {
+          en: 'Native WPS formats stay honest',
+          zh: '原生 WPS 格式保持诚实',
+        },
+        detail: {
+          en: 'Unknown imported clock formats remain source-preserved until changed, while unsupported switches remain cached and diagnosed instead of being approximated.',
+          zh: '导入的未知时间格式在用户修改前保持源格式；不支持的开关继续缓存并诊断，不被近似伪装。',
+        },
+      },
+      {
+        title: {
+          en: 'A3S Test covers desktop and phone',
+          zh: 'A3S Test 覆盖桌面与手机',
+        },
+        detail: {
+          en: 'Web/CDP scenarios cover the two-step compact ribbon discovery, preview, F9 refresh, focus recovery, screenshots, accessibility, and empty console/page-error evidence at 1280px and 390px.',
+          zh: 'Web/CDP 场景覆盖 1280px 与 390px 下的两步紧凑功能区发现、预览、F9 刷新、焦点恢复、截图、可访问性及空控制台/页面错误证据。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#common-live-fields',
+          zh: './components/document.html#常用实时字段',
+        },
+        label: {
+          en: 'Read the field settings guide',
+          zh: '阅读字段设置指南',
+        },
+      },
+      {
+        href: {
+          en: './automation/index.html',
+          zh: './automation/index.html',
+        },
+        label: {
+          en: 'Run the common WPS field probe',
+          zh: '运行常用 WPS 字段探针',
+        },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.59.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.59.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.58.0',
     date: '2026-09-06',
     kind: 'new',

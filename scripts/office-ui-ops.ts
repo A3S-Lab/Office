@@ -34,6 +34,7 @@ type WpsProbeOption = JsonOption & {
 };
 type WpsFieldsProbeOption = JsonOption & {
   output?: string;
+  profile?: 'numeric' | 'common';
 };
 type A3sRunOption = JsonOption & {
   browserDriver?: 'a3s' | 'standalone';
@@ -173,6 +174,11 @@ program
     'Capture WPS Writer COM field-switch reference output (Windows).',
   )
   .option('--output <docx>', 'exact output DOCX path')
+  .addOption(
+    new Option('--profile <profile>', 'bounded WPS field reference profile')
+      .choices(['numeric', 'common'])
+      .default('numeric'),
+  )
   .option('--json', 'reserved for the probe JSON receipt')
   .action((options: WpsFieldsProbeOption) => {
     runWpsFieldsProbe(options);
@@ -798,6 +804,8 @@ function runWpsFieldsProbe(options: WpsFieldsProbeOption): void {
     path.join(repositoryRoot, 'scripts', 'probe-wps-fields.ps1'),
     '-OutputPath',
     target,
+    '-Profile',
+    options.profile ?? 'numeric',
   ]);
 }
 

@@ -4,6 +4,22 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.59.0 - 2026-09-06
+
+- Added a typed Writer field-settings dialog for bounded WPS-compatible page,
+  section, and bookmark page-reference formats. Arabic, upper/lower Roman,
+  upper/lower alphabetic, Ordinal, date, time, bookmark-target, and hyperlink
+  choices share one controlled insert/edit path. Imported MERGEFORMAT switches
+  and native date/time formats outside the picker remain preserved.
+- Added a deterministic `word-field-settings` Playground fixture and A3S Test
+  Web/CDP desktop and 390px phone scenarios. The scenarios cover responsive
+  ribbon discovery, live preview, F9 refresh, focus restoration, screenshots,
+  accessibility, and empty console/page-error diagnostics.
+- Extended the Commander `wps-fields-probe` with a typed `--profile
+  numeric|common` option. The common profile records WPS `DATE`, `TIME`,
+  `NUMWORDS`, and `NUMCHARS` instructions through Windows COM without adding a
+  runtime or CI dependency.
+
 ## 0.58.0 - 2026-09-06
 
 - Extended bounded Writer `PAGE`, `NUMPAGES`, `SECTION`, `SECTIONPAGES`, and

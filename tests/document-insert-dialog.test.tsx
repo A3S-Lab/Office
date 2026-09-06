@@ -304,6 +304,146 @@ test('inserts a configured native index from marked entries', async () => {
   }
 });
 
+test('inserts a WPS-compatible numeric field from the field settings dialog', async () => {
+  const { editor, element } = createEditor();
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开字段设置' }));
+
+    const dialog = screen.getByRole('dialog', { name: '插入字段' });
+    expect(
+      within(dialog).getByRole('combobox', { name: '字段类型' }),
+    ).toHaveFocus();
+    fireEvent.click(within(dialog).getByRole('combobox', { name: '数字格式' }));
+    fireEvent.click(screen.getByRole('option', { name: '小写罗马数字（i）' }));
+    expect(
+      within(dialog).getByRole('status', { name: '结果预览' }),
+    ).toHaveTextContent('i');
+    fireEvent.click(within(dialog).getByRole('button', { name: '插入字段' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '插入字段' })).toBeNull(),
+    );
+    expect(editor.getHTML()).toContain(
+      'data-field-instruction="PAGE \\* roman"',
+    );
+    expect(editor.getHTML()).toContain('data-field-display="i"');
+    expect(editor.view.dom).toHaveFocus();
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('edits a selected WPS field without losing MERGEFORMAT or bookmark identity', async () => {
+  const { editor, element } = createEditor();
+  editor.commands.insertDocumentField('pageReference', {
+    targetId: 'bookmark-1',
+    targetName: 'WpsTarget',
+    format: { kind: 'numeric', value: 'roman' },
+    hyperlink: true,
+    mergeFormat: true,
+  });
+  const fieldPosition = findNodePosition(editor, 'documentField');
+  editor.commands.setNodeSelection(fieldPosition);
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开字段设置' }));
+
+    const dialog = screen.getByRole('dialog', { name: '编辑字段' });
+    expect(
+      within(dialog).getByRole('combobox', { name: '数字格式' }),
+    ).toHaveTextContent('大写罗马数字（I）');
+    fireEvent.click(within(dialog).getByRole('combobox', { name: '数字格式' }));
+    fireEvent.click(screen.getByRole('option', { name: '序数（1st）' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: '应用字段' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '编辑字段' })).toBeNull(),
+    );
+    expect(editor.getHTML()).toContain(
+      'data-field-instruction="PAGEREF WpsTarget \\h \\* Ordinal \\* MERGEFORMAT"',
+    );
+    expect(editor.getHTML()).toContain('data-field-target-id="bookmark-1"');
+    expect(editor.view.dom).toHaveFocus();
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('requires an explicit bookmark when switching to a page reference', async () => {
+  const { editor, element } = createEditor();
+  editor.commands.setTextSelection(textRange(editor, 'Alpha'));
+  editor.commands.insertDocumentBookmark('Alpha_target');
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开字段设置' }));
+    const dialog = screen.getByRole('dialog', { name: '插入字段' });
+    fireEvent.click(within(dialog).getByRole('combobox', { name: '字段类型' }));
+    fireEvent.click(screen.getByRole('option', { name: '目标页码' }));
+
+    const submit = within(dialog).getByRole('button', { name: '插入字段' });
+    expect(submit).toBeDisabled();
+    expect(
+      within(dialog).getByRole('status', { name: '结果预览' }),
+    ).toHaveTextContent('请选择引用目标');
+
+    fireEvent.click(within(dialog).getByRole('combobox', { name: '引用目标' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Alpha_target' }));
+    expect(submit).not.toBeDisabled();
+    fireEvent.click(submit);
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '插入字段' })).toBeNull(),
+    );
+    expect(editor.getHTML()).toContain('PAGEREF Alpha_target \\h');
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('keeps the field dialog open when no bookmark can satisfy a page reference', async () => {
+  const { editor, element } = createEditor();
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开字段设置' }));
+    const dialog = screen.getByRole('dialog', { name: '插入字段' });
+    fireEvent.click(within(dialog).getByRole('combobox', { name: '字段类型' }));
+    fireEvent.click(screen.getByRole('option', { name: '目标页码' }));
+    expect(
+      within(dialog).getByRole('button', { name: '插入字段' }),
+    ).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole('button', { name: '插入字段' }));
+    expect(screen.getByRole('dialog', { name: '插入字段' })).toBeTruthy();
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('cancels field settings and restores focus to the invoking control', async () => {
+  const { editor, element } = createEditor();
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    const opener = screen.getByRole('button', { name: '打开字段设置' });
+    opener.focus();
+    fireEvent.click(opener);
+    fireEvent.click(screen.getByRole('button', { name: '取消' }));
+    expect(screen.queryByRole('dialog', { name: '插入字段' })).toBeNull();
+    await waitFor(() => expect(opener).toHaveFocus());
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
 function InsertDialogHarness({ editor }: { editor: Editor }) {
   const contentRef = useRef<WorkDocumentContent>({
     type: 'document',
@@ -329,6 +469,9 @@ function InsertDialogHarness({ editor }: { editor: Editor }) {
       </button>
       <button type="button" onClick={commands.openContentControl}>
         打开内容控件
+      </button>
+      <button type="button" onClick={commands.openField}>
+        打开字段设置
       </button>
       {commands.dialog}
     </>
@@ -368,4 +511,14 @@ function textRange(editor: Editor, text: string): { from: number; to: number } {
   });
   if (!range) throw new Error(`Unable to find "${text}".`);
   return range;
+}
+
+function findNodePosition(editor: Editor, type: string): number {
+  let found: number | null = null;
+  editor.state.doc.descendants((node, position) => {
+    if (found === null && node.type.name === type) found = position;
+    return found === null;
+  });
+  if (found === null) throw new Error(`Unable to find ${type}.`);
+  return found;
 }

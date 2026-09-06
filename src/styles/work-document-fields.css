@@ -16,3 +16,57 @@
   background: transparent;
   color: inherit;
 }
+
+.work-document-field-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.work-document-field-dialog .work-document-dialog-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.work-document-field-dialog .work-document-dialog-field > span,
+.work-document-field-dialog-preview > span {
+  color: #4d5668;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.work-document-field-dialog-help,
+.work-document-field-dialog-note {
+  color: #69758a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.work-document-field-dialog-preview {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.work-document-field-dialog-preview output {
+  display: block;
+  min-height: 38px;
+  padding: 9px 11px;
+  border: 1px solid #c9d5e8;
+  border-radius: 6px;
+  background: #f7faff;
+  color: #245fc4;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.work-document-field-dialog-note {
+  margin: 10px 0 0;
+}
+
+@media (max-width: 560px) {
+  .work-document-field-dialog-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -332,15 +332,27 @@ browser-editor evidence uses A3S Test Web/CDP. On Windows,
 `bun run office:ops -- wps-probe --connector` captures the bounded WPS COM
 reference used for UI/OOXML parity; that probe is evidence, not a product
 runtime. Use `--connector-type straight|elbow|curved` to select the typed WPS
-reference shape through the Commander CLI. `wps-fields-probe --json` records
-the installed WPS numeric field switches and feeds the `word-wps-numeric-fields`
-A3S Test fixture; it is likewise an explicit local reference capture, never a
-CI prerequisite.
+reference shape through the Commander CLI. `wps-fields-probe --profile
+numeric|common --json` records the installed WPS numeric or common field
+instructions and feeds the corresponding A3S Test fixtures; it is likewise an
+explicit local reference capture, never a CI prerequisite.
 
 ## Current release
 
-Version `0.58.0` extends bounded Writer fields with WPS numeric switches and
-continues the Writer connector workflow to the WPS
+Version `0.59.0` adds a typed Writer field-settings workflow on top of the WPS
+numeric-switch and connector parity already shipped:
+
+- The Insert ribbon opens one bounded field-settings dialog for page, section,
+  and bookmark page-reference fields. It exposes WPS-compatible numeric,
+  date/time, hyperlink, and target choices, preserves `MERGEFORMAT`, and keeps
+  unknown imported date formats intact until the user changes them.
+- A3S Test covers the desktop and 390px phone flow, including the responsive
+  ribbon's two-step horizontal discovery, preview, F9 refresh, focus recovery,
+  screenshots, accessibility, and clean browser diagnostics. Windows CUA
+  remains fail-closed while the locked profile is not contract-tested.
+
+Version `0.58.0` extended bounded Writer fields with WPS numeric switches and
+continued the Writer connector workflow to the WPS
 straight, elbow, and curved shape subset:
 
 - The Connector ribbon exposes one typed connector-kind control. The same

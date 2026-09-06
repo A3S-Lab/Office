@@ -26,6 +26,7 @@ interface ToolbarCalls {
   captions: string[];
   comparisons: string[];
   fields: string[];
+  fieldSettings: number;
   files: string[];
   hiddenText: number;
   notes: string[];
@@ -156,6 +157,8 @@ test('wires every Insert and Page Layout action to document state or its owner',
   );
   fireEvent.click(screen.getByRole('option', { name: '当前日期' }));
   expect(calls.fields).toEqual(['date']);
+  fireEvent.click(screen.getByRole('button', { name: '字段设置' }));
+  expect(calls.fieldSettings).toBe(1);
   fireEvent.click(screen.getByRole('button', { name: '页码' }));
   expect(calls.pageNumbers).toBe(1);
 
@@ -955,6 +958,9 @@ function toolbar(
         calls.toggleCitations += 1;
       }}
       onInsertField={(kind) => calls.fields.push(kind)}
+      onOpenField={() => {
+        calls.fieldSettings += 1;
+      }}
       onRefreshFields={() => {
         calls.refreshFields += 1;
       }}
@@ -994,6 +1000,7 @@ function createCalls(): ToolbarCalls {
     captions: [],
     comparisons: [],
     fields: [],
+    fieldSettings: 0,
     files: [],
     hiddenText: 0,
     notes: [],

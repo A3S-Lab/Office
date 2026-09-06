@@ -329,9 +329,14 @@ work rather than silent approximations.
   fixtures, typed SVG/DrawingML projections, and editor contracts. Keep
   arbitrary routing, mixed paragraphs, and unsupported branches fail-closed
   until each has its own native fixture and editor contract.
-- Extend common field instructions and reference workflows beyond the bounded
-  numeric-switch subset; keep nested fields, document properties, mail fields,
-  and unsupported switches fail-closed until each has a native contract.
+- The bounded field-authoring slice is complete: typed insert/edit settings for
+  page, section, and bookmark page-reference formats, WPS numeric switches,
+  date/time presets, bookmark targets, hyperlinks, MERGEFORMAT preservation,
+  responsive discovery, and A3S Test desktop/390px phone evidence. Keep
+  nested fields, document properties, mail fields, and unsupported switches
+  fail-closed until each has a native contract.
+- Extend common field instructions and reference workflows beyond this bounded
+  authoring slice only with independent native fixtures and typed contracts.
 - Extend the bounded content-control slice beyond direct inline text and rich
   text only after block, form, and data-binding semantics have independent
   typed models and fail-closed native fixtures.

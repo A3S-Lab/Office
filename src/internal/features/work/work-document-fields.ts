@@ -43,15 +43,52 @@ export interface WorkDocumentFieldInsertOptions {
   targetId?: string;
   /** Bookmark name emitted in the native PAGEREF instruction. */
   targetName?: string;
+  /** Typed numeric or date/time format selected by the field authoring UI. */
+  format?: WorkDocumentFieldFormat;
+  /** Preserve the native MERGEFORMAT switch when editing an imported field. */
+  mergeFormat?: boolean;
+  /** Add the native PAGEREF hyperlink switch. */
+  hyperlink?: boolean;
 }
 
-type WorkDocumentNumericFieldFormat =
+export interface WorkDocumentFieldDraft {
+  kind: WorkDocumentFieldKind;
+  format: WorkDocumentFieldFormat;
+  targetId: string;
+  targetName: string;
+  hyperlink: boolean;
+  mergeFormat: boolean;
+}
+
+export type WorkDocumentNumericFieldFormat =
   | 'arabic'
   | 'roman'
   | 'romanLower'
   | 'alphabetic'
   | 'alphabeticLower'
   | 'ordinal';
+
+export type WorkDocumentClockFieldFormat =
+  | 'yyyy年M月d日'
+  | 'yyyy-MM-dd'
+  | 'MMMM d, yyyy'
+  | 'dddd, MMMM d, yyyy'
+  | 'HH:mm'
+  | 'HH:mm:ss'
+  | 'h:mm AM/PM';
+
+export type WorkDocumentFieldFormat =
+  | { kind: 'none' }
+  | {
+      kind: 'numeric';
+      value: WorkDocumentNumericFieldFormat;
+    }
+  | {
+      kind: 'clock';
+      value: WorkDocumentClockFieldFormat;
+      /** A native format outside the bounded picker, retained until changed. */
+      source?: string;
+    };
 
 const FIELD_SELECTOR = 'span[data-document-field]';
 const FIELD_TEXT_BOUNDARY = '\uFFFC';
@@ -122,9 +159,125 @@ export function documentFieldInstruction(
   options: WorkDocumentFieldInsertOptions = {},
 ): string {
   if (kind === 'pageReference') {
-    return documentPageReferenceInstruction(options.targetName, '', true);
+    const base = documentPageReferenceInstruction(
+      options.targetName,
+      '',
+      options.hyperlink ?? true,
+    );
+    return appendFieldSwitches(base, options);
   }
-  return FIELD_COMMANDS[kind];
+  return appendFieldSwitches(FIELD_COMMANDS[kind], options);
+}
+
+export function documentFieldDraftFromAttributes(attributes: {
+  kind?: unknown;
+  instruction?: unknown;
+  targetId?: unknown;
+  targetName?: unknown;
+}): WorkDocumentFieldDraft | null {
+  const instruction = stringValue(attributes.instruction);
+  const kind =
+    documentFieldKind(stringValue(attributes.kind)) ??
+    docxDocumentFieldKind(instruction);
+  if (!kind) return null;
+  return {
+    kind,
+    format: fieldFormatFromInstruction(kind, instruction),
+    targetId: stringValue(attributes.targetId),
+    targetName:
+      stringValue(attributes.targetName) ||
+      docxDocumentFieldTarget(instruction) ||
+      '',
+    hyperlink:
+      kind === 'pageReference' && /(?:^|\s)\\h(?:\s|$)/i.test(instruction),
+    mergeFormat: /(?:^|\s)\\\*\s+MERGEFORMAT(?:\s|$)/i.test(instruction),
+  };
+}
+
+export function documentFieldOptionsFromDraft(
+  draft: WorkDocumentFieldDraft,
+): WorkDocumentFieldInsertOptions {
+  return {
+    targetId: draft.targetId || undefined,
+    targetName: draft.targetName || undefined,
+    format: draft.format,
+    hyperlink: draft.hyperlink,
+    mergeFormat: draft.mergeFormat,
+  };
+}
+
+function appendFieldSwitches(
+  base: string,
+  options: WorkDocumentFieldInsertOptions,
+): string {
+  const format = options.format;
+  let instruction = base;
+  if (format?.kind === 'clock') {
+    const pattern = format.source ?? format.value;
+    instruction = instruction.replace(/\\@\s+"[^"]*"/i, `\\@ "${pattern}"`);
+  }
+  const switches: string[] = [];
+  if (format?.kind === 'numeric' && format.value !== 'arabic') {
+    switches.push(`\\* ${numericFieldFormatToken(format.value)}`);
+  }
+  if (
+    options.mergeFormat &&
+    !/(?:^|\s)\\\*\s+MERGEFORMAT(?:\s|$)/i.test(instruction)
+  ) {
+    switches.push('\\* MERGEFORMAT');
+  }
+  return switches.length ? `${instruction} ${switches.join(' ')}` : instruction;
+}
+
+function numericFieldFormatToken(
+  format: WorkDocumentNumericFieldFormat,
+): string {
+  if (format === 'romanLower') return 'roman';
+  if (format === 'alphabeticLower') return 'alphabetic';
+  if (format === 'ordinal') return 'Ordinal';
+  if (format === 'roman') return 'ROMAN';
+  if (format === 'alphabetic') return 'ALPHABETIC';
+  return 'Arabic';
+}
+
+function fieldFormatFromInstruction(
+  kind: WorkDocumentFieldKind,
+  instruction: string,
+): WorkDocumentFieldFormat {
+  if (isNumericFieldKind(kind)) {
+    return {
+      kind: 'numeric',
+      value: numericFieldFormatSwitchValue(instruction),
+    };
+  }
+  if (kind !== 'date' && kind !== 'time') return { kind: 'none' };
+  const source = dateFormatSwitch(instruction);
+  const fallback = kind === 'date' ? 'yyyy年M月d日' : 'HH:mm';
+  const value = isClockFieldFormat(kind, source) ? source : fallback;
+  return {
+    kind: 'clock',
+    value,
+    ...(source && source !== value ? { source } : {}),
+  };
+}
+
+function isClockFieldFormat(
+  kind: 'date' | 'time',
+  value: string | null,
+): value is WorkDocumentClockFieldFormat {
+  if (kind === 'date') {
+    return (
+      value === 'yyyy年M月d日' ||
+      value === 'yyyy-MM-dd' ||
+      value === 'MMMM d, yyyy' ||
+      value === 'dddd, MMMM d, yyyy'
+    );
+  }
+  return value === 'HH:mm' || value === 'HH:mm:ss' || value === 'h:mm AM/PM';
+}
+
+function stringValue(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 /** Builds a stable PAGEREF instruction while retaining the supported switches. */

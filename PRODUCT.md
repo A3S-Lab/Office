@@ -1075,15 +1075,16 @@ discoverability, geometry projection, accessibility, and clean diagnostics.
 Arbitrary route-point editing, mixed paragraphs, and unsupported DrawingML
 branches remain explicit compatibility boundaries.
 
-The seventy-seventh Writer milestone extends the bounded live-field grammar
-with the numeric switches emitted by the installed WPS COM editor: Arabic,
-upper/lower Roman, upper/lower alphabetic, and Ordinal for page, section, and
-bookmark page-reference fields. WPS complex fields and their automatic
-`MERGEFORMAT` tails stay editable through the same pagination resolver, while
-unknown switches remain cached and enter compatibility diagnostics. A WPS COM
-field probe, deterministic Playground fixture, native DOCX round-trip tests,
-and A3S Test evidence cover live results, accessible labels, F9 focus
-restoration, and clean browser diagnostics.
+The seventy-eighth Writer milestone adds one typed field-settings dialog for
+the bounded live-field grammar. Page, section, and bookmark page-reference
+fields expose Arabic, upper/lower Roman, upper/lower alphabetic, Ordinal,
+date/time, hyperlink, and bookmark-target choices. WPS complex fields and
+their automatic `MERGEFORMAT` tails stay editable through the same pagination
+resolver; unknown imported date formats remain source-preserved and unsupported
+switches stay cached with compatibility diagnostics. The Commander WPS COM
+probe now has numeric and common profiles, while deterministic Playground and
+A3S Test desktop/390px phone evidence cover preview, live refresh, focus
+restoration, accessibility, and clean browser diagnostics.
 
 ## Current Presentation Milestone
 

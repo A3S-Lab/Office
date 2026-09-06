@@ -2,6 +2,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$OutputPath,
 
+    [ValidateSet('numeric', 'common')]
+    [string]$Profile = 'numeric',
+
     [string]$WpsPath
 )
 
@@ -37,7 +40,7 @@ function Invoke-In32BitPowerShell {
         }
         $arguments = @(
             '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
-            '-File', $PSCommandPath, '-OutputPath', $OutputPath
+            '-File', $PSCommandPath, '-OutputPath', $OutputPath, '-Profile', $Profile
         )
         if ($WpsPath) { $arguments += @('-WpsPath', $WpsPath) }
         & $powershell32 @arguments
@@ -78,12 +81,30 @@ try {
     $target.Collapse(0)
     $target.InsertParagraphAfter() | Out-Null
 
-    $codes = @(
-        'PAGE \* ROMAN',
-        'NUMPAGES \* ALPHABETIC',
-        'SECTION \* Ordinal',
-        'PAGEREF WpsFieldsTarget \h \* Ordinal'
-    )
+    $codes = switch ($Profile) {
+        'common' {
+            @(
+                'PAGE \* ROMAN',
+                'NUMPAGES \* ALPHABETIC',
+                'SECTION \* Ordinal',
+                'PAGEREF WpsFieldsTarget \h \* Ordinal',
+                'DATE \@ "yyyy-MM-dd"',
+                'TIME \@ "HH:mm:ss"',
+                'NUMWORDS',
+                'NUMCHARS'
+            )
+            break
+        }
+        default {
+            @(
+                'PAGE \* ROMAN',
+                'NUMPAGES \* ALPHABETIC',
+                'SECTION \* Ordinal',
+                'PAGEREF WpsFieldsTarget \h \* Ordinal'
+            )
+            break
+        }
+    }
     foreach ($code in $codes) {
         $paragraph = $document.Paragraphs.Add()
         $range = $paragraph.Range
@@ -96,6 +117,7 @@ try {
     $document.SaveAs2($resolvedOutput, 16)
     [pscustomobject]@{
         output = $resolvedOutput
+        profile = $Profile
         wps = $resolvedWps
         version = [string]$application.Version
         fieldInstructions = @($document.Fields | ForEach-Object { [string]$_.Code.Text.Trim() })
