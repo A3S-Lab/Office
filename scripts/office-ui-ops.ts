@@ -581,12 +581,7 @@ function runChecks(selection: string, asJson: boolean): void {
 }
 
 async function runA3s(selection: string, options: A3sRunOption): Promise<void> {
-  const a3sTest = resolveA3sTest();
-  if (!a3sTest) {
-    throw new Error(
-      'a3s-test was not found. Set A3S_TEST_BIN or build crates/test first.',
-    );
-  }
+  const a3sTest = resolveSupportedA3sTest();
   const suites = resolveSuites(selection);
   const baseUrl = validateLoopbackUrl(
     options.baseUrl ??
@@ -684,12 +679,7 @@ async function runAgentStart(
   options: AgentStartOption,
 ): Promise<void> {
   const surface = resolveSurface(surfaceId);
-  const a3sTest = resolveA3sTest();
-  if (!a3sTest) {
-    throw new Error(
-      'a3s-test was not found. Set A3S_TEST_BIN or build crates/test first.',
-    );
-  }
+  const a3sTest = resolveSupportedA3sTest();
   const url = validateLoopbackUrl(
     options.url ??
       process.env.A3S_OFFICE_A3S_AGENT_URL ??
@@ -766,6 +756,23 @@ function runCuaCertification(asJson: boolean): void {
       'Windows GUI execution is fail-closed until the locked CUA adapter has a reviewed Windows profile.',
     );
   }
+}
+
+function resolveSupportedA3sTest(): string {
+  const executable = resolveA3sTest();
+  if (!executable) {
+    throw new Error(
+      'a3s-test was not found. Set A3S_TEST_BIN or build crates/test first.',
+    );
+  }
+  const version = readA3sTestVersion(executable);
+  if (!isSupportedA3sTestVersion(version)) {
+    throw new Error(
+      `A3S Test browser execution requires 1.x; found ${version ?? 'unknown'}. ` +
+        'Build or select a supported binary with A3S_TEST_BIN.',
+    );
+  }
+  return executable;
 }
 
 function runCuaCertify(options: CuaCertifyOption): void {

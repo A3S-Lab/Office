@@ -34,6 +34,8 @@ test('derives a WPS-aware Writer workflow from the declarative matrix', () => {
     'visual-1',
     'visual-2',
     'visual-3',
+    'visual-4',
+    'visual-5',
     'agent',
     'wps-ui',
     'wps-fields',
@@ -85,4 +87,35 @@ test('keeps all five editor plans aligned with the shared evidence root', () => 
         (plan) => !plan.commands.some((command) => command.id === 'wps-ui'),
       ),
   ).toBe(true);
+});
+
+test('keeps the focused WPS parity matrix broad across every editor surface', () => {
+  const plans = matrix.surfaces.map(createSurfacePlan);
+  expect(
+    plans.find((plan) => plan.surface.id === 'writer')?.surface.visual,
+  ).toEqual(
+    expect.arrayContaining([
+      'visual-tests/document-formatting.functional.spec.ts',
+      'visual-tests/document-page-navigation.functional.spec.ts',
+    ]),
+  );
+  expect(
+    plans.find((plan) => plan.surface.id === 'spreadsheet')?.surface.acl,
+  ).toEqual(
+    expect.arrayContaining([
+      'tests/e2e/spreadsheet-ribbon-alignment.acl',
+      'tests/e2e/spreadsheet-font-dialog-shortcuts.acl',
+    ]),
+  );
+  expect(
+    plans.find((plan) => plan.surface.id === 'presentation')?.surface.acl,
+  ).toEqual(
+    expect.arrayContaining(['tests/e2e/presentation-cut-paste-focus.acl']),
+  );
+  expect(plans.find((plan) => plan.surface.id === 'pdf')?.surface.acl).toEqual(
+    expect.arrayContaining([
+      'tests/e2e/pdf-thumbnail-keyboard.acl',
+      'tests/e2e/pdf-page-drawer-phone.acl',
+    ]),
+  );
 });

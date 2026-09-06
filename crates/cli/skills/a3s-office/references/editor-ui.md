@@ -22,10 +22,10 @@ Test ACLs, deterministic fixtures, and the WPS reference flag:
 | Surface | Focused local contract | Typical evidence |
 | --- | --- | --- |
 | Writer | `writer` | ribbon state, WPS shortcuts, imported DOCX, pagination, font/grid metrics, undo/redo, WPS drawing boundary |
-| Spreadsheet | `spreadsheet` | grid selection, formula/validation dialogs, sorting, compact layout |
-| Presentation | `presentation` | object selection, animation/task panes, keyboard focus, compact canvas |
+| Spreadsheet | `spreadsheet` | grid selection, ribbon/font shortcuts, formula/validation dialogs, sorting, compact layout |
+| Presentation | `presentation` | object selection, animation/task panes, cut/paste focus, compact canvas |
 | Markdown | `markdown` | source/visual/split modes, link dialogs, read-only preview, focus return |
-| PDF | `pdf` | thumbnail rail, page organization, keyboard navigation, save/reopen |
+| PDF | `pdf` | thumbnail rail, page organization, keyboard navigation, compact page drawer, save/reopen |
 
 `plan <surface> --json` is the machine-readable workflow manifest. It expands
 the selected matrix row into typed fixture, ACL, A3S Test gate, desktop/compact
@@ -33,6 +33,10 @@ visual, exploratory-agent, and (for Writer) WPS COM reference commands. Keep
 the manifest as the handoff between Codex/CLI and the UI evidence runner.
 `doctor --json` must report `a3sTestCompatible: true` before a browser gate is
 treated as runnable; stale 0.x binaries are surfaced as infrastructure failure.
+Interactive `run` and `agent start` apply the same version gate before opening
+a browser, while static `check` remains available for diagnosing ACL syntax
+with an older binary. Windows dispatch keeps selectors and action JSON in typed
+argv rather than shell tokenization.
 
 Run one bounded surface gate while developing. `check` is the fast ACL parse;
 add `--run` when a configured A3S Test browser should execute the primary

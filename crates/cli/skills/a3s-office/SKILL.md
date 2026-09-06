@@ -47,10 +47,14 @@ Start each UI/UX pass with `bun run office:ops -- plan <surface> --json` (or
 emits typed fixture, ACL, A3S Test, visual, agent, and WPS-reference commands;
 do not hand-author per-surface shell conditionals.
 The Writer row includes the WPS shortcut, layout-parity, and font/grid ACLs plus
-their generated DOCX fixtures, so use its returned inventory before choosing a
-native or browser operation.
+their generated DOCX fixtures. Spreadsheet, Presentation, and PDF rows also
+expose representative ribbon/font, focus, keyboard, and compact-drawer
+contracts, so use the returned inventory before choosing a native or browser
+operation.
 `doctor --json` also fails closed for stale A3S Test binaries; the supported
 local gate line is A3S Test 1.x with the pinned standalone Web protocol.
+On Windows, the operator sends action JSON, selectors, and paths as typed child
+argv and does not pass them through `cmd.exe` shell parsing.
 
 ## Workflow
 

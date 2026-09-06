@@ -360,6 +360,17 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.63.0` broadens the declarative WPS/UI evidence matrix across all five
+editor surfaces on top of the Writer completion shipped in `0.62.0`:
+
+- Spreadsheet ribbon/font shortcuts, Presentation cut/paste focus, and PDF
+  thumbnail keyboard/compact drawer workflows are now included in `plan` and
+  `check` output; Writer formatting and page-navigation visual contracts are
+  included as well.
+- Windows UI operations preserve typed argv boundaries instead of passing agent
+  action JSON and selectors through shell parsing. Browser execution rejects
+  stale A3S Test 0.x binaries before opening a gate.
+
 Version `0.62.0` completes the Writer side of the declarative WPS evidence
 matrix on top of the typed workflow manifest shipped in `0.61.0`:
 

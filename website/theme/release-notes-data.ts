@@ -42,6 +42,70 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.63.0',
+    date: '2026-09-06',
+    kind: 'improved',
+    surfaces: [
+      'writer',
+      'spreadsheet',
+      'presentation',
+      'pdf',
+      'playground',
+      'documentation',
+    ],
+    title: {
+      en: 'Every editor gets a deeper typed UI contract',
+      zh: '五种编辑器共享更深入的类型化 UI 契约',
+    },
+    summary: {
+      en: 'The WPS-informed operator now inventories representative ribbon, focus, keyboard, and responsive workflows across Writer, Spreadsheet, Presentation, Markdown, and PDF.',
+      zh: '基于 WPS 参考的操作器现在为 Writer、Spreadsheet、Presentation、Markdown 和 PDF 清晰列出代表性的功能区、焦点、键盘和响应式流程。',
+    },
+    highlights: [
+      {
+        title: { en: 'Cross-surface coverage', zh: '跨编辑器覆盖' },
+        detail: {
+          en: 'Spreadsheet ribbon/font, Presentation focus, and PDF keyboard/phone ACLs now join the Writer contracts in `plan all --json` and `check all`.',
+          zh: 'Spreadsheet 功能区/字体、Presentation 焦点以及 PDF 键盘/手机 ACL 现在与 Writer 契约一起出现在 `plan all --json` 和 `check all` 中。',
+        },
+      },
+      {
+        title: { en: 'Typed Windows dispatch', zh: 'Windows 类型化派发' },
+        detail: {
+          en: 'The operator keeps selectors, paths, and agent action JSON in argv instead of sending them through shell tokenization.',
+          zh: '操作器把选择器、路径和智能体 action JSON 保留在 argv 中，不再经过 shell 分词。',
+        },
+      },
+      {
+        title: {
+          en: 'Fail-closed browser gates',
+          zh: '浏览器门禁 fail-closed',
+        },
+        detail: {
+          en: 'Interactive runs reject stale A3S Test 0.x binaries before opening a browser, while static ACL diagnosis remains available.',
+          zh: '交互运行在打开浏览器前拒绝过时的 A3S Test 0.x 二进制，同时保留静态 ACL 诊断能力。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.63.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.63.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.62.0',
     date: '2026-09-06',
     kind: 'improved',

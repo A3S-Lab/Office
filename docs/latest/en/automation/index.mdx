@@ -106,7 +106,9 @@ bun run office:ops -- visual spreadsheet --project compact-768
 ```
 
 The declarative matrix covers Writer, Spreadsheet, Presentation, Markdown, and
-PDF. A focused gate regenerates ignored fixtures and parses the selected A3S
+PDF. It includes representative Writer formatting/page navigation, Spreadsheet
+ribbon/font, Presentation focus, and PDF keyboard/compact-drawer contracts. A
+focused gate regenerates ignored fixtures and parses the selected A3S
 Test ACLs. With `--run`, A3S Test is the primary interaction gate; Playwright
 is only a supplemental desktop/compact pixel baseline. Evidence is written to
 `.a3s-test/office-ops/`; committed visual baselines are never changed and the
@@ -118,7 +120,8 @@ WPS reference commands, so the runner does not need per-surface shell logic.
 The Writer row also exposes the shortcut, layout-parity, and font/grid suites
 and their generated DOCX fixtures; use that inventory before changing UI code.
 `doctor --json` reports the installed A3S Test version and fails closed unless
-the supported 1.x line is selected.
+the supported 1.x line is selected. Windows dispatch keeps selectors and agent
+action JSON in typed argv rather than shell tokenization.
 
 On Windows, the CDP adapter calls the pinned standalone `agent-browser`
 driver directly with `--cdp <port>`. It does not detach a second connection

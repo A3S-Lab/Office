@@ -44,7 +44,16 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.62.0)
+## What's new on `main` (0.63.0)
+
+- The shared matrix now covers representative Spreadsheet ribbon/font,
+  Presentation focus, and PDF keyboard/compact-drawer workflows alongside the
+  Writer WPS contracts. `plan all --json` and `check all` expose the same
+  typed inventory across all five editors.
+
+- Windows UI operator dispatch keeps agent action JSON, selectors, and paths in
+  typed argv; interactive gates reject stale A3S Test 0.x binaries before
+  opening a browser.
 
 - Writer's declarative WPS matrix now includes the shortcut, layout-parity, and
   font/grid A3S Test suites with their deterministic DOCX fixtures. `plan writer

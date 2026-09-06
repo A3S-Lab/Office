@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.63.0 - 2026-09-06
+
+- Broadened the declarative UI/UX evidence matrix beyond Writer: Spreadsheet
+  ribbon and font shortcuts, Presentation cut/paste focus, and PDF thumbnail
+  keyboard plus compact page-drawer workflows are now first-class A3S Test
+  contracts. Writer also includes the existing formatting and page-navigation
+  visual contracts.
+- Replaced Windows shell re-parsing in the Office UI operator with typed child
+  argv dispatch, including an explicit Bun executable resolver. Agent action
+  JSON, selectors, and paths are no longer exposed to `cmd.exe` tokenization.
+- Browser execution now fails closed when the selected A3S Test binary is not
+  on the supported 1.x line; static ACL checks remain available for diagnosis.
+- Refined per-surface agent goals and success criteria so Codex checks focus,
+  responsive controls, and clean browser diagnostics for every editor.
+
 ## 0.62.0 - 2026-09-06
 
 - Expanded the declarative five-surface matrix with Writer WPS shortcut,

@@ -41,7 +41,14 @@ description: 在应用中接入、扩展 A3S Office 编辑器，审阅有界原�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.62.0）
+## `main` 更新内容（0.63.0）
+
+- 共享矩阵现在在 Writer WPS 契约之外，进一步覆盖 Spreadsheet 功能区/字体、
+  Presentation 焦点以及 PDF 键盘/紧凑页面抽屉流程；`plan all --json` 与
+  `check all` 会为五种编辑器公开同一份类型化清单。
+
+- Windows UI 操作器把智能体 action JSON、选择器和路径保留在类型化 argv 中；
+  交互门禁在打开浏览器前拒绝过时的 A3S Test 0.x 二进制。
 
 - Writer 的声明式 WPS 矩阵现在纳入快捷键、版式对齐和字体/网格 A3S Test 套件及其确定性
   DOCX 夹具；`plan writer --json`、`check all` 与 `gate writer` 会公开同一份有界 UI/UX 契约。

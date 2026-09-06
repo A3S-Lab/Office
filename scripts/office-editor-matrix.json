@@ -10,7 +10,9 @@
       "visual": [
         "visual-tests/document-connector.functional.spec.ts",
         "visual-tests/document-text-box.functional.spec.ts",
-        "visual-tests/document-field-settings.functional.spec.ts"
+        "visual-tests/document-field-settings.functional.spec.ts",
+        "visual-tests/document-formatting.functional.spec.ts",
+        "visual-tests/document-page-navigation.functional.spec.ts"
       ],
       "acl": [
         "tests/e2e/word-connector-editor.acl",
@@ -37,8 +39,8 @@
       ],
       "wpsReference": true,
       "agent": {
-        "goal": "Inspect the Writer connector editing surface",
-        "success": "The Writer connector ribbon is visible, editable, and exposes typed straight, elbow, and curved geometry plus line and arrow styles"
+        "goal": "Inspect Writer typography and page-layout controls against the WPS reference",
+        "success": "The Writer editor exposes an accessible font dialog and page-layout surface, preserves focus after one typed change, and shows no page errors"
       }
     },
     {
@@ -48,16 +50,20 @@
       "formats": ["xlsx", "xls", "ods", "csv"],
       "visual": [
         "visual-tests/spreadsheet-data-validation.functional.spec.ts",
-        "visual-tests/spreadsheet-custom-sort.functional.spec.ts"
+        "visual-tests/spreadsheet-custom-sort.functional.spec.ts",
+        "visual-tests/spreadsheet-ribbon.functional.spec.ts",
+        "visual-tests/spreadsheet-font-dialog-shortcuts.functional.spec.ts"
       ],
       "acl": [
         "tests/e2e/spreadsheet-data-validation.acl",
-        "tests/e2e/spreadsheet-custom-sort.acl"
+        "tests/e2e/spreadsheet-custom-sort.acl",
+        "tests/e2e/spreadsheet-ribbon-alignment.acl",
+        "tests/e2e/spreadsheet-font-dialog-shortcuts.acl"
       ],
       "fixtures": ["spreadsheet-1904-date-system.xlsx"],
       "agent": {
-        "goal": "Inspect the Spreadsheet editing surface",
-        "success": "The Spreadsheet editor is loaded"
+        "goal": "Inspect Spreadsheet ribbon, selection, and formatting controls",
+        "success": "The Spreadsheet editor exposes the active grid and ribbon controls, restores cell focus after one typed action, and shows no page errors"
       }
     },
     {
@@ -67,16 +73,18 @@
       "formats": ["pptx"],
       "visual": [
         "visual-tests/presentation-animation.functional.spec.ts",
-        "visual-tests/presentation-task-panes.functional.spec.ts"
+        "visual-tests/presentation-task-panes.functional.spec.ts",
+        "visual-tests/presentation-menu.functional.spec.ts"
       ],
       "acl": [
         "tests/e2e/presentation-animation.acl",
-        "tests/e2e/presentation-presenter-view.acl"
+        "tests/e2e/presentation-presenter-view.acl",
+        "tests/e2e/presentation-cut-paste-focus.acl"
       ],
       "fixtures": [],
       "agent": {
-        "goal": "Inspect the Presentation editing surface",
-        "success": "The Presentation editor is loaded"
+        "goal": "Inspect Presentation object selection and animation controls",
+        "success": "The Presentation canvas exposes an accessible object or slide control, keeps selection focus after one typed action, and shows no page errors"
       }
     },
     {
@@ -88,8 +96,8 @@
       "acl": ["tests/e2e/markdown-phone-modes.acl"],
       "fixtures": [],
       "agent": {
-        "goal": "Inspect the Markdown editing surface",
-        "success": "The Markdown editor is loaded"
+        "goal": "Inspect Markdown source and preview controls",
+        "success": "The Markdown editor exposes the source/preview boundary, restores focus after one typed action, and shows no page errors"
       }
     },
     {
@@ -101,11 +109,15 @@
         "visual-tests/pdf-page-organization.functional.spec.ts",
         "visual-tests/pdf-menu.functional.spec.ts"
       ],
-      "acl": ["tests/e2e/pdf-page-organization.acl"],
+      "acl": [
+        "tests/e2e/pdf-page-organization.acl",
+        "tests/e2e/pdf-thumbnail-keyboard.acl",
+        "tests/e2e/pdf-page-drawer-phone.acl"
+      ],
       "fixtures": ["pdf-thumbnail-keyboard.pdf"],
       "agent": {
-        "goal": "Inspect the PDF editing surface",
-        "success": "The PDF editor is loaded"
+        "goal": "Inspect PDF navigation, thumbnails, and compact page controls",
+        "success": "The PDF editor exposes page navigation and thumbnail controls, keeps the active page visible after one typed action, and shows no page errors"
       }
     }
   ],

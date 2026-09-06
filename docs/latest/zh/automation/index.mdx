@@ -96,7 +96,9 @@ bun run office:ops -- gate writer --run \
 bun run office:ops -- visual spreadsheet --project compact-768
 ```
 
-声明式矩阵覆盖 Writer、Spreadsheet、Presentation、Markdown 和 PDF。聚焦 gate 会重新生成
+声明式矩阵覆盖 Writer、Spreadsheet、Presentation、Markdown 和 PDF，并纳入 Writer
+格式/分页导航、Spreadsheet 功能区/字体、Presentation 焦点以及 PDF 键盘/紧凑页面抽屉契约。
+聚焦 gate 会重新生成
 被忽略的夹具并解析选定的 A3S Test ACL；传入 `--run` 时由 A3S Test 承担主交互门禁，
 Playwright 仅作为桌面与紧凑视口的补充像素基线。证据写入 `.a3s-test/office-ops/`，不会改动
 已提交的视觉基线，也不会等待 CI。
@@ -106,6 +108,7 @@ Playwright 仅作为桌面与紧凑视口的补充像素基线。证据写入 `.
 编写独立的 shell 条件。
 Writer 行还会公开快捷键、版式对齐、字体/网格套件及其生成的 DOCX 夹具；修改 UI 代码前应先检查这份清单。
 `doctor --json` 会报告已安装的 A3S Test 版本；未选择受支持的 1.x 版本时会 fail-closed。
+Windows 派发会把选择器和智能体 action JSON 保留在类型化 argv 中，不经过 shell 分词。
 
 在 Windows 上，CDP 适配器直接以 `--cdp <port>` 调用锁定版本的独立
 `agent-browser` 驱动，不再分离第二个连接守护进程或轮询 session 端口文件；原生进程退出后

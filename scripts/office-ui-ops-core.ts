@@ -187,13 +187,17 @@ export async function startPreview(
   url: string,
 ): Promise<ReturnType<typeof spawn> | undefined> {
   if (await isHttpReady(url)) return undefined;
-  const preview = spawn('bun', ['run', 'playground:preview'], {
-    cwd: repositoryRoot,
-    env: process.env,
-    shell: process.platform === 'win32',
-    stdio: 'ignore',
-    windowsHide: true,
-  });
+  const preview = spawn(
+    resolveChildExecutable('bun'),
+    ['run', 'playground:preview'],
+    {
+      cwd: repositoryRoot,
+      env: process.env,
+      shell: false,
+      stdio: 'ignore',
+      windowsHide: true,
+    },
+  );
   try {
     await waitForHttp(url, 30_000);
   } catch (error) {
@@ -436,13 +440,14 @@ export function run(
   commandArgs: string[],
   options: { env?: NodeJS.ProcessEnv } = {},
 ): void {
-  const result = spawnSync(commandName, commandArgs, {
+  const executable = resolveChildExecutable(commandName);
+  const result = spawnSync(executable, commandArgs, {
     cwd: repositoryRoot,
     env: options.env,
     stdio: 'inherit',
-    shell:
-      process.platform === 'win32' &&
-      ['bun', 'bunx', 'powershell.exe'].includes(commandName),
+    // Keep argv typed all the way to the child process. In particular, agent
+    // action JSON and CSS selectors must never be reparsed by cmd.exe.
+    shell: false,
   });
   if (result.error) throw result.error;
   if (result.status !== 0) {
@@ -450,6 +455,23 @@ export function run(
       `${commandName} ${commandArgs.join(' ')} exited with ${result.status ?? 'unknown status'}.`,
     );
   }
+}
+
+function resolveChildExecutable(commandName: string): string {
+  if (process.platform !== 'win32' || !['bun', 'bunx'].includes(commandName)) {
+    return commandName;
+  }
+  const appData = process.env.APPDATA;
+  if (!appData) return commandName;
+  const candidate = path.join(
+    appData,
+    'npm',
+    'node_modules',
+    'bun',
+    'bin',
+    `${commandName}.exe`,
+  );
+  return existsSync(candidate) ? candidate : commandName;
 }
 
 function readJson<T>(filePath: string): T {
