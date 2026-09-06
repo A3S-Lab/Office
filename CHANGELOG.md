@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.68.0 - 2026-09-06
+
+- Promoted two existing Presentation phone workflows into the shared
+  WPS-informed matrix: chart-pane focus containment and comments-review
+  focus restoration. The matrix now exposes 54 ACL contracts and 45
+  visual contracts across all five editors.
+- Ran four Presentation phone visual cases across the desktop and compact
+  Playwright projects, plus a bounded live A3S Test 1.0.1 phone review
+  session that committed a comment and restored the invoker without page errors.
+
 ## 0.67.0 - 2026-09-06
 
 - Promoted three existing Spreadsheet appearance workflows into the shared

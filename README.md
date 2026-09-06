@@ -361,6 +361,18 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.68.0` promotes Presentation phone review workflows into the shared
+WPS/UI evidence matrix on top of the native Windows A3S Test operator:
+
+- The declarative matrix now exposes 54 ACL contracts and 45 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Presentation phone evidence now covers chart-pane modal focus containment,
+  invalid-draft rollback, comments-review modal inertness, draft cancellation,
+  and original-invoker focus restoration.
+- A3S Test 1.0.1 validated all 54 ACL files; four new Presentation phone visual
+  cases passed at desktop and compact layouts, and a live comments session
+  committed a comment and restored focus without page errors.
+
 Version `0.67.0` promotes Spreadsheet appearance workflows into the shared
 WPS/UI evidence matrix on top of the native Windows A3S Test operator:
 

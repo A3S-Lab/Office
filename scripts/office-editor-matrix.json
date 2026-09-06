@@ -131,14 +131,18 @@
         "visual-tests/presentation-animation.functional.spec.ts",
         "visual-tests/presentation-task-panes.functional.spec.ts",
         "visual-tests/presentation-menu.functional.spec.ts",
-        "visual-tests/presentation-slideshow.functional.spec.ts"
+        "visual-tests/presentation-slideshow.functional.spec.ts",
+        "visual-tests/presentation-phone-chart-pane.functional.spec.ts",
+        "visual-tests/presentation-phone-comments.functional.spec.ts"
       ],
       "acl": [
         "tests/e2e/presentation-animation.acl",
         "tests/e2e/presentation-presenter-view.acl",
         "tests/e2e/presentation-cut-paste-focus.acl",
         "tests/e2e/presentation-chinese-ime.acl",
-        "tests/e2e/presentation-large-windowing.acl"
+        "tests/e2e/presentation-large-windowing.acl",
+        "tests/e2e/presentation-phone-chart-pane.acl",
+        "tests/e2e/presentation-phone-comments.acl"
       ],
       "fixtures": [],
       "agent": {

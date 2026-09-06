@@ -169,6 +169,8 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
       'tests/e2e/presentation-cut-paste-focus.acl',
       'tests/e2e/presentation-chinese-ime.acl',
       'tests/e2e/presentation-large-windowing.acl',
+      'tests/e2e/presentation-phone-chart-pane.acl',
+      'tests/e2e/presentation-phone-comments.acl',
     ]),
   );
   expect(plans.find((plan) => plan.surface.id === 'pdf')?.surface.acl).toEqual(
@@ -176,6 +178,14 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
       'tests/e2e/pdf-thumbnail-keyboard.acl',
       'tests/e2e/pdf-page-drawer-phone.acl',
       'tests/e2e/pdf-large-windowing.acl',
+    ]),
+  );
+  expect(
+    plans.find((plan) => plan.surface.id === 'presentation')?.surface.visual,
+  ).toEqual(
+    expect.arrayContaining([
+      'visual-tests/presentation-phone-chart-pane.functional.spec.ts',
+      'visual-tests/presentation-phone-comments.functional.spec.ts',
     ]),
   );
 });

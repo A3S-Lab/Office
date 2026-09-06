@@ -42,6 +42,60 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.68.0',
+    date: '2026-09-06',
+    kind: 'improved',
+    surfaces: ['presentation', 'playground', 'documentation'],
+    title: {
+      en: 'Presentation phone review joins the WPS evidence matrix',
+      zh: 'Presentation 手机端审阅进入 WPS 证据矩阵',
+    },
+    summary: {
+      en: 'The shared operator now inventories 54 ACL and 45 visual contracts, with focused phone chart and comments evidence.',
+      zh: '共享操作器现在公开 54 个 ACL 和 45 个视觉契约，深入覆盖手机端图表与批注证据。',
+    },
+    highlights: [
+      {
+        title: { en: 'Phone chart pane', zh: '手机端图表面板' },
+        detail: {
+          en: 'Chart editing keeps modal focus contained, rolls back invalid drafts, and restores the selected chart trigger on close.',
+          zh: '图表编辑保持模态焦点隔离，回滚无效草稿，并在关闭后恢复选中图表触发器焦点。',
+        },
+      },
+      {
+        title: { en: 'Phone comments review', zh: '手机端批注审阅' },
+        detail: {
+          en: 'Comments review keeps the phone editor inert, cancels drafts cleanly, and restores the original invoker after closing.',
+          zh: '批注审阅让手机编辑器保持模态隔离，干净取消草稿，并在关闭后恢复原始触发器焦点。',
+        },
+      },
+      {
+        title: { en: 'Browser proof', zh: '浏览器证据' },
+        detail: {
+          en: 'Four Presentation phone visual cases passed at desktop and compact layouts, plus a live A3S Test 1.0.1 review with no page errors.',
+          zh: '4 个 Presentation 手机端视觉用例在桌面与紧凑布局通过，并完成无页面错误的 A3S Test 1.0.1 实时审阅。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.68.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.68.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.67.0',
     date: '2026-09-06',
     kind: 'improved',

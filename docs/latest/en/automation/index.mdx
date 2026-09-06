@@ -105,15 +105,15 @@ bun run office:ops -- visual spreadsheet --project compact-768
 ```
 
 The declarative matrix covers Writer, Spreadsheet, Presentation, Markdown, and
-PDF. It currently exposes 52 deterministic ACL contracts and 43 visual
+PDF. It currently exposes 54 deterministic ACL contracts and 45 visual
 contracts. Writer includes character position, scale, spacing, emphasis, hidden
 text, OpenType, content controls, review conflicts, paired move revisions, and
 phone track changes; Spreadsheet includes AutoSum, Paste Special, conditional
 formatting, date/time, cell styles, rich text, table totals, orientation and
 visibility, appearance/color, custom-list, table-owned, left-to-right,
 partial-range, Simplified Chinese text sorting, diagonal borders, linear/path
-gradients, and pattern fills, plus Presentation
-IME/large-window and PDF large-file workflows.
+gradients, and pattern fills, plus Presentation IME/large-window, phone
+chart-pane, and comments-review workflows and PDF large-file workflows.
 A focused gate regenerates ignored fixtures and parses the selected A3S
 Test ACLs. With `--run`, A3S Test is the primary interaction gate; Playwright
 is only a supplemental desktop/compact pixel baseline. Evidence is written to
