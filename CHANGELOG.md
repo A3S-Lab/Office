@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.75.0 - 2026-09-07
+
+- Added desktop and compact visual evidence for Writer WPS page layout,
+  imported pagination metadata, Latin/CJK font metrics, document-grid line
+  pitch, and mixed-script direction and line metrics. The shared matrix now
+  exposes 61 ACL contracts and 55 visual contracts across all five editors.
+- Ran the focused layout contract through the Commander-based Office CLI;
+  all visual scenarios passed with empty console and page-error evidence.
+
 ## 0.74.0 - 2026-09-07
 
 - Added desktop and compact visual evidence for the existing Writer WPS

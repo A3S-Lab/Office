@@ -361,6 +361,17 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.75.0` adds desktop and compact visual evidence for the existing
+Writer WPS layout and font-grid workflows:
+
+- The declarative matrix now exposes 61 ACL contracts and 55 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Writer evidence covers imported A4 pagination, automatic line metrics,
+  Latin/CJK font metrics, document-grid line pitch, mixed-script direction,
+  and script-aware line-height metrics.
+- The focused visual contract passed through the Commander-based Office CLI in
+  both layouts with empty console and page-error evidence.
+
 Version `0.74.0` adds desktop and compact visual evidence to the existing
 Writer WPS shortcut workflow:
 

@@ -13,6 +13,7 @@
         "visual-tests/document-field-settings.functional.spec.ts",
         "visual-tests/document-formatting.functional.spec.ts",
         "visual-tests/document-wps-shortcuts.functional.spec.ts",
+        "visual-tests/document-wps-layout.functional.spec.ts",
         "visual-tests/document-page-navigation.functional.spec.ts",
         "visual-tests/document-menu.functional.spec.ts",
         "visual-tests/document-character-position.functional.spec.ts",

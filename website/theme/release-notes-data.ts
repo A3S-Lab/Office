@@ -42,6 +42,60 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.75.0',
+    date: '2026-09-07',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer WPS layout and font-grid parity gain visual evidence',
+      zh: 'Writer WPS 版式与字体网格对齐补齐视觉证据',
+    },
+    summary: {
+      en: 'The shared operator now inventories 61 ACL and 55 visual contracts, with focused Writer pagination, font, grid, and mixed-script evidence.',
+      zh: '共享操作器现在公开 61 个 ACL 和 55 个视觉契约，深入覆盖 Writer 分页、字体、网格与混合脚本证据。',
+    },
+    highlights: [
+      {
+        title: { en: 'WPS page layout', zh: 'WPS 页面版式' },
+        detail: {
+          en: 'Imported A4 portrait metadata, automatic line metrics, table flow, and one-page pagination are checked in desktop and compact layouts.',
+          zh: '桌面与紧凑布局检查导入的 A4 纵向元数据、自动行距指标、表格流和单页分页。',
+        },
+      },
+      {
+        title: { en: 'Font and document grid', zh: '字体与文档网格' },
+        detail: {
+          en: 'Latin/CJK line-height factors and the WPS document-grid line pitch remain inspectable through the Writer DOM projection.',
+          zh: '拉丁/CJK 行高因子和 WPS 文档网格行距可通过 Writer DOM 投影检查。',
+        },
+      },
+      {
+        title: { en: 'Mixed-script fidelity', zh: '混合脚本保真度' },
+        detail: {
+          en: 'RTL paragraphs, Arabic/Hebrew/CJK/Latin font slots, and bold/italic mixed runs keep their WPS-aligned metrics without browser errors.',
+          zh: 'RTL 段落、阿拉伯语/希伯来语/CJK/拉丁字体槽以及粗体/斜体混合文本保留 WPS 对齐指标，且无浏览器错误。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.75.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.75.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.74.0',
     date: '2026-09-07',
     kind: 'improved',
