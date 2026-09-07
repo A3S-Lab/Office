@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.72.0 - 2026-09-07
+
+- Promoted the existing Spreadsheet WPS font-alias and direct-color-reset
+  workflow into the shared visual matrix. Desktop and compact evidence now
+  cover `Ctrl+2`/`Ctrl+3`/`Ctrl+4`, Automatic Color and No Fill resets, undo,
+  focus restoration, and clean browser diagnostics. The matrix now exposes 60
+  ACL contracts and 52 visual contracts across all five editors.
+- Ran the focused visual contract through the Commander-based Office CLI in
+  both layouts and executed both ACL scenarios with A3S Test 1.0.1; all
+  semantic steps passed with empty console and page-error evidence.
+
 ## 0.71.0 - 2026-09-07
 
 - Promoted two existing Spreadsheet workflows into the shared WPS-informed

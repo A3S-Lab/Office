@@ -42,6 +42,60 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.72.0',
+    date: '2026-09-07',
+    kind: 'improved',
+    surfaces: ['spreadsheet', 'playground', 'documentation'],
+    title: {
+      en: 'Spreadsheet WPS font aliases and color resets gain visual evidence',
+      zh: 'Spreadsheet WPS 字体快捷键与颜色复位补齐视觉证据',
+    },
+    summary: {
+      en: 'The shared operator now inventories 60 ACL and 52 visual contracts, with focused font-alias, color-reset, and focus-restoration evidence.',
+      zh: '共享操作器现在公开 60 个 ACL 和 52 个视觉契约，深入覆盖字体快捷键、颜色复位与焦点恢复证据。',
+    },
+    highlights: [
+      {
+        title: { en: 'WPS font aliases', zh: 'WPS 字体快捷键' },
+        detail: {
+          en: 'Ctrl+2, Ctrl+3, and Ctrl+4 remain discoverable through shared aria-keyshortcuts metadata and apply from the active grid.',
+          zh: 'Ctrl+2、Ctrl+3 和 Ctrl+4 通过统一的 aria-keyshortcuts 元数据保持可发现，并从活动网格执行。',
+        },
+      },
+      {
+        title: { en: 'Direct color resets', zh: '直接颜色复位' },
+        detail: {
+          en: 'Automatic Color and No Fill are explicit actions that clear direct styles, preserve selection, and return focus to the grid.',
+          zh: '自动颜色与无填充是显式操作，可清除直接样式、保留选区并将焦点返回网格。',
+        },
+      },
+      {
+        title: { en: 'Browser proof', zh: '浏览器证据' },
+        detail: {
+          en: 'The Commander-based visual gate passed desktop and compact layouts, and A3S Test 1.0.1 passed both ACL scenarios with empty console and page-error evidence.',
+          zh: '基于 Commander 的视觉门禁通过桌面与紧凑布局；A3S Test 1.0.1 的两个 ACL 场景全部通过，控制台和页面错误证据均为空。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.72.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.72.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.71.0',
     date: '2026-09-07',
     kind: 'improved',

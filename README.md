@@ -361,6 +361,17 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.72.0` promotes the existing Spreadsheet WPS font-alias and direct
+color-reset workflow into the shared WPS/UI evidence matrix:
+
+- The declarative matrix now exposes 60 ACL contracts and 52 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Desktop and compact evidence covers `Ctrl+2`/`Ctrl+3`/`Ctrl+4`, Automatic
+  Color and No Fill resets, undo semantics, and grid-focus restoration.
+- The Commander-based Office CLI ran the visual contract in both layouts, and
+  A3S Test 1.0.1 passed both ACL scenarios with empty console and page-error
+  evidence.
+
 Version `0.71.0` promotes Spreadsheet hyperlink and advanced underline
 workflows into the shared WPS/UI evidence matrix on top of the native Windows
 A3S Test operator:

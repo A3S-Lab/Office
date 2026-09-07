@@ -95,7 +95,8 @@
         "visual-tests/spreadsheet-phone-find.functional.spec.ts",
         "visual-tests/spreadsheet-phone-rename.functional.spec.ts",
         "visual-tests/spreadsheet-hyperlink.functional.spec.ts",
-        "visual-tests/spreadsheet-underline.functional.spec.ts"
+        "visual-tests/spreadsheet-underline.functional.spec.ts",
+        "visual-tests/spreadsheet-font-colors-shortcuts.functional.spec.ts"
       ],
       "acl": [
         "tests/e2e/spreadsheet-data-validation.acl",
