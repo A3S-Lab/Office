@@ -361,6 +361,17 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.73.0` promotes the existing Spreadsheet WPS copy-from-above workflow
+into the shared WPS/UI evidence matrix:
+
+- The declarative matrix now exposes 61 ACL contracts and 53 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Desktop and compact evidence covers `Ctrl+'` formula copy, `Ctrl+Shift+'`
+  calculated-value copy, target-style preservation, one-step undo, and
+  grid-focus restoration.
+- The Commander-based Office CLI ran the visual contract in both layouts, and
+  A3S Test 1.0.1 passed the ACL with empty console and page-error evidence.
+
 Version `0.72.0` promotes the existing Spreadsheet WPS font-alias and direct
 color-reset workflow into the shared WPS/UI evidence matrix:
 

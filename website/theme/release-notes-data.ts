@@ -42,6 +42,60 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.73.0',
+    date: '2026-09-07',
+    kind: 'improved',
+    surfaces: ['spreadsheet', 'playground', 'documentation'],
+    title: {
+      en: 'Spreadsheet copy-from-above shortcuts gain WPS evidence',
+      zh: 'Spreadsheet 从上方复制快捷键补齐 WPS 证据',
+    },
+    summary: {
+      en: 'The shared operator now inventories 61 ACL and 53 visual contracts, with focused copy-from-above, style, undo, and focus evidence.',
+      zh: '共享操作器现在公开 61 个 ACL 和 53 个视觉契约，深入覆盖从上方复制、样式、撤销与焦点证据。',
+    },
+    highlights: [
+      {
+        title: { en: 'WPS copy shortcuts', zh: 'WPS 复制快捷键' },
+        detail: {
+          en: "Ctrl+' copies the source formula, while Ctrl+Shift+' copies its calculated value from the active grid.",
+          zh: "Ctrl+' 从活动网格复制源公式，Ctrl+Shift+' 复制其计算值。",
+        },
+      },
+      {
+        title: { en: 'Style and undo parity', zh: '样式与撤销对齐' },
+        detail: {
+          en: 'Copy-from-above preserves the target style, supports one-step undo, and restores grid focus after each action.',
+          zh: '从上方复制保留目标样式，支持单步撤销，并在每次操作后恢复网格焦点。',
+        },
+      },
+      {
+        title: { en: 'Browser proof', zh: '浏览器证据' },
+        detail: {
+          en: 'The Commander-based visual gate passed desktop and compact layouts, and A3S Test 1.0.1 passed the ACL with empty console and page-error evidence.',
+          zh: '基于 Commander 的视觉门禁通过桌面与紧凑布局；A3S Test 1.0.1 的 ACL 场景通过，控制台和页面错误证据均为空。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.73.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.73.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.72.0',
     date: '2026-09-07',
     kind: 'improved',

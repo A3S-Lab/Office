@@ -173,6 +173,7 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
       'visual-tests/spreadsheet-hyperlink.functional.spec.ts',
       'visual-tests/spreadsheet-underline.functional.spec.ts',
       'visual-tests/spreadsheet-font-colors-shortcuts.functional.spec.ts',
+      'visual-tests/spreadsheet-copy-from-above.functional.spec.ts',
     ]),
   );
   expect(

@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.73.0 - 2026-09-07
+
+- Promoted the existing Spreadsheet WPS copy-from-above workflow into the
+  shared matrix. Visual and ACL evidence cover `Ctrl+'` formula copy,
+  `Ctrl+Shift+'` calculated-value copy, target-style preservation, one-step
+  undo, grid-focus restoration, and clean diagnostics. The matrix now exposes
+  61 ACL contracts and 53 visual contracts across all five editors.
+- Ran the focused visual contract through the Commander-based Office CLI in
+  desktop and compact layouts, and executed the ACL with A3S Test 1.0.1; all
+  semantic steps passed with empty console and page-error evidence.
+
 ## 0.72.0 - 2026-09-07
 
 - Promoted the existing Spreadsheet WPS font-alias and direct-color-reset
