@@ -164,6 +164,30 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".work-spreadsheet-ribbon[data-collapsed='true'] .work-office-ribbon-collapse[aria-expanded='false']")
         }
 
+        expect "collapse-shortcut-advertised" {
+            visible = css(".work-spreadsheet-ribbon[data-collapsed='true'] .work-office-ribbon-collapse[aria-keyshortcuts='Control+F1 Meta+F1']")
+        }
+
+        press "expand-ribbon-with-ctrl-f1" {
+            key = "Control+F1"
+        }
+
+        expect "ribbon-expanded-by-ctrl-f1" {
+            visible = css(".work-spreadsheet-ribbon:not([data-collapsed]) .work-office-ribbon-collapse[aria-label='折叠功能区'][aria-expanded='true']")
+        }
+
+        focus "focus-grid-before-collapse-shortcut" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "collapse-ribbon-with-ctrl-f1" {
+            key = "Control+F1"
+        }
+
+        expect "ribbon-collapsed-by-ctrl-f1" {
+            visible = css(".work-spreadsheet-ribbon[data-collapsed='true'] .work-office-ribbon-collapse[aria-expanded='false']")
+        }
+
         click "temporarily-open-data" {
             target = css(".work-spreadsheet-ribbon [role='tab'][data-tab-id='data']")
         }

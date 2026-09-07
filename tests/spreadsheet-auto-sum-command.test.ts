@@ -217,6 +217,7 @@ function autoSumFixture(sheetOverride: Partial<Sheet> = {}): {
     },
     onChange: () => undefined,
     selection: null,
+    showFormulas: null,
     targetSheetId: 'sheet-1',
     toolbarCell: null,
     view: null,

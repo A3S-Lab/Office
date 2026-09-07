@@ -46,6 +46,7 @@ import { WorkOfficeCollaborationParticipants } from './office-collaboration-part
 import { OfficeColorPicker } from './office-color-picker';
 import { OfficeTextField } from './office-controls';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { moveOfficeToolbarFocus } from './office-toolbar-keyboard';
 import type { PdfAnnotationControllerState } from './pdf-annotation-controller';
 import type {
   PdfEditorCanCommands,
@@ -139,7 +140,12 @@ export function PdfToolbar({
   };
 
   return (
-    <header className="work-pdf-toolbar" role="toolbar" aria-label="PDF 工具栏">
+    <header
+      className="work-pdf-toolbar"
+      role="toolbar"
+      aria-label="PDF 工具栏"
+      onKeyDown={moveOfficeToolbarFocus}
+    >
       {showSave && (
         <div className="work-pdf-toolbar-group work-pdf-save">
           <output aria-label="PDF 保存状态" aria-live="polite">

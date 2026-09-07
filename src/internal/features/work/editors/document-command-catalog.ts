@@ -502,6 +502,16 @@ export const documentCommandCatalog = {
     location: { area: 'ribbon', tab: 'references', group: 'update' },
     shortcut: { label: 'F9', aria: 'F9', editor: ['F9'] },
   },
+  toggleFieldCodes: {
+    id: 'view.toggleFieldCodes',
+    label: '切换域代码',
+    location: { area: 'ribbon', tab: 'view', group: 'show' },
+    shortcut: {
+      label: 'Alt+F9 / Shift+F9',
+      aria: 'Alt+F9 Shift+F9',
+      editor: ['Alt-F9', 'Shift-F9'],
+    },
+  },
   navigationPane: {
     id: 'view.navigationPane',
     label: '导航窗格',

@@ -43,8 +43,11 @@ model:
    selection before the next keystroke.
    Writer keeps tab, group, label, and shortcut metadata in one internal
    command catalog. Undo and redo live in a keyboard-described quick-access
-   toolbar. The ribbon measures its own toolbar instead of the browser viewport
-   and compacts low-priority, then normal-priority groups before exposing group
+   toolbar. The ribbon measures its own toolbar instead of the browser viewport.
+   Every Office toolbar shares Arrow and Home/End movement between actionable
+   buttons while leaving comboboxes, sliders, and text inputs to their native
+   interaction model. The ribbon then compacts low-priority, then
+   normal-priority groups before exposing group
    paging. It can remain collapsed; activating a tab temporarily overlays that
    tab's commands without moving the document, and an outside pointer action
    returns to the compact row. Writer routes its catalogued Traditional Office font-size,

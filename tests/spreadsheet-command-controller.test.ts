@@ -3367,6 +3367,7 @@ function commandFixture(): {
           column: [3, 1],
         },
       },
+      showFormulas: null,
       sort,
       table: { canOpen: false, open: () => false },
       targetSheetId: 'sheet-1',

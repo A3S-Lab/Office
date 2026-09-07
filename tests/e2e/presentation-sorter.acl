@@ -1,0 +1,82 @@
+suite "office-presentation-sorter" {
+    version = 1
+
+    scenario "enter-returns-from-sorter-to-normal" {
+        name = "Return from WPS-style slide sorter to normal view with Enter"
+        surface = "web"
+        timeout_ms = 90000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-presentation" {
+            target = text("策略汇报", true)
+        }
+
+        wait "presentation-loaded" {
+            visible = css(".work-slide-canvas.interactive")
+        }
+
+        click "open-view-tab" {
+            target = role("tab", "视图")
+        }
+
+        click "open-sorter" {
+            target = role("button", "幻灯片浏览")
+        }
+
+        wait "sorter-ready" {
+            visible = css(".work-presentation-sorter [data-slide-thumbnail].active:focus")
+        }
+
+        press "select-second-slide" {
+            key = "ArrowRight"
+        }
+
+        expect "second-slide-selected" {
+            visible = css(".work-presentation-sorter [data-slide-thumbnail][data-slide-index='1'].active:focus")
+        }
+
+        press "enter-normal-view" {
+            key = "Enter"
+        }
+
+        wait "normal-view-restored" {
+            visible = css(".work-slide-canvas.interactive")
+        }
+
+        expect "selected-slide-strip-focus" {
+            visible = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='1'].active:focus")
+        }
+
+        screenshot "presentation-sorter-enter" {
+            path = "screenshots/presentation-sorter-enter.png"
+        }
+
+        accessibility "presentation-sorter-accessibility" {
+            path = "evidence/presentation-sorter-accessibility.json"
+            interactive = true
+        }
+
+        console "presentation-sorter-console" {
+            path = "diagnostics/presentation-sorter-console.json"
+            clear = false
+        }
+
+        page_errors "presentation-sorter-page-errors" {
+            path = "diagnostics/presentation-sorter-page-errors.json"
+            clear = false
+        }
+    }
+}

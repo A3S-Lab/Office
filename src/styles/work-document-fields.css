@@ -9,6 +9,34 @@
   white-space: nowrap;
 }
 
+.work-document-editor.show-field-codes:not(.preview) .work-document-field,
+.work-document-editor:not(.preview) .work-document-field.show-field-code {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0;
+  letter-spacing: 0;
+}
+
+.work-document-editor.show-field-codes:not(.preview) .work-document-field::before,
+.work-document-editor:not(.preview) .work-document-field.show-field-code::before {
+  content: attr(data-field-code);
+  font-size: 0.92rem;
+  font-variant-numeric: normal;
+  white-space: pre-wrap;
+}
+
+/* Shift+F9 override while Alt+F9 (document-wide codes) is active. */
+.work-document-editor.show-field-codes:not(.preview)
+  .work-document-field.show-field-code-result {
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+
+.work-document-editor.show-field-codes:not(.preview)
+  .work-document-field.show-field-code-result::before {
+  content: none;
+}
+
 .work-document-editor.preview .work-document-field,
 .work-pdf-export-page .work-document-field {
   padding: 0;
@@ -43,6 +71,19 @@
   line-height: 1.5;
 }
 
+.work-document-field-dialog-options {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.work-document-field-dialog-options .work-office-checkbox {
+  min-height: 34px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
 .work-document-field-dialog-preview {
   display: grid;
   gap: 6px;
@@ -68,5 +109,10 @@
 @media (max-width: 560px) {
   .work-document-field-dialog-grid {
     grid-template-columns: 1fr;
+  }
+
+  .work-document-field-dialog-options .work-office-checkbox {
+    min-height: 44px;
+    padding-block: 8px;
   }
 }

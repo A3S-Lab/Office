@@ -939,6 +939,7 @@ function documentToolbar(
       navigationOpen={false}
       pageColor="#ffffff"
       showPageNumbers
+      showFieldCodes={false}
       showHiddenText={false}
       showRulers={false}
       spellcheckEnabled
@@ -955,6 +956,8 @@ function documentToolbar(
       onLayoutChange={noop}
       onOpenLayout={noop}
       onToggleNavigation={noop}
+      onToggleFieldCodes={noop}
+      onToggleSelectedFieldCodes={() => false}
       onToggleHiddenText={noop}
       onTogglePageNumbers={noop}
       onToggleRulers={noop}

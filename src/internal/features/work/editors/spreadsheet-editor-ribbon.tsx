@@ -3,7 +3,9 @@ import {
   BarChart3,
   Bookmark,
   Calculator,
+  Code2,
   Grid3X3,
+  Heading,
   Link2,
   ListChecks,
   ListFilter,
@@ -12,6 +14,7 @@ import {
   Redo2,
   RefreshCw,
   ShieldCheck,
+  Sigma,
   SortAsc,
   SortDesc,
   SlidersHorizontal,
@@ -83,9 +86,15 @@ export function SpreadsheetEditorRibbon({
   formatPainterMode = null,
   freezePanesActive = false,
   freezePanesSelection = defaultSpreadsheetFreezePanesSelection,
+  formulaBarVisible = true,
+  showFormulas = false,
   gridLinesVisible,
+  headingsVisible = true,
   panelId,
   onTabChange,
+  onToggleFormulaBar,
+  onToggleShowFormulas,
+  onToggleHeadings,
   onTogglePanel,
   panel,
   toolbarCell,
@@ -103,9 +112,15 @@ export function SpreadsheetEditorRibbon({
   formatPainterMode?: SpreadsheetFormatPainterMode | null;
   freezePanesActive?: boolean;
   freezePanesSelection?: Selection;
+  formulaBarVisible?: boolean;
+  showFormulas?: boolean;
   gridLinesVisible: boolean;
+  headingsVisible?: boolean;
   panelId: string;
   onTabChange: (tab: SpreadsheetRibbonTabId) => void;
+  onToggleFormulaBar?: () => void;
+  onToggleShowFormulas?: () => void;
+  onToggleHeadings?: () => void;
   onTogglePanel: (
     panel: SpreadsheetWorkbookPanelView,
     trigger: HTMLButtonElement,
@@ -375,13 +390,47 @@ export function SpreadsheetEditorRibbon({
           <>
             <WorkOfficeRibbonGroup label="工作簿视图" priority="high">
               <WorkOfficeRibbonButton
-                label={gridLinesVisible ? '隐藏网格线' : '显示网格线'}
-                visibleLabel={spreadsheetCommandCatalog.gridLines.label}
+                label={spreadsheetCommandCatalog.formulaBar.label}
+                active={formulaBarVisible}
+                disabled={!onToggleFormulaBar}
+                title={formulaBarVisible ? '隐藏编辑栏' : '显示编辑栏'}
+                onClick={() => onToggleFormulaBar?.()}
+              >
+                <Sigma size={19} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.showFormulas.label}
+                active={showFormulas}
+                disabled={!onToggleShowFormulas}
+                title={
+                  showFormulas
+                    ? '隐藏公式（Ctrl+`）'
+                    : '显示公式（Ctrl+`）'
+                }
+                aria-keyshortcuts={
+                  spreadsheetCommandCatalog.showFormulas.shortcut.aria
+                }
+                onClick={() => onToggleShowFormulas?.()}
+              >
+                <Code2 size={19} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.gridLines.label}
                 active={gridLinesVisible}
                 disabled={!can.setGridLines(!gridLinesVisible)}
+                title={gridLinesVisible ? '隐藏网格线' : '显示网格线'}
                 onClick={() => commands.setGridLines(!gridLinesVisible)}
               >
                 <Grid3X3 size={19} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.headings.label}
+                active={headingsVisible}
+                disabled={!onToggleHeadings}
+                title={headingsVisible ? '隐藏标题' : '显示标题'}
+                onClick={() => onToggleHeadings?.()}
+              >
+                <Heading size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="窗口" priority="high">

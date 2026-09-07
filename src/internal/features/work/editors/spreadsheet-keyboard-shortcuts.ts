@@ -292,6 +292,24 @@ export function createSpreadsheetKeyboardShortcutExtension(): OfficeEditorExtens
           commands.activateSheet,
           1,
         ),
+      [spreadsheetCommandCatalog.showFormulas.shortcut.editor[0]]: (
+        { context },
+        event,
+      ) => {
+        if (event.altKey || event.shiftKey) return false;
+        if (!context.showFormulas?.toggle()) return false;
+        event.preventDefault();
+        return true;
+      },
+      [spreadsheetCommandCatalog.showFormulas.shortcut.editor[1]]: (
+        { context },
+        event,
+      ) => {
+        if (event.altKey || event.shiftKey || event.metaKey) return false;
+        if (!context.showFormulas?.toggle()) return false;
+        event.preventDefault();
+        return true;
+      },
       'Shift-F11': ({ can, commands }, event) =>
         runSpreadsheetAddSheetShortcut(event, can.addSheet, commands.addSheet),
       'Alt-Shift-F1': ({ can, commands }, event) =>

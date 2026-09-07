@@ -256,6 +256,7 @@ function PresentationEditingSurface({
     null,
   );
   const [viewMode, setViewMode] = useState<'normal' | 'sorter'>('normal');
+  const [notesVisible, setNotesVisible] = useState(true);
   const [slideshowStartIndex, setSlideshowStartIndex] = useState<number | null>(
     null,
   );
@@ -938,6 +939,7 @@ function PresentationEditingSurface({
     <section
       ref={presentationRootRef}
       className="work-presentation-editor"
+      data-notes={notesVisible ? 'visible' : 'hidden'}
       data-presentation-geometry-engine={geometry.engine ?? undefined}
       data-presentation-geometry-state={geometry.pending ? 'running' : 'idle'}
       data-presentation-transform-state={
@@ -963,7 +965,12 @@ function PresentationEditingSurface({
         editingDesign={designMode !== 'slide'}
         background={activeBackground}
         transition={selectedSlide.transition}
+        notesVisible={notesVisible}
         viewMode={viewMode}
+        onToggleNotes={() => {
+          setNotesVisible((visible) => !visible);
+          queueMicrotask(() => restoreObjectFocus());
+        }}
         commands={presentationToolbarCommands}
       />
       {designOpen && selectedLayout && selectedMaster && (
@@ -1007,7 +1014,11 @@ function PresentationEditingSurface({
           aspectRatio={aspectRatio}
           canvasName={canvasName}
           canvasRef={canvasRef}
-          commands={presentationCommands}
+          commands={{
+            ...presentationCommands,
+            // Sorter Enter/double-click and View ribbon switches share WPS focus restoration.
+            setViewMode: presentationToolbarCommands.setViewMode,
+          }}
           content={content}
           designContent={designContent}
           designMode={designMode}
@@ -1018,6 +1029,7 @@ function PresentationEditingSurface({
           selectedLayout={selectedLayout}
           selectedMaster={selectedMaster}
           selectedSlide={selectedSlide}
+          notesVisible={notesVisible}
           viewMode={viewMode}
           zoom={zoom}
           snapGuides={transform.guides}

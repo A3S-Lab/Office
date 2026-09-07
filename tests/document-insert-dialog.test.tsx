@@ -317,6 +317,12 @@ test('inserts a WPS-compatible numeric field from the field settings dialog', as
     ).toHaveFocus();
     fireEvent.click(within(dialog).getByRole('combobox', { name: '数字格式' }));
     fireEvent.click(screen.getByRole('option', { name: '小写罗马数字（i）' }));
+    const preserveFormatting = within(dialog).getByRole('checkbox', {
+      name: '更新时保留格式',
+    });
+    expect(preserveFormatting).not.toBeChecked();
+    fireEvent.click(preserveFormatting);
+    expect(preserveFormatting).toBeChecked();
     expect(
       within(dialog).getByRole('status', { name: '结果预览' }),
     ).toHaveTextContent('i');
@@ -326,7 +332,7 @@ test('inserts a WPS-compatible numeric field from the field settings dialog', as
       expect(screen.queryByRole('dialog', { name: '插入字段' })).toBeNull(),
     );
     expect(editor.getHTML()).toContain(
-      'data-field-instruction="PAGE \\* roman"',
+      'data-field-instruction="PAGE \\* roman \\* MERGEFORMAT"',
     );
     expect(editor.getHTML()).toContain('data-field-display="i"');
     expect(editor.view.dom).toHaveFocus();
@@ -354,6 +360,9 @@ test('edits a selected WPS field without losing MERGEFORMAT or bookmark identity
 
     const dialog = screen.getByRole('dialog', { name: '编辑字段' });
     expect(
+      within(dialog).getByRole('checkbox', { name: '更新时保留格式' }),
+    ).toBeChecked();
+    expect(
       within(dialog).getByRole('combobox', { name: '数字格式' }),
     ).toHaveTextContent('大写罗马数字（I）');
     fireEvent.click(within(dialog).getByRole('combobox', { name: '数字格式' }));
@@ -367,6 +376,42 @@ test('edits a selected WPS field without losing MERGEFORMAT or bookmark identity
       'data-field-instruction="PAGEREF WpsTarget \\h \\* Ordinal \\* MERGEFORMAT"',
     );
     expect(editor.getHTML()).toContain('data-field-target-id="bookmark-1"');
+    expect(editor.view.dom).toHaveFocus();
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('lets an edited field explicitly remove the WPS MERGEFORMAT switch', async () => {
+  const { editor, element } = createEditor();
+  editor.commands.insertDocumentField('page', {
+    format: { kind: 'numeric', value: 'roman' },
+    mergeFormat: true,
+  });
+  const fieldPosition = findNodePosition(editor, 'documentField');
+  editor.commands.setNodeSelection(fieldPosition);
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开字段设置' }));
+
+    const dialog = screen.getByRole('dialog', { name: '编辑字段' });
+    const preserveFormatting = within(dialog).getByRole('checkbox', {
+      name: '更新时保留格式',
+    });
+    expect(preserveFormatting).toBeChecked();
+    fireEvent.click(preserveFormatting);
+    expect(preserveFormatting).not.toBeChecked();
+    fireEvent.click(within(dialog).getByRole('button', { name: '应用字段' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '编辑字段' })).toBeNull(),
+    );
+    expect(editor.getHTML()).toContain(
+      'data-field-instruction="PAGE \\* ROMAN"',
+    );
+    expect(editor.getHTML()).not.toContain('MERGEFORMAT');
     expect(editor.view.dom).toHaveFocus();
   } finally {
     editor.destroy();

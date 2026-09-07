@@ -254,6 +254,7 @@ function copyFromAboveFixture(
     },
     onChange: () => undefined,
     selection: null,
+    showFormulas: null,
     table: { canOpen: false, open: () => false },
     targetSheetId: 'sheet-1',
     toolbarCell: null,

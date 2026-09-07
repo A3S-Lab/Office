@@ -141,6 +141,20 @@ test('executes scoped WPS Writer review shortcuts and ignores unrelated keys', (
   expect(
     runDocumentWpsShortcut(
       editor,
+      shortcut({ key: 'F9', ctrlKey: false, altKey: true }),
+      callbacks,
+    ),
+  ).toBe(true);
+  expect(
+    runDocumentWpsShortcut(
+      editor,
+      shortcut({ key: 'F9', ctrlKey: false, shiftKey: true }),
+      callbacks,
+    ),
+  ).toBe(true);
+  expect(
+    runDocumentWpsShortcut(
+      editor,
       shortcut({ key: 'F9', ctrlKey: false }),
       callbacks,
     ),
@@ -159,6 +173,8 @@ test('executes scoped WPS Writer review shortcuts and ignores unrelated keys', (
     'track',
     'comment',
     'spellcheck',
+    'fieldCodes',
+    'selectedFieldCodes',
     'refresh',
     'wordCount',
   ]);
@@ -219,6 +235,11 @@ function createCallbacks(calls: string[] = []) {
     onOpenFontDialog: () => calls.push('fontDialog'),
     onOpenWordCount: () => calls.push('wordCount'),
     onRefreshFields: () => calls.push('refresh'),
+    onToggleFieldCodes: () => calls.push('fieldCodes'),
+    onToggleSelectedFieldCodes: () => {
+      calls.push('selectedFieldCodes');
+      return true;
+    },
     onToggleSpellcheck: () => calls.push('spellcheck'),
     onToggleTrackChanges: () => calls.push('track'),
   };

@@ -2,6 +2,7 @@ import type { WorkspaceContextMenuEvent } from '../../workspace/components/works
 import { isWorkspaceContextMenuKeyboardEvent } from '../../workspace/components/workspace-context-menu';
 import type { WorkPresentationDesignContent } from '../work-presentation-layouts';
 import type { WorkSlide } from '../work-types';
+import { handlePresentationThumbnailKey } from './presentation-slide-thumbnail-keyboard';
 import { SlideCanvas } from './presentation-slide-canvas';
 
 export function PresentationSlideThumbnail({
@@ -55,7 +56,13 @@ export function PresentationSlideThumbnail({
           onContextMenu(event);
           return;
         }
-        handleThumbnailKey(event, index, slideCount, onDelete, onNavigate);
+        handlePresentationThumbnailKey(event, {
+          index,
+          slideCount,
+          onDelete,
+          onNavigate,
+          onActivate: onDoubleClick,
+        });
       }}
     >
       {variant === 'strip' && <span>{index + 1}</span>}
@@ -82,41 +89,4 @@ export function PresentationSlideThumbnail({
       )}
     </button>
   );
-}
-
-function handleThumbnailKey(
-  event: React.KeyboardEvent<HTMLButtonElement>,
-  index: number,
-  slideCount: number,
-  onDelete: () => boolean,
-  onNavigate: (index: number) => void,
-): void {
-  if (event.key === 'Delete' || event.key === 'Backspace') {
-    event.preventDefault();
-    event.stopPropagation();
-    onDelete();
-    return;
-  }
-  if (
-    ![
-      'ArrowUp',
-      'ArrowDown',
-      'ArrowLeft',
-      'ArrowRight',
-      'Home',
-      'End',
-    ].includes(event.key)
-  )
-    return;
-  event.preventDefault();
-  event.stopPropagation();
-  const nextIndex =
-    event.key === 'Home'
-      ? 0
-      : event.key === 'End'
-        ? slideCount - 1
-        : event.key === 'ArrowUp' || event.key === 'ArrowLeft'
-          ? Math.max(0, index - 1)
-          : Math.min(slideCount - 1, index + 1);
-  onNavigate(nextIndex);
 }

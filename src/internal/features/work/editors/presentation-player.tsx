@@ -24,6 +24,11 @@ import {
   type PresentationTimerController,
 } from './presentation-presenter-view';
 import { SlideCanvas } from './presentation-slide-canvas';
+import {
+  nextPresentationBlankScreen,
+  presentationBlankScreenLabel,
+  type PresentationBlankScreen,
+} from './presentation-slideshow-blank';
 
 interface PlaybackState {
   animationCueIndex: number;
@@ -52,6 +57,8 @@ export function PresentationPlayer({
     transitionKey: 0,
   });
   const [presenter, setPresenter] = useState(false);
+  const [blankScreen, setBlankScreen] =
+    useState<PresentationBlankScreen>('off');
   const playerRef = useRef<HTMLDivElement>(null);
   const presenterTimerRef = useRef<PresentationTimerController | null>(null);
   if (!presenterTimerRef.current) {
@@ -157,6 +164,13 @@ export function PresentationPlayer({
         return;
       }
 
+      const nextBlank = nextPresentationBlankScreen(blankScreen, event.key);
+      if (nextBlank !== null) {
+        event.preventDefault();
+        setBlankScreen(nextBlank);
+        return;
+      }
+
       if (
         event.key === 'ArrowRight' ||
         event.key === 'ArrowDown' ||
@@ -189,7 +203,14 @@ export function PresentationPlayer({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [advance, completeExit, content.slides.length, move, retreat]);
+  }, [
+    advance,
+    blankScreen,
+    completeExit,
+    content.slides.length,
+    move,
+    retreat,
+  ]);
   useLayoutEffect(() => {
     const player = playerRef.current;
     if (!autoFullscreen || !player) return;
@@ -245,10 +266,18 @@ export function PresentationPlayer({
   return (
     <section
       className="work-presentation-player"
+      data-blank-screen={blankScreen}
       data-player-mode={presenter ? 'presenter' : 'audience'}
       ref={playerRef}
       tabIndex={-1}
     >
+      {blankScreen !== 'off' ? (
+        <div
+          aria-label={presentationBlankScreenLabel(blankScreen)}
+          className="work-presentation-blank-screen"
+          data-blank-screen={blankScreen}
+        />
+      ) : null}
       {presenter ? (
         <PresentationPresenterView
           animationCueIndex={playback.animationCueIndex}

@@ -45,7 +45,12 @@ suite "office-word-field-settings" {
         }
 
         expect "preview-is-lower-roman" {
-            visible = css("[role='dialog'][aria-label='插入字段'] [role='status']:has-text('i')")
+            target = css(".work-document-field-dialog [aria-label='结果预览']")
+            value = "i"
+        }
+
+        click "preserve-formatting" {
+            target = css(".work-document-field-dialog input[aria-label='更新时保留格式']")
         }
 
         click "insert-field" {
@@ -53,7 +58,7 @@ suite "office-word-field-settings" {
         }
 
         expect "formatted-page-field-is-live" {
-            visible = css(".work-document-field[data-field-kind='page'][data-field-display='i']")
+            visible = css(".work-document-field[data-field-kind='page'][data-field-display='i'][data-field-instruction*='MERGEFORMAT']")
         }
 
         press "refresh-field" {
@@ -111,10 +116,6 @@ suite "office-word-field-settings" {
             target = role("button", "向右查看更多插入工具")
         }
 
-        click "show-compact-insert-tools-again" {
-            target = role("button", "向右查看更多插入工具")
-        }
-
         wait "compact-field-button" {
             visible = css("button[aria-label='字段设置']")
         }
@@ -131,13 +132,33 @@ suite "office-word-field-settings" {
             visible = css(".work-document-field-dialog")
         }
 
-        screenshot "field-settings-phone" {
-            path = "screenshots/word-field-settings-phone.png"
+        click "compact-preserve-formatting" {
+            target = css(".work-document-field-dialog input[aria-label='更新时保留格式']")
+        }
+
+        screenshot "field-settings-phone-dialog" {
+            path = "screenshots/word-field-settings-phone-dialog.png"
         }
 
         accessibility "field-settings-phone-accessibility" {
             path = "evidence/word-field-settings-phone-accessibility.json"
             interactive = true
+        }
+
+        click "compact-insert-field" {
+            target = role("button", "插入字段")
+        }
+
+        expect "compact-formatted-page-field-is-live" {
+            visible = css(".work-document-field[data-field-kind='page'][data-field-display='1'][data-field-instruction*='MERGEFORMAT']")
+        }
+
+        expect "compact-document-focus-is-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        screenshot "field-settings-phone" {
+            path = "screenshots/word-field-settings-phone.png"
         }
 
         console "field-settings-phone-console" {

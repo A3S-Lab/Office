@@ -180,15 +180,25 @@ export function DocumentFieldDialog({
         )}
       </div>
 
-      {draft.kind === 'pageReference' && (
+      <div className="work-document-field-dialog-options">
+        {draft.kind === 'pageReference' && (
+          <OfficeCheckbox
+            ariaLabel="使用超链接"
+            checked={draft.hyperlink}
+            onCheckedChange={(hyperlink) => onChange({ ...draft, hyperlink })}
+          >
+            使用超链接
+          </OfficeCheckbox>
+        )}
+
         <OfficeCheckbox
-          ariaLabel="使用超链接"
-          checked={draft.hyperlink}
-          onCheckedChange={(hyperlink) => onChange({ ...draft, hyperlink })}
+          ariaLabel="更新时保留格式"
+          checked={draft.mergeFormat}
+          onCheckedChange={(mergeFormat) => onChange({ ...draft, mergeFormat })}
         >
-          使用超链接
+          更新时保留格式
         </OfficeCheckbox>
-      )}
+      </div>
 
       <div className="work-document-field-dialog-preview">
         <span>结果预览</span>
@@ -198,7 +208,7 @@ export function DocumentFieldDialog({
       </div>
       <p className="work-document-field-dialog-note">
         {draft.mergeFormat
-          ? '此字段保留 WPS 的 MERGEFORMAT 开关。'
+          ? '将写入 WPS 的 MERGEFORMAT 开关，F9 更新时保留结果格式。'
           : '应用后仍可使用 F9 更新分页、日期和统计结果。'}
       </p>
     </Dialog>

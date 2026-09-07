@@ -303,6 +303,12 @@ export function documentFieldLabel(kind: WorkDocumentFieldKind): string {
   return FIELD_LABELS[kind];
 }
 
+/** WPS/Word-style field-code text shown when "切换域代码" is active. */
+export function documentFieldCodeDisplay(instruction: string): string {
+  const normalized = instruction.trim();
+  return normalized ? `{ ${normalized} }` : '{ PAGE }';
+}
+
 export function documentFieldDisplay(
   kind: WorkDocumentFieldKind,
   context: WorkDocumentFieldContext,
@@ -401,6 +407,9 @@ export function normalizeDocumentFieldsHtml(source: string): string {
       }
     }
     element.dataset.fieldDisplay = display;
+    element.dataset.fieldCode = documentFieldCodeDisplay(
+      element.dataset.fieldInstruction,
+    );
     element.classList.add('work-document-field');
     element.textContent = display;
   }
@@ -436,6 +445,9 @@ export function resolveDocumentFieldsHtml(
       element.dataset.fieldDisplay,
     );
     element.dataset.fieldDisplay = display;
+    element.dataset.fieldCode = documentFieldCodeDisplay(
+      element.dataset.fieldInstruction ?? '',
+    );
     element.textContent = display;
   }
   return document.body.innerHTML;

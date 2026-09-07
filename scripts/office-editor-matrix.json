@@ -46,7 +46,8 @@
         "tests/e2e/word-review-conflict-phone.acl",
         "tests/e2e/word-content-controls-phone.acl",
         "tests/e2e/word-move-revision.acl",
-        "tests/e2e/word-track-changes-phone.acl"
+        "tests/e2e/word-track-changes-phone.acl",
+        "tests/e2e/word-ribbon-collapse.acl"
       ],
       "fixtures": [
         "word-wps-connector.docx",
@@ -106,6 +107,7 @@
         "tests/e2e/spreadsheet-data-validation.acl",
         "tests/e2e/spreadsheet-custom-sort.acl",
         "tests/e2e/spreadsheet-ribbon-alignment.acl",
+        "tests/e2e/spreadsheet-view-workbook.acl",
         "tests/e2e/spreadsheet-font-dialog-shortcuts.acl",
         "tests/e2e/spreadsheet-auto-sum.acl",
         "tests/e2e/spreadsheet-paste-special.acl",
@@ -160,7 +162,11 @@
         "tests/e2e/presentation-chinese-ime.acl",
         "tests/e2e/presentation-large-windowing.acl",
         "tests/e2e/presentation-phone-chart-pane.acl",
-        "tests/e2e/presentation-phone-comments.acl"
+        "tests/e2e/presentation-phone-comments.acl",
+        "tests/e2e/presentation-sorter.acl",
+        "tests/e2e/presentation-slideshow-blank.acl",
+        "tests/e2e/presentation-view-notes.acl",
+        "tests/e2e/presentation-ribbon-collapse.acl"
       ],
       "fixtures": [],
       "agent": {

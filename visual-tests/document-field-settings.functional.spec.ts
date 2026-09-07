@@ -25,7 +25,36 @@ test('Writer field settings keeps format choices visible and inserts a live fiel
   );
   await dialog.getByRole('combobox', { name: '数字格式' }).click();
   await page.getByRole('option', { name: '小写罗马数字（i）' }).click();
+  const preserveFormatting = dialog.getByRole('checkbox', {
+    name: '更新时保留格式',
+  });
+  await expect(preserveFormatting).not.toBeChecked();
+  await preserveFormatting.click();
+  await expect(preserveFormatting).toBeChecked();
+  await expect(dialog).toContainText('MERGEFORMAT');
   await expect(dialog.getByRole('status')).toHaveText(/i/);
+
+  const [dialogBounds, preserveFormattingBounds] = await Promise.all([
+    dialog.boundingBox(),
+    preserveFormatting.boundingBox(),
+  ]);
+  const viewport = page.viewportSize();
+  expect(dialogBounds?.x ?? -1).toBeGreaterThanOrEqual(0);
+  expect(dialogBounds?.y ?? -1).toBeGreaterThanOrEqual(0);
+  expect(
+    (dialogBounds?.x ?? 0) + (dialogBounds?.width ?? Number.POSITIVE_INFINITY),
+  ).toBeLessThanOrEqual(viewport?.width ?? 1280);
+  expect(
+    (dialogBounds?.y ?? 0) + (dialogBounds?.height ?? Number.POSITIVE_INFINITY),
+  ).toBeLessThanOrEqual(viewport?.height ?? 800);
+  expect(preserveFormattingBounds?.height ?? 0).toBeGreaterThanOrEqual(34);
+
+  await page.screenshot({
+    path: testInfo.outputPath(
+      `writer-field-settings-dialog-${testInfo.project.name}.png`,
+    ),
+    animations: 'disabled',
+  });
   await dialog.getByRole('button', { name: '插入字段' }).click();
 
   const field = page.locator(
@@ -34,7 +63,7 @@ test('Writer field settings keeps format choices visible and inserts a live fiel
   await expect(field).toHaveAttribute('data-field-display', 'i');
   await expect(field).toHaveAttribute(
     'data-field-instruction',
-    'PAGE \\* roman',
+    'PAGE \\* roman \\* MERGEFORMAT',
   );
 
   await page.screenshot({

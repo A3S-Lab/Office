@@ -12,7 +12,6 @@ import {
 import {
   type ButtonHTMLAttributes,
   Fragment,
-  type KeyboardEvent,
   type ReactNode,
   useCallback,
   useEffect,
@@ -25,6 +24,7 @@ import { Popover, Tabs } from '../../../design-system/primitives';
 import { WorkOfficeCollaborationParticipants } from './office-collaboration-participants';
 import { OfficeSlider } from './office-controls';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { moveOfficeToolbarFocus } from './office-toolbar-keyboard';
 import {
   calculateRibbonDensity,
   calculateRibbonOverflow,
@@ -227,6 +227,20 @@ export function WorkOfficeRibbon<T extends string>({
       document.removeEventListener('pointerdown', closeTemporaryPanel, true);
   }, [collapsed, temporarilyExpanded]);
 
+  useEffect(() => {
+    if (!collapsible) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) {
+        return;
+      }
+      if (event.key !== 'F1' && event.code !== 'F1') return;
+      event.preventDefault();
+      changeCollapsed(!collapsed);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [changeCollapsed, collapsed, collapsible]);
+
   useLayoutEffect(() => {
     const toolbar = toolbarRef.current;
     if (!toolbar) return;
@@ -385,7 +399,12 @@ export function WorkOfficeRibbon<T extends string>({
             type="button"
             className="work-office-ribbon-collapse"
             aria-label={collapsed ? '展开功能区' : '折叠功能区'}
-            title={collapsed ? '展开功能区' : '折叠功能区'}
+            title={
+              collapsed
+                ? '展开功能区（Ctrl+F1）'
+                : '折叠功能区（Ctrl+F1）'
+            }
+            aria-keyshortcuts="Control+F1 Meta+F1"
             aria-controls={`${reactId}-panel`}
             aria-expanded={panelExpanded}
             onClick={() => changeCollapsed(!collapsed)}
@@ -426,6 +445,7 @@ export function WorkOfficeRibbon<T extends string>({
               data-has-overflow={hasRibbonOverflow ? 'true' : undefined}
               role="toolbar"
               aria-label={`${selectedLabel}工具栏`}
+              onKeyDown={moveOfficeToolbarFocus}
               onScroll={updateRibbonOverflow}
             >
               {selectedPanel}
@@ -458,6 +478,7 @@ function WorkOfficeQuickAccessToolbar({
       className="work-office-quick-access"
       role="toolbar"
       aria-label="快速访问工具栏"
+      onKeyDown={moveOfficeToolbarFocus}
     >
       {actions.map((action) => (
         <button
@@ -754,33 +775,6 @@ export function WorkOfficeStatusBar({
       )}
     </section>
   );
-}
-
-function moveOfficeToolbarFocus(event: KeyboardEvent<HTMLDivElement>): void {
-  if (
-    !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) ||
-    (event.target instanceof HTMLElement &&
-      event.target.getAttribute('role') === 'slider')
-  ) {
-    return;
-  }
-  const controls = [
-    ...event.currentTarget.querySelectorAll<HTMLElement>(
-      'button:not(:disabled), [role="slider"]:not([aria-disabled="true"])',
-    ),
-  ];
-  if (!controls.length) return;
-  const currentIndex = controls.indexOf(document.activeElement as HTMLElement);
-  const nextIndex =
-    event.key === 'Home'
-      ? 0
-      : event.key === 'End'
-        ? controls.length - 1
-        : event.key === 'ArrowRight'
-          ? (currentIndex + 1 + controls.length) % controls.length
-          : (currentIndex - 1 + controls.length) % controls.length;
-  event.preventDefault();
-  controls[nextIndex]?.focus();
 }
 
 export function WorkOfficeZoomControls({

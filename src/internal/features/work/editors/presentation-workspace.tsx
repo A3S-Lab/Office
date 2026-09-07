@@ -80,6 +80,7 @@ export interface PresentationWorkspaceProps {
   selectedMaster: WorkPresentationMaster | undefined;
   selectedSlide: WorkSlide;
   snapGuides: OfficeKernelPresentationSnapGuide[];
+  notesVisible: boolean;
   viewMode: 'normal' | 'sorter';
   zoom: number;
   onBeginDrag: (
@@ -119,6 +120,7 @@ export function PresentationWorkspace({
   selectedMaster,
   selectedSlide,
   snapGuides,
+  notesVisible,
   viewMode,
   zoom,
   onBeginDrag,
@@ -556,7 +558,7 @@ export function PresentationWorkspace({
             {(content.height ?? 7.5).toFixed(2)}
           </span>
         </footer>
-        {designMode === 'slide' && (
+        {designMode === 'slide' && notesVisible && (
           <div className="work-slide-notes">
             <span>演讲者备注</span>
             <OfficeTextArea

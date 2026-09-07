@@ -149,6 +149,7 @@ function navigationFixture(): {
       navigation,
       onChange: () => undefined,
       selection: null,
+      showFormulas: null,
       targetSheetId: 'sheet-1',
       toolbarCell: null,
       view: null,

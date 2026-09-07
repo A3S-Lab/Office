@@ -80,6 +80,39 @@ test('keeps PDF navigation, search, zoom, history, and save in one toolbar', () 
   expect(screen.getByText('/ 8')).toBeInTheDocument();
 });
 
+test('shares toolbar keyboard navigation without hijacking PDF inputs', () => {
+  const controller = createController([]);
+  const annotation = createAnnotationController([]);
+
+  render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, [])}
+      editable
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  const toolbar = screen.getByRole('toolbar', { name: 'PDF 工具栏' });
+  const save = within(toolbar).getByRole('button', { name: '保存' });
+  const undo = within(toolbar).getByRole('button', { name: '撤销' });
+  save.focus();
+  fireEvent.keyDown(save, { key: 'ArrowRight' });
+  expect(document.activeElement).toBe(undo);
+
+  fireEvent.keyDown(undo, { key: 'Home' });
+  expect(document.activeElement).toBe(save);
+
+  const page = within(toolbar).getByRole('textbox', { name: '页码' });
+  page.focus();
+  fireEvent.keyDown(page, { key: 'End' });
+  expect(document.activeElement).toBe(page);
+});
+
 test('keeps collaboration editing controls without showing a host save port', () => {
   const calls: string[] = [];
   const controller = createController(calls);

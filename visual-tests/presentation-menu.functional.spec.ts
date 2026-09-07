@@ -382,6 +382,22 @@ test('Presentation view switches move focus into the active slide view', async (
   await expect(sorterSelection).toHaveCount(1);
   await expect(sorterSelection).toBeFocused();
 
+  await page.keyboard.press('ArrowRight');
+  const secondSorterSlide = page.locator(
+    '.work-presentation-sorter [data-slide-thumbnail][data-slide-index="1"].active',
+  );
+  await expect(secondSorterSlide).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.work-slide-canvas.interactive')).toBeVisible();
+  const stripSecond = page.locator(
+    '.work-slide-strip [data-slide-thumbnail][data-slide-index="1"].active',
+  );
+  await expect(stripSecond).toBeFocused();
+
+  await page.getByRole('tab', { name: '视图' }).click();
+  await page.getByRole('button', { name: '幻灯片浏览', exact: true }).click();
+  await expect(sorterSelection).toBeFocused();
+
   await page.getByRole('button', { name: '普通视图', exact: true }).click();
   const stripSelection = page.locator(
     '.work-slide-strip [data-slide-thumbnail].active',
@@ -392,6 +408,36 @@ test('Presentation view switches move focus into the active slide view', async (
   const status = page.locator('.work-presentation-status');
   await status.getByRole('button', { name: '幻灯片浏览视图' }).click();
   await expect(sorterSelection).toBeFocused();
+});
+
+test('Presentation View ribbon toggles speaker notes like WPS 备注', async ({
+  page,
+}) => {
+  await page.goto('/playground/');
+  await page
+    .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
+    .click();
+
+  const editor = page.locator('.work-presentation-editor');
+  await expect(editor).toHaveAttribute('data-notes', 'visible');
+  await expect(
+    page.getByRole('textbox', { name: '演讲者备注' }),
+  ).toBeVisible();
+
+  await page.getByRole('tab', { name: '视图' }).click();
+  const notes = page.getByRole('button', { name: '备注', exact: true });
+  await expect(notes).toHaveAttribute('aria-pressed', 'true');
+  await notes.click();
+  await expect(editor).toHaveAttribute('data-notes', 'hidden');
+  await expect(page.getByRole('textbox', { name: '演讲者备注' })).toHaveCount(
+    0,
+  );
+
+  await notes.click();
+  await expect(editor).toHaveAttribute('data-notes', 'visible');
+  await expect(
+    page.getByRole('textbox', { name: '演讲者备注' }),
+  ).toBeVisible();
 });
 
 test('Presentation opens slide menus from the keyboard and preserves tab order', async ({

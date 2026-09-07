@@ -232,6 +232,7 @@ function presentationWorkspace(
       selectedMaster={undefined}
       selectedSlide={selectedSlide}
       snapGuides={[]}
+      notesVisible
       viewMode={viewMode}
       zoom={100}
       onBeginDrag={() => undefined}

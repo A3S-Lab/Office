@@ -18,6 +18,7 @@ import {
   Link2,
   MessageSquarePlus,
   MessagesSquare,
+  NotebookPen,
   PanelsTopLeft,
   Play,
   Plus,
@@ -111,7 +112,9 @@ export function PresentationToolbar({
   background,
   transition,
   fileActions,
+  notesVisible = true,
   viewMode = 'normal',
+  onToggleNotes,
   commands,
 }: {
   selectedSlide: WorkSlide;
@@ -126,7 +129,9 @@ export function PresentationToolbar({
   background?: string;
   transition: WorkSlide['transition'];
   fileActions?: readonly WorkOfficeFileAction[];
+  notesVisible?: boolean;
   viewMode?: 'normal' | 'sorter';
+  onToggleNotes?: () => void;
   commands: PresentationEditorCommands;
 }) {
   const officeDialog = useOfficeDialog();
@@ -178,6 +183,7 @@ export function PresentationToolbar({
         tabs={presentationRibbonTabs}
         defaultTab="home"
         fileActions={fileActions}
+        collapsible
         className="work-presentation-ribbon"
         toolbarClassName="presentation-toolbar"
         panels={{
@@ -635,6 +641,23 @@ export function PresentationToolbar({
                   onClick={() => commands.setViewMode('sorter')}
                 >
                   <Grid2X2 size={19} />
+                </WorkOfficeRibbonButton>
+              </WorkOfficeRibbonGroup>
+              <WorkOfficeRibbonGroup label="显示">
+                <WorkOfficeRibbonButton
+                  label="备注"
+                  active={notesVisible}
+                  disabled={viewMode !== 'normal' || !onToggleNotes}
+                  title={
+                    viewMode === 'normal'
+                      ? notesVisible
+                        ? '隐藏演讲者备注'
+                        : '显示演讲者备注'
+                      : '备注仅用于普通视图'
+                  }
+                  onClick={() => onToggleNotes?.()}
+                >
+                  <NotebookPen size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
               <WorkOfficeRibbonGroup label="母版">

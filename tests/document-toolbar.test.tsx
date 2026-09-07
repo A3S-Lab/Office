@@ -28,6 +28,7 @@ interface ToolbarCalls {
   fields: string[];
   fieldSettings: number;
   files: string[];
+  fieldCodes: number;
   hiddenText: number;
   notes: string[];
   pageColors: string[];
@@ -839,6 +840,25 @@ test('exposes the shared hidden-text display toggle in the View ribbon', () => {
   );
 });
 
+test('exposes the WPS field-codes toggle in the View ribbon', () => {
+  editor = createEditor();
+  const calls = createCalls();
+  const view = render(toolbar(editor, calls));
+  fireEvent.click(screen.getByRole('tab', { name: '视图' }));
+
+  const toggle = screen.getByRole('button', { name: '切换域代码' });
+  expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  expect(toggle).toHaveAttribute('aria-keyshortcuts', 'Alt+F9 Shift+F9');
+  fireEvent.click(toggle);
+  expect(calls.fieldCodes).toBe(1);
+
+  view.rerender(toolbar(editor, calls, 100, false, null, false, true));
+  expect(screen.getByRole('button', { name: '切换域代码' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+});
+
 test('can start with the ribbon panel collapsed without disabling editing tools', () => {
   editor = createEditor();
   render(toolbar(editor, createCalls(), 100, true));
@@ -858,6 +878,32 @@ test('can start with the ribbon panel collapsed without disabling editing tools'
   );
 });
 
+test('moves focus across the shared ribbon without hijacking comboboxes', () => {
+  editor = createEditor();
+  render(toolbar(editor, createCalls()));
+
+  const ribbonToolbar = screen.getByRole('toolbar', { name: '开始工具栏' });
+  const copyFormat = within(ribbonToolbar).getByRole('button', {
+    name: '复制格式',
+  });
+  const formatPainter = within(ribbonToolbar).getByRole('button', {
+    name: '格式刷',
+  });
+  copyFormat.focus();
+  fireEvent.keyDown(copyFormat, { key: 'ArrowRight' });
+  expect(document.activeElement).toBe(formatPainter);
+
+  fireEvent.keyDown(formatPainter, { key: 'Home' });
+  expect(document.activeElement).toBe(copyFormat);
+
+  const fontFamily = within(ribbonToolbar).getByRole('combobox', {
+    name: '字体',
+  });
+  fontFamily.focus();
+  fireEvent.keyDown(fontFamily, { key: 'End' });
+  expect(document.activeElement).toBe(fontFamily);
+});
+
 function toolbar(
   currentEditor: Editor,
   calls: ToolbarCalls,
@@ -865,6 +911,7 @@ function toolbar(
   defaultRibbonCollapsed = false,
   currentPageChromeEditor: Editor | null = null,
   showHiddenText = false,
+  showFieldCodes = false,
 ) {
   return (
     <DocumentToolbar
@@ -882,6 +929,7 @@ function toolbar(
       navigationOpen={false}
       pageColor="#ffffff"
       showPageNumbers={false}
+      showFieldCodes={showFieldCodes}
       showHiddenText={showHiddenText}
       showRulers={false}
       spellcheckEnabled
@@ -919,6 +967,10 @@ function toolbar(
       onToggleNavigation={() => {
         calls.navigation += 1;
       }}
+      onToggleFieldCodes={() => {
+        calls.fieldCodes += 1;
+      }}
+      onToggleSelectedFieldCodes={() => false}
       onToggleHiddenText={() => {
         calls.hiddenText += 1;
       }}
@@ -1002,6 +1054,7 @@ function createCalls(): ToolbarCalls {
     fields: [],
     fieldSettings: 0,
     files: [],
+    fieldCodes: 0,
     hiddenText: 0,
     notes: [],
     pageColors: [],

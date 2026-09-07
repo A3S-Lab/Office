@@ -13,6 +13,7 @@ import type {
   WorkDocumentFieldKind,
 } from '../src/internal/features/work/work-document-fields';
 import {
+  documentFieldCodeDisplay,
   documentFieldDisplay,
   documentFieldDraftFromAttributes,
   documentFieldInstruction,
@@ -223,6 +224,10 @@ describe('document fields', () => {
 
   test('keeps the bounded instruction grammar explicit', () => {
     expect(docxDocumentFieldKind('NUMWORDS \\* MERGEFORMAT')).toBe('wordCount');
+    expect(documentFieldCodeDisplay('PAGE \\* ROMAN \\* MERGEFORMAT')).toBe(
+      '{ PAGE \\* ROMAN \\* MERGEFORMAT }',
+    );
+    expect(documentFieldCodeDisplay('')).toBe('{ PAGE }');
     expect(docxDocumentFieldKind('NUMCHARS')).toBe('characterCount');
     expect(docxDocumentFieldKind('PAGEREF Target \\h')).toBe('pageReference');
     expect(supportedDocxDocumentFieldInstruction('PAGEREF Target \\h')).toBe(

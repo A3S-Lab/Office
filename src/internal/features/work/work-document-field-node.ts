@@ -8,6 +8,7 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { NodeSelection } from '@tiptap/pm/state';
 import { createDocumentFieldIdentityPlugin } from './work-document-field-identity';
 import {
+  documentFieldCodeDisplay,
   documentFieldDisplay,
   documentFieldInstruction,
   documentFieldKind,
@@ -142,6 +143,7 @@ export const DocumentField = Node.create({
         'data-field-id': typeof node.attrs.id === 'string' ? node.attrs.id : '',
         'data-field-kind': kind,
         'data-field-instruction': normalizedInstruction,
+        'data-field-code': documentFieldCodeDisplay(normalizedInstruction),
         'data-field-display': display,
         ...(kind === 'pageReference' &&
         typeof node.attrs.targetId === 'string' &&

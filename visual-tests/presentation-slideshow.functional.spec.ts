@@ -171,3 +171,41 @@ test('Presenter view keeps the current slide, cue, notes, and controls usable on
     geometry.viewportHeight + 1,
   );
 });
+
+test('Slideshow blank screen follows WPS B and W shortcuts', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await page.goto('/playground/');
+  await page
+    .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
+    .click();
+  await page.getByRole('tab', { name: '幻灯片放映' }).click();
+  await page.getByRole('button', { name: '从头开始放映' }).click();
+
+  const dialog = page.getByRole('dialog', { name: '幻灯片放映' });
+  const player = dialog.locator('.work-presentation-player');
+  await expect(dialog).toBeVisible();
+  await expect(player).toHaveAttribute('data-blank-screen', 'off');
+
+  await page.keyboard.press('b');
+  await expect(player).toHaveAttribute('data-blank-screen', 'black');
+  await expect(dialog.getByLabel('黑屏')).toBeVisible();
+
+  await page.keyboard.press('b');
+  await expect(player).toHaveAttribute('data-blank-screen', 'off');
+  await expect(dialog.getByLabel('黑屏')).toHaveCount(0);
+
+  await page.keyboard.press('w');
+  await expect(player).toHaveAttribute('data-blank-screen', 'white');
+  await expect(dialog.getByLabel('白屏')).toBeVisible();
+
+  await page.keyboard.press('b');
+  await expect(player).toHaveAttribute('data-blank-screen', 'black');
+  await expect(dialog.getByLabel('黑屏')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  expect(browserErrors).toEqual([]);
+});

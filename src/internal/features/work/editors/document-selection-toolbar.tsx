@@ -20,6 +20,7 @@ import {
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import { DocumentStrikeRibbon } from './document-strike-ribbon';
 import { DocumentUnderlineRibbon } from './document-underline-ribbon';
+import { moveOfficeToolbarFocus } from './office-toolbar-keyboard';
 
 const bubbleMenuOptions = {
   strategy: 'fixed' as const,
@@ -81,6 +82,7 @@ export function DocumentSelectionToolbar({
       className="work-document-selection-toolbar"
       role="toolbar"
       aria-label="文本快捷工具栏"
+      onKeyDown={moveOfficeToolbarFocus}
       updateDelay={80}
       resizeDelay={60}
       appendTo={() =>

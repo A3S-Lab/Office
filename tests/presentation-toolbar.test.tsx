@@ -417,6 +417,126 @@ test('shows the actual imported font in the presentation font menu', async () =>
   await waitFor(() => expect(importedOption).toHaveFocus());
 });
 
+test('toggles speaker notes from the View display group', () => {
+  const toggles: boolean[] = [];
+  const can = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCanCommands;
+  const commands = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCommands;
+
+  const view = render(
+    <PresentationToolbar
+      selectedSlide={slide}
+      selectedElement={textElement}
+      selectedUnitCount={1}
+      can={can}
+      textFormattingAvailable
+      commentsOpen={false}
+      commentCount={0}
+      designOpen={false}
+      editingDesign={false}
+      transition={slide.transition}
+      notesVisible
+      viewMode="normal"
+      onToggleNotes={() => toggles.push(true)}
+      commands={commands}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('tab', { name: '视图' }));
+  const notes = screen.getByRole('button', { name: '备注' });
+  expect(notes).toHaveAttribute('aria-pressed', 'true');
+  expect(notes).toHaveAttribute('title', '隐藏演讲者备注');
+  fireEvent.click(notes);
+  expect(toggles).toEqual([true]);
+
+  view.rerender(
+    <PresentationToolbar
+      selectedSlide={slide}
+      selectedElement={textElement}
+      selectedUnitCount={1}
+      can={can}
+      textFormattingAvailable
+      commentsOpen={false}
+      commentCount={0}
+      designOpen={false}
+      editingDesign={false}
+      transition={slide.transition}
+      notesVisible={false}
+      viewMode="normal"
+      onToggleNotes={() => toggles.push(true)}
+      commands={commands}
+    />,
+  );
+  expect(screen.getByRole('button', { name: '备注' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+  expect(screen.getByRole('button', { name: '备注' })).toHaveAttribute(
+    'title',
+    '显示演讲者备注',
+  );
+
+  view.rerender(
+    <PresentationToolbar
+      selectedSlide={slide}
+      selectedElement={textElement}
+      selectedUnitCount={1}
+      can={can}
+      textFormattingAvailable
+      commentsOpen={false}
+      commentCount={0}
+      designOpen={false}
+      editingDesign={false}
+      transition={slide.transition}
+      notesVisible={false}
+      viewMode="sorter"
+      onToggleNotes={() => toggles.push(true)}
+      commands={commands}
+    />,
+  );
+  expect(screen.getByRole('button', { name: '备注' })).toBeDisabled();
+});
+
+test('Presentation ribbon collapses with WPS Ctrl+F1', () => {
+  const can = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCanCommands;
+  const commands = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCommands;
+
+  render(
+    <PresentationToolbar
+      selectedSlide={slide}
+      selectedElement={textElement}
+      selectedUnitCount={1}
+      can={can}
+      textFormattingAvailable
+      commentsOpen={false}
+      commentCount={0}
+      designOpen={false}
+      editingDesign={false}
+      transition={slide.transition}
+      commands={commands}
+    />,
+  );
+
+  expect(
+    screen.getByRole('button', { name: '折叠功能区' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+F1 Meta+F1');
+  fireEvent.keyDown(window, { key: 'F1', code: 'F1', ctrlKey: true });
+  expect(screen.getByRole('button', { name: '展开功能区' })).toBeVisible();
+  fireEvent.keyDown(window, { key: 'F1', code: 'F1', ctrlKey: true });
+  expect(screen.getByRole('button', { name: '折叠功能区' })).toBeVisible();
+});
+
 const textElement: WorkSlideElement = {
   id: 'element-1',
   type: 'text',

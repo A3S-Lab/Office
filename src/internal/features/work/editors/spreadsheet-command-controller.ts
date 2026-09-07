@@ -296,6 +296,10 @@ export interface SpreadsheetViewCommandPort {
   activateSheet: (sheetId: string) => boolean;
 }
 
+export interface SpreadsheetShowFormulasCommandPort {
+  toggle: () => boolean;
+}
+
 export interface SpreadsheetEditorCommands {
   activateSheet: (sheetId: string) => boolean;
   activateFormatPainter: (mode: SpreadsheetFormatPainterMode) => boolean;
@@ -405,6 +409,7 @@ export interface SpreadsheetCommandContext {
   richTextFormat?: SpreadsheetRichTextFormatCommandPort | null;
   selection: SpreadsheetCommandSelection | null;
   selectionRef?: SpreadsheetSelectionRef;
+  showFormulas: SpreadsheetShowFormulasCommandPort | null;
   sort: SpreadsheetSortCommandPort;
   table: SpreadsheetTableCommandPort;
   targetSheetGridSize?: SpreadsheetGridSize | null;

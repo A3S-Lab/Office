@@ -12,6 +12,9 @@ export interface DocumentWpsShortcutCallbacks {
   onOpenFontDialog: () => void;
   onOpenWordCount: () => void;
   onRefreshFields: () => void;
+  onToggleFieldCodes: () => void;
+  /** WPS/Word Shift+F9: toggle codes for the selected field(s) only. */
+  onToggleSelectedFieldCodes: () => boolean;
   onToggleSpellcheck: () => void;
   onToggleTrackChanges: () => void;
 }
@@ -31,6 +34,13 @@ export function runDocumentWpsShortcut(
   const modifier = event.ctrlKey || event.metaKey;
 
   if (!modifier) {
+    if (key === 'f9' && event.altKey && !event.shiftKey) {
+      callbacks.onToggleFieldCodes();
+      return true;
+    }
+    if (key === 'f9' && event.shiftKey && !event.altKey) {
+      return callbacks.onToggleSelectedFieldCodes();
+    }
     if (event.altKey || event.shiftKey) return false;
     if (key === 'f7') {
       callbacks.onToggleSpellcheck();

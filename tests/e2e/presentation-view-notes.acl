@@ -1,0 +1,63 @@
+suite "office-presentation-view-notes" {
+    version = 1
+
+    scenario "toggle-wps-view-speaker-notes" {
+        name = "Toggle WPS View speaker notes pane with 备注"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        focus "focus-presentation-home" {
+            target = css(".playground-home")
+        }
+
+        press "scroll-presentation-into-view" {
+            key = "PageDown"
+        }
+
+        click "open-presentation" {
+            target = css("button[data-template-id='strategy-deck']")
+        }
+
+        wait "presentation-ready" {
+            visible = css(".work-presentation-editor[data-notes='visible']")
+        }
+
+        expect "notes-visible-by-default" {
+            visible = css(".work-presentation-editor[data-notes='visible'] [aria-label='演讲者备注']")
+        }
+
+        click "open-view-tab" {
+            target = role("tab", "视图")
+        }
+
+        expect "display-group-visible" {
+            visible = css(".work-presentation-ribbon .work-office-ribbon-group[aria-label='显示']")
+        }
+
+        click "hide-notes" {
+            target = role("button", "备注")
+        }
+
+        expect "notes-hidden" {
+            visible = css(".work-presentation-editor[data-notes='hidden']")
+        }
+
+        click "show-notes" {
+            target = role("button", "备注")
+        }
+
+        expect "notes-visible-again" {
+            visible = css(".work-presentation-editor[data-notes='visible'] [aria-label='演讲者备注']")
+        }
+    }
+}

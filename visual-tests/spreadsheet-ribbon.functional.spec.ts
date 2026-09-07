@@ -51,6 +51,18 @@ test('Spreadsheet follows the WPS ribbon information architecture', async ({
   await expect(ribbon).toHaveAttribute('data-collapsed', 'true');
   await expect(ribbon.locator('.work-office-ribbon-panel')).toBeHidden();
 
+  await page.keyboard.press('Control+F1');
+  await expect(ribbon).not.toHaveAttribute('data-collapsed', 'true');
+  await expect(ribbon.locator('.work-office-ribbon-panel')).toBeVisible();
+  await expect(
+    ribbon.getByRole('button', { name: '折叠功能区' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+F1 Meta+F1');
+
+  await page.locator('.fortune-sheet-overlay').focus();
+  await page.keyboard.press('Control+F1');
+  await expect(ribbon).toHaveAttribute('data-collapsed', 'true');
+  await expect(ribbon.locator('.work-office-ribbon-panel')).toBeHidden();
+
   await ribbon.getByRole('tab', { name: '数据' }).click();
   await expect(ribbon.locator('.work-office-ribbon-panel')).toBeVisible();
   await expect(ribbon.getByRole('button', { name: '升序' })).toBeVisible();
@@ -1393,6 +1405,87 @@ test('Spreadsheet freezes panes from the WPS View window group', async ({
   await page.keyboard.press('Enter');
   await expect(editor).not.toHaveAttribute('data-freeze-panes');
   await expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  await expect(grid).toBeFocused();
+  expect(browserErrors).toEqual([]);
+});
+
+test('Spreadsheet toggles WPS View workbook chrome: formula bar, show formulas, gridlines, headings', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const editor = page.locator('.work-spreadsheet-editor');
+  const grid = page.locator('.fortune-sheet-overlay');
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  const formulaBar = page.locator('.fortune-fx-input');
+  const rowHeader = page.locator('.fortune-row-header').first();
+  const columnHeader = page.locator('.fortune-col-header').first();
+
+  await expect(editor).toHaveAttribute('data-formula-bar', 'visible');
+  await expect(editor).toHaveAttribute('data-show-formulas', 'hidden');
+  await expect(editor).toHaveAttribute('data-grid-lines', 'visible');
+  await expect(editor).toHaveAttribute('data-sheet-headings', 'visible');
+  await expect(formulaBar).toBeVisible();
+  await expect(rowHeader).toBeVisible();
+  await expect(columnHeader).toBeVisible();
+
+  await grid.focus();
+  await ribbon.getByRole('tab', { name: '视图' }).click();
+  const formulaBarToggle = ribbon.getByRole('button', { name: '编辑栏' });
+  const showFormulasToggle = ribbon.getByRole('button', { name: '显示公式' });
+  const gridLinesToggle = ribbon.getByRole('button', { name: '网格线' });
+  const headingsToggle = ribbon.getByRole('button', { name: '标题' });
+  await expect(formulaBarToggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(showFormulasToggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(showFormulasToggle).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+` Meta+`',
+  );
+  await expect(gridLinesToggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(headingsToggle).toHaveAttribute('aria-pressed', 'true');
+
+  await formulaBarToggle.click();
+  await expect(editor).toHaveAttribute('data-formula-bar', 'hidden');
+  await expect(formulaBar).toHaveCount(0);
+  await expect(grid).toBeFocused();
+
+  await showFormulasToggle.click();
+  await expect(editor).toHaveAttribute('data-show-formulas', 'visible');
+  await expect(showFormulasToggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(grid).toBeFocused();
+
+  await grid.focus();
+  await page.keyboard.press('Control+`');
+  await expect(editor).toHaveAttribute('data-show-formulas', 'hidden');
+  await expect(showFormulasToggle).toHaveAttribute('aria-pressed', 'false');
+
+  await gridLinesToggle.click();
+  await expect(editor).toHaveAttribute('data-grid-lines', 'hidden');
+  await expect(gridLinesToggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(grid).toBeFocused();
+
+  await headingsToggle.click();
+  await expect(editor).toHaveAttribute('data-sheet-headings', 'hidden');
+  await expect(rowHeader).toBeHidden();
+  await expect(columnHeader).toBeHidden();
+  await expect(grid).toBeFocused();
+
+  await page.screenshot({
+    path: testInfo.outputPath('spreadsheet-view-workbook-chrome-hidden.png'),
+  });
+
+  await formulaBarToggle.click();
+  await gridLinesToggle.click();
+  await headingsToggle.click();
+  await expect(editor).toHaveAttribute('data-formula-bar', 'visible');
+  await expect(editor).toHaveAttribute('data-show-formulas', 'hidden');
+  await expect(editor).toHaveAttribute('data-grid-lines', 'visible');
+  await expect(editor).toHaveAttribute('data-sheet-headings', 'visible');
+  await expect(formulaBar).toBeVisible();
+  await expect(rowHeader).toBeVisible();
+  await expect(columnHeader).toBeVisible();
   await expect(grid).toBeFocused();
   expect(browserErrors).toEqual([]);
 });

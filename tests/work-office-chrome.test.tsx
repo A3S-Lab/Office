@@ -384,3 +384,32 @@ test('toggles ribbon collapse by double-clicking the active tab', () => {
   ).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: '展开功能区' })).toBeVisible();
 });
+
+test('toggles ribbon collapse with the WPS Ctrl+F1 shortcut', () => {
+  render(
+    <WorkOfficeRibbon
+      ariaLabel="Test ribbon"
+      tabs={[{ id: 'home', label: '开始' }]}
+      defaultTab="home"
+      collapsible
+      panels={{ home: <span>Home tools</span> }}
+    />,
+  );
+
+  const collapse = screen.getByRole('button', { name: '折叠功能区' });
+  expect(collapse).toHaveAttribute('aria-keyshortcuts', 'Control+F1 Meta+F1');
+  expect(collapse).toHaveAttribute('title', '折叠功能区（Ctrl+F1）');
+
+  fireEvent.keyDown(window, { key: 'F1', code: 'F1', ctrlKey: true });
+  expect(
+    screen.queryByRole('toolbar', { name: '开始工具栏' }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '展开功能区' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+F1 Meta+F1',
+  );
+
+  fireEvent.keyDown(window, { key: 'F1', code: 'F1', metaKey: true });
+  expect(screen.getByRole('toolbar', { name: '开始工具栏' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '折叠功能区' })).toBeVisible();
+});

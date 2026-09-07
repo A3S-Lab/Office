@@ -55,6 +55,7 @@ test('separates additive object selection from content editing', () => {
       selectedMaster={undefined}
       selectedSlide={content.slides[0]}
       snapGuides={[]}
+      notesVisible
       viewMode="normal"
       zoom={90}
       onBeginDrag={(_event, element, mode) =>
@@ -103,6 +104,7 @@ test('separates additive object selection from content editing', () => {
       selectedMaster={undefined}
       selectedSlide={content.slides[0]}
       snapGuides={[]}
+      notesVisible
       viewMode="normal"
       zoom={90}
       onBeginDrag={(_event, element, mode) =>
@@ -166,6 +168,7 @@ test('keeps phone slide navigation dismissible and restores focus', async () => 
       selectedMaster={undefined}
       selectedSlide={content.slides[0]}
       snapGuides={[]}
+      notesVisible
       viewMode="normal"
       zoom={90}
       onBeginDrag={() => undefined}
@@ -307,6 +310,94 @@ function presentationElement(id: string, text: string): WorkSlideElement {
     align: 'center',
   };
 }
+
+test('hides the speaker notes pane when notesVisible is false', () => {
+  const content: WorkPresentationContent = {
+    type: 'presentation',
+    slides: [
+      {
+        id: 'slide',
+        name: 'Slide',
+        background: '#ffffff',
+        notes: 'Hidden when toggled off',
+        elements: [],
+      },
+    ],
+  };
+
+  const view = render(
+    <PresentationWorkspace
+      activeBackground="#ffffff"
+      activeCommentId={null}
+      activeElements={[]}
+      aspectRatio="16 / 9"
+      canvasName="Slide canvas"
+      canvasRef={createRef<HTMLElement>()}
+      commands={workspaceCommands()}
+      content={content}
+      designContent={withPresentationDesign(content)}
+      designMode="slide"
+      editingElementId={null}
+      inheritedElements={[]}
+      placeholderGuides={[]}
+      selectedElementIds={[]}
+      selectedLayout={undefined}
+      selectedMaster={undefined}
+      selectedSlide={content.slides[0]}
+      snapGuides={[]}
+      notesVisible
+      viewMode="normal"
+      zoom={90}
+      onBeginDrag={() => undefined}
+      onContinueDrag={() => undefined}
+      onDragCancel={() => undefined}
+      onDragEnd={() => undefined}
+      onOpenContextMenu={() => undefined}
+      onTextEditorChange={() => undefined}
+      onTextSelectionChange={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('textbox', { name: '演讲者备注' })).toBeVisible();
+  expect(screen.getByRole('textbox', { name: '演讲者备注' })).toHaveValue(
+    'Hidden when toggled off',
+  );
+
+  view.rerender(
+    <PresentationWorkspace
+      activeBackground="#ffffff"
+      activeCommentId={null}
+      activeElements={[]}
+      aspectRatio="16 / 9"
+      canvasName="Slide canvas"
+      canvasRef={createRef<HTMLElement>()}
+      commands={workspaceCommands()}
+      content={content}
+      designContent={withPresentationDesign(content)}
+      designMode="slide"
+      editingElementId={null}
+      inheritedElements={[]}
+      placeholderGuides={[]}
+      selectedElementIds={[]}
+      selectedLayout={undefined}
+      selectedMaster={undefined}
+      selectedSlide={content.slides[0]}
+      snapGuides={[]}
+      notesVisible={false}
+      viewMode="normal"
+      zoom={90}
+      onBeginDrag={() => undefined}
+      onContinueDrag={() => undefined}
+      onDragCancel={() => undefined}
+      onDragEnd={() => undefined}
+      onOpenContextMenu={() => undefined}
+      onTextEditorChange={() => undefined}
+      onTextSelectionChange={() => undefined}
+    />,
+  );
+
+  expect(screen.queryByRole('textbox', { name: '演讲者备注' })).toBeNull();
+});
 
 function workspaceCommands(
   overrides: Partial<PresentationWorkspaceCommands> = {},

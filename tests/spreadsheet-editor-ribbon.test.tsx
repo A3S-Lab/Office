@@ -1149,6 +1149,62 @@ test('exposes WPS AutoFilter state and routes the Data ribbon action', () => {
   expect(actions).toEqual(['toggle-filter']);
 });
 
+test('exposes WPS View workbook chrome toggles for formula bar, show formulas, gridlines, and headings', () => {
+  const actions: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="view"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          setGridLines: (visible) => {
+            actions.push(visible ? 'show-grid' : 'hide-grid');
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      findOpen={false}
+      formulaBarVisible
+      showFormulas={false}
+      gridLinesVisible
+      headingsVisible
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onToggleFormulaBar={() => actions.push('formula-bar')}
+      onToggleShowFormulas={() => actions.push('show-formulas')}
+      onToggleHeadings={() => actions.push('headings')}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const formulaBar = screen.getByRole('button', { name: '编辑栏' });
+  const showFormulas = screen.getByRole('button', { name: '显示公式' });
+  const gridLines = screen.getByRole('button', { name: '网格线' });
+  const headings = screen.getByRole('button', { name: '标题' });
+  expect(formulaBar).toHaveAttribute('aria-pressed', 'true');
+  expect(showFormulas).toHaveAttribute('aria-pressed', 'false');
+  expect(showFormulas).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+` Meta+`',
+  );
+  expect(gridLines).toHaveAttribute('aria-pressed', 'true');
+  expect(headings).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(formulaBar);
+  fireEvent.click(showFormulas);
+  fireEvent.click(gridLines);
+  fireEvent.click(headings);
+  expect(actions).toEqual([
+    'formula-bar',
+    'show-formulas',
+    'hide-grid',
+    'headings',
+  ]);
+});
+
 test('operates WPS Freeze Panes from the View window group', () => {
   const actions: string[] = [];
   render(
@@ -1496,6 +1552,7 @@ function spreadsheetCommands(
       | 'pasteSpecial'
       | 'removeDataValidation'
       | 'setFreezePanes'
+      | 'setGridLines'
       | 'setSelectedStructureHidden'
       | 'setTextOrientation'
       | 'toggleCellFormat'
@@ -1552,7 +1609,7 @@ function spreadsheetCommands(
     setCellFormat,
     toggleCellFormat: overrides.toggleCellFormat ?? (() => true),
     setFreezePanes: overrides.setFreezePanes ?? (() => true),
-    setGridLines: () => true,
+    setGridLines: overrides.setGridLines ?? (() => true),
     setSelectedCellBorders: () => true,
     setSheetColor: () => true,
     setSelectedStructureHidden:

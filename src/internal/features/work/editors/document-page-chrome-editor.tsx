@@ -43,6 +43,7 @@ import {
   normalizeDocumentPageChromeHref,
 } from '../work-document-page-chrome-commands';
 import { DocumentParagraphFormatting } from '../work-document-paragraph-formatting';
+import { moveOfficeToolbarFocus } from './office-toolbar-keyboard';
 import { DocumentParagraphIdentity } from '../work-document-paragraph-identity';
 import { DocumentTableRowIdentity } from '../work-document-table-row-identity';
 import {
@@ -241,6 +242,7 @@ export function DocumentPageChromeRichTextEditor({
               className="work-document-page-chrome-toolbar"
               role="toolbar"
               aria-label={`${label}格式`}
+              onKeyDown={moveOfficeToolbarFocus}
             >
               <fieldset
                 className="work-document-page-chrome-toolbar-row"

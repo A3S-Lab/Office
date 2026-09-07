@@ -210,6 +210,7 @@ function tableContext(
     },
     onChange,
     selection: null,
+    showFormulas: null,
     table,
     targetSheetId: 'sheet-1',
     toolbarCell: null,

@@ -26,6 +26,7 @@ import type {
   PdfPageOrganizationControllerState,
 } from './use-pdf-page-organization';
 import { OfficeFileInput } from './office-controls';
+import { moveOfficeToolbarFocus } from './office-toolbar-keyboard';
 
 const PDF_ORGANIZER_ITEM_HEIGHT = 184;
 const PDF_ORGANIZER_VIEWPORT_HEIGHT = 552;
@@ -146,6 +147,7 @@ export function PdfPageOrganizerDialog({
         className="work-pdf-page-organizer-actions"
         role="toolbar"
         aria-label="PDF 页面组织命令"
+        onKeyDown={moveOfficeToolbarFocus}
       >
         <Button
           tone="secondary"

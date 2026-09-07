@@ -136,6 +136,7 @@ import {
   SpreadsheetRichTextSelectionController,
 } from './spreadsheet-rich-text-selection-controller';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
+import { projectSpreadsheetSheetsShowingFormulas } from './spreadsheet-show-formulas';
 import { spreadsheetTableAtCell } from './spreadsheet-table';
 import {
   beginSpreadsheetTableCellRender,
@@ -613,6 +614,10 @@ function SpreadsheetEditorSurface({
   const officeDialog = useOfficeDialog();
   const [findOpen, setFindOpen] = useState(false);
   const [findFocusRequest, setFindFocusRequest] = useState(0);
+  const [formulaBarVisible, setFormulaBarVisible] = useState(true);
+  const [showFormulas, setShowFormulas] = useState(false);
+  const toggleSpreadsheetShowFormulasRef = useRef<() => boolean>(() => false);
+  const [headingsVisible, setHeadingsVisible] = useState(true);
   const [navigationActiveSheetId, setNavigationActiveSheetId] = useState<
     string | null
   >(null);
@@ -1109,17 +1114,18 @@ function SpreadsheetEditorSurface({
       ),
     [materializedContent.namedRanges, renderedWorkbookSheets],
   );
-  const displayedWorkbookSheets = useMemo(
-    () =>
-      preview
-        ? workbookSheets.map((sheet) => ({
-            ...sheet,
-            status: sheet.id === activeSheetId ? 1 : 0,
-            zoomRatio: previewZoom / 100,
-          }))
-        : workbookSheets,
-    [activeSheetId, preview, previewZoom, workbookSheets],
-  );
+  const displayedWorkbookSheets = useMemo(() => {
+    const base = preview
+      ? workbookSheets.map((sheet) => ({
+          ...sheet,
+          status: sheet.id === activeSheetId ? 1 : 0,
+          zoomRatio: previewZoom / 100,
+        }))
+      : workbookSheets;
+    return showFormulas
+      ? projectSpreadsheetSheetsShowingFormulas(base)
+      : base;
+  }, [activeSheetId, preview, previewZoom, showFormulas, workbookSheets]);
   projectedWorkbookSheetsRef.current = displayedWorkbookSheets;
   const handleWorkbookChange = useCallback(
     (sheets: WorkSpreadsheetContent['sheets']) => {
@@ -1695,6 +1701,11 @@ function SpreadsheetEditorSurface({
       },
       selection: selectionState,
       selectionRef: selectionStateRef.current,
+      showFormulas: preview
+        ? null
+        : {
+            toggle: () => toggleSpreadsheetShowFormulasRef.current(),
+          },
       sort: spreadsheetSort.commandPort,
       table: spreadsheetTable.commandPort,
       targetSheetGridSize,
@@ -1753,6 +1764,30 @@ function SpreadsheetEditorSurface({
     if (richTextSelectionRef.current?.restore()) return;
     focusSpreadsheetGrid(spreadsheetCanvasRef.current);
   }, []);
+  const toggleSpreadsheetFormulaBar = useCallback(() => {
+    setFormulaBarVisible((value) => !value);
+  }, []);
+  const toggleSpreadsheetShowFormulas = useCallback(() => {
+    setShowFormulas((value) => !value);
+    return true;
+  }, []);
+  toggleSpreadsheetShowFormulasRef.current = toggleSpreadsheetShowFormulas;
+  const toggleSpreadsheetHeadings = useCallback(() => {
+    setHeadingsVisible((value) => !value);
+  }, []);
+  const spreadsheetViewChromeFocusReady = useRef(false);
+  useEffect(() => {
+    if (!spreadsheetViewChromeFocusReady.current) {
+      spreadsheetViewChromeFocusReady.current = true;
+      return;
+    }
+    restoreSpreadsheetGridFocus();
+  }, [
+    formulaBarVisible,
+    headingsVisible,
+    restoreSpreadsheetGridFocus,
+    showFormulas,
+  ]);
   const closeSpreadsheetFind = useCallback(() => {
     setFindOpen(false);
     focusSpreadsheetGrid(spreadsheetCanvasRef.current);
@@ -2000,11 +2035,15 @@ function SpreadsheetEditorSurface({
       data-auto-filter={autoFilterActive ? 'active' : undefined}
       data-column-count={targetSheetGridSize?.columnCount}
       data-format-painter={formatPainterMode ?? undefined}
+      data-formula-bar={formulaBarVisible ? 'visible' : 'hidden'}
       data-freeze-panes={toolbarSheet?.frozen ? 'active' : undefined}
+      data-grid-lines={gridLinesVisible ? 'visible' : 'hidden'}
       data-populated-cell-count={activeSheetProfile?.populatedCellCount}
       data-profile-column-count={activeSheetProfile?.columnCount}
       data-profile-row-count={activeSheetProfile?.rowCount}
       data-row-count={targetSheetGridSize?.rowCount}
+      data-sheet-headings={headingsVisible ? 'visible' : 'hidden'}
+      data-show-formulas={showFormulas ? 'visible' : 'hidden'}
       data-spreadsheet-profile={
         activeSheetProfile?.fortuneReady ? 'ready' : undefined
       }
@@ -2038,12 +2077,18 @@ function SpreadsheetEditorSurface({
           formatPainterMode={formatPainterMode}
           freezePanesActive={Boolean(toolbarSheet?.frozen)}
           freezePanesSelection={toolbarSelection}
+          formulaBarVisible={formulaBarVisible}
+          showFormulas={showFormulas}
           gridLinesVisible={gridLinesVisible}
+          headingsVisible={headingsVisible}
           panelId={panelId}
           onTabChange={(tab) => {
             setRibbonTab(tab);
             if (panel) closeWorkbookPanel();
           }}
+          onToggleFormulaBar={toggleSpreadsheetFormulaBar}
+          onToggleShowFormulas={toggleSpreadsheetShowFormulas}
+          onToggleHeadings={toggleSpreadsheetHeadings}
           onTogglePanel={(nextPanel, trigger) => {
             if (panel === nextPanel) {
               closeWorkbookPanel();
@@ -2095,17 +2140,17 @@ function SpreadsheetEditorSurface({
         >
           <ControlledWorkbook
             ref={bindWorkbookInstance}
-            key={`spreadsheet:${workbookMountRevision}:${preview ? `preview-${previewZoom}` : 'edit'}:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}`}
+            key={`spreadsheet:${workbookMountRevision}:${preview ? `preview-${previewZoom}` : 'edit'}:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}:fx-${formulaBarVisible ? 1 : 0}:hd-${headingsVisible ? 1 : 0}:sf-${showFormulas ? 1 : 0}`}
             data={displayedWorkbookSheets}
             lang="zh"
-            allowEdit={!preview}
+            allowEdit={!preview && !showFormulas}
             showToolbar={false}
-            showFormulaBar
+            showFormulaBar={!preview && formulaBarVisible}
             showSheetTabs={false}
             row={60}
             column={26}
-            rowHeaderWidth={44}
-            columnHeaderHeight={24}
+            rowHeaderWidth={headingsVisible ? 44 : 0}
+            columnHeaderHeight={headingsVisible ? 24 : 0}
             defaultRowHeight={24}
             defaultColWidth={96}
             defaultFontSize={11}

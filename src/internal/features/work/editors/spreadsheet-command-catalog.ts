@@ -755,6 +755,26 @@ export const spreadsheetCommandCatalog = {
     label: '网格线',
     location: { area: 'ribbon', tab: 'view', group: 'workbookViews' },
   },
+  formulaBar: {
+    id: 'view.formulaBar',
+    label: '编辑栏',
+    location: { area: 'ribbon', tab: 'view', group: 'workbookViews' },
+  },
+  showFormulas: {
+    id: 'view.showFormulas',
+    label: '显示公式',
+    location: { area: 'ribbon', tab: 'view', group: 'workbookViews' },
+    shortcut: {
+      label: 'Ctrl+`',
+      aria: 'Control+` Meta+`',
+      editor: ['Mod-`', 'Control-`'],
+    },
+  },
+  headings: {
+    id: 'view.headings',
+    label: '标题',
+    location: { area: 'ribbon', tab: 'view', group: 'workbookViews' },
+  },
   freezePanes: {
     id: 'view.freezePanes',
     label: '冻结窗格',

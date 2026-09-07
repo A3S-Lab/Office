@@ -21,9 +21,9 @@ Test ACLs, deterministic fixtures, and the WPS reference flag:
 
 | Surface | Focused local contract | Typical evidence |
 | --- | --- | --- |
-| Writer | `writer` | ribbon state, WPS shortcuts, imported DOCX, pagination, font/grid metrics, undo/redo, WPS drawing boundary |
-| Spreadsheet | `spreadsheet` | grid selection, ribbon/font shortcuts, formula/validation dialogs, sorting, compact layout |
-| Presentation | `presentation` | object selection, animation/task panes, cut/paste focus, compact canvas |
+| Writer | `writer` | ribbon state (incl. Ctrl+F1 collapse), WPS shortcuts, field settings/`MERGEFORMAT`, field-code toggle (Alt+F9 document-wide / Shift+F9 selected), imported DOCX, pagination, font/grid metrics, undo/redo, WPS drawing boundary |
+| Spreadsheet | `spreadsheet` | ribbon IA (incl. Ctrl+F1 collapse), freeze panes, View workbook chrome (编辑栏 / 显示公式 Ctrl+` / 网格线 / 标题), sort/filter, format cells, paste special, phone task panes |
+| Presentation | `presentation` | object selection, animation/task panes, cut/paste focus, slide sorter Enter→normal, View 备注 notes pane, collapsible ribbon Ctrl+F1, slideshow B/W blank screens, compact canvas |
 | Markdown | `markdown` | source/visual/split modes, link dialogs, read-only preview, focus return |
 | PDF | `pdf` | thumbnail rail, page organization, keyboard navigation, compact page drawer, save/reopen |
 
@@ -39,8 +39,13 @@ with an older binary. Windows dispatch keeps selectors and action JSON in typed
 argv rather than shell tokenization. When `--cdp-port` is supplied on Windows,
 the operator compiles and uses a native `.exe` CDP adapter under
 `.a3s-test/office-ops/`; this avoids passing state-changing A3S Test arguments
-through a `.cmd` shim. Set `A3S_TEST_AGENT_BROWSER` only when an explicit
-reviewed adapter is required.
+through a `.cmd` shim. The adapter prefers a Playwright-managed Chromium build
+under `%LOCALAPPDATA%\ms-playwright`, auto-launches it when the CDP port is
+empty, sets viewport size through `Browser.setWindowBounds`, and waits for CSS
+selectors directly over CDP so spaced attribute selectors are not split. Set
+`A3S_TEST_CHROME_EXECUTABLE` only when an explicit reviewed browser binary is
+required. Set `A3S_TEST_AGENT_BROWSER` only when an explicit reviewed adapter is
+required.
 
 Run one bounded surface gate while developing. `check` is the fast ACL parse;
 add `--run` when a configured A3S Test browser should execute the primary

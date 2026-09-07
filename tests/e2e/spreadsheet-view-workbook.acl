@@ -1,0 +1,154 @@
+suite "office-spreadsheet-view-workbook" {
+    version = 1
+
+    scenario "toggle-wps-view-workbook-chrome" {
+        name = "Toggle WPS View workbook chrome: formula bar, show formulas, gridlines, and headings"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=spreadsheet-ribbon-alignment"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "formula-bar-visible-by-default" {
+            visible = css(".work-spreadsheet-editor[data-formula-bar='visible'] .fortune-fx-input")
+        }
+
+        expect "show-formulas-hidden-by-default" {
+            visible = css(".work-spreadsheet-editor[data-show-formulas='hidden']")
+        }
+
+        expect "gridlines-visible-by-default" {
+            visible = css(".work-spreadsheet-editor[data-grid-lines='visible']")
+        }
+
+        expect "headings-visible-by-default" {
+            visible = css(".work-spreadsheet-editor[data-sheet-headings='visible'] .fortune-row-header")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        click "open-view-tab" {
+            target = role("tab", "视图")
+        }
+
+        expect "view-workbook-group-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-group[aria-label='工作簿视图']")
+        }
+
+        expect "show-formulas-control-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='显示公式'][aria-keyshortcuts='Control+` Meta+`'][aria-pressed='false']")
+        }
+
+        click "hide-formula-bar" {
+            target = role("button", "编辑栏")
+        }
+
+        expect "formula-bar-hidden" {
+            visible = css(".work-spreadsheet-editor[data-formula-bar='hidden']")
+        }
+
+        expect "grid-focus-after-formula-bar" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        click "show-formulas" {
+            target = role("button", "显示公式")
+        }
+
+        expect "show-formulas-visible" {
+            visible = css(".work-spreadsheet-editor[data-show-formulas='visible'] button[aria-label='显示公式'][aria-pressed='true']")
+        }
+
+        expect "grid-focus-after-show-formulas" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        focus "refocus-grid-for-shortcut" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "hide-formulas-with-ctrl-backquote" {
+            key = "Control+`"
+        }
+
+        expect "show-formulas-hidden-after-shortcut" {
+            visible = css(".work-spreadsheet-editor[data-show-formulas='hidden'] button[aria-label='显示公式'][aria-pressed='false']")
+        }
+
+        click "hide-gridlines" {
+            target = role("button", "网格线")
+        }
+
+        expect "gridlines-hidden" {
+            visible = css(".work-spreadsheet-editor[data-grid-lines='hidden'] button[aria-label='网格线'][aria-pressed='false']")
+        }
+
+        expect "grid-focus-after-gridlines" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        click "hide-headings" {
+            target = role("button", "标题")
+        }
+
+        expect "headings-hidden" {
+            visible = css(".work-spreadsheet-editor[data-sheet-headings='hidden'] button[aria-label='标题'][aria-pressed='false']")
+        }
+
+        expect "grid-focus-after-headings" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        click "show-formula-bar" {
+            target = role("button", "编辑栏")
+        }
+
+        click "show-gridlines" {
+            target = role("button", "网格线")
+        }
+
+        click "show-headings" {
+            target = role("button", "标题")
+        }
+
+        expect "workbook-chrome-restored" {
+            visible = css(".work-spreadsheet-editor[data-formula-bar='visible'][data-show-formulas='hidden'][data-grid-lines='visible'][data-sheet-headings='visible'] .fortune-fx-input")
+        }
+
+        accessibility "spreadsheet-view-workbook-accessibility" {
+            path = "evidence/view-workbook-accessibility.json"
+            interactive = true
+        }
+
+        console "view-workbook-browser-console" {
+            path = "diagnostics/view-workbook-console.json"
+            clear = false
+        }
+
+        page_errors "view-workbook-browser-errors" {
+            path = "diagnostics/view-workbook-page-errors.json"
+            clear = false
+        }
+    }
+}

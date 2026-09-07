@@ -12,6 +12,11 @@ import {
   useRef,
   useState,
 } from 'react';
+import {
+  selectedDocumentFieldIds,
+  syncDocumentFieldCodeClasses,
+  toggleDocumentFieldCodeOverrides,
+} from './document-field-code-overrides';
 import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
 import type { WorkOfficeCollaborationParticipant } from '../../../collaboration/office-collaboration-presence';
 import {
@@ -418,6 +423,10 @@ function DocumentEditorSurface({
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
   const [viewMode, setViewMode] = useState<DocumentViewMode>('page');
   const [showHiddenText, setShowHiddenText] = useState(false);
+  const [showFieldCodes, setShowFieldCodes] = useState(false);
+  const [fieldCodeOverrides, setFieldCodeOverrides] = useState(
+    () => new Set<string>(),
+  );
   const [showRulers, setShowRulers] = useState(false);
   const [zoom, setZoom] = useState(90);
   const [selectionMenu, setSelectionMenu] =
@@ -1120,6 +1129,22 @@ function DocumentEditorSurface({
     });
   }, [editor]);
 
+  useEffect(() => {
+    if (!editor || editor.isDestroyed || preview) return;
+    const sync = () => {
+      syncDocumentFieldCodeClasses(
+        editor.view.dom,
+        showFieldCodes,
+        fieldCodeOverrides,
+      );
+    };
+    sync();
+    editor.on('transaction', sync);
+    return () => {
+      editor.off('transaction', sync);
+    };
+  }, [editor, fieldCodeOverrides, preview, showFieldCodes]);
+
   useOfficeEditorInitialFocus({
     enabled: autoFocus && !readOnly && Boolean(editor && !editor.isDestroyed),
     getTarget: () => (!editor || editor.isDestroyed ? null : editor.view.dom),
@@ -1474,7 +1499,7 @@ function DocumentEditorSurface({
 
   return (
     <section
-      className={`work-document-editor${preview ? ' preview' : ''}${!preview && showHiddenText ? ' show-hidden-text' : ''}`}
+      className={`work-document-editor${preview ? ' preview' : ''}${!preview && showHiddenText ? ' show-hidden-text' : ''}${!preview && showFieldCodes ? ' show-field-codes' : ''}`}
       data-collaboration-mode={collaboration?.mode}
       data-work-pdf-artifact={artifactId}
       data-work-pdf-surface={artifactId ? 'live' : undefined}
@@ -1518,6 +1543,7 @@ function DocumentEditorSurface({
           navigationOpen={navigationOpen}
           pageColor={documentPageColor(currentContent.pageColor)}
           showPageNumbers={visibleChrome.showPageNumber}
+          showFieldCodes={showFieldCodes}
           showHiddenText={showHiddenText}
           showRulers={showRulers}
           spellcheckEnabled={spellcheckEnabled}
@@ -1537,6 +1563,21 @@ function DocumentEditorSurface({
           onLayoutChange={updateToolbarLayout}
           onOpenLayout={openLayoutPanel}
           onToggleNavigation={() => void toggleTaskPane('navigation')}
+          onToggleFieldCodes={() => {
+            setFieldCodeOverrides(new Set());
+            setShowFieldCodes((value) => !value);
+            restoreDocumentBodyFocus();
+          }}
+          onToggleSelectedFieldCodes={() => {
+            if (!editor || editor.isDestroyed) return false;
+            const ids = selectedDocumentFieldIds(editor);
+            if (!ids.length) return false;
+            setFieldCodeOverrides((current) =>
+              toggleDocumentFieldCodeOverrides(current, ids),
+            );
+            restoreDocumentBodyFocus();
+            return true;
+          }}
           onToggleHiddenText={() => {
             setShowHiddenText((value) => !value);
             restoreDocumentBodyFocus();

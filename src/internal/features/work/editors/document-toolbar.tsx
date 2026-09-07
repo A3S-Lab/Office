@@ -31,6 +31,7 @@ import {
   TextCursorInput,
   TextSelect,
   Undo2,
+  Braces,
   XCircle,
   ZoomIn,
   ZoomOut,
@@ -147,6 +148,7 @@ interface DocumentToolbarProps {
   navigationOpen: boolean;
   pageColor: string;
   showPageNumbers: boolean;
+  showFieldCodes: boolean;
   showHiddenText: boolean;
   showRulers: boolean;
   spellcheckEnabled: boolean;
@@ -167,6 +169,8 @@ interface DocumentToolbarProps {
   onOpenLayout: (target: DocumentLayoutPanelTab) => void;
   onToggleNavigation: () => void;
   onTogglePageNumbers: () => void;
+  onToggleFieldCodes: () => void;
+  onToggleSelectedFieldCodes: () => boolean;
   onToggleHiddenText: () => void;
   onToggleRulers: () => void;
   onPageColorChange: (color: string) => void;
@@ -225,6 +229,7 @@ export function DocumentToolbar({
   navigationOpen,
   pageColor,
   showPageNumbers,
+  showFieldCodes,
   showHiddenText,
   showRulers,
   spellcheckEnabled,
@@ -245,6 +250,8 @@ export function DocumentToolbar({
   onOpenLayout,
   onToggleNavigation,
   onTogglePageNumbers,
+  onToggleFieldCodes,
+  onToggleSelectedFieldCodes,
   onToggleHiddenText,
   onToggleRulers,
   onPageColorChange,
@@ -479,6 +486,8 @@ export function DocumentToolbar({
           onOpenFontDialog: () => openFontDialog(editor),
           onOpenWordCount,
           onRefreshFields,
+          onToggleFieldCodes,
+          onToggleSelectedFieldCodes,
           onToggleSpellcheck,
           onToggleTrackChanges,
         })
@@ -569,6 +578,8 @@ export function DocumentToolbar({
     onOpenWordCount,
     onRefreshFields,
     reviewOnly,
+    onToggleFieldCodes,
+    onToggleSelectedFieldCodes,
     onToggleSpellcheck,
     onToggleTrackChanges,
     pageChromeEditor,
@@ -1028,6 +1039,23 @@ export function DocumentToolbar({
                   onClick={onToggleNavigation}
                 >
                   <PanelLeftOpen size={19} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label="切换域代码"
+                  displayLabel
+                  active={showFieldCodes}
+                  shortcut={
+                    getDocumentCommandDefinition('toggleFieldCodes').shortcut
+                      ?.label
+                  }
+                  ariaKeyShortcuts={
+                    getDocumentCommandDefinition('toggleFieldCodes').shortcut
+                      ?.aria
+                  }
+                  title="在域结果和域代码之间切换（Alt+F9；选中域 Shift+F9）"
+                  onClick={onToggleFieldCodes}
+                >
+                  <Braces size={19} />
                 </ToolbarButton>
                 <ToolbarButton
                   label="显示隐藏文字"

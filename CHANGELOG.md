@@ -4,6 +4,41 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Aligned shared Office ribbons with WPS `Ctrl+F1` / `Meta+F1` collapse: the
+  existing collapse control now advertises and toggles the shortcut, Presentation
+  ribbons are collapsible, and Spreadsheet / Writer / Presentation ACL plus
+  visual evidence cover the keyboard path.
+- Aligned Presentation View with WPS `备注`: show/hide the speaker-notes pane
+  from the Display ribbon group in normal view, expose `data-notes`, disable
+  the control in slide sorter, and cover with unit, visual, and ACL evidence.
+- Continued WPS Writer field-settings parity with an explicit `MERGEFORMAT`
+  option, responsive touch-sized choices, and regression coverage for adding,
+  editing, and removing the native switch.
+- Added Writer `切换域代码` (Alt+F9) so field results and native instructions
+  share one View-ribbon toggle, matching the WPS Fields command surface.
+- Extended Writer field-code UX with WPS/Word `Shift+F9`: toggle codes for the
+  selected field(s) only (XOR with document-wide Alt+F9), keep other fields on
+  results, and restore body focus; covered by unit, visual, and ACL evidence.
+- Aligned Spreadsheet View with WPS workbook chrome: `编辑栏`, `显示公式`
+  (Ctrl+`), `网格线`, and `标题` toggles hide/show the formula bar, paint
+  formula text in cells (display-only; editing paused while active), sheet
+  gridlines, and row/column headers, restore grid focus, and expose `data-*`
+  state for ACL/visual gates.
+- Aligned Presentation slideshow with WPS blank-screen shortcuts: `B`/`.` black
+  and `W`/`,` white overlays toggle during slideshow, switch between modes, and
+  leave Escape to exit; covered by unit, visual, and ACL evidence.
+- Aligned Presentation slide sorter with WPS: Enter on a selected thumbnail
+  returns to normal view (same as double-click), with focus restoration and ACL
+  / visual evidence promoted into the shared matrix (62 ACL contracts).
+- Unified keyboard navigation across every Office ribbon, quick access
+  toolbar, and the PDF command bar. Arrow keys and Home/End now move between
+  actionable toolbar buttons while comboboxes and other editing controls
+  retain their own input behavior.
+- Hardened the Windows A3S Test CDP adapter for local Writer gates: auto-launch
+  Playwright Chromium when the CDP port is empty, implement viewport via window
+  bounds instead of device-metrics overrides that broke kernel boot, and wait
+  for CSS selectors over CDP so spaced attribute selectors stay intact.
+
 ## 0.76.0 - 2026-09-07
 
 - Added desktop and compact visual evidence for the existing Writer WPS

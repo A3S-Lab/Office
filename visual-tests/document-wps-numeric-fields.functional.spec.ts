@@ -25,6 +25,10 @@ test('Writer keeps WPS numeric fields live, labelled, and responsive', async ({
     'data-field-instruction',
     'PAGE \\* ROMAN \\* MERGEFORMAT',
   );
+  await expect(pageField).toHaveAttribute(
+    'data-field-code',
+    '{ PAGE \\* ROMAN \\* MERGEFORMAT }',
+  );
   await expect(pageField).toHaveAttribute('aria-label', '当前页码');
 
   const totalPagesField = editor.locator(
@@ -58,8 +62,32 @@ test('Writer keeps WPS numeric fields live, labelled, and responsive', async ({
     '1',
   );
   await editor.focus();
+  await page.keyboard.press('Alt+F9');
+  await expect(page.locator('.work-document-editor')).toHaveClass(
+    /show-field-codes/,
+  );
+  await page.getByRole('tab', { name: '视图' }).click();
+  await expect(page.getByRole('button', { name: '切换域代码' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await editor.focus();
   await page.keyboard.press('F9');
   await expect(editor).toBeFocused();
+  await expect(page.locator('.work-document-editor')).toHaveClass(
+    /show-field-codes/,
+  );
+
+  await page.keyboard.press('Alt+F9');
+  await expect(page.locator('.work-document-editor')).not.toHaveClass(
+    /show-field-codes/,
+  );
+  await pageField.click();
+  await page.keyboard.press('Shift+F9');
+  await expect(pageField).toHaveClass(/show-field-code/);
+  await expect(totalPagesField).not.toHaveClass(/show-field-code/);
+  await expect(editor).toBeFocused();
+
 
   await page.screenshot({
     path: testInfo.outputPath(

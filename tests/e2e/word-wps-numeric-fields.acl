@@ -40,11 +40,55 @@ suite "office-word-wps-numeric-fields" {
             visible = css(".work-document-field[aria-label='当前页码']")
         }
 
+        expect "field-code-attribute-is-ready" {
+            visible = css(".work-document-field[data-field-kind='page'][data-field-code*='PAGE'][data-field-code*='ROMAN']")
+        }
+
+        press "toggle-field-codes" {
+            key = "Alt+F9"
+        }
+
+        expect "field-codes-view-is-active" {
+            visible = css(".work-document-editor.show-field-codes .work-document-field[data-field-kind='page']")
+        }
+
         press "refresh-fields" {
             key = "F9"
         }
 
         expect "refresh-restores-document-focus" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        expect "field-codes-view-survives-refresh" {
+            visible = css(".work-document-editor.show-field-codes")
+        }
+
+        press "exit-document-field-codes" {
+            key = "Alt+F9"
+        }
+
+        expect "document-field-codes-cleared" {
+            visible = css(".work-document-editor:not(.show-field-codes)")
+        }
+
+        click "select-page-field" {
+            target = css(".work-document-field[data-field-kind='page']")
+        }
+
+        press "toggle-selected-field-codes" {
+            key = "Shift+F9"
+        }
+
+        expect "selected-page-field-shows-code" {
+            visible = css(".work-document-field[data-field-kind='page'].show-field-code")
+        }
+
+        expect "other-fields-stay-on-result" {
+            visible = css(".work-document-field[data-field-kind='numPages']:not(.show-field-code)")
+        }
+
+        expect "shift-f9-restores-document-focus" {
             visible = css(".work-document-editable .ProseMirror:focus")
         }
 
