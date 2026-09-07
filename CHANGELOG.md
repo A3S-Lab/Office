@@ -4,6 +4,18 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.74.0 - 2026-09-07
+
+- Added desktop and compact visual evidence for the existing Writer WPS
+  shortcut contract: format copy/paste, mutually exclusive text-case effects,
+  one-step undo, alignment, line spacing, heading styles, spelling, review,
+  discoverable menu shortcuts, and editor-focus preservation. The shared
+  matrix now exposes 61 ACL contracts and 54 visual contracts across all five
+  editors.
+- Re-ran the local WPS Writer COM UI probe against build 12.1.0.21541 and
+  executed the shortcut ACL with A3S Test 1.0.1. The ACL and both visual layouts
+  passed with empty console and page-error evidence.
+
 ## 0.73.0 - 2026-09-07
 
 - Promoted the existing Spreadsheet WPS copy-from-above workflow into the

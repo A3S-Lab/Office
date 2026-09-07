@@ -341,6 +341,10 @@ work rather than silent approximations.
   These receipts inform accessible command naming and discoverable field
   workflows; A3S Test Web/CDP remains the primary browser UI contract and the
   locked Windows CUA profile remains unsupported.
+- The Writer WPS shortcut slice now pairs the existing ACL with desktop and
+  compact visual evidence for format copy/paste, text-case menu discovery,
+  atomic undo, paragraph formatting, spelling/review toggles, and editor-focus
+  preservation.
 - Extend common field instructions and reference workflows beyond this bounded
   authoring slice only with independent native fixtures and typed contracts.
 - Extend the bounded content-control slice beyond direct inline text and rich

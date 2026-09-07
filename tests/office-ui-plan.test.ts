@@ -96,6 +96,7 @@ test('keeps the focused WPS parity matrix broad across every editor surface', ()
   ).toEqual(
     expect.arrayContaining([
       'visual-tests/document-formatting.functional.spec.ts',
+      'visual-tests/document-wps-shortcuts.functional.spec.ts',
       'visual-tests/document-page-navigation.functional.spec.ts',
       'visual-tests/document-character-position.functional.spec.ts',
       'visual-tests/document-character-spacing.functional.spec.ts',

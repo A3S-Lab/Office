@@ -42,6 +42,63 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.74.0',
+    date: '2026-09-07',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer WPS shortcuts gain desktop and compact visual evidence',
+      zh: 'Writer WPS 快捷键补齐桌面与紧凑视觉证据',
+    },
+    summary: {
+      en: 'The shared operator now inventories 61 ACL and 54 visual contracts, with focused Writer formatting, review, menu, and focus evidence.',
+      zh: '共享操作器现在公开 61 个 ACL 和 54 个视觉契约，深入覆盖 Writer 格式、审阅、菜单与焦点证据。',
+    },
+    highlights: [
+      {
+        title: { en: 'WPS formatting shortcuts', zh: 'WPS 格式快捷键' },
+        detail: {
+          en: 'Format copy/paste, mutually exclusive text-case effects, one-step undo, paragraph alignment/spacing, and heading styles are covered in both layouts.',
+          zh: '两种布局均覆盖格式复制/粘贴、互斥大小写效果、单步撤销、段落对齐/行距和标题样式。',
+        },
+      },
+      {
+        title: { en: 'Accessible command discovery', zh: '可访问的命令发现' },
+        detail: {
+          en: 'Text-case menu items expose their shortcuts, Escape restores the menu trigger, and spelling/review shortcuts preserve editor focus.',
+          zh: '大小写菜单项公开快捷键，Escape 恢复菜单触发器焦点，拼写/审阅快捷键保留正文焦点。',
+        },
+      },
+      {
+        title: {
+          en: 'Local WPS and browser proof',
+          zh: '本机 WPS 与浏览器证据',
+        },
+        detail: {
+          en: 'The WPS Writer COM probe ran against build 12.1.0.21541, and A3S Test 1.0.1 passed the shortcut ACL with empty console and page-error evidence.',
+          zh: 'WPS Writer COM 探针在 12.1.0.21541 版本运行；A3S Test 1.0.1 的快捷键 ACL 通过，控制台和页面错误证据均为空。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.74.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.74.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.73.0',
     date: '2026-09-07',
     kind: 'improved',

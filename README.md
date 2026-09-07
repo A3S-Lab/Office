@@ -361,6 +361,17 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.74.0` adds desktop and compact visual evidence to the existing
+Writer WPS shortcut workflow:
+
+- The declarative matrix now exposes 61 ACL contracts and 54 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Writer evidence covers format copy/paste, mutually exclusive text-case
+  effects, one-step undo, paragraph alignment/spacing, heading styles,
+  spelling, review, menu discovery, and editor-focus preservation.
+- The local WPS Writer COM UI probe ran against build 12.1.0.21541; A3S Test
+  1.0.1 passed the shortcut ACL with empty console and page-error evidence.
+
 Version `0.73.0` promotes the existing Spreadsheet WPS copy-from-above workflow
 into the shared WPS/UI evidence matrix:
 
