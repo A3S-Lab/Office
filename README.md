@@ -361,6 +361,17 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.76.0` adds desktop and compact visual evidence for the existing
+Writer WPS numeric-field workflow:
+
+- The declarative matrix now exposes 61 ACL contracts and 56 visual contracts
+  across Writer, Spreadsheet, Presentation, Markdown, and PDF.
+- Writer evidence covers live `PAGE`, `NUMPAGES`, `SECTION`, and `PAGEREF`
+  results, native numeric instructions with `MERGEFORMAT`, accessible labels,
+  one-page pagination, and F9 focus restoration.
+- The focused visual contract passed through the Commander-based Office CLI;
+  the local WPS field reference was refreshed against build 12.1.0.21541.
+
 Version `0.75.0` adds desktop and compact visual evidence for the existing
 Writer WPS layout and font-grid workflows:
 

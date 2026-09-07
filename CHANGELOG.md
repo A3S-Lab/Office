@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.76.0 - 2026-09-07
+
+- Added desktop and compact visual evidence for the existing Writer WPS
+  numeric-field workflow: live `PAGE`, `NUMPAGES`, `SECTION`, and `PAGEREF`
+  results, native numeric instructions with `MERGEFORMAT`, accessible field
+  labels, one-page pagination, and F9 focus restoration. The shared matrix now
+  exposes 61 ACL contracts and 56 visual contracts across all five editors.
+- Ran the focused numeric-field contract through the Commander-based Office
+  CLI and refreshed the local WPS field reference against build 12.1.0.21541;
+  the pinned A3S Test 1.0.1 ACL remains the primary semantic gate.
+
 ## 0.75.0 - 2026-09-07
 
 - Added desktop and compact visual evidence for Writer WPS page layout,

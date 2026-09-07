@@ -42,6 +42,63 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.76.0',
+    date: '2026-09-07',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer WPS numeric fields gain responsive visual evidence',
+      zh: 'Writer WPS 数字字段补齐响应式视觉证据',
+    },
+    summary: {
+      en: 'The shared operator now inventories 61 ACL and 56 visual contracts, with focused Writer field results, instructions, labels, and focus evidence.',
+      zh: '共享操作器现在公开 61 个 ACL 和 56 个视觉契约，深入覆盖 Writer 字段结果、指令、标签与焦点证据。',
+    },
+    highlights: [
+      {
+        title: { en: 'Live WPS field results', zh: '实时 WPS 字段结果' },
+        detail: {
+          en: 'PAGE, NUMPAGES, SECTION, and PAGEREF resolve to the expected Roman, alphabetic, and ordinal displays on the measured page.',
+          zh: 'PAGE、NUMPAGES、SECTION 和 PAGEREF 在测量页面上解析为预期的罗马、字母和序数显示。',
+        },
+      },
+      {
+        title: {
+          en: 'Native instructions and labels',
+          zh: '原生指令与可访问标签',
+        },
+        detail: {
+          en: 'MERGEFORMAT instructions, bookmark targets, and localized ARIA labels remain inspectable in the Writer DOM projection.',
+          zh: 'MERGEFORMAT 指令、书签目标和本地化 ARIA 标签在 Writer DOM 投影中保持可检查。',
+        },
+      },
+      {
+        title: { en: 'Responsive focus proof', zh: '响应式焦点证据' },
+        detail: {
+          en: 'Desktop and compact layouts keep the one-page projection stable, and F9 refresh returns focus to the document editor without browser errors.',
+          zh: '桌面与紧凑布局保持单页投影稳定，F9 刷新后焦点回到文档编辑器，且无浏览器错误。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.76.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.76.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.75.0',
     date: '2026-09-07',
     kind: 'improved',
