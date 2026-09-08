@@ -9,9 +9,20 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(41);
+  await expect(cards).toHaveCount(58);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.77.0');
+  await expect(cards.first()).toContainText(
+    '五编辑器共享同一 WPS 快捷键矩阵（103 ACL / 78 视觉）',
+  );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.77.0')).toContainText('Writer 段落与域快捷键');
+  await expect(releaseCard('0.77.0')).toContainText(
+    'Presentation 与 Spreadsheet 界面',
+  );
+  await expect(releaseCard('0.77.0')).toContainText(
+    'Markdown 与 PDF 键盘证据',
+  );
   await expect(releaseCard('0.60.0')).toContainText(
     'WPS UI 参考升级为类型化证据',
   );
