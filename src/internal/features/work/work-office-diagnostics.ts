@@ -540,7 +540,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.row-formatting',
             'Row-formatting revisions',
-            `${supportedRowFormattingRevisionCount} relationship-free w:trPrChange record(s) with a prior cantSplit, tblHeader, trHeight, hidden, jc, and/or gridBefore snapshot remain reviewable in Work as row-formatting changes and round-trip as native w:trPrChange records.`,
+            `${supportedRowFormattingRevisionCount} relationship-free w:trPrChange record(s) with a prior cantSplit, tblHeader, trHeight, hidden, jc, gridBefore, and/or gridAfter snapshot remain reviewable in Work as row-formatting changes and round-trip as native w:trPrChange records.`,
             'info',
           ),
         );
@@ -622,7 +622,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.row-property',
             'Row-property revisions',
-            `${preservableRowPropertyRevisionCount} relationship-free w:trPrChange record(s) outside the reviewable cantSplit/tblHeader/trHeight/hidden/jc/gridBefore subset round-trip as opaque row metadata on untouched rows. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. cantSplit, tblHeader, trHeight, hidden, jc, and/or gridBefore records are reported separately as reviewable row-formatting revisions.`,
+            `${preservableRowPropertyRevisionCount} relationship-free w:trPrChange record(s) outside the reviewable cantSplit/tblHeader/trHeight/hidden/jc/gridBefore/gridAfter subset round-trip as opaque row metadata on untouched rows. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. cantSplit, tblHeader, trHeight, hidden, jc, gridBefore, and/or gridAfter records are reported separately as reviewable row-formatting revisions.`,
             'info',
           ),
         );
@@ -702,7 +702,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.structural',
             'Structural revisions',
-            'Moved content plus unsupported character formatting, paragraph formatting, numbering, and unpreservable table/row/cell/section-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded whole-paragraph mark, text-move, character-, paragraph-, table-formatting (alignment/preferred-width/indent/cell margins/layout), row-formatting (cantSplit/tblHeader/trHeight/hidden/jc/gridBefore), cell-formatting (vAlign/solid fill/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark), section-formatting (orientation/page geometry/page margins/paper source/equal-width columns), and ordered-list-numbering subsets, including live track-changes for those formatting families. Relationship-free non-reviewable w:tblPrChange plus broader w:trPrChange, w:tcPrChange, and w:sectPrChange records are reported separately. Isolated paragraph-break mark revisions are reported separately as docx.revisions.paragraph-break. Unpaired w:move*Range* markers are reported separately as docx.revisions.move-range.',
+            'Moved content plus unsupported character formatting, paragraph formatting, numbering, and unpreservable table/row/cell/section-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded whole-paragraph mark, text-move, character-, paragraph-, table-formatting (alignment/preferred-width/indent/cell margins/layout), row-formatting (cantSplit/tblHeader/trHeight/hidden/jc/gridBefore/gridAfter), cell-formatting (vAlign/solid fill/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark), section-formatting (orientation/page geometry/page margins/paper source/equal-width columns), and ordered-list-numbering subsets, including live track-changes for those formatting families. Relationship-free non-reviewable w:tblPrChange plus broader w:trPrChange, w:tcPrChange, and w:sectPrChange records are reported separately. Isolated paragraph-break mark revisions are reported separately as docx.revisions.paragraph-break. Unpaired w:move*Range* markers are reported separately as docx.revisions.move-range.',
           ),
         );
       }

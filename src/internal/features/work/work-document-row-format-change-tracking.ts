@@ -20,7 +20,7 @@ interface DocumentRowFormattingTrackingOptions {
 
 /**
  * When track-changes is on, row cantSplit / repeatHeader / height / hidden /
- * alignment / gridBefore edits become reviewable `row-formatting` revisions.
+ * alignment / gridBefore / gridAfter edits become reviewable `row-formatting` revisions.
  */
 export function trackDocumentRowFormattingTransaction(
   transaction: Transaction,
@@ -65,6 +65,7 @@ function rowFormatting(node: ProseMirrorNode): {
   hidden?: boolean;
   alignment?: DocumentTableAlignment;
   gridBefore?: number;
+  gridAfter?: number;
 } | null {
   const height = normalizeDocumentTableRowHeight(node.attrs.rowHeight);
   const rule =
@@ -80,6 +81,12 @@ function rowFormatting(node: ProseMirrorNode): {
     node.attrs.gridBefore >= 0
       ? node.attrs.gridBefore
       : 0;
+  const gridAfter =
+    typeof node.attrs.gridAfter === 'number' &&
+    Number.isInteger(node.attrs.gridAfter) &&
+    node.attrs.gridAfter >= 0
+      ? node.attrs.gridAfter
+      : 0;
   return normalizeDocumentRowFormattingSnapshot({
     cantSplit:
       typeof node.attrs.cantSplit === 'boolean'
@@ -93,6 +100,7 @@ function rowFormatting(node: ProseMirrorNode): {
       typeof node.attrs.hidden === 'boolean' ? node.attrs.hidden : false,
     alignment,
     gridBefore,
+    gridAfter,
     ...(height !== null && rule ? { height: { value: height, rule } } : {}),
   });
 }
@@ -110,6 +118,7 @@ function onlyRowFormattingChanged(
   delete beforeAttrs.hidden;
   delete beforeAttrs.alignment;
   delete beforeAttrs.gridBefore;
+  delete beforeAttrs.gridAfter;
   delete beforeAttrs.rowChangeKind;
   delete beforeAttrs.rowChangeId;
   delete beforeAttrs.rowChangeAuthor;
@@ -123,6 +132,7 @@ function onlyRowFormattingChanged(
   delete afterAttrs.hidden;
   delete afterAttrs.alignment;
   delete afterAttrs.gridBefore;
+  delete afterAttrs.gridAfter;
   delete afterAttrs.rowChangeKind;
   delete afterAttrs.rowChangeId;
   delete afterAttrs.rowChangeAuthor;

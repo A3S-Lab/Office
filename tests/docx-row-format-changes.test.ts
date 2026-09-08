@@ -180,6 +180,7 @@ describe('DOCX row-formatting revisions', () => {
         hidden: false,
         alignment: 'left',
         gridBefore: 0,
+        gridAfter: 0,
       });
       expect(row?.dataset.officeCantSplit).toBe('true');
     } finally {
@@ -277,6 +278,7 @@ describe('DOCX row-formatting revisions', () => {
         hidden: false,
         alignment: 'left',
         gridBefore: 0,
+        gridAfter: 0,
       });
       expect(row?.dataset.officeRowHidden).toBe('true');
     } finally {
@@ -379,6 +381,7 @@ describe('DOCX row-formatting revisions', () => {
         hidden: false,
         alignment: 'left',
         gridBefore: 0,
+        gridAfter: 0,
       });
       expect(row?.dataset.officeRowAlignment).toBe('center');
     } finally {
@@ -488,6 +491,7 @@ describe('DOCX row-formatting revisions', () => {
         hidden: false,
         alignment: 'left',
         gridBefore: 0,
+        gridAfter: 0,
         height: { value: 24, rule: 'atLeast' },
       });
       expect(row?.dataset.officeRowHeight).toBe('40');
@@ -561,6 +565,116 @@ describe('DOCX row-formatting revisions', () => {
         priorGrid?.getAttribute('w:val') ??
         priorGrid?.getAttribute('val'),
     ).toBe('3');
+  });
+
+  test('imports gridAfter-only w:trPrChange as a reviewable row-formatting change', async () => {
+    const source = await rowDocxWithGridAfterChange({ prior: 2, current: 1 });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-grid-after.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const row = html.body.querySelector('tr');
+    expect(row?.dataset.changeKind).toBe('row-formatting');
+    expect(row?.dataset.officeRowPropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toEqual({
+      gridAfter: 2,
+    });
+    expect(row?.dataset.officeRowGridAfter).toBe('1');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('row-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const rejected = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rejectedRow = rejected.body.querySelector('tr');
+      expect(rejectedRow?.dataset.changeKind).toBeUndefined();
+      expect(rejectedRow?.dataset.officeRowGridAfter).toBe('2');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending gridAfter row-formatting change round-trips as native w:trPrChange', async () => {
+    const source = await rowDocxWithGridAfterChange({ prior: 3 });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-grid-after-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await xmlEntry(
+      await JSZip.loadAsync(
+        await (await createArtifactBlob(imported)).arrayBuffer(),
+      ),
+      'word/document.xml',
+    );
+    const change = directChild(
+      directChild(descendants(exported, 'tr')[0], 'trPr'),
+      'trPrChange',
+    );
+    expect(change).toBeTruthy();
+    const priorGrid = directChild(directChild(change!, 'trPr'), 'gridAfter');
+    expect(
+      priorGrid?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorGrid?.getAttribute('w:val') ??
+        priorGrid?.getAttribute('val'),
+    ).toBe('3');
+  });
+
+  test('live row gridAfter edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content:
+        '<table><tbody><tr data-office-row-grid-after="0"><td><p>Cell</p></td></tr></tbody></table>',
+    });
+    try {
+      let rowPos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'tableRow' && rowPos === null) {
+          rowPos = position;
+        }
+      });
+      expect(rowPos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(rowPos!, undefined, {
+          ...editor.state.doc.nodeAt(rowPos!)!.attrs,
+          gridAfter: 2,
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'row-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const row = html.body.querySelector('tr');
+      expect(row?.dataset.changeKind).toBe('row-formatting');
+      expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toMatchObject(
+        {
+          gridAfter: 0,
+        },
+      );
+      expect(row?.dataset.officeRowGridAfter).toBe('2');
+    } finally {
+      editor.destroy();
+    }
   });
 
   test('live row gridBefore edits become reviewable when track changes is on', () => {
@@ -863,6 +977,57 @@ async function rowDocxWithAlignmentChange(options: {
   return archive.generateAsync({ type: 'arraybuffer' });
 }
 
+
+async function rowDocxWithGridAfterChange(options: {
+  prior: number;
+  current?: number;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const row = descendants(document, 'tr')[0];
+  const properties =
+    directChild(row, 'trPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+      row.insertBefore(created, row.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'gridAfter' || child.localName === 'trPrChange',
+  )) {
+    existing.remove();
+  }
+  const current = document.createElementNS(WORD_NAMESPACE, 'w:gridAfter');
+  current.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:val',
+    String(options.current ?? options.prior),
+  );
+  properties.append(current);
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:trPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '30');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+  const priorGrid = document.createElementNS(WORD_NAMESPACE, 'w:gridAfter');
+  priorGrid.setAttributeNS(WORD_NAMESPACE, 'w:val', String(options.prior));
+  prior.append(priorGrid);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
 
 async function rowDocxWithGridBeforeChange(options: {
   prior: number;

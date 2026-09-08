@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.83.0` makes row grid-before property revisions reviewable:
+Version `0.84.0` makes row grid-after property revisions reviewable:
 
-- **Row grid before** — relationship-free `gridBefore` priors become
+- **Row grid after** — relationship-free `gridAfter` priors become
   `row-formatting` with accept/reject, live track-changes, and native DOCX
   export (including current-row write).
 - **Boundary** — broader `tcPr` / `trPr` shapes stay opaque metadata or
-  fail-closed; opaque row fixtures moved to `gridAfter`.
+  fail-closed; opaque row fixtures moved to `wBefore`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

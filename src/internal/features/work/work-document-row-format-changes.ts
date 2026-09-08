@@ -18,8 +18,8 @@ export const DOCUMENT_ROW_CHANGE_ATTRIBUTES = [
 
 /**
  * Prior snapshot for reviewable row-property revisions.
- * At least one of cantSplit, repeatHeader, height, hidden, alignment, or
- * gridBefore must be present.
+ * At least one of cantSplit, repeatHeader, height, hidden, alignment,
+ * gridBefore, or gridAfter must be present.
  */
 export interface DocumentRowFormattingSnapshot {
   cantSplit?: boolean;
@@ -28,6 +28,7 @@ export interface DocumentRowFormattingSnapshot {
   hidden?: boolean;
   alignment?: DocumentTableAlignment;
   gridBefore?: number;
+  gridAfter?: number;
 }
 
 export interface DocumentRowFormattingHeight {
@@ -45,12 +46,13 @@ export function serializeDocumentRowFormatting(
     hidden?: unknown;
     alignment?: unknown;
     gridBefore?: unknown;
+    gridAfter?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentRowFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, or gridBefore.',
+      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, gridBefore, or gridAfter.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -86,7 +88,8 @@ export function parseDocumentRowFormatting(
         key !== 'height' &&
         key !== 'hidden' &&
         key !== 'alignment' &&
-        key !== 'gridBefore',
+        key !== 'gridBefore' &&
+        key !== 'gridAfter',
     )
   ) {
     return null;
@@ -104,6 +107,7 @@ export function normalizeDocumentRowFormattingSnapshot(
     hidden?: unknown;
     alignment?: unknown;
     gridBefore?: unknown;
+    gridAfter?: unknown;
   },
 ): DocumentRowFormattingSnapshot | null {
   const snapshot: DocumentRowFormattingSnapshot = {};
@@ -130,16 +134,22 @@ export function normalizeDocumentRowFormattingSnapshot(
     snapshot.alignment = alignment;
   }
   if ('gridBefore' in attributes && attributes.gridBefore !== undefined) {
-    const gridBefore = normalizeDocumentRowGridBefore(attributes.gridBefore);
+    const gridBefore = normalizeDocumentRowGridSpan(attributes.gridBefore);
     if (gridBefore === null) return null;
     snapshot.gridBefore = gridBefore;
+  }
+  if ('gridAfter' in attributes && attributes.gridAfter !== undefined) {
+    const gridAfter = normalizeDocumentRowGridSpan(attributes.gridAfter);
+    if (gridAfter === null) return null;
+    snapshot.gridAfter = gridAfter;
   }
   return snapshot.cantSplit !== undefined ||
     snapshot.repeatHeader !== undefined ||
     snapshot.height !== undefined ||
     snapshot.hidden !== undefined ||
     snapshot.alignment !== undefined ||
-    snapshot.gridBefore !== undefined
+    snapshot.gridBefore !== undefined ||
+    snapshot.gridAfter !== undefined
     ? snapshot
     : null;
 }
@@ -181,6 +191,9 @@ export function restoredDocumentRowAttributes(
     ...(formatting.gridBefore !== undefined
       ? { gridBefore: formatting.gridBefore }
       : {}),
+    ...(formatting.gridAfter !== undefined
+      ? { gridAfter: formatting.gridAfter }
+      : {}),
   });
 }
 
@@ -220,12 +233,22 @@ function orderedSnapshot(
   if (snapshot.hidden !== undefined) ordered.hidden = snapshot.hidden;
   if (snapshot.alignment !== undefined) ordered.alignment = snapshot.alignment;
   if (snapshot.gridBefore !== undefined) ordered.gridBefore = snapshot.gridBefore;
+  if (snapshot.gridAfter !== undefined) ordered.gridAfter = snapshot.gridAfter;
   return ordered;
 }
 
-export function normalizeDocumentRowGridBefore(value: unknown): number | null {
+export function normalizeDocumentRowGridSpan(value: unknown): number | null {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
     return null;
   }
   return value;
+}
+
+/** @deprecated Prefer normalizeDocumentRowGridSpan */
+export function normalizeDocumentRowGridBefore(value: unknown): number | null {
+  return normalizeDocumentRowGridSpan(value);
+}
+
+export function normalizeDocumentRowGridAfter(value: unknown): number | null {
+  return normalizeDocumentRowGridSpan(value);
 }

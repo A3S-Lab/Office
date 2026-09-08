@@ -27,6 +27,7 @@ export interface ImportedDocxTableRowMarker {
   hidden?: boolean;
   alignment?: 'left' | 'center' | 'right';
   gridBefore?: number;
+  gridAfter?: number;
   rowId?: string;
   rowHeight?: number;
   rowHeightRule?: 'atLeast' | 'exact';
@@ -86,6 +87,18 @@ export function markDocxTableRows(
       gridBeforeRaw >= 0
         ? gridBeforeRaw
         : undefined;
+    const gridAfterElement = properties
+      ? directChild(properties, 'gridAfter')
+      : undefined;
+    const gridAfterRaw = gridAfterElement
+      ? Number(attribute(gridAfterElement, 'val'))
+      : null;
+    const gridAfter =
+      gridAfterRaw !== null &&
+      Number.isInteger(gridAfterRaw) &&
+      gridAfterRaw >= 0
+        ? gridAfterRaw
+        : undefined;
     const height = properties ? directChild(properties, 'trHeight') : undefined;
     const rowHeight = height
       ? twipsToPixels(Number(attribute(height, 'val')))
@@ -107,6 +120,7 @@ export function markDocxTableRows(
       !hidden &&
       !alignment &&
       gridBefore === undefined &&
+      gridAfter === undefined &&
       rowHeight === null &&
       !uniqueIdentity &&
       !propertyRevisionOmml &&
@@ -125,6 +139,7 @@ export function markDocxTableRows(
       ...(hidden ? { hidden: onOffValue(hidden) } : {}),
       ...(alignment ? { alignment } : {}),
       ...(gridBefore !== undefined ? { gridBefore } : {}),
+      ...(gridAfter !== undefined ? { gridAfter } : {}),
       ...(uniqueIdentity ?? {}),
       ...(rowHeight !== null ? { rowHeight } : {}),
       ...(rowHeight !== null && rowHeightRule ? { rowHeightRule } : {}),
@@ -184,6 +199,9 @@ export function applyImportedDocxTableRowMarkers(
         }
         if (properties.gridBefore !== undefined) {
           row.dataset.officeRowGridBefore = String(properties.gridBefore);
+        }
+        if (properties.gridAfter !== undefined) {
+          row.dataset.officeRowGridAfter = String(properties.gridAfter);
         }
         if (properties.rowHeight !== undefined) {
           row.dataset.officeRowHeight = String(properties.rowHeight);

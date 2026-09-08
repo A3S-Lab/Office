@@ -20,6 +20,7 @@ export class DocxRowFormattingChangePatchCollector {
   readonly hidden: boolean[] = [];
   readonly alignments: Array<'left' | 'center' | 'right' | null> = [];
   readonly gridBefore: Array<number | null> = [];
+  readonly gridAfter: Array<number | null> = [];
 
   record(element: HTMLTableRowElement, id: number): void {
     this.hidden.push(element.dataset.officeRowHidden === 'true');
@@ -39,6 +40,18 @@ export class DocxRowFormattingChangePatchCollector {
         Number.isInteger(gridBeforeValue) &&
         gridBeforeValue > 0
         ? gridBeforeValue
+        : null,
+    );
+    const gridAfterRaw = element.dataset.officeRowGridAfter;
+    const gridAfterValue =
+      gridAfterRaw === undefined || gridAfterRaw === ''
+        ? null
+        : Number(gridAfterRaw);
+    this.gridAfter.push(
+      gridAfterValue !== null &&
+        Number.isInteger(gridAfterValue) &&
+        gridAfterValue > 0
+        ? gridAfterValue
         : null,
     );
     if (
@@ -71,12 +84,14 @@ export async function patchDocxRowFormattingChanges(
   hidden: readonly boolean[] = [],
   alignments: readonly ('left' | 'center' | 'right' | null)[] = [],
   gridBefore: readonly (number | null)[] = [],
+  gridAfter: readonly (number | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
     !hidden.some(Boolean) &&
     !alignments.some(Boolean) &&
-    !gridBefore.some((value) => value !== null && value > 0)
+    !gridBefore.some((value) => value !== null && value > 0) &&
+    !gridAfter.some((value) => value !== null && value > 0)
   ) {
     return buffer;
   }
@@ -103,6 +118,7 @@ export async function patchDocxRowFormattingChanges(
     const rowHidden = hidden[index] === true;
     const alignment = alignments[index] ?? null;
     const rowGridBefore = gridBefore[index] ?? null;
+    const rowGridAfter = gridAfter[index] ?? null;
     index += 1;
     if (patch) {
       setRowFormattingChange(document, row, patch);
@@ -118,6 +134,10 @@ export async function patchDocxRowFormattingChanges(
     }
     if (rowGridBefore !== null && rowGridBefore > 0) {
       setRowGridBefore(document, row, rowGridBefore);
+      changed = true;
+    }
+    if (rowGridAfter !== null && rowGridAfter > 0) {
+      setRowGridAfter(document, row, rowGridAfter);
       changed = true;
     }
   }
@@ -168,6 +188,29 @@ function setRowGridBefore(
   if (gridBefore <= 0) return;
   const element = document.createElementNS(WORD_NAMESPACE, 'w:gridBefore');
   element.setAttributeNS(WORD_NAMESPACE, 'w:val', String(gridBefore));
+  properties.append(element);
+}
+
+function setRowGridAfter(
+  document: Document,
+  row: Element,
+  gridAfter: number,
+): void {
+  let properties = directChild(row, 'trPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+    row.insertBefore(properties, row.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'gridAfter' &&
+      child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (gridAfter <= 0) return;
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:gridAfter');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', String(gridAfter));
   properties.append(element);
 }
 
@@ -268,6 +311,15 @@ function setRowFormattingChange(
       String(formatting.gridBefore),
     );
     prior.append(gridBefore);
+  }
+  if (formatting.gridAfter !== undefined) {
+    const gridAfter = document.createElementNS(WORD_NAMESPACE, 'w:gridAfter');
+    gridAfter.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:val',
+      String(formatting.gridAfter),
+    );
+    prior.append(gridAfter);
   }
   change.append(prior);
   properties.append(change);

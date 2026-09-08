@@ -44,14 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.83.0)
+## What's new on `main` (0.84.0)
 
-Writer Phase 0 makes row grid-before reviewable:
+Writer Phase 0 makes row grid-after reviewable:
 
-- Relationship-free `gridBefore` imports as reviewable `row-formatting` with
+- Relationship-free `gridAfter` imports as reviewable `row-formatting` with
   accept/reject, live track-changes, and native DOCX export.
 - Broader cell/row property sets stay opaque or fail-closed
-  (`cnfStyle`, `gridAfter`, and other unsupported priors).
+  (`cnfStyle`, `wBefore`, and other unsupported priors).
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).
