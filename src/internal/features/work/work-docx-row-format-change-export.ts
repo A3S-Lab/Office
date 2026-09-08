@@ -1,5 +1,9 @@
 import JSZip from 'jszip';
 import { parseDocumentRowFormatting } from './work-document-row-format-changes';
+import {
+  normalizeDocumentTablePreferredWidth,
+  type DocumentTablePreferredWidth,
+} from './work-document-table-geometry';
 import { descendants, directChild, parseXml } from './work-ooxml-package';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 
@@ -21,6 +25,7 @@ export class DocxRowFormattingChangePatchCollector {
   readonly alignments: Array<'left' | 'center' | 'right' | null> = [];
   readonly gridBefore: Array<number | null> = [];
   readonly gridAfter: Array<number | null> = [];
+  readonly widthBefore: Array<DocumentTablePreferredWidth | null> = [];
 
   record(element: HTMLTableRowElement, id: number): void {
     this.hidden.push(element.dataset.officeRowHidden === 'true');
@@ -54,6 +59,7 @@ export class DocxRowFormattingChangePatchCollector {
         ? gridAfterValue
         : null,
     );
+    this.widthBefore.push(preferredWidthFromRowElement(element));
     if (
       element.dataset.changeKind !== 'row-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -85,13 +91,15 @@ export async function patchDocxRowFormattingChanges(
   alignments: readonly ('left' | 'center' | 'right' | null)[] = [],
   gridBefore: readonly (number | null)[] = [],
   gridAfter: readonly (number | null)[] = [],
+  widthBefore: readonly (DocumentTablePreferredWidth | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
     !hidden.some(Boolean) &&
     !alignments.some(Boolean) &&
     !gridBefore.some((value) => value !== null && value > 0) &&
-    !gridAfter.some((value) => value !== null && value > 0)
+    !gridAfter.some((value) => value !== null && value > 0) &&
+    !widthBefore.some((value) => value !== null)
   ) {
     return buffer;
   }
@@ -119,6 +127,7 @@ export async function patchDocxRowFormattingChanges(
     const alignment = alignments[index] ?? null;
     const rowGridBefore = gridBefore[index] ?? null;
     const rowGridAfter = gridAfter[index] ?? null;
+    const rowWidthBefore = widthBefore[index] ?? null;
     index += 1;
     if (patch) {
       setRowFormattingChange(document, row, patch);
@@ -138,6 +147,10 @@ export async function patchDocxRowFormattingChanges(
     }
     if (rowGridAfter !== null && rowGridAfter > 0) {
       setRowGridAfter(document, row, rowGridAfter);
+      changed = true;
+    }
+    if (rowWidthBefore) {
+      setRowWidthBefore(document, row, rowWidthBefore);
       changed = true;
     }
   }
@@ -321,6 +334,9 @@ function setRowFormattingChange(
     );
     prior.append(gridAfter);
   }
+  if (formatting.widthBefore !== undefined) {
+    prior.append(createPreferredWidthElement(document, formatting.widthBefore));
+  }
   change.append(prior);
   properties.append(change);
 }
@@ -329,4 +345,63 @@ function normalizedRevisionDate(value: string | undefined): string {
   if (!value?.trim()) return '';
   const time = Date.parse(value);
   return Number.isFinite(time) ? new Date(time).toISOString() : '';
+}
+
+function setRowWidthBefore(
+  document: Document,
+  row: Element,
+  width: DocumentTablePreferredWidth,
+): void {
+  let properties = directChild(row, 'trPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+    row.insertBefore(properties, row.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'wBefore' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  properties.append(createPreferredWidthElement(document, width));
+}
+
+function createPreferredWidthElement(
+  document: Document,
+  width: DocumentTablePreferredWidth,
+): Element {
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:wBefore');
+  if (width.type === 'auto') {
+    element.setAttributeNS(WORD_NAMESPACE, 'w:type', 'auto');
+    element.setAttributeNS(WORD_NAMESPACE, 'w:w', '0');
+    return element;
+  }
+  if (width.type === 'percent') {
+    element.setAttributeNS(WORD_NAMESPACE, 'w:type', 'pct');
+    element.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:w',
+      String(Math.round((width.value ?? 0) * 50)),
+    );
+    return element;
+  }
+  element.setAttributeNS(WORD_NAMESPACE, 'w:type', 'dxa');
+  element.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:w',
+    String(Math.max(1, Math.round((width.value ?? 0) * TWIPS_PER_PIXEL))),
+  );
+  return element;
+}
+
+function preferredWidthFromRowElement(
+  element: HTMLTableRowElement,
+): DocumentTablePreferredWidth | null {
+  const type = element.dataset.officeRowWidthBeforeType;
+  if (type === 'auto') return { type: 'auto', value: null };
+  if (type === 'percent' || type === 'pixels') {
+    const value = Number(element.dataset.officeRowWidthBefore);
+    return normalizeDocumentTablePreferredWidth({ type, value });
+  }
+  return null;
 }

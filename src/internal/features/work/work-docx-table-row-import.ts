@@ -28,6 +28,7 @@ export interface ImportedDocxTableRowMarker {
   alignment?: 'left' | 'center' | 'right';
   gridBefore?: number;
   gridAfter?: number;
+  widthBefore?: { type: 'auto' | 'percent' | 'pixels'; value: number | null };
   rowId?: string;
   rowHeight?: number;
   rowHeightRule?: 'atLeast' | 'exact';
@@ -99,6 +100,12 @@ export function markDocxTableRows(
       gridAfterRaw >= 0
         ? gridAfterRaw
         : undefined;
+    const widthBeforeElement = properties
+      ? directChild(properties, 'wBefore')
+      : undefined;
+    const widthBefore = widthBeforeElement
+      ? importedRowPreferredWidth(widthBeforeElement)
+      : undefined;
     const height = properties ? directChild(properties, 'trHeight') : undefined;
     const rowHeight = height
       ? twipsToPixels(Number(attribute(height, 'val')))
@@ -121,6 +128,7 @@ export function markDocxTableRows(
       !alignment &&
       gridBefore === undefined &&
       gridAfter === undefined &&
+      widthBefore === undefined &&
       rowHeight === null &&
       !uniqueIdentity &&
       !propertyRevisionOmml &&
@@ -140,6 +148,7 @@ export function markDocxTableRows(
       ...(alignment ? { alignment } : {}),
       ...(gridBefore !== undefined ? { gridBefore } : {}),
       ...(gridAfter !== undefined ? { gridAfter } : {}),
+      ...(widthBefore !== undefined ? { widthBefore } : {}),
       ...(uniqueIdentity ?? {}),
       ...(rowHeight !== null ? { rowHeight } : {}),
       ...(rowHeight !== null && rowHeightRule ? { rowHeightRule } : {}),
@@ -202,6 +211,17 @@ export function applyImportedDocxTableRowMarkers(
         }
         if (properties.gridAfter !== undefined) {
           row.dataset.officeRowGridAfter = String(properties.gridAfter);
+        }
+        if (properties.widthBefore) {
+          row.dataset.officeRowWidthBeforeType = properties.widthBefore.type;
+          if (
+            properties.widthBefore.type !== 'auto' &&
+            properties.widthBefore.value !== null
+          ) {
+            row.dataset.officeRowWidthBefore = String(
+              properties.widthBefore.value,
+            );
+          }
         }
         if (properties.rowHeight !== undefined) {
           row.dataset.officeRowHeight = String(properties.rowHeight);
@@ -337,4 +357,29 @@ function textNodes(root: ParentNode): Text[] {
   if (!walker) return nodes;
   while (walker.nextNode()) nodes.push(walker.currentNode as Text);
   return nodes;
+}
+
+function importedRowPreferredWidth(
+  width: Element,
+): { type: 'auto' | 'percent' | 'pixels'; value: number | null } | undefined {
+  const type = attribute(width, 'type');
+  if (type === 'auto' || type === 'nil') return { type: 'auto', value: null };
+  if (type === 'pct') {
+    const raw = attribute(width, 'w')?.trim();
+    if (!raw) return undefined;
+    const percentage = raw.endsWith('%')
+      ? Number(raw.slice(0, -1))
+      : Number(raw) / 50;
+    if (!Number.isFinite(percentage) || percentage <= 0) return undefined;
+    return {
+      type: 'percent',
+      value: Math.round(percentage * 100) / 100,
+    };
+  }
+  if (type === 'dxa') {
+    const pixels = twipsToPixels(Number(attribute(width, 'w')));
+    if (pixels === null || pixels <= 0) return undefined;
+    return { type: 'pixels', value: pixels };
+  }
+  return undefined;
 }

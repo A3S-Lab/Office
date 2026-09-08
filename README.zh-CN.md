@@ -370,10 +370,10 @@ Codex 编辑器操作可在所有五个表面上键入和重现。
 
 ## 当前版本
 
-版本 `0.84.0` 让行后置网格（grid after）属性修订可审阅：
+版本 `0.85.0` 让行前置宽度（width before）属性修订可审阅：
 
-- **行后置网格** — 无关系的 `gridAfter` 先验成为 `row-formatting`，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出（含当前行写出）。
-- **边界** — 更广的 `tcPr` / `trPr` 形态仍为不透明元数据或失败闭合；不透明行夹具已迁至 `wBefore`。
+- **行前置宽度** — 无关系的 `wBefore` 先验成为 `row-formatting`，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出（含当前行写出）。
+- **边界** — 更广的 `tcPr` / `trPr` 形态仍为不透明元数据或失败闭合；不透明行夹具已迁至 `wAfter`。
 
 更早的版本请查看产品向
 [更新日志](https://a3s-lab.github.io/Office/docs/changelog.html) 时间线，以及完整工程

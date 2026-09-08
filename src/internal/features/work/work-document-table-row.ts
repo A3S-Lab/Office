@@ -2,7 +2,9 @@ import type { Editor } from '@tiptap/core';
 import { TableRow } from '@tiptap/extension-table';
 import {
   normalizeDocumentTableAlignment,
+  normalizeDocumentTablePreferredWidth,
   type DocumentTableAlignment,
+  type DocumentTablePreferredWidth,
 } from './work-document-table-geometry';
 import {
   DOCUMENT_ROW_PROPERTY_REVISION_OMML_ATTRIBUTE,
@@ -104,6 +106,24 @@ export const DocumentTableRow = TableRow.extend({
           return value === null
             ? {}
             : { 'data-office-row-grid-after': String(value) };
+        },
+      },
+      widthBefore: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          preferredWidthFromRowDataset(element.dataset),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const width = normalizeDocumentTablePreferredWidth(
+            attributes.widthBefore,
+          );
+          if (!width) return {};
+          if (width.type === 'auto') {
+            return { 'data-office-row-width-before-type': 'auto' };
+          }
+          return {
+            'data-office-row-width-before-type': width.type,
+            'data-office-row-width-before': String(width.value),
+          };
         },
       },
       rowHeight: {
@@ -331,5 +351,18 @@ function rowChangeAttribute(
 function directBoolean(value: unknown): boolean | null {
   if (value === true || value === 'true' || value === '1') return true;
   if (value === false || value === 'false' || value === '0') return false;
+  return null;
+}
+
+
+function preferredWidthFromRowDataset(
+  dataset: DOMStringMap,
+): DocumentTablePreferredWidth | null {
+  const type = dataset.officeRowWidthBeforeType;
+  if (type === 'auto') return { type: 'auto', value: null };
+  if (type === 'percent' || type === 'pixels') {
+    const value = Number(dataset.officeRowWidthBefore);
+    return normalizeDocumentTablePreferredWidth({ type, value });
+  }
   return null;
 }

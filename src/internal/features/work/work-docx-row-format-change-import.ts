@@ -5,7 +5,9 @@ import {
 } from './work-document-row-format-changes';
 import {
   normalizeDocumentTableAlignment,
+  normalizeDocumentTablePreferredWidth,
   type DocumentTableAlignment,
+  type DocumentTablePreferredWidth,
 } from './work-document-table-geometry';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
@@ -29,6 +31,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'jc',
   'gridBefore',
   'gridAfter',
+  'wBefore',
 ]);
 const PIXELS_PER_TWIP = 96 / 1440;
 
@@ -42,8 +45,8 @@ export interface SupportedDocxRowFormattingChange {
 /**
  * Relationship-free `w:trPrChange` whose prior snapshot contains only
  * `w:cantSplit`, `w:tblHeader`, `w:trHeight`, `w:hidden`, `w:jc`,
- * `w:gridBefore`, and/or `w:gridAfter`. Broader row property sets stay on the
- * opaque OMML path.
+ * `w:gridBefore`, `w:gridAfter`, and/or `w:wBefore`. Broader row property
+ * sets stay on the opaque OMML path.
  */
 export function isSupportedDocxRowFormattingChange(change: Element): boolean {
   return supportedRowFormattingChange(change) !== null;
@@ -128,6 +131,7 @@ function supportedRowFormattingChange(
     alignment?: DocumentTableAlignment;
     gridBefore?: number;
     gridAfter?: number;
+    widthBefore?: DocumentTablePreferredWidth;
   } = {};
   for (const child of children) {
     if (child.localName === 'cantSplit') {
@@ -170,6 +174,12 @@ function supportedRowFormattingChange(
       );
       if (gridAfter === null) return null;
       snapshot.gridAfter = gridAfter;
+      continue;
+    }
+    if (child.localName === 'wBefore') {
+      const widthBefore = importedPreferredWidth(child);
+      if (!widthBefore) return null;
+      snapshot.widthBefore = widthBefore;
     }
   }
   return {
@@ -265,4 +275,33 @@ function normalizeRevisionDate(value: string | null): string {
   if (!value) return '';
   const time = Date.parse(value);
   return Number.isFinite(time) ? new Date(time).toISOString() : '';
+}
+
+function importedPreferredWidth(
+  width: Element,
+): DocumentTablePreferredWidth | null {
+  const type = attribute(width, 'type');
+  if (type === 'auto' || type === 'nil') return { type: 'auto', value: null };
+  if (type === 'pct') {
+    const value = percentageValue(attribute(width, 'w'));
+    return value === null
+      ? null
+      : normalizeDocumentTablePreferredWidth({ type: 'percent', value });
+  }
+  if (type === 'dxa') {
+    const pixels = twipsToPixels(Number(attribute(width, 'w')));
+    if (pixels === null || pixels <= 0) return null;
+    return normalizeDocumentTablePreferredWidth({ type: 'pixels', value: pixels });
+  }
+  return null;
+}
+
+function percentageValue(value: string | null): number | null {
+  const normalized = value?.trim();
+  if (!normalized) return null;
+  const percentage = normalized.endsWith('%')
+    ? Number(normalized.slice(0, -1))
+    : Number(normalized) / 50;
+  if (!Number.isFinite(percentage) || percentage <= 0) return null;
+  return Math.round(percentage * 100) / 100;
 }

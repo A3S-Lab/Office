@@ -7,7 +7,9 @@ import {
 } from './work-document-row-format-changes';
 import {
   normalizeDocumentTableAlignment,
+  normalizeDocumentTablePreferredWidth,
   type DocumentTableAlignment,
+  type DocumentTablePreferredWidth,
 } from './work-document-table-geometry';
 import {
   normalizeDocumentTableRowHeight,
@@ -20,7 +22,7 @@ interface DocumentRowFormattingTrackingOptions {
 
 /**
  * When track-changes is on, row cantSplit / repeatHeader / height / hidden /
- * alignment / gridBefore / gridAfter edits become reviewable `row-formatting` revisions.
+ * alignment / gridBefore / gridAfter / widthBefore edits become reviewable `row-formatting` revisions.
  */
 export function trackDocumentRowFormattingTransaction(
   transaction: Transaction,
@@ -66,6 +68,7 @@ function rowFormatting(node: ProseMirrorNode): {
   alignment?: DocumentTableAlignment;
   gridBefore?: number;
   gridAfter?: number;
+  widthBefore?: DocumentTablePreferredWidth;
 } | null {
   const height = normalizeDocumentTableRowHeight(node.attrs.rowHeight);
   const rule =
@@ -87,6 +90,11 @@ function rowFormatting(node: ProseMirrorNode): {
     node.attrs.gridAfter >= 0
       ? node.attrs.gridAfter
       : 0;
+  const widthBefore =
+    normalizeDocumentTablePreferredWidth(node.attrs.widthBefore) ?? {
+      type: 'auto' as const,
+      value: null,
+    };
   return normalizeDocumentRowFormattingSnapshot({
     cantSplit:
       typeof node.attrs.cantSplit === 'boolean'
@@ -101,6 +109,7 @@ function rowFormatting(node: ProseMirrorNode): {
     alignment,
     gridBefore,
     gridAfter,
+    widthBefore,
     ...(height !== null && rule ? { height: { value: height, rule } } : {}),
   });
 }
@@ -119,6 +128,7 @@ function onlyRowFormattingChanged(
   delete beforeAttrs.alignment;
   delete beforeAttrs.gridBefore;
   delete beforeAttrs.gridAfter;
+  delete beforeAttrs.widthBefore;
   delete beforeAttrs.rowChangeKind;
   delete beforeAttrs.rowChangeId;
   delete beforeAttrs.rowChangeAuthor;
@@ -133,6 +143,7 @@ function onlyRowFormattingChanged(
   delete afterAttrs.alignment;
   delete afterAttrs.gridBefore;
   delete afterAttrs.gridAfter;
+  delete afterAttrs.widthBefore;
   delete afterAttrs.rowChangeKind;
   delete afterAttrs.rowChangeId;
   delete afterAttrs.rowChangeAuthor;

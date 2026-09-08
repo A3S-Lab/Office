@@ -181,6 +181,7 @@ describe('DOCX row-formatting revisions', () => {
         alignment: 'left',
         gridBefore: 0,
         gridAfter: 0,
+        widthBefore: { type: 'auto', value: null },
       });
       expect(row?.dataset.officeCantSplit).toBe('true');
     } finally {
@@ -279,6 +280,7 @@ describe('DOCX row-formatting revisions', () => {
         alignment: 'left',
         gridBefore: 0,
         gridAfter: 0,
+        widthBefore: { type: 'auto', value: null },
       });
       expect(row?.dataset.officeRowHidden).toBe('true');
     } finally {
@@ -382,6 +384,7 @@ describe('DOCX row-formatting revisions', () => {
         alignment: 'left',
         gridBefore: 0,
         gridAfter: 0,
+        widthBefore: { type: 'auto', value: null },
       });
       expect(row?.dataset.officeRowAlignment).toBe('center');
     } finally {
@@ -492,6 +495,7 @@ describe('DOCX row-formatting revisions', () => {
         alignment: 'left',
         gridBefore: 0,
         gridAfter: 0,
+        widthBefore: { type: 'auto', value: null },
         height: { value: 24, rule: 'atLeast' },
       });
       expect(row?.dataset.officeRowHeight).toBe('40');
@@ -672,6 +676,129 @@ describe('DOCX row-formatting revisions', () => {
         },
       );
       expect(row?.dataset.officeRowGridAfter).toBe('2');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('imports wBefore-only w:trPrChange as a reviewable row-formatting change', async () => {
+    const source = await rowDocxWithWidthBeforeChange({
+      prior: { type: 'dxa', w: '288' },
+      current: { type: 'dxa', w: '144' },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-w-before.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const row = html.body.querySelector('tr');
+    expect(row?.dataset.changeKind).toBe('row-formatting');
+    expect(row?.dataset.officeRowPropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toEqual({
+      widthBefore: { type: 'pixels', value: 19.2 },
+    });
+    expect(row?.dataset.officeRowWidthBeforeType).toBe('pixels');
+    expect(row?.dataset.officeRowWidthBefore).toBe('9.6');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('row-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const rejected = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rejectedRow = rejected.body.querySelector('tr');
+      expect(rejectedRow?.dataset.changeKind).toBeUndefined();
+      expect(rejectedRow?.dataset.officeRowWidthBeforeType).toBe('pixels');
+      expect(rejectedRow?.dataset.officeRowWidthBefore).toBe('19.2');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending wBefore row-formatting change round-trips as native w:trPrChange', async () => {
+    const source = await rowDocxWithWidthBeforeChange({
+      prior: { type: 'dxa', w: '432' },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-w-before-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await xmlEntry(
+      await JSZip.loadAsync(
+        await (await createArtifactBlob(imported)).arrayBuffer(),
+      ),
+      'word/document.xml',
+    );
+    const change = directChild(
+      directChild(descendants(exported, 'tr')[0], 'trPr'),
+      'trPrChange',
+    );
+    expect(change).toBeTruthy();
+    const priorWidth = directChild(directChild(change!, 'trPr'), 'wBefore');
+    expect(
+      priorWidth?.getAttributeNS(WORD_NAMESPACE, 'type') ??
+        priorWidth?.getAttribute('w:type') ??
+        priorWidth?.getAttribute('type'),
+    ).toBe('dxa');
+    expect(
+      priorWidth?.getAttributeNS(WORD_NAMESPACE, 'w') ??
+        priorWidth?.getAttribute('w:w') ??
+        priorWidth?.getAttribute('w'),
+    ).toBe('432');
+  });
+
+  test('live row widthBefore edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content:
+        '<table><tbody><tr data-office-row-width-before-type="auto"><td><p>Cell</p></td></tr></tbody></table>',
+    });
+    try {
+      let rowPos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'tableRow' && rowPos === null) {
+          rowPos = position;
+        }
+      });
+      expect(rowPos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(rowPos!, undefined, {
+          ...editor.state.doc.nodeAt(rowPos!)!.attrs,
+          widthBefore: { type: 'pixels', value: 48 },
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'row-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const row = html.body.querySelector('tr');
+      expect(row?.dataset.changeKind).toBe('row-formatting');
+      expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toMatchObject(
+        {
+          widthBefore: { type: 'auto', value: null },
+        },
+      );
+      expect(row?.dataset.officeRowWidthBeforeType).toBe('pixels');
+      expect(row?.dataset.officeRowWidthBefore).toBe('48');
     } finally {
       editor.destroy();
     }
@@ -1020,6 +1147,56 @@ async function rowDocxWithGridAfterChange(options: {
   const priorGrid = document.createElementNS(WORD_NAMESPACE, 'w:gridAfter');
   priorGrid.setAttributeNS(WORD_NAMESPACE, 'w:val', String(options.prior));
   prior.append(priorGrid);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function rowDocxWithWidthBeforeChange(options: {
+  prior: { type: string; w: string };
+  current?: { type: string; w: string };
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const row = descendants(document, 'tr')[0];
+  const properties =
+    directChild(row, 'trPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+      row.insertBefore(created, row.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'wBefore' || child.localName === 'trPrChange',
+  )) {
+    existing.remove();
+  }
+  const currentSpec = options.current ?? options.prior;
+  const current = document.createElementNS(WORD_NAMESPACE, 'w:wBefore');
+  current.setAttributeNS(WORD_NAMESPACE, 'w:type', currentSpec.type);
+  current.setAttributeNS(WORD_NAMESPACE, 'w:w', currentSpec.w);
+  properties.append(current);
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:trPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '31');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+  const priorWidth = document.createElementNS(WORD_NAMESPACE, 'w:wBefore');
+  priorWidth.setAttributeNS(WORD_NAMESPACE, 'w:type', options.prior.type);
+  priorWidth.setAttributeNS(WORD_NAMESPACE, 'w:w', options.prior.w);
+  prior.append(priorWidth);
   change.append(prior);
   properties.append(change);
   archive.file(

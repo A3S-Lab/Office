@@ -1,6 +1,8 @@
 import {
   normalizeDocumentTableAlignment,
+  normalizeDocumentTablePreferredWidth,
   type DocumentTableAlignment,
+  type DocumentTablePreferredWidth,
 } from './work-document-table-geometry';
 import {
   normalizeDocumentTableRowHeight,
@@ -19,7 +21,7 @@ export const DOCUMENT_ROW_CHANGE_ATTRIBUTES = [
 /**
  * Prior snapshot for reviewable row-property revisions.
  * At least one of cantSplit, repeatHeader, height, hidden, alignment,
- * gridBefore, or gridAfter must be present.
+ * gridBefore, gridAfter, or widthBefore must be present.
  */
 export interface DocumentRowFormattingSnapshot {
   cantSplit?: boolean;
@@ -29,6 +31,7 @@ export interface DocumentRowFormattingSnapshot {
   alignment?: DocumentTableAlignment;
   gridBefore?: number;
   gridAfter?: number;
+  widthBefore?: DocumentTablePreferredWidth;
 }
 
 export interface DocumentRowFormattingHeight {
@@ -47,12 +50,13 @@ export function serializeDocumentRowFormatting(
     alignment?: unknown;
     gridBefore?: unknown;
     gridAfter?: unknown;
+    widthBefore?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentRowFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, gridBefore, or gridAfter.',
+      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, gridBefore, gridAfter, or widthBefore.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -89,7 +93,8 @@ export function parseDocumentRowFormatting(
         key !== 'hidden' &&
         key !== 'alignment' &&
         key !== 'gridBefore' &&
-        key !== 'gridAfter',
+        key !== 'gridAfter' &&
+        key !== 'widthBefore',
     )
   ) {
     return null;
@@ -108,6 +113,7 @@ export function normalizeDocumentRowFormattingSnapshot(
     alignment?: unknown;
     gridBefore?: unknown;
     gridAfter?: unknown;
+    widthBefore?: unknown;
   },
 ): DocumentRowFormattingSnapshot | null {
   const snapshot: DocumentRowFormattingSnapshot = {};
@@ -143,13 +149,21 @@ export function normalizeDocumentRowFormattingSnapshot(
     if (gridAfter === null) return null;
     snapshot.gridAfter = gridAfter;
   }
+  if ('widthBefore' in attributes && attributes.widthBefore !== undefined) {
+    const widthBefore = normalizeDocumentTablePreferredWidth(
+      attributes.widthBefore,
+    );
+    if (!widthBefore) return null;
+    snapshot.widthBefore = widthBefore;
+  }
   return snapshot.cantSplit !== undefined ||
     snapshot.repeatHeader !== undefined ||
     snapshot.height !== undefined ||
     snapshot.hidden !== undefined ||
     snapshot.alignment !== undefined ||
     snapshot.gridBefore !== undefined ||
-    snapshot.gridAfter !== undefined
+    snapshot.gridAfter !== undefined ||
+    snapshot.widthBefore !== undefined
     ? snapshot
     : null;
 }
@@ -194,6 +208,9 @@ export function restoredDocumentRowAttributes(
     ...(formatting.gridAfter !== undefined
       ? { gridAfter: formatting.gridAfter }
       : {}),
+    ...(formatting.widthBefore !== undefined
+      ? { widthBefore: formatting.widthBefore }
+      : {}),
   });
 }
 
@@ -234,6 +251,12 @@ function orderedSnapshot(
   if (snapshot.alignment !== undefined) ordered.alignment = snapshot.alignment;
   if (snapshot.gridBefore !== undefined) ordered.gridBefore = snapshot.gridBefore;
   if (snapshot.gridAfter !== undefined) ordered.gridAfter = snapshot.gridAfter;
+  if (snapshot.widthBefore) {
+    ordered.widthBefore = {
+      type: snapshot.widthBefore.type,
+      value: snapshot.widthBefore.value,
+    };
+  }
   return ordered;
 }
 

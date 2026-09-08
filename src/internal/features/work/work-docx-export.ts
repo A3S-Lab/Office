@@ -696,6 +696,7 @@ export async function createDocxBlob(
     noteContext.rowFormattingChangePatches.alignments,
     noteContext.rowFormattingChangePatches.gridBefore,
     noteContext.rowFormattingChangePatches.gridAfter,
+    noteContext.rowFormattingChangePatches.widthBefore,
   );
   const cellFormattingChangesPatched = await patchDocxCellFormattingChanges(
     rowFormattingChangesPatched,
