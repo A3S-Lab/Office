@@ -385,6 +385,24 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
       renderHTML: (attributes: Record<string, unknown>) =>
         renderDocumentTableCellMarginOverrides(attributes.margins),
     },
+    noWrap: {
+      default: null,
+      parseHTML: (element: HTMLElement) => {
+        const value = element.dataset.officeCellNoWrap;
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return null;
+      },
+      renderHTML: (attributes: Record<string, unknown>) => {
+        if (attributes.noWrap === true) {
+          return { 'data-office-cell-no-wrap': 'true' };
+        }
+        if (attributes.noWrap === false) {
+          return { 'data-office-cell-no-wrap': 'false' };
+        }
+        return {};
+      },
+    },
     propertyRevisionOmml: {
       default: null,
       parseHTML: (element: HTMLElement) =>

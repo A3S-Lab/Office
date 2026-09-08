@@ -1,6 +1,10 @@
 import type { Editor } from '@tiptap/core';
 import { TableRow } from '@tiptap/extension-table';
 import {
+  normalizeDocumentTableAlignment,
+  type DocumentTableAlignment,
+} from './work-document-table-geometry';
+import {
   DOCUMENT_ROW_PROPERTY_REVISION_OMML_ATTRIBUTE,
   documentRowPropertyRevisionOmmlFromElement,
   encodeDocumentTablePropertyRevisionOmml,
@@ -9,6 +13,8 @@ import {
 export interface DocumentTableRowOptions {
   cantSplit: boolean;
   repeatHeader: boolean;
+  hidden?: boolean;
+  alignment?: DocumentTableAlignment;
 }
 
 export type DocumentTableRowHeightRule = 'atLeast' | 'exact';
@@ -42,6 +48,24 @@ export const DocumentTableRow = TableRow.extend({
         'officeRepeatHeader',
         'data-office-repeat-header',
       ),
+      hidden: booleanRowAttribute(
+        'hidden',
+        'officeRowHidden',
+        'data-office-row-hidden',
+      ),
+      alignment: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentTableAlignment(element.dataset.officeRowAlignment),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const alignment = normalizeDocumentTableAlignment(
+            attributes.alignment,
+          );
+          return alignment
+            ? { 'data-office-row-alignment': alignment }
+            : {};
+        },
+      },
       rowHeight: {
         default: null,
         parseHTML: (element: HTMLElement) =>
@@ -109,6 +133,16 @@ export const DocumentTableRow = TableRow.extend({
             .updateAttributes('tableRow', {
               cantSplit: Boolean(options.cantSplit),
               repeatHeader: Boolean(options.repeatHeader),
+              ...(options.hidden !== undefined
+                ? { hidden: Boolean(options.hidden) }
+                : {}),
+              ...(options.alignment !== undefined
+                ? {
+                    alignment:
+                      normalizeDocumentTableAlignment(options.alignment) ??
+                      null,
+                  }
+                : {}),
               propertyRevisionOmml: null,
             })
             .run();
@@ -125,6 +159,8 @@ export function documentTableRowOptions(
     cantSplit: directBoolean(attributes.cantSplit) ?? false,
     repeatHeader:
       directBoolean(attributes.repeatHeader) ?? editor.isActive('tableHeader'),
+    hidden: directBoolean(attributes.hidden) ?? false,
+    alignment: normalizeDocumentTableAlignment(attributes.alignment) ?? undefined,
   };
 }
 
@@ -194,9 +230,12 @@ export function normalizeDocumentTableRowHeightRule(
 }
 
 function booleanRowAttribute(
-  modelKey: 'cantSplit' | 'repeatHeader',
-  datasetKey: 'officeCantSplit' | 'officeRepeatHeader',
-  htmlName: 'data-office-cant-split' | 'data-office-repeat-header',
+  modelKey: 'cantSplit' | 'repeatHeader' | 'hidden',
+  datasetKey: 'officeCantSplit' | 'officeRepeatHeader' | 'officeRowHidden',
+  htmlName:
+    | 'data-office-cant-split'
+    | 'data-office-repeat-header'
+    | 'data-office-row-hidden',
 ) {
   return {
     default: null,

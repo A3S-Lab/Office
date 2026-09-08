@@ -2,6 +2,10 @@ import {
   serializeDocumentRowFormatting,
   type DocumentRowFormattingHeight,
 } from './work-document-row-format-changes';
+import {
+  normalizeDocumentTableAlignment,
+  type DocumentTableAlignment,
+} from './work-document-table-geometry';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
   xmlAttributeLocalName,
@@ -20,6 +24,8 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'cantSplit',
   'tblHeader',
   'trHeight',
+  'hidden',
+  'jc',
 ]);
 const PIXELS_PER_TWIP = 96 / 1440;
 
@@ -32,8 +38,8 @@ export interface SupportedDocxRowFormattingChange {
 
 /**
  * Relationship-free `w:trPrChange` whose prior snapshot contains only
- * `w:cantSplit`, `w:tblHeader`, and/or `w:trHeight`. Broader row property sets
- * stay on the opaque OMML path.
+ * `w:cantSplit`, `w:tblHeader`, `w:trHeight`, `w:hidden`, and/or `w:jc`.
+ * Broader row property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxRowFormattingChange(change: Element): boolean {
   return supportedRowFormattingChange(change) !== null;
@@ -114,6 +120,8 @@ function supportedRowFormattingChange(
     cantSplit?: boolean;
     repeatHeader?: boolean;
     height?: DocumentRowFormattingHeight;
+    hidden?: boolean;
+    alignment?: DocumentTableAlignment;
   } = {};
   for (const child of children) {
     if (child.localName === 'cantSplit') {
@@ -128,6 +136,18 @@ function supportedRowFormattingChange(
       const height = importedRowHeight(child);
       if (!height) return null;
       snapshot.height = height;
+      continue;
+    }
+    if (child.localName === 'hidden') {
+      snapshot.hidden = onOffValue(child);
+      continue;
+    }
+    if (child.localName === 'jc') {
+      const alignment = normalizeDocumentTableAlignment(
+        mapJcValue(attribute(child, 'val')),
+      );
+      if (!alignment) return null;
+      snapshot.alignment = alignment;
     }
   }
   return {
@@ -170,6 +190,13 @@ function onOffValue(element: Element): boolean {
     value === 'off' ||
     value === 'False'
   );
+}
+
+function mapJcValue(value: string | null): string | null {
+  if (!value) return null;
+  if (value === 'start') return 'left';
+  if (value === 'end') return 'right';
+  return value;
 }
 
 function wordAttribute(element: Element, localName: string): string | null {

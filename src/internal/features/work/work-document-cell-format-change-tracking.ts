@@ -3,6 +3,7 @@ import type { EditorState, Transaction } from '@tiptap/pm/state';
 import type { WorkDocumentChangeIdentity } from './work-document-changes';
 import {
   normalizeDocumentCellFormattingSnapshot,
+  preferredWidthFromCellAttributes,
   serializeDocumentCellFormatting,
 } from './work-document-cell-format-changes';
 import { normalizeTableColor } from './work-document-table-borders';
@@ -13,6 +14,7 @@ import {
 import {
   normalizeDocumentTableCellMarginOverrides,
   type DocumentTableCellMarginOverrides,
+  type DocumentTablePreferredWidth,
 } from './work-document-table-geometry';
 
 interface DocumentCellFormattingTrackingOptions {
@@ -20,8 +22,8 @@ interface DocumentCellFormattingTrackingOptions {
 }
 
 /**
- * When track-changes is on, cell verticalAlign / solid fill / margin edits
- * become reviewable `cell-formatting` revisions.
+ * When track-changes is on, cell verticalAlign / solid fill / margin /
+ * preferred-width / noWrap edits become reviewable `cell-formatting` revisions.
  */
 export function trackDocumentCellFormattingTransaction(
   transaction: Transaction,
@@ -64,6 +66,8 @@ function cellFormatting(node: ProseMirrorNode): {
   verticalAlign?: DocumentTableVerticalAlign;
   fill?: string;
   margins?: DocumentTableCellMarginOverrides;
+  width?: DocumentTablePreferredWidth;
+  noWrap?: boolean;
 } | null {
   const verticalAlign =
     normalizeDocumentTableVerticalAlign(node.attrs.verticalAlign) ?? 'top';
@@ -74,10 +78,15 @@ function cellFormatting(node: ProseMirrorNode): {
         : null,
     ) ?? undefined;
   const margins = normalizeDocumentTableCellMarginOverrides(node.attrs.margins);
+  const width = preferredWidthFromCellAttributes(node.attrs) ?? undefined;
+  const noWrap =
+    typeof node.attrs.noWrap === 'boolean' ? node.attrs.noWrap : false;
   return normalizeDocumentCellFormattingSnapshot({
     verticalAlign,
     ...(fill ? { fill } : {}),
     ...(margins ? { margins } : {}),
+    ...(width ? { width } : {}),
+    noWrap,
   });
 }
 
@@ -91,6 +100,9 @@ function onlyReviewableCellFormattingChanged(
     'verticalAlign',
     'backgroundColor',
     'margins',
+    'colwidth',
+    'columnWidthPercentages',
+    'noWrap',
     'cellChangeKind',
     'cellChangeId',
     'cellChangeAuthor',

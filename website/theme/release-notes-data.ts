@@ -42,6 +42,69 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.79.0',
+    date: '2026-09-08',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer deepens reviewable cell and row property revisions',
+      zh: 'Writer 深化可审阅的单元格与行属性修订',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: reviewable tcW and noWrap cell-formatting plus hidden and jc row-formatting, with accept/reject, live track-changes, and native DOCX export.',
+      zh: 'Phase 0 保真：可审阅的 tcW / noWrap 单元格格式修订，以及 hidden / jc 行格式修订，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Cell width and wrap',
+          zh: '单元格宽度与换行',
+        },
+        detail: {
+          en: 'Relationship-free tcPrChange priors with tcW (auto/dxa/pct) or noWrap import as cell-formatting; live colwidth and noWrap edits track and export natively.',
+          zh: '含 tcW（auto/dxa/pct）或 noWrap 的无关系 tcPrChange 先验导入为 cell-formatting；实时 colwidth 与 noWrap 编辑可跟踪并原生导出。',
+        },
+      },
+      {
+        title: {
+          en: 'Row hide and justify',
+          zh: '行隐藏与对齐',
+        },
+        detail: {
+          en: 'trPrChange priors with hidden or jc (left/center/right) are reviewable as row-formatting, including current-row export of those properties.',
+          zh: '含 hidden 或 jc（left/center/right）的 trPrChange 先验可作为 row-formatting 审阅，并覆盖当前行属性的导出。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'Broader cell/row property sets remain opaque metadata or fail-closed; fixtures moved off admitted priors to textDirection and gridBefore.',
+          zh: '更广的单元格/行属性集仍为不透明元数据或失败闭合；夹具已从已接纳先验迁至 textDirection 与 gridBefore。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './components/document.html', zh: './components/document.html' },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.79.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.79.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './native-office-engine.html', zh: './native-office-engine.html' },
+        label: { en: 'Native engine notes', zh: '原生引擎说明' },
+      },
+    ],
+  },
+  {
     version: '0.78.0',
     date: '2026-09-08',
     kind: 'improved',

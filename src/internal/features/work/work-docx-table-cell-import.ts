@@ -55,6 +55,7 @@ export interface ImportedDocxTableCellMarker {
   verticalAlign?: ImportedDocxTableCellVerticalAlign;
   borders?: ImportedDocxTableCellBorders;
   margins?: DocumentTableCellMarginOverrides;
+  noWrap?: boolean;
   propertyRevisionOmml?: string;
   formattingChange?: SupportedDocxCellFormattingChange;
 }
@@ -117,6 +118,10 @@ export function markDocxTableCells(
     const background = importedTableCellBackgroundColor(layers, theme);
     const verticalAlign = importedTableCellVerticalAlign(layers);
     const margins = importedTableCellMargins(layers);
+    const noWrapElement = properties
+      ? directChild(properties, 'noWrap')
+      : undefined;
+    const noWrap = noWrapElement ? onOffValue(noWrapElement) : undefined;
     const formattingChange =
       supportedDocxCellFormattingChangeFromProperties(properties);
     const propertyRevisionOmml = formattingChange
@@ -127,6 +132,7 @@ export function markDocxTableCells(
       !verticalAlign &&
       !borders &&
       !margins &&
+      noWrap === undefined &&
       !propertyRevisionOmml &&
       !formattingChange
     ) {
@@ -143,6 +149,7 @@ export function markDocxTableCells(
       ...(verticalAlign ? { verticalAlign } : {}),
       ...(borders ? { borders } : {}),
       ...(margins ? { margins } : {}),
+      ...(noWrap !== undefined ? { noWrap } : {}),
       ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
       ...(formattingChange ? { formattingChange } : {}),
     });
@@ -216,6 +223,9 @@ function applyCellFormat(
     if (rendered.style) {
       cell.style.cssText = `${cell.style.cssText}; ${rendered.style}`;
     }
+  }
+  if (format.noWrap !== undefined) {
+    cell.dataset.officeCellNoWrap = String(format.noWrap);
   }
   applyDocumentCellPropertyRevisionOmmlToElement(
     cell,
@@ -538,6 +548,13 @@ function ooxmlColor(value: string | null): string | null {
       .join('')}`;
   }
   return /^[0-9a-f]{6}$/.test(normalized) ? `#${normalized}` : null;
+}
+
+function onOffValue(element: Element): boolean {
+  const value = (attribute(element, 'val') ?? attribute(element, 'w:val'))
+    ?.trim()
+    .toLowerCase();
+  return value !== '0' && value !== 'false' && value !== 'off';
 }
 
 function firstTableCellParagraph(

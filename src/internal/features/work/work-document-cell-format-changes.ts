@@ -5,8 +5,10 @@ import {
 } from './work-document-table-cell-formatting';
 import {
   normalizeDocumentTableCellMarginOverrides,
+  normalizeDocumentTablePreferredWidth,
   type DocumentTableCellMarginOverrides,
   type DocumentTableCellMarginSide,
+  type DocumentTablePreferredWidth,
 } from './work-document-table-geometry';
 
 export const DOCUMENT_CELL_CHANGE_ATTRIBUTES = [
@@ -19,12 +21,14 @@ export const DOCUMENT_CELL_CHANGE_ATTRIBUTES = [
 
 /**
  * Prior snapshot for reviewable cell-property revisions.
- * At least one of verticalAlign, fill, or margins must be present.
+ * At least one of verticalAlign, fill, margins, width, or noWrap must be present.
  */
 export interface DocumentCellFormattingSnapshot {
   verticalAlign?: DocumentTableVerticalAlign;
   fill?: string;
   margins?: DocumentTableCellMarginOverrides;
+  width?: DocumentTablePreferredWidth;
+  noWrap?: boolean;
 }
 
 const MAX_CELL_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -40,12 +44,14 @@ export function serializeDocumentCellFormatting(
     verticalAlign?: unknown;
     fill?: unknown;
     margins?: unknown;
+    width?: unknown;
+    noWrap?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentCellFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Cell-formatting snapshot requires verticalAlign, fill, or margins.',
+      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, or noWrap.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -75,7 +81,12 @@ export function parseDocumentCellFormatting(
   if (
     !keys.length ||
     keys.some(
-      (key) => key !== 'verticalAlign' && key !== 'fill' && key !== 'margins',
+      (key) =>
+        key !== 'verticalAlign' &&
+        key !== 'fill' &&
+        key !== 'margins' &&
+        key !== 'width' &&
+        key !== 'noWrap',
     )
   ) {
     return null;
@@ -90,6 +101,8 @@ export function normalizeDocumentCellFormattingSnapshot(
     verticalAlign?: unknown;
     fill?: unknown;
     margins?: unknown;
+    width?: unknown;
+    noWrap?: unknown;
   },
 ): DocumentCellFormattingSnapshot | null {
   const snapshot: DocumentCellFormattingSnapshot = {};
@@ -116,7 +129,20 @@ export function normalizeDocumentCellFormattingSnapshot(
     if (!margins) return null;
     snapshot.margins = orderedMargins(margins);
   }
-  return snapshot.verticalAlign || snapshot.fill || snapshot.margins
+  if ('width' in attributes && attributes.width !== undefined) {
+    const width = normalizeDocumentTablePreferredWidth(attributes.width);
+    if (!width) return null;
+    snapshot.width = orderedWidth(width);
+  }
+  if ('noWrap' in attributes && attributes.noWrap !== undefined) {
+    if (typeof attributes.noWrap !== 'boolean') return null;
+    snapshot.noWrap = attributes.noWrap;
+  }
+  return snapshot.verticalAlign ||
+    snapshot.fill ||
+    snapshot.margins ||
+    snapshot.width ||
+    snapshot.noWrap !== undefined
     ? snapshot
     : null;
 }
@@ -148,7 +174,73 @@ export function restoredDocumentCellAttributes(
     ...(formatting.margins !== undefined
       ? { margins: formatting.margins }
       : {}),
+    ...(formatting.width !== undefined
+      ? restoredCellWidthAttributes(attributes, formatting.width)
+      : {}),
+    ...(formatting.noWrap !== undefined ? { noWrap: formatting.noWrap } : {}),
   });
+}
+
+export function preferredWidthFromCellAttributes(
+  attributes: Record<string, unknown>,
+): DocumentTablePreferredWidth | null {
+  const percentages = normalizedPositiveNumberList(
+    attributes.columnWidthPercentages,
+  );
+  if (percentages) {
+    const total = percentages.reduce((sum, value) => sum + value, 0);
+    return normalizeDocumentTablePreferredWidth({
+      type: 'percent',
+      value: Math.round(total * 100) / 100,
+    });
+  }
+  const pixels = normalizedPositiveNumberList(attributes.colwidth);
+  if (pixels) {
+    const total = pixels.reduce((sum, value) => sum + value, 0);
+    return normalizeDocumentTablePreferredWidth({
+      type: 'pixels',
+      value: Math.round(total * 100) / 100,
+    });
+  }
+  return normalizeDocumentTablePreferredWidth({ type: 'auto', value: null });
+}
+
+function restoredCellWidthAttributes(
+  attributes: Record<string, unknown>,
+  width: DocumentTablePreferredWidth,
+): Record<string, unknown> {
+  const span = Math.max(
+    1,
+    Number(attributes.colspan) ||
+      (Array.isArray(attributes.colwidth) ? attributes.colwidth.length : 1) ||
+      1,
+  );
+  if (width.type === 'auto') {
+    return { colwidth: null, columnWidthPercentages: null };
+  }
+  if (width.type === 'percent') {
+    const share = Math.round(((width.value ?? 0) / span) * 100) / 100;
+    return {
+      colwidth: null,
+      columnWidthPercentages: Array.from({ length: span }, () => share),
+    };
+  }
+  const share = Math.round(((width.value ?? 0) / span) * 100) / 100;
+  return {
+    colwidth: Array.from({ length: span }, () => share),
+    columnWidthPercentages: null,
+  };
+}
+
+function normalizedPositiveNumberList(value: unknown): number[] | null {
+  if (!Array.isArray(value) || !value.length) return null;
+  const numbers: number[] = [];
+  for (const entry of value) {
+    const numeric = typeof entry === 'number' ? entry : Number(entry);
+    if (!Number.isFinite(numeric) || numeric <= 0) return null;
+    numbers.push(Math.round(numeric * 100) / 100);
+  }
+  return numbers;
 }
 
 function orderedSnapshot(
@@ -162,7 +254,17 @@ function orderedSnapshot(
   if (snapshot.margins !== undefined) {
     ordered.margins = orderedMargins(snapshot.margins);
   }
+  if (snapshot.width !== undefined) ordered.width = orderedWidth(snapshot.width);
+  if (snapshot.noWrap !== undefined) ordered.noWrap = snapshot.noWrap;
   return ordered;
+}
+
+function orderedWidth(
+  width: DocumentTablePreferredWidth,
+): DocumentTablePreferredWidth {
+  return width.type === 'auto'
+    ? { type: 'auto', value: null }
+    : { type: width.type, value: width.value };
 }
 
 function orderedMargins(

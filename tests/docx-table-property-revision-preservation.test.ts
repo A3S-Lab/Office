@@ -188,12 +188,13 @@ describe('DOCX table property-revision preservation', () => {
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
     const cantSplit = document.createElementNS(WORD_NAMESPACE, 'w:cantSplit');
     const header = document.createElementNS(WORD_NAMESPACE, 'w:tblHeader');
-    // Extra property keeps this on the opaque path; cantSplit/tblHeader/trHeight
-    // alone are reviewable as row-formatting.
+    // Extra property keeps this on the opaque path; cantSplit/tblHeader/trHeight/
+    // hidden/jc alone are reviewable as row-formatting.
     const height = document.createElementNS(WORD_NAMESPACE, 'w:trHeight');
     height.setAttributeNS(WORD_NAMESPACE, 'w:val', '240');
-    const hidden = document.createElementNS(WORD_NAMESPACE, 'w:hidden');
-    prior.append(cantSplit, header, height, hidden);
+    const gridBefore = document.createElementNS(WORD_NAMESPACE, 'w:gridBefore');
+    gridBefore.setAttributeNS(WORD_NAMESPACE, 'w:val', '1');
+    prior.append(cantSplit, header, height, gridBefore);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -252,7 +253,7 @@ describe('DOCX table property-revision preservation', () => {
       directChild(directChild(exportedChange!, 'trPr'), 'trHeight'),
     ).toBeTruthy();
     expect(
-      directChild(directChild(exportedChange!, 'trPr'), 'hidden'),
+      directChild(directChild(exportedChange!, 'trPr'), 'gridBefore'),
     ).toBeTruthy();
   });
 
@@ -281,15 +282,18 @@ describe('DOCX table property-revision preservation', () => {
     const vAlign = document.createElementNS(WORD_NAMESPACE, 'w:vAlign');
     vAlign.setAttributeNS(WORD_NAMESPACE, 'w:val', 'center');
     prior.append(vAlign);
-    // Multi-property prior outside the reviewable vAlign/solid-shd subset.
+    // Multi-property prior outside the reviewable
+    // vAlign/solid-shd/tcMar/tcW/noWrap subset (textDirection stays opaque).
     const shading = document.createElementNS(WORD_NAMESPACE, 'w:shd');
     shading.setAttributeNS(WORD_NAMESPACE, 'w:val', 'clear');
     shading.setAttributeNS(WORD_NAMESPACE, 'w:fill', 'FFFF00');
     prior.append(shading);
-    const width = document.createElementNS(WORD_NAMESPACE, 'w:tcW');
-    width.setAttributeNS(WORD_NAMESPACE, 'w:w', '1440');
-    width.setAttributeNS(WORD_NAMESPACE, 'w:type', 'dxa');
-    prior.append(width);
+    const textDirection = document.createElementNS(
+      WORD_NAMESPACE,
+      'w:textDirection',
+    );
+    textDirection.setAttributeNS(WORD_NAMESPACE, 'w:val', 'btLr');
+    prior.append(textDirection);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -346,7 +350,7 @@ describe('DOCX table property-revision preservation', () => {
         priorAlign?.getAttribute('val'),
     ).toBe('center');
     expect(directChild(priorProperties, 'shd')).toBeTruthy();
-    expect(directChild(priorProperties, 'tcW')).toBeTruthy();
+    expect(directChild(priorProperties, 'textDirection')).toBeTruthy();
   });
 });
 

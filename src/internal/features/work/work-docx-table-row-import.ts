@@ -24,6 +24,8 @@ export interface ImportedDocxTableRowMarker {
   marker: string;
   cantSplit?: boolean;
   repeatHeader?: boolean;
+  hidden?: boolean;
+  alignment?: 'left' | 'center' | 'right';
   rowId?: string;
   rowHeight?: number;
   rowHeightRule?: 'atLeast' | 'exact';
@@ -66,6 +68,11 @@ export function markDocxTableRows(
     const repeatHeader = properties
       ? directChild(properties, 'tblHeader')
       : undefined;
+    const hidden = properties ? directChild(properties, 'hidden') : undefined;
+    const jc = properties ? directChild(properties, 'jc') : undefined;
+    const alignment = jc
+      ? normalizeRowAlignment(attribute(jc, 'val'))
+      : undefined;
     const height = properties ? directChild(properties, 'trHeight') : undefined;
     const rowHeight = height
       ? twipsToPixels(Number(attribute(height, 'val')))
@@ -84,6 +91,8 @@ export function markDocxTableRows(
     if (
       !cantSplit &&
       !repeatHeader &&
+      !hidden &&
+      !alignment &&
       rowHeight === null &&
       !uniqueIdentity &&
       !propertyRevisionOmml &&
@@ -99,6 +108,8 @@ export function markDocxTableRows(
       marker,
       ...(cantSplit ? { cantSplit: onOffValue(cantSplit) } : {}),
       ...(repeatHeader ? { repeatHeader: onOffValue(repeatHeader) } : {}),
+      ...(hidden ? { hidden: onOffValue(hidden) } : {}),
+      ...(alignment ? { alignment } : {}),
       ...(uniqueIdentity ?? {}),
       ...(rowHeight !== null ? { rowHeight } : {}),
       ...(rowHeight !== null && rowHeightRule ? { rowHeightRule } : {}),
@@ -148,6 +159,14 @@ export function applyImportedDocxTableRowMarkers(
           'data-office-repeat-header',
           properties.repeatHeader,
         );
+        setBooleanAttribute(
+          row,
+          'data-office-row-hidden',
+          properties.hidden,
+        );
+        if (properties.alignment) {
+          row.dataset.officeRowAlignment = properties.alignment;
+        }
         if (properties.rowHeight !== undefined) {
           row.dataset.officeRowHeight = String(properties.rowHeight);
           row.style.height = `${properties.rowHeight}px`;
@@ -236,6 +255,16 @@ function onOffValue(element: Element): boolean {
     ?.trim()
     .toLowerCase();
   return value !== '0' && value !== 'false' && value !== 'off';
+}
+
+function normalizeRowAlignment(
+  value: string | null,
+): 'left' | 'center' | 'right' | undefined {
+  if (!value) return undefined;
+  if (value === 'start' || value === 'left') return 'left';
+  if (value === 'end' || value === 'right') return 'right';
+  if (value === 'center') return 'center';
+  return undefined;
 }
 
 function setBooleanAttribute(

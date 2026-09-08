@@ -17,8 +17,17 @@ const TWIPS_PER_PIXEL = 1440 / 96;
 
 export class DocxRowFormattingChangePatchCollector {
   readonly patches: Array<DocxRowFormattingChangePatch | null> = [];
+  readonly hidden: boolean[] = [];
+  readonly alignments: Array<'left' | 'center' | 'right' | null> = [];
 
   record(element: HTMLTableRowElement, id: number): void {
+    this.hidden.push(element.dataset.officeRowHidden === 'true');
+    const alignment = element.dataset.officeRowAlignment;
+    this.alignments.push(
+      alignment === 'left' || alignment === 'center' || alignment === 'right'
+        ? alignment
+        : null,
+    );
     if (
       element.dataset.changeKind !== 'row-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -46,8 +55,16 @@ export class DocxRowFormattingChangePatchCollector {
 export async function patchDocxRowFormattingChanges(
   buffer: ArrayBuffer,
   patches: readonly (DocxRowFormattingChangePatch | null)[],
+  hidden: readonly boolean[] = [],
+  alignments: readonly ('left' | 'center' | 'right' | null)[] = [],
 ): Promise<ArrayBuffer> {
-  if (!patches.some(Boolean)) return buffer;
+  if (
+    !patches.some(Boolean) &&
+    !hidden.some(Boolean) &&
+    !alignments.some(Boolean)
+  ) {
+    return buffer;
+  }
   if (patches.filter(Boolean).length > MAX_ROW_FORMATTING_CHANGE_PATCHES) {
     throw new Error('Document exceeds the row-formatting revision limit.');
   }
@@ -67,12 +84,24 @@ export async function patchDocxRowFormattingChanges(
   let changed = false;
   let index = 0;
   for (const row of rows) {
-    const patch = patches[index++] ?? null;
-    if (!patch) continue;
-    setRowFormattingChange(document, row, patch);
-    changed = true;
+    const patch = patches[index] ?? null;
+    const rowHidden = hidden[index] === true;
+    const alignment = alignments[index] ?? null;
+    index += 1;
+    if (patch) {
+      setRowFormattingChange(document, row, patch);
+      changed = true;
+    }
+    if (rowHidden) {
+      setRowHidden(document, row, true);
+      changed = true;
+    }
+    if (alignment) {
+      setRowAlignment(document, row, alignment);
+      changed = true;
+    }
   }
-  if (index !== patches.length) {
+  if (patches.length && index !== patches.length) {
     throw new Error(
       `DOCX row-formatting revision patch count mismatch (${patches.length} patches, ${index} rows).`,
     );
@@ -81,6 +110,43 @@ export async function patchDocxRowFormattingChanges(
     archive.file('word/document.xml', serializeUtf8Xml(document));
   }
   return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function setRowHidden(document: Document, row: Element, hidden: boolean): void {
+  let properties = directChild(row, 'trPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+    row.insertBefore(properties, row.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'hidden' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (!hidden) return;
+  properties.append(document.createElementNS(WORD_NAMESPACE, 'w:hidden'));
+}
+
+function setRowAlignment(
+  document: Document,
+  row: Element,
+  alignment: 'left' | 'center' | 'right',
+): void {
+  let properties = directChild(row, 'trPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+    row.insertBefore(properties, row.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'jc' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  const jc = document.createElementNS(WORD_NAMESPACE, 'w:jc');
+  jc.setAttributeNS(WORD_NAMESPACE, 'w:val', alignment);
+  properties.append(jc);
 }
 
 function setRowFormattingChange(
@@ -138,6 +204,18 @@ function setRowFormattingChange(
       height.setAttributeNS(WORD_NAMESPACE, 'w:hRule', 'atLeast');
     }
     prior.append(height);
+  }
+  if (formatting.hidden !== undefined) {
+    const hidden = document.createElementNS(WORD_NAMESPACE, 'w:hidden');
+    if (!formatting.hidden) {
+      hidden.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    }
+    prior.append(hidden);
+  }
+  if (formatting.alignment !== undefined) {
+    const jc = document.createElementNS(WORD_NAMESPACE, 'w:jc');
+    jc.setAttributeNS(WORD_NAMESPACE, 'w:val', formatting.alignment);
+    prior.append(jc);
   }
   change.append(prior);
   properties.append(change);

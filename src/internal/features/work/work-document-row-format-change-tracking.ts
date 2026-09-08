@@ -6,6 +6,10 @@ import {
   serializeDocumentRowFormatting,
 } from './work-document-row-format-changes';
 import {
+  normalizeDocumentTableAlignment,
+  type DocumentTableAlignment,
+} from './work-document-table-geometry';
+import {
   normalizeDocumentTableRowHeight,
   normalizeDocumentTableRowHeightRule,
 } from './work-document-table-row';
@@ -15,8 +19,8 @@ interface DocumentRowFormattingTrackingOptions {
 }
 
 /**
- * When track-changes is on, row cantSplit / repeatHeader / height edits become
- * reviewable `row-formatting` revisions.
+ * When track-changes is on, row cantSplit / repeatHeader / height / hidden /
+ * alignment edits become reviewable `row-formatting` revisions.
  */
 export function trackDocumentRowFormattingTransaction(
   transaction: Transaction,
@@ -58,6 +62,8 @@ function rowFormatting(node: ProseMirrorNode): {
   cantSplit?: boolean;
   repeatHeader?: boolean;
   height?: { value: number; rule: 'exact' | 'atLeast' };
+  hidden?: boolean;
+  alignment?: DocumentTableAlignment;
 } | null {
   const height = normalizeDocumentTableRowHeight(node.attrs.rowHeight);
   const rule =
@@ -65,6 +71,8 @@ function rowFormatting(node: ProseMirrorNode): {
       ? null
       : (normalizeDocumentTableRowHeightRule(node.attrs.rowHeightRule) ??
         'atLeast');
+  const alignment =
+    normalizeDocumentTableAlignment(node.attrs.alignment) ?? 'left';
   return normalizeDocumentRowFormattingSnapshot({
     cantSplit:
       typeof node.attrs.cantSplit === 'boolean'
@@ -74,6 +82,9 @@ function rowFormatting(node: ProseMirrorNode): {
       typeof node.attrs.repeatHeader === 'boolean'
         ? node.attrs.repeatHeader
         : false,
+    hidden:
+      typeof node.attrs.hidden === 'boolean' ? node.attrs.hidden : false,
+    alignment,
     ...(height !== null && rule ? { height: { value: height, rule } } : {}),
   });
 }
@@ -88,6 +99,8 @@ function onlyRowFormattingChanged(
   delete beforeAttrs.repeatHeader;
   delete beforeAttrs.rowHeight;
   delete beforeAttrs.rowHeightRule;
+  delete beforeAttrs.hidden;
+  delete beforeAttrs.alignment;
   delete beforeAttrs.rowChangeKind;
   delete beforeAttrs.rowChangeId;
   delete beforeAttrs.rowChangeAuthor;
@@ -98,6 +111,8 @@ function onlyRowFormattingChanged(
   delete afterAttrs.repeatHeader;
   delete afterAttrs.rowHeight;
   delete afterAttrs.rowHeightRule;
+  delete afterAttrs.hidden;
+  delete afterAttrs.alignment;
   delete afterAttrs.rowChangeKind;
   delete afterAttrs.rowChangeId;
   delete afterAttrs.rowChangeAuthor;
@@ -113,9 +128,7 @@ function sameRowContentIgnoringFormatting(
 ): boolean {
   if (before.childCount !== after.childCount) return false;
   for (let index = 0; index < before.childCount; index += 1) {
-    const left = before.child(index);
-    const right = after.child(index);
-    if (!left || !right || !left.eq(right)) return false;
+    if (!before.child(index).eq(after.child(index))) return false;
   }
   return true;
 }

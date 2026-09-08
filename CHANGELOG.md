@@ -4,6 +4,25 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.79.0 - 2026-09-08
+
+### Writer
+
+- Relationship-free `w:tcPrChange` priors that include preferred cell width
+  (`w:tcW`: auto / dxa / pct) are now reviewable as `cell-formatting` with
+  accept/reject, live track-changes for `colwidth` / percentage edits, and
+  native export. Broader cell property sets remain opaque or fail-closed.
+- Relationship-free `w:tcPrChange` priors that include `w:noWrap` are now
+  reviewable as `cell-formatting` with accept/reject, live track-changes, and
+  native export (including current-cell `w:noWrap` on DOCX write).
+- Relationship-free `w:trPrChange` priors that include `w:hidden` are now
+  reviewable as `row-formatting` with accept/reject, live track-changes, and
+  native export (including current-row `w:hidden` on DOCX write).
+- Relationship-free `w:trPrChange` priors that include row justification
+  (`w:jc`: left / center / right) are now reviewable as `row-formatting` with
+  accept/reject, live track-changes, and native export (including current-row
+  `w:jc` on DOCX write).
+
 ## 0.78.0 - 2026-09-08
 
 ### Writer

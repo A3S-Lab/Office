@@ -44,17 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.78.0)
+## What's new on `main` (0.79.0)
 
-- Writer Phase 0 no-clobber deepens reviewable `tblPrChange` / `trPrChange` /
-  `tcPrChange` / `sectPrChange` subsets (layout, margins, paper source,
-  equal-width columns), richer paragraph-mark and move companions, and eligible
-  paragraph-break merge/split.
-- Unsupported OMML roots and body-table float `tblpPr` preserve as opaque native
-  markup instead of inventing incomplete editable approximations.
-- Document PDF export paints searchable Latin Helvetica vectors under measured
-  runs; hosts may `registerWorkPdfCjkFont`; title/lang/heading outline bootstrap
-  ships without claiming full PDF/UA.
+- Writer Phase 0 admits reviewable `tcW` and `noWrap` as `cell-formatting`, plus
+  `hidden` and `jc` as `row-formatting`, with accept/reject, live track-changes,
+  and native DOCX export.
+- Broader cell/row property sets remain opaque metadata or fail-closed; opaque
+  fixtures moved to `textDirection` and `gridBefore`.
+- Earlier 0.78.0 searchable PDF vector and paragraph-mark fidelity remains on
+  the [What's new](./changelog.html) timeline.
 
 The [What's new](./changelog.html) page presents recent releases by version,
 editor surface, user outcome, compatibility evidence, and detailed reference.

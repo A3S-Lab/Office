@@ -41,14 +41,15 @@ description: 在应用中接入、扩展 A3S Office 编辑器，审阅有界原�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.78.0）
+## `main` 更新内容（0.79.0）
 
-- Writer Phase 0 无破坏保真深化：可审阅的 `tblPrChange` / `trPrChange` /
-  `tcPrChange` / `sectPrChange` 子集（布局、边距、纸张来源、等宽分栏），更丰富的
-  段落标记与移动伴随标记，以及合格的段落断裂合并/拆分。
-- 不支持的 OMML 根与正文表浮动 `tblpPr` 以不透明原生标记保留，避免编造不完整的可编辑近似。
-- 文档 PDF 导出在已测量 run 下绘制可搜索 Latin Helvetica 矢量；宿主可
-  `registerWorkPdfCjkFont`；标题/语言/标题大纲引导已交付，但不宣称完整 PDF/UA。
+- Writer Phase 0 接纳可审阅的 `tcW` / `noWrap`（`cell-formatting`）以及
+  `hidden` / `jc`（`row-formatting`），支持接受/拒绝、实时修订跟踪与原生 DOCX
+  导出。
+- 更广的单元格/行属性集仍为不透明元数据或失败闭合；不透明夹具已迁至
+  `textDirection` 与 `gridBefore`。
+- 更早的 0.78.0 可搜索 PDF 矢量与段落标记保真仍在
+  [更新日志](./changelog.html) 时间线中。
 
 [更新日志](./changelog.html) 按版本、编辑器表面、用户结果、兼容性证据与详细参考呈现
 近期发布。使用版本切换器可只查看冻结文档发布当时已存在的历史。

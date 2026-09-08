@@ -9,13 +9,16 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(59);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.78.0');
+  await expect(cards).toHaveCount(60);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.79.0');
   await expect(cards.first()).toContainText(
-    'Writer 无破坏修订深化，PDF 导出补齐可搜索矢量文本',
+    'Writer 深化可审阅的单元格与行属性修订',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.79.0')).toContainText('单元格宽度与换行');
+  await expect(releaseCard('0.79.0')).toContainText('行隐藏与对齐');
+  await expect(releaseCard('0.79.0')).toContainText('不透明路径保持失败闭合');
   await expect(releaseCard('0.78.0')).toContainText('可审阅的属性修订');
   await expect(releaseCard('0.78.0')).toContainText('段落标记与移动保真');
   await expect(releaseCard('0.78.0')).toContainText('可搜索 PDF 矢量文本');

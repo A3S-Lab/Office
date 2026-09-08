@@ -371,18 +371,17 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.78.0` deepens Writer Phase 0 no-clobber fidelity and searchable PDF
-export:
+Version `0.79.0` deepens Writer Phase 0 reviewable cell and row property
+revisions:
 
-- **Revisions** — reviewable table/row/cell/section property subsets (including
-  layout, cell margins, paper source, and equal-width columns), richer
-  paragraph-mark and move-range companions, and eligible paragraph-break
-  merge/split.
-- **Preservation** — opaque unsupported OMML roots and body-table float
-  `tblpPr` round-trip without inventing editable approximations.
-- **PDF** — measured Latin clears to Helvetica vector text; hosts may
-  `registerWorkPdfCjkFont`; title/lang/heading outline bootstrap ships without
-  claiming full PDF/UA.
+- **Cell formatting** — relationship-free `tcW` (auto / dxa / pct) and `noWrap`
+  priors are reviewable as `cell-formatting`, with live track-changes and native
+  DOCX export.
+- **Row formatting** — relationship-free `hidden` and `jc` (left / center /
+  right) priors are reviewable as `row-formatting`, including current-row export
+  of those properties.
+- **Boundaries** — broader cell/row property sets remain opaque metadata or
+  fail-closed.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

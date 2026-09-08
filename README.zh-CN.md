@@ -370,11 +370,13 @@ Codex 编辑器操作可在所有五个表面上键入和重现。
 
 ## 当前版本
 
-版本 `0.78.0` 深化 Writer Phase 0 无破坏保真与可搜索 PDF 导出：
+版本 `0.79.0` 深化 Writer Phase 0 可审阅的单元格与行属性修订：
 
-- **修订** — 可审阅的表格/行/单元格/节属性子集（含布局、单元格边距、纸张来源与等宽分栏）、更丰富的段落标记与移动范围伴随标记，以及合格的段落断裂合并/拆分。
-- **保留** — 不透明不支持的 OMML 根与正文表浮动 `tblpPr` 往返，避免编造可编辑近似。
-- **PDF** — 已测量 Latin 清除为 Helvetica 矢量文本；宿主可 `registerWorkPdfCjkFont`；标题/语言/标题大纲引导已交付，但不宣称完整 PDF/UA。
+- **单元格格式** — 无关系的 `tcW`（auto / dxa / pct）与 `noWrap` 先验可作为
+  `cell-formatting` 审阅，并覆盖实时修订跟踪与原生 DOCX 导出。
+- **行格式** — 无关系的 `hidden` 与 `jc`（left / center / right）先验可作为
+  `row-formatting` 审阅，并覆盖当前行属性导出。
+- **边界** — 更广的单元格/行属性集仍为不透明元数据或失败闭合。
 
 更早的版本请查看产品向
 [更新日志](https://a3s-lab.github.io/Office/docs/changelog.html) 时间线，以及完整工程

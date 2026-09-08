@@ -692,10 +692,13 @@ export async function createDocxBlob(
   const rowFormattingChangesPatched = await patchDocxRowFormattingChanges(
     tableFormattingChangesPatched,
     noteContext.rowFormattingChangePatches.patches,
+    noteContext.rowFormattingChangePatches.hidden,
+    noteContext.rowFormattingChangePatches.alignments,
   );
   const cellFormattingChangesPatched = await patchDocxCellFormattingChanges(
     rowFormattingChangesPatched,
     noteContext.cellFormattingChangePatches.patches,
+    noteContext.cellFormattingChangePatches.noWrap,
   );
   const sectionFormattingChangesPatched =
     await patchDocxSectionFormattingChanges(

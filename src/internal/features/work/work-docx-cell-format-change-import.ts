@@ -5,6 +5,7 @@ import {
   normalizeDocumentTableCellMarginOverrides,
   type DocumentTableCellMarginOverrides,
   type DocumentTableCellMarginSide,
+  type DocumentTablePreferredWidth,
 } from './work-document-table-geometry';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
@@ -20,7 +21,13 @@ const RELATIONSHIP_NAMESPACES = new Set([
   'http://purl.oclc.org/ooxml/officeDocument/relationships',
   'http://schemas.openxmlformats.org/package/2006/relationships',
 ]);
-const SUPPORTED_PRIOR_CHILDREN = new Set(['vAlign', 'shd', 'tcMar']);
+const SUPPORTED_PRIOR_CHILDREN = new Set([
+  'vAlign',
+  'shd',
+  'tcMar',
+  'tcW',
+  'noWrap',
+]);
 const SOLID_SHADING_VALUES = new Set(['clear', 'nil', 'none', '']);
 const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
 const PIXELS_PER_TWIP = 96 / 1440;
@@ -34,8 +41,8 @@ export interface SupportedDocxCellFormattingChange {
 
 /**
  * Relationship-free `w:tcPrChange` whose prior snapshot contains only
- * `w:vAlign`, solid direct-color `w:shd`, and/or `w:tcMar`. Broader cell
- * property sets stay on the opaque OMML path.
+ * `w:vAlign`, solid direct-color `w:shd`, `w:tcMar`, `w:tcW`, and/or `w:noWrap`.
+ * Broader cell property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxCellFormattingChange(change: Element): boolean {
   return supportedCellFormattingChange(change) !== null;
@@ -108,7 +115,13 @@ function supportedCellFormattingChange(
       ) {
         return true;
       }
-      if (child.localName === 'tcMar') return false;
+      if (
+        child.localName === 'tcMar' ||
+        child.localName === 'tcW' ||
+        child.localName === 'noWrap'
+      ) {
+        return false;
+      }
       return child.children.length > 0;
     })
   ) {
@@ -120,6 +133,8 @@ function supportedCellFormattingChange(
     verticalAlign?: string;
     fill?: string;
     margins?: DocumentTableCellMarginOverrides;
+    width?: DocumentTablePreferredWidth;
+    noWrap?: boolean;
   } = {};
   for (const child of children) {
     if (child.localName === 'vAlign') {
@@ -140,6 +155,16 @@ function supportedCellFormattingChange(
       const margins = importedCellMargins(child);
       if (!margins) return null;
       snapshot.margins = margins;
+      continue;
+    }
+    if (child.localName === 'tcW') {
+      const width = importedPreferredWidth(child);
+      if (!width) return null;
+      snapshot.width = width;
+      continue;
+    }
+    if (child.localName === 'noWrap') {
+      snapshot.noWrap = onOffValue(child);
     }
   }
   return {
@@ -179,6 +204,33 @@ function importedCellMargins(
     margins[side] = pixels;
   }
   return normalizeDocumentTableCellMarginOverrides(margins);
+}
+
+function importedPreferredWidth(
+  width: Element,
+): DocumentTablePreferredWidth | null {
+  const type = attribute(width, 'type');
+  if (type === 'auto' || type === 'nil') return { type: 'auto', value: null };
+  if (type === 'pct') {
+    const value = percentageValue(attribute(width, 'w'));
+    return value === null ? null : { type: 'percent', value };
+  }
+  if (type === 'dxa') {
+    const pixels = twipsToPixels(Number(attribute(width, 'w')));
+    if (pixels === null || pixels <= 0) return null;
+    return { type: 'pixels', value: pixels };
+  }
+  return null;
+}
+
+function percentageValue(value: string | null): number | null {
+  const normalized = value?.trim();
+  if (!normalized) return null;
+  const percentage = normalized.endsWith('%')
+    ? Number(normalized.slice(0, -1))
+    : Number(normalized) / 50;
+  if (!Number.isFinite(percentage) || percentage <= 0) return null;
+  return Math.round(percentage * 100) / 100;
 }
 
 function marginSide(localName: string): DocumentTableCellMarginSide | null {
@@ -230,6 +282,17 @@ function mapVAlignValue(value: string | null): string | null {
   if (!value) return null;
   if (value === 'center') return 'middle';
   return value;
+}
+
+function onOffValue(element: Element): boolean {
+  const value = attribute(element, 'val');
+  if (value === null || value === '') return true;
+  return !(
+    value === '0' ||
+    value === 'false' ||
+    value === 'off' ||
+    value === 'False'
+  );
 }
 
 function wordAttribute(element: Element, localName: string): string | null {

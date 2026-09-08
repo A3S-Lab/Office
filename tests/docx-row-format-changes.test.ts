@@ -177,8 +177,207 @@ describe('DOCX row-formatting revisions', () => {
       expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toEqual({
         cantSplit: false,
         repeatHeader: false,
+        hidden: false,
+        alignment: 'left',
       });
       expect(row?.dataset.officeCantSplit).toBe('true');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('imports hidden-only w:trPrChange as a reviewable row-formatting change', async () => {
+    const source = await rowDocxWithHiddenChange({ prior: true });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-hidden.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const row = html.body.querySelector('tr');
+    expect(row?.dataset.changeKind).toBe('row-formatting');
+    expect(row?.dataset.officeRowPropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toEqual({
+      hidden: true,
+    });
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('row-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const rejected = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rejectedRow = rejected.body.querySelector('tr');
+      expect(rejectedRow?.dataset.changeKind).toBeUndefined();
+      expect(rejectedRow?.dataset.officeRowHidden).toBe('true');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending hidden row-formatting change round-trips as native w:trPrChange', async () => {
+    const source = await rowDocxWithHiddenChange({ prior: true });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-hidden-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await createArtifactBlob(imported);
+    const archive = await JSZip.loadAsync(await exported.arrayBuffer());
+    const document = await xmlEntry(archive, 'word/document.xml');
+    const change = directChild(
+      directChild(descendants(document, 'tr')[0], 'trPr'),
+      'trPrChange',
+    );
+    expect(change).toBeTruthy();
+    expect(directChild(directChild(change, 'trPr'), 'hidden')).toBeTruthy();
+  });
+
+  test('live row hidden edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content:
+        '<table><tbody><tr data-office-row-hidden="false"><td><p>Cell</p></td></tr></tbody></table>',
+    });
+    try {
+      expect(
+        editor.commands.setDocumentTableRowOptions({
+          cantSplit: false,
+          repeatHeader: false,
+          hidden: true,
+        }),
+      ).toBe(true);
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'row-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const row = html.body.querySelector('tr');
+      expect(row?.dataset.changeKind).toBe('row-formatting');
+      expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toEqual({
+        cantSplit: false,
+        repeatHeader: false,
+        hidden: false,
+        alignment: 'left',
+      });
+      expect(row?.dataset.officeRowHidden).toBe('true');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('imports jc-only w:trPrChange as a reviewable row-formatting change', async () => {
+    const source = await rowDocxWithAlignmentChange({ prior: 'center' });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-alignment.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const row = html.body.querySelector('tr');
+    expect(row?.dataset.changeKind).toBe('row-formatting');
+    expect(row?.dataset.officeRowPropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toEqual({
+      alignment: 'center',
+    });
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('row-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const rejected = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rejectedRow = rejected.body.querySelector('tr');
+      expect(rejectedRow?.dataset.changeKind).toBeUndefined();
+      expect(rejectedRow?.dataset.officeRowAlignment).toBe('center');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending jc row-formatting change round-trips as native w:trPrChange', async () => {
+    const source = await rowDocxWithAlignmentChange({ prior: 'right' });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-alignment-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await createArtifactBlob(imported);
+    const archive = await JSZip.loadAsync(await exported.arrayBuffer());
+    const document = await xmlEntry(archive, 'word/document.xml');
+    const change = directChild(
+      directChild(descendants(document, 'tr')[0], 'trPr'),
+      'trPrChange',
+    );
+    expect(change).toBeTruthy();
+    const priorJc = directChild(directChild(change, 'trPr'), 'jc');
+    expect(
+      priorJc?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorJc?.getAttribute('w:val') ??
+        priorJc?.getAttribute('val'),
+    ).toBe('right');
+  });
+
+  test('live row alignment edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content:
+        '<table><tbody><tr data-office-row-alignment="left"><td><p>Cell</p></td></tr></tbody></table>',
+    });
+    try {
+      expect(
+        editor.commands.setDocumentTableRowOptions({
+          cantSplit: false,
+          repeatHeader: false,
+          alignment: 'center',
+        }),
+      ).toBe(true);
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'row-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const row = html.body.querySelector('tr');
+      expect(row?.dataset.changeKind).toBe('row-formatting');
+      expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toEqual({
+        cantSplit: false,
+        repeatHeader: false,
+        hidden: false,
+        alignment: 'left',
+      });
+      expect(row?.dataset.officeRowAlignment).toBe('center');
     } finally {
       editor.destroy();
     }
@@ -283,6 +482,8 @@ describe('DOCX row-formatting revisions', () => {
       expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toEqual({
         cantSplit: false,
         repeatHeader: false,
+        hidden: false,
+        alignment: 'left',
         height: { value: 24, rule: 'atLeast' },
       });
       expect(row?.dataset.officeRowHeight).toBe('40');
@@ -444,6 +645,101 @@ async function rowDocxWithHeightChange(options: {
     options.priorRule ?? 'atLeast',
   );
   prior.append(priorHeight);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function rowDocxWithHiddenChange(options: {
+  prior: boolean;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const row = descendants(document, 'tr')[0];
+  const properties =
+    directChild(row, 'trPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+      row.insertBefore(created, row.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'hidden' || child.localName === 'trPrChange',
+  )) {
+    existing.remove();
+  }
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:trPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '27');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+  const priorHidden = document.createElementNS(WORD_NAMESPACE, 'w:hidden');
+  if (!options.prior) {
+    priorHidden.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+  }
+  prior.append(priorHidden);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function rowDocxWithAlignmentChange(options: {
+  prior: 'left' | 'center' | 'right';
+  current?: 'left' | 'center' | 'right';
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const row = descendants(document, 'tr')[0];
+  const properties =
+    directChild(row, 'trPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+      row.insertBefore(created, row.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) => child.localName === 'jc' || child.localName === 'trPrChange',
+  )) {
+    existing.remove();
+  }
+  const current = document.createElementNS(WORD_NAMESPACE, 'w:jc');
+  current.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:val',
+    options.current ?? 'left',
+  );
+  properties.append(current);
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:trPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '28');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+  const priorJc = document.createElementNS(WORD_NAMESPACE, 'w:jc');
+  priorJc.setAttributeNS(WORD_NAMESPACE, 'w:val', options.prior);
+  prior.append(priorJc);
   change.append(prior);
   properties.append(change);
   archive.file(
