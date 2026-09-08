@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.85.0` makes row width-before property revisions reviewable:
+Version `0.86.0` makes row width-after property revisions reviewable:
 
-- **Row width before** — relationship-free `wBefore` priors become
+- **Row width after** — relationship-free `wAfter` priors become
   `row-formatting` with accept/reject, live track-changes, and native DOCX
   export (including current-row write).
 - **Boundary** — broader `tcPr` / `trPr` shapes stay opaque metadata or
-  fail-closed; opaque row fixtures moved to `wAfter`.
+  fail-closed; opaque row fixtures moved to `cnfStyle`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

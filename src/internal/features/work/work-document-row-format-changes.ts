@@ -21,7 +21,7 @@ export const DOCUMENT_ROW_CHANGE_ATTRIBUTES = [
 /**
  * Prior snapshot for reviewable row-property revisions.
  * At least one of cantSplit, repeatHeader, height, hidden, alignment,
- * gridBefore, gridAfter, or widthBefore must be present.
+ * gridBefore, gridAfter, widthBefore, or widthAfter must be present.
  */
 export interface DocumentRowFormattingSnapshot {
   cantSplit?: boolean;
@@ -32,6 +32,7 @@ export interface DocumentRowFormattingSnapshot {
   gridBefore?: number;
   gridAfter?: number;
   widthBefore?: DocumentTablePreferredWidth;
+  widthAfter?: DocumentTablePreferredWidth;
 }
 
 export interface DocumentRowFormattingHeight {
@@ -51,12 +52,13 @@ export function serializeDocumentRowFormatting(
     gridBefore?: unknown;
     gridAfter?: unknown;
     widthBefore?: unknown;
+    widthAfter?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentRowFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, gridBefore, gridAfter, or widthBefore.',
+      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, gridBefore, gridAfter, widthBefore, or widthAfter.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -94,7 +96,8 @@ export function parseDocumentRowFormatting(
         key !== 'alignment' &&
         key !== 'gridBefore' &&
         key !== 'gridAfter' &&
-        key !== 'widthBefore',
+        key !== 'widthBefore' &&
+        key !== 'widthAfter',
     )
   ) {
     return null;
@@ -114,6 +117,7 @@ export function normalizeDocumentRowFormattingSnapshot(
     gridBefore?: unknown;
     gridAfter?: unknown;
     widthBefore?: unknown;
+    widthAfter?: unknown;
   },
 ): DocumentRowFormattingSnapshot | null {
   const snapshot: DocumentRowFormattingSnapshot = {};
@@ -156,6 +160,13 @@ export function normalizeDocumentRowFormattingSnapshot(
     if (!widthBefore) return null;
     snapshot.widthBefore = widthBefore;
   }
+  if ('widthAfter' in attributes && attributes.widthAfter !== undefined) {
+    const widthAfter = normalizeDocumentTablePreferredWidth(
+      attributes.widthAfter,
+    );
+    if (!widthAfter) return null;
+    snapshot.widthAfter = widthAfter;
+  }
   return snapshot.cantSplit !== undefined ||
     snapshot.repeatHeader !== undefined ||
     snapshot.height !== undefined ||
@@ -163,7 +174,8 @@ export function normalizeDocumentRowFormattingSnapshot(
     snapshot.alignment !== undefined ||
     snapshot.gridBefore !== undefined ||
     snapshot.gridAfter !== undefined ||
-    snapshot.widthBefore !== undefined
+    snapshot.widthBefore !== undefined ||
+    snapshot.widthAfter !== undefined
     ? snapshot
     : null;
 }
@@ -211,6 +223,9 @@ export function restoredDocumentRowAttributes(
     ...(formatting.widthBefore !== undefined
       ? { widthBefore: formatting.widthBefore }
       : {}),
+    ...(formatting.widthAfter !== undefined
+      ? { widthAfter: formatting.widthAfter }
+      : {}),
   });
 }
 
@@ -255,6 +270,12 @@ function orderedSnapshot(
     ordered.widthBefore = {
       type: snapshot.widthBefore.type,
       value: snapshot.widthBefore.value,
+    };
+  }
+  if (snapshot.widthAfter) {
+    ordered.widthAfter = {
+      type: snapshot.widthAfter.type,
+      value: snapshot.widthAfter.value,
     };
   }
   return ordered;

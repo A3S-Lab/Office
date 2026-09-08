@@ -111,7 +111,11 @@ export const DocumentTableRow = TableRow.extend({
       widthBefore: {
         default: null,
         parseHTML: (element: HTMLElement) =>
-          preferredWidthFromRowDataset(element.dataset),
+          preferredWidthFromRowDataset(
+            element.dataset,
+            'officeRowWidthBeforeType',
+            'officeRowWidthBefore',
+          ),
         renderHTML: (attributes: Record<string, unknown>) => {
           const width = normalizeDocumentTablePreferredWidth(
             attributes.widthBefore,
@@ -123,6 +127,28 @@ export const DocumentTableRow = TableRow.extend({
           return {
             'data-office-row-width-before-type': width.type,
             'data-office-row-width-before': String(width.value),
+          };
+        },
+      },
+      widthAfter: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          preferredWidthFromRowDataset(
+            element.dataset,
+            'officeRowWidthAfterType',
+            'officeRowWidthAfter',
+          ),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const width = normalizeDocumentTablePreferredWidth(
+            attributes.widthAfter,
+          );
+          if (!width) return {};
+          if (width.type === 'auto') {
+            return { 'data-office-row-width-after-type': 'auto' };
+          }
+          return {
+            'data-office-row-width-after-type': width.type,
+            'data-office-row-width-after': String(width.value),
           };
         },
       },
@@ -357,11 +383,13 @@ function directBoolean(value: unknown): boolean | null {
 
 function preferredWidthFromRowDataset(
   dataset: DOMStringMap,
+  typeKey: keyof DOMStringMap,
+  valueKey: keyof DOMStringMap,
 ): DocumentTablePreferredWidth | null {
-  const type = dataset.officeRowWidthBeforeType;
+  const type = dataset[typeKey];
   if (type === 'auto') return { type: 'auto', value: null };
   if (type === 'percent' || type === 'pixels') {
-    const value = Number(dataset.officeRowWidthBefore);
+    const value = Number(dataset[valueKey]);
     return normalizeDocumentTablePreferredWidth({ type, value });
   }
   return null;

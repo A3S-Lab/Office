@@ -29,6 +29,7 @@ export interface ImportedDocxTableRowMarker {
   gridBefore?: number;
   gridAfter?: number;
   widthBefore?: { type: 'auto' | 'percent' | 'pixels'; value: number | null };
+  widthAfter?: { type: 'auto' | 'percent' | 'pixels'; value: number | null };
   rowId?: string;
   rowHeight?: number;
   rowHeightRule?: 'atLeast' | 'exact';
@@ -106,6 +107,12 @@ export function markDocxTableRows(
     const widthBefore = widthBeforeElement
       ? importedRowPreferredWidth(widthBeforeElement)
       : undefined;
+    const widthAfterElement = properties
+      ? directChild(properties, 'wAfter')
+      : undefined;
+    const widthAfter = widthAfterElement
+      ? importedRowPreferredWidth(widthAfterElement)
+      : undefined;
     const height = properties ? directChild(properties, 'trHeight') : undefined;
     const rowHeight = height
       ? twipsToPixels(Number(attribute(height, 'val')))
@@ -129,6 +136,7 @@ export function markDocxTableRows(
       gridBefore === undefined &&
       gridAfter === undefined &&
       widthBefore === undefined &&
+      widthAfter === undefined &&
       rowHeight === null &&
       !uniqueIdentity &&
       !propertyRevisionOmml &&
@@ -149,6 +157,7 @@ export function markDocxTableRows(
       ...(gridBefore !== undefined ? { gridBefore } : {}),
       ...(gridAfter !== undefined ? { gridAfter } : {}),
       ...(widthBefore !== undefined ? { widthBefore } : {}),
+      ...(widthAfter !== undefined ? { widthAfter } : {}),
       ...(uniqueIdentity ?? {}),
       ...(rowHeight !== null ? { rowHeight } : {}),
       ...(rowHeight !== null && rowHeightRule ? { rowHeightRule } : {}),
@@ -220,6 +229,17 @@ export function applyImportedDocxTableRowMarkers(
           ) {
             row.dataset.officeRowWidthBefore = String(
               properties.widthBefore.value,
+            );
+          }
+        }
+        if (properties.widthAfter) {
+          row.dataset.officeRowWidthAfterType = properties.widthAfter.type;
+          if (
+            properties.widthAfter.type !== 'auto' &&
+            properties.widthAfter.value !== null
+          ) {
+            row.dataset.officeRowWidthAfter = String(
+              properties.widthAfter.value,
             );
           }
         }

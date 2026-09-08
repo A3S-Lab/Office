@@ -26,6 +26,7 @@ export class DocxRowFormattingChangePatchCollector {
   readonly gridBefore: Array<number | null> = [];
   readonly gridAfter: Array<number | null> = [];
   readonly widthBefore: Array<DocumentTablePreferredWidth | null> = [];
+  readonly widthAfter: Array<DocumentTablePreferredWidth | null> = [];
 
   record(element: HTMLTableRowElement, id: number): void {
     this.hidden.push(element.dataset.officeRowHidden === 'true');
@@ -59,7 +60,20 @@ export class DocxRowFormattingChangePatchCollector {
         ? gridAfterValue
         : null,
     );
-    this.widthBefore.push(preferredWidthFromRowElement(element));
+    this.widthBefore.push(
+      preferredWidthFromRowElement(
+        element,
+        'officeRowWidthBeforeType',
+        'officeRowWidthBefore',
+      ),
+    );
+    this.widthAfter.push(
+      preferredWidthFromRowElement(
+        element,
+        'officeRowWidthAfterType',
+        'officeRowWidthAfter',
+      ),
+    );
     if (
       element.dataset.changeKind !== 'row-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -92,6 +106,7 @@ export async function patchDocxRowFormattingChanges(
   gridBefore: readonly (number | null)[] = [],
   gridAfter: readonly (number | null)[] = [],
   widthBefore: readonly (DocumentTablePreferredWidth | null)[] = [],
+  widthAfter: readonly (DocumentTablePreferredWidth | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
@@ -99,7 +114,8 @@ export async function patchDocxRowFormattingChanges(
     !alignments.some(Boolean) &&
     !gridBefore.some((value) => value !== null && value > 0) &&
     !gridAfter.some((value) => value !== null && value > 0) &&
-    !widthBefore.some((value) => value !== null)
+    !widthBefore.some((value) => value !== null) &&
+    !widthAfter.some((value) => value !== null)
   ) {
     return buffer;
   }
@@ -128,6 +144,7 @@ export async function patchDocxRowFormattingChanges(
     const rowGridBefore = gridBefore[index] ?? null;
     const rowGridAfter = gridAfter[index] ?? null;
     const rowWidthBefore = widthBefore[index] ?? null;
+    const rowWidthAfter = widthAfter[index] ?? null;
     index += 1;
     if (patch) {
       setRowFormattingChange(document, row, patch);
@@ -150,7 +167,11 @@ export async function patchDocxRowFormattingChanges(
       changed = true;
     }
     if (rowWidthBefore) {
-      setRowWidthBefore(document, row, rowWidthBefore);
+      setRowPreferredWidth(document, row, 'wBefore', rowWidthBefore);
+      changed = true;
+    }
+    if (rowWidthAfter) {
+      setRowPreferredWidth(document, row, 'wAfter', rowWidthAfter);
       changed = true;
     }
   }
@@ -335,7 +356,14 @@ function setRowFormattingChange(
     prior.append(gridAfter);
   }
   if (formatting.widthBefore !== undefined) {
-    prior.append(createPreferredWidthElement(document, formatting.widthBefore));
+    prior.append(
+      createPreferredWidthElement(document, 'wBefore', formatting.widthBefore),
+    );
+  }
+  if (formatting.widthAfter !== undefined) {
+    prior.append(
+      createPreferredWidthElement(document, 'wAfter', formatting.widthAfter),
+    );
   }
   change.append(prior);
   properties.append(change);
@@ -347,9 +375,10 @@ function normalizedRevisionDate(value: string | undefined): string {
   return Number.isFinite(time) ? new Date(time).toISOString() : '';
 }
 
-function setRowWidthBefore(
+function setRowPreferredWidth(
   document: Document,
   row: Element,
+  localName: 'wBefore' | 'wAfter',
   width: DocumentTablePreferredWidth,
 ): void {
   let properties = directChild(row, 'trPr');
@@ -359,18 +388,19 @@ function setRowWidthBefore(
   }
   for (const existing of Array.from(properties.children).filter(
     (child) =>
-      child.localName === 'wBefore' && child.namespaceURI === WORD_NAMESPACE,
+      child.localName === localName && child.namespaceURI === WORD_NAMESPACE,
   )) {
     existing.remove();
   }
-  properties.append(createPreferredWidthElement(document, width));
+  properties.append(createPreferredWidthElement(document, localName, width));
 }
 
 function createPreferredWidthElement(
   document: Document,
+  localName: 'wBefore' | 'wAfter',
   width: DocumentTablePreferredWidth,
 ): Element {
-  const element = document.createElementNS(WORD_NAMESPACE, 'w:wBefore');
+  const element = document.createElementNS(WORD_NAMESPACE, `w:${localName}`);
   if (width.type === 'auto') {
     element.setAttributeNS(WORD_NAMESPACE, 'w:type', 'auto');
     element.setAttributeNS(WORD_NAMESPACE, 'w:w', '0');
@@ -396,11 +426,13 @@ function createPreferredWidthElement(
 
 function preferredWidthFromRowElement(
   element: HTMLTableRowElement,
+  typeKey: string,
+  valueKey: string,
 ): DocumentTablePreferredWidth | null {
-  const type = element.dataset.officeRowWidthBeforeType;
+  const type = element.dataset[typeKey];
   if (type === 'auto') return { type: 'auto', value: null };
   if (type === 'percent' || type === 'pixels') {
-    const value = Number(element.dataset.officeRowWidthBefore);
+    const value = Number(element.dataset[valueKey]);
     return normalizeDocumentTablePreferredWidth({ type, value });
   }
   return null;

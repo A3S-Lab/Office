@@ -32,6 +32,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'gridBefore',
   'gridAfter',
   'wBefore',
+  'wAfter',
 ]);
 const PIXELS_PER_TWIP = 96 / 1440;
 
@@ -45,8 +46,8 @@ export interface SupportedDocxRowFormattingChange {
 /**
  * Relationship-free `w:trPrChange` whose prior snapshot contains only
  * `w:cantSplit`, `w:tblHeader`, `w:trHeight`, `w:hidden`, `w:jc`,
- * `w:gridBefore`, `w:gridAfter`, and/or `w:wBefore`. Broader row property
- * sets stay on the opaque OMML path.
+ * `w:gridBefore`, `w:gridAfter`, `w:wBefore`, and/or `w:wAfter`. Broader
+ * row property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxRowFormattingChange(change: Element): boolean {
   return supportedRowFormattingChange(change) !== null;
@@ -132,6 +133,7 @@ function supportedRowFormattingChange(
     gridBefore?: number;
     gridAfter?: number;
     widthBefore?: DocumentTablePreferredWidth;
+    widthAfter?: DocumentTablePreferredWidth;
   } = {};
   for (const child of children) {
     if (child.localName === 'cantSplit') {
@@ -180,6 +182,12 @@ function supportedRowFormattingChange(
       const widthBefore = importedPreferredWidth(child);
       if (!widthBefore) return null;
       snapshot.widthBefore = widthBefore;
+      continue;
+    }
+    if (child.localName === 'wAfter') {
+      const widthAfter = importedPreferredWidth(child);
+      if (!widthAfter) return null;
+      snapshot.widthAfter = widthAfter;
     }
   }
   return {
