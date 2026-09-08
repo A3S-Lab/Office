@@ -42,6 +42,69 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.80.0',
+    date: '2026-09-08',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes cell textDirection revisions reviewable',
+      zh: 'Writer 让单元格 textDirection 修订可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free tcPrChange priors with textDirection import as cell-formatting with accept/reject, live track-changes, and native DOCX export.',
+      zh: 'Phase 0 保真：含 textDirection 的无关系 tcPrChange 先验导入为 cell-formatting，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Cell text direction',
+          zh: '单元格文字方向',
+        },
+        detail: {
+          en: 'Supported ST_TextDirection values (lrTb, tbRl, btLr, lrTbV, tbRlV, tbLrV) round-trip as reviewable cell-formatting, including current-cell export.',
+          zh: '支持的 ST_TextDirection 值（lrTb、tbRl、btLr、lrTbV、tbRlV、tbLrV）作为可审阅 cell-formatting 往返，并覆盖当前单元格导出。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing data-office-cell-text-direction under track-changes creates a pending cell-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑 data-office-cell-text-direction 会生成待审阅的 cell-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'Broader cell/row property sets remain opaque metadata or fail-closed; opaque cell fixtures moved off textDirection to tcFitText.',
+          zh: '更广的单元格/行属性集仍为不透明元数据或失败闭合；不透明单元格夹具已从 textDirection 迁至 tcFitText。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './components/document.html', zh: './components/document.html' },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.80.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.80.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './native-office-engine.html', zh: './native-office-engine.html' },
+        label: { en: 'Native engine notes', zh: '原生引擎说明' },
+      },
+    ],
+  },
+  {
     version: '0.79.0',
     date: '2026-09-08',
     kind: 'improved',

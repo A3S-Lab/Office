@@ -1,4 +1,8 @@
-import { serializeDocumentCellFormatting } from './work-document-cell-format-changes';
+import {
+  normalizeDocumentTableCellTextDirection,
+  serializeDocumentCellFormatting,
+  type DocumentTableCellTextDirection,
+} from './work-document-cell-format-changes';
 import { normalizeTableColor } from './work-document-table-borders';
 import { normalizeDocumentTableVerticalAlign } from './work-document-table-cell-formatting';
 import {
@@ -27,6 +31,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tcMar',
   'tcW',
   'noWrap',
+  'textDirection',
 ]);
 const SOLID_SHADING_VALUES = new Set(['clear', 'nil', 'none', '']);
 const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
@@ -41,8 +46,9 @@ export interface SupportedDocxCellFormattingChange {
 
 /**
  * Relationship-free `w:tcPrChange` whose prior snapshot contains only
- * `w:vAlign`, solid direct-color `w:shd`, `w:tcMar`, `w:tcW`, and/or `w:noWrap`.
- * Broader cell property sets stay on the opaque OMML path.
+ * `w:vAlign`, solid direct-color `w:shd`, `w:tcMar`, `w:tcW`, `w:noWrap`,
+ * and/or `w:textDirection`. Broader cell property sets stay on the opaque OMML
+ * path.
  */
 export function isSupportedDocxCellFormattingChange(change: Element): boolean {
   return supportedCellFormattingChange(change) !== null;
@@ -118,7 +124,8 @@ function supportedCellFormattingChange(
       if (
         child.localName === 'tcMar' ||
         child.localName === 'tcW' ||
-        child.localName === 'noWrap'
+        child.localName === 'noWrap' ||
+        child.localName === 'textDirection'
       ) {
         return false;
       }
@@ -135,6 +142,7 @@ function supportedCellFormattingChange(
     margins?: DocumentTableCellMarginOverrides;
     width?: DocumentTablePreferredWidth;
     noWrap?: boolean;
+    textDirection?: DocumentTableCellTextDirection;
   } = {};
   for (const child of children) {
     if (child.localName === 'vAlign') {
@@ -165,6 +173,14 @@ function supportedCellFormattingChange(
     }
     if (child.localName === 'noWrap') {
       snapshot.noWrap = onOffValue(child);
+      continue;
+    }
+    if (child.localName === 'textDirection') {
+      const textDirection = normalizeDocumentTableCellTextDirection(
+        attribute(child, 'val'),
+      );
+      if (!textDirection) return null;
+      snapshot.textDirection = textDirection;
     }
   }
   return {

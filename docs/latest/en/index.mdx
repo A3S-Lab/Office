@@ -44,16 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.79.0)
+## What's new on `main` (0.80.0)
 
-Writer Phase 0 deepens reviewable table-cell and table-row property revisions:
+Writer Phase 0 makes cell text direction reviewable:
 
-- Relationship-free `tcW` and `noWrap` import as reviewable `cell-formatting`
-  with accept/reject, live track-changes, and native DOCX export.
-- Relationship-free `hidden` and `jc` import as reviewable `row-formatting`
-  with the same review and export path.
+- Relationship-free `textDirection` (`lrTb` / `tbRl` / `btLr` / `lrTbV` /
+  `tbRlV` / `tbLrV`) imports as reviewable `cell-formatting` with
+  accept/reject, live track-changes, and native DOCX export.
 - Broader cell/row property sets stay opaque or fail-closed
-  (`textDirection`, `gridBefore`, and other unsupported priors).
+  (`tcFitText`, `gridBefore`, and other unsupported priors).
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

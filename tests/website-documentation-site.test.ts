@@ -212,7 +212,7 @@ test('documents host-owned file action icons and destructive semantics in the cu
     expect(document).toContain('neutral file glyph');
   }
   for (const document of [latestChinese, releaseChinese]) {
-    expect(document).toContain('## 宿主持有的文件操作');
+    expect(document).toContain('## 宿主挝有的文件擝作');
     expect(document).toContain('OfficeFileAction');
     expect(document).toContain('danger: true');
     expect(document).toContain('中性文件图标');
@@ -270,20 +270,20 @@ test('documents controlled rich-text IME settlement in the current release', asy
     expect(document).toContain('defers that replacement');
   }
   for (const document of [latestChineseDocument, releaseChineseDocument]) {
-    expect(document).toContain('## 输入法与受控更新');
+    expect(document).toContain('## 输入法与块控更新');
     expect(document).toContain('拼音等预编辑文字');
-    expect(document).toContain('把替换延后');
+    expect(document).toContain('把替杢延坎');
   }
   expect(latestEnglishMarkdown).toContain('## Visual-editor IME behavior');
   expect(latestEnglishMarkdown).toContain('raw Pinyin');
-  expect(latestChineseMarkdown).toContain('## 可视化编辑器的输入法行为');
+  expect(latestChineseMarkdown).toContain('## 坯视化编辑器的输入法行为');
   expect(releaseEnglishArchitecture).toContain(
     '## Controlled rich-text IME boundary',
   );
   expect(releaseEnglishArchitecture).toContain(
     'creates no timers or extra renders for ordinary keyboard input',
   );
-  expect(releaseChineseArchitecture).toContain('## 受控富文本输入法边界');
+  expect(releaseChineseArchitecture).toContain('## 块控富文本输入法边界');
 });
 
 test('builds a product home beside, rather than inside, the versioned docs site', async () => {
@@ -536,13 +536,13 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.79.0`');
-  expect(readme).toContain('table property revisions reviewable');
+  expect(readme).toContain('Version `0.80.0`');
+  expect(readme).toContain('cell text-direction property revisions reviewable');
   expect(readme).toContain('cell-formatting');
   expect(readme).toContain('Earlier releases stay on the product');
-  expect(englishHome).toContain("## What's new on `main` (0.79.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.80.0)");
   expect(englishHome).toContain('cell-formatting');
-  expect(chineseHome).toContain('## `main` 更新内容（0.79.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.80.0）');
   expect(chineseHome).toContain('cell-formatting');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
@@ -555,7 +555,7 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.79.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.80.0)");
   expect(englishHome).toContain('## Explore by surface');
   expect(englishHome).not.toContain('Current product highlights');
   expect(englishHome).toContain("[What's new](./changelog.html)");
@@ -583,23 +583,23 @@ test('routes the concise README and documentation homes to the current release s
   expect(englishHome).toContain('document.html#common-live-fields');
   expect(englishHome).toContain('document.html#built-in-content-controls');
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.79.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.80.0）');
   expect(chineseHome).toContain('## 按表面探索');
-  expect(chineseHome).not.toContain('当前产品亮点');
+  expect(chineseHome).not.toContain('当剝产哝亮点');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
-  expect(chineseHome).toContain('document.html#整段段落标记修订');
+  expect(chineseHome).toContain('document.html#整段段蝽标记修订');
   expect(chineseHome).toContain('document.html#移动修订');
-  expect(chineseHome).toContain('spreadsheet.html#公式条件格式');
+  expect(chineseHome).toContain('spreadsheet.html#公弝条件格弝');
   expect(chineseHome).toContain('spreadsheet.html#依赖下拉列表');
   expect(chineseHome).toContain(
     'spreadsheet.html#与-office-一致的错误警告分支',
   );
-  expect(chineseHome).toContain('document.html#有序列表编号修订');
+  expect(chineseHome).toContain('document.html#有庝列表编坷修订');
   expect(chineseHome).toContain('presentation.html#进入与退出动画');
   expect(chineseHome).toContain('document.html#原生-opentype-排版');
   expect(chineseHome).toContain('spreadsheet.html#xlsx-1904-日期系统保留');
   expect(chineseHome).toContain('document.html#图片属性');
-  expect(chineseHome).toContain('document.html#可编辑文本框');
+  expect(chineseHome).toContain('document.html#坯编辑文本框');
   expect(chineseHome).toContain('document.html#常用实时字段');
   expect(chineseHome).toContain('document.html#原生内容控件');
 });
@@ -682,7 +682,7 @@ test('publishes the WPS VML connector boundary across code, docs, and A3S Test e
   expect(connectorTest).toContain('WPS connector compatibility boundary');
   expect(connectorAcl).toContain('scenario "edit-wps-vml-connector-boundary"');
   expect(packageManifest).toContain('test:e2e:writer-wps-connector:check');
-  expect(packageManifest).toContain('"version": "0.79.0"');
+  expect(packageManifest).toContain('"version": "0.80.0"');
 });
 
 test('publishes Writer connector arrow-style parity across the current and frozen release', async () => {
@@ -732,8 +732,8 @@ test('publishes Writer connector arrow-style parity across the current and froze
   expect(changelog).toContain('## 0.56.0 - 2026-09-06');
   expect(changelog).toContain('BeginArrowheadStyle=3');
   expect(releaseData).toContain("version: '0.56.0'");
-  expect(releaseData).toContain('一个类型化箭头样式模型');
-  expect(packageManifest).toContain('"version": "0.79.0"');
+  expect(releaseData).toContain('一个类型化箭头样弝模型');
+  expect(packageManifest).toContain('"version": "0.80.0"');
 });
 
 test('publishes the WPS connector-kind A3S Test matrix in the 0.57.0 release story', async () => {
@@ -760,7 +760,7 @@ test('publishes the WPS connector-kind A3S Test matrix in the 0.57.0 release sto
 
   for (const document of [latestEnglish, latestChinese]) {
     expect(document).toContain('A3S Test');
-    expect(document).toContain('0.79.0');
+    expect(document).toContain('0.80.0');
   }
   for (const document of [frozenEnglish, frozenChinese]) {
     expect(document).toContain('A3S Test');
@@ -772,7 +772,7 @@ test('publishes the WPS connector-kind A3S Test matrix in the 0.57.0 release sto
   expect(releaseData).toContain(
     'Writer connectors gain typed WPS shape parity',
   );
-  expect(packageManifest).toContain('"version": "0.79.0"');
+  expect(packageManifest).toContain('"version": "0.80.0"');
 });
 
 test('publishes Writer numbering revisions across implementation, native collaboration, docs, and release evidence', async () => {
@@ -880,8 +880,8 @@ test('publishes Writer numbering revisions across implementation, native collabo
   expect(releaseEnglishHome).toContain(
     'document.html#ordered-list-numbering-revisions',
   );
-  expect(releaseChineseHome).toContain('0.40.0 发布');
-  expect(releaseChineseHome).toContain('document.html#有序列表编号修订');
+  expect(releaseChineseHome).toContain('0.40.0 坑布');
+  expect(releaseChineseHome).toContain('document.html#有庝列表编坷修订');
 
   for (const source of [
     englishDocument,
@@ -903,7 +903,7 @@ test('publishes Writer numbering revisions across implementation, native collabo
     expect(source).toContain('65,536');
   }
   expect(englishDocument).toContain('## Ordered-list numbering revisions');
-  expect(chineseDocument).toContain('## 有序列表编号修订');
+  expect(chineseDocument).toContain('## 有庝列表编坷修订');
 
   expect(tracking).toContain('ReplaceAroundStep');
   expect(importer).toContain('MAX_NUMBERING_CHANGES = 65_536');
@@ -1126,7 +1126,7 @@ test('publishes Writer move revisions across implementation, native collaboratio
   expect(moveTests).toContain(
     'round-trips native moveFrom and moveTo wrappers',
   );
-  expect(packageManifest).toContain('0.79.0');
+  expect(packageManifest).toContain('0.80.0');
 });
 
 test('publishes bounded Writer whole-paragraph revisions in the 0.52.0 frozen documentation', async () => {
@@ -1221,9 +1221,9 @@ test('publishes bounded Writer whole-paragraph revisions in the 0.52.0 frozen do
     expect(source).toContain('paragraph-break merge or split');
   }
   for (const source of [latestChinese, frozenChinese]) {
-    expect(source).toContain('## 整段段落标记修订');
+    expect(source).toContain('## 整段段蝽标记修订');
     expect(source).toContain('`w:pPr/w:rPr`');
-    expect(source).toContain('段落分隔符合并或拆分');
+    expect(source).toContain('段蝽分隔符坈并或拆分');
   }
   expect(frozenEnglishHome).toContain('# A3S Office 0.52.0 documentation');
   expect(frozenEnglishHome.toLowerCase()).toContain(
@@ -1247,7 +1247,7 @@ test('publishes bounded Writer whole-paragraph revisions in the 0.52.0 frozen do
   expect(aclSuite).toContain(
     'scenario "review-wps-paragraph-mark-revisions-on-phone"',
   );
-  expect(packageManifest).toContain('"version": "0.79.0"');
+  expect(packageManifest).toContain('"version": "0.80.0"');
   expect(packageManifest).toContain('test:e2e:writer-paragraph-mark-revision');
 });
 
@@ -1297,10 +1297,10 @@ test('publishes bounded Writer Compare moves in the 0.51.0 frozen documentation'
     );
   }
   for (const source of [latestChinese, frozenChinese]) {
-    expect(source).toContain('## 文档比较与合并');
-    expect(source).toContain('成对的 `move` 移动修订');
+    expect(source).toContain('## 文档比较与坈并');
+    expect(source).toContain('戝对的 `move` 移动修订');
     expect(source).toContain(
-      '当前“比较文档”可以在同一简单段落或标题中推断移动',
+      '当剝“比较文档”坯以在坌一简坕段蝽或标题中推断移动',
     );
   }
   expect(frozenEnglishHome).toContain('# A3S Office 0.51.0 documentation');
@@ -1313,7 +1313,7 @@ test('publishes bounded Writer Compare moves in the 0.51.0 frozen documentation'
   expect(changelog).toContain('WPS COM/UIA reference probe');
   expect(releaseData).toContain("version: '0.51.0'");
   expect(releaseData).toContain('document-compare-and-combine');
-  expect(packageManifest).toContain('"version": "0.79.0"');
+  expect(packageManifest).toContain('"version": "0.80.0"');
 });
 
 test('publishes Spreadsheet validation alert branches across implementation, docs, and release evidence', async () => {
@@ -1513,10 +1513,10 @@ test('publishes Spreadsheet custom-formula validation across the current and fro
   }
   expect(english).toContain('Custom formula');
   expect(frozenEnglish).toContain('Custom formula');
-  expect(chinese).toContain('自定义公式');
-  expect(frozenChinese).toContain('自定义公式');
+  expect(chinese).toContain('自定义公弝');
+  expect(frozenChinese).toContain('自定义公弝');
   expect(english).toContain('## Custom formulas');
-  expect(chinese).toContain('## 自定义公式');
+  expect(chinese).toContain('## 自定义公弝');
   expect(releaseData).toContain("version: '0.42.0'");
   expect(releaseData).toContain('custom-formulas');
   expect(evaluator).toContain(
@@ -1553,7 +1553,7 @@ test('keeps every documentation index separate from the product home surface', a
     expect(index).not.toContain('Open the Playground');
     expect(index).not.toContain('Product storytelling');
     expect(index).not.toContain('product-home demonstrations');
-    expect(index).not.toContain('产品首页');
+    expect(index).not.toContain('产哝首页');
     expect(index).toContain('./guide/index.');
     expect(index).toContain('./components/index.');
     expect(index).toContain('./automation/index.');
@@ -1665,7 +1665,7 @@ test('publishes Presentation entrance and exit animations across implementation,
   expect(releaseEnglishHome).toContain(
     'presentation.html#entrance-and-exit-animations',
   );
-  expect(releaseChineseHome).toContain('0.39.0 发布');
+  expect(releaseChineseHome).toContain('0.39.0 坑布');
   expect(releaseChineseHome).toContain('presentation.html#进入与退出动画');
 
   expect(templates).toContain("id: 'animated-deck'");
@@ -1779,7 +1779,7 @@ test('publishes PDF page organization across docs, Playground, and release evide
   expect(releaseEnglish).toContain('## Page organization');
   expect(chinese).toContain('## 页面组织');
   expect(chinese).toContain('独立 Web Worker');
-  expect(chinese).toContain('原生 PDF 历史优先');
+  expect(chinese).toContain('原生 PDF 历坲优先');
   expect(releaseChinese).toContain('## 页面组织');
 
   expect(workspaceHome).toContain('PDF 编辑器');
@@ -1886,7 +1886,7 @@ test('publishes Writer Table of Contents in docs, roadmap, and Playground guidan
     '**Supported**: shared semantic-heading/native-outline model',
   );
   expect(english).toContain('## Native table of contents');
-  expect(chinese).toContain('## 原生可更新目录');
+  expect(chinese).toContain('## 原生坯更新目录');
   expect(templates).toContain("id: 'table-of-contents'");
   expect(playground).toContain('officeTemplates.map((template) =>');
   for (const document of [english, chinese]) {
@@ -2048,20 +2048,20 @@ test('publishes Writer document compare and combine across product and documenta
   expect(roadmap).toContain('| Compare/combine documents | **Partial**');
   expect(product).toContain('The forty-fifth milestone');
   expect(english).toContain('## Document compare and combine');
-  expect(chinese).toContain('## 文档比较与合并');
+  expect(chinese).toContain('## 文档比较与坈并');
   expect(releaseEnglish).toContain('## Document compare and combine');
-  expect(releaseChinese).toContain('## 文档比较与合并');
+  expect(releaseChinese).toContain('## 文档比较与坈并');
   expect(englishArchitecture).toContain(
     'Document comparison is a pure planning boundary',
   );
   expect(chineseArchitecture).toContain(
-    '文档比较在编辑器事务之前形成纯规划边界',
+    '文档比较在编辑器事务之剝形戝纯规划边界',
   );
   expect(englishRoadmap).toContain(
     'Writer document compare/combine now forms one completed bounded vertical slice',
   );
   expect(chineseRoadmap).toContain(
-    'Writer 文档比较与合并现在形成一个已完成的有界纵向切片',
+    'Writer 文档比较与坈并现在形戝一个已完戝的有界纵坑切片',
   );
   expect(e2eGuide).toContain('bun run test:e2e:writer-document-comparison');
   expect(templates).toContain("id: 'document-comparison'");
@@ -2103,19 +2103,19 @@ test('publishes complete Spreadsheet data-validation settings in product documen
   ]);
 
   expect(changelog).toContain('input titles and messages');
-  expect(changelog).toContain('home-page **新建 → 数据验证**');
+  expect(changelog).toContain('home-page **新建 → 数杮验话**');
   expect(changelog).toContain('dependent dropdown lists');
   expect(roadmap).toContain('input and error-alert settings');
   expect(roadmap).toContain('bounded `=INDIRECT(...)`');
   expect(english).toContain('### Input and error settings');
   expect(english).toContain('### Dependent dropdown lists');
   expect(english).toContain('`=INDIRECT($F2)`');
-  expect(english).toContain('**新建 → 数据验证**');
-  expect(chinese).toContain('## 数据验证');
+  expect(english).toContain('**新建 → 数杮验话**');
+  expect(chinese).toContain('## 数杮验话');
   expect(chinese).toContain('### 依赖下拉列表');
   expect(chinese).toContain('`=INDIRECT($F2)`');
-  expect(chinese).toContain('### 输入信息与错误警告设置');
-  expect(chinese).toContain('**新建 → 数据验证**');
+  expect(chinese).toContain('### 输入信杯与错误警告设置');
+  expect(chinese).toContain('**新建 → 数杮验话**');
   expect(templates).toContain("id: 'data-validation'");
   for (const document of [english, chinese]) {
     expect(document).toContain('`allowBlank`');
@@ -2298,7 +2298,7 @@ test('publishes Writer picture transforms across implementation, docs, and brows
   expect(releaseData).toContain("version: '0.45.0'");
   expect(releaseData).toContain('picture-transform');
   expect(unitTest).toContain('bounded image rotation and reflection');
-  expect(visual).toContain('向右旋转');
+  expect(visual).toContain('坑坳旋转');
   expect(acl).toContain('picture-transform-saved');
 });
 
@@ -2369,11 +2369,11 @@ test('publishes Writer text boxes across implementation, docs, and browser evide
     expect(source).toContain('txBox');
   }
   expect(english).toContain('## Built-in editable text boxes');
-  expect(chinese).toContain('## 可编辑文本框');
+  expect(chinese).toContain('## 坯编辑文本框');
   expect(releaseData).toContain("version: '0.46.0'");
   expect(releaseData).toContain('text-box');
   expect(unitTest).toContain('exports native WPS shape geometry');
-  expect(visual).toContain('插入文本框');
+  expect(visual).toContain('杒入文本框');
   expect(acl).toContain('scenario "author-native-text-box"');
   expect(packageManifest).toContain('test:e2e:writer-text-box');
   expect(packageManifest).toContain('playground:visual:document-text-box');
@@ -2536,9 +2536,9 @@ test('publishes editable formula conditional formatting across code, docs, and P
     expect(document).toContain('255');
   }
   expect(english).toContain('## Formula conditional formatting');
-  expect(chinese).toContain('## 公式条件格式');
+  expect(chinese).toContain('## 公弝条件格弝');
   expect(english).toContain('Stop if true');
-  expect(chinese).toContain('匹配后停止');
+  expect(chinese).toContain('匹酝坎坜止');
   expect(releaseData).toContain("version: '0.43.0'");
   expect(releaseData).toContain('formula-conditional-formatting');
   expect(templates).toContain("id: 'conditional-format'");
@@ -3703,9 +3703,9 @@ test('documents Traditional Office font-size and border shortcuts in 0.17.0', as
       expect(english).toContain(evidence);
     }
     for (const evidence of [
-      '## 字号步进与框线快捷键',
-      '增大字号',
-      '减小字号',
+      '## 字坷步进与框线快杷键',
+      '增大字坷',
+      '凝尝字坷',
       '外侧框线',
       '清除框线',
       '10,000 个',
@@ -3742,9 +3742,9 @@ test('documents exact advanced Spreadsheet underline styles in 0.18.0', async ()
       expect(english).toContain(evidence);
     }
     for (const evidence of [
-      '## 高级下划线样式',
-      '单会计用下划线',
-      '双会计用下划线',
+      '## 高级下划线样弝',
+      '坕会计用下划线',
+      '坌会计用下划线',
       '`Cmd/Ctrl+U`',
       'val="singleAccounting"',
       'val="doubleAccounting"',
@@ -3785,7 +3785,7 @@ test('documents text orientation and bounded row/column visibility in 0.19.0', a
       expect(english).toContain(evidence);
     }
     for (const evidence of [
-      '## 文字方向与行列显隐',
+      '## 文字方坑与行列显隝',
       '逆时针倾斜',
       '顺时针倾斜',
       "`tr='3'`",
@@ -3830,7 +3830,7 @@ test('documents direct color resets, Traditional Office font aliases, and XLSX c
       expect(english).toContain(evidence);
     }
     for (const evidence of [
-      '## 直接颜色重置、传统 Office 字体快捷键与 XLSX 颜色身份',
+      '## 直接颜色針置〝传统 Office 字体快杷键与 XLSX 颜色身份',
       '自动颜色',
       '无填充',
       '`Ctrl+2`',
@@ -3838,7 +3838,7 @@ test('documents direct color resets, Traditional Office font aliases, and XLSX c
       '`Ctrl+4`',
       'theme="4"',
       'indexed="0"',
-      '调色板槽位',
+      '调色板槽佝',
       'spreadsheet-font-colors-shortcuts.acl',
       'A3S Test 1.0.0',
     ]) {
@@ -3874,10 +3874,10 @@ test('documents independent Spreadsheet diagonal borders in 0.21.0', async () =>
       expect(english).toContain(evidence);
     }
     for (const evidence of [
-      '## 单元格框线',
+      '## 坕元格框线',
       '斜下',
       '斜上',
-      '交叉框线',
+      '交坉框线',
       '`diagonalDown`',
       '`diagonalUp`',
       '4,096',
@@ -3916,12 +3916,12 @@ test('documents static Spreadsheet date and time entry in 0.22.0', async () => {
       expect(english).toContain(evidence);
     }
     for (const evidence of [
-      '### 静态当前日期与时间',
+      '### 静思当剝日期与时间',
       '`Ctrl+;`',
       '`Ctrl+Shift+;`',
       '`yyyy-MM-dd`',
       '`hh:mm`',
-      '活动单元格',
+      '活动坕元格',
       '一次撤销',
       'spreadsheet-date-time.acl',
       'A3S Test 1.0.0',
@@ -3957,10 +3957,10 @@ test('documents exact Spreadsheet copy from above in 0.23.0', async () => {
       expect(english).toContain(evidence);
     }
     for (const evidence of [
-      '### 从上方复制公式或值',
+      '### 从上方夝制公弝或值',
       "`Ctrl+'`",
       "`Ctrl+Shift+'`",
-      '不平移相对引用',
+      '丝平移相对引用',
       '目标自己的',
       '一次撤销',
       'spreadsheet-copy-from-above.acl',
@@ -3997,7 +3997,7 @@ test('documents focused Spreadsheet font-dialog shortcuts in 0.24.0', async () =
       expect(english).toContain(evidence);
     }
     for (const evidence of [
-      '## 设置单元格格式与字体快捷键',
+      '## 设置坕元格格弝与字体快杷键',
       '`Cmd/Ctrl+Shift+F`',
       '`Cmd/Ctrl+Shift+P`',
       '字体下拉框',
@@ -4052,7 +4052,7 @@ test('documents native Spreadsheet rich-text authoring through formatted paste',
       expect(english).toContain('partial-run authoring');
     }
     for (const evidence of [
-      '## 原生 XLSX 单元格富文本',
+      '## 原生 XLSX 坕元格富文本',
       "`ct.t='inlineStr'`",
       '`xml:space="preserve"`',
       '32,767 个字符',
@@ -4066,12 +4066,12 @@ test('documents native Spreadsheet rich-text authoring through formatted paste',
     if (version !== '0.25.0') {
       for (const evidence of [
         '选中非空文字',
-        '字体、字号、颜色、粗体、斜体、下划线与删除线',
-        'UTF-16 代理对',
-        '公式栏或 F2',
-        '一次受控修订',
+        '字体〝字坷〝颜色〝粗体〝斜体〝下划线与删除线',
+        'UTF-16 代睆对',
+        '公弝栝或 F2',
+        '一次块控修订',
         '一条撤销记录',
-        '带格式富文本粘贴',
+        '带格弝富文本粘贴',
       ]) {
         expect(chinese).toContain(evidence);
       }
@@ -4099,8 +4099,8 @@ test('publishes slice 33 rich-text reconciliation architecture', async () => {
 
   expect(englishRoadmap).toContain('The thirty-third slice');
   expect(englishRoadmap).toMatch(/text-stable focus\s+callbacks/);
-  expect(chineseRoadmap).toContain('第三十三个 Spreadsheet 纵向切片');
-  expect(chineseRoadmap).toMatch(/文字未变化的聚焦\s*回调/);
+  expect(chineseRoadmap).toContain('第三坝三个 Spreadsheet 纵坑切片');
+  expect(chineseRoadmap).toMatch(/文字未坘化的蝚焦\s*回调/);
   expect(architecture).toContain(
     'Native XLSX rich-text editing is reconciled at the controlled Fortune boundary',
   );
@@ -4250,15 +4250,15 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(chinese).toContain('calculatedColumnFormula');
   expect(english).toContain('Rows inserted outside the table');
   expect(english).toContain('do not trigger a fill');
-  expect(chinese).toContain('表格外插入的行不会触发填充');
+  expect(chinese).toContain('表格外杒入的行丝会触坑填充');
   expect(architecture).toContain('worksheet-qualified tables');
-  expect(chineseArchitecture).toContain('工作表限定');
+  expect(chineseArchitecture).toContain('工作表陝定');
   expect(architecture).toContain('newly inserted body rows');
-  expect(chineseArchitecture).toContain('新插入的正文空单元格');
+  expect(chineseArchitecture).toContain('新杒入的正文空坕元格');
   expect(quality).toContain('The follow-up structured-reference slice');
   expect(chineseQuality).toContain('结构化引用计算切片');
   expect(quality).toContain('conflicts remove the rule');
-  expect(chineseQuality).toContain('检测到冲突时会删除规则');
+  expect(chineseQuality).toContain('检测到冲窝时会删除规则');
   expect(releaseEnglish).toContain('calculated-column rule');
   expect(releaseEnglish).toContain('<calculatedColumnFormula>');
   expect(releaseChinese).toContain('计算列规则');
@@ -4266,7 +4266,7 @@ test('publishes bounded Spreadsheet structured references across code, docs, and
   expect(templates).toContain("id: 'structured-references'");
   expect(templates).toContain('=[@Units]*[@[Unit price]]');
   expect(templates).toContain('=SUM(Sales[Revenue])');
-  expect(templates).toContain('插入表格正文行会自动补齐 Revenue');
+  expect(templates).toContain('杒入表格正文行会自动补齝 Revenue');
   expect(workspaceHome).toContain('data-template-id={template.id}');
   expect(workspaceHome).not.toContain('data-release');
   expect(discoverability).toContain(
@@ -4569,29 +4569,29 @@ test('publishes formula-safe Spreadsheet sorting, owned-range reconciliation, an
   expect(product).toContain('The fifty-ninth milestone');
   expect(product).toContain('responsive, keyboard-accessible manager');
   expect(english).toContain('## Multi-key custom sort');
-  expect(chinese).toContain('## 多关键字自定义排序');
+  expect(chinese).toContain('## 多关键字自定义排庝');
   expect(english).toContain('coordinate-owned');
-  expect(chinese).toContain('坐标归属');
+  expect(chinese).toContain('坝标归属');
   expect(english).toContain('Traditional Office-style Sort Warning');
-  expect(chinese).toContain('传统 Office 风格“排序提醒”');
+  expect(chinese).toContain('传统 Office 风格“排庝杝醒”');
   expect(english).toContain('seven built-in Chinese or English month');
-  expect(chinese).toContain('七个中英文月份/星期内置序列');
+  expect(chinese).toContain('七个中英文月份/星期内置庝列');
   expect(english).toContain('effective cell color');
-  expect(chinese).toContain('有效单元格颜色');
+  expect(chinese).toContain('有效坕元格颜色');
   expect(english).toContain('Sort left to right');
-  expect(chinese).toContain('按行排序');
+  expect(chinese).toContain('按行排庝');
   expect(english).toContain('**Pinyin** or **Stroke**');
-  expect(chinese).toContain('“拼音排序”或“笔画排序”');
+  expect(chinese).toContain('“拼音排庝”或“笔画排庝”');
   expect(english).toContain('`sortCustomListStore`');
   expect(chinese).toContain('`sortCustomListStore`');
   expect(english).toContain('LocalStorageSpreadsheetSortCustomListStore');
   expect(english).toContain('**Custom Lists** opens a keyboard-accessible');
   expect(chinese).toContain('LocalStorageSpreadsheetSortCustomListStore');
-  expect(chinese).toContain('可用键盘操作的偏好管理器');
+  expect(chinese).toContain('坯用键盘擝作的坝好管睆器');
   expect(english).toContain('exactly one semantic ListObject or');
   expect(english).toContain('opaque `caljs` state');
   expect(chinese).toContain('唯一一张语义 ListObject');
-  expect(chinese).toContain('不透明 `caljs` 状态');
+  expect(chinese).toContain('丝逝明 `caljs` 状思');
   expect(english).toContain(
     "element's `sortCustomListStore` JavaScript property",
   );
@@ -4601,7 +4601,7 @@ test('publishes formula-safe Spreadsheet sorting, owned-range reconciliation, an
   expect(architecture).toContain('`spreadsheet-sort-appearance` model');
   expect(chineseArchitecture).toContain('`spreadsheet-sort-appearance` 模型');
   expect(architecture).toContain('direction-neutral matrix engine');
-  expect(chineseArchitecture).toContain('方向中立的矩阵引擎');
+  expect(chineseArchitecture).toContain('方坑中立的矩阵引擎');
   expect(architecture).toContain('`spreadsheet-sort-collation` boundary');
   expect(chineseArchitecture).toContain('`spreadsheet-sort-collation` 边界');
   expect(architecture).toContain(
@@ -4616,33 +4616,33 @@ test('publishes formula-safe Spreadsheet sorting, owned-range reconciliation, an
   expect(architecture).toContain('`spreadsheet-filter-reconciliation`');
   expect(chineseArchitecture).toContain('`spreadsheet-filter-reconciliation`');
   expect(quality).toContain('The thirty-eighth Spreadsheet slice');
-  expect(chineseQuality).toContain('第三十八个 Spreadsheet 纵向切片');
+  expect(chineseQuality).toContain('第三坝八个 Spreadsheet 纵坑切片');
   expect(quality).toContain('The thirty-ninth Spreadsheet slice');
-  expect(chineseQuality).toContain('第三十九个 Spreadsheet 纵向切片');
+  expect(chineseQuality).toContain('第三坝九个 Spreadsheet 纵坑切片');
   expect(quality).toContain('The fortieth Spreadsheet slice');
-  expect(chineseQuality).toContain('第四十个 Spreadsheet 纵向切片');
+  expect(chineseQuality).toContain('第四坝个 Spreadsheet 纵坑切片');
   expect(quality).toContain('The forty-first Spreadsheet slice');
-  expect(chineseQuality).toContain('第四十一个 Spreadsheet 纵向切片');
+  expect(chineseQuality).toContain('第四坝一个 Spreadsheet 纵坑切片');
   expect(quality).toContain('The forty-second Spreadsheet slice');
-  expect(chineseQuality).toContain('第四十二个 Spreadsheet 纵向切片');
+  expect(chineseQuality).toContain('第四坝二个 Spreadsheet 纵坑切片');
   expect(quality).toContain('The forty-third Spreadsheet slice');
-  expect(chineseQuality).toContain('第四十三个 Spreadsheet 纵向切片');
+  expect(chineseQuality).toContain('第四坝三个 Spreadsheet 纵坑切片');
   expect(quality).toContain('The forty-fourth Spreadsheet slice');
-  expect(chineseQuality).toContain('第四十四个 Spreadsheet 纵向切片');
+  expect(chineseQuality).toContain('第四坝四个 Spreadsheet 纵坑切片');
   expect(quality).toContain('The fiftieth Spreadsheet slice');
-  expect(chineseQuality).toContain('第五十个 Spreadsheet 纵向切片');
+  expect(chineseQuality).toContain('第五坝个 Spreadsheet 纵坑切片');
   expect(quality).toContain('The fifty-first Spreadsheet slice');
-  expect(chineseQuality).toContain('第五十一个 Spreadsheet 纵向切片');
+  expect(chineseQuality).toContain('第五坝一个 Spreadsheet 纵坑切片');
   expect(releaseEnglish).not.toContain('## Multi-key custom sort');
-  expect(releaseChinese).not.toContain('## 多关键字自定义排序');
+  expect(releaseChinese).not.toContain('## 多关键字自定义排庝');
   expect(releaseEnglish).not.toContain('Traditional Office-style Sort Warning');
-  expect(releaseChinese).not.toContain('传统 Office 风格“排序提醒”');
+  expect(releaseChinese).not.toContain('传统 Office 风格“排庝杝醒”');
   expect(sortCommand).toContain("name: 'spreadsheetSort'");
   expect(sortCommand).toContain('spreadsheetSortRangeHasStructuralConflict');
   expect(structureCommand).not.toContain('sortSelectedCells');
   expect(currentRegion).toContain('export function spreadsheetCurrentRegion');
   expect(rangeDialog).toContain('扩展选定区域');
-  expect(rangeDialog).toContain('以当前选定区域排序');
+  expect(rangeDialog).toContain('以当剝选定区域排庝');
   expect(e2e).toContain('moved-formula-is-rebased');
   expect(e2e).toContain('original-formula-is-restored-in-one-step');
   expect(e2e).toContain('spreadsheet-after-custom-sort-accessibility');
@@ -4681,9 +4681,9 @@ test('publishes formula-safe Spreadsheet sorting, owned-range reconciliation, an
   expect(webComponent).toContain(
     'get sortCustomListStore(): SpreadsheetSortCustomListStore | undefined',
   );
-  expect(sortOrderControls).toContain('新建自定义序列…');
+  expect(sortOrderControls).toContain('新建自定义庝列…');
   expect(customListDialog).toContain('onRememberCustomList');
-  expect(customListDialog).toContain('管理自定义序列');
+  expect(customListDialog).toContain('管睆自定义庝列');
   expect(customListManager).toContain('MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS');
   expect(customListManager).toContain('managedCustomListResult');
   expect(customListE2e).toContain('duplicate-custom-list-is-explained');
@@ -4707,9 +4707,9 @@ test('publishes formula-safe Spreadsheet sorting, owned-range reconciliation, an
   expect(appearanceVisual).toContain('spreadsheet-appearance-sort-');
   expect(sortMatrix).toContain('export function sortSpreadsheetMatrix');
   expect(sortMatrix).toContain('translateSpreadsheetFormula');
-  expect(sortOptionsDialog).toContain('按行排序');
-  expect(sortOptionsDialog).toContain('区分大小写');
-  expect(sortOptionsDialog).toContain('笔画排序');
+  expect(sortOptionsDialog).toContain('按行排庝');
+  expect(sortOptionsDialog).toContain('区分大尝写');
+  expect(sortOptionsDialog).toContain('笔画排庝');
   expect(collationModel).toContain('createSpreadsheetSortTextComparator');
   expect(collationModel).toContain('numeric: false');
   expect(rowSortE2e).toContain('choose-row-orientation');
@@ -4903,7 +4903,7 @@ test('publishes the workbook-owned 1900 and 1904 date-system contract', async ()
   ]) {
     expect(document).toContain('工作簿');
     expect(document).toContain('1904');
-    expect(document).toContain('序列 0');
+    expect(document).toContain('庝列 0');
   }
   expect(englishSpreadsheet).toContain('## XLSX 1904 date-system retention');
   expect(chineseSpreadsheet).toContain('## XLSX 1904 日期系统保留');

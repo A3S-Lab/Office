@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.80.0 - 2026-09-08
+
+### Writer
+
+- Relationship-free `w:tcPrChange` priors that include `w:textDirection`
+  (`lrTb` / `tbRl` / `btLr` / `lrTbV` / `tbRlV` / `tbLrV`) are now
+  reviewable as `cell-formatting` with accept/reject, live track-changes, and
+  native export (including current-cell `w:textDirection` on DOCX write).
+  Broader cell property sets remain opaque or fail-closed; opaque fixtures now
+  use `tcFitText` instead of `textDirection`.
+
 ## 0.79.0 - 2026-09-08
 
 ### Writer

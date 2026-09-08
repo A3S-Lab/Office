@@ -1,6 +1,8 @@
 import { normalizeTableColor } from './work-document-table-borders';
 import {
   normalizeDocumentTableVerticalAlign,
+  normalizeDocumentTableCellTextDirection,
+  type DocumentTableCellTextDirection,
   type DocumentTableVerticalAlign,
 } from './work-document-table-cell-formatting';
 import {
@@ -19,9 +21,13 @@ export const DOCUMENT_CELL_CHANGE_ATTRIBUTES = [
   'cellChangeBefore',
 ] as const;
 
+export type { DocumentTableCellTextDirection } from './work-document-table-cell-formatting';
+export { normalizeDocumentTableCellTextDirection } from './work-document-table-cell-formatting';
+
 /**
  * Prior snapshot for reviewable cell-property revisions.
- * At least one of verticalAlign, fill, margins, width, or noWrap must be present.
+ * At least one of verticalAlign, fill, margins, width, noWrap, or textDirection
+ * must be present.
  */
 export interface DocumentCellFormattingSnapshot {
   verticalAlign?: DocumentTableVerticalAlign;
@@ -29,6 +35,7 @@ export interface DocumentCellFormattingSnapshot {
   margins?: DocumentTableCellMarginOverrides;
   width?: DocumentTablePreferredWidth;
   noWrap?: boolean;
+  textDirection?: DocumentTableCellTextDirection;
 }
 
 const MAX_CELL_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -46,12 +53,13 @@ export function serializeDocumentCellFormatting(
     margins?: unknown;
     width?: unknown;
     noWrap?: unknown;
+    textDirection?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentCellFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, or noWrap.',
+      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, or textDirection.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -86,7 +94,8 @@ export function parseDocumentCellFormatting(
         key !== 'fill' &&
         key !== 'margins' &&
         key !== 'width' &&
-        key !== 'noWrap',
+        key !== 'noWrap' &&
+        key !== 'textDirection',
     )
   ) {
     return null;
@@ -103,6 +112,7 @@ export function normalizeDocumentCellFormattingSnapshot(
     margins?: unknown;
     width?: unknown;
     noWrap?: unknown;
+    textDirection?: unknown;
   },
 ): DocumentCellFormattingSnapshot | null {
   const snapshot: DocumentCellFormattingSnapshot = {};
@@ -138,11 +148,19 @@ export function normalizeDocumentCellFormattingSnapshot(
     if (typeof attributes.noWrap !== 'boolean') return null;
     snapshot.noWrap = attributes.noWrap;
   }
+  if ('textDirection' in attributes && attributes.textDirection !== undefined) {
+    const textDirection = normalizeDocumentTableCellTextDirection(
+      attributes.textDirection,
+    );
+    if (!textDirection) return null;
+    snapshot.textDirection = textDirection;
+  }
   return snapshot.verticalAlign ||
     snapshot.fill ||
     snapshot.margins ||
     snapshot.width ||
-    snapshot.noWrap !== undefined
+    snapshot.noWrap !== undefined ||
+    snapshot.textDirection !== undefined
     ? snapshot
     : null;
 }
@@ -178,6 +196,9 @@ export function restoredDocumentCellAttributes(
       ? restoredCellWidthAttributes(attributes, formatting.width)
       : {}),
     ...(formatting.noWrap !== undefined ? { noWrap: formatting.noWrap } : {}),
+    ...(formatting.textDirection !== undefined
+      ? { textDirection: formatting.textDirection }
+      : {}),
   });
 }
 
@@ -256,6 +277,9 @@ function orderedSnapshot(
   }
   if (snapshot.width !== undefined) ordered.width = orderedWidth(snapshot.width);
   if (snapshot.noWrap !== undefined) ordered.noWrap = snapshot.noWrap;
+  if (snapshot.textDirection !== undefined) {
+    ordered.textDirection = snapshot.textDirection;
+  }
   return ordered;
 }
 

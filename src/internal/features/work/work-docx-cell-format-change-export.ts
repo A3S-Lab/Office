@@ -19,9 +19,13 @@ const TWIPS_PER_PIXEL = 1440 / 96;
 export class DocxCellFormattingChangePatchCollector {
   readonly patches: Array<DocxCellFormattingChangePatch | null> = [];
   readonly noWrap: boolean[] = [];
+  readonly textDirection: Array<string | null> = [];
 
   record(element: HTMLTableCellElement, id: number): void {
     this.noWrap.push(element.dataset.officeCellNoWrap === 'true');
+    this.textDirection.push(
+      element.dataset.officeCellTextDirection?.trim() || null,
+    );
     if (
       element.dataset.changeKind !== 'cell-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -52,8 +56,15 @@ export async function patchDocxCellFormattingChanges(
   buffer: ArrayBuffer,
   patches: readonly (DocxCellFormattingChangePatch | null)[],
   noWrap: readonly boolean[] = [],
+  textDirection: readonly (string | null)[] = [],
 ): Promise<ArrayBuffer> {
-  if (!patches.some(Boolean) && !noWrap.some(Boolean)) return buffer;
+  if (
+    !patches.some(Boolean) &&
+    !noWrap.some(Boolean) &&
+    !textDirection.some(Boolean)
+  ) {
+    return buffer;
+  }
   if (patches.filter(Boolean).length > MAX_CELL_FORMATTING_CHANGE_PATCHES) {
     throw new Error('Document exceeds the cell-formatting revision limit.');
   }
@@ -75,6 +86,7 @@ export async function patchDocxCellFormattingChanges(
   for (const cell of cells) {
     const patch = patches[index] ?? null;
     const cellNoWrap = noWrap[index] === true;
+    const cellTextDirection = textDirection[index] ?? null;
     index += 1;
     if (patch) {
       setCellFormattingChange(document, cell, patch);
@@ -82,6 +94,10 @@ export async function patchDocxCellFormattingChanges(
     }
     if (cellNoWrap) {
       setCellNoWrap(document, cell, true);
+      changed = true;
+    }
+    if (cellTextDirection) {
+      setCellTextDirection(document, cell, cellTextDirection);
       changed = true;
     }
   }
@@ -114,6 +130,28 @@ function setCellNoWrap(
   }
   if (!noWrap) return;
   properties.append(document.createElementNS(WORD_NAMESPACE, 'w:noWrap'));
+}
+
+function setCellTextDirection(
+  document: Document,
+  cell: Element,
+  textDirection: string,
+): void {
+  let properties = directChild(cell, 'tcPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+    cell.insertBefore(properties, cell.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'textDirection' &&
+      child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:textDirection');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', textDirection);
+  properties.append(element);
 }
 
 function setCellFormattingChange(
@@ -177,6 +215,18 @@ function setCellFormattingChange(
       noWrap.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
     }
     prior.append(noWrap);
+  }
+  if (formatting.textDirection !== undefined) {
+    const textDirection = document.createElementNS(
+      WORD_NAMESPACE,
+      'w:textDirection',
+    );
+    textDirection.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:val',
+      formatting.textDirection,
+    );
+    prior.append(textDirection);
   }
   change.append(prior);
   properties.append(change);

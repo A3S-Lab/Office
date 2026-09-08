@@ -371,16 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.79.0` makes more Writer table property revisions reviewable without
-widening the opaque/fail-closed boundary:
+Version `0.80.0` makes cell text-direction property revisions reviewable:
 
-- **Cell formatting** — relationship-free `tcW` (auto / dxa / pct) and `noWrap`
-  become `cell-formatting` with accept/reject, live track-changes, and native
-  DOCX export.
-- **Row formatting** — relationship-free `hidden` and `jc` (left / center /
-  right) become `row-formatting` on the same path, including current-row export.
+- **Cell text direction** — relationship-free `textDirection` priors
+  (`lrTb` / `tbRl` / `btLr` / `lrTbV` / `tbRlV` / `tbLrV`) become
+  `cell-formatting` with accept/reject, live track-changes, and native DOCX
+  export (including current-cell write).
 - **Boundary** — broader `tcPr` / `trPr` shapes stay opaque metadata or
-  fail-closed.
+  fail-closed; opaque cell fixtures moved to `tcFitText`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

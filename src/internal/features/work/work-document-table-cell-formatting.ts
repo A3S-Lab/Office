@@ -62,6 +62,22 @@ export type {
 
 export type DocumentTableVerticalAlign = 'top' | 'middle' | 'bottom';
 export type DocumentTableHorizontalAlign = 'left' | 'center' | 'right';
+export type DocumentTableCellTextDirection =
+  | 'lrTb'
+  | 'tbRl'
+  | 'btLr'
+  | 'lrTbV'
+  | 'tbRlV'
+  | 'tbLrV';
+
+const DOCUMENT_TABLE_CELL_TEXT_DIRECTIONS = new Set<DocumentTableCellTextDirection>([
+  'lrTb',
+  'tbRl',
+  'btLr',
+  'lrTbV',
+  'tbRlV',
+  'tbLrV',
+]);
 export interface DocumentTableCellFormat {
   backgroundColor: string;
   verticalAlign: DocumentTableVerticalAlign;
@@ -403,6 +419,21 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
         return {};
       },
     },
+    textDirection: {
+      default: null,
+      parseHTML: (element: HTMLElement) =>
+        normalizeDocumentTableCellTextDirection(
+          element.dataset.officeCellTextDirection,
+        ),
+      renderHTML: (attributes: Record<string, unknown>) => {
+        const textDirection = normalizeDocumentTableCellTextDirection(
+          attributes.textDirection,
+        );
+        return textDirection
+          ? { 'data-office-cell-text-direction': textDirection }
+          : {};
+      },
+    },
     propertyRevisionOmml: {
       default: null,
       parseHTML: (element: HTMLElement) =>
@@ -717,6 +748,18 @@ export function normalizeDocumentTableVerticalAlign(
   if (value === 'top' || value === 'middle' || value === 'bottom') return value;
   if (value === 'center') return 'middle';
   return null;
+}
+
+export function normalizeDocumentTableCellTextDirection(
+  value: unknown,
+): DocumentTableCellTextDirection | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return DOCUMENT_TABLE_CELL_TEXT_DIRECTIONS.has(
+    normalized as DocumentTableCellTextDirection,
+  )
+    ? (normalized as DocumentTableCellTextDirection)
+    : null;
 }
 
 function cellChangeAttribute(

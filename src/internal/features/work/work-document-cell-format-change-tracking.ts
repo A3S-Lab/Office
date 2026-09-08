@@ -3,8 +3,10 @@ import type { EditorState, Transaction } from '@tiptap/pm/state';
 import type { WorkDocumentChangeIdentity } from './work-document-changes';
 import {
   normalizeDocumentCellFormattingSnapshot,
+  normalizeDocumentTableCellTextDirection,
   preferredWidthFromCellAttributes,
   serializeDocumentCellFormatting,
+  type DocumentTableCellTextDirection,
 } from './work-document-cell-format-changes';
 import { normalizeTableColor } from './work-document-table-borders';
 import {
@@ -23,7 +25,8 @@ interface DocumentCellFormattingTrackingOptions {
 
 /**
  * When track-changes is on, cell verticalAlign / solid fill / margin /
- * preferred-width / noWrap edits become reviewable `cell-formatting` revisions.
+ * preferred-width / noWrap / textDirection edits become reviewable
+ * `cell-formatting` revisions.
  */
 export function trackDocumentCellFormattingTransaction(
   transaction: Transaction,
@@ -68,6 +71,7 @@ function cellFormatting(node: ProseMirrorNode): {
   margins?: DocumentTableCellMarginOverrides;
   width?: DocumentTablePreferredWidth;
   noWrap?: boolean;
+  textDirection?: DocumentTableCellTextDirection;
 } | null {
   const verticalAlign =
     normalizeDocumentTableVerticalAlign(node.attrs.verticalAlign) ?? 'top';
@@ -81,12 +85,15 @@ function cellFormatting(node: ProseMirrorNode): {
   const width = preferredWidthFromCellAttributes(node.attrs) ?? undefined;
   const noWrap =
     typeof node.attrs.noWrap === 'boolean' ? node.attrs.noWrap : false;
+  const textDirection =
+    normalizeDocumentTableCellTextDirection(node.attrs.textDirection) ?? 'lrTb';
   return normalizeDocumentCellFormattingSnapshot({
     verticalAlign,
     ...(fill ? { fill } : {}),
     ...(margins ? { margins } : {}),
     ...(width ? { width } : {}),
     noWrap,
+    textDirection,
   });
 }
 
@@ -103,6 +110,7 @@ function onlyReviewableCellFormattingChanged(
     'colwidth',
     'columnWidthPercentages',
     'noWrap',
+    'textDirection',
     'cellChangeKind',
     'cellChangeId',
     'cellChangeAuthor',

@@ -35,6 +35,8 @@ import {
   supportedDocxCellFormattingChangeFromProperties,
   type SupportedDocxCellFormattingChange,
 } from './work-docx-cell-format-change-import';
+import { normalizeDocumentTableCellTextDirection } from './work-document-table-cell-formatting';
+import type { DocumentTableCellTextDirection } from './work-document-table-cell-formatting';
 import {
   type DocxThemeColorReference,
   serializeDocxThemeReference,
@@ -56,6 +58,7 @@ export interface ImportedDocxTableCellMarker {
   borders?: ImportedDocxTableCellBorders;
   margins?: DocumentTableCellMarginOverrides;
   noWrap?: boolean;
+  textDirection?: DocumentTableCellTextDirection;
   propertyRevisionOmml?: string;
   formattingChange?: SupportedDocxCellFormattingChange;
 }
@@ -122,6 +125,14 @@ export function markDocxTableCells(
       ? directChild(properties, 'noWrap')
       : undefined;
     const noWrap = noWrapElement ? onOffValue(noWrapElement) : undefined;
+    const textDirectionElement = properties
+      ? directChild(properties, 'textDirection')
+      : undefined;
+    const textDirection = textDirectionElement
+      ? normalizeDocumentTableCellTextDirection(
+          attribute(textDirectionElement, 'val'),
+        ) ?? undefined
+      : undefined;
     const formattingChange =
       supportedDocxCellFormattingChangeFromProperties(properties);
     const propertyRevisionOmml = formattingChange
@@ -133,6 +144,7 @@ export function markDocxTableCells(
       !borders &&
       !margins &&
       noWrap === undefined &&
+      textDirection === undefined &&
       !propertyRevisionOmml &&
       !formattingChange
     ) {
@@ -150,6 +162,7 @@ export function markDocxTableCells(
       ...(borders ? { borders } : {}),
       ...(margins ? { margins } : {}),
       ...(noWrap !== undefined ? { noWrap } : {}),
+      ...(textDirection !== undefined ? { textDirection } : {}),
       ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
       ...(formattingChange ? { formattingChange } : {}),
     });
@@ -226,6 +239,9 @@ function applyCellFormat(
   }
   if (format.noWrap !== undefined) {
     cell.dataset.officeCellNoWrap = String(format.noWrap);
+  }
+  if (format.textDirection) {
+    cell.dataset.officeCellTextDirection = format.textDirection;
   }
   applyDocumentCellPropertyRevisionOmmlToElement(
     cell,
