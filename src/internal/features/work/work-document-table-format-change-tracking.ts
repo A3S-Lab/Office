@@ -13,7 +13,7 @@ interface DocumentTableFormattingTrackingOptions {
 
 /**
  * When track-changes is on, table layout / alignment / preferred-width /
- * indent / default cell-margin geometry edits become reviewable
+ * indent / default cell-margin / bidiVisual edits become reviewable
  * `table-formatting` revisions.
  *
  * Layout-mode switches (`setDocumentTableLayoutMode`) also rewrite cell
@@ -73,6 +73,8 @@ function geometryFormatting(
     width: geometry.width,
     indent: geometry.indent,
     cellMargins: geometry.cellMargins,
+    bidiVisual:
+      typeof node.attrs.bidiVisual === 'boolean' ? node.attrs.bidiVisual : false,
   });
 }
 
@@ -122,6 +124,7 @@ function tableSnapshotIgnoringGeometry(node: ProseMirrorNode): unknown {
   const attrs = { ...node.attrs };
   delete attrs.geometry;
   delete attrs.layoutMode;
+  delete attrs.bidiVisual;
   delete attrs.tableChangeKind;
   delete attrs.tableChangeId;
   delete attrs.tableChangeAuthor;

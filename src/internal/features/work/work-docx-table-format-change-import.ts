@@ -27,6 +27,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tblInd',
   'tblCellMar',
   'tblLayout',
+  'bidiVisual',
 ]);
 const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
 const RELATIONSHIP_NAMESPACES = new Set([
@@ -45,7 +46,8 @@ export interface SupportedDocxTableFormattingChange {
 
 /**
  * Relationship-free `w:tblPrChange` whose prior snapshot contains only
- * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, and/or `w:tblLayout`. Broader
+ * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, `w:tblLayout`, and/or
+ * `w:bidiVisual`. Broader
  * property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxTableFormattingChange(
@@ -135,6 +137,7 @@ function supportedTableFormattingChange(
   let width: DocumentTablePreferredWidth | undefined;
   let indent: number | undefined;
   let cellMargins: DocumentTableCellMarginOverrides | undefined;
+  let bidiVisual: boolean | undefined;
   for (const child of children) {
     if (child.localName === 'tblLayout') {
       const value = normalizeDocumentTableLayoutAlgorithm(
@@ -168,6 +171,10 @@ function supportedTableFormattingChange(
       const value = importedTableCellMargins(child);
       if (!value) return null;
       cellMargins = value;
+      continue;
+    }
+    if (child.localName === 'bidiVisual') {
+      bidiVisual = onOffValue(child);
     }
   }
   const snapshot = normalizeDocumentTableFormattingSnapshot({
@@ -176,6 +183,7 @@ function supportedTableFormattingChange(
     ...(width ? { width } : {}),
     ...(indent !== undefined ? { indent } : {}),
     ...(cellMargins ? { cellMargins } : {}),
+    ...(bidiVisual !== undefined ? { bidiVisual } : {}),
   });
   if (!snapshot) return null;
   const date = normalizeRevisionDate(rawDate);
@@ -270,6 +278,18 @@ function mapJcValue(value: string | null): string | null {
   if (value === 'start') return 'left';
   if (value === 'end') return 'right';
   return value;
+}
+
+function onOffValue(element: Element): boolean {
+  const value = attribute(element, 'val');
+  if (value === null || value === '') return true;
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized === '1' ||
+    normalized === 'true' ||
+    normalized === 'on' ||
+    normalized === 'yes'
+  );
 }
 
 function wordAttribute(element: Element, localName: string): string | null {

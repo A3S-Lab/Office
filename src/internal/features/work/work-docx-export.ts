@@ -688,6 +688,7 @@ export async function createDocxBlob(
   const tableFormattingChangesPatched = await patchDocxTableFormattingChanges(
     tablePropertyRevisionPatched,
     noteContext.tableFormattingChangePatches.patches,
+    noteContext.tableFormattingChangePatches.bidiVisual,
   );
   const rowFormattingChangesPatched = await patchDocxRowFormattingChanges(
     tableFormattingChangesPatched,

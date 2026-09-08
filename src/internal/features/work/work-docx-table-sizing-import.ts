@@ -41,6 +41,7 @@ export interface ImportedDocxTableSizingMarker {
   floatOmml?: string;
   propertyRevisionOmml?: string;
   formattingChange?: SupportedDocxTableFormattingChange;
+  bidiVisual?: boolean;
 }
 
 export interface ImportedDocxTableSizingMarkers {
@@ -90,6 +91,9 @@ export function markDocxTableSizing(
       ...(floatOmml ? { floatOmml } : {}),
       ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
       ...(formattingChange ? { formattingChange } : {}),
+      ...(importedTableBidiVisual(tableProperties)
+        ? { bidiVisual: true }
+        : {}),
     });
   }
   return { tables };
@@ -121,6 +125,9 @@ export function applyImportedDocxTableSizingMarkers(
             sizing.formattingChange,
           );
         }
+        if (sizing.bidiVisual) {
+          table.dataset.officeTableBidiVisual = 'true';
+        }
         if (sizing.columnWidths.length) {
           applyColumnWidths(table, sizing.columnWidths);
         }
@@ -138,6 +145,23 @@ export function hasImportedDocxTableSizingMarkers(
   markers: ImportedDocxTableSizingMarkers,
 ): boolean {
   return markers.tables.length > 0;
+}
+
+function importedTableBidiVisual(
+  properties: Element | null | undefined,
+): boolean {
+  if (!properties) return false;
+  const element = directChild(properties, 'bidiVisual');
+  if (!element) return false;
+  const value = attribute(element, 'val');
+  if (value === null || value === '') return true;
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized === '1' ||
+    normalized === 'true' ||
+    normalized === 'on' ||
+    normalized === 'yes'
+  );
 }
 
 function importedTableGeometry(

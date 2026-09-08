@@ -18,8 +18,10 @@ const TWIPS_PER_PIXEL = 1440 / 96;
 
 export class DocxTableFormattingChangePatchCollector {
   readonly patches: Array<DocxTableFormattingChangePatch | null> = [];
+  readonly bidiVisual: boolean[] = [];
 
   record(element: HTMLTableElement, id: number): void {
+    this.bidiVisual.push(element.dataset.officeTableBidiVisual === 'true');
     if (
       element.dataset.changeKind !== 'table-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -47,8 +49,9 @@ export class DocxTableFormattingChangePatchCollector {
 export async function patchDocxTableFormattingChanges(
   buffer: ArrayBuffer,
   patches: readonly (DocxTableFormattingChangePatch | null)[],
+  bidiVisual: readonly boolean[] = [],
 ): Promise<ArrayBuffer> {
-  if (!patches.some(Boolean)) return buffer;
+  if (!patches.some(Boolean) && !bidiVisual.some(Boolean)) return buffer;
   if (patches.filter(Boolean).length > MAX_TABLE_FORMATTING_CHANGE_PATCHES) {
     throw new Error('Document exceeds the table-formatting revision limit.');
   }
@@ -68,14 +71,25 @@ export async function patchDocxTableFormattingChanges(
   let changed = false;
   let index = 0;
   for (const table of tables) {
-    const patch = patches[index++] ?? null;
-    if (!patch) continue;
-    setTableFormattingChange(document, table, patch);
-    changed = true;
+    const patch = patches[index] ?? null;
+    const tableBidiVisual = bidiVisual[index] === true;
+    index += 1;
+    if (patch) {
+      setTableFormattingChange(document, table, patch);
+      changed = true;
+    }
+    if (setTableBidiVisual(document, table, tableBidiVisual)) {
+      changed = true;
+    }
   }
   if (index !== patches.length) {
     throw new Error(
       `DOCX table-formatting revision patch count mismatch (${patches.length} patches, ${index} tables).`,
+    );
+  }
+  if (bidiVisual.length && bidiVisual.length !== patches.length) {
+    throw new Error(
+      `DOCX table bidiVisual patch count mismatch (${bidiVisual.length} flags, ${patches.length} tables).`,
     );
   }
   if (changed) {
@@ -131,8 +145,38 @@ function setTableFormattingChange(
   if (formatting.cellMargins) {
     prior.append(createTableCellMarginsElement(document, formatting.cellMargins));
   }
+  if (formatting.bidiVisual !== undefined) {
+    const bidiVisual = document.createElementNS(WORD_NAMESPACE, 'w:bidiVisual');
+    if (!formatting.bidiVisual) {
+      bidiVisual.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    }
+    prior.append(bidiVisual);
+  }
   change.append(prior);
   properties.append(change);
+}
+
+function setTableBidiVisual(
+  document: Document,
+  table: Element,
+  bidiVisual: boolean,
+): boolean {
+  let properties = directChild(table, 'tblPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    if (!bidiVisual) return false;
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+    table.insertBefore(properties, table.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'bidiVisual' &&
+      child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (!bidiVisual) return true;
+  properties.append(document.createElementNS(WORD_NAMESPACE, 'w:bidiVisual'));
+  return true;
 }
 
 function createPreferredWidthElement(

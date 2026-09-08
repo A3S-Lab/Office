@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.87.0 - 2026-09-08
+
+### Writer
+
+- Relationship-free `w:tblPrChange` priors that include `w:bidiVisual` are now
+  reviewable as `table-formatting` with accept/reject, live track-changes, and
+  native export (including current-table `w:bidiVisual` on DOCX write).
+  Broader table property sets remain opaque or fail-closed; opaque fixtures stay
+  on `tblLook`.
+
 ## 0.86.0 - 2026-09-08
 
 ### Writer

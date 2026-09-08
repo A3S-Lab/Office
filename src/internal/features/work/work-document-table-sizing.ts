@@ -194,6 +194,17 @@ export const DocumentTable = Table.extend({
             ? { 'data-office-table-imported': 'true' }
             : {},
       },
+      bidiVisual: {
+        default: false,
+        parseHTML: (element: HTMLElement) =>
+          element.dataset.officeTableBidiVisual === 'true',
+        renderHTML: (attributes: Record<string, unknown>) =>
+          attributes.bidiVisual === true
+            ? { 'data-office-table-bidi-visual': 'true' }
+            : attributes.bidiVisual === false
+              ? { 'data-office-table-bidi-visual': 'false' }
+              : {},
+      },
       floatOmml: {
         default: null,
         parseHTML: (element: HTMLElement) =>

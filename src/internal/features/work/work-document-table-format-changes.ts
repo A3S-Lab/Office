@@ -22,8 +22,8 @@ export const DOCUMENT_TABLE_CHANGE_ATTRIBUTES = [
 
 /**
  * Prior snapshot for reviewable table-property revisions.
- * At least one of layout, alignment, preferred width, indent, or cellMargins
- * must be present.
+ * At least one of layout, alignment, preferred width, indent, cellMargins,
+ * or bidiVisual must be present.
  */
 export interface DocumentTableFormattingSnapshot {
   layout?: DocumentTableLayoutAlgorithm;
@@ -31,6 +31,7 @@ export interface DocumentTableFormattingSnapshot {
   width?: DocumentTablePreferredWidth;
   indent?: number;
   cellMargins?: DocumentTableCellMarginOverrides;
+  bidiVisual?: boolean;
 }
 
 const MAX_TABLE_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -49,12 +50,13 @@ export function serializeDocumentTableFormatting(
     width?: unknown;
     indent?: unknown;
     cellMargins?: unknown;
+    bidiVisual?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentTableFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Table-formatting snapshot requires layout, alignment, width, indent, or cellMargins.',
+      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, or bidiVisual.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -89,7 +91,8 @@ export function parseDocumentTableFormatting(
         key !== 'alignment' &&
         key !== 'width' &&
         key !== 'indent' &&
-        key !== 'cellMargins',
+        key !== 'cellMargins' &&
+        key !== 'bidiVisual',
     )
   ) {
     return null;
@@ -107,6 +110,7 @@ export function normalizeDocumentTableFormattingSnapshot(
     width?: unknown;
     indent?: unknown;
     cellMargins?: unknown;
+    bidiVisual?: unknown;
   },
 ): DocumentTableFormattingSnapshot | null {
   const snapshot: DocumentTableFormattingSnapshot = {};
@@ -137,11 +141,16 @@ export function normalizeDocumentTableFormattingSnapshot(
     if (!cellMargins) return null;
     snapshot.cellMargins = orderedMargins(cellMargins);
   }
+  if ('bidiVisual' in attributes && attributes.bidiVisual !== undefined) {
+    if (typeof attributes.bidiVisual !== 'boolean') return null;
+    snapshot.bidiVisual = attributes.bidiVisual;
+  }
   return snapshot.layout ||
     snapshot.alignment ||
     snapshot.width ||
     snapshot.indent !== undefined ||
-    snapshot.cellMargins
+    snapshot.cellMargins ||
+    snapshot.bidiVisual !== undefined
     ? snapshot
     : null;
 }
@@ -184,10 +193,14 @@ export function restoredDocumentTableAttributes(
     if (!merged) return null;
     geometry.cellMargins = merged;
   }
-  return clearDocumentTableChangeAttributes({
+  const next = clearDocumentTableChangeAttributes({
     ...attributes,
     geometry,
   });
+  if (formatting.bidiVisual !== undefined) {
+    next.bidiVisual = formatting.bidiVisual;
+  }
+  return next;
 }
 
 function orderedSnapshot(
@@ -206,6 +219,7 @@ function orderedSnapshot(
   if (snapshot.cellMargins) {
     ordered.cellMargins = orderedMargins(snapshot.cellMargins);
   }
+  if (snapshot.bidiVisual !== undefined) ordered.bidiVisual = snapshot.bidiVisual;
   return ordered;
 }
 
