@@ -371,16 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.79.0` deepens Writer Phase 0 reviewable cell and row property
-revisions:
+Version `0.79.0` makes more Writer table property revisions reviewable without
+widening the opaque/fail-closed boundary:
 
 - **Cell formatting** — relationship-free `tcW` (auto / dxa / pct) and `noWrap`
-  priors are reviewable as `cell-formatting`, with live track-changes and native
+  become `cell-formatting` with accept/reject, live track-changes, and native
   DOCX export.
 - **Row formatting** — relationship-free `hidden` and `jc` (left / center /
-  right) priors are reviewable as `row-formatting`, including current-row export
-  of those properties.
-- **Boundaries** — broader cell/row property sets remain opaque metadata or
+  right) become `row-formatting` on the same path, including current-row export.
+- **Boundary** — broader `tcPr` / `trPr` shapes stay opaque metadata or
   fail-closed.
 
 Earlier releases stay on the product
@@ -398,10 +397,12 @@ evidence. `Partial` means a useful path exists with a documented boundary.
 ### Document
 
 **Strong paths:** structured authoring, pagination, tables, references, review,
-large plain-document windows, and source-aware DOCX round trips.
+large plain-document windows, source-aware DOCX round trips, and Document PDF
+export with searchable Latin Helvetica vectors (optional host-registered CJK).
 
-**Boundary:** long-tail DrawingML, fields, exact layout parity, and searchable
-vector PDF remain partial.
+**Boundary:** long-tail DrawingML, fields, exact layout parity, full PDF/UA
+structure trees, and unregistered non-Latin PDF glyphs remain partial or
+fail-soft.
 
 ### Spreadsheet
 

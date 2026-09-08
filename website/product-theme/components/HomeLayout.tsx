@@ -87,8 +87,8 @@ function productCopy(language: Language) {
   const zh = language === 'zh';
   return {
     lead: zh
-      ? '在你的应用里打开、编辑和保存文档、Markdown、表格、演示文稿与 PDF。文件、权限和存储仍由你的应用管理；多人协作可以单独接入。'
-      : 'Open, edit, and save documents, Markdown, spreadsheets, presentations, and PDFs in your app. Your app keeps files, permissions, and storage; collaboration can be added separately.',
+      ? '五种编辑器，一个宿主边界：在你的应用里打开、编辑和保存文档、Markdown、表格、演示文稿与 PDF。文件、权限和存储仍由你管；多人协作可单独接入。'
+      : 'Five editors, one host boundary: open, edit, and save documents, Markdown, spreadsheets, presentations, and PDFs in your app. You keep files, permissions, and storage; add collaboration when you need it.',
     primary: zh ? '开始接入' : 'Start integrating',
     secondary: zh ? '打开 Playground' : 'Open Playground',
     workflowTitle: zh ? '接入步骤' : 'Integration steps',

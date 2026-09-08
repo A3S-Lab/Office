@@ -1,12 +1,12 @@
 ---
 title: A3S Office documentation
-description: Embed and extend A3S Office editors, review bounded native Writer whole-paragraph changes and same-section text moves, author WPS-compatible text-box shapes with explicit connector boundaries, content controls, and picture transforms locally, inspect WPS UI references, build Spreadsheet validation and formula workflows, collaborate in real time, and automate Office files from coding agents.
+description: Embed five host-owned Office editors, collaborate in real time, and automate real Office files from coding agents.
 ---
 
 # A3S Office documentation
 
-This index covers the latest `main` branch. Use it to find integration guides,
-API references, and engineering notes.
+Latest docs for `main`. One job per section: integrate, explore a surface,
+review what shipped, then dig into engineering references.
 
 ## Start here
 
@@ -46,51 +46,31 @@ identity, authorization, providers, offline buffering, and persistence.
 
 ## What's new on `main` (0.79.0)
 
-- Writer Phase 0 admits reviewable `tcW` and `noWrap` as `cell-formatting`, plus
-  `hidden` and `jc` as `row-formatting`, with accept/reject, live track-changes,
-  and native DOCX export.
-- Broader cell/row property sets remain opaque metadata or fail-closed; opaque
-  fixtures moved to `textDirection` and `gridBefore`.
-- Earlier 0.78.0 searchable PDF vector and paragraph-mark fidelity remains on
-  the [What's new](./changelog.html) timeline.
+Writer Phase 0 deepens reviewable table-cell and table-row property revisions:
 
-The [What's new](./changelog.html) page presents recent releases by version,
-editor surface, user outcome, compatibility evidence, and detailed reference.
-Use the version switcher there to see only the history that existed in a frozen
-documentation release.
+- Relationship-free `tcW` and `noWrap` import as reviewable `cell-formatting`
+  with accept/reject, live track-changes, and native DOCX export.
+- Relationship-free `hidden` and `jc` import as reviewable `row-formatting`
+  with the same review and export path.
+- Broader cell/row property sets stay opaque or fail-closed
+  (`textDirection`, `gridBefore`, and other unsupported priors).
 
-Current product highlights:
+Full product timeline: [What's new](./changelog.html). Engineering detail:
+repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).
 
-- [A3S Test five-surface editor gates](./automation/index.html)
-- [Keyboard-safe template discovery](./automation/index.html)
-- [PDF page organization with resilient Blob export](./components/pdf.html#page-organization)
+## Explore by surface
 
-- [WPS-compatible Writer connector arrow styles](./components/document.html#built-in-editable-text-boxes)
+Curated entry points for durable capabilities. Prefer these over scanning
+every historical release note.
 
-- [WPS-compatible Writer connector line styles](./components/document.html#built-in-editable-text-boxes)
-- [Stable Windows A3S Test CDP adapter and responsive Writer matrix](./automation/index.html)
-- [Commander office editor operator with A3S Test agent workflows](./automation/index.html)
-- [A3S Test connector editing contract and WPS COM reference boundary](./components/document.html#built-in-editable-text-boxes)
-- [WPS VML connector compatibility boundary](./components/document.html#built-in-editable-text-boxes)
-- [WPS-compatible Writer text-box shapes](./components/document.html#built-in-editable-text-boxes)
-- [Native Writer whole-paragraph mark revisions](./components/document.html#whole-paragraph-mark-revisions)
-- [Bounded same-section Writer Compare moves](./components/document.html#document-compare-and-combine)
-- [Native Writer move revisions](./components/document.html#move-revisions)
-- [Themed Writer selection-toolbar controls](./components/document.html#selection-toolbar-controls)
-- [Native Writer content controls](./components/document.html#built-in-content-controls)
-- [Common live Writer fields and bookmark page references](./components/document.html#common-live-fields)
-- [Native editable Writer text boxes](./components/document.html#built-in-editable-text-boxes)
-- [Writer picture rotation and reflection](./components/document.html#built-in-picture-properties)
-- [Local Spreadsheet dependent dropdown lists](./components/spreadsheet.html#dependent-dropdown-lists)
-- [Editable local Spreadsheet formula conditional formatting](./components/spreadsheet.html#formula-conditional-formatting)
-- [Bounded local Spreadsheet custom-formula validation](./components/spreadsheet.html#custom-formulas)
-- [Office-style Spreadsheet data-validation alert branches](./components/spreadsheet.html#office-style-error-alert-branches)
-- [Atomic Writer ordered-list numbering revisions](./components/document.html#ordered-list-numbering-revisions)
-- [Composable Presentation entrance and exit animations](./components/presentation.html#entrance-and-exit-animations)
-- [Version-aware product release notes](./changelog.html)
-- [Native Writer OpenType typography](./components/document.html#native-opentype-typography)
-- [Exact XLSX 1900/1904 date-system retention](./components/spreadsheet.html#xlsx-1904-date-system-retention)
-- [Keyboard-safe template discovery and A3S Test five-surface gates](./automation/index.html)
+| Surface | Start with |
+| --- | --- |
+| Document | [Whole-paragraph mark revisions](./components/document.html#whole-paragraph-mark-revisions) · [Move revisions](./components/document.html#move-revisions) · [Compare moves](./components/document.html#document-compare-and-combine) · [Numbering revisions](./components/document.html#ordered-list-numbering-revisions) · [OpenType typography](./components/document.html#native-opentype-typography) · [Content controls](./components/document.html#built-in-content-controls) · [Live fields](./components/document.html#common-live-fields) · [Text boxes and connectors](./components/document.html#built-in-editable-text-boxes) · [Picture properties](./components/document.html#built-in-picture-properties) · [Selection toolbar](./components/document.html#selection-toolbar-controls) |
+| Spreadsheet | [Dependent dropdowns](./components/spreadsheet.html#dependent-dropdown-lists) · [Formula conditional formatting](./components/spreadsheet.html#formula-conditional-formatting) · [Custom formulas](./components/spreadsheet.html#custom-formulas) · [Error-alert branches](./components/spreadsheet.html#office-style-error-alert-branches) · [1900/1904 date systems](./components/spreadsheet.html#xlsx-1904-date-system-retention) |
+| Presentation | [Entrance and exit animations](./components/presentation.html#entrance-and-exit-animations) |
+| PDF | [Page organization](./components/pdf.html#page-organization) |
+| Automation | [A3S Test gates, template discovery, and operator workflows](./automation/index.html) |
+| Releases | [Version-aware What's new](./changelog.html) |
 
 ## Engineering references
 

@@ -537,7 +537,7 @@ test('routes the concise README and documentation homes to the current release s
 
   expect(readme).toContain('## Current release');
   expect(readme).toContain('Version `0.79.0`');
-  expect(readme).toContain('reviewable cell and row property');
+  expect(readme).toContain('table property revisions reviewable');
   expect(readme).toContain('cell-formatting');
   expect(readme).toContain('Earlier releases stay on the product');
   expect(englishHome).toContain("## What's new on `main` (0.79.0)");
@@ -556,6 +556,8 @@ test('routes the concise README and documentation homes to the current release s
   );
 
   expect(englishHome).toContain("## What's new on `main` (0.79.0)");
+  expect(englishHome).toContain('## Explore by surface');
+  expect(englishHome).not.toContain('Current product highlights');
   expect(englishHome).toContain("[What's new](./changelog.html)");
   expect(englishHome).toContain('document.html#whole-paragraph-mark-revisions');
   expect(englishHome).toContain('document.html#move-revisions');
@@ -582,6 +584,8 @@ test('routes the concise README and documentation homes to the current release s
   expect(englishHome).toContain('document.html#built-in-content-controls');
 
   expect(chineseHome).toContain('## `main` 更新内容（0.79.0）');
+  expect(chineseHome).toContain('## 按表面探索');
+  expect(chineseHome).not.toContain('当前产品亮点');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
   expect(chineseHome).toContain('document.html#整段段落标记修订');
   expect(chineseHome).toContain('document.html#移动修订');

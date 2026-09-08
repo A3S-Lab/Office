@@ -370,13 +370,13 @@ Codex 编辑器操作可在所有五个表面上键入和重现。
 
 ## 当前版本
 
-版本 `0.79.0` 深化 Writer Phase 0 可审阅的单元格与行属性修订：
+版本 `0.79.0` 在不扩大不透明/失败闭合边界的前提下，让更多 Writer 表格属性修订可审阅：
 
-- **单元格格式** — 无关系的 `tcW`（auto / dxa / pct）与 `noWrap` 先验可作为
-  `cell-formatting` 审阅，并覆盖实时修订跟踪与原生 DOCX 导出。
-- **行格式** — 无关系的 `hidden` 与 `jc`（left / center / right）先验可作为
-  `row-formatting` 审阅，并覆盖当前行属性导出。
-- **边界** — 更广的单元格/行属性集仍为不透明元数据或失败闭合。
+- **单元格格式** — 无关系的 `tcW`（auto / dxa / pct）与 `noWrap` 成为
+  `cell-formatting`：接受/拒绝、实时修订跟踪、原生 DOCX 导出。
+- **行格式** — 无关系的 `hidden` 与 `jc`（left / center / right）成为
+  `row-formatting`：同一路径，并覆盖当前行导出。
+- **边界** — 更广的 `tcPr` / `trPr` 形态仍为不透明元数据或失败闭合。
 
 更早的版本请查看产品向
 [更新日志](https://a3s-lab.github.io/Office/docs/changelog.html) 时间线，以及完整工程
@@ -391,11 +391,11 @@ A3S Office 优先显式保真边界，而不是静默近似。
 
 ### 文档
 
-**强路径：** 结构化写作、分页、表格、引用、审阅、
-大篇幅纯文窗口，以及源感知的 DOCX 往返。
+**强路径：** 结构化写作、分页、表格、引用、审阅、大篇幅纯文窗口、源感知 DOCX 往返，
+以及文档 PDF 导出中的可搜索 Latin Helvetica 矢量文本（可选宿主注册 CJK）。
 
-**边界：** 长尾 DrawingML、域、精确版式对齐，以及可搜索
-矢量 PDF 仍为部分支持。
+**边界：** 长尾 DrawingML、域、精确版式对齐、完整 PDF/UA 结构树，以及未注册的非
+Latin PDF 字形仍为部分支持或失败软化。
 
 ### 电子表格
 
