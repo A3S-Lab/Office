@@ -976,7 +976,7 @@ A3S Office 是 1.0 之前的版本。公共模型和组件道具是可用的，�
 【编辑质量路线图](./docs/latest/en/editor-quality-roadmap.md)记录
 移动每个边界所需的证据。
 
-## 发展
+## 开发
 
 从存储库根运行标准检查：
 
@@ -1032,7 +1032,7 @@ GitHub Actions 不需要 A3S 测试。参见
 通过私有进程怀疑存在漏洞
 [SECURITY.md](./SECURITY.md)，不是通过公开问题。
 
-## 执照
+## 许可证
 
 A3S Office 可在 [MIT 许可证](./LICENSE) 下使用。捆绑 PDFium 和
 其他第三方资产带有附加通知
