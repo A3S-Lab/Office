@@ -2,6 +2,8 @@
 
 All notable changes to A3S Office will be documented in this file.
 
+## Unreleased
+
 ## 0.78.0 - 2026-09-08
 
 ### Writer
