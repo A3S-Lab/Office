@@ -55,12 +55,12 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
       'documentation',
     ],
     title: {
-      en: 'Five-surface WPS shortcut matrix reaches 103 ACL / 78 visual',
-      zh: '五编辑器 WPS 快捷键矩阵达到 103 ACL / 78 视觉',
+      en: 'Five editors share one WPS shortcut matrix (103 ACL / 78 visual)',
+      zh: '五编辑器共享同一 WPS 快捷键矩阵（103 ACL / 78 视觉）',
     },
     summary: {
-      en: 'Writer, Spreadsheet, Presentation, Markdown, and PDF deepen WPS UI/UX chords with dedicated ACL and responsive visual evidence across the shared operator matrix.',
-      zh: 'Writer、Spreadsheet、Presentation、Markdown 与 PDF 深化 WPS UI/UX 快捷键，并在共享操作器矩阵中补齐专用 ACL 与响应式视觉证据。',
+      en: 'One release story across Writer, Spreadsheet, Presentation, Markdown, and PDF: WPS-aligned chords with ribbon ads plus dedicated ACL and responsive visual evidence on the shared operator matrix.',
+      zh: 'Writer、Spreadsheet、Presentation、Markdown 与 PDF 共用同一发布叙事：对齐 WPS 的快捷键、功能区广告，以及共享操作器矩阵上的专用 ACL 与响应式视觉证据。',
     },
     highlights: [
       {

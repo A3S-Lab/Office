@@ -537,25 +537,16 @@ test('routes the concise README and documentation homes to the current release s
 
   expect(readme).toContain('## Current release');
   expect(readme).toContain('Version `0.77.0`');
+  expect(readme).toContain('103 ACL');
+  expect(readme).toContain('78 visual');
+  expect(readme).toContain('Earlier releases stay on the product');
   expect(readme).toContain('office-ui-ops plan <surface> --json');
   expect(englishHome).toContain("## What's new on `main` (0.77.0)");
   expect(englishHome).toContain('office-ui-ops plan <surface> --json');
   expect(chineseHome).toContain('## `main` 更新内容（0.77.0）');
   expect(chineseHome).toContain('office-ui-ops plan <surface> --json');
-  expect(readme).toContain('Version `0.54.0`');
-  expect(readme).toContain('Version `0.53.1`');
-  expect(readme).toContain('Version `0.53.0`');
-  expect(readme).toContain('Version `0.52.0`');
-  expect(readme).toContain('Version `0.51.0`');
-  expect(readme).toContain('Version `0.50.0`');
-  expect(readme).toContain('Version `0.49.0`');
-  expect(readme).toContain('Version `0.48.1`');
-  expect(readme).toContain('Version `0.48.0`');
-  expect(readme).toContain('Version `0.47.0`');
-  expect(readme).toContain('Version `0.46.0`');
-  expect(readme).toContain('Version `0.45.0`');
-  expect(readme).toContain('Version `0.44.0`');
-  expect(readme).toContain('Version `0.43.0`');
+  expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
+  expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
   expect(readme).toContain(
     "[What's new](https://a3s-lab.github.io/Office/docs/changelog.html)",
   );
@@ -683,7 +674,6 @@ test('publishes the WPS VML connector boundary across code, docs, and A3S Test e
   expect(changelog).toContain('WPS VML connectors');
   expect(product).toContain('The seventy-second Writer milestone');
   expect(roadmap).toContain('straight, elbow, and curved connector subset');
-  expect(readme).toContain('Version `0.54.0`');
   expect(releaseData).toContain("version: '0.54.0'");
   expect(diagnostics).toContain("'docx.connectors'");
   expect(connectorTest).toContain('WPS connector compatibility boundary');
@@ -767,7 +757,7 @@ test('publishes the WPS connector-kind A3S Test matrix in the 0.57.0 release sto
 
   for (const document of [latestEnglish, latestChinese]) {
     expect(document).toContain('A3S Test');
-    expect(document).toContain('0.74.0');
+    expect(document).toContain('0.77.0');
   }
   for (const document of [frozenEnglish, frozenChinese]) {
     expect(document).toContain('A3S Test');
@@ -1092,7 +1082,6 @@ test('publishes Writer move revisions across implementation, native collaboratio
   expect(changelog).toContain('bounded native Writer move revisions');
   expect(roadmap).toContain('w:moveFrom');
   expect(product).toContain('The sixty-seventh Writer milestone');
-  expect(readme).toContain('Version `0.49.0`');
   expect(releaseEnglishHome).toContain('0.49.0');
   expect(releaseEnglishHome).toContain('document.html#move-revisions');
   expect(releaseChineseHome).toContain('0.49.0');
@@ -1243,7 +1232,6 @@ test('publishes bounded Writer whole-paragraph revisions in the 0.52.0 frozen do
   expect(changelog).toContain('12.1.0.22215 COM inspection confirmed');
   expect(roadmap).toContain('whole-paragraph mark insertion/deletion');
   expect(product).toContain('The seventieth Writer milestone');
-  expect(readme).toContain('Version `0.52.0`');
   expect(releaseData).toContain("version: '0.52.0'");
   expect(releaseData).toContain('whole-paragraph-mark-revisions');
   expect(importer).toContain('markDocxParagraphMarkChanges');
@@ -1411,7 +1399,6 @@ test('publishes Spreadsheet validation alert branches across implementation, doc
   expect(changelog).toContain('Aligned Spreadsheet data-validation alerts');
   expect(roadmap).toContain('Warning/Information confirmation branches');
   expect(product).toContain('Version 0.41.0 aligns direct and formula-bar');
-  expect(readme).toContain('Version `0.41.0`');
 
   for (const source of [english, chinese, frozenEnglish, frozenChinese]) {
     expect(source).toContain('errorStyle');
@@ -1517,7 +1504,6 @@ test('publishes Spreadsheet custom-formula validation across the current and fro
   expect(product).toContain(
     'Version 0.42.0 adds the follow-up custom-formula rule',
   );
-  expect(readme).toContain('Version `0.42.0`');
   for (const source of [english, chinese, frozenEnglish, frozenChinese]) {
     expect(source).toContain('1,024');
     expect(source).toContain('255');
@@ -2220,7 +2206,6 @@ test('publishes Spreadsheet dependent dropdowns across implementation, docs, and
   expect(changelog).toContain('local dependent dropdown lists');
   expect(roadmap).toContain('bounded `=INDIRECT(...)`');
   expect(product).toContain('The sixty-third Spreadsheet milestone');
-  expect(readme).toContain('Version `0.44.0`');
   for (const source of [english, chinese, frozenEnglish, frozenChinese]) {
     expect(source).toContain('INDIRECT');
     expect(source).toContain('1,024');
@@ -2301,7 +2286,6 @@ test('publishes Writer picture transforms across implementation, docs, and brows
   expect(changelog).toContain('bounded Writer picture-transform workflow');
   expect(roadmap).toContain('quarter-turn transforms');
   expect(product).toContain('The sixty-fourth Writer milestone');
-  expect(readme).toContain('Version `0.45.0`');
   for (const source of [english, chinese, frozenEnglish, frozenChinese]) {
     expect(source).toContain('a:xfrm');
     expect(source).toContain('90');
@@ -2377,7 +2361,6 @@ test('publishes Writer text boxes across implementation, docs, and browser evide
   expect(changelog).toContain('bounded native Writer text-box workflow');
   expect(roadmap).toContain('Editable text boxes and bounded shape geometry');
   expect(product).toContain('The sixty-fifth Writer milestone');
-  expect(readme).toContain('Version `0.46.0`');
   for (const source of [english, chinese, frozenEnglish, frozenChinese]) {
     expect(source).toContain('wps:wsp');
     expect(source).toContain('txBox');
@@ -2455,7 +2438,6 @@ test('publishes Writer content controls across implementation, docs, and browser
   expect(changelog).toContain('bounded Writer content-control workflow');
   expect(roadmap).toContain('Extend the bounded content-control slice');
   expect(product).toContain('The sixty-sixth Writer milestone');
-  expect(readme).toContain('Version `0.48.0`');
   for (const source of [english, chinese, frozenEnglish, frozenChinese]) {
     expect(source).toContain('w:sdt');
     expect(source).toContain('docx.content-controls.unsupported');
@@ -2546,7 +2528,6 @@ test('publishes editable formula conditional formatting across code, docs, and P
   );
   expect(roadmap).toContain('bounded local formula rules');
   expect(product).toContain('The sixty-second Spreadsheet milestone');
-  expect(readme).toContain('Version `0.43.0`');
   for (const document of [english, chinese, frozenEnglish, frozenChinese]) {
     expect(document).toContain('1,024');
     expect(document).toContain('255');
@@ -4896,7 +4877,6 @@ test('publishes the workbook-owned 1900 and 1904 date-system contract', async ()
     readFile(path.join(repositoryRoot, 'package.json'), 'utf8'),
   ]);
 
-  expect(readme).toContain('Version `0.41.0`');
   expect(readme).toContain("workbook's native 1900 or");
   expect(changelog).toContain('## 0.37.5 - 2026-09-01');
   expect(roadmap).toContain(
