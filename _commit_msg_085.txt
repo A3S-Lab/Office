@@ -1,5 +1,0 @@
-feat(office): make row wBefore revisions reviewable for 0.85.0
-
-Promote relationship-free w:wBefore priors to reviewable row-formatting
-with accept/reject, live track-changes, and native DOCX export. Move the
-opaque row fixture to wAfter.
