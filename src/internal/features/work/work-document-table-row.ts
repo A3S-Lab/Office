@@ -66,6 +66,26 @@ export const DocumentTableRow = TableRow.extend({
             : {};
         },
       },
+      gridBefore: {
+        default: null,
+        parseHTML: (element: HTMLElement) => {
+          const raw = element.dataset.officeRowGridBefore;
+          if (raw === undefined || raw === '') return null;
+          const value = Number(raw);
+          return Number.isInteger(value) && value >= 0 ? value : null;
+        },
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const value =
+            typeof attributes.gridBefore === 'number' &&
+            Number.isInteger(attributes.gridBefore) &&
+            attributes.gridBefore >= 0
+              ? attributes.gridBefore
+              : null;
+          return value === null
+            ? {}
+            : { 'data-office-row-grid-before': String(value) };
+        },
+      },
       rowHeight: {
         default: null,
         parseHTML: (element: HTMLElement) =>

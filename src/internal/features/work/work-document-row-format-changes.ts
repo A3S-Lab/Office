@@ -18,8 +18,8 @@ export const DOCUMENT_ROW_CHANGE_ATTRIBUTES = [
 
 /**
  * Prior snapshot for reviewable row-property revisions.
- * At least one of cantSplit, repeatHeader, height, hidden, or alignment must
- * be present.
+ * At least one of cantSplit, repeatHeader, height, hidden, alignment, or
+ * gridBefore must be present.
  */
 export interface DocumentRowFormattingSnapshot {
   cantSplit?: boolean;
@@ -27,6 +27,7 @@ export interface DocumentRowFormattingSnapshot {
   height?: DocumentRowFormattingHeight;
   hidden?: boolean;
   alignment?: DocumentTableAlignment;
+  gridBefore?: number;
 }
 
 export interface DocumentRowFormattingHeight {
@@ -43,12 +44,13 @@ export function serializeDocumentRowFormatting(
     height?: unknown;
     hidden?: unknown;
     alignment?: unknown;
+    gridBefore?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentRowFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, or alignment.',
+      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, or gridBefore.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -83,7 +85,8 @@ export function parseDocumentRowFormatting(
         key !== 'repeatHeader' &&
         key !== 'height' &&
         key !== 'hidden' &&
-        key !== 'alignment',
+        key !== 'alignment' &&
+        key !== 'gridBefore',
     )
   ) {
     return null;
@@ -100,6 +103,7 @@ export function normalizeDocumentRowFormattingSnapshot(
     height?: unknown;
     hidden?: unknown;
     alignment?: unknown;
+    gridBefore?: unknown;
   },
 ): DocumentRowFormattingSnapshot | null {
   const snapshot: DocumentRowFormattingSnapshot = {};
@@ -125,11 +129,17 @@ export function normalizeDocumentRowFormattingSnapshot(
     if (!alignment) return null;
     snapshot.alignment = alignment;
   }
+  if ('gridBefore' in attributes && attributes.gridBefore !== undefined) {
+    const gridBefore = normalizeDocumentRowGridBefore(attributes.gridBefore);
+    if (gridBefore === null) return null;
+    snapshot.gridBefore = gridBefore;
+  }
   return snapshot.cantSplit !== undefined ||
     snapshot.repeatHeader !== undefined ||
     snapshot.height !== undefined ||
     snapshot.hidden !== undefined ||
-    snapshot.alignment !== undefined
+    snapshot.alignment !== undefined ||
+    snapshot.gridBefore !== undefined
     ? snapshot
     : null;
 }
@@ -167,6 +177,9 @@ export function restoredDocumentRowAttributes(
     ...(formatting.hidden !== undefined ? { hidden: formatting.hidden } : {}),
     ...(formatting.alignment !== undefined
       ? { alignment: formatting.alignment }
+      : {}),
+    ...(formatting.gridBefore !== undefined
+      ? { gridBefore: formatting.gridBefore }
       : {}),
   });
 }
@@ -206,5 +219,13 @@ function orderedSnapshot(
   }
   if (snapshot.hidden !== undefined) ordered.hidden = snapshot.hidden;
   if (snapshot.alignment !== undefined) ordered.alignment = snapshot.alignment;
+  if (snapshot.gridBefore !== undefined) ordered.gridBefore = snapshot.gridBefore;
   return ordered;
+}
+
+export function normalizeDocumentRowGridBefore(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    return null;
+  }
+  return value;
 }

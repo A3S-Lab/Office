@@ -26,6 +26,7 @@ export interface ImportedDocxTableRowMarker {
   repeatHeader?: boolean;
   hidden?: boolean;
   alignment?: 'left' | 'center' | 'right';
+  gridBefore?: number;
   rowId?: string;
   rowHeight?: number;
   rowHeightRule?: 'atLeast' | 'exact';
@@ -73,6 +74,18 @@ export function markDocxTableRows(
     const alignment = jc
       ? normalizeRowAlignment(attribute(jc, 'val'))
       : undefined;
+    const gridBeforeElement = properties
+      ? directChild(properties, 'gridBefore')
+      : undefined;
+    const gridBeforeRaw = gridBeforeElement
+      ? Number(attribute(gridBeforeElement, 'val'))
+      : null;
+    const gridBefore =
+      gridBeforeRaw !== null &&
+      Number.isInteger(gridBeforeRaw) &&
+      gridBeforeRaw >= 0
+        ? gridBeforeRaw
+        : undefined;
     const height = properties ? directChild(properties, 'trHeight') : undefined;
     const rowHeight = height
       ? twipsToPixels(Number(attribute(height, 'val')))
@@ -93,6 +106,7 @@ export function markDocxTableRows(
       !repeatHeader &&
       !hidden &&
       !alignment &&
+      gridBefore === undefined &&
       rowHeight === null &&
       !uniqueIdentity &&
       !propertyRevisionOmml &&
@@ -110,6 +124,7 @@ export function markDocxTableRows(
       ...(repeatHeader ? { repeatHeader: onOffValue(repeatHeader) } : {}),
       ...(hidden ? { hidden: onOffValue(hidden) } : {}),
       ...(alignment ? { alignment } : {}),
+      ...(gridBefore !== undefined ? { gridBefore } : {}),
       ...(uniqueIdentity ?? {}),
       ...(rowHeight !== null ? { rowHeight } : {}),
       ...(rowHeight !== null && rowHeightRule ? { rowHeightRule } : {}),
@@ -166,6 +181,9 @@ export function applyImportedDocxTableRowMarkers(
         );
         if (properties.alignment) {
           row.dataset.officeRowAlignment = properties.alignment;
+        }
+        if (properties.gridBefore !== undefined) {
+          row.dataset.officeRowGridBefore = String(properties.gridBefore);
         }
         if (properties.rowHeight !== undefined) {
           row.dataset.officeRowHeight = String(properties.rowHeight);

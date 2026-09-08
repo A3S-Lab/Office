@@ -20,7 +20,7 @@ interface DocumentRowFormattingTrackingOptions {
 
 /**
  * When track-changes is on, row cantSplit / repeatHeader / height / hidden /
- * alignment edits become reviewable `row-formatting` revisions.
+ * alignment / gridBefore edits become reviewable `row-formatting` revisions.
  */
 export function trackDocumentRowFormattingTransaction(
   transaction: Transaction,
@@ -64,6 +64,7 @@ function rowFormatting(node: ProseMirrorNode): {
   height?: { value: number; rule: 'exact' | 'atLeast' };
   hidden?: boolean;
   alignment?: DocumentTableAlignment;
+  gridBefore?: number;
 } | null {
   const height = normalizeDocumentTableRowHeight(node.attrs.rowHeight);
   const rule =
@@ -73,6 +74,12 @@ function rowFormatting(node: ProseMirrorNode): {
         'atLeast');
   const alignment =
     normalizeDocumentTableAlignment(node.attrs.alignment) ?? 'left';
+  const gridBefore =
+    typeof node.attrs.gridBefore === 'number' &&
+    Number.isInteger(node.attrs.gridBefore) &&
+    node.attrs.gridBefore >= 0
+      ? node.attrs.gridBefore
+      : 0;
   return normalizeDocumentRowFormattingSnapshot({
     cantSplit:
       typeof node.attrs.cantSplit === 'boolean'
@@ -85,6 +92,7 @@ function rowFormatting(node: ProseMirrorNode): {
     hidden:
       typeof node.attrs.hidden === 'boolean' ? node.attrs.hidden : false,
     alignment,
+    gridBefore,
     ...(height !== null && rule ? { height: { value: height, rule } } : {}),
   });
 }
@@ -101,6 +109,7 @@ function onlyRowFormattingChanged(
   delete beforeAttrs.rowHeightRule;
   delete beforeAttrs.hidden;
   delete beforeAttrs.alignment;
+  delete beforeAttrs.gridBefore;
   delete beforeAttrs.rowChangeKind;
   delete beforeAttrs.rowChangeId;
   delete beforeAttrs.rowChangeAuthor;
@@ -113,6 +122,7 @@ function onlyRowFormattingChanged(
   delete afterAttrs.rowHeightRule;
   delete afterAttrs.hidden;
   delete afterAttrs.alignment;
+  delete afterAttrs.gridBefore;
   delete afterAttrs.rowChangeKind;
   delete afterAttrs.rowChangeId;
   delete afterAttrs.rowChangeAuthor;

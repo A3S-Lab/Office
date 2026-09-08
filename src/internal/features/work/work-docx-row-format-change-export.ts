@@ -19,6 +19,7 @@ export class DocxRowFormattingChangePatchCollector {
   readonly patches: Array<DocxRowFormattingChangePatch | null> = [];
   readonly hidden: boolean[] = [];
   readonly alignments: Array<'left' | 'center' | 'right' | null> = [];
+  readonly gridBefore: Array<number | null> = [];
 
   record(element: HTMLTableRowElement, id: number): void {
     this.hidden.push(element.dataset.officeRowHidden === 'true');
@@ -26,6 +27,18 @@ export class DocxRowFormattingChangePatchCollector {
     this.alignments.push(
       alignment === 'left' || alignment === 'center' || alignment === 'right'
         ? alignment
+        : null,
+    );
+    const gridBeforeRaw = element.dataset.officeRowGridBefore;
+    const gridBeforeValue =
+      gridBeforeRaw === undefined || gridBeforeRaw === ''
+        ? null
+        : Number(gridBeforeRaw);
+    this.gridBefore.push(
+      gridBeforeValue !== null &&
+        Number.isInteger(gridBeforeValue) &&
+        gridBeforeValue > 0
+        ? gridBeforeValue
         : null,
     );
     if (
@@ -57,11 +70,13 @@ export async function patchDocxRowFormattingChanges(
   patches: readonly (DocxRowFormattingChangePatch | null)[],
   hidden: readonly boolean[] = [],
   alignments: readonly ('left' | 'center' | 'right' | null)[] = [],
+  gridBefore: readonly (number | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
     !hidden.some(Boolean) &&
-    !alignments.some(Boolean)
+    !alignments.some(Boolean) &&
+    !gridBefore.some((value) => value !== null && value > 0)
   ) {
     return buffer;
   }
@@ -87,6 +102,7 @@ export async function patchDocxRowFormattingChanges(
     const patch = patches[index] ?? null;
     const rowHidden = hidden[index] === true;
     const alignment = alignments[index] ?? null;
+    const rowGridBefore = gridBefore[index] ?? null;
     index += 1;
     if (patch) {
       setRowFormattingChange(document, row, patch);
@@ -98,6 +114,10 @@ export async function patchDocxRowFormattingChanges(
     }
     if (alignment) {
       setRowAlignment(document, row, alignment);
+      changed = true;
+    }
+    if (rowGridBefore !== null && rowGridBefore > 0) {
+      setRowGridBefore(document, row, rowGridBefore);
       changed = true;
     }
   }
@@ -126,6 +146,29 @@ function setRowHidden(document: Document, row: Element, hidden: boolean): void {
   }
   if (!hidden) return;
   properties.append(document.createElementNS(WORD_NAMESPACE, 'w:hidden'));
+}
+
+function setRowGridBefore(
+  document: Document,
+  row: Element,
+  gridBefore: number,
+): void {
+  let properties = directChild(row, 'trPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+    row.insertBefore(properties, row.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'gridBefore' &&
+      child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (gridBefore <= 0) return;
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:gridBefore');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', String(gridBefore));
+  properties.append(element);
 }
 
 function setRowAlignment(
@@ -216,6 +259,15 @@ function setRowFormattingChange(
     const jc = document.createElementNS(WORD_NAMESPACE, 'w:jc');
     jc.setAttributeNS(WORD_NAMESPACE, 'w:val', formatting.alignment);
     prior.append(jc);
+  }
+  if (formatting.gridBefore !== undefined) {
+    const gridBefore = document.createElementNS(WORD_NAMESPACE, 'w:gridBefore');
+    gridBefore.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:val',
+      String(formatting.gridBefore),
+    );
+    prior.append(gridBefore);
   }
   change.append(prior);
   properties.append(change);

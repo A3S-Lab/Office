@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.83.0 - 2026-09-08
+
+### Writer
+
+- Relationship-free `w:trPrChange` priors that include `w:gridBefore` are now
+  reviewable as `row-formatting` with accept/reject, live track-changes, and
+  native export (including current-row `w:gridBefore` on DOCX write).
+  Broader row property sets remain opaque or fail-closed; opaque fixtures now
+  use `gridAfter` instead of `gridBefore`.
+
 ## 0.82.0 - 2026-09-08
 
 ### Writer

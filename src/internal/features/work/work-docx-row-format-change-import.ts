@@ -1,4 +1,5 @@
 import {
+  normalizeDocumentRowGridBefore,
   serializeDocumentRowFormatting,
   type DocumentRowFormattingHeight,
 } from './work-document-row-format-changes';
@@ -26,6 +27,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'trHeight',
   'hidden',
   'jc',
+  'gridBefore',
 ]);
 const PIXELS_PER_TWIP = 96 / 1440;
 
@@ -38,8 +40,8 @@ export interface SupportedDocxRowFormattingChange {
 
 /**
  * Relationship-free `w:trPrChange` whose prior snapshot contains only
- * `w:cantSplit`, `w:tblHeader`, `w:trHeight`, `w:hidden`, and/or `w:jc`.
- * Broader row property sets stay on the opaque OMML path.
+ * `w:cantSplit`, `w:tblHeader`, `w:trHeight`, `w:hidden`, `w:jc`, and/or
+ * `w:gridBefore`. Broader row property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxRowFormattingChange(change: Element): boolean {
   return supportedRowFormattingChange(change) !== null;
@@ -122,6 +124,7 @@ function supportedRowFormattingChange(
     height?: DocumentRowFormattingHeight;
     hidden?: boolean;
     alignment?: DocumentTableAlignment;
+    gridBefore?: number;
   } = {};
   for (const child of children) {
     if (child.localName === 'cantSplit') {
@@ -148,6 +151,14 @@ function supportedRowFormattingChange(
       );
       if (!alignment) return null;
       snapshot.alignment = alignment;
+      continue;
+    }
+    if (child.localName === 'gridBefore') {
+      const gridBefore = normalizeDocumentRowGridBefore(
+        Number(attribute(child, 'val')),
+      );
+      if (gridBefore === null) return null;
+      snapshot.gridBefore = gridBefore;
     }
   }
   return {

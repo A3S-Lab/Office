@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.82.0` makes cell hide-mark property revisions reviewable:
+Version `0.83.0` makes row grid-before property revisions reviewable:
 
-- **Cell hide mark** — relationship-free `hideMark` priors become
-  `cell-formatting` with accept/reject, live track-changes, and native DOCX
-  export (including current-cell write).
+- **Row grid before** — relationship-free `gridBefore` priors become
+  `row-formatting` with accept/reject, live track-changes, and native DOCX
+  export (including current-row write).
 - **Boundary** — broader `tcPr` / `trPr` shapes stay opaque metadata or
-  fail-closed; opaque cell fixtures moved to `cnfStyle`.
+  fail-closed; opaque row fixtures moved to `gridAfter`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

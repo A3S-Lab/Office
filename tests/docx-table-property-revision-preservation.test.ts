@@ -189,12 +189,12 @@ describe('DOCX table property-revision preservation', () => {
     const cantSplit = document.createElementNS(WORD_NAMESPACE, 'w:cantSplit');
     const header = document.createElementNS(WORD_NAMESPACE, 'w:tblHeader');
     // Extra property keeps this on the opaque path; cantSplit/tblHeader/trHeight/
-    // hidden/jc alone are reviewable as row-formatting.
+    // hidden/jc/gridBefore alone are reviewable as row-formatting.
     const height = document.createElementNS(WORD_NAMESPACE, 'w:trHeight');
     height.setAttributeNS(WORD_NAMESPACE, 'w:val', '240');
-    const gridBefore = document.createElementNS(WORD_NAMESPACE, 'w:gridBefore');
-    gridBefore.setAttributeNS(WORD_NAMESPACE, 'w:val', '1');
-    prior.append(cantSplit, header, height, gridBefore);
+    const gridAfter = document.createElementNS(WORD_NAMESPACE, 'w:gridAfter');
+    gridAfter.setAttributeNS(WORD_NAMESPACE, 'w:val', '1');
+    prior.append(cantSplit, header, height, gridAfter);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -253,7 +253,7 @@ describe('DOCX table property-revision preservation', () => {
       directChild(directChild(exportedChange!, 'trPr'), 'trHeight'),
     ).toBeTruthy();
     expect(
-      directChild(directChild(exportedChange!, 'trPr'), 'gridBefore'),
+      directChild(directChild(exportedChange!, 'trPr'), 'gridAfter'),
     ).toBeTruthy();
   });
 
