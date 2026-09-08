@@ -3,6 +3,7 @@ import { diagnoseDocxBookmarksAndLinks } from './work-docx-bookmark-diagnostics'
 import { diagnoseDocxCaptions } from './work-docx-caption-diagnostics';
 import {
   isSupportedDocxMoveChange,
+  inspectDocxMoveRangeCompanions,
   supportedDocxMovePairCount,
 } from './work-docx-change-import';
 import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
@@ -24,7 +25,14 @@ import { diagnoseDocxPageSize } from './work-docx-page-size-diagnostics';
 import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diagnostics';
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import { isSupportedDocxParagraphFormattingChange } from './work-docx-paragraph-format-change-import';
-import { isSupportedDocxParagraphMarkChange } from './work-docx-paragraph-mark-change-import';
+import { isSupportedDocxTableFormattingChange } from './work-docx-table-format-change-import';
+import { isSupportedDocxRowFormattingChange } from './work-docx-row-format-change-import';
+import { isSupportedDocxCellFormattingChange } from './work-docx-cell-format-change-import';
+import { isSupportedDocxSectionFormattingChange } from './work-docx-section-format-change-import';
+import {
+  isIsolatedDocxParagraphBreakMarkChange,
+  isSupportedDocxParagraphMarkChange,
+} from './work-docx-paragraph-mark-change-import';
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { diagnoseDocxProofing } from './work-docx-proofing-diagnostics';
 import { diagnoseDocxRunBorders } from './work-docx-run-border-diagnostics';
@@ -32,6 +40,12 @@ import { diagnoseDocxRunFonts } from './work-docx-run-fonts-diagnostics';
 import { isSupportedDocxRunFormattingChange } from './work-docx-run-formatting-import';
 import { diagnoseDocxRunShading } from './work-docx-run-shading-diagnostics';
 import { inspectDocxTextBoxes } from './work-docx-text-box-import';
+import {
+  serializePreservableDocxCellPropertyRevision,
+  serializePreservableDocxRowPropertyRevision,
+  serializePreservableDocxSectionPropertyRevision,
+  serializePreservableDocxTablePropertyRevision,
+} from './work-document-table-property-revision';
 import {
   attribute,
   contentTypeForPart,
@@ -387,6 +401,7 @@ export async function analyzeDocxCompatibility(
         ...moveFromRevisions,
         ...moveToRevisions,
       ].filter(isSupportedDocxMoveChange).length;
+      const moveRangeCompanions = inspectDocxMoveRangeCompanions(document);
       const runFormattingRevisions = descendants(document, 'rPrChange');
       const paragraphFormattingRevisions = descendants(document, 'pPrChange');
       const paragraphMarkRevisions = [
@@ -411,9 +426,69 @@ export async function analyzeDocxCompatibility(
       );
       const supportedParagraphMarkRevisionCount =
         supportedParagraphMarkRevisions.length;
+      const isolatedParagraphBreakMarkRevisions = paragraphMarkRevisions.filter(
+        (revision) =>
+          !isSupportedDocxParagraphMarkChange(revision) &&
+          isIsolatedDocxParagraphBreakMarkChange(revision),
+      );
+      const isolatedParagraphBreakMarkRevisionCount =
+        isolatedParagraphBreakMarkRevisions.length;
       const supportedNumberingRevisionCount = numberingRevisions.filter(
         isSupportedDocxNumberingChange,
       ).length;
+      const tablePropertyRevisions = descendants(document, 'tblPrChange');
+      const supportedTableFormattingRevisionCount =
+        tablePropertyRevisions.filter(isSupportedDocxTableFormattingChange)
+          .length;
+      const preservableTablePropertyRevisionCount =
+        tablePropertyRevisions.filter((change) => {
+          if (isSupportedDocxTableFormattingChange(change)) return false;
+          const properties = change.parentElement;
+          if (properties?.localName !== 'tblPr') return false;
+          return (
+            serializePreservableDocxTablePropertyRevision(properties) !== null
+          );
+        }).length;
+      const unpreservableTablePropertyRevisionCount =
+        tablePropertyRevisions.length -
+        preservableTablePropertyRevisionCount -
+        supportedTableFormattingRevisionCount;
+      const rowPropertyRevisions = descendants(document, 'trPrChange');
+      const supportedRowFormattingRevisionCount = rowPropertyRevisions.filter(
+        isSupportedDocxRowFormattingChange,
+      ).length;
+      const preservableRowPropertyRevisionCount = rowPropertyRevisions.filter(
+        (change) => {
+          if (isSupportedDocxRowFormattingChange(change)) return false;
+          const properties = change.parentElement;
+          if (properties?.localName !== 'trPr') return false;
+          return (
+            serializePreservableDocxRowPropertyRevision(properties) !== null
+          );
+        },
+      ).length;
+      const unpreservableRowPropertyRevisionCount =
+        rowPropertyRevisions.length -
+        preservableRowPropertyRevisionCount -
+        supportedRowFormattingRevisionCount;
+      const cellPropertyRevisions = descendants(document, 'tcPrChange');
+      const supportedCellFormattingRevisionCount = cellPropertyRevisions.filter(
+        isSupportedDocxCellFormattingChange,
+      ).length;
+      const preservableCellPropertyRevisionCount = cellPropertyRevisions.filter(
+        (change) => {
+          if (isSupportedDocxCellFormattingChange(change)) return false;
+          const properties = change.parentElement;
+          if (properties?.localName !== 'tcPr') return false;
+          return (
+            serializePreservableDocxCellPropertyRevision(properties) !== null
+          );
+        },
+      ).length;
+      const unpreservableCellPropertyRevisionCount =
+        cellPropertyRevisions.length -
+        preservableCellPropertyRevisionCount -
+        supportedCellFormattingRevisionCount;
       if (
         textRevisions.some(
           (revision) =>
@@ -450,6 +525,36 @@ export async function analyzeDocxCompatibility(
           ),
         );
       }
+      if (supportedTableFormattingRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.table-formatting',
+            'Table-formatting revisions',
+            `${supportedTableFormattingRevisionCount} relationship-free w:tblPrChange record(s) with a prior alignment, preferred-width, indent, default cell-margin, and/or layout snapshot remain reviewable in Work as table-formatting changes and round-trip as native w:tblPrChange records.`,
+            'info',
+          ),
+        );
+      }
+      if (supportedRowFormattingRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.row-formatting',
+            'Row-formatting revisions',
+            `${supportedRowFormattingRevisionCount} relationship-free w:trPrChange record(s) with a prior cantSplit, tblHeader, and/or trHeight snapshot remain reviewable in Work as row-formatting changes and round-trip as native w:trPrChange records.`,
+            'info',
+          ),
+        );
+      }
+      if (supportedCellFormattingRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.cell-formatting',
+            'Cell-formatting revisions',
+            `${supportedCellFormattingRevisionCount} relationship-free w:tcPrChange record(s) with a prior vAlign, solid direct-color shd, and/or tcMar snapshot remain reviewable in Work as cell-formatting changes and round-trip as native w:tcPrChange records.`,
+            'info',
+          ),
+        );
+      }
       if (supportedNumberingRevisionCount) {
         issues.push(
           issue(
@@ -465,8 +570,17 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.paragraph-mark',
             'Paragraph-mark revisions',
-            `${supportedParagraphMarkRevisionCount} bounded paragraph-mark insertion/deletion revision(s) preserve author, date, and whole-paragraph accept/reject semantics through Work and native DOCX w:pPr/w:rPr/w:ins or w:del round trips.`,
+            `${supportedParagraphMarkRevisionCount} bounded paragraph-mark insertion/deletion revision(s) preserve author, date, and whole-paragraph accept/reject semantics through Work and native DOCX w:pPr/w:rPr/w:ins or w:del round trips, including multi-wrapper text-only bodies that share the mark author and date plus soft breaks, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/rPr-only untracked sibling runs.`,
             'info',
+          ),
+        );
+      }
+      if (isolatedParagraphBreakMarkRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.paragraph-break',
+            'Paragraph-break revisions',
+            `${isolatedParagraphBreakMarkRevisionCount} isolated paragraph-mark revision(s) look like paragraph-break merge or split candidates. Eligible text-only neighbor pairs become reviewable paragraph-break changes; others stay fail-closed diagnostics instead of whole-paragraph guesses.`,
           ),
         );
       }
@@ -475,7 +589,89 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.move',
             'Move revisions',
-            `${supportedMovePairCount} bounded text move revision(s) preserve author, date, source and destination text, remain reviewable as one atomic Work change, and round-trip as native w:moveFrom and w:moveTo records. Rich content, range markers, and relationship-bound moves remain on the compatibility path.`,
+            `${supportedMovePairCount} bounded text move revision(s) preserve author, date, source and destination text, remain reviewable as one atomic Work change, and round-trip as native w:moveFrom and w:moveTo records${
+              moveRangeCompanions.companionCount
+                ? ` with ${moveRangeCompanions.companionCount} companion w:move*Range* bookmark set(s)`
+                : ''
+            }. Rich content, unpaired range markers, and relationship-bound moves remain on the compatibility path.`,
+            'info',
+          ),
+        );
+      }
+      if (moveRangeCompanions.unpairedMarkerCount) {
+        issues.push(
+          issue(
+            'docx.revisions.move-range',
+            'Move-range revisions',
+            `${moveRangeCompanions.unpairedMarkerCount} w:move*Range* marker(s) are not companions of a supported text-only moveFrom/moveTo pair in the same section. Cross-section, table-spanning, and unpaired range moves stay fail-closed.`,
+          ),
+        );
+      }
+      if (preservableTablePropertyRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.table-property',
+            'Table-property revisions',
+            `${preservableTablePropertyRevisionCount} relationship-free w:tblPrChange record(s) that are outside the reviewable alignment/preferred-width/indent/cell-margin/layout subset round-trip as opaque table metadata on untouched tables. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. Alignment, preferred-width, indent, default cell-margin, and/or layout records are reported separately as reviewable table-formatting revisions.`,
+            'info',
+          ),
+        );
+      }
+      if (preservableRowPropertyRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.row-property',
+            'Row-property revisions',
+            `${preservableRowPropertyRevisionCount} relationship-free w:trPrChange record(s) outside the reviewable cantSplit/tblHeader/trHeight subset round-trip as opaque row metadata on untouched rows. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. cantSplit, tblHeader, and/or trHeight records are reported separately as reviewable row-formatting revisions.`,
+            'info',
+          ),
+        );
+      }
+      if (preservableCellPropertyRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.cell-property',
+            'Cell-property revisions',
+            `${preservableCellPropertyRevisionCount} relationship-free w:tcPrChange record(s) outside the reviewable vAlign/solid-shd/tcMar subset round-trip as opaque cell metadata on untouched cells. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. vAlign, solid-shd, and/or tcMar records are reported separately as reviewable cell-formatting revisions.`,
+            'info',
+          ),
+        );
+      }
+      const sectionPropertyRevisions = descendants(document, 'sectPrChange');
+      const supportedSectionFormattingRevisionCount =
+        sectionPropertyRevisions.filter(
+          isSupportedDocxSectionFormattingChange,
+        ).length;
+      const preservableSectionPropertyRevisionCount =
+        sectionPropertyRevisions.filter((change) => {
+          if (isSupportedDocxSectionFormattingChange(change)) return false;
+          const properties = change.parentElement;
+          if (properties?.localName !== 'sectPr') return false;
+          return (
+            serializePreservableDocxSectionPropertyRevision(properties) !==
+            null
+          );
+        }).length;
+      const unpreservableSectionPropertyRevisionCount =
+        sectionPropertyRevisions.length -
+        preservableSectionPropertyRevisionCount -
+        supportedSectionFormattingRevisionCount;
+      if (preservableSectionPropertyRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.section-property',
+            'Section-property revisions',
+            `${preservableSectionPropertyRevisionCount} relationship-free w:sectPrChange record(s) outside the reviewable orientation/page-geometry/page-margin/paper-source/equal-width-cols subset round-trip as opaque section metadata on untouched sections. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. Orientation, full page-geometry, page-margin, paper-source, and/or equal-width column records are reported separately as reviewable section-formatting revisions.`,
+            'info',
+          ),
+        );
+      }
+      if (supportedSectionFormattingRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.section-formatting',
+            'Section-formatting revisions',
+            `${supportedSectionFormattingRevisionCount} relationship-free w:sectPrChange record(s) with a prior orientation-only or complete w:pgSz, complete w:pgMar, w:paperSrc, and/or equal-width w:cols snapshot remain reviewable in Work as section-formatting changes and round-trip as native w:sectPrChange records.`,
             'info',
           ),
         );
@@ -484,32 +680,29 @@ export async function analyzeDocxCompatibility(
         textRevisions.some(
           (revision) =>
             !supportedParagraphMarkRevisions.includes(revision) &&
+            !isolatedParagraphBreakMarkRevisions.includes(revision) &&
             !descendants(revision, 't').length &&
             !descendants(revision, 'delText').length,
         ) ||
         supportedRunFormattingRevisionCount !== runFormattingRevisions.length ||
         supportedParagraphFormattingRevisionCount !==
           paragraphFormattingRevisions.length ||
-        supportedParagraphMarkRevisionCount !== paragraphMarkRevisions.length ||
+        supportedParagraphMarkRevisionCount +
+          isolatedParagraphBreakMarkRevisionCount !==
+          paragraphMarkRevisions.length ||
         supportedNumberingRevisionCount !== numberingRevisions.length ||
         supportedMoveRevisionCount !== moveRevisionCount ||
         supportedMoveRevisionCount !== supportedMovePairCount * 2 ||
-        [
-          'moveFromRangeStart',
-          'moveFromRangeEnd',
-          'moveToRangeStart',
-          'moveToRangeEnd',
-          'tblPrChange',
-          'trPrChange',
-          'tcPrChange',
-          'sectPrChange',
-        ].some((name) => descendants(document, name).length)
+        unpreservableTablePropertyRevisionCount > 0 ||
+        unpreservableRowPropertyRevisionCount > 0 ||
+        unpreservableCellPropertyRevisionCount > 0 ||
+        unpreservableSectionPropertyRevisionCount > 0
       ) {
         issues.push(
           issue(
             'docx.revisions.structural',
             'Structural revisions',
-            'Moved content plus unsupported paragraph-break, character formatting, paragraph formatting, numbering, section, row, cell, and table-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded whole-paragraph mark, text-move, character-, paragraph-, and ordered-list-numbering subsets.',
+            'Moved content plus unsupported character formatting, paragraph formatting, numbering, and unpreservable table/row/cell/section-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded whole-paragraph mark, text-move, character-, paragraph-, table-formatting (alignment/preferred-width/indent/cell margins/layout), row-formatting (cantSplit/tblHeader/trHeight), cell-formatting (vAlign/solid fill/tcMar), section-formatting (orientation/page geometry/page margins/paper source/equal-width columns), and ordered-list-numbering subsets, including live track-changes for those formatting families. Relationship-free non-reviewable w:tblPrChange plus broader w:trPrChange, w:tcPrChange, and w:sectPrChange records are reported separately. Isolated paragraph-break mark revisions are reported separately as docx.revisions.paragraph-break. Unpaired w:move*Range* markers are reported separately as docx.revisions.move-range.',
           ),
         );
       }

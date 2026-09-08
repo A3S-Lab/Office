@@ -1573,7 +1573,9 @@ properties, ragged or over-limit matrices,
 over-limit equation arrays,
 malformed, misplaced, over-budget,
 namespace-spoofed, nested, or relationship-bound math fails closed to bounded
-text with compatibility diagnostics; the remaining OMML grammar is still part
+text with compatibility diagnostics. Relationship-free, correctly placed
+unsupported OMML roots instead round-trip as atomic native markup so untouched
+files do not lose equation identity. The remaining OMML grammar is still part
 of the Rich Word gate.
 
 ### Gate 3 — Rich Word

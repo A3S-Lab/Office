@@ -25,16 +25,34 @@ export class DocxParagraphMarkChangePatchCollector {
   readonly patches: DocxParagraphMarkChangePatch[] = [];
 
   register(element: HTMLElement, id: number): string | null {
+    const paragraphBreak =
+      element.dataset.paragraphBreakChange === 'true' &&
+      (element.dataset.paragraphBreakKind === 'merge' ||
+        element.dataset.paragraphBreakKind === 'split');
     if (
-      element.dataset.documentBlockChange !== 'true' ||
-      (element.dataset.blockChangeKind !== 'insertion' &&
-        element.dataset.blockChangeKind !== 'deletion')
+      !paragraphBreak &&
+      (element.dataset.documentBlockChange !== 'true' ||
+        (element.dataset.blockChangeKind !== 'insertion' &&
+          element.dataset.blockChangeKind !== 'deletion'))
     ) {
       return null;
     }
-    const key = element.dataset.blockChangeId?.trim() ?? '';
-    const author = element.dataset.blockChangeAuthor?.trim() ?? '';
-    const date = normalizedRevisionDate(element.dataset.blockChangeDate);
+    const key = paragraphBreak
+      ? (element.dataset.paragraphBreakId?.trim() ?? '')
+      : (element.dataset.blockChangeId?.trim() ?? '');
+    const author = paragraphBreak
+      ? (element.dataset.paragraphBreakAuthor?.trim() ?? '')
+      : (element.dataset.blockChangeAuthor?.trim() ?? '');
+    const date = normalizedRevisionDate(
+      paragraphBreak
+        ? element.dataset.paragraphBreakDate
+        : element.dataset.blockChangeDate,
+    );
+    const kind = paragraphBreak
+      ? element.dataset.paragraphBreakKind === 'merge'
+        ? 'deletion'
+        : 'insertion'
+      : (element.dataset.blockChangeKind as 'insertion' | 'deletion');
     if (
       !key ||
       !author ||
@@ -42,14 +60,21 @@ export class DocxParagraphMarkChangePatchCollector {
       /[\u0000-\u001f\u007f]/.test(author) ||
       !Number.isSafeInteger(id) ||
       id < 1 ||
-      !browserParagraphBodyMatchesChange(
-        element,
-        element.dataset.blockChangeKind,
-        author,
-        element.dataset.blockChangeDate,
-      )
+      (!paragraphBreak &&
+        !browserParagraphBodyMatchesChange(
+          element,
+          kind,
+          author,
+          paragraphBreak
+            ? element.dataset.paragraphBreakDate
+            : element.dataset.blockChangeDate,
+        ))
     ) {
-      throw new Error('Document contains an invalid paragraph-mark revision.');
+      throw new Error(
+        paragraphBreak
+          ? 'Document contains an invalid paragraph-break revision.'
+          : 'Document contains an invalid paragraph-mark revision.',
+      );
     }
     if (this.patches.length >= MAX_PARAGRAPH_MARK_CHANGE_PATCHES) {
       throw new Error('Document exceeds the paragraph-mark revision limit.');
@@ -58,7 +83,7 @@ export class DocxParagraphMarkChangePatchCollector {
     this.patches.push({
       marker,
       id,
-      kind: element.dataset.blockChangeKind,
+      kind,
       author,
       date,
     });
@@ -237,7 +262,14 @@ function browserParagraphBodyMatchesChange(
   }
   if (
     paragraph.querySelector(
-      'br, img, svg, math, audio, video, canvas, iframe, object, embed, [contenteditable="false"]',
+      'img, svg, math, audio, video, canvas, iframe, object, embed, [contenteditable="false"]',
+    )
+  ) {
+    return false;
+  }
+  if (
+    Array.from(paragraph.querySelectorAll('br')).some(
+      (breakElement) => !isBrowserTextWrappingBreak(breakElement),
     )
   ) {
     return false;
@@ -279,6 +311,15 @@ function browserParagraphBodyMatchesChange(
     if (!revision || !paragraph.contains(revision)) return false;
   }
   return hasText;
+}
+
+function isBrowserTextWrappingBreak(element: Element): boolean {
+  if (!(element instanceof HTMLElement) || element.tagName.toLowerCase() !== 'br') {
+    return false;
+  }
+  if (element.childNodes.length) return false;
+  const type = element.getAttribute('data-break') ?? element.getAttribute('type');
+  return type === null || type === '' || type === 'textWrapping';
 }
 
 function sameRevisionDate(

@@ -878,7 +878,13 @@ and attempted metadata removal is rejected before state changes. Focused
 Rstest, DOCX export/import/reopen, responsive browser coverage, and the pinned
 local A3S Test numbering suite cover review, rejection, Undo, accessibility,
 and clean diagnostics. Complex and multi-level numbering changes, move ranges,
-and section/table/row/cell property revisions remain explicit follow-up work.
+cell/section property revisions, and table/row property revisions outside the
+reviewable subsets remain explicit follow-up work. `w:tblPrChange` with prior
+`w:jc` and/or `w:tblW` is reviewable as `table-formatting`; `w:trPrChange`
+with prior `w:cantSplit` and/or `w:tblHeader` is reviewable as `row-formatting`; `w:tcPrChange`
+with prior `w:vAlign` and/or solid direct-color `w:shd` is reviewable as
+`cell-formatting`; `w:sectPrChange`
+with prior orientation-only `w:pgSz` is reviewable as `section-formatting`.
 
 The sixty-second Spreadsheet milestone completes the first editable formula
 conditional-format path. Home → Conditional Formatting authors bounded local
@@ -966,11 +972,15 @@ transaction and one immutable collaboration decision. DOCX export rewrites
 transient wrappers to native move records and reopen restores the same paired
 identity without browser markers or negative IDs.
 
-Rich runs, range markers, relationship-bound objects, malformed metadata,
-duplicate identities, and unpaired sides remain structural diagnostics. The
-bounded importer/exporter, browser/Yrs decision projection, focused Rstest,
-responsive review-panel coverage, and native DOCX reopen fixture cover the
-declared subset.
+Rich runs, relationship-bound objects, malformed metadata, duplicate
+identities, and unpaired sides remain structural diagnostics. Companion
+same-section `w:move*Range*` bookmarks that uniquely sandwich a supported
+text-only move pair (immediate siblings or cross-paragraph placement around
+the containing paragraph) round-trip with the move; unpaired, table-spanning,
+or cross-section range markers report `docx.revisions.move-range`. The bounded
+importer/exporter, browser/Yrs decision
+projection, focused Rstest, responsive review-panel coverage, and native DOCX
+reopen fixture cover the declared subset.
 
 The sixty-eighth Writer milestone extends Compare with bounded same-paragraph
 move inference. A deterministic lexical range that appears once in a delete
@@ -1001,10 +1011,21 @@ native paragraph mark without leaking browser metadata. Separate body and
 paragraph-mark IDs remain valid because WPS Office 12.1.0.22215 emitted that
 shape for the COM-observed `Bravo\r` deletion and `Delta\r` insertion ranges.
 
-The recognizer deliberately excludes isolated paragraph-break merge/split
-revisions, mixed or relationship-bound content, malformed or namespace-spoofed
-metadata, identity conflicts, and over-limit inputs. Those cases remain
-structural diagnostics. Deterministic WPS-shaped fixtures, focused Rstest,
+The recognizer deliberately excludes relationship-bound content, untracked
+siblings mixed into a paragraph-mark body, drawings, relationship-bound
+hyperlinks, spoofed bookmark relationship attributes, malformed or
+namespace-spoofed metadata, identity conflicts, and over-limit inputs.
+Relationship-free internal hyperlinks, relationship-free bookmarks, and empty
+or `w:rPr`-only untracked sibling runs inside or beside the mark body are
+admitted. Multi-wrapper text-only bodies that
+share the paragraph-mark author and date are admitted as one atomic
+whole-paragraph revision. Isolated mark-only
+shapes are classified as
+`docx.revisions.paragraph-break` diagnostics; when the adjacent paragraph is
+also an eligible text-only sibling, Work imports a reviewable paragraph-break
+merge/split change with atomic accept/reject join semantics and mark-only DOCX
+export. Other excluded cases remain structural diagnostics. Deterministic
+WPS-shaped fixtures, focused Rstest,
 desktop and 390 px Playwright, compact 44 px review actions, accessibility,
 clean browser diagnostics, and a local-only A3S Test suite cover the admitted
 path without adding the GUI runner to Actions or Pages.

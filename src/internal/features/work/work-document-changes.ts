@@ -28,6 +28,31 @@ import {
   parseDocumentParagraphFormatting,
   restoredDocumentParagraphAttributes,
 } from './work-document-paragraph-format-changes';
+import {
+  clearDocumentTableChangeAttributes,
+  parseDocumentTableFormatting,
+  restoredDocumentTableAttributes,
+} from './work-document-table-format-changes';
+import {
+  clearDocumentRowChangeAttributes,
+  parseDocumentRowFormatting,
+  restoredDocumentRowAttributes,
+} from './work-document-row-format-changes';
+import {
+  clearDocumentCellChangeAttributes,
+  parseDocumentCellFormatting,
+  restoredDocumentCellAttributes,
+} from './work-document-cell-format-changes';
+import {
+  clearDocumentSectionChangeAttributes,
+  parseDocumentSectionFormatting,
+  restoredDocumentSectionAttributes,
+} from './work-document-section-format-changes';
+import {
+  documentParagraphBreakChangeSegments,
+  paragraphBreakChangeAttribute,
+  resolveDocumentParagraphBreakChange,
+} from './work-document-paragraph-break-changes';
 import type {
   WorkDocumentChangeKind,
   WorkDocumentMoveRole,
@@ -93,6 +118,42 @@ interface ParagraphChangeSegment {
 interface NumberingChangeSegment {
   id: string;
   kind: 'numbering';
+  position: number;
+  from: number;
+  to: number;
+  before: string;
+}
+
+interface TableChangeSegment {
+  id: string;
+  kind: 'table-formatting';
+  position: number;
+  from: number;
+  to: number;
+  before: string;
+}
+
+interface RowChangeSegment {
+  id: string;
+  kind: 'row-formatting';
+  position: number;
+  from: number;
+  to: number;
+  before: string;
+}
+
+interface CellChangeSegment {
+  id: string;
+  kind: 'cell-formatting';
+  position: number;
+  from: number;
+  to: number;
+  before: string;
+}
+
+interface SectionChangeSegment {
+  id: string;
+  kind: 'section-formatting';
   position: number;
   from: number;
   to: number;
@@ -173,6 +234,24 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
             ? { 'data-change-move-role': attributes.moveRole }
             : {},
       },
+      moveRangeId: {
+        default: '',
+        parseHTML: (element) =>
+          element.getAttribute('data-change-move-range-id') ?? '',
+        renderHTML: (attributes) =>
+          attributes.moveRangeId
+            ? { 'data-change-move-range-id': attributes.moveRangeId }
+            : {},
+      },
+      moveRangeName: {
+        default: '',
+        parseHTML: (element) =>
+          element.getAttribute('data-change-move-range-name') ?? '',
+        renderHTML: (attributes) =>
+          attributes.moveRangeName
+            ? { 'data-change-move-range-name': attributes.moveRangeName }
+            : {},
+      },
       id: {
         default: '',
         parseHTML: (element) => element.getAttribute('data-change-id') ?? '',
@@ -241,6 +320,10 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
           blockChangeActorId: blockChangeAttribute('actorId'),
           blockChangeAuthor: blockChangeAttribute('author'),
           blockChangeDate: blockChangeAttribute('date'),
+          paragraphBreakChangeKind: paragraphBreakChangeAttribute('kind'),
+          paragraphBreakChangeId: paragraphBreakChangeAttribute('id'),
+          paragraphBreakChangeAuthor: paragraphBreakChangeAttribute('author'),
+          paragraphBreakChangeDate: paragraphBreakChangeAttribute('date'),
         },
       },
       {
@@ -516,6 +599,29 @@ export function collectDocumentChanges(
     }
     if (
       (node.type.name === 'paragraph' || node.type.name === 'heading') &&
+      (node.attrs.paragraphBreakChangeKind === 'merge' ||
+        node.attrs.paragraphBreakChangeKind === 'split')
+    ) {
+      const id =
+        stringAttribute(node.attrs.paragraphBreakChangeId) ||
+        `paragraph-break-at-${position}`;
+      const key = `paragraph-break:${id}`;
+      const from = position;
+      const to = position + node.nodeSize;
+      changes.set(key, {
+        id,
+        kind: 'paragraph-break',
+        author:
+          stringAttribute(node.attrs.paragraphBreakChangeAuthor) ||
+          '未知审阅者',
+        date: stringAttribute(node.attrs.paragraphBreakChangeDate),
+        from,
+        to,
+        text: node.textContent,
+      });
+    }
+    if (
+      (node.type.name === 'paragraph' || node.type.name === 'heading') &&
       node.attrs.paragraphChangeKind === 'paragraph-formatting'
     ) {
       const id =
@@ -575,6 +681,79 @@ export function collectDocumentChanges(
           text: node.textContent,
         });
       }
+    }
+    if (
+      node.type.name === 'table' &&
+      node.attrs.tableChangeKind === 'table-formatting'
+    ) {
+      const id =
+        stringAttribute(node.attrs.tableChangeId) ||
+        `table-change-at-${position}`;
+      const key = `table-formatting:${id}`;
+      changes.set(key, {
+        id,
+        kind: 'table-formatting',
+        author: stringAttribute(node.attrs.tableChangeAuthor) || '未知审阅者',
+        date: stringAttribute(node.attrs.tableChangeDate),
+        from: position,
+        to: position + node.nodeSize,
+        text: node.textContent,
+      });
+    }
+    if (
+      node.type.name === 'tableRow' &&
+      node.attrs.rowChangeKind === 'row-formatting'
+    ) {
+      const id =
+        stringAttribute(node.attrs.rowChangeId) ||
+        `row-change-at-${position}`;
+      const key = `row-formatting:${id}`;
+      changes.set(key, {
+        id,
+        kind: 'row-formatting',
+        author: stringAttribute(node.attrs.rowChangeAuthor) || '未知审阅者',
+        date: stringAttribute(node.attrs.rowChangeDate),
+        from: position,
+        to: position + node.nodeSize,
+        text: node.textContent,
+      });
+    }
+    if (
+      (node.type.name === 'tableCell' || node.type.name === 'tableHeader') &&
+      node.attrs.cellChangeKind === 'cell-formatting'
+    ) {
+      const id =
+        stringAttribute(node.attrs.cellChangeId) ||
+        `cell-change-at-${position}`;
+      const key = `cell-formatting:${id}`;
+      changes.set(key, {
+        id,
+        kind: 'cell-formatting',
+        author: stringAttribute(node.attrs.cellChangeAuthor) || '未知审阅者',
+        date: stringAttribute(node.attrs.cellChangeDate),
+        from: position,
+        to: position + node.nodeSize,
+        text: node.textContent,
+      });
+    }
+    if (
+      node.type.name === 'documentSection' &&
+      node.attrs.sectionChangeKind === 'section-formatting'
+    ) {
+      const id =
+        stringAttribute(node.attrs.sectionChangeId) ||
+        `section-change-at-${position}`;
+      const key = `section-formatting:${id}`;
+      changes.set(key, {
+        id,
+        kind: 'section-formatting',
+        author:
+          stringAttribute(node.attrs.sectionChangeAuthor) || '未知审阅者',
+        date: stringAttribute(node.attrs.sectionChangeDate),
+        from: position,
+        to: position + node.nodeSize,
+        text: node.textContent,
+      });
     }
     if (!node.isText || !node.text) return;
     const mark = documentChangeMark(node.marks);
@@ -737,11 +916,31 @@ function resolveDocumentChangesTransaction(
   const numberingSegments = numberingChangeSegments(state.doc).filter(
     (segment) => !ids || ids.has(segment.id),
   );
+  const paragraphBreakSegments = documentParagraphBreakChangeSegments(
+    state.doc,
+  ).filter((segment) => !ids || ids.has(segment.id));
+  const tableSegments = tableChangeSegments(state.doc).filter(
+    (segment) => !ids || ids.has(segment.id),
+  );
+  const rowSegments = rowChangeSegments(state.doc).filter(
+    (segment) => !ids || ids.has(segment.id),
+  );
+  const cellSegments = cellChangeSegments(state.doc).filter(
+    (segment) => !ids || ids.has(segment.id),
+  );
+  const sectionSegments = sectionChangeSegments(state.doc).filter(
+    (segment) => !ids || ids.has(segment.id),
+  );
   if (
     !segments.length &&
     !paragraphSegments.length &&
     !numberingSegments.length &&
-    !blockSegments.length
+    !blockSegments.length &&
+    !paragraphBreakSegments.length &&
+    !tableSegments.length &&
+    !rowSegments.length &&
+    !cellSegments.length &&
+    !sectionSegments.length
   )
     return 0;
   if (
@@ -750,6 +949,16 @@ function resolveDocumentChangesTransaction(
     ) ||
     numberingSegments.some(
       (segment) => !parseDocumentNumberingChange(segment.before),
+    ) ||
+    tableSegments.some(
+      (segment) => !parseDocumentTableFormatting(segment.before),
+    ) ||
+    rowSegments.some((segment) => !parseDocumentRowFormatting(segment.before)) ||
+    cellSegments.some(
+      (segment) => !parseDocumentCellFormatting(segment.before),
+    ) ||
+    sectionSegments.some(
+      (segment) => !parseDocumentSectionFormatting(segment.before),
     ) ||
     (decision === 'reject' &&
       segments.some(
@@ -841,6 +1050,55 @@ function resolveDocumentChangesTransaction(
     if (!attributes) return 0;
     tr.setNodeMarkup(position, undefined, attributes);
   }
+  for (const segment of tableSegments) {
+    const position = tr.mapping.map(segment.position);
+    const node = tr.doc.nodeAt(position);
+    if (!node || node.type.name !== 'table') return 0;
+    const attributes =
+      decision === 'reject'
+        ? restoredDocumentTableAttributes(node.attrs, segment.before)
+        : clearDocumentTableChangeAttributes(node.attrs);
+    if (!attributes) return 0;
+    tr.setNodeMarkup(position, undefined, attributes);
+  }
+  for (const segment of rowSegments) {
+    const position = tr.mapping.map(segment.position);
+    const node = tr.doc.nodeAt(position);
+    if (!node || node.type.name !== 'tableRow') return 0;
+    const attributes =
+      decision === 'reject'
+        ? restoredDocumentRowAttributes(node.attrs, segment.before)
+        : clearDocumentRowChangeAttributes(node.attrs);
+    if (!attributes) return 0;
+    tr.setNodeMarkup(position, undefined, attributes);
+  }
+  for (const segment of cellSegments) {
+    const position = tr.mapping.map(segment.position);
+    const node = tr.doc.nodeAt(position);
+    if (
+      !node ||
+      (node.type.name !== 'tableCell' && node.type.name !== 'tableHeader')
+    ) {
+      return 0;
+    }
+    const attributes =
+      decision === 'reject'
+        ? restoredDocumentCellAttributes(node.attrs, segment.before)
+        : clearDocumentCellChangeAttributes(node.attrs);
+    if (!attributes) return 0;
+    tr.setNodeMarkup(position, undefined, attributes);
+  }
+  for (const segment of sectionSegments) {
+    const position = tr.mapping.map(segment.position);
+    const node = tr.doc.nodeAt(position);
+    if (!node || node.type.name !== 'documentSection') return 0;
+    const attributes =
+      decision === 'reject'
+        ? restoredDocumentSectionAttributes(node.attrs, segment.before)
+        : clearDocumentSectionChangeAttributes(node.attrs);
+    if (!attributes) return 0;
+    tr.setNodeMarkup(position, undefined, attributes);
+  }
   for (const segment of blockSegments) {
     if (removedBlockIds.has(segment.id)) continue;
     const position = tr.mapping.map(segment.position);
@@ -856,6 +1114,13 @@ function resolveDocumentChangesTransaction(
       undefined,
       clearDocumentBlockChangeAttributes(node.attrs),
     );
+  }
+  for (const segment of [...paragraphBreakSegments].sort(
+    (left, right) => right.position - left.position,
+  )) {
+    if (!resolveDocumentParagraphBreakChange(tr, segment, decision)) {
+      return 0;
+    }
   }
   for (const segment of markRemovals) {
     tr.removeMark(segment.from, segment.to, type);
@@ -884,7 +1149,12 @@ function resolveDocumentChangesTransaction(
           ...segments,
           ...paragraphSegments,
           ...numberingSegments,
+          ...tableSegments,
+          ...rowSegments,
+          ...cellSegments,
+          ...sectionSegments,
           ...blockSegments,
+          ...paragraphBreakSegments,
         ].map((segment) => segment.id),
       ).size
     : 0;
@@ -1059,6 +1329,100 @@ function numberingChangeSegments(
       from: position + 1,
       to: position + 1 + node.content.size,
       before: stringAttribute(node.attrs.numberingChangeBefore),
+    });
+  });
+  return segments;
+}
+
+function tableChangeSegments(document: ProseMirrorNode): TableChangeSegment[] {
+  const segments: TableChangeSegment[] = [];
+  document.descendants((node, position) => {
+    if (
+      node.type.name !== 'table' ||
+      node.attrs.tableChangeKind !== 'table-formatting'
+    ) {
+      return;
+    }
+    segments.push({
+      id:
+        stringAttribute(node.attrs.tableChangeId) ||
+        `table-change-at-${position}`,
+      kind: 'table-formatting',
+      position,
+      from: position,
+      to: position + node.nodeSize,
+      before: stringAttribute(node.attrs.tableChangeBefore),
+    });
+  });
+  return segments;
+}
+
+function rowChangeSegments(document: ProseMirrorNode): RowChangeSegment[] {
+  const segments: RowChangeSegment[] = [];
+  document.descendants((node, position) => {
+    if (
+      node.type.name !== 'tableRow' ||
+      node.attrs.rowChangeKind !== 'row-formatting'
+    ) {
+      return;
+    }
+    segments.push({
+      id:
+        stringAttribute(node.attrs.rowChangeId) ||
+        `row-change-at-${position}`,
+      kind: 'row-formatting',
+      position,
+      from: position,
+      to: position + node.nodeSize,
+      before: stringAttribute(node.attrs.rowChangeBefore),
+    });
+  });
+  return segments;
+}
+
+function cellChangeSegments(document: ProseMirrorNode): CellChangeSegment[] {
+  const segments: CellChangeSegment[] = [];
+  document.descendants((node, position) => {
+    if (
+      (node.type.name !== 'tableCell' && node.type.name !== 'tableHeader') ||
+      node.attrs.cellChangeKind !== 'cell-formatting'
+    ) {
+      return;
+    }
+    segments.push({
+      id:
+        stringAttribute(node.attrs.cellChangeId) ||
+        `cell-change-at-${position}`,
+      kind: 'cell-formatting',
+      position,
+      from: position,
+      to: position + node.nodeSize,
+      before: stringAttribute(node.attrs.cellChangeBefore),
+    });
+  });
+  return segments;
+}
+
+function sectionChangeSegments(
+  document: ProseMirrorNode,
+): SectionChangeSegment[] {
+  const segments: SectionChangeSegment[] = [];
+  document.descendants((node, position) => {
+    if (
+      node.type.name !== 'documentSection' ||
+      node.attrs.sectionChangeKind !== 'section-formatting'
+    ) {
+      return;
+    }
+    segments.push({
+      id:
+        stringAttribute(node.attrs.sectionChangeId) ||
+        `section-change-at-${position}`,
+      kind: 'section-formatting',
+      position,
+      from: position,
+      to: position + node.nodeSize,
+      before: stringAttribute(node.attrs.sectionChangeBefore),
     });
   });
   return segments;

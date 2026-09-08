@@ -1367,7 +1367,9 @@ function DocumentEditorSurface({
   const paragraphIndent = documentParagraphIndent(editor);
   const paragraphTabStops = documentParagraphTabStops(editor);
   const updateLayout = (next: typeof layout) => {
-    editor.commands.updateActiveDocumentSection(next);
+    const { propertyRevisionOmml: _cleared, formattingChange: _fmt, ...rest } =
+      next;
+    editor.commands.updateActiveDocumentSection(rest);
   };
   const openDocumentStatistics = () => {
     const activeElement = document.activeElement;

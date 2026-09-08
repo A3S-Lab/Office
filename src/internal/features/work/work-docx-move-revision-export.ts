@@ -26,6 +26,8 @@ export interface DocxMoveRevisionRegistration {
   id: number;
   author: string;
   date: string;
+  rangeId?: string;
+  rangeName?: string;
 }
 
 export interface DocxMoveRevisionPatch {
@@ -34,6 +36,8 @@ export interface DocxMoveRevisionPatch {
   role: DocxMoveRevisionRole;
   author: string;
   date: string;
+  rangeId?: string;
+  rangeName?: string;
 }
 
 /**
@@ -69,6 +73,8 @@ export class DocxMoveRevisionPatchCollector {
     const date = revisionDate;
     const key = element.dataset.changeId?.trim() ?? '';
     const text = element.textContent ?? '';
+    const rangeId = element.dataset.changeMoveRangeId?.trim() ?? '';
+    const rangeName = element.dataset.changeMoveRangeName?.trim() ?? '';
     if (
       !role ||
       !key ||
@@ -83,8 +89,12 @@ export class DocxMoveRevisionPatchCollector {
       text.length > MAX_MOVE_TEXT_LENGTH ||
       element.querySelector('[data-document-change]') ||
       element.querySelector(
-        '[data-document-equation], [data-document-field], [data-document-note-reference], [data-document-content-control], img, br',
-      )
+        '[data-document-equation], [data-document-field], [data-document-note-reference], [data-document-content-control], img',
+      ) ||
+      Array.from(element.querySelectorAll('br')).some(
+        (breakElement) => !isBrowserTextWrappingBreak(breakElement),
+      ) ||
+      !validOptionalMoveRange(rangeId, rangeName)
     ) {
       throw new Error('Document contains an invalid move revision.');
     }
@@ -99,9 +109,17 @@ export class DocxMoveRevisionPatchCollector {
       id,
       author,
       date,
+      ...(rangeId && rangeName ? { rangeId, rangeName } : {}),
     };
     this.registrations.set(element, registration);
-    this.patches.push({ wireId, id, role, author, date });
+    this.patches.push({
+      wireId,
+      id,
+      role,
+      author,
+      date,
+      ...(rangeId && rangeName ? { rangeId, rangeName } : {}),
+    });
     return registration;
   }
 }
@@ -205,6 +223,9 @@ export async function patchDocxMoveRevisions(
       );
       while (wrapper.firstChild) replacement.append(wrapper.firstChild);
       wrapper.replaceWith(replacement);
+      if (patch.rangeId && patch.rangeName) {
+        wrapMoveWithRangeMarkers(document, replacement, patch);
+      }
       applied.set(patch.wireId, (applied.get(patch.wireId) ?? 0) + 1);
       changed = true;
     }
@@ -236,6 +257,48 @@ export async function patchDocxMoveRevisions(
 
 function moveRole(value: string | undefined): DocxMoveRevisionRole | null {
   return value === 'from' || value === 'to' ? value : null;
+}
+
+function validOptionalMoveRange(rangeId: string, rangeName: string): boolean {
+  if (!rangeId && !rangeName) return true;
+  return (
+    /^\d{1,10}$/.test(rangeId) &&
+    Boolean(rangeName) &&
+    rangeName.length <= 255 &&
+    !/[\u0000-\u001f\u007f]/.test(rangeName)
+  );
+}
+
+function isBrowserTextWrappingBreak(element: Element): boolean {
+  if (!(element instanceof HTMLElement) || element.tagName.toLowerCase() !== 'br') {
+    return false;
+  }
+  if (element.childNodes.length) return false;
+  const type = element.getAttribute('data-break') ?? element.getAttribute('type');
+  return type === null || type === '' || type === 'textWrapping';
+}
+
+function wrapMoveWithRangeMarkers(
+  document: Document,
+  move: Element,
+  patch: DocxMoveRevisionPatch,
+): void {
+  const parent = move.parentNode;
+  if (!parent || !patch.rangeId || !patch.rangeName) return;
+  const namespace = move.namespaceURI ?? WORD_NAMESPACE;
+  const prefix = xmlNamespacePrefix(move, namespace) ?? move.prefix ?? 'w';
+  const startName =
+    patch.role === 'from' ? 'moveFromRangeStart' : 'moveToRangeStart';
+  const endName = patch.role === 'from' ? 'moveFromRangeEnd' : 'moveToRangeEnd';
+  const start = document.createElementNS(namespace, `${prefix}:${startName}`);
+  setWordAttribute(start, 'id', patch.rangeId);
+  setWordAttribute(start, 'author', patch.author);
+  setWordAttribute(start, 'date', patch.date);
+  setWordAttribute(start, 'name', patch.rangeName);
+  const end = document.createElementNS(namespace, `${prefix}:${endName}`);
+  setWordAttribute(end, 'id', patch.rangeId);
+  parent.insertBefore(start, move);
+  parent.insertBefore(end, move.nextSibling);
 }
 
 function numericWordAttribute(

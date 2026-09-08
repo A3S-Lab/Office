@@ -44,18 +44,17 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.77.0)
+## What's new on `main` (0.78.0)
 
-- The WPS-informed matrix now exposes **103** A3S Test ACL contracts and **78**
-  visual contracts across Writer, Spreadsheet, Presentation, Markdown, and PDF.
-- Writer deepens paragraph, style, character, find/replace, and field chords;
-  Spreadsheet adds workbook View toggles and sheet navigation; Presentation
-  expands slide, notes, slideshow, and ribbon-collapse evidence; Markdown and
-  PDF promote formatting, link, zoom, navigation, and search shortcuts.
-- Focused ACL and desktop/compact visual contracts for these families passed
-  through the Commander-based Office CLI with empty console and page-error
-  evidence. `office-ui-ops plan <surface> --json` remains the typed inventory
-  entry point.
+- Writer Phase 0 no-clobber deepens reviewable `tblPrChange` / `trPrChange` /
+  `tcPrChange` / `sectPrChange` subsets (layout, margins, paper source,
+  equal-width columns), richer paragraph-mark and move companions, and eligible
+  paragraph-break merge/split.
+- Unsupported OMML roots and body-table float `tblpPr` preserve as opaque native
+  markup instead of inventing incomplete editable approximations.
+- Document PDF export paints searchable Latin Helvetica vectors under measured
+  runs; hosts may `registerWorkPdfCjkFont`; title/lang/heading outline bootstrap
+  ships without claiming full PDF/UA.
 
 The [What's new](./changelog.html) page presents recent releases by version,
 editor surface, user outcome, compatibility evidence, and detailed reference.

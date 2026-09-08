@@ -3,6 +3,10 @@ import {
   documentEquationFromElement,
 } from './work-document-equations';
 import {
+  createDocumentEquationOpaqueElement,
+  documentEquationOpaqueFromElement,
+} from './work-document-equation-opaque';
+import {
   DOCUMENT_CHARACTER_SCALE_ATTRIBUTE,
   documentCharacterScaleDomAttributes,
   documentCharacterScalePercentFromElement,
@@ -161,6 +165,15 @@ const EQUATION_ATTRIBUTES = [
   'data-document-equation',
   'data-equation-display',
   'data-equation-model',
+  'role',
+] as const;
+const EQUATION_OPAQUE_ATTRIBUTES = [
+  'aria-label',
+  'class',
+  'contenteditable',
+  'data-document-equation-opaque',
+  'data-equation-display',
+  'data-equation-omml',
   'role',
 ] as const;
 const MATHML_ATTRIBUTES = new Set([
@@ -401,6 +414,22 @@ export function sanitizeDocumentPageChromeHtml(
       continue;
     }
     element.replaceWith(createDocumentEquationElement(document, equation));
+  }
+  for (const element of Array.from(
+    document.body.querySelectorAll<HTMLElement>(
+      'span[data-document-equation-opaque]',
+    ),
+  )) {
+    const opaque = documentEquationOpaqueFromElement(element);
+    if (!opaque) {
+      element.replaceWith(
+        document.createTextNode(
+          element.textContent?.trim() || '[Unsupported equation]',
+        ),
+      );
+      continue;
+    }
+    element.replaceWith(createDocumentEquationOpaqueElement(document, opaque));
   }
   for (const element of Array.from(
     document.body.querySelectorAll<HTMLElement>('*'),
@@ -742,7 +771,9 @@ function sanitizeAttributes(element: Element, tag: string) {
   const allowed =
     tag === 'span' && element.dataset.documentEquation === 'true'
       ? new Set(EQUATION_ATTRIBUTES)
-      : tag === 'a'
+      : tag === 'span' && element.dataset.documentEquationOpaque === 'true'
+        ? new Set(EQUATION_OPAQUE_ATTRIBUTES)
+        : tag === 'a'
         ? new Set(['dir', 'href', 'title', 'style'])
         : tag === 'img'
           ? new Set([

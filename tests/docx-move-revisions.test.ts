@@ -286,4 +286,323 @@ describe('DOCX move revisions', () => {
       report.issues.some(({ code }) => code === 'docx.revisions.structural'),
     ).toBe(true);
   });
+
+  test('admits soft breaks and relationship-free hyperlinks inside move revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:r><w:delText>old</w:delText><w:br/><w:delText>line</w:delText></w:r>
+            </w:moveFrom>
+          </w:p>
+          <w:p>
+            <w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:hyperlink w:anchor="Target" w:tooltip="Jump">
+                <w:r><w:t>old</w:t><w:br/><w:t>line</w:t></w:r>
+              </w:hyperlink>
+            </w:moveTo>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const moves = [
+      ...descendants(document, 'moveFrom'),
+      ...descendants(document, 'moveTo'),
+    ];
+    expect(moves.map(isSupportedDocxMoveChange)).toEqual([true, true]);
+    expect(supportedDocxMovePairCount(document)).toBe(1);
+    expect(markDocxTextChanges(document).changes).toEqual([
+      expect.objectContaining({ kind: 'move', moveRole: 'from' }),
+      expect.objectContaining({ kind: 'move', moveRole: 'to' }),
+    ]);
+  });
+
+  test('admits relationship-free bookmarks inside move revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:moveFrom w:id="8" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:bookmarkStart w:id="3" w:name="Moved"/>
+              <w:r><w:delText>old</w:delText></w:r>
+              <w:bookmarkEnd w:id="3"/>
+            </w:moveFrom>
+          </w:p>
+          <w:p>
+            <w:moveTo w:id="8" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:bookmarkStart w:id="4" w:name="Moved"/>
+              <w:r><w:t>old</w:t></w:r>
+              <w:bookmarkEnd w:id="4"/>
+            </w:moveTo>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const moves = [
+      ...descendants(document, 'moveFrom'),
+      ...descendants(document, 'moveTo'),
+    ];
+    expect(moves.map(isSupportedDocxMoveChange)).toEqual([true, true]);
+    expect(supportedDocxMovePairCount(document)).toBe(1);
+  });
+
+  test('rejects relationship-spoofed bookmarks inside move revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <w:body>
+          <w:p>
+            <w:moveFrom w:id="8" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:r><w:delText>old</w:delText></w:r>
+            </w:moveFrom>
+          </w:p>
+          <w:p>
+            <w:moveTo w:id="8" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:bookmarkStart w:id="4" w:name="Spoof" r:id="rId1"/>
+              <w:r><w:t>old</w:t></w:r>
+              <w:bookmarkEnd w:id="4"/>
+            </w:moveTo>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    expect(supportedDocxMovePairCount(document)).toBe(0);
+  });
+
+  test('rejects relationship-bound hyperlinks inside move revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <w:body>
+          <w:p>
+            <w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:r><w:delText>old</w:delText></w:r>
+            </w:moveFrom>
+          </w:p>
+          <w:p>
+            <w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:hyperlink r:id="rId5"><w:r><w:t>old</w:t></w:r></w:hyperlink>
+            </w:moveTo>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    expect(supportedDocxMovePairCount(document)).toBe(0);
+  });
+
+  test('exports move revisions that include soft line breaks', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      '<del data-document-change="true" data-change-kind="move" data-change-move-role="from" data-change-id="move-br" data-change-author="Ada" data-change-date="2026-09-01T00:00:00.000Z">old<br>line</del>',
+      ' middle ',
+      '<ins data-document-change="true" data-change-kind="move" data-change-move-role="to" data-change-id="move-br" data-change-author="Ada" data-change-date="2026-09-01T00:00:00.000Z">old<br>line</ins>',
+      '</p></section>',
+    ].join('');
+    artifact.content.trackChanges = true;
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(xml).toMatch(/<w:moveFrom\b/);
+    expect(xml).toMatch(/<w:moveTo\b/);
+    expect(xml).toMatch(/<w:br\b/);
+  });
+
+  test('imports companion move-range bookmarks without a structural warning', async () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+            <w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom>
+            <w:moveFromRangeEnd w:id="0"/>
+          </w:p>
+          <w:p>
+            <w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+            <w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:t>old</w:t></w:r></w:moveTo>
+            <w:moveToRangeEnd w:id="0"/>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const markers = markDocxTextChanges(document);
+    expect(markers.changes).toEqual([
+      expect.objectContaining({
+        kind: 'move',
+        moveRole: 'from',
+        moveRangeId: '0',
+        moveRangeName: 'move0',
+      }),
+      expect.objectContaining({
+        kind: 'move',
+        moveRole: 'to',
+        moveRangeId: '0',
+        moveRangeName: 'move0',
+      }),
+    ]);
+    expect(descendants(document, 'moveFromRangeStart')).toHaveLength(0);
+    expect(descendants(document, 'moveToRangeEnd')).toHaveLength(0);
+
+    const archive = new JSZip();
+    archive.file(
+      'word/document.xml',
+      `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/><w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom><w:moveFromRangeEnd w:id="0"/></w:p><w:p><w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/><w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:t>old</w:t></w:r></w:moveTo><w:moveToRangeEnd w:id="0"/></w:p></w:body></w:document>`,
+    );
+    const bytes = await archive.generateAsync({ type: 'arraybuffer' });
+    const report = await analyzeDocxCompatibility(
+      new File([bytes], 'move-range-companion.docx'),
+      [],
+    );
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'docx.revisions.move',
+        severity: 'info',
+      }),
+    );
+    expect(
+      report.issues.some(({ code }) => code === 'docx.revisions.structural'),
+    ).toBe(false);
+    expect(
+      report.issues.some(({ code }) => code === 'docx.revisions.move-range'),
+    ).toBe(false);
+  });
+
+  test('round-trips companion move-range bookmarks with native move wrappers', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      '<del data-document-change="true" data-change-kind="move" data-change-move-role="from" data-change-move-range-id="0" data-change-move-range-name="move0" data-change-id="move-7" data-change-author="Ada" data-change-date="2026-09-01T00:00:00.000Z">old</del>',
+      ' middle ',
+      '<ins data-document-change="true" data-change-kind="move" data-change-move-role="to" data-change-move-range-id="0" data-change-move-range-name="move0" data-change-id="move-7" data-change-author="Ada" data-change-date="2026-09-01T00:00:00.000Z">old</ins>',
+      '</p></section>',
+    ].join('');
+    artifact.content.trackChanges = true;
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(xml).toMatch(
+      /<w:moveFromRangeStart\b[^>]*w:id="0"[^>]*w:name="move0"/,
+    );
+    expect(xml).toMatch(/<w:moveFrom\b[^>]*w:author="Ada"/);
+    expect(xml).toMatch(/<w:moveFromRangeEnd\b[^>]*w:id="0"/);
+    expect(xml).toMatch(
+      /<w:moveToRangeStart\b[^>]*w:id="0"[^>]*w:name="move0"/,
+    );
+    expect(xml).toMatch(/<w:moveToRangeEnd\b[^>]*w:id="0"/);
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'move-range-roundtrip.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain('data-change-move-range-id="0"');
+    expect(reopened.content.html).toContain(
+      'data-change-move-range-name="move0"',
+    );
+  });
+
+  test('imports same-section cross-paragraph companion move-range bookmarks', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:p>
+            <w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom>
+          </w:p>
+          <w:moveFromRangeEnd w:id="0"/>
+          <w:p><w:r><w:t>stable</w:t></w:r></w:p>
+          <w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:p>
+            <w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:t>old</w:t></w:r></w:moveTo>
+          </w:p>
+          <w:moveToRangeEnd w:id="0"/>
+        </w:body>
+      </w:document>
+    `);
+    const markers = markDocxTextChanges(document);
+    expect(markers.changes).toEqual([
+      expect.objectContaining({
+        kind: 'move',
+        moveRole: 'from',
+        moveRangeId: '0',
+        moveRangeName: 'move0',
+      }),
+      expect.objectContaining({
+        kind: 'move',
+        moveRole: 'to',
+        moveRangeId: '0',
+        moveRangeName: 'move0',
+      }),
+    ]);
+    expect(descendants(document, 'moveFromRangeStart')).toHaveLength(0);
+    expect(document.documentElement.textContent).toContain('stable');
+  });
+
+  test('rejects move-range bookmarks that sandwich extra sibling content', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:p>
+            <w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom>
+          </w:p>
+          <w:p><w:r><w:t>extra</w:t></w:r></w:p>
+          <w:moveFromRangeEnd w:id="0"/>
+          <w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:p>
+            <w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:t>old</w:t></w:r></w:moveTo>
+          </w:p>
+          <w:moveToRangeEnd w:id="0"/>
+        </w:body>
+      </w:document>
+    `);
+    const markers = markDocxTextChanges(document);
+    expect(markers.changes.every((change) => !change.moveRangeId)).toBe(true);
+    expect(descendants(document, 'moveFromRangeStart')).toHaveLength(1);
+  });
+
+  test('rejects companion move-range bookmarks that cross a section boundary', async () => {
+    const archive = new JSZip();
+    archive.file(
+      'word/document.xml',
+      `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/><w:p><w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom></w:p><w:moveFromRangeEnd w:id="0"/><w:p><w:pPr><w:sectPr/></w:pPr></w:p><w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/><w:p><w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:t>old</w:t></w:r></w:moveTo></w:p><w:moveToRangeEnd w:id="0"/></w:body></w:document>`,
+    );
+    const bytes = await archive.generateAsync({ type: 'arraybuffer' });
+    const report = await analyzeDocxCompatibility(
+      new File([bytes], 'cross-section-move-range.docx'),
+      [],
+    );
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'docx.revisions.move-range',
+      }),
+    );
+  });
+
+  test('reports unpaired move-range markers with a dedicated diagnostic', async () => {
+    const archive = new JSZip();
+    archive.file(
+      'word/document.xml',
+      `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:moveFromRangeStart w:id="9" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="orphan"/><w:r><w:t>loose</w:t></w:r><w:moveFromRangeEnd w:id="9"/></w:p></w:body></w:document>`,
+    );
+    const bytes = await archive.generateAsync({ type: 'arraybuffer' });
+    const report = await analyzeDocxCompatibility(
+      new File([bytes], 'unpaired-move-range.docx'),
+      [],
+    );
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'docx.revisions.move-range',
+      }),
+    );
+    expect(
+      report.issues.some(({ code }) => code === 'docx.revisions.structural'),
+    ).toBe(false);
+  });
 });

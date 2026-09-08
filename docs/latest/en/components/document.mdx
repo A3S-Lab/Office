@@ -734,11 +734,14 @@ revision, enables tracked changes, removes private markers, and reopening the
 DOCX restores the same atomic semantics. Import and export admit at most 65,536
 records.
 
-An isolated paragraph-mark change can mean a paragraph-break merge or split,
-so it is not guessed as a whole-paragraph change. Mixed or relationship-bound
-content, multiple body wrappers, mismatched kind/author/date, malformed or
-namespace-spoofed attributes, unsupported nodes, and over-limit input stay on
-the structural compatibility path with explicit diagnostics.
+An isolated paragraph-mark change can mean a paragraph-break merge or split.
+When the adjacent sibling is also an eligible text-only paragraph, Work imports
+a reviewable `paragraph-break` change with accept/reject join semantics and
+mark-only DOCX export. Otherwise it is not guessed as a whole-paragraph change.
+Mixed or relationship-bound content, multiple body wrappers, mismatched
+kind/author/date, malformed or namespace-spoofed attributes, unsupported nodes,
+and over-limit input stay on the structural compatibility path with explicit
+diagnostics.
 
 ## Move revisions
 

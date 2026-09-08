@@ -31,6 +31,12 @@
   font-size: 1.08em;
 }
 
+.work-document-equation.opaque {
+  font-family: "Cambria Math", "STIX Two Math", math, serif;
+  font-style: italic;
+  opacity: 0.92;
+}
+
 .work-document-editor:not(.preview)
   .work-document-equation.ProseMirror-selectednode {
   outline: 2px solid

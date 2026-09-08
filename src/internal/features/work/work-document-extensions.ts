@@ -28,6 +28,7 @@ import { DocumentComment } from './work-document-comments';
 import { DocumentContentControl } from './work-document-content-control';
 import { DocumentConnector } from './work-document-connector';
 import { DocumentEquation } from './work-document-equations';
+import { DocumentEquationOpaque } from './work-document-equation-opaque';
 import { DocumentField } from './work-document-field-node';
 import { DocumentImage } from './work-document-image-layout';
 import { DocumentIndex, DocumentIndexEntry } from './work-document-index-nodes';
@@ -142,6 +143,7 @@ export function createWorkDocumentExtensions(
     DocumentField,
     DocumentContentControl,
     DocumentEquation,
+    DocumentEquationOpaque,
     commentExtension,
     DocumentNoteReference,
     DocumentNote,

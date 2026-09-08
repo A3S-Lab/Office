@@ -69,6 +69,12 @@ export const DocumentSection = Node.create({
       paperSource: hiddenAttribute(''),
       documentGridType: hiddenAttribute(''),
       documentGridLinePitch: hiddenAttribute(null),
+      propertyRevisionOmml: hiddenAttribute(''),
+      sectionChangeKind: hiddenAttribute(null),
+      sectionChangeId: hiddenAttribute(''),
+      sectionChangeAuthor: hiddenAttribute(''),
+      sectionChangeDate: hiddenAttribute(''),
+      sectionChangeBefore: hiddenAttribute(''),
     };
   },
 
@@ -157,6 +163,17 @@ export const DocumentSection = Node.create({
               node,
               'sectionDocumentGridLinePitch',
             ),
+            propertyRevisionOmml:
+              node.dataset.sectionPropertyRevisionOmml ?? '',
+            sectionChangeKind:
+              node.getAttribute('data-document-change') === 'true' &&
+              node.getAttribute('data-change-kind') === 'section-formatting'
+                ? 'section-formatting'
+                : null,
+            sectionChangeId: node.getAttribute('data-change-id') ?? '',
+            sectionChangeAuthor: node.getAttribute('data-change-author') ?? '',
+            sectionChangeDate: node.getAttribute('data-change-date') ?? '',
+            sectionChangeBefore: node.getAttribute('data-change-before') ?? '',
           } satisfies DocumentSectionNodeAttributes;
         },
       },

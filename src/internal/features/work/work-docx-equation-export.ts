@@ -26,9 +26,16 @@ import {
   type WorkDocumentEquationWordTextOutlineCap,
   type WorkDocumentEquationWordTextOutlineCompound,
 } from './work-document-equations';
+import {
+  documentEquationOpaqueFromElement,
+  type WorkDocumentEquationOpaque,
+} from './work-document-equation-opaque';
+import { isDocxEquationLikeRoot } from './work-docx-equation-story';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
   XMLNS_NAMESPACE,
+  cloneXmlElement,
+  declareInheritedNamespaces,
   xmlAttributeLocalName,
   xmlAttributeNamespace,
   xmlDeclaredPrefix,
@@ -39,7 +46,8 @@ import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 
 interface DocxEquationPatch {
   marker: string;
-  equation: WorkDocumentEquation;
+  equation?: WorkDocumentEquation;
+  opaque?: WorkDocumentEquationOpaque;
 }
 
 const MATH_NAMESPACE =
@@ -229,8 +237,9 @@ export class DocxEquationPatchCollector {
   constructor(private readonly source: string) {}
 
   marker(element: HTMLElement): string | null {
-    const equation = documentEquationFromElement(element);
-    if (!equation) return null;
+    const opaque = documentEquationOpaqueFromElement(element);
+    const equation = opaque ? null : documentEquationFromElement(element);
+    if (!opaque && !equation) return null;
     if (this.patches.length >= MAX_EQUATION_PATCHES) {
       throw new Error('Document exceeds the equation limit.');
     }
@@ -239,7 +248,9 @@ export class DocxEquationPatchCollector {
       marker = `__A3S_EQUATION_${this.nextMarker}__`;
       this.nextMarker += 1;
     } while (this.source.includes(marker));
-    this.patches.push({ marker, equation });
+    this.patches.push(
+      opaque ? { marker, opaque } : { marker, equation: equation! },
+    );
     return marker;
   }
 }
@@ -275,6 +286,24 @@ export async function patchDocxEquations(
       const count = (applied.get(target.patch.marker) ?? 0) + 1;
       applied.set(target.patch.marker, count);
       if (count > 1) continue;
+      if (target.patch.opaque) {
+        const restored = importOpaqueEquation(
+          document,
+          target.patch.opaque.omml,
+        );
+        if (!restored) continue;
+        if (
+          target.patch.opaque.display === 'block' &&
+          target.paragraph &&
+          paragraphHasOnlyEquationRun(target.paragraph, target.run)
+        ) {
+          target.paragraph.replaceWith(restored);
+        } else {
+          target.run.replaceWith(restored);
+        }
+        changed = true;
+        continue;
+      }
       const equation = normalizeDocumentEquation(target.patch.equation);
       if (!equation) continue;
       const math = createMathElement(document, prefix, 'oMath');
@@ -317,6 +346,29 @@ export async function patchDocxEquations(
     );
   }
   return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function importOpaqueEquation(
+  document: Document,
+  omml: string,
+): Element | null {
+  try {
+    const parsed = parseXml(omml, 'preserved OMML equation');
+    const root = parsed.documentElement;
+    if (!isDocxEquationLikeRoot(root) || !root.namespaceURI) return null;
+    if (
+      root.namespaceURI !== MATH_NAMESPACE &&
+      root.namespaceURI !==
+        'http://purl.oclc.org/ooxml/officeDocument/math'
+    ) {
+      return null;
+    }
+    const imported = cloneXmlElement(document, root);
+    declareInheritedNamespaces(imported, root);
+    return imported;
+  } catch {
+    return null;
+  }
 }
 
 function equationMarkerTargets(

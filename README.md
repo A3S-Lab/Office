@@ -371,18 +371,18 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.77.0` deepens WPS UI/UX alignment across all five editors and expands
-the shared evidence matrix to **103 ACL** contracts and **78 visual** contracts:
+Version `0.78.0` deepens Writer Phase 0 no-clobber fidelity and searchable PDF
+export:
 
-- **Writer** — paragraph move and indent families, alignment including distribute,
-  bullets, headings, Normal/正文, case cycle, clear formatting, double
-  strikethrough, find/replace, page break, hyperlink, and field lock/unlink.
-- **Spreadsheet** — workbook View chrome and `Ctrl+PageUp`/`Ctrl+PageDown` sheet
-  navigation.
-- **Presentation** — new/duplicate/delete slide, notes, group ads, ribbon
-  collapse, and slideshow navigation (including Home/End and digit+Enter).
-- **Markdown** — `Ctrl+F1` ribbon collapse plus `Ctrl+B` / `Ctrl+I` / `Ctrl+K`.
-- **PDF** — zoom, page navigation, and `Ctrl+F` search focus.
+- **Revisions** — reviewable table/row/cell/section property subsets (including
+  layout, cell margins, paper source, and equal-width columns), richer
+  paragraph-mark and move-range companions, and eligible paragraph-break
+  merge/split.
+- **Preservation** — opaque unsupported OMML roots and body-table float
+  `tblpPr` round-trip without inventing editable approximations.
+- **PDF** — measured Latin clears to Helvetica vector text; hosts may
+  `registerWorkPdfCjkFont`; title/lang/heading outline bootstrap ships without
+  claiming full PDF/UA.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

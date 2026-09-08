@@ -5,6 +5,11 @@ import type {
 } from './work-document-changes';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
+  companionDocxMoveRangeBookmarks,
+  inspectUnpairedDocxMoveRangeMarkers,
+  stripDocxMoveRangeMarkers,
+} from './work-docx-move-range-import';
+import {
   xmlAttributeLocalName,
   xmlAttributeNamespace,
 } from './work-docx-settings-xml';
@@ -13,6 +18,8 @@ import { attribute, descendants } from './work-ooxml-package';
 export interface ImportedDocxChangeMarker extends WorkDocumentChangeIdentity {
   kind: WorkDocumentChangeKind;
   moveRole?: WorkDocumentMoveRole;
+  moveRangeId?: string;
+  moveRangeName?: string;
   start: string;
   end: string;
 }
@@ -49,6 +56,20 @@ export function markDocxTextChanges(
 ): ImportedDocxChangeMarkers {
   const changes: ImportedDocxChangeMarker[] = [];
   const movePairs = supportedMovePairs(document);
+  const companions = companionDocxMoveRangeBookmarks(
+    document,
+    movePairs.map((pair) => ({
+      from: pair.from.element,
+      to: pair.to.element,
+    })),
+  );
+  const companionByMove = new Map(
+    companions.flatMap((companion) => [
+      [companion.from, companion] as const,
+      [companion.to, companion] as const,
+    ]),
+  );
+  stripDocxMoveRangeMarkers(companions.flatMap((companion) => companion.markers));
   const moveByElement = new Map<Element, SupportedMovePair>();
   for (const pair of movePairs) {
     moveByElement.set(pair.from.element, pair);
@@ -72,6 +93,7 @@ export function markDocxTextChanges(
       const ordered = [move.from, move.to].sort((left, right) =>
         compareDocumentOrder(left.element, right.element),
       );
+      const companion = companionByMove.get(move.from.element);
       for (const side of ordered) {
         markerIndex += 1;
         if (side.role === 'from') convertDeletedText(document, side.element);
@@ -83,6 +105,12 @@ export function markDocxTextChanges(
           date: side.date,
           start: `__A3S_WORK_CHANGE_START_${markerIndex}__`,
           end: `__A3S_WORK_CHANGE_END_${markerIndex}__`,
+          ...(companion
+            ? {
+                moveRangeId: companion.rangeId,
+                moveRangeName: companion.rangeName,
+              }
+            : {}),
         };
         unwrapRevision(document, side.element, marker.start, marker.end);
         changes.push(marker);
@@ -127,6 +155,10 @@ export function applyImportedDocxChangeMarkers(
     if (marker.kind === 'move' && marker.moveRole) {
       element.dataset.changeMoveRole = marker.moveRole;
     }
+    if (marker.kind === 'move' && marker.moveRangeId && marker.moveRangeName) {
+      element.dataset.changeMoveRangeId = marker.moveRangeId;
+      element.dataset.changeMoveRangeName = marker.moveRangeName;
+    }
     element.dataset.changeId = marker.id;
     element.dataset.changeAuthor = marker.author;
     element.dataset.changeDate = marker.date;
@@ -150,8 +182,8 @@ function revisionText(revision: Element, kind: WorkDocumentChangeKind): string {
 
 /**
  * Returns whether one move wrapper uses the bounded, text-only Word shape.
- * Range-marker moves and relationship-bearing children intentionally remain on
- * the compatibility path until their structural semantics are modelled.
+ * Unpaired or non-companion range-marker moves and relationship-bearing
+ * children intentionally remain on the compatibility path.
  */
 export function isSupportedDocxMoveChange(element: Element): boolean {
   return supportedMoveRevision(element) !== null;
@@ -160,6 +192,28 @@ export function isSupportedDocxMoveChange(element: Element): boolean {
 /** Counts complete, paired move revisions in a WordprocessingML story. */
 export function supportedDocxMovePairCount(document: Document): number {
   return supportedMovePairs(document).length;
+}
+
+/** Companion range bookmarks paired with supported move wrappers. */
+export function inspectDocxMoveRangeCompanions(document: Document): {
+  companionCount: number;
+  unpairedMarkerCount: number;
+} {
+  const pairs = supportedMovePairs(document);
+  const companions = companionDocxMoveRangeBookmarks(
+    document,
+    pairs.map((pair) => ({
+      from: pair.from.element,
+      to: pair.to.element,
+    })),
+  );
+  return {
+    companionCount: companions.length,
+    unpairedMarkerCount: inspectUnpairedDocxMoveRangeMarkers(
+      document,
+      companions,
+    ),
+  };
 }
 
 function supportedMovePairs(document: Document): SupportedMovePair[] {
@@ -270,51 +324,179 @@ function moveChildrenAreTextOnly(
   role: WorkDocumentMoveRole,
 ): boolean {
   const allowedText = role === 'from' ? new Set(['delText']) : new Set(['t']);
-  const runs = Array.from(revision.children);
-  if (
-    !runs.length ||
-    runs.some(
-      (run) =>
-        run.localName !== 'r' ||
-        !DOCX_WORDPROCESSING_NAMESPACES.has(run.namespaceURI ?? ''),
-    )
-  ) {
-    return false;
-  }
-  for (const run of runs) {
-    const properties = Array.from(run.children).filter(
-      (child) => child.localName === 'rPr',
-    );
-    if (properties.length > 1) return false;
-    for (const child of Array.from(run.children)) {
-      if (!DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '')) {
-        return false;
-      }
-      if (child.localName === 'rPr') {
+  const children = Array.from(revision.children);
+  if (!children.length) return false;
+  let hasText = false;
+  for (const child of children) {
+    if (!DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '')) {
+      return false;
+    }
+    if (child.localName === 'r') {
+      if (!moveRunIsTextOnly(child, allowedText)) return false;
+      hasText ||= Array.from(child.children).some(
+        (node) =>
+          allowedText.has(node.localName) && Boolean(node.textContent),
+      );
+      continue;
+    }
+    if (child.localName === 'hyperlink') {
+      if (!isRelationshipFreeInternalHyperlink(child)) return false;
+      const runs = Array.from(child.children);
+      if (!runs.length) return false;
+      for (const run of runs) {
         if (
-          Array.from(child.querySelectorAll('*')).some(
-            (descendant) =>
-              !DOCX_WORDPROCESSING_NAMESPACES.has(
-                descendant.namespaceURI ?? '',
-              ),
-          )
+          run.localName !== 'r' ||
+          !DOCX_WORDPROCESSING_NAMESPACES.has(run.namespaceURI ?? '') ||
+          !moveRunIsTextOnly(run, allowedText)
         ) {
           return false;
         }
-        continue;
+        hasText ||= Array.from(run.children).some(
+          (node) =>
+            allowedText.has(node.localName) && Boolean(node.textContent),
+        );
       }
-      if (!allowedText.has(child.localName)) return false;
-      if (child.querySelector('*')) return false;
+      continue;
     }
     if (
-      !Array.from(run.children).some((child) =>
-        allowedText.has(child.localName),
-      )
+      child.localName === 'bookmarkStart' ||
+      child.localName === 'bookmarkEnd'
     ) {
+      if (!isRelationshipFreeBookmarkMarker(child)) return false;
+      continue;
+    }
+    return false;
+  }
+  return hasText;
+}
+
+function moveRunIsTextOnly(
+  run: Element,
+  allowedText: ReadonlySet<string>,
+): boolean {
+  const properties = Array.from(run.children).filter(
+    (child) => child.localName === 'rPr',
+  );
+  if (properties.length > 1) return false;
+  for (const child of Array.from(run.children)) {
+    if (!DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '')) {
+      return false;
+    }
+    if (child.localName === 'rPr') {
+      if (
+        Array.from(child.querySelectorAll('*')).some(
+          (descendant) =>
+            !DOCX_WORDPROCESSING_NAMESPACES.has(descendant.namespaceURI ?? ''),
+        )
+      ) {
+        return false;
+      }
+      continue;
+    }
+    if (child.localName === 'br') {
+      if (!isTextWrappingBreak(child)) return false;
+      continue;
+    }
+    if (!allowedText.has(child.localName) || child.querySelector('*')) {
       return false;
     }
   }
   return true;
+}
+
+const HYPERLINK_ATTRIBUTES = new Set([
+  'anchor',
+  'docLocation',
+  'history',
+  'tgtFrame',
+  'tooltip',
+]);
+const BOOKMARK_START_ATTRIBUTES = new Set(['id', 'name']);
+const BOOKMARK_END_ATTRIBUTES = new Set(['id']);
+const RELATIONSHIP_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+  'http://purl.oclc.org/ooxml/officeDocument/relationships',
+  'http://schemas.openxmlformats.org/package/2006/relationships',
+]);
+
+function isRelationshipFreeInternalHyperlink(element: Element): boolean {
+  if (!DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')) {
+    return false;
+  }
+  let hasAnchor = false;
+  for (const attribute of Array.from(element.attributes)) {
+    const namespace =
+      attribute.namespaceURI ||
+      xmlAttributeNamespace(element, attribute) ||
+      '';
+    if (RELATIONSHIP_NAMESPACES.has(namespace)) return false;
+    if (namespace && namespace !== element.namespaceURI) return false;
+    const localName = xmlAttributeLocalName(attribute);
+    if (namespace === element.namespaceURI || !namespace) {
+      if (!HYPERLINK_ATTRIBUTES.has(localName)) return false;
+      if (localName === 'anchor') {
+        const value = attribute.value.trim();
+        if (
+          !value ||
+          value.length > 255 ||
+          /[\u0000-\u001f\u007f]/.test(value)
+        ) {
+          return false;
+        }
+        hasAnchor = true;
+      }
+    }
+  }
+  return hasAnchor;
+}
+
+function isRelationshipFreeBookmarkMarker(element: Element): boolean {
+  if (
+    !DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '') ||
+    element.children.length > 0
+  ) {
+    return false;
+  }
+  const allowed =
+    element.localName === 'bookmarkStart'
+      ? BOOKMARK_START_ATTRIBUTES
+      : element.localName === 'bookmarkEnd'
+        ? BOOKMARK_END_ATTRIBUTES
+        : null;
+  if (!allowed) return false;
+  let hasId = false;
+  let hasName = element.localName !== 'bookmarkStart';
+  for (const attribute of Array.from(element.attributes)) {
+    const namespace =
+      attribute.namespaceURI ||
+      xmlAttributeNamespace(element, attribute) ||
+      '';
+    if (RELATIONSHIP_NAMESPACES.has(namespace)) return false;
+    if (namespace && namespace !== element.namespaceURI) return false;
+    const localName = xmlAttributeLocalName(attribute);
+    if (!(namespace === element.namespaceURI || !namespace)) return false;
+    if (!allowed.has(localName)) return false;
+    const value = attribute.value.trim();
+    if (
+      !value ||
+      value.length > 255 ||
+      /[\u0000-\u001f\u007f]/.test(value)
+    ) {
+      return false;
+    }
+    if (localName === 'id') {
+      if (!/^\+?\d{1,10}$/.test(value)) return false;
+      hasId = true;
+    }
+    if (localName === 'name') hasName = true;
+  }
+  return hasId && hasName;
+}
+
+function isTextWrappingBreak(element: Element): boolean {
+  if (element.children.length) return false;
+  const type = wordAttribute(element, 'type');
+  return type === null || type === 'textWrapping';
 }
 
 function wordAttribute(element: Element, localName: string): string | null {

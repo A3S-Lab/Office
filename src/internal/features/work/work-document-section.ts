@@ -40,11 +40,16 @@ import {
   parseDocumentPageChrome,
   serializeDocumentPageChrome,
 } from './work-document-page-chrome';
+import {
+  encodeDocumentTablePropertyRevisionOmml,
+  decodeDocumentTablePropertyRevisionOmml,
+} from './work-document-table-property-revision';
 import type {
   WorkDocumentContent,
   WorkDocumentGrid,
   WorkDocumentGridType,
   WorkDocumentSectionBreakType,
+  WorkDocumentSectionFormattingChange,
   WorkDocumentSectionLayout,
 } from './work-types';
 
@@ -78,6 +83,12 @@ export interface DocumentSectionNodeAttributes {
   paperSource: string;
   documentGridType: WorkDocumentGridType | '';
   documentGridLinePitch: number | null;
+  propertyRevisionOmml: string;
+  sectionChangeKind: 'section-formatting' | null;
+  sectionChangeId: string;
+  sectionChangeAuthor: string;
+  sectionChangeDate: string;
+  sectionChangeBefore: string;
 }
 
 const SECTION_SELECTOR = 'section[data-document-section]';
@@ -216,6 +227,14 @@ export function documentSectionNodeAttributes(
     documentGridType: layout.documentGrid?.type ?? '',
     documentGridLinePitch:
       normalizedDocumentGrid(layout.documentGrid)?.linePitch ?? null,
+    propertyRevisionOmml: layout.propertyRevisionOmml
+      ? encodeDocumentTablePropertyRevisionOmml(layout.propertyRevisionOmml)
+      : '',
+    sectionChangeKind: layout.formattingChange?.kind ?? null,
+    sectionChangeId: layout.formattingChange?.id ?? '',
+    sectionChangeAuthor: layout.formattingChange?.author ?? '',
+    sectionChangeDate: layout.formattingChange?.date ?? '',
+    sectionChangeBefore: layout.formattingChange?.before ?? '',
   };
 }
 
@@ -290,6 +309,18 @@ export function documentSectionLayoutFromNodeAttributes(
     ...(pageMargins ? { pageMargins } : {}),
     ...(pageGeometry ? { pageGeometry } : {}),
     ...(paperSource ? { paperSource } : {}),
+    ...(decodeDocumentTablePropertyRevisionOmml(
+      attributes.propertyRevisionOmml ?? '',
+    )
+      ? {
+          propertyRevisionOmml: decodeDocumentTablePropertyRevisionOmml(
+            attributes.propertyRevisionOmml ?? '',
+          )!,
+        }
+      : {}),
+    ...(sectionFormattingChangeFromAttributes(attributes)
+      ? { formattingChange: sectionFormattingChangeFromAttributes(attributes)! }
+      : {}),
   };
   return pageGeometry
     ? applyDocumentPageGeometry(layout, pageGeometry)
@@ -332,6 +363,22 @@ export function documentSectionDomAttributes(
       attributes.documentGridLinePitch === null
         ? ''
         : String(attributes.documentGridLinePitch),
+    ...(attributes.propertyRevisionOmml
+      ? {
+          'data-section-property-revision-omml':
+            attributes.propertyRevisionOmml,
+        }
+      : {}),
+    ...(attributes.sectionChangeKind === 'section-formatting'
+      ? {
+          'data-document-change': 'true',
+          'data-change-kind': 'section-formatting',
+          'data-change-id': attributes.sectionChangeId,
+          'data-change-author': attributes.sectionChangeAuthor,
+          'data-change-date': attributes.sectionChangeDate,
+          'data-change-before': attributes.sectionChangeBefore,
+        }
+      : {}),
   };
 }
 
@@ -369,6 +416,17 @@ export function documentSectionLayoutFromElement(
         .sectionDocumentGridType as WorkDocumentGridType,
       documentGridLinePitch:
         numberValue(element.dataset.sectionDocumentGridLinePitch) ?? null,
+      propertyRevisionOmml:
+        element.dataset.sectionPropertyRevisionOmml ?? '',
+      sectionChangeKind:
+        element.getAttribute('data-document-change') === 'true' &&
+        element.getAttribute('data-change-kind') === 'section-formatting'
+          ? 'section-formatting'
+          : null,
+      sectionChangeId: element.getAttribute('data-change-id') ?? '',
+      sectionChangeAuthor: element.getAttribute('data-change-author') ?? '',
+      sectionChangeDate: element.getAttribute('data-change-date') ?? '',
+      sectionChangeBefore: element.getAttribute('data-change-before') ?? '',
     },
     fallback,
   );
@@ -522,4 +580,34 @@ function validDocumentGridType(value: unknown): value is WorkDocumentGridType {
     value === 'linesAndChars' ||
     value === 'snapToChars'
   );
+}
+
+function sectionFormattingChangeFromAttributes(
+  attributes: Partial<DocumentSectionNodeAttributes>,
+): WorkDocumentSectionFormattingChange | null {
+  if (attributes.sectionChangeKind !== 'section-formatting') return null;
+  const id =
+    typeof attributes.sectionChangeId === 'string'
+      ? attributes.sectionChangeId.trim()
+      : '';
+  const author =
+    typeof attributes.sectionChangeAuthor === 'string'
+      ? attributes.sectionChangeAuthor.trim()
+      : '';
+  const date =
+    typeof attributes.sectionChangeDate === 'string'
+      ? attributes.sectionChangeDate
+      : '';
+  const before =
+    typeof attributes.sectionChangeBefore === 'string'
+      ? attributes.sectionChangeBefore
+      : '';
+  if (!id || !author || !before) return null;
+  return {
+    kind: 'section-formatting',
+    id,
+    author,
+    date,
+    before,
+  };
 }

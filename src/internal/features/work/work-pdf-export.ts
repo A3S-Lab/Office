@@ -9,6 +9,16 @@ import {
   documentPageSurfaceGeometryForElement,
   type RegisteredDocumentPageSurfaceFrame,
 } from './work-document-page-surface-registry';
+import {
+  applyWorkPdfDocumentStructure,
+  collectWorkPdfOutlineEntriesFromRoot,
+  type WorkPdfOutlineEntry,
+} from './work-pdf-structure';
+import { collectWorkPdfTextRuns } from './work-pdf-text-layer';
+import {
+  appendWorkPdfVectorTextLayer,
+  clearWorkPdfTextRunsOnCanvas,
+} from './work-pdf-vector-text';
 
 type PdfPageSize = WorkSpreadsheetPaperSize;
 
@@ -80,6 +90,8 @@ export async function exportWorkArtifactPdf(
     import('jspdf'),
   ]);
   let pdf: JsPdf | null = null;
+  const outline: WorkPdfOutlineEntry[] = [];
+  let exportedPageNumber = 0;
 
   if (liveDocument) {
     const firstSelectedPage = livePageIndexes[0] ?? 0;
@@ -126,7 +138,34 @@ export async function exportWorkArtifactPdf(
               Math.max(1, sourceBottom - sourceTop),
               capture.backgroundColor,
             );
+            const textRuns = collectLiveCapturePageTextRuns(
+              capture,
+              page,
+              firstPage,
+            );
+            clearWorkPdfTextRunsOnCanvas(
+              pageCanvas,
+              textRuns,
+              page,
+              capture.backgroundColor,
+            );
             pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
+            if (pdf) {
+              appendWorkPdfVectorTextLayer(pdf, textRuns, page, page);
+              exportedPageNumber += 1;
+              const pageBounds = liveCapturePageBounds(
+                capture,
+                page,
+                firstPage,
+              );
+              outline.push(
+                ...collectWorkPdfOutlineEntriesFromRoot(
+                  capture.viewport,
+                  exportedPageNumber,
+                  pageBounds,
+                ),
+              );
+            }
           }
         }
       } else {
@@ -145,7 +184,29 @@ export async function exportWorkArtifactPdf(
             windowHeight: Math.ceil(page.height),
             windowWidth: Math.ceil(page.width),
           });
+          const textRuns = collectLiveCapturePageTextRuns(
+            capture,
+            page,
+            page,
+          );
+          clearWorkPdfTextRunsOnCanvas(
+            pageCanvas,
+            textRuns,
+            page,
+            capture.backgroundColor,
+          );
           pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
+          if (pdf) {
+            appendWorkPdfVectorTextLayer(pdf, textRuns, page, page);
+            exportedPageNumber += 1;
+            outline.push(
+              ...collectWorkPdfOutlineEntriesFromRoot(
+                capture.viewport,
+                exportedPageNumber,
+                liveCapturePageBounds(capture, page, page),
+              ),
+            );
+          }
         }
       }
     } finally {
@@ -172,6 +233,15 @@ export async function exportWorkArtifactPdf(
         windowWidth: Math.max(page.scrollWidth, page.clientWidth),
         windowHeight: Math.max(page.scrollHeight, page.clientHeight),
       });
+      const pageBox = page.getBoundingClientRect();
+      const pageCss = {
+        height: pageBox.height || page.clientHeight,
+        left: pageBox.left,
+        top: pageBox.top,
+        width: pageBox.width || page.clientWidth,
+      };
+      const textRuns = collectWorkPdfTextRuns(page, pageCss);
+      clearWorkPdfTextRunsOnCanvas(canvas, textRuns, pageCss, backgroundColor);
       pdf = appendCanvas(
         pdf,
         canvas,
@@ -180,13 +250,35 @@ export async function exportWorkArtifactPdf(
         backgroundColor,
         jsPDF,
       );
+      if (pdf) {
+        appendWorkPdfVectorTextLayer(
+          pdf,
+          textRuns,
+          {
+            height: pageCss.height,
+            width: pageCss.width,
+          },
+          {
+            pageHeightPoints: pageDefinition.height,
+            pageWidthPoints: pageDefinition.width,
+          },
+        );
+        exportedPageNumber += 1;
+        outline.push(
+          ...collectWorkPdfOutlineEntriesFromRoot(
+            page,
+            exportedPageNumber,
+            pageCss,
+          ),
+        );
+      }
     }
   }
   if (!pdf) throw new Error('PDF export did not produce any pages.');
-  pdf.setProperties({
+  applyWorkPdfDocumentStructure(pdf, {
+    language: document.documentElement.lang || undefined,
+    outline,
     title: artifact.title,
-    author: 'A3S Work',
-    creator: 'A3S Work',
   });
   pdf.save(`${safeFileName(artifact.title)}.pdf`);
 }
@@ -450,6 +542,35 @@ export function workLiveDocumentPdfCaptureBatches(
     current.pageIndexes.push(pageIndex);
   }
   return batches;
+}
+
+function liveCapturePageBounds(
+  capture: {
+    viewport: HTMLElement;
+  },
+  page: Pick<WorkLiveDocumentCapturePage, 'height' | 'left' | 'top' | 'width'>,
+  firstPageInCapture: Pick<WorkLiveDocumentCapturePage, 'left' | 'top'>,
+) {
+  const viewportRect = capture.viewport.getBoundingClientRect();
+  return {
+    height: page.height,
+    left: viewportRect.left + (page.left - firstPageInCapture.left),
+    top: viewportRect.top + (page.top - firstPageInCapture.top),
+    width: page.width,
+  };
+}
+
+function collectLiveCapturePageTextRuns(
+  capture: {
+    viewport: HTMLElement;
+  },
+  page: Pick<WorkLiveDocumentCapturePage, 'height' | 'left' | 'top' | 'width'>,
+  firstPageInCapture: Pick<WorkLiveDocumentCapturePage, 'left' | 'top'>,
+) {
+  return collectWorkPdfTextRuns(
+    capture.viewport,
+    liveCapturePageBounds(capture, page, firstPageInCapture),
+  );
 }
 
 function uniformLiveDocumentPages(

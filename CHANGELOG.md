@@ -2,7 +2,77 @@
 
 All notable changes to A3S Office will be documented in this file.
 
-## Unreleased
+## 0.78.0 - 2026-09-08
+
+### Writer
+
+- Document PDF export clears Latin/Latin-1 raster glyphs under measured text
+  runs, then paints a visible Helvetica vector text layer at the same page
+  geometry so readers get sharp searchable text without a second layout model.
+  Hosts may also `registerWorkPdfCjkFont` with a TrueType face so measured CJK
+  runs clear and paint as searchable vector text; without a registration those
+  glyphs stay fail-soft raster-only. Non-Latin glyphs outside the registered
+  face and out-of-page geometry remain fail-soft. Export also
+  applies a tagged/accessibility bootstrap: document title, HTML `lang`, and
+  heading outline bookmarks (not a full PDF/UA structure tree).
+- Rectangular Writer tables project Word-style shared-edge border winners onto
+  CSS paint (thicker width, then style weight) without rewriting stored
+  per-cell `tcBorders` used for DOCX export. Colspan/rowspan occupancy grids
+  use the same resolver; irregular unmappable grids stay fail-soft.
+- Isolated paragraph-mark revisions are classified as paragraph-break
+  merge/split candidates (`docx.revisions.paragraph-break`). Eligible
+  text-only neighbor pairs import as reviewable `paragraph-break` changes with
+  accept/reject join semantics and mark-only DOCX export; other isolated marks
+  stay fail-closed diagnostics.
+- Whole-paragraph mark revisions now also admit multi-wrapper text-only bodies
+  that share the mark author and date (Word/WPS often split run formatting
+  across sibling `w:ins`/`w:del` wrappers), soft text-wrapping `w:br`
+  breaks inside those runs, relationship-free internal `w:hyperlink`
+  anchors (`w:anchor`), relationship-free `w:bookmarkStart`/`w:bookmarkEnd`
+  markers inside or beside the mark body, and empty or `w:rPr`-only untracked
+  sibling runs. Mixed untracked text siblings, page/column breaks,
+  relationship-bound hyperlinks, and spoofed bookmark relationship attributes
+  remain fail-closed.
+- Companion `w:moveFromRangeStart/End` and `w:moveToRangeStart/End` bookmarks
+  that uniquely sandwich a supported text-only `w:moveFrom`/`w:moveTo` pair in
+  the same section (immediate siblings or cross-paragraph placement around the
+  containing paragraph) now round-trip with the reviewable move. Extra sibling
+  content, tables, content controls, and cross-section placements stay
+  fail-closed as `docx.revisions.move-range`. Soft text-wrapping breaks,
+  relationship-free internal hyperlinks, and relationship-free ordinary
+  bookmarks inside move wrappers are admitted; relationship-bound hyperlinks
+  and spoofed bookmark relationship attributes stay fail-closed.
+- Relationship-free, correctly placed unsupported OMML roots now round-trip as
+  atomic native markup (`data-document-equation-opaque`) instead of flattening
+  to text. Spoofed namespaces, misplaced roots, and relationship-bound markup
+  still flatten; diagnostics remain `docx.equations.unsupported`.
+- Relationship-free body-table `w:tblpPr` floating-position markup now
+  round-trips as opaque `data-office-table-float-omml` metadata on untouched
+  tables. Relationship-bound float properties stay fail-closed and are dropped.
+- Relationship-free body-table `w:tblPrChange`, `w:trPrChange`, and
+  `w:tcPrChange` property revisions round-trip as opaque
+  `data-office-table/row/cell-property-revision-omml` metadata on untouched
+  structures when they are not reviewable. Relationship-free `w:tblPrChange`
+  with a prior `w:jc` and/or `w:tblW` and/or `w:tblInd` and/or `w:tblCellMar`
+  and/or `w:tblLayout` snapshot imports as reviewable `table-formatting`
+  changes with accept/reject and native DOCX export. Live table-alignment,
+  preferred-width, indent, default cell-margin, and layout-mode edits under
+  track-changes also mint the same reviewable records. Relationship-free
+  `w:trPrChange` with a prior
+  `w:cantSplit`, `w:tblHeader`, and/or `w:trHeight` snapshot imports as
+  reviewable `row-formatting` changes. Live cantSplit / repeat-header /
+  row-height edits under track-changes also mint the same reviewable records.
+  Relationship-free `w:tcPrChange` with a prior `w:vAlign` and/or solid
+  direct-color `w:shd` and/or `w:tcMar` snapshot imports as reviewable
+  `cell-formatting` changes. Live vertical-align, solid-fill, and cell-margin
+  edits under track-changes also mint the same reviewable records. Relationship-free `w:sectPrChange` with a prior orientation-only or complete
+  `w:pgSz` (width/height with optional orientation/code), complete seven-edge
+  `w:pgMar`, `w:paperSrc`, and/or equal-width `w:cols` snapshot imports as
+  reviewable `section-formatting` changes. Live orientation, page-geometry,
+  page-margin, paper-source, and equal-width column edits under track-changes
+  also mint the same reviewable records. Broader relationship-free
+  `w:sectPrChange` records still round-trip on section layout metadata as
+  opaque OMML. Relationship-bound records stay fail-closed.
 
 ## 0.77.0 - 2026-09-08
 

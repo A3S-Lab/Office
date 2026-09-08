@@ -3,6 +3,15 @@ import {
   normalizeDocumentTableRowIdentity,
   type WorkDocumentTableRowIdentity,
 } from './work-document-table-row-identity';
+import {
+  applyDocumentRowPropertyRevisionOmmlToElement,
+  serializePreservableDocxRowPropertyRevision,
+} from './work-document-table-property-revision';
+import {
+  applyDocumentRowFormattingChangeToElement,
+  supportedDocxRowFormattingChangeFromProperties,
+  type SupportedDocxRowFormattingChange,
+} from './work-docx-row-format-change-import';
 import { normalizeDocumentParagraphId } from './work-document-paragraph-identity';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import { attribute, descendants, directChild } from './work-ooxml-package';
@@ -19,6 +28,8 @@ export interface ImportedDocxTableRowMarker {
   rowHeight?: number;
   rowHeightRule?: 'atLeast' | 'exact';
   rowTextId?: string;
+  propertyRevisionOmml?: string;
+  formattingChange?: SupportedDocxRowFormattingChange;
 }
 
 export interface ImportedDocxTableRowMarkers {
@@ -65,7 +76,19 @@ export function markDocxTableRows(
       rowIdentity && identityCounts.get(rowIdentity.rowId) === 1
         ? rowIdentity
         : null;
-    if (!cantSplit && !repeatHeader && rowHeight === null && !uniqueIdentity) {
+    const formattingChange =
+      supportedDocxRowFormattingChangeFromProperties(properties);
+    const propertyRevisionOmml = formattingChange
+      ? undefined
+      : serializePreservableDocxRowPropertyRevision(properties) ?? undefined;
+    if (
+      !cantSplit &&
+      !repeatHeader &&
+      rowHeight === null &&
+      !uniqueIdentity &&
+      !propertyRevisionOmml &&
+      !formattingChange
+    ) {
       continue;
     }
     const paragraph = firstTableRowParagraph(document, row);
@@ -79,6 +102,8 @@ export function markDocxTableRows(
       ...(uniqueIdentity ?? {}),
       ...(rowHeight !== null ? { rowHeight } : {}),
       ...(rowHeight !== null && rowHeightRule ? { rowHeightRule } : {}),
+      ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
+      ...(formattingChange ? { formattingChange } : {}),
     });
   }
   return { rows };
@@ -128,6 +153,16 @@ export function applyImportedDocxTableRowMarkers(
           row.style.height = `${properties.rowHeight}px`;
           row.dataset.officeRowHeightRule =
             properties.rowHeightRule ?? 'atLeast';
+        }
+        applyDocumentRowPropertyRevisionOmmlToElement(
+          row,
+          properties.propertyRevisionOmml,
+        );
+        if (properties.formattingChange) {
+          applyDocumentRowFormattingChangeToElement(
+            row,
+            properties.formattingChange,
+          );
         }
       }
       return '';

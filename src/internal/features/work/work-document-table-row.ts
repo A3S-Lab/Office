@@ -1,5 +1,10 @@
 import type { Editor } from '@tiptap/core';
 import { TableRow } from '@tiptap/extension-table';
+import {
+  DOCUMENT_ROW_PROPERTY_REVISION_OMML_ATTRIBUTE,
+  documentRowPropertyRevisionOmmlFromElement,
+  encodeDocumentTablePropertyRevisionOmml,
+} from './work-document-table-property-revision';
 
 export interface DocumentTableRowOptions {
   cantSplit: boolean;
@@ -66,6 +71,26 @@ export const DocumentTableRow = TableRow.extend({
           return rule === null ? {} : { 'data-office-row-height-rule': rule };
         },
       },
+      propertyRevisionOmml: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          documentRowPropertyRevisionOmmlFromElement(element),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const omml =
+            typeof attributes.propertyRevisionOmml === 'string'
+              ? attributes.propertyRevisionOmml
+              : '';
+          const encoded = encodeDocumentTablePropertyRevisionOmml(omml);
+          return encoded
+            ? { [DOCUMENT_ROW_PROPERTY_REVISION_OMML_ATTRIBUTE]: encoded }
+            : {};
+        },
+      },
+      rowChangeKind: rowChangeAttribute('kind', 'data-change-kind'),
+      rowChangeId: rowChangeAttribute('id', 'data-change-id'),
+      rowChangeAuthor: rowChangeAttribute('author', 'data-change-author'),
+      rowChangeDate: rowChangeAttribute('date', 'data-change-date'),
+      rowChangeBefore: rowChangeAttribute('before', 'data-change-before'),
     };
   },
 
@@ -84,6 +109,7 @@ export const DocumentTableRow = TableRow.extend({
             .updateAttributes('tableRow', {
               cantSplit: Boolean(options.cantSplit),
               repeatHeader: Boolean(options.repeatHeader),
+              propertyRevisionOmml: null,
             })
             .run();
         },
@@ -179,6 +205,46 @@ function booleanRowAttribute(
     renderHTML: (attributes: Record<string, unknown>) => {
       const value = directBoolean(attributes[modelKey]);
       return value === null ? {} : { [htmlName]: String(value) };
+    },
+  };
+}
+
+function rowChangeAttribute(
+  field: 'kind' | 'id' | 'author' | 'date' | 'before',
+  htmlName:
+    | 'data-change-kind'
+    | 'data-change-id'
+    | 'data-change-author'
+    | 'data-change-date'
+    | 'data-change-before',
+) {
+  const modelName = `rowChange${field[0]?.toUpperCase() ?? ''}${field.slice(1)}`;
+  return {
+    default: field === 'kind' ? null : '',
+    parseHTML: (element: HTMLElement) => {
+      if (
+        element.getAttribute('data-document-change') !== 'true' ||
+        element.getAttribute('data-change-kind') !== 'row-formatting'
+      ) {
+        return field === 'kind' ? null : '';
+      }
+      return field === 'kind'
+        ? 'row-formatting'
+        : (element.getAttribute(htmlName) ?? '');
+    },
+    renderHTML: (attributes: Record<string, unknown>) => {
+      if (attributes.rowChangeKind !== 'row-formatting') return {};
+      if (field === 'kind') {
+        return {
+          'data-document-change': 'true',
+          'data-change-kind': 'row-formatting',
+        };
+      }
+      const value =
+        typeof attributes[modelName] === 'string'
+          ? attributes[modelName].trim()
+          : '';
+      return value ? { [htmlName]: value } : {};
     },
   };
 }

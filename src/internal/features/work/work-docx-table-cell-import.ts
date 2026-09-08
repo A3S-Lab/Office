@@ -27,6 +27,15 @@ import {
   type DocumentTableCellMarginSide,
 } from './work-document-table-geometry';
 import {
+  applyDocumentCellPropertyRevisionOmmlToElement,
+  serializePreservableDocxCellPropertyRevision,
+} from './work-document-table-property-revision';
+import {
+  applyDocumentCellFormattingChangeToElement,
+  supportedDocxCellFormattingChangeFromProperties,
+  type SupportedDocxCellFormattingChange,
+} from './work-docx-cell-format-change-import';
+import {
   type DocxThemeColorReference,
   serializeDocxThemeReference,
 } from './work-docx-theme-reference';
@@ -46,6 +55,8 @@ export interface ImportedDocxTableCellMarker {
   verticalAlign?: ImportedDocxTableCellVerticalAlign;
   borders?: ImportedDocxTableCellBorders;
   margins?: DocumentTableCellMarginOverrides;
+  propertyRevisionOmml?: string;
+  formattingChange?: SupportedDocxCellFormattingChange;
 }
 
 export interface ImportedDocxTableCellMarkers {
@@ -106,7 +117,21 @@ export function markDocxTableCells(
     const background = importedTableCellBackgroundColor(layers, theme);
     const verticalAlign = importedTableCellVerticalAlign(layers);
     const margins = importedTableCellMargins(layers);
-    if (!background && !verticalAlign && !borders && !margins) continue;
+    const formattingChange =
+      supportedDocxCellFormattingChangeFromProperties(properties);
+    const propertyRevisionOmml = formattingChange
+      ? undefined
+      : serializePreservableDocxCellPropertyRevision(properties) ?? undefined;
+    if (
+      !background &&
+      !verticalAlign &&
+      !borders &&
+      !margins &&
+      !propertyRevisionOmml &&
+      !formattingChange
+    ) {
+      continue;
+    }
     const paragraph = firstTableCellParagraph(document, cell);
     if (!paragraph) continue;
     const marker = `__A3S_WORK_TABLE_CELL_${cells.length + 1}__`;
@@ -118,6 +143,8 @@ export function markDocxTableCells(
       ...(verticalAlign ? { verticalAlign } : {}),
       ...(borders ? { borders } : {}),
       ...(margins ? { margins } : {}),
+      ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
+      ...(formattingChange ? { formattingChange } : {}),
     });
   }
   return { cells };
@@ -189,6 +216,13 @@ function applyCellFormat(
     if (rendered.style) {
       cell.style.cssText = `${cell.style.cssText}; ${rendered.style}`;
     }
+  }
+  applyDocumentCellPropertyRevisionOmmlToElement(
+    cell,
+    format.propertyRevisionOmml,
+  );
+  if (format.formattingChange) {
+    applyDocumentCellFormattingChangeToElement(cell, format.formattingChange);
   }
 }
 

@@ -127,6 +127,265 @@ export function uniformDocumentTableBorder(
     : null;
 }
 
+/**
+ * Word-style shared-edge conflict: thicker width wins, then style weight, then
+ * the first argument for stability. `none` always loses to a painted edge.
+ * Storage stays independent; callers project winners for CSS paint only.
+ */
+export function resolveDocumentTableSharedBorder(
+  first: DocumentTableBorder,
+  second: DocumentTableBorder,
+): DocumentTableBorder {
+  const a = normalizeResolvedBorder(first);
+  const b = normalizeResolvedBorder(second);
+  if (a.style === 'none' && b.style === 'none') return a;
+  if (a.style === 'none') return b;
+  if (b.style === 'none') return a;
+  if (a.width !== b.width) return a.width > b.width ? a : b;
+  const weightA = documentTableBorderStyleWeight(a.style);
+  const weightB = documentTableBorderStyleWeight(b.style);
+  if (weightA !== weightB) return weightA > weightB ? a : b;
+  return a;
+}
+
+/**
+ * Projects independent per-cell borders into a paint grid where each shared
+ * edge uses the Word-style winner on both abutting sides.
+ */
+export function projectDocumentTableBordersForPaint(
+  grid: ReadonlyArray<ReadonlyArray<DocumentTableCellBorders>>,
+): DocumentTableCellBorders[][] {
+  const projected = grid.map((row) =>
+    row.map((cell) => ({
+      top: { ...cell.top },
+      right: { ...cell.right },
+      bottom: { ...cell.bottom },
+      left: { ...cell.left },
+    })),
+  );
+  for (let rowIndex = 0; rowIndex < projected.length; rowIndex += 1) {
+    const row = projected[rowIndex];
+    if (!row) continue;
+    for (let cellIndex = 0; cellIndex < row.length; cellIndex += 1) {
+      const cell = row[cellIndex];
+      if (!cell) continue;
+      const rightNeighbor = row[cellIndex + 1];
+      if (rightNeighbor) {
+        const winner = resolveDocumentTableSharedBorder(
+          cell.right,
+          rightNeighbor.left,
+        );
+        cell.right = { ...winner };
+        rightNeighbor.left = { ...winner };
+      }
+      const below = projected[rowIndex + 1]?.[cellIndex];
+      if (below) {
+        const winner = resolveDocumentTableSharedBorder(cell.bottom, below.top);
+        cell.bottom = { ...winner };
+        below.top = { ...winner };
+      }
+    }
+  }
+  return projected;
+}
+
+/**
+ * Applies shared-edge winners to CSS paint on an HTML table (including
+ * colspan/rowspan occupancy) without mutating `data-office-cell-border-*`
+ * storage used for DOCX export. Irregular grids fail soft.
+ */
+export function applyDocumentTableSharedBorderPaint(
+  table: HTMLTableElement,
+): void {
+  const occupancy = tableCellOccupancy(table);
+  if (!occupancy) return;
+  const fallback: DocumentTableBorder = {
+    color: '#cfd5df',
+    style: 'solid',
+    width: 1,
+  };
+  const paint = new Map<HTMLTableCellElement, DocumentTableCellBorders>();
+  for (const placement of occupancy.placements) {
+    paint.set(
+      placement.cell,
+      documentTableBordersFromElement(placement.cell, fallback),
+    );
+  }
+  const { grid, rowCount, columnCount } = occupancy;
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+    for (let columnIndex = 0; columnIndex < columnCount - 1; columnIndex += 1) {
+      const left = grid[rowIndex]?.[columnIndex];
+      const right = grid[rowIndex]?.[columnIndex + 1];
+      if (!left || !right || left === right) continue;
+      const leftPlacement = occupancy.byCell.get(left);
+      const rightPlacement = occupancy.byCell.get(right);
+      if (
+        !leftPlacement ||
+        !rightPlacement ||
+        leftPlacement.originColumn + leftPlacement.colSpan - 1 !==
+          columnIndex ||
+        rightPlacement.originColumn !== columnIndex + 1
+      ) {
+        continue;
+      }
+      const leftPaint = paint.get(left);
+      const rightPaint = paint.get(right);
+      if (!leftPaint || !rightPaint) continue;
+      const winner = resolveDocumentTableSharedBorder(
+        leftPaint.right,
+        rightPaint.left,
+      );
+      leftPaint.right = { ...winner };
+      rightPaint.left = { ...winner };
+    }
+  }
+  for (let rowIndex = 0; rowIndex < rowCount - 1; rowIndex += 1) {
+    for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+      const above = grid[rowIndex]?.[columnIndex];
+      const below = grid[rowIndex + 1]?.[columnIndex];
+      if (!above || !below || above === below) continue;
+      const abovePlacement = occupancy.byCell.get(above);
+      const belowPlacement = occupancy.byCell.get(below);
+      if (
+        !abovePlacement ||
+        !belowPlacement ||
+        abovePlacement.originRow + abovePlacement.rowSpan - 1 !== rowIndex ||
+        belowPlacement.originRow !== rowIndex + 1
+      ) {
+        continue;
+      }
+      const abovePaint = paint.get(above);
+      const belowPaint = paint.get(below);
+      if (!abovePaint || !belowPaint) continue;
+      const winner = resolveDocumentTableSharedBorder(
+        abovePaint.bottom,
+        belowPaint.top,
+      );
+      abovePaint.bottom = { ...winner };
+      belowPaint.top = { ...winner };
+    }
+  }
+  for (const [cell, borders] of paint) {
+    for (const edge of BORDER_EDGES) {
+      cell.style.setProperty(
+        `border-${edge}`,
+        documentTableBorderCss(borders[edge]),
+      );
+    }
+  }
+}
+
+interface TableCellPlacement {
+  cell: HTMLTableCellElement;
+  originRow: number;
+  originColumn: number;
+  rowSpan: number;
+  colSpan: number;
+}
+
+interface TableCellOccupancy {
+  byCell: Map<HTMLTableCellElement, TableCellPlacement>;
+  grid: Array<Array<HTMLTableCellElement | null>>;
+  placements: TableCellPlacement[];
+  rowCount: number;
+  columnCount: number;
+}
+
+function tableCellOccupancy(
+  table: HTMLTableElement,
+): TableCellOccupancy | null {
+  const rows = Array.from(table.rows);
+  if (!rows.length) return null;
+  const grid: Array<Array<HTMLTableCellElement | null>> = [];
+  const byCell = new Map<HTMLTableCellElement, TableCellPlacement>();
+  const placements: TableCellPlacement[] = [];
+  let columnCount = 0;
+
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const row = rows[rowIndex];
+    if (!row) return null;
+    if (!grid[rowIndex]) grid[rowIndex] = [];
+    const cells = Array.from(row.cells).filter(
+      (cell): cell is HTMLTableCellElement =>
+        cell instanceof HTMLTableCellElement,
+    );
+    let columnIndex = 0;
+    for (const cell of cells) {
+      const occupied = grid[rowIndex] ?? (grid[rowIndex] = []);
+      while (occupied[columnIndex]) columnIndex += 1;
+      const colSpan = Math.max(1, cell.colSpan || 1);
+      const rowSpan = Math.max(1, cell.rowSpan || 1);
+      if (
+        !Number.isSafeInteger(colSpan) ||
+        !Number.isSafeInteger(rowSpan) ||
+        colSpan > 64 ||
+        rowSpan > 64 ||
+        byCell.has(cell)
+      ) {
+        return null;
+      }
+      const placement: TableCellPlacement = {
+        cell,
+        originRow: rowIndex,
+        originColumn: columnIndex,
+        rowSpan,
+        colSpan,
+      };
+      byCell.set(cell, placement);
+      placements.push(placement);
+      for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
+        const targetRow = rowIndex + rowOffset;
+        if (!grid[targetRow]) grid[targetRow] = [];
+        for (let columnOffset = 0; columnOffset < colSpan; columnOffset += 1) {
+          const targetColumn = columnIndex + columnOffset;
+          if (grid[targetRow]?.[targetColumn]) return null;
+          grid[targetRow]![targetColumn] = cell;
+        }
+      }
+      columnIndex += colSpan;
+      columnCount = Math.max(columnCount, columnIndex);
+    }
+  }
+
+  const rowCount = grid.length;
+  if (!rowCount || !columnCount) return null;
+  for (const row of grid) {
+    while (row.length < columnCount) row.push(null);
+    if (row.length !== columnCount) return null;
+  }
+  return { byCell, grid, placements, rowCount, columnCount };
+}
+
+function normalizeResolvedBorder(
+  border: DocumentTableBorder,
+): DocumentTableBorder {
+  const style = border.style === 'none' ? 'none' : border.style;
+  return {
+    color: border.color,
+    style,
+    width: style === 'none' ? 0 : border.width,
+  };
+}
+
+function documentTableBorderStyleWeight(
+  style: DocumentTableBorderStyle,
+): number {
+  switch (style) {
+    case 'none':
+      return 0;
+    case 'dotted':
+      return 1;
+    case 'dashed':
+      return 2;
+    case 'solid':
+      return 3;
+    case 'double':
+      return 4;
+    default:
+      return 0;
+  }
+}
+
 export function normalizeDocumentTableBorder(
   value: unknown,
 ): DocumentTableBorder | null {

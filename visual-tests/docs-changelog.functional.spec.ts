@@ -9,13 +9,16 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(58);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.77.0');
+  await expect(cards).toHaveCount(59);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.78.0');
   await expect(cards.first()).toContainText(
-    '五编辑器共享同一 WPS 快捷键矩阵（103 ACL / 78 视觉）',
+    'Writer 无破坏修订深化，PDF 导出补齐可搜索矢量文本',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.78.0')).toContainText('可审阅的属性修订');
+  await expect(releaseCard('0.78.0')).toContainText('段落标记与移动保真');
+  await expect(releaseCard('0.78.0')).toContainText('可搜索 PDF 矢量文本');
   await expect(releaseCard('0.77.0')).toContainText('Writer 段落与域快捷键');
   await expect(releaseCard('0.77.0')).toContainText(
     'Presentation 与 Spreadsheet 界面',

@@ -114,6 +114,34 @@ import {
   patchDocxEquations,
 } from './work-docx-equation-export';
 import {
+  DocxTableFloatPatchCollector,
+  patchDocxTableFloats,
+} from './work-docx-table-float-export';
+import {
+  DocxTablePropertyRevisionPatchCollector,
+  patchDocxTablePropertyRevisions,
+} from './work-docx-table-property-revision-export';
+import {
+  DocxTableFormattingChangePatchCollector,
+  patchDocxTableFormattingChanges,
+} from './work-docx-table-format-change-export';
+import {
+  DocxRowFormattingChangePatchCollector,
+  patchDocxRowFormattingChanges,
+} from './work-docx-row-format-change-export';
+import {
+  DocxCellFormattingChangePatchCollector,
+  patchDocxCellFormattingChanges,
+} from './work-docx-cell-format-change-export';
+import {
+  DocxSectionPropertyRevisionPatchCollector,
+  patchDocxSectionPropertyRevisions,
+} from './work-docx-section-property-revision-export';
+import {
+  DocxSectionFormattingChangePatchCollector,
+  patchDocxSectionFormattingChanges,
+} from './work-docx-section-format-change-export';
+import {
   cssColorToHex,
   cssFontFamily,
   cssFontSize,
@@ -285,6 +313,14 @@ interface DocxNoteContext extends DocxListExportContext {
   paragraphDefaultCollapsedPatches: DocxParagraphDefaultCollapsedPatchCollector;
   paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
   equationPatches: DocxEquationPatchCollector;
+  tableFloatPatches: DocxTableFloatPatchCollector;
+  tableFloatPart: 'document' | 'chrome' | 'note';
+  tablePropertyRevisionPatches: DocxTablePropertyRevisionPatchCollector;
+  tableFormattingChangePatches: DocxTableFormattingChangePatchCollector;
+  rowFormattingChangePatches: DocxRowFormattingChangePatchCollector;
+  cellFormattingChangePatches: DocxCellFormattingChangePatchCollector;
+  sectionFormattingChangePatches: DocxSectionFormattingChangePatchCollector;
+  sectionPropertyRevisionPatches: DocxSectionPropertyRevisionPatchCollector;
   formattingChangePatches: DocxRunFormattingChangePatchCollector;
   runFontPatches: DocxRunFontsPatchCollector;
   hiddenTextPatches: DocxHiddenTextPatchCollector;
@@ -375,6 +411,14 @@ export async function createDocxBlob(
     equationPatches: new DocxEquationPatchCollector(
       JSON.stringify(normalizedContent),
     ),
+    tableFloatPatches: new DocxTableFloatPatchCollector(),
+    tableFloatPart: 'document',
+    tablePropertyRevisionPatches: new DocxTablePropertyRevisionPatchCollector(),
+    tableFormattingChangePatches: new DocxTableFormattingChangePatchCollector(),
+    rowFormattingChangePatches: new DocxRowFormattingChangePatchCollector(),
+    cellFormattingChangePatches: new DocxCellFormattingChangePatchCollector(),
+    sectionFormattingChangePatches: new DocxSectionFormattingChangePatchCollector(),
+    sectionPropertyRevisionPatches: new DocxSectionPropertyRevisionPatchCollector(),
     formattingChangePatches: new DocxRunFormattingChangePatchCollector(),
     runFontPatches: new DocxRunFontsPatchCollector(
       JSON.stringify(normalizedContent),
@@ -444,6 +488,15 @@ export async function createDocxBlob(
       section.layout,
     );
     usesOddEvenPageChrome ||= pageChrome.differentOddEvenPages;
+    noteContext.sectionFormattingChangePatches.record(
+      section.layout,
+      docxRevisionIdForKey(
+        section.layout.formattingChange?.id ||
+          `section-format-${section.id}`,
+        noteContext,
+      ),
+    );
+    noteContext.sectionPropertyRevisionPatches.record(section.layout);
     const headers = await sectionHeaders(pageChrome, docx, noteContext);
     const footers = await sectionFooters(pageChrome, docx, noteContext);
     sections.push({
@@ -624,8 +677,38 @@ export async function createDocxBlob(
     moveRevisionsPatched,
     noteContext.equationPatches.patches,
   );
-  const patched = await patchDocxPageColor(
+  const tableFloatPatched = await patchDocxTableFloats(
     equationPatched,
+    noteContext.tableFloatPatches.patches,
+  );
+  const tablePropertyRevisionPatched = await patchDocxTablePropertyRevisions(
+    tableFloatPatched,
+    noteContext.tablePropertyRevisionPatches,
+  );
+  const tableFormattingChangesPatched = await patchDocxTableFormattingChanges(
+    tablePropertyRevisionPatched,
+    noteContext.tableFormattingChangePatches.patches,
+  );
+  const rowFormattingChangesPatched = await patchDocxRowFormattingChanges(
+    tableFormattingChangesPatched,
+    noteContext.rowFormattingChangePatches.patches,
+  );
+  const cellFormattingChangesPatched = await patchDocxCellFormattingChanges(
+    rowFormattingChangesPatched,
+    noteContext.cellFormattingChangePatches.patches,
+  );
+  const sectionFormattingChangesPatched =
+    await patchDocxSectionFormattingChanges(
+      cellFormattingChangesPatched,
+      noteContext.sectionFormattingChangePatches.patches,
+    );
+  const sectionPropertyRevisionPatched =
+    await patchDocxSectionPropertyRevisions(
+      sectionFormattingChangesPatched,
+      noteContext.sectionPropertyRevisionPatches.patches,
+    );
+  const patched = await patchDocxPageColor(
+    sectionPropertyRevisionPatched,
     normalizedContent.pageColor,
   );
   const contentControlsPatched = await patchDocxContentControls(
@@ -1193,30 +1276,36 @@ async function pageChromeBlocks(
   Array<InstanceType<typeof docx.Paragraph> | InstanceType<typeof docx.Table>>
 > {
   if (!html.trim()) return [];
-  const document = new DOMParser().parseFromString(html, 'text/html');
-  const children: Array<
-    InstanceType<typeof docx.Paragraph> | InstanceType<typeof docx.Table>
-  > = [];
-  for (const element of Array.from(document.body.children)) {
-    const blocks = await blockToFileChildren(
-      element as HTMLElement,
-      docx,
-      noteContext,
-    );
-    for (const block of blocks) {
-      if (block instanceof docx.Paragraph || block instanceof docx.Table)
-        children.push(block);
+  const previousPart = noteContext.tableFloatPart;
+  noteContext.tableFloatPart = 'chrome';
+  try {
+    const document = new DOMParser().parseFromString(html, 'text/html');
+    const children: Array<
+      InstanceType<typeof docx.Paragraph> | InstanceType<typeof docx.Table>
+    > = [];
+    for (const element of Array.from(document.body.children)) {
+      const blocks = await blockToFileChildren(
+        element as HTMLElement,
+        docx,
+        noteContext,
+      );
+      for (const block of blocks) {
+        if (block instanceof docx.Paragraph || block instanceof docx.Table)
+          children.push(block);
+      }
     }
+    if (!children.length && document.body.textContent?.trim()) {
+      children.push(
+        new docx.Paragraph({
+          children: await inlineRuns(document.body, docx, noteContext),
+          ...paragraphDirectionOptions(document.body),
+        }),
+      );
+    }
+    return children;
+  } finally {
+    noteContext.tableFloatPart = previousPart;
   }
-  if (!children.length && document.body.textContent?.trim()) {
-    children.push(
-      new docx.Paragraph({
-        children: await inlineRuns(document.body, docx, noteContext),
-        ...paragraphDirectionOptions(document.body),
-      }),
-    );
-  }
-  return children;
 }
 
 async function paragraphRuns(
@@ -1237,18 +1326,22 @@ async function paragraphRuns(
           docxRevisionId(element, noteContext),
         )
       : null;
-  const paragraphMarkChangeMarker = element.hasAttribute(
-    'data-document-block-change',
-  )
-    ? noteContext.paragraphMarkChangePatches.register(
-        element,
-        docxRevisionIdForKey(
-          element.dataset.blockChangeId?.trim() ?? '',
-          noteContext,
-          'paragraph-mark',
-        ),
-      )
-    : null;
+  const paragraphMarkChangeMarker =
+    element.hasAttribute('data-document-block-change') ||
+    element.getAttribute('data-paragraph-break-change') === 'true'
+      ? noteContext.paragraphMarkChangePatches.register(
+          element,
+          docxRevisionIdForKey(
+            element.dataset.paragraphBreakChange === 'true'
+              ? (element.dataset.paragraphBreakId?.trim() ?? '')
+              : (element.dataset.blockChangeId?.trim() ?? ''),
+            noteContext,
+            element.dataset.paragraphBreakChange === 'true'
+              ? 'paragraph-break'
+              : 'paragraph-mark',
+          ),
+        )
+      : null;
   return [
     new docx.TextRun(identityMarker),
     ...(paragraphFormattingChangeMarker
@@ -1312,7 +1405,10 @@ async function inlineRuns(
       const entry = docxIndexEntryRun(node, docx);
       return entry ? [entry] : [];
     }
-    if (node.hasAttribute('data-document-equation')) {
+    if (
+      node.hasAttribute('data-document-equation') ||
+      node.hasAttribute('data-document-equation-opaque')
+    ) {
       const equation = noteContext.equationPatches.marker(node);
       return [new docx.TextRun(equation ?? node.textContent ?? '')];
     }
@@ -1803,7 +1899,7 @@ function documentHasTrackedChanges(html: string): boolean {
   const document = new DOMParser().parseFromString(html, 'text/html');
   return Boolean(
     document.body.querySelector(
-      'ins[data-document-change], del[data-document-change], span[data-document-change][data-change-kind="formatting"], [data-document-change][data-change-kind="paragraph-formatting"], [data-document-change][data-change-kind="numbering"], [data-document-change][data-change-kind="move"], [data-document-block-change="true"]',
+      'ins[data-document-change], del[data-document-change], span[data-document-change][data-change-kind="formatting"], [data-document-change][data-change-kind="paragraph-formatting"], [data-document-change][data-change-kind="numbering"], [data-document-change][data-change-kind="table-formatting"], [data-document-change][data-change-kind="row-formatting"], [data-document-change][data-change-kind="cell-formatting"], [data-document-change][data-change-kind="section-formatting"], [data-document-change][data-change-kind="move"], [data-document-block-change="true"], [data-paragraph-break-change="true"]',
     ),
   );
 }
@@ -1866,12 +1962,27 @@ async function tableToDocx(
   docx: typeof import('docx'),
   noteContext: DocxNoteContext,
 ): Promise<InstanceType<typeof docx.Table>> {
+  if (noteContext.tableFloatPart === 'document') {
+    noteContext.tableFloatPatches.record(element);
+    noteContext.tableFormattingChangePatches.record(
+      element,
+      docxRevisionId(element, noteContext),
+    );
+    noteContext.tablePropertyRevisionPatches.recordTable(element);
+  }
   const rows: InstanceType<typeof docx.TableRow>[] = [];
   let inferLeadingHeader = true;
   const ownedRows = Array.from(element.rows).filter(
     (row) => row.closest('table') === element,
   );
   for (const row of ownedRows) {
+    if (noteContext.tableFloatPart === 'document') {
+      noteContext.rowFormattingChangePatches.record(
+        row,
+        docxRevisionId(row, noteContext),
+      );
+      noteContext.tablePropertyRevisionPatches.recordRow(row);
+    }
     const ownedCells = Array.from(row.cells).filter(
       (cell) => cell.closest('tr') === row,
     );
@@ -1880,6 +1991,13 @@ async function tableToDocx(
       : null;
     const cells: InstanceType<typeof docx.TableCell>[] = [];
     for (const [cellIndex, cell] of ownedCells.entries()) {
+      if (noteContext.tableFloatPart === 'document') {
+        noteContext.cellFormattingChangePatches.record(
+          cell,
+          docxRevisionId(cell, noteContext),
+        );
+        noteContext.tablePropertyRevisionPatches.recordCell(cell);
+      }
       const children: Array<
         InstanceType<typeof docx.Paragraph> | InstanceType<typeof docx.Table>
       > = [];

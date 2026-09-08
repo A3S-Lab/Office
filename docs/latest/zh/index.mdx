@@ -41,15 +41,14 @@ description: 在应用中接入、扩展 A3S Office 编辑器，审阅有界原�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.77.0）
+## `main` 更新内容（0.78.0）
 
-- 基于 WPS 的矩阵现在公开 **103** 个 A3S Test ACL 契约和 **78** 个视觉契约，覆盖
-  Writer、Spreadsheet、Presentation、Markdown 与 PDF。
-- Writer 深化段落、样式、字符、查找替换与域快捷键；Spreadsheet 补齐工作簿视图与
-  工作表导航；Presentation 扩展幻灯片、备注、放映与功能区折叠证据；Markdown 与 PDF
-  将格式、链接、缩放、翻页和搜索快捷键纳入共享矩阵。
-- 这些快捷键族的聚焦 ACL 与桌面/紧凑视觉契约已通过 Commander 操作 CLI，控制台与
-  页面错误证据为空。`office-ui-ops plan <surface> --json` 仍是类型化清单入口。
+- Writer Phase 0 无破坏保真深化：可审阅的 `tblPrChange` / `trPrChange` /
+  `tcPrChange` / `sectPrChange` 子集（布局、边距、纸张来源、等宽分栏），更丰富的
+  段落标记与移动伴随标记，以及合格的段落断裂合并/拆分。
+- 不支持的 OMML 根与正文表浮动 `tblpPr` 以不透明原生标记保留，避免编造不完整的可编辑近似。
+- 文档 PDF 导出在已测量 run 下绘制可搜索 Latin Helvetica 矢量；宿主可
+  `registerWorkPdfCjkFont`；标题/语言/标题大纲引导已交付，但不宣称完整 PDF/UA。
 
 [更新日志](./changelog.html) 按版本、编辑器表面、用户结果、兼容性证据与详细参考呈现
 近期发布。使用版本切换器可只查看冻结文档发布当时已存在的历史。

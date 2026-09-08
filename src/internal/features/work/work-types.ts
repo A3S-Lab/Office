@@ -111,6 +111,18 @@ export interface WorkDocumentSectionLayout {
   pageMargins?: WorkDocumentPageMargins;
   pageGeometry?: WorkDocumentPageGeometry;
   paperSource?: WorkDocumentPaperSource;
+  /** Opaque relationship-free `w:sectPrChange` snapshot; not reviewable. */
+  propertyRevisionOmml?: string;
+  /** Reviewable orientation-only `w:sectPrChange`; mutually exclusive with opaque OMML. */
+  formattingChange?: WorkDocumentSectionFormattingChange;
+}
+
+export interface WorkDocumentSectionFormattingChange {
+  kind: 'section-formatting';
+  id: string;
+  author: string;
+  date: string;
+  before: string;
 }
 
 export type WorkDocumentAttributeValue =
@@ -171,7 +183,12 @@ export type WorkDocumentChangeKind =
   | 'deletion'
   | 'formatting'
   | 'paragraph-formatting'
+  | 'paragraph-break'
   | 'numbering'
+  | 'table-formatting'
+  | 'row-formatting'
+  | 'cell-formatting'
+  | 'section-formatting'
   | 'move';
 
 /** The side of a native Word move revision represented by a text mark. */

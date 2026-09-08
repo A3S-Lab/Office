@@ -36,6 +36,11 @@ import {
   documentTableColumnPercentagesFromElement,
   renderDocumentTableColumnPercentages,
 } from './work-document-table-column-widths';
+import {
+  DOCUMENT_CELL_PROPERTY_REVISION_OMML_ATTRIBUTE,
+  documentCellPropertyRevisionOmmlFromElement,
+  encodeDocumentTablePropertyRevisionOmml,
+} from './work-document-table-property-revision';
 
 export {
   documentTableBordersFromElement,
@@ -380,6 +385,26 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
       renderHTML: (attributes: Record<string, unknown>) =>
         renderDocumentTableCellMarginOverrides(attributes.margins),
     },
+    propertyRevisionOmml: {
+      default: null,
+      parseHTML: (element: HTMLElement) =>
+        documentCellPropertyRevisionOmmlFromElement(element),
+      renderHTML: (attributes: Record<string, unknown>) => {
+        const omml =
+          typeof attributes.propertyRevisionOmml === 'string'
+            ? attributes.propertyRevisionOmml
+            : '';
+        const encoded = encodeDocumentTablePropertyRevisionOmml(omml);
+        return encoded
+          ? { [DOCUMENT_CELL_PROPERTY_REVISION_OMML_ATTRIBUTE]: encoded }
+          : {};
+      },
+    },
+    cellChangeKind: cellChangeAttribute('kind', 'data-change-kind'),
+    cellChangeId: cellChangeAttribute('id', 'data-change-id'),
+    cellChangeAuthor: cellChangeAttribute('author', 'data-change-author'),
+    cellChangeDate: cellChangeAttribute('date', 'data-change-date'),
+    cellChangeBefore: cellChangeAttribute('before', 'data-change-before'),
   };
 }
 
@@ -439,6 +464,7 @@ function setSelectedCellFormat(
     transaction.setNodeMarkup(position, undefined, {
       ...cell.attrs,
       ...normalized,
+      propertyRevisionOmml: null,
       ...(changesBorder
         ? {
             borderColor: nextBorder.color,
@@ -673,4 +699,44 @@ export function normalizeDocumentTableVerticalAlign(
   if (value === 'top' || value === 'middle' || value === 'bottom') return value;
   if (value === 'center') return 'middle';
   return null;
+}
+
+function cellChangeAttribute(
+  field: 'kind' | 'id' | 'author' | 'date' | 'before',
+  htmlName:
+    | 'data-change-kind'
+    | 'data-change-id'
+    | 'data-change-author'
+    | 'data-change-date'
+    | 'data-change-before',
+) {
+  const modelName = `cellChange${field[0]?.toUpperCase() ?? ''}${field.slice(1)}`;
+  return {
+    default: field === 'kind' ? null : '',
+    parseHTML: (element: HTMLElement) => {
+      if (
+        element.getAttribute('data-document-change') !== 'true' ||
+        element.getAttribute('data-change-kind') !== 'cell-formatting'
+      ) {
+        return field === 'kind' ? null : '';
+      }
+      return field === 'kind'
+        ? 'cell-formatting'
+        : (element.getAttribute(htmlName) ?? '');
+    },
+    renderHTML: (attributes: Record<string, unknown>) => {
+      if (attributes.cellChangeKind !== 'cell-formatting') return {};
+      if (field === 'kind') {
+        return {
+          'data-document-change': 'true',
+          'data-change-kind': 'cell-formatting',
+        };
+      }
+      const value =
+        typeof attributes[modelName] === 'string'
+          ? attributes[modelName].trim()
+          : '';
+      return value ? { [htmlName]: value } : {};
+    },
+  };
 }

@@ -11,13 +11,24 @@ import {
   isDocumentCharacterFormatMark,
   serializeDocumentCharacterFormatting,
 } from './work-document-format-changes';
+import { trackDocumentCellFormattingTransaction } from './work-document-cell-format-change-tracking';
 import { trackDocumentNumberingChangeTransaction } from './work-document-numbering-change-tracking';
 import { trackDocumentParagraphFormattingTransaction } from './work-document-paragraph-format-change-tracking';
+import { trackDocumentRowFormattingTransaction } from './work-document-row-format-change-tracking';
+import { trackDocumentSectionFormattingTransaction } from './work-document-section-format-change-tracking';
+import { trackDocumentTableFormattingTransaction } from './work-document-table-format-change-tracking';
 
 interface DocumentFormattingChangeTrackingOptions {
   isTracking: () => boolean;
   createChange: (
-    kind: 'formatting' | 'paragraph-formatting' | 'numbering',
+    kind:
+      | 'formatting'
+      | 'paragraph-formatting'
+      | 'numbering'
+      | 'table-formatting'
+      | 'row-formatting'
+      | 'cell-formatting'
+      | 'section-formatting',
   ) => WorkDocumentChangeIdentity;
 }
 
@@ -93,11 +104,51 @@ export function trackDocumentFormattingTransaction(
       createChange: () => options.createChange('numbering'),
     },
   );
-  if (identity || paragraphFormatting || numbering) {
+  const tableFormatting = trackDocumentTableFormattingTransaction(
+    transaction,
+    state,
+    {
+      createChange: () => options.createChange('table-formatting'),
+    },
+  );
+  const rowFormatting = trackDocumentRowFormattingTransaction(
+    transaction,
+    state,
+    {
+      createChange: () => options.createChange('row-formatting'),
+    },
+  );
+  const cellFormatting = trackDocumentCellFormattingTransaction(
+    transaction,
+    state,
+    {
+      createChange: () => options.createChange('cell-formatting'),
+    },
+  );
+  const sectionFormatting = trackDocumentSectionFormattingTransaction(
+    transaction,
+    state,
+    {
+      createChange: () => options.createChange('section-formatting'),
+    },
+  );
+  if (
+    identity ||
+    paragraphFormatting ||
+    numbering ||
+    tableFormatting ||
+    rowFormatting ||
+    cellFormatting ||
+    sectionFormatting
+  ) {
     transaction.setMeta(pluginKey, {
       ...(identity ? { formatting: true } : {}),
       ...(paragraphFormatting ? { paragraphFormatting: true } : {}),
       ...(numbering ? { numbering: true } : {}),
+      ...(tableFormatting ? { tableFormatting: true } : {}),
+      ...(rowFormatting ? { rowFormatting: true } : {}),
+      ...(cellFormatting ? { cellFormatting: true } : {}),
+      ...(sectionFormatting ? { sectionFormatting: true } : {}),
     });
   }
 }

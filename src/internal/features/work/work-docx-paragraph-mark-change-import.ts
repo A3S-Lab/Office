@@ -124,6 +124,290 @@ export function isSupportedDocxParagraphMarkChange(change: Element): boolean {
   return false;
 }
 
+export type DocxParagraphBreakMarkKind = 'merge' | 'split';
+
+export interface InspectedDocxParagraphBreakMark {
+  author: string;
+  date: string;
+  id: string;
+  kind: DocxParagraphBreakMarkKind;
+}
+
+export interface ImportedDocxParagraphBreakChangeMarker {
+  marker: string;
+  id: string;
+  kind: DocxParagraphBreakMarkKind;
+  author: string;
+  date: string;
+}
+
+export interface ImportedDocxParagraphBreakChangeMarkers {
+  paragraphs: ImportedDocxParagraphBreakChangeMarker[];
+}
+
+const PARAGRAPH_BREAK_CHANGE_MARKER_PATTERN =
+  /__A3S_WORK_PARAGRAPH_BREAK_CHANGE_\d+__/g;
+
+/**
+ * Mark-only paragraph revisions (no matching body wrap) are paragraph-break
+ * merge/split candidates. Eligible neighbors promote them into reviewable
+ * Work changes; others stay diagnostics-only.
+ */
+export function isIsolatedDocxParagraphBreakMarkChange(
+  change: Element,
+): boolean {
+  return isolatedParagraphBreakMarkChange(change) !== null;
+}
+
+export function inspectDocxParagraphBreakMarkChanges(
+  document: Document,
+): InspectedDocxParagraphBreakMark[] {
+  const inspected: InspectedDocxParagraphBreakMark[] = [];
+  for (const change of [
+    ...descendants(document, 'ins'),
+    ...descendants(document, 'del'),
+  ]) {
+    const breakMark = isolatedParagraphBreakMarkChange(change);
+    if (breakMark) inspected.push(breakMark);
+  }
+  return inspected;
+}
+
+/**
+ * Promotes eligible isolated paragraph-break marks into Work review markers.
+ * Mammoth would join deleted marks; remove the native flag after capture so
+ * both paragraphs survive for accept/reject.
+ */
+export function markDocxParagraphBreakChanges(
+  document: Document,
+): ImportedDocxParagraphBreakChangeMarkers {
+  const paragraphs: ImportedDocxParagraphBreakChangeMarker[] = [];
+  const changeIds = new Set<string>();
+  for (const paragraph of descendants(document, 'p')) {
+    if (!DOCX_WORDPROCESSING_NAMESPACES.has(paragraph.namespaceURI ?? '')) {
+      continue;
+    }
+    const change = reviewableParagraphBreakMarkChange(paragraph);
+    if (!change) continue;
+    if (paragraphs.length >= MAX_PARAGRAPH_MARK_CHANGES) {
+      throw new Error('Document exceeds the paragraph-break revision limit.');
+    }
+    const marker = `__A3S_WORK_PARAGRAPH_BREAK_CHANGE_${paragraphs.length + 1}__`;
+    insertParagraphMarker(paragraph, marker);
+    change.element.remove();
+    paragraphs.push({
+      marker,
+      id: uniqueChangeId(change.id, changeIds),
+      kind: change.kind,
+      author: change.author,
+      date: change.date,
+    });
+  }
+  return { paragraphs };
+}
+
+export function applyImportedDocxParagraphBreakChangeMarkers(
+  document: Document,
+  markers: ImportedDocxParagraphBreakChangeMarkers,
+): void {
+  const changes = new Map(
+    markers.paragraphs.map((change) => [change.marker, change]),
+  );
+  for (const node of textNodes(document.body)) {
+    if (!node.data.includes('__A3S_WORK_PARAGRAPH_BREAK_CHANGE_')) continue;
+    node.data = node.data.replace(
+      PARAGRAPH_BREAK_CHANGE_MARKER_PATTERN,
+      (marker) => {
+        const change = changes.get(marker);
+        const block = change
+          ? closestParagraphBlock(node.parentElement, node)
+          : null;
+        if (block && change) {
+          block.dataset.paragraphBreakChange = 'true';
+          block.dataset.paragraphBreakKind = change.kind;
+          block.dataset.paragraphBreakId = change.id;
+          block.dataset.paragraphBreakAuthor = change.author;
+          block.dataset.paragraphBreakDate = change.date;
+        }
+        return '';
+      },
+    );
+  }
+  document.body.normalize();
+}
+
+export function hasImportedDocxParagraphBreakChangeMarkers(
+  markers: ImportedDocxParagraphBreakChangeMarkers,
+): boolean {
+  return markers.paragraphs.length > 0;
+}
+
+function reviewableParagraphBreakMarkChange(
+  paragraph: Element,
+): (InspectedDocxParagraphBreakMark & { element: Element }) | null {
+  const properties = directChildren(paragraph, 'pPr').filter(
+    (element) => element.namespaceURI === paragraph.namespaceURI,
+  );
+  if (properties.length !== 1) return null;
+  const runProperties = directChildren(properties[0] as Element, 'rPr').filter(
+    (element) => element.namespaceURI === paragraph.namespaceURI,
+  );
+  if (runProperties.length !== 1) return null;
+  const revision = Array.from((runProperties[0] as Element).children).find(
+    (element) =>
+      (element.localName === 'ins' || element.localName === 'del') &&
+      element.namespaceURI === paragraph.namespaceURI,
+  );
+  if (!revision) return null;
+  const inspected = isolatedParagraphBreakMarkChange(revision);
+  if (!inspected) return null;
+  if (!paragraphBreakNeighborIsEligible(paragraph, inspected.kind)) {
+    return null;
+  }
+  return { ...inspected, element: revision };
+}
+
+function paragraphBreakNeighborIsEligible(
+  paragraph: Element,
+  kind: DocxParagraphBreakMarkKind,
+): boolean {
+  const sibling =
+    kind === 'merge'
+      ? nextWordParagraphSibling(paragraph)
+      : previousWordParagraphSibling(paragraph);
+  if (!sibling) return false;
+  const properties = directChildren(sibling, 'pPr').find(
+    (element) => element.namespaceURI === sibling.namespaceURI,
+  );
+  return paragraphBodyIsUntrackedTextOnly(sibling, properties);
+}
+
+function nextWordParagraphSibling(paragraph: Element): Element | null {
+  let sibling = paragraph.nextElementSibling;
+  while (sibling) {
+    if (
+      sibling.localName === 'p' &&
+      sibling.namespaceURI === paragraph.namespaceURI
+    ) {
+      return sibling;
+    }
+    if (
+      sibling.localName === 'tbl' ||
+      sibling.localName === 'sectPr' ||
+      sibling.localName === 'sdt'
+    ) {
+      return null;
+    }
+    sibling = sibling.nextElementSibling;
+  }
+  return null;
+}
+
+function previousWordParagraphSibling(paragraph: Element): Element | null {
+  let sibling = paragraph.previousElementSibling;
+  while (sibling) {
+    if (
+      sibling.localName === 'p' &&
+      sibling.namespaceURI === paragraph.namespaceURI
+    ) {
+      return sibling;
+    }
+    if (
+      sibling.localName === 'tbl' ||
+      sibling.localName === 'sectPr' ||
+      sibling.localName === 'sdt'
+    ) {
+      return null;
+    }
+    sibling = sibling.previousElementSibling;
+  }
+  return null;
+}
+
+function isolatedParagraphBreakMarkChange(
+  change: Element,
+): InspectedDocxParagraphBreakMark | null {
+  const runProperties = change.parentElement;
+  const properties = runProperties?.parentElement;
+  const paragraph = properties?.parentElement;
+  if (
+    runProperties?.localName !== 'rPr' ||
+    properties?.localName !== 'pPr' ||
+    paragraph?.localName !== 'p' ||
+    runProperties.namespaceURI !== change.namespaceURI ||
+    properties.namespaceURI !== change.namespaceURI ||
+    paragraph.namespaceURI !== change.namespaceURI ||
+    !DOCX_WORDPROCESSING_NAMESPACES.has(change.namespaceURI ?? '')
+  ) {
+    return null;
+  }
+  if (supportedParagraphMarkChange(paragraph)?.element === change) {
+    return null;
+  }
+  const markChanges = Array.from(runProperties.children).filter(
+    (element) =>
+      (element.localName === 'ins' || element.localName === 'del') &&
+      element.namespaceURI === paragraph.namespaceURI,
+  );
+  if (markChanges.length !== 1 || markChanges[0] !== change) return null;
+  const parsed = paragraphMarkChangeFromElement(change);
+  if (!parsed) return null;
+  if (!paragraphBodyIsUntrackedTextOnly(paragraph, properties)) return null;
+  return {
+    author: parsed.author,
+    date: parsed.date,
+    id: parsed.id,
+    kind: parsed.kind === 'deletion' ? 'merge' : 'split',
+  };
+}
+
+function paragraphBodyIsUntrackedTextOnly(
+  paragraph: Element,
+  properties: Element | undefined,
+): boolean {
+  const body = directChildren(paragraph).filter(
+    (element) => element !== properties,
+  );
+  if (!body.length) return true;
+  for (const run of body) {
+    if (
+      run.localName !== 'r' ||
+      run.namespaceURI !== paragraph.namespaceURI
+    ) {
+      return false;
+    }
+    const children = directChildren(run);
+    const runProperties = children.filter(
+      (child) =>
+        child.localName === 'rPr' &&
+        child.namespaceURI === paragraph.namespaceURI,
+    );
+    if (runProperties.length > 1) return false;
+    for (const child of children) {
+      if (child.namespaceURI !== paragraph.namespaceURI) return false;
+      if (child.localName === 'rPr') {
+        if (
+          Array.from(child.querySelectorAll('*')).some(
+            (descendant) =>
+              descendant.localName === 'ins' ||
+              descendant.localName === 'del' ||
+              descendant.namespaceURI !== paragraph.namespaceURI,
+          )
+        ) {
+          return false;
+        }
+        continue;
+      }
+      if (child.localName === 'br') {
+        if (!isTextWrappingBreak(child)) return false;
+        continue;
+      }
+      if (child.localName !== 't' || child.children.length) return false;
+    }
+  }
+  return true;
+}
+
 function supportedParagraphMarkChange(
   paragraph: Element,
 ): SupportedDocxParagraphMarkChange | null {
@@ -197,65 +481,265 @@ function paragraphBodyMatchesChange(
   const body = directChildren(paragraph).filter(
     (element) => element !== properties,
   );
-  if (body.length !== 1) return false;
-  const revision = body[0];
+  if (!body.length) return false;
   const expectedName = change.kind === 'deletion' ? 'del' : 'ins';
-  if (
-    !revision ||
-    revision.localName !== expectedName ||
-    revision.namespaceURI !== paragraph.namespaceURI ||
-    hasUnsupportedWordAttributes(revision) ||
-    !revisionBodyIsTextOnly(revision, change.kind)
-  ) {
-    return false;
+  // Admit one or more consecutive matching body wrappers (Word/WPS often
+  // split a whole-paragraph revision across run formatting siblings). Mixed
+  // untracked text, drawings, or mismatched authors stay excluded.
+  // Relationship-free bookmarkStart/End markers and empty/rPr-only untracked
+  // runs may appear as siblings of the revision wrappers without blocking
+  // admission.
+  let sawRevision = false;
+  for (const revision of body) {
+    if (
+      revision.localName === 'bookmarkStart' ||
+      revision.localName === 'bookmarkEnd'
+    ) {
+      if (!isRelationshipFreeBookmarkMarker(revision)) return false;
+      continue;
+    }
+    if (revision.localName === 'r') {
+      if (
+        revision.namespaceURI !== paragraph.namespaceURI ||
+        !isPropertiesOnlyUntrackedRun(revision)
+      ) {
+        return false;
+      }
+      continue;
+    }
+    if (
+      revision.localName !== expectedName ||
+      revision.namespaceURI !== paragraph.namespaceURI ||
+      hasUnsupportedWordAttributes(revision) ||
+      !revisionBodyIsTextOnly(revision, change.kind)
+    ) {
+      return false;
+    }
+    const id = wordAttribute(revision, 'id')?.trim() ?? '';
+    const author = wordAttribute(revision, 'author')?.trim() ?? '';
+    const rawDate = wordAttribute(revision, 'date');
+    if (
+      !/^\+?\d{1,10}$/.test(id) ||
+      author !== change.author ||
+      normalizeRevisionDate(rawDate) !== change.date ||
+      (rawDate !== null && !Number.isFinite(Date.parse(rawDate)))
+    ) {
+      return false;
+    }
+    sawRevision = true;
   }
-  const id = wordAttribute(revision, 'id')?.trim() ?? '';
-  const author = wordAttribute(revision, 'author')?.trim() ?? '';
-  const rawDate = wordAttribute(revision, 'date');
-  return Boolean(
-    /^\+?\d{1,10}$/.test(id) &&
-      author === change.author &&
-      normalizeRevisionDate(rawDate) === change.date &&
-      (rawDate === null || Number.isFinite(Date.parse(rawDate))),
-  );
+  return sawRevision;
 }
 
 function revisionBodyIsTextOnly(
   revision: Element,
   kind: DocxParagraphMarkChangeKind,
 ): boolean {
-  const textName = kind === 'deletion' ? 'delText' : 't';
-  const runs = directChildren(revision);
-  if (!runs.length) return false;
+  const children = directChildren(revision);
+  if (!children.length) return false;
   let hasText = false;
-  for (const run of runs) {
-    if (run.localName !== 'r' || run.namespaceURI !== revision.namespaceURI) {
-      return false;
+  for (const child of children) {
+    if (child.namespaceURI !== revision.namespaceURI) return false;
+    if (child.localName === 'r') {
+      if (!runIsTextOnly(child, kind)) return false;
+      hasText ||= runHasVisibleText(child, kind);
+      continue;
     }
-    const children = directChildren(run);
-    const properties = children.filter(
-      (child) =>
-        child.localName === 'rPr' &&
-        child.namespaceURI === revision.namespaceURI,
-    );
-    if (properties.length > 1) return false;
-    for (const child of children) {
-      if (child.namespaceURI !== revision.namespaceURI) return false;
-      if (child.localName === 'rPr') {
+    if (child.localName === 'hyperlink') {
+      if (!isRelationshipFreeInternalHyperlink(child)) return false;
+      const runs = directChildren(child);
+      if (!runs.length) return false;
+      for (const run of runs) {
         if (
-          Array.from(child.querySelectorAll('*')).some(
-            (descendant) => descendant.namespaceURI !== revision.namespaceURI,
-          )
+          run.localName !== 'r' ||
+          run.namespaceURI !== revision.namespaceURI ||
+          !runIsTextOnly(run, kind)
         ) {
           return false;
         }
-        continue;
+        hasText ||= runHasVisibleText(run, kind);
       }
-      if (child.localName !== textName || child.children.length) return false;
-      hasText ||= Boolean(child.textContent);
+      continue;
     }
+    if (
+      child.localName === 'bookmarkStart' ||
+      child.localName === 'bookmarkEnd'
+    ) {
+      if (!isRelationshipFreeBookmarkMarker(child)) return false;
+      continue;
+    }
+    return false;
   }
   return hasText;
+}
+
+function runIsTextOnly(
+  run: Element,
+  kind: DocxParagraphMarkChangeKind,
+): boolean {
+  const textName = kind === 'deletion' ? 'delText' : 't';
+  const children = directChildren(run);
+  const properties = children.filter(
+    (child) =>
+      child.localName === 'rPr' && child.namespaceURI === run.namespaceURI,
+  );
+  if (properties.length > 1) return false;
+  for (const child of children) {
+    if (child.namespaceURI !== run.namespaceURI) return false;
+    if (child.localName === 'rPr') {
+      if (
+        Array.from(child.querySelectorAll('*')).some(
+          (descendant) => descendant.namespaceURI !== run.namespaceURI,
+        )
+      ) {
+        return false;
+      }
+      continue;
+    }
+    if (child.localName === 'br') {
+      if (!isTextWrappingBreak(child)) return false;
+      continue;
+    }
+    if (child.localName !== textName || child.children.length) return false;
+  }
+  return true;
+}
+
+function runHasVisibleText(
+  run: Element,
+  kind: DocxParagraphMarkChangeKind,
+): boolean {
+  const textName = kind === 'deletion' ? 'delText' : 't';
+  return directChildren(run).some(
+    (child) =>
+      child.localName === textName &&
+      child.namespaceURI === run.namespaceURI &&
+      Boolean(child.textContent),
+  );
+}
+
+/**
+ * Word often emits empty or properties-only runs beside a whole-paragraph
+ * mark revision. Those carry no visible body text and must not block
+ * admission; runs with any text or break content stay fail-closed.
+ */
+function isPropertiesOnlyUntrackedRun(run: Element): boolean {
+  const children = directChildren(run);
+  const properties = children.filter(
+    (child) =>
+      child.localName === 'rPr' && child.namespaceURI === run.namespaceURI,
+  );
+  if (properties.length > 1) return false;
+  for (const child of children) {
+    if (child.namespaceURI !== run.namespaceURI) return false;
+    if (child.localName === 'rPr') {
+      if (
+        Array.from(child.querySelectorAll('*')).some(
+          (descendant) => descendant.namespaceURI !== run.namespaceURI,
+        )
+      ) {
+        return false;
+      }
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
+
+const HYPERLINK_ATTRIBUTES = new Set([
+  'anchor',
+  'docLocation',
+  'history',
+  'tgtFrame',
+  'tooltip',
+]);
+const BOOKMARK_START_ATTRIBUTES = new Set(['id', 'name']);
+const BOOKMARK_END_ATTRIBUTES = new Set(['id']);
+const RELATIONSHIP_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+  'http://purl.oclc.org/ooxml/officeDocument/relationships',
+  'http://schemas.openxmlformats.org/package/2006/relationships',
+]);
+
+function isRelationshipFreeInternalHyperlink(element: Element): boolean {
+  if (!DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')) {
+    return false;
+  }
+  let hasAnchor = false;
+  for (const attribute of Array.from(element.attributes)) {
+    const namespace =
+      attribute.namespaceURI ||
+      xmlAttributeNamespace(element, attribute) ||
+      '';
+    if (RELATIONSHIP_NAMESPACES.has(namespace)) return false;
+    if (namespace && namespace !== element.namespaceURI) return false;
+    const localName = xmlAttributeLocalName(attribute);
+    if (namespace === element.namespaceURI || !namespace) {
+      if (!HYPERLINK_ATTRIBUTES.has(localName)) return false;
+      if (localName === 'anchor') {
+        const value = attribute.value.trim();
+        if (
+          !value ||
+          value.length > 255 ||
+          /[\u0000-\u001f\u007f]/.test(value)
+        ) {
+          return false;
+        }
+        hasAnchor = true;
+      }
+    }
+  }
+  return hasAnchor;
+}
+
+function isRelationshipFreeBookmarkMarker(element: Element): boolean {
+  if (
+    !DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '') ||
+    element.children.length > 0
+  ) {
+    return false;
+  }
+  const allowed =
+    element.localName === 'bookmarkStart'
+      ? BOOKMARK_START_ATTRIBUTES
+      : element.localName === 'bookmarkEnd'
+        ? BOOKMARK_END_ATTRIBUTES
+        : null;
+  if (!allowed) return false;
+  let hasId = false;
+  let hasName = element.localName !== 'bookmarkStart';
+  for (const attribute of Array.from(element.attributes)) {
+    const namespace =
+      attribute.namespaceURI ||
+      xmlAttributeNamespace(element, attribute) ||
+      '';
+    if (RELATIONSHIP_NAMESPACES.has(namespace)) return false;
+    if (namespace && namespace !== element.namespaceURI) return false;
+    const localName = xmlAttributeLocalName(attribute);
+    if (!(namespace === element.namespaceURI || !namespace)) return false;
+    if (!allowed.has(localName)) return false;
+    const value = attribute.value.trim();
+    if (
+      !value ||
+      value.length > 255 ||
+      /[\u0000-\u001f\u007f]/.test(value)
+    ) {
+      return false;
+    }
+    if (localName === 'id') {
+      if (!/^\+?\d{1,10}$/.test(value)) return false;
+      hasId = true;
+    }
+    if (localName === 'name') hasName = true;
+  }
+  return hasId && hasName;
+}
+
+function isTextWrappingBreak(element: Element): boolean {
+  if (element.children.length) return false;
+  const type = wordAttribute(element, 'type');
+  return type === null || type === 'textWrapping';
 }
 
 function wordAttribute(element: Element, localName: string): string | null {

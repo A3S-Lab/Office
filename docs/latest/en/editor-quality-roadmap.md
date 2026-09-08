@@ -271,8 +271,10 @@ chrome is treated as an overlay inside the physical margins rather than an
 additional body-height deduction. Browser PDF export finds this mounted surface
 by stable artifact ID, clones it without editing state, and crops physical pages
 from bounded batches. The three browser rendering paths therefore share one
-page-layout result; searchable text and vector PDF output remain separate
-fidelity work.
+page-layout result; Latin/Latin-1 vector text clears under measured runs and
+paints Helvetica at the same geometry for search/copy, with a title/`lang`/
+heading-outline accessibility bootstrap. Full PDF/UA structure trees and
+CJK/custom fonts remain separate fidelity work.
 
 A deterministic Traditional Office Writer layout gate now covers the first declared native
 page-parity slice. The fixture uses an A4 page, installed Arial runs, explicit

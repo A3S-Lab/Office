@@ -42,6 +42,69 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.78.0',
+    date: '2026-09-08',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Writer no-clobber revisions deepen with searchable PDF vectors',
+      zh: 'Writer 无破坏修订深化，PDF 导出补齐可搜索矢量文本',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: reviewable table/row/cell/section property revisions, richer paragraph-mark and move companions, opaque float/OMML preservation, and Latin (optional CJK) searchable PDF vector text with a tagged structure bootstrap.',
+      zh: 'Phase 0 保真：可审阅的表格/行/单元格/节属性修订、更丰富的段落标记与移动伴随标记、不透明浮动/公式保留，以及 Latin（可选 CJK）可搜索 PDF 矢量文本与结构引导。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Reviewable property revisions',
+          zh: '可审阅的属性修订',
+        },
+        detail: {
+          en: 'tblPrChange, trPrChange, tcPrChange, and sectPrChange subsets (including layout, cell margins, paper source, and equal-width columns) accept/reject with live track-changes.',
+          zh: 'tblPrChange、trPrChange、tcPrChange 与 sectPrChange 子集（含布局、单元格边距、纸张来源与等宽分栏）支持接受/拒绝，并覆盖实时修订跟踪。',
+        },
+      },
+      {
+        title: {
+          en: 'Paragraph-mark and move fidelity',
+          zh: '段落标记与移动保真',
+        },
+        detail: {
+          en: 'Multi-wrapper mark bodies, soft breaks, internal hyperlinks, bookmarks, empty rPr siblings, move-range companions, and eligible paragraph-break merge/split stay reviewable.',
+          zh: '多包装标记正文、软换行、内部超链接、书签、空 rPr 兄弟、移动范围伴随标记，以及合格的段落断裂合并/拆分保持可审阅。',
+        },
+      },
+      {
+        title: {
+          en: 'Searchable PDF vectors',
+          zh: '可搜索 PDF 矢量文本',
+        },
+        detail: {
+          en: 'Measured Latin clears to Helvetica vectors; hosts may register a CJK TrueType face; title/lang/heading outline bootstrap ships without claiming full PDF/UA.',
+          zh: '已测量 Latin 清除为 Helvetica 矢量；宿主可注册 CJK TrueType；标题/语言/标题大纲引导已交付，但不宣称完整 PDF/UA。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './components/document.html', zh: './components/document.html' },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.78.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.78.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './native-office-engine.html', zh: './native-office-engine.html' },
+        label: { en: 'Native engine notes', zh: '原生引擎说明' },
+      },
+    ],
+  },
+  {
     version: '0.77.0',
     date: '2026-09-08',
     kind: 'improved',

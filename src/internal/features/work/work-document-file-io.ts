@@ -185,6 +185,7 @@ export async function importWorkDocumentFile(
           prepared.paragraphIdentityMarkers,
           prepared.paragraphFormattingChangeMarkers,
           prepared.paragraphMarkChangeMarkers,
+          prepared.paragraphBreakChangeMarkers,
           prepared.paragraphAlignmentMarkers,
           prepared.runFormattingMarkers,
           prepared.paragraphDirectionMarkers,

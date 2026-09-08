@@ -1,4 +1,9 @@
 import {
+  createDocumentEquationOpaqueElement,
+  MAX_DOCUMENT_EQUATION_OPAQUE_OMML_LENGTH,
+  type WorkDocumentEquationOpaque,
+} from './work-document-equation-opaque';
+import {
   createDocumentEquationElement,
   documentEquationText,
   normalizeDocumentEquation,
@@ -87,12 +92,15 @@ import {
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
   XMLNS_NAMESPACE,
+  cloneXmlElement,
+  declareInheritedNamespaces,
   xmlAttributeLocalName,
   xmlAttributeNamespace,
 } from './work-docx-settings-xml';
 import {
   descendants,
   directChildren,
+  parseXml,
   type OoxmlPackage,
 } from './work-ooxml-package';
 
@@ -113,7 +121,8 @@ export interface DocxEquationInspection {
 
 interface ImportedDocxEquationMarker {
   marker: string;
-  equation: WorkDocumentEquation;
+  equation?: WorkDocumentEquation;
+  opaque?: WorkDocumentEquationOpaque;
 }
 
 interface EquationMarkerState {
@@ -160,6 +169,11 @@ const STRICT_WORD_NAMESPACE =
 const DOCX_MATH_NAMESPACES = new Set([
   TRANSITIONAL_MATH_NAMESPACE,
   STRICT_MATH_NAMESPACE,
+]);
+const DOCX_RELATIONSHIP_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+  'http://purl.oclc.org/ooxml/officeDocument/relationships',
+  'http://schemas.openxmlformats.org/package/2006/relationships',
 ]);
 const WORD_DATE_UTC_NAMESPACE =
   'http://schemas.microsoft.com/office/word/2023/wordml/word16du';
@@ -825,20 +839,25 @@ export function applyImportedDocxEquationMarkers(
     const matches = docxEquationTextNodes(document.body).filter((node) =>
       node.data.includes(marker.marker),
     );
+    const label = marker.equation
+      ? documentEquationText(marker.equation)
+      : (marker.opaque?.text ?? '[Unsupported equation]');
     if (matches.length !== 1) {
       for (const match of matches) {
-        match.data = match.data.replaceAll(
-          marker.marker,
-          documentEquationText(marker.equation),
-        );
+        match.data = match.data.replaceAll(marker.marker, label);
       }
       continue;
     }
-    replaceDocxEquationTextMarker(
-      matches[0],
-      marker.marker,
-      createDocumentEquationElement(document, marker.equation),
-    );
+    const replacement = marker.equation
+      ? createDocumentEquationElement(document, marker.equation)
+      : marker.opaque
+        ? createDocumentEquationOpaqueElement(document, marker.opaque)
+        : null;
+    if (!replacement) {
+      matches[0].data = matches[0].data.replaceAll(marker.marker, label);
+      continue;
+    }
+    replaceDocxEquationTextMarker(matches[0], marker.marker, replacement);
   }
 }
 
@@ -892,13 +911,81 @@ export function isSupportedDocxEquationPlacement(element: Element): boolean {
   );
 }
 
+export function docxEquationHasRelationshipBindings(element: Element): boolean {
+  const stack: Element[] = [element];
+  while (stack.length) {
+    const current = stack.pop();
+    if (!current) continue;
+    for (const attribute of Array.from(current.attributes)) {
+      const namespace =
+        attribute.namespaceURI ||
+        xmlAttributeNamespace(current, attribute) ||
+        '';
+      if (DOCX_RELATIONSHIP_NAMESPACES.has(namespace)) {
+        return true;
+      }
+    }
+    for (const child of Array.from(current.children)) {
+      stack.push(child);
+    }
+  }
+  return false;
+}
+
+export function isPreservableUnsupportedDocxEquation(
+  element: Element,
+): boolean {
+  if (!isSupportedDocxEquationPlacement(element)) return false;
+  const inspection = inspectDocxEquation(element);
+  if (inspection.status !== 'unsupported' || inspection.equation) return false;
+  if (docxEquationHasRelationshipBindings(element)) return false;
+  return serializePreservableDocxEquationOmml(element) !== null;
+}
+
+export function serializePreservableDocxEquationOmml(
+  element: Element,
+): string | null {
+  const namespace = element.namespaceURI ?? '';
+  if (
+    !isDocxEquationLikeRoot(element) ||
+    !DOCX_MATH_NAMESPACES.has(namespace)
+  ) {
+    return null;
+  }
+  const prefix = element.prefix || 'm';
+  const shell = parseXml(
+    `<${prefix}:${element.localName} xmlns:${prefix}="${namespace}"/>`,
+    'opaque OMML shell',
+  );
+  const clone = cloneXmlElement(shell, element);
+  declareInheritedNamespaces(clone, element);
+  shell.replaceChild(clone, shell.documentElement);
+  const omml = new XMLSerializer().serializeToString(clone).trim();
+  if (!omml || omml.length > MAX_DOCUMENT_EQUATION_OPAQUE_OMML_LENGTH) {
+    return null;
+  }
+  return omml;
+}
+
 export function docxEquationHtml(element: Element): string {
   const inspection = inspectDocxEquation(element);
-  if (!inspection.equation || !isSupportedDocxEquationPlacement(element)) {
-    return escapeDocxEquationHtml(inspection.text || '[Unsupported equation]');
-  }
   const document = new DOMParser().parseFromString('', 'text/html');
-  return createDocumentEquationElement(document, inspection.equation).outerHTML;
+  if (inspection.equation && isSupportedDocxEquationPlacement(element)) {
+    return createDocumentEquationElement(document, inspection.equation)
+      .outerHTML;
+  }
+  const omml = isPreservableUnsupportedDocxEquation(element)
+    ? serializePreservableDocxEquationOmml(element)
+    : null;
+  if (omml) {
+    const placement = docxEquationPlacement(element);
+    return createDocumentEquationOpaqueElement(document, {
+      display: placement === 'block' ? 'block' : 'inline',
+      omml,
+      text: inspection.text || '[Unsupported equation]',
+    }).outerHTML;
+  }
+  return escapeDocxEquationHtml(inspection.text || '[Unsupported equation]');
 }
 
 function markDocxEquationDocument(
@@ -935,6 +1022,36 @@ function markDocxEquationDocument(
       state.markers.push({ marker, equation });
       changed = true;
       continue;
+    }
+    if (
+      placement &&
+      inspection.status === 'unsupported' &&
+      !inspection.equation &&
+      !docxEquationHasRelationshipBindings(root) &&
+      state.markers.length < MAX_IMPORTED_EQUATIONS
+    ) {
+      const omml = serializePreservableDocxEquationOmml(root);
+      if (omml) {
+        const marker = nextEquationMarker(state);
+        root.replaceWith(
+          docxEquationWordReplacement(
+            root.ownerDocument,
+            root,
+            marker,
+            placement,
+          ),
+        );
+        state.markers.push({
+          marker,
+          opaque: {
+            display: placement === 'block' ? 'block' : 'inline',
+            omml,
+            text: inspection.text || '[Unsupported equation]',
+          },
+        });
+        changed = true;
+        continue;
+      }
     }
     const fallback = docxEquationWordFallbackForContext(
       root.ownerDocument,

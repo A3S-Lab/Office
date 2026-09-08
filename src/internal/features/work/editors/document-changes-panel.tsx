@@ -390,6 +390,11 @@ function documentChangeKindLabel(kind: WorkDocumentChange['kind']): string {
   if (kind === 'insertion') return '插入';
   if (kind === 'formatting') return '格式';
   if (kind === 'paragraph-formatting') return '段落格式';
+  if (kind === 'table-formatting') return '表格格式';
+  if (kind === 'row-formatting') return '表格行格式';
+  if (kind === 'cell-formatting') return '表格单元格格式';
+  if (kind === 'section-formatting') return '节格式';
+  if (kind === 'paragraph-break') return '段落分隔';
   if (kind === 'numbering') return '编号格式';
   if (kind === 'move') return '移动';
   return '删除';

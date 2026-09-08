@@ -202,6 +202,12 @@ export {
   type WorkPdfExportOptions as PdfExportOptions,
   workPdfPagesForExport as pdfPagesForExport,
 } from './internal/features/work/work-pdf-export';
+export {
+  clearWorkPdfCjkFont as clearPdfCjkFont,
+  registerWorkPdfCjkFont as registerPdfCjkFont,
+  workPdfCjkFontRegistered as pdfCjkFontRegistered,
+  type WorkPdfCjkFontRegistration as PdfCjkFontRegistration,
+} from './internal/features/work/work-pdf-cjk-font';
 export type { PdfPageOrganizationExport } from './internal/features/work/editors/use-pdf-page-organization';
 export { defaultPptxRuntimeUrl } from './internal/features/work/work-presentation-file-io';
 export {

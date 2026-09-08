@@ -1043,6 +1043,11 @@ describe('document equations', () => {
       'text/html',
     );
     expect(html.body.querySelector('[data-document-equation]')).toBeNull();
+    const opaque = html.body.querySelector<HTMLElement>(
+      '[data-document-equation-opaque]',
+    );
+    expect(opaque).not.toBeNull();
+    expect(opaque?.textContent).toContain('B');
     expect(html.body.textContent).toContain('A');
     expect(html.body.textContent).toContain('B');
     expect(html.body.textContent).toContain('C');
@@ -1050,9 +1055,15 @@ describe('document equations', () => {
     expect(imported.content.pageChrome?.default.headerHtml).not.toContain(
       'data-document-equation',
     );
+    expect(imported.content.pageChrome?.default.headerHtml).not.toContain(
+      'data-document-equation-opaque',
+    );
     expect(imported.content.pageChrome?.default.headerHtml).toContain('H');
     expect(imported.content.pageChrome?.default.footerHtml).not.toContain(
       'data-document-equation',
+    );
+    expect(imported.content.pageChrome?.default.footerHtml).not.toContain(
+      'data-document-equation-opaque',
     );
     expect(imported.content.pageChrome?.default.footerHtml).toContain('J');
     expect(imported.compatibility.issues).toContainEqual(
@@ -1062,11 +1073,105 @@ describe('document equations', () => {
     const output = await JSZip.loadAsync(
       await (await createArtifactBlob(imported)).arrayBuffer(),
     );
-    for (const path of ['word/document.xml', headerPath, footerPath]) {
+    const exportedDocument = await xmlEntry(output, 'word/document.xml');
+    const preserved = descendants(exportedDocument, 'oMath');
+    expect(preserved).toHaveLength(1);
+    expect(inspectDocxEquation(preserved[0]).status).toBe('unsupported');
+    expect(
+      descendants(preserved[0], 'cSp').some((spacing) =>
+        Array.from(spacing.attributes).some(
+          (attribute) =>
+            xmlAttributeLocalName(attribute) === 'val' &&
+            xmlAttributeNamespace(spacing, attribute) === MATH_NAMESPACE &&
+            attribute.value === '31681',
+        ),
+      ),
+    ).toBe(true);
+    for (const path of [headerPath, footerPath]) {
       expect(descendants(await xmlEntry(output, path), 'oMath')).toHaveLength(
         0,
       );
     }
+  });
+
+  test('preserves relationship-free unsupported OMML as atomic native markup on untouched round-trip', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${equationHtml(simpleEquation('B'))}</p>`;
+    const seed = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+    const document = await xmlEntry(archive, 'word/document.xml');
+    const equation = descendants(document, 'oMath')[0];
+    const matrix = document.createElementNS(MATH_NAMESPACE, 'm:m');
+    const matrixProperties = document.createElementNS(MATH_NAMESPACE, 'm:mPr');
+    const columnSpacing = document.createElementNS(MATH_NAMESPACE, 'm:cSp');
+    columnSpacing.setAttributeNS(MATH_NAMESPACE, 'm:val', '31681');
+    matrixProperties.append(columnSpacing);
+    const row = document.createElementNS(MATH_NAMESPACE, 'm:mr');
+    const argument = document.createElementNS(MATH_NAMESPACE, 'm:e');
+    argument.append(...Array.from(equation.childNodes));
+    row.append(argument);
+    matrix.append(matrixProperties, row);
+    equation.replaceChildren(matrix);
+    archive.file(
+      'word/document.xml',
+      new XMLSerializer().serializeToString(document),
+    );
+    const source = await archive.generateAsync({ type: 'arraybuffer' });
+    const imported = await importOfficeFile(
+      new File([source], 'opaque-equation.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(html.body.querySelector('[data-document-equation]')).toBeNull();
+    expect(
+      html.body.querySelector('[data-document-equation-opaque]'),
+    ).not.toBeNull();
+    expect(imported.compatibility.issues).toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        new DOMParser()
+          .parseFromString(editor.getHTML(), 'text/html')
+          .body.querySelector('[data-document-equation-opaque]'),
+      ).not.toBeNull();
+      imported.content.html = editor.getHTML();
+    } finally {
+      editor.destroy();
+    }
+
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = descendants(
+      await xmlEntry(output, 'word/document.xml'),
+      'oMath',
+    );
+    expect(exported).toHaveLength(1);
+    expect(inspectDocxEquation(exported[0]).status).toBe('unsupported');
+    expect(
+      descendants(exported[0], 'cSp').some((spacing) =>
+        Array.from(spacing.attributes).some(
+          (attribute) =>
+            xmlAttributeLocalName(attribute) === 'val' &&
+            xmlAttributeNamespace(spacing, attribute) === MATH_NAMESPACE &&
+            attribute.value === '31681',
+        ),
+      ),
+    ).toBe(true);
   });
 
   test('rejects unmodeled and contradictory OMML properties', () => {

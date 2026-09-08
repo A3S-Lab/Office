@@ -16,6 +16,8 @@ import {
   documentInitialSectionLayout,
   documentSectionDomAttributes,
 } from './work-document-section';
+import { serializePreservableDocxSectionPropertyRevision } from './work-document-table-property-revision';
+import { supportedDocxSectionFormattingChangeFromProperties } from './work-docx-section-format-change-import';
 import { normalizeDocumentTableOfContentsHtml } from './work-document-table-of-contents';
 import { readDocxBibliography } from './work-docx-bibliography';
 import {
@@ -154,9 +156,13 @@ import {
   markDocxParagraphIndents,
 } from './work-docx-paragraph-indent-import';
 import {
+  applyImportedDocxParagraphBreakChangeMarkers,
   applyImportedDocxParagraphMarkChangeMarkers,
+  hasImportedDocxParagraphBreakChangeMarkers,
   hasImportedDocxParagraphMarkChangeMarkers,
+  type ImportedDocxParagraphBreakChangeMarkers,
   type ImportedDocxParagraphMarkChangeMarkers,
+  markDocxParagraphBreakChanges,
   markDocxParagraphMarkChanges,
 } from './work-docx-paragraph-mark-change-import';
 import {
@@ -265,6 +271,7 @@ export interface PreparedDocxImport {
   paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers;
   paragraphFormattingChangeMarkers: ImportedDocxParagraphFormattingChangeMarkers;
   paragraphMarkChangeMarkers: ImportedDocxParagraphMarkChangeMarkers;
+  paragraphBreakChangeMarkers: ImportedDocxParagraphBreakChangeMarkers;
   paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers;
   paragraphDirectionMarkers: ImportedDocxParagraphDirectionMarkers;
   paragraphIndentMarkers: ImportedDocxParagraphIndentMarkers;
@@ -318,6 +325,7 @@ export async function prepareDocxImport(
       paragraphIdentityMarkers: { paragraphs: [] },
       paragraphFormattingChangeMarkers: { paragraphs: [] },
       paragraphMarkChangeMarkers: { paragraphs: [] },
+      paragraphBreakChangeMarkers: { paragraphs: [] },
       paragraphAlignmentMarkers: { paragraphs: [] },
       paragraphDirectionMarkers: { paragraphs: [] },
       paragraphIndentMarkers: { paragraphs: [] },
@@ -346,6 +354,7 @@ export async function prepareDocxImport(
   const document = await archive.xml('word/document.xml');
   const pageColor = importDocxPageColor(document);
   const paragraphMarkChangeMarkers = markDocxParagraphMarkChanges(document);
+  const paragraphBreakChangeMarkers = markDocxParagraphBreakChanges(document);
   const tableOfContentsMarkers = markDocxTablesOfContents(document);
   const indexMarkers = markDocxIndexes(document);
   const contentControlMarkers = markDocxContentControls(document);
@@ -470,6 +479,7 @@ export async function prepareDocxImport(
     Boolean(settings && firstDescendant(settings, 'trackRevisions')) ||
     changeMarkers.changes.length > 0 ||
     paragraphMarkChangeMarkers.paragraphs.length > 0 ||
+    paragraphBreakChangeMarkers.paragraphs.length > 0 ||
     numberingChangeMarkers.groups.length > 0 ||
     paragraphFormattingChangeMarkers.paragraphs.length > 0 ||
     runFormattingMarkers.runs.some((run) => Boolean(run.change));
@@ -497,6 +507,9 @@ export async function prepareDocxImport(
           paragraphFormattingChangeMarkers,
         ) ||
         hasImportedDocxParagraphMarkChangeMarkers(paragraphMarkChangeMarkers) ||
+        hasImportedDocxParagraphBreakChangeMarkers(
+          paragraphBreakChangeMarkers,
+        ) ||
         hasImportedDocxParagraphAlignmentMarkers(paragraphAlignmentMarkers) ||
         hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
         hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
@@ -531,6 +544,7 @@ export async function prepareDocxImport(
       paragraphIdentityMarkers,
       paragraphFormattingChangeMarkers,
       paragraphMarkChangeMarkers,
+      paragraphBreakChangeMarkers,
       paragraphAlignmentMarkers,
       paragraphDirectionMarkers,
       paragraphIndentMarkers,
@@ -588,6 +602,7 @@ export async function prepareDocxImport(
         paragraphFormattingChangeMarkers,
       ) ||
       hasImportedDocxParagraphMarkChangeMarkers(paragraphMarkChangeMarkers) ||
+      hasImportedDocxParagraphBreakChangeMarkers(paragraphBreakChangeMarkers) ||
       hasImportedDocxParagraphAlignmentMarkers(paragraphAlignmentMarkers) ||
       hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
       hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
@@ -622,6 +637,7 @@ export async function prepareDocxImport(
     paragraphIdentityMarkers,
     paragraphFormattingChangeMarkers,
     paragraphMarkChangeMarkers,
+    paragraphBreakChangeMarkers,
     paragraphAlignmentMarkers,
     paragraphDirectionMarkers,
     paragraphIndentMarkers,
@@ -667,6 +683,9 @@ export function applyDocxSectionsToHtml(
     paragraphs: [],
   },
   paragraphMarkChangeMarkers: ImportedDocxParagraphMarkChangeMarkers = {
+    paragraphs: [],
+  },
+  paragraphBreakChangeMarkers: ImportedDocxParagraphBreakChangeMarkers = {
     paragraphs: [],
   },
   paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers = {
@@ -746,6 +765,10 @@ export function applyDocxSectionsToHtml(
   applyImportedDocxParagraphMarkChangeMarkers(
     document,
     paragraphMarkChangeMarkers,
+  );
+  applyImportedDocxParagraphBreakChangeMarkers(
+    document,
+    paragraphBreakChangeMarkers,
   );
   applyImportedDocxTableCellMarkers(document, tableCellMarkers);
   applyImportedDocxTableSizingMarkers(document, tableSizingMarkers);
@@ -855,6 +878,10 @@ async function parseSectionLayout(
     firstDescendant(section, 'pgNumType'),
     'start',
   );
+  const propertyRevisionOmml =
+    serializePreservableDocxSectionPropertyRevision(section);
+  const formattingChange =
+    supportedDocxSectionFormattingChangeFromProperties(section);
   const layout: WorkDocumentSectionLayout = {
     pageSize: previous.pageSize,
     orientation: previous.orientation,
@@ -871,6 +898,18 @@ async function parseSectionLayout(
     ...(pageMargins ? { pageMargins } : {}),
     ...(pageGeometry ? { pageGeometry } : {}),
     ...(paperSource ? { paperSource } : {}),
+    ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
+    ...(formattingChange
+      ? {
+          formattingChange: {
+            kind: 'section-formatting' as const,
+            id: formattingChange.id,
+            author: formattingChange.author,
+            date: formattingChange.date,
+            before: formattingChange.before,
+          },
+        }
+      : {}),
     breakAfter: parseSectionBreak(firstDescendant(section, 'type')),
     ...pageChrome,
     pageNumberStart: pageNumberStart > 0 ? pageNumberStart : undefined,

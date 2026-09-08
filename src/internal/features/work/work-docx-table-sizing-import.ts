@@ -9,6 +9,19 @@ import {
   type DocumentTablePreferredWidth,
 } from './work-document-table-geometry';
 import {
+  applyDocumentTableFloatOmmlToElement,
+  serializePreservableDocxTableFloat,
+} from './work-document-table-float';
+import {
+  applyDocumentTablePropertyRevisionOmmlToElement,
+  serializePreservableDocxTablePropertyRevision,
+} from './work-document-table-property-revision';
+import {
+  applyDocumentTableFormattingChangeToElement,
+  supportedDocxTableFormattingChangeFromProperties,
+  type SupportedDocxTableFormattingChange,
+} from './work-docx-table-format-change-import';
+import {
   docxTablePropertySources,
   resolveDocxTableStyleResolver,
   type DocxTableStyleSource,
@@ -25,6 +38,9 @@ export interface ImportedDocxTableSizingMarker {
   geometry: DocumentTableGeometry;
   columnWidths: number[];
   columnPercentages: number[];
+  floatOmml?: string;
+  propertyRevisionOmml?: string;
+  formattingChange?: SupportedDocxTableFormattingChange;
 }
 
 export interface ImportedDocxTableSizingMarkers {
@@ -54,6 +70,16 @@ export function markDocxTableSizing(
       : [];
     const marker = `__A3S_WORK_TABLE_SIZING_${tables.length + 1}__`;
     insertMarker(document, paragraph, marker);
+    const floatOmml = serializePreservableDocxTableFloat(
+      directChild(table, 'tblPr'),
+    );
+    const tableProperties = directChild(table, 'tblPr');
+    const formattingChange =
+      supportedDocxTableFormattingChangeFromProperties(tableProperties);
+    const propertyRevisionOmml = formattingChange
+      ? undefined
+      : serializePreservableDocxTablePropertyRevision(tableProperties) ??
+        undefined;
     tables.push({
       marker,
       geometry: importedTableGeometry(
@@ -61,6 +87,9 @@ export function markDocxTableSizing(
       ),
       columnWidths,
       columnPercentages: importedColumnPercentages(table, columnWidths),
+      ...(floatOmml ? { floatOmml } : {}),
+      ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
+      ...(formattingChange ? { formattingChange } : {}),
     });
   }
   return { tables };
@@ -81,6 +110,17 @@ export function applyImportedDocxTableSizingMarkers(
       if (table instanceof HTMLTableElement && sizing) {
         table.dataset.officeTableImported = 'true';
         applyDocumentTableGeometryToElement(table, sizing.geometry);
+        applyDocumentTableFloatOmmlToElement(table, sizing.floatOmml);
+        applyDocumentTablePropertyRevisionOmmlToElement(
+          table,
+          sizing.propertyRevisionOmml,
+        );
+        if (sizing.formattingChange) {
+          applyDocumentTableFormattingChangeToElement(
+            table,
+            sizing.formattingChange,
+          );
+        }
         if (sizing.columnWidths.length) {
           applyColumnWidths(table, sizing.columnWidths);
         }

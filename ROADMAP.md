@@ -74,12 +74,12 @@ collaboration transport, and AI providers.
 | Headers, footers, first/even/default variants, page numbers | **Supported** | Complex fields and application-specific placement settings remain partial | P0 |
 | Page borders (`w:pgBorders`) | **Supported** on current `main`: four ordered edges, 197 styles, theme/direct colors, page/text offsets, first/not-first display, front/back order, strict namespaces, diagnostics, exact DOCX export | Art borders and document-wide compatibility modifiers use bounded browser approximations | Maintain / P0 regression gate |
 | Document grid and script-aware typography | **Supported** for section grid, run snap overrides, bundled/host/imported font choices, four native script-font slots, theme/style inheritance, mixed-script spans, and Traditional Office layout fixtures | Font substitution, missing glyphs, and browser shaping can still alter pagination | P0 |
-| Tables, merges, sizing, margins, styles, row pagination, nested tables | **Partial**, with broad editable geometry and style inheritance | Full Word border conflict rules, every conditional property, floating tables, formulas, and advanced table tools are incomplete | P0/P1 |
+| Tables, merges, sizing, margins, styles, row pagination, nested tables | **Partial**, with broad editable geometry, style inheritance, Word-style shared-edge border paint for rectangular and colspan/rowspan occupancy grids, and opaque body `w:tblpPr` float round-trip | Full ECMA style matrix, editable floating placement UI, formulas, and advanced table tools are incomplete | P0/P1 |
 | Inline and floating pictures, crop, wrap contour, layer, identity, alt text, quarter-turn transforms | **Partial**, with strong DrawingML picture support plus editable 90-degree rotation and horizontal/vertical reflection | Arbitrary-angle transforms, broad shapes, connectors, text boxes, WordArt, SmartArt, charts, and unsupported drawings normalize | P0 safe preservation; P1 editable drawings |
 | Editable text boxes and bounded shape geometry | **Partial**, with isolated native WordprocessingML text boxes editable through inline/floating layout, five explicit presets (rectangle, rounded rectangle, ellipse, diamond, triangle), bounded geometry, fill, outline, padding, vertical alignment, WPS `mc:AlternateContent` import, and native DOCX round trips; isolated straight WPS VML connectors now have a typed endpoint/color/width/line-style/arrow model and native DrawingML export | Mixed paragraphs, routed or VML-only non-straight connectors, arbitrary shapes, WordArt, SmartArt, charts, malformed bodies, and unsupported DrawingML branches remain explicit compatibility boundaries | P1 editable drawings |
-| OMML equations | **Partial**, with a large bounded structured model and strict/transitional import/export | Unbounded or unsupported OMML branches remain atomic/unsupported rather than fully editable | P0 no-clobber; P2 coverage |
+| OMML equations | **Partial**, with a large bounded structured model and strict/transitional import/export; relationship-free unsupported roots preserve as atomic native OMML | Relationship-bound, spoofed, misplaced, or over-limit OMML still flatten; editable coverage of remaining branches is P2 | P0 no-clobber; P2 coverage |
 | Comments, replies, resolved state, anchors, modern IDs | **Supported** for editable review records and safe source preservation | Reactions, people sidecars, live presence, and server synchronization are absent/host-owned | P1 protocol |
-| Track changes review | **Partial**: body-text insertions/deletions plus bounded whole-paragraph mark insertion/deletion, character-, paragraph-formatting, ordered-list numbering, and text-only move revisions; native `w:pPr/w:rPr/w:ins`/`w:del`, `w:rPrChange`, `w:pPrChange`, `w:numberingChange`, `w:moveFrom`, and `w:moveTo` round trips; navigation, atomic accept/reject, immutable collaboration audit, and long-list virtualization | Isolated paragraph-break merge/split revisions, mixed/complex paragraph-mark changes, cross-section/range moves, rich/relationship-bound moves, plus section, table, row, cell, and complex/multi-level numbering property revisions are not fully editable | P0 |
+| Track changes review | **Partial**: body-text insertions/deletions plus bounded whole-paragraph mark insertion/deletion (including multi-wrapper text-only bodies, soft breaks, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/`rPr`-only untracked sibling runs), character-, paragraph-formatting, ordered-list numbering, **table-formatting** (`w:tblPrChange` with prior `w:jc` and/or `w:tblW` and/or `w:tblInd` and/or `w:tblCellMar` and/or `w:tblLayout`; live track-changes), **row-formatting** (`w:trPrChange` with prior `w:cantSplit`, `w:tblHeader`, and/or `w:trHeight`; live track-changes), **cell-formatting** (`w:tcPrChange` with prior `w:vAlign` and/or solid `w:shd` and/or `w:tcMar`; live track-changes), **section-formatting** (`w:sectPrChange` with prior orientation-only or complete `w:pgSz`, complete `w:pgMar`, `w:paperSrc`, and/or equal-width `w:cols`; live track-changes), text-only move revisions with soft breaks / internal hyperlinks / relationship-free bookmarks and same-section companion `w:move*Range*` bookmarks (including cross-paragraph sandwich), and eligible text-only paragraph-break merge/split revisions; native `w:pPr/w:rPr/w:ins`/`w:del`, `w:rPrChange`, `w:pPrChange`, `w:numberingChange`, `w:tblPrChange` (alignment/preferred-width/indent/cell-margins/layout), `w:trPrChange` (cantSplit/tblHeader/trHeight), `w:tcPrChange` (vAlign/solid-shd/tcMar), `w:sectPrChange` (orientation/page-geometry/page-margins/paper-source/equal-width-cols), `w:moveFrom`, and `w:moveTo` round trips; broader relationship-free `w:tblPrChange` / `w:trPrChange` / `w:tcPrChange` / `w:sectPrChange` opaque metadata round-trip; navigation, atomic accept/reject, immutable collaboration audit, and long-list virtualization; ineligible isolated paragraph-break shapes stay `docx.revisions.paragraph-break`; unpaired move-range markers stay `docx.revisions.move-range` | Richer mixed paragraph-mark shapes (untracked text siblings, drawings, relationship-bound hyperlinks), cross-section/table-spanning range moves, rich/relationship-bound moves, plus complex/multi-level numbering and remaining table/row/cell/section property revisions are not fully editable | P0 |
 | Bookmarks, links, captions, cross-references, citations, bibliography, footnotes/endnotes | **Partial**, with native identity and editable common paths | Wider field instructions, tables of authorities/figures, citation styles, and reference dialogs remain incomplete | P1 |
 | Table of contents and outline authoring | **Supported**: shared semantic-heading/native-outline model plus typed insert/customize/refresh, levels 1–9, hyperlinks, live page numbers, alignment, four leader styles, stable paragraph-identity targets, one-step Undo, and native DOCX `TOC` round trips | Custom style-to-level mappings, tables of figures, and deeper TOC style formatting remain open | Maintain / P1 fidelity |
 | Native index authoring | **Supported**: primary/secondary `XE` entries, cross-references, bold/italic page intent, stable marker targets, merged page numbers, typed insert/customize/refresh, 1–4 columns, indented/run-in layouts, four leader styles, one-step Undo, and native DOCX `XE`/`INDEX` round trips | Entry ranges, custom index types, letter-heading formats, authorities, and locale-specific collation controls remain open | Maintain / P1 fidelity |
@@ -89,7 +89,7 @@ collaboration transport, and AI providers.
 | Content controls and forms | **Partial**: inline plain-text and rich-text controls are editable with aliases, tags, bounded locks, multiline text, appearance/color, and direct-paragraph DOCX `w:sdt` round trips; static controls in note/comment preservation remain separately bounded | Data binding, repeating sections, date/dropdown/picture/form controls, block controls, nested or relationship-bound semantics, placeholders, and active behavior are intentionally limited | P1/P2 |
 | Spelling, grammar, language, translation | **Partial**: native Latin/East Asian/bidi `w:lang` metadata, explicit `w:noProof` authoring and round trips, browser spellcheck, and host actions | No suite-grade proofing dictionaries, grammar engine, or bundled translation service | Host/provider-owned; P2 adapter |
 | Find, navigation, physical thumbnails, long-document review | **Supported** with transferable Worker import, bounded auxiliary-pane virtualization, model-level text/table-row NodeView windows for eligible structurally plain large DOCX files, and model-boundary keyboard navigation | Rich-feature giant DOCX fallback paths still need the same bounded body rendering and broader performance fixtures | P0 |
-| PDF output | **Partial**: live browser pages share editor pagination | Output is currently rasterized; searchable text, tagged output, and vector fidelity remain gaps | P0/P1 |
+| PDF output | **Partial**: live browser pages share editor pagination; Latin/Latin-1 vector text clears under measured runs and paints Helvetica at the same geometry for search/copy; optional host `registerWorkPdfCjkFont` TrueType face enables searchable CJK vector text (fail-soft without it); title/`lang`/heading outline bootstrap | Full PDF/UA structure tree, bundled CJK fonts, and broader vector object fidelity remain gaps | P0/P1 |
 | DOCX no-clobber round trip | **Partial but strong**: safe source-only parts and stable identities are preserved under bounded rules | Unsupported, relationship-bound, ambiguous, active, or changed structures may normalize and must stay diagnosed | P0 continuous work |
 
 ## Spreadsheet comparison
@@ -193,9 +193,40 @@ a phase exits only when its evidence is complete.
   lexical matches across simple paragraphs or headings within one section;
   whole-paragraph records additionally require matching text-only body and
   `w:pPr/w:rPr` metadata while allowing distinct native IDs. Isolated
-  paragraph-break merge/split revisions, mixed content, section-boundary/range
-  moves, tables, rows, cells, complex numbering, and broader move-range
-  generation remain explicit follow-up work.
+  paragraph-break merge/split revisions, richer mixed content (untracked
+  siblings, drawings, hyperlinks), cross-section/table-spanning range
+  moves, complex numbering, and broader move-range generation remain explicit
+  follow-up work. Relationship-free `w:tblPrChange` with a prior `w:jc`
+  and/or `w:tblW` and/or `w:tblInd` and/or `w:tblCellMar` and/or `w:tblLayout`
+  snapshot is reviewable as `table-formatting` with accept/reject, live
+  track-changes for alignment/preferred-width/indent/default-cell-margin/layout-mode
+  edits, and native export. Relationship-free `w:trPrChange` with a prior `w:cantSplit`,
+  `w:tblHeader`, and/or `w:trHeight` snapshot is reviewable as
+  `row-formatting` with accept/reject, live track-changes for
+  cantSplit/repeat-header/row-height edits, and native export.
+  Relationship-free `w:tcPrChange`
+  with a prior `w:vAlign` and/or solid direct-color `w:shd` and/or `w:tcMar`
+  snapshot is reviewable as `cell-formatting` with accept/reject, live
+  track-changes for vertical-align/solid-fill/cell-margin edits, and native
+  export.   Relationship-free
+  `w:sectPrChange` with a prior orientation-only or complete `w:pgSz`
+  (width/height with optional orientation/code), complete seven-edge
+  `w:pgMar`, and/or `w:paperSrc` snapshot is reviewable as `section-formatting`
+  with accept/reject, live track-changes for orientation, page-geometry,
+  page-margin, and paper-source edits, and native export. Equal-width
+  `w:cols` (num/space/sep, no unequal `w:col` children) is also reviewable as
+  `section-formatting` with live column-count edits. Broader relationship-free
+  `w:tblPrChange`, `w:trPrChange`, `w:tcPrChange`, and `w:sectPrChange`
+  records still round-trip as opaque metadata (not yet reviewable).
+  Multi-wrapper text-only whole-paragraph mark bodies that share the mark
+  author and date are admitted, including soft breaks, relationship-free
+  internal hyperlinks, relationship-free bookmarks, and empty/`w:rPr`-only
+  untracked sibling runs. Companion same-section `w:move*Range*`
+  bookmarks around supported text moves (including cross-paragraph sandwich)
+  round-trip with the move; unpaired range markers report
+  `docx.revisions.move-range`. Soft breaks, relationship-free internal
+  hyperlinks, and relationship-free ordinary bookmarks inside move wrappers
+  are also admitted.
 - Treat native all-caps and small-caps as a completed character-effect slice:
   retain one mutually exclusive typed state, semantic source text, standard
   shortcuts, body/header/footer parity, formatting revision and Format Painter
@@ -293,6 +324,9 @@ a phase exits only when its evidence is complete.
   relationship-bound or namespace-spoofed data to a regenerated identity.
 - Move browser document PDF output toward searchable text, vector content, and
   tagged/accessibility structure without creating a second layout model.
+  **Partial**: Latin vector paint + title/`lang`/heading outline bootstrap are
+  in place; optional host `registerWorkPdfCjkFont` TrueType enables searchable
+  CJK vector text; full PDF/UA structure trees and bundled CJK fonts remain open.
 
 Exit criteria: representative Traditional Office/Word fixtures reopen without
 unreported data loss; edited native structures retain identity; malformed

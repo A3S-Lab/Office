@@ -29,6 +29,17 @@ import {
   type DocumentTableProperties,
 } from './work-document-table-geometry';
 import {
+  DOCUMENT_TABLE_FLOAT_OMML_ATTRIBUTE,
+  documentTableFloatOmmlFromElement,
+  encodeDocumentTableFloatOmml,
+} from './work-document-table-float';
+import {
+  DOCUMENT_TABLE_PROPERTY_REVISION_OMML_ATTRIBUTE,
+  documentTablePropertyRevisionOmmlFromElement,
+  encodeDocumentTablePropertyRevisionOmml,
+} from './work-document-table-property-revision';
+import { applyDocumentTableSharedBorderPaint } from './work-document-table-borders';
+import {
   MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
   MIN_DOCUMENT_TABLE_ROW_HEIGHT,
   normalizeDocumentTableDimension,
@@ -143,6 +154,7 @@ class WorkDocumentTableView extends TableView {
       delete this.table.dataset.officeTableImported;
     }
     if (!tableHasExplicitColumnWidths(node)) this.clearStaleColumnWidths();
+    applyDocumentTableSharedBorderPaint(this.table);
   }
 
   private clearStaleColumnWidths(): void {
@@ -182,6 +194,39 @@ export const DocumentTable = Table.extend({
             ? { 'data-office-table-imported': 'true' }
             : {},
       },
+      floatOmml: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          documentTableFloatOmmlFromElement(element),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const omml =
+            typeof attributes.floatOmml === 'string' ? attributes.floatOmml : '';
+          const encoded = encodeDocumentTableFloatOmml(omml);
+          return encoded
+            ? { [DOCUMENT_TABLE_FLOAT_OMML_ATTRIBUTE]: encoded }
+            : {};
+        },
+      },
+      propertyRevisionOmml: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          documentTablePropertyRevisionOmmlFromElement(element),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const omml =
+            typeof attributes.propertyRevisionOmml === 'string'
+              ? attributes.propertyRevisionOmml
+              : '';
+          const encoded = encodeDocumentTablePropertyRevisionOmml(omml);
+          return encoded
+            ? { [DOCUMENT_TABLE_PROPERTY_REVISION_OMML_ATTRIBUTE]: encoded }
+            : {};
+        },
+      },
+      tableChangeKind: tableChangeAttribute('kind', 'data-change-kind'),
+      tableChangeId: tableChangeAttribute('id', 'data-change-id'),
+      tableChangeAuthor: tableChangeAttribute('author', 'data-change-author'),
+      tableChangeDate: tableChangeAttribute('date', 'data-change-date'),
+      tableChangeBefore: tableChangeAttribute('before', 'data-change-before'),
       virtualTableId: {
         default: null,
         parseHTML: (element: HTMLElement) =>
@@ -914,6 +959,7 @@ function setPhysicalRowHeights(
       ...current.attrs,
       rowHeight: height,
       rowHeightRule: height === null ? null : rule,
+      propertyRevisionOmml: null,
     });
   });
 }
@@ -935,6 +981,7 @@ function setPhysicalRowProperties(
       rowHeight: properties.height,
       rowHeightRule: properties.height === null ? null : properties.heightRule,
       cantSplit: properties.cantSplit,
+      propertyRevisionOmml: null,
       ...(properties.repeatHeader === undefined
         ? {}
         : { repeatHeader: properties.repeatHeader }),
@@ -961,6 +1008,7 @@ function setSelectedCellProperties(
       ...current.attrs,
       verticalAlign: properties.verticalAlign,
       margins: properties.margins,
+      propertyRevisionOmml: null,
     });
   }
 }
@@ -986,6 +1034,8 @@ function setTableGeometryAttribute(
     ...table.attrs,
     geometry: normalizeDocumentTableGeometry(geometry),
     layoutMode: null,
+    // Edited table properties invalidate the opaque prior-revision snapshot.
+    propertyRevisionOmml: null,
   });
 }
 
@@ -1255,4 +1305,44 @@ function commonPositiveValue(
 function commonNullableValue<T>(values: readonly (T | null)[]): T | null {
   if (!values.length || values.some((value) => value === null)) return null;
   return values.every((value) => value === values[0]) ? values[0] : null;
+}
+
+function tableChangeAttribute(
+  field: 'kind' | 'id' | 'author' | 'date' | 'before',
+  htmlName:
+    | 'data-change-kind'
+    | 'data-change-id'
+    | 'data-change-author'
+    | 'data-change-date'
+    | 'data-change-before',
+) {
+  const modelName = `tableChange${field[0]?.toUpperCase() ?? ''}${field.slice(1)}`;
+  return {
+    default: field === 'kind' ? null : '',
+    parseHTML: (element: HTMLElement) => {
+      if (
+        element.getAttribute('data-document-change') !== 'true' ||
+        element.getAttribute('data-change-kind') !== 'table-formatting'
+      ) {
+        return field === 'kind' ? null : '';
+      }
+      return field === 'kind'
+        ? 'table-formatting'
+        : (element.getAttribute(htmlName) ?? '');
+    },
+    renderHTML: (attributes: Record<string, unknown>) => {
+      if (attributes.tableChangeKind !== 'table-formatting') return {};
+      if (field === 'kind') {
+        return {
+          'data-document-change': 'true',
+          'data-change-kind': 'table-formatting',
+        };
+      }
+      const value =
+        typeof attributes[modelName] === 'string'
+          ? attributes[modelName].trim()
+          : '';
+      return value ? { [htmlName]: value } : {};
+    },
+  };
 }
