@@ -3,6 +3,12 @@
 </p>
 
 <p align="center">
+  <strong>Language / 语言:</strong>
+  <a href="README.md">English</a> ·
+  <a href="README.zh-CN.md">中文</a>
+</p>
+
+<p align="center">
   <strong>Open-source browser editors and deterministic native automation for real Office files.</strong>
 </p>
 
