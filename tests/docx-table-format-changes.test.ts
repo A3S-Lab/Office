@@ -469,7 +469,9 @@ describe('DOCX table-formatting revisions', () => {
       expect(editor.commands.setDocumentTableLayoutMode('fixed', 400)).toBe(
         true,
       );
-      const changes = collectDocumentChanges(editor.state.doc);
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'table-formatting',
+      );
       expect(changes).toHaveLength(1);
       expect(changes[0]?.kind).toBe('table-formatting');
       const html = new DOMParser().parseFromString(

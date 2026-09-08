@@ -125,6 +125,8 @@ describe('document tables', () => {
     expect(documentTableRowOptions(editor)).toEqual({
       cantSplit: true,
       repeatHeader: true,
+      hidden: false,
+      alignment: undefined,
     });
     expect(editor.getHTML()).toContain('data-office-cant-split="true"');
     expect(editor.getHTML()).toContain('data-office-repeat-header="true"');
@@ -145,6 +147,8 @@ describe('document tables', () => {
     expect(documentTableRowOptions(editor)).toEqual({
       cantSplit: false,
       repeatHeader: false,
+      hidden: false,
+      alignment: undefined,
     });
     expect(editor.getHTML()).toContain('data-office-cant-split="false"');
     expect(editor.getHTML()).toContain('data-office-repeat-header="false"');
