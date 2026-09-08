@@ -452,6 +452,24 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
         return {};
       },
     },
+    hideMark: {
+      default: null,
+      parseHTML: (element: HTMLElement) => {
+        const value = element.dataset.officeCellHideMark;
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return null;
+      },
+      renderHTML: (attributes: Record<string, unknown>) => {
+        if (attributes.hideMark === true) {
+          return { 'data-office-cell-hide-mark': 'true' };
+        }
+        if (attributes.hideMark === false) {
+          return { 'data-office-cell-hide-mark': 'false' };
+        }
+        return {};
+      },
+    },
     propertyRevisionOmml: {
       default: null,
       parseHTML: (element: HTMLElement) =>

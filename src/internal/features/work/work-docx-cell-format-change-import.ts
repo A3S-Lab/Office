@@ -33,6 +33,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'noWrap',
   'textDirection',
   'tcFitText',
+  'hideMark',
 ]);
 const SOLID_SHADING_VALUES = new Set(['clear', 'nil', 'none', '']);
 const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
@@ -48,8 +49,8 @@ export interface SupportedDocxCellFormattingChange {
 /**
  * Relationship-free `w:tcPrChange` whose prior snapshot contains only
  * `w:vAlign`, solid direct-color `w:shd`, `w:tcMar`, `w:tcW`, `w:noWrap`,
- * `w:textDirection`, and/or `w:tcFitText`. Broader cell property sets stay on
- * the opaque OMML path.
+ * `w:textDirection`, `w:tcFitText`, and/or `w:hideMark`. Broader cell
+ * property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxCellFormattingChange(change: Element): boolean {
   return supportedCellFormattingChange(change) !== null;
@@ -127,7 +128,8 @@ function supportedCellFormattingChange(
         child.localName === 'tcW' ||
         child.localName === 'noWrap' ||
         child.localName === 'textDirection' ||
-        child.localName === 'tcFitText'
+        child.localName === 'tcFitText' ||
+        child.localName === 'hideMark'
       ) {
         return false;
       }
@@ -146,6 +148,7 @@ function supportedCellFormattingChange(
     noWrap?: boolean;
     textDirection?: DocumentTableCellTextDirection;
     fitText?: boolean;
+    hideMark?: boolean;
   } = {};
   for (const child of children) {
     if (child.localName === 'vAlign') {
@@ -188,6 +191,10 @@ function supportedCellFormattingChange(
     }
     if (child.localName === 'tcFitText') {
       snapshot.fitText = onOffValue(child);
+      continue;
+    }
+    if (child.localName === 'hideMark') {
+      snapshot.hideMark = onOffValue(child);
     }
   }
   return {

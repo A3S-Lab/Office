@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.82.0 - 2026-09-08
+
+### Writer
+
+- Relationship-free `w:tcPrChange` priors that include `w:hideMark` are now
+  reviewable as `cell-formatting` with accept/reject, live track-changes, and
+  native export (including current-cell `w:hideMark` on DOCX write).
+  Broader cell property sets remain opaque or fail-closed; opaque fixtures now
+  use `cnfStyle` instead of `hideMark`.
+
 ## 0.81.0 - 2026-09-08
 
 ### Writer

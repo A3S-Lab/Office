@@ -21,6 +21,7 @@ export class DocxCellFormattingChangePatchCollector {
   readonly noWrap: boolean[] = [];
   readonly textDirection: Array<string | null> = [];
   readonly fitText: boolean[] = [];
+  readonly hideMark: boolean[] = [];
 
   record(element: HTMLTableCellElement, id: number): void {
     this.noWrap.push(element.dataset.officeCellNoWrap === 'true');
@@ -28,6 +29,7 @@ export class DocxCellFormattingChangePatchCollector {
       element.dataset.officeCellTextDirection?.trim() || null,
     );
     this.fitText.push(element.dataset.officeCellFitText === 'true');
+    this.hideMark.push(element.dataset.officeCellHideMark === 'true');
     if (
       element.dataset.changeKind !== 'cell-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -60,12 +62,14 @@ export async function patchDocxCellFormattingChanges(
   noWrap: readonly boolean[] = [],
   textDirection: readonly (string | null)[] = [],
   fitText: readonly boolean[] = [],
+  hideMark: readonly boolean[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
     !noWrap.some(Boolean) &&
     !textDirection.some(Boolean) &&
-    !fitText.some(Boolean)
+    !fitText.some(Boolean) &&
+    !hideMark.some(Boolean)
   ) {
     return buffer;
   }
@@ -92,6 +96,7 @@ export async function patchDocxCellFormattingChanges(
     const cellNoWrap = noWrap[index] === true;
     const cellTextDirection = textDirection[index] ?? null;
     const cellFitText = fitText[index] === true;
+    const cellHideMark = hideMark[index] === true;
     index += 1;
     if (patch) {
       setCellFormattingChange(document, cell, patch);
@@ -107,6 +112,10 @@ export async function patchDocxCellFormattingChanges(
     }
     if (cellFitText) {
       setCellFitText(document, cell, true);
+      changed = true;
+    }
+    if (cellHideMark) {
+      setCellHideMark(document, cell, true);
       changed = true;
     }
   }
@@ -181,6 +190,26 @@ function setCellFitText(
   }
   if (!fitText) return;
   properties.append(document.createElementNS(WORD_NAMESPACE, 'w:tcFitText'));
+}
+
+function setCellHideMark(
+  document: Document,
+  cell: Element,
+  hideMark: boolean,
+): void {
+  let properties = directChild(cell, 'tcPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+    cell.insertBefore(properties, cell.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'hideMark' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (!hideMark) return;
+  properties.append(document.createElementNS(WORD_NAMESPACE, 'w:hideMark'));
 }
 
 function setCellFormattingChange(
@@ -263,6 +292,13 @@ function setCellFormattingChange(
       fitText.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
     }
     prior.append(fitText);
+  }
+  if (formatting.hideMark !== undefined) {
+    const hideMark = document.createElementNS(WORD_NAMESPACE, 'w:hideMark');
+    if (!formatting.hideMark) {
+      hideMark.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    }
+    prior.append(hideMark);
   }
   change.append(prior);
   properties.append(change);

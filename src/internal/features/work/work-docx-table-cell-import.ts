@@ -60,6 +60,7 @@ export interface ImportedDocxTableCellMarker {
   noWrap?: boolean;
   textDirection?: DocumentTableCellTextDirection;
   fitText?: boolean;
+  hideMark?: boolean;
   propertyRevisionOmml?: string;
   formattingChange?: SupportedDocxCellFormattingChange;
 }
@@ -138,6 +139,10 @@ export function markDocxTableCells(
       ? directChild(properties, 'tcFitText')
       : undefined;
     const fitText = fitTextElement ? onOffValue(fitTextElement) : undefined;
+    const hideMarkElement = properties
+      ? directChild(properties, 'hideMark')
+      : undefined;
+    const hideMark = hideMarkElement ? onOffValue(hideMarkElement) : undefined;
     const formattingChange =
       supportedDocxCellFormattingChangeFromProperties(properties);
     const propertyRevisionOmml = formattingChange
@@ -151,6 +156,7 @@ export function markDocxTableCells(
       noWrap === undefined &&
       textDirection === undefined &&
       fitText === undefined &&
+      hideMark === undefined &&
       !propertyRevisionOmml &&
       !formattingChange
     ) {
@@ -170,6 +176,7 @@ export function markDocxTableCells(
       ...(noWrap !== undefined ? { noWrap } : {}),
       ...(textDirection !== undefined ? { textDirection } : {}),
       ...(fitText !== undefined ? { fitText } : {}),
+      ...(hideMark !== undefined ? { hideMark } : {}),
       ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
       ...(formattingChange ? { formattingChange } : {}),
     });
@@ -252,6 +259,9 @@ function applyCellFormat(
   }
   if (format.fitText !== undefined) {
     cell.dataset.officeCellFitText = String(format.fitText);
+  }
+  if (format.hideMark !== undefined) {
+    cell.dataset.officeCellHideMark = String(format.hideMark);
   }
   applyDocumentCellPropertyRevisionOmmlToElement(
     cell,

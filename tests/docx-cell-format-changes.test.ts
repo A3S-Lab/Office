@@ -415,6 +415,7 @@ describe('DOCX cell-formatting revisions', () => {
         noWrap: false,
         textDirection: 'lrTb',
         fitText: false,
+        hideMark: false,
       });
       expect(cell?.getAttribute('colwidth')).toBe('192');
     } finally {
@@ -747,6 +748,113 @@ describe('DOCX cell-formatting revisions', () => {
         },
       );
       expect(cell?.dataset.officeCellFitText).toBe('true');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('imports hideMark-only w:tcPrChange as a reviewable cell-formatting change', async () => {
+    const source = await cellDocxWithHideMarkChange({
+      prior: true,
+      current: false,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-formatting-hide-mark.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const cell = html.body.querySelector('td');
+    expect(cell?.dataset.changeKind).toBe('cell-formatting');
+    expect(cell?.dataset.officeCellPropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentCellFormatting(cell?.dataset.changeBefore)).toEqual({
+      hideMark: true,
+    });
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('cell-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const rejected = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rejectedCell = rejected.body.querySelector('td');
+      expect(rejectedCell?.dataset.changeKind).toBeUndefined();
+      expect(rejectedCell?.dataset.officeCellHideMark).toBe('true');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending hideMark cell-formatting change round-trips as native w:tcPrChange', async () => {
+    const source = await cellDocxWithHideMarkChange({ prior: true });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-formatting-hide-mark-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await xmlEntry(
+      await JSZip.loadAsync(
+        await (await createArtifactBlob(imported)).arrayBuffer(),
+      ),
+      'word/document.xml',
+    );
+    const change = directChild(
+      directChild(descendants(exported, 'tc')[0], 'tcPr'),
+      'tcPrChange',
+    );
+    expect(change).toBeTruthy();
+    expect(directChild(directChild(change!, 'tcPr'), 'hideMark')).toBeTruthy();
+  });
+
+  test('live cell hideMark edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content:
+        '<table><tbody><tr><td data-office-cell-hide-mark="false"><p>Cell</p></td></tr></tbody></table>',
+    });
+    try {
+      let cellPos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'tableCell' && cellPos === null) {
+          cellPos = position;
+        }
+      });
+      expect(cellPos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(cellPos!, undefined, {
+          ...editor.state.doc.nodeAt(cellPos!)!.attrs,
+          hideMark: true,
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'cell-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const cell = html.body.querySelector('td');
+      expect(cell?.dataset.changeKind).toBe('cell-formatting');
+      expect(parseDocumentCellFormatting(cell?.dataset.changeBefore)).toMatchObject(
+        {
+          hideMark: false,
+        },
+      );
+      expect(cell?.dataset.officeCellHideMark).toBe('true');
     } finally {
       editor.destroy();
     }
@@ -1105,6 +1213,58 @@ async function cellDocxWithFitTextChange(options: {
     const fitText = document.createElementNS(WORD_NAMESPACE, 'w:tcFitText');
     fitText.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
     prior.append(fitText);
+  }
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function cellDocxWithHideMarkChange(options: {
+  prior: boolean;
+  current?: boolean;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const cell = descendants(document, 'tc')[0];
+  const properties =
+    directChild(cell, 'tcPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+      cell.insertBefore(created, cell.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'hideMark' || child.localName === 'tcPrChange',
+  )) {
+    existing.remove();
+  }
+  const currentHideMark = options.current ?? false;
+  if (currentHideMark) {
+    properties.append(document.createElementNS(WORD_NAMESPACE, 'w:hideMark'));
+  }
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:tcPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '45');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+  if (options.prior) {
+    prior.append(document.createElementNS(WORD_NAMESPACE, 'w:hideMark'));
+  } else {
+    const hideMark = document.createElementNS(WORD_NAMESPACE, 'w:hideMark');
+    hideMark.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    prior.append(hideMark);
   }
   change.append(prior);
   properties.append(change);
