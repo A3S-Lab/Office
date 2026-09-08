@@ -370,13 +370,10 @@ Codex 编辑器操作可在所有五个表面上键入和重现。
 
 ## 当前版本
 
-版本 `0.80.0` 让单元格文字方向属性修订可审阅：
+版本 `0.81.0` 让单元格适应文字（fit text）属性修订可审阅：
 
-- **单元格文字方向** — 无关系的 `textDirection` 先验（`lrTb` / `tbRl` /
-  `btLr` / `lrTbV` / `tbRlV` / `tbLrV`）成为 `cell-formatting`：接受/拒绝、
-  实时修订跟踪、原生 DOCX 导出（含当前单元格写入）。
-- **边界** — 更广的 `tcPr` / `trPr` 形态仍为不透明元数据或失败闭合；不透明
-  单元格夹具已迁至 `tcFitText`。
+- **单元格适应文字** — 无关系的 `tcFitText` 先验成为 `cell-formatting`，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出（含当前单元格写出）。
+- **边界** — 更广的 `tcPr` / `trPr` 形态仍为不透明元数据或失败闭合；不透明单元格夹具已迁至 `hideMark`。
 
 更早的版本请查看产品向
 [更新日志](https://a3s-lab.github.io/Office/docs/changelog.html) 时间线，以及完整工程

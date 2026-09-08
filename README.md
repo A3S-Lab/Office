@@ -371,14 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.80.0` makes cell text-direction property revisions reviewable:
+Version `0.81.0` makes cell fit-text property revisions reviewable:
 
-- **Cell text direction** — relationship-free `textDirection` priors
-  (`lrTb` / `tbRl` / `btLr` / `lrTbV` / `tbRlV` / `tbLrV`) become
+- **Cell fit text** — relationship-free `tcFitText` priors become
   `cell-formatting` with accept/reject, live track-changes, and native DOCX
   export (including current-cell write).
 - **Boundary** — broader `tcPr` / `trPr` shapes stay opaque metadata or
-  fail-closed; opaque cell fixtures moved to `tcFitText`.
+  fail-closed; opaque cell fixtures moved to `hideMark`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

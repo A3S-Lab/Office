@@ -414,6 +414,7 @@ describe('DOCX cell-formatting revisions', () => {
         width: { type: 'pixels', value: 96 },
         noWrap: false,
         textDirection: 'lrTb',
+        fitText: false,
       });
       expect(cell?.getAttribute('colwidth')).toBe('192');
     } finally {
@@ -639,6 +640,113 @@ describe('DOCX cell-formatting revisions', () => {
         },
       );
       expect(cell?.dataset.officeCellTextDirection).toBe('tbRl');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('imports tcFitText-only w:tcPrChange as a reviewable cell-formatting change', async () => {
+    const source = await cellDocxWithFitTextChange({
+      prior: true,
+      current: false,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-formatting-fit-text.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const cell = html.body.querySelector('td');
+    expect(cell?.dataset.changeKind).toBe('cell-formatting');
+    expect(cell?.dataset.officeCellPropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentCellFormatting(cell?.dataset.changeBefore)).toEqual({
+      fitText: true,
+    });
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('cell-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const rejected = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rejectedCell = rejected.body.querySelector('td');
+      expect(rejectedCell?.dataset.changeKind).toBeUndefined();
+      expect(rejectedCell?.dataset.officeCellFitText).toBe('true');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending tcFitText cell-formatting change round-trips as native w:tcPrChange', async () => {
+    const source = await cellDocxWithFitTextChange({ prior: true });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-formatting-fit-text-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await xmlEntry(
+      await JSZip.loadAsync(
+        await (await createArtifactBlob(imported)).arrayBuffer(),
+      ),
+      'word/document.xml',
+    );
+    const change = directChild(
+      directChild(descendants(exported, 'tc')[0], 'tcPr'),
+      'tcPrChange',
+    );
+    expect(change).toBeTruthy();
+    expect(directChild(directChild(change!, 'tcPr'), 'tcFitText')).toBeTruthy();
+  });
+
+  test('live cell fitText edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content:
+        '<table><tbody><tr><td data-office-cell-fit-text="false"><p>Cell</p></td></tr></tbody></table>',
+    });
+    try {
+      let cellPos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'tableCell' && cellPos === null) {
+          cellPos = position;
+        }
+      });
+      expect(cellPos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(cellPos!, undefined, {
+          ...editor.state.doc.nodeAt(cellPos!)!.attrs,
+          fitText: true,
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'cell-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const cell = html.body.querySelector('td');
+      expect(cell?.dataset.changeKind).toBe('cell-formatting');
+      expect(parseDocumentCellFormatting(cell?.dataset.changeBefore)).toMatchObject(
+        {
+          fitText: false,
+        },
+      );
+      expect(cell?.dataset.officeCellFitText).toBe('true');
     } finally {
       editor.destroy();
     }
@@ -946,6 +1054,58 @@ async function cellDocxWithTextDirectionChange(options: {
   );
   priorDirection.setAttributeNS(WORD_NAMESPACE, 'w:val', options.prior);
   prior.append(priorDirection);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function cellDocxWithFitTextChange(options: {
+  prior: boolean;
+  current?: boolean;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const cell = descendants(document, 'tc')[0];
+  const properties =
+    directChild(cell, 'tcPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+      cell.insertBefore(created, cell.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tcFitText' || child.localName === 'tcPrChange',
+  )) {
+    existing.remove();
+  }
+  const currentFitText = options.current ?? false;
+  if (currentFitText) {
+    properties.append(document.createElementNS(WORD_NAMESPACE, 'w:tcFitText'));
+  }
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:tcPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '44');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+  if (options.prior) {
+    prior.append(document.createElementNS(WORD_NAMESPACE, 'w:tcFitText'));
+  } else {
+    const fitText = document.createElementNS(WORD_NAMESPACE, 'w:tcFitText');
+    fitText.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    prior.append(fitText);
+  }
   change.append(prior);
   properties.append(change);
   archive.file(

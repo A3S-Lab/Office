@@ -25,7 +25,7 @@ interface DocumentCellFormattingTrackingOptions {
 
 /**
  * When track-changes is on, cell verticalAlign / solid fill / margin /
- * preferred-width / noWrap / textDirection edits become reviewable
+ * preferred-width / noWrap / textDirection / fitText edits become reviewable
  * `cell-formatting` revisions.
  */
 export function trackDocumentCellFormattingTransaction(
@@ -72,6 +72,7 @@ function cellFormatting(node: ProseMirrorNode): {
   width?: DocumentTablePreferredWidth;
   noWrap?: boolean;
   textDirection?: DocumentTableCellTextDirection;
+  fitText?: boolean;
 } | null {
   const verticalAlign =
     normalizeDocumentTableVerticalAlign(node.attrs.verticalAlign) ?? 'top';
@@ -87,6 +88,8 @@ function cellFormatting(node: ProseMirrorNode): {
     typeof node.attrs.noWrap === 'boolean' ? node.attrs.noWrap : false;
   const textDirection =
     normalizeDocumentTableCellTextDirection(node.attrs.textDirection) ?? 'lrTb';
+  const fitText =
+    typeof node.attrs.fitText === 'boolean' ? node.attrs.fitText : false;
   return normalizeDocumentCellFormattingSnapshot({
     verticalAlign,
     ...(fill ? { fill } : {}),
@@ -94,6 +97,7 @@ function cellFormatting(node: ProseMirrorNode): {
     ...(width ? { width } : {}),
     noWrap,
     textDirection,
+    fitText,
   });
 }
 
@@ -111,6 +115,7 @@ function onlyReviewableCellFormattingChanged(
     'columnWidthPercentages',
     'noWrap',
     'textDirection',
+    'fitText',
     'cellChangeKind',
     'cellChangeId',
     'cellChangeAuthor',

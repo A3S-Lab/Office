@@ -20,12 +20,14 @@ export class DocxCellFormattingChangePatchCollector {
   readonly patches: Array<DocxCellFormattingChangePatch | null> = [];
   readonly noWrap: boolean[] = [];
   readonly textDirection: Array<string | null> = [];
+  readonly fitText: boolean[] = [];
 
   record(element: HTMLTableCellElement, id: number): void {
     this.noWrap.push(element.dataset.officeCellNoWrap === 'true');
     this.textDirection.push(
       element.dataset.officeCellTextDirection?.trim() || null,
     );
+    this.fitText.push(element.dataset.officeCellFitText === 'true');
     if (
       element.dataset.changeKind !== 'cell-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -57,11 +59,13 @@ export async function patchDocxCellFormattingChanges(
   patches: readonly (DocxCellFormattingChangePatch | null)[],
   noWrap: readonly boolean[] = [],
   textDirection: readonly (string | null)[] = [],
+  fitText: readonly boolean[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
     !noWrap.some(Boolean) &&
-    !textDirection.some(Boolean)
+    !textDirection.some(Boolean) &&
+    !fitText.some(Boolean)
   ) {
     return buffer;
   }
@@ -87,6 +91,7 @@ export async function patchDocxCellFormattingChanges(
     const patch = patches[index] ?? null;
     const cellNoWrap = noWrap[index] === true;
     const cellTextDirection = textDirection[index] ?? null;
+    const cellFitText = fitText[index] === true;
     index += 1;
     if (patch) {
       setCellFormattingChange(document, cell, patch);
@@ -98,6 +103,10 @@ export async function patchDocxCellFormattingChanges(
     }
     if (cellTextDirection) {
       setCellTextDirection(document, cell, cellTextDirection);
+      changed = true;
+    }
+    if (cellFitText) {
+      setCellFitText(document, cell, true);
       changed = true;
     }
   }
@@ -152,6 +161,26 @@ function setCellTextDirection(
   const element = document.createElementNS(WORD_NAMESPACE, 'w:textDirection');
   element.setAttributeNS(WORD_NAMESPACE, 'w:val', textDirection);
   properties.append(element);
+}
+
+function setCellFitText(
+  document: Document,
+  cell: Element,
+  fitText: boolean,
+): void {
+  let properties = directChild(cell, 'tcPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+    cell.insertBefore(properties, cell.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tcFitText' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (!fitText) return;
+  properties.append(document.createElementNS(WORD_NAMESPACE, 'w:tcFitText'));
 }
 
 function setCellFormattingChange(
@@ -227,6 +256,13 @@ function setCellFormattingChange(
       formatting.textDirection,
     );
     prior.append(textDirection);
+  }
+  if (formatting.fitText !== undefined) {
+    const fitText = document.createElementNS(WORD_NAMESPACE, 'w:tcFitText');
+    if (!formatting.fitText) {
+      fitText.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    }
+    prior.append(fitText);
   }
   change.append(prior);
   properties.append(change);

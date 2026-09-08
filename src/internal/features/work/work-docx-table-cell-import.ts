@@ -59,6 +59,7 @@ export interface ImportedDocxTableCellMarker {
   margins?: DocumentTableCellMarginOverrides;
   noWrap?: boolean;
   textDirection?: DocumentTableCellTextDirection;
+  fitText?: boolean;
   propertyRevisionOmml?: string;
   formattingChange?: SupportedDocxCellFormattingChange;
 }
@@ -133,6 +134,10 @@ export function markDocxTableCells(
           attribute(textDirectionElement, 'val'),
         ) ?? undefined
       : undefined;
+    const fitTextElement = properties
+      ? directChild(properties, 'tcFitText')
+      : undefined;
+    const fitText = fitTextElement ? onOffValue(fitTextElement) : undefined;
     const formattingChange =
       supportedDocxCellFormattingChangeFromProperties(properties);
     const propertyRevisionOmml = formattingChange
@@ -145,6 +150,7 @@ export function markDocxTableCells(
       !margins &&
       noWrap === undefined &&
       textDirection === undefined &&
+      fitText === undefined &&
       !propertyRevisionOmml &&
       !formattingChange
     ) {
@@ -163,6 +169,7 @@ export function markDocxTableCells(
       ...(margins ? { margins } : {}),
       ...(noWrap !== undefined ? { noWrap } : {}),
       ...(textDirection !== undefined ? { textDirection } : {}),
+      ...(fitText !== undefined ? { fitText } : {}),
       ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
       ...(formattingChange ? { formattingChange } : {}),
     });
@@ -242,6 +249,9 @@ function applyCellFormat(
   }
   if (format.textDirection) {
     cell.dataset.officeCellTextDirection = format.textDirection;
+  }
+  if (format.fitText !== undefined) {
+    cell.dataset.officeCellFitText = String(format.fitText);
   }
   applyDocumentCellPropertyRevisionOmmlToElement(
     cell,

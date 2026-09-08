@@ -283,13 +283,14 @@ describe('DOCX table property-revision preservation', () => {
     vAlign.setAttributeNS(WORD_NAMESPACE, 'w:val', 'center');
     prior.append(vAlign);
     // Multi-property prior outside the reviewable
-    // vAlign/solid-shd/tcMar/tcW/noWrap/textDirection subset (tcFitText stays opaque).
+    // vAlign/solid-shd/tcMar/tcW/noWrap/textDirection/tcFitText subset
+    // (hideMark stays opaque).
     const shading = document.createElementNS(WORD_NAMESPACE, 'w:shd');
     shading.setAttributeNS(WORD_NAMESPACE, 'w:val', 'clear');
     shading.setAttributeNS(WORD_NAMESPACE, 'w:fill', 'FFFF00');
     prior.append(shading);
-    const fitText = document.createElementNS(WORD_NAMESPACE, 'w:tcFitText');
-    prior.append(fitText);
+    const hideMark = document.createElementNS(WORD_NAMESPACE, 'w:hideMark');
+    prior.append(hideMark);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -346,7 +347,7 @@ describe('DOCX table property-revision preservation', () => {
         priorAlign?.getAttribute('val'),
     ).toBe('center');
     expect(directChild(priorProperties, 'shd')).toBeTruthy();
-    expect(directChild(priorProperties, 'tcFitText')).toBeTruthy();
+    expect(directChild(priorProperties, 'hideMark')).toBeTruthy();
   });
 });
 

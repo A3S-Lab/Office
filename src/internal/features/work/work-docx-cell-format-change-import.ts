@@ -32,6 +32,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tcW',
   'noWrap',
   'textDirection',
+  'tcFitText',
 ]);
 const SOLID_SHADING_VALUES = new Set(['clear', 'nil', 'none', '']);
 const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
@@ -47,8 +48,8 @@ export interface SupportedDocxCellFormattingChange {
 /**
  * Relationship-free `w:tcPrChange` whose prior snapshot contains only
  * `w:vAlign`, solid direct-color `w:shd`, `w:tcMar`, `w:tcW`, `w:noWrap`,
- * and/or `w:textDirection`. Broader cell property sets stay on the opaque OMML
- * path.
+ * `w:textDirection`, and/or `w:tcFitText`. Broader cell property sets stay on
+ * the opaque OMML path.
  */
 export function isSupportedDocxCellFormattingChange(change: Element): boolean {
   return supportedCellFormattingChange(change) !== null;
@@ -125,7 +126,8 @@ function supportedCellFormattingChange(
         child.localName === 'tcMar' ||
         child.localName === 'tcW' ||
         child.localName === 'noWrap' ||
-        child.localName === 'textDirection'
+        child.localName === 'textDirection' ||
+        child.localName === 'tcFitText'
       ) {
         return false;
       }
@@ -143,6 +145,7 @@ function supportedCellFormattingChange(
     width?: DocumentTablePreferredWidth;
     noWrap?: boolean;
     textDirection?: DocumentTableCellTextDirection;
+    fitText?: boolean;
   } = {};
   for (const child of children) {
     if (child.localName === 'vAlign') {
@@ -181,6 +184,10 @@ function supportedCellFormattingChange(
       );
       if (!textDirection) return null;
       snapshot.textDirection = textDirection;
+      continue;
+    }
+    if (child.localName === 'tcFitText') {
+      snapshot.fitText = onOffValue(child);
     }
   }
   return {

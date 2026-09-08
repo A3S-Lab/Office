@@ -434,6 +434,24 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
           : {};
       },
     },
+    fitText: {
+      default: null,
+      parseHTML: (element: HTMLElement) => {
+        const value = element.dataset.officeCellFitText;
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return null;
+      },
+      renderHTML: (attributes: Record<string, unknown>) => {
+        if (attributes.fitText === true) {
+          return { 'data-office-cell-fit-text': 'true' };
+        }
+        if (attributes.fitText === false) {
+          return { 'data-office-cell-fit-text': 'false' };
+        }
+        return {};
+      },
+    },
     propertyRevisionOmml: {
       default: null,
       parseHTML: (element: HTMLElement) =>

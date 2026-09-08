@@ -26,8 +26,8 @@ export { normalizeDocumentTableCellTextDirection } from './work-document-table-c
 
 /**
  * Prior snapshot for reviewable cell-property revisions.
- * At least one of verticalAlign, fill, margins, width, noWrap, or textDirection
- * must be present.
+ * At least one of verticalAlign, fill, margins, width, noWrap, textDirection,
+ * or fitText must be present.
  */
 export interface DocumentCellFormattingSnapshot {
   verticalAlign?: DocumentTableVerticalAlign;
@@ -36,6 +36,7 @@ export interface DocumentCellFormattingSnapshot {
   width?: DocumentTablePreferredWidth;
   noWrap?: boolean;
   textDirection?: DocumentTableCellTextDirection;
+  fitText?: boolean;
 }
 
 const MAX_CELL_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -54,12 +55,13 @@ export function serializeDocumentCellFormatting(
     width?: unknown;
     noWrap?: unknown;
     textDirection?: unknown;
+    fitText?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentCellFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, or textDirection.',
+      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, textDirection, or fitText.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -95,7 +97,8 @@ export function parseDocumentCellFormatting(
         key !== 'margins' &&
         key !== 'width' &&
         key !== 'noWrap' &&
-        key !== 'textDirection',
+        key !== 'textDirection' &&
+        key !== 'fitText',
     )
   ) {
     return null;
@@ -113,6 +116,7 @@ export function normalizeDocumentCellFormattingSnapshot(
     width?: unknown;
     noWrap?: unknown;
     textDirection?: unknown;
+    fitText?: unknown;
   },
 ): DocumentCellFormattingSnapshot | null {
   const snapshot: DocumentCellFormattingSnapshot = {};
@@ -155,12 +159,17 @@ export function normalizeDocumentCellFormattingSnapshot(
     if (!textDirection) return null;
     snapshot.textDirection = textDirection;
   }
+  if ('fitText' in attributes && attributes.fitText !== undefined) {
+    if (typeof attributes.fitText !== 'boolean') return null;
+    snapshot.fitText = attributes.fitText;
+  }
   return snapshot.verticalAlign ||
     snapshot.fill ||
     snapshot.margins ||
     snapshot.width ||
     snapshot.noWrap !== undefined ||
-    snapshot.textDirection !== undefined
+    snapshot.textDirection !== undefined ||
+    snapshot.fitText !== undefined
     ? snapshot
     : null;
 }
@@ -198,6 +207,9 @@ export function restoredDocumentCellAttributes(
     ...(formatting.noWrap !== undefined ? { noWrap: formatting.noWrap } : {}),
     ...(formatting.textDirection !== undefined
       ? { textDirection: formatting.textDirection }
+      : {}),
+    ...(formatting.fitText !== undefined
+      ? { fitText: formatting.fitText }
       : {}),
   });
 }
@@ -280,6 +292,7 @@ function orderedSnapshot(
   if (snapshot.textDirection !== undefined) {
     ordered.textDirection = snapshot.textDirection;
   }
+  if (snapshot.fitText !== undefined) ordered.fitText = snapshot.fitText;
   return ordered;
 }
 
