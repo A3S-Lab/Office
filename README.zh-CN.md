@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <a href="https://a3s-lab.github.io/Office/playground/"><strong>打开游乐场</strong></a>
+  <a href="https://a3s-lab.github.io/Office/playground/"><strong>打开Playground</strong></a>
   ·
   <a href="https://a3s-lab.github.io/Office/docs/">阅读文档</a>
   ·
@@ -58,7 +58,7 @@ A3S Office 是一个开源 Office 引擎，供团队将编辑构建为
 ## 证据，而非承诺
 
 这些是与真实情况的视觉回归基线
-[游乐场](https://a3s-lab.github.io/Office/playground/)，不是概念图。
+[Playground](https://a3s-lab.github.io/Office/playground/)，不是概念图。
 
 <p align="center">
   <a href="./visual-tests/__snapshots__/linux/desktop-1280/document.png">
@@ -170,7 +170,7 @@ A3S Office 将这些问题分开，同时通过一个解决方案将它们暴露
 ### 尝试完整的产品
 
 最快的第一次成功是
-[现场游乐场](https://a3s-lab.github.io/Office/playground/)。它暴露了
+[现场Playground](https://a3s-lab.github.io/Office/playground/)。它暴露了
 普通文档模板、最近功能、文件导入和每个编辑器
 无需本地安装。
 
@@ -275,7 +275,7 @@ const output = await createArtifactBlob(artifact);
 
 每个编辑器都通过以下方式公开相同的传输中立协作边界
 Yjs/Yrs 内容和意识。浏览器用户、本机副本、CLI 会话、
-MCP 客户端和 A3S 代码可以参与同一主机拥有的文档。
+MCP 客户端和 A3S Code可以参与同一主机拥有的文档。
 
 A3S Office 提供特定于格式的绑定、本地撤消、验证存在、
 远程选择或位置、评论、建议和本地冲突
@@ -433,7 +433,7 @@ A3S测试操作员：
   奇偶校验、键盘快捷键和撤消语义。
 - A3S Test 1.0.1 验证了所有 60 个 ACL 文件；四个电子表格视觉案例通过
   在桌面和紧凑布局，以及实时超链接会话恢复网格
-  焦点没有页面错误或控制台消息。生产游乐场
+  焦点没有页面错误或控制台消息。生产Playground
   shell 还提供其共享徽标和网站图标资产。
 
 版本`0.70.0`推广电子表格手机查找和工作表重命名
@@ -911,7 +911,7 @@ WPS 引用的形状几何体并关闭导入到编辑器模型循环：
   合并，并在具有 Blob 级别撤消/重做的专用 Worker 中拆分。
 
 浏览以产品为中心的【最新动态](https://a3s-lab.github.io/Office/docs/changelog.html)
-页面或详尽的工程[变更日志](./CHANGELOG.md)。游乐场
+页面或详尽的工程[变更日志](./CHANGELOG.md)。Playground
 从带有版本标签的模板网格公开这些工作流程。
 
 ## 能力和边界
@@ -1013,7 +1013,7 @@ GitHub Actions 不需要 A3S 测试。参见
 
 ## 文档
 
-- [现场游乐场](https://a3s-lab.github.io/Office/playground/)
+- [现场Playground](https://a3s-lab.github.io/Office/playground/)
 - [文档中心](https://a3s-lab.github.io/Office/docs/)
 - [新增内容](https://a3s-lab.github.io/Office/docs/changelog.html)
 - [React、Vue、Web 组件和核心 API](https://a3s-lab.github.io/Office/docs/components/)
