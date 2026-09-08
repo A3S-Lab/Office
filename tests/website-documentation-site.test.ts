@@ -760,7 +760,7 @@ test('publishes the WPS connector-kind A3S Test matrix in the 0.57.0 release sto
 
   for (const document of [latestEnglish, latestChinese]) {
     expect(document).toContain('A3S Test');
-    expect(document).toContain('0.79.0');
+    expect(document).toContain('0.80.0');
   }
   for (const document of [frozenEnglish, frozenChinese]) {
     expect(document).toContain('A3S Test');
