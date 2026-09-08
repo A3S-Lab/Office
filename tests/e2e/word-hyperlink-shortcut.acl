@@ -1,0 +1,92 @@
+suite "office-word-hyperlink-shortcut" {
+    version = 1
+
+    scenario "open-writer-link-dialog-with-wps-ctrl-k" {
+        name = "Open the Writer hyperlink dialog with WPS Ctrl+K"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        expect "link-shortcut-described" {
+            visible = css(".document-toolbar button[aria-label='添加链接'][aria-keyshortcuts='Control+K Meta+K']")
+        }
+
+        click "select-paragraph" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        press "move-to-paragraph-start" {
+            key = "Home"
+        }
+
+        press "select-paragraph-line" {
+            key = "Shift+End"
+        }
+
+        press "open-link-dialog" {
+            key = "Control+k"
+        }
+
+        wait "link-dialog-open" {
+            visible = css(".ds-dialog.work-office-dialog[role='dialog']")
+        }
+
+        expect "link-dialog-title" {
+            visible = css(".ds-dialog.work-office-dialog[role='dialog'] h2")
+        }
+
+        expect "link-field-focused" {
+            visible = css(".ds-dialog.work-office-dialog[role='dialog'] input[aria-label='链接地址']:focus")
+        }
+
+        fill "enter-link-url" {
+            target = css(".ds-dialog.work-office-dialog[role='dialog'] input[aria-label='链接地址']")
+            value = "https://a3s.dev/office"
+        }
+
+        click "confirm-link" {
+            target = css(".ds-dialog.work-office-dialog[role='dialog'] .ds-button.primary")
+        }
+
+        wait "link-applied" {
+            visible = css(".work-document-editable .ProseMirror a[href='https://a3s.dev/office']")
+        }
+
+        accessibility "word-hyperlink-shortcut-accessibility" {
+            path = "evidence/word-hyperlink-shortcut-accessibility.json"
+        }
+
+        console "word-hyperlink-shortcut-console" {
+            path = "diagnostics/word-hyperlink-shortcut-console.json"
+        }
+
+        page_errors "word-hyperlink-shortcut-page-errors" {
+            path = "diagnostics/word-hyperlink-shortcut-page-errors.json"
+        }
+    }
+}

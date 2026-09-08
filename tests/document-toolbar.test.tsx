@@ -971,6 +971,9 @@ function toolbar(
         calls.fieldCodes += 1;
       }}
       onToggleSelectedFieldCodes={() => false}
+      onUnlinkFields={() => false}
+      onLockFields={() => false}
+      onUnlockFields={() => false}
       onToggleHiddenText={() => {
         calls.hiddenText += 1;
       }}

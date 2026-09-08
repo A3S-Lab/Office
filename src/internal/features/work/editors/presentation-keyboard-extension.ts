@@ -116,12 +116,25 @@ export function createPresentationKeyboardExtension(): OfficeEditorExtension<
           can.pasteSelection,
           commands.pasteSelection,
         ),
-      'Mod-d': ({ can, commands }, event) =>
-        runPresentationSelectionShortcut(
-          event,
-          can.duplicateSelection,
-          commands.duplicateSelection,
-        ),
+      'Mod-d': ({ can, commands, context }, event) => {
+        if (
+          presentationShortcutBlocked(event) ||
+          isPresentationTextEditingTarget(event.target)
+        ) {
+          return false;
+        }
+        // WPS/PowerPoint: Ctrl+D duplicates selected objects; otherwise the
+        // current slide (thumbnail / empty canvas selection).
+        if (
+          context.keyboard.selectedElementCount > 0 &&
+          can.duplicateSelection()
+        ) {
+          return commands.duplicateSelection();
+        }
+        if (!can.duplicateSlide()) return false;
+        commands.duplicateSlide();
+        return true;
+      },
       ArrowLeft: ({ can, commands, context }, event) =>
         runPresentationNudgeShortcut(event, context, can, commands, 1),
       ArrowRight: ({ can, commands, context }, event) =>

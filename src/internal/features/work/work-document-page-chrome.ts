@@ -467,11 +467,12 @@ function sanitizeAttributes(element: Element, tag: string) {
     if (attribute.name.toLowerCase().startsWith('on'))
       element.removeAttribute(attribute.name);
   }
-  const textAlign = ['left', 'center', 'right', 'justify'].includes(
-    element.style.textAlign,
-  )
-    ? element.style.textAlign
-    : '';
+  const textAlign =
+    element.getAttribute('data-office-text-align') === 'distribute'
+      ? 'distribute'
+      : ['left', 'center', 'right', 'justify'].includes(element.style.textAlign)
+        ? element.style.textAlign
+        : '';
   const color = element.style.color;
   const scriptFonts =
     tag === 'span' ? documentScriptFontsFromElement(element) : null;
@@ -601,7 +602,11 @@ function sanitizeAttributes(element: Element, tag: string) {
   element.removeAttribute(DOCUMENT_SCRIPT_FONTS_ATTRIBUTE);
   element.removeAttribute(DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE);
   const styles = [
-    textAlign ? `text-align: ${textAlign}` : '',
+    textAlign === 'distribute'
+      ? 'text-align: justify; text-align-last: justify'
+      : textAlign
+        ? `text-align: ${textAlign}`
+        : '',
     color ? `color: ${color}` : '',
     fontFamily ? `font-family: ${fontFamily}` : '',
     fontSize ? `font-size: ${fontSize}` : '',
@@ -621,6 +626,11 @@ function sanitizeAttributes(element: Element, tag: string) {
     shadingAttributes.style ?? '',
   ].filter(Boolean);
   if (styles.length) element.setAttribute('style', styles.join('; '));
+  if (textAlign === 'distribute') {
+    element.setAttribute('data-office-text-align', 'distribute');
+  } else {
+    element.removeAttribute('data-office-text-align');
+  }
 
   if (tag === 'a') {
     const href = element.getAttribute('href')?.trim() ?? '';

@@ -8,7 +8,7 @@ const documentParagraphStyles = [
     value: 'paragraph',
     label: '正文',
     level: null,
-    shortcut: undefined,
+    shortcut: getDocumentCommandDefinition('normalStyle').shortcut,
   },
   {
     value: 'h1',
@@ -29,6 +29,11 @@ const documentParagraphStyles = [
     shortcut: getDocumentCommandDefinition('heading3').shortcut,
   },
 ] as const;
+
+const documentParagraphStyleAriaKeyShortcuts = documentParagraphStyles
+  .map((style) => style.shortcut?.aria)
+  .filter((value): value is string => Boolean(value))
+  .join(' ');
 
 type DocumentParagraphStyle = (typeof documentParagraphStyles)[number];
 type DocumentParagraphStyleValue = DocumentParagraphStyle['value'];
@@ -105,6 +110,7 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
       </div>
       <OfficeSelect
         ariaLabel="段落样式"
+        ariaKeyShortcuts={documentParagraphStyleAriaKeyShortcuts}
         className="work-document-style-select"
         value={activeStyle}
         options={documentParagraphStyles.map((style) => ({

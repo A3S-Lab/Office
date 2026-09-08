@@ -28,6 +28,7 @@ test('Writer keeps WPS shortcuts discoverable and keyboard reachable', async ({
   const textCaseTrigger = textRibbon.getByRole('button', {
     name: '大小写效果',
   });
+  await expect(textCaseTrigger).toHaveAttribute('aria-keyshortcuts', 'Shift+F3');
   await textCaseTrigger.click();
   const textCaseMenu = page.getByRole('menu', { name: '大小写效果' });
   await expect(textCaseMenu).toBeVisible();

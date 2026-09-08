@@ -9,6 +9,13 @@
   white-space: nowrap;
 }
 
+.work-document-field-locked {
+  border-bottom-style: solid;
+  border-bottom-color: #7a8699;
+  background: color-mix(in srgb, #e8ecf2 70%, transparent);
+  color: #445066;
+}
+
 .work-document-editor.show-field-codes:not(.preview) .work-document-field,
 .work-document-editor:not(.preview) .work-document-field.show-field-code {
   font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;

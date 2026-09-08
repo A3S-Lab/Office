@@ -78,9 +78,14 @@ test('advertises the implemented history and clipboard shortcuts', () => {
   const shortcuts = [
     ['撤销', 'Control+Z Meta+Z'],
     ['重做', 'Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y'],
+    ['新建幻灯片', 'Control+M Meta+Shift+N'],
+    ['复制幻灯片', 'Control+D Meta+D'],
+    ['删除幻灯片', 'Delete Backspace'],
     ['复制', 'Control+C Meta+C'],
     ['剪切', 'Control+X Meta+X'],
     ['粘贴', 'Control+V Meta+V'],
+    ['组合', 'Control+G Meta+G'],
+    ['取消组合', 'Control+Shift+G Meta+Shift+G'],
   ] as const;
   for (const [name, shortcut] of shortcuts) {
     expect(screen.getByRole('button', { name })).toHaveAttribute(

@@ -1,0 +1,83 @@
+suite "office-word-clear-formatting-shortcut" {
+    version = 1
+
+    scenario "clear-writer-formatting-with-wps-ctrl-space" {
+        name = "Clear Writer formatting with WPS Ctrl+Space"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "clear-formatting-shortcut-described" {
+            visible = css("[aria-label='字体'] button[aria-label='清除格式'][aria-keyshortcuts='Control+Space Meta+Space']")
+        }
+
+        click "select-paragraph" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        press "move-to-paragraph-start" {
+            key = "Home"
+        }
+
+        press "select-paragraph-line" {
+            key = "Shift+End"
+        }
+
+        press "bold-paragraph" {
+            key = "Control+b"
+        }
+
+        press "italic-paragraph" {
+            key = "Control+i"
+        }
+
+        expect "paragraph-bold-and-italic" {
+            visible = css(".work-document-editable .ProseMirror p strong em, .work-document-editable .ProseMirror p em strong")
+        }
+
+        press "clear-formatting" {
+            key = "Control+Space"
+        }
+
+        expect "paragraph-marks-cleared" {
+            visible = css(".work-document-editable .ProseMirror p:not(:has(strong)):not(:has(em))")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "word-clear-formatting-accessibility" {
+            path = "evidence/word-clear-formatting-accessibility.json"
+        }
+
+        console "word-clear-formatting-console" {
+            path = "diagnostics/word-clear-formatting-console.json"
+        }
+
+        page_errors "word-clear-formatting-page-errors" {
+            path = "diagnostics/word-clear-formatting-page-errors.json"
+        }
+    }
+}

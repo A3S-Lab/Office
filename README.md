@@ -368,10 +368,28 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
+Version `0.77.0` deepens WPS UI/UX alignment across all five editors and expands
+the shared evidence matrix to 103 ACL contracts and 78 visual contracts:
+
+- Writer: field-code toggles and lock/unlink chords, page break / hyperlink /
+  find-replace, underline and double-strikethrough shortcuts, font-size and
+  indent families (including `Alt+Shift` arrows), paragraph move
+  (`Alt+Shift+↑/↓`), alignment (`Ctrl+L/E/R/J`, `Ctrl+Shift+J`), bullets,
+  line spacing, headings, Normal/正文, `Shift+F3` case cycle, and
+  `Ctrl+Space` clear formatting.
+- Spreadsheet: workbook View chrome (`编辑栏` / `显示公式` / gridlines /
+  headers) and `Ctrl+PageUp`/`Ctrl+PageDown` sheet navigation.
+- Presentation: notes pane, blank screens, sorter Enter, digit+Enter jump,
+  Home/End, F5/Shift+F5, new/duplicate/delete slide chords, group ads, and
+  `Ctrl+F1` ribbon collapse with visual coverage.
+- Markdown: `Ctrl+F1` ribbon collapse plus `Ctrl+B` / `Ctrl+I` / `Ctrl+K`
+  source formatting and link dialog evidence.
+- PDF: WPS zoom, page navigation, and search-focus shortcuts.
+
 Version `0.76.0` adds desktop and compact visual evidence for the existing
 Writer WPS numeric-field workflow:
 
-- The declarative matrix now exposes 61 ACL contracts and 56 visual contracts
+- The declarative matrix then exposed 61 ACL contracts and 56 visual contracts
   across Writer, Spreadsheet, Presentation, Markdown, and PDF.
 - Writer evidence covers live `PAGE`, `NUMPAGES`, `SECTION`, and `PAGEREF`
   results, native numeric instructions with `MERGEFORMAT`, accessible labels,

@@ -1,0 +1,66 @@
+suite "office-word-field-lock" {
+    version = 1
+
+    scenario "lock-and-unlock-selected-field-with-wps-f11" {
+        name = "Lock and unlock a selected Writer field with Ctrl+F11 / Ctrl+Shift+F11"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=word-wps-numeric-fields"
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "live-page-field" {
+            visible = css(".work-document-field[data-field-kind='page'][data-field-display='I']")
+        }
+
+        click "select-page-field" {
+            target = css(".work-document-field[data-field-kind='page']")
+        }
+
+        press "lock-selected-field" {
+            key = "Control+F11"
+        }
+
+        expect "page-field-locked" {
+            visible = css(".work-document-field[data-field-kind='page'][data-field-locked='true']")
+        }
+
+        click "reselect-locked-page-field" {
+            target = css(".work-document-field[data-field-kind='page'][data-field-locked='true']")
+        }
+
+        press "unlock-selected-field" {
+            key = "Control+Shift+F11"
+        }
+
+        expect "page-field-unlocked" {
+            visible = css(".work-document-field[data-field-kind='page'][data-field-display='I']:not([data-field-locked])")
+        }
+
+        accessibility "field-lock-accessibility" {
+            path = "evidence/field-lock-accessibility.json"
+            interactive = true
+        }
+
+        console "field-lock-console" {
+            path = "diagnostics/field-lock-console.json"
+            clear = false
+        }
+
+        page_errors "field-lock-page-errors" {
+            path = "diagnostics/field-lock-page-errors.json"
+            clear = false
+        }
+    }
+}

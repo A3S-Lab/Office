@@ -1,7 +1,7 @@
 import type { Extensions } from '@tiptap/core';
+import { DocumentTextAlign } from './work-document-text-align';
 import Color from '@tiptap/extension-color';
 import { TableKit } from '@tiptap/extension-table';
-import TextAlign from '@tiptap/extension-text-align';
 import FontSize from '@tiptap/extension-text-style/font-size';
 import StarterKit from '@tiptap/starter-kit';
 import { DocumentBookmarkBoundary } from './work-document-bookmarks';
@@ -183,7 +183,10 @@ export function createWorkDocumentExtensions(
     FontSize,
     Color,
     DocumentHighlight.configure({ multicolor: true }),
-    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    DocumentTextAlign.configure({
+      types: ['heading', 'paragraph'],
+      alignments: ['left', 'center', 'right', 'justify', 'distribute'],
+    }),
     DocumentParagraphIdentity.configure({
       rotateTextId: options.rotateTrackedTextIdentities ?? (() => true),
     }),

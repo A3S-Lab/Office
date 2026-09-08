@@ -1,0 +1,71 @@
+suite "office-word-distribute-align-shortcut" {
+    version = 1
+
+    scenario "step-writer-distribute-align-with-wps-ctrl-shift-j" {
+        name = "Step Writer distributed alignment with WPS Ctrl+Shift+J"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "distribute-shortcut-described" {
+            visible = css("[aria-label='段落'] button[aria-label='分散对齐'][aria-keyshortcuts='Control+Shift+J Meta+Shift+J']")
+        }
+
+        click "select-paragraph" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        press "move-to-paragraph-start" {
+            key = "Home"
+        }
+
+        press "align-distribute" {
+            key = "Control+Shift+j"
+        }
+
+        expect "align-distribute-applied" {
+            visible = css(".work-document-editable .ProseMirror p[data-office-text-align='distribute']")
+        }
+
+        expect "distribute-button-active" {
+            visible = css("[aria-label='段落'] button[aria-label='分散对齐'].active")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "word-distribute-align-shortcut-accessibility" {
+            path = "evidence/word-distribute-align-shortcut-accessibility.json"
+        }
+
+        console "word-distribute-align-shortcut-console" {
+            path = "diagnostics/word-distribute-align-shortcut-console.json"
+        }
+
+        page_errors "word-distribute-align-shortcut-page-errors" {
+            path = "diagnostics/word-distribute-align-shortcut-page-errors.json"
+        }
+    }
+}

@@ -224,6 +224,25 @@ describe('PDF editor extensions', () => {
     expect(zoom.defaultPrevented).toBe(true);
     expect(calls).toEqual(['zoom:in']);
 
+    const fitWidth = new KeyboardEvent('keydown', {
+      cancelable: true,
+      code: 'Digit2',
+      key: '2',
+      metaKey: true,
+    });
+    expect(editor.handleKeyDown(fitWidth)).toBe(true);
+    expect(fitWidth.defaultPrevented).toBe(true);
+
+    const actualSize = new KeyboardEvent('keydown', {
+      cancelable: true,
+      code: 'Digit1',
+      key: '1',
+      metaKey: true,
+    });
+    expect(editor.handleKeyDown(actualSize)).toBe(true);
+    expect(actualSize.defaultPrevented).toBe(true);
+    expect(calls).toEqual(['zoom:in', 'zoom:width', 'zoom:actual']);
+
     const save = new KeyboardEvent('keydown', {
       cancelable: true,
       key: 's',
@@ -231,7 +250,95 @@ describe('PDF editor extensions', () => {
     });
     expect(editor.handleKeyDown(save)).toBe(true);
     expect(save.defaultPrevented).toBe(true);
-    expect(calls).toEqual(['zoom:in', 'save']);
+    expect(calls).toEqual(['zoom:in', 'zoom:width', 'zoom:actual', 'save']);
+
+    const nextPage = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'PageDown',
+    });
+    expect(editor.handleKeyDown(nextPage)).toBe(true);
+    expect(nextPage.defaultPrevented).toBe(true);
+
+    const lastPage = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'End',
+      metaKey: true,
+    });
+    expect(editor.handleKeyDown(lastPage)).toBe(true);
+    expect(lastPage.defaultPrevented).toBe(true);
+
+    const firstPage = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'Home',
+      metaKey: true,
+    });
+    expect(editor.handleKeyDown(firstPage)).toBe(true);
+    expect(firstPage.defaultPrevented).toBe(true);
+
+    const previousPage = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'PageUp',
+    });
+    expect(editor.handleKeyDown(previousPage)).toBe(true);
+    expect(previousPage.defaultPrevented).toBe(true);
+    expect(calls).toEqual([
+      'zoom:in',
+      'zoom:width',
+      'zoom:actual',
+      'save',
+      'page:next',
+      'page:5',
+      'page:1',
+      'page:previous',
+    ]);
+
+    const nextBySpace = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: ' ',
+    });
+    expect(editor.handleKeyDown(nextBySpace)).toBe(true);
+    expect(nextBySpace.defaultPrevented).toBe(true);
+
+    const previousByShiftSpace = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: ' ',
+      shiftKey: true,
+    });
+    expect(editor.handleKeyDown(previousByShiftSpace)).toBe(true);
+    expect(previousByShiftSpace.defaultPrevented).toBe(true);
+    expect(calls).toEqual([
+      'zoom:in',
+      'zoom:width',
+      'zoom:actual',
+      'save',
+      'page:next',
+      'page:5',
+      'page:1',
+      'page:previous',
+      'page:next',
+      'page:previous',
+    ]);
+
+    const focusSearch = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'f',
+      metaKey: true,
+    });
+    expect(editor.handleKeyDown(focusSearch)).toBe(true);
+    expect(focusSearch.defaultPrevented).toBe(true);
+    expect(calls).toEqual([
+      'zoom:in',
+      'zoom:width',
+      'zoom:actual',
+      'save',
+      'page:next',
+      'page:5',
+      'page:1',
+      'page:previous',
+      'page:next',
+      'page:previous',
+      'search:focus',
+    ]);
   });
 
   test('keeps the active annotation tool when Escape belongs to a popover', () => {
@@ -333,6 +440,7 @@ function context(calls: string[]): PdfEditorCommandContext {
       totalPages: 5,
     },
     clearSearch: () => calls.push('search:clear'),
+    actualSize: () => calls.push('zoom:actual'),
     fitPage: () => calls.push('zoom:page'),
     fitWidth: () => calls.push('zoom:width'),
     goToPage: (page) => calls.push(`page:${page}`),

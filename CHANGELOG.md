@@ -4,6 +4,185 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.77.0 - 2026-09-08
+
+- Aligned Writer double strikethrough with WPS `Ctrl+Shift+X` / `⌘⇧X`: the
+  Home 删除线 menu advertises the chord on 双删除线, the shortcut toggles the
+  double strike mark, and ACL / visual / unit evidence cover the contract. The
+  shared matrix now exposes 103 ACL contracts and 78 visual contracts across
+  all five editors.
+- Promoted Presentation slide management, View/group chrome, and ribbon
+  collapse into shared visual coverage: `Ctrl+M` / `⌘⇧N` new slide, `Ctrl+D`
+  duplicate, `Delete`/`Backspace` on the active thumbnail, `Ctrl+G` /
+  `Ctrl+Shift+G` advertisement, View 备注 toggle, and `Ctrl+F1` ribbon
+  collapse. Also promoted Markdown `Ctrl+B` / `Ctrl+I` / `Ctrl+K` format
+  shortcuts into visual evidence. The shared matrix now exposes 102 ACL
+  contracts and 77 visual contracts across all five editors.
+- Strengthened Writer paragraph-alignment evidence to include WPS `Ctrl+E` /
+  `⌘E` center alongside `Ctrl+L` / `Ctrl+R` / `Ctrl+J` in the dedicated ACL /
+  visual / unit contract (matrix count unchanged).
+- Aligned Writer paragraph reordering with WPS/Word `Alt+Shift+↑` /
+  `Alt+Shift+↓`: the shortcut swaps the active block with its sibling inside
+  the section (or other movable container), and ACL / visual / unit evidence
+  cover the contract. The shared matrix now exposes 102 ACL contracts and 73
+  visual contracts across all five editors.
+- Extended Writer paragraph indent with WPS `Alt+Shift+→` / `Alt+Shift+←`
+  (increase / decrease) alongside `Ctrl+M` / `Ctrl+Shift+M` and
+  `Shift+Alt+.` / `Shift+Alt+,`; the Home ribbon advertises all three chord
+  families, and the indent ACL / visual / unit contracts cover them. Matrix
+  remains at 101 ACL / 72 visual.
+- Aligned Writer paragraph indent with WPS `Shift+Alt+.` / `Shift+Alt+,`
+  (increase / decrease) as aliases alongside `Ctrl+M` / `Ctrl+Shift+M`; the
+  Home ribbon advertises both chord families, and the existing indent ACL /
+  visual / unit contracts cover them. Matrix remains at 101 ACL / 72 visual.
+- Promoted Writer heading styles into the shared matrix: `Ctrl+Alt+1` /
+  `Ctrl+Alt+2` / `Ctrl+Alt+3` apply 标题 1–3, advertised on the style gallery
+  (and compact 段落样式 combobox), with ACL / visual / unit evidence. The
+  shared matrix now exposes 101 ACL contracts and 72 visual contracts across
+  all five editors.
+- Aligned Writer default bullet list with WPS/Word `Ctrl+Shift+L` / `⌘⇧L`:
+  the Home 项目符号 control advertises the chord, the shortcut toggles the
+  disc bullet list, TipTap's conflicting Mod-Shift-l left-align binding is
+  removed, and ACL / visual / unit evidence cover the contract. The shared
+  matrix now exposes 100 ACL contracts and 71 visual contracts across all
+  five editors.
+- Aligned Writer distributed paragraph alignment with WPS `Ctrl+Shift+J` /
+  `⌘⇧J`: the Home ribbon exposes 分散对齐, DOCX import/export preserve
+  `w:jc=distribute`, the shortcut sets TipTap distribute via a durable
+  data attribute (painted as justify + text-align-last:justify), and ACL /
+  visual / unit evidence cover the contract. The shared matrix now exposes
+  99 ACL contracts and 70 visual contracts across all five editors.
+- Aligned Writer selection case cycling with WPS/Word `Shift+F3`: the Home
+  text-case control advertises the chord, the shortcut cycles selected text
+  lower → UPPER → Title Case (expanding to the word at the caret when the
+  selection is empty), and ACL / visual / unit evidence cover the contract.
+  The shared matrix now exposes 98 ACL contracts and 69 visual contracts
+  across all five editors.
+- Aligned Writer Normal / 正文 style with WPS/Word `Ctrl+Shift+N` / `⌘⇧N`:
+  the style gallery advertises the chord, the shortcut restores paragraph
+  style from a heading, and ACL / visual / unit evidence cover the contract.
+  The shared matrix now exposes 97 ACL contracts and 68 visual contracts
+  across all five editors.
+- Promoted Writer WPS paragraph alignment and line spacing into the shared
+  matrix: `Ctrl+L` / `Ctrl+R` / `Ctrl+J` align left/right/justify, and
+  `Ctrl+1` / `Ctrl+5` / `Ctrl+2` single / 1.5× / double line spacing. The Home
+  ribbon advertises the chords (including the line-spacing combobox), and ACL /
+  visual / unit evidence cover the contracts. The shared matrix now exposes 96
+  ACL contracts and 67 visual contracts across all five editors.
+- Aligned Writer paragraph indent with WPS/Word `Ctrl+M` / `⌘M` (increase)
+  and `Ctrl+Shift+M` / `⌘⇧M` (decrease): the Home ribbon advertises the
+  chords, and ACL / visual / unit evidence cover the contract. The shared
+  matrix now exposes 94 ACL contracts and 65 visual contracts across all
+  five editors.
+- Promoted Writer WPS font-size steppers into the shared matrix: `Ctrl+]` /
+  `Ctrl+Shift+.` grow and `Ctrl+[` / `Ctrl+Shift+,` shrink, advertised on the
+  Home ribbon, with ACL / visual / unit evidence. The shared matrix now
+  exposes 93 ACL contracts and 64 visual contracts across all five editors.
+- Promoted Writer WPS `Ctrl+=` / `⌘=` subscript and `Ctrl+Shift+=` /
+  `⌘⇧=` superscript into the shared matrix: the Home ribbon advertises the
+  chords, the shortcuts toggle mutually exclusive script marks, and ACL /
+  visual / unit evidence cover the contract. The shared matrix now exposes
+  92 ACL contracts and 63 visual contracts across all five editors.
+- Aligned Writer clear formatting with WPS/Word `Ctrl+Space` / `⌘Space`: the
+  Home ribbon advertises the chord, the shortcut clears character and
+  paragraph formatting on the selection, and ACL / visual / unit evidence
+  cover the contract. The shared matrix now exposes 91 ACL contracts and 62
+  visual contracts across all five editors.
+- Deepened Writer WPS alignment: `Ctrl+Shift+D` / `Ctrl+Shift+W` underline
+  styles, `Ctrl+F` / `Ctrl+H` find-replace, `Ctrl+Enter` page break,
+  `Ctrl+K` hyperlink, status-bar `Ctrl+Shift+G` word count, and Insert /
+  Page Layout chrome (ads + ACL / visual where applicable). The shared
+  matrix now exposes 90 ACL contracts and 61 visual contracts across all
+  five editors.
+- Aligned Presentation slideshow navigation with WPS/PowerPoint `Home` /
+  `End`: jump to the first or last slide during playback, advertise the chords
+  on the player previous/next controls, and cover the contract with ACL /
+  visual evidence. The shared matrix now exposes 84 ACL contracts and 57
+  visual contracts across all five editors.
+- Promoted Markdown WPS `Ctrl+I` / `⌘I` italic into the shared matrix: source
+  editing toggles italic markers from the chord, the Home ribbon advertises the
+  shortcut, and ACL / visual evidence cover the contract. The shared matrix now
+  exposes 83 ACL contracts and 57 visual contracts across all five editors.
+- Promoted PDF WPS `Ctrl+F` / `⌘F` search focus into the shared matrix: the
+  search field advertises the shortcut, the chord focuses the in-editor search
+  box from PDF tools, and ACL / visual / unit evidence cover the contract. The
+  shared matrix now exposes 82 ACL contracts and 57 visual contracts across all
+  five editors.
+- Promoted Presentation WPS `Ctrl+G` / `⌘G` group and `Ctrl+Shift+G` /
+  `⌘⇧G` ungroup into the shared matrix: the Arrange ribbon advertises the
+  chords, visual evidence covers keyboard group/ungroup on a multi-object
+  selection, and unit tests cover the advertised controls. The shared matrix
+  now exposes 81 ACL contracts and 57 visual contracts across all five editors.
+- Promoted Markdown WPS `Ctrl+B` / `⌘B` (and advertised `Ctrl+I` / `⌘I`) into
+  the shared matrix: source editing inserts bold markers from the chord, the
+  Home ribbon advertises the shortcuts, and ACL / visual / unit evidence cover
+  the contract. The shared matrix now exposes 80 ACL contracts and 57 visual
+  contracts across all five editors.
+- Aligned Presentation slide deletion with WPS/PowerPoint `Delete` /
+  `Backspace` on the active thumbnail: the Home ribbon and slide context menu
+  advertise the shortcuts, deleting keeps an adjacent slide selected, and ACL /
+  visual / unit evidence cover the contract. The shared matrix now exposes 79
+  ACL contracts and 57 visual contracts across all five editors.
+- Aligned Markdown hyperlink entry with WPS/Office `Ctrl+K` / `⌘K`: the
+  Insert ribbon advertises the shortcut, the chord opens the shared link
+  dialog from source or visual editing, and ACL / visual / unit evidence
+  cover the contract. The shared matrix now exposes 78 ACL contracts and 57
+  visual contracts across all five editors.
+- Extended PDF page navigation with WPS/Acrobat-style `Space` (next) and
+  `Shift+Space` (previous), advertised beside `PageDown` / `PageUp` on the
+  toolbar and overflow, with unit / ACL / visual evidence on the existing
+  page-navigation contract.
+- Aligned Presentation slide duplication with WPS/PowerPoint `Ctrl+D` /
+  `⌘D`: with no object selection the chord duplicates the current slide;
+  with objects selected it still duplicates objects. The Home ribbon and
+  slide context menu advertise the shortcut, and ACL / visual / unit
+  evidence cover the contract. The shared matrix now exposes 77 ACL
+  contracts and 57 visual contracts across all five editors.
+- Promoted Presentation WPS `Ctrl+M` / `⌘⇧N` new-slide shortcuts into the
+  shared matrix: the Home ribbon advertises the chords, keyboard creates a
+  slide and selects it, and ACL / visual / unit evidence cover the contract.
+  The shared matrix now exposes 76 ACL contracts and 57 visual contracts
+  across all five editors.
+- Aligned PDF page navigation with WPS `PageUp` / `PageDown` and
+  `Ctrl+Home` / `Ctrl+End`: toolbar and overflow advertise the shortcuts,
+  overflow exposes `首页` / `末页`, and ACL / visual / unit evidence cover the
+  contract. The shared matrix now exposes 75 ACL contracts and 57 visual
+  contracts across all five editors.
+- Promoted Presentation WPS slideshow start shortcuts into the shared matrix:
+  `F5` starts from the beginning and `Shift+F5` starts from the current slide,
+  with ACL / visual evidence for the advertised controls. The shared matrix now
+  exposes 74 ACL contracts and 57 visual contracts across all five editors.
+- Aligned PDF zoom with WPS `Ctrl+1` (actual size), `Ctrl+2` (fit width), and
+  the existing `Ctrl+0` (fit page) shortcuts: the toolbar advertises the
+  shortcuts, exposes `实际大小`, unit tests cover the `Mod-1` chord, and ACL /
+  visual evidence cover fit-width / fit-page keyboard paths plus the actual-size
+  control (Chromium reserves Ctrl+1 for tab switching). The shared matrix now
+  exposes 73 ACL contracts and 57 visual contracts across all five editors.
+- Promoted Spreadsheet WPS worksheet navigation into the shared matrix:
+  `Ctrl+PageUp` / `Ctrl+PageDown` (and matching sheet-bar controls) switch
+  sheets while restoring grid focus, with ACL / visual evidence. The shared
+  matrix now exposes 72 ACL contracts and 57 visual contracts across all five
+  editors.
+- Aligned Markdown with the shared WPS `Ctrl+F1` / `Meta+F1` ribbon collapse
+  path used by Writer, Spreadsheet, and Presentation: the Markdown ribbon now
+  exposes the collapse control and keyboard shortcut, with unit / ACL / visual
+  evidence. The shared matrix now exposes 71 ACL contracts across all five
+  editors.
+- Aligned Writer fields with WPS/Word `Ctrl+F11` / `Ctrl+Shift+F11` lock:
+  selected fields skip F9 refresh while locked, the References ribbon exposes
+  `锁定域` / `解除域锁定`, DOCX import/export preserves `w:fldLock`, and ACL /
+  visual / unit evidence cover the contract. The shared matrix now exposes 70
+  ACL contracts across all five editors.
+- Aligned Writer fields with WPS/Word `Ctrl+Shift+F9` unlink: selected fields
+  become static result text in one undo step, the References ribbon exposes
+  `取消域链接`, and ACL / visual / unit evidence cover the contract. The shared
+  matrix now exposes 69 ACL contracts across all five editors.
+- Aligned Presentation slideshow with WPS/PowerPoint digit+Enter navigation:
+  typed slide numbers appear in the player chrome, Escape clears a pending
+  buffer without ending the show (windowed fallback when the browser drops
+  fullscreen), Enter jumps (clamping past the last slide), and ACL / visual /
+  unit evidence cover the contract. The shared matrix now exposes 68 ACL
+  contracts across all five editors.
 - Aligned shared Office ribbons with WPS `Ctrl+F1` / `Meta+F1` collapse: the
   existing collapse control now advertises and toggles the shortcut, Presentation
   ribbons are collapsible, and Spreadsheet / Writer / Presentation ACL plus

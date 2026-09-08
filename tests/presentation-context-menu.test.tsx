@@ -41,6 +41,10 @@ test('provides native slide operations before optional AI actions', () => {
     '删除幻灯片',
   ]);
   expect(items[0]?.shortcut).toBe('Ctrl+M / ⌘⇧N');
+  expect(items[1]?.shortcut).toBe('Ctrl+D / ⌘D');
+  expect(items[1]?.ariaKeyShortcut).toBe('Control+D Meta+D');
+  expect(items[3]?.shortcut).toBe('Delete / Backspace');
+  expect(items[3]?.ariaKeyShortcut).toBe('Delete Backspace');
   for (const item of items) item.onSelect();
   expect(calls).toEqual(['add', 'duplicate', 'paste', 'delete:slide-2']);
 });

@@ -51,6 +51,7 @@ export interface PdfViewerControllerState {
 
 export interface PdfViewerController {
   state: PdfViewerControllerState;
+  actualSize: () => void;
   clearSearch: () => void;
   fitPage: () => void;
   fitWidth: () => void;
@@ -249,6 +250,12 @@ export function usePdfViewerController(
     });
   }, []);
 
+  const actualSize = useCallback(() => {
+    withActiveDocument(capabilitiesRef.current, ({ zoom }, documentId) => {
+      zoom?.forDocument(documentId).requestZoom(1);
+    });
+  }, []);
+
   const fitPage = useCallback(() => {
     withActiveDocument(capabilitiesRef.current, ({ zoom }, documentId) => {
       zoom?.forDocument(documentId).requestZoom(ZoomMode.FitPage);
@@ -388,6 +395,7 @@ export function usePdfViewerController(
   return useMemo(
     () => ({
       state: projectedState,
+      actualSize,
       clearSearch,
       fitPage,
       fitWidth,
@@ -405,6 +413,7 @@ export function usePdfViewerController(
     }),
     [
       projectedState,
+      actualSize,
       clearSearch,
       fitPage,
       fitWidth,

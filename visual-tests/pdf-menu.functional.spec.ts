@@ -115,6 +115,13 @@ test('PDF toolbar shortcuts stay inside the editor command surface', async ({
   await waitForPdfFixture(page);
 
   const search = page.getByRole('searchbox', { name: '在 PDF 中搜索' });
+  await expect(search).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+F Meta+F',
+  );
+  await page.getByRole('button', { name: '选择' }).focus();
+  await page.keyboard.press('Control+f');
+  await expect(search).toBeFocused();
   await page.getByRole('button', { name: '选择' }).focus();
   await page.keyboard.press('Meta+f');
   await expect(search).toBeFocused();
@@ -272,4 +279,115 @@ test('PDF command states use the same product accent as the file identity', asyn
     .locator('.work-pdf-search')
     .evaluate((element) => getComputedStyle(element).borderTopColor);
   expect(searchFocusAccent).toBe(productAccent);
+});
+
+test('PDF zoom follows WPS Ctrl+1 / Ctrl+2 / Ctrl+0 shortcuts', async ({
+  page,
+}) => {
+  await page.goto('/playground/');
+  await openPdfFixture(page, { pageCount: 2 });
+  await waitForPdfFixture(page);
+
+  const openZoomMenu = async () => {
+    await page.getByRole('button', { name: '更多 PDF 工具' }).click();
+    return page.getByRole('menu', { name: '更多 PDF 工具' });
+  };
+
+  let menu = await openZoomMenu();
+  const actualSize = menu.getByRole('menuitemradio', { name: '实际大小' });
+  const fitPage = menu.getByRole('menuitemradio', { name: '整页' });
+  const fitWidth = menu.getByRole('menuitemradio', { name: '页宽' });
+  await expect(actualSize).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+1 Meta+1',
+  );
+  await expect(fitPage).toHaveAttribute('aria-keyshortcuts', 'Control+0 Meta+0');
+  await expect(fitWidth).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+2 Meta+2',
+  );
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+
+  await page.locator('.work-pdf-embed').click();
+  await page.keyboard.press('Control+2');
+  menu = await openZoomMenu();
+  await expect(
+    menu.getByRole('menuitemradio', { name: '页宽' }),
+  ).toHaveAttribute('aria-checked', 'true');
+
+  // Chromium reserves Ctrl+1 for tab switching; exercise the advertised control.
+  await menu.getByRole('menuitemradio', { name: '实际大小' }).click();
+  await expect(page.getByLabel('PDF 缩放比例')).toHaveText('100%');
+  menu = await openZoomMenu();
+  await expect(
+    menu.getByRole('menuitemradio', { name: '实际大小' }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('Escape');
+
+  await page.locator('.work-pdf-embed').click();
+  await page.keyboard.press('Control+0');
+  menu = await openZoomMenu();
+  await expect(
+    menu.getByRole('menuitemradio', { name: '整页' }),
+  ).toHaveAttribute('aria-checked', 'true');
+});
+
+test('PDF page navigation follows WPS PageUp/PageDown and Ctrl+Home/End', async ({
+  page,
+}) => {
+  await page.goto('/playground/');
+  await openPdfFixture(page, { pageCount: 4 });
+  await waitForPdfFixture(page);
+
+  await page.getByRole('button', { name: '更多 PDF 工具' }).click();
+  const menu = page.getByRole('menu', { name: '更多 PDF 工具' });
+  await expect(menu.getByRole('menuitem', { name: '首页' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Home Meta+Home',
+  );
+  await expect(menu.getByRole('menuitem', { name: '上一页' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'PageUp Shift+Space',
+  );
+  await expect(menu.getByRole('menuitem', { name: '下一页' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'PageDown Space',
+  );
+  await expect(menu.getByRole('menuitem', { name: '末页' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+End Meta+End',
+  );
+  await page.keyboard.press('Escape');
+
+  const pageField = page.getByRole('textbox', { name: '页码' });
+  await page.locator('.work-pdf-embed').click();
+  await page.keyboard.press('PageDown');
+  await expect(pageField).toHaveValue('2');
+  await expect(page.getByRole('button', { name: '第 2 页' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+
+  await page.keyboard.press('PageUp');
+  await expect(pageField).toHaveValue('1');
+
+  await page.keyboard.press(' ');
+  await expect(pageField).toHaveValue('2');
+  await page.keyboard.press('Shift+ ');
+  await expect(pageField).toHaveValue('1');
+
+  await page.keyboard.press('Control+End');
+  await expect(pageField).toHaveValue('4');
+  await expect(page.getByRole('button', { name: '第 4 页' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+
+  await page.keyboard.press('Control+Home');
+  await expect(pageField).toHaveValue('1');
+  await expect(page.getByRole('button', { name: '第 1 页' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
 });

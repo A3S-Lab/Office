@@ -69,7 +69,7 @@ describe('DOCX paragraph styles', () => {
     expect(markers.paragraphs.map(({ alignment }) => alignment)).toEqual([
       'right',
       'right',
-      'justify',
+      'distribute',
       'center',
     ]);
 
@@ -94,6 +94,10 @@ describe('DOCX paragraph styles', () => {
       'justify',
       'center',
     ]);
+    expect(blocks[2]?.getAttribute('data-office-text-align')).toBe(
+      'distribute',
+    );
+    expect(blocks[2]?.style.textAlignLast).toBe('justify');
     expect(html.body.querySelector('li > p')?.textContent).toBe(
       'Centered list item',
     );

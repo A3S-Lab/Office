@@ -1,0 +1,123 @@
+suite "office-pdf-page-navigation" {
+    version = 1
+
+    scenario "navigate-pdf-pages-with-wps-keyboard" {
+        name = "Navigate PDF pages with WPS PageUp/PageDown, Space, and Ctrl+Home/End"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        upload "open-pdf" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/pdf-thumbnail-keyboard.pdf"]
+        }
+
+        wait "pdf-ready" {
+            visible = css(".work-pdf-embed[data-ready='true']")
+        }
+
+        click "open-more-tools" {
+            target = role("button", "更多 PDF 工具")
+        }
+
+        wait "more-tools-open" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具']")
+        }
+
+        expect "first-page-shortcut" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具'] button[aria-keyshortcuts='Control+Home Meta+Home']")
+        }
+
+        expect "previous-page-shortcut" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具'] button[aria-keyshortcuts='PageUp Shift+Space']")
+        }
+
+        expect "next-page-shortcut" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具'] button[aria-keyshortcuts='PageDown Space']")
+        }
+
+        expect "last-page-shortcut" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具'] button[aria-keyshortcuts='Control+End Meta+End']")
+        }
+
+        press "close-menu" {
+            key = "Escape"
+        }
+
+        click "focus-pdf-canvas" {
+            target = css(".work-pdf-embed")
+        }
+
+        press "next-page" {
+            key = "PageDown"
+        }
+
+        wait "second-page-active" {
+            visible = css("[data-pdf-page-index='1'][aria-current='page']")
+        }
+
+        press "previous-page" {
+            key = "PageUp"
+        }
+
+        wait "first-page-active" {
+            visible = css("[data-pdf-page-index='0'][aria-current='page']")
+        }
+
+        press "next-page-by-space" {
+            key = "Space"
+        }
+
+        wait "second-page-by-space" {
+            visible = css("[data-pdf-page-index='1'][aria-current='page']")
+        }
+
+        press "previous-page-by-shift-space" {
+            key = "Shift+Space"
+        }
+
+        wait "first-page-by-shift-space" {
+            visible = css("[data-pdf-page-index='0'][aria-current='page']")
+        }
+
+        press "last-page" {
+            key = "Control+End"
+        }
+
+        wait "last-page-active" {
+            visible = css("[data-pdf-page-index='3'][aria-current='page']")
+        }
+
+        press "first-page" {
+            key = "Control+Home"
+        }
+
+        wait "first-page-again" {
+            visible = css("[data-pdf-page-index='0'][aria-current='page']")
+        }
+
+        accessibility "pdf-page-navigation-accessibility" {
+            path = "evidence/pdf-page-navigation-accessibility.json"
+            interactive = true
+        }
+
+        console "pdf-page-navigation-console" {
+            path = "diagnostics/pdf-page-navigation-console.json"
+            clear = false
+        }
+
+        page_errors "pdf-page-navigation-page-errors" {
+            path = "diagnostics/pdf-page-navigation-page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -302,6 +302,126 @@ test('Presentation returns keyboard control to newly inserted objects', async ({
     .not.toBe(chartTopBefore);
 });
 
+test('Presentation duplicates the current slide with WPS Ctrl+D', async ({
+  page,
+}) => {
+  await page.goto('/playground/');
+  await page
+    .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
+    .click();
+  await page.locator('.work-slide-canvas.interactive').waitFor();
+
+  const thumbnails = page.locator('.work-slide-strip [data-slide-thumbnail]');
+  await expect(thumbnails).toHaveCount(3);
+  const duplicateSlide = page.getByRole('button', { name: '复制幻灯片' });
+  await expect(duplicateSlide).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+D Meta+D',
+  );
+
+  const activeThumbnail = page.locator(
+    '.work-slide-strip [data-slide-thumbnail].active',
+  );
+  await activeThumbnail.focus();
+  await activeThumbnail.press('Control+d');
+  await expect(thumbnails).toHaveCount(4);
+  await expect(activeThumbnail).toHaveAttribute('data-slide-index', '1');
+});
+
+test('Presentation deletes the current slide with WPS Delete', async ({
+  page,
+}) => {
+  await page.goto('/playground/');
+  await page
+    .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
+    .click();
+  await page.locator('.work-slide-canvas.interactive').waitFor();
+
+  const thumbnails = page.locator('.work-slide-strip [data-slide-thumbnail]');
+  await expect(thumbnails).toHaveCount(3);
+  const deleteSlide = page.getByRole('button', { name: '删除幻灯片' });
+  await expect(deleteSlide).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Delete Backspace',
+  );
+
+  const activeThumbnail = page.locator(
+    '.work-slide-strip [data-slide-thumbnail].active',
+  );
+  await activeThumbnail.focus();
+  await activeThumbnail.press('Delete');
+  await expect(thumbnails).toHaveCount(2);
+  await expect(activeThumbnail).toHaveAttribute('data-slide-index', '0');
+});
+
+test('Presentation groups objects with WPS Ctrl+G', async ({ page }) => {
+  await page.goto('/playground/');
+  await page
+    .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
+    .click();
+  const canvas = page.locator('.work-slide-canvas.interactive');
+  await canvas.waitFor();
+
+  const elements = canvas.locator(':scope > .work-slide-element');
+  await elements.nth(0).click();
+  await elements.nth(1).click({ modifiers: ['Shift'] });
+
+  const group = page.getByRole('button', { name: '组合', exact: true });
+  const ungroup = page.getByRole('button', { name: '取消组合', exact: true });
+  await expect(group).toHaveAttribute('aria-keyshortcuts', 'Control+G Meta+G');
+  await expect(ungroup).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+G Meta+Shift+G',
+  );
+  await expect(group).toBeEnabled();
+
+  await page.keyboard.press('Control+g');
+  const groupedPath = await elements.nth(0).getAttribute(
+    'data-slide-element-group-path',
+  );
+  expect(groupedPath).toBeTruthy();
+  await expect(elements.nth(1)).toHaveAttribute(
+    'data-slide-element-group-path',
+    groupedPath ?? '',
+  );
+  await expect(page.getByText('已选择 1 组，共 2 个对象')).toBeVisible();
+  await expect(ungroup).toBeEnabled();
+  await expect(group).toBeDisabled();
+
+  await page.keyboard.press('Control+Shift+g');
+  await expect(elements.nth(0)).not.toHaveAttribute(
+    'data-slide-element-group-path',
+  );
+  await expect(elements.nth(1)).not.toHaveAttribute(
+    'data-slide-element-group-path',
+  );
+  await expect(group).toBeEnabled();
+});
+
+test('Presentation creates a slide with WPS Ctrl+M', async ({ page }) => {
+  await page.goto('/playground/');
+  await page
+    .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
+    .click();
+  await page.locator('.work-slide-canvas.interactive').waitFor();
+
+  const thumbnails = page.locator('.work-slide-strip [data-slide-thumbnail]');
+  await expect(thumbnails).toHaveCount(3);
+  const newSlide = page.getByRole('button', { name: '新建幻灯片' });
+  await expect(newSlide).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+M Meta+Shift+N',
+  );
+
+  const activeThumbnail = page.locator(
+    '.work-slide-strip [data-slide-thumbnail].active',
+  );
+  await activeThumbnail.focus();
+  await activeThumbnail.press('Control+m');
+  await expect(thumbnails).toHaveCount(4);
+  await expect(activeThumbnail).toHaveAttribute('data-slide-index', '3');
+});
+
 test('Presentation returns keyboard control after slide mutations and blocks them in layout editing', async ({
   page,
 }) => {

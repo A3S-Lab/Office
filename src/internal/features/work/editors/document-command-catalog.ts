@@ -219,6 +219,11 @@ export const documentCommandCatalog = {
     id: 'font.doubleStrike',
     label: '双删除线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+X',
+      aria: 'Control+Shift+X Meta+Shift+X',
+      editor: ['Mod-Shift-x'],
+    },
   },
   allCaps: {
     id: 'font.allCaps',
@@ -238,6 +243,16 @@ export const documentCommandCatalog = {
       label: 'Cmd/Ctrl+Shift+K',
       aria: 'Control+Shift+K Meta+Shift+K',
       editor: [documentTextCaseKeyboardShortcuts.smallCaps],
+    },
+  },
+  changeCase: {
+    id: 'font.changeCase',
+    label: '切换大小写',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Shift+F3',
+      aria: 'Shift+F3',
+      editor: [documentTextCaseKeyboardShortcuts.changeCase],
     },
   },
   subscript: {
@@ -284,6 +299,61 @@ export const documentCommandCatalog = {
     id: 'font.clearFormatting',
     label: '清除格式',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Space',
+      aria: 'Control+Space Meta+Space',
+      editor: ['Mod-Space'],
+    },
+  },
+  increaseIndent: {
+    id: 'paragraph.increaseIndent',
+    label: '增加缩进',
+    location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
+    shortcut: {
+      label: 'Cmd/Ctrl+M 或 Shift+Alt+. 或 Alt+Shift+→',
+      aria: 'Control+M Meta+M Shift+Alt+. Alt+Shift+ArrowRight',
+      editor: ['Mod-m', 'Shift-Alt-.', 'Alt-Shift-ArrowRight'],
+    },
+  },
+  decreaseIndent: {
+    id: 'paragraph.decreaseIndent',
+    label: '减少缩进',
+    location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+M 或 Shift+Alt+, 或 Alt+Shift+←',
+      aria: 'Control+Shift+M Meta+Shift+M Shift+Alt+, Alt+Shift+ArrowLeft',
+      editor: ['Mod-Shift-m', 'Shift-Alt-,', 'Alt-Shift-ArrowLeft'],
+    },
+  },
+  bulletList: {
+    id: 'paragraph.bulletList',
+    label: '项目符号',
+    location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+L',
+      aria: 'Control+Shift+L Meta+Shift+L',
+      editor: ['Mod-Shift-l'],
+    },
+  },
+  moveBlockUp: {
+    id: 'paragraph.moveBlockUp',
+    label: '上移段落',
+    location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
+    shortcut: {
+      label: 'Alt+Shift+↑',
+      aria: 'Alt+Shift+ArrowUp',
+      editor: ['Alt-Shift-ArrowUp'],
+    },
+  },
+  moveBlockDown: {
+    id: 'paragraph.moveBlockDown',
+    label: '下移段落',
+    location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
+    shortcut: {
+      label: 'Alt+Shift+↓',
+      aria: 'Alt+Shift+ArrowDown',
+      editor: ['Alt-Shift-ArrowDown'],
+    },
   },
   alignLeft: {
     id: 'paragraph.alignLeft',
@@ -325,6 +395,16 @@ export const documentCommandCatalog = {
       editor: ['Mod-j'],
     },
   },
+  alignDistribute: {
+    id: 'paragraph.alignDistribute',
+    label: '分散对齐',
+    location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+J',
+      aria: 'Control+Shift+J Meta+Shift+J',
+      editor: ['Mod-Shift-j'],
+    },
+  },
   lineSpacingSingle: {
     id: 'paragraph.lineSpacingSingle',
     label: '单倍行距',
@@ -353,6 +433,16 @@ export const documentCommandCatalog = {
       label: 'Cmd/Ctrl+2',
       aria: 'Control+2 Meta+2',
       editor: ['Mod-2'],
+    },
+  },
+  normalStyle: {
+    id: 'styles.normal',
+    label: '正文',
+    location: { area: 'ribbon', tab: 'home', group: 'styles' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+N',
+      aria: 'Control+Shift+N Meta+Shift+N',
+      editor: ['Mod-Shift-n'],
     },
   },
   heading1: {
@@ -501,6 +591,36 @@ export const documentCommandCatalog = {
     label: '更新域',
     location: { area: 'ribbon', tab: 'references', group: 'update' },
     shortcut: { label: 'F9', aria: 'F9', editor: ['F9'] },
+  },
+  unlinkFields: {
+    id: 'references.unlinkFields',
+    label: '取消域链接',
+    location: { area: 'ribbon', tab: 'references', group: 'update' },
+    shortcut: {
+      label: 'Ctrl+Shift+F9',
+      aria: 'Control+Shift+F9 Meta+Shift+F9',
+      editor: ['Mod-Shift-F9'],
+    },
+  },
+  lockFields: {
+    id: 'references.lockFields',
+    label: '锁定域',
+    location: { area: 'ribbon', tab: 'references', group: 'update' },
+    shortcut: {
+      label: 'Ctrl+F11',
+      aria: 'Control+F11 Meta+F11',
+      editor: ['Mod-F11'],
+    },
+  },
+  unlockFields: {
+    id: 'references.unlockFields',
+    label: '解除域锁定',
+    location: { area: 'ribbon', tab: 'references', group: 'update' },
+    shortcut: {
+      label: 'Ctrl+Shift+F11',
+      aria: 'Control+Shift+F11 Meta+Shift+F11',
+      editor: ['Mod-Shift-F11'],
+    },
   },
   toggleFieldCodes: {
     id: 'view.toggleFieldCodes',

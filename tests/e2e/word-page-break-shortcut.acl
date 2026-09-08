@@ -1,0 +1,67 @@
+suite "office-word-page-break-shortcut" {
+    version = 1
+
+    scenario "insert-page-break-with-wps-ctrl-enter" {
+        name = "Insert a Writer page break with WPS Ctrl+Enter"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        expect "page-break-shortcut-described" {
+            visible = css(".document-toolbar button[aria-label='插入分页符'][aria-keyshortcuts='Control+Enter Meta+Enter']")
+        }
+
+        click "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "insert-page-break" {
+            key = "Control+Enter"
+        }
+
+        wait "page-break-inserted" {
+            visible = css(".work-document-editable .ProseMirror [data-page-break='true'][aria-label='分页符']")
+        }
+
+        wait "two-page-layout-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready'][data-pagination-pages='2']")
+        }
+
+        accessibility "word-page-break-shortcut-accessibility" {
+            path = "evidence/word-page-break-shortcut-accessibility.json"
+        }
+
+        console "word-page-break-shortcut-console" {
+            path = "diagnostics/word-page-break-shortcut-console.json"
+        }
+
+        page_errors "word-page-break-shortcut-page-errors" {
+            path = "diagnostics/word-page-break-shortcut-page-errors.json"
+        }
+    }
+}

@@ -1,0 +1,66 @@
+suite "office-markdown-ribbon-collapse" {
+    version = 1
+
+    scenario "toggle-wps-markdown-ribbon-with-ctrl-f1" {
+        name = "Collapse and expand Markdown ribbon with WPS Ctrl+F1"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-markdown" {
+            target = text("产品说明", true)
+        }
+
+        wait "markdown-ready" {
+            visible = css(".work-markdown-editor .work-markdown-ribbon")
+        }
+
+        expect "collapse-control-visible" {
+            visible = css(".work-markdown-ribbon .work-office-ribbon-collapse[aria-label='折叠功能区'][aria-keyshortcuts='Control+F1 Meta+F1']")
+        }
+
+        press "collapse-ribbon" {
+            key = "Control+F1"
+        }
+
+        expect "ribbon-collapsed" {
+            visible = css(".work-markdown-ribbon[data-collapsed='true'] .work-office-ribbon-collapse[aria-label='展开功能区'][aria-expanded='false']")
+        }
+
+        press "expand-ribbon" {
+            key = "Control+F1"
+        }
+
+        expect "ribbon-expanded" {
+            visible = css(".work-markdown-ribbon:not([data-collapsed]) .work-office-ribbon-collapse[aria-label='折叠功能区'][aria-expanded='true']")
+        }
+
+        accessibility "markdown-ribbon-collapse-accessibility" {
+            path = "evidence/markdown-ribbon-collapse-accessibility.json"
+            interactive = true
+        }
+
+        console "markdown-ribbon-collapse-console" {
+            path = "diagnostics/markdown-ribbon-collapse-console.json"
+            clear = false
+        }
+
+        page_errors "markdown-ribbon-collapse-page-errors" {
+            path = "diagnostics/markdown-ribbon-collapse-page-errors.json"
+            clear = false
+        }
+    }
+}

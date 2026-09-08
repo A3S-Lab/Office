@@ -1578,6 +1578,31 @@ function DocumentEditorSurface({
             restoreDocumentBodyFocus();
             return true;
           }}
+          onUnlinkFields={() => {
+            if (!editor || editor.isDestroyed) return false;
+            const ids = selectedDocumentFieldIds(editor);
+            if (!ids.length) return false;
+            if (!editor.commands.unlinkDocumentFields()) return false;
+            setFieldCodeOverrides((current) => {
+              const next = new Set(current);
+              for (const id of ids) next.delete(id);
+              return next;
+            });
+            restoreDocumentBodyFocus();
+            return true;
+          }}
+          onLockFields={() => {
+            if (!editor || editor.isDestroyed) return false;
+            if (!editor.commands.setDocumentFieldsLocked(true)) return false;
+            restoreDocumentBodyFocus();
+            return true;
+          }}
+          onUnlockFields={() => {
+            if (!editor || editor.isDestroyed) return false;
+            if (!editor.commands.setDocumentFieldsLocked(false)) return false;
+            restoreDocumentBodyFocus();
+            return true;
+          }}
           onToggleHiddenText={() => {
             setShowHiddenText((value) => !value);
             restoreDocumentBodyFocus();

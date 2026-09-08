@@ -18,6 +18,7 @@ import {
 } from './office-editor-extension';
 
 export interface PdfEditorCommands {
+  actualSize: () => void;
   clearSearch: () => void;
   deleteAnnotationSelection: () => void;
   fitPage: () => void;
@@ -148,6 +149,10 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
     createOfficeEditorExtension<PdfEditorCommandContext, PdfEditorCommands>({
       name: 'pdfZoom',
       addCommands: () => ({
+        actualSize: {
+          canExecute: ({ viewer }) => canZoom(viewer),
+          execute: ({ viewer }) => viewer.actualSize(),
+        },
         fitPage: {
           canExecute: ({ viewer }) => canZoom(viewer),
           execute: ({ viewer }) => viewer.fitPage(),
@@ -319,6 +324,33 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
           runPdfShortcut(event, can.zoomOut, commands.zoomOut),
         'Mod-0': ({ can, commands }, event) =>
           runPdfShortcut(event, can.fitPage, commands.fitPage),
+        'Mod-1': ({ can, commands }, event) =>
+          runPdfShortcut(event, can.actualSize, commands.actualSize),
+        'Mod-2': ({ can, commands }, event) =>
+          runPdfShortcut(event, can.fitWidth, commands.fitWidth),
+        PageUp: ({ can, commands }, event) =>
+          runPdfTextAwareShortcut(event, can.previousPage, commands.previousPage),
+        PageDown: ({ can, commands }, event) =>
+          runPdfTextAwareShortcut(event, can.nextPage, commands.nextPage),
+        // WPS/Acrobat-style page advance (Space) and reverse (Shift+Space).
+        Space: ({ can, commands }, event) =>
+          runPdfTextAwareShortcut(event, can.nextPage, commands.nextPage),
+        'Shift-Space': ({ can, commands }, event) =>
+          runPdfTextAwareShortcut(event, can.previousPage, commands.previousPage),
+        'Mod-Home': ({ can, commands }, event) =>
+          runPdfTextAwareShortcut(
+            event,
+            () => can.goToPage(1),
+            () => commands.goToPage(1),
+          ),
+        'Mod-End': ({ can, commands, context }, event) => {
+          const lastPage = context.viewer.state.totalPages;
+          return runPdfTextAwareShortcut(
+            event,
+            () => can.goToPage(lastPage),
+            () => commands.goToPage(lastPage),
+          );
+        },
         'Mod-f': ({ can, context }, event) => {
           if (
             event.repeat ||

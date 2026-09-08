@@ -314,6 +314,104 @@ test('Markdown opens source selection actions from the keyboard', async ({
   await expect(source).toBeFocused();
 });
 
+test('Markdown opens the link dialog with WPS Ctrl+K', async ({ page }) => {
+  await page.goto('/playground/');
+  await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
+
+  await page.getByRole('tab', { name: '插入' }).click();
+  const addLink = page.getByRole('button', { name: '添加链接' });
+  await expect(addLink).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+K Meta+K',
+  );
+
+  const source = page.getByRole('textbox', { name: 'Markdown 源码' });
+  await source.focus();
+  await page.keyboard.press('Control+k');
+  const dialog = page.getByRole('dialog', { name: '添加链接' });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(source).toBeFocused();
+});
+
+test('Markdown applies bold with WPS Ctrl+B in source editing', async ({
+  page,
+}) => {
+  await page.goto('/playground/');
+  await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
+
+  const bold = page.getByRole('button', { name: '加粗' });
+  await expect(bold).toHaveAttribute('aria-keyshortcuts', 'Control+B Meta+B');
+  await expect(page.getByRole('button', { name: '斜体' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+I Meta+I',
+  );
+
+  const source = page.getByRole('textbox', { name: 'Markdown 源码' });
+  await source.focus();
+  const before = await source.inputValue();
+  await page.keyboard.press('Control+b');
+  await expect(source).not.toHaveValue(before);
+  await expect(source).toHaveValue(/\*\*/);
+  await expect(source).toBeFocused();
+});
+
+test('Markdown applies italic with WPS Ctrl+I in source editing', async ({
+  page,
+}) => {
+  await page.goto('/playground/');
+  await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
+
+  const italic = page.getByRole('button', { name: '斜体' });
+  await expect(italic).toHaveAttribute('aria-keyshortcuts', 'Control+I Meta+I');
+
+  const source = page.getByRole('textbox', { name: 'Markdown 源码' });
+  await source.focus();
+  const before = await source.inputValue();
+  await page.keyboard.press('Control+i');
+  await expect(source).not.toHaveValue(before);
+  await expect(italic).toHaveAttribute('aria-pressed', 'true');
+  await expect(source).toBeFocused();
+});
+
+test('Markdown ribbon collapses with WPS Ctrl+F1', async ({ page }, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') browserErrors.push(message.text());
+  });
+
+  await page.goto('/playground/');
+  await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
+
+  const ribbon = page.locator('.work-markdown-ribbon');
+  const collapse = ribbon.locator('.work-office-ribbon-collapse');
+  await expect(collapse).toHaveAttribute('aria-label', '折叠功能区');
+  await expect(collapse).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+F1 Meta+F1',
+  );
+
+  await page.keyboard.press('Control+F1');
+  await expect(ribbon).toHaveAttribute('data-collapsed', 'true');
+  await expect(collapse).toHaveAttribute('aria-label', '展开功能区');
+  await expect(collapse).toHaveAttribute('aria-expanded', 'false');
+
+  await page.screenshot({
+    path: testInfo.outputPath(
+      `markdown-ribbon-collapsed-${testInfo.project.name}.png`,
+    ),
+    animations: 'disabled',
+  });
+
+  await page.keyboard.press('Control+F1');
+  await expect(ribbon).not.toHaveAttribute('data-collapsed', 'true');
+  await expect(collapse).toHaveAttribute('aria-label', '折叠功能区');
+  await expect(collapse).toHaveAttribute('aria-expanded', 'true');
+  expect(browserErrors).toEqual([]);
+});
+
 async function setMarkdownSourceSelection(
   source: Locator,
   start: number,

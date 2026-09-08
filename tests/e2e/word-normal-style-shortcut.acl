@@ -1,0 +1,75 @@
+suite "office-word-normal-style-shortcut" {
+    version = 1
+
+    scenario "apply-writer-normal-style-with-wps-ctrl-shift-n" {
+        name = "Apply Writer Normal / 正文 style with WPS Ctrl+Shift+N"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "normal-style-shortcut-described" {
+            visible = css("[aria-label='段落样式库'] label[data-document-style='paragraph'][title='正文（Cmd/Ctrl+Shift+N）']")
+        }
+
+        click "select-title" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-title-start" {
+            key = "Home"
+        }
+
+        press "apply-heading-two" {
+            key = "Control+Alt+2"
+        }
+
+        expect "heading-two-applied" {
+            visible = css(".work-document-editable .ProseMirror h2")
+        }
+
+        press "apply-normal-style" {
+            key = "Control+Shift+n"
+        }
+
+        expect "normal-style-active" {
+            visible = css("[aria-label='段落样式库'] label[data-document-style='paragraph'].active")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "word-normal-style-shortcut-accessibility" {
+            path = "evidence/word-normal-style-shortcut-accessibility.json"
+        }
+
+        console "word-normal-style-shortcut-console" {
+            path = "diagnostics/word-normal-style-shortcut-console.json"
+        }
+
+        page_errors "word-normal-style-shortcut-page-errors" {
+            path = "diagnostics/word-normal-style-shortcut-page-errors.json"
+        }
+    }
+}

@@ -1,0 +1,83 @@
+suite "office-word-font-size-shortcuts" {
+    version = 1
+
+    scenario "step-writer-font-size-with-wps-shortcuts" {
+        name = "Step Writer font size with WPS grow and shrink shortcuts"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "grow-font-shortcut-described" {
+            visible = css("[aria-label='字体'] button[aria-label='增大字号'][aria-keyshortcuts='Control+Shift+. Meta+Shift+. Control+] Meta+]']")
+        }
+
+        expect "shrink-font-shortcut-described" {
+            visible = css("[aria-label='字体'] button[aria-label='减小字号'][aria-keyshortcuts='Control+Shift+, Meta+Shift+, Control+[ Meta+[']")
+        }
+
+        click "select-title" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-title-start" {
+            key = "Home"
+        }
+
+        press "select-title-line" {
+            key = "Shift+End"
+        }
+
+        press "grow-font" {
+            key = "Control+]"
+        }
+
+        expect "grown-font-size-applied" {
+            visible = css(".work-document-editable .ProseMirror h1 [style*='font-size: 12pt']")
+        }
+
+        press "shrink-font" {
+            key = "Control+["
+        }
+
+        expect "shrunk-font-size-applied" {
+            visible = css(".work-document-editable .ProseMirror h1 [style*='font-size: 10.5pt']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "word-font-size-shortcuts-accessibility" {
+            path = "evidence/word-font-size-shortcuts-accessibility.json"
+        }
+
+        console "word-font-size-shortcuts-console" {
+            path = "diagnostics/word-font-size-shortcuts-console.json"
+        }
+
+        page_errors "word-font-size-shortcuts-page-errors" {
+            path = "diagnostics/word-font-size-shortcuts-page-errors.json"
+        }
+    }
+}

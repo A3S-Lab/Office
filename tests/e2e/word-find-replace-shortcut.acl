@@ -1,0 +1,79 @@
+suite "office-word-find-replace-shortcut" {
+    version = 1
+
+    scenario "open-writer-find-and-replace-with-wps-shortcuts" {
+        name = "Open Writer find and replace with WPS Ctrl+F / Ctrl+H"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "find-shortcut-described" {
+            visible = css(".work-document-ribbon button[aria-label='查找'][aria-keyshortcuts='Control+F Meta+F']")
+        }
+
+        expect "replace-shortcut-described" {
+            visible = css(".work-document-ribbon button[aria-label='替换'][aria-keyshortcuts='Control+H Meta+H']")
+        }
+
+        click "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "open-find" {
+            key = "Control+f"
+        }
+
+        wait "find-panel-open" {
+            visible = css(".work-document-find-panel")
+        }
+
+        expect "find-query-focused" {
+            visible = css(".work-document-find-panel input[aria-label='查找内容']:focus")
+        }
+
+        press "switch-to-replace" {
+            key = "Control+h"
+        }
+
+        expect "replace-query-focused" {
+            visible = css(".work-document-find-panel input[aria-label='查找内容']:focus")
+        }
+
+        expect "replace-field-visible" {
+            visible = css(".work-document-find-panel input[aria-label='替换为']")
+        }
+
+        accessibility "word-find-replace-shortcut-accessibility" {
+            path = "evidence/word-find-replace-shortcut-accessibility.json"
+        }
+
+        console "word-find-replace-shortcut-console" {
+            path = "diagnostics/word-find-replace-shortcut-console.json"
+        }
+
+        page_errors "word-find-replace-shortcut-page-errors" {
+            path = "diagnostics/word-find-replace-shortcut-page-errors.json"
+        }
+    }
+}

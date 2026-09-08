@@ -171,6 +171,9 @@ interface DocumentToolbarProps {
   onTogglePageNumbers: () => void;
   onToggleFieldCodes: () => void;
   onToggleSelectedFieldCodes: () => boolean;
+  onUnlinkFields: () => boolean;
+  onLockFields: () => boolean;
+  onUnlockFields: () => boolean;
   onToggleHiddenText: () => void;
   onToggleRulers: () => void;
   onPageColorChange: (color: string) => void;
@@ -252,6 +255,9 @@ export function DocumentToolbar({
   onTogglePageNumbers,
   onToggleFieldCodes,
   onToggleSelectedFieldCodes,
+  onUnlinkFields,
+  onLockFields,
+  onUnlockFields,
   onToggleHiddenText,
   onToggleRulers,
   onPageColorChange,
@@ -488,6 +494,9 @@ export function DocumentToolbar({
           onRefreshFields,
           onToggleFieldCodes,
           onToggleSelectedFieldCodes,
+          onUnlinkFields,
+          onLockFields,
+          onUnlockFields,
           onToggleSpellcheck,
           onToggleTrackChanges,
         })
@@ -580,6 +589,9 @@ export function DocumentToolbar({
     reviewOnly,
     onToggleFieldCodes,
     onToggleSelectedFieldCodes,
+    onUnlinkFields,
+    onLockFields,
+    onUnlockFields,
     onToggleSpellcheck,
     onToggleTrackChanges,
     pageChromeEditor,
@@ -855,6 +867,15 @@ export function DocumentToolbar({
               onRefreshIndex={onRefreshIndex}
               onToggleCitations={onToggleCitations}
               onRefreshFields={onRefreshFields}
+              onUnlinkFields={() => {
+                onUnlinkFields();
+              }}
+              onLockFields={() => {
+                onLockFields();
+              }}
+              onUnlockFields={() => {
+                onUnlockFields();
+              }}
             />
           ),
           review: (

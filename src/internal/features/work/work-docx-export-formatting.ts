@@ -9,11 +9,15 @@ export function paragraphAlignment(
   element: HTMLElement,
   docx: typeof import('docx'),
 ) {
+  if (element.getAttribute('data-office-text-align') === 'distribute') {
+    return docx.AlignmentType.DISTRIBUTE;
+  }
   const alignment = element.style.textAlign;
   if (alignment === 'center') return docx.AlignmentType.CENTER;
   if (alignment === 'right' || alignment === 'end')
     return docx.AlignmentType.RIGHT;
   if (alignment === 'justify') return docx.AlignmentType.JUSTIFIED;
+  if (alignment === 'distribute') return docx.AlignmentType.DISTRIBUTE;
   if (alignment === 'left' || alignment === 'start')
     return docx.AlignmentType.LEFT;
   return undefined;

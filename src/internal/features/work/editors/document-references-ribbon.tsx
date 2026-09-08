@@ -5,9 +5,12 @@ import {
   Link2,
   ListOrdered,
   ListTree,
+  Lock,
+  LockOpen,
   RefreshCw,
   Table2,
   Tags,
+  Unlink2,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { WorkDocumentCaptionKind } from '../work-document-captions';
@@ -17,7 +20,9 @@ import {
   selectedDocumentIndexDraft,
 } from '../work-document-index-nodes';
 import { documentHasTableOfContents } from '../work-document-table-of-contents-node';
+import { documentFieldLockTargets } from '../work-document-field-node';
 import { getDocumentCommandDefinition } from './document-command-catalog';
+import { selectedDocumentFieldIds } from './document-field-code-overrides';
 import { documentHasRefreshableFields } from './document-editor-support';
 import {
   WorkOfficeRibbonButton,
@@ -38,6 +43,9 @@ export interface DocumentReferencesRibbonProps {
   onRefreshIndex: () => void;
   onToggleCitations: () => void;
   onRefreshFields: () => void;
+  onUnlinkFields: () => void;
+  onLockFields: () => void;
+  onUnlockFields: () => void;
 }
 
 export function DocumentReferencesRibbon({
@@ -54,12 +62,22 @@ export function DocumentReferencesRibbon({
   onRefreshIndex,
   onToggleCitations,
   onRefreshFields,
+  onUnlinkFields,
+  onLockFields,
+  onUnlockFields,
 }: DocumentReferencesRibbonProps) {
   const hasTableOfContents = documentHasTableOfContents(editor);
   const hasIndex = documentHasIndex(editor);
   const canMarkIndexEntry = Boolean(selectedDocumentIndexDraft(editor));
   const hasRefreshableFields = documentHasRefreshableFields(editor);
+  const fieldLockTargets = documentFieldLockTargets(editor.state);
+  const canUnlinkFields = selectedDocumentFieldIds(editor).length > 0;
+  const canLockFields = fieldLockTargets.some((field) => !field.locked);
+  const canUnlockFields = fieldLockTargets.some((field) => field.locked);
   const refreshFieldsCommand = getDocumentCommandDefinition('refreshFields');
+  const unlinkFieldsCommand = getDocumentCommandDefinition('unlinkFields');
+  const lockFieldsCommand = getDocumentCommandDefinition('lockFields');
+  const unlockFieldsCommand = getDocumentCommandDefinition('unlockFields');
 
   return (
     <>
@@ -164,6 +182,48 @@ export function DocumentReferencesRibbon({
           onClick={onRefreshFields}
         >
           <RefreshCw size={19} />
+        </ReferencesButton>
+        <ReferencesButton
+          label="取消域链接"
+          shortcut={unlinkFieldsCommand.shortcut?.label}
+          ariaKeyShortcuts={unlinkFieldsCommand.shortcut?.aria}
+          disabled={!canUnlinkFields}
+          title={
+            canUnlinkFields
+              ? `将所选域替换为结果文本（${unlinkFieldsCommand.shortcut?.label}）`
+              : '请先选择一个或多个域'
+          }
+          onClick={onUnlinkFields}
+        >
+          <Unlink2 size={19} />
+        </ReferencesButton>
+        <ReferencesButton
+          label="锁定域"
+          shortcut={lockFieldsCommand.shortcut?.label}
+          ariaKeyShortcuts={lockFieldsCommand.shortcut?.aria}
+          disabled={!canLockFields}
+          title={
+            canLockFields
+              ? `锁定所选域，阻止更新（${lockFieldsCommand.shortcut?.label}）`
+              : '请先选择未锁定的域'
+          }
+          onClick={onLockFields}
+        >
+          <Lock size={19} />
+        </ReferencesButton>
+        <ReferencesButton
+          label="解除域锁定"
+          shortcut={unlockFieldsCommand.shortcut?.label}
+          ariaKeyShortcuts={unlockFieldsCommand.shortcut?.aria}
+          disabled={!canUnlockFields}
+          title={
+            canUnlockFields
+              ? `解除所选域锁定（${unlockFieldsCommand.shortcut?.label}）`
+              : '请先选择已锁定的域'
+          }
+          onClick={onUnlockFields}
+        >
+          <LockOpen size={19} />
         </ReferencesButton>
       </WorkOfficeRibbonGroup>
     </>

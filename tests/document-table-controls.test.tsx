@@ -958,6 +958,9 @@ function documentToolbar(
       onToggleNavigation={noop}
       onToggleFieldCodes={noop}
       onToggleSelectedFieldCodes={() => false}
+      onUnlinkFields={() => false}
+      onLockFields={() => false}
+      onUnlockFields={() => false}
       onToggleHiddenText={noop}
       onTogglePageNumbers={noop}
       onToggleRulers={noop}

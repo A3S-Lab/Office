@@ -1,0 +1,111 @@
+suite "office-word-indent-shortcuts" {
+    version = 1
+
+    scenario "step-writer-indent-with-wps-ctrl-m" {
+        name = "Step Writer paragraph indent with WPS Ctrl+M, Shift+Alt+. / ,, and Alt+Shift+arrows"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "increase-indent-shortcut-described" {
+            visible = css("[aria-label='段落'] button[aria-label='增加缩进'][aria-keyshortcuts='Control+M Meta+M Shift+Alt+. Alt+Shift+ArrowRight']")
+        }
+
+        expect "decrease-indent-shortcut-described" {
+            visible = css("[aria-label='段落'] button[aria-label='减少缩进'][aria-keyshortcuts='Control+Shift+M Meta+Shift+M Shift+Alt+, Alt+Shift+ArrowLeft']")
+        }
+
+        click "select-paragraph" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        press "move-to-paragraph-start" {
+            key = "Home"
+        }
+
+        press "increase-indent" {
+            key = "Control+m"
+        }
+
+        expect "indent-level-one-applied" {
+            visible = css(".work-document-editable .ProseMirror p[data-office-indent-level='1']")
+        }
+
+        press "decrease-indent" {
+            key = "Control+Shift+m"
+        }
+
+        expect "indent-level-cleared" {
+            visible = css(".work-document-editable .ProseMirror p:not([data-office-indent-level])")
+        }
+
+        press "increase-indent-shift-alt" {
+            key = "Shift+Alt+."
+        }
+
+        expect "indent-level-one-via-shift-alt" {
+            visible = css(".work-document-editable .ProseMirror p[data-office-indent-level='1']")
+        }
+
+        press "decrease-indent-shift-alt" {
+            key = "Shift+Alt+,"
+        }
+
+        expect "indent-level-cleared-via-shift-alt" {
+            visible = css(".work-document-editable .ProseMirror p:not([data-office-indent-level])")
+        }
+
+        press "increase-indent-alt-shift-arrow" {
+            key = "Alt+Shift+ArrowRight"
+        }
+
+        expect "indent-level-one-via-alt-shift-arrow" {
+            visible = css(".work-document-editable .ProseMirror p[data-office-indent-level='1']")
+        }
+
+        press "decrease-indent-alt-shift-arrow" {
+            key = "Alt+Shift+ArrowLeft"
+        }
+
+        expect "indent-level-cleared-via-alt-shift-arrow" {
+            visible = css(".work-document-editable .ProseMirror p:not([data-office-indent-level])")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "word-indent-shortcuts-accessibility" {
+            path = "evidence/word-indent-shortcuts-accessibility.json"
+        }
+
+        console "word-indent-shortcuts-console" {
+            path = "diagnostics/word-indent-shortcuts-console.json"
+        }
+
+        page_errors "word-indent-shortcuts-page-errors" {
+            path = "diagnostics/word-indent-shortcuts-page-errors.json"
+        }
+    }
+}

@@ -1,0 +1,79 @@
+suite "office-word-bullet-list-shortcut" {
+    version = 1
+
+    scenario "toggle-writer-bullets-with-wps-ctrl-shift-l" {
+        name = "Toggle Writer bullet list with WPS Ctrl+Shift+L"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "bullet-shortcut-described" {
+            visible = css("[aria-label='段落'] button[aria-label='项目符号'][aria-keyshortcuts='Control+Shift+L Meta+Shift+L']")
+        }
+
+        click "select-title-paragraph" {
+            target = text("新项目方案", true)
+        }
+
+        press "move-to-paragraph-start" {
+            key = "Home"
+        }
+
+        press "toggle-bullets-on" {
+            key = "Control+Shift+l"
+        }
+
+        expect "bullet-button-active" {
+            visible = css("[aria-label='段落'] button[aria-label='项目符号'].active")
+        }
+
+        expect "title-still-present" {
+            text = "新项目方案"
+        }
+
+        press "toggle-bullets-off" {
+            key = "Control+Shift+l"
+        }
+
+        expect "bullet-button-inactive" {
+            visible = css("[aria-label='段落'] button[aria-label='项目符号'][aria-pressed='false']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "word-bullet-list-shortcut-accessibility" {
+            path = "evidence/word-bullet-list-shortcut-accessibility.json"
+        }
+
+        console "word-bullet-list-shortcut-console" {
+            path = "diagnostics/word-bullet-list-shortcut-console.json"
+        }
+
+        page_errors "word-bullet-list-shortcut-page-errors" {
+            path = "diagnostics/word-bullet-list-shortcut-page-errors.json"
+        }
+    }
+}

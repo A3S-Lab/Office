@@ -6,15 +6,17 @@ import {
   documentStrikeStyle,
   type WorkDocumentStrikeStyle,
 } from '../work-document-strike';
+import { getDocumentCommandDefinition } from './document-command-catalog';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
 
 const strikeOptions = [
   { value: 'none', label: '无删除线' },
-  { value: 'single', label: '单删除线' },
-  { value: 'double', label: '双删除线' },
+  { value: 'single', label: '单删除线', command: 'strike' as const },
+  { value: 'double', label: '双删除线', command: 'doubleStrike' as const },
 ] as const satisfies readonly {
   value: WorkDocumentStrikeStyle;
   label: string;
+  command?: 'strike' | 'doubleStrike';
 }[];
 
 export function DocumentStrikeRibbon({
@@ -88,23 +90,30 @@ export function DocumentStrikeRibbon({
         )}
       >
         {(close) =>
-          strikeOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              role="menuitemradio"
-              tabIndex={-1}
-              aria-label={option.label}
-              aria-checked={style === option.value}
-              onClick={() => {
-                close();
-                editor.chain().focus().setDocumentStrike(option.value).run();
-              }}
-            >
-              <DocumentStrikeGlyph style={option.value} />
-              <span>{option.label}</span>
-            </button>
-          ))
+          strikeOptions.map((option) => {
+            const optionShortcut =
+              'command' in option && option.command
+                ? getDocumentCommandDefinition(option.command).shortcut
+                : undefined;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="menuitemradio"
+                tabIndex={-1}
+                aria-label={option.label}
+                aria-checked={style === option.value}
+                aria-keyshortcuts={optionShortcut?.aria}
+                onClick={() => {
+                  close();
+                  editor.chain().focus().setDocumentStrike(option.value).run();
+                }}
+              >
+                <DocumentStrikeGlyph style={option.value} />
+                <span>{option.label}</span>
+              </button>
+            );
+          })
         }
       </Popover>
     </span>

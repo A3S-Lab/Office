@@ -209,3 +209,120 @@ test('Slideshow blank screen follows WPS B and W shortcuts', async ({
   await expect(dialog).toBeHidden();
   expect(browserErrors).toEqual([]);
 });
+
+test('Slideshow digit+Enter jumps like WPS/PowerPoint', async ({ page }, testInfo) => {
+  const browserErrors: string[] = [];
+  const consoleMessages: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleMessages.push(message.text());
+  });
+  await page.goto('/playground/');
+  await page
+    .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
+    .click();
+  await page.getByRole('tab', { name: '幻灯片放映' }).click();
+  await page.getByRole('button', { name: '从头开始放映' }).click();
+
+  const dialog = page.getByRole('dialog', { name: '幻灯片放映' });
+  const player = dialog.locator('.work-presentation-player');
+  await expect(player).toHaveAttribute('data-slide-index', '0');
+
+  await page.keyboard.press('3');
+  await expect(player).toHaveAttribute('data-goto-digits', '3');
+  await expect(dialog.getByText('转到 3')).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath('presentation-slideshow-goto-buffer.png'),
+    fullPage: true,
+  });
+
+  await page.keyboard.press('Enter');
+  await expect(player).toHaveAttribute('data-slide-index', '2');
+  await expect(player).not.toHaveAttribute('data-goto-digits');
+  await page.screenshot({
+    path: testInfo.outputPath('presentation-slideshow-goto-slide-3.png'),
+    fullPage: true,
+  });
+
+  await page.keyboard.press('2');
+  await page.keyboard.press('Enter');
+  await expect(player).toHaveAttribute('data-slide-index', '1');
+  await expect(dialog.getByText('2 / 3')).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath('presentation-slideshow-goto-slide-2.png'),
+    fullPage: true,
+  });
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  expect(browserErrors).toEqual([]);
+  expect(consoleMessages).toEqual([]);
+});
+
+test('Slideshow Home / End jump like WPS/PowerPoint', async ({ page }) => {
+  await page.goto('/playground/');
+  await page
+    .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
+    .click();
+  await page.getByRole('tab', { name: '幻灯片放映' }).click();
+  await page.getByRole('button', { name: '从头开始放映' }).click();
+
+  const dialog = page.getByRole('dialog', { name: '幻灯片放映' });
+  const player = dialog.locator('.work-presentation-player');
+  await expect(player).toHaveAttribute('data-slide-index', '0');
+  await expect(
+    player.locator('button[aria-label="上一张"]'),
+  ).toHaveAttribute('aria-keyshortcuts', 'ArrowLeft ArrowUp PageUp Home');
+  await expect(player.locator('button[aria-label="下一张"]')).toHaveAttribute(
+    'aria-keyshortcuts',
+    'ArrowRight ArrowDown PageDown Space End',
+  );
+
+  await page.keyboard.press('End');
+  await expect(player).toHaveAttribute('data-slide-index', '2');
+  await page.keyboard.press('Home');
+  await expect(player).toHaveAttribute('data-slide-index', '0');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+});
+
+test('Slideshow starts with WPS F5 / Shift+F5 shortcuts', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name === 'compact-768',
+    'Compact hosts reserve F5 for browser refresh; desktop + ACL cover the chord.',
+  );
+  await page.goto('/playground/');
+  await page
+    .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
+    .click();
+  await page.getByRole('tab', { name: '幻灯片放映' }).click();
+
+  const startFromBeginning = page.getByRole('button', {
+    name: '从头开始放映',
+  });
+  const startFromCurrent = page.getByRole('button', {
+    name: '从当前幻灯片放映',
+  });
+  await expect(startFromBeginning).toHaveAttribute('aria-keyshortcuts', 'F5');
+  await expect(startFromCurrent).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Shift+F5',
+  );
+
+  await page.locator('.work-presentation-editor').press('F5');
+  const dialog = page.getByRole('dialog', { name: '幻灯片放映' });
+  const player = dialog.locator('.work-presentation-player');
+  await expect(player).toHaveAttribute('data-slide-index', '0');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+
+  const secondSlide = page.locator(
+    '.work-slide-strip [data-slide-thumbnail][data-slide-index="1"]',
+  );
+  await secondSlide.click();
+  await expect(secondSlide).toHaveClass(/active/);
+  await secondSlide.press('Shift+F5');
+  await expect(player).toHaveAttribute('data-slide-index', '1');
+});

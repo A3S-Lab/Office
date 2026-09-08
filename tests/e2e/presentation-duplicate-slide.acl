@@ -1,0 +1,71 @@
+suite "office-presentation-duplicate-slide" {
+    version = 1
+
+    scenario "duplicate-slide-with-wps-ctrl-d" {
+        name = "Duplicate the current slide with WPS Ctrl+D"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        focus "focus-presentation-home" {
+            target = css(".playground-home")
+        }
+
+        press "scroll-presentation-into-view" {
+            key = "PageDown"
+        }
+
+        click "open-presentation" {
+            target = css("button[data-template-id='strategy-deck']")
+        }
+
+        wait "presentation-ready" {
+            visible = css(".work-presentation-editor")
+        }
+
+        expect "initial-slide-count" {
+            visible = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='2']")
+        }
+
+        expect "duplicate-slide-shortcut" {
+            visible = css("button[aria-label='复制幻灯片'][aria-keyshortcuts='Control+D Meta+D']")
+        }
+
+        click "focus-active-thumbnail" {
+            target = css(".work-slide-strip [data-slide-thumbnail].active")
+        }
+
+        press "duplicate-slide" {
+            key = "Control+d"
+        }
+
+        wait "duplicated-slide" {
+            visible = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='1'].active")
+        }
+
+        expect "duplicate-selected" {
+            visible = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='1'].active")
+        }
+
+        accessibility "presentation-duplicate-slide-accessibility" {
+            path = "evidence/presentation-duplicate-slide-accessibility.json"
+        }
+
+        console "presentation-duplicate-slide-console" {
+            path = "diagnostics/presentation-duplicate-slide-console.json"
+        }
+
+        page_errors "presentation-duplicate-slide-page-errors" {
+            path = "diagnostics/presentation-duplicate-slide-page-errors.json"
+        }
+    }
+}

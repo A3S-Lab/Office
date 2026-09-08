@@ -29,6 +29,11 @@ import {
   presentationBlankScreenLabel,
   type PresentationBlankScreen,
 } from './presentation-slideshow-blank';
+import {
+  appendPresentationGotoDigit,
+  presentationGotoEscapeAction,
+  resolvePresentationGotoIndex,
+} from './presentation-slideshow-goto';
 
 interface PlaybackState {
   animationCueIndex: number;
@@ -59,6 +64,9 @@ export function PresentationPlayer({
   const [presenter, setPresenter] = useState(false);
   const [blankScreen, setBlankScreen] =
     useState<PresentationBlankScreen>('off');
+  const [gotoBuffer, setGotoBuffer] = useState('');
+  const gotoBufferRef = useRef('');
+  const retainFullscreenAfterGotoClearRef = useRef(false);
   const playerRef = useRef<HTMLDivElement>(null);
   const presenterTimerRef = useRef<PresentationTimerController | null>(null);
   if (!presenterTimerRef.current) {
@@ -67,6 +75,7 @@ export function PresentationPlayer({
   const enteredFullscreenRef = useRef(false);
   const completedExitRef = useRef(false);
   const slide = content.slides[playback.index] ?? content.slides[0];
+  gotoBufferRef.current = gotoBuffer;
   const completeExit = useCallback(() => {
     if (completedExitRef.current) return;
     completedExitRef.current = true;
@@ -76,11 +85,32 @@ export function PresentationPlayer({
     (element: HTMLElement) => {
       void requestPresentationFullscreen(element).then((enteredFullscreen) => {
         if (!enteredFullscreen) return;
+        if (retainFullscreenAfterGotoClearRef.current) return;
         enteredFullscreenRef.current = true;
         if (document.fullscreenElement !== element) completeExit();
       });
     },
     [completeExit],
+  );
+  const goTo = useCallback(
+    (targetIndex: number) => {
+      setPlayback((current) => {
+        const index = Math.min(
+          Math.max(targetIndex, 0),
+          content.slides.length - 1,
+        );
+        return index === current.index
+          ? current
+          : {
+              animationCueIndex: initialAnimationCueIndex(
+                content.slides[index],
+              ),
+              index,
+              transitionKey: current.transitionKey + 1,
+            };
+      });
+    },
+    [content.slides],
   );
   const move = useCallback(
     (delta: number) => {
@@ -102,6 +132,19 @@ export function PresentationPlayer({
     },
     [content.slides],
   );
+  const clearGotoBuffer = useCallback(() => {
+    gotoBufferRef.current = '';
+    setGotoBuffer('');
+  }, []);
+  const suppressExitAfterGotoClear = useCallback(() => {
+    // Browser Escape also drops Fullscreen API; keep the slideshow open in
+    // windowed mode instead of treating that UA exit as ending the show.
+    retainFullscreenAfterGotoClearRef.current = true;
+    enteredFullscreenRef.current = false;
+    window.setTimeout(() => {
+      retainFullscreenAfterGotoClearRef.current = false;
+    }, 500);
+  }, []);
   const advance = useCallback(() => {
     setPlayback((current) => {
       const currentSlide = content.slides[current.index];
@@ -147,6 +190,13 @@ export function PresentationPlayer({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
+        if (
+          presentationGotoEscapeAction(gotoBufferRef.current) === 'clear-buffer'
+        ) {
+          clearGotoBuffer();
+          suppressExitAfterGotoClear();
+          return;
+        }
         if (document.fullscreenElement && document.exitFullscreen) {
           void document.exitFullscreen();
         } else {
@@ -164,9 +214,35 @@ export function PresentationPlayer({
         return;
       }
 
+      const nextDigit = appendPresentationGotoDigit(
+        gotoBufferRef.current,
+        event.key,
+      );
+      if (nextDigit !== null) {
+        event.preventDefault();
+        gotoBufferRef.current = nextDigit;
+        setGotoBuffer(nextDigit);
+        return;
+      }
+
+      if (event.key === 'Enter') {
+        const target = resolvePresentationGotoIndex(
+          gotoBufferRef.current,
+          content.slides.length,
+        );
+        if (target !== null) {
+          event.preventDefault();
+          clearGotoBuffer();
+          setBlankScreen('off');
+          goTo(target);
+          return;
+        }
+      }
+
       const nextBlank = nextPresentationBlankScreen(blankScreen, event.key);
       if (nextBlank !== null) {
         event.preventDefault();
+        clearGotoBuffer();
         setBlankScreen(nextBlank);
         return;
       }
@@ -179,6 +255,7 @@ export function PresentationPlayer({
         event.key === 'Spacebar'
       ) {
         event.preventDefault();
+        clearGotoBuffer();
         advance();
         return;
       }
@@ -188,16 +265,19 @@ export function PresentationPlayer({
         event.key === 'PageUp'
       ) {
         event.preventDefault();
+        clearGotoBuffer();
         retreat();
         return;
       }
       if (event.key === 'Home') {
         event.preventDefault();
+        clearGotoBuffer();
         move(-content.slides.length);
         return;
       }
       if (event.key === 'End') {
         event.preventDefault();
+        clearGotoBuffer();
         move(content.slides.length);
       }
     };
@@ -206,9 +286,12 @@ export function PresentationPlayer({
   }, [
     advance,
     blankScreen,
+    clearGotoBuffer,
     completeExit,
     content.slides.length,
+    goTo,
     move,
+    suppressExitAfterGotoClear,
     retreat,
   ]);
   useLayoutEffect(() => {
@@ -220,7 +303,12 @@ export function PresentationPlayer({
   useEffect(() => {
     const onFullscreenChange = () => {
       if (document.fullscreenElement === playerRef.current) {
+        if (retainFullscreenAfterGotoClearRef.current) return;
         enteredFullscreenRef.current = true;
+        return;
+      }
+      if (retainFullscreenAfterGotoClearRef.current) {
+        enteredFullscreenRef.current = false;
         return;
       }
       if (enteredFullscreenRef.current) completeExit();
@@ -233,6 +321,7 @@ export function PresentationPlayer({
   useEffect(() => {
     if (!onExit) return;
     const timer = window.setInterval(() => {
+      if (retainFullscreenAfterGotoClearRef.current) return;
       if (
         enteredFullscreenRef.current &&
         document.fullscreenElement !== playerRef.current
@@ -267,7 +356,9 @@ export function PresentationPlayer({
     <section
       className="work-presentation-player"
       data-blank-screen={blankScreen}
+      data-goto-digits={gotoBuffer || undefined}
       data-player-mode={presenter ? 'presenter' : 'audience'}
+      data-slide-index={playback.index}
       ref={playerRef}
       tabIndex={-1}
     >
@@ -327,7 +418,8 @@ export function PresentationPlayer({
         <button
           type="button"
           aria-label="上一张"
-          aria-keyshortcuts="ArrowLeft ArrowUp PageUp"
+          aria-keyshortcuts="ArrowLeft ArrowUp PageUp Home"
+          title="上一张（← / ↑ / PageUp / Home）"
           disabled={
             playback.index === 0 &&
             playback.animationCueIndex <= initialAnimationCueIndex(slide)
@@ -336,13 +428,16 @@ export function PresentationPlayer({
         >
           <ChevronLeft size={18} />
         </button>
-        <span>
-          {playback.index + 1} / {content.slides.length}
+        <span aria-live="polite">
+          {gotoBuffer
+            ? `转到 ${gotoBuffer}`
+            : `${playback.index + 1} / ${content.slides.length}`}
         </span>
         <button
           type="button"
           aria-label="下一张"
-          aria-keyshortcuts="ArrowRight ArrowDown PageDown Space"
+          aria-keyshortcuts="ArrowRight ArrowDown PageDown Space End"
+          title="下一张（→ / ↓ / PageDown / Space / End）"
           disabled={
             !hasPendingAnimation && playback.index === content.slides.length - 1
           }

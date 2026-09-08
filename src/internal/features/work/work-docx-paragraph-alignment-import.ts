@@ -14,7 +14,8 @@ export type ImportedDocxParagraphAlignment =
   | 'left'
   | 'center'
   | 'right'
-  | 'justify';
+  | 'justify'
+  | 'distribute';
 
 export interface ImportedDocxParagraphAlignmentMarker {
   marker: string;
@@ -72,7 +73,16 @@ export function applyImportedDocxParagraphAlignmentMarkers(
         const block = alignment
           ? closestParagraphBlock(node.parentElement, node)
           : null;
-        if (block && alignment) block.style.textAlign = alignment;
+        if (block && alignment) {
+          if (alignment === 'distribute') {
+            block.style.textAlign = 'justify';
+            block.style.textAlignLast = 'justify';
+            block.setAttribute('data-office-text-align', 'distribute');
+          } else {
+            block.style.textAlign = alignment;
+            block.removeAttribute('data-office-text-align');
+          }
+        }
         return '';
       },
     );
@@ -107,13 +117,17 @@ export function resolveDocxParagraphAlignment(
   if (justification === 'right') return 'right';
   if (justification === 'start') return direction === 'rtl' ? 'right' : 'left';
   if (justification === 'end') return direction === 'rtl' ? 'left' : 'right';
+  if (justification === 'both') return 'justify';
   if (
-    justification === 'both' ||
     justification === 'distribute' ||
+    justification === 'thaiDistribute'
+  ) {
+    return 'distribute';
+  }
+  if (
     justification === 'highKashida' ||
     justification === 'lowKashida' ||
-    justification === 'mediumKashida' ||
-    justification === 'thaiDistribute'
+    justification === 'mediumKashida'
   ) {
     return 'justify';
   }

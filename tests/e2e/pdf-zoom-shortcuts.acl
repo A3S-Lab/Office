@@ -1,0 +1,119 @@
+suite "office-pdf-zoom-shortcuts" {
+    version = 1
+
+    scenario "apply-wps-pdf-zoom-shortcuts" {
+        name = "Apply WPS PDF zoom with Ctrl+0 / Ctrl+2 and actual-size control"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        upload "open-pdf" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/pdf-thumbnail-keyboard.pdf"]
+        }
+
+        wait "pdf-ready" {
+            visible = css(".work-pdf-embed[data-ready='true']")
+        }
+
+        click "open-more-tools" {
+            target = role("button", "更多 PDF 工具")
+        }
+
+        wait "more-tools-open" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具']")
+        }
+
+        expect "actual-size-shortcut" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具'] button[aria-keyshortcuts='Control+1 Meta+1']")
+        }
+
+        expect "fit-page-shortcut" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具'] button[aria-keyshortcuts='Control+0 Meta+0']")
+        }
+
+        expect "fit-width-shortcut" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具'] button[aria-keyshortcuts='Control+2 Meta+2']")
+        }
+
+        press "close-menu" {
+            key = "Escape"
+        }
+
+        click "focus-pdf-canvas" {
+            target = css(".work-pdf-embed")
+        }
+
+        press "fit-width" {
+            key = "Control+2"
+        }
+
+        click "reopen-more-tools-after-fit-width" {
+            target = role("button", "更多 PDF 工具")
+        }
+
+        wait "fit-width-active" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具'] button[aria-keyshortcuts='Control+2 Meta+2'][aria-checked='true']")
+        }
+
+        click "actual-size-control" {
+            target = role("menuitemradio", "实际大小")
+        }
+
+        expect "zoom-percent-100" {
+            text = "100%"
+        }
+
+        click "reopen-more-tools-after-actual-size" {
+            target = role("button", "更多 PDF 工具")
+        }
+
+        wait "actual-size-active" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具'] button[aria-keyshortcuts='Control+1 Meta+1'][aria-checked='true']")
+        }
+
+        press "close-menu-after-actual-size" {
+            key = "Escape"
+        }
+
+        click "refocus-pdf-canvas" {
+            target = css(".work-pdf-embed")
+        }
+
+        press "fit-page" {
+            key = "Control+0"
+        }
+
+        click "reopen-more-tools-after-fit-page" {
+            target = role("button", "更多 PDF 工具")
+        }
+
+        wait "fit-page-active" {
+            visible = css("[role='menu'][aria-label='更多 PDF 工具'] button[aria-keyshortcuts='Control+0 Meta+0'][aria-checked='true']")
+        }
+
+        accessibility "pdf-zoom-shortcuts-accessibility" {
+            path = "evidence/pdf-zoom-shortcuts-accessibility.json"
+            interactive = true
+        }
+
+        console "pdf-zoom-shortcuts-console" {
+            path = "diagnostics/pdf-zoom-shortcuts-console.json"
+            clear = false
+        }
+
+        page_errors "pdf-zoom-shortcuts-page-errors" {
+            path = "diagnostics/pdf-zoom-shortcuts-page-errors.json"
+            clear = false
+        }
+    }
+}

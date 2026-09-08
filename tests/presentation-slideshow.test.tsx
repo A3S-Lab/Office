@@ -176,6 +176,43 @@ test('returns focus to the slideshow launcher after playback exits', async () =>
   await waitFor(() => expect(launcher).toHaveFocus());
 });
 
+test('jumps to a typed slide with the WPS digit+Enter shortcut', () => {
+  let exits = 0;
+  render(
+    <PresentationPlayer
+      content={presentation()}
+      onExit={() => {
+        exits += 1;
+      }}
+    />,
+  );
+
+  expect(screen.getByText('1 / 3')).toBeVisible();
+  fireEvent.keyDown(window, { key: '3' });
+  expect(screen.getByText('转到 3')).toBeVisible();
+  expect(
+    document.querySelector('.work-presentation-player[data-goto-digits="3"]'),
+  ).not.toBeNull();
+
+  fireEvent.keyDown(window, { key: 'Escape' });
+  expect(screen.getByText('1 / 3')).toBeVisible();
+  expect(exits).toBe(0);
+
+  fireEvent.keyDown(window, { key: '2' });
+  fireEvent.keyDown(window, { key: 'Enter' });
+  expect(screen.getByText('2 / 3')).toBeVisible();
+  expect(
+    document.querySelector('.work-presentation-player[data-slide-index="1"]'),
+  ).not.toBeNull();
+  expect(
+    document.querySelector('.work-presentation-player[data-goto-digits]'),
+  ).toBeNull();
+
+  fireEvent.keyDown(window, { key: '9' });
+  fireEvent.keyDown(window, { key: 'Enter' });
+  expect(screen.getByText('3 / 3')).toBeVisible();
+});
+
 test('keeps slideshow keyboard commands active after presenter controls receive focus', () => {
   let exits = 0;
   render(

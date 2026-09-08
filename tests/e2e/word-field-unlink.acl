@@ -1,0 +1,70 @@
+suite "office-word-field-unlink" {
+    version = 1
+
+    scenario "unlink-selected-field-with-wps-ctrl-shift-f9" {
+        name = "Unlink a selected Writer field to static result text with Ctrl+Shift+F9"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=word-wps-numeric-fields"
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "live-page-field" {
+            visible = css(".work-document-field[data-field-kind='page'][data-field-display='I']")
+        }
+
+        click "select-page-field" {
+            target = css(".work-document-field[data-field-kind='page']")
+        }
+
+        press "unlink-selected-field" {
+            key = "Control+Shift+F9"
+        }
+
+        expect "page-field-node-removed" {
+            visible = css(".work-document-editable .ProseMirror:not(:has(.work-document-field[data-field-kind='page']))")
+        }
+
+        expect "other-fields-remain-live" {
+            visible = css(".work-document-field[data-field-kind='numPages'][data-field-display='A']")
+        }
+
+        expect "editor-keeps-focus" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-unlink" {
+            key = "Control+z"
+        }
+
+        expect "page-field-restored" {
+            visible = css(".work-document-field[data-field-kind='page'][data-field-display='I']")
+        }
+
+        accessibility "field-unlink-accessibility" {
+            path = "evidence/field-unlink-accessibility.json"
+            interactive = true
+        }
+
+        console "field-unlink-console" {
+            path = "diagnostics/field-unlink-console.json"
+            clear = false
+        }
+
+        page_errors "field-unlink-page-errors" {
+            path = "diagnostics/field-unlink-page-errors.json"
+            clear = false
+        }
+    }
+}

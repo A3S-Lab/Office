@@ -1,0 +1,71 @@
+suite "office-presentation-delete-slide" {
+    version = 1
+
+    scenario "delete-slide-with-wps-delete" {
+        name = "Delete the current slide with WPS Delete on the active thumbnail"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        focus "focus-presentation-home" {
+            target = css(".playground-home")
+        }
+
+        press "scroll-presentation-into-view" {
+            key = "PageDown"
+        }
+
+        click "open-presentation" {
+            target = css("button[data-template-id='strategy-deck']")
+        }
+
+        wait "presentation-ready" {
+            visible = css(".work-presentation-editor")
+        }
+
+        expect "initial-slide-count" {
+            visible = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='2']")
+        }
+
+        expect "delete-slide-shortcut" {
+            visible = css("button[aria-label='删除幻灯片'][aria-keyshortcuts='Delete Backspace']")
+        }
+
+        click "focus-active-thumbnail" {
+            target = css(".work-slide-strip [data-slide-thumbnail].active")
+        }
+
+        press "delete-slide" {
+            key = "Delete"
+        }
+
+        wait "adjacent-selected" {
+            visible = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='0'].active")
+        }
+
+        expect "remaining-slides" {
+            visible = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='1']")
+        }
+
+        accessibility "presentation-delete-slide-accessibility" {
+            path = "evidence/presentation-delete-slide-accessibility.json"
+        }
+
+        console "presentation-delete-slide-console" {
+            path = "diagnostics/presentation-delete-slide-console.json"
+        }
+
+        page_errors "presentation-delete-slide-page-errors" {
+            path = "diagnostics/presentation-delete-slide-page-errors.json"
+        }
+    }
+}

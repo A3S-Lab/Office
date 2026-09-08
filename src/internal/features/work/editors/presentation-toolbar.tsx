@@ -221,6 +221,8 @@ export function PresentationToolbar({
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label="复制幻灯片"
+                  title="复制幻灯片（Ctrl+D / ⌘D）"
+                  aria-keyshortcuts="Control+D Meta+D"
                   disabled={!can.duplicateSlide()}
                   onClick={commands.duplicateSlide}
                 >
@@ -228,6 +230,8 @@ export function PresentationToolbar({
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label="删除幻灯片"
+                  title="删除幻灯片（Delete / Backspace）"
+                  aria-keyshortcuts="Delete Backspace"
                   disabled={!can.deleteSlide()}
                   onClick={commands.deleteSlide}
                 >

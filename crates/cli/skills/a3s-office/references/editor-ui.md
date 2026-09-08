@@ -21,11 +21,11 @@ Test ACLs, deterministic fixtures, and the WPS reference flag:
 
 | Surface | Focused local contract | Typical evidence |
 | --- | --- | --- |
-| Writer | `writer` | ribbon state (incl. Ctrl+F1 collapse), WPS shortcuts, field settings/`MERGEFORMAT`, field-code toggle (Alt+F9 document-wide / Shift+F9 selected), imported DOCX, pagination, font/grid metrics, undo/redo, WPS drawing boundary |
-| Spreadsheet | `spreadsheet` | ribbon IA (incl. Ctrl+F1 collapse), freeze panes, View workbook chrome (编辑栏 / 显示公式 Ctrl+` / 网格线 / 标题), sort/filter, format cells, paste special, phone task panes |
-| Presentation | `presentation` | object selection, animation/task panes, cut/paste focus, slide sorter Enter→normal, View 备注 notes pane, collapsible ribbon Ctrl+F1, slideshow B/W blank screens, compact canvas |
-| Markdown | `markdown` | source/visual/split modes, link dialogs, read-only preview, focus return |
-| PDF | `pdf` | thumbnail rail, page organization, keyboard navigation, compact page drawer, save/reopen |
+| Writer | `writer` | ribbon state (incl. Ctrl+F1 collapse), WPS shortcuts (incl. Ctrl+Enter page break, Ctrl+K hyperlink, Ctrl+F/Ctrl+H find-replace, Ctrl+Shift+D/Ctrl+Shift+W underline, Ctrl+Shift+X double strikethrough, Ctrl+= / Ctrl+Shift+= sub/superscript, Ctrl+]/Ctrl+[ font size, Ctrl+M / Ctrl+Shift+M, Shift+Alt+. / Shift+Alt+,, and Alt+Shift+→ / Alt+Shift+← indent, Alt+Shift+↑ / Alt+Shift+↓ paragraph move, Ctrl+L/E/R/J align, Ctrl+Shift+J distribute, Ctrl+Shift+L bullets, Ctrl+1/5/2 line spacing, Ctrl+Alt+1/2/3 headings, Ctrl+Shift+N Normal/正文, Shift+F3 case cycle, Ctrl+Space clear formatting, Ctrl+Shift+G word count, Ctrl+Shift+F9 unlink, Ctrl+F11 / Ctrl+Shift+F11 lock), Insert/Page Layout chrome, field settings/`MERGEFORMAT`, field-code toggle (Alt+F9 document-wide / Shift+F9 selected), imported DOCX, pagination, font/grid metrics, undo/redo, WPS drawing boundary |
+| Spreadsheet | `spreadsheet` | ribbon IA (incl. Ctrl+F1 collapse), freeze panes, View workbook chrome (编辑栏 / 显示公式 Ctrl+` / 网格线 / 标题), sheet Ctrl+PageUp/PageDown navigation, sort/filter, format cells, paste special, phone task panes |
+| Presentation | `presentation` | object selection, animation/task panes, cut/paste focus, slide sorter Enter→normal, View 备注 notes pane, collapsible ribbon Ctrl+F1, Ctrl+M / ⌘⇧N new slide, Ctrl+D slide/object duplicate, Delete/Backspace slide delete on thumbnails (visual + ACL), Ctrl+G / Ctrl+Shift+G group/ungroup, slideshow F5 / Shift+F5 start, B/W blank screens, digit+Enter slide jump, Home/End first/last slide, compact canvas |
+| Markdown | `markdown` | source/visual/split modes, link dialogs (Ctrl+K), source bold/italic (Ctrl+B / Ctrl+I) with visual + ACL, read-only preview, focus return, collapsible ribbon Ctrl+F1 |
+| PDF | `pdf` | thumbnail rail, page organization, keyboard navigation (PageUp/PageDown, Space/Shift+Space, Ctrl+Home/End), search focus (Ctrl+F), WPS zoom (Ctrl+0/1/2), compact page drawer, save/reopen |
 
 `plan <surface> --json` is the machine-readable workflow manifest. It expands
 the selected matrix row into typed fixture, ACL, A3S Test gate, desktop/compact

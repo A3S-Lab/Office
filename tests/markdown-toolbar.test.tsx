@@ -214,6 +214,56 @@ test('advertises only the keyboard shortcuts implemented by the editor', () => {
     'aria-keyshortcuts',
     'Control+I Meta+I',
   );
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  expect(screen.getByRole('button', { name: '添加链接' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+K Meta+K',
+  );
+});
+
+test('opens the Markdown link dialog with WPS Ctrl+K', () => {
+  editor = new Editor({
+    extensions: createWorkMarkdownExtensions(),
+    content: '<p>Markdown link shortcut</p>',
+  });
+  const sourceFocus = document.createElement('textarea');
+  document.body.append(sourceFocus);
+
+  try {
+    const { container } = render(
+      <div className="work-markdown-editor">
+        <MarkdownToolbar
+          editor={editor}
+          sourceEditing
+          canSourceRedo={false}
+          canSourceUndo={false}
+          viewMode="source"
+          getSourceFocusTarget={() => sourceFocus}
+          getSourceSelection={() => ({
+            markdown: 'Link me',
+            selection: { start: 0, end: 7, direction: 'none' },
+            text: 'Link me',
+          })}
+          onSourceCommand={() => false}
+          onSourceRedo={() => false}
+          onSourceReplace={() => false}
+          onSourceUndo={() => false}
+          onViewModeChange={() => undefined}
+        />
+      </div>,
+    );
+
+    const surface = container.querySelector('.work-markdown-editor');
+    expect(surface).not.toBeNull();
+    fireEvent.keyDown(surface!, {
+      key: 'k',
+      ctrlKey: true,
+      bubbles: true,
+    });
+    expect(screen.getByRole('dialog', { name: '添加链接' })).toBeVisible();
+  } finally {
+    sourceFocus.remove();
+  }
 });
 
 test('exposes concise and unambiguous Markdown view modes', () => {
@@ -254,4 +304,41 @@ test('exposes concise and unambiguous Markdown view modes', () => {
   expect(source).toHaveAttribute('aria-pressed', 'false');
   expect(split).toHaveAttribute('aria-pressed', 'true');
   expect(within(modeGroup).queryByRole('button', { name: '编辑' })).toBeNull();
+});
+
+test('Markdown ribbon collapses with WPS Ctrl+F1', () => {
+  editor = new Editor({
+    extensions: createWorkMarkdownExtensions(),
+    content: '<p>Ribbon collapse</p>',
+  });
+
+  render(
+    <MarkdownToolbar
+      editor={editor}
+      sourceEditing={false}
+      canSourceRedo={false}
+      canSourceUndo={false}
+      viewMode="visual"
+      getSourceFocusTarget={() => null}
+      getSourceSelection={() => ({
+        markdown: '',
+        selection: { start: 0, end: 0, direction: 'none' },
+        text: '',
+      })}
+      onSourceCommand={() => true}
+      onSourceRedo={() => false}
+      onSourceReplace={() => false}
+      onSourceUndo={() => false}
+      onViewModeChange={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('button', { name: '折叠功能区' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+F1 Meta+F1',
+  );
+  fireEvent.keyDown(window, { key: 'F1', code: 'F1', ctrlKey: true });
+  expect(screen.getByRole('button', { name: '展开功能区' })).toBeVisible();
+  fireEvent.keyDown(window, { key: 'F1', code: 'F1', ctrlKey: true });
+  expect(screen.getByRole('button', { name: '折叠功能区' })).toBeVisible();
 });

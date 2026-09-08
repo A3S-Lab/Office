@@ -42,6 +42,77 @@ export interface OfficeReleaseNote {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.77.0',
+    date: '2026-09-08',
+    kind: 'improved',
+    surfaces: [
+      'writer',
+      'spreadsheet',
+      'presentation',
+      'markdown',
+      'pdf',
+      'playground',
+      'documentation',
+    ],
+    title: {
+      en: 'Five-surface WPS shortcut matrix reaches 103 ACL / 78 visual',
+      zh: '五编辑器 WPS 快捷键矩阵达到 103 ACL / 78 视觉',
+    },
+    summary: {
+      en: 'Writer, Spreadsheet, Presentation, Markdown, and PDF deepen WPS UI/UX chords with dedicated ACL and responsive visual evidence across the shared operator matrix.',
+      zh: 'Writer、Spreadsheet、Presentation、Markdown 与 PDF 深化 WPS UI/UX 快捷键，并在共享操作器矩阵中补齐专用 ACL 与响应式视觉证据。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Writer paragraph and field chords',
+          zh: 'Writer 段落与域快捷键',
+        },
+        detail: {
+          en: 'Paragraph move, distribute align, bullets, indent families, double strikethrough, Normal style, case cycle, clear formatting, and field lock/unlink join the matrix.',
+          zh: '段落移动、分散对齐、项目符号、缩进族、双删除线、正文样式、大小写循环、清除格式以及域锁定/取消链接进入矩阵。',
+        },
+      },
+      {
+        title: {
+          en: 'Presentation and Spreadsheet chrome',
+          zh: 'Presentation 与 Spreadsheet 界面',
+        },
+        detail: {
+          en: 'Slide new/duplicate/delete, notes toggle, group ads, ribbon collapse, workbook View toggles, and sheet PageUp/PageDown navigation are covered.',
+          zh: '覆盖新建/复制/删除幻灯片、备注开关、组合广告、功能区折叠、工作簿视图开关以及工作表 PageUp/PageDown 导航。',
+        },
+      },
+      {
+        title: {
+          en: 'Markdown and PDF keyboard proof',
+          zh: 'Markdown 与 PDF 键盘证据',
+        },
+        detail: {
+          en: 'Markdown bold/italic/link and PDF zoom, page navigation, and Ctrl+F search focus ship with ACL plus desktop/compact visuals.',
+          zh: 'Markdown 加粗/斜体/链接以及 PDF 缩放、翻页和 Ctrl+F 搜索焦点均配有 ACL 与桌面/紧凑视觉证据。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './automation/index.html', zh: './automation/index.html' },
+        label: { en: 'Run the five-surface matrix', zh: '运行五种编辑器矩阵' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.77.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.77.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+      {
+        href: { en: './cli-reference.html', zh: './cli-reference.html' },
+        label: { en: 'CLI reference', zh: 'CLI 参考' },
+      },
+    ],
+  },
+  {
     version: '0.76.0',
     date: '2026-09-07',
     kind: 'improved',

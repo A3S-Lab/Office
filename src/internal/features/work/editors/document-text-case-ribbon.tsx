@@ -31,6 +31,8 @@ export function DocumentTextCaseRibbon({ editor }: { editor: Editor }) {
   const current =
     textCaseOptions.find((option) => option.value === value) ??
     textCaseOptions[0];
+  const changeCaseShortcut =
+    getDocumentCommandDefinition('changeCase').shortcut;
 
   return (
     <Popover
@@ -49,7 +51,10 @@ export function DocumentTextCaseRibbon({ editor }: { editor: Editor }) {
           type="button"
           className={value !== 'none' || open ? 'active' : ''}
           aria-pressed={value !== 'none'}
-          title={`大小写效果（${current.label}）`}
+          aria-keyshortcuts={changeCaseShortcut?.aria}
+          title={`大小写效果（${current.label}${
+            changeCaseShortcut ? `，${changeCaseShortcut.label}` : ''
+          }）`}
         >
           <ALargeSmall size={16} aria-hidden="true" />
         </button>

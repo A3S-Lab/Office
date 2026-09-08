@@ -5,7 +5,7 @@ import {
   Node,
 } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
-import { NodeSelection } from '@tiptap/pm/state';
+import { NodeSelection, type EditorState } from '@tiptap/pm/state';
 import { createDocumentFieldIdentityPlugin } from './work-document-field-identity';
 import {
   documentFieldCodeDisplay,
@@ -42,6 +42,10 @@ declare module '@tiptap/core' {
         content: WorkDocumentContent,
         options?: WorkDocumentFieldRefreshOptions,
       ) => ReturnType;
+      /** WPS/Word Ctrl+Shift+F9: replace selected fields with their result text. */
+      unlinkDocumentFields: () => ReturnType;
+      /** WPS/Word Ctrl+F11 / Ctrl+Shift+F11: lock or unlock selected fields. */
+      setDocumentFieldsLocked: (locked: boolean) => ReturnType;
     };
   }
 }
@@ -67,6 +71,10 @@ export const DocumentField = Node.create({
         updateDocumentFieldCommand(props, draft),
       refreshDocumentFields: (content, options) => (props) =>
         refreshDocumentFieldsCommand(props, content, options),
+      unlinkDocumentFields: () => (props) => unlinkDocumentFieldsCommand(props),
+      setDocumentFieldsLocked:
+        (locked) => (props) =>
+          setDocumentFieldsLockedCommand(props, locked),
     };
   },
 
@@ -79,6 +87,7 @@ export const DocumentField = Node.create({
       targetId: hiddenAttribute(''),
       targetName: hiddenAttribute(''),
       orphaned: hiddenAttribute(false),
+      locked: hiddenAttribute(false),
     };
   },
 
@@ -111,6 +120,7 @@ export const DocumentField = Node.create({
             targetId: node.dataset.fieldTargetId ?? '',
             targetName,
             orphaned: node.dataset.fieldOrphaned === 'true',
+            locked: node.dataset.fieldLocked === 'true',
           };
         },
       },
@@ -156,9 +166,16 @@ export const DocumentField = Node.create({
           ? { 'data-field-target-name': node.attrs.targetName }
           : {}),
         'data-field-orphaned': node.attrs.orphaned ? 'true' : undefined,
-        class: 'work-document-field',
-        'aria-label': documentFieldLabel(kind),
-        title: documentFieldLabel(kind),
+        'data-field-locked': node.attrs.locked ? 'true' : undefined,
+        class: node.attrs.locked
+          ? 'work-document-field work-document-field-locked'
+          : 'work-document-field',
+        'aria-label': node.attrs.locked
+          ? `${documentFieldLabel(kind)}（已锁定）`
+          : documentFieldLabel(kind),
+        title: node.attrs.locked
+          ? `${documentFieldLabel(kind)}（已锁定）`
+          : documentFieldLabel(kind),
       }),
       display,
     ];
@@ -245,6 +262,125 @@ function updateDocumentFieldCommand(
   return true;
 }
 
+function unlinkDocumentFieldsCommand({
+  dispatch,
+  editor,
+  state,
+  tr,
+}: CommandProps): boolean {
+  const fieldType = editor.schema.nodes.documentField;
+  if (!fieldType) return false;
+  const ranges = documentFieldUnlinkRanges(state);
+  if (!ranges.length) return false;
+  if (!dispatch) return true;
+
+  for (const range of ranges) {
+    const text = range.text;
+    tr.replaceWith(
+      range.from,
+      range.to,
+      text ? state.schema.text(text) : [],
+    );
+  }
+  tr.scrollIntoView();
+  return true;
+}
+
+function setDocumentFieldsLockedCommand(
+  { dispatch, editor, state, tr }: CommandProps,
+  locked: boolean,
+): boolean {
+  const fieldType = editor.schema.nodes.documentField;
+  if (!fieldType) return false;
+  const ranges = documentFieldLockTargets(state);
+  const targets = ranges.filter((range) => range.locked !== locked);
+  if (!targets.length) return false;
+  if (!dispatch) return true;
+
+  for (const range of targets) {
+    const node = state.doc.nodeAt(range.from);
+    if (!node || node.type.name !== 'documentField') continue;
+    tr.setNodeMarkup(range.from, undefined, {
+      ...node.attrs,
+      locked,
+    });
+  }
+  if (
+    state.selection instanceof NodeSelection &&
+    state.selection.node.type.name === 'documentField' &&
+    targets.length === 1
+  ) {
+    const mapped = tr.mapping.map(targets[0].from);
+    try {
+      tr.setSelection(NodeSelection.create(tr.doc, mapped));
+    } catch {
+      // Keep whatever selection ProseMirror mapped when the node cannot be reselected.
+    }
+  }
+  tr.scrollIntoView();
+  return true;
+}
+
+/** Selection-scoped fields for WPS Ctrl+F11 / Ctrl+Shift+F11. */
+export function documentFieldLockTargets(
+  state: Pick<EditorState, 'doc' | 'selection'>,
+): Array<{ from: number; to: number; locked: boolean }> {
+  const { doc, selection } = state;
+  const ranges: Array<{ from: number; to: number; locked: boolean }> = [];
+  if (
+    selection instanceof NodeSelection &&
+    selection.node.type.name === 'documentField'
+  ) {
+    ranges.push({
+      from: selection.from,
+      to: selection.to,
+      locked: Boolean(selection.node.attrs.locked),
+    });
+    return ranges;
+  }
+
+  doc.nodesBetween(selection.from, selection.to, (node, pos) => {
+    if (node.type.name !== 'documentField') return;
+    ranges.push({
+      from: pos,
+      to: pos + node.nodeSize,
+      locked: Boolean(node.attrs.locked),
+    });
+  });
+  ranges.sort((left, right) => right.from - left.from);
+  return ranges;
+}
+
+/** Selection-scoped field positions for WPS Ctrl+Shift+F9 (end→start order). */
+export function documentFieldUnlinkRanges(
+  state: Pick<EditorState, 'doc' | 'selection'>,
+): Array<{ from: number; to: number; text: string }> {
+  const { doc, selection } = state;
+  const ranges: Array<{ from: number; to: number; text: string }> = [];
+  if (
+    selection instanceof NodeSelection &&
+    selection.node.type.name === 'documentField'
+  ) {
+    ranges.push({
+      from: selection.from,
+      to: selection.to,
+      text: stringAttribute(selection.node.attrs.display),
+    });
+    return ranges;
+  }
+
+  doc.nodesBetween(selection.from, selection.to, (node, pos) => {
+    if (node.type.name !== 'documentField') return;
+    ranges.push({
+      from: pos,
+      to: pos + node.nodeSize,
+      text: stringAttribute(node.attrs.display),
+    });
+  });
+  ranges.sort((left, right) => right.from - left.from);
+  return ranges;
+}
+
 function refreshDocumentFieldsCommand(
   { editor, state, tr }: CommandProps,
   content: WorkDocumentContent,
@@ -289,6 +425,7 @@ function refreshDocumentFieldsCommand(
     const fallback = fallbackFields[fieldIndex]?.display;
     fieldIndex += 1;
     if (!kind) return;
+    if (node.attrs.locked) return;
     if (options.updateClock === false && (kind === 'date' || kind === 'time')) {
       return;
     }

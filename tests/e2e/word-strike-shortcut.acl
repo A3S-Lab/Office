@@ -1,0 +1,87 @@
+suite "office-word-strike-shortcut" {
+    version = 1
+
+    scenario "toggle-writer-double-strike-with-wps-ctrl-shift-x" {
+        name = "Toggle Writer double strikethrough with WPS Ctrl+Shift+X"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        click "open-strike-menu" {
+            target = role("button", "更多删除线")
+        }
+
+        expect "double-strike-shortcut-described" {
+            visible = css("[role='menu'][aria-label='删除线样式'] [role='menuitemradio'][aria-label='双删除线'][aria-keyshortcuts='Control+Shift+X Meta+Shift+X']")
+        }
+
+        press "close-strike-menu" {
+            key = "Escape"
+        }
+
+        click "select-title" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-title-start" {
+            key = "Home"
+        }
+
+        press "select-title-line" {
+            key = "Shift+End"
+        }
+
+        press "apply-double-strike" {
+            key = "Control+Shift+x"
+        }
+
+        expect "double-strike-applied" {
+            visible = css(".work-document-editable .ProseMirror h1 s[data-office-strike-style='double']")
+        }
+
+        press "clear-double-strike" {
+            key = "Control+Shift+x"
+        }
+
+        expect "double-strike-cleared" {
+            visible = css(".work-document-editable .ProseMirror h1")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "word-strike-shortcut-accessibility" {
+            path = "evidence/word-strike-shortcut-accessibility.json"
+        }
+
+        console "word-strike-shortcut-console" {
+            path = "diagnostics/word-strike-shortcut-console.json"
+        }
+
+        page_errors "word-strike-shortcut-page-errors" {
+            path = "diagnostics/word-strike-shortcut-page-errors.json"
+        }
+    }
+}

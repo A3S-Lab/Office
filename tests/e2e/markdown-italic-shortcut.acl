@@ -1,0 +1,63 @@
+suite "office-markdown-italic-shortcut" {
+    version = 1
+
+    scenario "apply-markdown-italic-with-wps-ctrl-i" {
+        name = "Apply Markdown italic with WPS Ctrl+I in source editing"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-markdown" {
+            target = text("产品说明", true)
+        }
+
+        wait "markdown-ready" {
+            visible = css(".work-markdown-editor .work-markdown-ribbon")
+        }
+
+        expect "italic-shortcut" {
+            visible = css(".work-markdown-ribbon button[aria-label='斜体'][aria-keyshortcuts='Control+I Meta+I']")
+        }
+
+        click "focus-markdown-source" {
+            target = role("textbox", "Markdown 源码")
+        }
+
+        press "apply-italic" {
+            key = "Control+i"
+        }
+
+        wait "italic-active" {
+            visible = css(".work-markdown-ribbon button[aria-label='斜体'][aria-pressed='true']")
+        }
+
+        expect "italic-pressed" {
+            visible = css(".work-markdown-ribbon button[aria-label='斜体'][aria-pressed='true']")
+        }
+
+        accessibility "markdown-italic-shortcut-accessibility" {
+            path = "evidence/markdown-italic-shortcut-accessibility.json"
+        }
+
+        console "markdown-italic-shortcut-console" {
+            path = "diagnostics/markdown-italic-shortcut-console.json"
+        }
+
+        page_errors "markdown-italic-shortcut-page-errors" {
+            path = "diagnostics/markdown-italic-shortcut-page-errors.json"
+        }
+    }
+}

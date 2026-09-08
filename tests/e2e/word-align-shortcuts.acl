@@ -1,0 +1,103 @@
+suite "office-word-align-shortcuts" {
+    version = 1
+
+    scenario "step-writer-align-with-wps-ctrl-l-e-r-j" {
+        name = "Step Writer paragraph alignment with WPS Ctrl+L / Ctrl+E / Ctrl+R / Ctrl+J"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "align-left-shortcut-described" {
+            visible = css("[aria-label='段落'] button[aria-label='左对齐'][aria-keyshortcuts='Control+L Meta+L']")
+        }
+
+        expect "align-center-shortcut-described" {
+            visible = css("[aria-label='段落'] button[aria-label='居中'][aria-keyshortcuts='Control+E Meta+E']")
+        }
+
+        expect "align-right-shortcut-described" {
+            visible = css("[aria-label='段落'] button[aria-label='右对齐'][aria-keyshortcuts='Control+R Meta+R']")
+        }
+
+        expect "align-justify-shortcut-described" {
+            visible = css("[aria-label='段落'] button[aria-label='两端对齐'][aria-keyshortcuts='Control+J Meta+J']")
+        }
+
+        click "select-paragraph" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        press "move-to-paragraph-start" {
+            key = "Home"
+        }
+
+        press "align-center" {
+            key = "Control+e"
+        }
+
+        expect "align-center-applied" {
+            visible = css(".work-document-editable .ProseMirror p[style*='text-align: center']")
+        }
+
+        press "align-right" {
+            key = "Control+r"
+        }
+
+        expect "align-right-applied" {
+            visible = css(".work-document-editable .ProseMirror p[style*='text-align: right']")
+        }
+
+        press "align-justify" {
+            key = "Control+j"
+        }
+
+        expect "align-justify-applied" {
+            visible = css(".work-document-editable .ProseMirror p[style*='text-align: justify']")
+        }
+
+        press "align-left" {
+            key = "Control+l"
+        }
+
+        expect "align-left-applied" {
+            visible = css(".work-document-editable .ProseMirror p[style*='text-align: left']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "word-align-shortcuts-accessibility" {
+            path = "evidence/word-align-shortcuts-accessibility.json"
+        }
+
+        console "word-align-shortcuts-console" {
+            path = "diagnostics/word-align-shortcuts-console.json"
+        }
+
+        page_errors "word-align-shortcuts-page-errors" {
+            path = "diagnostics/word-align-shortcuts-page-errors.json"
+        }
+    }
+}

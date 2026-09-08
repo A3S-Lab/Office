@@ -4,6 +4,8 @@ import {
   pasteDocumentFormatting,
 } from './document-format-clipboard';
 import { changeDocumentFontSize } from './document-formatting-options';
+import { moveDocumentBlock } from './document-move-block';
+import { cycleDocumentSelectionCase } from './document-selection-case';
 
 export interface DocumentWpsShortcutCallbacks {
   canInsertComment: boolean;
@@ -15,6 +17,12 @@ export interface DocumentWpsShortcutCallbacks {
   onToggleFieldCodes: () => void;
   /** WPS/Word Shift+F9: toggle codes for the selected field(s) only. */
   onToggleSelectedFieldCodes: () => boolean;
+  /** WPS/Word Ctrl+Shift+F9: replace selected fields with result text. */
+  onUnlinkFields: () => boolean;
+  /** WPS/Word Ctrl+F11: lock selected fields against F9 refresh. */
+  onLockFields: () => boolean;
+  /** WPS/Word Ctrl+Shift+F11: unlock selected fields. */
+  onUnlockFields: () => boolean;
   onToggleSpellcheck: () => void;
   onToggleTrackChanges: () => void;
 }
@@ -34,12 +42,47 @@ export function runDocumentWpsShortcut(
   const modifier = event.ctrlKey || event.metaKey;
 
   if (!modifier) {
+    // WPS/Word Shift+F3: cycle selected text lower → UPPER → Title Case.
+    if (key === 'f3' && event.shiftKey && !event.altKey) {
+      return cycleDocumentSelectionCase(editor);
+    }
     if (key === 'f9' && event.altKey && !event.shiftKey) {
       callbacks.onToggleFieldCodes();
       return true;
     }
     if (key === 'f9' && event.shiftKey && !event.altKey) {
       return callbacks.onToggleSelectedFieldCodes();
+    }
+    // WPS Shift+Alt+. / , and Alt+Shift+→ / ← : increase / decrease indent.
+    // WPS/Word Alt+Shift+↑ / ↓ : move the current block among siblings.
+    if (event.altKey && event.shiftKey) {
+      if (event.code === 'ArrowUp' || key === 'arrowup') {
+        return moveDocumentBlock(editor, -1);
+      }
+      if (event.code === 'ArrowDown' || key === 'arrowdown') {
+        return moveDocumentBlock(editor, 1);
+      }
+      if (
+        event.code === 'Period' ||
+        key === '.' ||
+        key === '>' ||
+        event.code === 'ArrowRight' ||
+        key === 'arrowright'
+      ) {
+        editor.commands.changeDocumentIndent(1);
+        return true;
+      }
+      if (
+        event.code === 'Comma' ||
+        key === ',' ||
+        key === '<' ||
+        event.code === 'ArrowLeft' ||
+        key === 'arrowleft'
+      ) {
+        editor.commands.changeDocumentIndent(-1);
+        return true;
+      }
+      return false;
     }
     if (event.altKey || event.shiftKey) return false;
     if (key === 'f7') {
@@ -68,6 +111,12 @@ export function runDocumentWpsShortcut(
   }
 
   if (event.shiftKey) {
+    if (key === 'f9') {
+      return callbacks.onUnlinkFields();
+    }
+    if (key === 'f11') {
+      return callbacks.onUnlockFields();
+    }
     if (key === 'h') {
       editor.commands.toggleDocumentHiddenText();
       return true;
@@ -78,6 +127,11 @@ export function runDocumentWpsShortcut(
     }
     if (key === 'w') {
       editor.commands.toggleDocumentUnderlineStyle('words');
+      return true;
+    }
+    // WPS: Ctrl+Shift+X toggles double strikethrough.
+    if (key === 'x') {
+      editor.commands.toggleDocumentStrikeStyle('double');
       return true;
     }
     if (key === 'a') {
@@ -104,6 +158,30 @@ export function runDocumentWpsShortcut(
       callbacks.onToggleTrackChanges();
       return true;
     }
+    // WPS/Word Ctrl+Shift+M: decrease paragraph indent.
+    if (key === 'm') {
+      editor.commands.changeDocumentIndent(-1);
+      return true;
+    }
+    // WPS/Word Ctrl+Shift+N: apply the Normal / 正文 paragraph style.
+    if (key === 'n') {
+      editor.chain().focus().setParagraph().run();
+      return true;
+    }
+    // WPS Ctrl+Shift+J: distributed paragraph alignment.
+    if (key === 'j') {
+      editor.chain().focus().setTextAlign('distribute').run();
+      return true;
+    }
+    // WPS/Word Ctrl+Shift+L: toggle the default bullet list.
+    if (key === 'l') {
+      if (editor.isActive('bulletList')) {
+        editor.chain().focus().clearDocumentList().run();
+      } else {
+        editor.chain().focus().applyDocumentBulletList('disc').run();
+      }
+      return true;
+    }
     if (event.code === 'Period' || key === '>' || key === '.') {
       changeDocumentFontSize(editor, 1);
       return true;
@@ -113,6 +191,22 @@ export function runDocumentWpsShortcut(
       return true;
     }
     return false;
+  }
+
+  if (key === 'f11') {
+    return callbacks.onLockFields();
+  }
+
+  // WPS/Word Ctrl+Space: clear character and paragraph formatting on the selection.
+  if (key === ' ' || event.code === 'Space') {
+    editor.commands.clearDocumentFormatting();
+    return true;
+  }
+
+  // WPS/Word Ctrl+M: increase paragraph indent (Ctrl+Alt+M inserts a comment).
+  if (key === 'm') {
+    editor.commands.changeDocumentIndent(1);
+    return true;
   }
 
   if (key === ']') {

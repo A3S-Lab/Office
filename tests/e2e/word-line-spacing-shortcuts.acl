@@ -1,0 +1,83 @@
+suite "office-word-line-spacing-shortcuts" {
+    version = 1
+
+    scenario "step-writer-line-spacing-with-wps-ctrl-1-5-2" {
+        name = "Step Writer line spacing with WPS Ctrl+1 / Ctrl+5 / Ctrl+2"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "line-spacing-shortcuts-described" {
+            visible = css("[aria-label='段落'] [aria-label='行距'][aria-keyshortcuts='Control+1 Meta+1 Control+5 Meta+5 Control+2 Meta+2']")
+        }
+
+        click "select-paragraph" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        press "move-to-paragraph-start" {
+            key = "Home"
+        }
+
+        press "one-and-half-line-spacing" {
+            key = "Control+5"
+        }
+
+        expect "one-and-half-line-spacing-applied" {
+            visible = css(".work-document-editable .ProseMirror p[style*='--work-document-office-auto-line-multiple: 1.5']")
+        }
+
+        press "double-line-spacing" {
+            key = "Control+2"
+        }
+
+        expect "double-line-spacing-applied" {
+            visible = css(".work-document-editable .ProseMirror p[style*='--work-document-office-auto-line-multiple: 2']")
+        }
+
+        press "single-line-spacing" {
+            key = "Control+1"
+        }
+
+        expect "single-line-spacing-applied" {
+            visible = css(".work-document-editable .ProseMirror p[style*='--work-document-office-auto-line-multiple: 1;']")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "word-line-spacing-shortcuts-accessibility" {
+            path = "evidence/word-line-spacing-shortcuts-accessibility.json"
+        }
+
+        console "word-line-spacing-shortcuts-console" {
+            path = "diagnostics/word-line-spacing-shortcuts-console.json"
+        }
+
+        page_errors "word-line-spacing-shortcuts-page-errors" {
+            path = "diagnostics/word-line-spacing-shortcuts-page-errors.json"
+        }
+    }
+}

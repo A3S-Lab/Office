@@ -48,7 +48,7 @@ test('routes PDF commands through typed plugin capabilities', async () => {
         }),
         zoomOut: () => calls.push('zoom-out'),
         zoomIn: () => calls.push('zoom-in'),
-        requestZoom: (mode: string) => calls.push(`zoom:${mode}`),
+        requestZoom: (mode: string | number) => calls.push(`zoom:${mode}`),
       }),
       onStateChange: zoomChange.subscribe,
     },
@@ -124,6 +124,7 @@ test('routes PDF commands through typed plugin capabilities', async () => {
     result.current.goToPage(6);
     result.current.zoomOut();
     result.current.zoomIn();
+    result.current.actualSize();
     result.current.fitPage();
     result.current.fitWidth();
     result.current.search('roadmap');
@@ -139,6 +140,7 @@ test('routes PDF commands through typed plugin capabilities', async () => {
     'page:6:auto',
     'zoom-out',
     'zoom-in',
+    'zoom:1',
     'zoom:fit-page',
     'zoom:fit-width',
     'search:roadmap',

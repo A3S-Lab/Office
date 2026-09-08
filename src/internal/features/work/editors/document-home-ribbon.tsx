@@ -3,6 +3,7 @@ import {
   AArrowDown,
   AArrowUp,
   AlignCenter,
+  AlignHorizontalDistributeCenter,
   AlignJustify,
   AlignLeft,
   AlignRight,
@@ -74,6 +75,14 @@ const documentLineHeightOptions = [
     meta: getDocumentCommandDefinition('lineSpacingDouble').shortcut?.label,
   },
 ] as const;
+
+const lineSpacingAriaKeyShortcuts = [
+  getDocumentCommandDefinition('lineSpacingSingle').shortcut?.aria,
+  getDocumentCommandDefinition('lineSpacingOneAndHalf').shortcut?.aria,
+  getDocumentCommandDefinition('lineSpacingDouble').shortcut?.aria,
+]
+  .filter((value): value is string => Boolean(value))
+  .join(' ');
 
 export function DocumentHomeRibbon({
   editor,
@@ -237,6 +246,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="清除格式"
+              {...commandShortcut('clearFormatting')}
               onClick={() => editor.commands.clearDocumentFormatting()}
             >
               <Eraser size={16} />
@@ -250,6 +260,7 @@ export function DocumentHomeRibbon({
             <DocumentListGallery editor={editor} />
             <ToolbarButton
               label="减少缩进"
+              {...commandShortcut('decreaseIndent')}
               disabled={!canChangeDocumentIndent(editor, -1)}
               onClick={() => editor.commands.changeDocumentIndent(-1)}
             >
@@ -257,6 +268,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="增加缩进"
+              {...commandShortcut('increaseIndent')}
               disabled={!canChangeDocumentIndent(editor, 1)}
               onClick={() => editor.commands.changeDocumentIndent(1)}
             >
@@ -264,6 +276,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <OfficeSelect
               ariaLabel="行距"
+              ariaKeyShortcuts={lineSpacingAriaKeyShortcuts}
               className="work-document-line-height-select"
               value={lineHeightValue}
               options={documentLineHeightOptionsForValue(lineHeightValue)}
@@ -310,6 +323,16 @@ export function DocumentHomeRibbon({
               }
             >
               <AlignJustify size={16} />
+            </ToolbarButton>
+            <ToolbarButton
+              label="分散对齐"
+              {...commandShortcut('alignDistribute')}
+              active={editor.isActive({ textAlign: 'distribute' })}
+              onClick={() =>
+                editor.chain().focus().setTextAlign('distribute').run()
+              }
+            >
+              <AlignHorizontalDistributeCenter size={16} />
             </ToolbarButton>
             <ToolbarButton
               label="从左向右"

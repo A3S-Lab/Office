@@ -268,7 +268,11 @@ test('advertises only shortcuts implemented by the PDF command surface', () => {
     ['在 PDF 中搜索', 'Control+F Meta+F'],
     ['缩小', 'Control+- Meta+-'],
     ['放大', 'Control+= Meta+= Control+Shift++ Meta+Shift++'],
+    ['实际大小', 'Control+1 Meta+1'],
     ['整页', 'Control+0 Meta+0'],
+    ['页宽', 'Control+2 Meta+2'],
+    ['上一页', 'PageUp Shift+Space'],
+    ['下一页', 'PageDown Space'],
     ['删除所选批注', 'Delete Backspace'],
   ] as const;
   for (const [name, shortcut] of shortcuts) {
@@ -286,8 +290,26 @@ test('advertises only shortcuts implemented by the PDF command surface', () => {
     'Control+Z Meta+Z',
   );
   expect(
+    within(menu).getByRole('menuitem', { name: '首页' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+Home Meta+Home');
+  expect(
+    within(menu).getByRole('menuitem', { name: '上一页' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'PageUp Shift+Space');
+  expect(
+    within(menu).getByRole('menuitem', { name: '下一页' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'PageDown Space');
+  expect(
+    within(menu).getByRole('menuitem', { name: '末页' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+End Meta+End');
+  expect(
+    within(menu).getByRole('menuitemradio', { name: '实际大小' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+1 Meta+1');
+  expect(
     within(menu).getByRole('menuitemradio', { name: '整页' }),
   ).toHaveAttribute('aria-keyshortcuts', 'Control+0 Meta+0');
+  expect(
+    within(menu).getByRole('menuitemradio', { name: '页宽' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+2 Meta+2');
 });
 
 test('keeps compact PDF actions reachable from the more-tools menu', () => {
@@ -593,6 +615,7 @@ function createCanCommands(
     deletePages: ready,
     deleteAnnotationSelection: () => false,
     extractPages: ready,
+    actualSize: ready,
     fitPage: ready,
     fitWidth: ready,
     goToPage: (page) =>
@@ -640,6 +663,7 @@ function createCommands(
       calls.push(`extract-pages:${indexes.join(',')}`);
       return true;
     },
+    actualSize: controller.actualSize,
     fitPage: controller.fitPage,
     fitWidth: controller.fitWidth,
     goToPage: controller.goToPage,
@@ -743,6 +767,7 @@ function createController(calls: string[]): PdfViewerController {
 
   return {
     state,
+    actualSize: () => calls.push('actual-size'),
     clearSearch: () => calls.push('clear-search'),
     fitPage: () => calls.push('fit-page'),
     fitWidth: () => calls.push('fit-width'),

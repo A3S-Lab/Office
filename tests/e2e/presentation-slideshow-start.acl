@@ -1,0 +1,102 @@
+suite "office-presentation-slideshow-start" {
+    version = 1
+
+    scenario "start-slideshow-with-wps-f5-shortcuts" {
+        name = "Start slideshow with WPS F5 / Shift+F5 shortcuts"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        focus "focus-presentation-home" {
+            target = css(".playground-home")
+        }
+
+        press "scroll-presentation-into-view" {
+            key = "PageDown"
+        }
+
+        click "open-presentation" {
+            target = css("button[data-template-id='strategy-deck']")
+        }
+
+        wait "presentation-ready" {
+            visible = css(".work-presentation-editor")
+        }
+
+        click "open-slideshow-tab" {
+            target = role("tab", "幻灯片放映")
+        }
+
+        expect "start-from-beginning-shortcut" {
+            visible = css("button[aria-label='从头开始放映'][aria-keyshortcuts='F5']")
+        }
+
+        expect "start-from-current-shortcut" {
+            visible = css("button[aria-label='从当前幻灯片放映'][aria-keyshortcuts='Shift+F5']")
+        }
+
+        click "focus-editor-for-f5" {
+            target = css(".work-presentation-editor")
+        }
+
+        press "start-from-beginning" {
+            key = "F5"
+        }
+
+        wait "slideshow-from-beginning" {
+            visible = css("[role='dialog'][aria-label='幻灯片放映'] .work-presentation-player[data-slide-index='0']")
+        }
+
+        press "exit-slideshow" {
+            key = "Escape"
+        }
+
+        wait "slideshow-closed" {
+            visible = css(".work-presentation-editor")
+        }
+
+        click "select-second-slide" {
+            target = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='1']")
+        }
+
+        expect "second-slide-selected" {
+            visible = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='1'].active")
+        }
+
+        click "focus-editor-for-shift-f5" {
+            target = css(".work-presentation-editor")
+        }
+
+        press "start-from-current" {
+            key = "Shift+F5"
+        }
+
+        wait "slideshow-from-current" {
+            visible = css("[role='dialog'][aria-label='幻灯片放映'] .work-presentation-player[data-slide-index='1']")
+        }
+
+        accessibility "slideshow-start-accessibility" {
+            path = "evidence/slideshow-start-accessibility.json"
+            interactive = true
+        }
+
+        console "slideshow-start-console" {
+            path = "diagnostics/slideshow-start-console.json"
+            clear = false
+        }
+
+        page_errors "slideshow-start-page-errors" {
+            path = "diagnostics/slideshow-start-page-errors.json"
+            clear = false
+        }
+    }
+}

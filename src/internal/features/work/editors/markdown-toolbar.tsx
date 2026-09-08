@@ -19,7 +19,7 @@ import {
   Undo2,
   Unlink,
 } from 'lucide-react';
-import { type ButtonHTMLAttributes, type ReactNode, useState } from 'react';
+import { type ButtonHTMLAttributes, type ReactNode, useEffect, useRef, useState } from 'react';
 import { OfficeSelect } from './office-controls';
 import {
   MarkdownInsertDialog,
@@ -38,6 +38,7 @@ import {
   isMarkdownSourceCommandActive,
 } from './markdown-source-commands';
 import type { MarkdownViewMode } from './markdown-workspace';
+import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
   type WorkOfficeFileAction,
   WorkOfficeRibbon,
@@ -83,6 +84,10 @@ const markdownToolbarShortcuts = {
   italic: {
     ariaKeyShortcuts: 'Control+I Meta+I',
     label: 'Cmd/Ctrl+I',
+  },
+  link: {
+    ariaKeyShortcuts: 'Control+K Meta+K',
+    label: 'Cmd/Ctrl+K',
   },
   redo: {
     ariaKeyShortcuts: 'Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y',
@@ -132,6 +137,7 @@ export function MarkdownToolbar({
   const [activeTab, setActiveTab] = useState<MarkdownRibbonTab>('home');
   const [insertDialog, setInsertDialog] =
     useState<MarkdownInsertDialogState | null>(null);
+  const openLinkDialogRef = useRef<() => void>(() => undefined);
   const sourceSelection = sourceEditing ? getSourceSelection() : null;
   const sourceLink = sourceSelection
     ? findMarkdownSourceLink(
@@ -236,6 +242,38 @@ export function MarkdownToolbar({
       },
     });
   };
+
+  useEffect(() => {
+    openLinkDialogRef.current = openLinkDialog;
+  });
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.repeat ||
+        event.altKey ||
+        event.shiftKey ||
+        !(event.metaKey || event.ctrlKey) ||
+        event.key.toLocaleLowerCase() !== 'k' ||
+        isOfficeShortcutBlocked(event.target)
+      ) {
+        return;
+      }
+      const target = event.target;
+      if (
+        !(target instanceof Element) ||
+        !target.closest('.work-markdown-editor')
+      ) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      openLinkDialogRef.current();
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, []);
+
   const removeLink = () => {
     if (sourceEditing) {
       const current = getSourceSelection();
@@ -342,6 +380,7 @@ export function MarkdownToolbar({
         activeTab={activeTab}
         onTabChange={setActiveTab}
         fileActions={fileActions}
+        collapsible
         className="work-markdown-ribbon"
         toolbarClassName="markdown-toolbar"
         panels={{
@@ -529,6 +568,7 @@ export function MarkdownToolbar({
                 <MarkdownToolbarButton
                   label={linkActive ? '编辑链接' : '添加链接'}
                   displayLabel
+                  shortcut={markdownToolbarShortcuts.link}
                   active={linkActive}
                   onClick={openLinkDialog}
                 >

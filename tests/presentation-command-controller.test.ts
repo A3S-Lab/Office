@@ -173,6 +173,81 @@ describe('presentation editor extensions', () => {
       'slideshow.start:beginning',
       'slideshow.start:current',
     ]);
+
+    const newSlide = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: 'm',
+    });
+    expect(editor.handleKeyDown(newSlide)).toBe(true);
+    expect(newSlide.defaultPrevented).toBe(true);
+
+    const newSlideMac = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'n',
+      metaKey: true,
+      shiftKey: true,
+    });
+    expect(editor.handleKeyDown(newSlideMac)).toBe(true);
+    expect(newSlideMac.defaultPrevented).toBe(true);
+    expect(calls).toEqual([
+      'history.undo',
+      'slideshow.start:beginning',
+      'slideshow.start:current',
+      'slide.add',
+      'slide.add',
+    ]);
+
+    const duplicateSlide = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: 'd',
+    });
+    expect(editor.handleKeyDown(duplicateSlide)).toBe(true);
+    expect(duplicateSlide.defaultPrevented).toBe(true);
+    expect(calls).toEqual([
+      'history.undo',
+      'slideshow.start:beginning',
+      'slideshow.start:current',
+      'slide.add',
+      'slide.add',
+      'slide.duplicate',
+    ]);
+  });
+
+  test('Ctrl+D duplicates selected objects before falling back to the slide', () => {
+    const calls: string[] = [];
+    const commandContext = presentationContext(calls);
+    commandContext.keyboard = {
+      editingElementId: null,
+      selectedElement: {
+        id: 'title',
+        type: 'text',
+        x: 10,
+        y: 10,
+        width: 80,
+        height: 20,
+        text: 'Quarterly plan',
+        fontSize: 24,
+        color: '#172033',
+        fill: 'transparent',
+        bold: false,
+        align: 'left',
+      },
+      selectedElementCount: 1,
+    };
+    const editor = createOfficeEditorRuntime(
+      commandContext,
+      createPresentationEditorExtensions(),
+    );
+    const duplicate = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: 'd',
+    });
+    expect(editor.handleKeyDown(duplicate)).toBe(true);
+    expect(duplicate.defaultPrevented).toBe(true);
+    expect(calls).toEqual(['selection.duplicate']);
   });
 
   test('does not create slides from toolbar shortcuts when slide editing is unavailable', () => {

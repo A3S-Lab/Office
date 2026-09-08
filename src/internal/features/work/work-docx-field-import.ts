@@ -27,6 +27,7 @@ interface ImportedDocxFieldMarker {
   targetId?: string;
   targetName?: string;
   orphaned?: boolean;
+  locked?: boolean;
 }
 
 const WORD_NAMESPACE =
@@ -67,6 +68,7 @@ export function markDocxBodyFields(
       display: docxFieldResultText(field),
       ...(target ? { targetId: target.id, targetName: target.name } : {}),
       ...(kind === 'pageReference' ? { orphaned: !target } : {}),
+      ...(docxFieldIsLocked(field) ? { locked: true } : {}),
     };
     insertFieldBoundaryMarkers(document, field, marker.start, marker.end);
     return [marker];
@@ -106,6 +108,7 @@ export function applyImportedDocxFieldMarkers(
     if (field.targetId) element.dataset.fieldTargetId = field.targetId;
     if (field.targetName) element.dataset.fieldTargetName = field.targetName;
     if (field.orphaned) element.dataset.fieldOrphaned = 'true';
+    if (field.locked) element.dataset.fieldLocked = 'true';
     const convertedDisplay = replaceMarkerRange(
       document.body,
       field.start,
@@ -162,6 +165,12 @@ function markerText(document: Document, text: string): Element {
   value.setAttributeNS(XML_NAMESPACE, 'xml:space', 'preserve');
   value.textContent = text;
   return value;
+}
+
+function docxFieldIsLocked(field: DocxFieldOccurrence): boolean {
+  const lock =
+    attribute(field.start, 'fldLock')?.trim().toLowerCase() ?? '';
+  return lock === '1' || lock === 'true' || lock === 'on';
 }
 
 function replaceMarkerRange(

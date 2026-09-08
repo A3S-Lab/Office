@@ -1,0 +1,100 @@
+suite "office-word-change-case-shortcut" {
+    version = 1
+
+    scenario "cycle-writer-selection-case-with-wps-shift-f3" {
+        name = "Cycle Writer selection case with WPS Shift+F3"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "change-case-shortcut-described" {
+            visible = css("[aria-label='字体'] button[aria-label='大小写效果'][aria-keyshortcuts='Shift+F3']")
+        }
+
+        click "focus-editor" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "select-all-document" {
+            key = "Control+a"
+        }
+
+        type "replace-with-english-sample" {
+            target = css(".work-document-editable .ProseMirror")
+            value = "hello world"
+        }
+
+        press "select-sample-for-upper" {
+            key = "Control+a"
+        }
+
+        press "cycle-case-to-upper" {
+            key = "Shift+F3"
+        }
+
+        wait "sample-uppercased" {
+            text = "HELLO WORLD"
+        }
+
+        press "select-sample-for-title" {
+            key = "Control+a"
+        }
+
+        press "cycle-case-to-title" {
+            key = "Shift+F3"
+        }
+
+        wait "sample-title-cased" {
+            text = "Hello World"
+        }
+
+        press "select-sample-for-lower" {
+            key = "Control+a"
+        }
+
+        press "cycle-case-to-lower" {
+            key = "Shift+F3"
+        }
+
+        wait "sample-lowercased" {
+            text = "hello world"
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "word-change-case-shortcut-accessibility" {
+            path = "evidence/word-change-case-shortcut-accessibility.json"
+        }
+
+        console "word-change-case-shortcut-console" {
+            path = "diagnostics/word-change-case-shortcut-console.json"
+        }
+
+        page_errors "word-change-case-shortcut-page-errors" {
+            path = "diagnostics/word-change-case-shortcut-page-errors.json"
+        }
+    }
+}

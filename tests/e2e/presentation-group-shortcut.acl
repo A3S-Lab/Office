@@ -1,0 +1,71 @@
+suite "office-presentation-group-shortcut" {
+    version = 1
+
+    scenario "advertise-presentation-group-shortcuts" {
+        name = "Advertise Presentation Ctrl+G / Ctrl+Shift+G group shortcuts"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        focus "focus-presentation-home" {
+            target = css(".playground-home")
+        }
+
+        press "scroll-presentation-into-view" {
+            key = "PageDown"
+        }
+
+        click "open-presentation" {
+            target = css("button[data-template-id='strategy-deck']")
+        }
+
+        wait "presentation-ready" {
+            visible = css(".work-presentation-editor")
+        }
+
+        click "select-accent" {
+            target = css(".work-slide-canvas.interactive > .work-slide-element:nth-of-type(1)")
+        }
+
+        wait "arrange-group-visible" {
+            visible = css(".work-presentation-ribbon .work-office-ribbon-group[aria-label='排列']")
+        }
+
+        expect "group-shortcut" {
+            visible = css("button[aria-label='组合'][aria-keyshortcuts='Control+G Meta+G']")
+        }
+
+        expect "ungroup-shortcut" {
+            visible = css("button[aria-label='取消组合'][aria-keyshortcuts='Control+Shift+G Meta+Shift+G']")
+        }
+
+        expect "group-disabled-for-single-selection" {
+            visible = css("button[aria-label='组合'][disabled]")
+        }
+
+        expect "ungroup-disabled-without-group" {
+            visible = css("button[aria-label='取消组合'][disabled]")
+        }
+
+        accessibility "presentation-group-shortcut-accessibility" {
+            path = "evidence/presentation-group-shortcut-accessibility.json"
+        }
+
+        console "presentation-group-shortcut-console" {
+            path = "diagnostics/presentation-group-shortcut-console.json"
+        }
+
+        page_errors "presentation-group-shortcut-page-errors" {
+            path = "diagnostics/presentation-group-shortcut-page-errors.json"
+        }
+    }
+}

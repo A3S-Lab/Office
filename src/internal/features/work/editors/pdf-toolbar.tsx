@@ -3,6 +3,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronUp,
   Ellipsis,
   GalleryVerticalEnd,
@@ -15,6 +17,7 @@ import {
   Pencil,
   Plus,
   Redo2,
+  Ratio,
   Save,
   Scan,
   Search,
@@ -64,8 +67,14 @@ interface PdfPageNavigationControl {
 }
 
 const pdfKeyboardShortcuts = {
+  actualSize: 'Control+1 Meta+1',
   deleteAnnotation: 'Delete Backspace',
   fitPage: 'Control+0 Meta+0',
+  fitWidth: 'Control+2 Meta+2',
+  firstPage: 'Control+Home Meta+Home',
+  lastPage: 'Control+End Meta+End',
+  nextPage: 'PageDown Space',
+  previousPage: 'PageUp Shift+Space',
   redo: 'Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y',
   save: 'Control+S Meta+S',
   search: 'Control+F Meta+F',
@@ -396,6 +405,8 @@ export function PdfToolbar({
         <IconButton
           className="work-pdf-page-step"
           label="上一页"
+          title="上一页（PageUp）"
+          aria-keyshortcuts={pdfKeyboardShortcuts.previousPage}
           disabled={!can.previousPage()}
           onClick={commands.previousPage}
         >
@@ -438,6 +449,8 @@ export function PdfToolbar({
         <IconButton
           className="work-pdf-page-step"
           label="下一页"
+          title="下一页（PageDown）"
+          aria-keyshortcuts={pdfKeyboardShortcuts.nextPage}
           disabled={!can.nextPage()}
           onClick={commands.nextPage}
         >
@@ -468,6 +481,19 @@ export function PdfToolbar({
         <button
           type="button"
           className="work-pdf-fit-button"
+          aria-label="实际大小"
+          title="实际大小（Cmd/Ctrl+1）"
+          aria-keyshortcuts={pdfKeyboardShortcuts.actualSize}
+          aria-pressed={isPdfActualSize(state)}
+          disabled={!can.actualSize()}
+          onClick={commands.actualSize}
+        >
+          实际大小
+        </button>
+        <button
+          type="button"
+          className="work-pdf-fit-button"
+          aria-label="整页"
           title="整页（Cmd/Ctrl+0）"
           aria-keyshortcuts={pdfKeyboardShortcuts.fitPage}
           aria-pressed={state.zoomMode === 'fit-page'}
@@ -479,6 +505,9 @@ export function PdfToolbar({
         <button
           type="button"
           className="work-pdf-fit-button"
+          aria-label="页宽"
+          title="页宽（Cmd/Ctrl+2）"
+          aria-keyshortcuts={pdfKeyboardShortcuts.fitWidth}
           aria-pressed={state.zoomMode === 'fit-width'}
           disabled={!can.fitWidth()}
           onClick={commands.fitWidth}
@@ -854,7 +883,16 @@ function PdfToolbarOverflow({
             {state.features.navigation && (
               <fieldset className="work-pdf-overflow-group" aria-label="翻页">
                 <PdfOverflowAction
+                  label="首页"
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.firstPage}
+                  disabled={!can.goToPage(1)}
+                  onSelect={() => select(() => commands.goToPage(1))}
+                >
+                  <ChevronsLeft size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
                   label="上一页"
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.previousPage}
                   disabled={!can.previousPage()}
                   onSelect={() => select(commands.previousPage)}
                 >
@@ -862,10 +900,21 @@ function PdfToolbarOverflow({
                 </PdfOverflowAction>
                 <PdfOverflowAction
                   label="下一页"
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.nextPage}
                   disabled={!can.nextPage()}
                   onSelect={() => select(commands.nextPage)}
                 >
                   <ChevronRight size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="末页"
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.lastPage}
+                  disabled={!can.goToPage(state.totalPages || 1)}
+                  onSelect={() =>
+                    select(() => commands.goToPage(state.totalPages || 1))
+                  }
+                >
+                  <ChevronsRight size={15} />
                 </PdfOverflowAction>
               </fieldset>
             )}
@@ -888,6 +937,15 @@ function PdfToolbarOverflow({
                   <Plus size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
+                  label="实际大小"
+                  active={isPdfActualSize(state)}
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.actualSize}
+                  disabled={!can.actualSize()}
+                  onSelect={() => select(commands.actualSize)}
+                >
+                  <Ratio size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
                   label="整页"
                   active={state.zoomMode === 'fit-page'}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.fitPage}
@@ -899,6 +957,7 @@ function PdfToolbarOverflow({
                 <PdfOverflowAction
                   label="页宽"
                   active={state.zoomMode === 'fit-width'}
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.fitWidth}
                   disabled={!can.fitWidth()}
                   onSelect={() => select(commands.fitWidth)}
                 >
@@ -984,6 +1043,10 @@ function PdfOverflowAction({
       {content}
     </button>
   );
+}
+
+function isPdfActualSize(state: PdfViewerControllerState): boolean {
+  return state.zoomMode === null && state.zoomPercent === 100;
 }
 
 function searchStatus(state: PdfViewerControllerState): string {

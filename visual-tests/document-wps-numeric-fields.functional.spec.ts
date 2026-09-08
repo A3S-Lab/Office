@@ -88,6 +88,34 @@ test('Writer keeps WPS numeric fields live, labelled, and responsive', async ({
   await expect(totalPagesField).not.toHaveClass(/show-field-code/);
   await expect(editor).toBeFocused();
 
+  const pageDisplay =
+    (await pageField.getAttribute('data-field-display'))?.trim() || 'I';
+  await page.keyboard.press('Control+Shift+F9');
+  await expect(
+    editor.locator('.work-document-field[data-field-kind="page"]'),
+  ).toHaveCount(0);
+  // Unlinked result is plain text inside the paragraph (no field span to match exactly).
+  await expect(editor).toContainText(new RegExp(`Page:\\s*${escapeRegExp(pageDisplay)}\\b`));
+  await expect(totalPagesField).toHaveAttribute('data-field-display', 'A');
+  await expect(editor).toBeFocused();
+  await page.screenshot({
+    path: testInfo.outputPath(
+      `writer-wps-field-unlink-${testInfo.project.name}.png`,
+    ),
+    animations: 'disabled',
+  });
+
+  await page.keyboard.press('Control+z');
+  await expect(
+    editor.locator('.work-document-field[data-field-kind="page"]'),
+  ).toHaveAttribute('data-field-display', pageDisplay);
+
+  await pageField.click();
+  await page.keyboard.press('Control+F11');
+  await expect(pageField).toHaveAttribute('data-field-locked', 'true');
+  await expect(pageField).toHaveClass(/work-document-field-locked/);
+  await page.keyboard.press('Control+Shift+F11');
+  await expect(pageField).not.toHaveAttribute('data-field-locked', 'true');
 
   await page.screenshot({
     path: testInfo.outputPath(
@@ -97,3 +125,7 @@ test('Writer keeps WPS numeric fields live, labelled, and responsive', async ({
   });
   expect(browserErrors).toEqual([]);
 });
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

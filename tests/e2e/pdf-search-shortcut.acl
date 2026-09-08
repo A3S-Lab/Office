@@ -1,0 +1,56 @@
+suite "office-pdf-search-shortcut" {
+    version = 1
+
+    scenario "focus-pdf-search-with-wps-ctrl-f" {
+        name = "Focus the PDF search field with WPS Ctrl+F"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        upload "open-pdf" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/pdf-thumbnail-keyboard.pdf"]
+        }
+
+        wait "pdf-ready" {
+            visible = css(".work-pdf-embed[data-ready='true']")
+        }
+
+        expect "search-shortcut" {
+            visible = css(".work-pdf-search input[aria-label='在 PDF 中搜索'][aria-keyshortcuts='Control+F Meta+F']")
+        }
+
+        click "focus-pdf-tool" {
+            target = role("button", "选择")
+        }
+
+        press "focus-search" {
+            key = "Control+f"
+        }
+
+        expect "search-focused" {
+            focused = css(".work-pdf-search input[aria-label='在 PDF 中搜索']")
+        }
+
+        accessibility "pdf-search-shortcut-accessibility" {
+            path = "evidence/pdf-search-shortcut-accessibility.json"
+        }
+
+        console "pdf-search-shortcut-console" {
+            path = "diagnostics/pdf-search-shortcut-console.json"
+        }
+
+        page_errors "pdf-search-shortcut-page-errors" {
+            path = "diagnostics/pdf-search-shortcut-page-errors.json"
+        }
+    }
+}

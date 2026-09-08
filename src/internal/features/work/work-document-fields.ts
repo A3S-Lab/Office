@@ -410,7 +410,17 @@ export function normalizeDocumentFieldsHtml(source: string): string {
     element.dataset.fieldCode = documentFieldCodeDisplay(
       element.dataset.fieldInstruction,
     );
+    if (element.dataset.fieldLocked === 'true') {
+      element.dataset.fieldLocked = 'true';
+    } else {
+      delete element.dataset.fieldLocked;
+    }
     element.classList.add('work-document-field');
+    if (element.dataset.fieldLocked === 'true') {
+      element.classList.add('work-document-field-locked');
+    } else {
+      element.classList.remove('work-document-field-locked');
+    }
     element.textContent = display;
   }
   return document.body.innerHTML;

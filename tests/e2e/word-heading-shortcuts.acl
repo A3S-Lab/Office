@@ -1,0 +1,103 @@
+suite "office-word-heading-shortcuts" {
+    version = 1
+
+    scenario "step-writer-headings-with-wps-ctrl-alt-1-2-3" {
+        name = "Step Writer heading styles with WPS Ctrl+Alt+1 / Ctrl+Alt+2 / Ctrl+Alt+3"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "heading-one-shortcut-described" {
+            visible = css("[aria-label='段落样式库'] label[data-document-style='h1'][title='标题 1（Cmd/Ctrl+Alt+1）']")
+        }
+
+        expect "heading-two-shortcut-described" {
+            visible = css("[aria-label='段落样式库'] label[data-document-style='h2'][title='标题 2（Cmd/Ctrl+Alt+2）']")
+        }
+
+        expect "heading-three-shortcut-described" {
+            visible = css("[aria-label='段落样式库'] label[data-document-style='h3'][title='标题 3（Cmd/Ctrl+Alt+3）']")
+        }
+
+        click "select-body-paragraph" {
+            target = text("用一句话说明这项工作的目标，以及完成后会带来什么变化。", true)
+        }
+
+        press "move-to-paragraph-start" {
+            key = "Home"
+        }
+
+        press "apply-heading-one" {
+            key = "Control+Alt+1"
+        }
+
+        expect "heading-one-applied" {
+            visible = css(".work-document-editable .ProseMirror h1")
+        }
+
+        expect "heading-one-gallery-active" {
+            visible = css("[aria-label='段落样式库'] label[data-document-style='h1'].active")
+        }
+
+        press "apply-heading-two" {
+            key = "Control+Alt+2"
+        }
+
+        expect "heading-two-applied" {
+            visible = css(".work-document-editable .ProseMirror h2")
+        }
+
+        expect "heading-two-gallery-active" {
+            visible = css("[aria-label='段落样式库'] label[data-document-style='h2'].active")
+        }
+
+        press "apply-heading-three" {
+            key = "Control+Alt+3"
+        }
+
+        expect "heading-three-applied" {
+            visible = css(".work-document-editable .ProseMirror h3")
+        }
+
+        expect "heading-three-gallery-active" {
+            visible = css("[aria-label='段落样式库'] label[data-document-style='h3'].active")
+        }
+
+        expect "editor-focus-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "word-heading-shortcuts-accessibility" {
+            path = "evidence/word-heading-shortcuts-accessibility.json"
+        }
+
+        console "word-heading-shortcuts-console" {
+            path = "diagnostics/word-heading-shortcuts-console.json"
+        }
+
+        page_errors "word-heading-shortcuts-page-errors" {
+            path = "diagnostics/word-heading-shortcuts-page-errors.json"
+        }
+    }
+}

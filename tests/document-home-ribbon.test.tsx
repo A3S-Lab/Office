@@ -102,9 +102,17 @@ test('switches superscript and subscript without stacking both marks', () => {
     'aria-pressed',
     'true',
   );
+  expect(screen.getByRole('button', { name: '下标' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+= Meta+=',
+  );
   expect(screen.getByRole('button', { name: '上标' })).toHaveAttribute(
     'aria-pressed',
     'false',
+  );
+  expect(screen.getByRole('button', { name: '上标' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+= Meta+Shift+=',
   );
 
   fireEvent.click(screen.getByRole('button', { name: '上标' }));
@@ -379,6 +387,10 @@ test('wires every direct character-format action to the TipTap selection', () =>
   expect(editor.getHTML()).toContain('data-office-text-case="small-caps"');
 
   fireEvent.click(within(font).getByRole('button', { name: '清除格式' }));
+  expect(within(font).getByRole('button', { name: '清除格式' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Space Meta+Space',
+  );
   expect(textMarkNames(editor, 'Format this')).toEqual(new Set());
   expect(editor.getText()).toBe('Format this text');
 });
@@ -398,6 +410,14 @@ test('steps font size while preserving the active selection', () => {
   );
 
   fireEvent.click(screen.getByRole('button', { name: '增大字号' }));
+  expect(screen.getByRole('button', { name: '增大字号' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+. Meta+Shift+. Control+] Meta+]',
+  );
+  expect(screen.getByRole('button', { name: '减小字号' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+, Meta+Shift+, Control+[ Meta+[',
+  );
   expect(editor.getAttributes('textStyle').fontSize).toBe('12pt');
   fireEvent.click(screen.getByRole('button', { name: '减小字号' }));
   expect(editor.getAttributes('textStyle').fontSize).toBe('10.5pt');
@@ -458,6 +478,27 @@ test('wires paragraph alignment, direction, spacing, and indent controls', () =>
   );
   const paragraph = screen.getByRole('region', { name: '段落' });
 
+  expect(
+    within(paragraph).getByRole('button', { name: '左对齐' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+L Meta+L');
+  expect(
+    within(paragraph).getByRole('button', { name: '居中' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+E Meta+E');
+  expect(
+    within(paragraph).getByRole('button', { name: '右对齐' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+R Meta+R');
+  expect(
+    within(paragraph).getByRole('button', { name: '两端对齐' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+J Meta+J');
+  expect(
+    within(paragraph).getByRole('button', { name: '分散对齐' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+Shift+J Meta+Shift+J');
+  expect(
+    within(paragraph).getByRole('combobox', { name: '行距' }),
+  ).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+1 Meta+1 Control+5 Meta+5 Control+2 Meta+2',
+  );
   fireEvent.click(within(paragraph).getByRole('button', { name: '居中' }));
   expect(editor.getAttributes('paragraph').textAlign).toBe('center');
   fireEvent.click(within(paragraph).getByRole('button', { name: '右对齐' }));
@@ -466,12 +507,26 @@ test('wires paragraph alignment, direction, spacing, and indent controls', () =>
   expect(editor.getAttributes('paragraph').textAlign).toBe('left');
   fireEvent.click(within(paragraph).getByRole('button', { name: '两端对齐' }));
   expect(editor.getAttributes('paragraph').textAlign).toBe('justify');
+  fireEvent.click(within(paragraph).getByRole('button', { name: '分散对齐' }));
+  expect(editor.getAttributes('paragraph').textAlign).toBe('distribute');
   fireEvent.click(within(paragraph).getByRole('button', { name: '从右向左' }));
   expect(editor.getHTML()).toContain('dir="rtl"');
   fireEvent.click(within(paragraph).getByRole('button', { name: '从左向右' }));
   expect(editor.getHTML()).toContain('dir="ltr"');
   fireEvent.click(within(paragraph).getByRole('button', { name: '增加缩进' }));
   expect(editor.getHTML()).toContain('data-office-indent-level="1"');
+  expect(
+    within(paragraph).getByRole('button', { name: '增加缩进' }),
+  ).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+M Meta+M Shift+Alt+. Alt+Shift+ArrowRight',
+  );
+  expect(
+    within(paragraph).getByRole('button', { name: '减少缩进' }),
+  ).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+M Meta+Shift+M Shift+Alt+, Alt+Shift+ArrowLeft',
+  );
   fireEvent.click(within(paragraph).getByRole('button', { name: '减少缩进' }));
   expect(editor.getHTML()).not.toContain('data-office-indent-level');
   fireEvent.click(within(paragraph).getByRole('button', { name: '增加缩进' }));
@@ -511,9 +566,17 @@ test('shows paragraph styles and applies the active style idempotently', () => {
   });
 
   expect(paragraph).toBeChecked();
+  expect(paragraph).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+N Meta+Shift+N',
+  );
   expect(headingOne).toHaveAttribute(
     'aria-keyshortcuts',
     'Control+Alt+1 Meta+Alt+1',
+  );
+  expect(screen.getByRole('combobox', { name: '段落样式' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+N Meta+Shift+N Control+Alt+1 Meta+Alt+1 Control+Alt+2 Meta+Alt+2 Control+Alt+3 Meta+Alt+3',
   );
   fireEvent.click(headingOne);
   expect(editor.getHTML()).toContain('<h1>Project brief</h1>');
