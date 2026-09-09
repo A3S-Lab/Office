@@ -719,6 +719,7 @@ export async function createDocxBlob(
     noteContext.cellFormattingChangePatches.textDirection,
     noteContext.cellFormattingChangePatches.fitText,
     noteContext.cellFormattingChangePatches.hideMark,
+    noteContext.cellFormattingChangePatches.cnfStyles,
   );
   const sectionFormattingChangesPatched =
     await patchDocxSectionFormattingChanges(

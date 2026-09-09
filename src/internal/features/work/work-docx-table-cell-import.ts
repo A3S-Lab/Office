@@ -35,6 +35,7 @@ import {
   supportedDocxCellFormattingChangeFromProperties,
   type SupportedDocxCellFormattingChange,
 } from './work-docx-cell-format-change-import';
+import { parseDocxCnfStyleElement } from './work-document-cnf-style';
 import { normalizeDocumentTableCellTextDirection } from './work-document-table-cell-formatting';
 import type { DocumentTableCellTextDirection } from './work-document-table-cell-formatting';
 import {
@@ -61,6 +62,7 @@ export interface ImportedDocxTableCellMarker {
   textDirection?: DocumentTableCellTextDirection;
   fitText?: boolean;
   hideMark?: boolean;
+  cnfStyle?: string;
   propertyRevisionOmml?: string;
   formattingChange?: SupportedDocxCellFormattingChange;
 }
@@ -143,6 +145,13 @@ export function markDocxTableCells(
       ? directChild(properties, 'hideMark')
       : undefined;
     const hideMark = hideMarkElement ? onOffValue(hideMarkElement) : undefined;
+    const cnfStyleElement = properties
+      ? directChild(properties, 'cnfStyle')
+      : undefined;
+    const cnfStyleParsed = cnfStyleElement
+      ? parseDocxCnfStyleElement(cnfStyleElement)
+      : null;
+    const cnfStyle = cnfStyleParsed ?? undefined;
     const formattingChange =
       supportedDocxCellFormattingChangeFromProperties(properties);
     const propertyRevisionOmml = formattingChange
@@ -157,6 +166,7 @@ export function markDocxTableCells(
       textDirection === undefined &&
       fitText === undefined &&
       hideMark === undefined &&
+      cnfStyle === undefined &&
       !propertyRevisionOmml &&
       !formattingChange
     ) {
@@ -177,6 +187,7 @@ export function markDocxTableCells(
       ...(textDirection !== undefined ? { textDirection } : {}),
       ...(fitText !== undefined ? { fitText } : {}),
       ...(hideMark !== undefined ? { hideMark } : {}),
+      ...(cnfStyle !== undefined ? { cnfStyle } : {}),
       ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
       ...(formattingChange ? { formattingChange } : {}),
     });
@@ -262,6 +273,9 @@ function applyCellFormat(
   }
   if (format.hideMark !== undefined) {
     cell.dataset.officeCellHideMark = String(format.hideMark);
+  }
+  if (format.cnfStyle !== undefined) {
+    cell.dataset.officeCellCnfStyle = format.cnfStyle;
   }
   applyDocumentCellPropertyRevisionOmmlToElement(
     cell,

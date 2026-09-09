@@ -8,6 +8,7 @@ import {
   serializeDocumentCellFormatting,
   type DocumentTableCellTextDirection,
 } from './work-document-cell-format-changes';
+import { normalizeDocumentCnfStyle } from './work-document-cnf-style';
 import { normalizeTableColor } from './work-document-table-borders';
 import {
   normalizeDocumentTableVerticalAlign,
@@ -25,7 +26,7 @@ interface DocumentCellFormattingTrackingOptions {
 
 /**
  * When track-changes is on, cell verticalAlign / solid fill / margin /
- * preferred-width / noWrap / textDirection / fitText / hideMark edits become reviewable
+ * preferred-width / noWrap / textDirection / fitText / hideMark / cnfStyle edits become reviewable
  * `cell-formatting` revisions.
  */
 export function trackDocumentCellFormattingTransaction(
@@ -74,6 +75,7 @@ function cellFormatting(node: ProseMirrorNode): {
   textDirection?: DocumentTableCellTextDirection;
   fitText?: boolean;
   hideMark?: boolean;
+  cnfStyle?: string;
 } | null {
   const verticalAlign =
     normalizeDocumentTableVerticalAlign(node.attrs.verticalAlign) ?? 'top';
@@ -93,6 +95,7 @@ function cellFormatting(node: ProseMirrorNode): {
     typeof node.attrs.fitText === 'boolean' ? node.attrs.fitText : false;
   const hideMark =
     typeof node.attrs.hideMark === 'boolean' ? node.attrs.hideMark : false;
+  const cnfStyle = normalizeDocumentCnfStyle(node.attrs.cnfStyle);
   return normalizeDocumentCellFormattingSnapshot({
     verticalAlign,
     ...(fill ? { fill } : {}),
@@ -102,6 +105,7 @@ function cellFormatting(node: ProseMirrorNode): {
     textDirection,
     fitText,
     hideMark,
+    ...(cnfStyle ? { cnfStyle } : {}),
   });
 }
 
@@ -121,6 +125,7 @@ function onlyReviewableCellFormattingChanged(
     'textDirection',
     'fitText',
     'hideMark',
+    'cnfStyle',
     'cellChangeKind',
     'cellChangeId',
     'cellChangeAuthor',

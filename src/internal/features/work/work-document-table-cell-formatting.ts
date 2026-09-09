@@ -41,6 +41,7 @@ import {
   documentCellPropertyRevisionOmmlFromElement,
   encodeDocumentTablePropertyRevisionOmml,
 } from './work-document-table-property-revision';
+import { normalizeDocumentCnfStyle } from './work-document-cnf-style';
 
 export {
   documentTableBordersFromElement,
@@ -469,6 +470,15 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
           return { 'data-office-cell-hide-mark': 'false' };
         }
         return {};
+      },
+    },
+    cnfStyle: {
+      default: null,
+      parseHTML: (element: HTMLElement) =>
+        normalizeDocumentCnfStyle(element.dataset.officeCellCnfStyle),
+      renderHTML: (attributes: Record<string, unknown>) => {
+        const cnfStyle = normalizeDocumentCnfStyle(attributes.cnfStyle);
+        return cnfStyle ? { 'data-office-cell-cnf-style': cnfStyle } : {};
       },
     },
     propertyRevisionOmml: {

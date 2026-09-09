@@ -3,6 +3,7 @@ import {
   serializeDocumentCellFormatting,
   type DocumentTableCellTextDirection,
 } from './work-document-cell-format-changes';
+import { parseDocxCnfStyleElement } from './work-document-cnf-style';
 import { normalizeTableColor } from './work-document-table-borders';
 import { normalizeDocumentTableVerticalAlign } from './work-document-table-cell-formatting';
 import {
@@ -34,6 +35,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'textDirection',
   'tcFitText',
   'hideMark',
+  'cnfStyle',
 ]);
 const SOLID_SHADING_VALUES = new Set(['clear', 'nil', 'none', '']);
 const MARGIN_SIDES = new Set([
@@ -56,7 +58,7 @@ export interface SupportedDocxCellFormattingChange {
 /**
  * Relationship-free `w:tcPrChange` whose prior snapshot contains only
  * `w:vAlign`, solid direct-color `w:shd`, `w:tcMar`, `w:tcW`, `w:noWrap`,
- * `w:textDirection`, `w:tcFitText`, and/or `w:hideMark`. Broader cell
+ * `w:textDirection`, `w:tcFitText`, `w:hideMark`, and/or `w:cnfStyle`. Broader cell
  * property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxCellFormattingChange(change: Element): boolean {
@@ -138,7 +140,8 @@ function supportedCellFormattingChange(
         child.localName === 'noWrap' ||
         child.localName === 'textDirection' ||
         child.localName === 'tcFitText' ||
-        child.localName === 'hideMark'
+        child.localName === 'hideMark' ||
+        child.localName === 'cnfStyle'
       ) {
         return false;
       }
@@ -158,6 +161,7 @@ function supportedCellFormattingChange(
     textDirection?: DocumentTableCellTextDirection;
     fitText?: boolean;
     hideMark?: boolean;
+    cnfStyle?: string;
   } = {};
   for (const child of children) {
     if (child.localName === 'vAlign') {
@@ -204,6 +208,12 @@ function supportedCellFormattingChange(
     }
     if (child.localName === 'hideMark') {
       snapshot.hideMark = onOffValue(child);
+      continue;
+    }
+    if (child.localName === 'cnfStyle') {
+      const cnfStyle = parseDocxCnfStyleElement(child);
+      if (!cnfStyle) return null;
+      snapshot.cnfStyle = cnfStyle;
     }
   }
   return {

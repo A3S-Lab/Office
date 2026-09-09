@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { parseDocumentCellFormatting } from './work-document-cell-format-changes';
+import { normalizeDocumentCnfStyle } from './work-document-cnf-style';
 import type { DocumentTablePreferredWidth } from './work-document-table-geometry';
 import { descendants, directChild, parseXml } from './work-ooxml-package';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
@@ -22,6 +23,7 @@ export class DocxCellFormattingChangePatchCollector {
   readonly textDirection: Array<string | null> = [];
   readonly fitText: boolean[] = [];
   readonly hideMark: boolean[] = [];
+  readonly cnfStyles: Array<string | null> = [];
 
   record(element: HTMLTableCellElement, id: number): void {
     this.noWrap.push(element.dataset.officeCellNoWrap === 'true');
@@ -30,6 +32,9 @@ export class DocxCellFormattingChangePatchCollector {
     );
     this.fitText.push(element.dataset.officeCellFitText === 'true');
     this.hideMark.push(element.dataset.officeCellHideMark === 'true');
+    this.cnfStyles.push(
+      normalizeDocumentCnfStyle(element.dataset.officeCellCnfStyle),
+    );
     if (
       element.dataset.changeKind !== 'cell-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -63,13 +68,15 @@ export async function patchDocxCellFormattingChanges(
   textDirection: readonly (string | null)[] = [],
   fitText: readonly boolean[] = [],
   hideMark: readonly boolean[] = [],
+  cnfStyles: readonly (string | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
     !noWrap.some(Boolean) &&
     !textDirection.some(Boolean) &&
     !fitText.some(Boolean) &&
-    !hideMark.some(Boolean)
+    !hideMark.some(Boolean) &&
+    !cnfStyles.some((value) => value !== null)
   ) {
     return buffer;
   }
@@ -97,6 +104,7 @@ export async function patchDocxCellFormattingChanges(
     const cellTextDirection = textDirection[index] ?? null;
     const cellFitText = fitText[index] === true;
     const cellHideMark = hideMark[index] === true;
+    const cellCnfStyle = cnfStyles[index] ?? null;
     index += 1;
     if (patch) {
       setCellFormattingChange(document, cell, patch);
@@ -116,6 +124,10 @@ export async function patchDocxCellFormattingChanges(
     }
     if (cellHideMark) {
       setCellHideMark(document, cell, true);
+      changed = true;
+    }
+    if (cellCnfStyle) {
+      setCellCnfStyle(document, cell, cellCnfStyle);
       changed = true;
     }
   }
@@ -212,6 +224,27 @@ function setCellHideMark(
   properties.append(document.createElementNS(WORD_NAMESPACE, 'w:hideMark'));
 }
 
+function setCellCnfStyle(
+  document: Document,
+  cell: Element,
+  cnfStyle: string,
+): void {
+  let properties = directChild(cell, 'tcPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+    cell.insertBefore(properties, cell.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'cnfStyle' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:cnfStyle');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', cnfStyle);
+  properties.append(element);
+}
+
 function setCellFormattingChange(
   document: Document,
   cell: Element,
@@ -298,6 +331,11 @@ function setCellFormattingChange(
       hideMark.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
     }
     prior.append(hideMark);
+  }
+  if (formatting.cnfStyle !== undefined) {
+    const cnfStyle = document.createElementNS(WORD_NAMESPACE, 'w:cnfStyle');
+    cnfStyle.setAttributeNS(WORD_NAMESPACE, 'w:val', formatting.cnfStyle);
+    prior.append(cnfStyle);
   }
   change.append(prior);
   properties.append(change);

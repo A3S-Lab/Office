@@ -1,3 +1,4 @@
+import { normalizeDocumentCnfStyle } from './work-document-cnf-style';
 import { normalizeTableColor } from './work-document-table-borders';
 import {
   normalizeDocumentTableVerticalAlign,
@@ -27,7 +28,7 @@ export { normalizeDocumentTableCellTextDirection } from './work-document-table-c
 /**
  * Prior snapshot for reviewable cell-property revisions.
  * At least one of verticalAlign, fill, margins, width, noWrap, textDirection,
- * fitText, or hideMark must be present.
+ * fitText, hideMark, or cnfStyle must be present.
  */
 export interface DocumentCellFormattingSnapshot {
   verticalAlign?: DocumentTableVerticalAlign;
@@ -38,6 +39,7 @@ export interface DocumentCellFormattingSnapshot {
   textDirection?: DocumentTableCellTextDirection;
   fitText?: boolean;
   hideMark?: boolean;
+  cnfStyle?: string;
 }
 
 const MAX_CELL_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -57,11 +59,12 @@ export function serializeDocumentCellFormatting(attributes: {
   textDirection?: unknown;
   fitText?: unknown;
   hideMark?: unknown;
+  cnfStyle?: unknown;
 }): string {
   const snapshot = normalizeDocumentCellFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, textDirection, fitText, or hideMark.',
+      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, textDirection, fitText, hideMark, or cnfStyle.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -99,7 +102,8 @@ export function parseDocumentCellFormatting(
         key !== 'noWrap' &&
         key !== 'textDirection' &&
         key !== 'fitText' &&
-        key !== 'hideMark',
+        key !== 'hideMark' &&
+        key !== 'cnfStyle',
     )
   ) {
     return null;
@@ -118,6 +122,7 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
   textDirection?: unknown;
   fitText?: unknown;
   hideMark?: unknown;
+  cnfStyle?: unknown;
 }): DocumentCellFormattingSnapshot | null {
   const snapshot: DocumentCellFormattingSnapshot = {};
   if ('verticalAlign' in attributes && attributes.verticalAlign !== undefined) {
@@ -167,6 +172,11 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
     if (typeof attributes.hideMark !== 'boolean') return null;
     snapshot.hideMark = attributes.hideMark;
   }
+  if ('cnfStyle' in attributes && attributes.cnfStyle !== undefined) {
+    const cnfStyle = normalizeDocumentCnfStyle(attributes.cnfStyle);
+    if (!cnfStyle) return null;
+    snapshot.cnfStyle = cnfStyle;
+  }
   return snapshot.verticalAlign ||
     snapshot.fill ||
     snapshot.margins ||
@@ -174,7 +184,8 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
     snapshot.noWrap !== undefined ||
     snapshot.textDirection !== undefined ||
     snapshot.fitText !== undefined ||
-    snapshot.hideMark !== undefined
+    snapshot.hideMark !== undefined ||
+    snapshot.cnfStyle !== undefined
     ? snapshot
     : null;
 }
@@ -218,6 +229,9 @@ export function restoredDocumentCellAttributes(
       : {}),
     ...(formatting.hideMark !== undefined
       ? { hideMark: formatting.hideMark }
+      : {}),
+    ...(formatting.cnfStyle !== undefined
+      ? { cnfStyle: formatting.cnfStyle }
       : {}),
   });
 }
@@ -303,6 +317,7 @@ function orderedSnapshot(
   }
   if (snapshot.fitText !== undefined) ordered.fitText = snapshot.fitText;
   if (snapshot.hideMark !== undefined) ordered.hideMark = snapshot.hideMark;
+  if (snapshot.cnfStyle !== undefined) ordered.cnfStyle = snapshot.cnfStyle;
   return ordered;
 }
 
