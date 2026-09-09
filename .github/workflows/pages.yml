@@ -60,9 +60,6 @@ jobs:
       - name: Build Playground for visual contracts
         run: bun run playground:build:ui
 
-      - name: Check playground bundle budget
-        run: bun run playground:bundle-check
-
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
@@ -105,6 +102,9 @@ jobs:
           A3S_OFFICE_SITE_BASE: ${{ steps.pages.outputs.base_path }}/
           RSPRESS_PERSISTENT_CACHE: false
           NODE_OPTIONS: --max-old-space-size=8192
+
+      - name: Check playground bundle budget
+        run: bun run playground:bundle-check
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v5
