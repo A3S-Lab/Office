@@ -215,8 +215,12 @@ function listFrozenDirs() {
     .sort((a, b) => compareVersion(b, a));
 }
 
+/** Keep the Pages/Rspress multi-version build under GitHub-hosted RAM limits. */
+const MAX_PUBLISHED_FROZEN_VERSIONS = 70;
+
 function registerVersions() {
-  const merged = ['latest', ...listFrozenDirs()];
+  const frozen = listFrozenDirs().slice(0, MAX_PUBLISHED_FROZEN_VERSIONS);
+  const merged = ['latest', ...frozen];
   const file = path.join(root, 'website', 'documentation-site.ts');
   const text = fs.readFileSync(file, 'utf8');
   const start = text.indexOf('export const DOCUMENTATION_VERSIONS = [');
@@ -276,8 +280,12 @@ function main() {
     }
   }
   const merged = registerVersions();
+  const archived = listFrozenDirs().length - (merged.length - 1);
   console.log(
-    `Registered ${merged.length - 1} frozen versions + latest in DOCUMENTATION_VERSIONS`,
+    `Registered ${merged.length - 1} published frozen versions + latest in DOCUMENTATION_VERSIONS` +
+      (archived > 0
+        ? ` (${archived} older frozen trees kept on disk but not published)`
+        : ''),
   );
 }
 
