@@ -4,6 +4,7 @@ import {
   parseDocumentTableFormatting,
   normalizeDocumentTableOverlap,
   normalizeDocumentTableStyleId,
+  normalizeDocumentTableCellSpacing,
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
 import {
@@ -33,6 +34,7 @@ export class DocxTableFormattingChangePatchCollector {
   readonly looks: Array<DocumentTableLook | null> = [];
   readonly overlaps: Array<DocumentTableOverlap | null> = [];
   readonly styleIds: Array<string | null> = [];
+  readonly cellSpacings: Array<number | null> = [];
 
   record(element: HTMLTableElement, id: number): void {
     this.bidiVisual.push(element.dataset.officeTableBidiVisual === 'true');
@@ -46,6 +48,11 @@ export class DocxTableFormattingChangePatchCollector {
     );
     this.styleIds.push(
       normalizeDocumentTableStyleId(element.dataset.officeTableStyleId),
+    );
+    this.cellSpacings.push(
+      normalizeDocumentTableCellSpacing(
+        element.dataset.officeTableCellSpacing,
+      ),
     );
     if (
       element.dataset.changeKind !== 'table-formatting' ||
@@ -79,6 +86,7 @@ export async function patchDocxTableFormattingChanges(
   looks: readonly (DocumentTableLook | null)[] = [],
   overlaps: readonly (DocumentTableOverlap | null)[] = [],
   styleIds: readonly (string | null)[] = [],
+  cellSpacings: readonly (number | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
@@ -86,7 +94,8 @@ export async function patchDocxTableFormattingChanges(
     !fills.some(Boolean) &&
     !looks.some(Boolean) &&
     !overlaps.some(Boolean) &&
-    !styleIds.some(Boolean)
+    !styleIds.some(Boolean) &&
+    !cellSpacings.some((value) => value !== null && value !== undefined)
   ) {
     return buffer;
   }
@@ -115,6 +124,7 @@ export async function patchDocxTableFormattingChanges(
     const tableLook = looks[index] ?? null;
     const tableOverlap = overlaps[index] ?? null;
     const tableStyleId = styleIds[index] ?? null;
+    const tableCellSpacing = cellSpacings[index] ?? null;
     index += 1;
     if (patch) {
       setTableFormattingChange(document, table, patch);
@@ -133,6 +143,9 @@ export async function patchDocxTableFormattingChanges(
       changed = true;
     }
     if (setTableStyleId(document, table, tableStyleId)) {
+      changed = true;
+    }
+    if (setTableCellSpacing(document, table, tableCellSpacing)) {
       changed = true;
     }
   }
@@ -164,6 +177,11 @@ export async function patchDocxTableFormattingChanges(
   if (styleIds.length && styleIds.length !== patches.length) {
     throw new Error(
       `DOCX table styleId patch count mismatch (${styleIds.length} styleIds, ${patches.length} tables).`,
+    );
+  }
+  if (cellSpacings.length && cellSpacings.length !== patches.length) {
+    throw new Error(
+      `DOCX table cellSpacing patch count mismatch (${cellSpacings.length} cellSpacings, ${patches.length} tables).`,
     );
   }
   if (changed) {
@@ -245,6 +263,9 @@ function setTableFormattingChange(
   if (formatting.styleId) {
     prior.append(createTblStyleElement(document, formatting.styleId));
   }
+  if (formatting.cellSpacing !== undefined) {
+    prior.append(createTblCellSpacingElement(document, formatting.cellSpacing));
+  }
   change.append(prior);
   properties.append(change);
 }
@@ -299,6 +320,43 @@ function setTableBidiVisual(
   if (!bidiVisual) return true;
   properties.append(document.createElementNS(WORD_NAMESPACE, 'w:bidiVisual'));
   return true;
+}
+
+function setTableCellSpacing(
+  document: Document,
+  table: Element,
+  cellSpacing: number | null,
+): boolean {
+  let properties = directChild(table, 'tblPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    if (cellSpacing === null) return false;
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+    table.insertBefore(properties, table.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblCellSpacing' &&
+      child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (cellSpacing === null) return true;
+  properties.append(createTblCellSpacingElement(document, cellSpacing));
+  return true;
+}
+
+function createTblCellSpacingElement(
+  document: Document,
+  cellSpacing: number,
+): Element {
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:tblCellSpacing');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:type', 'dxa');
+  element.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:w',
+    String(Math.round(cellSpacing * TWIPS_PER_PIXEL)),
+  );
+  return element;
 }
 
 function setTableStyleId(

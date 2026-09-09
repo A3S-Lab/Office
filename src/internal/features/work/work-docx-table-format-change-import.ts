@@ -12,6 +12,7 @@ import {
   normalizeDocumentTableFormattingSnapshot,
   normalizeDocumentTableOverlap,
   normalizeDocumentTableStyleId,
+  normalizeDocumentTableCellSpacing,
   serializeDocumentTableFormatting,
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
@@ -40,6 +41,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tblLook',
   'tblOverlap',
   'tblStyle',
+  'tblCellSpacing',
 ]);
 const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
 const RELATIONSHIP_NAMESPACES = new Set([
@@ -59,7 +61,7 @@ export interface SupportedDocxTableFormattingChange {
 /**
  * Relationship-free `w:tblPrChange` whose prior snapshot contains only
  * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, `w:tblLayout`,
- * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, `w:tblOverlap`, and/or relationship-free `w:tblStyle`. Broader
+ * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, `w:tblOverlap`, relationship-free `w:tblStyle`, and/or dxa `w:tblCellSpacing`. Broader
  * property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxTableFormattingChange(
@@ -154,6 +156,7 @@ function supportedTableFormattingChange(
   let look: DocumentTableLook | undefined;
   let overlap: DocumentTableOverlap | undefined;
   let styleId: string | undefined;
+  let cellSpacing: number | undefined;
   for (const child of children) {
     if (child.localName === 'tblLayout') {
       const value = normalizeDocumentTableLayoutAlgorithm(
@@ -217,6 +220,13 @@ function supportedTableFormattingChange(
       const value = normalizeDocumentTableStyleId(attribute(child, 'val'));
       if (!value) return null;
       styleId = value;
+      continue;
+    }
+    if (child.localName === 'tblCellSpacing') {
+      if (child.children.length > 0) return null;
+      const value = importedCellSpacing(child);
+      if (value === null) return null;
+      cellSpacing = value;
     }
   }
   const snapshot = normalizeDocumentTableFormattingSnapshot({
@@ -230,6 +240,7 @@ function supportedTableFormattingChange(
     ...(look ? { look } : {}),
     ...(overlap ? { overlap } : {}),
     ...(styleId ? { styleId } : {}),
+    ...(cellSpacing !== undefined ? { cellSpacing } : {}),
   });
   if (!snapshot) return null;
   const date = normalizeRevisionDate(rawDate);
@@ -300,6 +311,13 @@ function importedIndent(indent: Element): number | null {
   const type = attribute(indent, 'type');
   if (type !== null && type !== 'dxa') return null;
   return twipsToPixels(Number(attribute(indent, 'w')), true);
+}
+
+function importedCellSpacing(spacing: Element): number | null {
+  const type = attribute(spacing, 'type');
+  if (type !== null && type !== 'dxa') return null;
+  const pixels = twipsToPixels(Number(attribute(spacing, 'w')), true);
+  return pixels === null ? null : normalizeDocumentTableCellSpacing(pixels);
 }
 
 function percentageValue(value: string | null): number | null {

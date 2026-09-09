@@ -7,6 +7,7 @@ import {
 import {
   normalizeDocumentTableOverlap,
   normalizeDocumentTableStyleId,
+  normalizeDocumentTableCellSpacing,
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
 import {
@@ -57,6 +58,7 @@ export interface ImportedDocxTableSizingMarker {
   look?: DocumentTableLook;
   overlap?: DocumentTableOverlap;
   styleId?: string;
+  cellSpacing?: number;
 }
 
 export interface ImportedDocxTableSizingMarkers {
@@ -121,6 +123,9 @@ export function markDocxTableSizing(
       ...(importedTableStyleId(tableProperties)
         ? { styleId: importedTableStyleId(tableProperties)! }
         : {}),
+      ...(importedTableCellSpacing(tableProperties) !== null
+        ? { cellSpacing: importedTableCellSpacing(tableProperties)! }
+        : {}),
     });
   }
   return { tables };
@@ -167,6 +172,9 @@ export function applyImportedDocxTableSizingMarkers(
         }
         if (sizing.styleId) {
           table.dataset.officeTableStyleId = sizing.styleId;
+        }
+        if (sizing.cellSpacing !== undefined) {
+          table.dataset.officeTableCellSpacing = String(sizing.cellSpacing);
         }
         if (sizing.columnWidths.length) {
           applyColumnWidths(table, sizing.columnWidths);
@@ -231,6 +239,21 @@ function importedTableStyleId(
   const element = directChild(properties, 'tblStyle');
   if (!element || element.children.length > 0) return null;
   return normalizeDocumentTableStyleId(attribute(element, 'val'));
+}
+
+function importedTableCellSpacing(
+  properties: Element | null | undefined,
+): number | null {
+  if (!properties) return null;
+  const element = directChild(properties, 'tblCellSpacing');
+  if (!element || element.children.length > 0) return null;
+  const type = attribute(element, 'type');
+  if (type !== null && type !== 'dxa') return null;
+  const twips = Number(attribute(element, 'w'));
+  if (!Number.isFinite(twips) || twips < 0) return null;
+  return normalizeDocumentTableCellSpacing(
+    Math.round(twips * PIXELS_PER_TWIP * 100) / 100,
+  );
 }
 
 function importedTableBidiVisual(

@@ -46,11 +46,15 @@ describe('DOCX table property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
-    // tblStyle is reviewable as table-formatting; keep opaque on tblCellSpacing.
-    const spacing = document.createElementNS(WORD_NAMESPACE, 'w:tblCellSpacing');
-    spacing.setAttributeNS(WORD_NAMESPACE, 'w:w', '120');
-    spacing.setAttributeNS(WORD_NAMESPACE, 'w:type', 'dxa');
-    prior.append(spacing);
+    // tblCellSpacing is reviewable as table-formatting; keep opaque on tblBorders.
+    const borders = document.createElementNS(WORD_NAMESPACE, 'w:tblBorders');
+    const top = document.createElementNS(WORD_NAMESPACE, 'w:top');
+    top.setAttributeNS(WORD_NAMESPACE, 'w:val', 'single');
+    top.setAttributeNS(WORD_NAMESPACE, 'w:sz', '4');
+    top.setAttributeNS(WORD_NAMESPACE, 'w:space', '0');
+    top.setAttributeNS(WORD_NAMESPACE, 'w:color', 'auto');
+    borders.append(top);
+    prior.append(borders);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -102,15 +106,12 @@ describe('DOCX table property-revision preservation', () => {
       id: '7',
       author: 'Reviewer',
     });
-    const priorSpacing = directChild(
+    const priorBorders = directChild(
       directChild(exportedChange!, 'tblPr'),
-      'tblCellSpacing',
+      'tblBorders',
     );
-    expect(
-      priorSpacing?.getAttributeNS(WORD_NAMESPACE, 'w') ??
-        priorSpacing?.getAttribute('w:w') ??
-        priorSpacing?.getAttribute('w'),
-    ).toBe('120');
+    expect(priorBorders).toBeTruthy();
+    expect(directChild(priorBorders!, 'top')).toBeTruthy();
   });
 
   test('drops relationship-bound w:tblPrChange instead of inventing opaque metadata', async () => {

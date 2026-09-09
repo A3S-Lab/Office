@@ -983,6 +983,99 @@ describe('DOCX table-formatting revisions', () => {
     }
   });
 
+  test('imports tblCellSpacing-only w:tblPrChange as a reviewable table-formatting change', async () => {
+    const source = await tableDocxWithCellSpacingChange({
+      priorTwips: 120,
+      currentTwips: 240,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-cell-spacing-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const table = html.body.querySelector('table');
+    expect(table?.dataset.changeKind).toBe('table-formatting');
+    expect(table?.dataset.officeTablePropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentTableFormatting(table?.dataset.changeBefore)).toEqual({
+      cellSpacing: 8,
+    });
+    expect(table?.dataset.officeTableCellSpacing).toBe('16');
+  });
+
+  test('pending tblCellSpacing table-formatting change round-trips as native w:tblPrChange', async () => {
+    const source = await tableDocxWithCellSpacingChange({
+      priorTwips: 120,
+      currentTwips: 240,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-cell-spacing-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const properties = directChild(descendants(exported, 'tbl')[0], 'tblPr');
+    const change = directChild(properties, 'tblPrChange');
+    expect(change).toBeTruthy();
+    expect(directChild(directChild(change!, 'tblPr'), 'tblCellSpacing')).toBeTruthy();
+    expect(directChild(properties, 'tblCellSpacing')).toBeTruthy();
+  });
+
+  test('live table cellSpacing edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<table data-office-table-layout="autofit"',
+        ' data-office-table-width-type="percent"',
+        ' data-office-table-width="100"',
+        ' data-office-table-bidi-visual="false"',
+        ' data-office-table-cell-spacing="8">',
+        '<tbody><tr><td><p>Cell</p></td></tr></tbody></table>',
+      ].join(''),
+    });
+    try {
+      let tablePos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'table' && tablePos === null) {
+          tablePos = position;
+        }
+      });
+      expect(tablePos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(tablePos!, undefined, {
+          ...editor.state.doc.nodeAt(tablePos!)!.attrs,
+          cellSpacing: 16,
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'table-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const table = html.body.querySelector('table');
+      expect(table?.dataset.changeKind).toBe('table-formatting');
+      expect(
+        parseDocumentTableFormatting(table?.dataset.changeBefore)?.cellSpacing,
+      ).toBe(8);
+      expect(table?.dataset.officeTableCellSpacing).toBe('16');
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('live table layout-mode edits become reviewable when track changes is on', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions({
@@ -1170,6 +1263,58 @@ async function tableDocxWithStyleIdChange(options: {
   const priorStyle = document.createElementNS(WORD_NAMESPACE, 'w:tblStyle');
   priorStyle.setAttributeNS(WORD_NAMESPACE, 'w:val', options.prior);
   prior.append(priorStyle);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function tableDocxWithCellSpacingChange(options: {
+  priorTwips: number;
+  currentTwips: number | null;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const table = descendants(document, 'tbl')[0];
+  const properties =
+    directChild(table, 'tblPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+      table.insertBefore(created, table.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblCellSpacing' ||
+      child.localName === 'tblPrChange',
+  )) {
+    existing.remove();
+  }
+  if (options.currentTwips !== null) {
+    const current = document.createElementNS(WORD_NAMESPACE, 'w:tblCellSpacing');
+    current.setAttributeNS(WORD_NAMESPACE, 'w:type', 'dxa');
+    current.setAttributeNS(WORD_NAMESPACE, 'w:w', String(options.currentTwips));
+    properties.append(current);
+  }
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:tblPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '63');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-09T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+  const priorSpacing = document.createElementNS(WORD_NAMESPACE, 'w:tblCellSpacing');
+  priorSpacing.setAttributeNS(WORD_NAMESPACE, 'w:type', 'dxa');
+  priorSpacing.setAttributeNS(WORD_NAMESPACE, 'w:w', String(options.priorTwips));
+  prior.append(priorSpacing);
   change.append(prior);
   properties.append(change);
   archive.file(

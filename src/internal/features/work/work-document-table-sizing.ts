@@ -46,6 +46,7 @@ import {
 import {
   normalizeDocumentTableOverlap,
   normalizeDocumentTableStyleId,
+  normalizeDocumentTableCellSpacing,
 } from './work-document-table-format-changes';
 import { applyDocumentTableSharedBorderPaint } from './work-document-table-borders';
 import {
@@ -261,6 +262,21 @@ export const DocumentTable = Table.extend({
           const styleId = normalizeDocumentTableStyleId(attributes.styleId);
           return styleId
             ? { 'data-office-table-style-id': styleId }
+            : {};
+        },
+      },
+      cellSpacing: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentTableCellSpacing(
+            element.dataset.officeTableCellSpacing,
+          ),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const cellSpacing = normalizeDocumentTableCellSpacing(
+            attributes.cellSpacing,
+          );
+          return cellSpacing !== null
+            ? { 'data-office-table-cell-spacing': String(cellSpacing) }
             : {};
         },
       },
