@@ -32,6 +32,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'paperSrc',
   'cols',
   'titlePg',
+  'rtlGutter',
 ]);
 const PAGE_SIZE_ATTRIBUTE_SET = new Set(['w', 'h', 'orient', 'code']);
 const PAPER_SOURCE_ATTRIBUTE_SET = new Set(['first', 'other']);
@@ -66,7 +67,7 @@ export interface SupportedDocxSectionFormattingChange {
  * Relationship-free `w:sectPrChange` whose prior snapshot contains only
  * orientation-only or complete `w:pgSz` (w/h with optional orient/code), a
  * complete seven-edge `w:pgMar`, `w:paperSrc`, equal-width `w:cols`,
- * and/or `w:titlePg`. Broader section property sets stay on the opaque OMML
+ * and/or `w:titlePg` and/or `w:rtlGutter`. Broader section property sets stay on the opaque OMML
  * path.
  */
 export function isSupportedDocxSectionFormattingChange(
@@ -121,7 +122,7 @@ function supportedSectionFormattingChange(
   const prior = priors[0];
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
-  if (!children.length || children.length > 5) return null;
+  if (!children.length || children.length > 6) return null;
   if (
     children.some(
       (child) =>
@@ -147,6 +148,7 @@ function supportedSectionFormattingChange(
       }
     | undefined;
   let differentFirstPage: boolean | undefined;
+  let rtlGutter: boolean | undefined;
   for (const child of children) {
     if (child.localName === 'pgSz') {
       const value = importedPageSize(child);
@@ -175,6 +177,10 @@ function supportedSectionFormattingChange(
     }
     if (child.localName === 'titlePg') {
       differentFirstPage = onOffValue(child);
+      continue;
+    }
+    if (child.localName === 'rtlGutter') {
+      rtlGutter = onOffValue(child);
     }
   }
   const before = serializeDocumentSectionFormatting({
@@ -184,6 +190,7 @@ function supportedSectionFormattingChange(
     ...(paperSource ? { paperSource } : {}),
     ...(columns ? { columns } : {}),
     ...(differentFirstPage !== undefined ? { differentFirstPage } : {}),
+    ...(rtlGutter !== undefined ? { rtlGutter } : {}),
   });
   return {
     id: `docx-section-format-change-${id}`,

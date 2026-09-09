@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.90.0 - 2026-09-09
+
+### Writer
+
+- Relationship-free `w:sectPrChange` priors that include `w:rtlGutter` are now
+  reviewable as `section-formatting` with accept/reject, live track-changes, and
+  native export (maps to page-margin `gutterOnRight`; current-section write already
+  emits `w:rtlGutter`). Broader section property sets remain opaque or fail-closed;
+  opaque fixtures stay on unequal-width `cols`.
+
 ## 0.89.0 - 2026-09-09
 
 ### Writer

@@ -527,6 +527,108 @@ describe('DOCX section-formatting revisions', () => {
   });
 
 
+
+  test('imports rtlGutter-only w:sectPrChange as a reviewable section-formatting change', async () => {
+    const source = await sectionDocxWithRtlGutterChange({
+      prior: true,
+      current: false,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-rtlgutter-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const section = html.body.querySelector('section[data-document-section]');
+    expect(section?.getAttribute('data-change-kind')).toBe('section-formatting');
+    expect(section?.getAttribute('data-section-property-revision-omml')).toBeNull();
+    expect(
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
+    ).toEqual({ rtlGutter: true });
+  });
+
+  test('pending rtlGutter section-formatting change round-trips as native w:sectPrChange', async () => {
+    const source = await sectionDocxWithRtlGutterChange({
+      prior: true,
+      current: false,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-rtlgutter-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const section = descendants(exported, 'sectPr').find(
+      (element) => element.parentElement?.localName !== 'sectPrChange',
+    );
+    const change = directChild(section!, 'sectPrChange');
+    expect(change).toBeTruthy();
+    expect(directChild(directChild(change!, 'sectPr'), 'rtlGutter')).toBeTruthy();
+  });
+
+  test('live section rtlGutter edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1"',
+        ' data-section-orientation="portrait"',
+        ' data-section-page-margins=\'{"top":1440,"right":1440,"bottom":1440,"left":1440,"header":708,"footer":708,"gutter":0}\'>',
+        '<p>Body</p>',
+        '</section>',
+      ].join(''),
+    });
+    try {
+      const active = activeDocumentSection(editor);
+      expect(active).not.toBeNull();
+      if (!active) throw new Error('Expected an active document section.');
+      expect(
+        editor.commands.updateActiveDocumentSection({
+          ...active.layout,
+          pageMargins: {
+            top: 1440,
+            right: 1440,
+            bottom: 1440,
+            left: 1440,
+            header: 708,
+            footer: 708,
+            gutter: 0,
+            gutterOnRight: true,
+          },
+        }),
+      ).toBe(true);
+      const changes = collectDocumentChanges(editor.state.doc);
+      expect(changes).toHaveLength(1);
+      expect(changes[0]?.kind).toBe('section-formatting');
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBe(
+        'section-formatting',
+      );
+      expect(
+        parseDocumentSectionFormatting(
+          section?.getAttribute('data-change-before'),
+        ),
+      ).toMatchObject({ rtlGutter: false });
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('imports titlePg-only w:sectPrChange as a reviewable section-formatting change', async () => {
     const source = await sectionDocxWithTitlePageChange({
       prior: true,
@@ -721,6 +823,52 @@ describe('DOCX section-formatting revisions', () => {
   });
 });
 
+
+
+async function sectionDocxWithRtlGutterChange(options: {
+  prior: boolean;
+  current: boolean;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const section = descendants(document, 'sectPr').find(
+    (element) => element.parentElement?.localName !== 'sectPrChange',
+  );
+  if (!section) throw new Error('Expected body sectPr.');
+  for (const existing of Array.from(section.children).filter(
+    (child) =>
+      child.localName === 'rtlGutter' || child.localName === 'sectPrChange',
+  )) {
+    existing.remove();
+  }
+  if (options.current) {
+    section.append(document.createElementNS(WORD_NAMESPACE, 'w:rtlGutter'));
+  }
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:sectPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '32');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-09T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
+  if (options.prior) {
+    prior.append(document.createElementNS(WORD_NAMESPACE, 'w:rtlGutter'));
+  } else {
+    const off = document.createElementNS(WORD_NAMESPACE, 'w:rtlGutter');
+    off.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    prior.append(off);
+  }
+  change.append(prior);
+  section.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
 
 async function sectionDocxWithTitlePageChange(options: {
   prior: boolean;

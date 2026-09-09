@@ -16,7 +16,7 @@ interface DocumentSectionFormattingTrackingOptions {
 
 /**
  * When track-changes is on, section orientation, page-geometry, page-margin,
- * paper-source, equal-width column, and/or different-first-page edits become
+ * paper-source, equal-width column, different-first-page, and/or rtlGutter edits become
  * reviewable `section-formatting` revisions. Companion `pageGeometry` / `pageSize`
  * swaps that follow orientation or geometry edits are allowed; other section
  * layout fields must stay unchanged.

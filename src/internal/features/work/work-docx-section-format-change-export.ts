@@ -196,6 +196,13 @@ function setSectionFormattingChange(
     }
     prior.append(titlePg);
   }
+  if (formatting.rtlGutter !== undefined) {
+    const rtlGutter = document.createElementNS(WORD_NAMESPACE, 'w:rtlGutter');
+    if (!formatting.rtlGutter) {
+      rtlGutter.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    }
+    prior.append(rtlGutter);
+  }
   change.append(prior);
   section.append(change);
 }

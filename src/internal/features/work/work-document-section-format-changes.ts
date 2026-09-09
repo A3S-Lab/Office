@@ -49,7 +49,7 @@ export interface DocumentSectionEqualColumnsSnapshot {
 /**
  * Prior snapshot for reviewable section-property revisions.
  * At least one of orientation, pageGeometry, pageMargins, paperSource,
- * columns, or differentFirstPage must be present.
+ * columns, differentFirstPage, or rtlGutter must be present.
  */
 export interface DocumentSectionFormattingSnapshot {
   orientation?: 'portrait' | 'landscape';
@@ -58,6 +58,7 @@ export interface DocumentSectionFormattingSnapshot {
   paperSource?: WorkDocumentPaperSource;
   columns?: DocumentSectionEqualColumnsSnapshot;
   differentFirstPage?: boolean;
+  rtlGutter?: boolean;
 }
 
 const MAX_SECTION_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -79,12 +80,13 @@ export function serializeDocumentSectionFormatting(
     paperSource?: unknown;
     columns?: unknown;
     differentFirstPage?: unknown;
+    rtlGutter?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentSectionFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, or differentFirstPage.',
+      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, or rtlGutter.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -120,7 +122,8 @@ export function parseDocumentSectionFormatting(
         key !== 'pageMargins' &&
         key !== 'paperSource' &&
         key !== 'columns' &&
-        key !== 'differentFirstPage',
+        key !== 'differentFirstPage' &&
+        key !== 'rtlGutter',
     )
   ) {
     return null;
@@ -138,6 +141,7 @@ export function normalizeDocumentSectionFormattingSnapshot(
     paperSource?: unknown;
     columns?: unknown;
     differentFirstPage?: unknown;
+    rtlGutter?: unknown;
   },
 ): DocumentSectionFormattingSnapshot | null {
   const snapshot: DocumentSectionFormattingSnapshot = {};
@@ -177,12 +181,17 @@ export function normalizeDocumentSectionFormattingSnapshot(
     if (typeof attributes.differentFirstPage !== 'boolean') return null;
     snapshot.differentFirstPage = attributes.differentFirstPage;
   }
+  if ('rtlGutter' in attributes && attributes.rtlGutter !== undefined) {
+    if (typeof attributes.rtlGutter !== 'boolean') return null;
+    snapshot.rtlGutter = attributes.rtlGutter;
+  }
   return snapshot.orientation ||
     snapshot.pageGeometry ||
     snapshot.pageMargins ||
     snapshot.paperSource ||
     snapshot.columns ||
-    snapshot.differentFirstPage !== undefined
+    snapshot.differentFirstPage !== undefined ||
+    snapshot.rtlGutter !== undefined
     ? snapshot
     : null;
 }
@@ -305,6 +314,23 @@ export function restoredDocumentSectionAttributes(
       differentFirstPage: formatting.differentFirstPage,
     });
   }
+  if (formatting.rtlGutter !== undefined) {
+    const existing = normalizeDocumentPageMargins(pageMargins) ?? {
+      top: 25,
+      right: 23,
+      bottom: 25,
+      left: 23,
+      header: 12.5,
+      footer: 12.5,
+      gutter: 0,
+    };
+    const restored = normalizeDocumentPageMargins({
+      ...existing,
+      gutterOnRight: formatting.rtlGutter,
+    });
+    if (!restored) return null;
+    pageMargins = serializeDocumentPageMargins(restored) ?? '';
+  }
   return clearDocumentSectionChangeAttributes({
     ...attributes,
     orientation,
@@ -365,6 +391,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
     ...(paperSource ? { paperSource } : {}),
     ...(columns ? { columns } : {}),
     differentFirstPage: chrome.differentFirstPage,
+    rtlGutter: pageMargins.gutterOnRight === true,
   });
 }
 
@@ -488,6 +515,9 @@ function orderedSnapshot(
   }
   if (snapshot.differentFirstPage !== undefined) {
     ordered.differentFirstPage = snapshot.differentFirstPage;
+  }
+  if (snapshot.rtlGutter !== undefined) {
+    ordered.rtlGutter = snapshot.rtlGutter;
   }
   if (snapshot.columns) {
     ordered.columns = {
