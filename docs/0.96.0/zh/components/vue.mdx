@@ -1,0 +1,40 @@
+---
+title: Vue
+description: 通过类型化 Vue 绑定使用 A3S Office。
+---
+
+# Vue
+
+Vue 绑定与 React 使用相同的内容类型，并支持 `v-model:content`。
+
+```vue title="DocumentPage.vue"
+<script setup lang="ts">
+import { ref } from 'vue';
+import type { DocumentContent } from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/vue';
+import '@a3s-lab/office/styles.css';
+
+const content = ref<DocumentContent>({
+  type: 'document',
+  html: '<h1>项目说明</h1><p>从这里开始编辑。</p>',
+  pageSize: 'a4',
+});
+</script>
+
+<template>
+  <main class="editor-host">
+    <DocumentEditor v-model:content="content" theme="light" />
+  </main>
+</template>
+
+<style scoped>
+.editor-host {
+  height: 100vh;
+  min-height: 0;
+}
+</style>
+```
+
+如果应用只使用事件，可以传入 `:content="content"`，并通过
+`@change="content = $event"` 接收新值。`agent-request` 等宿主回调仍保留
+完整的类型化载荷。
