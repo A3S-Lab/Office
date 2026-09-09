@@ -1,0 +1,62 @@
+---
+title: Component integration
+description: Choose a framework binding and understand the shared editor contract.
+---
+
+# Component integration
+
+All bindings expose the same controlled content model. Framework adapters
+translate naming and event conventions without creating a second editor
+implementation.
+
+## Framework bindings
+
+| Framework | Import | Content binding |
+| --- | --- | --- |
+| [React](./react.mdx) | `@a3s-lab/office/react` | `content` and `onChange` |
+| [Vue](./vue.mdx) | `@a3s-lab/office/vue` | `v-model:content` or `content` and `@change` |
+| [Web Component](./web-component.mdx) | `@a3s-lab/office/web-component` | `.content` and the `change` event |
+
+## Real-time collaboration
+
+[Real-time collaboration](./collaboration.mdx) spans all five editors and all
+three framework bindings. One host-owned Yjs session can connect two browsers,
+participants and remote locations, plus a CLI, MCP, or A3S Code Yrs replica.
+Document reviewers can add attributed selection threads, reply, resolve or
+reopen, and delete their own records without gaining text-edit permission.
+Authenticated suggesters can submit attributed insertions, deletions, and
+replacements without gaining canonical formatting or decision authority;
+editors accept or reject them into an immutable audit trail. The guide also
+defines room authentication, permission boundaries, initial seeding,
+reconnects, offline convergence, and current native-agent limitations.
+
+Use the runnable [A3S Boot collaboration server](./collaboration-server.mdx)
+when you need the corresponding authenticated WebSocket rooms, durable Yrs
+storage, Awareness relay, browser adapter, and actor-scoped room protocol.
+
+| Integration | Public boundary | The host still owns |
+| --- | --- | --- |
+| Shared content | `collaboration` | Rooms, provider, `Y.Doc`, and persistence |
+| Participants and locations | `presence` | Awareness transport and member identity |
+| Native coding agents | CLI / MCP replica | Authorization, delivery, and audit policy |
+
+## Available editors
+
+| Product | Component | Content contract |
+| --- | --- | --- |
+| Document | [`DocumentEditor`](./document.mdx) | `DocumentContent` |
+| Markdown | [`MarkdownEditor`](./markdown.mdx) | `MarkdownContent` |
+| Spreadsheet | [`SpreadsheetEditor`](./spreadsheet.mdx) | `SpreadsheetContent` |
+| Presentation | [`PresentationEditor`](./presentation.mdx) | `PresentationContent` |
+| PDF | [`PdfViewer`](./pdf.mdx) | `Blob` input and output ports |
+
+## Shared surface properties
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `theme` | `'light' \| 'dark' \| 'system'` | `'system'` | Editor color mode. |
+| `className` | `string` | — | React host class name. Vue and custom elements use normal `class`. |
+| `style` | `CSSProperties` | — | React host inline style. The editor fills this host. |
+| `preview` | `boolean` | `false` | Read-only surface for controlled editors. |
+| `saveStatus` | `string` | editor-specific | Host-owned save status shown in the file surface. |
+| `fileActions` | `readonly OfficeFileAction[]` | `[]` | Host file actions such as save, export, history, or approval. |
