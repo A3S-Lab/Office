@@ -508,11 +508,15 @@ function normalizeRevisionColumns(
   if (customSource !== undefined && (!custom || custom.some((entry) => !entry))) {
     return null;
   }
+  const customColumns = custom?.filter(
+    (entry): entry is { widthPercent: number; spacing: number } =>
+      entry !== null,
+  );
   const normalized = normalizeDocumentColumns({
     count: record.count as number,
     spacing: record.spacing as number,
     separator: Boolean(record.separator),
-    ...(custom ? { custom } : {}),
+    ...(customColumns?.length ? { custom: customColumns } : {}),
   });
   const snapshot: DocumentSectionColumnsSnapshot = {
     count: normalized.count,
