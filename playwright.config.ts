@@ -63,7 +63,7 @@ export default defineConfig({
     : {
         command: 'bun run playground:preview',
         reuseExistingServer: !process.env.CI,
-        timeout: 30_000,
+        timeout: 120_000,
         url: baseURL,
       },
 });

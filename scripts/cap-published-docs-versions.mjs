@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const docsRoot = path.join(root, 'docs');
-const MAX_PUBLISHED_FROZEN_VERSIONS = 40;
+const MAX_PUBLISHED_FROZEN_VERSIONS = 25;
+const REQUIRED_PUBLISHED_FROZEN_VERSIONS = ['0.38.0'];
 
 function compareVersion(a, b) {
   const pa = a.split('.').map(Number);
@@ -20,12 +21,18 @@ function compareVersion(a, b) {
   return 0;
 }
 
-const frozen = fs
+const newest = fs
   .readdirSync(docsRoot, { withFileTypes: true })
   .filter((d) => d.isDirectory() && /^\d+\.\d+\.\d+$/.test(d.name))
   .map((d) => d.name)
   .sort((a, b) => compareVersion(b, a))
   .slice(0, MAX_PUBLISHED_FROZEN_VERSIONS);
+const required = REQUIRED_PUBLISHED_FROZEN_VERSIONS.filter((version) =>
+  fs.existsSync(path.join(docsRoot, version)),
+);
+const frozen = [...new Set([...newest, ...required])].sort((a, b) =>
+  compareVersion(b, a),
+);
 const merged = ['latest', ...frozen];
 
 const file = path.join(root, 'website', 'documentation-site.ts');
@@ -56,5 +63,5 @@ if (replaced === test) {
 fs.writeFileSync(testFile, replaced);
 
 console.log(
-  `Published ${merged.length} versions (latest + ${frozen.length} frozen: ${frozen[0]} … ${frozen.at(-1)})`,
+  `Published ${merged.length} versions (latest + ${frozen.length} frozen: ${frozen[0]} … ${frozen.at(-1)}; required ${required.join(',') || 'none'})`,
 );
