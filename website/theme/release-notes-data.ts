@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.101.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes row cnfStyle revisions reviewable',
+      zh: 'Writer 让行 cnfStyle 修订可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free trPrChange priors with relationship-free cnfStyle import as row-formatting with accept/reject, live track-changes, and native DOCX export.',
+      zh: 'Phase 0 保真：含无关系 cnfStyle 的无关系 trPrChange 先验导入为 row-formatting，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Row conditional formatting bitmask',
+          zh: '行条件格式位掩码',
+        },
+        detail: {
+          en: 'Relationship-free 12-bit cnfStyle priors round-trip as reviewable row-formatting snapshots.',
+          zh: '无关系 12 位 cnfStyle 先验作为可审阅 row-formatting 快照往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing row cnfStyle under track-changes creates a pending row-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑行 cnfStyle 会生成待审阅的 row-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'Broader row property sets remain opaque metadata or fail-closed; opaque row fixtures stay on divId. Cell cnfStyle remains opaque.',
+          zh: '更广的行属性集仍为不透明元数据或失败闭合；不透明行夹具仍为 divId。单元格 cnfStyle 仍不透明。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.101.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.101.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.100.0',
     date: '2026-09-09',
     kind: 'improved',

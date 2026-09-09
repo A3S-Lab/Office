@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.101.0 - 2026-09-10
+
 ### Writer
 
 - Relationship-free `w:trPrChange` priors that include relationship-free

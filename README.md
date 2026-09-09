@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.100.0` makes unequal-width section cols revisions reviewable:
+Version `0.101.0` makes row cnfStyle revisions reviewable:
 
-- **Unequal columns** — relationship-free `sectPrChange` priors with unequal-width
-  `cols` become reviewable `section-formatting` with accept/reject, live
+- **Row conditional formatting** — relationship-free `trPrChange` priors with
+  `cnfStyle` become reviewable `row-formatting` with accept/reject, live
   track-changes, and native DOCX export.
-- **Boundary** — broader `sectPr` shapes stay opaque metadata or fail-closed;
-  opaque section fixtures stay on `docGrid`.
+- **Boundary** — broader `trPr` shapes stay opaque metadata or fail-closed;
+  opaque row fixtures stay on `divId`. Cell `cnfStyle` remains opaque.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
