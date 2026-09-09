@@ -52,6 +52,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tblStyle',
   'tblCellSpacing',
   'tblStyleColBandSize',
+  'tblStyleRowBandSize',
   'tblBorders',
   'tblCaption',
   'tblDescription',
@@ -83,8 +84,8 @@ export interface SupportedDocxTableFormattingChange {
  * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, `w:tblLayout`,
  * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, `w:tblOverlap`, relationship-free
  * `w:tblStyle`, dxa `w:tblCellSpacing`, relationship-free `w:tblStyleColBandSize`,
- * direct-color `w:tblBorders`, relationship-free `w:tblCaption`, and/or
- * relationship-free `w:tblDescription`.
+ * relationship-free `w:tblStyleRowBandSize`, direct-color `w:tblBorders`,
+ * relationship-free `w:tblCaption`, and/or relationship-free `w:tblDescription`.
  * Broader property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxTableFormattingChange(change: Element): boolean {
@@ -186,6 +187,7 @@ function supportedTableFormattingChange(
   let styleId: string | undefined;
   let cellSpacing: number | undefined;
   let colBandSize: number | undefined;
+  let rowBandSize: number | undefined;
   let borders: DocumentTableFormattingBorders | undefined;
   let caption: string | undefined;
   let description: string | undefined;
@@ -263,9 +265,16 @@ function supportedTableFormattingChange(
     }
     if (child.localName === 'tblStyleColBandSize') {
       if (child.children.length > 0) return null;
-      const value = importedColBandSize(child);
+      const value = importedBandSize(child);
       if (value === null) return null;
       colBandSize = value;
+      continue;
+    }
+    if (child.localName === 'tblStyleRowBandSize') {
+      if (child.children.length > 0) return null;
+      const value = importedBandSize(child);
+      if (value === null) return null;
+      rowBandSize = value;
       continue;
     }
     if (child.localName === 'tblBorders') {
@@ -301,6 +310,7 @@ function supportedTableFormattingChange(
     ...(styleId ? { styleId } : {}),
     ...(cellSpacing !== undefined ? { cellSpacing } : {}),
     ...(colBandSize !== undefined ? { colBandSize } : {}),
+    ...(rowBandSize !== undefined ? { rowBandSize } : {}),
     ...(borders ? { borders } : {}),
     ...(caption ? { caption } : {}),
     ...(description ? { description } : {}),
@@ -415,7 +425,7 @@ function importedCellSpacing(spacing: Element): number | null {
   return pixels === null ? null : normalizeDocumentTableCellSpacing(pixels);
 }
 
-function importedColBandSize(element: Element): number | null {
+function importedBandSize(element: Element): number | null {
   return normalizeDocumentTableColBandSize(attribute(element, 'val'));
 }
 

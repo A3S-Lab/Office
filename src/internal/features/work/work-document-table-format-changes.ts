@@ -34,8 +34,8 @@ export const DOCUMENT_TABLE_CHANGE_ATTRIBUTES = [
 /**
  * Prior snapshot for reviewable table-property revisions.
  * At least one of layout, alignment, preferred width, indent, cellMargins,
- * bidiVisual, fill, look, overlap, styleId, cellSpacing, colBandSize, borders,
- * caption, or description must be present.
+ * bidiVisual, fill, look, overlap, styleId, cellSpacing, colBandSize,
+ * rowBandSize, borders, caption, or description must be present.
  */
 export type DocumentTableOverlap = 'never' | 'overlap';
 
@@ -52,6 +52,7 @@ export interface DocumentTableFormattingSnapshot {
   styleId?: string;
   cellSpacing?: number;
   colBandSize?: number;
+  rowBandSize?: number;
   borders?: DocumentTableFormattingBorders;
   caption?: string;
   description?: string;
@@ -79,6 +80,7 @@ export function serializeDocumentTableFormatting(attributes: {
   styleId?: unknown;
   cellSpacing?: unknown;
   colBandSize?: unknown;
+  rowBandSize?: unknown;
   borders?: unknown;
   caption?: unknown;
   description?: unknown;
@@ -86,7 +88,7 @@ export function serializeDocumentTableFormatting(attributes: {
   const snapshot = normalizeDocumentTableFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, bidiVisual, fill, look, overlap, styleId, cellSpacing, colBandSize, borders, caption, or description.',
+      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, bidiVisual, fill, look, overlap, styleId, cellSpacing, colBandSize, rowBandSize, borders, caption, or description.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -129,6 +131,7 @@ export function parseDocumentTableFormatting(
         key !== 'styleId' &&
         key !== 'cellSpacing' &&
         key !== 'colBandSize' &&
+        key !== 'rowBandSize' &&
         key !== 'borders' &&
         key !== 'caption' &&
         key !== 'description',
@@ -155,6 +158,7 @@ export function normalizeDocumentTableFormattingSnapshot(attributes: {
   styleId?: unknown;
   cellSpacing?: unknown;
   colBandSize?: unknown;
+  rowBandSize?: unknown;
   borders?: unknown;
   caption?: unknown;
   description?: unknown;
@@ -225,6 +229,13 @@ export function normalizeDocumentTableFormattingSnapshot(attributes: {
     if (colBandSize === null) return null;
     snapshot.colBandSize = colBandSize;
   }
+  if ('rowBandSize' in attributes && attributes.rowBandSize !== undefined) {
+    const rowBandSize = normalizeDocumentTableRowBandSize(
+      attributes.rowBandSize,
+    );
+    if (rowBandSize === null) return null;
+    snapshot.rowBandSize = rowBandSize;
+  }
   if ('borders' in attributes && attributes.borders !== undefined) {
     const borders = normalizeDocumentTableFormattingBorders(attributes.borders);
     if (!borders) return null;
@@ -252,6 +263,7 @@ export function normalizeDocumentTableFormattingSnapshot(attributes: {
     snapshot.styleId ||
     snapshot.cellSpacing !== undefined ||
     snapshot.colBandSize !== undefined ||
+    snapshot.rowBandSize !== undefined ||
     snapshot.borders ||
     snapshot.caption ||
     snapshot.description
@@ -323,6 +335,9 @@ export function restoredDocumentTableAttributes(
   if (formatting.colBandSize !== undefined) {
     next.colBandSize = formatting.colBandSize;
   }
+  if (formatting.rowBandSize !== undefined) {
+    next.rowBandSize = formatting.rowBandSize;
+  }
   if (formatting.borders !== undefined) {
     next.borders = orderedDocumentTableFormattingBorders(formatting.borders);
   }
@@ -361,6 +376,8 @@ function orderedSnapshot(
     ordered.cellSpacing = snapshot.cellSpacing;
   if (snapshot.colBandSize !== undefined)
     ordered.colBandSize = snapshot.colBandSize;
+  if (snapshot.rowBandSize !== undefined)
+    ordered.rowBandSize = snapshot.rowBandSize;
   if (snapshot.borders) {
     ordered.borders = orderedDocumentTableFormattingBorders(snapshot.borders);
   }
@@ -417,6 +434,16 @@ const MAX_TABLE_COL_BAND_SIZE = 64;
 export function normalizeDocumentTableColBandSize(
   value: unknown,
 ): number | null {
+  return normalizeDocumentTableBandSize(value);
+}
+
+export function normalizeDocumentTableRowBandSize(
+  value: unknown,
+): number | null {
+  return normalizeDocumentTableBandSize(value);
+}
+
+function normalizeDocumentTableBandSize(value: unknown): number | null {
   const numeric =
     typeof value === 'number'
       ? value

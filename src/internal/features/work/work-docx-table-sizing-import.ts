@@ -9,6 +9,7 @@ import {
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
   normalizeDocumentTableColBandSize,
+  normalizeDocumentTableRowBandSize,
   normalizeDocumentTableCaption,
   normalizeDocumentTableDescription,
   type DocumentTableOverlap,
@@ -68,6 +69,7 @@ export interface ImportedDocxTableSizingMarker {
   styleId?: string;
   cellSpacing?: number;
   colBandSize?: number;
+  rowBandSize?: number;
   borders?: DocumentTableFormattingBorders;
   caption?: string;
   description?: string;
@@ -139,6 +141,9 @@ export function markDocxTableSizing(
       ...(importedTableColBandSize(tableProperties) !== null
         ? { colBandSize: importedTableColBandSize(tableProperties)! }
         : {}),
+      ...(importedTableRowBandSize(tableProperties) !== null
+        ? { rowBandSize: importedTableRowBandSize(tableProperties)! }
+        : {}),
       ...(importedTableBorders(tableProperties)
         ? { borders: importedTableBorders(tableProperties)! }
         : {}),
@@ -201,6 +206,9 @@ export function applyImportedDocxTableSizingMarkers(
         }
         if (sizing.colBandSize !== undefined) {
           table.dataset.officeTableColBandSize = String(sizing.colBandSize);
+        }
+        if (sizing.rowBandSize !== undefined) {
+          table.dataset.officeTableRowBandSize = String(sizing.rowBandSize);
         }
         if (sizing.borders) {
           const encoded = serializeDocumentTableFormattingBordersDataset(
@@ -301,6 +309,15 @@ function importedTableColBandSize(
   const element = directChild(properties, 'tblStyleColBandSize');
   if (!element || element.children.length > 0) return null;
   return normalizeDocumentTableColBandSize(attribute(element, 'val'));
+}
+
+function importedTableRowBandSize(
+  properties: Element | null | undefined,
+): number | null {
+  if (!properties) return null;
+  const element = directChild(properties, 'tblStyleRowBandSize');
+  if (!element || element.children.length > 0) return null;
+  return normalizeDocumentTableRowBandSize(attribute(element, 'val'));
 }
 
 function importedTableBorders(

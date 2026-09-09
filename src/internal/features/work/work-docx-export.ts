@@ -696,6 +696,7 @@ export async function createDocxBlob(
     noteContext.tableFormattingChangePatches.styleIds,
     noteContext.tableFormattingChangePatches.cellSpacings,
     noteContext.tableFormattingChangePatches.colBandSizes,
+    noteContext.tableFormattingChangePatches.rowBandSizes,
     noteContext.tableFormattingChangePatches.borders,
     noteContext.tableFormattingChangePatches.captions,
     noteContext.tableFormattingChangePatches.descriptions,

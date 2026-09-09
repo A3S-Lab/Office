@@ -7,6 +7,7 @@ import {
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
   normalizeDocumentTableColBandSize,
+  normalizeDocumentTableRowBandSize,
   normalizeDocumentTableCaption,
   normalizeDocumentTableDescription,
   serializeDocumentTableFormatting,
@@ -28,7 +29,7 @@ interface DocumentTableFormattingTrackingOptions {
 
 /**
  * When track-changes is on, table layout / alignment / preferred-width /
- * indent / default cell-margin / bidiVisual / solid-fill / tblLook / tblOverlap / tblStyle / tblCellSpacing / tblStyleColBandSize / tblBorders / tblCaption / tblDescription edits become
+ * indent / default cell-margin / bidiVisual / solid-fill / tblLook / tblOverlap / tblStyle / tblCellSpacing / tblStyleColBandSize / tblStyleRowBandSize / tblBorders / tblCaption / tblDescription edits become
  * reviewable `table-formatting` revisions.
  *
  * Layout-mode switches (`setDocumentTableLayoutMode`) also rewrite cell
@@ -128,6 +129,13 @@ function geometryFormatting(
           )!,
         }
       : {}),
+    ...(normalizeDocumentTableRowBandSize(node.attrs.rowBandSize) !== null
+      ? {
+          rowBandSize: normalizeDocumentTableRowBandSize(
+            node.attrs.rowBandSize,
+          )!,
+        }
+      : {}),
     ...(normalizeDocumentTableFormattingBorders(node.attrs.borders)
       ? {
           borders: orderedDocumentTableFormattingBorders(
@@ -199,6 +207,7 @@ function tableSnapshotIgnoringGeometry(node: ProseMirrorNode): unknown {
   delete attrs.styleId;
   delete attrs.cellSpacing;
   delete attrs.colBandSize;
+  delete attrs.rowBandSize;
   delete attrs.borders;
   delete attrs.caption;
   delete attrs.description;

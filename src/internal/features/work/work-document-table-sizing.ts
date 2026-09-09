@@ -48,6 +48,7 @@ import {
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
   normalizeDocumentTableColBandSize,
+  normalizeDocumentTableRowBandSize,
   normalizeDocumentTableCaption,
   normalizeDocumentTableDescription,
 } from './work-document-table-format-changes';
@@ -295,6 +296,21 @@ export const DocumentTable = Table.extend({
           );
           return colBandSize !== null
             ? { 'data-office-table-col-band-size': String(colBandSize) }
+            : {};
+        },
+      },
+      rowBandSize: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentTableRowBandSize(
+            element.dataset.officeTableRowBandSize,
+          ),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const rowBandSize = normalizeDocumentTableRowBandSize(
+            attributes.rowBandSize,
+          );
+          return rowBandSize !== null
+            ? { 'data-office-table-row-band-size': String(rowBandSize) }
             : {};
         },
       },
