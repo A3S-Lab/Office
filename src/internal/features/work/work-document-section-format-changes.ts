@@ -1,6 +1,4 @@
-import {
-  normalizeDocumentColumns,
-} from './work-document-columns';
+import { normalizeDocumentColumns } from './work-document-columns';
 import {
   documentPageMarginBody,
   documentPageMarginsForLayout,
@@ -23,10 +21,7 @@ import {
   parseDocumentPageChrome,
   serializeDocumentPageChrome,
 } from './work-document-page-chrome';
-import type {
-  WorkDocumentColumns,
-  WorkDocumentPaperSize,
-} from './work-types';
+import type { WorkDocumentColumns, WorkDocumentPaperSize } from './work-types';
 
 export const DOCUMENT_SECTION_CHANGE_ATTRIBUTES = [
   'sectionChangeKind',
@@ -72,17 +67,15 @@ const PAGE_MARGIN_TWIP_KEYS = [
   'gutter',
 ] as const;
 
-export function serializeDocumentSectionFormatting(
-  attributes: {
-    orientation?: unknown;
-    pageGeometry?: unknown;
-    pageMargins?: unknown;
-    paperSource?: unknown;
-    columns?: unknown;
-    differentFirstPage?: unknown;
-    rtlGutter?: unknown;
-  },
-): string {
+export function serializeDocumentSectionFormatting(attributes: {
+  orientation?: unknown;
+  pageGeometry?: unknown;
+  pageMargins?: unknown;
+  paperSource?: unknown;
+  columns?: unknown;
+  differentFirstPage?: unknown;
+  rtlGutter?: unknown;
+}): string {
   const snapshot = normalizeDocumentSectionFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
@@ -133,17 +126,15 @@ export function parseDocumentSectionFormatting(
   return JSON.stringify(orderedSnapshot(snapshot)) === value ? snapshot : null;
 }
 
-export function normalizeDocumentSectionFormattingSnapshot(
-  attributes: {
-    orientation?: unknown;
-    pageGeometry?: unknown;
-    pageMargins?: unknown;
-    paperSource?: unknown;
-    columns?: unknown;
-    differentFirstPage?: unknown;
-    rtlGutter?: unknown;
-  },
-): DocumentSectionFormattingSnapshot | null {
+export function normalizeDocumentSectionFormattingSnapshot(attributes: {
+  orientation?: unknown;
+  pageGeometry?: unknown;
+  pageMargins?: unknown;
+  paperSource?: unknown;
+  columns?: unknown;
+  differentFirstPage?: unknown;
+  rtlGutter?: unknown;
+}): DocumentSectionFormattingSnapshot | null {
   const snapshot: DocumentSectionFormattingSnapshot = {};
   if ('orientation' in attributes && attributes.orientation !== undefined) {
     if (
@@ -216,8 +207,7 @@ export function restoredDocumentSectionAttributes(
     attributes.orientation === 'landscape' ? 'landscape' : 'portrait';
   let pageGeometry = attributes.pageGeometry;
   if (formatting.pageGeometry) {
-    pageGeometry =
-      serializeDocumentPageGeometry(formatting.pageGeometry) ?? '';
+    pageGeometry = serializeDocumentPageGeometry(formatting.pageGeometry) ?? '';
     orientation =
       formatting.pageGeometry.orientation ??
       (formatting.pageGeometry.width <= formatting.pageGeometry.height
@@ -377,7 +367,9 @@ export function sectionFormattingSnapshotFromLayout(layout: {
           footerText: layout.footerText,
           showPageNumbers: layout.showPageNumbers,
         })
-      : (layout.pageChrome as Parameters<typeof normalizeDocumentPageChrome>[0]),
+      : (layout.pageChrome as Parameters<
+          typeof normalizeDocumentPageChrome
+        >[0]),
     {
       headerText: layout.headerText,
       footerText: layout.footerText,
@@ -403,8 +395,7 @@ function normalizeRevisionPageMargins(
   if (
     !keys.length ||
     keys.some(
-      (key) =>
-        !(PAGE_MARGIN_TWIP_KEYS as readonly string[]).includes(key),
+      (key) => !(PAGE_MARGIN_TWIP_KEYS as readonly string[]).includes(key),
     )
   ) {
     return null;

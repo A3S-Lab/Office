@@ -196,8 +196,7 @@ function parseViewportCommand(
   const width = Number(arguments_[setIndex + 2]);
   const height = Number(arguments_[setIndex + 3]);
   const scaleRaw = arguments_[setIndex + 4];
-  const scale =
-    scaleRaw && !scaleRaw.startsWith('-') ? Number(scaleRaw) : 1;
+  const scale = scaleRaw && !scaleRaw.startsWith('-') ? Number(scaleRaw) : 1;
   if (
     !Number.isFinite(width) ||
     !Number.isFinite(height) ||
@@ -482,7 +481,9 @@ async function setViewportOverCdp(
       targetId: page.id,
     })) as { windowId?: number };
     if (typeof windowInfo.windowId !== 'number') {
-      throw new Error('CDP Browser.getWindowForTarget did not return windowId.');
+      throw new Error(
+        'CDP Browser.getWindowForTarget did not return windowId.',
+      );
     }
     await send('Browser.setWindowBounds', {
       windowId: windowInfo.windowId,
@@ -545,7 +546,9 @@ async function createBlankPage(port: string): Promise<void> {
     signal: AbortSignal.timeout(5_000),
   });
   if (!versionResponse.ok) {
-    throw new Error(`CDP /json/version failed with HTTP ${versionResponse.status}.`);
+    throw new Error(
+      `CDP /json/version failed with HTTP ${versionResponse.status}.`,
+    );
   }
   const version = (await versionResponse.json()) as {
     webSocketDebuggerUrl?: string;
@@ -561,7 +564,10 @@ async function createBlankPage(port: string): Promise<void> {
 async function withCdpSocket(
   url: string,
   run: (
-    send: (method: string, params?: Record<string, unknown>) => Promise<unknown>,
+    send: (
+      method: string,
+      params?: Record<string, unknown>,
+    ) => Promise<unknown>,
   ) => Promise<void>,
 ): Promise<void> {
   const socket = new WebSocket(url);
@@ -598,9 +604,7 @@ async function withCdpSocket(
       if (!waiter) return;
       pending.delete(payload.id);
       if (payload.error) {
-        waiter.reject(
-          new Error(payload.error.message || 'CDP command failed'),
-        );
+        waiter.reject(new Error(payload.error.message || 'CDP command failed'));
         return;
       }
       waiter.resolve(payload.result);

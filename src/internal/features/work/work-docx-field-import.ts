@@ -168,8 +168,7 @@ function markerText(document: Document, text: string): Element {
 }
 
 function docxFieldIsLocked(field: DocxFieldOccurrence): boolean {
-  const lock =
-    attribute(field.start, 'fldLock')?.trim().toLowerCase() ?? '';
+  const lock = attribute(field.start, 'fldLock')?.trim().toLowerCase() ?? '';
   return lock === '1' || lock === 'true' || lock === 'on';
 }
 

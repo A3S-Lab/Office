@@ -102,8 +102,8 @@ export function markDocxTableSizing(
       supportedDocxTableFormattingChangeFromProperties(tableProperties);
     const propertyRevisionOmml = formattingChange
       ? undefined
-      : serializePreservableDocxTablePropertyRevision(tableProperties) ??
-        undefined;
+      : (serializePreservableDocxTablePropertyRevision(tableProperties) ??
+        undefined);
     tables.push({
       marker,
       geometry: importedTableGeometry(
@@ -114,9 +114,7 @@ export function markDocxTableSizing(
       ...(floatOmml ? { floatOmml } : {}),
       ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
       ...(formattingChange ? { formattingChange } : {}),
-      ...(importedTableBidiVisual(tableProperties)
-        ? { bidiVisual: true }
-        : {}),
+      ...(importedTableBidiVisual(tableProperties) ? { bidiVisual: true } : {}),
       ...(importedTableFill(tableProperties)
         ? { fill: importedTableFill(tableProperties)! }
         : {}),
@@ -173,8 +171,9 @@ export function applyImportedDocxTableSizingMarkers(
           table.dataset.officeTableFill = sizing.fill;
         }
         if (sizing.look) {
-          table.dataset.officeTableLook =
-            serializeDocumentTableLookDataset(sizing.look);
+          table.dataset.officeTableLook = serializeDocumentTableLookDataset(
+            sizing.look,
+          );
         }
         if (sizing.overlap) {
           table.dataset.officeTableOverlap = sizing.overlap;

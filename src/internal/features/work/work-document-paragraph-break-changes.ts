@@ -165,9 +165,7 @@ export function paragraphBreakChangeAttribute(
         };
       }
       const value =
-        typeof attributes[modelName] === 'string'
-          ? attributes[modelName]
-          : '';
+        typeof attributes[modelName] === 'string' ? attributes[modelName] : '';
       return value ? { [htmlName]: value } : {};
     },
   };

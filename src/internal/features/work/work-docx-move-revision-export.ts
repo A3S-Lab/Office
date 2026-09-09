@@ -270,11 +270,15 @@ function validOptionalMoveRange(rangeId: string, rangeName: string): boolean {
 }
 
 function isBrowserTextWrappingBreak(element: Element): boolean {
-  if (!(element instanceof HTMLElement) || element.tagName.toLowerCase() !== 'br') {
+  if (
+    !(element instanceof HTMLElement) ||
+    element.tagName.toLowerCase() !== 'br'
+  ) {
     return false;
   }
   if (element.childNodes.length) return false;
-  const type = element.getAttribute('data-break') ?? element.getAttribute('type');
+  const type =
+    element.getAttribute('data-break') ?? element.getAttribute('type');
   return type === null || type === '' || type === 'textWrapping';
 }
 

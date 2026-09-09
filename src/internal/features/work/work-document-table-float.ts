@@ -27,9 +27,7 @@ export function encodeDocumentTableFloatOmml(omml: string): string {
   return btoa(binary);
 }
 
-export function decodeDocumentTableFloatOmml(
-  encoded: string,
-): string | null {
+export function decodeDocumentTableFloatOmml(encoded: string): string | null {
   if (!encoded) return null;
   try {
     const binary = atob(encoded);
@@ -69,9 +67,7 @@ export function docxTableFloatHasRelationshipBindings(
 ): boolean {
   for (const attribute of Array.from(element.attributes)) {
     const namespace =
-      attribute.namespaceURI ||
-      xmlAttributeNamespace(element, attribute) ||
-      '';
+      attribute.namespaceURI || xmlAttributeNamespace(element, attribute) || '';
     if (DOCX_RELATIONSHIP_NAMESPACES.has(namespace)) return true;
   }
   return false;
@@ -80,9 +76,7 @@ export function docxTableFloatHasRelationshipBindings(
 export function serializePreservableDocxTableFloat(
   tableProperties: Element | null | undefined,
 ): string | null {
-  const float = tableProperties
-    ? directChild(tableProperties, 'tblpPr')
-    : null;
+  const float = tableProperties ? directChild(tableProperties, 'tblpPr') : null;
   if (!float) return null;
   const namespace = float.namespaceURI ?? '';
   if (!DOCX_WORDPROCESSING_NAMESPACES.has(namespace)) return null;

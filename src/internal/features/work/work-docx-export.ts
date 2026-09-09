@@ -417,8 +417,10 @@ export async function createDocxBlob(
     tableFormattingChangePatches: new DocxTableFormattingChangePatchCollector(),
     rowFormattingChangePatches: new DocxRowFormattingChangePatchCollector(),
     cellFormattingChangePatches: new DocxCellFormattingChangePatchCollector(),
-    sectionFormattingChangePatches: new DocxSectionFormattingChangePatchCollector(),
-    sectionPropertyRevisionPatches: new DocxSectionPropertyRevisionPatchCollector(),
+    sectionFormattingChangePatches:
+      new DocxSectionFormattingChangePatchCollector(),
+    sectionPropertyRevisionPatches:
+      new DocxSectionPropertyRevisionPatchCollector(),
     formattingChangePatches: new DocxRunFormattingChangePatchCollector(),
     runFontPatches: new DocxRunFontsPatchCollector(
       JSON.stringify(normalizedContent),
@@ -491,8 +493,7 @@ export async function createDocxBlob(
     noteContext.sectionFormattingChangePatches.record(
       section.layout,
       docxRevisionIdForKey(
-        section.layout.formattingChange?.id ||
-          `section-format-${section.id}`,
+        section.layout.formattingChange?.id || `section-format-${section.id}`,
         noteContext,
       ),
     );

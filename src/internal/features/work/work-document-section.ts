@@ -416,8 +416,7 @@ export function documentSectionLayoutFromElement(
         .sectionDocumentGridType as WorkDocumentGridType,
       documentGridLinePitch:
         numberValue(element.dataset.sectionDocumentGridLinePitch) ?? null,
-      propertyRevisionOmml:
-        element.dataset.sectionPropertyRevisionOmml ?? '',
+      propertyRevisionOmml: element.dataset.sectionPropertyRevisionOmml ?? '',
       sectionChangeKind:
         element.getAttribute('data-document-change') === 'true' &&
         element.getAttribute('data-change-kind') === 'section-formatting'

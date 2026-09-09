@@ -50,7 +50,14 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tblCellSpacing',
   'tblBorders',
 ]);
-const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
+const MARGIN_SIDES = new Set([
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'start',
+  'end',
+]);
 const RELATIONSHIP_NAMESPACES = new Set([
   'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
   'http://purl.oclc.org/ooxml/officeDocument/relationships',
@@ -72,9 +79,7 @@ export interface SupportedDocxTableFormattingChange {
  * `w:tblStyle`, dxa `w:tblCellSpacing`, and/or direct-color `w:tblBorders`.
  * Broader property sets stay on the opaque OMML path.
  */
-export function isSupportedDocxTableFormattingChange(
-  change: Element,
-): boolean {
+export function isSupportedDocxTableFormattingChange(change: Element): boolean {
   return supportedTableFormattingChange(change) !== null;
 }
 
@@ -111,7 +116,10 @@ function supportedTableFormattingChange(
   ) {
     return null;
   }
-  if (hasRelationshipBindings(change) || hasUnsupportedRevisionAttributes(change)) {
+  if (
+    hasRelationshipBindings(change) ||
+    hasUnsupportedRevisionAttributes(change)
+  ) {
     return null;
   }
   const id = wordAttribute(change, 'id')?.trim() ?? '';
@@ -129,8 +137,7 @@ function supportedTableFormattingChange(
   }
   const priors = Array.from(change.children).filter(
     (child) =>
-      child.localName === 'tblPr' &&
-      child.namespaceURI === change.namespaceURI,
+      child.localName === 'tblPr' && child.namespaceURI === change.namespaceURI,
   );
   if (priors.length !== 1) return null;
   const prior = priors[0];
@@ -145,7 +152,10 @@ function supportedTableFormattingChange(
       ) {
         return true;
       }
-      if (child.localName === 'tblCellMar' || child.localName === 'tblBorders') {
+      if (
+        child.localName === 'tblCellMar' ||
+        child.localName === 'tblBorders'
+      ) {
         return false;
       }
       return child.children.length > 0;
@@ -278,7 +288,8 @@ export function importedDocxTableFormattingBorders(
   if (
     children.some(
       (child) =>
-        child.namespaceURI !== element.namespaceURI || child.children.length > 0,
+        child.namespaceURI !== element.namespaceURI ||
+        child.children.length > 0,
     )
   ) {
     return null;

@@ -36,7 +36,14 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'hideMark',
 ]);
 const SOLID_SHADING_VALUES = new Set(['clear', 'nil', 'none', '']);
-const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
+const MARGIN_SIDES = new Set([
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'start',
+  'end',
+]);
 const PIXELS_PER_TWIP = 96 / 1440;
 
 export interface SupportedDocxCellFormattingChange {
@@ -89,7 +96,10 @@ function supportedCellFormattingChange(
   ) {
     return null;
   }
-  if (hasRelationshipBindings(change) || hasUnsupportedRevisionAttributes(change)) {
+  if (
+    hasRelationshipBindings(change) ||
+    hasUnsupportedRevisionAttributes(change)
+  ) {
     return null;
   }
   const id = wordAttribute(change, 'id')?.trim() ?? '';
@@ -107,8 +117,7 @@ function supportedCellFormattingChange(
   }
   const priors = Array.from(change.children).filter(
     (child) =>
-      child.localName === 'tcPr' &&
-      child.namespaceURI === change.namespaceURI,
+      child.localName === 'tcPr' && child.namespaceURI === change.namespaceURI,
   );
   if (priors.length !== 1) return null;
   const prior = priors[0];

@@ -68,9 +68,7 @@ export function workPdfTextNeedsCjkFont(text: string): boolean {
   );
 }
 
-function normalizeFontBase64(
-  data: ArrayBuffer | Uint8Array | string,
-): string {
+function normalizeFontBase64(data: ArrayBuffer | Uint8Array | string): string {
   if (typeof data === 'string') {
     const trimmed = data.trim();
     const raw = trimmed.includes(',')

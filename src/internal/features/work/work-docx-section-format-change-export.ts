@@ -26,13 +26,22 @@ export class DocxSectionFormattingChangePatchCollector {
     }
     const author = change.author.trim();
     const date = normalizedRevisionDate(change.date);
-    if (!author || author.length > 255 || !parseDocumentSectionFormatting(change.before)) {
-      throw new Error('Document contains an invalid section-formatting revision.');
+    if (
+      !author ||
+      author.length > 255 ||
+      !parseDocumentSectionFormatting(change.before)
+    ) {
+      throw new Error(
+        'Document contains an invalid section-formatting revision.',
+      );
     }
     if (
-      this.patches.filter(Boolean).length >= MAX_SECTION_FORMATTING_CHANGE_PATCHES
+      this.patches.filter(Boolean).length >=
+      MAX_SECTION_FORMATTING_CHANGE_PATCHES
     ) {
-      throw new Error('Document exceeds the section-formatting revision limit.');
+      throw new Error(
+        'Document exceeds the section-formatting revision limit.',
+      );
     }
     this.patches.push({ id, author, date, before: change.before });
   }
@@ -87,7 +96,9 @@ function setSectionFormattingChange(
 ): void {
   const formatting = parseDocumentSectionFormatting(patch.before);
   if (!formatting) {
-    throw new Error('Document contains an invalid section-formatting revision.');
+    throw new Error(
+      'Document contains an invalid section-formatting revision.',
+    );
   }
   for (const existing of Array.from(section.children).filter(
     (child) =>

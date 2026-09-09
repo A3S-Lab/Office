@@ -1571,9 +1571,10 @@
 }
 
 /* WPS View → 工作簿视图: hide row/column header chrome when titles are off. */
-.work-spreadsheet-editor[data-sheet-headings='hidden'] .fortune-row-header,
-.work-spreadsheet-editor[data-sheet-headings='hidden'] .fortune-col-header,
-.work-spreadsheet-editor[data-sheet-headings='hidden'] .fortune-col-header-wrap {
+.work-spreadsheet-editor[data-sheet-headings="hidden"] .fortune-row-header,
+.work-spreadsheet-editor[data-sheet-headings="hidden"] .fortune-col-header,
+.work-spreadsheet-editor[data-sheet-headings="hidden"]
+  .fortune-col-header-wrap {
   pointer-events: none;
   visibility: hidden;
 }

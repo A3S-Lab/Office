@@ -23,7 +23,9 @@ describe('document selection case cycle', () => {
   });
 
   test('transforms selected text for each case target', () => {
-    expect(transformDocumentSelectionCase("o'reilly", 'title')).toBe("O'reilly");
+    expect(transformDocumentSelectionCase("o'reilly", 'title')).toBe(
+      "O'reilly",
+    );
     expect(transformDocumentSelectionCase('Hello', 'lower')).toBe('hello');
     expect(transformDocumentSelectionCase('Hello', 'upper')).toBe('HELLO');
   });

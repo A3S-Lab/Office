@@ -705,8 +705,7 @@ export function collectDocumentChanges(
       node.attrs.rowChangeKind === 'row-formatting'
     ) {
       const id =
-        stringAttribute(node.attrs.rowChangeId) ||
-        `row-change-at-${position}`;
+        stringAttribute(node.attrs.rowChangeId) || `row-change-at-${position}`;
       const key = `row-formatting:${id}`;
       changes.set(key, {
         id,
@@ -747,8 +746,7 @@ export function collectDocumentChanges(
       changes.set(key, {
         id,
         kind: 'section-formatting',
-        author:
-          stringAttribute(node.attrs.sectionChangeAuthor) || '未知审阅者',
+        author: stringAttribute(node.attrs.sectionChangeAuthor) || '未知审阅者',
         date: stringAttribute(node.attrs.sectionChangeDate),
         from: position,
         to: position + node.nodeSize,
@@ -953,7 +951,9 @@ function resolveDocumentChangesTransaction(
     tableSegments.some(
       (segment) => !parseDocumentTableFormatting(segment.before),
     ) ||
-    rowSegments.some((segment) => !parseDocumentRowFormatting(segment.before)) ||
+    rowSegments.some(
+      (segment) => !parseDocumentRowFormatting(segment.before),
+    ) ||
     cellSegments.some(
       (segment) => !parseDocumentCellFormatting(segment.before),
     ) ||
@@ -1368,8 +1368,7 @@ function rowChangeSegments(document: ProseMirrorNode): RowChangeSegment[] {
     }
     segments.push({
       id:
-        stringAttribute(node.attrs.rowChangeId) ||
-        `row-change-at-${position}`,
+        stringAttribute(node.attrs.rowChangeId) || `row-change-at-${position}`,
       kind: 'row-formatting',
       position,
       from: position,

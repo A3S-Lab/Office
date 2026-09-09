@@ -28,7 +28,12 @@ function selectionRangeForCaseCycle(
   const $pos = editor.state.selection.$from;
   if (!$pos.parent.isTextblock) return null;
   const blockStart = $pos.start();
-  const text = $pos.parent.textBetween(0, $pos.parent.content.size, undefined, '\0');
+  const text = $pos.parent.textBetween(
+    0,
+    $pos.parent.content.size,
+    undefined,
+    '\0',
+  );
   if (!text) return null;
   const offset = $pos.parentOffset;
   let left = offset;

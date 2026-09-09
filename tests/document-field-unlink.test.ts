@@ -24,7 +24,9 @@ test('unlinks a selected WPS field to its result text with one undo step', () =>
   );
 
   editor.view.dispatch(
-    editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, fieldPos)),
+    editor.state.tr.setSelection(
+      NodeSelection.create(editor.state.doc, fieldPos),
+    ),
   );
   expect(documentFieldUnlinkRanges(editor.state)).toEqual([
     { from: fieldPos, to: fieldPos + 1, text: '7' },

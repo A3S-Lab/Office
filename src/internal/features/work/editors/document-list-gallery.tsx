@@ -22,9 +22,7 @@ import {
   documentBulletListStyle,
   documentOrderedListState,
 } from '../work-document-lists';
-import {
-  getDocumentCommandDefinition,
-} from './document-command-catalog';
+import { getDocumentCommandDefinition } from './document-command-catalog';
 import { OfficeNumberField } from './office-controls';
 import { WorkOfficeRibbonButton } from './work-office-chrome';
 
@@ -111,9 +109,7 @@ function BulletListControl({
       <WorkOfficeRibbonButton
         label="项目符号"
         title={
-          bulletShortcut
-            ? `项目符号（${bulletShortcut.label}）`
-            : '项目符号'
+          bulletShortcut ? `项目符号（${bulletShortcut.label}）` : '项目符号'
         }
         aria-keyshortcuts={bulletShortcut?.aria}
         displayLabel={false}

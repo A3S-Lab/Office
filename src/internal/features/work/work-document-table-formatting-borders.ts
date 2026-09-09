@@ -61,7 +61,9 @@ export function normalizeDocumentTableFormattingBorders(
     if (!border) return null;
     borders[edge] = border;
   }
-  return Object.keys(borders).length ? orderedDocumentTableFormattingBorders(borders) : null;
+  return Object.keys(borders).length
+    ? orderedDocumentTableFormattingBorders(borders)
+    : null;
 }
 
 export function orderedDocumentTableFormattingBorders(
@@ -185,7 +187,10 @@ export function revisionBorderFromDocxEdge(
             rawColor.startsWith('#') ? rawColor : `#${rawColor}`,
           );
   if (!color) return null;
-  const width = normalizeRevisionBorderWidthFromSz(attribute(edge, 'sz'), style);
+  const width = normalizeRevisionBorderWidthFromSz(
+    attribute(edge, 'sz'),
+    style,
+  );
   if (width === null) return null;
   return normalizeDocumentTableBorder({ color, style, width });
 }

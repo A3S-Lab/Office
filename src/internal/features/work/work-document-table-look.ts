@@ -126,8 +126,7 @@ export function parseDocxTblLookElement(
   if (!attributes.length) return null;
   if (
     attributes.some(
-      (candidate) =>
-        !TBL_LOOK_ATTRIBUTES.has(xmlAttributeLocalName(candidate)),
+      (candidate) => !TBL_LOOK_ATTRIBUTES.has(xmlAttributeLocalName(candidate)),
     )
   ) {
     return null;

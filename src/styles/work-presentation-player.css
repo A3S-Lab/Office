@@ -20,11 +20,11 @@
   pointer-events: none;
 }
 
-.work-presentation-blank-screen[data-blank-screen='black'] {
+.work-presentation-blank-screen[data-blank-screen="black"] {
   background: #000;
 }
 
-.work-presentation-blank-screen[data-blank-screen='white'] {
+.work-presentation-blank-screen[data-blank-screen="white"] {
   background: #fff;
 }
 

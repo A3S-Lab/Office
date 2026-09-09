@@ -91,27 +91,26 @@ function rowFormatting(node: ProseMirrorNode): {
     node.attrs.gridAfter >= 0
       ? node.attrs.gridAfter
       : 0;
-  const widthBefore =
-    normalizeDocumentTablePreferredWidth(node.attrs.widthBefore) ?? {
-      type: 'auto' as const,
-      value: null,
-    };
-  const widthAfter =
-    normalizeDocumentTablePreferredWidth(node.attrs.widthAfter) ?? {
-      type: 'auto' as const,
-      value: null,
-    };
+  const widthBefore = normalizeDocumentTablePreferredWidth(
+    node.attrs.widthBefore,
+  ) ?? {
+    type: 'auto' as const,
+    value: null,
+  };
+  const widthAfter = normalizeDocumentTablePreferredWidth(
+    node.attrs.widthAfter,
+  ) ?? {
+    type: 'auto' as const,
+    value: null,
+  };
   return normalizeDocumentRowFormattingSnapshot({
     cantSplit:
-      typeof node.attrs.cantSplit === 'boolean'
-        ? node.attrs.cantSplit
-        : false,
+      typeof node.attrs.cantSplit === 'boolean' ? node.attrs.cantSplit : false,
     repeatHeader:
       typeof node.attrs.repeatHeader === 'boolean'
         ? node.attrs.repeatHeader
         : false,
-    hidden:
-      typeof node.attrs.hidden === 'boolean' ? node.attrs.hidden : false,
+    hidden: typeof node.attrs.hidden === 'boolean' ? node.attrs.hidden : false,
     alignment,
     gridBefore,
     gridAfter,

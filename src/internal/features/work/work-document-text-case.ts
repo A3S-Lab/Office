@@ -46,7 +46,9 @@ export function documentTextCaseCss(textCase: WorkDocumentTextCase): string {
   ].join('; ');
 }
 
-export function detectDocumentSelectionCase(text: string): DocumentSelectionCase {
+export function detectDocumentSelectionCase(
+  text: string,
+): DocumentSelectionCase {
   const letters = text.replace(/[^\p{L}]/gu, '');
   if (!letters) return 'lower';
   if (letters === letters.toLocaleUpperCase()) return 'upper';
@@ -86,8 +88,7 @@ function isTitleCaseSelection(text: string): boolean {
     const first = word.charAt(0);
     const rest = word.slice(1);
     return (
-      first === first.toLocaleUpperCase() &&
-      rest === rest.toLocaleLowerCase()
+      first === first.toLocaleUpperCase() && rest === rest.toLocaleLowerCase()
     );
   });
 }
@@ -99,4 +100,3 @@ function toTitleCaseSelection(text: string): string {
     return `${first}${rest}`;
   });
 }
-

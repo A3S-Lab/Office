@@ -30,7 +30,10 @@ export class DocxTablePropertyRevisionPatchCollector {
       pushPatch(this.tablePatches, null);
       return;
     }
-    pushPatch(this.tablePatches, documentTablePropertyRevisionOmmlFromElement(element));
+    pushPatch(
+      this.tablePatches,
+      documentTablePropertyRevisionOmmlFromElement(element),
+    );
   }
 
   recordRow(element: HTMLTableRowElement): void {
@@ -41,7 +44,10 @@ export class DocxTablePropertyRevisionPatchCollector {
       pushPatch(this.rowPatches, null);
       return;
     }
-    pushPatch(this.rowPatches, documentRowPropertyRevisionOmmlFromElement(element));
+    pushPatch(
+      this.rowPatches,
+      documentRowPropertyRevisionOmmlFromElement(element),
+    );
   }
 
   recordCell(element: HTMLTableCellElement): void {
@@ -52,7 +58,10 @@ export class DocxTablePropertyRevisionPatchCollector {
       pushPatch(this.cellPatches, null);
       return;
     }
-    pushPatch(this.cellPatches, documentCellPropertyRevisionOmmlFromElement(element));
+    pushPatch(
+      this.cellPatches,
+      documentCellPropertyRevisionOmmlFromElement(element),
+    );
   }
 
   get patches(): Array<string | null> {
@@ -101,13 +110,8 @@ export async function patchDocxTablePropertyRevisions(
   );
   let changed = false;
   changed =
-    applyScopedPatches(
-      document,
-      'tbl',
-      'tblPr',
-      'tblPrChange',
-      tablePatches,
-    ) || changed;
+    applyScopedPatches(document, 'tbl', 'tblPr', 'tblPrChange', tablePatches) ||
+    changed;
   changed =
     applyScopedPatches(document, 'tr', 'trPr', 'trPrChange', rowPatches) ||
     changed;
@@ -161,10 +165,7 @@ function applyScopedPatches(
   return changed;
 }
 
-function pushPatch(
-  patches: Array<string | null>,
-  omml: string | null,
-): void {
+function pushPatch(patches: Array<string | null>, omml: string | null): void {
   if (patches.length >= MAX_TABLE_PROPERTY_REVISION_PATCHES) {
     throw new Error('Document exceeds the table property-revision limit.');
   }

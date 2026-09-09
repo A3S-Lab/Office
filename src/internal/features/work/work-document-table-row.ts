@@ -63,9 +63,7 @@ export const DocumentTableRow = TableRow.extend({
           const alignment = normalizeDocumentTableAlignment(
             attributes.alignment,
           );
-          return alignment
-            ? { 'data-office-row-alignment': alignment }
-            : {};
+          return alignment ? { 'data-office-row-alignment': alignment } : {};
         },
       },
       gridBefore: {
@@ -246,7 +244,8 @@ export function documentTableRowOptions(
     repeatHeader:
       directBoolean(attributes.repeatHeader) ?? editor.isActive('tableHeader'),
     hidden: directBoolean(attributes.hidden) ?? false,
-    alignment: normalizeDocumentTableAlignment(attributes.alignment) ?? undefined,
+    alignment:
+      normalizeDocumentTableAlignment(attributes.alignment) ?? undefined,
   };
 }
 
@@ -379,7 +378,6 @@ function directBoolean(value: unknown): boolean | null {
   if (value === false || value === 'false' || value === '0') return false;
   return null;
 }
-
 
 function preferredWidthFromRowDataset(
   dataset: DOMStringMap,

@@ -35,9 +35,9 @@ export const DocumentEquationOpaque = Node.create({
         default: '',
         parseHTML: (element) =>
           element instanceof HTMLElement
-            ? decodeDocumentEquationOpaqueOmml(
+            ? (decodeDocumentEquationOpaqueOmml(
                 element.dataset.equationOmml ?? '',
-              ) ?? ''
+              ) ?? '')
             : '',
         renderHTML: (attributes) => {
           const encoded = encodeDocumentEquationOpaqueOmml(
@@ -139,8 +139,7 @@ export function documentEquationOpaqueFromElement(
   );
   if (!omml) return null;
   return normalizeDocumentEquationOpaque({
-    display:
-      element.dataset.equationDisplay === 'block' ? 'block' : 'inline',
+    display: element.dataset.equationDisplay === 'block' ? 'block' : 'inline',
     omml,
     text:
       element.textContent?.trim() ||
@@ -163,14 +162,19 @@ export function normalizeDocumentEquationOpaque(
     typeof record.text === 'string' && record.text.trim()
       ? record.text.trim()
       : 'Equation';
-  if (!display || !omml || omml.length > MAX_DOCUMENT_EQUATION_OPAQUE_OMML_LENGTH) {
+  if (
+    !display ||
+    !omml ||
+    omml.length > MAX_DOCUMENT_EQUATION_OPAQUE_OMML_LENGTH
+  ) {
     return null;
   }
   return { display, omml, text };
 }
 
 export function encodeDocumentEquationOpaqueOmml(omml: string): string {
-  if (!omml || omml.length > MAX_DOCUMENT_EQUATION_OPAQUE_OMML_LENGTH) return '';
+  if (!omml || omml.length > MAX_DOCUMENT_EQUATION_OPAQUE_OMML_LENGTH)
+    return '';
   const bytes = new TextEncoder().encode(omml);
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);

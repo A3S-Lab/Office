@@ -48,7 +48,9 @@ export class DocxTableFormattingChangePatchCollector {
   record(element: HTMLTableElement, id: number): void {
     this.bidiVisual.push(element.dataset.officeTableBidiVisual === 'true');
     const fill = element.dataset.officeTableFill?.trim() ?? '';
-    this.fills.push(/^#[0-9A-Fa-f]{6}$/i.test(fill) ? fill.toLowerCase() : null);
+    this.fills.push(
+      /^#[0-9A-Fa-f]{6}$/i.test(fill) ? fill.toLowerCase() : null,
+    );
     this.looks.push(
       parseDocumentTableLookDataset(element.dataset.officeTableLook),
     );
@@ -59,9 +61,7 @@ export class DocxTableFormattingChangePatchCollector {
       normalizeDocumentTableStyleId(element.dataset.officeTableStyleId),
     );
     this.cellSpacings.push(
-      normalizeDocumentTableCellSpacing(
-        element.dataset.officeTableCellSpacing,
-      ),
+      normalizeDocumentTableCellSpacing(element.dataset.officeTableCellSpacing),
     );
     this.borders.push(
       parseDocumentTableFormattingBordersDataset(
@@ -83,9 +83,13 @@ export class DocxTableFormattingChangePatchCollector {
       author.length > 255 ||
       !parseDocumentTableFormatting(before)
     ) {
-      throw new Error('Document contains an invalid table-formatting revision.');
+      throw new Error(
+        'Document contains an invalid table-formatting revision.',
+      );
     }
-    if (this.patches.filter(Boolean).length >= MAX_TABLE_FORMATTING_CHANGE_PATCHES) {
+    if (
+      this.patches.filter(Boolean).length >= MAX_TABLE_FORMATTING_CHANGE_PATCHES
+    ) {
       throw new Error('Document exceeds the table-formatting revision limit.');
     }
     this.patches.push({ id, author, date, before });
@@ -260,7 +264,9 @@ function setTableFormattingChange(
     prior.append(createIndentElement(document, formatting.indent));
   }
   if (formatting.cellMargins) {
-    prior.append(createTableCellMarginsElement(document, formatting.cellMargins));
+    prior.append(
+      createTableCellMarginsElement(document, formatting.cellMargins),
+    );
   }
   if (formatting.bidiVisual !== undefined) {
     const bidiVisual = document.createElementNS(WORD_NAMESPACE, 'w:bidiVisual');
@@ -340,8 +346,7 @@ function setTableBidiVisual(
   }
   for (const existing of Array.from(properties.children).filter(
     (child) =>
-      child.localName === 'bidiVisual' &&
-      child.namespaceURI === WORD_NAMESPACE,
+      child.localName === 'bidiVisual' && child.namespaceURI === WORD_NAMESPACE,
   )) {
     existing.remove();
   }
@@ -387,8 +392,7 @@ function setTableBorders(
   }
   for (const existing of Array.from(properties.children).filter(
     (child) =>
-      child.localName === 'tblBorders' &&
-      child.namespaceURI === WORD_NAMESPACE,
+      child.localName === 'tblBorders' && child.namespaceURI === WORD_NAMESPACE,
   )) {
     existing.remove();
   }
@@ -414,7 +418,9 @@ function createTblBordersElement(
     child.setAttributeNS(
       WORD_NAMESPACE,
       'w:sz',
-      border.style === 'none' ? '0' : docxSzFromSnapshotBorderWidth(border.width),
+      border.style === 'none'
+        ? '0'
+        : docxSzFromSnapshotBorderWidth(border.width),
     );
     child.setAttributeNS(WORD_NAMESPACE, 'w:space', '0');
     child.setAttributeNS(
@@ -465,10 +471,7 @@ function setTableStyleId(
   return true;
 }
 
-function createTblStyleElement(
-  document: Document,
-  styleId: string,
-): Element {
+function createTblStyleElement(document: Document, styleId: string): Element {
   const element = document.createElementNS(WORD_NAMESPACE, 'w:tblStyle');
   element.setAttributeNS(WORD_NAMESPACE, 'w:val', styleId);
   return element;

@@ -72,10 +72,7 @@ export function workPdfTextRunsFromClientRects(
   ) {
     return [];
   }
-  if (
-    workPdfTextNeedsCjkFont(searchable) &&
-    !workPdfCjkFontRegistered()
-  ) {
+  if (workPdfTextNeedsCjkFont(searchable) && !workPdfCjkFontRegistered()) {
     return [];
   }
   const runs: WorkPdfTextRun[] = [];

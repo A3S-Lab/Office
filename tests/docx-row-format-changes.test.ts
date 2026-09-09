@@ -113,9 +113,7 @@ describe('DOCX row-formatting revisions', () => {
     );
     expect(change).toBeTruthy();
     expect(wordAttribute(change!, 'author')).toBe('Reviewer');
-    expect(
-      directChild(directChild(change, 'trPr'), 'cantSplit'),
-    ).toBeTruthy();
+    expect(directChild(directChild(change, 'trPr'), 'cantSplit')).toBeTruthy();
   });
 
   test('imports tblHeader-only w:trPrChange as a reviewable row-formatting change', async () => {
@@ -674,11 +672,11 @@ describe('DOCX row-formatting revisions', () => {
       );
       const row = html.body.querySelector('tr');
       expect(row?.dataset.changeKind).toBe('row-formatting');
-      expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toMatchObject(
-        {
-          gridAfter: 0,
-        },
-      );
+      expect(
+        parseDocumentRowFormatting(row?.dataset.changeBefore),
+      ).toMatchObject({
+        gridAfter: 0,
+      });
       expect(row?.dataset.officeRowGridAfter).toBe('2');
     } finally {
       editor.destroy();
@@ -796,11 +794,11 @@ describe('DOCX row-formatting revisions', () => {
       );
       const row = html.body.querySelector('tr');
       expect(row?.dataset.changeKind).toBe('row-formatting');
-      expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toMatchObject(
-        {
-          widthBefore: { type: 'auto', value: null },
-        },
-      );
+      expect(
+        parseDocumentRowFormatting(row?.dataset.changeBefore),
+      ).toMatchObject({
+        widthBefore: { type: 'auto', value: null },
+      });
       expect(row?.dataset.officeRowWidthBeforeType).toBe('pixels');
       expect(row?.dataset.officeRowWidthBefore).toBe('48');
     } finally {
@@ -919,11 +917,11 @@ describe('DOCX row-formatting revisions', () => {
       );
       const row = html.body.querySelector('tr');
       expect(row?.dataset.changeKind).toBe('row-formatting');
-      expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toMatchObject(
-        {
-          widthAfter: { type: 'auto', value: null },
-        },
-      );
+      expect(
+        parseDocumentRowFormatting(row?.dataset.changeBefore),
+      ).toMatchObject({
+        widthAfter: { type: 'auto', value: null },
+      });
       expect(row?.dataset.officeRowWidthAfterType).toBe('pixels');
       expect(row?.dataset.officeRowWidthAfter).toBe('48');
     } finally {
@@ -963,17 +961,16 @@ describe('DOCX row-formatting revisions', () => {
       );
       const row = html.body.querySelector('tr');
       expect(row?.dataset.changeKind).toBe('row-formatting');
-      expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toMatchObject(
-        {
-          gridBefore: 0,
-        },
-      );
+      expect(
+        parseDocumentRowFormatting(row?.dataset.changeBefore),
+      ).toMatchObject({
+        gridBefore: 0,
+      });
       expect(row?.dataset.officeRowGridBefore).toBe('2');
     } finally {
       editor.destroy();
     }
   });
-
 });
 
 async function rowDocxWithCantSplitChange(options: {
@@ -1157,8 +1154,7 @@ async function rowDocxWithHiddenChange(options: {
       return created;
     })();
   for (const existing of Array.from(properties.children).filter(
-    (child) =>
-      child.localName === 'hidden' || child.localName === 'trPrChange',
+    (child) => child.localName === 'hidden' || child.localName === 'trPrChange',
   )) {
     existing.remove();
   }
@@ -1208,11 +1204,7 @@ async function rowDocxWithAlignmentChange(options: {
     existing.remove();
   }
   const current = document.createElementNS(WORD_NAMESPACE, 'w:jc');
-  current.setAttributeNS(
-    WORD_NAMESPACE,
-    'w:val',
-    options.current ?? 'left',
-  );
+  current.setAttributeNS(WORD_NAMESPACE, 'w:val', options.current ?? 'left');
   properties.append(current);
   const change = document.createElementNS(WORD_NAMESPACE, 'w:trPrChange');
   change.setAttributeNS(WORD_NAMESPACE, 'w:id', '28');
@@ -1230,7 +1222,6 @@ async function rowDocxWithAlignmentChange(options: {
   );
   return archive.generateAsync({ type: 'arraybuffer' });
 }
-
 
 async function rowDocxWithGridAfterChange(options: {
   prior: number;
@@ -1305,8 +1296,7 @@ async function rowDocxWithWidthAfterChange(options: {
       return created;
     })();
   for (const existing of Array.from(properties.children).filter(
-    (child) =>
-      child.localName === 'wAfter' || child.localName === 'trPrChange',
+    (child) => child.localName === 'wAfter' || child.localName === 'trPrChange',
   )) {
     existing.remove();
   }

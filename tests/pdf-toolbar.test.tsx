@@ -289,18 +289,20 @@ test('advertises only shortcuts implemented by the PDF command surface', () => {
     'aria-keyshortcuts',
     'Control+Z Meta+Z',
   );
-  expect(
-    within(menu).getByRole('menuitem', { name: '首页' }),
-  ).toHaveAttribute('aria-keyshortcuts', 'Control+Home Meta+Home');
+  expect(within(menu).getByRole('menuitem', { name: '首页' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Home Meta+Home',
+  );
   expect(
     within(menu).getByRole('menuitem', { name: '上一页' }),
   ).toHaveAttribute('aria-keyshortcuts', 'PageUp Shift+Space');
   expect(
     within(menu).getByRole('menuitem', { name: '下一页' }),
   ).toHaveAttribute('aria-keyshortcuts', 'PageDown Space');
-  expect(
-    within(menu).getByRole('menuitem', { name: '末页' }),
-  ).toHaveAttribute('aria-keyshortcuts', 'Control+End Meta+End');
+  expect(within(menu).getByRole('menuitem', { name: '末页' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+End Meta+End',
+  );
   expect(
     within(menu).getByRole('menuitemradio', { name: '实际大小' }),
   ).toHaveAttribute('aria-keyshortcuts', 'Control+1 Meta+1');

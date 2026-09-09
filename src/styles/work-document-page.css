@@ -37,8 +37,8 @@
 }
 
 /* WPS/Word distributed alignment: painted via justify + text-align-last. */
-.work-document-page .tiptap [data-office-text-align='distribute'],
-.work-document-preview-page .tiptap [data-office-text-align='distribute'] {
+.work-document-page .tiptap [data-office-text-align="distribute"],
+.work-document-preview-page .tiptap [data-office-text-align="distribute"] {
   text-align: justify;
   text-align-last: justify;
 }

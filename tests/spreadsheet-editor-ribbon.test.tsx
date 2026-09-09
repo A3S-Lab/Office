@@ -1187,10 +1187,7 @@ test('exposes WPS View workbook chrome toggles for formula bar, show formulas, g
   const headings = screen.getByRole('button', { name: '标题' });
   expect(formulaBar).toHaveAttribute('aria-pressed', 'true');
   expect(showFormulas).toHaveAttribute('aria-pressed', 'false');
-  expect(showFormulas).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Control+` Meta+`',
-  );
+  expect(showFormulas).toHaveAttribute('aria-keyshortcuts', 'Control+` Meta+`');
   expect(gridLines).toHaveAttribute('aria-pressed', 'true');
   expect(headings).toHaveAttribute('aria-pressed', 'true');
   fireEvent.click(formulaBar);

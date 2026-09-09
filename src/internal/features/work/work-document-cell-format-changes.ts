@@ -48,18 +48,16 @@ const MARGIN_SIDES: readonly DocumentTableCellMarginSide[] = [
   'left',
 ];
 
-export function serializeDocumentCellFormatting(
-  attributes: {
-    verticalAlign?: unknown;
-    fill?: unknown;
-    margins?: unknown;
-    width?: unknown;
-    noWrap?: unknown;
-    textDirection?: unknown;
-    fitText?: unknown;
-    hideMark?: unknown;
-  },
-): string {
+export function serializeDocumentCellFormatting(attributes: {
+  verticalAlign?: unknown;
+  fill?: unknown;
+  margins?: unknown;
+  width?: unknown;
+  noWrap?: unknown;
+  textDirection?: unknown;
+  fitText?: unknown;
+  hideMark?: unknown;
+}): string {
   const snapshot = normalizeDocumentCellFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
@@ -111,18 +109,16 @@ export function parseDocumentCellFormatting(
   return JSON.stringify(orderedSnapshot(snapshot)) === value ? snapshot : null;
 }
 
-export function normalizeDocumentCellFormattingSnapshot(
-  attributes: {
-    verticalAlign?: unknown;
-    fill?: unknown;
-    margins?: unknown;
-    width?: unknown;
-    noWrap?: unknown;
-    textDirection?: unknown;
-    fitText?: unknown;
-    hideMark?: unknown;
-  },
-): DocumentCellFormattingSnapshot | null {
+export function normalizeDocumentCellFormattingSnapshot(attributes: {
+  verticalAlign?: unknown;
+  fill?: unknown;
+  margins?: unknown;
+  width?: unknown;
+  noWrap?: unknown;
+  textDirection?: unknown;
+  fitText?: unknown;
+  hideMark?: unknown;
+}): DocumentCellFormattingSnapshot | null {
   const snapshot: DocumentCellFormattingSnapshot = {};
   if ('verticalAlign' in attributes && attributes.verticalAlign !== undefined) {
     const verticalAlign = normalizeDocumentTableVerticalAlign(
@@ -299,7 +295,8 @@ function orderedSnapshot(
   if (snapshot.margins !== undefined) {
     ordered.margins = orderedMargins(snapshot.margins);
   }
-  if (snapshot.width !== undefined) ordered.width = orderedWidth(snapshot.width);
+  if (snapshot.width !== undefined)
+    ordered.width = orderedWidth(snapshot.width);
   if (snapshot.noWrap !== undefined) ordered.noWrap = snapshot.noWrap;
   if (snapshot.textDirection !== undefined) {
     ordered.textDirection = snapshot.textDirection;

@@ -86,7 +86,9 @@ function geometryFormatting(
     indent: geometry.indent,
     cellMargins: geometry.cellMargins,
     bidiVisual:
-      typeof node.attrs.bidiVisual === 'boolean' ? node.attrs.bidiVisual : false,
+      typeof node.attrs.bidiVisual === 'boolean'
+        ? node.attrs.bidiVisual
+        : false,
     ...(normalizeTableColor(
       typeof node.attrs.fill === 'string' ? node.attrs.fill : null,
     )
@@ -97,7 +99,11 @@ function geometryFormatting(
         }
       : {}),
     ...(normalizeDocumentTableLook(node.attrs.look)
-      ? { look: orderedDocumentTableLook(normalizeDocumentTableLook(node.attrs.look)!) }
+      ? {
+          look: orderedDocumentTableLook(
+            normalizeDocumentTableLook(node.attrs.look)!,
+          ),
+        }
       : {}),
     ...(normalizeDocumentTableOverlap(node.attrs.overlap)
       ? { overlap: normalizeDocumentTableOverlap(node.attrs.overlap)! }
@@ -144,9 +150,7 @@ function onlyReviewableGeometryChanged(
   return JSON.stringify(beforeRest) === JSON.stringify(afterRest);
 }
 
-function geometryRecord(
-  node: ProseMirrorNode,
-): Record<string, unknown> | null {
+function geometryRecord(node: ProseMirrorNode): Record<string, unknown> | null {
   return node.attrs.geometry &&
     typeof node.attrs.geometry === 'object' &&
     !Array.isArray(node.attrs.geometry)

@@ -127,7 +127,7 @@ export function markDocxTableRows(
       supportedDocxRowFormattingChangeFromProperties(properties);
     const propertyRevisionOmml = formattingChange
       ? undefined
-      : serializePreservableDocxRowPropertyRevision(properties) ?? undefined;
+      : (serializePreservableDocxRowPropertyRevision(properties) ?? undefined);
     if (
       !cantSplit &&
       !repeatHeader &&
@@ -207,11 +207,7 @@ export function applyImportedDocxTableRowMarkers(
           'data-office-repeat-header',
           properties.repeatHeader,
         );
-        setBooleanAttribute(
-          row,
-          'data-office-row-hidden',
-          properties.hidden,
-        );
+        setBooleanAttribute(row, 'data-office-row-hidden', properties.hidden);
         if (properties.alignment) {
           row.dataset.officeRowAlignment = properties.alignment;
         }

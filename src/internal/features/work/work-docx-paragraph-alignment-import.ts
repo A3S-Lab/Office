@@ -118,10 +118,7 @@ export function resolveDocxParagraphAlignment(
   if (justification === 'start') return direction === 'rtl' ? 'right' : 'left';
   if (justification === 'end') return direction === 'rtl' ? 'left' : 'right';
   if (justification === 'both') return 'justify';
-  if (
-    justification === 'distribute' ||
-    justification === 'thaiDistribute'
-  ) {
+  if (justification === 'distribute' || justification === 'thaiDistribute') {
     return 'distribute';
   }
   if (

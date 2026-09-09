@@ -21,7 +21,9 @@ test('locks selected WPS fields against F9 refresh', () => {
 
   const fieldPos = fieldPosition(editor);
   editor.view.dispatch(
-    editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, fieldPos)),
+    editor.state.tr.setSelection(
+      NodeSelection.create(editor.state.doc, fieldPos),
+    ),
   );
   expect(documentFieldLockTargets(editor.state)).toEqual([
     { from: fieldPos, to: fieldPos + 1, locked: false },

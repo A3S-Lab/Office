@@ -533,9 +533,10 @@ test('Presentation ribbon collapses with WPS Ctrl+F1', () => {
     />,
   );
 
-  expect(
-    screen.getByRole('button', { name: '折叠功能区' }),
-  ).toHaveAttribute('aria-keyshortcuts', 'Control+F1 Meta+F1');
+  expect(screen.getByRole('button', { name: '折叠功能区' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+F1 Meta+F1',
+  );
   fireEvent.keyDown(window, { key: 'F1', code: 'F1', ctrlKey: true });
   expect(screen.getByRole('button', { name: '展开功能区' })).toBeVisible();
   fireEvent.keyDown(window, { key: 'F1', code: 'F1', ctrlKey: true });

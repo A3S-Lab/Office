@@ -86,7 +86,10 @@ function supportedRowFormattingChange(
   ) {
     return null;
   }
-  if (hasRelationshipBindings(change) || hasUnsupportedRevisionAttributes(change)) {
+  if (
+    hasRelationshipBindings(change) ||
+    hasUnsupportedRevisionAttributes(change)
+  ) {
     return null;
   }
   const id = wordAttribute(change, 'id')?.trim() ?? '';
@@ -104,8 +107,7 @@ function supportedRowFormattingChange(
   }
   const priors = Array.from(change.children).filter(
     (child) =>
-      child.localName === 'trPr' &&
-      child.namespaceURI === change.namespaceURI,
+      child.localName === 'trPr' && child.namespaceURI === change.namespaceURI,
   );
   if (priors.length !== 1) return null;
   const prior = priors[0];
@@ -299,7 +301,10 @@ function importedPreferredWidth(
   if (type === 'dxa') {
     const pixels = twipsToPixels(Number(attribute(width, 'w')));
     if (pixels === null || pixels <= 0) return null;
-    return normalizeDocumentTablePreferredWidth({ type: 'pixels', value: pixels });
+    return normalizeDocumentTablePreferredWidth({
+      type: 'pixels',
+      value: pixels,
+    });
   }
   return null;
 }

@@ -387,10 +387,9 @@ test('wires every direct character-format action to the TipTap selection', () =>
   expect(editor.getHTML()).toContain('data-office-text-case="small-caps"');
 
   fireEvent.click(within(font).getByRole('button', { name: '清除格式' }));
-  expect(within(font).getByRole('button', { name: '清除格式' })).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Control+Space Meta+Space',
-  );
+  expect(
+    within(font).getByRole('button', { name: '清除格式' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+Space Meta+Space');
   expect(textMarkNames(editor, 'Format this')).toEqual(new Set());
   expect(editor.getText()).toBe('Format this text');
 });

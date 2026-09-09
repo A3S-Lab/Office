@@ -162,10 +162,7 @@ export function serializePreservableDocxScopedPropertyRevision(
   declareInheritedNamespaces(clone, change);
   shell.replaceChild(clone, shell.documentElement);
   const omml = new XMLSerializer().serializeToString(clone).trim();
-  if (
-    !omml ||
-    omml.length > MAX_DOCUMENT_TABLE_PROPERTY_REVISION_OMML_LENGTH
-  ) {
+  if (!omml || omml.length > MAX_DOCUMENT_TABLE_PROPERTY_REVISION_OMML_LENGTH) {
     return null;
   }
   return omml;
@@ -191,7 +188,9 @@ export function serializePreservableDocxTablePropertyRevision(
 export function serializePreservableDocxRowPropertyRevision(
   rowProperties: Element | null | undefined,
 ): string | null {
-  const change = rowProperties ? directChild(rowProperties, 'trPrChange') : null;
+  const change = rowProperties
+    ? directChild(rowProperties, 'trPrChange')
+    : null;
   if (change && isSupportedDocxRowFormattingChange(change)) {
     return null;
   }
@@ -258,9 +257,5 @@ export function importDocxTablePropertyRevisionElement(
   document: Document,
   omml: string,
 ): Element | null {
-  return importDocxScopedPropertyRevisionElement(
-    document,
-    omml,
-    'tblPrChange',
-  );
+  return importDocxScopedPropertyRevisionElement(document, omml, 'tblPrChange');
 }

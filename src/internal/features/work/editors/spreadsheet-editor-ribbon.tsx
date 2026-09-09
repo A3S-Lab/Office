@@ -403,9 +403,7 @@ export function SpreadsheetEditorRibbon({
                 active={showFormulas}
                 disabled={!onToggleShowFormulas}
                 title={
-                  showFormulas
-                    ? '隐藏公式（Ctrl+`）'
-                    : '显示公式（Ctrl+`）'
+                  showFormulas ? '隐藏公式（Ctrl+`）' : '显示公式（Ctrl+`）'
                 }
                 aria-keyshortcuts={
                   spreadsheetCommandCatalog.showFormulas.shortcut.aria

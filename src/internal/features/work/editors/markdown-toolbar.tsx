@@ -19,7 +19,13 @@ import {
   Undo2,
   Unlink,
 } from 'lucide-react';
-import { type ButtonHTMLAttributes, type ReactNode, useEffect, useRef, useState } from 'react';
+import {
+  type ButtonHTMLAttributes,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { OfficeSelect } from './office-controls';
 import {
   MarkdownInsertDialog,

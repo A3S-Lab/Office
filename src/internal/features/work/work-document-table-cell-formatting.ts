@@ -70,14 +70,15 @@ export type DocumentTableCellTextDirection =
   | 'tbRlV'
   | 'tbLrV';
 
-const DOCUMENT_TABLE_CELL_TEXT_DIRECTIONS = new Set<DocumentTableCellTextDirection>([
-  'lrTb',
-  'tbRl',
-  'btLr',
-  'lrTbV',
-  'tbRlV',
-  'tbLrV',
-]);
+const DOCUMENT_TABLE_CELL_TEXT_DIRECTIONS =
+  new Set<DocumentTableCellTextDirection>([
+    'lrTb',
+    'tbRl',
+    'btLr',
+    'lrTbV',
+    'tbRlV',
+    'tbLrV',
+  ]);
 export interface DocumentTableCellFormat {
   backgroundColor: string;
   verticalAlign: DocumentTableVerticalAlign;

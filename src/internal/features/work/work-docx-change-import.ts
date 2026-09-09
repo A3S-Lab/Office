@@ -69,7 +69,9 @@ export function markDocxTextChanges(
       [companion.to, companion] as const,
     ]),
   );
-  stripDocxMoveRangeMarkers(companions.flatMap((companion) => companion.markers));
+  stripDocxMoveRangeMarkers(
+    companions.flatMap((companion) => companion.markers),
+  );
   const moveByElement = new Map<Element, SupportedMovePair>();
   for (const pair of movePairs) {
     moveByElement.set(pair.from.element, pair);
@@ -334,8 +336,7 @@ function moveChildrenAreTextOnly(
     if (child.localName === 'r') {
       if (!moveRunIsTextOnly(child, allowedText)) return false;
       hasText ||= Array.from(child.children).some(
-        (node) =>
-          allowedText.has(node.localName) && Boolean(node.textContent),
+        (node) => allowedText.has(node.localName) && Boolean(node.textContent),
       );
       continue;
     }
@@ -426,9 +427,7 @@ function isRelationshipFreeInternalHyperlink(element: Element): boolean {
   let hasAnchor = false;
   for (const attribute of Array.from(element.attributes)) {
     const namespace =
-      attribute.namespaceURI ||
-      xmlAttributeNamespace(element, attribute) ||
-      '';
+      attribute.namespaceURI || xmlAttributeNamespace(element, attribute) || '';
     if (RELATIONSHIP_NAMESPACES.has(namespace)) return false;
     if (namespace && namespace !== element.namespaceURI) return false;
     const localName = xmlAttributeLocalName(attribute);
@@ -468,20 +467,14 @@ function isRelationshipFreeBookmarkMarker(element: Element): boolean {
   let hasName = element.localName !== 'bookmarkStart';
   for (const attribute of Array.from(element.attributes)) {
     const namespace =
-      attribute.namespaceURI ||
-      xmlAttributeNamespace(element, attribute) ||
-      '';
+      attribute.namespaceURI || xmlAttributeNamespace(element, attribute) || '';
     if (RELATIONSHIP_NAMESPACES.has(namespace)) return false;
     if (namespace && namespace !== element.namespaceURI) return false;
     const localName = xmlAttributeLocalName(attribute);
     if (!(namespace === element.namespaceURI || !namespace)) return false;
     if (!allowed.has(localName)) return false;
     const value = attribute.value.trim();
-    if (
-      !value ||
-      value.length > 255 ||
-      /[\u0000-\u001f\u007f]/.test(value)
-    ) {
+    if (!value || value.length > 255 || /[\u0000-\u001f\u007f]/.test(value)) {
       return false;
     }
     if (localName === 'id') {

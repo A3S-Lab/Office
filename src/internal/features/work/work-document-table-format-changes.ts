@@ -62,22 +62,20 @@ const MARGIN_SIDES: readonly DocumentTableCellMarginSide[] = [
   'left',
 ];
 
-export function serializeDocumentTableFormatting(
-  attributes: {
-    layout?: unknown;
-    alignment?: unknown;
-    width?: unknown;
-    indent?: unknown;
-    cellMargins?: unknown;
-    bidiVisual?: unknown;
-    fill?: unknown;
-    look?: unknown;
-    overlap?: unknown;
-    styleId?: unknown;
-    cellSpacing?: unknown;
-    borders?: unknown;
-  },
-): string {
+export function serializeDocumentTableFormatting(attributes: {
+  layout?: unknown;
+  alignment?: unknown;
+  width?: unknown;
+  indent?: unknown;
+  cellMargins?: unknown;
+  bidiVisual?: unknown;
+  fill?: unknown;
+  look?: unknown;
+  overlap?: unknown;
+  styleId?: unknown;
+  cellSpacing?: unknown;
+  borders?: unknown;
+}): string {
   const snapshot = normalizeDocumentTableFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
@@ -134,22 +132,20 @@ export function parseDocumentTableFormatting(
   return normalized === value ? snapshot : null;
 }
 
-export function normalizeDocumentTableFormattingSnapshot(
-  attributes: {
-    layout?: unknown;
-    alignment?: unknown;
-    width?: unknown;
-    indent?: unknown;
-    cellMargins?: unknown;
-    bidiVisual?: unknown;
-    fill?: unknown;
-    look?: unknown;
-    overlap?: unknown;
-    styleId?: unknown;
-    cellSpacing?: unknown;
-    borders?: unknown;
-  },
-): DocumentTableFormattingSnapshot | null {
+export function normalizeDocumentTableFormattingSnapshot(attributes: {
+  layout?: unknown;
+  alignment?: unknown;
+  width?: unknown;
+  indent?: unknown;
+  cellMargins?: unknown;
+  bidiVisual?: unknown;
+  fill?: unknown;
+  look?: unknown;
+  overlap?: unknown;
+  styleId?: unknown;
+  cellSpacing?: unknown;
+  borders?: unknown;
+}): DocumentTableFormattingSnapshot | null {
   const snapshot: DocumentTableFormattingSnapshot = {};
   if ('layout' in attributes && attributes.layout !== undefined) {
     const layout = normalizeDocumentTableLayoutAlgorithm(attributes.layout);
@@ -203,7 +199,9 @@ export function normalizeDocumentTableFormattingSnapshot(
     snapshot.styleId = styleId;
   }
   if ('cellSpacing' in attributes && attributes.cellSpacing !== undefined) {
-    const cellSpacing = normalizeDocumentTableCellSpacing(attributes.cellSpacing);
+    const cellSpacing = normalizeDocumentTableCellSpacing(
+      attributes.cellSpacing,
+    );
     if (cellSpacing === null) return null;
     snapshot.cellSpacing = cellSpacing;
   }
@@ -255,10 +253,11 @@ export function restoredDocumentTableAttributes(
   if (formatting.width) geometry.width = formatting.width;
   if (formatting.indent !== undefined) geometry.indent = formatting.indent;
   if (formatting.cellMargins) {
-    const existing =
-      normalizeDocumentTableCellMargins(geometry.cellMargins) ?? {
-        ...DEFAULT_DOCUMENT_TABLE_CELL_MARGINS,
-      };
+    const existing = normalizeDocumentTableCellMargins(
+      geometry.cellMargins,
+    ) ?? {
+      ...DEFAULT_DOCUMENT_TABLE_CELL_MARGINS,
+    };
     const merged = normalizeDocumentTableCellMargins({
       ...existing,
       ...formatting.cellMargins,
@@ -310,12 +309,14 @@ function orderedSnapshot(
   if (snapshot.cellMargins) {
     ordered.cellMargins = orderedMargins(snapshot.cellMargins);
   }
-  if (snapshot.bidiVisual !== undefined) ordered.bidiVisual = snapshot.bidiVisual;
+  if (snapshot.bidiVisual !== undefined)
+    ordered.bidiVisual = snapshot.bidiVisual;
   if (snapshot.fill !== undefined) ordered.fill = snapshot.fill;
   if (snapshot.look) ordered.look = orderedDocumentTableLook(snapshot.look);
   if (snapshot.overlap) ordered.overlap = snapshot.overlap;
   if (snapshot.styleId) ordered.styleId = snapshot.styleId;
-  if (snapshot.cellSpacing !== undefined) ordered.cellSpacing = snapshot.cellSpacing;
+  if (snapshot.cellSpacing !== undefined)
+    ordered.cellSpacing = snapshot.cellSpacing;
   if (snapshot.borders) {
     ordered.borders = orderedDocumentTableFormattingBorders(snapshot.borders);
   }
@@ -364,9 +365,7 @@ export function normalizeDocumentTableCellSpacing(
   return normalizeTableIndent(value);
 }
 
-export function normalizeDocumentTableStyleId(
-  value: unknown,
-): string | null {
+export function normalizeDocumentTableStyleId(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const styleId = value.trim();
   if (

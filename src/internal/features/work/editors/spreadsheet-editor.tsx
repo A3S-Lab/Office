@@ -1122,9 +1122,7 @@ function SpreadsheetEditorSurface({
           zoomRatio: previewZoom / 100,
         }))
       : workbookSheets;
-    return showFormulas
-      ? projectSpreadsheetSheetsShowingFormulas(base)
-      : base;
+    return showFormulas ? projectSpreadsheetSheetsShowingFormulas(base) : base;
   }, [activeSheetId, preview, previewZoom, showFormulas, workbookSheets]);
   projectedWorkbookSheetsRef.current = displayedWorkbookSheets;
   const handleWorkbookChange = useCallback(

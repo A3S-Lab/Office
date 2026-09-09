@@ -84,14 +84,12 @@ export class DocxRowFormattingChangePatchCollector {
     const author = element.dataset.changeAuthor?.trim() ?? '';
     const date = normalizedRevisionDate(element.dataset.changeDate);
     const before = element.dataset.changeBefore ?? '';
-    if (
-      !author ||
-      author.length > 255 ||
-      !parseDocumentRowFormatting(before)
-    ) {
+    if (!author || author.length > 255 || !parseDocumentRowFormatting(before)) {
       throw new Error('Document contains an invalid row-formatting revision.');
     }
-    if (this.patches.filter(Boolean).length >= MAX_ROW_FORMATTING_CHANGE_PATCHES) {
+    if (
+      this.patches.filter(Boolean).length >= MAX_ROW_FORMATTING_CHANGE_PATCHES
+    ) {
       throw new Error('Document exceeds the row-formatting revision limit.');
     }
     this.patches.push({ id, author, date, before });
@@ -214,8 +212,7 @@ function setRowGridBefore(
   }
   for (const existing of Array.from(properties.children).filter(
     (child) =>
-      child.localName === 'gridBefore' &&
-      child.namespaceURI === WORD_NAMESPACE,
+      child.localName === 'gridBefore' && child.namespaceURI === WORD_NAMESPACE,
   )) {
     existing.remove();
   }
@@ -237,8 +234,7 @@ function setRowGridAfter(
   }
   for (const existing of Array.from(properties.children).filter(
     (child) =>
-      child.localName === 'gridAfter' &&
-      child.namespaceURI === WORD_NAMESPACE,
+      child.localName === 'gridAfter' && child.namespaceURI === WORD_NAMESPACE,
   )) {
     existing.remove();
   }
@@ -285,8 +281,7 @@ function setRowFormattingChange(
   }
   for (const existing of Array.from(properties.children).filter(
     (child) =>
-      child.localName === 'trPrChange' &&
-      child.namespaceURI === WORD_NAMESPACE,
+      child.localName === 'trPrChange' && child.namespaceURI === WORD_NAMESPACE,
   )) {
     existing.remove();
   }
@@ -316,7 +311,9 @@ function setRowFormattingChange(
     height.setAttributeNS(
       WORD_NAMESPACE,
       'w:val',
-      String(Math.max(1, Math.round(formatting.height.value * TWIPS_PER_PIXEL))),
+      String(
+        Math.max(1, Math.round(formatting.height.value * TWIPS_PER_PIXEL)),
+      ),
     );
     if (formatting.height.rule === 'exact') {
       height.setAttributeNS(WORD_NAMESPACE, 'w:hRule', 'exact');

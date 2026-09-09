@@ -400,9 +400,7 @@ export function WorkOfficeRibbon<T extends string>({
             className="work-office-ribbon-collapse"
             aria-label={collapsed ? '展开功能区' : '折叠功能区'}
             title={
-              collapsed
-                ? '展开功能区（Ctrl+F1）'
-                : '折叠功能区（Ctrl+F1）'
+              collapsed ? '展开功能区（Ctrl+F1）' : '折叠功能区（Ctrl+F1）'
             }
             aria-keyshortcuts="Control+F1 Meta+F1"
             aria-controls={`${reactId}-panel`}

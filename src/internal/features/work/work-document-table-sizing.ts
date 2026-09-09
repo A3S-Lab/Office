@@ -253,9 +253,7 @@ export const DocumentTable = Table.extend({
           normalizeDocumentTableOverlap(element.dataset.officeTableOverlap),
         renderHTML: (attributes: Record<string, unknown>) => {
           const overlap = normalizeDocumentTableOverlap(attributes.overlap);
-          return overlap
-            ? { 'data-office-table-overlap': overlap }
-            : {};
+          return overlap ? { 'data-office-table-overlap': overlap } : {};
         },
       },
       styleId: {
@@ -264,9 +262,7 @@ export const DocumentTable = Table.extend({
           normalizeDocumentTableStyleId(element.dataset.officeTableStyleId),
         renderHTML: (attributes: Record<string, unknown>) => {
           const styleId = normalizeDocumentTableStyleId(attributes.styleId);
-          return styleId
-            ? { 'data-office-table-style-id': styleId }
-            : {};
+          return styleId ? { 'data-office-table-style-id': styleId } : {};
         },
       },
       cellSpacing: {
@@ -303,7 +299,9 @@ export const DocumentTable = Table.extend({
           documentTableFloatOmmlFromElement(element),
         renderHTML: (attributes: Record<string, unknown>) => {
           const omml =
-            typeof attributes.floatOmml === 'string' ? attributes.floatOmml : '';
+            typeof attributes.floatOmml === 'string'
+              ? attributes.floatOmml
+              : '';
           const encoded = encodeDocumentTableFloatOmml(omml);
           return encoded
             ? { [DOCUMENT_TABLE_FLOAT_OMML_ATTRIBUTE]: encoded }

@@ -115,7 +115,9 @@ describe('DOCX paragraph-break merge/split revisions', () => {
     artifact.content.trackChanges = true;
 
     const pendingBlob = await createArtifactBlob(artifact);
-    const pendingArchive = await JSZip.loadAsync(await pendingBlob.arrayBuffer());
+    const pendingArchive = await JSZip.loadAsync(
+      await pendingBlob.arrayBuffer(),
+    );
     const pendingXml =
       (await pendingArchive.file('word/document.xml')?.async('text')) ?? '';
     expect(pendingXml).toMatch(

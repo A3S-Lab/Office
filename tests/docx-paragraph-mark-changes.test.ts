@@ -159,7 +159,9 @@ describe('DOCX paragraph-mark revisions', () => {
       }),
     );
     expect(
-      report.issues.some(({ code }) => code === 'docx.revisions.paragraph-mark'),
+      report.issues.some(
+        ({ code }) => code === 'docx.revisions.paragraph-mark',
+      ),
     ).toBe(false);
     expect(
       report.issues.some(({ code }) => code === 'docx.revisions.structural'),

@@ -97,7 +97,10 @@ function supportedSectionFormattingChange(
   ) {
     return null;
   }
-  if (hasRelationshipBindings(change) || hasUnsupportedRevisionAttributes(change)) {
+  if (
+    hasRelationshipBindings(change) ||
+    hasUnsupportedRevisionAttributes(change)
+  ) {
     return null;
   }
   const id = wordAttribute(change, 'id')?.trim() ?? '';
@@ -296,11 +299,7 @@ function importedEqualColumns(element: Element): {
   );
   if (byName.has('equalWidth')) {
     const equalWidth = byName.get('equalWidth')?.toLowerCase();
-    if (
-      equalWidth !== '1' &&
-      equalWidth !== 'true' &&
-      equalWidth !== 'on'
-    ) {
+    if (equalWidth !== '1' && equalWidth !== 'true' && equalWidth !== 'on') {
       return null;
     }
   }
@@ -328,9 +327,7 @@ function importedEqualColumns(element: Element): {
   return { count, spacing, separator };
 }
 
-function importedPaperSource(
-  element: Element,
-): WorkDocumentPaperSource | null {
+function importedPaperSource(element: Element): WorkDocumentPaperSource | null {
   const attributes = Array.from(element.attributes).filter(
     (candidate) =>
       xmlAttributeNamespace(element, candidate) === element.namespaceURI,

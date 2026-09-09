@@ -154,7 +154,10 @@ describe('DOCX floating table preservation', () => {
     );
     const exported = await xmlEntry(output, 'word/document.xml');
     expect(
-      directChild(directChild(descendants(exported, 'tbl')[0], 'tblPr'), 'tblpPr'),
+      directChild(
+        directChild(descendants(exported, 'tbl')[0], 'tblPr'),
+        'tblpPr',
+      ),
     ).toBeUndefined();
   });
 });

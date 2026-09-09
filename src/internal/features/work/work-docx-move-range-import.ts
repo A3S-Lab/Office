@@ -47,9 +47,7 @@ export function companionDocxMoveRangeBookmarks(
   return companions;
 }
 
-export function stripDocxMoveRangeMarkers(
-  markers: readonly Element[],
-): void {
+export function stripDocxMoveRangeMarkers(markers: readonly Element[]): void {
   for (const marker of markers) marker.remove();
 }
 
@@ -80,12 +78,7 @@ function companionForMovePair(
   const fromBound = findSandwichMarkers(from, FROM_START, FROM_END);
   const toBound = findSandwichMarkers(to, TO_START, TO_END);
   if (!fromBound || !toBound) return null;
-  const markers = [
-    fromBound.start,
-    fromBound.end,
-    toBound.start,
-    toBound.end,
-  ];
+  const markers = [fromBound.start, fromBound.end, toBound.start, toBound.end];
   if (markers.some((marker) => usedMarkers.has(marker))) return null;
   if (new Set(markers).size !== 4) return null;
   const rangeId = wordAttribute(fromBound.start, 'id')?.trim() ?? '';
@@ -220,9 +213,7 @@ function crossesSectionBoundary(markers: readonly Element[]): boolean {
   for (const element of elementsBetween(first, last)) {
     if (element.localName === SECTION_BREAK) return true;
   }
-  return Boolean(
-    ordered.some((marker) => marker.localName === SECTION_BREAK),
-  );
+  return Boolean(ordered.some((marker) => marker.localName === SECTION_BREAK));
 }
 
 function storyRoot(element: Element): Element | null {
@@ -292,10 +283,7 @@ function previousSiblingNamed(
     : null;
 }
 
-function nextSiblingNamed(
-  element: Element,
-  localName: string,
-): Element | null {
+function nextSiblingNamed(element: Element, localName: string): Element | null {
   const sibling = element.nextElementSibling;
   return sibling?.localName === localName &&
     sibling.namespaceURI === element.namespaceURI

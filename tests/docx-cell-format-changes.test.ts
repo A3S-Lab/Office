@@ -519,11 +519,11 @@ describe('DOCX cell-formatting revisions', () => {
       );
       const cell = html.body.querySelector('td');
       expect(cell?.dataset.changeKind).toBe('cell-formatting');
-      expect(parseDocumentCellFormatting(cell?.dataset.changeBefore)).toMatchObject(
-        {
-          noWrap: false,
-        },
-      );
+      expect(
+        parseDocumentCellFormatting(cell?.dataset.changeBefore),
+      ).toMatchObject({
+        noWrap: false,
+      });
       expect(cell?.dataset.officeCellNoWrap).toBe('true');
     } finally {
       editor.destroy();
@@ -635,11 +635,11 @@ describe('DOCX cell-formatting revisions', () => {
       );
       const cell = html.body.querySelector('td');
       expect(cell?.dataset.changeKind).toBe('cell-formatting');
-      expect(parseDocumentCellFormatting(cell?.dataset.changeBefore)).toMatchObject(
-        {
-          textDirection: 'lrTb',
-        },
-      );
+      expect(
+        parseDocumentCellFormatting(cell?.dataset.changeBefore),
+      ).toMatchObject({
+        textDirection: 'lrTb',
+      });
       expect(cell?.dataset.officeCellTextDirection).toBe('tbRl');
     } finally {
       editor.destroy();
@@ -742,11 +742,11 @@ describe('DOCX cell-formatting revisions', () => {
       );
       const cell = html.body.querySelector('td');
       expect(cell?.dataset.changeKind).toBe('cell-formatting');
-      expect(parseDocumentCellFormatting(cell?.dataset.changeBefore)).toMatchObject(
-        {
-          fitText: false,
-        },
-      );
+      expect(
+        parseDocumentCellFormatting(cell?.dataset.changeBefore),
+      ).toMatchObject({
+        fitText: false,
+      });
       expect(cell?.dataset.officeCellFitText).toBe('true');
     } finally {
       editor.destroy();
@@ -849,11 +849,11 @@ describe('DOCX cell-formatting revisions', () => {
       );
       const cell = html.body.querySelector('td');
       expect(cell?.dataset.changeKind).toBe('cell-formatting');
-      expect(parseDocumentCellFormatting(cell?.dataset.changeBefore)).toMatchObject(
-        {
-          hideMark: false,
-        },
-      );
+      expect(
+        parseDocumentCellFormatting(cell?.dataset.changeBefore),
+      ).toMatchObject({
+        hideMark: false,
+      });
       expect(cell?.dataset.officeCellHideMark).toBe('true');
     } finally {
       editor.destroy();
@@ -883,8 +883,7 @@ async function cellDocxWithVAlignChange(options: {
       return created;
     })();
   for (const existing of Array.from(properties.children).filter(
-    (child) =>
-      child.localName === 'vAlign' || child.localName === 'tcPrChange',
+    (child) => child.localName === 'vAlign' || child.localName === 'tcPrChange',
   )) {
     existing.remove();
   }
@@ -980,8 +979,7 @@ async function cellDocxWithMarginChange(options: {
       return created;
     })();
   for (const existing of Array.from(properties.children).filter(
-    (child) =>
-      child.localName === 'tcMar' || child.localName === 'tcPrChange',
+    (child) => child.localName === 'tcMar' || child.localName === 'tcPrChange',
   )) {
     existing.remove();
   }
@@ -1034,8 +1032,7 @@ async function cellDocxWithWidthChange(options: {
       return created;
     })();
   for (const existing of Array.from(properties.children).filter(
-    (child) =>
-      child.localName === 'tcW' || child.localName === 'tcPrChange',
+    (child) => child.localName === 'tcW' || child.localName === 'tcPrChange',
   )) {
     existing.remove();
   }
@@ -1087,8 +1084,7 @@ async function cellDocxWithNoWrapChange(options: {
       return created;
     })();
   for (const existing of Array.from(properties.children).filter(
-    (child) =>
-      child.localName === 'noWrap' || child.localName === 'tcPrChange',
+    (child) => child.localName === 'noWrap' || child.localName === 'tcPrChange',
   )) {
     existing.remove();
   }

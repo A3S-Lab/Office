@@ -358,8 +358,7 @@ function importOpaqueEquation(
     if (!isDocxEquationLikeRoot(root) || !root.namespaceURI) return null;
     if (
       root.namespaceURI !== MATH_NAMESPACE &&
-      root.namespaceURI !==
-        'http://purl.oclc.org/ooxml/officeDocument/math'
+      root.namespaceURI !== 'http://purl.oclc.org/ooxml/officeDocument/math'
     ) {
       return null;
     }

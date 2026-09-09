@@ -370,10 +370,7 @@ function paragraphBodyIsUntrackedTextOnly(
   );
   if (!body.length) return true;
   for (const run of body) {
-    if (
-      run.localName !== 'r' ||
-      run.namespaceURI !== paragraph.namespaceURI
-    ) {
+    if (run.localName !== 'r' || run.namespaceURI !== paragraph.namespaceURI) {
       return false;
     }
     const children = directChildren(run);
@@ -669,9 +666,7 @@ function isRelationshipFreeInternalHyperlink(element: Element): boolean {
   let hasAnchor = false;
   for (const attribute of Array.from(element.attributes)) {
     const namespace =
-      attribute.namespaceURI ||
-      xmlAttributeNamespace(element, attribute) ||
-      '';
+      attribute.namespaceURI || xmlAttributeNamespace(element, attribute) || '';
     if (RELATIONSHIP_NAMESPACES.has(namespace)) return false;
     if (namespace && namespace !== element.namespaceURI) return false;
     const localName = xmlAttributeLocalName(attribute);
@@ -711,20 +706,14 @@ function isRelationshipFreeBookmarkMarker(element: Element): boolean {
   let hasName = element.localName !== 'bookmarkStart';
   for (const attribute of Array.from(element.attributes)) {
     const namespace =
-      attribute.namespaceURI ||
-      xmlAttributeNamespace(element, attribute) ||
-      '';
+      attribute.namespaceURI || xmlAttributeNamespace(element, attribute) || '';
     if (RELATIONSHIP_NAMESPACES.has(namespace)) return false;
     if (namespace && namespace !== element.namespaceURI) return false;
     const localName = xmlAttributeLocalName(attribute);
     if (!(namespace === element.namespaceURI || !namespace)) return false;
     if (!allowed.has(localName)) return false;
     const value = attribute.value.trim();
-    if (
-      !value ||
-      value.length > 255 ||
-      /[\u0000-\u001f\u007f]/.test(value)
-    ) {
+    if (!value || value.length > 255 || /[\u0000-\u001f\u007f]/.test(value)) {
       return false;
     }
     if (localName === 'id') {

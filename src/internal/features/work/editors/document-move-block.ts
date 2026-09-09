@@ -13,10 +13,7 @@ const MOVE_CONTAINER_TYPES = new Set([
  * WPS/Word Alt+Shift+↑ / Alt+Shift+↓: swap the current block with the
  * adjacent sibling inside the nearest movable container.
  */
-export function moveDocumentBlock(
-  editor: Editor,
-  direction: -1 | 1,
-): boolean {
+export function moveDocumentBlock(editor: Editor, direction: -1 | 1): boolean {
   if (editor.isDestroyed || !editor.view) return false;
 
   const { state } = editor;

@@ -329,14 +329,22 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
         'Mod-2': ({ can, commands }, event) =>
           runPdfShortcut(event, can.fitWidth, commands.fitWidth),
         PageUp: ({ can, commands }, event) =>
-          runPdfTextAwareShortcut(event, can.previousPage, commands.previousPage),
+          runPdfTextAwareShortcut(
+            event,
+            can.previousPage,
+            commands.previousPage,
+          ),
         PageDown: ({ can, commands }, event) =>
           runPdfTextAwareShortcut(event, can.nextPage, commands.nextPage),
         // WPS/Acrobat-style page advance (Space) and reverse (Shift+Space).
         Space: ({ can, commands }, event) =>
           runPdfTextAwareShortcut(event, can.nextPage, commands.nextPage),
         'Shift-Space': ({ can, commands }, event) =>
-          runPdfTextAwareShortcut(event, can.previousPage, commands.previousPage),
+          runPdfTextAwareShortcut(
+            event,
+            can.previousPage,
+            commands.previousPage,
+          ),
         'Mod-Home': ({ can, commands }, event) =>
           runPdfTextAwareShortcut(
             event,

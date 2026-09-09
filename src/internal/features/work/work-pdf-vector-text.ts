@@ -9,11 +9,7 @@ import type {
   WorkPdfTextRun,
 } from './work-pdf-text-layer';
 
-export type WorkPdfTextFontStyle =
-  | 'normal'
-  | 'bold'
-  | 'italic'
-  | 'bolditalic';
+export type WorkPdfTextFontStyle = 'normal' | 'bold' | 'italic' | 'bolditalic';
 
 export interface WorkPdfStyledTextRun extends WorkPdfTextRun {
   color: string;

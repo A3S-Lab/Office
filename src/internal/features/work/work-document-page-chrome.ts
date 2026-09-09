@@ -774,72 +774,72 @@ function sanitizeAttributes(element: Element, tag: string) {
       : tag === 'span' && element.dataset.documentEquationOpaque === 'true'
         ? new Set(EQUATION_OPAQUE_ATTRIBUTES)
         : tag === 'a'
-        ? new Set(['dir', 'href', 'title', 'style'])
-        : tag === 'img'
-          ? new Set([
-              'dir',
-              'src',
-              'alt',
-              'title',
-              'width',
-              'height',
-              'style',
-              ...IMAGE_IDENTITY_ATTRIBUTES,
-            ])
-          : tag === 'ol'
-            ? new Set(['dir', 'start', 'style', 'type'])
-            : tag === 'p'
-              ? new Set([
-                  'dir',
-                  'style',
-                  PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE,
-                  PARAGRAPH_BORDERS_ATTRIBUTE,
-                  PARAGRAPH_SHADING_ATTRIBUTE,
-                  ...PARAGRAPH_IDENTITY_ATTRIBUTES,
-                ])
-              : tag === 'tr'
-                ? new Set(['dir', 'style', ...TABLE_ROW_IDENTITY_ATTRIBUTES])
-                : new Set([
-                    'colspan',
+          ? new Set(['dir', 'href', 'title', 'style'])
+          : tag === 'img'
+            ? new Set([
+                'dir',
+                'src',
+                'alt',
+                'title',
+                'width',
+                'height',
+                'style',
+                ...IMAGE_IDENTITY_ATTRIBUTES,
+              ])
+            : tag === 'ol'
+              ? new Set(['dir', 'start', 'style', 'type'])
+              : tag === 'p'
+                ? new Set([
                     'dir',
-                    'rowspan',
                     'style',
-                    ...(tag === 'span'
-                      ? [
-                          DOCUMENT_TEXT_CASE_ATTRIBUTE,
-                          DOCUMENT_CHARACTER_SCALE_ATTRIBUTE,
-                          DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
-                          DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
-                          DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
-                          DOCUMENT_OPEN_TYPE_ATTRIBUTE,
-                          DOCUMENT_EMPHASIS_MARK_ATTRIBUTE,
-                          DOCUMENT_HIDDEN_TEXT_ATTRIBUTE,
-                          DOCUMENT_LEGACY_TEXT_OUTLINE_ATTRIBUTE,
-                          DOCUMENT_LEGACY_TEXT_SHADOW_ATTRIBUTE,
-                          DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
-                          DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
-                          DOCUMENT_RUN_BORDER_ATTRIBUTE,
-                          DOCUMENT_RUN_SHADING_ATTRIBUTE,
-                          DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE,
-                          DOCUMENT_NO_PROOF_ATTRIBUTE,
-                          'lang',
-                          'spellcheck',
-                          DOCUMENT_HIGHLIGHT_ATTRIBUTE,
-                          DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
-                          DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,
-                        ]
-                      : []),
-                    ...(tag === 'u'
-                      ? [
-                          DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
-                          DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE,
-                          DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE,
-                        ]
-                      : []),
-                    ...(tag === 's' || tag === 'strike'
-                      ? [DOCUMENT_STRIKE_STYLE_ATTRIBUTE]
-                      : []),
-                  ]);
+                    PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE,
+                    PARAGRAPH_BORDERS_ATTRIBUTE,
+                    PARAGRAPH_SHADING_ATTRIBUTE,
+                    ...PARAGRAPH_IDENTITY_ATTRIBUTES,
+                  ])
+                : tag === 'tr'
+                  ? new Set(['dir', 'style', ...TABLE_ROW_IDENTITY_ATTRIBUTES])
+                  : new Set([
+                      'colspan',
+                      'dir',
+                      'rowspan',
+                      'style',
+                      ...(tag === 'span'
+                        ? [
+                            DOCUMENT_TEXT_CASE_ATTRIBUTE,
+                            DOCUMENT_CHARACTER_SCALE_ATTRIBUTE,
+                            DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
+                            DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
+                            DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
+                            DOCUMENT_OPEN_TYPE_ATTRIBUTE,
+                            DOCUMENT_EMPHASIS_MARK_ATTRIBUTE,
+                            DOCUMENT_HIDDEN_TEXT_ATTRIBUTE,
+                            DOCUMENT_LEGACY_TEXT_OUTLINE_ATTRIBUTE,
+                            DOCUMENT_LEGACY_TEXT_SHADOW_ATTRIBUTE,
+                            DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
+                            DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
+                            DOCUMENT_RUN_BORDER_ATTRIBUTE,
+                            DOCUMENT_RUN_SHADING_ATTRIBUTE,
+                            DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE,
+                            DOCUMENT_NO_PROOF_ATTRIBUTE,
+                            'lang',
+                            'spellcheck',
+                            DOCUMENT_HIGHLIGHT_ATTRIBUTE,
+                            DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
+                            DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,
+                          ]
+                        : []),
+                      ...(tag === 'u'
+                        ? [
+                            DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
+                            DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE,
+                            DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE,
+                          ]
+                        : []),
+                      ...(tag === 's' || tag === 'strike'
+                        ? [DOCUMENT_STRIKE_STYLE_ATTRIBUTE]
+                        : []),
+                    ]);
   for (const attribute of Array.from(element.attributes)) {
     if (!allowed.has(attribute.name.toLowerCase()))
       element.removeAttribute(attribute.name);

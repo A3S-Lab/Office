@@ -72,9 +72,8 @@ export const DocumentField = Node.create({
       refreshDocumentFields: (content, options) => (props) =>
         refreshDocumentFieldsCommand(props, content, options),
       unlinkDocumentFields: () => (props) => unlinkDocumentFieldsCommand(props),
-      setDocumentFieldsLocked:
-        (locked) => (props) =>
-          setDocumentFieldsLockedCommand(props, locked),
+      setDocumentFieldsLocked: (locked) => (props) =>
+        setDocumentFieldsLockedCommand(props, locked),
     };
   },
 
@@ -276,11 +275,7 @@ function unlinkDocumentFieldsCommand({
 
   for (const range of ranges) {
     const text = range.text;
-    tr.replaceWith(
-      range.from,
-      range.to,
-      text ? state.schema.text(text) : [],
-    );
+    tr.replaceWith(range.from, range.to, text ? state.schema.text(text) : []);
   }
   tr.scrollIntoView();
   return true;

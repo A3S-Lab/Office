@@ -45,7 +45,9 @@ describe('DOCX section-formatting revisions', () => {
     );
     expect(section?.dataset.sectionPropertyRevisionOmml).toBeFalsy();
     expect(
-      parseDocumentSectionFormatting(section?.getAttribute('data-change-before')),
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
     ).toEqual({ orientation: 'landscape' });
 
     const editor = new Editor({
@@ -232,7 +234,9 @@ describe('DOCX section-formatting revisions', () => {
     );
     expect(section?.dataset.sectionPropertyRevisionOmml).toBeFalsy();
     expect(
-      parseDocumentSectionFormatting(section?.getAttribute('data-change-before')),
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
     ).toEqual({
       pageMargins: {
         top: 1440,
@@ -261,7 +265,9 @@ describe('DOCX section-formatting revisions', () => {
         'section[data-document-section]',
       );
       expect(rejectedSection?.getAttribute('data-change-kind')).toBeNull();
-      expect(rejectedSection?.dataset.sectionPageMargins).toContain('"top":1440');
+      expect(rejectedSection?.dataset.sectionPageMargins).toContain(
+        '"top":1440',
+      );
     } finally {
       editor.destroy();
     }
@@ -341,7 +347,9 @@ describe('DOCX section-formatting revisions', () => {
     );
     expect(section?.dataset.sectionPropertyRevisionOmml).toBeFalsy();
     expect(
-      parseDocumentSectionFormatting(section?.getAttribute('data-change-before')),
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
     ).toEqual({
       pageGeometry: {
         width: 12240,
@@ -453,7 +461,9 @@ describe('DOCX section-formatting revisions', () => {
     );
     expect(section?.dataset.sectionPropertyRevisionOmml).toBeFalsy();
     expect(
-      parseDocumentSectionFormatting(section?.getAttribute('data-change-before')),
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
     ).toEqual({
       paperSource: { first: 1, other: 2 },
     });
@@ -474,8 +484,12 @@ describe('DOCX section-formatting revisions', () => {
         'section[data-document-section]',
       );
       expect(rejectedSection?.getAttribute('data-change-kind')).toBeNull();
-      expect(rejectedSection?.dataset.sectionPaperSource).toContain('"first":1');
-      expect(rejectedSection?.dataset.sectionPaperSource).toContain('"other":2');
+      expect(rejectedSection?.dataset.sectionPaperSource).toContain(
+        '"first":1',
+      );
+      expect(rejectedSection?.dataset.sectionPaperSource).toContain(
+        '"other":2',
+      );
     } finally {
       editor.destroy();
     }
@@ -526,8 +540,6 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 
-
-
   test('imports rtlGutter-only w:sectPrChange as a reviewable section-formatting change', async () => {
     const source = await sectionDocxWithRtlGutterChange({
       prior: true,
@@ -544,8 +556,12 @@ describe('DOCX section-formatting revisions', () => {
       'text/html',
     );
     const section = html.body.querySelector('section[data-document-section]');
-    expect(section?.getAttribute('data-change-kind')).toBe('section-formatting');
-    expect(section?.getAttribute('data-section-property-revision-omml')).toBeNull();
+    expect(section?.getAttribute('data-change-kind')).toBe(
+      'section-formatting',
+    );
+    expect(
+      section?.getAttribute('data-section-property-revision-omml'),
+    ).toBeNull();
     expect(
       parseDocumentSectionFormatting(
         section?.getAttribute('data-change-before'),
@@ -573,7 +589,9 @@ describe('DOCX section-formatting revisions', () => {
     );
     const change = directChild(section!, 'sectPrChange');
     expect(change).toBeTruthy();
-    expect(directChild(directChild(change!, 'sectPr'), 'rtlGutter')).toBeTruthy();
+    expect(
+      directChild(directChild(change!, 'sectPr'), 'rtlGutter'),
+    ).toBeTruthy();
   });
 
   test('live section rtlGutter edits become reviewable when track changes is on', () => {
@@ -645,8 +663,12 @@ describe('DOCX section-formatting revisions', () => {
       'text/html',
     );
     const section = html.body.querySelector('section[data-document-section]');
-    expect(section?.getAttribute('data-change-kind')).toBe('section-formatting');
-    expect(section?.getAttribute('data-section-property-revision-omml')).toBeNull();
+    expect(section?.getAttribute('data-change-kind')).toBe(
+      'section-formatting',
+    );
+    expect(
+      section?.getAttribute('data-section-property-revision-omml'),
+    ).toBeNull();
     expect(
       parseDocumentSectionFormatting(
         section?.getAttribute('data-change-before'),
@@ -749,7 +771,9 @@ describe('DOCX section-formatting revisions', () => {
     );
     expect(section?.dataset.sectionPropertyRevisionOmml).toBeFalsy();
     expect(
-      parseDocumentSectionFormatting(section?.getAttribute('data-change-before')),
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
     ).toEqual({
       columns: { count: 1, spacing: 12, separator: false },
     });
@@ -822,8 +846,6 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 });
-
-
 
 async function sectionDocxWithRtlGutterChange(options: {
   prior: boolean;
@@ -1021,7 +1043,11 @@ async function sectionDocxWithMarginChange(options: {
 }
 
 async function sectionDocxWithPageGeometryChange(options: {
-  prior: { width: number; height: number; orientation: 'portrait' | 'landscape' };
+  prior: {
+    width: number;
+    height: number;
+    orientation: 'portrait' | 'landscape';
+  };
   current: {
     width: number;
     height: number;
@@ -1040,8 +1066,7 @@ async function sectionDocxWithPageGeometryChange(options: {
   );
   if (!section) throw new Error('Expected body sectPr.');
   for (const existing of Array.from(section.children).filter(
-    (child) =>
-      child.localName === 'pgSz' || child.localName === 'sectPrChange',
+    (child) => child.localName === 'pgSz' || child.localName === 'sectPrChange',
   )) {
     existing.remove();
   }
@@ -1099,8 +1124,16 @@ async function sectionDocxWithPaperSourceChange(options: {
     existing.remove();
   }
   const current = document.createElementNS(WORD_NAMESPACE, 'w:paperSrc');
-  current.setAttributeNS(WORD_NAMESPACE, 'w:first', String(options.current.first));
-  current.setAttributeNS(WORD_NAMESPACE, 'w:other', String(options.current.other));
+  current.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:first',
+    String(options.current.first),
+  );
+  current.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:other',
+    String(options.current.other),
+  );
   section.append(current);
   const change = document.createElementNS(WORD_NAMESPACE, 'w:sectPrChange');
   change.setAttributeNS(WORD_NAMESPACE, 'w:id', '44');
@@ -1144,8 +1177,7 @@ async function sectionDocxWithColumnsChange(options: {
   );
   if (!section) throw new Error('Expected body sectPr.');
   for (const existing of Array.from(section.children).filter(
-    (child) =>
-      child.localName === 'cols' || child.localName === 'sectPrChange',
+    (child) => child.localName === 'cols' || child.localName === 'sectPrChange',
   )) {
     existing.remove();
   }

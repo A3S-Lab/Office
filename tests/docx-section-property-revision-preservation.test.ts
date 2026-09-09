@@ -97,7 +97,10 @@ describe('DOCX section property-revision preservation', () => {
       id: '21',
       author: 'Reviewer',
     });
-    const priorCols = directChild(directChild(exportedChange!, 'sectPr'), 'cols');
+    const priorCols = directChild(
+      directChild(exportedChange!, 'sectPr'),
+      'cols',
+    );
     expect(
       priorCols?.getAttributeNS(WORD_NAMESPACE, 'num') ??
         priorCols?.getAttribute('w:num') ??
@@ -121,7 +124,10 @@ describe('DOCX section property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:id', '22');
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
-    const headerRef = document.createElementNS(WORD_NAMESPACE, 'w:headerReference');
+    const headerRef = document.createElementNS(
+      WORD_NAMESPACE,
+      'w:headerReference',
+    );
     headerRef.setAttributeNS(RELATIONSHIP_NAMESPACE, 'r:id', 'rIdHeader');
     prior.append(headerRef);
     change.append(prior);
@@ -139,7 +145,9 @@ describe('DOCX section property-revision preservation', () => {
     if (imported.content.type !== 'document') {
       throw new Error('Expected an imported document artifact.');
     }
-    expect(imported.content.sections?.[0]?.layout.propertyRevisionOmml).toBeFalsy();
+    expect(
+      imported.content.sections?.[0]?.layout.propertyRevisionOmml,
+    ).toBeFalsy();
     expect(
       imported.content.html.includes('data-section-property-revision-omml'),
     ).toBe(false);

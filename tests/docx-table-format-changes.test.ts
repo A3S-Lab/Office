@@ -6,9 +6,7 @@ import {
   createArtifactBlob,
   importOfficeFile,
 } from '../src/core';
-import {
-  collectDocumentChanges,
-} from '../src/internal/features/work/work-document-changes';
+import { collectDocumentChanges } from '../src/internal/features/work/work-document-changes';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { parseDocumentTableFormatting } from '../src/internal/features/work/work-document-table-format-changes';
 import { analyzeDocxCompatibility } from '../src/internal/features/work/work-office-diagnostics';
@@ -453,8 +451,6 @@ describe('DOCX table-formatting revisions', () => {
     }
   });
 
-
-
   test('imports solid-shd-only w:tblPrChange as a reviewable table-formatting change', async () => {
     const source = await tableDocxWithSolidFillChange({
       prior: '#ffcc00',
@@ -589,7 +585,9 @@ describe('DOCX table-formatting revisions', () => {
     const properties = directChild(descendants(exported, 'tbl')[0], 'tblPr');
     const change = directChild(properties, 'tblPrChange');
     expect(change).toBeTruthy();
-    expect(directChild(directChild(change!, 'tblPr'), 'bidiVisual')).toBeTruthy();
+    expect(
+      directChild(directChild(change!, 'tblPr'), 'bidiVisual'),
+    ).toBeTruthy();
   });
 
   test('live table bidiVisual edits become reviewable when track changes is on', () => {
@@ -629,11 +627,11 @@ describe('DOCX table-formatting revisions', () => {
       );
       const table = html.body.querySelector('table');
       expect(table?.dataset.changeKind).toBe('table-formatting');
-      expect(parseDocumentTableFormatting(table?.dataset.changeBefore)).toMatchObject(
-        {
-          bidiVisual: false,
-        },
-      );
+      expect(
+        parseDocumentTableFormatting(table?.dataset.changeBefore),
+      ).toMatchObject({
+        bidiVisual: false,
+      });
       expect(table?.dataset.officeTableBidiVisual).toBe('true');
     } finally {
       editor.destroy();
@@ -773,16 +771,16 @@ describe('DOCX table-formatting revisions', () => {
       );
       const table = html.body.querySelector('table');
       expect(table?.dataset.changeKind).toBe('table-formatting');
-      expect(parseDocumentTableFormatting(table?.dataset.changeBefore)?.look).toEqual(
-        {
-          firstRow: true,
-          lastRow: false,
-          firstColumn: true,
-          lastColumn: false,
-          noHorizontalBand: false,
-          noVerticalBand: true,
-        },
-      );
+      expect(
+        parseDocumentTableFormatting(table?.dataset.changeBefore)?.look,
+      ).toEqual({
+        firstRow: true,
+        lastRow: false,
+        firstColumn: true,
+        lastColumn: false,
+        noHorizontalBand: false,
+        noVerticalBand: true,
+      });
       expect(JSON.parse(table?.dataset.officeTableLook ?? 'null')).toEqual({
         firstRow: true,
         lastRow: true,
@@ -795,7 +793,6 @@ describe('DOCX table-formatting revisions', () => {
       editor.destroy();
     }
   });
-
 
   test('imports tblOverlap-only w:tblPrChange as a reviewable table-formatting change', async () => {
     const source = await tableDocxWithOverlapChange({
@@ -839,7 +836,9 @@ describe('DOCX table-formatting revisions', () => {
     const properties = directChild(descendants(exported, 'tbl')[0], 'tblPr');
     const change = directChild(properties, 'tblPrChange');
     expect(change).toBeTruthy();
-    expect(directChild(directChild(change!, 'tblPr'), 'tblOverlap')).toBeTruthy();
+    expect(
+      directChild(directChild(change!, 'tblPr'), 'tblOverlap'),
+    ).toBeTruthy();
     expect(directChild(properties, 'tblOverlap')).toBeTruthy();
   });
 
@@ -881,9 +880,9 @@ describe('DOCX table-formatting revisions', () => {
       );
       const table = html.body.querySelector('table');
       expect(table?.dataset.changeKind).toBe('table-formatting');
-      expect(parseDocumentTableFormatting(table?.dataset.changeBefore)?.overlap).toBe(
-        'never',
-      );
+      expect(
+        parseDocumentTableFormatting(table?.dataset.changeBefore)?.overlap,
+      ).toBe('never');
       expect(table?.dataset.officeTableOverlap).toBe('overlap');
     } finally {
       editor.destroy();
@@ -974,9 +973,9 @@ describe('DOCX table-formatting revisions', () => {
       );
       const table = html.body.querySelector('table');
       expect(table?.dataset.changeKind).toBe('table-formatting');
-      expect(parseDocumentTableFormatting(table?.dataset.changeBefore)?.styleId).toBe(
-        'TableNormal',
-      );
+      expect(
+        parseDocumentTableFormatting(table?.dataset.changeBefore)?.styleId,
+      ).toBe('TableNormal');
       expect(table?.dataset.officeTableStyleId).toBe('TableGrid');
     } finally {
       editor.destroy();
@@ -1025,7 +1024,9 @@ describe('DOCX table-formatting revisions', () => {
     const properties = directChild(descendants(exported, 'tbl')[0], 'tblPr');
     const change = directChild(properties, 'tblPrChange');
     expect(change).toBeTruthy();
-    expect(directChild(directChild(change!, 'tblPr'), 'tblCellSpacing')).toBeTruthy();
+    expect(
+      directChild(directChild(change!, 'tblPr'), 'tblCellSpacing'),
+    ).toBeTruthy();
     expect(directChild(properties, 'tblCellSpacing')).toBeTruthy();
   });
 
@@ -1224,7 +1225,6 @@ describe('DOCX table-formatting revisions', () => {
   });
 });
 
-
 async function tableDocxWithSolidFillChange(options: {
   prior: string | null;
   current: string | null;
@@ -1284,7 +1284,6 @@ async function tableDocxWithSolidFillChange(options: {
   );
   return archive.generateAsync({ type: 'arraybuffer' });
 }
-
 
 async function tableDocxWithOverlapChange(options: {
   prior: 'never' | 'overlap';
@@ -1407,13 +1406,15 @@ async function tableDocxWithCellSpacingChange(options: {
     })();
   for (const existing of Array.from(properties.children).filter(
     (child) =>
-      child.localName === 'tblCellSpacing' ||
-      child.localName === 'tblPrChange',
+      child.localName === 'tblCellSpacing' || child.localName === 'tblPrChange',
   )) {
     existing.remove();
   }
   if (options.currentTwips !== null) {
-    const current = document.createElementNS(WORD_NAMESPACE, 'w:tblCellSpacing');
+    const current = document.createElementNS(
+      WORD_NAMESPACE,
+      'w:tblCellSpacing',
+    );
     current.setAttributeNS(WORD_NAMESPACE, 'w:type', 'dxa');
     current.setAttributeNS(WORD_NAMESPACE, 'w:w', String(options.currentTwips));
     properties.append(current);
@@ -1423,9 +1424,16 @@ async function tableDocxWithCellSpacingChange(options: {
   change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
   change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-09T00:00:00Z');
   const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
-  const priorSpacing = document.createElementNS(WORD_NAMESPACE, 'w:tblCellSpacing');
+  const priorSpacing = document.createElementNS(
+    WORD_NAMESPACE,
+    'w:tblCellSpacing',
+  );
   priorSpacing.setAttributeNS(WORD_NAMESPACE, 'w:type', 'dxa');
-  priorSpacing.setAttributeNS(WORD_NAMESPACE, 'w:w', String(options.priorTwips));
+  priorSpacing.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:w',
+    String(options.priorTwips),
+  );
   prior.append(priorSpacing);
   change.append(prior);
   properties.append(change);
@@ -1637,9 +1645,7 @@ async function tableDocxWithBidiVisualChange(options: {
     existing.remove();
   }
   if (options.current) {
-    properties.append(
-      document.createElementNS(WORD_NAMESPACE, 'w:bidiVisual'),
-    );
+    properties.append(document.createElementNS(WORD_NAMESPACE, 'w:bidiVisual'));
   }
   const change = document.createElementNS(WORD_NAMESPACE, 'w:tblPrChange');
   change.setAttributeNS(WORD_NAMESPACE, 'w:id', '21');

@@ -184,11 +184,7 @@ export async function exportWorkArtifactPdf(
             windowHeight: Math.ceil(page.height),
             windowWidth: Math.ceil(page.width),
           });
-          const textRuns = collectLiveCapturePageTextRuns(
-            capture,
-            page,
-            page,
-          );
+          const textRuns = collectLiveCapturePageTextRuns(capture, page, page);
           clearWorkPdfTextRunsOnCanvas(
             pageCanvas,
             textRuns,

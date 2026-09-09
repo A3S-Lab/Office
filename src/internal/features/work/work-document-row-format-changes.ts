@@ -42,19 +42,17 @@ export interface DocumentRowFormattingHeight {
 
 const MAX_ROW_FORMAT_SNAPSHOT_BYTES = 4_096;
 
-export function serializeDocumentRowFormatting(
-  attributes: {
-    cantSplit?: unknown;
-    repeatHeader?: unknown;
-    height?: unknown;
-    hidden?: unknown;
-    alignment?: unknown;
-    gridBefore?: unknown;
-    gridAfter?: unknown;
-    widthBefore?: unknown;
-    widthAfter?: unknown;
-  },
-): string {
+export function serializeDocumentRowFormatting(attributes: {
+  cantSplit?: unknown;
+  repeatHeader?: unknown;
+  height?: unknown;
+  hidden?: unknown;
+  alignment?: unknown;
+  gridBefore?: unknown;
+  gridAfter?: unknown;
+  widthBefore?: unknown;
+  widthAfter?: unknown;
+}): string {
   const snapshot = normalizeDocumentRowFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
@@ -107,19 +105,17 @@ export function parseDocumentRowFormatting(
   return JSON.stringify(orderedSnapshot(snapshot)) === value ? snapshot : null;
 }
 
-export function normalizeDocumentRowFormattingSnapshot(
-  attributes: {
-    cantSplit?: unknown;
-    repeatHeader?: unknown;
-    height?: unknown;
-    hidden?: unknown;
-    alignment?: unknown;
-    gridBefore?: unknown;
-    gridAfter?: unknown;
-    widthBefore?: unknown;
-    widthAfter?: unknown;
-  },
-): DocumentRowFormattingSnapshot | null {
+export function normalizeDocumentRowFormattingSnapshot(attributes: {
+  cantSplit?: unknown;
+  repeatHeader?: unknown;
+  height?: unknown;
+  hidden?: unknown;
+  alignment?: unknown;
+  gridBefore?: unknown;
+  gridAfter?: unknown;
+  widthBefore?: unknown;
+  widthAfter?: unknown;
+}): DocumentRowFormattingSnapshot | null {
   const snapshot: DocumentRowFormattingSnapshot = {};
   if ('cantSplit' in attributes && attributes.cantSplit !== undefined) {
     if (typeof attributes.cantSplit !== 'boolean') return null;
@@ -235,11 +231,7 @@ export function normalizeDocumentRowFormattingHeight(
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
   const keys = Object.keys(record);
-  if (
-    keys.length !== 2 ||
-    !keys.includes('value') ||
-    !keys.includes('rule')
-  ) {
+  if (keys.length !== 2 || !keys.includes('value') || !keys.includes('rule')) {
     return null;
   }
   const height = normalizeDocumentTableRowHeight(record.value);
@@ -264,7 +256,8 @@ function orderedSnapshot(
   }
   if (snapshot.hidden !== undefined) ordered.hidden = snapshot.hidden;
   if (snapshot.alignment !== undefined) ordered.alignment = snapshot.alignment;
-  if (snapshot.gridBefore !== undefined) ordered.gridBefore = snapshot.gridBefore;
+  if (snapshot.gridBefore !== undefined)
+    ordered.gridBefore = snapshot.gridBefore;
   if (snapshot.gridAfter !== undefined) ordered.gridAfter = snapshot.gridAfter;
   if (snapshot.widthBefore) {
     ordered.widthBefore = {

@@ -438,8 +438,9 @@ export async function analyzeDocxCompatibility(
       ).length;
       const tablePropertyRevisions = descendants(document, 'tblPrChange');
       const supportedTableFormattingRevisionCount =
-        tablePropertyRevisions.filter(isSupportedDocxTableFormattingChange)
-          .length;
+        tablePropertyRevisions.filter(
+          isSupportedDocxTableFormattingChange,
+        ).length;
       const preservableTablePropertyRevisionCount =
         tablePropertyRevisions.filter((change) => {
           if (isSupportedDocxTableFormattingChange(change)) return false;
@@ -648,8 +649,7 @@ export async function analyzeDocxCompatibility(
           const properties = change.parentElement;
           if (properties?.localName !== 'sectPr') return false;
           return (
-            serializePreservableDocxSectionPropertyRevision(properties) !==
-            null
+            serializePreservableDocxSectionPropertyRevision(properties) !== null
           );
         }).length;
       const unpreservableSectionPropertyRevisionCount =

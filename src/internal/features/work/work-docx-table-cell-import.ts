@@ -131,9 +131,9 @@ export function markDocxTableCells(
       ? directChild(properties, 'textDirection')
       : undefined;
     const textDirection = textDirectionElement
-      ? normalizeDocumentTableCellTextDirection(
+      ? (normalizeDocumentTableCellTextDirection(
           attribute(textDirectionElement, 'val'),
-        ) ?? undefined
+        ) ?? undefined)
       : undefined;
     const fitTextElement = properties
       ? directChild(properties, 'tcFitText')
@@ -147,7 +147,7 @@ export function markDocxTableCells(
       supportedDocxCellFormattingChangeFromProperties(properties);
     const propertyRevisionOmml = formattingChange
       ? undefined
-      : serializePreservableDocxCellPropertyRevision(properties) ?? undefined;
+      : (serializePreservableDocxCellPropertyRevision(properties) ?? undefined);
     if (
       !background &&
       !verticalAlign &&

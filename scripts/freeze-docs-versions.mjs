@@ -110,7 +110,10 @@ function rewriteChineseIndex(version, text) {
     /^# A3S Office(?: \d+\.\d+\.\d+)? 文档\s*\n+[\s\S]*?(?=\n## )/m,
     `# A3S Office ${version} 文档\n\n这是 A3S Office ${version} 的冻结文档索引，提供本版本可用的 API、接入步骤和工程参考。\n\n`,
   );
-  if (!next.includes('冻结文档索引') || !next.includes(`# A3S Office ${version} 文档`)) {
+  if (
+    !next.includes('冻结文档索引') ||
+    !next.includes(`# A3S Office ${version} 文档`)
+  ) {
     throw new Error(`ZH freeze rewrite failed for ${version}`);
   }
   return next.replace(/\n/g, nl);
@@ -174,7 +177,9 @@ function ensureChangelogRoute(version) {
       const donorNav = JSON.parse(
         fs.readFileSync(path.join(docsRoot, donor, lang, '_nav.json'), 'utf8'),
       );
-      const donorItem = donorNav.find((item) => item.link === '/changelog.html');
+      const donorItem = donorNav.find(
+        (item) => item.link === '/changelog.html',
+      );
       if (!donorItem) {
         throw new Error(`Donor ${donor}/${lang} missing changelog nav`);
       }
@@ -189,11 +194,15 @@ function rewriteIndexes(version) {
   const zh = path.join(docsRoot, version, 'zh', 'index.mdx');
   fs.writeFileSync(
     en,
-    stripPlaygroundRows(rewriteEnglishIndex(version, fs.readFileSync(en, 'utf8'))),
+    stripPlaygroundRows(
+      rewriteEnglishIndex(version, fs.readFileSync(en, 'utf8')),
+    ),
   );
   fs.writeFileSync(
     zh,
-    stripPlaygroundRows(rewriteChineseIndex(version, fs.readFileSync(zh, 'utf8'))),
+    stripPlaygroundRows(
+      rewriteChineseIndex(version, fs.readFileSync(zh, 'utf8')),
+    ),
   );
   ensureChangelogRoute(version);
 }
@@ -221,7 +230,11 @@ function registerVersions() {
     text.slice(end + marker.length);
   fs.writeFileSync(file, next);
 
-  const testFile = path.join(root, 'tests', 'website-documentation-site.test.ts');
+  const testFile = path.join(
+    root,
+    'tests',
+    'website-documentation-site.test.ts',
+  );
   let test = fs.readFileSync(testFile, 'utf8');
   const nl = test.includes('\r\n') ? '\r\n' : '\n';
   const testBody = merged.map((v) => `    '${v}',`).join(nl);

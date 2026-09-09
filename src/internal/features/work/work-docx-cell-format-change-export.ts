@@ -228,8 +228,7 @@ function setCellFormattingChange(
   }
   for (const existing of Array.from(properties.children).filter(
     (child) =>
-      child.localName === 'tcPrChange' &&
-      child.namespaceURI === WORD_NAMESPACE,
+      child.localName === 'tcPrChange' && child.namespaceURI === WORD_NAMESPACE,
   )) {
     existing.remove();
   }
