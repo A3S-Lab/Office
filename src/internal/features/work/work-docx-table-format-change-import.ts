@@ -10,7 +10,9 @@ import {
 } from './work-document-table-geometry';
 import {
   normalizeDocumentTableFormattingSnapshot,
+  normalizeDocumentTableOverlap,
   serializeDocumentTableFormatting,
+  type DocumentTableOverlap,
 } from './work-document-table-format-changes';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
@@ -35,6 +37,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'bidiVisual',
   'shd',
   'tblLook',
+  'tblOverlap',
 ]);
 const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
 const RELATIONSHIP_NAMESPACES = new Set([
@@ -54,7 +57,7 @@ export interface SupportedDocxTableFormattingChange {
 /**
  * Relationship-free `w:tblPrChange` whose prior snapshot contains only
  * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, `w:tblLayout`,
- * `w:bidiVisual`, solid `w:shd`, and/or `w:tblLook`. Broader
+ * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, and/or `w:tblOverlap`. Broader
  * property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxTableFormattingChange(
@@ -147,6 +150,7 @@ function supportedTableFormattingChange(
   let bidiVisual: boolean | undefined;
   let fill: string | undefined;
   let look: DocumentTableLook | undefined;
+  let overlap: DocumentTableOverlap | undefined;
   for (const child of children) {
     if (child.localName === 'tblLayout') {
       const value = normalizeDocumentTableLayoutAlgorithm(
@@ -196,6 +200,13 @@ function supportedTableFormattingChange(
       const value = parseDocxTblLookElement(child);
       if (!value) return null;
       look = value;
+      continue;
+    }
+    if (child.localName === 'tblOverlap') {
+      if (child.children.length > 0) return null;
+      const value = normalizeDocumentTableOverlap(attribute(child, 'val'));
+      if (!value) return null;
+      overlap = value;
     }
   }
   const snapshot = normalizeDocumentTableFormattingSnapshot({
@@ -207,6 +218,7 @@ function supportedTableFormattingChange(
     ...(bidiVisual !== undefined ? { bidiVisual } : {}),
     ...(fill ? { fill } : {}),
     ...(look ? { look } : {}),
+    ...(overlap ? { overlap } : {}),
   });
   if (!snapshot) return null;
   const date = normalizeRevisionDate(rawDate);

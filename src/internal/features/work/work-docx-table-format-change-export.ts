@@ -1,6 +1,10 @@
 import JSZip from 'jszip';
 import type { DocumentTablePreferredWidth } from './work-document-table-geometry';
-import { parseDocumentTableFormatting } from './work-document-table-format-changes';
+import {
+  parseDocumentTableFormatting,
+  normalizeDocumentTableOverlap,
+  type DocumentTableOverlap,
+} from './work-document-table-format-changes';
 import {
   documentTableLookBitmask,
   parseDocumentTableLookDataset,
@@ -26,6 +30,7 @@ export class DocxTableFormattingChangePatchCollector {
   readonly bidiVisual: boolean[] = [];
   readonly fills: Array<string | null> = [];
   readonly looks: Array<DocumentTableLook | null> = [];
+  readonly overlaps: Array<DocumentTableOverlap | null> = [];
 
   record(element: HTMLTableElement, id: number): void {
     this.bidiVisual.push(element.dataset.officeTableBidiVisual === 'true');
@@ -33,6 +38,9 @@ export class DocxTableFormattingChangePatchCollector {
     this.fills.push(/^#[0-9A-Fa-f]{6}$/i.test(fill) ? fill.toLowerCase() : null);
     this.looks.push(
       parseDocumentTableLookDataset(element.dataset.officeTableLook),
+    );
+    this.overlaps.push(
+      normalizeDocumentTableOverlap(element.dataset.officeTableOverlap),
     );
     if (
       element.dataset.changeKind !== 'table-formatting' ||
@@ -64,12 +72,14 @@ export async function patchDocxTableFormattingChanges(
   bidiVisual: readonly boolean[] = [],
   fills: readonly (string | null)[] = [],
   looks: readonly (DocumentTableLook | null)[] = [],
+  overlaps: readonly (DocumentTableOverlap | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
     !bidiVisual.some(Boolean) &&
     !fills.some(Boolean) &&
-    !looks.some(Boolean)
+    !looks.some(Boolean) &&
+    !overlaps.some(Boolean)
   ) {
     return buffer;
   }
@@ -96,6 +106,7 @@ export async function patchDocxTableFormattingChanges(
     const tableBidiVisual = bidiVisual[index] === true;
     const tableFill = fills[index] ?? null;
     const tableLook = looks[index] ?? null;
+    const tableOverlap = overlaps[index] ?? null;
     index += 1;
     if (patch) {
       setTableFormattingChange(document, table, patch);
@@ -108,6 +119,9 @@ export async function patchDocxTableFormattingChanges(
       changed = true;
     }
     if (setTableLook(document, table, tableLook)) {
+      changed = true;
+    }
+    if (setTableOverlap(document, table, tableOverlap)) {
       changed = true;
     }
   }
@@ -129,6 +143,11 @@ export async function patchDocxTableFormattingChanges(
   if (looks.length && looks.length !== patches.length) {
     throw new Error(
       `DOCX table look patch count mismatch (${looks.length} looks, ${patches.length} tables).`,
+    );
+  }
+  if (overlaps.length && overlaps.length !== patches.length) {
+    throw new Error(
+      `DOCX table overlap patch count mismatch (${overlaps.length} overlaps, ${patches.length} tables).`,
     );
   }
   if (changed) {
@@ -204,6 +223,9 @@ function setTableFormattingChange(
   if (formatting.look) {
     prior.append(createTblLookElement(document, formatting.look));
   }
+  if (formatting.overlap) {
+    prior.append(createTblOverlapElement(document, formatting.overlap));
+  }
   change.append(prior);
   properties.append(change);
 }
@@ -258,6 +280,37 @@ function setTableBidiVisual(
   if (!bidiVisual) return true;
   properties.append(document.createElementNS(WORD_NAMESPACE, 'w:bidiVisual'));
   return true;
+}
+
+function setTableOverlap(
+  document: Document,
+  table: Element,
+  overlap: DocumentTableOverlap | null,
+): boolean {
+  let properties = directChild(table, 'tblPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    if (!overlap) return false;
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+    table.insertBefore(properties, table.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblOverlap' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (!overlap) return true;
+  properties.append(createTblOverlapElement(document, overlap));
+  return true;
+}
+
+function createTblOverlapElement(
+  document: Document,
+  overlap: DocumentTableOverlap,
+): Element {
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:tblOverlap');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', overlap);
+  return element;
 }
 
 function setTableLook(

@@ -46,9 +46,9 @@ describe('DOCX table property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
-    const overlap = document.createElementNS(WORD_NAMESPACE, 'w:tblOverlap');
-    overlap.setAttributeNS(WORD_NAMESPACE, 'w:val', 'never');
-    prior.append(overlap);
+    const style = document.createElementNS(WORD_NAMESPACE, 'w:tblStyle');
+    style.setAttributeNS(WORD_NAMESPACE, 'w:val', 'TableGrid');
+    prior.append(style);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -100,15 +100,15 @@ describe('DOCX table property-revision preservation', () => {
       id: '7',
       author: 'Reviewer',
     });
-    const priorOverlap = directChild(
+    const priorStyle = directChild(
       directChild(exportedChange!, 'tblPr'),
-      'tblOverlap',
+      'tblStyle',
     );
     expect(
-      priorOverlap?.getAttributeNS(WORD_NAMESPACE, 'val') ??
-        priorOverlap?.getAttribute('w:val') ??
-        priorOverlap?.getAttribute('val'),
-    ).toBe('never');
+      priorStyle?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorStyle?.getAttribute('w:val') ??
+        priorStyle?.getAttribute('val'),
+    ).toBe('TableGrid');
   });
 
   test('drops relationship-bound w:tblPrChange instead of inventing opaque metadata', async () => {
