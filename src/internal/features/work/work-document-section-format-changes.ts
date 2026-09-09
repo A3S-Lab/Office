@@ -32,14 +32,18 @@ export const DOCUMENT_SECTION_CHANGE_ATTRIBUTES = [
 ] as const;
 
 /**
- * Equal-width column layout for reviewable section-property revisions.
- * Unequal `custom` widths stay outside this snapshot.
+ * Column layout for reviewable section-property revisions.
+ * Equal-width snapshots omit `custom`; unequal-width snapshots include it.
  */
-export interface DocumentSectionEqualColumnsSnapshot {
+export interface DocumentSectionColumnsSnapshot {
   count: number;
   spacing: number;
   separator: boolean;
+  custom?: Array<{ widthPercent: number; spacing: number }>;
 }
+
+/** @deprecated Use {@link DocumentSectionColumnsSnapshot}. */
+export type DocumentSectionEqualColumnsSnapshot = DocumentSectionColumnsSnapshot;
 
 /**
  * Prior snapshot for reviewable section-property revisions.
@@ -51,7 +55,7 @@ export interface DocumentSectionFormattingSnapshot {
   pageGeometry?: WorkDocumentPageGeometry;
   pageMargins?: WorkDocumentPageMargins;
   paperSource?: WorkDocumentPaperSource;
-  columns?: DocumentSectionEqualColumnsSnapshot;
+  columns?: DocumentSectionColumnsSnapshot;
   differentFirstPage?: boolean;
   rtlGutter?: boolean;
 }
@@ -161,7 +165,7 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     snapshot.paperSource = paperSource;
   }
   if ('columns' in attributes && attributes.columns !== undefined) {
-    const columns = normalizeRevisionEqualColumns(attributes.columns);
+    const columns = normalizeRevisionColumns(attributes.columns);
     if (!columns) return null;
     snapshot.columns = columns;
   }
@@ -359,7 +363,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
     pageSize: layout.pageSize ?? 'a4',
   });
   const paperSource = normalizeRevisionPaperSource(layout.paperSource);
-  const columns = normalizeRevisionEqualColumns(layout.columns);
+  const columns = normalizeRevisionColumns(layout.columns);
   const chrome = normalizeDocumentPageChrome(
     typeof layout.pageChrome === 'string'
       ? parseDocumentPageChrome(layout.pageChrome, {
@@ -451,17 +455,20 @@ function orderedPaperSource(
   };
 }
 
-function normalizeRevisionEqualColumns(
+function normalizeRevisionColumns(
   value: unknown,
-): DocumentSectionEqualColumnsSnapshot | null {
+): DocumentSectionColumnsSnapshot | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
-  if ('custom' in record && record.custom !== undefined) return null;
   const keys = Object.keys(record);
   if (
     !keys.length ||
     keys.some(
-      (key) => key !== 'count' && key !== 'spacing' && key !== 'separator',
+      (key) =>
+        key !== 'count' &&
+        key !== 'spacing' &&
+        key !== 'separator' &&
+        key !== 'custom',
     )
   ) {
     return null;
@@ -473,17 +480,54 @@ function normalizeRevisionEqualColumns(
   ) {
     return null;
   }
+  const customSource = record.custom;
+  const custom =
+    customSource === undefined
+      ? undefined
+      : Array.isArray(customSource)
+        ? customSource.map((entry) => {
+            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+              return null;
+            }
+            const item = entry as Record<string, unknown>;
+            if (
+              !('widthPercent' in item) ||
+              !('spacing' in item) ||
+              Object.keys(item).some(
+                (key) => key !== 'widthPercent' && key !== 'spacing',
+              )
+            ) {
+              return null;
+            }
+            return {
+              widthPercent: item.widthPercent as number,
+              spacing: item.spacing as number,
+            };
+          })
+        : null;
+  if (customSource !== undefined && (!custom || custom.some((entry) => !entry))) {
+    return null;
+  }
   const normalized = normalizeDocumentColumns({
     count: record.count as number,
     spacing: record.spacing as number,
     separator: Boolean(record.separator),
+    ...(custom ? { custom } : {}),
   });
-  if (normalized.custom) return null;
-  return {
+  const snapshot: DocumentSectionColumnsSnapshot = {
     count: normalized.count,
     spacing: normalized.spacing,
     separator: normalized.separator,
   };
+  if (normalized.custom) {
+    snapshot.custom = normalized.custom.map((column) => ({
+      widthPercent: column.widthPercent,
+      spacing: column.spacing,
+    }));
+  } else if (customSource !== undefined) {
+    return null;
+  }
+  return snapshot;
 }
 
 function orderedSnapshot(
@@ -511,11 +555,21 @@ function orderedSnapshot(
     ordered.rtlGutter = snapshot.rtlGutter;
   }
   if (snapshot.columns) {
-    ordered.columns = {
-      count: snapshot.columns.count,
-      spacing: snapshot.columns.spacing,
-      separator: snapshot.columns.separator,
-    };
+    ordered.columns = snapshot.columns.custom
+      ? {
+          count: snapshot.columns.count,
+          spacing: snapshot.columns.spacing,
+          separator: snapshot.columns.separator,
+          custom: snapshot.columns.custom.map((column) => ({
+            widthPercent: column.widthPercent,
+            spacing: column.spacing,
+          })),
+        }
+      : {
+          count: snapshot.columns.count,
+          spacing: snapshot.columns.spacing,
+          separator: snapshot.columns.separator,
+        };
   }
   return ordered;
 }

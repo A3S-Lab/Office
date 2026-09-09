@@ -216,8 +216,9 @@ a phase exits only when its evidence is complete.
   `w:pgMar`, and/or `w:paperSrc` snapshot is reviewable as `section-formatting`
   with accept/reject, live track-changes for orientation, page-geometry,
   page-margin, paper-source, differentFirstPage (`w:titlePg`), and rtlGutter edits, and native export. Equal-width
-  `w:cols` (num/space/sep, no unequal `w:col` children) is also reviewable as
-  `section-formatting` with live column-count edits. Broader relationship-free
+  `w:cols` (num/space/sep, no unequal `w:col` children) and unequal-width
+  `w:cols` (`w:equalWidth` off with bounded `w:col` children) are also reviewable as
+  `section-formatting` with live column edits. Broader relationship-free
   `w:tblPrChange`, `w:trPrChange`, `w:tcPrChange`, and `w:sectPrChange`
   records still round-trip as opaque metadata (not yet reviewable).
   Multi-wrapper text-only whole-paragraph mark bodies that share the mark

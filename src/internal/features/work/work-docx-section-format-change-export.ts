@@ -1,5 +1,8 @@
 import JSZip from 'jszip';
-import { parseDocumentSectionFormatting } from './work-document-section-format-changes';
+import {
+  type DocumentSectionColumnsSnapshot,
+  parseDocumentSectionFormatting,
+} from './work-document-section-format-changes';
 import { descendants, directChild, parseXml } from './work-ooxml-package';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 import type { WorkDocumentSectionLayout } from './work-types';
@@ -184,21 +187,9 @@ function setSectionFormattingChange(
     prior.append(paperSource);
   }
   if (formatting.columns) {
-    const columns = document.createElementNS(WORD_NAMESPACE, 'w:cols');
-    columns.setAttributeNS(
-      WORD_NAMESPACE,
-      'w:num',
-      String(formatting.columns.count),
+    prior.append(
+      createSectionFormattingColumns(document, formatting.columns),
     );
-    columns.setAttributeNS(
-      WORD_NAMESPACE,
-      'w:space',
-      String(Math.round((formatting.columns.spacing * 1440) / 25.4)),
-    );
-    if (formatting.columns.separator) {
-      columns.setAttributeNS(WORD_NAMESPACE, 'w:sep', '1');
-    }
-    prior.append(columns);
   }
   if (formatting.differentFirstPage !== undefined) {
     const titlePg = document.createElementNS(WORD_NAMESPACE, 'w:titlePg');
@@ -222,4 +213,44 @@ function normalizedRevisionDate(value: string | undefined): string {
   if (!value?.trim()) return '';
   const time = Date.parse(value);
   return Number.isFinite(time) ? new Date(time).toISOString() : '';
+}
+
+function createSectionFormattingColumns(
+  document: Document,
+  columns: DocumentSectionColumnsSnapshot,
+): Element {
+  const cols = document.createElementNS(WORD_NAMESPACE, 'w:cols');
+  cols.setAttributeNS(WORD_NAMESPACE, 'w:num', String(columns.count));
+  if (columns.custom?.length) {
+    cols.setAttributeNS(WORD_NAMESPACE, 'w:equalWidth', '0');
+    if (columns.separator) {
+      cols.setAttributeNS(WORD_NAMESPACE, 'w:sep', '1');
+    }
+    for (const [index, column] of columns.custom.entries()) {
+      const col = document.createElementNS(WORD_NAMESPACE, 'w:col');
+      col.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:w',
+        String(Math.round(column.widthPercent)),
+      );
+      if (index < columns.custom.length - 1) {
+        col.setAttributeNS(
+          WORD_NAMESPACE,
+          'w:space',
+          String(Math.round((column.spacing * 1440) / 25.4)),
+        );
+      }
+      cols.append(col);
+    }
+    return cols;
+  }
+  cols.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:space',
+    String(Math.round((columns.spacing * 1440) / 25.4)),
+  );
+  if (columns.separator) {
+    cols.setAttributeNS(WORD_NAMESPACE, 'w:sep', '1');
+  }
+  return cols;
 }

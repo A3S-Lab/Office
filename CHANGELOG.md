@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:sectPrChange` priors that include unequal-width `w:cols`
+  (`w:equalWidth` off with bounded `w:col` children) are now reviewable as
+  `section-formatting` with accept/reject, live track-changes, and native export.
+  Broader section property sets remain opaque or fail-closed; opaque fixtures stay
+  on `docGrid`.
+
 ## 0.99.0 - 2026-09-09
 
 ### Writer

@@ -750,6 +750,141 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 
+  test('imports unequal-width cols-only w:sectPrChange as a reviewable section-formatting change', async () => {
+    const source = await sectionDocxWithUnequalColumnsChange({
+      prior: {
+        count: 2,
+        spacing: 12.7,
+        separator: false,
+        custom: [
+          { widthPercent: 40, spacing: 12.7 },
+          { widthPercent: 60, spacing: 0 },
+        ],
+      },
+      current: {
+        count: 2,
+        spacing: 12,
+        separator: true,
+        custom: [
+          { widthPercent: 50, spacing: 12 },
+          { widthPercent: 50, spacing: 0 },
+        ],
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-unequal-columns-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const section = html.body.querySelector('section[data-document-section]');
+    expect(section?.getAttribute('data-change-kind')).toBe(
+      'section-formatting',
+    );
+    expect(section?.dataset.sectionPropertyRevisionOmml).toBeFalsy();
+    expect(
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
+    ).toEqual({
+      columns: {
+        count: 2,
+        spacing: 12.7,
+        separator: false,
+        custom: [
+          { widthPercent: 40, spacing: 12.7 },
+          { widthPercent: 60, spacing: 0 },
+        ],
+      },
+    });
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('section-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const rejected = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rejectedSection = rejected.body.querySelector(
+        'section[data-document-section]',
+      );
+      expect(rejectedSection?.getAttribute('data-change-kind')).toBeNull();
+      expect(rejectedSection?.dataset.sectionColumnCount).toBe('2');
+      expect(
+        JSON.parse(rejectedSection?.dataset.sectionColumnLayout ?? '{}').custom,
+      ).toEqual([
+        { widthPercent: 40, spacing: 12.7 },
+        { widthPercent: 60, spacing: 0 },
+      ]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending unequal-width cols section-formatting change round-trips as native w:sectPrChange', async () => {
+    const source = await sectionDocxWithUnequalColumnsChange({
+      prior: {
+        count: 2,
+        spacing: 12.7,
+        separator: false,
+        custom: [
+          { widthPercent: 40, spacing: 12.7 },
+          { widthPercent: 60, spacing: 0 },
+        ],
+      },
+      current: {
+        count: 2,
+        spacing: 12,
+        separator: false,
+        custom: [
+          { widthPercent: 50, spacing: 12 },
+          { widthPercent: 50, spacing: 0 },
+        ],
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-unequal-columns-round-trip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await xmlEntry(
+      await JSZip.loadAsync(
+        await (await createArtifactBlob(imported)).arrayBuffer(),
+      ),
+      'word/document.xml',
+    );
+    const change = directChild(
+      descendants(exported, 'sectPr').find(
+        (element) => element.parentElement?.localName !== 'sectPrChange',
+      )!,
+      'sectPrChange',
+    );
+    expect(change).toBeTruthy();
+    const priorCols = directChild(directChild(change!, 'sectPr'), 'cols');
+    expect(priorCols).toBeTruthy();
+    expect(
+      priorCols?.getAttributeNS(WORD_NAMESPACE, 'equalWidth') ??
+        priorCols?.getAttribute('w:equalWidth'),
+    ).toBe('0');
+    const priorColumnWidths = Array.from(priorCols?.children ?? []).map(
+      (column) =>
+        column.getAttributeNS(WORD_NAMESPACE, 'w') ??
+        column.getAttribute('w:w') ??
+        column.getAttribute('w'),
+    );
+    expect(priorColumnWidths).toEqual(['40', '60']);
+  });
+
   test('imports equal-width cols-only w:sectPrChange as a reviewable section-formatting change', async () => {
     const source = await sectionDocxWithColumnsChange({
       prior: { count: 1, spacing: 12, separator: false },
@@ -1195,6 +1330,82 @@ async function sectionDocxWithColumnsChange(options: {
     new XMLSerializer().serializeToString(document),
   );
   return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function sectionDocxWithUnequalColumnsChange(options: {
+  prior: {
+    count: number;
+    spacing: number;
+    separator: boolean;
+    custom: Array<{ widthPercent: number; spacing: number }>;
+  };
+  current: {
+    count: number;
+    spacing: number;
+    separator: boolean;
+    custom: Array<{ widthPercent: number; spacing: number }>;
+  };
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const section = descendants(document, 'sectPr').find(
+    (element) => element.parentElement?.localName !== 'sectPrChange',
+  );
+  if (!section) throw new Error('Expected body sectPr.');
+  for (const existing of Array.from(section.children).filter(
+    (child) => child.localName === 'cols' || child.localName === 'sectPrChange',
+  )) {
+    existing.remove();
+  }
+  section.append(createUnequalWidthCols(document, options.current));
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:sectPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '46');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
+  prior.append(createUnequalWidthCols(document, options.prior));
+  change.append(prior);
+  section.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function createUnequalWidthCols(
+  document: Document,
+  columns: {
+    count: number;
+    spacing: number;
+    separator: boolean;
+    custom: Array<{ widthPercent: number; spacing: number }>;
+  },
+): Element {
+  const cols = document.createElementNS(WORD_NAMESPACE, 'w:cols');
+  cols.setAttributeNS(WORD_NAMESPACE, 'w:num', String(columns.count));
+  cols.setAttributeNS(WORD_NAMESPACE, 'w:equalWidth', '0');
+  if (columns.separator) {
+    cols.setAttributeNS(WORD_NAMESPACE, 'w:sep', '1');
+  }
+  for (const [index, column] of columns.custom.entries()) {
+    const col = document.createElementNS(WORD_NAMESPACE, 'w:col');
+    col.setAttributeNS(WORD_NAMESPACE, 'w:w', String(Math.round(column.widthPercent)));
+    if (index < columns.custom.length - 1) {
+      col.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:space',
+        String(Math.round((column.spacing * 1440) / 25.4)),
+      );
+    }
+    cols.append(col);
+  }
+  return cols;
 }
 
 function createEqualWidthCols(

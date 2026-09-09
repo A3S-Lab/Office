@@ -39,19 +39,11 @@ describe('DOCX section property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:id', '21');
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
-    // Unequal column widths stay outside the reviewable equal-width cols subset.
-    const cols = document.createElementNS(WORD_NAMESPACE, 'w:cols');
-    cols.setAttributeNS(WORD_NAMESPACE, 'w:num', '2');
-    cols.setAttributeNS(WORD_NAMESPACE, 'w:space', '720');
-    cols.setAttributeNS(WORD_NAMESPACE, 'w:equalWidth', '0');
-    const col = document.createElementNS(WORD_NAMESPACE, 'w:col');
-    col.setAttributeNS(WORD_NAMESPACE, 'w:w', '2500');
-    col.setAttributeNS(WORD_NAMESPACE, 'w:space', '720');
-    cols.append(col);
-    const col2 = document.createElementNS(WORD_NAMESPACE, 'w:col');
-    col2.setAttributeNS(WORD_NAMESPACE, 'w:w', '2500');
-    cols.append(col2);
-    prior.append(cols);
+    // Unequal-width cols are reviewable as section-formatting; keep opaque on docGrid.
+    const docGrid = document.createElementNS(WORD_NAMESPACE, 'w:docGrid');
+    docGrid.setAttributeNS(WORD_NAMESPACE, 'w:linePitch', '360');
+    docGrid.setAttributeNS(WORD_NAMESPACE, 'w:type', 'lines');
+    prior.append(docGrid);
     change.append(prior);
     section.append(change);
     archive.file(
@@ -97,15 +89,16 @@ describe('DOCX section property-revision preservation', () => {
       id: '21',
       author: 'Reviewer',
     });
-    const priorCols = directChild(
+    const priorDocGrid = directChild(
       directChild(exportedChange!, 'sectPr'),
-      'cols',
+      'docGrid',
     );
+    expect(priorDocGrid).toBeTruthy();
     expect(
-      priorCols?.getAttributeNS(WORD_NAMESPACE, 'num') ??
-        priorCols?.getAttribute('w:num') ??
-        priorCols?.getAttribute('num'),
-    ).toBe('2');
+      priorDocGrid?.getAttributeNS(WORD_NAMESPACE, 'linePitch') ??
+        priorDocGrid?.getAttribute('w:linePitch') ??
+        priorDocGrid?.getAttribute('linePitch'),
+    ).toBe('360');
   });
 
   test('drops relationship-bound w:sectPrChange instead of inventing opaque metadata', async () => {

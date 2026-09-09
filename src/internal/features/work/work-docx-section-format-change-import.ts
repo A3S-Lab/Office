@@ -1,4 +1,9 @@
-import { serializeDocumentSectionFormatting } from './work-document-section-format-changes';
+import { DEFAULT_DOCUMENT_COLUMNS } from './work-document-columns';
+import { importDocxColumns } from './work-docx-column-import';
+import {
+  type DocumentSectionColumnsSnapshot,
+  serializeDocumentSectionFormatting,
+} from './work-document-section-format-changes';
 import {
   type WorkDocumentPageMarginKey,
   type WorkDocumentPageMargins,
@@ -22,7 +27,7 @@ import {
   parseBoundedDocxInteger,
   parseDocxTwipsMeasure,
 } from './work-docx-twips';
-import { directChildren } from './work-ooxml-package';
+import { attribute, directChildren } from './work-ooxml-package';
 
 const MAX_REVISION_DATE_LENGTH = 64;
 const REVISION_ATTRIBUTES = new Set(['id', 'author', 'date']);
@@ -37,6 +42,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
 const PAGE_SIZE_ATTRIBUTE_SET = new Set(['w', 'h', 'orient', 'code']);
 const PAPER_SOURCE_ATTRIBUTE_SET = new Set(['first', 'other']);
 const COLUMNS_ATTRIBUTE_SET = new Set(['num', 'space', 'sep', 'equalWidth']);
+const COLUMN_CHILD_ATTRIBUTE_SET = new Set(['w', 'space']);
 const TWIPS_PER_MILLIMETER = 1440 / 25.4;
 const PAGE_MARGIN_KEYS = [
   'top',
@@ -66,9 +72,9 @@ export interface SupportedDocxSectionFormattingChange {
 /**
  * Relationship-free `w:sectPrChange` whose prior snapshot contains only
  * orientation-only or complete `w:pgSz` (w/h with optional orient/code), a
- * complete seven-edge `w:pgMar`, `w:paperSrc`, equal-width `w:cols`,
- * and/or `w:titlePg` and/or `w:rtlGutter`. Broader section property sets stay on the opaque OMML
- * path.
+ * complete seven-edge `w:pgMar`, `w:paperSrc`, equal-width or unequal-width
+ * `w:cols`, and/or `w:titlePg` and/or `w:rtlGutter`. Broader section property
+ * sets stay on the opaque OMML path.
  */
 export function isSupportedDocxSectionFormattingChange(
   change: Element,
@@ -126,14 +132,7 @@ function supportedSectionFormattingChange(
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
   if (!children.length || children.length > 6) return null;
-  if (
-    children.some(
-      (child) =>
-        child.namespaceURI !== change.namespaceURI ||
-        !SUPPORTED_PRIOR_CHILDREN.has(child.localName) ||
-        child.children.length > 0,
-    )
-  ) {
+  if (children.some((child) => !isSupportedSectionFormattingPriorChild(child))) {
     return null;
   }
   const localNames = children.map((child) => child.localName);
@@ -143,13 +142,7 @@ function supportedSectionFormattingChange(
   let pageGeometry: WorkDocumentPageGeometry | undefined;
   let pageMargins: WorkDocumentPageMargins | undefined;
   let paperSource: WorkDocumentPaperSource | undefined;
-  let columns:
-    | {
-        count: number;
-        spacing: number;
-        separator: boolean;
-      }
-    | undefined;
+  let columns: DocumentSectionColumnsSnapshot | undefined;
   let differentFirstPage: boolean | undefined;
   let rtlGutter: boolean | undefined;
   for (const child of children) {
@@ -173,7 +166,7 @@ function supportedSectionFormattingChange(
       continue;
     }
     if (child.localName === 'cols') {
-      const value = importedEqualColumns(child);
+      const value = importedSectionFormattingColumns(child);
       if (!value) return null;
       columns = value;
       continue;
@@ -274,12 +267,112 @@ function importedPageSize(element: Element): {
   return pageGeometry ? { pageGeometry } : null;
 }
 
-function importedEqualColumns(element: Element): {
-  count: number;
-  spacing: number;
-  separator: boolean;
-} | null {
-  if (Array.from(element.children).length > 0) return null;
+function isSupportedSectionFormattingPriorChild(child: Element): boolean {
+  if (child.namespaceURI !== child.parentElement?.namespaceURI) return false;
+  if (!SUPPORTED_PRIOR_CHILDREN.has(child.localName)) return false;
+  if (child.localName === 'cols') {
+    return Array.from(child.children).every(
+      (column) =>
+        column.localName === 'col' &&
+        column.namespaceURI === child.namespaceURI &&
+        isSupportedColumnChild(column),
+    );
+  }
+  return child.children.length === 0;
+}
+
+function isSupportedColumnChild(column: Element): boolean {
+  const attributes = Array.from(column.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(column, candidate) === column.namespaceURI,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if ([...names].some((name) => !COLUMN_CHILD_ATTRIBUTE_SET.has(name))) {
+    return false;
+  }
+  if (names.size !== attributes.length || !names.has('w')) return false;
+  const width = parseBoundedDocxInteger(
+    attributes.find(
+      (candidate) => xmlAttributeLocalName(candidate) === 'w',
+    )?.value.trim() ?? '',
+    { minimum: 1, maximum: MAX_UNSIGNED_WORD_TWIPS },
+  );
+  if (width === null) return false;
+  if (names.has('space')) {
+    const space = parseDocxTwipsMeasure(
+      attributes.find(
+        (candidate) => xmlAttributeLocalName(candidate) === 'space',
+      )?.value.trim() ?? '',
+      {
+        minimum: 0,
+        maximum: MAX_UNSIGNED_WORD_TWIPS,
+        signed: false,
+        strict: false,
+      },
+    );
+    if (space === null) return false;
+  }
+  return column.children.length === 0;
+}
+
+function importedSectionFormattingColumns(
+  element: Element,
+): DocumentSectionColumnsSnapshot | null {
+  const columnElements = Array.from(element.children).filter(
+    (child) => child.localName === 'col' && child.namespaceURI === element.namespaceURI,
+  );
+  if (columnElements.length > 0) {
+    if (
+      columnElements.length !== element.children.length ||
+      columnElements.length < 2 ||
+      columnElements.length > 6 ||
+      !columnElements.every(isSupportedColumnChild)
+    ) {
+      return null;
+    }
+    const attributes = Array.from(element.attributes).filter(
+      (candidate) =>
+        xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+    );
+    const names = new Set(
+      attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+    );
+    if ([...names].some((name) => !COLUMNS_ATTRIBUTE_SET.has(name))) {
+      return null;
+    }
+    if (names.size !== attributes.length) return null;
+    if (names.has('equalWidth')) {
+      const equalWidth = attributes
+        .find((candidate) => xmlAttributeLocalName(candidate) === 'equalWidth')
+        ?.value.trim()
+        .toLowerCase();
+      if (
+        equalWidth === '1' ||
+        equalWidth === 'true' ||
+        equalWidth === 'on'
+      ) {
+        return null;
+      }
+    }
+    const imported = importDocxColumns(element, DEFAULT_DOCUMENT_COLUMNS);
+    if (!imported.custom) return null;
+    const spacing =
+      attribute(element, 'space') !== null
+        ? imported.spacing
+        : (imported.custom[0]?.spacing ?? imported.spacing);
+    return {
+      count: imported.count,
+      spacing,
+      separator: imported.separator,
+      custom: imported.custom.map((column) => ({
+        widthPercent: column.widthPercent,
+        spacing: column.spacing,
+      })),
+    };
+  }
+
   const attributes = Array.from(element.attributes).filter(
     (candidate) =>
       xmlAttributeNamespace(element, candidate) === element.namespaceURI,
