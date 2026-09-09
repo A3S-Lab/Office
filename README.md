@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.95.0` makes table tblBorders revisions reviewable:
+Version `0.96.0` makes table tblCaption revisions reviewable:
 
-- **Table borders** — direct-color `tblBorders` priors become
-  `table-formatting` (`borders`) with accept/reject, live track-changes, and native DOCX
-  export.
+- **Table caption** — relationship-free `tblCaption` priors become
+  reviewable `table-formatting` (`caption`) with accept/reject, live
+  track-changes, and native DOCX export.
 - **Boundary** — broader `tblPr` shapes stay opaque metadata or fail-closed;
-  opaque table fixtures stay on `tblCaption`.
+  opaque table fixtures stay on `tblDescription`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.96.0 - 2026-09-09
+
 ### Writer
 
 - Relationship-free `w:tblPrChange` priors that include relationship-free `w:tblCaption` are now
@@ -20,7 +22,7 @@ All notable changes to A3S Office will be documented in this file.
   reviewable as `table-formatting` (`borders`) with accept/reject, live
   track-changes, and native export (including current-table `w:tblBorders` on
   DOCX write). Broader table property sets remain opaque or fail-closed; opaque
-  fixtures stay on `tblCaption`.
+  fixtures stayed on `tblCaption` (moved to `tblDescription` in 0.96.0).
 
 ## 0.94.0 - 2026-09-09
 
