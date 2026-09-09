@@ -454,6 +454,100 @@ describe('DOCX table-formatting revisions', () => {
   });
 
 
+
+  test('imports solid-shd-only w:tblPrChange as a reviewable table-formatting change', async () => {
+    const source = await tableDocxWithSolidFillChange({
+      prior: '#ffcc00',
+      current: null,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-fill-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const table = html.body.querySelector('table');
+    expect(table?.dataset.changeKind).toBe('table-formatting');
+    expect(table?.dataset.officeTablePropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentTableFormatting(table?.dataset.changeBefore)).toEqual({
+      fill: '#ffcc00',
+    });
+  });
+
+  test('pending solid-shd table-formatting change round-trips as native w:tblPrChange', async () => {
+    const source = await tableDocxWithSolidFillChange({
+      prior: '#ffcc00',
+      current: null,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-fill-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const properties = directChild(descendants(exported, 'tbl')[0], 'tblPr');
+    const change = directChild(properties, 'tblPrChange');
+    expect(change).toBeTruthy();
+    expect(directChild(directChild(change!, 'tblPr'), 'shd')).toBeTruthy();
+  });
+
+  test('live table fill edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<table data-office-table-layout="autofit"',
+        ' data-office-table-width-type="percent"',
+        ' data-office-table-width="100"',
+        ' data-office-table-bidi-visual="false">',
+        '<tbody><tr><td><p>Cell</p></td></tr></tbody></table>',
+      ].join(''),
+    });
+    try {
+      let tablePos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'table' && tablePos === null) {
+          tablePos = position;
+        }
+      });
+      expect(tablePos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(tablePos!, undefined, {
+          ...editor.state.doc.nodeAt(tablePos!)!.attrs,
+          fill: '#ffcc00',
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'table-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const table = html.body.querySelector('table');
+      expect(table?.dataset.changeKind).toBe('table-formatting');
+      expect(
+        parseDocumentTableFormatting(table?.dataset.changeBefore),
+      ).toMatchObject({ bidiVisual: false });
+      expect(
+        parseDocumentTableFormatting(table?.dataset.changeBefore)?.fill,
+      ).toBeUndefined();
+      expect(table?.dataset.officeTableFill).toBe('#ffcc00');
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('imports bidiVisual-only w:tblPrChange as a reviewable table-formatting change', async () => {
     const source = await tableDocxWithBidiVisualChange({
       prior: true,
@@ -581,6 +675,67 @@ describe('DOCX table-formatting revisions', () => {
     }
   });
 });
+
+
+async function tableDocxWithSolidFillChange(options: {
+  prior: string | null;
+  current: string | null;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const table = descendants(document, 'tbl')[0];
+  const properties =
+    directChild(table, 'tblPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+      table.insertBefore(created, table.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) => child.localName === 'shd' || child.localName === 'tblPrChange',
+  )) {
+    existing.remove();
+  }
+  if (options.current) {
+    const shading = document.createElementNS(WORD_NAMESPACE, 'w:shd');
+    shading.setAttributeNS(WORD_NAMESPACE, 'w:val', 'clear');
+    shading.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:fill',
+      options.current.replace(/^#/, '').toUpperCase(),
+    );
+    properties.append(shading);
+  }
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:tblPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '41');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-09T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+  if (options.prior) {
+    const shading = document.createElementNS(WORD_NAMESPACE, 'w:shd');
+    shading.setAttributeNS(WORD_NAMESPACE, 'w:val', 'clear');
+    shading.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:fill',
+      options.prior.replace(/^#/, '').toUpperCase(),
+    );
+    prior.append(shading);
+  }
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
 
 async function tableDocxWithBidiVisualChange(options: {
   prior: boolean;

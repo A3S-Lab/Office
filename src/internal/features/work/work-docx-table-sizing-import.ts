@@ -1,3 +1,4 @@
+import { normalizeTableColor } from './work-document-table-borders';
 import {
   DEFAULT_DOCUMENT_TABLE_CELL_MARGINS,
   DEFAULT_DOCUMENT_TABLE_GEOMETRY,
@@ -42,6 +43,7 @@ export interface ImportedDocxTableSizingMarker {
   propertyRevisionOmml?: string;
   formattingChange?: SupportedDocxTableFormattingChange;
   bidiVisual?: boolean;
+  fill?: string;
 }
 
 export interface ImportedDocxTableSizingMarkers {
@@ -94,6 +96,9 @@ export function markDocxTableSizing(
       ...(importedTableBidiVisual(tableProperties)
         ? { bidiVisual: true }
         : {}),
+      ...(importedTableFill(tableProperties)
+        ? { fill: importedTableFill(tableProperties)! }
+        : {}),
     });
   }
   return { tables };
@@ -128,6 +133,9 @@ export function applyImportedDocxTableSizingMarkers(
         if (sizing.bidiVisual) {
           table.dataset.officeTableBidiVisual = 'true';
         }
+        if (sizing.fill) {
+          table.dataset.officeTableFill = sizing.fill;
+        }
         if (sizing.columnWidths.length) {
           applyColumnWidths(table, sizing.columnWidths);
         }
@@ -145,6 +153,25 @@ export function hasImportedDocxTableSizingMarkers(
   markers: ImportedDocxTableSizingMarkers,
 ): boolean {
   return markers.tables.length > 0;
+}
+
+function importedTableFill(
+  properties: Element | null | undefined,
+): string | null {
+  if (!properties) return null;
+  const element = directChild(properties, 'shd');
+  if (!element) return null;
+  const fill = attribute(element, 'fill')?.trim() ?? '';
+  if (!/^[0-9A-Fa-f]{6}$/.test(fill)) return null;
+  const val = attribute(element, 'val');
+  if (
+    val !== null &&
+    val !== '' &&
+    !['clear', 'nil', 'none'].includes(val.trim().toLowerCase())
+  ) {
+    return null;
+  }
+  return normalizeTableColor(`#${fill}`);
 }
 
 function importedTableBidiVisual(

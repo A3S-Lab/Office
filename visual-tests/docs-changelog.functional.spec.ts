@@ -9,16 +9,16 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(66);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.88.0');
+  await expect(cards).toHaveCount(67);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.89.0');
   await expect(cards.first()).toContainText(
-    'Writer 让节 titlePg 修订可审阅',
+    'Writer 让表纯色填充修订可审阅',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
-  await expect(releaseCard('0.88.0')).toContainText('首页不同');
-  await expect(releaseCard('0.88.0')).toContainText('实时修订跟踪');
-  await expect(releaseCard('0.88.0')).toContainText('不透明路径保持失败闭合');
+  await expect(releaseCard('0.89.0')).toContainText('表纯色填充');
+  await expect(releaseCard('0.89.0')).toContainText('实时修订跟踪');
+  await expect(releaseCard('0.89.0')).toContainText('不透明路径保持失败闭合');
   await expect(releaseCard('0.78.0')).toContainText('可审阅的属性修订');
   await expect(releaseCard('0.78.0')).toContainText('段落标记与移动保真');
   await expect(releaseCard('0.78.0')).toContainText('可搜索 PDF 矢量文本');

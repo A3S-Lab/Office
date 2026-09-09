@@ -19,9 +19,12 @@ const TWIPS_PER_PIXEL = 1440 / 96;
 export class DocxTableFormattingChangePatchCollector {
   readonly patches: Array<DocxTableFormattingChangePatch | null> = [];
   readonly bidiVisual: boolean[] = [];
+  readonly fills: Array<string | null> = [];
 
   record(element: HTMLTableElement, id: number): void {
     this.bidiVisual.push(element.dataset.officeTableBidiVisual === 'true');
+    const fill = element.dataset.officeTableFill?.trim() ?? '';
+    this.fills.push(/^#[0-9A-Fa-f]{6}$/i.test(fill) ? fill.toLowerCase() : null);
     if (
       element.dataset.changeKind !== 'table-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -50,8 +53,9 @@ export async function patchDocxTableFormattingChanges(
   buffer: ArrayBuffer,
   patches: readonly (DocxTableFormattingChangePatch | null)[],
   bidiVisual: readonly boolean[] = [],
+  fills: readonly (string | null)[] = [],
 ): Promise<ArrayBuffer> {
-  if (!patches.some(Boolean) && !bidiVisual.some(Boolean)) return buffer;
+  if (!patches.some(Boolean) && !bidiVisual.some(Boolean) && !fills.some(Boolean)) return buffer;
   if (patches.filter(Boolean).length > MAX_TABLE_FORMATTING_CHANGE_PATCHES) {
     throw new Error('Document exceeds the table-formatting revision limit.');
   }
@@ -73,12 +77,16 @@ export async function patchDocxTableFormattingChanges(
   for (const table of tables) {
     const patch = patches[index] ?? null;
     const tableBidiVisual = bidiVisual[index] === true;
+    const tableFill = fills[index] ?? null;
     index += 1;
     if (patch) {
       setTableFormattingChange(document, table, patch);
       changed = true;
     }
     if (setTableBidiVisual(document, table, tableBidiVisual)) {
+      changed = true;
+    }
+    if (setTableFill(document, table, tableFill)) {
       changed = true;
     }
   }
@@ -90,6 +98,11 @@ export async function patchDocxTableFormattingChanges(
   if (bidiVisual.length && bidiVisual.length !== patches.length) {
     throw new Error(
       `DOCX table bidiVisual patch count mismatch (${bidiVisual.length} flags, ${patches.length} tables).`,
+    );
+  }
+  if (fills.length && fills.length !== patches.length) {
+    throw new Error(
+      `DOCX table fill patch count mismatch (${fills.length} fills, ${patches.length} tables).`,
     );
   }
   if (changed) {
@@ -152,8 +165,47 @@ function setTableFormattingChange(
     }
     prior.append(bidiVisual);
   }
+  if (formatting.fill !== undefined) {
+    const shading = document.createElementNS(WORD_NAMESPACE, 'w:shd');
+    shading.setAttributeNS(WORD_NAMESPACE, 'w:val', 'clear');
+    shading.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:fill',
+      formatting.fill.replace(/^#/, '').toUpperCase(),
+    );
+    prior.append(shading);
+  }
   change.append(prior);
   properties.append(change);
+}
+
+function setTableFill(
+  document: Document,
+  table: Element,
+  fill: string | null,
+): boolean {
+  let properties = directChild(table, 'tblPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    if (!fill) return false;
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+    table.insertBefore(properties, table.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'shd' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (!fill) return true;
+  const shading = document.createElementNS(WORD_NAMESPACE, 'w:shd');
+  shading.setAttributeNS(WORD_NAMESPACE, 'w:val', 'clear');
+  shading.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:fill',
+    fill.replace(/^#/, '').toUpperCase(),
+  );
+  properties.append(shading);
+  return true;
 }
 
 function setTableBidiVisual(

@@ -6,6 +6,7 @@ import {
   serializeDocumentTableFormatting,
   type DocumentTableFormattingSnapshot,
 } from './work-document-table-format-changes';
+import { normalizeTableColor } from './work-document-table-borders';
 
 interface DocumentTableFormattingTrackingOptions {
   createChange: () => WorkDocumentChangeIdentity;
@@ -13,7 +14,7 @@ interface DocumentTableFormattingTrackingOptions {
 
 /**
  * When track-changes is on, table layout / alignment / preferred-width /
- * indent / default cell-margin / bidiVisual edits become reviewable
+ * indent / default cell-margin / bidiVisual / solid-fill edits become reviewable
  * `table-formatting` revisions.
  *
  * Layout-mode switches (`setDocumentTableLayoutMode`) also rewrite cell
@@ -75,6 +76,15 @@ function geometryFormatting(
     cellMargins: geometry.cellMargins,
     bidiVisual:
       typeof node.attrs.bidiVisual === 'boolean' ? node.attrs.bidiVisual : false,
+    ...(normalizeTableColor(
+      typeof node.attrs.fill === 'string' ? node.attrs.fill : null,
+    )
+      ? {
+          fill: normalizeTableColor(
+            typeof node.attrs.fill === 'string' ? node.attrs.fill : null,
+          )!,
+        }
+      : {}),
   });
 }
 
@@ -125,6 +135,7 @@ function tableSnapshotIgnoringGeometry(node: ProseMirrorNode): unknown {
   delete attrs.geometry;
   delete attrs.layoutMode;
   delete attrs.bidiVisual;
+  delete attrs.fill;
   delete attrs.tableChangeKind;
   delete attrs.tableChangeId;
   delete attrs.tableChangeAuthor;

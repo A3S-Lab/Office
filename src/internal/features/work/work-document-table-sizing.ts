@@ -205,6 +205,20 @@ export const DocumentTable = Table.extend({
               ? { 'data-office-table-bidi-visual': 'false' }
               : {},
       },
+      fill: {
+        default: null,
+        parseHTML: (element: HTMLElement) => {
+          const fill = element.dataset.officeTableFill?.trim() ?? '';
+          return /^#[0-9A-Fa-f]{6}$/i.test(fill) ? fill.toLowerCase() : null;
+        },
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const fill =
+            typeof attributes.fill === 'string' ? attributes.fill.trim() : '';
+          return /^#[0-9A-Fa-f]{6}$/i.test(fill)
+            ? { 'data-office-table-fill': fill.toLowerCase() }
+            : {};
+        },
+      },
       floatOmml: {
         default: null,
         parseHTML: (element: HTMLElement) =>

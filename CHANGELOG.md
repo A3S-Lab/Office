@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.89.0 - 2026-09-09
+
+### Writer
+
+- Relationship-free `w:tblPrChange` priors that include solid direct-color `w:shd`
+  are now reviewable as `table-formatting` (`fill`) with accept/reject, live
+  track-changes, and native export (including current-table `w:shd` on DOCX
+  write). Broader table property sets remain opaque or fail-closed; opaque
+  fixtures stay on `tblLook`.
+
 ## 0.88.0 - 2026-09-09
 
 ### Writer

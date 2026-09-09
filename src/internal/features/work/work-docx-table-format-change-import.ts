@@ -17,6 +17,7 @@ import {
   xmlAttributeLocalName,
   xmlAttributeNamespace,
 } from './work-docx-settings-xml';
+import { normalizeTableColor } from './work-document-table-borders';
 import { attribute, directChildren } from './work-ooxml-package';
 
 const MAX_REVISION_DATE_LENGTH = 64;
@@ -28,6 +29,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tblCellMar',
   'tblLayout',
   'bidiVisual',
+  'shd',
 ]);
 const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
 const RELATIONSHIP_NAMESPACES = new Set([
@@ -138,6 +140,7 @@ function supportedTableFormattingChange(
   let indent: number | undefined;
   let cellMargins: DocumentTableCellMarginOverrides | undefined;
   let bidiVisual: boolean | undefined;
+  let fill: string | undefined;
   for (const child of children) {
     if (child.localName === 'tblLayout') {
       const value = normalizeDocumentTableLayoutAlgorithm(
@@ -175,6 +178,12 @@ function supportedTableFormattingChange(
     }
     if (child.localName === 'bidiVisual') {
       bidiVisual = onOffValue(child);
+      continue;
+    }
+    if (child.localName === 'shd') {
+      const value = solidShadingFill(child);
+      if (!value) return null;
+      fill = value;
     }
   }
   const snapshot = normalizeDocumentTableFormattingSnapshot({
@@ -184,6 +193,7 @@ function supportedTableFormattingChange(
     ...(indent !== undefined ? { indent } : {}),
     ...(cellMargins ? { cellMargins } : {}),
     ...(bidiVisual !== undefined ? { bidiVisual } : {}),
+    ...(fill ? { fill } : {}),
   });
   if (!snapshot) return null;
   const date = normalizeRevisionDate(rawDate);
@@ -336,4 +346,38 @@ function normalizeRevisionDate(value: string | null): string {
   if (!value) return '';
   const time = Date.parse(value);
   return Number.isFinite(time) ? new Date(time).toISOString() : '';
+}
+
+const SOLID_SHADING_VALUES = new Set(['clear', 'nil', 'none', '']);
+
+function solidShadingFill(element: Element): string | null {
+  const namespace = element.namespaceURI;
+  if (!namespace) return null;
+  const attributes = Array.from(element.attributes).filter(
+    (candidate) => xmlAttributeNamespace(element, candidate) === namespace,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if (
+    names.has('themeFill') ||
+    names.has('themeFillTint') ||
+    names.has('themeFillShade') ||
+    names.has('themeColor') ||
+    names.has('color') ||
+    names.has('themeTint') ||
+    names.has('themeShade')
+  ) {
+    return null;
+  }
+  if (![...names].every((name) => name === 'val' || name === 'fill')) {
+    return null;
+  }
+  const val = attribute(element, 'val');
+  if (val !== null && !SOLID_SHADING_VALUES.has(val.trim().toLowerCase())) {
+    return null;
+  }
+  const fill = attribute(element, 'fill')?.trim() ?? '';
+  if (!/^[0-9A-Fa-f]{6}$/.test(fill)) return null;
+  return normalizeTableColor(`#${fill}`);
 }

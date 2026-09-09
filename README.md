@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.88.0` makes section titlePg / differentFirstPage revisions reviewable:
+Version `0.89.0` makes table solid shading (fill) revisions reviewable:
 
-- **Different first page** — relationship-free `titlePg` priors become
-  `section-formatting` with accept/reject, live track-changes, and native DOCX
-  export (including current-section write).
-- **Boundary** — broader `sectPr` shapes stay opaque metadata or fail-closed;
-  opaque section fixtures stay on unequal-width `cols`.
+- **Table solid fill** — relationship-free solid `shd` priors become
+  `table-formatting` with accept/reject, live track-changes, and native DOCX
+  export (including current-table write).
+- **Boundary** — broader `tblPr` / `tcPr` / `trPr` shapes stay opaque
+  metadata or fail-closed; opaque table fixtures stay on `tblLook`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

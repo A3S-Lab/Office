@@ -11,6 +11,7 @@ import {
   type DocumentTablePreferredWidth,
   DEFAULT_DOCUMENT_TABLE_CELL_MARGINS,
 } from './work-document-table-geometry';
+import { normalizeTableColor } from './work-document-table-borders';
 
 export const DOCUMENT_TABLE_CHANGE_ATTRIBUTES = [
   'tableChangeKind',
@@ -23,7 +24,7 @@ export const DOCUMENT_TABLE_CHANGE_ATTRIBUTES = [
 /**
  * Prior snapshot for reviewable table-property revisions.
  * At least one of layout, alignment, preferred width, indent, cellMargins,
- * or bidiVisual must be present.
+ * bidiVisual, or fill must be present.
  */
 export interface DocumentTableFormattingSnapshot {
   layout?: DocumentTableLayoutAlgorithm;
@@ -32,6 +33,7 @@ export interface DocumentTableFormattingSnapshot {
   indent?: number;
   cellMargins?: DocumentTableCellMarginOverrides;
   bidiVisual?: boolean;
+  fill?: string;
 }
 
 const MAX_TABLE_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -51,12 +53,13 @@ export function serializeDocumentTableFormatting(
     indent?: unknown;
     cellMargins?: unknown;
     bidiVisual?: unknown;
+    fill?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentTableFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, or bidiVisual.',
+      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, bidiVisual, or fill.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -92,7 +95,8 @@ export function parseDocumentTableFormatting(
         key !== 'width' &&
         key !== 'indent' &&
         key !== 'cellMargins' &&
-        key !== 'bidiVisual',
+        key !== 'bidiVisual' &&
+        key !== 'fill',
     )
   ) {
     return null;
@@ -111,6 +115,7 @@ export function normalizeDocumentTableFormattingSnapshot(
     indent?: unknown;
     cellMargins?: unknown;
     bidiVisual?: unknown;
+    fill?: unknown;
   },
 ): DocumentTableFormattingSnapshot | null {
   const snapshot: DocumentTableFormattingSnapshot = {};
@@ -145,12 +150,18 @@ export function normalizeDocumentTableFormattingSnapshot(
     if (typeof attributes.bidiVisual !== 'boolean') return null;
     snapshot.bidiVisual = attributes.bidiVisual;
   }
+  if ('fill' in attributes && attributes.fill !== undefined) {
+    const fill = normalizeTableFill(attributes.fill);
+    if (!fill) return null;
+    snapshot.fill = fill;
+  }
   return snapshot.layout ||
     snapshot.alignment ||
     snapshot.width ||
     snapshot.indent !== undefined ||
     snapshot.cellMargins ||
-    snapshot.bidiVisual !== undefined
+    snapshot.bidiVisual !== undefined ||
+    snapshot.fill
     ? snapshot
     : null;
 }
@@ -200,6 +211,9 @@ export function restoredDocumentTableAttributes(
   if (formatting.bidiVisual !== undefined) {
     next.bidiVisual = formatting.bidiVisual;
   }
+  if (formatting.fill !== undefined) {
+    next.fill = formatting.fill;
+  }
   return next;
 }
 
@@ -220,6 +234,7 @@ function orderedSnapshot(
     ordered.cellMargins = orderedMargins(snapshot.cellMargins);
   }
   if (snapshot.bidiVisual !== undefined) ordered.bidiVisual = snapshot.bidiVisual;
+  if (snapshot.fill !== undefined) ordered.fill = snapshot.fill;
   return ordered;
 }
 
@@ -244,4 +259,9 @@ function normalizeTableIndent(value: unknown): number | null {
     return null;
   }
   return Math.round(numeric * 100) / 100;
+}
+
+function normalizeTableFill(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  return normalizeTableColor(value);
 }
