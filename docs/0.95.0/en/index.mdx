@@ -1,0 +1,87 @@
+---
+title: A3S Office 0.95.0 documentation
+description: Embed five host-owned Office editors, collaborate in real time, and automate real Office files from coding agents.
+---
+
+# A3S Office 0.95.0 documentation
+
+This is the frozen documentation index for A3S Office 0.95.0. Use it to find
+integration guides, API references, and engineering notes.
+
+
+## Start here
+
+| Goal | Documentation |
+| --- | --- |
+| Mount the first controlled editor | [Getting started](./guide/index.html) |
+| Choose React, Vue, or Web Component | [Component integration](./components/index.html) |
+| Configure an editor and its content model | [Editor APIs](./components/document.html) |
+| Add host actions or TipTap extensions | [Extension model](./components/extensions.html) |
+| Let people and agents edit one file live | [Real-time collaboration](./components/collaboration.html) |
+| Deploy an authenticated, persistent backend | [A3S Boot collaboration server](./components/collaboration-server.html) |
+| Process Office files from a coding agent | [CLI and Skill](./automation/index.html) |
+| See what changed in recent releases | [What's new](./changelog.html) |
+
+## Editor components
+
+| File type | Public component | Content model and implementation |
+| --- | --- | --- |
+| Document | [`DocumentEditor`](./components/document.html) | `DocumentContent`; TipTap / ProseMirror and the A3S Office layout kernel |
+| Markdown | [`MarkdownEditor`](./components/markdown.html) | `MarkdownContent`; visual editing with a controlled source |
+| Spreadsheet | [`SpreadsheetEditor`](./components/spreadsheet.html) | `SpreadsheetContent`; sparse workbook and calculation kernel |
+| Presentation | [`PresentationEditor`](./components/presentation.html) | `PresentationContent`; scene graph with on-demand text editing |
+| PDF | [`PdfViewer`](./components/pdf.html) | `Blob` input/output; PDFium WebAssembly and annotation controllers |
+
+All framework bindings share the controlled-component contract. The host owns
+content, persistence, permissions, and lifecycle; editors report state changes
+through typed properties and events.
+
+## Real-time collaboration
+
+The collaboration protocol covers all five editors and all three framework
+bindings. Browsers use Yjs and native agents use Yrs. The host owns rooms,
+identity, authorization, providers, offline buffering, and persistence.
+
+- [Collaboration protocol and state boundaries](./components/collaboration.html)
+- [Complete A3S Boot backend example](./components/collaboration-server.html)
+
+## What's new on `main` (0.95.0)
+
+Writer Phase 0 makes table tblBorders reviewable:
+
+- direct-color `tblBorders` imports as reviewable `table-formatting` (`borders`) with
+  accept/reject, live track-changes, and native DOCX export.
+- Broader table property sets stay opaque or fail-closed
+  (`tblCaption` and other unsupported priors).
+
+Full product timeline: [What's new](./changelog.html). Engineering detail:
+repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).
+
+## Explore by surface
+
+Curated entry points for durable capabilities. Prefer these over scanning
+every historical release note.
+
+| Surface | Start with |
+| --- | --- |
+| Document | [Whole-paragraph mark revisions](./components/document.html#whole-paragraph-mark-revisions) · [Move revisions](./components/document.html#move-revisions) · [Compare moves](./components/document.html#document-compare-and-combine) · [Numbering revisions](./components/document.html#ordered-list-numbering-revisions) · [OpenType typography](./components/document.html#native-opentype-typography) · [Content controls](./components/document.html#built-in-content-controls) · [Live fields](./components/document.html#common-live-fields) · [Text boxes and connectors](./components/document.html#built-in-editable-text-boxes) · [Picture properties](./components/document.html#built-in-picture-properties) · [Selection toolbar](./components/document.html#selection-toolbar-controls) |
+| Spreadsheet | [Dependent dropdowns](./components/spreadsheet.html#dependent-dropdown-lists) · [Formula conditional formatting](./components/spreadsheet.html#formula-conditional-formatting) · [Custom formulas](./components/spreadsheet.html#custom-formulas) · [Error-alert branches](./components/spreadsheet.html#office-style-error-alert-branches) · [1900/1904 date systems](./components/spreadsheet.html#xlsx-1904-date-system-retention) |
+| Presentation | [Entrance and exit animations](./components/presentation.html#entrance-and-exit-animations) |
+| PDF | [Page organization](./components/pdf.html#page-organization) |
+| Automation | [A3S Test gates, template discovery, and operator workflows](./automation/index.html) |
+| Releases | [Version-aware What's new](./changelog.html) |
+
+## Engineering references
+
+| Topic | Reference |
+| --- | --- |
+| Browser components, Workers, and WebAssembly boundaries | [Browser editor architecture](./browser-editor-architecture.html) |
+| Rust core, CLI, MCP, and local files | [Native Office engine](./native-office-engine.html) |
+| Quality gates, performance metrics, and compatibility | [Editor quality roadmap](./editor-quality-roadmap.html) |
+| Commands, selectors, and JSON protocol | [CLI reference](./cli-reference.html) |
+
+## Languages and versions
+
+Use the language and version controls in the page header to switch between
+Simplified Chinese, English, and frozen releases. Search remains scoped to the
+active language and version so API results from different releases are never mixed.
