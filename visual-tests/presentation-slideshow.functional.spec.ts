@@ -210,7 +210,9 @@ test('Slideshow blank screen follows WPS B and W shortcuts', async ({
   expect(browserErrors).toEqual([]);
 });
 
-test('Slideshow digit+Enter jumps like WPS/PowerPoint', async ({ page }, testInfo) => {
+test('Slideshow digit+Enter jumps like WPS/PowerPoint', async ({
+  page,
+}, testInfo) => {
   const browserErrors: string[] = [];
   const consoleMessages: string[] = [];
   page.on('pageerror', (error) => browserErrors.push(error.message));
@@ -270,9 +272,10 @@ test('Slideshow Home / End jump like WPS/PowerPoint', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: '幻灯片放映' });
   const player = dialog.locator('.work-presentation-player');
   await expect(player).toHaveAttribute('data-slide-index', '0');
-  await expect(
-    player.locator('button[aria-label="上一张"]'),
-  ).toHaveAttribute('aria-keyshortcuts', 'ArrowLeft ArrowUp PageUp Home');
+  await expect(player.locator('button[aria-label="上一张"]')).toHaveAttribute(
+    'aria-keyshortcuts',
+    'ArrowLeft ArrowUp PageUp Home',
+  );
   await expect(player.locator('button[aria-label="下一张"]')).toHaveAttribute(
     'aria-keyshortcuts',
     'ArrowRight ArrowDown PageDown Space End',

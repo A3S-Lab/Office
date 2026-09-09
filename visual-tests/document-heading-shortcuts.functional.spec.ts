@@ -63,9 +63,9 @@ test('Writer steps heading styles with WPS Ctrl+Alt+1 / Ctrl+Alt+2 / Ctrl+Alt+3'
   await editor.press('Control+Alt+Digit2');
   await expect(editor.locator('h2', { hasText: '用一句话说明' })).toBeVisible();
   if (await headingOne.isVisible()) {
-    await expect(gallery.locator('label[data-document-style="h2"]')).toHaveClass(
-      /active/,
-    );
+    await expect(
+      gallery.locator('label[data-document-style="h2"]'),
+    ).toHaveClass(/active/);
   } else {
     await expect(styleSelect).toHaveText('标题 2');
   }
@@ -73,9 +73,9 @@ test('Writer steps heading styles with WPS Ctrl+Alt+1 / Ctrl+Alt+2 / Ctrl+Alt+3'
   await editor.press('Control+Alt+Digit3');
   await expect(editor.locator('h3', { hasText: '用一句话说明' })).toBeVisible();
   if (await headingOne.isVisible()) {
-    await expect(gallery.locator('label[data-document-style="h3"]')).toHaveClass(
-      /active/,
-    );
+    await expect(
+      gallery.locator('label[data-document-style="h3"]'),
+    ).toHaveClass(/active/);
   } else {
     await expect(styleSelect).toHaveText('标题 3');
   }

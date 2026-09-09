@@ -18,7 +18,9 @@ test('Writer steps line spacing with WPS Ctrl+1 / Ctrl+5 / Ctrl+2', async ({
   await waitForDocumentFixture(page);
 
   const textRibbon = page.getByRole('region', { name: '文字功能区' });
-  await expect(textRibbon.getByRole('combobox', { name: '行距' })).toHaveAttribute(
+  await expect(
+    textRibbon.getByRole('combobox', { name: '行距' }),
+  ).toHaveAttribute(
     'aria-keyshortcuts',
     'Control+1 Meta+1 Control+5 Meta+5 Control+2 Meta+2',
   );
@@ -32,10 +34,16 @@ test('Writer steps line spacing with WPS Ctrl+1 / Ctrl+5 / Ctrl+2', async ({
   await expect(paragraph).toHaveAttribute('style', /line-height:\s*1\.5/);
 
   await editor.press('Control+Digit2');
-  await expect(paragraph).toHaveAttribute('style', /line-height:\s*2(?:;|$|\s)/);
+  await expect(paragraph).toHaveAttribute(
+    'style',
+    /line-height:\s*2(?:;|$|\s)/,
+  );
 
   await editor.press('Control+Digit1');
-  await expect(paragraph).toHaveAttribute('style', /line-height:\s*1(?:;|$|\s)/);
+  await expect(paragraph).toHaveAttribute(
+    'style',
+    /line-height:\s*1(?:;|$|\s)/,
+  );
   await expect(editor).toBeFocused();
 
   await page.screenshot({

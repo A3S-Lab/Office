@@ -67,10 +67,9 @@ test('Writer keeps WPS numeric fields live, labelled, and responsive', async ({
     /show-field-codes/,
   );
   await page.getByRole('tab', { name: '视图' }).click();
-  await expect(page.getByRole('button', { name: '切换域代码' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  await expect(
+    page.getByRole('button', { name: '切换域代码' }),
+  ).toHaveAttribute('aria-pressed', 'true');
   await editor.focus();
   await page.keyboard.press('F9');
   await expect(editor).toBeFocused();
@@ -95,7 +94,9 @@ test('Writer keeps WPS numeric fields live, labelled, and responsive', async ({
     editor.locator('.work-document-field[data-field-kind="page"]'),
   ).toHaveCount(0);
   // Unlinked result is plain text inside the paragraph (no field span to match exactly).
-  await expect(editor).toContainText(new RegExp(`Page:\\s*${escapeRegExp(pageDisplay)}\\b`));
+  await expect(editor).toContainText(
+    new RegExp(`Page:\\s*${escapeRegExp(pageDisplay)}\\b`),
+  );
   await expect(totalPagesField).toHaveAttribute('data-field-display', 'A');
   await expect(editor).toBeFocused();
   await page.screenshot({

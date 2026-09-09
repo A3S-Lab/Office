@@ -375,7 +375,9 @@ test('Markdown applies italic with WPS Ctrl+I in source editing', async ({
   await expect(source).toBeFocused();
 });
 
-test('Markdown ribbon collapses with WPS Ctrl+F1', async ({ page }, testInfo) => {
+test('Markdown ribbon collapses with WPS Ctrl+F1', async ({
+  page,
+}, testInfo) => {
   const browserErrors: string[] = [];
   page.on('pageerror', (error) => browserErrors.push(error.message));
   page.on('console', (message) => {

@@ -115,10 +115,7 @@ test('PDF toolbar shortcuts stay inside the editor command surface', async ({
   await waitForPdfFixture(page);
 
   const search = page.getByRole('searchbox', { name: '在 PDF 中搜索' });
-  await expect(search).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Control+F Meta+F',
-  );
+  await expect(search).toHaveAttribute('aria-keyshortcuts', 'Control+F Meta+F');
   await page.getByRole('button', { name: '选择' }).focus();
   await page.keyboard.press('Control+f');
   await expect(search).toBeFocused();
@@ -301,7 +298,10 @@ test('PDF zoom follows WPS Ctrl+1 / Ctrl+2 / Ctrl+0 shortcuts', async ({
     'aria-keyshortcuts',
     'Control+1 Meta+1',
   );
-  await expect(fitPage).toHaveAttribute('aria-keyshortcuts', 'Control+0 Meta+0');
+  await expect(fitPage).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+0 Meta+0',
+  );
   await expect(fitWidth).toHaveAttribute(
     'aria-keyshortcuts',
     'Control+2 Meta+2',

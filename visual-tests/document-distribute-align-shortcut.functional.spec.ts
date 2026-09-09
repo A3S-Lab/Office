@@ -30,7 +30,10 @@ test('Writer steps distributed alignment with WPS Ctrl+Shift+J', async ({
   await selectBlockText(paragraph);
 
   await editor.press('Control+Shift+j');
-  await expect(paragraph).toHaveAttribute('data-office-text-align', 'distribute');
+  await expect(paragraph).toHaveAttribute(
+    'data-office-text-align',
+    'distribute',
+  );
   await expect(paragraph).toHaveAttribute('style', /text-align:\s*justify/);
   await expect(distributeButton).toHaveClass(/active/);
   await expect(editor).toBeFocused();

@@ -49,7 +49,11 @@ test('Writer applies Normal / 正文 style with WPS Ctrl+Shift+N', async ({
   await selectBlockText(headingTwo);
   // Chrome steals real Ctrl+Shift+N (new window); deliver the chord to the
   // Writer capture listener. ACL/CDP covers the live key path.
-  await dispatchWriterShortcut(page, { key: 'n', code: 'KeyN', shiftKey: true });
+  await dispatchWriterShortcut(page, {
+    key: 'n',
+    code: 'KeyN',
+    shiftKey: true,
+  });
   if (await normalStyle.isVisible()) {
     await expect(normalStyle).toHaveClass(/active/);
   } else {
@@ -81,8 +85,9 @@ async function dispatchWriterShortcut(
   page: Page,
   event: { key: string; code: string; shiftKey?: boolean },
 ): Promise<void> {
-  await page.locator('.work-document-editable .ProseMirror').evaluate(
-    (element, detail) => {
+  await page
+    .locator('.work-document-editable .ProseMirror')
+    .evaluate((element, detail) => {
       element.dispatchEvent(
         new KeyboardEvent('keydown', {
           key: detail.key,
@@ -93,7 +98,5 @@ async function dispatchWriterShortcut(
           cancelable: true,
         }),
       );
-    },
-    event,
-  );
+    }, event);
 }

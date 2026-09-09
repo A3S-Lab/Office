@@ -30,9 +30,7 @@ test('documentation changelog stays scannable, localized, and version-aware', as
   await expect(releaseCard('0.77.0')).toContainText(
     'Presentation 与 Spreadsheet 界面',
   );
-  await expect(releaseCard('0.77.0')).toContainText(
-    'Markdown 与 PDF 键盘证据',
-  );
+  await expect(releaseCard('0.77.0')).toContainText('Markdown 与 PDF 键盘证据');
   await expect(releaseCard('0.60.0')).toContainText(
     'WPS UI 参考升级为类型化证据',
   );

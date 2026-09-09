@@ -11,21 +11,20 @@ test('Presentation manages slides with WPS Ctrl+M / Ctrl+D / Delete', async ({
 
   await openPresentationFixture(page);
 
-  await expect(page.getByRole('button', { name: '新建幻灯片' })).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Control+M Meta+Shift+N',
-  );
-  await expect(page.getByRole('button', { name: '复制幻灯片' })).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Control+D Meta+D',
-  );
-  await expect(page.getByRole('button', { name: '删除幻灯片' })).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Delete Backspace',
-  );
+  await expect(
+    page.getByRole('button', { name: '新建幻灯片' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+M Meta+Shift+N');
+  await expect(
+    page.getByRole('button', { name: '复制幻灯片' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+D Meta+D');
+  await expect(
+    page.getByRole('button', { name: '删除幻灯片' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Delete Backspace');
 
   const strip = page.locator('.work-slide-strip');
-  await expect(strip.locator('[data-slide-thumbnail][data-slide-index="2"]')).toBeVisible();
+  await expect(
+    strip.locator('[data-slide-thumbnail][data-slide-index="2"]'),
+  ).toBeVisible();
 
   const active = strip.locator('[data-slide-thumbnail].active');
   await active.click();

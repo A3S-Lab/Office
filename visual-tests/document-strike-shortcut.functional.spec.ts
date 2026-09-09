@@ -37,7 +37,9 @@ test('Writer toggles double strikethrough with WPS Ctrl+Shift+X', async ({
   await expect(
     title.locator('s[data-office-strike-style="double"]'),
   ).toHaveCount(0);
-  await expect(page.locator('.work-document-editable .ProseMirror')).toBeFocused();
+  await expect(
+    page.locator('.work-document-editable .ProseMirror'),
+  ).toBeFocused();
 
   await page.screenshot({
     path: testInfo.outputPath(

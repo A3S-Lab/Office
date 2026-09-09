@@ -44,9 +44,11 @@ test('Writer moves paragraphs with WPS Alt+Shift+ArrowUp / ArrowDown', async ({
 });
 
 async function paragraphOrder(editor: Locator): Promise<string[]> {
-  return editor.locator('p, h1, h2, h3').evaluateAll((nodes) =>
-    nodes
-      .map((node) => (node.textContent ?? '').trim())
-      .filter((text) => text.length > 0),
-  );
+  return editor
+    .locator('p, h1, h2, h3')
+    .evaluateAll((nodes) =>
+      nodes
+        .map((node) => (node.textContent ?? '').trim())
+        .filter((text) => text.length > 0),
+    );
 }

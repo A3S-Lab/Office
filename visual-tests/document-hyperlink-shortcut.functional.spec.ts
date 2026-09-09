@@ -24,7 +24,9 @@ test('Writer opens the hyperlink dialog with WPS Ctrl+K', async ({
     'Control+K Meta+K',
   );
 
-  const paragraph = page.locator('.work-document-editable .ProseMirror p').first();
+  const paragraph = page
+    .locator('.work-document-editable .ProseMirror p')
+    .first();
   await paragraph.click();
   await page.keyboard.press('Home');
   await page.keyboard.press('Shift+End');

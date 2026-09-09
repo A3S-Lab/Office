@@ -376,9 +376,9 @@ test('Presentation groups objects with WPS Ctrl+G', async ({ page }) => {
   await expect(group).toBeEnabled();
 
   await page.keyboard.press('Control+g');
-  const groupedPath = await elements.nth(0).getAttribute(
-    'data-slide-element-group-path',
-  );
+  const groupedPath = await elements
+    .nth(0)
+    .getAttribute('data-slide-element-group-path');
   expect(groupedPath).toBeTruthy();
   await expect(elements.nth(1)).toHaveAttribute(
     'data-slide-element-group-path',
@@ -540,9 +540,7 @@ test('Presentation View ribbon toggles speaker notes like WPS 备注', async ({
 
   const editor = page.locator('.work-presentation-editor');
   await expect(editor).toHaveAttribute('data-notes', 'visible');
-  await expect(
-    page.getByRole('textbox', { name: '演讲者备注' }),
-  ).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '演讲者备注' })).toBeVisible();
 
   await page.getByRole('tab', { name: '视图' }).click();
   const notes = page.getByRole('button', { name: '备注', exact: true });
@@ -555,9 +553,7 @@ test('Presentation View ribbon toggles speaker notes like WPS 备注', async ({
 
   await notes.click();
   await expect(editor).toHaveAttribute('data-notes', 'visible');
-  await expect(
-    page.getByRole('textbox', { name: '演讲者备注' }),
-  ).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '演讲者备注' })).toBeVisible();
 });
 
 test('Presentation opens slide menus from the keyboard and preserves tab order', async ({
