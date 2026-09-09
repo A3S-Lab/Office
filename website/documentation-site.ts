@@ -32,6 +32,7 @@ export const DOCUMENTATION_VERSIONS = [
   '0.87.0',
   '0.86.0',
   '0.38.0',
+  '0.1.0',
 ] as const;
 
 export const DOCUMENTATION_REQUIRED_ROUTES = [

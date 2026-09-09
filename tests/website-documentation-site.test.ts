@@ -116,6 +116,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
     '0.87.0',
     '0.86.0',
     '0.38.0',
+    '0.1.0',
   ]);
 });
 
