@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.97.0` makes table tblDescription revisions reviewable:
+Version `0.98.0` makes table tblStyleColBandSize revisions reviewable:
 
-- **Table description** — relationship-free `tblDescription` priors become
-  reviewable `table-formatting` (`description`) with accept/reject, live
+- **Column band size** — relationship-free `tblStyleColBandSize` priors become
+  reviewable `table-formatting` (`colBandSize`) with accept/reject, live
   track-changes, and native DOCX export.
 - **Boundary** — broader `tblPr` shapes stay opaque metadata or fail-closed;
-  opaque table fixtures stay on `tblStyleColBandSize`.
+  opaque table fixtures stay on `tblStyleRowBandSize`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
