@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.100.0 - 2026-09-09
+
 ### Writer
 
 - Relationship-free `w:sectPrChange` priors that include unequal-width `w:cols`

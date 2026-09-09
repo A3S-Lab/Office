@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.99.0` makes table tblStyleRowBandSize revisions reviewable:
+Version `0.100.0` makes unequal-width section cols revisions reviewable:
 
-- **Row band size** — relationship-free `tblStyleRowBandSize` priors become
-  reviewable `table-formatting` (`rowBandSize`) with accept/reject, live
+- **Unequal columns** — relationship-free `sectPrChange` priors with unequal-width
+  `cols` become reviewable `section-formatting` with accept/reject, live
   track-changes, and native DOCX export.
-- **Boundary** — broader `tblPr` shapes stay opaque metadata or fail-closed;
-  opaque table fixtures stay on `tblPrException`.
+- **Boundary** — broader `sectPr` shapes stay opaque metadata or fail-closed;
+  opaque section fixtures stay on `docGrid`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
