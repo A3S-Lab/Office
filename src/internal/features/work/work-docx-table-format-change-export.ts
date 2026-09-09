@@ -8,6 +8,14 @@ import {
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
 import {
+  DOCUMENT_TABLE_FORMATTING_BORDER_EDGES,
+  docxSzFromSnapshotBorderWidth,
+  mapSnapshotBorderStyleToDocx,
+  normalizeDocumentTableFormattingBorders,
+  parseDocumentTableFormattingBordersDataset,
+  type DocumentTableFormattingBorders,
+} from './work-document-table-formatting-borders';
+import {
   documentTableLookBitmask,
   parseDocumentTableLookDataset,
   type DocumentTableLook,
@@ -35,6 +43,7 @@ export class DocxTableFormattingChangePatchCollector {
   readonly overlaps: Array<DocumentTableOverlap | null> = [];
   readonly styleIds: Array<string | null> = [];
   readonly cellSpacings: Array<number | null> = [];
+  readonly borders: Array<DocumentTableFormattingBorders | null> = [];
 
   record(element: HTMLTableElement, id: number): void {
     this.bidiVisual.push(element.dataset.officeTableBidiVisual === 'true');
@@ -52,6 +61,11 @@ export class DocxTableFormattingChangePatchCollector {
     this.cellSpacings.push(
       normalizeDocumentTableCellSpacing(
         element.dataset.officeTableCellSpacing,
+      ),
+    );
+    this.borders.push(
+      parseDocumentTableFormattingBordersDataset(
+        element.dataset.officeTableBorders,
       ),
     );
     if (
@@ -87,6 +101,7 @@ export async function patchDocxTableFormattingChanges(
   overlaps: readonly (DocumentTableOverlap | null)[] = [],
   styleIds: readonly (string | null)[] = [],
   cellSpacings: readonly (number | null)[] = [],
+  borders: readonly (DocumentTableFormattingBorders | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
@@ -95,7 +110,8 @@ export async function patchDocxTableFormattingChanges(
     !looks.some(Boolean) &&
     !overlaps.some(Boolean) &&
     !styleIds.some(Boolean) &&
-    !cellSpacings.some((value) => value !== null && value !== undefined)
+    !cellSpacings.some((value) => value !== null && value !== undefined) &&
+    !borders.some(Boolean)
   ) {
     return buffer;
   }
@@ -125,6 +141,7 @@ export async function patchDocxTableFormattingChanges(
     const tableOverlap = overlaps[index] ?? null;
     const tableStyleId = styleIds[index] ?? null;
     const tableCellSpacing = cellSpacings[index] ?? null;
+    const tableBorders = borders[index] ?? null;
     index += 1;
     if (patch) {
       setTableFormattingChange(document, table, patch);
@@ -146,6 +163,9 @@ export async function patchDocxTableFormattingChanges(
       changed = true;
     }
     if (setTableCellSpacing(document, table, tableCellSpacing)) {
+      changed = true;
+    }
+    if (setTableBorders(document, table, tableBorders)) {
       changed = true;
     }
   }
@@ -182,6 +202,11 @@ export async function patchDocxTableFormattingChanges(
   if (cellSpacings.length && cellSpacings.length !== patches.length) {
     throw new Error(
       `DOCX table cellSpacing patch count mismatch (${cellSpacings.length} cellSpacings, ${patches.length} tables).`,
+    );
+  }
+  if (borders.length && borders.length !== patches.length) {
+    throw new Error(
+      `DOCX table borders patch count mismatch (${borders.length} borders, ${patches.length} tables).`,
     );
   }
   if (changed) {
@@ -266,6 +291,9 @@ function setTableFormattingChange(
   if (formatting.cellSpacing !== undefined) {
     prior.append(createTblCellSpacingElement(document, formatting.cellSpacing));
   }
+  if (formatting.borders) {
+    prior.append(createTblBordersElement(document, formatting.borders));
+  }
   change.append(prior);
   properties.append(change);
 }
@@ -343,6 +371,62 @@ function setTableCellSpacing(
   if (cellSpacing === null) return true;
   properties.append(createTblCellSpacingElement(document, cellSpacing));
   return true;
+}
+
+function setTableBorders(
+  document: Document,
+  table: Element,
+  borders: DocumentTableFormattingBorders | null,
+): boolean {
+  const normalized = normalizeDocumentTableFormattingBorders(borders);
+  let properties = directChild(table, 'tblPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    if (!normalized) return false;
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+    table.insertBefore(properties, table.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblBorders' &&
+      child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (!normalized) return true;
+  properties.append(createTblBordersElement(document, normalized));
+  return true;
+}
+
+function createTblBordersElement(
+  document: Document,
+  borders: DocumentTableFormattingBorders,
+): Element {
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:tblBorders');
+  for (const edge of DOCUMENT_TABLE_FORMATTING_BORDER_EDGES) {
+    const border = borders[edge];
+    if (!border) continue;
+    const child = document.createElementNS(WORD_NAMESPACE, `w:${edge}`);
+    child.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:val',
+      mapSnapshotBorderStyleToDocx(border.style),
+    );
+    child.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:sz',
+      border.style === 'none' ? '0' : docxSzFromSnapshotBorderWidth(border.width),
+    );
+    child.setAttributeNS(WORD_NAMESPACE, 'w:space', '0');
+    child.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:color',
+      border.style === 'none'
+        ? 'auto'
+        : border.color.replace(/^#/, '').toUpperCase(),
+    );
+    element.append(child);
+  }
+  return element;
 }
 
 function createTblCellSpacingElement(

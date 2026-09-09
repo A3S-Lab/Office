@@ -30,9 +30,14 @@ import {
 } from './work-document-table-property-revision';
 import {
   applyDocumentTableFormattingChangeToElement,
+  importedDocxTableFormattingBorders,
   supportedDocxTableFormattingChangeFromProperties,
   type SupportedDocxTableFormattingChange,
 } from './work-docx-table-format-change-import';
+import {
+  serializeDocumentTableFormattingBordersDataset,
+  type DocumentTableFormattingBorders,
+} from './work-document-table-formatting-borders';
 import {
   docxTablePropertySources,
   resolveDocxTableStyleResolver,
@@ -59,6 +64,7 @@ export interface ImportedDocxTableSizingMarker {
   overlap?: DocumentTableOverlap;
   styleId?: string;
   cellSpacing?: number;
+  borders?: DocumentTableFormattingBorders;
 }
 
 export interface ImportedDocxTableSizingMarkers {
@@ -126,6 +132,9 @@ export function markDocxTableSizing(
       ...(importedTableCellSpacing(tableProperties) !== null
         ? { cellSpacing: importedTableCellSpacing(tableProperties)! }
         : {}),
+      ...(importedTableBorders(tableProperties)
+        ? { borders: importedTableBorders(tableProperties)! }
+        : {}),
     });
   }
   return { tables };
@@ -175,6 +184,12 @@ export function applyImportedDocxTableSizingMarkers(
         }
         if (sizing.cellSpacing !== undefined) {
           table.dataset.officeTableCellSpacing = String(sizing.cellSpacing);
+        }
+        if (sizing.borders) {
+          const encoded = serializeDocumentTableFormattingBordersDataset(
+            sizing.borders,
+          );
+          if (encoded) table.dataset.officeTableBorders = encoded;
         }
         if (sizing.columnWidths.length) {
           applyColumnWidths(table, sizing.columnWidths);
@@ -254,6 +269,15 @@ function importedTableCellSpacing(
   return normalizeDocumentTableCellSpacing(
     Math.round(twips * PIXELS_PER_TWIP * 100) / 100,
   );
+}
+
+function importedTableBorders(
+  properties: Element | null | undefined,
+): DocumentTableFormattingBorders | null {
+  if (!properties) return null;
+  const element = directChild(properties, 'tblBorders');
+  if (!element) return null;
+  return importedDocxTableFormattingBorders(element);
 }
 
 function importedTableBidiVisual(

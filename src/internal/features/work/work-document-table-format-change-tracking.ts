@@ -11,6 +11,10 @@ import {
 } from './work-document-table-format-changes';
 import { normalizeTableColor } from './work-document-table-borders';
 import {
+  normalizeDocumentTableFormattingBorders,
+  orderedDocumentTableFormattingBorders,
+} from './work-document-table-formatting-borders';
+import {
   normalizeDocumentTableLook,
   orderedDocumentTableLook,
 } from './work-document-table-look';
@@ -21,7 +25,7 @@ interface DocumentTableFormattingTrackingOptions {
 
 /**
  * When track-changes is on, table layout / alignment / preferred-width /
- * indent / default cell-margin / bidiVisual / solid-fill / tblLook / tblOverlap / tblStyle / tblCellSpacing edits become
+ * indent / default cell-margin / bidiVisual / solid-fill / tblLook / tblOverlap / tblStyle / tblCellSpacing / tblBorders edits become
  * reviewable `table-formatting` revisions.
  *
  * Layout-mode switches (`setDocumentTableLayoutMode`) also rewrite cell
@@ -108,6 +112,13 @@ function geometryFormatting(
           )!,
         }
       : {}),
+    ...(normalizeDocumentTableFormattingBorders(node.attrs.borders)
+      ? {
+          borders: orderedDocumentTableFormattingBorders(
+            normalizeDocumentTableFormattingBorders(node.attrs.borders)!,
+          ),
+        }
+      : {}),
   });
 }
 
@@ -163,6 +174,7 @@ function tableSnapshotIgnoringGeometry(node: ProseMirrorNode): unknown {
   delete attrs.overlap;
   delete attrs.styleId;
   delete attrs.cellSpacing;
+  delete attrs.borders;
   delete attrs.tableChangeKind;
   delete attrs.tableChangeId;
   delete attrs.tableChangeAuthor;

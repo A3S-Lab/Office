@@ -46,15 +46,10 @@ describe('DOCX table property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
-    // tblCellSpacing is reviewable as table-formatting; keep opaque on tblBorders.
-    const borders = document.createElementNS(WORD_NAMESPACE, 'w:tblBorders');
-    const top = document.createElementNS(WORD_NAMESPACE, 'w:top');
-    top.setAttributeNS(WORD_NAMESPACE, 'w:val', 'single');
-    top.setAttributeNS(WORD_NAMESPACE, 'w:sz', '4');
-    top.setAttributeNS(WORD_NAMESPACE, 'w:space', '0');
-    top.setAttributeNS(WORD_NAMESPACE, 'w:color', 'auto');
-    borders.append(top);
-    prior.append(borders);
+    // tblBorders is reviewable as table-formatting; keep opaque on tblCaption.
+    const caption = document.createElementNS(WORD_NAMESPACE, 'w:tblCaption');
+    caption.setAttributeNS(WORD_NAMESPACE, 'val', 'OpaqueKeeper');
+    prior.append(caption);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -106,12 +101,16 @@ describe('DOCX table property-revision preservation', () => {
       id: '7',
       author: 'Reviewer',
     });
-    const priorBorders = directChild(
+    const priorCaption = directChild(
       directChild(exportedChange!, 'tblPr'),
-      'tblBorders',
+      'tblCaption',
     );
-    expect(priorBorders).toBeTruthy();
-    expect(directChild(priorBorders!, 'top')).toBeTruthy();
+    expect(priorCaption).toBeTruthy();
+    expect(
+      priorCaption?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorCaption?.getAttribute('w:val') ??
+        priorCaption?.getAttribute('val'),
+    ).toBe('OpaqueKeeper');
   });
 
   test('drops relationship-bound w:tblPrChange instead of inventing opaque metadata', async () => {

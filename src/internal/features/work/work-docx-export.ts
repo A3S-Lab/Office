@@ -694,6 +694,7 @@ export async function createDocxBlob(
     noteContext.tableFormattingChangePatches.overlaps,
     noteContext.tableFormattingChangePatches.styleIds,
     noteContext.tableFormattingChangePatches.cellSpacings,
+    noteContext.tableFormattingChangePatches.borders,
   );
   const rowFormattingChangesPatched = await patchDocxRowFormattingChanges(
     tableFormattingChangesPatched,

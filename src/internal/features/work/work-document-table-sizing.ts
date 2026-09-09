@@ -48,6 +48,10 @@ import {
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
 } from './work-document-table-format-changes';
+import {
+  parseDocumentTableFormattingBordersDataset,
+  serializeDocumentTableFormattingBordersDataset,
+} from './work-document-table-formatting-borders';
 import { applyDocumentTableSharedBorderPaint } from './work-document-table-borders';
 import {
   MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
@@ -278,6 +282,19 @@ export const DocumentTable = Table.extend({
           return cellSpacing !== null
             ? { 'data-office-table-cell-spacing': String(cellSpacing) }
             : {};
+        },
+      },
+      borders: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          parseDocumentTableFormattingBordersDataset(
+            element.dataset.officeTableBorders,
+          ),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const encoded = serializeDocumentTableFormattingBordersDataset(
+            attributes.borders as never,
+          );
+          return encoded ? { 'data-office-table-borders': encoded } : {};
         },
       },
       floatOmml: {

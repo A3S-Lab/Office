@@ -16,6 +16,12 @@ import {
   serializeDocumentTableFormatting,
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
+import {
+  orderedDocumentTableFormattingBorders,
+  resolveFormattingBorderEdge,
+  revisionBorderFromDocxEdge,
+  type DocumentTableFormattingBorders,
+} from './work-document-table-formatting-borders';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
   xmlAttributeLocalName,
@@ -42,6 +48,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tblOverlap',
   'tblStyle',
   'tblCellSpacing',
+  'tblBorders',
 ]);
 const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
 const RELATIONSHIP_NAMESPACES = new Set([
@@ -61,8 +68,9 @@ export interface SupportedDocxTableFormattingChange {
 /**
  * Relationship-free `w:tblPrChange` whose prior snapshot contains only
  * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, `w:tblLayout`,
- * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, `w:tblOverlap`, relationship-free `w:tblStyle`, and/or dxa `w:tblCellSpacing`. Broader
- * property sets stay on the opaque OMML path.
+ * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, `w:tblOverlap`, relationship-free
+ * `w:tblStyle`, dxa `w:tblCellSpacing`, and/or direct-color `w:tblBorders`.
+ * Broader property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxTableFormattingChange(
   change: Element,
@@ -137,7 +145,9 @@ function supportedTableFormattingChange(
       ) {
         return true;
       }
-      if (child.localName === 'tblCellMar') return false;
+      if (child.localName === 'tblCellMar' || child.localName === 'tblBorders') {
+        return false;
+      }
       return child.children.length > 0;
     })
   ) {
@@ -157,6 +167,7 @@ function supportedTableFormattingChange(
   let overlap: DocumentTableOverlap | undefined;
   let styleId: string | undefined;
   let cellSpacing: number | undefined;
+  let borders: DocumentTableFormattingBorders | undefined;
   for (const child of children) {
     if (child.localName === 'tblLayout') {
       const value = normalizeDocumentTableLayoutAlgorithm(
@@ -227,6 +238,12 @@ function supportedTableFormattingChange(
       const value = importedCellSpacing(child);
       if (value === null) return null;
       cellSpacing = value;
+      continue;
+    }
+    if (child.localName === 'tblBorders') {
+      const value = importedTableBorders(child);
+      if (!value) return null;
+      borders = value;
     }
   }
   const snapshot = normalizeDocumentTableFormattingSnapshot({
@@ -241,6 +258,7 @@ function supportedTableFormattingChange(
     ...(overlap ? { overlap } : {}),
     ...(styleId ? { styleId } : {}),
     ...(cellSpacing !== undefined ? { cellSpacing } : {}),
+    ...(borders ? { borders } : {}),
   });
   if (!snapshot) return null;
   const date = normalizeRevisionDate(rawDate);
@@ -250,6 +268,37 @@ function supportedTableFormattingChange(
     date,
     before: serializeDocumentTableFormatting(snapshot),
   };
+}
+
+export function importedDocxTableFormattingBorders(
+  element: Element,
+): DocumentTableFormattingBorders | null {
+  const children = Array.from(element.children);
+  if (!children.length) return null;
+  if (
+    children.some(
+      (child) =>
+        child.namespaceURI !== element.namespaceURI || child.children.length > 0,
+    )
+  ) {
+    return null;
+  }
+  const borders: DocumentTableFormattingBorders = {};
+  for (const child of children) {
+    const edge = resolveFormattingBorderEdge(child.localName);
+    if (!edge) return null;
+    if (borders[edge]) return null;
+    const border = revisionBorderFromDocxEdge(child, attribute);
+    if (!border) return null;
+    borders[edge] = border;
+  }
+  return orderedDocumentTableFormattingBorders(borders);
+}
+
+function importedTableBorders(
+  element: Element,
+): DocumentTableFormattingBorders | null {
+  return importedDocxTableFormattingBorders(element);
 }
 
 function importedTableCellMargins(

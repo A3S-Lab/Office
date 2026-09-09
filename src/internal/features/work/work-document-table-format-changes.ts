@@ -13,6 +13,11 @@ import {
 } from './work-document-table-geometry';
 import { normalizeTableColor } from './work-document-table-borders';
 import {
+  normalizeDocumentTableFormattingBorders,
+  orderedDocumentTableFormattingBorders,
+  type DocumentTableFormattingBorders,
+} from './work-document-table-formatting-borders';
+import {
   normalizeDocumentTableLook,
   orderedDocumentTableLook,
   type DocumentTableLook,
@@ -29,7 +34,7 @@ export const DOCUMENT_TABLE_CHANGE_ATTRIBUTES = [
 /**
  * Prior snapshot for reviewable table-property revisions.
  * At least one of layout, alignment, preferred width, indent, cellMargins,
- * bidiVisual, fill, look, overlap, styleId, or cellSpacing must be present.
+ * bidiVisual, fill, look, overlap, styleId, cellSpacing, or borders must be present.
  */
 export type DocumentTableOverlap = 'never' | 'overlap';
 
@@ -45,6 +50,7 @@ export interface DocumentTableFormattingSnapshot {
   overlap?: DocumentTableOverlap;
   styleId?: string;
   cellSpacing?: number;
+  borders?: DocumentTableFormattingBorders;
 }
 
 const MAX_TABLE_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -69,12 +75,13 @@ export function serializeDocumentTableFormatting(
     overlap?: unknown;
     styleId?: unknown;
     cellSpacing?: unknown;
+    borders?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentTableFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, bidiVisual, fill, look, overlap, styleId, or cellSpacing.',
+      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, bidiVisual, fill, look, overlap, styleId, cellSpacing, or borders.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -115,7 +122,8 @@ export function parseDocumentTableFormatting(
         key !== 'look' &&
         key !== 'overlap' &&
         key !== 'styleId' &&
-        key !== 'cellSpacing',
+        key !== 'cellSpacing' &&
+        key !== 'borders',
     )
   ) {
     return null;
@@ -139,6 +147,7 @@ export function normalizeDocumentTableFormattingSnapshot(
     overlap?: unknown;
     styleId?: unknown;
     cellSpacing?: unknown;
+    borders?: unknown;
   },
 ): DocumentTableFormattingSnapshot | null {
   const snapshot: DocumentTableFormattingSnapshot = {};
@@ -198,6 +207,11 @@ export function normalizeDocumentTableFormattingSnapshot(
     if (cellSpacing === null) return null;
     snapshot.cellSpacing = cellSpacing;
   }
+  if ('borders' in attributes && attributes.borders !== undefined) {
+    const borders = normalizeDocumentTableFormattingBorders(attributes.borders);
+    if (!borders) return null;
+    snapshot.borders = orderedDocumentTableFormattingBorders(borders);
+  }
   return snapshot.layout ||
     snapshot.alignment ||
     snapshot.width ||
@@ -208,7 +222,8 @@ export function normalizeDocumentTableFormattingSnapshot(
     snapshot.look ||
     snapshot.overlap ||
     snapshot.styleId ||
-    snapshot.cellSpacing !== undefined
+    snapshot.cellSpacing !== undefined ||
+    snapshot.borders
     ? snapshot
     : null;
 }
@@ -273,6 +288,9 @@ export function restoredDocumentTableAttributes(
   if (formatting.cellSpacing !== undefined) {
     next.cellSpacing = formatting.cellSpacing;
   }
+  if (formatting.borders !== undefined) {
+    next.borders = orderedDocumentTableFormattingBorders(formatting.borders);
+  }
   return next;
 }
 
@@ -298,6 +316,9 @@ function orderedSnapshot(
   if (snapshot.overlap) ordered.overlap = snapshot.overlap;
   if (snapshot.styleId) ordered.styleId = snapshot.styleId;
   if (snapshot.cellSpacing !== undefined) ordered.cellSpacing = snapshot.cellSpacing;
+  if (snapshot.borders) {
+    ordered.borders = orderedDocumentTableFormattingBorders(snapshot.borders);
+  }
   return ordered;
 }
 

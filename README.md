@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.94.0` makes table tblCellSpacing revisions reviewable:
+Version `0.95.0` makes table tblBorders revisions reviewable:
 
-- **Table cell spacing** — dxa `tblCellSpacing` priors become
-  `table-formatting` (`cellSpacing`) with accept/reject, live track-changes, and native DOCX
+- **Table borders** — direct-color `tblBorders` priors become
+  `table-formatting` (`borders`) with accept/reject, live track-changes, and native DOCX
   export.
 - **Boundary** — broader `tblPr` shapes stay opaque metadata or fail-closed;
-  opaque table fixtures stay on `tblBorders`.
+  opaque table fixtures stay on `tblCaption`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
