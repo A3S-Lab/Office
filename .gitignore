@@ -34,3 +34,6 @@ target/
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+.docs-unpublished/
+

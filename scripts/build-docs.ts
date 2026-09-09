@@ -1,6 +1,14 @@
 import { spawnSync } from 'node:child_process';
-import { access, cp, mkdir, rm } from 'node:fs/promises';
+import {
+  access,
+  cp,
+  mkdir,
+  readdir,
+  rename,
+  rm,
+} from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { DOCUMENTATION_VERSIONS } from '../website/documentation-site';
 
 const siteBase = normalizeBase(
   process.env.A3S_OFFICE_SITE_BASE ??
@@ -20,20 +28,64 @@ if (siteBase !== '/') {
 }
 
 const repositoryRoot = resolve(import.meta.dirname, '..');
+const docsRoot = resolve(repositoryRoot, 'docs');
+const archivedDocsRoot = resolve(repositoryRoot, '.docs-unpublished');
 const siteOutput = resolve(repositoryRoot, 'playground-dist');
 const docsOutput = resolve(repositoryRoot, '.docs-build');
 const rspress = await resolveRspressBinary();
+const publishedVersions = new Set<string>(DOCUMENTATION_VERSIONS);
 
 await rm(docsOutput, { force: true, recursive: true });
 await rm(siteOutput, { force: true, recursive: true });
 
-runRspress('website/rspress.config.ts');
-runRspress('website/rspress.docs.config.ts');
+const parked = await parkUnpublishedDocs();
+try {
+  runRspress('website/rspress.config.ts');
+  runRspress('website/rspress.docs.config.ts');
+} finally {
+  await restoreUnpublishedDocs(parked);
+}
 
 const docsTarget = resolve(siteOutput, 'docs');
 await mkdir(docsTarget, { recursive: true });
 await cp(docsOutput, docsTarget, { recursive: true });
 await rm(docsOutput, { force: true, recursive: true });
+
+async function parkUnpublishedDocs(): Promise<string[]> {
+  await rm(archivedDocsRoot, { force: true, recursive: true });
+  await mkdir(archivedDocsRoot, { recursive: true });
+  const entries = await readdir(docsRoot, { withFileTypes: true });
+  const parkedVersions: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !/^\d+\.\d+\.\d+$/.test(entry.name)) {
+      continue;
+    }
+    if (publishedVersions.has(entry.name)) {
+      continue;
+    }
+    await rename(
+      resolve(docsRoot, entry.name),
+      resolve(archivedDocsRoot, entry.name),
+    );
+    parkedVersions.push(entry.name);
+  }
+  if (parkedVersions.length > 0) {
+    console.log(
+      `Parked ${parkedVersions.length} unpublished frozen docs trees during site build`,
+    );
+  }
+  return parkedVersions;
+}
+
+async function restoreUnpublishedDocs(parkedVersions: string[]) {
+  for (const version of parkedVersions) {
+    await rename(
+      resolve(archivedDocsRoot, version),
+      resolve(docsRoot, version),
+    );
+  }
+  await rm(archivedDocsRoot, { force: true, recursive: true });
+}
 
 function runRspress(config: string) {
   const result = spawnSync(rspress, ['build', '-c', config], {
