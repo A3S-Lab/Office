@@ -216,7 +216,7 @@ function listFrozenDirs() {
 }
 
 /** Keep the Pages/Rspress multi-version build under GitHub-hosted RAM limits. */
-const MAX_PUBLISHED_FROZEN_VERSIONS = 25;
+const MAX_PUBLISHED_FROZEN_VERSIONS = 10;
 /** Frozen trees that visual contracts still deep-link. */
 const REQUIRED_PUBLISHED_FROZEN_VERSIONS = ['0.38.0'];
 
