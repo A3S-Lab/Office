@@ -46,7 +46,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -105,7 +108,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -164,7 +170,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -223,7 +232,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -282,7 +294,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -341,7 +356,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -400,7 +418,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -459,7 +480,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -518,7 +542,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -577,7 +604,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -636,7 +666,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -647,7 +680,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
         label: { en: 'GitHub Release', zh: 'GitHub Release' },
       },
       {
-        href: { en: './native-office-engine.html', zh: './native-office-engine.html' },
+        href: {
+          en: './native-office-engine.html',
+          zh: './native-office-engine.html',
+        },
         label: { en: 'Native engine notes', zh: '原生引擎说明' },
       },
     ],
@@ -699,7 +735,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -710,7 +749,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
         label: { en: 'GitHub Release', zh: 'GitHub Release' },
       },
       {
-        href: { en: './native-office-engine.html', zh: './native-office-engine.html' },
+        href: {
+          en: './native-office-engine.html',
+          zh: './native-office-engine.html',
+        },
         label: { en: 'Native engine notes', zh: '原生引擎说明' },
       },
     ],
@@ -762,7 +804,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     ],
     links: [
       {
-        href: { en: './components/document.html', zh: './components/document.html' },
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
         label: { en: 'Document editor', zh: '文档编辑器' },
       },
       {
@@ -773,7 +818,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
         label: { en: 'GitHub Release', zh: 'GitHub Release' },
       },
       {
-        href: { en: './native-office-engine.html', zh: './native-office-engine.html' },
+        href: {
+          en: './native-office-engine.html',
+          zh: './native-office-engine.html',
+        },
         label: { en: 'Native engine notes', zh: '原生引擎说明' },
       },
     ],
