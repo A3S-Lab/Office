@@ -46,13 +46,13 @@ describe('DOCX table property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
-    // tblDescription is reviewable as table-formatting; keep opaque on tblStyleColBandSize.
-    const colBandSize = document.createElementNS(
+    // tblStyleColBandSize is reviewable as table-formatting; keep opaque on tblStyleRowBandSize.
+    const rowBandSize = document.createElementNS(
       WORD_NAMESPACE,
-      'w:tblStyleColBandSize',
+      'w:tblStyleRowBandSize',
     );
-    colBandSize.setAttributeNS(WORD_NAMESPACE, 'w:val', '1');
-    prior.append(colBandSize);
+    rowBandSize.setAttributeNS(WORD_NAMESPACE, 'w:val', '2');
+    prior.append(rowBandSize);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -104,16 +104,16 @@ describe('DOCX table property-revision preservation', () => {
       id: '7',
       author: 'Reviewer',
     });
-    const priorColBandSize = directChild(
+    const priorRowBandSize = directChild(
       directChild(exportedChange!, 'tblPr'),
-      'tblStyleColBandSize',
+      'tblStyleRowBandSize',
     );
-    expect(priorColBandSize).toBeTruthy();
+    expect(priorRowBandSize).toBeTruthy();
     expect(
-      priorColBandSize?.getAttributeNS(WORD_NAMESPACE, 'val') ??
-        priorColBandSize?.getAttribute('w:val') ??
-        priorColBandSize?.getAttribute('val'),
-    ).toBe('1');
+      priorRowBandSize?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorRowBandSize?.getAttribute('w:val') ??
+        priorRowBandSize?.getAttribute('val'),
+    ).toBe('2');
   });
 
   test('drops relationship-bound w:tblPrChange instead of inventing opaque metadata', async () => {

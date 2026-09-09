@@ -1285,6 +1285,101 @@ describe('DOCX table-formatting revisions', () => {
     expect(directChild(properties, 'tblDescription')).toBeTruthy();
   });
 
+  test('imports tblStyleColBandSize-only w:tblPrChange as a reviewable table-formatting change', async () => {
+    const source = await tableDocxWithColBandSizeChange({
+      prior: 1,
+      current: 2,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-col-band-size-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const table = html.body.querySelector('table');
+    expect(table?.dataset.changeKind).toBe('table-formatting');
+    expect(table?.dataset.officeTablePropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentTableFormatting(table?.dataset.changeBefore)).toEqual({
+      colBandSize: 1,
+    });
+    expect(table?.dataset.officeTableColBandSize).toBe('2');
+  });
+
+  test('pending tblStyleColBandSize table-formatting change round-trips as native w:tblPrChange', async () => {
+    const source = await tableDocxWithColBandSizeChange({
+      prior: 1,
+      current: 2,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-col-band-size-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const properties = directChild(descendants(exported, 'tbl')[0], 'tblPr');
+    const change = directChild(properties, 'tblPrChange');
+    expect(change).toBeTruthy();
+    expect(
+      directChild(directChild(change!, 'tblPr'), 'tblStyleColBandSize'),
+    ).toBeTruthy();
+    expect(directChild(properties, 'tblStyleColBandSize')).toBeTruthy();
+  });
+
+  test('live table colBandSize edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<table data-office-table-layout="autofit"',
+        ' data-office-table-width-type="percent"',
+        ' data-office-table-width="100"',
+        ' data-office-table-bidi-visual="false"',
+        ' data-office-table-col-band-size="1">',
+        '<tbody><tr><td><p>Cell</p></td></tr></tbody></table>',
+      ].join(''),
+    });
+    try {
+      let tablePos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'table' && tablePos === null) {
+          tablePos = position;
+        }
+      });
+      expect(tablePos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(tablePos!, undefined, {
+          ...editor.state.doc.nodeAt(tablePos!)!.attrs,
+          colBandSize: 2,
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'table-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const table = html.body.querySelector('table');
+      expect(table?.dataset.changeKind).toBe('table-formatting');
+      expect(
+        parseDocumentTableFormatting(table?.dataset.changeBefore)?.colBandSize,
+      ).toBe(1);
+      expect(table?.dataset.officeTableColBandSize).toBe('2');
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('live table description edits become reviewable when track changes is on', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions({
@@ -1693,6 +1788,66 @@ function createBordersElement(
     borders.append(child);
   }
   return borders;
+}
+
+async function tableDocxWithColBandSizeChange(options: {
+  prior: number;
+  current: number | null;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const table = descendants(document, 'tbl')[0];
+  const properties =
+    directChild(table, 'tblPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+      table.insertBefore(created, table.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblStyleColBandSize' ||
+      child.localName === 'tblPrChange',
+  )) {
+    existing.remove();
+  }
+  if (options.current !== null) {
+    const current = document.createElementNS(
+      WORD_NAMESPACE,
+      'w:tblStyleColBandSize',
+    );
+    current.setAttributeNS(WORD_NAMESPACE, 'w:val', String(options.current));
+    properties.append(current);
+  }
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:tblPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '66');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-09T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+  const priorColBandSize = document.createElementNS(
+    WORD_NAMESPACE,
+    'w:tblStyleColBandSize',
+  );
+  priorColBandSize.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:val',
+    String(options.prior),
+  );
+  prior.append(priorColBandSize);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
 }
 
 async function tableDocxWithDescriptionChange(options: {

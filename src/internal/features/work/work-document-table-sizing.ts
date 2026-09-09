@@ -47,6 +47,7 @@ import {
   normalizeDocumentTableOverlap,
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
+  normalizeDocumentTableColBandSize,
   normalizeDocumentTableCaption,
   normalizeDocumentTableDescription,
 } from './work-document-table-format-changes';
@@ -279,6 +280,21 @@ export const DocumentTable = Table.extend({
           );
           return cellSpacing !== null
             ? { 'data-office-table-cell-spacing': String(cellSpacing) }
+            : {};
+        },
+      },
+      colBandSize: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentTableColBandSize(
+            element.dataset.officeTableColBandSize,
+          ),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const colBandSize = normalizeDocumentTableColBandSize(
+            attributes.colBandSize,
+          );
+          return colBandSize !== null
+            ? { 'data-office-table-col-band-size': String(colBandSize) }
             : {};
         },
       },

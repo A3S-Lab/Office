@@ -8,6 +8,7 @@ import {
   normalizeDocumentTableOverlap,
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
+  normalizeDocumentTableColBandSize,
   normalizeDocumentTableCaption,
   normalizeDocumentTableDescription,
   type DocumentTableOverlap,
@@ -66,6 +67,7 @@ export interface ImportedDocxTableSizingMarker {
   overlap?: DocumentTableOverlap;
   styleId?: string;
   cellSpacing?: number;
+  colBandSize?: number;
   borders?: DocumentTableFormattingBorders;
   caption?: string;
   description?: string;
@@ -134,6 +136,9 @@ export function markDocxTableSizing(
       ...(importedTableCellSpacing(tableProperties) !== null
         ? { cellSpacing: importedTableCellSpacing(tableProperties)! }
         : {}),
+      ...(importedTableColBandSize(tableProperties) !== null
+        ? { colBandSize: importedTableColBandSize(tableProperties)! }
+        : {}),
       ...(importedTableBorders(tableProperties)
         ? { borders: importedTableBorders(tableProperties)! }
         : {}),
@@ -193,6 +198,9 @@ export function applyImportedDocxTableSizingMarkers(
         }
         if (sizing.cellSpacing !== undefined) {
           table.dataset.officeTableCellSpacing = String(sizing.cellSpacing);
+        }
+        if (sizing.colBandSize !== undefined) {
+          table.dataset.officeTableColBandSize = String(sizing.colBandSize);
         }
         if (sizing.borders) {
           const encoded = serializeDocumentTableFormattingBordersDataset(
@@ -284,6 +292,15 @@ function importedTableCellSpacing(
   return normalizeDocumentTableCellSpacing(
     Math.round(twips * PIXELS_PER_TWIP * 100) / 100,
   );
+}
+
+function importedTableColBandSize(
+  properties: Element | null | undefined,
+): number | null {
+  if (!properties) return null;
+  const element = directChild(properties, 'tblStyleColBandSize');
+  if (!element || element.children.length > 0) return null;
+  return normalizeDocumentTableColBandSize(attribute(element, 'val'));
 }
 
 function importedTableBorders(

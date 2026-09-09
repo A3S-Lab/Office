@@ -13,6 +13,7 @@ import {
   normalizeDocumentTableOverlap,
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
+  normalizeDocumentTableColBandSize,
   normalizeDocumentTableCaption,
   normalizeDocumentTableDescription,
   serializeDocumentTableFormatting,
@@ -50,6 +51,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tblOverlap',
   'tblStyle',
   'tblCellSpacing',
+  'tblStyleColBandSize',
   'tblBorders',
   'tblCaption',
   'tblDescription',
@@ -80,8 +82,9 @@ export interface SupportedDocxTableFormattingChange {
  * Relationship-free `w:tblPrChange` whose prior snapshot contains only
  * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, `w:tblLayout`,
  * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, `w:tblOverlap`, relationship-free
- * `w:tblStyle`, dxa `w:tblCellSpacing`, direct-color `w:tblBorders`,
- * relationship-free `w:tblCaption`, and/or relationship-free `w:tblDescription`.
+ * `w:tblStyle`, dxa `w:tblCellSpacing`, relationship-free `w:tblStyleColBandSize`,
+ * direct-color `w:tblBorders`, relationship-free `w:tblCaption`, and/or
+ * relationship-free `w:tblDescription`.
  * Broader property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxTableFormattingChange(change: Element): boolean {
@@ -182,6 +185,7 @@ function supportedTableFormattingChange(
   let overlap: DocumentTableOverlap | undefined;
   let styleId: string | undefined;
   let cellSpacing: number | undefined;
+  let colBandSize: number | undefined;
   let borders: DocumentTableFormattingBorders | undefined;
   let caption: string | undefined;
   let description: string | undefined;
@@ -257,6 +261,13 @@ function supportedTableFormattingChange(
       cellSpacing = value;
       continue;
     }
+    if (child.localName === 'tblStyleColBandSize') {
+      if (child.children.length > 0) return null;
+      const value = importedColBandSize(child);
+      if (value === null) return null;
+      colBandSize = value;
+      continue;
+    }
     if (child.localName === 'tblBorders') {
       const value = importedTableBorders(child);
       if (!value) return null;
@@ -289,6 +300,7 @@ function supportedTableFormattingChange(
     ...(overlap ? { overlap } : {}),
     ...(styleId ? { styleId } : {}),
     ...(cellSpacing !== undefined ? { cellSpacing } : {}),
+    ...(colBandSize !== undefined ? { colBandSize } : {}),
     ...(borders ? { borders } : {}),
     ...(caption ? { caption } : {}),
     ...(description ? { description } : {}),
@@ -401,6 +413,10 @@ function importedCellSpacing(spacing: Element): number | null {
   if (type !== null && type !== 'dxa') return null;
   const pixels = twipsToPixels(Number(attribute(spacing, 'w')), true);
   return pixels === null ? null : normalizeDocumentTableCellSpacing(pixels);
+}
+
+function importedColBandSize(element: Element): number | null {
+  return normalizeDocumentTableColBandSize(attribute(element, 'val'));
 }
 
 function percentageValue(value: string | null): number | null {

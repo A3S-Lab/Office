@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:tblPrChange` priors that include relationship-free
+  `w:tblStyleColBandSize` are now reviewable as `table-formatting`
+  (`colBandSize`) with accept/reject, live track-changes, and native export
+  (including current-table `w:tblStyleColBandSize` on DOCX write). Broader
+  table property sets remain opaque or fail-closed; opaque fixtures stay on
+  `tblStyleRowBandSize`.
+
 ## 0.97.0 - 2026-09-09
 
 ### Writer

@@ -5,6 +5,7 @@ import {
   normalizeDocumentTableOverlap,
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
+  normalizeDocumentTableColBandSize,
   normalizeDocumentTableCaption,
   normalizeDocumentTableDescription,
   type DocumentTableOverlap,
@@ -45,6 +46,7 @@ export class DocxTableFormattingChangePatchCollector {
   readonly overlaps: Array<DocumentTableOverlap | null> = [];
   readonly styleIds: Array<string | null> = [];
   readonly cellSpacings: Array<number | null> = [];
+  readonly colBandSizes: Array<number | null> = [];
   readonly borders: Array<DocumentTableFormattingBorders | null> = [];
   readonly captions: Array<string | null> = [];
   readonly descriptions: Array<string | null> = [];
@@ -66,6 +68,9 @@ export class DocxTableFormattingChangePatchCollector {
     );
     this.cellSpacings.push(
       normalizeDocumentTableCellSpacing(element.dataset.officeTableCellSpacing),
+    );
+    this.colBandSizes.push(
+      normalizeDocumentTableColBandSize(element.dataset.officeTableColBandSize),
     );
     this.borders.push(
       parseDocumentTableFormattingBordersDataset(
@@ -115,6 +120,7 @@ export async function patchDocxTableFormattingChanges(
   overlaps: readonly (DocumentTableOverlap | null)[] = [],
   styleIds: readonly (string | null)[] = [],
   cellSpacings: readonly (number | null)[] = [],
+  colBandSizes: readonly (number | null)[] = [],
   borders: readonly (DocumentTableFormattingBorders | null)[] = [],
   captions: readonly (string | null)[] = [],
   descriptions: readonly (string | null)[] = [],
@@ -127,6 +133,7 @@ export async function patchDocxTableFormattingChanges(
     !overlaps.some(Boolean) &&
     !styleIds.some(Boolean) &&
     !cellSpacings.some((value) => value !== null && value !== undefined) &&
+    !colBandSizes.some((value) => value !== null && value !== undefined) &&
     !borders.some(Boolean) &&
     !captions.some(Boolean) &&
     !descriptions.some(Boolean)
@@ -159,6 +166,7 @@ export async function patchDocxTableFormattingChanges(
     const tableOverlap = overlaps[index] ?? null;
     const tableStyleId = styleIds[index] ?? null;
     const tableCellSpacing = cellSpacings[index] ?? null;
+    const tableColBandSize = colBandSizes[index] ?? null;
     const tableBorders = borders[index] ?? null;
     const tableCaption = captions[index] ?? null;
     const tableDescription = descriptions[index] ?? null;
@@ -183,6 +191,9 @@ export async function patchDocxTableFormattingChanges(
       changed = true;
     }
     if (setTableCellSpacing(document, table, tableCellSpacing)) {
+      changed = true;
+    }
+    if (setTableColBandSize(document, table, tableColBandSize)) {
       changed = true;
     }
     if (setTableBorders(document, table, tableBorders)) {
@@ -228,6 +239,11 @@ export async function patchDocxTableFormattingChanges(
   if (cellSpacings.length && cellSpacings.length !== patches.length) {
     throw new Error(
       `DOCX table cellSpacing patch count mismatch (${cellSpacings.length} cellSpacings, ${patches.length} tables).`,
+    );
+  }
+  if (colBandSizes.length && colBandSizes.length !== patches.length) {
+    throw new Error(
+      `DOCX table colBandSize patch count mismatch (${colBandSizes.length} colBandSizes, ${patches.length} tables).`,
     );
   }
   if (borders.length && borders.length !== patches.length) {
@@ -328,6 +344,11 @@ function setTableFormattingChange(
   }
   if (formatting.cellSpacing !== undefined) {
     prior.append(createTblCellSpacingElement(document, formatting.cellSpacing));
+  }
+  if (formatting.colBandSize !== undefined) {
+    prior.append(
+      createTblStyleColBandSizeElement(document, formatting.colBandSize),
+    );
   }
   if (formatting.borders) {
     prior.append(createTblBordersElement(document, formatting.borders));
@@ -484,6 +505,41 @@ function createTblCellSpacingElement(
     'w:w',
     String(Math.round(cellSpacing * TWIPS_PER_PIXEL)),
   );
+  return element;
+}
+
+function setTableColBandSize(
+  document: Document,
+  table: Element,
+  colBandSize: number | null,
+): boolean {
+  let properties = directChild(table, 'tblPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    if (colBandSize === null) return false;
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+    table.insertBefore(properties, table.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblStyleColBandSize' &&
+      child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (colBandSize === null) return true;
+  properties.append(createTblStyleColBandSizeElement(document, colBandSize));
+  return true;
+}
+
+function createTblStyleColBandSizeElement(
+  document: Document,
+  colBandSize: number,
+): Element {
+  const element = document.createElementNS(
+    WORD_NAMESPACE,
+    'w:tblStyleColBandSize',
+  );
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', String(colBandSize));
   return element;
 }
 

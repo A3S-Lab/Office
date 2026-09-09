@@ -34,8 +34,8 @@ export const DOCUMENT_TABLE_CHANGE_ATTRIBUTES = [
 /**
  * Prior snapshot for reviewable table-property revisions.
  * At least one of layout, alignment, preferred width, indent, cellMargins,
- * bidiVisual, fill, look, overlap, styleId, cellSpacing, borders, caption,
- * or description must be present.
+ * bidiVisual, fill, look, overlap, styleId, cellSpacing, colBandSize, borders,
+ * caption, or description must be present.
  */
 export type DocumentTableOverlap = 'never' | 'overlap';
 
@@ -51,6 +51,7 @@ export interface DocumentTableFormattingSnapshot {
   overlap?: DocumentTableOverlap;
   styleId?: string;
   cellSpacing?: number;
+  colBandSize?: number;
   borders?: DocumentTableFormattingBorders;
   caption?: string;
   description?: string;
@@ -77,6 +78,7 @@ export function serializeDocumentTableFormatting(attributes: {
   overlap?: unknown;
   styleId?: unknown;
   cellSpacing?: unknown;
+  colBandSize?: unknown;
   borders?: unknown;
   caption?: unknown;
   description?: unknown;
@@ -84,7 +86,7 @@ export function serializeDocumentTableFormatting(attributes: {
   const snapshot = normalizeDocumentTableFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, bidiVisual, fill, look, overlap, styleId, cellSpacing, borders, caption, or description.',
+      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, bidiVisual, fill, look, overlap, styleId, cellSpacing, colBandSize, borders, caption, or description.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -126,6 +128,7 @@ export function parseDocumentTableFormatting(
         key !== 'overlap' &&
         key !== 'styleId' &&
         key !== 'cellSpacing' &&
+        key !== 'colBandSize' &&
         key !== 'borders' &&
         key !== 'caption' &&
         key !== 'description',
@@ -151,6 +154,7 @@ export function normalizeDocumentTableFormattingSnapshot(attributes: {
   overlap?: unknown;
   styleId?: unknown;
   cellSpacing?: unknown;
+  colBandSize?: unknown;
   borders?: unknown;
   caption?: unknown;
   description?: unknown;
@@ -214,6 +218,13 @@ export function normalizeDocumentTableFormattingSnapshot(attributes: {
     if (cellSpacing === null) return null;
     snapshot.cellSpacing = cellSpacing;
   }
+  if ('colBandSize' in attributes && attributes.colBandSize !== undefined) {
+    const colBandSize = normalizeDocumentTableColBandSize(
+      attributes.colBandSize,
+    );
+    if (colBandSize === null) return null;
+    snapshot.colBandSize = colBandSize;
+  }
   if ('borders' in attributes && attributes.borders !== undefined) {
     const borders = normalizeDocumentTableFormattingBorders(attributes.borders);
     if (!borders) return null;
@@ -240,6 +251,7 @@ export function normalizeDocumentTableFormattingSnapshot(attributes: {
     snapshot.overlap ||
     snapshot.styleId ||
     snapshot.cellSpacing !== undefined ||
+    snapshot.colBandSize !== undefined ||
     snapshot.borders ||
     snapshot.caption ||
     snapshot.description
@@ -308,6 +320,9 @@ export function restoredDocumentTableAttributes(
   if (formatting.cellSpacing !== undefined) {
     next.cellSpacing = formatting.cellSpacing;
   }
+  if (formatting.colBandSize !== undefined) {
+    next.colBandSize = formatting.colBandSize;
+  }
   if (formatting.borders !== undefined) {
     next.borders = orderedDocumentTableFormattingBorders(formatting.borders);
   }
@@ -344,6 +359,8 @@ function orderedSnapshot(
   if (snapshot.styleId) ordered.styleId = snapshot.styleId;
   if (snapshot.cellSpacing !== undefined)
     ordered.cellSpacing = snapshot.cellSpacing;
+  if (snapshot.colBandSize !== undefined)
+    ordered.colBandSize = snapshot.colBandSize;
   if (snapshot.borders) {
     ordered.borders = orderedDocumentTableFormattingBorders(snapshot.borders);
   }
@@ -393,6 +410,27 @@ export function normalizeDocumentTableCellSpacing(
   value: unknown,
 ): number | null {
   return normalizeTableIndent(value);
+}
+
+const MAX_TABLE_COL_BAND_SIZE = 64;
+
+export function normalizeDocumentTableColBandSize(
+  value: unknown,
+): number | null {
+  const numeric =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim()
+        ? Number(value)
+        : Number.NaN;
+  if (
+    !Number.isInteger(numeric) ||
+    numeric <= 0 ||
+    numeric > MAX_TABLE_COL_BAND_SIZE
+  ) {
+    return null;
+  }
+  return numeric;
 }
 
 export function normalizeDocumentTableStyleId(value: unknown): string | null {

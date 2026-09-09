@@ -197,9 +197,9 @@ a phase exits only when its evidence is complete.
   siblings, drawings, hyperlinks), cross-section/table-spanning range
   moves, complex numbering, and broader move-range generation remain explicit
   follow-up work. Relationship-free `w:tblPrChange` with a prior `w:jc`
-  and/or `w:tblW` and/or `w:tblInd` and/or `w:tblCellMar` and/or `w:tblLayout`   and/or `w:bidiVisual` and/or solid direct-color `w:shd` and/or `w:tblLook` and/or `w:tblOverlap` and/or relationship-free `w:tblStyle` and/or dxa `w:tblCellSpacing` and/or direct-color `w:tblBorders` and/or relationship-free `w:tblCaption` and/or relationship-free `w:tblDescription`
+  and/or `w:tblW` and/or `w:tblInd` and/or `w:tblCellMar` and/or `w:tblLayout`   and/or `w:bidiVisual` and/or solid direct-color `w:shd` and/or `w:tblLook` and/or `w:tblOverlap` and/or relationship-free `w:tblStyle` and/or dxa `w:tblCellSpacing` and/or relationship-free `w:tblStyleColBandSize` and/or direct-color `w:tblBorders` and/or relationship-free `w:tblCaption` and/or relationship-free `w:tblDescription`
   snapshot is reviewable as `table-formatting` with accept/reject, live
-  track-changes for alignment/preferred-width/indent/default-cell-margin/layout-mode/bidiVisual/solid-fill/tblLook/tblOverlap/tblStyle/tblCellSpacing/tblBorders/tblCaption/tblDescription
+  track-changes for alignment/preferred-width/indent/default-cell-margin/layout-mode/bidiVisual/solid-fill/tblLook/tblOverlap/tblStyle/tblCellSpacing/tblStyleColBandSize/tblBorders/tblCaption/tblDescription
   edits, and native export.   Relationship-free `w:trPrChange` with a prior `w:cantSplit`,
   `w:tblHeader`, and/or `w:trHeight` and/or `w:hidden` and/or `w:jc` and/or
   `w:gridBefore` and/or `w:gridAfter` and/or `w:wBefore` and/or `w:wAfter` snapshot
