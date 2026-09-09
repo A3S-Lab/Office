@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.102.0 - 2026-09-10
+
 ### Writer
 
 - Relationship-free `w:tcPrChange` priors that include relationship-free
@@ -19,8 +21,8 @@ All notable changes to A3S Office will be documented in this file.
 - Relationship-free `w:trPrChange` priors that include relationship-free
   `w:cnfStyle` (12-bit ECMA conditional-formatting bitmask) are now reviewable
   as `row-formatting` with accept/reject, live track-changes, and native export.
-  Broader row property sets remain opaque or fail-closed; opaque fixtures stay on
-  `divId`.
+  Broader row property sets remain opaque or fail-closed; opaque fixtures stayed on
+  `divId` (cell `cnfStyle` became reviewable in 0.102.0; cell opaque fixtures now `hMerge`).
 
 ## 0.100.0 - 2026-09-09
 

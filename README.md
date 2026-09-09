@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.101.0` makes row cnfStyle revisions reviewable:
+Version `0.102.0` makes cell cnfStyle revisions reviewable:
 
-- **Row conditional formatting** — relationship-free `trPrChange` priors with
-  `cnfStyle` become reviewable `row-formatting` with accept/reject, live
+- **Cell conditional formatting** — relationship-free `tcPrChange` priors with
+  `cnfStyle` become reviewable `cell-formatting` with accept/reject, live
   track-changes, and native DOCX export.
-- **Boundary** — broader `trPr` shapes stay opaque metadata or fail-closed;
-  opaque row fixtures stay on `divId`. Cell `cnfStyle` remains opaque.
+- **Boundary** — broader `tcPr` shapes stay opaque metadata or fail-closed;
+  opaque cell fixtures stay on `hMerge`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
