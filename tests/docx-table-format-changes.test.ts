@@ -640,6 +640,162 @@ describe('DOCX table-formatting revisions', () => {
     }
   });
 
+  test('imports tblLook-only w:tblPrChange as a reviewable table-formatting change', async () => {
+    const source = await tableDocxWithLookChange({
+      prior: {
+        firstRow: true,
+        lastRow: false,
+        firstColumn: true,
+        lastColumn: false,
+        noHorizontalBand: false,
+        noVerticalBand: true,
+      },
+      current: {
+        firstRow: true,
+        lastRow: true,
+        firstColumn: true,
+        lastColumn: false,
+        noHorizontalBand: false,
+        noVerticalBand: true,
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-look-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const table = html.body.querySelector('table');
+    expect(table?.dataset.changeKind).toBe('table-formatting');
+    expect(table?.dataset.officeTablePropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentTableFormatting(table?.dataset.changeBefore)).toEqual({
+      look: {
+        firstRow: true,
+        lastRow: false,
+        firstColumn: true,
+        lastColumn: false,
+        noHorizontalBand: false,
+        noVerticalBand: true,
+      },
+    });
+    expect(JSON.parse(table?.dataset.officeTableLook ?? 'null')).toEqual({
+      firstRow: true,
+      lastRow: true,
+      firstColumn: true,
+      lastColumn: false,
+      noHorizontalBand: false,
+      noVerticalBand: true,
+    });
+  });
+
+  test('pending tblLook table-formatting change round-trips as native w:tblPrChange', async () => {
+    const source = await tableDocxWithLookChange({
+      prior: {
+        firstRow: true,
+        lastRow: false,
+        firstColumn: true,
+        lastColumn: false,
+        noHorizontalBand: false,
+        noVerticalBand: true,
+      },
+      current: {
+        firstRow: false,
+        lastRow: false,
+        firstColumn: true,
+        lastColumn: true,
+        noHorizontalBand: true,
+        noVerticalBand: true,
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-look-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const properties = directChild(descendants(exported, 'tbl')[0], 'tblPr');
+    const change = directChild(properties, 'tblPrChange');
+    expect(change).toBeTruthy();
+    expect(directChild(directChild(change!, 'tblPr'), 'tblLook')).toBeTruthy();
+    expect(directChild(properties, 'tblLook')).toBeTruthy();
+  });
+
+  test('live table look edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<table data-office-table-layout="autofit"',
+        ' data-office-table-width-type="percent"',
+        ' data-office-table-width="100"',
+        ' data-office-table-bidi-visual="false"',
+        ' data-office-table-look=\'{"firstRow":true,"lastRow":false,"firstColumn":true,"lastColumn":false,"noHorizontalBand":false,"noVerticalBand":true}\'>',
+        '<tbody><tr><td><p>Cell</p></td></tr></tbody></table>',
+      ].join(''),
+    });
+    try {
+      let tablePos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'table' && tablePos === null) {
+          tablePos = position;
+        }
+      });
+      expect(tablePos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(tablePos!, undefined, {
+          ...editor.state.doc.nodeAt(tablePos!)!.attrs,
+          look: {
+            firstRow: true,
+            lastRow: true,
+            firstColumn: true,
+            lastColumn: false,
+            noHorizontalBand: false,
+            noVerticalBand: true,
+          },
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'table-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const table = html.body.querySelector('table');
+      expect(table?.dataset.changeKind).toBe('table-formatting');
+      expect(parseDocumentTableFormatting(table?.dataset.changeBefore)?.look).toEqual(
+        {
+          firstRow: true,
+          lastRow: false,
+          firstColumn: true,
+          lastColumn: false,
+          noHorizontalBand: false,
+          noVerticalBand: true,
+        },
+      );
+      expect(JSON.parse(table?.dataset.officeTableLook ?? 'null')).toEqual({
+        firstRow: true,
+        lastRow: true,
+        firstColumn: true,
+        lastColumn: false,
+        noHorizontalBand: false,
+        noVerticalBand: true,
+      });
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('live table layout-mode edits become reviewable when track changes is on', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions({
@@ -735,6 +891,118 @@ async function tableDocxWithSolidFillChange(options: {
     new XMLSerializer().serializeToString(document),
   );
   return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function tableDocxWithLookChange(options: {
+  prior: {
+    firstRow: boolean;
+    lastRow: boolean;
+    firstColumn: boolean;
+    lastColumn: boolean;
+    noHorizontalBand: boolean;
+    noVerticalBand: boolean;
+  };
+  current: {
+    firstRow: boolean;
+    lastRow: boolean;
+    firstColumn: boolean;
+    lastColumn: boolean;
+    noHorizontalBand: boolean;
+    noVerticalBand: boolean;
+  } | null;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const table = descendants(document, 'tbl')[0];
+  const properties =
+    directChild(table, 'tblPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+      table.insertBefore(created, table.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblLook' || child.localName === 'tblPrChange',
+  )) {
+    existing.remove();
+  }
+  if (options.current) {
+    properties.append(createLookElement(document, options.current));
+  }
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:tblPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '51');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-09T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+  prior.append(createLookElement(document, options.prior));
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function createLookElement(
+  document: Document,
+  look: {
+    firstRow: boolean;
+    lastRow: boolean;
+    firstColumn: boolean;
+    lastColumn: boolean;
+    noHorizontalBand: boolean;
+    noVerticalBand: boolean;
+  },
+): Element {
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:tblLook');
+  let value = 0;
+  if (look.firstRow) value |= 0x0020;
+  if (look.lastRow) value |= 0x0040;
+  if (look.firstColumn) value |= 0x0080;
+  if (look.lastColumn) value |= 0x0100;
+  if (look.noHorizontalBand) value |= 0x0200;
+  if (look.noVerticalBand) value |= 0x0400;
+  element.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:val',
+    value.toString(16).toUpperCase().padStart(4, '0'),
+  );
+  element.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:firstRow',
+    look.firstRow ? '1' : '0',
+  );
+  element.setAttributeNS(WORD_NAMESPACE, 'w:lastRow', look.lastRow ? '1' : '0');
+  element.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:firstColumn',
+    look.firstColumn ? '1' : '0',
+  );
+  element.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:lastColumn',
+    look.lastColumn ? '1' : '0',
+  );
+  element.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:noHBand',
+    look.noHorizontalBand ? '1' : '0',
+  );
+  element.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:noVBand',
+    look.noVerticalBand ? '1' : '0',
+  );
+  return element;
 }
 
 async function tableDocxWithBidiVisualChange(options: {

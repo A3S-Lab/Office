@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.90.0` makes section rtlGutter revisions reviewable:
+Version `0.91.0` makes table tblLook revisions reviewable:
 
-- **RTL gutter** — relationship-free `rtlGutter` priors become
-  `section-formatting` with accept/reject, live track-changes, and native DOCX
-  export (mapped to page-margin `gutterOnRight`).
-- **Boundary** — broader `sectPr` shapes stay opaque metadata or fail-closed;
-  opaque section fixtures stay on unequal-width `cols`.
+- **Table look** — relationship-free `tblLook` priors become
+  `table-formatting` with accept/reject, live track-changes, and native DOCX
+  export.
+- **Boundary** — broader `tblPr` shapes stay opaque metadata or fail-closed;
+  opaque table fixtures stay on `tblOverlap`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

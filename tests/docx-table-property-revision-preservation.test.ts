@@ -46,15 +46,9 @@ describe('DOCX table property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
-    const look = document.createElementNS(WORD_NAMESPACE, 'w:tblLook');
-    look.setAttributeNS(WORD_NAMESPACE, 'w:val', '04A0');
-    look.setAttributeNS(WORD_NAMESPACE, 'w:firstRow', '1');
-    look.setAttributeNS(WORD_NAMESPACE, 'w:lastRow', '0');
-    look.setAttributeNS(WORD_NAMESPACE, 'w:firstColumn', '1');
-    look.setAttributeNS(WORD_NAMESPACE, 'w:lastColumn', '0');
-    look.setAttributeNS(WORD_NAMESPACE, 'w:noHBand', '0');
-    look.setAttributeNS(WORD_NAMESPACE, 'w:noVBand', '1');
-    prior.append(look);
+    const overlap = document.createElementNS(WORD_NAMESPACE, 'w:tblOverlap');
+    overlap.setAttributeNS(WORD_NAMESPACE, 'w:val', 'never');
+    prior.append(overlap);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -106,15 +100,15 @@ describe('DOCX table property-revision preservation', () => {
       id: '7',
       author: 'Reviewer',
     });
-    const priorLook = directChild(
+    const priorOverlap = directChild(
       directChild(exportedChange!, 'tblPr'),
-      'tblLook',
+      'tblOverlap',
     );
     expect(
-      priorLook?.getAttributeNS(WORD_NAMESPACE, 'val') ??
-        priorLook?.getAttribute('w:val') ??
-        priorLook?.getAttribute('val'),
-    ).toBe('04A0');
+      priorOverlap?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorOverlap?.getAttribute('w:val') ??
+        priorOverlap?.getAttribute('val'),
+    ).toBe('never');
   });
 
   test('drops relationship-bound w:tblPrChange instead of inventing opaque metadata', async () => {

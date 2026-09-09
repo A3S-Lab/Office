@@ -7,6 +7,10 @@ import {
   type DocumentTableFormattingSnapshot,
 } from './work-document-table-format-changes';
 import { normalizeTableColor } from './work-document-table-borders';
+import {
+  normalizeDocumentTableLook,
+  orderedDocumentTableLook,
+} from './work-document-table-look';
 
 interface DocumentTableFormattingTrackingOptions {
   createChange: () => WorkDocumentChangeIdentity;
@@ -14,8 +18,8 @@ interface DocumentTableFormattingTrackingOptions {
 
 /**
  * When track-changes is on, table layout / alignment / preferred-width /
- * indent / default cell-margin / bidiVisual / solid-fill edits become reviewable
- * `table-formatting` revisions.
+ * indent / default cell-margin / bidiVisual / solid-fill / tblLook edits become
+ * reviewable `table-formatting` revisions.
  *
  * Layout-mode switches (`setDocumentTableLayoutMode`) also rewrite cell
  * `colwidth` / percentage attrs; those companions are ignored when deciding
@@ -85,6 +89,9 @@ function geometryFormatting(
           )!,
         }
       : {}),
+    ...(normalizeDocumentTableLook(node.attrs.look)
+      ? { look: orderedDocumentTableLook(normalizeDocumentTableLook(node.attrs.look)!) }
+      : {}),
   });
 }
 
@@ -136,6 +143,7 @@ function tableSnapshotIgnoringGeometry(node: ProseMirrorNode): unknown {
   delete attrs.layoutMode;
   delete attrs.bidiVisual;
   delete attrs.fill;
+  delete attrs.look;
   delete attrs.tableChangeKind;
   delete attrs.tableChangeId;
   delete attrs.tableChangeAuthor;

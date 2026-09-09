@@ -530,7 +530,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.table-formatting',
             'Table-formatting revisions',
-            `${supportedTableFormattingRevisionCount} relationship-free w:tblPrChange record(s) with a prior alignment, preferred-width, indent, default cell-margin, and/or layout snapshot remain reviewable in Work as table-formatting changes and round-trip as native w:tblPrChange records.`,
+            `${supportedTableFormattingRevisionCount} relationship-free w:tblPrChange record(s) with a prior alignment, preferred-width, indent, default cell-margin, layout, bidiVisual, solid fill, and/or tblLook snapshot remain reviewable in Work as table-formatting changes and round-trip as native w:tblPrChange records.`,
             'info',
           ),
         );
@@ -612,7 +612,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.table-property',
             'Table-property revisions',
-            `${preservableTablePropertyRevisionCount} relationship-free w:tblPrChange record(s) that are outside the reviewable alignment/preferred-width/indent/cell-margin/layout subset round-trip as opaque table metadata on untouched tables. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. Alignment, preferred-width, indent, default cell-margin, and/or layout records are reported separately as reviewable table-formatting revisions.`,
+            `${preservableTablePropertyRevisionCount} relationship-free w:tblPrChange record(s) that are outside the reviewable alignment/preferred-width/indent/cell-margin/layout/bidiVisual/solid-fill/tblLook subset round-trip as opaque table metadata on untouched tables. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. Alignment, preferred-width, indent, default cell-margin, layout, bidiVisual, solid-fill, and/or tblLook records are reported separately as reviewable table-formatting revisions.`,
             'info',
           ),
         );
@@ -702,7 +702,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.structural',
             'Structural revisions',
-            'Moved content plus unsupported character formatting, paragraph formatting, numbering, and unpreservable table/row/cell/section-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded whole-paragraph mark, text-move, character-, paragraph-, table-formatting (alignment/preferred-width/indent/cell margins/layout/bidiVisual/solid fill), row-formatting (cantSplit/tblHeader/trHeight/hidden/jc/gridBefore/gridAfter/wBefore/wAfter), cell-formatting (vAlign/solid fill/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark), section-formatting (orientation/page geometry/page margins/paper source/equal-width columns/titlePg/rtlGutter), and ordered-list-numbering subsets, including live track-changes for those formatting families. Relationship-free non-reviewable w:tblPrChange plus broader w:trPrChange, w:tcPrChange, and w:sectPrChange records are reported separately. Isolated paragraph-break mark revisions are reported separately as docx.revisions.paragraph-break. Unpaired w:move*Range* markers are reported separately as docx.revisions.move-range.',
+            'Moved content plus unsupported character formatting, paragraph formatting, numbering, and unpreservable table/row/cell/section-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded whole-paragraph mark, text-move, character-, paragraph-, table-formatting (alignment/preferred-width/indent/cell margins/layout/bidiVisual/solid fill/tblLook), row-formatting (cantSplit/tblHeader/trHeight/hidden/jc/gridBefore/gridAfter/wBefore/wAfter), cell-formatting (vAlign/solid fill/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark), section-formatting (orientation/page geometry/page margins/paper source/equal-width columns/titlePg/rtlGutter), and ordered-list-numbering subsets, including live track-changes for those formatting families. Relationship-free non-reviewable w:tblPrChange plus broader w:trPrChange, w:tcPrChange, and w:sectPrChange records are reported separately. Isolated paragraph-break mark revisions are reported separately as docx.revisions.paragraph-break. Unpaired w:move*Range* markers are reported separately as docx.revisions.move-range.',
           ),
         );
       }

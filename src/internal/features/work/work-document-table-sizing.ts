@@ -38,6 +38,11 @@ import {
   documentTablePropertyRevisionOmmlFromElement,
   encodeDocumentTablePropertyRevisionOmml,
 } from './work-document-table-property-revision';
+import {
+  normalizeDocumentTableLook,
+  parseDocumentTableLookDataset,
+  serializeDocumentTableLookDataset,
+} from './work-document-table-look';
 import { applyDocumentTableSharedBorderPaint } from './work-document-table-borders';
 import {
   MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
@@ -216,6 +221,20 @@ export const DocumentTable = Table.extend({
             typeof attributes.fill === 'string' ? attributes.fill.trim() : '';
           return /^#[0-9A-Fa-f]{6}$/i.test(fill)
             ? { 'data-office-table-fill': fill.toLowerCase() }
+            : {};
+        },
+      },
+      look: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          parseDocumentTableLookDataset(element.dataset.officeTableLook),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const look = normalizeDocumentTableLook(attributes.look);
+          return look
+            ? {
+                'data-office-table-look':
+                  serializeDocumentTableLookDataset(look),
+              }
             : {};
         },
       },

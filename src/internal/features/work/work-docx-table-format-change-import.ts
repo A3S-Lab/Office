@@ -18,6 +18,10 @@ import {
   xmlAttributeNamespace,
 } from './work-docx-settings-xml';
 import { normalizeTableColor } from './work-document-table-borders';
+import {
+  parseDocxTblLookElement,
+  type DocumentTableLook,
+} from './work-document-table-look';
 import { attribute, directChildren } from './work-ooxml-package';
 
 const MAX_REVISION_DATE_LENGTH = 64;
@@ -30,6 +34,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tblLayout',
   'bidiVisual',
   'shd',
+  'tblLook',
 ]);
 const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
 const RELATIONSHIP_NAMESPACES = new Set([
@@ -48,8 +53,8 @@ export interface SupportedDocxTableFormattingChange {
 
 /**
  * Relationship-free `w:tblPrChange` whose prior snapshot contains only
- * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, `w:tblLayout`, and/or
- * `w:bidiVisual`. Broader
+ * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, `w:tblLayout`,
+ * `w:bidiVisual`, solid `w:shd`, and/or `w:tblLook`. Broader
  * property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxTableFormattingChange(
@@ -141,6 +146,7 @@ function supportedTableFormattingChange(
   let cellMargins: DocumentTableCellMarginOverrides | undefined;
   let bidiVisual: boolean | undefined;
   let fill: string | undefined;
+  let look: DocumentTableLook | undefined;
   for (const child of children) {
     if (child.localName === 'tblLayout') {
       const value = normalizeDocumentTableLayoutAlgorithm(
@@ -184,6 +190,12 @@ function supportedTableFormattingChange(
       const value = solidShadingFill(child);
       if (!value) return null;
       fill = value;
+      continue;
+    }
+    if (child.localName === 'tblLook') {
+      const value = parseDocxTblLookElement(child);
+      if (!value) return null;
+      look = value;
     }
   }
   const snapshot = normalizeDocumentTableFormattingSnapshot({
@@ -194,6 +206,7 @@ function supportedTableFormattingChange(
     ...(cellMargins ? { cellMargins } : {}),
     ...(bidiVisual !== undefined ? { bidiVisual } : {}),
     ...(fill ? { fill } : {}),
+    ...(look ? { look } : {}),
   });
   if (!snapshot) return null;
   const date = normalizeRevisionDate(rawDate);

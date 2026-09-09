@@ -370,10 +370,10 @@ Codex 编辑器操作可在所有五个表面上键入和重现。
 
 ## 当前版本
 
-版本 `0.90.0` 让节 rtlGutter 属性修订可审阅：
+版本 `0.91.0` 让表 tblLook 属性修订可审阅：
 
-- **RTL 装订线** — 无关系的 `rtlGutter` 先验成为 `section-formatting`，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出（映射到页边距 `gutterOnRight`）。
-- **边界** — 更广的 `sectPr` 形态仍为不透明元数据或失败闭合；不透明节夹具仍为不等宽 `cols`。
+- **表外观** — 无关系的 `tblLook` 先验成为 `table-formatting`，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。
+- **边界** — 更广的 `tblPr` 形态仍为不透明元数据或失败闭合；不透明表夹具仍为 `tblOverlap`。
 
 更早的版本请查看产品向
 [更新日志](https://a3s-lab.github.io/Office/docs/changelog.html) 时间线，以及完整工程

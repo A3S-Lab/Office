@@ -1,5 +1,10 @@
 import { normalizeTableColor } from './work-document-table-borders';
 import {
+  parseDocxTblLookElement,
+  serializeDocumentTableLookDataset,
+  type DocumentTableLook,
+} from './work-document-table-look';
+import {
   DEFAULT_DOCUMENT_TABLE_CELL_MARGINS,
   DEFAULT_DOCUMENT_TABLE_GEOMETRY,
   applyDocumentTableGeometryToElement,
@@ -44,6 +49,7 @@ export interface ImportedDocxTableSizingMarker {
   formattingChange?: SupportedDocxTableFormattingChange;
   bidiVisual?: boolean;
   fill?: string;
+  look?: DocumentTableLook;
 }
 
 export interface ImportedDocxTableSizingMarkers {
@@ -99,6 +105,9 @@ export function markDocxTableSizing(
       ...(importedTableFill(tableProperties)
         ? { fill: importedTableFill(tableProperties)! }
         : {}),
+      ...(importedTableLook(tableProperties)
+        ? { look: importedTableLook(tableProperties)! }
+        : {}),
     });
   }
   return { tables };
@@ -136,6 +145,10 @@ export function applyImportedDocxTableSizingMarkers(
         if (sizing.fill) {
           table.dataset.officeTableFill = sizing.fill;
         }
+        if (sizing.look) {
+          table.dataset.officeTableLook =
+            serializeDocumentTableLookDataset(sizing.look);
+        }
         if (sizing.columnWidths.length) {
           applyColumnWidths(table, sizing.columnWidths);
         }
@@ -172,6 +185,15 @@ function importedTableFill(
     return null;
   }
   return normalizeTableColor(`#${fill}`);
+}
+
+function importedTableLook(
+  properties: Element | null | undefined,
+): DocumentTableLook | null {
+  if (!properties) return null;
+  const element = directChild(properties, 'tblLook');
+  if (!element) return null;
+  return parseDocxTblLookElement(element);
 }
 
 function importedTableBidiVisual(
