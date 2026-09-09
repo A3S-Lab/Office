@@ -929,6 +929,141 @@ describe('DOCX row-formatting revisions', () => {
     }
   });
 
+  test('imports cnfStyle-only w:trPrChange as a reviewable row-formatting change', async () => {
+    const source = await rowDocxWithCnfStyleChange({
+      prior: '100000000000',
+      current: '010000000000',
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-cnf-style.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const row = html.body.querySelector('tr');
+    expect(row?.dataset.changeKind).toBe('row-formatting');
+    expect(row?.dataset.officeRowPropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toEqual({
+      cnfStyle: '100000000000',
+    });
+    expect(row?.dataset.officeRowCnfStyle).toBe('010000000000');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('row-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const rejected = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rejectedRow = rejected.body.querySelector('tr');
+      expect(rejectedRow?.dataset.changeKind).toBeUndefined();
+      expect(rejectedRow?.dataset.officeRowCnfStyle).toBe('100000000000');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending cnfStyle row-formatting change round-trips as native w:trPrChange', async () => {
+    const source = await rowDocxWithCnfStyleChange({
+      prior: '101000000100',
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-cnf-style-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await xmlEntry(
+      await JSZip.loadAsync(
+        await (await createArtifactBlob(imported)).arrayBuffer(),
+      ),
+      'word/document.xml',
+    );
+    const change = directChild(
+      directChild(descendants(exported, 'tr')[0], 'trPr'),
+      'trPrChange',
+    );
+    expect(change).toBeTruthy();
+    const priorCnfStyle = directChild(directChild(change!, 'trPr'), 'cnfStyle');
+    expect(
+      priorCnfStyle?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorCnfStyle?.getAttribute('w:val') ??
+        priorCnfStyle?.getAttribute('val'),
+    ).toBe('101000000100');
+  });
+
+  test('malformed cnfStyle w:trPrChange stays on the opaque row metadata path', async () => {
+    const source = await rowDocxWithCnfStyleChange({
+      prior: '100000000000',
+      malformedPrior: true,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-cnf-style-opaque.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const row = html.body.querySelector('tr');
+    expect(row?.dataset.changeKind).toBeUndefined();
+    expect(row?.dataset.officeRowPropertyRevisionOmml).toBeTruthy();
+  });
+
+  test('live row cnfStyle edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content:
+        '<table><tbody><tr data-office-row-cnf-style="000000000000"><td><p>Cell</p></td></tr></tbody></table>',
+    });
+    try {
+      let rowPos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'tableRow' && rowPos === null) {
+          rowPos = position;
+        }
+      });
+      expect(rowPos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(rowPos!, undefined, {
+          ...editor.state.doc.nodeAt(rowPos!)!.attrs,
+          cnfStyle: '100000000000',
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'row-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const row = html.body.querySelector('tr');
+      expect(row?.dataset.changeKind).toBe('row-formatting');
+      expect(
+        parseDocumentRowFormatting(row?.dataset.changeBefore),
+      ).toMatchObject({
+        cnfStyle: '000000000000',
+      });
+      expect(row?.dataset.officeRowCnfStyle).toBe('100000000000');
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('live row gridBefore edits become reviewable when track changes is on', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions({
@@ -1265,6 +1400,62 @@ async function rowDocxWithGridAfterChange(options: {
   const priorGrid = document.createElementNS(WORD_NAMESPACE, 'w:gridAfter');
   priorGrid.setAttributeNS(WORD_NAMESPACE, 'w:val', String(options.prior));
   prior.append(priorGrid);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function rowDocxWithCnfStyleChange(options: {
+  prior: string;
+  current?: string;
+  malformedPrior?: boolean;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const row = descendants(document, 'tr')[0];
+  const properties =
+    directChild(row, 'trPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+      row.insertBefore(created, row.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'cnfStyle' || child.localName === 'trPrChange',
+  )) {
+    existing.remove();
+  }
+  const current = document.createElementNS(WORD_NAMESPACE, 'w:cnfStyle');
+  current.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:val',
+    options.current ?? options.prior,
+  );
+  properties.append(current);
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:trPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '33');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+  const priorCnfStyle = document.createElementNS(WORD_NAMESPACE, 'w:cnfStyle');
+  priorCnfStyle.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:val',
+    options.malformedPrior ? '10000000000' : options.prior,
+  );
+  prior.append(priorCnfStyle);
   change.append(prior);
   properties.append(change);
   archive.file(

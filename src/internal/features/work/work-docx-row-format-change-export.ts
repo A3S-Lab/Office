@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { normalizeDocumentRowCnfStyle } from './work-document-row-cnf-style';
 import { parseDocumentRowFormatting } from './work-document-row-format-changes';
 import {
   normalizeDocumentTablePreferredWidth,
@@ -27,6 +28,7 @@ export class DocxRowFormattingChangePatchCollector {
   readonly gridAfter: Array<number | null> = [];
   readonly widthBefore: Array<DocumentTablePreferredWidth | null> = [];
   readonly widthAfter: Array<DocumentTablePreferredWidth | null> = [];
+  readonly cnfStyles: Array<string | null> = [];
 
   record(element: HTMLTableRowElement, id: number): void {
     this.hidden.push(element.dataset.officeRowHidden === 'true');
@@ -74,6 +76,9 @@ export class DocxRowFormattingChangePatchCollector {
         'officeRowWidthAfter',
       ),
     );
+    this.cnfStyles.push(
+      normalizeDocumentRowCnfStyle(element.dataset.officeRowCnfStyle),
+    );
     if (
       element.dataset.changeKind !== 'row-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -105,6 +110,7 @@ export async function patchDocxRowFormattingChanges(
   gridAfter: readonly (number | null)[] = [],
   widthBefore: readonly (DocumentTablePreferredWidth | null)[] = [],
   widthAfter: readonly (DocumentTablePreferredWidth | null)[] = [],
+  cnfStyles: readonly (string | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
@@ -113,7 +119,8 @@ export async function patchDocxRowFormattingChanges(
     !gridBefore.some((value) => value !== null && value > 0) &&
     !gridAfter.some((value) => value !== null && value > 0) &&
     !widthBefore.some((value) => value !== null) &&
-    !widthAfter.some((value) => value !== null)
+    !widthAfter.some((value) => value !== null) &&
+    !cnfStyles.some((value) => value !== null)
   ) {
     return buffer;
   }
@@ -143,6 +150,7 @@ export async function patchDocxRowFormattingChanges(
     const rowGridAfter = gridAfter[index] ?? null;
     const rowWidthBefore = widthBefore[index] ?? null;
     const rowWidthAfter = widthAfter[index] ?? null;
+    const rowCnfStyle = cnfStyles[index] ?? null;
     index += 1;
     if (patch) {
       setRowFormattingChange(document, row, patch);
@@ -170,6 +178,10 @@ export async function patchDocxRowFormattingChanges(
     }
     if (rowWidthAfter) {
       setRowPreferredWidth(document, row, 'wAfter', rowWidthAfter);
+      changed = true;
+    }
+    if (rowCnfStyle) {
+      setRowCnfStyle(document, row, rowCnfStyle);
       changed = true;
     }
   }
@@ -362,6 +374,11 @@ function setRowFormattingChange(
       createPreferredWidthElement(document, 'wAfter', formatting.widthAfter),
     );
   }
+  if (formatting.cnfStyle !== undefined) {
+    const cnfStyle = document.createElementNS(WORD_NAMESPACE, 'w:cnfStyle');
+    cnfStyle.setAttributeNS(WORD_NAMESPACE, 'w:val', formatting.cnfStyle);
+    prior.append(cnfStyle);
+  }
   change.append(prior);
   properties.append(change);
 }
@@ -370,6 +387,27 @@ function normalizedRevisionDate(value: string | undefined): string {
   if (!value?.trim()) return '';
   const time = Date.parse(value);
   return Number.isFinite(time) ? new Date(time).toISOString() : '';
+}
+
+function setRowCnfStyle(
+  document: Document,
+  row: Element,
+  cnfStyle: string,
+): void {
+  let properties = directChild(row, 'trPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+    row.insertBefore(properties, row.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'cnfStyle' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:cnfStyle');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', cnfStyle);
+  properties.append(element);
 }
 
 function setRowPreferredWidth(

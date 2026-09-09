@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core';
 import { TableRow } from '@tiptap/extension-table';
+import { normalizeDocumentRowCnfStyle } from './work-document-row-cnf-style';
 import {
   normalizeDocumentTableAlignment,
   normalizeDocumentTablePreferredWidth,
@@ -148,6 +149,15 @@ export const DocumentTableRow = TableRow.extend({
             'data-office-row-width-after-type': width.type,
             'data-office-row-width-after': String(width.value),
           };
+        },
+      },
+      cnfStyle: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentRowCnfStyle(element.dataset.officeRowCnfStyle),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const cnfStyle = normalizeDocumentRowCnfStyle(attributes.cnfStyle);
+          return cnfStyle ? { 'data-office-row-cnf-style': cnfStyle } : {};
         },
       },
       rowHeight: {

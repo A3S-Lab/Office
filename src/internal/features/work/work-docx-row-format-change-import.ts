@@ -1,3 +1,4 @@
+import { parseDocxRowCnfStyleElement } from './work-document-row-cnf-style';
 import {
   normalizeDocumentRowGridSpan,
   serializeDocumentRowFormatting,
@@ -33,6 +34,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'gridAfter',
   'wBefore',
   'wAfter',
+  'cnfStyle',
 ]);
 const PIXELS_PER_TWIP = 96 / 1440;
 
@@ -46,8 +48,8 @@ export interface SupportedDocxRowFormattingChange {
 /**
  * Relationship-free `w:trPrChange` whose prior snapshot contains only
  * `w:cantSplit`, `w:tblHeader`, `w:trHeight`, `w:hidden`, `w:jc`,
- * `w:gridBefore`, `w:gridAfter`, `w:wBefore`, and/or `w:wAfter`. Broader
- * row property sets stay on the opaque OMML path.
+ * `w:gridBefore`, `w:gridAfter`, `w:wBefore`, `w:wAfter`, and/or `w:cnfStyle`.
+ * Broader row property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxRowFormattingChange(change: Element): boolean {
   return supportedRowFormattingChange(change) !== null;
@@ -136,6 +138,7 @@ function supportedRowFormattingChange(
     gridAfter?: number;
     widthBefore?: DocumentTablePreferredWidth;
     widthAfter?: DocumentTablePreferredWidth;
+    cnfStyle?: string;
   } = {};
   for (const child of children) {
     if (child.localName === 'cantSplit') {
@@ -190,6 +193,12 @@ function supportedRowFormattingChange(
       const widthAfter = importedPreferredWidth(child);
       if (!widthAfter) return null;
       snapshot.widthAfter = widthAfter;
+      continue;
+    }
+    if (child.localName === 'cnfStyle') {
+      const cnfStyle = parseDocxRowCnfStyleElement(child);
+      if (!cnfStyle) return null;
+      snapshot.cnfStyle = cnfStyle;
     }
   }
   return {

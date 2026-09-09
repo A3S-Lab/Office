@@ -4,6 +4,7 @@ import {
   type DocumentTableAlignment,
   type DocumentTablePreferredWidth,
 } from './work-document-table-geometry';
+import { normalizeDocumentRowCnfStyle } from './work-document-row-cnf-style';
 import {
   normalizeDocumentTableRowHeight,
   normalizeDocumentTableRowHeightRule,
@@ -21,7 +22,7 @@ export const DOCUMENT_ROW_CHANGE_ATTRIBUTES = [
 /**
  * Prior snapshot for reviewable row-property revisions.
  * At least one of cantSplit, repeatHeader, height, hidden, alignment,
- * gridBefore, gridAfter, widthBefore, or widthAfter must be present.
+ * gridBefore, gridAfter, widthBefore, widthAfter, or cnfStyle must be present.
  */
 export interface DocumentRowFormattingSnapshot {
   cantSplit?: boolean;
@@ -33,6 +34,7 @@ export interface DocumentRowFormattingSnapshot {
   gridAfter?: number;
   widthBefore?: DocumentTablePreferredWidth;
   widthAfter?: DocumentTablePreferredWidth;
+  cnfStyle?: string;
 }
 
 export interface DocumentRowFormattingHeight {
@@ -52,11 +54,12 @@ export function serializeDocumentRowFormatting(attributes: {
   gridAfter?: unknown;
   widthBefore?: unknown;
   widthAfter?: unknown;
+  cnfStyle?: unknown;
 }): string {
   const snapshot = normalizeDocumentRowFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, gridBefore, gridAfter, widthBefore, or widthAfter.',
+      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, gridBefore, gridAfter, widthBefore, widthAfter, or cnfStyle.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -95,7 +98,8 @@ export function parseDocumentRowFormatting(
         key !== 'gridBefore' &&
         key !== 'gridAfter' &&
         key !== 'widthBefore' &&
-        key !== 'widthAfter',
+        key !== 'widthAfter' &&
+        key !== 'cnfStyle',
     )
   ) {
     return null;
@@ -115,6 +119,7 @@ export function normalizeDocumentRowFormattingSnapshot(attributes: {
   gridAfter?: unknown;
   widthBefore?: unknown;
   widthAfter?: unknown;
+  cnfStyle?: unknown;
 }): DocumentRowFormattingSnapshot | null {
   const snapshot: DocumentRowFormattingSnapshot = {};
   if ('cantSplit' in attributes && attributes.cantSplit !== undefined) {
@@ -163,6 +168,11 @@ export function normalizeDocumentRowFormattingSnapshot(attributes: {
     if (!widthAfter) return null;
     snapshot.widthAfter = widthAfter;
   }
+  if ('cnfStyle' in attributes && attributes.cnfStyle !== undefined) {
+    const cnfStyle = normalizeDocumentRowCnfStyle(attributes.cnfStyle);
+    if (!cnfStyle) return null;
+    snapshot.cnfStyle = cnfStyle;
+  }
   return snapshot.cantSplit !== undefined ||
     snapshot.repeatHeader !== undefined ||
     snapshot.height !== undefined ||
@@ -171,7 +181,8 @@ export function normalizeDocumentRowFormattingSnapshot(attributes: {
     snapshot.gridBefore !== undefined ||
     snapshot.gridAfter !== undefined ||
     snapshot.widthBefore !== undefined ||
-    snapshot.widthAfter !== undefined
+    snapshot.widthAfter !== undefined ||
+    snapshot.cnfStyle !== undefined
     ? snapshot
     : null;
 }
@@ -222,6 +233,9 @@ export function restoredDocumentRowAttributes(
     ...(formatting.widthAfter !== undefined
       ? { widthAfter: formatting.widthAfter }
       : {}),
+    ...(formatting.cnfStyle !== undefined
+      ? { cnfStyle: formatting.cnfStyle }
+      : {}),
   });
 }
 
@@ -271,6 +285,7 @@ function orderedSnapshot(
       value: snapshot.widthAfter.value,
     };
   }
+  if (snapshot.cnfStyle !== undefined) ordered.cnfStyle = snapshot.cnfStyle;
   return ordered;
 }
 

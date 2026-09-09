@@ -1,6 +1,7 @@
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import type { EditorState, Transaction } from '@tiptap/pm/state';
 import type { WorkDocumentChangeIdentity } from './work-document-changes';
+import { normalizeDocumentRowCnfStyle } from './work-document-row-cnf-style';
 import {
   normalizeDocumentRowFormattingSnapshot,
   serializeDocumentRowFormatting,
@@ -22,7 +23,8 @@ interface DocumentRowFormattingTrackingOptions {
 
 /**
  * When track-changes is on, row cantSplit / repeatHeader / height / hidden /
- * alignment / gridBefore / gridAfter / widthBefore / widthAfter edits become reviewable `row-formatting` revisions.
+ * alignment / gridBefore / gridAfter / widthBefore / widthAfter / cnfStyle edits
+ * become reviewable `row-formatting` revisions.
  */
 export function trackDocumentRowFormattingTransaction(
   transaction: Transaction,
@@ -70,6 +72,7 @@ function rowFormatting(node: ProseMirrorNode): {
   gridAfter?: number;
   widthBefore?: DocumentTablePreferredWidth;
   widthAfter?: DocumentTablePreferredWidth;
+  cnfStyle?: string;
 } | null {
   const height = normalizeDocumentTableRowHeight(node.attrs.rowHeight);
   const rule =
@@ -103,6 +106,7 @@ function rowFormatting(node: ProseMirrorNode): {
     type: 'auto' as const,
     value: null,
   };
+  const cnfStyle = normalizeDocumentRowCnfStyle(node.attrs.cnfStyle);
   return normalizeDocumentRowFormattingSnapshot({
     cantSplit:
       typeof node.attrs.cantSplit === 'boolean' ? node.attrs.cantSplit : false,
@@ -116,6 +120,7 @@ function rowFormatting(node: ProseMirrorNode): {
     gridAfter,
     widthBefore,
     widthAfter,
+    ...(cnfStyle ? { cnfStyle } : {}),
     ...(height !== null && rule ? { height: { value: height, rule } } : {}),
   });
 }
@@ -136,6 +141,7 @@ function onlyRowFormattingChanged(
   delete beforeAttrs.gridAfter;
   delete beforeAttrs.widthBefore;
   delete beforeAttrs.widthAfter;
+  delete beforeAttrs.cnfStyle;
   delete beforeAttrs.rowChangeKind;
   delete beforeAttrs.rowChangeId;
   delete beforeAttrs.rowChangeAuthor;
@@ -152,6 +158,7 @@ function onlyRowFormattingChanged(
   delete afterAttrs.gridAfter;
   delete afterAttrs.widthBefore;
   delete afterAttrs.widthAfter;
+  delete afterAttrs.cnfStyle;
   delete afterAttrs.rowChangeKind;
   delete afterAttrs.rowChangeId;
   delete afterAttrs.rowChangeAuthor;
