@@ -215,18 +215,20 @@ function listFrozenDirs() {
     .sort((a, b) => compareVersion(b, a));
 }
 
-/** Keep the Pages/Rspress multi-version build under GitHub-hosted RAM limits. */
-const MAX_PUBLISHED_FROZEN_VERSIONS = 10;
+/** Inclusive lower bound for the continuously published release window. */
+const MIN_PUBLISHED_FROZEN_VERSION = '0.61.0';
 /** Frozen trees that visual contracts still deep-link. */
 const REQUIRED_PUBLISHED_FROZEN_VERSIONS = ['0.38.0', '0.1.0'];
 
 function registerVersions() {
-  const newest = listFrozenDirs().slice(0, MAX_PUBLISHED_FROZEN_VERSIONS);
+  const fromWindow = listFrozenDirs().filter(
+    (version) => compareVersion(version, MIN_PUBLISHED_FROZEN_VERSION) >= 0,
+  );
   const required = REQUIRED_PUBLISHED_FROZEN_VERSIONS.filter((version) =>
     fs.existsSync(path.join(docsRoot, version)),
   );
   const frozen = [
-    ...new Set([...newest, ...required]),
+    ...new Set([...fromWindow, ...required]),
   ].sort((a, b) => compareVersion(b, a));
   const merged = ['latest', ...frozen];
   const file = path.join(root, 'website', 'documentation-site.ts');
