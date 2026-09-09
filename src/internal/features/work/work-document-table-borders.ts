@@ -311,7 +311,11 @@ function tableCellOccupancy(
     );
     let columnIndex = 0;
     for (const cell of cells) {
-      const occupied = grid[rowIndex] ?? (grid[rowIndex] = []);
+      let occupied = grid[rowIndex];
+      if (!occupied) {
+        occupied = [];
+        grid[rowIndex] = occupied;
+      }
       while (occupied[columnIndex]) columnIndex += 1;
       const colSpan = Math.max(1, cell.colSpan || 1);
       const rowSpan = Math.max(1, cell.rowSpan || 1);

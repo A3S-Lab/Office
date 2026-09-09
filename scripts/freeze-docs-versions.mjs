@@ -216,7 +216,7 @@ function listFrozenDirs() {
 }
 
 /** Keep the Pages/Rspress multi-version build under GitHub-hosted RAM limits. */
-const MAX_PUBLISHED_FROZEN_VERSIONS = 70;
+const MAX_PUBLISHED_FROZEN_VERSIONS = 40;
 
 function registerVersions() {
   const frozen = listFrozenDirs().slice(0, MAX_PUBLISHED_FROZEN_VERSIONS);

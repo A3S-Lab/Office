@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const docsRoot = path.join(root, 'docs');
-const MAX_PUBLISHED_FROZEN_VERSIONS = 70;
+const MAX_PUBLISHED_FROZEN_VERSIONS = 40;
 
 function compareVersion(a, b) {
   const pa = a.split('.').map(Number);

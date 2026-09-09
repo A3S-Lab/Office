@@ -57,10 +57,8 @@ jobs:
       - name: Type-check playground
         run: bun run playground:typecheck
 
-      - name: Build documentation website and Playground
-        run: bun run playground:build
-        env:
-          NODE_OPTIONS: --max-old-space-size=8192
+      - name: Build Playground for visual contracts
+        run: bun run playground:build:ui
 
       - name: Check playground bundle budget
         run: bun run playground:bundle-check

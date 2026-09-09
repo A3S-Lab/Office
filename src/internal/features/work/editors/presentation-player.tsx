@@ -367,6 +367,7 @@ export function PresentationPlayer({
           aria-label={presentationBlankScreenLabel(blankScreen)}
           className="work-presentation-blank-screen"
           data-blank-screen={blankScreen}
+          role="img"
         />
       ) : null}
       {presenter ? (
