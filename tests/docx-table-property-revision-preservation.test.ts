@@ -46,10 +46,13 @@ describe('DOCX table property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
-    // tblBorders is reviewable as table-formatting; keep opaque on tblCaption.
-    const caption = document.createElementNS(WORD_NAMESPACE, 'w:tblCaption');
-    caption.setAttributeNS(WORD_NAMESPACE, 'val', 'OpaqueKeeper');
-    prior.append(caption);
+    // tblCaption is reviewable as table-formatting; keep opaque on tblDescription.
+    const description = document.createElementNS(
+      WORD_NAMESPACE,
+      'w:tblDescription',
+    );
+    description.setAttributeNS(WORD_NAMESPACE, 'val', 'OpaqueKeeper');
+    prior.append(description);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -101,15 +104,15 @@ describe('DOCX table property-revision preservation', () => {
       id: '7',
       author: 'Reviewer',
     });
-    const priorCaption = directChild(
+    const priorDescription = directChild(
       directChild(exportedChange!, 'tblPr'),
-      'tblCaption',
+      'tblDescription',
     );
-    expect(priorCaption).toBeTruthy();
+    expect(priorDescription).toBeTruthy();
     expect(
-      priorCaption?.getAttributeNS(WORD_NAMESPACE, 'val') ??
-        priorCaption?.getAttribute('w:val') ??
-        priorCaption?.getAttribute('val'),
+      priorDescription?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorDescription?.getAttribute('w:val') ??
+        priorDescription?.getAttribute('val'),
     ).toBe('OpaqueKeeper');
   });
 

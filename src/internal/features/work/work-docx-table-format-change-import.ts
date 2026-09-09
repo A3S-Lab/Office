@@ -13,6 +13,7 @@ import {
   normalizeDocumentTableOverlap,
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
+  normalizeDocumentTableCaption,
   serializeDocumentTableFormatting,
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
@@ -49,6 +50,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tblStyle',
   'tblCellSpacing',
   'tblBorders',
+  'tblCaption',
 ]);
 const MARGIN_SIDES = new Set([
   'top',
@@ -76,7 +78,8 @@ export interface SupportedDocxTableFormattingChange {
  * Relationship-free `w:tblPrChange` whose prior snapshot contains only
  * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, `w:tblLayout`,
  * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, `w:tblOverlap`, relationship-free
- * `w:tblStyle`, dxa `w:tblCellSpacing`, and/or direct-color `w:tblBorders`.
+ * `w:tblStyle`, dxa `w:tblCellSpacing`, direct-color `w:tblBorders`, and/or
+ * relationship-free `w:tblCaption`.
  * Broader property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxTableFormattingChange(change: Element): boolean {
@@ -178,6 +181,7 @@ function supportedTableFormattingChange(
   let styleId: string | undefined;
   let cellSpacing: number | undefined;
   let borders: DocumentTableFormattingBorders | undefined;
+  let caption: string | undefined;
   for (const child of children) {
     if (child.localName === 'tblLayout') {
       const value = normalizeDocumentTableLayoutAlgorithm(
@@ -254,6 +258,13 @@ function supportedTableFormattingChange(
       const value = importedTableBorders(child);
       if (!value) return null;
       borders = value;
+      continue;
+    }
+    if (child.localName === 'tblCaption') {
+      if (child.children.length > 0) return null;
+      const value = normalizeDocumentTableCaption(attribute(child, 'val'));
+      if (!value) return null;
+      caption = value;
     }
   }
   const snapshot = normalizeDocumentTableFormattingSnapshot({
@@ -269,6 +280,7 @@ function supportedTableFormattingChange(
     ...(styleId ? { styleId } : {}),
     ...(cellSpacing !== undefined ? { cellSpacing } : {}),
     ...(borders ? { borders } : {}),
+    ...(caption ? { caption } : {}),
   });
   if (!snapshot) return null;
   const date = normalizeRevisionDate(rawDate);

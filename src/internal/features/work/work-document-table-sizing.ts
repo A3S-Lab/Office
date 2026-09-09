@@ -47,6 +47,7 @@ import {
   normalizeDocumentTableOverlap,
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
+  normalizeDocumentTableCaption,
 } from './work-document-table-format-changes';
 import {
   parseDocumentTableFormattingBordersDataset,
@@ -291,6 +292,15 @@ export const DocumentTable = Table.extend({
             attributes.borders as never,
           );
           return encoded ? { 'data-office-table-borders': encoded } : {};
+        },
+      },
+      caption: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentTableCaption(element.dataset.officeTableCaption),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const caption = normalizeDocumentTableCaption(attributes.caption);
+          return caption ? { 'data-office-table-caption': caption } : {};
         },
       },
       floatOmml: {

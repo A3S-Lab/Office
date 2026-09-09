@@ -5,6 +5,7 @@ import {
   normalizeDocumentTableOverlap,
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
+  normalizeDocumentTableCaption,
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
 import {
@@ -44,6 +45,7 @@ export class DocxTableFormattingChangePatchCollector {
   readonly styleIds: Array<string | null> = [];
   readonly cellSpacings: Array<number | null> = [];
   readonly borders: Array<DocumentTableFormattingBorders | null> = [];
+  readonly captions: Array<string | null> = [];
 
   record(element: HTMLTableElement, id: number): void {
     this.bidiVisual.push(element.dataset.officeTableBidiVisual === 'true');
@@ -67,6 +69,9 @@ export class DocxTableFormattingChangePatchCollector {
       parseDocumentTableFormattingBordersDataset(
         element.dataset.officeTableBorders,
       ),
+    );
+    this.captions.push(
+      normalizeDocumentTableCaption(element.dataset.officeTableCaption),
     );
     if (
       element.dataset.changeKind !== 'table-formatting' ||
@@ -106,6 +111,7 @@ export async function patchDocxTableFormattingChanges(
   styleIds: readonly (string | null)[] = [],
   cellSpacings: readonly (number | null)[] = [],
   borders: readonly (DocumentTableFormattingBorders | null)[] = [],
+  captions: readonly (string | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
@@ -115,7 +121,8 @@ export async function patchDocxTableFormattingChanges(
     !overlaps.some(Boolean) &&
     !styleIds.some(Boolean) &&
     !cellSpacings.some((value) => value !== null && value !== undefined) &&
-    !borders.some(Boolean)
+    !borders.some(Boolean) &&
+    !captions.some(Boolean)
   ) {
     return buffer;
   }
@@ -146,6 +153,7 @@ export async function patchDocxTableFormattingChanges(
     const tableStyleId = styleIds[index] ?? null;
     const tableCellSpacing = cellSpacings[index] ?? null;
     const tableBorders = borders[index] ?? null;
+    const tableCaption = captions[index] ?? null;
     index += 1;
     if (patch) {
       setTableFormattingChange(document, table, patch);
@@ -170,6 +178,9 @@ export async function patchDocxTableFormattingChanges(
       changed = true;
     }
     if (setTableBorders(document, table, tableBorders)) {
+      changed = true;
+    }
+    if (setTableCaption(document, table, tableCaption)) {
       changed = true;
     }
   }
@@ -211,6 +222,11 @@ export async function patchDocxTableFormattingChanges(
   if (borders.length && borders.length !== patches.length) {
     throw new Error(
       `DOCX table borders patch count mismatch (${borders.length} borders, ${patches.length} tables).`,
+    );
+  }
+  if (captions.length && captions.length !== patches.length) {
+    throw new Error(
+      `DOCX table caption patch count mismatch (${captions.length} captions, ${patches.length} tables).`,
     );
   }
   if (changed) {
@@ -299,6 +315,9 @@ function setTableFormattingChange(
   }
   if (formatting.borders) {
     prior.append(createTblBordersElement(document, formatting.borders));
+  }
+  if (formatting.caption) {
+    prior.append(createTblCaptionElement(document, formatting.caption));
   }
   change.append(prior);
   properties.append(change);
@@ -471,9 +490,40 @@ function setTableStyleId(
   return true;
 }
 
+function setTableCaption(
+  document: Document,
+  table: Element,
+  caption: string | null,
+): boolean {
+  let properties = directChild(table, 'tblPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    if (!caption) return false;
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+    table.insertBefore(properties, table.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblCaption' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (!caption) return true;
+  properties.append(createTblCaptionElement(document, caption));
+  return true;
+}
+
 function createTblStyleElement(document: Document, styleId: string): Element {
   const element = document.createElementNS(WORD_NAMESPACE, 'w:tblStyle');
   element.setAttributeNS(WORD_NAMESPACE, 'w:val', styleId);
+  return element;
+}
+
+function createTblCaptionElement(
+  document: Document,
+  caption: string,
+): Element {
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:tblCaption');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', caption);
   return element;
 }
 

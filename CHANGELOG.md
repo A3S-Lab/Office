@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:tblPrChange` priors that include relationship-free `w:tblCaption` are now
+  reviewable as `table-formatting` (`caption`) with accept/reject, live
+  track-changes, and native export (including current-table `w:tblCaption` on
+  DOCX write). Broader table property sets remain opaque or fail-closed; opaque
+  fixtures stay on `tblDescription`.
+
 ## 0.95.0 - 2026-09-09
 
 ### Writer
