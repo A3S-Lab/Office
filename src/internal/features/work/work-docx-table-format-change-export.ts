@@ -3,6 +3,7 @@ import type { DocumentTablePreferredWidth } from './work-document-table-geometry
 import {
   parseDocumentTableFormatting,
   normalizeDocumentTableOverlap,
+  normalizeDocumentTableStyleId,
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
 import {
@@ -31,6 +32,7 @@ export class DocxTableFormattingChangePatchCollector {
   readonly fills: Array<string | null> = [];
   readonly looks: Array<DocumentTableLook | null> = [];
   readonly overlaps: Array<DocumentTableOverlap | null> = [];
+  readonly styleIds: Array<string | null> = [];
 
   record(element: HTMLTableElement, id: number): void {
     this.bidiVisual.push(element.dataset.officeTableBidiVisual === 'true');
@@ -41,6 +43,9 @@ export class DocxTableFormattingChangePatchCollector {
     );
     this.overlaps.push(
       normalizeDocumentTableOverlap(element.dataset.officeTableOverlap),
+    );
+    this.styleIds.push(
+      normalizeDocumentTableStyleId(element.dataset.officeTableStyleId),
     );
     if (
       element.dataset.changeKind !== 'table-formatting' ||
@@ -73,13 +78,15 @@ export async function patchDocxTableFormattingChanges(
   fills: readonly (string | null)[] = [],
   looks: readonly (DocumentTableLook | null)[] = [],
   overlaps: readonly (DocumentTableOverlap | null)[] = [],
+  styleIds: readonly (string | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
     !bidiVisual.some(Boolean) &&
     !fills.some(Boolean) &&
     !looks.some(Boolean) &&
-    !overlaps.some(Boolean)
+    !overlaps.some(Boolean) &&
+    !styleIds.some(Boolean)
   ) {
     return buffer;
   }
@@ -107,6 +114,7 @@ export async function patchDocxTableFormattingChanges(
     const tableFill = fills[index] ?? null;
     const tableLook = looks[index] ?? null;
     const tableOverlap = overlaps[index] ?? null;
+    const tableStyleId = styleIds[index] ?? null;
     index += 1;
     if (patch) {
       setTableFormattingChange(document, table, patch);
@@ -122,6 +130,9 @@ export async function patchDocxTableFormattingChanges(
       changed = true;
     }
     if (setTableOverlap(document, table, tableOverlap)) {
+      changed = true;
+    }
+    if (setTableStyleId(document, table, tableStyleId)) {
       changed = true;
     }
   }
@@ -148,6 +159,11 @@ export async function patchDocxTableFormattingChanges(
   if (overlaps.length && overlaps.length !== patches.length) {
     throw new Error(
       `DOCX table overlap patch count mismatch (${overlaps.length} overlaps, ${patches.length} tables).`,
+    );
+  }
+  if (styleIds.length && styleIds.length !== patches.length) {
+    throw new Error(
+      `DOCX table styleId patch count mismatch (${styleIds.length} styleIds, ${patches.length} tables).`,
     );
   }
   if (changed) {
@@ -226,6 +242,9 @@ function setTableFormattingChange(
   if (formatting.overlap) {
     prior.append(createTblOverlapElement(document, formatting.overlap));
   }
+  if (formatting.styleId) {
+    prior.append(createTblStyleElement(document, formatting.styleId));
+  }
   change.append(prior);
   properties.append(change);
 }
@@ -280,6 +299,37 @@ function setTableBidiVisual(
   if (!bidiVisual) return true;
   properties.append(document.createElementNS(WORD_NAMESPACE, 'w:bidiVisual'));
   return true;
+}
+
+function setTableStyleId(
+  document: Document,
+  table: Element,
+  styleId: string | null,
+): boolean {
+  let properties = directChild(table, 'tblPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    if (!styleId) return false;
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+    table.insertBefore(properties, table.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblStyle' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (!styleId) return true;
+  properties.append(createTblStyleElement(document, styleId));
+  return true;
+}
+
+function createTblStyleElement(
+  document: Document,
+  styleId: string,
+): Element {
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:tblStyle');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', styleId);
+  return element;
 }
 
 function setTableOverlap(

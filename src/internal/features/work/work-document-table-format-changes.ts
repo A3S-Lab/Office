@@ -29,7 +29,7 @@ export const DOCUMENT_TABLE_CHANGE_ATTRIBUTES = [
 /**
  * Prior snapshot for reviewable table-property revisions.
  * At least one of layout, alignment, preferred width, indent, cellMargins,
- * bidiVisual, fill, look, or overlap must be present.
+ * bidiVisual, fill, look, overlap, or styleId must be present.
  */
 export type DocumentTableOverlap = 'never' | 'overlap';
 
@@ -43,6 +43,7 @@ export interface DocumentTableFormattingSnapshot {
   fill?: string;
   look?: DocumentTableLook;
   overlap?: DocumentTableOverlap;
+  styleId?: string;
 }
 
 const MAX_TABLE_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -65,12 +66,13 @@ export function serializeDocumentTableFormatting(
     fill?: unknown;
     look?: unknown;
     overlap?: unknown;
+    styleId?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentTableFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, bidiVisual, fill, look, or overlap.',
+      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, bidiVisual, fill, look, overlap, or styleId.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -109,7 +111,8 @@ export function parseDocumentTableFormatting(
         key !== 'bidiVisual' &&
         key !== 'fill' &&
         key !== 'look' &&
-        key !== 'overlap',
+        key !== 'overlap' &&
+        key !== 'styleId',
     )
   ) {
     return null;
@@ -131,6 +134,7 @@ export function normalizeDocumentTableFormattingSnapshot(
     fill?: unknown;
     look?: unknown;
     overlap?: unknown;
+    styleId?: unknown;
   },
 ): DocumentTableFormattingSnapshot | null {
   const snapshot: DocumentTableFormattingSnapshot = {};
@@ -180,6 +184,11 @@ export function normalizeDocumentTableFormattingSnapshot(
     if (!overlap) return null;
     snapshot.overlap = overlap;
   }
+  if ('styleId' in attributes && attributes.styleId !== undefined) {
+    const styleId = normalizeDocumentTableStyleId(attributes.styleId);
+    if (!styleId) return null;
+    snapshot.styleId = styleId;
+  }
   return snapshot.layout ||
     snapshot.alignment ||
     snapshot.width ||
@@ -188,7 +197,8 @@ export function normalizeDocumentTableFormattingSnapshot(
     snapshot.bidiVisual !== undefined ||
     snapshot.fill ||
     snapshot.look ||
-    snapshot.overlap
+    snapshot.overlap ||
+    snapshot.styleId
     ? snapshot
     : null;
 }
@@ -247,6 +257,9 @@ export function restoredDocumentTableAttributes(
   if (formatting.overlap !== undefined) {
     next.overlap = formatting.overlap;
   }
+  if (formatting.styleId !== undefined) {
+    next.styleId = formatting.styleId;
+  }
   return next;
 }
 
@@ -270,6 +283,7 @@ function orderedSnapshot(
   if (snapshot.fill !== undefined) ordered.fill = snapshot.fill;
   if (snapshot.look) ordered.look = orderedDocumentTableLook(snapshot.look);
   if (snapshot.overlap) ordered.overlap = snapshot.overlap;
+  if (snapshot.styleId) ordered.styleId = snapshot.styleId;
   return ordered;
 }
 
@@ -305,4 +319,21 @@ export function normalizeDocumentTableOverlap(
   value: unknown,
 ): DocumentTableOverlap | null {
   return value === 'never' || value === 'overlap' ? value : null;
+}
+
+const MAX_TABLE_STYLE_ID_LENGTH = 255;
+
+export function normalizeDocumentTableStyleId(
+  value: unknown,
+): string | null {
+  if (typeof value !== 'string') return null;
+  const styleId = value.trim();
+  if (
+    !styleId ||
+    styleId.length > MAX_TABLE_STYLE_ID_LENGTH ||
+    /[\u0000-\u001f\u007f]/.test(styleId)
+  ) {
+    return null;
+  }
+  return styleId;
 }

@@ -46,9 +46,11 @@ describe('DOCX table property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
-    const style = document.createElementNS(WORD_NAMESPACE, 'w:tblStyle');
-    style.setAttributeNS(WORD_NAMESPACE, 'w:val', 'TableGrid');
-    prior.append(style);
+    // tblStyle is reviewable as table-formatting; keep opaque on tblCellSpacing.
+    const spacing = document.createElementNS(WORD_NAMESPACE, 'w:tblCellSpacing');
+    spacing.setAttributeNS(WORD_NAMESPACE, 'w:w', '120');
+    spacing.setAttributeNS(WORD_NAMESPACE, 'w:type', 'dxa');
+    prior.append(spacing);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -100,15 +102,15 @@ describe('DOCX table property-revision preservation', () => {
       id: '7',
       author: 'Reviewer',
     });
-    const priorStyle = directChild(
+    const priorSpacing = directChild(
       directChild(exportedChange!, 'tblPr'),
-      'tblStyle',
+      'tblCellSpacing',
     );
     expect(
-      priorStyle?.getAttributeNS(WORD_NAMESPACE, 'val') ??
-        priorStyle?.getAttribute('w:val') ??
-        priorStyle?.getAttribute('val'),
-    ).toBe('TableGrid');
+      priorSpacing?.getAttributeNS(WORD_NAMESPACE, 'w') ??
+        priorSpacing?.getAttribute('w:w') ??
+        priorSpacing?.getAttribute('w'),
+    ).toBe('120');
   });
 
   test('drops relationship-bound w:tblPrChange instead of inventing opaque metadata', async () => {

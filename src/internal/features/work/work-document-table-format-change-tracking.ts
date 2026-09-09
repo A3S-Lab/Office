@@ -4,6 +4,7 @@ import type { WorkDocumentChangeIdentity } from './work-document-changes';
 import {
   normalizeDocumentTableFormattingSnapshot,
   normalizeDocumentTableOverlap,
+  normalizeDocumentTableStyleId,
   serializeDocumentTableFormatting,
   type DocumentTableFormattingSnapshot,
 } from './work-document-table-format-changes';
@@ -19,7 +20,7 @@ interface DocumentTableFormattingTrackingOptions {
 
 /**
  * When track-changes is on, table layout / alignment / preferred-width /
- * indent / default cell-margin / bidiVisual / solid-fill / tblLook / tblOverlap edits become
+ * indent / default cell-margin / bidiVisual / solid-fill / tblLook / tblOverlap / tblStyle edits become
  * reviewable `table-formatting` revisions.
  *
  * Layout-mode switches (`setDocumentTableLayoutMode`) also rewrite cell
@@ -96,6 +97,9 @@ function geometryFormatting(
     ...(normalizeDocumentTableOverlap(node.attrs.overlap)
       ? { overlap: normalizeDocumentTableOverlap(node.attrs.overlap)! }
       : {}),
+    ...(normalizeDocumentTableStyleId(node.attrs.styleId)
+      ? { styleId: normalizeDocumentTableStyleId(node.attrs.styleId)! }
+      : {}),
   });
 }
 
@@ -149,6 +153,7 @@ function tableSnapshotIgnoringGeometry(node: ProseMirrorNode): unknown {
   delete attrs.fill;
   delete attrs.look;
   delete attrs.overlap;
+  delete attrs.styleId;
   delete attrs.tableChangeKind;
   delete attrs.tableChangeId;
   delete attrs.tableChangeAuthor;

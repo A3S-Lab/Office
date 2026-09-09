@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.92.0` makes table tblOverlap revisions reviewable:
+Version `0.93.0` makes table tblStyle revisions reviewable:
 
-- **Table overlap** — relationship-free `tblOverlap` priors become
-  `table-formatting` with accept/reject, live track-changes, and native DOCX
+- **Table style id** — relationship-free `tblStyle` priors become
+  `table-formatting` (`styleId`) with accept/reject, live track-changes, and native DOCX
   export.
 - **Boundary** — broader `tblPr` shapes stay opaque metadata or fail-closed;
-  opaque table fixtures stay on `tblStyle`.
+  opaque table fixtures stay on `tblCellSpacing`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

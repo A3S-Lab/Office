@@ -11,6 +11,7 @@ import {
 import {
   normalizeDocumentTableFormattingSnapshot,
   normalizeDocumentTableOverlap,
+  normalizeDocumentTableStyleId,
   serializeDocumentTableFormatting,
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
@@ -38,6 +39,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'shd',
   'tblLook',
   'tblOverlap',
+  'tblStyle',
 ]);
 const MARGIN_SIDES = new Set(['top', 'right', 'bottom', 'left', 'start', 'end']);
 const RELATIONSHIP_NAMESPACES = new Set([
@@ -57,7 +59,7 @@ export interface SupportedDocxTableFormattingChange {
 /**
  * Relationship-free `w:tblPrChange` whose prior snapshot contains only
  * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, `w:tblLayout`,
- * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, and/or `w:tblOverlap`. Broader
+ * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, `w:tblOverlap`, and/or relationship-free `w:tblStyle`. Broader
  * property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxTableFormattingChange(
@@ -151,6 +153,7 @@ function supportedTableFormattingChange(
   let fill: string | undefined;
   let look: DocumentTableLook | undefined;
   let overlap: DocumentTableOverlap | undefined;
+  let styleId: string | undefined;
   for (const child of children) {
     if (child.localName === 'tblLayout') {
       const value = normalizeDocumentTableLayoutAlgorithm(
@@ -207,6 +210,13 @@ function supportedTableFormattingChange(
       const value = normalizeDocumentTableOverlap(attribute(child, 'val'));
       if (!value) return null;
       overlap = value;
+      continue;
+    }
+    if (child.localName === 'tblStyle') {
+      if (child.children.length > 0) return null;
+      const value = normalizeDocumentTableStyleId(attribute(child, 'val'));
+      if (!value) return null;
+      styleId = value;
     }
   }
   const snapshot = normalizeDocumentTableFormattingSnapshot({
@@ -219,6 +229,7 @@ function supportedTableFormattingChange(
     ...(fill ? { fill } : {}),
     ...(look ? { look } : {}),
     ...(overlap ? { overlap } : {}),
+    ...(styleId ? { styleId } : {}),
   });
   if (!snapshot) return null;
   const date = normalizeRevisionDate(rawDate);

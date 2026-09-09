@@ -890,6 +890,99 @@ describe('DOCX table-formatting revisions', () => {
     }
   });
 
+  test('imports tblStyle-only w:tblPrChange as a reviewable table-formatting change', async () => {
+    const source = await tableDocxWithStyleIdChange({
+      prior: 'TableNormal',
+      current: 'TableGrid',
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-style-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const table = html.body.querySelector('table');
+    expect(table?.dataset.changeKind).toBe('table-formatting');
+    expect(table?.dataset.officeTablePropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentTableFormatting(table?.dataset.changeBefore)).toEqual({
+      styleId: 'TableNormal',
+    });
+    expect(table?.dataset.officeTableStyleId).toBe('TableGrid');
+  });
+
+  test('pending tblStyle table-formatting change round-trips as native w:tblPrChange', async () => {
+    const source = await tableDocxWithStyleIdChange({
+      prior: 'TableNormal',
+      current: 'TableGrid',
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-style-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const properties = directChild(descendants(exported, 'tbl')[0], 'tblPr');
+    const change = directChild(properties, 'tblPrChange');
+    expect(change).toBeTruthy();
+    expect(directChild(directChild(change!, 'tblPr'), 'tblStyle')).toBeTruthy();
+    expect(directChild(properties, 'tblStyle')).toBeTruthy();
+  });
+
+  test('live table styleId edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<table data-office-table-layout="autofit"',
+        ' data-office-table-width-type="percent"',
+        ' data-office-table-width="100"',
+        ' data-office-table-bidi-visual="false"',
+        ' data-office-table-style-id="TableNormal">',
+        '<tbody><tr><td><p>Cell</p></td></tr></tbody></table>',
+      ].join(''),
+    });
+    try {
+      let tablePos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'table' && tablePos === null) {
+          tablePos = position;
+        }
+      });
+      expect(tablePos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(tablePos!, undefined, {
+          ...editor.state.doc.nodeAt(tablePos!)!.attrs,
+          styleId: 'TableGrid',
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'table-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const table = html.body.querySelector('table');
+      expect(table?.dataset.changeKind).toBe('table-formatting');
+      expect(parseDocumentTableFormatting(table?.dataset.changeBefore)?.styleId).toBe(
+        'TableNormal',
+      );
+      expect(table?.dataset.officeTableStyleId).toBe('TableGrid');
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('live table layout-mode edits become reviewable when track changes is on', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions({
@@ -1028,6 +1121,55 @@ async function tableDocxWithOverlapChange(options: {
   const priorOverlap = document.createElementNS(WORD_NAMESPACE, 'w:tblOverlap');
   priorOverlap.setAttributeNS(WORD_NAMESPACE, 'w:val', options.prior);
   prior.append(priorOverlap);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function tableDocxWithStyleIdChange(options: {
+  prior: string;
+  current: string | null;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const table = descendants(document, 'tbl')[0];
+  const properties =
+    directChild(table, 'tblPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+      table.insertBefore(created, table.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblStyle' || child.localName === 'tblPrChange',
+  )) {
+    existing.remove();
+  }
+  if (options.current) {
+    const current = document.createElementNS(WORD_NAMESPACE, 'w:tblStyle');
+    current.setAttributeNS(WORD_NAMESPACE, 'w:val', options.current);
+    properties.append(current);
+  }
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:tblPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '62');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-09T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+  const priorStyle = document.createElementNS(WORD_NAMESPACE, 'w:tblStyle');
+  priorStyle.setAttributeNS(WORD_NAMESPACE, 'w:val', options.prior);
+  prior.append(priorStyle);
   change.append(prior);
   properties.append(change);
   archive.file(

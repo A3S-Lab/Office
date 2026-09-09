@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.93.0',
+    date: '2026-09-09',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes table tblStyle revisions reviewable',
+      zh: 'Writer 让表 tblStyle 修订可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free tblPrChange priors with tblStyle import as table-formatting with accept/reject, live track-changes, and native DOCX export.',
+      zh: 'Phase 0 保真：含 tblStyle 的无关系 tblPrChange 先验导入为 table-formatting，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Table style id',
+          zh: '表样式 ID',
+        },
+        detail: {
+          en: 'Relationship-free tblStyle priors round-trip as reviewable table-formatting styleId snapshots.',
+          zh: '无关系的 tblStyle 先验作为可审阅 table-formatting styleId 快照往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing table styleId under track-changes creates a pending table-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑表 styleId 会生成待审阅的 table-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'Broader table property sets remain opaque metadata or fail-closed; opaque table fixtures stay on tblCellSpacing.',
+          zh: '更广的表属性集仍为不透明元数据或失败闭合；不透明表夹具仍为 tblCellSpacing。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.93.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.93.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.92.0',
     date: '2026-09-09',
     kind: 'improved',

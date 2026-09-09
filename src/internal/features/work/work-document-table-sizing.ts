@@ -43,7 +43,10 @@ import {
   parseDocumentTableLookDataset,
   serializeDocumentTableLookDataset,
 } from './work-document-table-look';
-import { normalizeDocumentTableOverlap } from './work-document-table-format-changes';
+import {
+  normalizeDocumentTableOverlap,
+  normalizeDocumentTableStyleId,
+} from './work-document-table-format-changes';
 import { applyDocumentTableSharedBorderPaint } from './work-document-table-borders';
 import {
   MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
@@ -247,6 +250,17 @@ export const DocumentTable = Table.extend({
           const overlap = normalizeDocumentTableOverlap(attributes.overlap);
           return overlap
             ? { 'data-office-table-overlap': overlap }
+            : {};
+        },
+      },
+      styleId: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentTableStyleId(element.dataset.officeTableStyleId),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const styleId = normalizeDocumentTableStyleId(attributes.styleId);
+          return styleId
+            ? { 'data-office-table-style-id': styleId }
             : {};
         },
       },

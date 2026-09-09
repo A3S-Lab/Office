@@ -6,6 +6,7 @@ import {
 } from './work-document-table-look';
 import {
   normalizeDocumentTableOverlap,
+  normalizeDocumentTableStyleId,
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
 import {
@@ -55,6 +56,7 @@ export interface ImportedDocxTableSizingMarker {
   fill?: string;
   look?: DocumentTableLook;
   overlap?: DocumentTableOverlap;
+  styleId?: string;
 }
 
 export interface ImportedDocxTableSizingMarkers {
@@ -116,6 +118,9 @@ export function markDocxTableSizing(
       ...(importedTableOverlap(tableProperties)
         ? { overlap: importedTableOverlap(tableProperties)! }
         : {}),
+      ...(importedTableStyleId(tableProperties)
+        ? { styleId: importedTableStyleId(tableProperties)! }
+        : {}),
     });
   }
   return { tables };
@@ -159,6 +164,9 @@ export function applyImportedDocxTableSizingMarkers(
         }
         if (sizing.overlap) {
           table.dataset.officeTableOverlap = sizing.overlap;
+        }
+        if (sizing.styleId) {
+          table.dataset.officeTableStyleId = sizing.styleId;
         }
         if (sizing.columnWidths.length) {
           applyColumnWidths(table, sizing.columnWidths);
@@ -214,6 +222,15 @@ function importedTableOverlap(
   const element = directChild(properties, 'tblOverlap');
   if (!element || element.children.length > 0) return null;
   return normalizeDocumentTableOverlap(attribute(element, 'val'));
+}
+
+function importedTableStyleId(
+  properties: Element | null | undefined,
+): string | null {
+  if (!properties) return null;
+  const element = directChild(properties, 'tblStyle');
+  if (!element || element.children.length > 0) return null;
+  return normalizeDocumentTableStyleId(attribute(element, 'val'));
 }
 
 function importedTableBidiVisual(
