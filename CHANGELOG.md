@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.88.0 - 2026-09-09
+
+### Writer
+
+- Relationship-free `w:sectPrChange` priors that include `w:titlePg` are now
+  reviewable as `section-formatting` (`differentFirstPage`) with accept/reject,
+  live track-changes, and native export (including current-section `w:titlePg`
+  on DOCX write). Broader section property sets remain opaque or fail-closed;
+  opaque fixtures stay on unequal-width `cols`.
+
 ## 0.87.0 - 2026-09-08
 
 ### Writer

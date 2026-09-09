@@ -18,6 +18,11 @@ import {
   type WorkDocumentPageGeometry,
   type WorkDocumentPaperSource,
 } from './work-document-page-size';
+import {
+  normalizeDocumentPageChrome,
+  parseDocumentPageChrome,
+  serializeDocumentPageChrome,
+} from './work-document-page-chrome';
 import type {
   WorkDocumentColumns,
   WorkDocumentPaperSize,
@@ -43,8 +48,8 @@ export interface DocumentSectionEqualColumnsSnapshot {
 
 /**
  * Prior snapshot for reviewable section-property revisions.
- * At least one of orientation, pageGeometry, pageMargins, paperSource, or
- * columns must be present.
+ * At least one of orientation, pageGeometry, pageMargins, paperSource,
+ * columns, or differentFirstPage must be present.
  */
 export interface DocumentSectionFormattingSnapshot {
   orientation?: 'portrait' | 'landscape';
@@ -52,6 +57,7 @@ export interface DocumentSectionFormattingSnapshot {
   pageMargins?: WorkDocumentPageMargins;
   paperSource?: WorkDocumentPaperSource;
   columns?: DocumentSectionEqualColumnsSnapshot;
+  differentFirstPage?: boolean;
 }
 
 const MAX_SECTION_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -72,12 +78,13 @@ export function serializeDocumentSectionFormatting(
     pageMargins?: unknown;
     paperSource?: unknown;
     columns?: unknown;
+    differentFirstPage?: unknown;
   },
 ): string {
   const snapshot = normalizeDocumentSectionFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, or columns.',
+      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, or differentFirstPage.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -112,7 +119,8 @@ export function parseDocumentSectionFormatting(
         key !== 'pageGeometry' &&
         key !== 'pageMargins' &&
         key !== 'paperSource' &&
-        key !== 'columns',
+        key !== 'columns' &&
+        key !== 'differentFirstPage',
     )
   ) {
     return null;
@@ -129,6 +137,7 @@ export function normalizeDocumentSectionFormattingSnapshot(
     pageMargins?: unknown;
     paperSource?: unknown;
     columns?: unknown;
+    differentFirstPage?: unknown;
   },
 ): DocumentSectionFormattingSnapshot | null {
   const snapshot: DocumentSectionFormattingSnapshot = {};
@@ -161,11 +170,19 @@ export function normalizeDocumentSectionFormattingSnapshot(
     if (!columns) return null;
     snapshot.columns = columns;
   }
+  if (
+    'differentFirstPage' in attributes &&
+    attributes.differentFirstPage !== undefined
+  ) {
+    if (typeof attributes.differentFirstPage !== 'boolean') return null;
+    snapshot.differentFirstPage = attributes.differentFirstPage;
+  }
   return snapshot.orientation ||
     snapshot.pageGeometry ||
     snapshot.pageMargins ||
     snapshot.paperSource ||
-    snapshot.columns
+    snapshot.columns ||
+    snapshot.differentFirstPage !== undefined
     ? snapshot
     : null;
 }
@@ -264,12 +281,37 @@ export function restoredDocumentSectionAttributes(
     columnSeparator = restored.separator;
     columnLayout = JSON.stringify(restored);
   }
+  let pageChrome = attributes.pageChrome;
+  if (formatting.differentFirstPage !== undefined) {
+    const chrome = parseDocumentPageChrome(
+      typeof attributes.pageChrome === 'string' ? attributes.pageChrome : '',
+      {
+        headerText:
+          typeof attributes.headerText === 'string'
+            ? attributes.headerText
+            : undefined,
+        footerText:
+          typeof attributes.footerText === 'string'
+            ? attributes.footerText
+            : undefined,
+        showPageNumbers:
+          typeof attributes.showPageNumbers === 'boolean'
+            ? attributes.showPageNumbers
+            : undefined,
+      },
+    );
+    pageChrome = serializeDocumentPageChrome({
+      ...chrome,
+      differentFirstPage: formatting.differentFirstPage,
+    });
+  }
   return clearDocumentSectionChangeAttributes({
     ...attributes,
     orientation,
     pageGeometry,
     pageMargins,
     paperSource,
+    pageChrome,
     marginTop,
     marginRight,
     marginBottom,
@@ -289,6 +331,10 @@ export function sectionFormattingSnapshotFromLayout(layout: {
   pageSize?: WorkDocumentPaperSize;
   paperSource?: WorkDocumentPaperSource;
   columns?: WorkDocumentColumns;
+  pageChrome?: unknown;
+  headerText?: string;
+  footerText?: string;
+  showPageNumbers?: boolean;
 }): DocumentSectionFormattingSnapshot | null {
   const pageMargins = documentPageMarginsForLayout(layout);
   const pageGeometry = documentPageGeometryForLayout({
@@ -298,12 +344,27 @@ export function sectionFormattingSnapshotFromLayout(layout: {
   });
   const paperSource = normalizeRevisionPaperSource(layout.paperSource);
   const columns = normalizeRevisionEqualColumns(layout.columns);
+  const chrome = normalizeDocumentPageChrome(
+    typeof layout.pageChrome === 'string'
+      ? parseDocumentPageChrome(layout.pageChrome, {
+          headerText: layout.headerText,
+          footerText: layout.footerText,
+          showPageNumbers: layout.showPageNumbers,
+        })
+      : (layout.pageChrome as Parameters<typeof normalizeDocumentPageChrome>[0]),
+    {
+      headerText: layout.headerText,
+      footerText: layout.footerText,
+      showPageNumbers: layout.showPageNumbers,
+    },
+  );
   return normalizeDocumentSectionFormattingSnapshot({
     orientation: layout.orientation,
     pageGeometry,
     pageMargins: twipOnlyPageMargins(pageMargins),
     ...(paperSource ? { paperSource } : {}),
     ...(columns ? { columns } : {}),
+    differentFirstPage: chrome.differentFirstPage,
   });
 }
 
@@ -424,6 +485,9 @@ function orderedSnapshot(
   }
   if (snapshot.paperSource) {
     ordered.paperSource = orderedPaperSource(snapshot.paperSource);
+  }
+  if (snapshot.differentFirstPage !== undefined) {
+    ordered.differentFirstPage = snapshot.differentFirstPage;
   }
   if (snapshot.columns) {
     ordered.columns = {

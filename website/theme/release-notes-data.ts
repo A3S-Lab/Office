@@ -1,5 +1,64 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.88.0',
+    date: '2026-09-09',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes section titlePg revisions reviewable',
+      zh: 'Writer 让节 titlePg 修订可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free sectPrChange priors with titlePg import as section-formatting (differentFirstPage) with accept/reject, live track-changes, and native DOCX export.',
+      zh: 'Phase 0 保真：含 titlePg 的无关系 sectPrChange 先验导入为 section-formatting（differentFirstPage），支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Different first page',
+          zh: '首页不同',
+        },
+        detail: {
+          en: 'Relationship-free titlePg priors round-trip as reviewable section-formatting, including current-section export.',
+          zh: '无关系的 titlePg 先验作为可审阅 section-formatting 往返，并覆盖当前节导出。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing pageChrome.differentFirstPage under track-changes creates a pending section-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑 pageChrome.differentFirstPage 会生成待审阅的 section-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'Broader section property sets remain opaque metadata or fail-closed; opaque section fixtures stay on unequal-width cols.',
+          zh: '更广的节属性集仍为不透明元数据或失败闭合；不透明节夹具仍为不等宽 cols。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './components/document.html', zh: './components/document.html' },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.88.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.88.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.87.0',
     date: '2026-09-08',
     kind: 'improved',

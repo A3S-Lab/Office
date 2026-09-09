@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.87.0` makes table bidiVisual property revisions reviewable:
+Version `0.88.0` makes section titlePg / differentFirstPage revisions reviewable:
 
-- **Table bidi visual** — relationship-free `bidiVisual` priors become
-  `table-formatting` with accept/reject, live track-changes, and native DOCX
-  export (including current-table write).
-- **Boundary** — broader `tblPr` / `tcPr` / `trPr` shapes stay opaque
-  metadata or fail-closed; opaque table fixtures stay on `tblLook`.
+- **Different first page** — relationship-free `titlePg` priors become
+  `section-formatting` with accept/reject, live track-changes, and native DOCX
+  export (including current-section write).
+- **Boundary** — broader `sectPr` shapes stay opaque metadata or fail-closed;
+  opaque section fixtures stay on unequal-width `cols`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

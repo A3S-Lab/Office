@@ -26,7 +26,13 @@ import { directChildren } from './work-ooxml-package';
 
 const MAX_REVISION_DATE_LENGTH = 64;
 const REVISION_ATTRIBUTES = new Set(['id', 'author', 'date']);
-const SUPPORTED_PRIOR_CHILDREN = new Set(['pgSz', 'pgMar', 'paperSrc', 'cols']);
+const SUPPORTED_PRIOR_CHILDREN = new Set([
+  'pgSz',
+  'pgMar',
+  'paperSrc',
+  'cols',
+  'titlePg',
+]);
 const PAGE_SIZE_ATTRIBUTE_SET = new Set(['w', 'h', 'orient', 'code']);
 const PAPER_SOURCE_ATTRIBUTE_SET = new Set(['first', 'other']);
 const COLUMNS_ATTRIBUTE_SET = new Set(['num', 'space', 'sep', 'equalWidth']);
@@ -59,8 +65,9 @@ export interface SupportedDocxSectionFormattingChange {
 /**
  * Relationship-free `w:sectPrChange` whose prior snapshot contains only
  * orientation-only or complete `w:pgSz` (w/h with optional orient/code), a
- * complete seven-edge `w:pgMar`, `w:paperSrc`, and/or equal-width `w:cols`.
- * Broader section property sets stay on the opaque OMML path.
+ * complete seven-edge `w:pgMar`, `w:paperSrc`, equal-width `w:cols`,
+ * and/or `w:titlePg`. Broader section property sets stay on the opaque OMML
+ * path.
  */
 export function isSupportedDocxSectionFormattingChange(
   change: Element,
@@ -114,7 +121,7 @@ function supportedSectionFormattingChange(
   const prior = priors[0];
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
-  if (!children.length || children.length > 4) return null;
+  if (!children.length || children.length > 5) return null;
   if (
     children.some(
       (child) =>
@@ -139,6 +146,7 @@ function supportedSectionFormattingChange(
         separator: boolean;
       }
     | undefined;
+  let differentFirstPage: boolean | undefined;
   for (const child of children) {
     if (child.localName === 'pgSz') {
       const value = importedPageSize(child);
@@ -163,6 +171,10 @@ function supportedSectionFormattingChange(
       const value = importedEqualColumns(child);
       if (!value) return null;
       columns = value;
+      continue;
+    }
+    if (child.localName === 'titlePg') {
+      differentFirstPage = onOffValue(child);
     }
   }
   const before = serializeDocumentSectionFormatting({
@@ -171,6 +183,7 @@ function supportedSectionFormattingChange(
     ...(pageMargins ? { pageMargins } : {}),
     ...(paperSource ? { paperSource } : {}),
     ...(columns ? { columns } : {}),
+    ...(differentFirstPage !== undefined ? { differentFirstPage } : {}),
   });
   return {
     id: `docx-section-format-change-${id}`,
@@ -368,6 +381,24 @@ function importedPageMargins(element: Element): WorkDocumentPageMargins | null {
   }
   if (seen.size !== PAGE_MARGIN_KEYS.length) return null;
   return normalizeDocumentPageMargins(values);
+}
+
+function onOffValue(element: Element): boolean {
+  const matches = Array.from(element.attributes).filter(
+    (candidate) =>
+      xmlAttributeLocalName(candidate) === 'val' &&
+      xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+  );
+  if (matches.length > 1) return true;
+  const value = matches[0]?.value ?? null;
+  if (value === null || value === '') return true;
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized === '1' ||
+    normalized === 'true' ||
+    normalized === 'on' ||
+    normalized === 'yes'
+  );
 }
 
 function wordAttribute(element: Element, localName: string): string | null {

@@ -16,8 +16,8 @@ interface DocumentSectionFormattingTrackingOptions {
 
 /**
  * When track-changes is on, section orientation, page-geometry, page-margin,
- * paper-source, and/or equal-width column edits become reviewable
- * `section-formatting` revisions. Companion `pageGeometry` / `pageSize`
+ * paper-source, equal-width column, and/or different-first-page edits become
+ * reviewable `section-formatting` revisions. Companion `pageGeometry` / `pageSize`
  * swaps that follow orientation or geometry edits are allowed; other section
  * layout fields must stay unchanged.
  */
@@ -86,11 +86,17 @@ function layoutSnapshotIgnoringFormatting(node: ProseMirrorNode): unknown {
     margins: _margins,
     paperSource: _paperSource,
     columns: _columns,
+    pageChrome,
     propertyRevisionOmml: _propertyRevisionOmml,
     formattingChange: _formattingChange,
     ...rest
   } = layout;
-  return rest;
+  // differentFirstPage is reviewable via section-formatting; ignore its flips.
+  const chrome =
+    pageChrome && typeof pageChrome === 'object' && !Array.isArray(pageChrome)
+      ? { ...(pageChrome as Record<string, unknown>), differentFirstPage: false }
+      : pageChrome;
+  return { ...rest, pageChrome: chrome };
 }
 
 function sameSectionContentIgnoringFormatting(

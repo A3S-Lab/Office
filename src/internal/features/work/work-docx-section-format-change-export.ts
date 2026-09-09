@@ -189,6 +189,13 @@ function setSectionFormattingChange(
     }
     prior.append(columns);
   }
+  if (formatting.differentFirstPage !== undefined) {
+    const titlePg = document.createElementNS(WORD_NAMESPACE, 'w:titlePg');
+    if (!formatting.differentFirstPage) {
+      titlePg.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    }
+    prior.append(titlePg);
+  }
   change.append(prior);
   section.append(change);
 }

@@ -526,6 +526,106 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 
+
+  test('imports titlePg-only w:sectPrChange as a reviewable section-formatting change', async () => {
+    const source = await sectionDocxWithTitlePageChange({
+      prior: true,
+      current: false,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-titlepg-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const section = html.body.querySelector('section[data-document-section]');
+    expect(section?.getAttribute('data-change-kind')).toBe('section-formatting');
+    expect(section?.getAttribute('data-section-property-revision-omml')).toBeNull();
+    expect(
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
+    ).toEqual({ differentFirstPage: true });
+  });
+
+  test('pending titlePg section-formatting change round-trips as native w:sectPrChange', async () => {
+    const source = await sectionDocxWithTitlePageChange({
+      prior: true,
+      current: false,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-titlepg-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const section = descendants(exported, 'sectPr').find(
+      (element) => element.parentElement?.localName !== 'sectPrChange',
+    );
+    const change = directChild(section!, 'sectPrChange');
+    expect(change).toBeTruthy();
+    expect(directChild(directChild(change!, 'sectPr'), 'titlePg')).toBeTruthy();
+  });
+
+  test('live section differentFirstPage edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1"',
+        ' data-section-orientation="portrait"',
+        ' data-section-column-count="1">',
+        '<p>Body</p>',
+        '</section>',
+      ].join(''),
+    });
+    try {
+      const active = activeDocumentSection(editor);
+      expect(active).not.toBeNull();
+      if (!active) throw new Error('Expected an active document section.');
+      expect(
+        editor.commands.updateActiveDocumentSection({
+          ...active.layout,
+          pageChrome: {
+            ...active.layout.pageChrome!,
+            differentFirstPage: true,
+          },
+        }),
+      ).toBe(true);
+      const changes = collectDocumentChanges(editor.state.doc);
+      expect(changes).toHaveLength(1);
+      expect(changes[0]?.kind).toBe('section-formatting');
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBe(
+        'section-formatting',
+      );
+      expect(
+        parseDocumentSectionFormatting(
+          section?.getAttribute('data-change-before'),
+        ),
+      ).toMatchObject({ differentFirstPage: false });
+      const chrome = JSON.parse(
+        section?.getAttribute('data-section-page-chrome') ?? '{}',
+      );
+      expect(chrome.differentFirstPage).toBe(true);
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('imports equal-width cols-only w:sectPrChange as a reviewable section-formatting change', async () => {
     const source = await sectionDocxWithColumnsChange({
       prior: { count: 1, spacing: 12, separator: false },
@@ -620,6 +720,52 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 });
+
+
+async function sectionDocxWithTitlePageChange(options: {
+  prior: boolean;
+  current: boolean;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const section = descendants(document, 'sectPr').find(
+    (element) => element.parentElement?.localName !== 'sectPrChange',
+  );
+  if (!section) throw new Error('Expected body sectPr.');
+  for (const existing of Array.from(section.children).filter(
+    (child) =>
+      child.localName === 'titlePg' || child.localName === 'sectPrChange',
+  )) {
+    existing.remove();
+  }
+  if (options.current) {
+    section.append(document.createElementNS(WORD_NAMESPACE, 'w:titlePg'));
+  }
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:sectPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '31');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-09T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
+  if (options.prior) {
+    prior.append(document.createElementNS(WORD_NAMESPACE, 'w:titlePg'));
+  } else {
+    const off = document.createElementNS(WORD_NAMESPACE, 'w:titlePg');
+    off.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    prior.append(off);
+  }
+  change.append(prior);
+  section.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
 
 async function sectionDocxWithOrientationChange(options: {
   prior: 'portrait' | 'landscape';
