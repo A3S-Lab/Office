@@ -94,7 +94,7 @@ function layoutSnapshotIgnoringFormatting(node: ProseMirrorNode): unknown {
   // differentFirstPage is reviewable via section-formatting; ignore its flips.
   const chrome =
     pageChrome && typeof pageChrome === 'object' && !Array.isArray(pageChrome)
-      ? { ...(pageChrome as Record<string, unknown>), differentFirstPage: false }
+      ? { ...pageChrome, differentFirstPage: false as const }
       : pageChrome;
   return { ...rest, pageChrome: chrome };
 }
