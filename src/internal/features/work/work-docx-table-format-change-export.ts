@@ -6,6 +6,7 @@ import {
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
   normalizeDocumentTableCaption,
+  normalizeDocumentTableDescription,
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
 import {
@@ -46,6 +47,7 @@ export class DocxTableFormattingChangePatchCollector {
   readonly cellSpacings: Array<number | null> = [];
   readonly borders: Array<DocumentTableFormattingBorders | null> = [];
   readonly captions: Array<string | null> = [];
+  readonly descriptions: Array<string | null> = [];
 
   record(element: HTMLTableElement, id: number): void {
     this.bidiVisual.push(element.dataset.officeTableBidiVisual === 'true');
@@ -72,6 +74,9 @@ export class DocxTableFormattingChangePatchCollector {
     );
     this.captions.push(
       normalizeDocumentTableCaption(element.dataset.officeTableCaption),
+    );
+    this.descriptions.push(
+      normalizeDocumentTableDescription(element.dataset.officeTableDescription),
     );
     if (
       element.dataset.changeKind !== 'table-formatting' ||
@@ -112,6 +117,7 @@ export async function patchDocxTableFormattingChanges(
   cellSpacings: readonly (number | null)[] = [],
   borders: readonly (DocumentTableFormattingBorders | null)[] = [],
   captions: readonly (string | null)[] = [],
+  descriptions: readonly (string | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
@@ -122,7 +128,8 @@ export async function patchDocxTableFormattingChanges(
     !styleIds.some(Boolean) &&
     !cellSpacings.some((value) => value !== null && value !== undefined) &&
     !borders.some(Boolean) &&
-    !captions.some(Boolean)
+    !captions.some(Boolean) &&
+    !descriptions.some(Boolean)
   ) {
     return buffer;
   }
@@ -154,6 +161,7 @@ export async function patchDocxTableFormattingChanges(
     const tableCellSpacing = cellSpacings[index] ?? null;
     const tableBorders = borders[index] ?? null;
     const tableCaption = captions[index] ?? null;
+    const tableDescription = descriptions[index] ?? null;
     index += 1;
     if (patch) {
       setTableFormattingChange(document, table, patch);
@@ -181,6 +189,9 @@ export async function patchDocxTableFormattingChanges(
       changed = true;
     }
     if (setTableCaption(document, table, tableCaption)) {
+      changed = true;
+    }
+    if (setTableDescription(document, table, tableDescription)) {
       changed = true;
     }
   }
@@ -227,6 +238,11 @@ export async function patchDocxTableFormattingChanges(
   if (captions.length && captions.length !== patches.length) {
     throw new Error(
       `DOCX table caption patch count mismatch (${captions.length} captions, ${patches.length} tables).`,
+    );
+  }
+  if (descriptions.length && descriptions.length !== patches.length) {
+    throw new Error(
+      `DOCX table description patch count mismatch (${descriptions.length} descriptions, ${patches.length} tables).`,
     );
   }
   if (changed) {
@@ -318,6 +334,9 @@ function setTableFormattingChange(
   }
   if (formatting.caption) {
     prior.append(createTblCaptionElement(document, formatting.caption));
+  }
+  if (formatting.description) {
+    prior.append(createTblDescriptionElement(document, formatting.description));
   }
   change.append(prior);
   properties.append(change);
@@ -524,6 +543,38 @@ function createTblCaptionElement(
 ): Element {
   const element = document.createElementNS(WORD_NAMESPACE, 'w:tblCaption');
   element.setAttributeNS(WORD_NAMESPACE, 'w:val', caption);
+  return element;
+}
+
+function setTableDescription(
+  document: Document,
+  table: Element,
+  description: string | null,
+): boolean {
+  let properties = directChild(table, 'tblPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    if (!description) return false;
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+    table.insertBefore(properties, table.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblDescription' &&
+      child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (!description) return true;
+  properties.append(createTblDescriptionElement(document, description));
+  return true;
+}
+
+function createTblDescriptionElement(
+  document: Document,
+  description: string,
+): Element {
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:tblDescription');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', description);
   return element;
 }
 

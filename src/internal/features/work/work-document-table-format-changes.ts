@@ -34,8 +34,8 @@ export const DOCUMENT_TABLE_CHANGE_ATTRIBUTES = [
 /**
  * Prior snapshot for reviewable table-property revisions.
  * At least one of layout, alignment, preferred width, indent, cellMargins,
- * bidiVisual, fill, look, overlap, styleId, cellSpacing, borders, or caption
- * must be present.
+ * bidiVisual, fill, look, overlap, styleId, cellSpacing, borders, caption,
+ * or description must be present.
  */
 export type DocumentTableOverlap = 'never' | 'overlap';
 
@@ -53,6 +53,7 @@ export interface DocumentTableFormattingSnapshot {
   cellSpacing?: number;
   borders?: DocumentTableFormattingBorders;
   caption?: string;
+  description?: string;
 }
 
 const MAX_TABLE_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -78,11 +79,12 @@ export function serializeDocumentTableFormatting(attributes: {
   cellSpacing?: unknown;
   borders?: unknown;
   caption?: unknown;
+  description?: unknown;
 }): string {
   const snapshot = normalizeDocumentTableFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, bidiVisual, fill, look, overlap, styleId, cellSpacing, borders, or caption.',
+      'Table-formatting snapshot requires layout, alignment, width, indent, cellMargins, bidiVisual, fill, look, overlap, styleId, cellSpacing, borders, caption, or description.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -125,7 +127,8 @@ export function parseDocumentTableFormatting(
         key !== 'styleId' &&
         key !== 'cellSpacing' &&
         key !== 'borders' &&
-        key !== 'caption',
+        key !== 'caption' &&
+        key !== 'description',
     )
   ) {
     return null;
@@ -150,6 +153,7 @@ export function normalizeDocumentTableFormattingSnapshot(attributes: {
   cellSpacing?: unknown;
   borders?: unknown;
   caption?: unknown;
+  description?: unknown;
 }): DocumentTableFormattingSnapshot | null {
   const snapshot: DocumentTableFormattingSnapshot = {};
   if ('layout' in attributes && attributes.layout !== undefined) {
@@ -220,6 +224,11 @@ export function normalizeDocumentTableFormattingSnapshot(attributes: {
     if (!caption) return null;
     snapshot.caption = caption;
   }
+  if ('description' in attributes && attributes.description !== undefined) {
+    const description = normalizeDocumentTableDescription(attributes.description);
+    if (!description) return null;
+    snapshot.description = description;
+  }
   return snapshot.layout ||
     snapshot.alignment ||
     snapshot.width ||
@@ -232,7 +241,8 @@ export function normalizeDocumentTableFormattingSnapshot(attributes: {
     snapshot.styleId ||
     snapshot.cellSpacing !== undefined ||
     snapshot.borders ||
-    snapshot.caption
+    snapshot.caption ||
+    snapshot.description
     ? snapshot
     : null;
 }
@@ -304,6 +314,9 @@ export function restoredDocumentTableAttributes(
   if (formatting.caption !== undefined) {
     next.caption = formatting.caption;
   }
+  if (formatting.description !== undefined) {
+    next.description = formatting.description;
+  }
   return next;
 }
 
@@ -335,6 +348,7 @@ function orderedSnapshot(
     ordered.borders = orderedDocumentTableFormattingBorders(snapshot.borders);
   }
   if (snapshot.caption) ordered.caption = snapshot.caption;
+  if (snapshot.description) ordered.description = snapshot.description;
   return ordered;
 }
 
@@ -395,14 +409,24 @@ export function normalizeDocumentTableStyleId(value: unknown): string | null {
 }
 
 export function normalizeDocumentTableCaption(value: unknown): string | null {
+  return normalizeDocumentTableStringProperty(value);
+}
+
+export function normalizeDocumentTableDescription(
+  value: unknown,
+): string | null {
+  return normalizeDocumentTableStringProperty(value);
+}
+
+function normalizeDocumentTableStringProperty(value: unknown): string | null {
   if (typeof value !== 'string') return null;
-  const caption = value.trim();
+  const normalized = value.trim();
   if (
-    !caption ||
-    caption.length > MAX_TABLE_CAPTION_LENGTH ||
-    /[\u0000-\u001f\u007f]/.test(caption)
+    !normalized ||
+    normalized.length > MAX_TABLE_CAPTION_LENGTH ||
+    /[\u0000-\u001f\u007f]/.test(normalized)
   ) {
     return null;
   }
-  return caption;
+  return normalized;
 }

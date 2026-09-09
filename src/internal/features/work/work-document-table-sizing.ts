@@ -48,6 +48,7 @@ import {
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
   normalizeDocumentTableCaption,
+  normalizeDocumentTableDescription,
 } from './work-document-table-format-changes';
 import {
   parseDocumentTableFormattingBordersDataset,
@@ -301,6 +302,21 @@ export const DocumentTable = Table.extend({
         renderHTML: (attributes: Record<string, unknown>) => {
           const caption = normalizeDocumentTableCaption(attributes.caption);
           return caption ? { 'data-office-table-caption': caption } : {};
+        },
+      },
+      description: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          normalizeDocumentTableDescription(
+            element.dataset.officeTableDescription,
+          ),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const description = normalizeDocumentTableDescription(
+            attributes.description,
+          );
+          return description
+            ? { 'data-office-table-description': description }
+            : {};
         },
       },
       floatOmml: {

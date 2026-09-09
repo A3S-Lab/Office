@@ -14,6 +14,7 @@ import {
   normalizeDocumentTableStyleId,
   normalizeDocumentTableCellSpacing,
   normalizeDocumentTableCaption,
+  normalizeDocumentTableDescription,
   serializeDocumentTableFormatting,
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
@@ -51,6 +52,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tblCellSpacing',
   'tblBorders',
   'tblCaption',
+  'tblDescription',
 ]);
 const MARGIN_SIDES = new Set([
   'top',
@@ -78,8 +80,8 @@ export interface SupportedDocxTableFormattingChange {
  * Relationship-free `w:tblPrChange` whose prior snapshot contains only
  * `w:jc`, `w:tblW`, `w:tblInd`, `w:tblCellMar`, `w:tblLayout`,
  * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, `w:tblOverlap`, relationship-free
- * `w:tblStyle`, dxa `w:tblCellSpacing`, direct-color `w:tblBorders`, and/or
- * relationship-free `w:tblCaption`.
+ * `w:tblStyle`, dxa `w:tblCellSpacing`, direct-color `w:tblBorders`,
+ * relationship-free `w:tblCaption`, and/or relationship-free `w:tblDescription`.
  * Broader property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxTableFormattingChange(change: Element): boolean {
@@ -182,6 +184,7 @@ function supportedTableFormattingChange(
   let cellSpacing: number | undefined;
   let borders: DocumentTableFormattingBorders | undefined;
   let caption: string | undefined;
+  let description: string | undefined;
   for (const child of children) {
     if (child.localName === 'tblLayout') {
       const value = normalizeDocumentTableLayoutAlgorithm(
@@ -265,6 +268,13 @@ function supportedTableFormattingChange(
       const value = normalizeDocumentTableCaption(attribute(child, 'val'));
       if (!value) return null;
       caption = value;
+      continue;
+    }
+    if (child.localName === 'tblDescription') {
+      if (child.children.length > 0) return null;
+      const value = normalizeDocumentTableDescription(attribute(child, 'val'));
+      if (!value) return null;
+      description = value;
     }
   }
   const snapshot = normalizeDocumentTableFormattingSnapshot({
@@ -281,6 +291,7 @@ function supportedTableFormattingChange(
     ...(cellSpacing !== undefined ? { cellSpacing } : {}),
     ...(borders ? { borders } : {}),
     ...(caption ? { caption } : {}),
+    ...(description ? { description } : {}),
   });
   if (!snapshot) return null;
   const date = normalizeRevisionDate(rawDate);

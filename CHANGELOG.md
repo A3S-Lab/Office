@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:tblPrChange` priors that include relationship-free
+  `w:tblDescription` are now reviewable as `table-formatting` (`description`)
+  with accept/reject, live track-changes, and native export (including
+  current-table `w:tblDescription` on DOCX write). Broader table property sets
+  remain opaque or fail-closed; opaque fixtures stay on `tblStyleColBandSize`.
+
 ## 0.96.0 - 2026-09-09
 
 ### Writer
