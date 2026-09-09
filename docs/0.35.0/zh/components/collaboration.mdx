@@ -1,0 +1,881 @@
+---
+title: 多人实时协作
+description: 为 A3S Office 编辑器接入由宿主控制的 Yjs 实时协作、在线成员与编码智能体。
+---
+
+# 多人实时协作
+
+A3S Office 为 Document、Markdown、Spreadsheet、Presentation 和 PDF
+提供统一的多人实时协作边界。两台浏览器可以在同一个房间中实时编辑，在线成员、
+光标、选区与当前页面会通过 Yjs Awareness 同步；Rust 编码智能体也可以通过 Yrs、
+CLI、MCP 或 A3S Code 加入同一份共享状态。
+
+Office 不强制绑定某一种协作服务。宿主应用继续拥有房间、身份认证、权限校验、
+网络 Provider、离线队列、持久化和 `Y.Doc`；编辑器只负责各文件格式的共享数据绑定、
+本地撤销重做、远端位置投影与交互界面。
+
+需要可以直接运行的鉴权与持久化服务时，请使用
+[A3S Boot 实时协作后端](./collaboration-server.mdx)。其中已经包含 Rust 服务、浏览器
+传输适配器、ACL 配置与集成测试，把下文属于宿主的职责落实成了完整代码。
+
+## 能力一览
+
+| 文件类型 | 实时共享内容 | 在线位置 | 原生智能体变更 |
+| --- | --- | --- | --- |
+| Document | ProseMirror 结构、页面选项、评论、文字、字符与段落格式修订、最终决定和参考文献 | 文本光标与选区 | 文本替换、段落增删、页面颜色、修订模式、选区评论、署名文字建议与原子文字建议决定；Yrs 还会保护格式修订并读取其审计记录 |
+| Markdown | 共享 Markdown 源码 | 源码或可视化编辑器中的光标与选区 | UTF-16 安全的替换与 splice |
+| Spreadsheet | 工作表、命名区域、原生表格记录与冲突局部化单元格 | 工作表、区域与活动单元格 | 单元格创建、更新与删除；原生文件支持封闭的表格添加、设置和删除，浏览器协同编辑中的表格修改由浏览器绑定执行 |
+| Presentation | 幻灯片、母版、版式、场景对象与评论 | 幻灯片与稳定对象 ID | 对象创建、更新、层级移动与删除 |
+| PDF | 表单值、批注与不可逆审核记录 | 页面与批注 | 表单、批注、脱敏及页面操作提案 |
+
+所有格式都使用标准 Yjs v1 状态向量与增量更新。浏览器使用 Yjs，原生副本使用
+Yrs，双方不需要把整个 Office 文件作为一个 JSON 值反复覆盖。
+
+## 从两台浏览器开始
+
+一个完整房间通常按以下顺序打开：
+
+1. 宿主完成用户认证，加入已经授权的房间，并创建或取得房间对应的 `Y.Doc`。
+2. 网络 Provider 完成首次同步。新房间只由服务端或一个选定的初始化者写入初始内容。
+3. 宿主创建与文件类型、文件 ID 和当前用户绑定的 Office 协作会话。
+4. 把同一个会话传给 React、Vue 或 Web Component 编辑器。
+5. 如果需要在线成员和远端光标，再把 Provider 管理的 Awareness 交给 Presence 控制器。
+
+第二台浏览器重复同一流程并加入相同房间后，双方会交换状态向量，只补发彼此缺少的
+更新。内容同步完成之前不要挂载编辑器，否则客户端无法区分“新建空文档”和“远端
+内容尚未下载”。
+
+## 接入宿主传输层
+
+`createOfficeCollaborationTransportBinding` 是一个小型参考适配器，用来把
+Office 会话接到宿主自己的房间通道。每一条消息都绑定协议版本、文件 ID、文件类型、
+命名空间和 Yjs 客户端 ID；载荷是有界的标准 Yjs v1 状态向量或更新。
+
+```ts title="host-room.ts"
+import {
+  createOfficeCollaborationTransportBinding,
+  type OfficeCollaborationTransport,
+} from '@a3s-lab/office/core';
+
+const channel: OfficeCollaborationTransport = {
+  publish(message) {
+    room.publish(message); // 编码时保留 Uint8Array 载荷。
+  },
+  subscribe(listener) {
+    return room.subscribe(listener);
+  },
+};
+
+const transport = createOfficeCollaborationTransportBinding(session, channel, {
+  // 等待已经认证的房间订阅真正可用。
+  autoSynchronize: false,
+});
+
+room.onConnected(() => transport.synchronize());
+room.onReconnected(() => transport.synchronize());
+
+// 只取消订阅，不销毁宿主拥有的房间或 Y.Doc。
+transport.destroy();
+```
+
+订阅生效和每次重连后，每个 Peer 都发送新的状态向量，对端只返回缺少的更新。
+重复握手是安全的，收到的远端更新不会重新回显到同一个通道。适配器不替宿主提供
+账号、权限、房间成员管理、可靠投递、离线队列或数据库持久化；传输消息本身也不是
+授权凭证。
+
+### 断线、离线与收敛
+
+- 短暂断线期间，本地变更继续写入 `Y.Doc`。是否将更新保留到刷新或进程重启之后，
+  取决于宿主 Provider 的离线持久化策略。
+- 重连后必须再次调用 `synchronize()`。状态向量握手会传输双方缺少的增量，重复更新
+  可以安全应用，因果顺序尚未满足的结构会等待依赖到达。
+- 编辑器只撤销本地绑定产生的事务，不能撤销另一个用户或智能体的修改。
+- 共享状态是协作期间的事实来源。`content` 属性只是宿主快照，不会在每次渲染时覆盖
+  远端已经合并的状态。
+- 同一新房间只能有一个初始化者。两个客户端分别用不同初始内容抢先初始化会明确
+  报错，避免形成看似成功、实际不确定的初始文档。
+
+## 发布在线成员与远端位置
+
+Presence 是短暂界面状态，不写入文档历史。把 Provider 拥有的 Yjs Awareness 交给
+会话，再为本地客户端创建一个类型化 Presence 控制器。Awareness 的网络同步仍由
+Provider 负责，文档传输适配器不会保存或转发它。
+
+```ts title="shared-presence.ts"
+import { Awareness } from 'y-protocols/awareness';
+import {
+  createOfficeCollaborationPresence,
+  createOfficeCollaborationSession,
+} from '@a3s-lab/office/core';
+
+const awareness = new Awareness(document);
+provider.attachAwareness(awareness);
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'user-42', name: 'Ada', color: '#7c3aed' },
+  artifactId,
+  awareness,
+  document,
+  kind: 'spreadsheet',
+  mode: 'edit',
+});
+
+const presence = createOfficeCollaborationPresence(session);
+const unsubscribe = presence.subscribe(({ participants }) => {
+  renderParticipants(participants);
+});
+
+presence.update({
+  activity: 'active',
+  location: {
+    kind: 'spreadsheet',
+    sheetId: 'sheet-1',
+    ranges: [
+      { startRow: 4, startColumn: 1, endRow: 6, endColumn: 3 },
+    ],
+    activeCell: { row: 4, column: 1 },
+  },
+});
+
+unsubscribe();
+presence.destroy();
+```
+
+将控制器和创建它的同一个会话传给编辑器：
+
+```tsx title="SharedSpreadsheet.tsx"
+import { SpreadsheetEditor } from '@a3s-lab/office/react';
+
+<SpreadsheetEditor
+  collaboration={session}
+  content={initialSnapshot}
+  onChange={setSnapshot}
+  presence={presence}
+/>;
+```
+
+可编辑状态栏以及预览/PDF 工具栏会显示一个响应式、键盘可操作的参与者列表。它能
+区分本地与远端的人类、智能体和系统参与者，并显示活动状态、权限模式和当前位置。
+点击远端参与者会明确导航并聚焦到对方位置；仅仅收到 Awareness 更新绝不会移动
+本地视口、选区或焦点。
+
+各格式的位置模型不同：
+
+- Document 使用 ProseMirror 的 anchor/head 模型位置。
+- Markdown 使用 `source` UTF-16 偏移或 `visual` ProseMirror 位置。
+- Spreadsheet 使用有界的零基行列区域和活动单元格。
+- Presentation 使用一个幻灯片 ID 与稳定的场景对象 ID。
+- PDF 使用零基页码和可选的批注 ID。
+
+文件身份、协议、Actor、模式或位置结构不匹配的远端状态会被忽略。Presence 只是
+提示性界面信息，不是规范内容、审计记录或权限边界。
+
+## 打开 Markdown 会话
+
+Provider 完成首次同步后创建会话。新房间只由选定的初始化者调用初始化函数：
+
+```tsx title="SharedMarkdown.tsx"
+import * as Y from 'yjs';
+import {
+  createOfficeCollaborationSession,
+  initializeOfficeMarkdownCollaboration,
+  type MarkdownContent,
+  type OfficeCollaborationSession,
+} from '@a3s-lab/office/core';
+import { MarkdownEditor } from '@a3s-lab/office/react';
+
+interface OpenMarkdownOptions {
+  artifactId: string;
+  document: Y.Doc;
+  initialContent: MarkdownContent;
+  bootstrapOwner: boolean;
+}
+
+export function openMarkdownSession({
+  artifactId,
+  document,
+  initialContent,
+  bootstrapOwner,
+}: OpenMarkdownOptions) {
+  const session = createOfficeCollaborationSession({
+    actor: { id: 'user-42', name: 'Ada', kind: 'human' },
+    artifactId,
+    document,
+    kind: 'markdown',
+    mode: 'edit',
+  });
+  if (bootstrapOwner) {
+    initializeOfficeMarkdownCollaboration(session, initialContent);
+  }
+  return session;
+}
+
+export function SharedMarkdown({
+  session,
+  initialContent,
+}: {
+  session: OfficeCollaborationSession;
+  initialContent: MarkdownContent;
+}) {
+  return (
+    <MarkdownEditor
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      content={initialContent}
+      onChange={(snapshot) => reportSnapshot(snapshot)}
+    />
+  );
+}
+```
+
+Markdown 源码偏移使用 UTF-16 代码单元，与浏览器 Yjs 一致。会切开代理对的范围会
+失败，而不会写入损坏的文本。
+
+## 打开 Document 会话
+
+Document 使用 ProseMirror `Y.XmlFragment` 保存结构内容，并使用冲突局部化 Map
+保存页面选项、评论线程、不可变修订决定和参考文献来源：
+
+```tsx title="SharedDocument.tsx"
+import {
+  createOfficeCollaborationSession,
+  initializeOfficeDocumentCollaboration,
+  type DocumentContent,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'user-42', name: 'Ada', kind: 'human' },
+  artifactId,
+  document: provider.doc,
+  kind: 'document',
+  mode: 'edit',
+});
+
+if (bootstrapOwner) {
+  initializeOfficeDocumentCollaboration(session, initialContent);
+}
+
+export function SharedDocument({
+  initialContent,
+}: {
+  initialContent: DocumentContent;
+}) {
+  return (
+    <DocumentEditor
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      content={initialContent}
+      onChange={(snapshot) => reportSnapshot(snapshot)}
+    />
+  );
+}
+```
+
+结构片段包含分节布局、评论锚点和修订标记。评论、回复、最终修订决定与参考文献按稳定
+ID 保存，独立记录可以合并，不需要替换文档大小的 JSON。浏览器暂不支持的 OOXML
+包部件仍由宿主导入导出流程管理，不应作为完整 ZIP 替换写入 Yjs。
+
+### 使用 comment 模式审阅 Document
+
+当参与者只能审阅而不能修改正文时，用已经认证的 Actor 和 `mode: 'comment'` 打开一份
+完成初始化的 Document。初始化必须由服务端或另一个有权限的 `edit` 会话提前完成，
+评论者不能借初始化写入正文：
+
+```tsx title="SharedDocumentReview.tsx"
+import * as Y from 'yjs';
+import { Awareness } from 'y-protocols/awareness';
+import {
+  createOfficeCollaborationPresence,
+  createOfficeCollaborationSession,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const document = provider.doc as Y.Doc;
+const awareness = new Awareness(document);
+const reviewSession = createOfficeCollaborationSession({
+  actor: {
+    id: 'user-42',
+    name: 'Ada Reviewer',
+    kind: 'human',
+    color: '#7c3aed',
+  },
+  artifactId: 'quarterly-plan',
+  awareness,
+  document,
+  kind: 'document',
+  mode: 'comment',
+});
+const presence = createOfficeCollaborationPresence(reviewSession);
+
+export function SharedDocumentReview() {
+  return (
+    <DocumentEditor
+      key={`${reviewSession.artifactId}:${reviewSession.document.clientID}`}
+      collaboration={reviewSession}
+      content={initialContent}
+      presence={presence}
+      onChange={reportSnapshot}
+    />
+  );
+}
+```
+
+评论者选择真实的 Document 文字后添加批注。编辑器会把稳定线程写入
+`document.comments`，把 ID 追加到 `document.comment-order`，追加不可变记录声明，
+并在准确的 ProseMirror 选区写入对应 `documentComment` Mark。回复追加到线程中；任意
+评论者可以解决或重新打开线程；`comment` 模式只能删除当前 Actor 自己创建的评论或
+回复。如果之后由有权限的编辑者删除了全部锚点，线程仍会保留，并以
+`detached: true` 返回。
+
+正文仍然可以选中，以便建立评论锚点，但普通输入、格式、页面选项、参考文献与结构
+修改都会失败关闭。撤销/重做只记录当前评论者的本地审核事务，远端到达的评论和回复
+不会进入本地撤销栈。
+
+原生智能体通过同一份投影 v3 和类型化变更管理评论。决策前先读取最新投影，确保
+`paragraphId`、`textId`、锚点文字、UTF-16 偏移和可选状态向量前置条件来自同一版本：
+
+```bash title="document-review.sh"
+a3s-office collab join .a3s/report-review.replica \
+  --artifact-id report --kind document --actor-id agent-7 \
+  --actor-kind agent --mode comment --operation-id comment-join-1 \
+  --input browser.update --json
+a3s-office collab read .a3s/report-review.replica --json
+
+a3s-office collab mutate .a3s/report-review.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode comment \
+  --operation-id comment-create-1 \
+  --mutation '{"type":"document-comment-create","commentId":"comment-1","paragraphId":"00000001","expectedTextId":"00000002","startUtf16":6,"endUtf16":12,"expectedText":"review","author":"Ada Reviewer","createdAt":"2026-08-17T00:00:00.000Z","text":"Clarify this review point."}' \
+  --json
+
+a3s-office collab mutate .a3s/report-review.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode comment \
+  --operation-id comment-reply-1 \
+  --mutation '{"type":"document-comment-reply","commentId":"comment-1","replyId":"reply-1","author":"Ada Reviewer","createdAt":"2026-08-17T00:01:00.000Z","text":"Suggested wording is ready."}' \
+  --json
+
+a3s-office collab mutate .a3s/report-review.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode comment \
+  --operation-id comment-resolve-1 \
+  --mutation '{"type":"document-comment-set-resolved","commentId":"comment-1","resolved":true}' \
+  --json
+
+# resolved:false 用于重新打开；省略 replyId 会删除当前 Actor 自己的整个线程。
+a3s-office collab mutate .a3s/report-review.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode comment \
+  --operation-id comment-delete-reply-1 \
+  --mutation '{"type":"document-comment-delete","commentId":"comment-1","replyId":"reply-1"}' \
+  --json
+```
+
+原生新评论或回复的 `author` 必须与房间票据认证的显示名称一致；副本 Actor ID 会写入
+`actorId`，调用方 JSON 不能覆盖它。相同稳定 ID 的完全一致重试保持幂等；冲突 ID、
+陈旧锚点和越权删除不会产生更新。`collab read` 与
+`office_collaboration_read` 的投影版本现在是 `3`，会返回评论、回复、解决状态、
+脱离锚点状态、实时 `suggestions`、不可变 `changeDecisions`，以及评论锚点或建议位置的
+精确身份、UTF-16 偏移和当前文字。
+
+### 使用 suggest 模式提出修订
+
+当参与者可以建议文字修改，但不能直接修改规范正文或作出最终审核决定时，用已经认证的
+Actor 和 `mode: 'suggest'` 打开完成初始化的 Document：
+
+```tsx title="SharedDocumentSuggestion.tsx"
+import * as Y from 'yjs';
+import { Awareness } from 'y-protocols/awareness';
+import {
+  createOfficeCollaborationPresence,
+  createOfficeCollaborationSession,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const document = provider.doc as Y.Doc;
+const awareness = new Awareness(document);
+const suggestionSession = createOfficeCollaborationSession({
+  actor: {
+    id: 'reviewer-7',
+    name: 'Ada Suggester',
+    kind: 'human',
+    color: '#2563eb',
+  },
+  artifactId: 'quarterly-plan',
+  awareness,
+  document,
+  kind: 'document',
+  mode: 'suggest',
+});
+const presence = createOfficeCollaborationPresence(suggestionSession);
+
+export function SharedDocumentSuggestion() {
+  return (
+    <DocumentEditor
+      key={`${suggestionSession.artifactId}:${suggestionSession.document.clientID}`}
+      collaboration={suggestionSession}
+      content={initialContent}
+      presence={presence}
+      onChange={reportSnapshot}
+    />
+  );
+}
+```
+
+这个界面会强制使用文字修订。输入会创建插入建议，删除已有文字会创建删除建议，替换会
+形成一条删除建议和一条插入建议。每个 `documentChange` Mark 都携带稳定 ID、类型、经过
+认证的 `actorId`、显示名称 `author` 与规范 UTC 时间。建议者不会看到正文格式、结构、
+页面选项、评论、接受或拒绝控件。撤销/重做可以撤回或恢复当前 Actor 自己的插入建议，
+但不能改写他人的建议，也不能改变删除建议所指向的规范文字。
+
+`edit` 参与者在修订面板中审核同一批 Mark。接受或拒绝会在同一个 Yjs 事务中应用可见
+结果，并把一条不可变记录写入 `document.change-decisions`，同时把 ID 追加到
+`document.change-decision-order`。记录包含建议 ID/类型/文字、建议者 Actor/名称/时间、
+最终决定与决定者 Actor/名称/时间。一条建议只能有一个最终决定；完全相同的离线重试会
+收敛，不同的陈旧决定会失败关闭。决定完成后编辑器会清理旧的本地历史，避免撤销重新
+生成已经决定的 Mark，却留下无法删除的审计记录。
+
+A3S Boot 后端不会只相信票据模式或调用方提交的 Yjs 字节。它在持有持久房间锁期间把
+更新应用到候选 Yrs 文档，确认规范 Document 投影与所有非内容 Root 都没有变化，再只
+允许新增带身份的插入/删除建议、对当前认证 Actor 自己既有建议的安全修改，或撤回该
+Actor 自己的建议。伪造身份、非规范时间、正文结构/格式/选项/评论修改、改变他人建议、
+修改删除建议命中的规范文字，以及存在未满足 Yjs 依赖的更新，都会在持久化和广播前被
+拒绝。替换遵循“一条删除建议加一条插入建议”的同一规则。
+
+原生智能体可以使用同一审阅模型，不需要手写私有 Yjs Mark。投影 v3 会列出每条建议的
+稳定 ID、类型、Actor、作者、时间、文字，以及精确的段落/文字位置。先加入绑定 Actor
+的 `suggest` 副本，在提出建议前重新读取投影，再用一个封闭 Mutation 创建插入、删除或
+原子替换：
+
+```bash title="native-document-suggestions.sh"
+a3s-office collab join .a3s/report-suggest.replica \
+  --artifact-id report --kind document --actor-id agent-7 \
+  --actor-kind agent --mode suggest --operation-id suggest-join-1 \
+  --input browser.update --json
+a3s-office collab read .a3s/report-suggest.replica --json
+
+# UTF-16 偏移 6..8 选择一个辅助平面 Emoji。替换需要不同的插入/删除 ID；
+# actorId 由副本 Manifest 注入。
+a3s-office collab mutate .a3s/report-suggest.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode suggest \
+  --operation-id suggestion-create-1 \
+  --mutation '{"type":"document-suggestion-create","paragraphId":"00000001","expectedTextId":"00000002","startUtf16":6,"endUtf16":8,"expectedText":"😀","replacement":"reviewed","insertionId":"agent-7-insertion-1","deletionId":"agent-7-deletion-1","author":"A3S Agent","createdAt":"2026-08-17T11:00:00.000Z"}' \
+  --json
+
+# 建议更新到达 edit 副本后，再读取投影 v3，把每条精确身份复制到同一个原子决定批次。
+a3s-office collab read .a3s/report-editor.replica --json
+a3s-office collab mutate .a3s/report-editor.replica \
+  --actor-id editor-2 --artifact-id report --kind document --mode edit \
+  --operation-id suggestion-accept-1 \
+  --mutation '{"type":"document-suggestion-decide","suggestions":[{"id":"agent-7-deletion-1","kind":"deletion","expectedActorId":"agent-7","expectedAuthor":"A3S Agent","expectedCreatedAt":"2026-08-17T11:00:00.000Z","expectedText":"😀"},{"id":"agent-7-insertion-1","kind":"insertion","expectedActorId":"agent-7","expectedAuthor":"A3S Agent","expectedCreatedAt":"2026-08-17T11:00:00.000Z","expectedText":"reviewed"}],"decision":"accept","decidedBy":"Grace Editor","decidedAt":"2026-08-17T11:01:00.000Z"}' \
+  --json
+```
+
+拒绝时使用 `decision: "reject"`。创建建议只允许 `suggest`，最终决定只允许 `edit`。
+相同稳定 ID 的精确重试保持幂等；陈旧段落/文字身份、切开 UTF-16 代理对、重叠建议、
+复用建议 ID、审核身份或文字不匹配、冲突最终决定，都会在写入持久日志前让整个操作失败。
+决定成功后会移除实时 Mark，旋转受影响段落和祖先表格行的文字身份，并为每条建议追加
+一条浏览器兼容的不可变 `changeDecisions` 记录。
+
+### 同步字符格式修订
+
+开启修订的 `edit` 参与者可以给已有文字应用粗体、斜体、下划线、删除线、上下标、字体、
+字号、文字颜色、高亮或 Word 网格格式。浏览器写入一条 `formatting` Change Mark，其中
+包含有界序列化的旧直接 Mark 快照；正文显示新格式。接受只移除 Change Mark，拒绝恢复
+旧 Mark，不删除或插入文字。任一决定都会与不可变的
+`changeKind: "formatting"` 审计记录一起，在一个 Yjs 事务中提交。
+
+这条 Mark 直接位于规范的 `document.content` `Y.XmlFragment` 中，不使用私有旁路。因此
+浏览器更新会经过完整生产链路：
+
+1. Provider 使用经过认证的 `edit` 房间票据发送有大小限制的标准 Yjs v1 更新；
+2. A3S Boot 在持久房间锁内把更新应用到候选 Yrs 文档；
+3. Office 校验器只接受已知 Mark 字段、有界的作者/日期/ID，以及只包含受支持格式类型
+   和标量属性的旧 Mark 快照；
+4. 服务先持久化，再确认并广播；
+5. 浏览器与原生副本通过下一次状态向量交换收敛，包括重启、重复或乱序投递之后。
+
+`suggest` 边界有意继续只开放文字建议。语义比较只移除插入与删除效果，会保留已有格式
+修订 Mark，因此建议者不能借文字提案创建、删除、改写或隐藏格式修订。
+`NativeOfficeCollaborationDocumentChangeKind` 使用 `formatting` 投影共享决定；
+`NativeOfficeCollaborationDocumentSuggestionKind` 与当前封闭的
+`document-suggestion-*` Mutation 仍然只接受插入和删除。
+
+受支持的 DOCX 运行属性修订沿用同一模型：严格或过渡 `w:rPrChange` 会导入为“格式”卡，
+在同步和审核后重新导出成原生 OOXML。在 Playground 中依次选择**体验格式修订**、
+**审阅**、**查看修订（2）**；确定性 A3S Test 场景会证明拒绝后文字保留，粗体和字符
+修订 Mark 消失，同时段落修订仍处于未决状态。
+
+### 同步段落格式修订
+
+开启修订的段落命令会把同一个 `paragraph-formatting` 身份和规范旧属性快照直接附加到
+每个受影响的段落或标题节点。快照覆盖对齐、方向、缩进、间距与行距规则、分页控制、
+同样式段落间距、Outline Level、制表位、边框、底纹与折叠状态。跨多个段落的命令共享
+一个身份，审阅者因此可以原子处理完整意图；未决状态下再次修改格式仍保留最初快照与
+ID。
+
+`edit` 参与者接受时保留当前节点属性并清除修订字段，拒绝时恢复完整旧属性且不触碰
+正文。可见决定和不可变 `changeKind: "paragraph-formatting"` 审计记录会在同一个 Yjs
+事务中提交，并在浏览器客户端之间收敛。Rust/Yrs 投影能够读取这个独立决定类型，浏览器
+生成的 Fixture 也能在持久服务重启后继续读取。
+
+`suggest` 边界仍然只开放文字建议。浏览器准入和 A3S Boot 候选状态授权器都要求已有
+段落修订字段与快照保持完全不变，因此建议者不能在提交文字时创建、删除、改写或隐藏
+段落修订；正常的署名插入与删除仍能经过同一份受保护文档。
+
+严格或过渡 DOCX `w:pPrChange` 使用同一模型，并以“段落格式”卡往返。格式错误、重复、
+命名空间伪造或包含不支持属性的修订继续进入结构诊断。确定性
+`word-paragraph-formatting-revision.acl` A3S Test 会打开公开 Playground、检查
+**段落格式**卡、拒绝该修订，并证明旧对齐、缩进、间距与行距恢复，同时正文和独立的
+字符格式修订保留。
+
+## 打开 Presentation 会话
+
+Presentation 分开保存幻灯片、母版与版式顺序，并按稳定 ID 保存每个场景对象。
+几何、样式、文本、备注、转场和图表等字段独立更新：
+
+```tsx title="SharedPresentation.tsx"
+import {
+  createOfficeCollaborationSession,
+  initializeOfficePresentationCollaboration,
+  type PresentationContent,
+} from '@a3s-lab/office/core';
+import { PresentationEditor } from '@a3s-lab/office/react';
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'user-42', name: 'Ada', kind: 'human' },
+  artifactId,
+  document: provider.doc,
+  kind: 'presentation',
+  mode: 'edit',
+});
+
+if (bootstrapOwner) {
+  initializeOfficePresentationCollaboration(session, initialContent);
+}
+
+export function SharedPresentation({
+  initialContent,
+}: {
+  initialContent: PresentationContent;
+}) {
+  return (
+    <PresentationEditor
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      content={initialContent}
+      onChange={(snapshot) => reportSnapshot(snapshot)}
+    />
+  );
+}
+```
+
+陈旧的宿主快照不会删除刚从远端到达的幻灯片或对象，除非本地操作明确删除了对应
+稳定 ID。对象层级移动使用前置对象 ID，而不是易漂移的数组下标。
+
+## 打开 Spreadsheet 会话
+
+Spreadsheet 用有序、按 ID 索引的记录保存工作表和命名区域，用稀疏且可递归定位
+字段的记录保存单元格和原生表格。公式、样式、数字格式、超链接、备注及独立的表格设计
+字段可以分别合并：
+
+```tsx title="SharedSpreadsheet.tsx"
+import {
+  createOfficeCollaborationSession,
+  initializeOfficeSpreadsheetCollaboration,
+  type SpreadsheetContent,
+} from '@a3s-lab/office/core';
+import { SpreadsheetEditor } from '@a3s-lab/office/react';
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'user-42', name: 'Ada', kind: 'human' },
+  artifactId,
+  document: provider.doc,
+  kind: 'spreadsheet',
+  mode: 'edit',
+});
+
+if (bootstrapOwner) {
+  initializeOfficeSpreadsheetCollaboration(session, initialContent);
+}
+
+export function SharedSpreadsheet({
+  initialContent,
+}: {
+  initialContent: SpreadsheetContent;
+}) {
+  return (
+    <SpreadsheetEditor
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      content={initialContent}
+      onChange={(snapshot) => reportSnapshot(snapshot)}
+    />
+  );
+}
+```
+
+每张工作表都有独立的 `tables` 记录映射与 `tableOrder` 顺序数组。ListObject 以稳定
+浏览器 ID 为键，递归保存名称/显示名称、可选 OOXML 数字 ID、区域、有序列定义、支持的
+筛选、标题/汇总标记、内置样式身份及首末列和行列条纹选项。修改或移动一个表格不会替换
+同级表格或工作表记录。
+
+创建表格时会在父工作表作用域内追加不可变 `table` 创建声明。即使记录之后被删除，该
+声明也会让 ID 冲突或复用失败关闭。共享输入校验还会检查每个覆盖列恰好对应一个唯一非空
+列名、区域有序且不越界、至少一条正文、筛选列唯一且在范围内、样式属于浅色 1–21、
+中等 1–28、深色 1–11 或无样式、表格互不重叠，并且表格名称不与其他表格或定义名称冲突。
+
+筛选条件是封闭联合类型，不接受任意共享 JSON。值筛选每列最多 10,000 个唯一值，每个文本
+操作数最多 32,767 个 XML 兼容字符，一张表中的筛选文本总量最多 1,048,576 个 UTF-8
+字节。前几项/后几项数量范围为 1–500，百分比范围为 1–100，动态筛选只能使用文档列出的
+枚举，并且只有启用标题行时才能设置筛选。
+
+受控快照会被翻译成记录与字段补丁。例如离线的客户端 A 可以修改名称，客户端 B 同时打开
+列条纹；交换标准 Yjs 更新后，两端同时保留新名称和新选项。过期的同字段替换会依据共享记录
+校验并失败，而不会丢弃无关远端值。聚焦双客户端测试已覆盖表格创建、独立设计修改、更新
+交换与最终内容完全收敛。
+
+Rust、CLI、MCP 与 A3S Code 已经提供独立、封闭的原生文件
+`add-spreadsheet-table`、`set-spreadsheet-table` 与类型化 `remove` 合同，其中包括受保护的
+区域修改和结构化引用重写。原生协作桥接目前还不会把这些文件修改投影到浏览器表格记录映射。
+后续桥接必须带类型化乐观保护和记录感知变换；客户端不能直接构造或修改内部 Yjs 映射。
+
+当前工作表、选区、缩放、计算缓存与派生图表预览属于本地视图状态，不写入规范
+Yjs 内容。远端工作簿更新不会抢走本地选择或焦点。
+
+## 打开 PDF 会话
+
+PDF 协作不会把源 PDF 字节写入 Yjs。初始化者提供不可变的小写 SHA-256、精确字节
+长度和页数，只同步表单、批注以及审核覆盖层：
+
+```ts title="shared-pdf.ts"
+import {
+  createOfficeCollaborationSession,
+  createPdfCollaborationContent,
+  initializeOfficePdfCollaboration,
+} from '@a3s-lab/office/core';
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'reviewer-42', name: 'Ada', kind: 'human' },
+  artifactId,
+  document: provider.doc,
+  kind: 'pdf',
+  mode: 'edit',
+});
+
+if (bootstrapOwner) {
+  initializeOfficePdfCollaboration(
+    session,
+    createPdfCollaborationContent({
+      sha256: sourceSha256,
+      byteLength: sourceBytes.byteLength,
+      pageCount,
+    }),
+  );
+}
+```
+
+挂载时必须提供完全相同的源文件。查看器会验证哈希、长度和 PDFium 页数后才接受
+协作修改：
+
+```tsx title="SharedPdf.tsx"
+import { PdfViewer } from '@a3s-lab/office/react';
+
+export function SharedPdf() {
+  return (
+    <PdfViewer
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      loadSource={() => Promise.resolve(sourceBlob)}
+      onCollaborationChange={(snapshot) => reportSnapshot(snapshot)}
+      onSave={async (pdf) => persistMergedPdf(pdf)}
+    />
+  );
+}
+```
+
+批注和表单值可以本地撤销。批注删除使用持久墓碑；签名放置、脱敏提案、页面操作
+和最终决定属于追加式审计记录，不进入撤销栈。签名外观字节、渲染位图、搜索索引、
+当前页和缩放都留在宿主或本地。`onSave` 仍然保存完整 PDF `Blob`，协作不会替代
+宿主的文件保存与版本管理。
+
+## 让 CLI、MCP 与 A3S Code 加入协作
+
+原生副本使用 Yrs，并兼容相同的 Yjs v1 更新。先从浏览器或服务端更新创建一个
+持久副本，再运行 JSONL 会话连接宿主房间：
+
+```bash
+a3s-office collab join .a3s/report.replica \
+  --artifact-id report --kind document --actor-id agent-7 \
+  --actor-kind agent --mode edit --operation-id join-1 \
+  --input browser-bootstrap.update --json
+
+a3s-office collab session .a3s/report.replica --poll-ms 100 \
+  --actor-name "A3S Agent" --actor-color "#2563eb" --json
+```
+
+宿主将 `session` 输出的 Envelope 转发给已经认证的房间，并使用稳定投递 ID 把房间
+Envelope 送回会话。另一个 CLI、MCP 或 A3S Code 进程产生的类型化变更会进入同一份
+持久事件日志，正在运行的会话会自动发布对应的最小增量。
+
+提供 `--actor-name` 后，JSONL 会话还会创建一个完全位于内存中的 Yrs Awareness
+参与者。宿主把 `outbound-awareness.message` 转成房间的
+`collaboration.awareness` 事件，把房间 Awareness 以 `receive-awareness` 写回，并把
+离线通知写成 `peer-left`。智能体可发布当前格式位置而不改变持久副本：
+
+```jsonl
+{"type":"set-presence","activity":"active","location":{"kind":"document","anchor":12,"head":18}}
+{"type":"receive-awareness","message":{"protocol":"a3s.office.collaboration","version":1,"artifactId":"report","artifactKind":"document","namespace":"a3s.office","senderClientId":424242,"payloadBase64":"<base64-yjs-awareness-update>"}}
+{"type":"peer-left","senderClientId":424242}
+```
+
+有效远端变化会输出按 Client ID 排序的 `presence` 快照，结构与浏览器协作者列表使用
+同一套用户、模式、活跃状态和格式位置协议。重连会清理旧远端状态并重新发布本地智能体；
+正常关闭会先输出 Awareness tombstone。Presence 内容和时钟绝不会进入 Checkpoint、
+持久更新或操作回执。
+宿主应在连接 Hello 和所有房间 Envelope 中使用 `ready.clientId`。启用 Presence 时，
+该 ID 每次启动都会重新生成；`ready.replicaClientId` 仍是持久更新内部稳定的 Yrs
+作者 ID。
+
+```bash title="typed-native-mutations.sh"
+# Markdown：UTF-16 安全的源码 splice。
+a3s-office collab mutate .a3s/notes.replica \
+  --actor-id agent-7 --artifact-id notes --kind markdown --mode edit \
+  --operation-id markdown-1 \
+  --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"insert":" shared"}' \
+  --json
+
+# Document：只有精确匹配当前状态时才替换。
+a3s-office collab mutate .a3s/report.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode edit \
+  --operation-id document-1 \
+  --mutation '{"type":"document-replace-text","search":"Draft","replacement":"Final","expectedMatches":1}' \
+  --json
+
+# Spreadsheet：递归比较并只写入变化的单元格叶子。
+a3s-office collab mutate .a3s/plan.replica \
+  --actor-id agent-7 --artifact-id plan --kind spreadsheet --mode edit \
+  --operation-id sheet-1 \
+  --mutation '{"type":"spreadsheet-set-cell","sheetId":"sheet-data","row":1,"column":0,"expectedCell":{"v":10,"m":"10"},"nextCell":{"v":12,"m":"12","f":"=6*2"}}' \
+  --json
+
+# Spreadsheet：把一次多单元格手势作为一个原子事务提交。
+a3s-office collab mutate .a3s/plan.replica \
+  --actor-id agent-7 --artifact-id plan --kind spreadsheet --mode edit \
+  --operation-id sheet-batch-2 \
+  --mutation '{"type":"spreadsheet-batch-cells","sheetId":"sheet-data","changes":[{"row":1,"column":0,"expectedCell":{"v":12,"m":"12","f":"=6*2"},"nextCell":{"v":14,"m":"14","f":"=7*2"}},{"row":1,"column":1,"expectedCell":null,"nextCell":{"v":20,"m":"20"}},{"row":2,"column":0,"expectedCell":{"v":"obsolete","m":"obsolete"},"nextCell":null}]}' \
+  --json
+
+# Presentation：按稳定前置 ID 移动对象，null 表示第一层级。
+a3s-office collab mutate .a3s/deck.replica \
+  --actor-id agent-7 --artifact-id deck --kind presentation --mode edit \
+  --operation-id deck-1 \
+  --mutation '{"type":"presentation-move-element","containerKind":"slide","containerId":"slide-1","elementId":"title-1","expectedAfterElementId":"background-1","afterElementId":null}' \
+  --json
+
+# PDF：通过稳定的完全限定字段名更新表单值。
+a3s-office collab mutate .a3s/application.replica \
+  --actor-id agent-7 --artifact-id application --kind pdf --mode edit \
+  --operation-id pdf-1 \
+  --mutation '{"type":"pdf-set-form-value","fieldId":"Applicant.Name","value":"Grace Hopper"}' \
+  --json
+```
+
+`spreadsheet-batch-cells` 接受同一工作表内 1 至 4096 个不同坐标。
+`nextCell` 有值时沿用递归 set/create 保护；`nextCell: null` 时必须提供完整精确的
+`expectedCell` 并执行删除。服务会先基于同一份共享快照检查所有项，任一项非法或过期都
+不会改变单元格、Presence、密集行长度或持久事件；成功时所有项进入同一个 Yjs 事务。
+
+对应的 MCP 工具是 `office_collaboration_mutate`。编码智能体应使用持久化的
+`cursorSequence` 轮询 `office_collaboration_events`，这样重启后可以从上次位置继续。
+浏览器更新可以携带经过宿主验证的来源 Actor 与操作 ID；原生回执会保留这份归因，
+但归因信息仍然不能代替服务端授权。
+
+## 权限与安全边界
+
+| 关注点 | 约定 |
+| --- | --- |
+| 房间访问 | 宿主在接受订阅、更新和 Awareness 前认证用户并校验文件权限。 |
+| 会话模式 | `edit` 可以修改规范内容、创建或决定文字与字符格式修订并更新审核数据。Document `comment` 可以创建选区评论、回复、解决/重开，并且只能删除当前 Actor 自己的审核记录，正文保持只读。经过认证的 Document `suggest` 可以创建署名插入/删除/替换建议，并且只能撤回自己的建议；不能作出最终决定，也不能修改规范正文、结构、格式修订、选项、评论或他人建议。`view`、非 Document `suggest` 与非 Document `comment` 只能接收。 |
+| 客户端校验 | 文件 ID、类型、命名空间、Actor、Y.Doc 客户端和模式不匹配时失败关闭。 |
+| 更新授权 | 会话模式只限制客户端能力，不是安全边界；同步服务必须独立授权每个更新。 |
+| 审计归因 | Actor 与操作来源用于审计，不证明消息已经被授权。 |
+| Presence | Awareness 内容是短暂提示，不得用作权限、审批或持久审计依据。 |
+
+不要让浏览器直接信任客户端声明的 Actor、模式或文件 ID。服务端应把已认证身份绑定
+到房间连接，对更新做大小和协议限制，并只向有权成员广播。
+
+## React、Vue 与 Web Component
+
+React 的五个公开组件都接受同一套 `collaboration` / `presence` 边界。Vue 使用同名
+Prop：
+
+```vue
+<MarkdownEditor
+  :collaboration="session"
+  :presence="presence"
+  :content="content"
+  @change="handleSnapshot"
+/>
+
+<DocumentEditor
+  :collaboration="documentSession"
+  :content="documentContent"
+  @change="handleDocumentSnapshot"
+/>
+
+<PresentationEditor
+  :collaboration="presentationSession"
+  :content="presentationContent"
+  @change="handlePresentationSnapshot"
+/>
+
+<SpreadsheetEditor
+  :collaboration="spreadsheetSession"
+  :content="spreadsheetContent"
+  @change="handleSpreadsheetSnapshot"
+/>
+
+<PdfViewer
+  :collaboration="pdfSession"
+  :load-source="loadPdfSource"
+  @collaboration-change="handlePdfSnapshot"
+/>
+```
+
+Web Component 的复杂值必须通过 JavaScript 属性传递，不能序列化到 HTML Attribute：
+
+```ts
+const markdown = document.querySelector('a3s-markdown-editor');
+markdown.collaboration = markdownSession;
+markdown.presence = markdownPresence;
+markdown.content = markdownContent;
+
+const spreadsheet = document.querySelector('a3s-spreadsheet-editor');
+spreadsheet.collaboration = spreadsheetSession;
+spreadsheet.content = spreadsheetContent;
+
+const pdf = document.querySelector('a3s-pdf-viewer');
+pdf.collaboration = pdfSession;
+pdf.loadSource = loadPdfSource;
+pdf.addEventListener('collaboration-change', handlePdfSnapshot);
+```
+
+## 当前限制
+
+- A3S Office 提供的是传输中立的编辑器绑定，不附带账号系统、协作后端、房间服务或
+  数据库存储。
+- Document 已开放 `comment` 模式的持久评论操作，以及 `suggest` 模式的署名插入、删除
+  与替换建议。`edit` 还可以创建和决定字符格式修订。只有 `edit` 参与者可以接受或拒绝，
+  并写入不可变决定审计。非 Document 的 `suggest` 与 `comment` 仍只能接收并观察经过
+  授权的远端更新。
+- 原生投影 v3 会列出实时建议与不可变决定；`document-suggestion-create` 只接受
+  `suggest` 副本，`document-suggestion-decide` 只接受 `edit` 副本。
+- PDF 只同步覆盖层与审核记录，不同步源文件或签名外观字节。保存仍由宿主完成。
+- 协作 Document 只接受行为型 TipTap `Extension`。自定义 Node、Mark、全局属性或
+  Extension Kit 需要版本化的 Office Schema 迁移，目前会被拒绝。
+- Presence 可能因网络延迟短暂过时；编辑命令必须依据规范共享内容重新校验，不能
+  依据远端光标位置直接写入。
+- 当文件或 `Y.Doc` 改变时，应使用
+  ``key={`${session.artifactId}:${session.document.clientID}`}`` 重新挂载编辑器，不能把
+  一个会话对象切换到另一份文件。
+
+`onChange` 会为本地和远端共享变更提供完整快照，适合更新宿主界面或导出状态。
+持久协作应保存 Yjs 增量或快照，不要把每一次 `onChange` 再变成整份文档写回。

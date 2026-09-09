@@ -1,0 +1,41 @@
+---
+title: Vue
+description: Use A3S Office through typed Vue bindings.
+---
+
+# Vue
+
+Vue bindings use the same content contracts as React and support
+`v-model:content`.
+
+```vue title="DocumentPage.vue"
+<script setup lang="ts">
+import { ref } from 'vue';
+import type { DocumentContent } from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/vue';
+import '@a3s-lab/office/styles.css';
+
+const content = ref<DocumentContent>({
+  type: 'document',
+  html: '<h1>Project brief</h1><p>Start editing here.</p>',
+  pageSize: 'a4',
+});
+</script>
+
+<template>
+  <main class="editor-host">
+    <DocumentEditor v-model:content="content" theme="light" />
+  </main>
+</template>
+
+<style scoped>
+.editor-host {
+  height: 100vh;
+  min-height: 0;
+}
+</style>
+```
+
+For event-only integration, pass `:content="content"` and handle
+`@change="content = $event"`. Host callbacks such as `agent-request` retain
+their typed payloads.

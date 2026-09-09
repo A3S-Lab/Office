@@ -1,0 +1,81 @@
+---
+title: Office CLI 与编码智能体 Skill
+description: 安装本地 CLI，并让 Codex 等编码智能体通过类型化流程处理 Office 文件。
+---
+
+# Office CLI 与编码智能体 Skill
+
+CLI 在本机确定性地处理文件。Skill 告诉编码智能体何时调用 CLI、怎样读取结构化结果、
+如何保留源文件，以及怎样验证输出。两者属于同一条工作流，因此安装与用法集中在本页。
+
+## 1. 安装 CLI
+
+```bash
+cargo install \
+  --git https://github.com/A3S-Lab/Office.git \
+  --locked a3s-office-cli
+```
+
+确认命令可用，并以只读方式检查文件。
+
+```bash
+a3s-office --version
+a3s-office validate report.docx --json
+a3s-office view report.docx outline --json
+```
+
+编码智能体应使用 `--json`。结构化结果可以稳定地用于决策和断言；终端说明文字主要
+面向人工阅读。
+
+## 2. 为编码智能体安装 Skill
+
+<PlaygroundLink path="downloads/a3s-office-skill.tar.gz" download>下载 A3S Office Skill</PlaygroundLink>
+
+下载后解压到智能体的个人 Skill 目录。
+
+```bash
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+tar -xzf a3s-office-skill.tar.gz \
+  -C "${CODEX_HOME:-$HOME/.codex}/skills"
+```
+
+压缩包包含 `SKILL.md`，以及文档、表格、演示文稿和 MCP 的独立参考资料。
+
+<PlaygroundLink path="downloads/a3s-office-skill/SKILL.md">查看打包后的 Skill 源码</PlaygroundLink>
+
+## 3. 执行修改并验证
+
+```bash
+a3s-office set report.docx /body \
+  --find Draft \
+  --replace Final \
+  --json
+
+a3s-office validate report.docx --json
+a3s-office view report.docx outline --json
+```
+
+修改之后应执行语义读取或校验命令。退出码为零只说明命令完成，不能单独证明文件已经
+达到用户要求的状态。
+
+## 4. 交给编码智能体
+
+一次说明清楚 Skill、源文件、目标修改和验证要求。
+
+```text
+使用 $a3s-office 检查这份季度报告，修正报告年份，另存为新文件，
+并验证最终目录结构和校验结果。
+```
+
+Skill 不替代应用逻辑，也不会自动上传文件。它只围绕本地 CLI 提供边界明确的工作流；
+编码智能体仍需遵循自己的权限与沙箱规则。
+
+## 职责边界
+
+| 层 | 负责内容 |
+| --- | --- |
+| Office CLI | 文件准入、语义读取、类型化修改、序列化、校验与 JSON 结果。 |
+| Skill | 工具选择、安全执行顺序、验证要求与智能体示例。 |
+| 编码智能体 | 用户意图、文件选择、授权、失败恢复与最终报告。 |
+
+全部命令与本地修改协议见 [CLI 参考](../cli-reference.md)。

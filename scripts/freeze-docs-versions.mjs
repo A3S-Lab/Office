@@ -116,11 +116,86 @@ function rewriteChineseIndex(version, text) {
   return next.replace(/\n/g, nl);
 }
 
+function stripPlaygroundRows(text) {
+  const nl = text.includes('\r\n') ? '\r\n' : '\n';
+  const next = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split('\n')
+    .filter((line) => {
+      if (!line.includes('|')) return true;
+      return !(
+        line.includes('<PlaygroundLink') ||
+        line.includes('在线体验') ||
+        line.includes('Open the Playground') ||
+        line.includes('Product storytelling') ||
+        line.includes('product-home demonstrations') ||
+        line.includes('产品首页')
+      );
+    })
+    .join('\n');
+  return next.replace(/\n/g, nl);
+}
+
+function findDonorVersion(version) {
+  const older = listFrozenDirs()
+    .filter((candidate) => compareVersion(candidate, version) < 0)
+    .sort(compareVersion)
+    .reverse();
+  return older.find((candidate) =>
+    fs.existsSync(path.join(docsRoot, candidate, 'en', 'changelog.mdx')),
+  );
+}
+
+function ensureChangelogRoute(version) {
+  for (const lang of ['en', 'zh']) {
+    const destDir = path.join(docsRoot, version, lang);
+    const changelogPath = path.join(destDir, 'changelog.mdx');
+    if (fs.existsSync(changelogPath)) continue;
+    const donor = findDonorVersion(version);
+    if (!donor) {
+      throw new Error(`No changelog donor for ${version}`);
+    }
+    fs.copyFileSync(
+      path.join(docsRoot, donor, lang, 'changelog.mdx'),
+      changelogPath,
+    );
+    const metaPath = path.join(destDir, '_meta.json');
+    const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+    if (!meta.includes('changelog')) {
+      const indexAt = meta.indexOf('index');
+      if (indexAt >= 0) meta.splice(indexAt + 1, 0, 'changelog');
+      else meta.unshift('changelog');
+      fs.writeFileSync(metaPath, `${JSON.stringify(meta, null, 2)}\n`);
+    }
+    const navPath = path.join(destDir, '_nav.json');
+    const nav = JSON.parse(fs.readFileSync(navPath, 'utf8'));
+    if (!nav.some((item) => item.link === '/changelog.html')) {
+      const donorNav = JSON.parse(
+        fs.readFileSync(path.join(docsRoot, donor, lang, '_nav.json'), 'utf8'),
+      );
+      const donorItem = donorNav.find((item) => item.link === '/changelog.html');
+      if (!donorItem) {
+        throw new Error(`Donor ${donor}/${lang} missing changelog nav`);
+      }
+      nav.splice(1, 0, donorItem);
+      fs.writeFileSync(navPath, `${JSON.stringify(nav, null, 2)}\n`);
+    }
+  }
+}
+
 function rewriteIndexes(version) {
   const en = path.join(docsRoot, version, 'en', 'index.mdx');
   const zh = path.join(docsRoot, version, 'zh', 'index.mdx');
-  fs.writeFileSync(en, rewriteEnglishIndex(version, fs.readFileSync(en, 'utf8')));
-  fs.writeFileSync(zh, rewriteChineseIndex(version, fs.readFileSync(zh, 'utf8')));
+  fs.writeFileSync(
+    en,
+    stripPlaygroundRows(rewriteEnglishIndex(version, fs.readFileSync(en, 'utf8'))),
+  );
+  fs.writeFileSync(
+    zh,
+    stripPlaygroundRows(rewriteChineseIndex(version, fs.readFileSync(zh, 'utf8'))),
+  );
+  ensureChangelogRoute(version);
 }
 
 function listFrozenDirs() {

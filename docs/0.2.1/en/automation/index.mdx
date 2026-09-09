@@ -1,0 +1,89 @@
+---
+title: Office CLI and coding-agent Skill
+description: Install one native CLI and expose its typed Office workflow to Codex and other coding agents.
+---
+
+# Office CLI and coding-agent Skill
+
+The CLI performs deterministic local file work. The Skill teaches a coding
+agent when and how to call that CLI, inspect structured results, preserve the
+source file, and verify the output. They are one workflow, so setup and usage
+live on this page instead of in separate product documents.
+
+## 1. Install the CLI
+
+```bash
+cargo install \
+  --git https://github.com/A3S-Lab/Office.git \
+  --locked a3s-office-cli
+```
+
+Confirm the executable and inspect a file without changing it.
+
+```bash
+a3s-office --version
+a3s-office validate report.docx --json
+a3s-office view report.docx outline --json
+```
+
+Use `--json` for coding-agent workflows. Structured results are stable inputs
+for decisions and assertions; terminal prose is for people.
+
+## 2. Install the Skill when an agent needs Office access
+
+<PlaygroundLink path="downloads/a3s-office-skill.tar.gz" download>Download the A3S Office Skill</PlaygroundLink>
+
+Download and extract it into the agent's personal Skill directory.
+
+```bash
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+tar -xzf a3s-office-skill.tar.gz \
+  -C "${CODEX_HOME:-$HOME/.codex}/skills"
+```
+
+The archive includes `SKILL.md` and focused references for documents,
+spreadsheets, presentations, and MCP operation.
+
+<PlaygroundLink path="downloads/a3s-office-skill/SKILL.md">Read the packaged Skill source before installing it.</PlaygroundLink>
+
+## 3. Run an exact mutation and verify it
+
+```bash
+a3s-office set report.docx /body \
+  --find Draft \
+  --replace Final \
+  --json
+
+a3s-office validate report.docx --json
+a3s-office view report.docx outline --json
+```
+
+A mutation should be followed by a semantic read or validation command. The
+agent should not treat a zero exit code as proof that the requested document
+state exists.
+
+## 4. Ask a coding agent
+
+Reference the Skill, source file, desired change, and verification outcome in
+one request.
+
+```text
+Use $a3s-office to inspect this quarterly report, correct the reporting year,
+save the result as a new file, and verify the final outline and validation
+report.
+```
+
+The Skill does not replace application logic or upload files automatically. It
+provides a bounded workflow around the local CLI. The agent still follows its
+normal permissions and sandbox policy.
+
+## Responsibilities
+
+| Layer | Owns |
+| --- | --- |
+| Office CLI | Package admission, semantic reads, typed mutations, serialization, validation, and JSON results. |
+| Skill | Tool selection, safe workflow order, verification expectations, and agent-facing examples. |
+| Coding agent | User intent, file choice, approval, failure recovery, and final reporting. |
+
+For every command and native mutation contract, use the complete
+[CLI reference](../cli-reference.md).

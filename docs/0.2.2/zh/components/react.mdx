@@ -1,0 +1,47 @@
+---
+title: React
+description: 以受控 React 组件的方式使用 A3S Office。
+---
+
+# React
+
+从 `@a3s-lab/office/react` 导入组件。内容值保存在宿主状态或应用数据仓库中，
+并把编辑器返回的完整新值传回组件。
+
+```tsx title="DocumentPage.tsx"
+import { useState } from 'react';
+import type { DocumentContent } from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+import '@a3s-lab/office/styles.css';
+
+const initialContent: DocumentContent = {
+  type: 'document',
+  html: '<h1>项目说明</h1><p>从这里开始编辑。</p>',
+  pageSize: 'a4',
+};
+
+export function DocumentPage() {
+  const [content, setContent] = useState(initialContent);
+
+  return (
+    <div style={{ height: '100vh', minHeight: 0 }}>
+      <DocumentEditor
+        content={content}
+        onChange={setContent}
+        theme="light"
+      />
+    </div>
+  );
+}
+```
+
+各编辑器实现会按需拆包加载。如果宿主已经知道用户即将打开哪一种编辑器，可以
+提前调用 `preloadOfficeEditor(kind)`，减少首次打开等待。
+
+```tsx
+import { preloadOfficeEditor } from '@a3s-lab/office/react';
+
+<button onPointerEnter={() => void preloadOfficeEditor('spreadsheet')}>
+  打开工作簿
+</button>;
+```
