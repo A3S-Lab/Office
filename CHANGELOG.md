@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Eligible paragraph-break merge/split, whole-paragraph mark, and text-move
+  revision bodies now admit relationship-free empty `w:dayShort`,
+  `w:monthShort`, and `w:yearShort` glyphs alongside the existing soft-break /
+  tab / carriage-return / last-rendered page break / page-number / long
+  date-field / hyphen / hyperlink / bookmark set. Attributed or non-empty short
+  date-field glyphs stay fail-closed.
+
 ## 0.128.0 - 2026-09-10
 
 ### Writer

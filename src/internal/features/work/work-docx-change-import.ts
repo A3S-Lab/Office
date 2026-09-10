@@ -512,6 +512,9 @@ const ADMITTED_EMPTY_RUN_GLYPHS = new Set([
   'dayLong',
   'monthLong',
   'yearLong',
+  'dayShort',
+  'monthShort',
+  'yearShort',
 ]);
 
 function isAdmittedEmptyRunGlyph(element: Element): boolean {

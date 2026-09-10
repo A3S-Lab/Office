@@ -1018,7 +1018,8 @@ namespace-spoofed metadata, identity conflicts, and over-limit inputs.
 Relationship-free internal hyperlinks, relationship-free bookmarks, empty
 or `w:rPr`-only untracked sibling runs, and empty `w:tab` / `w:cr` /
 `w:lastRenderedPageBreak` / `w:pgNum` / `w:dayLong` / `w:monthLong` /
-`w:yearLong` / `w:noBreakHyphen` / `w:softHyphen` glyphs inside or beside the
+`w:yearLong` / `w:dayShort` / `w:monthShort` / `w:yearShort` /
+`w:noBreakHyphen` / `w:softHyphen` glyphs inside or beside the
 mark body are admitted. Multi-wrapper text-only bodies that
 share the paragraph-mark author and date are admitted as one atomic
 whole-paragraph revision. Isolated mark-only
