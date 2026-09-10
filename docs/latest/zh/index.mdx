@@ -42,13 +42,14 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.135.0）
+## `main` 更新内容（0.136.0）
 
-Writer Phase 0 为整段段落标记包装与段落分隔符相邻段落准入仅含图片正文：
+Writer Phase 0 准入单单元格表格 companion 移动范围书签：
 
-- 当唯一内容为受支持的行内 DrawingML 图片（带已解析图片 `r:embed` 的
-  `wp:inline`）时，不再要求可见文本。
-- 空或畸形绘图、浮动锚点以及未解析嵌入仍失败闭合。
+- 正文级 `w:move*Range*` Start/End 夹住一张仅含一个 `w:tc`、且该单元格内为受支持
+  纯文本移动的 `w:tbl` 时，与移动一并往返。
+- 多单元格兄弟单元格文字、嵌套表、SDT sandwich、分节 sandwich、未配对标记以及
+  Compare 移动范围生成仍失败闭合。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

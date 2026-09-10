@@ -773,14 +773,17 @@ DOCX export first gives the `docx` writer transient negative IDs, then rewrites
 those wrappers to native `w:moveFrom` and `w:moveTo` elements with the shared
 positive ID, author, and UTC date. Companion `w:move*Range*` bookmarks that
 uniquely sandwich each supported side also round-trip, including when the
-destination lives in a later section than the source. Reopening therefore
-returns the same one-card review identity without `data-document-change`
-leakage or transient IDs. The bounded import/export budget is 65,536 move sides
-and 1,000,000 characters per move. Rich runs outside ordinary text,
-table-spanning or section-sandwiching range markers, relationship-bound
-objects, malformed metadata, duplicate identities, and unpaired sides remain
+destination lives in a later section than the source or when body-level
+Start/End enclose one single-cell `w:tbl` with a supported text-only move in
+exactly one `w:tc`. Reopening therefore returns the same one-card review
+identity without `data-document-change` leakage or transient IDs. The bounded
+import/export budget is 65,536 move sides and 1,000,000 characters per move.
+Rich runs outside ordinary text, multi-cell sibling-cell / nested-table / SDT
+sandwiches, section-sandwiching range markers, unpaired markers,
+relationship-bound objects, malformed metadata, and duplicate identities remain
 on the structural compatibility path and are reported rather than flattened
-into an inexact editable move.
+into an inexact editable move. Compare move-range generation is not in this
+slice.
 
 Compare can infer a move inside a simple paragraph or heading, and can pair a
 range across aligned simple text blocks when both blocks belong to the same

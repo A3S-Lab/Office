@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.136.0 - 2026-09-10
+
+### Writer
+
+- Companion `w:move*Range*` bookmarks that enclose a single-cell table are now
+  admitted on import when body-level Start/End wrap one `w:tbl` containing a
+  supported text-only move in exactly one `w:tc`. Multi-cell sibling-cell text,
+  nested tables, SDT sandwiches, section sandwiches, and unpaired markers stay
+  fail-closed. Compare move-range generation is not in this slice.
+
 ## 0.135.0 - 2026-09-10
 
 ### Writer

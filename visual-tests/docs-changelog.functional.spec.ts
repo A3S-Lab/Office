@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(116);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.135.0');
+  await expect(cards).toHaveCount(117);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.136.0');
   await expect(cards.first()).toContainText(
-    'Writer 整段标记与段落分隔符修订准入仅含图片正文',
+    'Writer 准入单单元格表格 companion 移动范围书签',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.136.0')).toContainText('单单元格表格 companion');
+  await expect(releaseCard('0.136.0')).toContainText(
+    '正文级 move*Range* Start/End 夹住单单元格表格时',
+  );
   await expect(releaseCard('0.135.0')).toContainText('仅含图片正文准入');
   await expect(releaseCard('0.135.0')).toContainText(
     '仅含受支持的 wp:inline 图片嵌入即可满足整段标记与段落分隔符正文准入',

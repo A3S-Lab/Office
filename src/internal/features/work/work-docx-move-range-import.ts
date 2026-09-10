@@ -15,7 +15,15 @@ const MAX_MOVE_DATE_LENGTH = 64;
 const START_ATTRIBUTES = new Set(['id', 'author', 'date', 'name']);
 const END_ATTRIBUTES = new Set(['id']);
 const SECTION_BREAK = 'sectPr';
-const BLOCKING_CONTAINERS = new Set(['tbl', 'sdt', SECTION_BREAK]);
+const ALWAYS_BLOCKED_CONTAINERS = new Set(['sdt', SECTION_BREAK]);
+const TABLE_CHROME = new Set([
+  'tblPr',
+  'tblGrid',
+  'tblGridCol',
+  'trPr',
+  'tcPr',
+]);
+const OFF_PATH_CONTENT = new Set(['p', MOVE_FROM, MOVE_TO, 'ins', 'del']);
 
 export interface DocxMoveRangeCompanion {
   rangeId: string;
@@ -29,9 +37,10 @@ export interface DocxMoveRangeCompanion {
  * Word often wraps bounded `w:moveFrom`/`w:moveTo` pairs with matching
  * `w:move*Range*` bookmarks. Companion bookmarks are relationship-free and
  * uniquely sandwich each supported move wrapper in document order (immediate
- * siblings or cross-paragraph placement, including across section breaks).
- * They may be stripped after capture so the text move stays reviewable.
- * Table-spanning sandwiches and unpaired markers stay fail-closed. */
+ * siblings, cross-paragraph placement including across section breaks, or a
+ * single-cell table with allowlisted table chrome). They may be stripped after
+ * capture so the text move stays reviewable. Multi-cell, nested-table, SDT,
+ * section-sandwich, and unpaired markers stay fail-closed. */
 export function companionDocxMoveRangeBookmarks(
   document: Document,
   movePairs: ReadonlyArray<{ from: Element; to: Element }>,
@@ -113,10 +122,11 @@ function companionForMovePair(
   ) {
     return null;
   }
-  // Each side's sandwich must stay move-only (extra siblings, tables, and
-  // section breaks inside one sandwich remain fail-closed via
-  // sandwichContainsOnlyMove). The destination may live in a later section
-  // than the source; that does not block companion admission.
+  // Each side's sandwich must stay move-only (extra siblings, multi-cell or
+  // nested tables, SDT, and section breaks inside one sandwich remain
+  // fail-closed via sandwichContainsOnlyMove). A single-cell table with
+  // allowlisted chrome is admitted. The destination may live in a later
+  // section than the source; that does not block companion admission.
   return { rangeId, rangeName, from, to, markers };
 }
 
@@ -163,29 +173,112 @@ function findSandwichMarkers(
 
 /**
  * Every element strictly between the range bookmarks must lie on the move
- * wrapper's ancestor chain, be the wrapper, or be inside the wrapper. That
- * admits bookmarks placed around the containing paragraph while rejecting
- * extra sibling content or nested tracked ranges.
+ * wrapper's ancestor chain, be the wrapper, be inside the wrapper, or be
+ * allowlisted single-cell table chrome on that path. At most one `w:tbl` may
+ * appear, it must contain the move in exactly one `w:tc`, and `w:sdt` /
+ * `w:sectPr` stay blocked. Off-path paragraphs and tracked ranges reject.
  */
 function sandwichContainsOnlyMove(
   start: Element,
   end: Element,
   move: Element,
 ): boolean {
+  const moveTable = nearestAncestorNamed(move, 'tbl');
+  const moveRow = nearestAncestorNamed(move, 'tr');
+  const moveCell = nearestAncestorNamed(move, 'tc');
+  if (moveTable && !moveCell) return false;
+
   let sawMove = false;
+  let tableCount = 0;
   for (const element of elementsBetween(start, end)) {
     if (element === move) {
       sawMove = true;
       continue;
     }
     if (move.contains(element)) continue;
-    if (element.contains(move)) {
-      if (BLOCKING_CONTAINERS.has(element.localName)) return false;
+    if (ALWAYS_BLOCKED_CONTAINERS.has(element.localName)) return false;
+    if (element.localName === 'tbl') {
+      tableCount += 1;
+      if (tableCount > 1 || !element.contains(move)) return false;
+      continue;
+    }
+    if (element.contains(move)) continue;
+    if (OFF_PATH_CONTENT.has(element.localName)) return false;
+    if (isTableChromeOnMovePath(element, moveTable, moveRow, moveCell)) {
       continue;
     }
     return false;
   }
   return sawMove;
+}
+
+function nearestAncestorNamed(
+  element: Element,
+  localName: string,
+): Element | null {
+  let current: Element | null = element.parentElement;
+  while (current) {
+    if (current.localName === localName) return current;
+    current = current.parentElement;
+  }
+  return null;
+}
+
+function isTableChromeOnMovePath(
+  element: Element,
+  moveTable: Element | null,
+  moveRow: Element | null,
+  moveCell: Element | null,
+): boolean {
+  const chrome = nearestTableChrome(element);
+  if (!chrome || chromeContainsTrackedRevision(chrome)) return false;
+  const parent = chrome.parentElement;
+  switch (chrome.localName) {
+    case 'tcPr':
+      return moveCell !== null && parent === moveCell;
+    case 'trPr':
+      return moveRow !== null && parent === moveRow;
+    case 'tblPr':
+    case 'tblGrid':
+      return moveTable !== null && parent === moveTable;
+    case 'tblGridCol':
+      return (
+        moveTable !== null &&
+        parent?.localName === 'tblGrid' &&
+        parent.parentElement === moveTable
+      );
+    default:
+      return false;
+  }
+}
+
+function nearestTableChrome(element: Element): Element | null {
+  let current: Element | null = element;
+  while (current) {
+    if (TABLE_CHROME.has(current.localName)) return current;
+    if (
+      current.localName === 'tbl' ||
+      current.localName === 'tr' ||
+      current.localName === 'tc' ||
+      current.localName === 'p' ||
+      current.localName === 'body' ||
+      current.localName === 'hdr' ||
+      current.localName === 'ftr'
+    ) {
+      return null;
+    }
+    current = current.parentElement;
+  }
+  return null;
+}
+
+function chromeContainsTrackedRevision(chrome: Element): boolean {
+  return (
+    descendants(chrome, MOVE_FROM).length > 0 ||
+    descendants(chrome, MOVE_TO).length > 0 ||
+    descendants(chrome, 'ins').length > 0 ||
+    descendants(chrome, 'del').length > 0
+  );
 }
 
 function elementsBetween(start: Element, end: Element): Element[] {

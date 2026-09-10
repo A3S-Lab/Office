@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.136.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits single-cell table companion move-range bookmarks',
+      zh: 'Writer 准入单单元格表格 companion 移动范围书签',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: companion w:move*Range* bookmarks are admitted on import when body-level Start/End enclose one w:tbl containing a supported text-only move in exactly one w:tc. Multi-cell sibling-cell text, nested tables, SDT sandwiches, section sandwiches, and unpaired markers stay fail-closed. Compare move-range generation is not in this slice.',
+      zh: 'Phase 0 保真：正文级 w:move*Range* Start/End 夹住一张仅含一个 w:tc、且该单元格内为受支持纯文本移动的 w:tbl 时，companion 书签可在导入时准入。多单元格兄弟单元格文字、嵌套表、SDT sandwich、分节 sandwich 与未配对标记仍失败闭合。本切片不含 Compare 移动范围生成。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Single-cell table companions',
+          zh: '单单元格表格 companion',
+        },
+        detail: {
+          en: 'Body-level move*Range* Start/End around one single-cell table keep matching bookmarks with the text move.',
+          zh: '正文级 move*Range* Start/End 夹住单单元格表格时，仍与文字移动保留匹配书签。',
+        },
+      },
+      {
+        title: {
+          en: 'One supported cell only',
+          zh: '仅一个受支持单元格',
+        },
+        detail: {
+          en: 'The enclosed w:tbl must contain a supported text-only move in exactly one w:tc.',
+          zh: '夹住的 w:tbl 必须恰好在一个 w:tc 内含受支持的纯文本移动。',
+        },
+      },
+      {
+        title: {
+          en: 'Broader sandwiches stay fail-closed',
+          zh: '更广 sandwich 仍失败闭合',
+        },
+        detail: {
+          en: 'Multi-cell sibling-cell text, nested tables, SDT, section sandwiches, unpaired markers, and Compare generation stay diagnostics-only.',
+          zh: '多单元格兄弟单元格文字、嵌套表、SDT、分节 sandwich、未配对标记与 Compare 生成仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.136.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.136.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.135.0',
     date: '2026-09-10',
     kind: 'improved',
