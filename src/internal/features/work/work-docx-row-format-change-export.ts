@@ -84,9 +84,7 @@ export class DocxRowFormattingChangePatchCollector {
     this.cnfStyles.push(
       normalizeDocumentRowCnfStyle(element.dataset.officeRowCnfStyle),
     );
-    this.divIds.push(
-      normalizeDocumentRowDivId(element.dataset.officeRowDivId),
-    );
+    this.divIds.push(normalizeDocumentRowDivId(element.dataset.officeRowDivId));
     this.tblCellSpacings.push(
       preferredWidthFromRowElement(
         element,

@@ -187,9 +187,7 @@ function setSectionFormattingChange(
     prior.append(paperSource);
   }
   if (formatting.columns) {
-    prior.append(
-      createSectionFormattingColumns(document, formatting.columns),
-    );
+    prior.append(createSectionFormattingColumns(document, formatting.columns));
   }
   if (formatting.differentFirstPage !== undefined) {
     const titlePg = document.createElementNS(WORD_NAMESPACE, 'w:titlePg');

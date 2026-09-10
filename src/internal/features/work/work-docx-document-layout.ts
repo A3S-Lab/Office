@@ -362,7 +362,11 @@ function patchSectionLnNumTypes(
     if (!value) continue;
     const lnNumType = document.createElementNS(WORD_NAMESPACE, 'w:lnNumType');
     if (value.countBy !== undefined) {
-      lnNumType.setAttributeNS(WORD_NAMESPACE, 'w:countBy', String(value.countBy));
+      lnNumType.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:countBy',
+        String(value.countBy),
+      );
     }
     if (value.start !== undefined) {
       lnNumType.setAttributeNS(WORD_NAMESPACE, 'w:start', String(value.start));

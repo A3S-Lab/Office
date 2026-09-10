@@ -11,9 +11,7 @@ test('documentation changelog stays scannable, localized, and version-aware', as
   const cards = page.locator('.office-release-card');
   await expect(cards).toHaveCount(91);
   await expect(cards.first()).toHaveAttribute('data-version', '0.114.0');
-  await expect(cards.first()).toContainText(
-    'Writer 让节 noEndnote 修订可审阅',
-  );
+  await expect(cards.first()).toContainText('Writer 让节 noEndnote 修订可审阅');
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
   await expect(releaseCard('0.114.0')).toContainText('节尾注抑制');

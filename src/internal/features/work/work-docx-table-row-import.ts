@@ -34,7 +34,10 @@ export interface ImportedDocxTableRowMarker {
   widthAfter?: { type: 'auto' | 'percent' | 'pixels'; value: number | null };
   cnfStyle?: string;
   divId?: number;
-  tblCellSpacing?: { type: 'auto' | 'percent' | 'pixels'; value: number | null };
+  tblCellSpacing?: {
+    type: 'auto' | 'percent' | 'pixels';
+    value: number | null;
+  };
   rowId?: string;
   rowHeight?: number;
   rowHeightRule?: 'atLeast' | 'exact';

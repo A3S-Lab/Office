@@ -86,10 +86,7 @@ export interface WorkDocumentGrid {
   linePitch: number;
 }
 
-export type WorkDocumentLnNumRestart =
-  | 'newPage'
-  | 'newSection'
-  | 'continuous';
+export type WorkDocumentLnNumRestart = 'newPage' | 'newSection' | 'continuous';
 
 /** Bounded CT_LineNumber subset for Traditional Office section line numbering. */
 export interface WorkDocumentLnNumType {

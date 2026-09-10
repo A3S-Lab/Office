@@ -227,9 +227,9 @@ function registerVersions() {
   const required = REQUIRED_PUBLISHED_FROZEN_VERSIONS.filter((version) =>
     fs.existsSync(path.join(docsRoot, version)),
   );
-  const frozen = [
-    ...new Set([...fromWindow, ...required]),
-  ].sort((a, b) => compareVersion(b, a));
+  const frozen = [...new Set([...fromWindow, ...required])].sort((a, b) =>
+    compareVersion(b, a),
+  );
   const merged = ['latest', ...frozen];
   const file = path.join(root, 'website', 'documentation-site.ts');
   const text = fs.readFileSync(file, 'utf8');

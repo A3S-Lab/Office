@@ -232,7 +232,9 @@ export function documentSectionNodeAttributes(
     headerText: legacy.headerText ?? '',
     footerText: legacy.footerText ?? '',
     showPageNumbers: Boolean(legacy.showPageNumbers),
-    pageNumberStart: validPageNumber(layout.pgNumType?.start ?? layout.pageNumberStart) ?? null,
+    pageNumberStart:
+      validPageNumber(layout.pgNumType?.start ?? layout.pageNumberStart) ??
+      null,
     pageChrome: serializeDocumentPageChrome(pageChrome),
     pageBorders: serializeDocumentPageBorders(layout.pageBorders) ?? '',
     pageMargins: serializeDocumentPageMargins(layout.pageMargins) ?? '',
@@ -477,10 +479,12 @@ export function documentSectionLayoutFromElement(
       lnNumCountBy: numberValue(element.dataset.sectionLnNumCountBy) ?? null,
       lnNumStart: numberValue(element.dataset.sectionLnNumStart) ?? null,
       lnNumDistance: numberValue(element.dataset.sectionLnNumDistance) ?? null,
-      lnNumRestart: (element.dataset.sectionLnNumRestart ??
-        '') as WorkDocumentLnNumRestart | '',
-      pgNumFmt: (element.dataset.sectionPgNumFmt ??
-        '') as WorkDocumentPgNumFmt | '',
+      lnNumRestart: (element.dataset.sectionLnNumRestart ?? '') as
+        | WorkDocumentLnNumRestart
+        | '',
+      pgNumFmt: (element.dataset.sectionPgNumFmt ?? '') as
+        | WorkDocumentPgNumFmt
+        | '',
       pgNumStart: numberValue(element.dataset.sectionPgNumStart) ?? null,
       formProt:
         element.dataset.sectionFormProt === 'true'
@@ -494,8 +498,9 @@ export function documentSectionLayoutFromElement(
           : element.dataset.sectionNoEndnote === 'false'
             ? false
             : null,
-      verticalAlign: (element.dataset.sectionVerticalAlign ??
-        '') as WorkDocumentSectionVerticalAlign | '',
+      verticalAlign: (element.dataset.sectionVerticalAlign ?? '') as
+        | WorkDocumentSectionVerticalAlign
+        | '',
       propertyRevisionOmml: element.dataset.sectionPropertyRevisionOmml ?? '',
       sectionChangeKind:
         element.getAttribute('data-document-change') === 'true' &&
@@ -725,7 +730,10 @@ function pgNumTypeFromNodeAttributes(
   attributes: Partial<DocumentSectionNodeAttributes>,
   base: WorkDocumentSectionLayout,
 ): WorkDocumentPgNumType | undefined {
-  if (attributes.pgNumFmt === undefined && attributes.pgNumStart === undefined) {
+  if (
+    attributes.pgNumFmt === undefined &&
+    attributes.pgNumStart === undefined
+  ) {
     return normalizedPgNumType(
       base.pgNumType ??
         (base.pageNumberStart !== undefined

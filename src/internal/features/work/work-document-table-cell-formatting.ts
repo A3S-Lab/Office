@@ -514,7 +514,9 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
       parseHTML: (element: HTMLElement) =>
         normalizeDocumentTableCellGridSpan(element.dataset.officeCellGridSpan),
       renderHTML: (attributes: Record<string, unknown>) => {
-        const gridSpan = normalizeDocumentTableCellGridSpan(attributes.gridSpan);
+        const gridSpan = normalizeDocumentTableCellGridSpan(
+          attributes.gridSpan,
+        );
         return gridSpan !== null
           ? { 'data-office-cell-grid-span': String(gridSpan) }
           : {};
@@ -853,9 +855,7 @@ export function normalizeDocumentTableCellHMerge(
 ): DocumentTableCellHMerge | null {
   if (typeof value !== 'string') return null;
   const normalized = value.trim();
-  return DOCUMENT_TABLE_CELL_H_MERGES.has(
-    normalized as DocumentTableCellHMerge,
-  )
+  return DOCUMENT_TABLE_CELL_H_MERGES.has(normalized as DocumentTableCellHMerge)
     ? (normalized as DocumentTableCellHMerge)
     : null;
 }
@@ -875,9 +875,7 @@ export function normalizeDocumentTableCellVMerge(
 ): DocumentTableCellVMerge | null {
   if (typeof value !== 'string') return null;
   const normalized = value.trim();
-  return DOCUMENT_TABLE_CELL_V_MERGES.has(
-    normalized as DocumentTableCellVMerge,
-  )
+  return DOCUMENT_TABLE_CELL_V_MERGES.has(normalized as DocumentTableCellVMerge)
     ? (normalized as DocumentTableCellVMerge)
     : null;
 }

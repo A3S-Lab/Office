@@ -186,7 +186,10 @@ export function normalizeDocumentRowFormattingSnapshot(attributes: {
     if (divId === null) return null;
     snapshot.divId = divId;
   }
-  if ('tblCellSpacing' in attributes && attributes.tblCellSpacing !== undefined) {
+  if (
+    'tblCellSpacing' in attributes &&
+    attributes.tblCellSpacing !== undefined
+  ) {
     const tblCellSpacing = normalizeDocumentTablePreferredWidth(
       attributes.tblCellSpacing,
     );
@@ -332,9 +335,7 @@ export function normalizeDocumentRowGridSpan(value: unknown): number | null {
 /** Non-negative safe-integer HTML div association for w:divId / data-office-row-div-id. */
 export function normalizeDocumentRowDivId(value: unknown): number | null {
   if (typeof value === 'number') {
-    return Number.isInteger(value) &&
-      Number.isSafeInteger(value) &&
-      value >= 0
+    return Number.isInteger(value) && Number.isSafeInteger(value) && value >= 0
       ? value
       : null;
   }

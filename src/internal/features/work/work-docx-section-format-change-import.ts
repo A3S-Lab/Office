@@ -179,7 +179,9 @@ function supportedSectionFormattingChange(
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
   if (!children.length || children.length > 11) return null;
-  if (children.some((child) => !isSupportedSectionFormattingPriorChild(child))) {
+  if (
+    children.some((child) => !isSupportedSectionFormattingPriorChild(child))
+  ) {
     return null;
   }
   const localNames = children.map((child) => child.localName);
@@ -389,17 +391,17 @@ function isSupportedColumnChild(column: Element): boolean {
   }
   if (names.size !== attributes.length || !names.has('w')) return false;
   const width = parseBoundedDocxInteger(
-    attributes.find(
-      (candidate) => xmlAttributeLocalName(candidate) === 'w',
-    )?.value.trim() ?? '',
+    attributes
+      .find((candidate) => xmlAttributeLocalName(candidate) === 'w')
+      ?.value.trim() ?? '',
     { minimum: 1, maximum: MAX_UNSIGNED_WORD_TWIPS },
   );
   if (width === null) return false;
   if (names.has('space')) {
     const space = parseDocxTwipsMeasure(
-      attributes.find(
-        (candidate) => xmlAttributeLocalName(candidate) === 'space',
-      )?.value.trim() ?? '',
+      attributes
+        .find((candidate) => xmlAttributeLocalName(candidate) === 'space')
+        ?.value.trim() ?? '',
       {
         minimum: 0,
         maximum: MAX_UNSIGNED_WORD_TWIPS,
@@ -416,7 +418,8 @@ function importedSectionFormattingColumns(
   element: Element,
 ): DocumentSectionColumnsSnapshot | null {
   const columnElements = Array.from(element.children).filter(
-    (child) => child.localName === 'col' && child.namespaceURI === element.namespaceURI,
+    (child) =>
+      child.localName === 'col' && child.namespaceURI === element.namespaceURI,
   );
   if (columnElements.length > 0) {
     if (
@@ -443,11 +446,7 @@ function importedSectionFormattingColumns(
         .find((candidate) => xmlAttributeLocalName(candidate) === 'equalWidth')
         ?.value.trim()
         .toLowerCase();
-      if (
-        equalWidth === '1' ||
-        equalWidth === 'true' ||
-        equalWidth === 'on'
-      ) {
+      if (equalWidth === '1' || equalWidth === 'true' || equalWidth === 'on') {
         return null;
       }
     }

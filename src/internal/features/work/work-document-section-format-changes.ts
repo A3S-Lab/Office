@@ -52,7 +52,8 @@ export interface DocumentSectionColumnsSnapshot {
 }
 
 /** @deprecated Use {@link DocumentSectionColumnsSnapshot}. */
-export type DocumentSectionEqualColumnsSnapshot = DocumentSectionColumnsSnapshot;
+export type DocumentSectionEqualColumnsSnapshot =
+  DocumentSectionColumnsSnapshot;
 
 /**
  * Prior snapshot for reviewable section-property revisions.
@@ -646,7 +647,10 @@ function normalizeRevisionColumns(
             };
           })
         : null;
-  if (customSource !== undefined && (!custom || custom.some((entry) => !entry))) {
+  if (
+    customSource !== undefined &&
+    (!custom || custom.some((entry) => !entry))
+  ) {
     return null;
   }
   const customColumns = custom?.filter(
@@ -681,7 +685,10 @@ function normalizeRevisionDocumentGrid(
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
   const keys = Object.keys(record);
-  if (!keys.length || keys.some((key) => key !== 'type' && key !== 'linePitch')) {
+  if (
+    !keys.length ||
+    keys.some((key) => key !== 'type' && key !== 'linePitch')
+  ) {
     return null;
   }
   if (!('type' in record) || !('linePitch' in record)) return null;
@@ -783,10 +790,7 @@ function normalizeRevisionPgNumType(
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
   const keys = Object.keys(record);
-  if (
-    !keys.length ||
-    keys.some((key) => key !== 'fmt' && key !== 'start')
-  ) {
+  if (!keys.length || keys.some((key) => key !== 'fmt' && key !== 'start')) {
     return null;
   }
   const next: WorkDocumentPgNumType = {};

@@ -298,12 +298,8 @@ export function restoredDocumentCellAttributes(
     ...(formatting.cnfStyle !== undefined
       ? { cnfStyle: formatting.cnfStyle }
       : {}),
-    ...(formatting.hMerge !== undefined
-      ? { hMerge: formatting.hMerge }
-      : {}),
-    ...(formatting.vMerge !== undefined
-      ? { vMerge: formatting.vMerge }
-      : {}),
+    ...(formatting.hMerge !== undefined ? { hMerge: formatting.hMerge } : {}),
+    ...(formatting.vMerge !== undefined ? { vMerge: formatting.vMerge } : {}),
     ...(formatting.gridSpan !== undefined
       ? { gridSpan: formatting.gridSpan }
       : {}),

@@ -1,12 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import {
-  access,
-  cp,
-  mkdir,
-  readdir,
-  rename,
-  rm,
-} from 'node:fs/promises';
+import { access, cp, mkdir, readdir, rename, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { DOCUMENTATION_VERSIONS } from '../website/documentation-site';
 

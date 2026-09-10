@@ -649,10 +649,7 @@ function createTblStyleElement(document: Document, styleId: string): Element {
   return element;
 }
 
-function createTblCaptionElement(
-  document: Document,
-  caption: string,
-): Element {
+function createTblCaptionElement(document: Document, caption: string): Element {
   const element = document.createElementNS(WORD_NAMESPACE, 'w:tblCaption');
   element.setAttributeNS(WORD_NAMESPACE, 'w:val', caption);
   return element;

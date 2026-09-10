@@ -528,7 +528,9 @@ function createTcBordersElement(
     child.setAttributeNS(
       WORD_NAMESPACE,
       'w:sz',
-      border.style === 'none' ? '0' : docxSzFromSnapshotBorderWidth(border.width),
+      border.style === 'none'
+        ? '0'
+        : docxSzFromSnapshotBorderWidth(border.width),
     );
     child.setAttributeNS(WORD_NAMESPACE, 'w:space', '0');
     child.setAttributeNS(

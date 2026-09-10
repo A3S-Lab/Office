@@ -247,7 +247,9 @@ export function normalizeDocumentTableFormattingSnapshot(attributes: {
     snapshot.caption = caption;
   }
   if ('description' in attributes && attributes.description !== undefined) {
-    const description = normalizeDocumentTableDescription(attributes.description);
+    const description = normalizeDocumentTableDescription(
+      attributes.description,
+    );
     if (!description) return null;
     snapshot.description = description;
   }

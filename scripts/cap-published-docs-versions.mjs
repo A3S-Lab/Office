@@ -28,7 +28,9 @@ const fromWindow = fs
   .readdirSync(docsRoot, { withFileTypes: true })
   .filter((d) => d.isDirectory() && /^\d+\.\d+\.\d+$/.test(d.name))
   .map((d) => d.name)
-  .filter((version) => compareVersion(version, MIN_PUBLISHED_FROZEN_VERSION) >= 0)
+  .filter(
+    (version) => compareVersion(version, MIN_PUBLISHED_FROZEN_VERSION) >= 0,
+  )
   .sort((a, b) => compareVersion(b, a));
 const required = REQUIRED_PUBLISHED_FROZEN_VERSIONS.filter((version) =>
   fs.existsSync(path.join(docsRoot, version)),
