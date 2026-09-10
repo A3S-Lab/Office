@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.140.0 - 2026-09-11
+
+### Writer
+
+- Companion `w:move*Range*` bookmarks that enclose a one-level nested table are
+  now admitted on import when move ancestry is at most two `w:tbl` elements
+  that both contain the supported text-only move. Deeper nesting, a nested
+  table beside the move, and SDT combined with nested tables stay fail-closed.
+
 ## 0.139.0 - 2026-09-11
 
 ### Writer

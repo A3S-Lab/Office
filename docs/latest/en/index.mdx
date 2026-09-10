@@ -44,15 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.139.0)
+## What's new on `main` (0.140.0)
 
-Writer Phase 0 admits simple SDT-wrapped companion move-range bookmarks:
+Writer Phase 0 admits one-level nested-table companion move-range bookmarks:
 
-- Companion `w:move*Range*` bookmarks are admitted on import when at most one
-  `w:sdt` contains the supported text-only move (paragraph or table) and may
-  carry `w:sdtPr` chrome.
-- Nested SDT, SDT beside the move, nested tables, and section sandwiches stay
-  fail-closed.
+- Companion `w:move*Range*` bookmarks are admitted on import when move ancestry
+  is at most two `w:tbl` elements that both contain the supported text-only
+  move.
+- Deeper nesting, a nested table beside the move, and SDT combined with nested
+  tables stay fail-closed.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

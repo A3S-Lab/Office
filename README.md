@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.139.0` admits simple SDT-wrapped companion move-range bookmarks:
+Version `0.140.0` admits one-level nested-table companion move-range bookmarks:
 
-- **Simple SDT companions** — at most one `w:sdt` containing the supported
-  text-only move (with optional `w:sdtPr` chrome) keeps matching
+- **One-level nested-table companions** — move ancestry of at most two `w:tbl`
+  elements that both contain the supported text-only move keeps matching
   `w:move*Range*` bookmarks on import.
-- **Boundary** — nested SDT, SDT beside the move, nested tables, and section
-  sandwiches stay fail-closed.
+- **Boundary** — deeper nesting, a nested table beside the move, and SDT
+  combined with nested tables stay fail-closed.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

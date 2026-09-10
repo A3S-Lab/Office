@@ -42,13 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.139.0）
+## `main` 更新内容（0.140.0）
 
-Writer Phase 0 准入简单 SDT 包装的 companion 移动范围书签：
+Writer Phase 0 准入一层嵌套表 companion 移动范围书签：
 
-- 至多一个含受支持纯文本移动（段落或表格）的 `w:sdt`（可带 `w:sdtPr` chrome）时，
-  companion `w:move*Range*` 书签可在导入时准入。
-- 嵌套 SDT、移动旁的 SDT、嵌套表与分节 sandwich 仍失败闭合。
+- 移动祖先至多两层且均含受支持纯文本移动的 `w:tbl` 时，companion
+  `w:move*Range*` 书签可在导入时准入。
+- 更深嵌套、移动旁的嵌套表，以及 SDT 与嵌套表组合仍失败闭合。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(120);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.139.0');
+  await expect(cards).toHaveCount(121);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.140.0');
   await expect(cards.first()).toContainText(
-    'Writer 准入简单 SDT 包装的 companion 移动范围书签',
+    'Writer 准入一层嵌套表 companion 移动范围书签',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.140.0')).toContainText('一层嵌套表 companion');
+  await expect(releaseCard('0.140.0')).toContainText(
+    '正文级 move*Range* Start/End 夹住外层表，且内层嵌套表含受支持移动时',
+  );
   await expect(releaseCard('0.139.0')).toContainText('简单 SDT companion');
   await expect(releaseCard('0.139.0')).toContainText(
     '正文级 move*Range* Start/End 夹住一个简单 w:sdt 时',

@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.140.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits one-level nested-table companion move-range bookmarks',
+      zh: 'Writer 准入一层嵌套表 companion 移动范围书签',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: companion w:move*Range* bookmarks are admitted on import when move ancestry is at most two w:tbl elements that both contain the supported text-only move. Deeper nesting, a nested table beside the move, and SDT combined with nested tables stay fail-closed.',
+      zh: 'Phase 0 保真：移动祖先至多两层且均含受支持纯文本移动的 w:tbl 时，companion w:move*Range* 书签可在导入时准入。更深嵌套、移动旁的嵌套表，以及 SDT 与嵌套表组合仍失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One-level nested-table companions',
+          zh: '一层嵌套表 companion',
+        },
+        detail: {
+          en: 'Body-level move*Range* Start/End around an outer table that contains one nested table with the supported move keep matching bookmarks.',
+          zh: '正文级 move*Range* Start/End 夹住外层表，且内层嵌套表含受支持移动时，仍与文字移动保留匹配书签。',
+        },
+      },
+      {
+        title: {
+          en: 'Move ancestry ≤2 tables',
+          zh: '移动祖先 ≤2 层表',
+        },
+        detail: {
+          en: 'Both enclosing tables must contain the move; ancestry deeper than two tables stays closed.',
+          zh: '两层包围表都必须含有该移动；祖先超过两层表仍关闭。',
+        },
+      },
+      {
+        title: {
+          en: 'Deeper, beside-move, and SDT+nested stay fail-closed',
+          zh: '更深、旁路与 SDT+嵌套仍失败闭合',
+        },
+        detail: {
+          en: 'Deeper nesting, nested tables beside the move, and SDT combined with nested tables stay diagnostics-only.',
+          zh: '更深嵌套、移动旁的嵌套表，以及 SDT 与嵌套表组合仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.140.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.140.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.139.0',
     date: '2026-09-11',
     kind: 'improved',

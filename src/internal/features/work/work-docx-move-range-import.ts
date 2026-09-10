@@ -46,13 +46,15 @@ export interface DocxMoveRangeCompanion {
  * Word often wraps bounded `w:moveFrom`/`w:moveTo` pairs with matching
  * `w:move*Range*` bookmarks. Companion bookmarks are relationship-free and
  * uniquely sandwich each supported move wrapper in document order (immediate
- * siblings, cross-paragraph placement including across section breaks, or one
- * table with the move in exactly one cell and allowlisted chrome / sibling
- * cell text-only content, or one simple `w:sdt` whose content path holds the
- * move's paragraph or table). They may be stripped after capture so the text
- * move stays reviewable. Nested-table, nested/sibling SDT, section-sandwich,
- * tracked or rich sibling-cell content, and unpaired markers stay
- * fail-closed. */
+ * siblings, cross-paragraph placement including across section breaks, one
+ * table with the move in a cell and allowlisted chrome / sibling cell
+ * text-only content, one-level nested tables when the move lives inside the
+ * inner table under those same cell rules, or one simple `w:sdt` whose
+ * content path holds the move's paragraph or flat table). They may be
+ * stripped after capture so the text move stays reviewable. Deeper table
+ * nesting, SDT combined with nested tables, nested/sibling SDT,
+ * section-sandwich, tracked or rich sibling-cell content, and unpaired
+ * markers stay fail-closed. */
 export function companionDocxMoveRangeBookmarks(
   document: Document,
   movePairs: ReadonlyArray<{ from: Element; to: Element }>,
@@ -135,11 +137,12 @@ function companionForMovePair(
     return null;
   }
   // Each side's sandwich must stay move-only aside from allowlisted table
-  // chrome, sibling-cell text-only content, and one simple SDT wrapper
-  // (nested tables, nested/sibling SDT, section breaks, and tracked/rich
-  // sibling cells remain fail-closed via sandwichContainsOnlyMove). The
-  // destination may live in a later section than the source; that does not
-  // block companion admission.
+  // chrome, sibling-cell text-only content, one-level nested tables, and one
+  // simple SDT wrapper (deeper nesting, SDT+nested-table combos,
+  // nested/sibling SDT, section breaks, and tracked/rich sibling cells
+  // remain fail-closed via sandwichContainsOnlyMove). The destination may
+  // live in a later section than the source; that does not block companion
+  // admission.
   return { rangeId, rangeName, from, to, markers };
 }
 
@@ -187,21 +190,27 @@ function findSandwichMarkers(
 /**
  * Every element strictly between the range bookmarks must lie on the move
  * wrapper's ancestor chain, be the wrapper, be inside the wrapper, be
- * allowlisted table chrome on the move table, be allowlisted `w:sdtPr`
- * chrome on one simple move SDT, or be untracked text-only content in a
- * sibling cell of that same table. At most one `w:tbl` and one `w:sdt` may
- * appear; each must contain the move. `w:sectPr`, nested tables, nested or
- * off-path SDTs, tracked revisions, and rich sibling-cell content reject.
+ * allowlisted table chrome on a move-path table (outer and at most one
+ * nested), be allowlisted `w:sdtPr` chrome on one simple move SDT, or be
+ * untracked text-only content in a sibling cell of the innermost move
+ * table. At most two `w:tbl` nodes and one `w:sdt` may appear; each must
+ * contain the move. SDT plus nested tables, three-or-more table levels,
+ * `w:sectPr`, nested or off-path SDTs, tracked revisions, and rich
+ * sibling-cell content reject.
  */
 function sandwichContainsOnlyMove(
   start: Element,
   end: Element,
   move: Element,
 ): boolean {
-  const moveTable = nearestAncestorNamed(move, 'tbl');
+  const moveTables = ancestorTables(move);
+  // Innermost table owns sibling-cell text-only rules; deeper than one
+  // nesting level stays fail-closed even before walking the sandwich.
+  if (moveTables.length > 2) return false;
+  const moveTable = moveTables[0] ?? null;
   const moveCell = nearestAncestorNamed(move, 'tc');
   const moveSdt = nearestAncestorNamed(move, 'sdt');
-  if (moveTable && !moveCell) return false;
+  if (moveTables.length > 0 && !moveCell) return false;
 
   let sawMove = false;
   let tableCount = 0;
@@ -220,11 +229,13 @@ function sandwichContainsOnlyMove(
     }
     if (element.localName === 'tbl') {
       tableCount += 1;
-      if (tableCount > 1 || !element.contains(move)) return false;
+      // Outer + one nested table that both contain the move; anything else
+      // (sibling nested tbl, third level, off-path tbl) fails closed.
+      if (tableCount > 2 || !element.contains(move)) return false;
       continue;
     }
     if (element.contains(move)) continue;
-    if (isTableChromeOnMovePath(element, moveTable)) {
+    if (isTableChromeOnMovePath(element, moveTables)) {
       continue;
     }
     if (isSdtChromeOnMovePath(element, moveSdt)) {
@@ -236,6 +247,9 @@ function sandwichContainsOnlyMove(
     if (OFF_PATH_CONTENT.has(element.localName)) return false;
     return false;
   }
+  // SDT wrapping a flat paragraph/table stays admitted; combining SDT with
+  // nested tables is not trivially safe, so keep fail-closed.
+  if (sdtCount > 0 && tableCount > 1) return false;
   return sawMove;
 }
 
@@ -251,34 +265,44 @@ function nearestAncestorNamed(
   return null;
 }
 
+/** Ancestor `w:tbl` nodes from innermost to outermost. */
+function ancestorTables(element: Element): Element[] {
+  const tables: Element[] = [];
+  let current: Element | null = element.parentElement;
+  while (current) {
+    if (current.localName === 'tbl') tables.push(current);
+    current = current.parentElement;
+  }
+  return tables;
+}
+
 function isTableChromeOnMovePath(
   element: Element,
-  moveTable: Element | null,
+  moveTables: readonly Element[],
 ): boolean {
+  if (moveTables.length === 0) return false;
   const chrome = nearestTableChrome(element);
   if (!chrome || chromeContainsTrackedRevision(chrome)) return false;
   const parent = chrome.parentElement;
   switch (chrome.localName) {
     case 'tcPr':
       return (
-        moveTable !== null &&
         parent?.localName === 'tc' &&
-        moveTable.contains(parent)
+        moveTables.some((table) => table.contains(parent))
       );
     case 'trPr':
       return (
-        moveTable !== null &&
         parent?.localName === 'tr' &&
-        moveTable.contains(parent)
+        moveTables.some((table) => table.contains(parent))
       );
     case 'tblPr':
     case 'tblGrid':
-      return moveTable !== null && parent === moveTable;
+      return parent !== null && moveTables.includes(parent);
     case 'tblGridCol':
       return (
-        moveTable !== null &&
         parent?.localName === 'tblGrid' &&
-        parent.parentElement === moveTable
+        parent.parentElement !== null &&
+        moveTables.includes(parent.parentElement)
       );
     default:
       return false;
@@ -301,10 +325,11 @@ function isSdtChromeOnMovePath(
 }
 
 /**
- * Sibling cells (and rows that do not contain the move) in the one admitted
- * table may carry untracked text-only paragraphs, empty/`rPr`-only runs, and
- * relationship-free bookmarks. Drawings, hyperlinks, nested containers, and
- * tracked revisions stay fail-closed.
+ * Sibling cells (and rows that do not contain the move) in the innermost
+ * admitted move table may carry untracked text-only paragraphs, empty/`rPr`-only
+ * runs, and relationship-free bookmarks. Drawings, hyperlinks, nested
+ * containers, and tracked revisions stay fail-closed. Outer-table sibling
+ * cells outside that innermost table stay fail-closed.
  */
 function isAdmittedSiblingTableContent(
   element: Element,

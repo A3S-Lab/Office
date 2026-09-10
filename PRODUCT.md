@@ -31,21 +31,22 @@ Enough means embeddable format-native editors for host daily workflows—not
 full Traditional Office parity and not every R6 enterprise row. The ordered
 remaining backlog, surface exit criteria, and explicit out-of-scope list live
 in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
-Active tip through `0.139.0` admits simple SDT-wrapped companion
-`w:move*Range*` bookmarks on import when at most one `w:sdt` contains the
-supported text-only move and may carry `w:sdtPr` chrome (and earlier
-multi-cell table-spanning companions through `0.138.0`, Compare /
-same-document text-only move-range generation through `0.137.0`, single-cell
-table companions through `0.136.0`, picture-only paragraph bodies through
-`0.135.0`, untracked picture siblings through `0.134.0`, inline pictures
-inside wrappers through `0.133.0`, safe relationship-bound external hyperlinks
-through `0.132.0`, cross-section companion move-range bookmarks through
-`0.131.0`, plus untracked text-only sibling runs beside whole-paragraph marks
-through `0.130.0`). Next R0 work is remaining nested-table move-range
-sandwiches, numbering edges, bounded property-revision subsets,
-searchable/tagged PDF output, and continuous no-clobber fixtures—then R1
-Writer daily leftovers, R2 calculation fidelity, R3 animation/media, and R4
-PDF content editing.
+Active tip through `0.140.0` admits one-level nested-table companion
+`w:move*Range*` bookmarks on import when move ancestry is at most two `w:tbl`
+elements that both contain the supported text-only move (and earlier simple
+SDT-wrapped companions through `0.139.0`, multi-cell table-spanning companions
+through `0.138.0`, Compare / same-document text-only move-range generation
+through `0.137.0`, single-cell table companions through `0.136.0`, picture-only
+paragraph bodies through `0.135.0`, untracked picture siblings through
+`0.134.0`, inline pictures inside wrappers through `0.133.0`, safe
+relationship-bound external hyperlinks through `0.132.0`, cross-section
+companion move-range bookmarks through `0.131.0`, plus untracked text-only
+sibling runs beside whole-paragraph marks through `0.130.0`). The move-range
+family is largely complete; residual fail-closed edges are deeper nesting, a
+nested table beside the move, and SDT+nested-table combinations. Next R0 work
+is numbering edges, bounded property-revision subsets, searchable/tagged PDF
+output, and continuous no-clobber fixtures—then R1 Writer daily leftovers, R2
+calculation fidelity, R3 animation/media, and R4 PDF content editing.
 
 ## Current Spreadsheet Milestone
 
@@ -999,14 +1000,14 @@ identities, and unpaired sides remain structural diagnostics. Companion
 `w:move*Range*` bookmarks that uniquely sandwich a supported text-only move
 pair (immediate siblings or cross-paragraph placement around the containing
 paragraph, including across section breaks, or a single-cell table enclosing
-the move) round-trip with the move; unpaired markers, multi-cell sibling-cell /
-nested-table / SDT sandwiches, and sandwiches that enclose a section break with
-the move, report `docx.revisions.move-range`. Compare / same-document text-only
-inferred moves also emit companion `w:move*Range*` bookmarks on export with
-deterministic `rangeId` / `rangeName`; section-crossing and table/complex
-Compare moves stay fail-closed. The bounded importer/exporter, browser/Yrs
-decision projection, focused Rstest, responsive review-panel coverage, and
-native DOCX reopen fixture cover the declared subset.
+the move) round-trip with the move; unpaired markers, deeper nested-table /
+beside-move nested-table / SDT+nested sandwiches, and sandwiches that enclose
+a section break with the move, report `docx.revisions.move-range`. Compare /
+same-document text-only inferred moves also emit companion `w:move*Range*`
+bookmarks on export with deterministic `rangeId` / `rangeName`; section-crossing
+and table/complex Compare moves stay fail-closed. The bounded importer/exporter,
+browser/Yrs decision projection, focused Rstest, responsive review-panel
+coverage, and native DOCX reopen fixture cover the declared subset.
 
 The sixty-eighth Writer milestone extends Compare with bounded same-paragraph
 move inference. A deterministic lexical range that appears once in a delete
