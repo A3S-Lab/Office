@@ -364,10 +364,11 @@ function isolatedParagraphBreakMarkChange(
 /**
  * Paragraph-break merge/split requires untracked text-only bodies on both the
  * marked paragraph and its eligible neighbor. Soft breaks, tabs, carriage
- * returns, last-rendered page breaks, non-breaking and soft hyphens,
- * empty/`rPr`-only runs, relationship-free internal hyperlinks, and
- * relationship-free bookmarks match the whole-paragraph mark admission set;
- * drawings, tracked wrappers, and relationship-bound links stay fail-closed.
+ * returns, last-rendered page breaks, page-number and date-field glyphs,
+ * non-breaking and soft hyphens, empty/`rPr`-only runs, relationship-free
+ * internal hyperlinks, and relationship-free bookmarks match the
+ * whole-paragraph mark admission set; drawings, tracked wrappers, and
+ * relationship-bound links stay fail-closed.
  */
 function paragraphBodyIsUntrackedTextOnly(
   paragraph: Element,
@@ -762,6 +763,10 @@ const ADMITTED_EMPTY_RUN_GLYPHS = new Set([
   'softHyphen',
   'cr',
   'lastRenderedPageBreak',
+  'pgNum',
+  'dayLong',
+  'monthLong',
+  'yearLong',
 ]);
 
 function isAdmittedEmptyRunGlyph(element: Element): boolean {

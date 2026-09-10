@@ -1017,14 +1017,14 @@ hyperlinks, spoofed bookmark relationship attributes, malformed or
 namespace-spoofed metadata, identity conflicts, and over-limit inputs.
 Relationship-free internal hyperlinks, relationship-free bookmarks, empty
 or `w:rPr`-only untracked sibling runs, and empty `w:tab` / `w:cr` /
-`w:lastRenderedPageBreak` / `w:noBreakHyphen` / `w:softHyphen` glyphs inside or
-beside the mark body are
-admitted. Multi-wrapper text-only bodies that
+`w:lastRenderedPageBreak` / `w:pgNum` / `w:dayLong` / `w:monthLong` /
+`w:yearLong` / `w:noBreakHyphen` / `w:softHyphen` glyphs inside or beside the
+mark body are admitted. Multi-wrapper text-only bodies that
 share the paragraph-mark author and date are admitted as one atomic
 whole-paragraph revision. Isolated mark-only
 shapes are classified as
 `docx.revisions.paragraph-break` diagnostics; when the adjacent paragraph is
-also an eligible text-only sibling (including soft breaks, tabs, carriage returns, last-rendered page breaks, non-breaking
+also an eligible text-only sibling (including soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and date-field glyphs, non-breaking
 and soft hyphens, relationship-free internal hyperlinks, relationship-free
 bookmarks, and empty/rPr-only runs), Work
 imports a reviewable paragraph-break merge/split change with atomic accept/reject

@@ -508,6 +508,10 @@ const ADMITTED_EMPTY_RUN_GLYPHS = new Set([
   'softHyphen',
   'cr',
   'lastRenderedPageBreak',
+  'pgNum',
+  'dayLong',
+  'monthLong',
+  'yearLong',
 ]);
 
 function isAdmittedEmptyRunGlyph(element: Element): boolean {
