@@ -42,12 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.118.0）
+## `main` 更新内容（0.119.0）
 
-Writer Phase 0 让节 endnotePr 可审阅：
+Writer Phase 0 让节 type 可审阅：
 
-- 有界空或 `pos`（`sectEnd`/`docEnd`）/`numFmt`/`numStart`/`numRestart` `endnotePr` 作为可审阅 `section-formatting`：接受/拒绝、实时修订跟踪、原生 DOCX 导出。
-- 未知子元素/属性保持失败闭合；不透明节夹具仍为 `type`。
+- 节 `type`（`nextPage`/`nextColumn`/`continuous`/`evenPage`/`oddPage`）经 `breakAfter` 作为可审阅 `section-formatting`：接受/拒绝、实时修订跟踪、原生 DOCX 导出。
+- 未知属性/值保持失败闭合；不透明节夹具仍为 `pgBorders`。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

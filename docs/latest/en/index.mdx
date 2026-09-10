@@ -44,13 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.118.0)
+## What's new on `main` (0.119.0)
 
-Writer Phase 0 makes section endnotePr reviewable:
+Writer Phase 0 makes section type reviewable:
 
-- bounded empty or `pos` (`sectEnd`/`docEnd`) / `numFmt` / `numStart` / `numRestart`
-  `endnotePr` imports as reviewable `section-formatting` with accept/reject, live track-changes, and native DOCX export.
-- Unknown children/attributes stay fail-closed; opaque section fixtures stay on `type`.
+- section `type` (`nextPage`/`nextColumn`/`continuous`/`evenPage`/`oddPage`) imports as
+  reviewable `section-formatting` via `breakAfter`, with accept/reject, live track-changes, and native DOCX export.
+- Unknown attributes/values stay fail-closed; opaque section fixtures stay on `pgBorders`.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

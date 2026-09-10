@@ -371,14 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.118.0` makes section endnotePr revisions reviewable:
+Version `0.119.0` makes section type revisions reviewable:
 
-- **Section endnote properties** — relationship-free `sectPrChange` priors with
-  bounded empty or `pos` (`sectEnd`/`docEnd`) / `numFmt` / `numStart` /
-  `numRestart` `endnotePr` become reviewable `section-formatting` with
+- **Section break type** — relationship-free `sectPrChange` priors with known
+  `type` (`nextPage`/`nextColumn`/`continuous`/`evenPage`/`oddPage`) become
+  reviewable `section-formatting` via the existing `breakAfter` model, with
   accept/reject, live track-changes, and native DOCX export.
-- **Boundary** — unknown children/attributes stay fail-closed; opaque section
-  fixtures stay on `type`.
+- **Boundary** — unknown attributes/values stay fail-closed; opaque section
+  fixtures stay on `pgBorders`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
