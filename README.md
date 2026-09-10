@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.107.0` makes cell gridSpan revisions reviewable:
+Version `0.108.0` makes row divId revisions reviewable:
 
-- **Grid span** — relationship-free `tcPrChange` priors with bounded positive
-  `gridSpan` become reviewable `cell-formatting` with accept/reject, live
-  track-changes, and native DOCX export.
-- **Boundary** — missing or non-positive values stay fail-closed; opaque cell
-  fixtures stay on `cellIns`.
+- **Row div id** — relationship-free `trPrChange` priors with bounded
+  non-negative `divId` become reviewable `row-formatting` with accept/reject,
+  live track-changes, and native DOCX export.
+- **Boundary** — missing or malformed values stay fail-closed; opaque row
+  fixtures stay on `tblCellSpacing`. Nested cell `cellIns`/`cellDel` stay opaque.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

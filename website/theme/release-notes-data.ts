@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.108.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes row divId revisions reviewable',
+      zh: 'Writer 让行 divId 修订可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free trPrChange priors with bounded non-negative divId import as row-formatting with accept/reject, live track-changes, and native DOCX export.',
+      zh: 'Phase 0 保真：含有界非负 divId 的无关系 trPrChange 先验导入为 row-formatting，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Row div id',
+          zh: '行分区 ID',
+        },
+        detail: {
+          en: 'Bounded divId priors round-trip as reviewable row-formatting snapshots.',
+          zh: '有界 divId 先验作为可审阅 row-formatting 快照往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing row divId under track-changes creates a pending row-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑行 divId 会生成待审阅的 row-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'Malformed divId stays fail-closed; opaque row fixtures stay on tblCellSpacing. Nested cellIns/cellDel stay opaque.',
+          zh: '畸形 divId 保持失败闭合；不透明行夹具仍为 tblCellSpacing。嵌套 cellIns/cellDel 仍不透明。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.108.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.108.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.107.0',
     date: '2026-09-10',
     kind: 'improved',
