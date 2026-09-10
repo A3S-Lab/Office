@@ -121,6 +121,15 @@ export type WorkDocumentSectionVerticalAlign =
   | 'both'
   | 'bottom';
 
+/** ST_TextDirection values for section text flow (`w:textDirection`). */
+export type WorkDocumentSectionTextDirection =
+  | 'lrTb'
+  | 'tbRl'
+  | 'btLr'
+  | 'lrTbV'
+  | 'tbRlV'
+  | 'tbLrV';
+
 export type WorkDocumentPaperSize =
   | 'a3'
   | 'a4'
@@ -150,6 +159,8 @@ export interface WorkDocumentSectionLayout {
   noEndnote?: boolean;
   /** Text vertical alignment (`w:vAlign`); CT_VerticalJc / ST_VerticalJc. */
   verticalAlign?: WorkDocumentSectionVerticalAlign;
+  /** Text flow direction (`w:textDirection`); CT_TextDirection / ST_TextDirection. */
+  textDirection?: WorkDocumentSectionTextDirection;
   pageBorders?: WorkDocumentPageBorders;
   pageMargins?: WorkDocumentPageMargins;
   pageGeometry?: WorkDocumentPageGeometry;

@@ -35,6 +35,7 @@ import type {
   WorkDocumentLnNumType,
   WorkDocumentPgNumFmt,
   WorkDocumentPgNumType,
+  WorkDocumentSectionTextDirection,
   WorkDocumentSectionVerticalAlign,
 } from './work-types';
 
@@ -53,12 +54,22 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'formProt',
   'vAlign',
   'noEndnote',
+  'textDirection',
 ]);
 const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch']);
 const FORM_PROT_ATTRIBUTE_SET = new Set(['val']);
 const NO_ENDNOTE_ATTRIBUTE_SET = new Set(['val']);
 const V_ALIGN_ATTRIBUTE_SET = new Set(['val']);
 const V_ALIGN_VALUES = new Set(['top', 'center', 'both', 'bottom']);
+const TEXT_DIRECTION_ATTRIBUTE_SET = new Set(['val']);
+const TEXT_DIRECTION_VALUES = new Set([
+  'lrTb',
+  'tbRl',
+  'btLr',
+  'lrTbV',
+  'tbRlV',
+  'tbLrV',
+]);
 const LN_NUM_TYPE_ATTRIBUTE_SET = new Set([
   'countBy',
   'start',
@@ -120,7 +131,9 @@ export interface SupportedDocxSectionFormattingChange {
  * and/or bounded relationship-free `w:pgNumType` (`fmt`/`start` only), and/or
  * relationship-free empty/onOff `w:formProt`, and/or relationship-free
  * `w:vAlign` with required known `w:val` (`top`/`center`/`both`/`bottom`),
- * and/or relationship-free empty/onOff `w:noEndnote`.
+ * and/or relationship-free empty/onOff `w:noEndnote`, and/or relationship-free
+ * `w:textDirection` with required known `w:val`
+ * (`lrTb`/`tbRl`/`btLr`/`lrTbV`/`tbRlV`/`tbLrV`).
  * Broader section property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxSectionFormattingChange(
@@ -178,7 +191,7 @@ function supportedSectionFormattingChange(
   const prior = priors[0];
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
-  if (!children.length || children.length > 11) return null;
+  if (!children.length || children.length > 12) return null;
   if (
     children.some((child) => !isSupportedSectionFormattingPriorChild(child))
   ) {
@@ -200,6 +213,7 @@ function supportedSectionFormattingChange(
   let formProt: boolean | undefined;
   let verticalAlign: WorkDocumentSectionVerticalAlign | undefined;
   let noEndnote: boolean | undefined;
+  let textDirection: WorkDocumentSectionTextDirection | undefined;
   for (const child of children) {
     if (child.localName === 'pgSz') {
       const value = importedPageSize(child);
@@ -268,6 +282,12 @@ function supportedSectionFormattingChange(
       const value = importedNoEndnote(child);
       if (value === null) return null;
       noEndnote = value;
+      continue;
+    }
+    if (child.localName === 'textDirection') {
+      const value = importedTextDirection(child);
+      if (value === null) return null;
+      textDirection = value;
     }
   }
   const before = serializeDocumentSectionFormatting({
@@ -284,6 +304,7 @@ function supportedSectionFormattingChange(
     ...(formProt !== undefined ? { formProt } : {}),
     ...(verticalAlign !== undefined ? { verticalAlign } : {}),
     ...(noEndnote !== undefined ? { noEndnote } : {}),
+    ...(textDirection !== undefined ? { textDirection } : {}),
   });
   return {
     id: `docx-section-format-change-${id}`,
@@ -663,6 +684,28 @@ function importedVerticalAlign(
     ?.value.trim();
   if (!value || !V_ALIGN_VALUES.has(value)) return null;
   return value as WorkDocumentSectionVerticalAlign;
+}
+
+function importedTextDirection(
+  element: Element,
+): WorkDocumentSectionTextDirection | null {
+  if (element.children.length > 0) return null;
+  const attributes = Array.from(element.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if ([...names].some((name) => !TEXT_DIRECTION_ATTRIBUTE_SET.has(name))) {
+    return null;
+  }
+  if (names.size !== attributes.length || !names.has('val')) return null;
+  const value = attributes
+    .find((candidate) => xmlAttributeLocalName(candidate) === 'val')
+    ?.value.trim();
+  if (!value || !TEXT_DIRECTION_VALUES.has(value)) return null;
+  return value as WorkDocumentSectionTextDirection;
 }
 
 function importedLnNumType(element: Element): WorkDocumentLnNumType | null {

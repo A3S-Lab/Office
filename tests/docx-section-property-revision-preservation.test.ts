@@ -39,13 +39,9 @@ describe('DOCX section property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:id', '21');
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
-    // noEndnote is reviewable as section-formatting; keep opaque on textDirection.
-    const textDirection = document.createElementNS(
-      WORD_NAMESPACE,
-      'w:textDirection',
-    );
-    textDirection.setAttributeNS(WORD_NAMESPACE, 'w:val', 'lrTb');
-    prior.append(textDirection);
+    // textDirection is reviewable as section-formatting; keep opaque on bidi.
+    const bidi = document.createElementNS(WORD_NAMESPACE, 'w:bidi');
+    prior.append(bidi);
     change.append(prior);
     section.append(change);
     archive.file(
@@ -91,11 +87,11 @@ describe('DOCX section property-revision preservation', () => {
       id: '21',
       author: 'Reviewer',
     });
-    const priorTextDirection = directChild(
+    const priorBidi = directChild(
       directChild(exportedChange!, 'sectPr'),
-      'textDirection',
+      'bidi',
     );
-    expect(priorTextDirection).toBeTruthy();
+    expect(priorBidi).toBeTruthy();
   });
 
   test('drops relationship-bound w:sectPrChange instead of inventing opaque metadata', async () => {

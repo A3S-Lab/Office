@@ -248,6 +248,7 @@ import type {
   WorkDocumentPgNumType,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
+  WorkDocumentSectionTextDirection,
   WorkDocumentSectionVerticalAlign,
 } from './work-types';
 
@@ -866,6 +867,7 @@ async function parseSectionLayout(
   const formProtElement = directChild(section, 'formProt');
   const vAlignElement = directChild(section, 'vAlign');
   const noEndnoteElement = directChild(section, 'noEndnote');
+  const textDirectionElement = directChild(section, 'textDirection');
   const pageBorders = parseDocxPageBorders(section, theme);
   const parsedPageMargins = parseDocxPageMargins(
     section,
@@ -894,6 +896,9 @@ async function parseSectionLayout(
     : undefined;
   const parsedNoEndnote = noEndnoteElement
     ? parseNoEndnote(noEndnoteElement)
+    : undefined;
+  const parsedTextDirection = textDirectionElement
+    ? parseTextDirection(textDirectionElement)
     : undefined;
   const pageNumberStart =
     parsedPgNumType?.start !== undefined && parsedPgNumType.start > 0
@@ -939,6 +944,11 @@ async function parseSectionLayout(
       ? { noEndnote: parsedNoEndnote }
       : previous.noEndnote !== undefined
         ? { noEndnote: previous.noEndnote }
+        : {}),
+    ...(parsedTextDirection !== undefined
+      ? { textDirection: parsedTextDirection }
+      : previous.textDirection !== undefined
+        ? { textDirection: previous.textDirection }
         : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
@@ -1017,6 +1027,23 @@ function parseVerticalAlign(
     value === 'center' ||
     value === 'both' ||
     value === 'bottom'
+  ) {
+    return value;
+  }
+  return undefined;
+}
+
+function parseTextDirection(
+  element: Element,
+): WorkDocumentSectionTextDirection | undefined {
+  const value = attribute(element, 'val')?.trim();
+  if (
+    value === 'lrTb' ||
+    value === 'tbRl' ||
+    value === 'btLr' ||
+    value === 'lrTbV' ||
+    value === 'tbRlV' ||
+    value === 'tbLrV'
   ) {
     return value;
   }

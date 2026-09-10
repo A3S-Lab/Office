@@ -286,6 +286,18 @@ function setSectionFormattingChange(
     }
     prior.append(noEndnote);
   }
+  if (formatting.textDirection !== undefined) {
+    const textDirection = document.createElementNS(
+      WORD_NAMESPACE,
+      'w:textDirection',
+    );
+    textDirection.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:val',
+      formatting.textDirection,
+    );
+    prior.append(textDirection);
+  }
   change.append(prior);
   section.append(change);
 }

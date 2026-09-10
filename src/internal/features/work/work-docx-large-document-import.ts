@@ -317,6 +317,7 @@ function documentSectionModelAttributes(
     formProt: null,
     noEndnote: null,
     verticalAlign: '',
+    textDirection: '',
   };
 }
 

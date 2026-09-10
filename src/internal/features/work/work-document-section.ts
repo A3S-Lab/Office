@@ -55,6 +55,7 @@ import type {
   WorkDocumentSectionBreakType,
   WorkDocumentSectionFormattingChange,
   WorkDocumentSectionLayout,
+  WorkDocumentSectionTextDirection,
   WorkDocumentSectionVerticalAlign,
 } from './work-types';
 
@@ -97,6 +98,7 @@ export interface DocumentSectionNodeAttributes {
   formProt: boolean | null;
   noEndnote: boolean | null;
   verticalAlign: WorkDocumentSectionVerticalAlign | '';
+  textDirection: WorkDocumentSectionTextDirection | '';
   propertyRevisionOmml: string;
   sectionChangeKind: 'section-formatting' | null;
   sectionChangeId: string;
@@ -248,6 +250,7 @@ export function documentSectionNodeAttributes(
     formProt: layout.formProt ?? null,
     noEndnote: layout.noEndnote ?? null,
     verticalAlign: layout.verticalAlign ?? '',
+    textDirection: layout.textDirection ?? '',
     propertyRevisionOmml: layout.propertyRevisionOmml
       ? encodeDocumentTablePropertyRevisionOmml(layout.propertyRevisionOmml)
       : '',
@@ -350,6 +353,16 @@ export function documentSectionLayoutFromNodeAttributes(
       : base.verticalAlign !== undefined
         ? { verticalAlign: base.verticalAlign }
         : {}),
+    ...(attributes.textDirection === 'lrTb' ||
+    attributes.textDirection === 'tbRl' ||
+    attributes.textDirection === 'btLr' ||
+    attributes.textDirection === 'lrTbV' ||
+    attributes.textDirection === 'tbRlV' ||
+    attributes.textDirection === 'tbLrV'
+      ? { textDirection: attributes.textDirection }
+      : base.textDirection !== undefined
+        ? { textDirection: base.textDirection }
+        : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
     ...(pageGeometry ? { pageGeometry } : {}),
@@ -423,6 +436,7 @@ export function documentSectionDomAttributes(
     'data-section-no-endnote':
       attributes.noEndnote === null ? '' : String(attributes.noEndnote),
     'data-section-vertical-align': attributes.verticalAlign,
+    'data-section-text-direction': attributes.textDirection,
     ...(attributes.propertyRevisionOmml
       ? {
           'data-section-property-revision-omml':
@@ -500,6 +514,9 @@ export function documentSectionLayoutFromElement(
             : null,
       verticalAlign: (element.dataset.sectionVerticalAlign ?? '') as
         | WorkDocumentSectionVerticalAlign
+        | '',
+      textDirection: (element.dataset.sectionTextDirection ?? '') as
+        | WorkDocumentSectionTextDirection
         | '',
       propertyRevisionOmml: element.dataset.sectionPropertyRevisionOmml ?? '',
       sectionChangeKind:

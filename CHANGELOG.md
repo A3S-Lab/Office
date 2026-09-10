@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:sectPrChange` priors that include relationship-free
+  `w:textDirection` with required known `w:val` (`lrTb` / `tbRl` / `btLr` /
+  `lrTbV` / `tbRlV` / `tbLrV`) are now reviewable as `section-formatting` with
+  accept/reject, live track-changes, and native export (including current-section
+  `w:textDirection` on DOCX write). Unknown attributes and values stay
+  fail-closed; opaque section fixtures moved off `textDirection` to `bidi`.
+
 ## 0.114.0 - 2026-09-10
 
 ### Writer
