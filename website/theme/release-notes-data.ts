@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.120.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes section pgBorders revisions reviewable',
+      zh: 'Writer 让节 pgBorders 修订可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free sectPrChange priors with bounded pgBorders (optional display/offsetFrom/zOrder plus ordered top/left/bottom/right edges) import as section-formatting via pageBorders with accept/reject, live track-changes, and native DOCX export.',
+      zh: 'Phase 0 保真：含有界 pgBorders（可选 display/offsetFrom/zOrder 与有序 top/left/bottom/right 边框）的无关系 sectPrChange 先验经 pageBorders 导入为 section-formatting，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Section page borders',
+          zh: '节页边框',
+        },
+        detail: {
+          en: 'Bounded pgBorders priors round-trip as reviewable section-formatting snapshots through pageBorders.',
+          zh: '有界 pgBorders 先验经 pageBorders 作为可审阅 section-formatting 快照往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing section pageBorders under track-changes creates a pending section-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑节 pageBorders 会生成待审阅的 section-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'Unknown attributes/values and nested track-change children stay fail-closed; opaque section fixtures stay on printerSettings.',
+          zh: '未知属性/值与嵌套修订子元素保持失败闭合；不透明节夹具仍为 printerSettings。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.120.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.120.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.119.0',
     date: '2026-09-10',
     kind: 'improved',

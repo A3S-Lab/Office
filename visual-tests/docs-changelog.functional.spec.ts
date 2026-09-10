@@ -9,13 +9,13 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(96);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.119.0');
-  await expect(cards.first()).toContainText(
-    'Writer 让节 type 修订可审阅',
-  );
+  await expect(cards).toHaveCount(97);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.120.0');
+  await expect(cards.first()).toContainText('Writer 让节 pgBorders 修订可审阅');
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.120.0')).toContainText('节页边框');
+  await expect(releaseCard('0.120.0')).toContainText('实时修订跟踪');
   await expect(releaseCard('0.119.0')).toContainText('节分隔类型');
   await expect(releaseCard('0.119.0')).toContainText('实时修订跟踪');
   await expect(releaseCard('0.118.0')).toContainText('节尾注属性');
