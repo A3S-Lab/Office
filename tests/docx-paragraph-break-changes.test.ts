@@ -140,6 +140,109 @@ describe('DOCX paragraph-break merge/split revisions', () => {
     editor.destroy();
   });
 
+  test('admits relationship-free bookmarks and internal hyperlinks in paragraph-break bodies', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:del w:id="16" w:author="Ada" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:bookmarkStart w:id="1" w:name="AlphaMark"/>
+            <w:r><w:t>Alpha</w:t><w:br/><w:t>line</w:t></w:r>
+            <w:bookmarkEnd w:id="1"/>
+          </w:p>
+          <w:p>
+            <w:hyperlink w:anchor="AlphaMark" w:tooltip="Jump">
+              <w:r><w:t>Bravo</w:t></w:r>
+            </w:hyperlink>
+            <w:r><w:rPr><w:i/></w:rPr></w:r>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const mark = descendants(document, 'del')[0];
+    expect(mark && isIsolatedDocxParagraphBreakMarkChange(mark)).toBe(true);
+    expect(inspectDocxParagraphBreakMarkChanges(document)).toEqual([
+      expect.objectContaining({ kind: 'merge', author: 'Ada' }),
+    ]);
+    expect(markDocxParagraphBreakChanges(document).paragraphs).toEqual([
+      expect.objectContaining({
+        kind: 'merge',
+        author: 'Ada',
+      }),
+    ]);
+  });
+
+  test('rejects relationship-bound hyperlinks in paragraph-break bodies', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:del w:id="17" w:author="Ada" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:hyperlink r:id="rId9">
+              <w:r><w:t>Alpha</w:t></w:r>
+            </w:hyperlink>
+          </w:p>
+          <w:p><w:r><w:t>Bravo</w:t></w:r></w:p>
+        </w:body>
+      </w:document>
+    `);
+    const mark = descendants(document, 'del')[0];
+    expect(mark && isIsolatedDocxParagraphBreakMarkChange(mark)).toBe(false);
+    expect(inspectDocxParagraphBreakMarkChanges(document)).toEqual([]);
+    expect(markDocxParagraphBreakChanges(document).paragraphs).toEqual([]);
+  });
+
+  test('keeps ineligible neighbors as diagnostics instead of reviewable breaks', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:del w:id="19" w:author="Ada" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:r><w:t>Alpha</w:t></w:r>
+          </w:p>
+          <w:p>
+            <w:hyperlink r:id="rId9">
+              <w:r><w:t>Bravo</w:t></w:r>
+            </w:hyperlink>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const mark = descendants(document, 'del')[0];
+    expect(mark && isIsolatedDocxParagraphBreakMarkChange(mark)).toBe(true);
+    expect(inspectDocxParagraphBreakMarkChanges(document)).toEqual([
+      expect.objectContaining({ kind: 'merge', author: 'Ada' }),
+    ]);
+    expect(markDocxParagraphBreakChanges(document).paragraphs).toEqual([]);
+  });
+
+  test('rejects relationship-spoofed bookmarks in paragraph-break bodies', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:del w:id="18" w:author="Ada" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:bookmarkStart w:id="2" w:name="Spoof" r:id="rId1"/>
+            <w:r><w:t>Alpha</w:t></w:r>
+            <w:bookmarkEnd w:id="2"/>
+          </w:p>
+          <w:p><w:r><w:t>Bravo</w:t></w:r></w:p>
+        </w:body>
+      </w:document>
+    `);
+    const mark = descendants(document, 'del')[0];
+    expect(mark && isIsolatedDocxParagraphBreakMarkChange(mark)).toBe(false);
+    expect(markDocxParagraphBreakChanges(document).paragraphs).toEqual([]);
+  });
+
   test('imports native mark-only merge through the DOCX pipeline as a reviewable change', async () => {
     const archive = new JSZip();
     archive.file(

@@ -361,6 +361,13 @@ function isolatedParagraphBreakMarkChange(
   };
 }
 
+/**
+ * Paragraph-break merge/split requires untracked text-only bodies on both the
+ * marked paragraph and its eligible neighbor. Soft breaks, empty/`rPr`-only
+ * runs, relationship-free internal hyperlinks, and relationship-free bookmarks
+ * match the whole-paragraph mark admission set; drawings, tracked wrappers,
+ * and relationship-bound links stay fail-closed.
+ */
 function paragraphBodyIsUntrackedTextOnly(
   paragraph: Element,
   properties: Element | undefined,
@@ -369,40 +376,52 @@ function paragraphBodyIsUntrackedTextOnly(
     (element) => element !== properties,
   );
   if (!body.length) return true;
-  for (const run of body) {
-    if (run.localName !== 'r' || run.namespaceURI !== paragraph.namespaceURI) {
-      return false;
+  for (const child of body) {
+    if (child.namespaceURI !== paragraph.namespaceURI) return false;
+    if (
+      child.localName === 'bookmarkStart' ||
+      child.localName === 'bookmarkEnd'
+    ) {
+      if (!isRelationshipFreeBookmarkMarker(child)) return false;
+      continue;
     }
-    const children = directChildren(run);
-    const runProperties = children.filter(
-      (child) =>
-        child.localName === 'rPr' &&
-        child.namespaceURI === paragraph.namespaceURI,
-    );
-    if (runProperties.length > 1) return false;
-    for (const child of children) {
-      if (child.namespaceURI !== paragraph.namespaceURI) return false;
-      if (child.localName === 'rPr') {
+    if (child.localName === 'hyperlink') {
+      if (!isRelationshipFreeInternalHyperlink(child)) return false;
+      const runs = directChildren(child);
+      if (!runs.length) return false;
+      let hasText = false;
+      for (const run of runs) {
         if (
-          Array.from(child.querySelectorAll('*')).some(
-            (descendant) =>
-              descendant.localName === 'ins' ||
-              descendant.localName === 'del' ||
-              descendant.namespaceURI !== paragraph.namespaceURI,
-          )
+          run.localName !== 'r' ||
+          run.namespaceURI !== paragraph.namespaceURI ||
+          !runIsTextOnly(run, 'insertion') ||
+          runHasTrackedMark(run)
         ) {
           return false;
         }
-        continue;
+        hasText ||= runHasVisibleText(run, 'insertion');
       }
-      if (child.localName === 'br') {
-        if (!isTextWrappingBreak(child)) return false;
-        continue;
-      }
-      if (child.localName !== 't' || child.children.length) return false;
+      if (!hasText) return false;
+      continue;
+    }
+    if (child.localName !== 'r') return false;
+    if (!runIsTextOnly(child, 'insertion') || runHasTrackedMark(child)) {
+      return false;
     }
   }
   return true;
+}
+
+function runHasTrackedMark(run: Element): boolean {
+  const properties = directChildren(run).find(
+    (child) =>
+      child.localName === 'rPr' && child.namespaceURI === run.namespaceURI,
+  );
+  if (!properties) return false;
+  return Array.from(properties.querySelectorAll('*')).some(
+    (descendant) =>
+      descendant.localName === 'ins' || descendant.localName === 'del',
+  );
 }
 
 function supportedParagraphMarkChange(

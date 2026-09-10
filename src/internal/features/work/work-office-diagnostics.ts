@@ -581,7 +581,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.paragraph-break',
             'Paragraph-break revisions',
-            `${isolatedParagraphBreakMarkRevisionCount} isolated paragraph-mark revision(s) look like paragraph-break merge or split candidates. Eligible text-only neighbor pairs become reviewable paragraph-break changes; others stay fail-closed diagnostics instead of whole-paragraph guesses.`,
+            `${isolatedParagraphBreakMarkRevisionCount} isolated paragraph-mark revision(s) look like paragraph-break merge or split candidates. Eligible text-only neighbor pairs (including soft breaks, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/rPr-only runs) become reviewable paragraph-break changes; others stay fail-closed diagnostics instead of whole-paragraph guesses.`,
           ),
         );
       }

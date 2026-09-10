@@ -1022,9 +1022,10 @@ share the paragraph-mark author and date are admitted as one atomic
 whole-paragraph revision. Isolated mark-only
 shapes are classified as
 `docx.revisions.paragraph-break` diagnostics; when the adjacent paragraph is
-also an eligible text-only sibling, Work imports a reviewable paragraph-break
-merge/split change with atomic accept/reject join semantics and mark-only DOCX
-export. Other excluded cases remain structural diagnostics. Deterministic
+also an eligible text-only sibling (including soft breaks, relationship-free
+internal hyperlinks, relationship-free bookmarks, and empty/rPr-only runs), Work
+imports a reviewable paragraph-break merge/split change with atomic accept/reject
+join semantics and mark-only DOCX export. Other excluded cases remain structural diagnostics. Deterministic
 WPS-shaped fixtures, focused Rstest,
 desktop and 390 px Playwright, compact 44 px review actions, accessibility,
 clean browser diagnostics, and a local-only A3S Test suite cover the admitted

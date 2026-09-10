@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Eligible paragraph-break merge/split revisions now admit the same bounded
+  untracked body shapes as whole-paragraph marks: soft breaks, relationship-free
+  internal hyperlinks, relationship-free bookmarks, and empty/rPr-only runs on
+  both the marked paragraph and its neighbor. Relationship-bound links, spoofed
+  bookmark relationship attributes, drawings, and mixed tracked wrappers stay
+  fail-closed.
+
 ## 0.123.0 - 2026-09-10
 
 ### Writer
