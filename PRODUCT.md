@@ -31,19 +31,20 @@ Enough means embeddable format-native editors for host daily workflows—not
 full Traditional Office parity and not every R6 enterprise row. The ordered
 remaining backlog, surface exit criteria, and explicit out-of-scope list live
 in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
-Active tip through `0.144.0` admits attribute-free empty `w:footnoteRef`
+Active tip through `0.145.0` admits attribute-free empty `w:endnoteRef`
 CT_Empty glyphs inside whole-paragraph mark, paragraph-break, and text-move
-revision bodies (attributed `footnoteRef`, `footnoteReference` with id,
-`endnoteRef`, `annotationRef`, and separators stay fail-closed; and earlier
-omitted `w:ilvl` as OOXML default level `0` on numbering revisions through
-`0.143.0`, relationship-free attribute-only `w:tblpPr` priors in reviewable
-`w:tblPrChange` through `0.142.0`, opaque sibling `ST_NumberFormat` values in
-multi-level numbering `w:original` while the current `w:ilvl` stays common
-nfc 0–4 through `0.141.0`, one-level nested-table companion `w:move*Range*`
-bookmarks through `0.140.0`, simple SDT-wrapped companions through `0.139.0`,
-multi-cell table-spanning companions through `0.138.0`, Compare /
-same-document text-only move-range generation through `0.137.0`, single-cell
-table companions through `0.136.0`, picture-only paragraph bodies through
+revision bodies (attributed `endnoteRef`, `endnoteReference` with id,
+`annotationRef`, and separators stay fail-closed; and earlier attribute-free
+empty `w:footnoteRef` through `0.144.0`, omitted `w:ilvl` as OOXML default
+level `0` on numbering revisions through `0.143.0`, relationship-free
+attribute-only `w:tblpPr` priors in reviewable `w:tblPrChange` through
+`0.142.0`, opaque sibling `ST_NumberFormat` values in multi-level numbering
+`w:original` while the current `w:ilvl` stays common nfc 0–4 through
+`0.141.0`, one-level nested-table companion `w:move*Range*` bookmarks through
+`0.140.0`, simple SDT-wrapped companions through `0.139.0`, multi-cell
+table-spanning companions through `0.138.0`, Compare / same-document
+text-only move-range generation through `0.137.0`, single-cell table
+companions through `0.136.0`, picture-only paragraph bodies through
 `0.135.0`, untracked picture siblings through `0.134.0`, inline pictures
 inside wrappers through `0.133.0`, safe relationship-bound external
 hyperlinks through `0.132.0`, cross-section companion move-range bookmarks
@@ -51,8 +52,8 @@ through `0.131.0`, plus untracked text-only sibling runs beside
 whole-paragraph marks through `0.130.0`). The move-range family is largely
 complete; residual fail-closed edges are deeper nesting, a nested table
 beside the move, and SDT+nested-table combinations. Next R0 work is remaining
-note-adjacent glyphs (`endnoteRef`, `annotationRef`, separators), broader
-bounded property-revision subsets, searchable/tagged PDF output, and
+note-adjacent glyphs (`annotationRef`, separators) and attributed note refs,
+broader bounded property-revision subsets, searchable/tagged PDF output, and
 continuous no-clobber fixtures—then R1 Writer daily leftovers, R2 calculation
 fidelity, R3 animation/media, and R4 PDF content editing.
 

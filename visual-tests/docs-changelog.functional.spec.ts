@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(125);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.144.0');
+  await expect(cards).toHaveCount(126);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.145.0');
   await expect(cards.first()).toContainText(
-    'Writer 修订正文准入空 footnoteRef 字形',
+    'Writer 修订正文准入空 endnoteRef 字形',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.145.0')).toContainText(
+    '修订正文中的空 endnoteRef',
+  );
+  await expect(releaseCard('0.145.0')).toContainText(
+    '无属性空 w:endnoteRef 字形可进入整段段落标记、段落分隔与文字移动修订正文',
+  );
   await expect(releaseCard('0.144.0')).toContainText(
     '修订正文中的空 footnoteRef',
   );
