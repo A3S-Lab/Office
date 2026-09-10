@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.123.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes bounded multi-level numbering revisions reviewable',
+      zh: 'Writer 让有界多级编号修订可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free numberingChange originals with contiguous sibling %[ilvl]:[start]:[nfc]:[suff] segments (2-9 common decimal/letter/Roman levels including the paragraph ilvl) import as reviewable ordered-list numbering revisions with accept/reject, contiguous grouping, and native export/reopen.',
+      zh: 'Phase 0 保真：含连续同级 %[ilvl]:[start]:[nfc]:[suff] 段（2-9 级常见 decimal/letter/Roman，含段落 ilvl）的无关系 numberingChange 先验导入为可审阅有序列表编号修订，支持接受/拒绝、连续分组与原生导出/重开。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Multi-level numbering originals',
+          zh: '多级编号先验',
+        },
+        detail: {
+          en: 'Contiguous sibling-level originals round-trip as reviewable ordered-list numbering revisions.',
+          zh: '连续同级先验作为可审阅有序列表编号修订往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Atomic accept/reject',
+          zh: '原子接受/拒绝',
+        },
+        detail: {
+          en: 'Contiguous multi-level numbering changes stay one atomic list-range review decision.',
+          zh: '连续多级编号变更保持为一次原子列表范围审阅决策。',
+        },
+      },
+      {
+        title: {
+          en: 'Unsupported forms stay fail-closed',
+          zh: '不支持形态保持失败闭合',
+        },
+        detail: {
+          en: 'Unsupported formats, missing current-level segments, and malformed originals stay fail-closed.',
+          zh: '不支持的格式、缺失当前级别段与畸形先验保持失败闭合。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.123.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.123.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.122.0',
     date: '2026-09-10',
     kind: 'improved',

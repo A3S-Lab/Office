@@ -371,15 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.122.0` makes section document-grid character spacing reviewable:
+Version `0.123.0` makes bounded multi-level numbering revisions reviewable:
 
-- **Section docGrid charSpace** — relationship-free `sectPrChange` priors with
-  bounded `docGrid` `charSpace` (signed OOXML integer pitch delta × 4096), alone
-  or with `type`/`linePitch`, become reviewable `section-formatting` via the
-  existing `documentGrid` model, with accept/reject, live track-changes, and
-  native DOCX export.
-- **Boundary** — out-of-range / unknown attributes stay fail-closed;
-  `printerSettings` remains the permanent opaque section marker.
+- **Multi-level numberingChange** — relationship-free `w:numberingChange`
+  originals with contiguous sibling `%[ilvl]:[start]:[nfc]:[suff]` segments
+  (2-9 common decimal/letter/Roman levels including the paragraph `w:ilvl`)
+  become reviewable ordered-list numbering revisions with accept/reject,
+  contiguous grouping, and native export/reopen.
+- **Boundary** — unsupported formats, missing current-level segments, and
+  malformed originals stay fail-closed.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
