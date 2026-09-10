@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.131.0 - 2026-09-10
+
+### Writer
+
+- Companion `w:move*Range*` bookmarks for supported text-only `w:moveFrom` /
+  `w:moveTo` pairs now admit when the destination lives across a section
+  break from the source. Sandwiches that enclose a section break with the move,
+  table-spanning ranges, and unpaired markers stay fail-closed.
+
 ## 0.130.0 - 2026-09-10
 
 ### Writer

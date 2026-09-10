@@ -28,10 +28,10 @@ export interface DocxMoveRangeCompanion {
 /**
  * Word often wraps bounded `w:moveFrom`/`w:moveTo` pairs with matching
  * `w:move*Range*` bookmarks. Companion bookmarks are relationship-free and
- * uniquely sandwich each supported move wrapper in document order within one
- * section (immediate siblings or same-section cross-paragraph placement).
+ * uniquely sandwich each supported move wrapper in document order (immediate
+ * siblings or cross-paragraph placement, including across section breaks).
  * They may be stripped after capture so the text move stays reviewable.
- */
+ * Table-spanning sandwiches and unpaired markers stay fail-closed. */
 export function companionDocxMoveRangeBookmarks(
   document: Document,
   movePairs: ReadonlyArray<{ from: Element; to: Element }>,
@@ -113,7 +113,10 @@ function companionForMovePair(
   ) {
     return null;
   }
-  if (crossesSectionBoundary(markers)) return null;
+  // Each side's sandwich must stay move-only (extra siblings, tables, and
+  // section breaks inside one sandwich remain fail-closed via
+  // sandwichContainsOnlyMove). The destination may live in a later section
+  // than the source; that does not block companion admission.
   return { rangeId, rangeName, from, to, markers };
 }
 
@@ -205,17 +208,6 @@ function elementsBetween(start: Element, end: Element): Element[] {
   return node === end ? elements : [];
 }
 
-function crossesSectionBoundary(markers: readonly Element[]): boolean {
-  const ordered = [...markers].sort(compareDocumentOrder);
-  const first = ordered[0];
-  const last = ordered[ordered.length - 1];
-  if (!first || !last) return true;
-  for (const element of elementsBetween(first, last)) {
-    if (element.localName === SECTION_BREAK) return true;
-  }
-  return Boolean(ordered.some((marker) => marker.localName === SECTION_BREAK));
-}
-
 function storyRoot(element: Element): Element | null {
   let current: Element | null = element;
   while (current) {
@@ -237,14 +229,6 @@ function storyRoot(element: Element): Element | null {
 function precedes(left: Element, right: Element): boolean {
   const position = left.compareDocumentPosition(right);
   return (position & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
-}
-
-function compareDocumentOrder(left: Element, right: Element): number {
-  if (left === right) return 0;
-  const position = left.compareDocumentPosition(right);
-  if (position & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
-  if (position & Node.DOCUMENT_POSITION_PRECEDING) return 1;
-  return 0;
 }
 
 function sameStartMarker(

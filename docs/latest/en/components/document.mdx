@@ -763,10 +763,13 @@ for diagnostics, but resolution fails closed until the pair is valid.
 
 DOCX export first gives the `docx` writer transient negative IDs, then rewrites
 those wrappers to native `w:moveFrom` and `w:moveTo` elements with the shared
-positive ID, author, and UTC date. Reopening therefore returns the same one-card
-review identity without `data-document-change` leakage or transient IDs. The
-bounded import/export budget is 65,536 move sides and 1,000,000 characters per
-move. Rich runs outside ordinary text, range markers, relationship-bound
+positive ID, author, and UTC date. Companion `w:move*Range*` bookmarks that
+uniquely sandwich each supported side also round-trip, including when the
+destination lives in a later section than the source. Reopening therefore
+returns the same one-card review identity without `data-document-change`
+leakage or transient IDs. The bounded import/export budget is 65,536 move sides
+and 1,000,000 characters per move. Rich runs outside ordinary text,
+table-spanning or section-sandwiching range markers, relationship-bound
 objects, malformed metadata, duplicate identities, and unpaired sides remain
 on the structural compatibility path and are reported rather than flattened
 into an inexact editable move.

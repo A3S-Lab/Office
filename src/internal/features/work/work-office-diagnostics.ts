@@ -604,7 +604,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.move-range',
             'Move-range revisions',
-            `${moveRangeCompanions.unpairedMarkerCount} w:move*Range* marker(s) are not companions of a supported text-only moveFrom/moveTo pair in the same section. Cross-section, table-spanning, and unpaired range moves stay fail-closed.`,
+            `${moveRangeCompanions.unpairedMarkerCount} w:move*Range* marker(s) are not companions of a supported text-only moveFrom/moveTo pair. Table-spanning sandwiches and unpaired range moves stay fail-closed.`,
           ),
         );
       }

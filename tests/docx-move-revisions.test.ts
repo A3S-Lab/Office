@@ -839,7 +839,42 @@ describe('DOCX move revisions', () => {
     expect(descendants(document, 'moveFromRangeStart')).toHaveLength(1);
   });
 
-  test('rejects companion move-range bookmarks that cross a section boundary', async () => {
+  test('imports companion move-range bookmarks that cross a section boundary', async () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:p>
+            <w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom>
+          </w:p>
+          <w:moveFromRangeEnd w:id="0"/>
+          <w:p><w:pPr><w:sectPr/></w:pPr></w:p>
+          <w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:p>
+            <w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:t>old</w:t></w:r></w:moveTo>
+          </w:p>
+          <w:moveToRangeEnd w:id="0"/>
+        </w:body>
+      </w:document>
+    `);
+    const markers = markDocxTextChanges(document);
+    expect(markers.changes).toEqual([
+      expect.objectContaining({
+        kind: 'move',
+        moveRole: 'from',
+        moveRangeId: '0',
+        moveRangeName: 'move0',
+      }),
+      expect.objectContaining({
+        kind: 'move',
+        moveRole: 'to',
+        moveRangeId: '0',
+        moveRangeName: 'move0',
+      }),
+    ]);
+    expect(descendants(document, 'moveFromRangeStart')).toHaveLength(0);
+    expect(descendants(document, 'sectPr')).toHaveLength(1);
+
     const archive = new JSZip();
     archive.file(
       'word/document.xml',
@@ -848,6 +883,50 @@ describe('DOCX move revisions', () => {
     const bytes = await archive.generateAsync({ type: 'arraybuffer' });
     const report = await analyzeDocxCompatibility(
       new File([bytes], 'cross-section-move-range.docx'),
+      [],
+    );
+    expect(
+      report.issues.some(({ code }) => code === 'docx.revisions.move-range'),
+    ).toBe(false);
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'docx.revisions.move',
+      }),
+    );
+  });
+
+  test('rejects companion move-range bookmarks that sandwich a section break with the move', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:p>
+            <w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom>
+          </w:p>
+          <w:p><w:pPr><w:sectPr/></w:pPr></w:p>
+          <w:moveFromRangeEnd w:id="0"/>
+          <w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:p>
+            <w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:t>old</w:t></w:r></w:moveTo>
+          </w:p>
+          <w:moveToRangeEnd w:id="0"/>
+        </w:body>
+      </w:document>
+    `);
+    const markers = markDocxTextChanges(document);
+    expect(markers.changes.every((change) => !change.moveRangeId)).toBe(true);
+    expect(descendants(document, 'moveFromRangeStart')).toHaveLength(1);
+  });
+
+  test('reports unpaired move-range markers when companions cross a section only as diagnostics for leftover shapes', async () => {
+    const archive = new JSZip();
+    archive.file(
+      'word/document.xml',
+      `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/><w:p><w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom></w:p><w:p><w:pPr><w:sectPr/></w:pPr></w:p><w:moveFromRangeEnd w:id="0"/><w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/><w:p><w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:t>old</w:t></w:r></w:moveTo></w:p><w:moveToRangeEnd w:id="0"/></w:body></w:document>`,
+    );
+    const bytes = await archive.generateAsync({ type: 'arraybuffer' });
+    const report = await analyzeDocxCompatibility(
+      new File([bytes], 'section-sandwich-move-range.docx'),
       [],
     );
     expect(report.issues).toContainEqual(

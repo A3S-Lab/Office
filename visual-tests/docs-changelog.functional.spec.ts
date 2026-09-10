@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(111);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.130.0');
+  await expect(cards).toHaveCount(112);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.131.0');
   await expect(cards.first()).toContainText(
-    'Writer 整段标记修订准入未跟踪文本兄弟',
+    'Writer 准入跨分节 companion 移动范围书签',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.131.0')).toContainText('跨分节 companion 书签');
+  await expect(releaseCard('0.131.0')).toContainText(
+    '未配对标记仍诊断',
+  );
   await expect(releaseCard('0.130.0')).toContainText('未跟踪纯文本兄弟 run');
   await expect(releaseCard('0.130.0')).toContainText(
     '绘图与关系绑定链接保持失败闭合',

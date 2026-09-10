@@ -371,14 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.130.0` admits untracked text siblings in whole-paragraph mark revisions:
+Version `0.131.0` admits cross-section companion move-range bookmarks:
 
-- **Untracked text-only siblings** — eligible whole-paragraph mark bodies now
-  admit untracked text-only sibling runs (including soft breaks and the existing
-  attribute-free empty glyph set) beside matching `w:ins` / `w:del` wrappers,
-  with atomic accept/reject for the whole paragraph.
-- **Boundary** — drawings, relationship-bound hyperlinks, attributed empty
-  glyphs, and isolated mark-only shapes stay fail-closed diagnostics.
+- **Cross-section companions** — supported text-only `w:moveFrom` / `w:moveTo`
+  pairs keep companion `w:move*Range*` bookmarks when the destination lives in
+  a later section than the source.
+- **Boundary** — sandwiches that enclose a section break with the move,
+  table-spanning ranges, unpaired markers, drawings, and relationship-bound
+  hyperlinks stay fail-closed diagnostics.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

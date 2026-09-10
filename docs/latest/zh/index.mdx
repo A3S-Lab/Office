@@ -42,13 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.130.0）
+## `main` 更新内容（0.131.0）
 
-Writer Phase 0 整段段落标记修订准入未跟踪文本兄弟：
+Writer Phase 0 准入跨分节 companion 移动范围书签：
 
-- 可审阅整段段落标记正文现可在匹配的 `w:ins` / `w:del` 包装旁纳入未跟踪纯文本兄弟
-  run（含软换行与既有无属性空字形集合）。
-- 绘图、关系绑定超链接与孤立仅标记形态仍失败闭合。
+- 受支持的纯文本 `w:moveFrom` / `w:moveTo` 成对修订在目标侧位于另一分节时仍保留
+  companion `w:move*Range*` 书签。
+- 把分节符夹进 sandwich 的形态，以及跨表格范围，仍失败闭合。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

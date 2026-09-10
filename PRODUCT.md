@@ -31,14 +31,15 @@ Enough means embeddable format-native editors for host daily workflows—not
 full Traditional Office parity and not every R6 enterprise row. The ordered
 remaining backlog, surface exit criteria, and explicit out-of-scope list live
 in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
-Active tip through `0.130.0` admits untracked text-only sibling runs beside
-whole-paragraph mark revisions (and earlier closed the attribute-free
-paragraph `CT_Empty` revision-admission family through `0.129.0`). Next R0 work
-is drawings and relationship-bound hyperlinks in mixed paragraph-mark bodies,
-cross-section/table moves, numbering edges, bounded property-revision subsets,
-searchable/tagged PDF output, and continuous no-clobber fixtures—then R1 Writer
-daily leftovers, R2 calculation fidelity, R3 animation/media, and R4 PDF
-content editing.
+Active tip through `0.131.0` admits companion `w:move*Range*` bookmarks across
+section boundaries for supported text-only moves (and earlier admitted
+untracked text-only sibling runs beside whole-paragraph marks through
+`0.130.0`). Next R0 work is drawings and relationship-bound hyperlinks in
+mixed paragraph-mark bodies, table-spanning move-range sandwiches, broader
+Compare move-range generation, numbering edges, bounded property-revision
+subsets, searchable/tagged PDF output, and continuous no-clobber fixtures—then
+R1 Writer daily leftovers, R2 calculation fidelity, R3 animation/media, and R4
+PDF content editing.
 
 ## Current Spreadsheet Milestone
 
@@ -989,10 +990,11 @@ identity without browser markers or negative IDs.
 
 Rich runs, relationship-bound objects, malformed metadata, duplicate
 identities, and unpaired sides remain structural diagnostics. Companion
-same-section `w:move*Range*` bookmarks that uniquely sandwich a supported
-text-only move pair (immediate siblings or cross-paragraph placement around
-the containing paragraph) round-trip with the move; unpaired, table-spanning,
-or cross-section range markers report `docx.revisions.move-range`. The bounded
+`w:move*Range*` bookmarks that uniquely sandwich a supported text-only move
+pair (immediate siblings or cross-paragraph placement around the containing
+paragraph, including across section breaks) round-trip with the move; unpaired
+or table-spanning range markers, and sandwiches that enclose a section break
+with the move, report `docx.revisions.move-range`. The bounded
 importer/exporter, browser/Yrs decision
 projection, focused Rstest, responsive review-panel coverage, and native DOCX
 reopen fixture cover the declared subset.

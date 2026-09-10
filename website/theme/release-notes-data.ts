@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.131.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits cross-section companion move-range bookmarks',
+      zh: 'Writer 准入跨分节 companion 移动范围书签',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: companion w:move*Range* bookmarks for supported text-only moveFrom/moveTo pairs now admit when the destination lives across a section break. Sandwiches that enclose a section break with the move, table-spanning ranges, and unpaired markers stay fail-closed.',
+      zh: 'Phase 0 保真：受支持纯文本 moveFrom/moveTo 的 companion w:move*Range* 书签在目标侧跨分节时也可准入。把分节符夹进 sandwich、跨表格范围与未配对标记仍失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Cross-section companion bookmarks',
+          zh: '跨分节 companion 书签',
+        },
+        detail: {
+          en: 'Destination sides in a later section keep matching move*Range* bookmarks with the text move.',
+          zh: '位于后续分节的目标侧仍与文字移动保留匹配的 move*Range* 书签。',
+        },
+      },
+      {
+        title: {
+          en: 'Per-side sandwich rules unchanged',
+          zh: '单侧 sandwich 规则不变',
+        },
+        detail: {
+          en: 'Extra siblings, tables, and section breaks inside one sandwich remain fail-closed.',
+          zh: '单侧 sandwich 内的额外兄弟、表格与分节符仍失败闭合。',
+        },
+      },
+      {
+        title: {
+          en: 'Unpaired markers stay diagnosed',
+          zh: '未配对标记仍诊断',
+        },
+        detail: {
+          en: 'Unpaired and table-spanning range markers continue to report docx.revisions.move-range.',
+          zh: '未配对与跨表格范围标记仍报告 docx.revisions.move-range。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.131.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.131.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.130.0',
     date: '2026-09-10',
     kind: 'improved',
