@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.126.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits empty carriage-return glyphs in revision bodies',
+      zh: 'Writer 修订正文准入空回车符',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: eligible paragraph-break merge/split, whole-paragraph mark, and text-move revision bodies now admit relationship-free empty w:cr glyphs alongside soft breaks, tabs, hyphens, hyperlinks, and bookmarks. Attributed or non-empty w:cr stays fail-closed.',
+      zh: 'Phase 0 保真：可审阅段落分隔合并/拆分、整段段落标记与文字移动修订正文现可纳入无关系空 w:cr，以及软换行/制表符/连字符/超链接/书签。带属性或非空 w:cr 保持失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Empty w:cr in revision bodies',
+          zh: '修订正文中的空回车符',
+        },
+        detail: {
+          en: 'Empty relationship-free carriage-return glyphs are admitted across paragraph-break, paragraph-mark, and move bodies.',
+          zh: '无关系空回车符字形可进入段落分隔、段落标记与移动修订正文。',
+        },
+      },
+      {
+        title: {
+          en: 'Shared admission with tabs and hyphens',
+          zh: '与制表符及连字符共享准入',
+        },
+        detail: {
+          en: 'Carriage returns join the existing soft-break, tab, hyphen, hyperlink, and bookmark admission set.',
+          zh: '回车符并入既有软换行、制表符、连字符、超链接与书签准入集合。',
+        },
+      },
+      {
+        title: {
+          en: 'Attributed w:cr stays fail-closed',
+          zh: '带属性回车符保持失败闭合',
+        },
+        detail: {
+          en: 'Attributed or non-empty w:cr glyphs and relationship-bound shapes stay diagnostics-only.',
+          zh: '带属性或非空 w:cr 字形与有关系形态仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.126.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.126.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.125.0',
     date: '2026-09-10',
     kind: 'improved',

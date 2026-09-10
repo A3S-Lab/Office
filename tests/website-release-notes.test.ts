@@ -15,6 +15,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 test('keeps curated release notes unique, localized, and newest first', () => {
   expect(OFFICE_RELEASE_NOTES.map(({ version }) => version)).toEqual([
+    '0.126.0',
     '0.125.0',
     '0.124.0',
     '0.123.0',

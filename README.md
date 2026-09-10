@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.125.0` admits tab and hyphen glyphs in revision run bodies:
+Version `0.126.0` admits empty carriage-return glyphs in revision run bodies:
 
-- **Tab / hyphen admission** — eligible paragraph-break merge/split, whole-paragraph
-  mark, and text-move revision bodies now admit relationship-free empty `w:tab`,
-  `w:noBreakHyphen`, and `w:softHyphen` glyphs alongside the existing soft-break /
-  hyperlink / bookmark set, with reviewable accept/reject.
-- **Boundary** — attributed or non-empty glyphs, relationship-bound or spoofed
+- **Carriage-return admission** — eligible paragraph-break merge/split, whole-paragraph
+  mark, and text-move revision bodies now admit relationship-free empty `w:cr`
+  glyphs alongside the existing soft-break / tab / hyphen / hyperlink / bookmark
+  set, with reviewable accept/reject.
+- **Boundary** — attributed or non-empty `w:cr`, relationship-bound or spoofed
   links/bookmarks, drawings, and tracked wrappers stay fail-closed diagnostics.
 
 Earlier releases stay on the product

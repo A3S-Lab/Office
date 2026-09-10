@@ -44,14 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.125.0)
+## What's new on `main` (0.126.0)
 
-Writer Phase 0 admits tab and hyphen glyphs in revision run bodies:
+Writer Phase 0 admits empty carriage-return glyphs in revision run bodies:
 
 - eligible paragraph-break, whole-paragraph mark, and text-move bodies now admit
-  relationship-free empty `w:tab`, `w:noBreakHyphen`, and `w:softHyphen` glyphs
-  alongside soft breaks, hyperlinks, and bookmarks.
-- Attributed or non-empty glyphs, and relationship-bound or spoofed shapes, stay
+  relationship-free empty `w:cr` glyphs alongside soft breaks, tabs, hyphens,
+  hyperlinks, and bookmarks.
+- Attributed or non-empty `w:cr`, and relationship-bound or spoofed shapes, stay
   fail-closed.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
