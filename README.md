@@ -371,15 +371,16 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.120.0` makes section page-border revisions reviewable:
+Version `0.121.0` makes section page-number chapter fields reviewable:
 
-- **Section page borders** — relationship-free `sectPrChange` priors with bounded
-  `pgBorders` (optional `display` / `offsetFrom` / `zOrder` plus ordered
-  `top` / `left` / `bottom` / `right` edges) become reviewable
-  `section-formatting` via the existing `pageBorders` model, with accept/reject,
-  live track-changes, and native DOCX export.
-- **Boundary** — unknown attributes/values and nested track-change children stay
-  fail-closed; opaque section fixtures stay on `printerSettings`.
+- **Section pgNumType chapter fields** — relationship-free `sectPrChange` priors with
+  bounded `pgNumType` `chapStyle` (1-9) and/or `chapSep`
+  (`hyphen`/`period`/`colon`/`emDash`/`enDash`), alone or with `fmt`/`start`,
+  become reviewable `section-formatting` with accept/reject, live track-changes,
+  and native DOCX export.
+- **Boundary** — `printerSettings` stays permanently opaque (`CT_Rel`/`r:id`);
+  unknown `pgNumType` attributes/values stay fail-closed; next expansion is
+  `docGrid` `charSpace`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

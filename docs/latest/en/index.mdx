@@ -44,13 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.120.0)
+## What's new on `main` (0.121.0)
 
-Writer Phase 0 makes section page borders reviewable:
+Writer Phase 0 makes section page-number chapter fields reviewable:
 
-- bounded `pgBorders` (optional `display` / `offsetFrom` / `zOrder` plus ordered
-  edge borders) imports as reviewable `section-formatting` via `pageBorders`, with accept/reject, live track-changes, and native DOCX export.
-- Unknown attributes/values stay fail-closed; opaque section fixtures stay on `printerSettings`.
+- bounded `pgNumType` `chapStyle` (1-9) and/or `chapSep`
+  (`hyphen`/`period`/`colon`/`emDash`/`enDash`) import as reviewable
+  `section-formatting` with accept/reject, live track-changes, and native DOCX export.
+- `printerSettings` stays permanently opaque; next expansion is `docGrid` `charSpace`.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

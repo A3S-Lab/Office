@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.121.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes section pgNumType chapter fields reviewable',
+      zh: 'Writer 让节 pgNumType 章节字段可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free sectPrChange priors with bounded pgNumType chapStyle (1-9) and/or chapSep (hyphen/period/colon/emDash/enDash), alone or with fmt/start, import as section-formatting with accept/reject, live track-changes, and native DOCX export. printerSettings stays permanently opaque.',
+      zh: 'Phase 0 保真：含有界 pgNumType chapStyle（1-9）和/或 chapSep（hyphen/period/colon/emDash/enDash）的无关系 sectPrChange 先验（可与 fmt/start 组合）导入为 section-formatting，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。printerSettings 保持永久不透明。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Chapter page-number fields',
+          zh: '章节页码字段',
+        },
+        detail: {
+          en: 'Bounded chapStyle/chapSep priors round-trip as reviewable section-formatting snapshots on pgNumType.',
+          zh: '有界 chapStyle/chapSep 先验作为可审阅 section-formatting 快照在 pgNumType 上往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing section pgNumType chapter fields under track-changes creates a pending section-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑节 pgNumType 章节字段会生成待审阅的 section-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'printerSettings remains permanently opaque (CT_Rel/r:id); unknown pgNumType attributes/values stay fail-closed.',
+          zh: 'printerSettings 保持永久不透明（CT_Rel/r:id）；未知 pgNumType 属性/值保持失败闭合。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.121.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.121.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.120.0',
     date: '2026-09-10',
     kind: 'improved',

@@ -42,12 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.120.0）
+## `main` 更新内容（0.121.0）
 
-Writer Phase 0 让节页边框可审阅：
+Writer Phase 0 让节页码章节字段可审阅：
 
-- 有界 `pgBorders`（可选 `display` / `offsetFrom` / `zOrder` 与有序边框）经 `pageBorders` 作为可审阅 `section-formatting`：接受/拒绝、实时修订跟踪、原生 DOCX 导出。
-- 未知属性/值保持失败闭合；不透明节夹具仍为 `printerSettings`。
+- 有界 `pgNumType` `chapStyle`（1-9）和/或 `chapSep`
+  （`hyphen`/`period`/`colon`/`emDash`/`enDash`）作为可审阅 `section-formatting`：接受/拒绝、实时修订跟踪、原生 DOCX 导出。
+- `printerSettings` 保持永久不透明；下一步扩展为 `docGrid` `charSpace`。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.121.0 - 2026-09-10
+
 ### Writer
 
 - Skipped promoting `w:printerSettings` to reviewable `section-formatting`:
