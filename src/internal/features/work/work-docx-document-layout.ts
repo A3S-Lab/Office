@@ -79,6 +79,7 @@ export async function patchDocxDocumentLayout(
   patchSectionPageMargins(document, sections);
   patchSectionPageBorders(document, sections);
   patchSectionDocumentGrids(document, sections);
+  patchSectionLnNumTypes(document, sections);
   archive.file(
     'word/document.xml',
     new XMLSerializer().serializeToString(document),
@@ -341,6 +342,38 @@ function patchSectionDocumentGrids(
       String(Math.max(1, Math.round(value.linePitch * 20))),
     );
     insertSectionProperty(properties, grid);
+  }
+}
+
+function patchSectionLnNumTypes(
+  document: Document,
+  sections: readonly WorkDocumentSection[],
+): void {
+  const sectionProperties = effectiveSectionProperties(document);
+  for (const [index, properties] of sectionProperties.entries()) {
+    for (const existing of directChildren(properties, 'lnNumType')) {
+      existing.remove();
+    }
+    const value = sections[index]?.layout.lnNumType;
+    if (!value) continue;
+    const lnNumType = document.createElementNS(WORD_NAMESPACE, 'w:lnNumType');
+    if (value.countBy !== undefined) {
+      lnNumType.setAttributeNS(WORD_NAMESPACE, 'w:countBy', String(value.countBy));
+    }
+    if (value.start !== undefined) {
+      lnNumType.setAttributeNS(WORD_NAMESPACE, 'w:start', String(value.start));
+    }
+    if (value.distance !== undefined) {
+      lnNumType.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:distance',
+        String(value.distance),
+      );
+    }
+    if (value.restart !== undefined) {
+      lnNumType.setAttributeNS(WORD_NAMESPACE, 'w:restart', value.restart);
+    }
+    insertSectionProperty(properties, lnNumType);
   }
 }
 

@@ -219,6 +219,38 @@ function setSectionFormattingChange(
     );
     prior.append(docGrid);
   }
+  if (formatting.lnNumType) {
+    const lnNumType = document.createElementNS(WORD_NAMESPACE, 'w:lnNumType');
+    if (formatting.lnNumType.countBy !== undefined) {
+      lnNumType.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:countBy',
+        String(formatting.lnNumType.countBy),
+      );
+    }
+    if (formatting.lnNumType.start !== undefined) {
+      lnNumType.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:start',
+        String(formatting.lnNumType.start),
+      );
+    }
+    if (formatting.lnNumType.distance !== undefined) {
+      lnNumType.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:distance',
+        String(formatting.lnNumType.distance),
+      );
+    }
+    if (formatting.lnNumType.restart !== undefined) {
+      lnNumType.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:restart',
+        formatting.lnNumType.restart,
+      );
+    }
+    prior.append(lnNumType);
+  }
   change.append(prior);
   section.append(change);
 }

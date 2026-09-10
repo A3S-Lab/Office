@@ -39,11 +39,10 @@ describe('DOCX section property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:id', '21');
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
-    // docGrid is reviewable as section-formatting; keep opaque on lnNumType.
-    const lnNumType = document.createElementNS(WORD_NAMESPACE, 'w:lnNumType');
-    lnNumType.setAttributeNS(WORD_NAMESPACE, 'w:countBy', '1');
-    lnNumType.setAttributeNS(WORD_NAMESPACE, 'w:start', '1');
-    prior.append(lnNumType);
+    // lnNumType is reviewable as section-formatting; keep opaque on pgNumType.
+    const pgNumType = document.createElementNS(WORD_NAMESPACE, 'w:pgNumType');
+    pgNumType.setAttributeNS(WORD_NAMESPACE, 'w:start', '3');
+    prior.append(pgNumType);
     change.append(prior);
     section.append(change);
     archive.file(
@@ -89,16 +88,16 @@ describe('DOCX section property-revision preservation', () => {
       id: '21',
       author: 'Reviewer',
     });
-    const priorLnNumType = directChild(
+    const priorPgNumType = directChild(
       directChild(exportedChange!, 'sectPr'),
-      'lnNumType',
+      'pgNumType',
     );
-    expect(priorLnNumType).toBeTruthy();
+    expect(priorPgNumType).toBeTruthy();
     expect(
-      priorLnNumType?.getAttributeNS(WORD_NAMESPACE, 'countBy') ??
-        priorLnNumType?.getAttribute('w:countBy') ??
-        priorLnNumType?.getAttribute('countBy'),
-    ).toBe('1');
+      priorPgNumType?.getAttributeNS(WORD_NAMESPACE, 'start') ??
+        priorPgNumType?.getAttribute('w:start') ??
+        priorPgNumType?.getAttribute('start'),
+    ).toBe('3');
   });
 
   test('drops relationship-bound w:sectPrChange instead of inventing opaque metadata', async () => {

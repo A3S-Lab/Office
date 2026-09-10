@@ -661,7 +661,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.section-property',
             'Section-property revisions',
-            `${preservableSectionPropertyRevisionCount} relationship-free w:sectPrChange record(s) outside the reviewable orientation/page-geometry/page-margin/paper-source/equal-width-cols/unequal-width-cols/titlePg/rtlGutter/docGrid subset round-trip as opaque section metadata on untouched sections. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. Orientation, full page-geometry, page-margin, paper-source, equal-width column, unequal-width column, titlePg, rtlGutter, and/or docGrid records are reported separately as reviewable section-formatting revisions.`,
+            `${preservableSectionPropertyRevisionCount} relationship-free w:sectPrChange record(s) outside the reviewable orientation/page-geometry/page-margin/paper-source/equal-width-cols/unequal-width-cols/titlePg/rtlGutter/docGrid/lnNumType subset round-trip as opaque section metadata on untouched sections. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. Orientation, full page-geometry, page-margin, paper-source, equal-width column, unequal-width column, titlePg, rtlGutter, docGrid, and/or lnNumType records are reported separately as reviewable section-formatting revisions.`,
             'info',
           ),
         );
@@ -671,7 +671,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.section-formatting',
             'Section-formatting revisions',
-            `${supportedSectionFormattingRevisionCount} relationship-free w:sectPrChange record(s) with a prior orientation-only or complete w:pgSz, complete w:pgMar, w:paperSrc, equal-width or unequal-width w:cols, w:titlePg, w:rtlGutter, and/or bounded w:docGrid snapshot remain reviewable in Work as section-formatting changes and round-trip as native w:sectPrChange records.`,
+            `${supportedSectionFormattingRevisionCount} relationship-free w:sectPrChange record(s) with a prior orientation-only or complete w:pgSz, complete w:pgMar, w:paperSrc, equal-width or unequal-width w:cols, w:titlePg, w:rtlGutter, bounded w:docGrid, and/or bounded w:lnNumType snapshot remain reviewable in Work as section-formatting changes and round-trip as native w:sectPrChange records.`,
             'info',
           ),
         );
@@ -702,7 +702,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.structural',
             'Structural revisions',
-            'Moved content plus unsupported character formatting, paragraph formatting, numbering, and unpreservable table/row/cell/section-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded whole-paragraph mark, text-move, character-, paragraph-, table-formatting (alignment/preferred-width/indent/cell margins/layout/bidiVisual/solid fill/tblLook/tblOverlap/tblStyle/tblCellSpacing/tblStyleColBandSize/tblStyleRowBandSize/tblBorders/tblCaption/tblDescription), row-formatting (cantSplit/tblHeader/trHeight/hidden/jc/gridBefore/gridAfter/wBefore/wAfter/cnfStyle/divId/tblCellSpacing), cell-formatting (vAlign/solid fill/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark/cnfStyle/hMerge/vMerge/gridSpan/tcBorders), section-formatting (orientation/page geometry/page margins/paper source/equal-width or unequal-width columns/titlePg/rtlGutter/docGrid), and ordered-list-numbering subsets, including live track-changes for those formatting families. Relationship-free non-reviewable w:tblPrChange plus broader w:trPrChange, w:tcPrChange, and w:sectPrChange records are reported separately. Isolated paragraph-break mark revisions are reported separately as docx.revisions.paragraph-break. Unpaired w:move*Range* markers are reported separately as docx.revisions.move-range.',
+            'Moved content plus unsupported character formatting, paragraph formatting, numbering, and unpreservable table/row/cell/section-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded whole-paragraph mark, text-move, character-, paragraph-, table-formatting (alignment/preferred-width/indent/cell margins/layout/bidiVisual/solid fill/tblLook/tblOverlap/tblStyle/tblCellSpacing/tblStyleColBandSize/tblStyleRowBandSize/tblBorders/tblCaption/tblDescription), row-formatting (cantSplit/tblHeader/trHeight/hidden/jc/gridBefore/gridAfter/wBefore/wAfter/cnfStyle/divId/tblCellSpacing), cell-formatting (vAlign/solid fill/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark/cnfStyle/hMerge/vMerge/gridSpan/tcBorders), section-formatting (orientation/page geometry/page margins/paper source/equal-width or unequal-width columns/titlePg/rtlGutter/docGrid/lnNumType), and ordered-list-numbering subsets, including live track-changes for those formatting families. Relationship-free non-reviewable w:tblPrChange plus broader w:trPrChange, w:tcPrChange, and w:sectPrChange records are reported separately. Isolated paragraph-break mark revisions are reported separately as docx.revisions.paragraph-break. Unpaired w:move*Range* markers are reported separately as docx.revisions.move-range.',
           ),
         );
       }

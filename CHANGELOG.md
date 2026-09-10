@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:sectPrChange` priors that include bounded relationship-free
+  `w:lnNumType` (`w:countBy` / `w:start` / `w:distance` / `w:restart` only) are now
+  reviewable as `section-formatting` with accept/reject, live track-changes, and
+  native export (including current-section `w:lnNumType` on DOCX write). Unknown
+  attributes stay fail-closed; opaque section fixtures moved off `lnNumType` to
+  `pgNumType`.
+
 ## 0.109.0 - 2026-09-10
 
 ### Writer

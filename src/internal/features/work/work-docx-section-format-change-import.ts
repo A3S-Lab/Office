@@ -28,7 +28,12 @@ import {
   parseDocxTwipsMeasure,
 } from './work-docx-twips';
 import { attribute, directChildren } from './work-ooxml-package';
-import type { WorkDocumentGrid, WorkDocumentGridType } from './work-types';
+import type {
+  WorkDocumentGrid,
+  WorkDocumentGridType,
+  WorkDocumentLnNumRestart,
+  WorkDocumentLnNumType,
+} from './work-types';
 
 const MAX_REVISION_DATE_LENGTH = 64;
 const REVISION_ATTRIBUTES = new Set(['id', 'author', 'date']);
@@ -40,8 +45,16 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'titlePg',
   'rtlGutter',
   'docGrid',
+  'lnNumType',
 ]);
 const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch']);
+const LN_NUM_TYPE_ATTRIBUTE_SET = new Set([
+  'countBy',
+  'start',
+  'distance',
+  'restart',
+]);
+const LN_NUM_RESTARTS = new Set(['newPage', 'newSection', 'continuous']);
 const DOC_GRID_TYPES = new Set([
   'default',
   'lines',
@@ -84,8 +97,8 @@ export interface SupportedDocxSectionFormattingChange {
  * orientation-only or complete `w:pgSz` (w/h with optional orient/code), a
  * complete seven-edge `w:pgMar`, `w:paperSrc`, equal-width or unequal-width
  * `w:cols`, and/or `w:titlePg`, and/or `w:rtlGutter`, and/or bounded
- * relationship-free `w:docGrid`. Broader section property sets stay on the
- * opaque OMML path.
+ * relationship-free `w:docGrid`, and/or bounded relationship-free `w:lnNumType`.
+ * Broader section property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxSectionFormattingChange(
   change: Element,
@@ -142,7 +155,7 @@ function supportedSectionFormattingChange(
   const prior = priors[0];
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
-  if (!children.length || children.length > 6) return null;
+  if (!children.length || children.length > 7) return null;
   if (children.some((child) => !isSupportedSectionFormattingPriorChild(child))) {
     return null;
   }
@@ -157,6 +170,7 @@ function supportedSectionFormattingChange(
   let differentFirstPage: boolean | undefined;
   let rtlGutter: boolean | undefined;
   let documentGrid: WorkDocumentGrid | undefined;
+  let lnNumType: WorkDocumentLnNumType | undefined;
   for (const child of children) {
     if (child.localName === 'pgSz') {
       const value = importedPageSize(child);
@@ -195,6 +209,12 @@ function supportedSectionFormattingChange(
       const value = importedDocumentGrid(child);
       if (!value) return null;
       documentGrid = value;
+      continue;
+    }
+    if (child.localName === 'lnNumType') {
+      const value = importedLnNumType(child);
+      if (!value) return null;
+      lnNumType = value;
     }
   }
   const before = serializeDocumentSectionFormatting({
@@ -206,6 +226,7 @@ function supportedSectionFormattingChange(
     ...(differentFirstPage !== undefined ? { differentFirstPage } : {}),
     ...(rtlGutter !== undefined ? { rtlGutter } : {}),
     ...(documentGrid ? { documentGrid } : {}),
+    ...(lnNumType ? { lnNumType } : {}),
   });
   return {
     id: `docx-section-format-change-${id}`,
@@ -497,6 +518,65 @@ function importedPageMargins(element: Element): WorkDocumentPageMargins | null {
   }
   if (seen.size !== PAGE_MARGIN_KEYS.length) return null;
   return normalizeDocumentPageMargins(values);
+}
+
+function importedLnNumType(element: Element): WorkDocumentLnNumType | null {
+  const attributes = Array.from(element.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if ([...names].some((name) => !LN_NUM_TYPE_ATTRIBUTE_SET.has(name))) {
+    return null;
+  }
+  if (names.size !== attributes.length) return null;
+  const byName = new Map(
+    attributes.map((candidate) => [
+      xmlAttributeLocalName(candidate),
+      candidate.value.trim(),
+    ]),
+  );
+  const next: WorkDocumentLnNumType = {};
+  if (byName.has('countBy')) {
+    const countBy = parseBoundedDocxInteger(byName.get('countBy') ?? '', {
+      minimum: 1,
+      maximum: 32_767,
+    });
+    if (countBy === null) return null;
+    next.countBy = countBy;
+  }
+  if (byName.has('start')) {
+    const start = parseBoundedDocxInteger(byName.get('start') ?? '', {
+      minimum: 0,
+      maximum: 32_767,
+    });
+    if (start === null) return null;
+    next.start = start;
+  }
+  if (byName.has('distance')) {
+    const distance = parseBoundedDocxInteger(byName.get('distance') ?? '', {
+      minimum: 1,
+      maximum: 31_680,
+    });
+    if (distance === null) return null;
+    next.distance = distance;
+  }
+  if (byName.has('restart')) {
+    const restart = byName.get('restart') ?? '';
+    if (!LN_NUM_RESTARTS.has(restart)) return null;
+    next.restart = restart as WorkDocumentLnNumRestart;
+  }
+  if (
+    next.countBy === undefined &&
+    next.start === undefined &&
+    next.distance === undefined &&
+    next.restart === undefined
+  ) {
+    next.countBy = 1;
+  }
+  return next;
 }
 
 function importedDocumentGrid(element: Element): WorkDocumentGrid | null {

@@ -69,6 +69,10 @@ export const DocumentSection = Node.create({
       paperSource: hiddenAttribute(''),
       documentGridType: hiddenAttribute(''),
       documentGridLinePitch: hiddenAttribute(null),
+      lnNumCountBy: hiddenAttribute(null),
+      lnNumStart: hiddenAttribute(null),
+      lnNumDistance: hiddenAttribute(null),
+      lnNumRestart: hiddenAttribute(''),
       propertyRevisionOmml: hiddenAttribute(''),
       sectionChangeKind: hiddenAttribute(null),
       sectionChangeId: hiddenAttribute(''),
@@ -163,6 +167,14 @@ export const DocumentSection = Node.create({
               node,
               'sectionDocumentGridLinePitch',
             ),
+            lnNumCountBy: nullableNumberAttribute(node, 'sectionLnNumCountBy'),
+            lnNumStart: nullableNumberAttribute(node, 'sectionLnNumStart'),
+            lnNumDistance: nullableNumberAttribute(
+              node,
+              'sectionLnNumDistance',
+            ),
+            lnNumRestart: (node.dataset.sectionLnNumRestart ??
+              '') as DocumentSectionNodeAttributes['lnNumRestart'],
             propertyRevisionOmml:
               node.dataset.sectionPropertyRevisionOmml ?? '',
             sectionChangeKind:

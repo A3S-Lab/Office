@@ -48,6 +48,8 @@ import type {
   WorkDocumentContent,
   WorkDocumentGrid,
   WorkDocumentGridType,
+  WorkDocumentLnNumRestart,
+  WorkDocumentLnNumType,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionFormattingChange,
   WorkDocumentSectionLayout,
@@ -83,6 +85,10 @@ export interface DocumentSectionNodeAttributes {
   paperSource: string;
   documentGridType: WorkDocumentGridType | '';
   documentGridLinePitch: number | null;
+  lnNumCountBy: number | null;
+  lnNumStart: number | null;
+  lnNumDistance: number | null;
+  lnNumRestart: WorkDocumentLnNumRestart | '';
   propertyRevisionOmml: string;
   sectionChangeKind: 'section-formatting' | null;
   sectionChangeId: string;
@@ -227,6 +233,7 @@ export function documentSectionNodeAttributes(
     documentGridType: layout.documentGrid?.type ?? '',
     documentGridLinePitch:
       normalizedDocumentGrid(layout.documentGrid)?.linePitch ?? null,
+    ...lnNumTypeNodeFields(layout.lnNumType),
     propertyRevisionOmml: layout.propertyRevisionOmml
       ? encodeDocumentTablePropertyRevisionOmml(layout.propertyRevisionOmml)
       : '',
@@ -262,6 +269,7 @@ export function documentSectionLayoutFromNodeAttributes(
   );
   const legacy = documentPageChromeLegacyFields(pageChrome);
   const documentGrid = documentGridFromNodeAttributes(attributes, base);
+  const lnNumType = lnNumTypeFromNodeAttributes(attributes, base);
   const pageBorders = parseDocumentPageBorders(attributes.pageBorders);
   const pageMargins = parseDocumentPageMargins(attributes.pageMargins);
   const pageGeometry = parseDocumentPageGeometry(attributes.pageGeometry);
@@ -305,6 +313,7 @@ export function documentSectionLayoutFromNodeAttributes(
     pageNumberStart: validPageNumber(attributes.pageNumberStart ?? undefined),
     pageChrome,
     ...(documentGrid ? { documentGrid } : {}),
+    ...(lnNumType ? { lnNumType } : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
     ...(pageGeometry ? { pageGeometry } : {}),
@@ -363,6 +372,13 @@ export function documentSectionDomAttributes(
       attributes.documentGridLinePitch === null
         ? ''
         : String(attributes.documentGridLinePitch),
+    'data-section-ln-num-count-by':
+      attributes.lnNumCountBy === null ? '' : String(attributes.lnNumCountBy),
+    'data-section-ln-num-start':
+      attributes.lnNumStart === null ? '' : String(attributes.lnNumStart),
+    'data-section-ln-num-distance':
+      attributes.lnNumDistance === null ? '' : String(attributes.lnNumDistance),
+    'data-section-ln-num-restart': attributes.lnNumRestart,
     ...(attributes.propertyRevisionOmml
       ? {
           'data-section-property-revision-omml':
@@ -416,6 +432,11 @@ export function documentSectionLayoutFromElement(
         .sectionDocumentGridType as WorkDocumentGridType,
       documentGridLinePitch:
         numberValue(element.dataset.sectionDocumentGridLinePitch) ?? null,
+      lnNumCountBy: numberValue(element.dataset.sectionLnNumCountBy) ?? null,
+      lnNumStart: numberValue(element.dataset.sectionLnNumStart) ?? null,
+      lnNumDistance: numberValue(element.dataset.sectionLnNumDistance) ?? null,
+      lnNumRestart: (element.dataset.sectionLnNumRestart ??
+        '') as WorkDocumentLnNumRestart | '',
       propertyRevisionOmml: element.dataset.sectionPropertyRevisionOmml ?? '',
       sectionChangeKind:
         element.getAttribute('data-document-change') === 'true' &&
@@ -579,6 +600,93 @@ function validDocumentGridType(value: unknown): value is WorkDocumentGridType {
     value === 'linesAndChars' ||
     value === 'snapToChars'
   );
+}
+
+function lnNumTypeNodeFields(value: WorkDocumentLnNumType | undefined): {
+  lnNumCountBy: number | null;
+  lnNumStart: number | null;
+  lnNumDistance: number | null;
+  lnNumRestart: WorkDocumentLnNumRestart | '';
+} {
+  const normalized = normalizedLnNumType(value);
+  return {
+    lnNumCountBy: normalized?.countBy ?? null,
+    lnNumStart: normalized?.start ?? null,
+    lnNumDistance: normalized?.distance ?? null,
+    lnNumRestart: normalized?.restart ?? '',
+  };
+}
+
+function lnNumTypeFromNodeAttributes(
+  attributes: Partial<DocumentSectionNodeAttributes>,
+  base: WorkDocumentSectionLayout,
+): WorkDocumentLnNumType | undefined {
+  if (
+    attributes.lnNumCountBy === undefined &&
+    attributes.lnNumStart === undefined &&
+    attributes.lnNumDistance === undefined &&
+    attributes.lnNumRestart === undefined
+  ) {
+    return normalizedLnNumType(base.lnNumType);
+  }
+  return normalizedLnNumType({
+    ...(attributes.lnNumCountBy != null
+      ? { countBy: Number(attributes.lnNumCountBy) }
+      : {}),
+    ...(attributes.lnNumStart != null
+      ? { start: Number(attributes.lnNumStart) }
+      : {}),
+    ...(attributes.lnNumDistance != null
+      ? { distance: Number(attributes.lnNumDistance) }
+      : {}),
+    ...(attributes.lnNumRestart
+      ? { restart: attributes.lnNumRestart as WorkDocumentLnNumRestart }
+      : {}),
+  });
+}
+
+function normalizedLnNumType(
+  value: WorkDocumentLnNumType | undefined,
+): WorkDocumentLnNumType | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const next: WorkDocumentLnNumType = {};
+  if (value.countBy !== undefined) {
+    const countBy = Number(value.countBy);
+    if (!Number.isInteger(countBy) || countBy < 1 || countBy > 32_767) {
+      return undefined;
+    }
+    next.countBy = countBy;
+  }
+  if (value.start !== undefined) {
+    const start = Number(value.start);
+    if (!Number.isInteger(start) || start < 0 || start > 32_767) {
+      return undefined;
+    }
+    next.start = start;
+  }
+  if (value.distance !== undefined) {
+    const distance = Number(value.distance);
+    if (!Number.isInteger(distance) || distance < 1 || distance > 31_680) {
+      return undefined;
+    }
+    next.distance = distance;
+  }
+  if (value.restart !== undefined) {
+    if (
+      value.restart !== 'newPage' &&
+      value.restart !== 'newSection' &&
+      value.restart !== 'continuous'
+    ) {
+      return undefined;
+    }
+    next.restart = value.restart;
+  }
+  return next.countBy !== undefined ||
+    next.start !== undefined ||
+    next.distance !== undefined ||
+    next.restart !== undefined
+    ? next
+    : undefined;
 }
 
 function sectionFormattingChangeFromAttributes(

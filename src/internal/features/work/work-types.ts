@@ -86,6 +86,20 @@ export interface WorkDocumentGrid {
   linePitch: number;
 }
 
+export type WorkDocumentLnNumRestart =
+  | 'newPage'
+  | 'newSection'
+  | 'continuous';
+
+/** Bounded CT_LineNumber subset for Traditional Office section line numbering. */
+export interface WorkDocumentLnNumType {
+  countBy?: number;
+  start?: number;
+  /** Distance from text to line numbers, in twips. */
+  distance?: number;
+  restart?: WorkDocumentLnNumRestart;
+}
+
 export type WorkDocumentPaperSize =
   | 'a3'
   | 'a4'
@@ -107,6 +121,7 @@ export interface WorkDocumentSectionLayout {
   pageNumberStart?: number;
   pageChrome?: WorkDocumentPageChrome;
   documentGrid?: WorkDocumentGrid;
+  lnNumType?: WorkDocumentLnNumType;
   pageBorders?: WorkDocumentPageBorders;
   pageMargins?: WorkDocumentPageMargins;
   pageGeometry?: WorkDocumentPageGeometry;

@@ -243,6 +243,7 @@ import type {
   WorkDocumentContent,
   WorkDocumentGrid,
   WorkDocumentGridType,
+  WorkDocumentLnNumType,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
 } from './work-types';
@@ -857,6 +858,7 @@ async function parseSectionLayout(
     parsedPaperSource === null ? previous.paperSource : parsedPaperSource;
   const columnsElement = firstDescendant(section, 'cols');
   const documentGridElement = directChild(section, 'docGrid');
+  const lnNumTypeElement = directChild(section, 'lnNumType');
   const pageBorders = parseDocxPageBorders(section, theme);
   const parsedPageMargins = parseDocxPageMargins(
     section,
@@ -893,6 +895,11 @@ async function parseSectionLayout(
       ? { documentGrid: parseDocumentGrid(documentGridElement) }
       : previous.documentGrid
         ? { documentGrid: { ...previous.documentGrid } }
+        : {}),
+    ...(lnNumTypeElement
+      ? { lnNumType: parseLnNumType(lnNumTypeElement) }
+      : previous.lnNumType
+        ? { lnNumType: { ...previous.lnNumType } }
         : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
@@ -933,6 +940,39 @@ function parseDocumentGrid(element: Element): WorkDocumentGrid {
     linePitch:
       sourceLinePitch > 0 ? Number((sourceLinePitch / 20).toFixed(2)) : 18,
   };
+}
+
+function parseLnNumType(element: Element): WorkDocumentLnNumType {
+  const next: WorkDocumentLnNumType = {};
+  const countBy = numberAttribute(element, 'countBy');
+  if (Number.isInteger(countBy) && countBy >= 1 && countBy <= 32_767) {
+    next.countBy = countBy;
+  }
+  const start = numberAttribute(element, 'start');
+  if (Number.isInteger(start) && start >= 0 && start <= 32_767) {
+    next.start = start;
+  }
+  const distance = numberAttribute(element, 'distance');
+  if (Number.isInteger(distance) && distance >= 1 && distance <= 31_680) {
+    next.distance = distance;
+  }
+  const restart = attribute(element, 'restart');
+  if (
+    restart === 'newPage' ||
+    restart === 'newSection' ||
+    restart === 'continuous'
+  ) {
+    next.restart = restart;
+  }
+  if (
+    next.countBy === undefined &&
+    next.start === undefined &&
+    next.distance === undefined &&
+    next.restart === undefined
+  ) {
+    next.countBy = 1;
+  }
+  return next;
 }
 
 function addSectionMarkers(

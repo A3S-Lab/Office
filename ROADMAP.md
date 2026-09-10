@@ -216,8 +216,9 @@ a phase exits only when its evidence is complete.
   (width/height with optional orientation/code), complete seven-edge
   `w:pgMar`, and/or `w:paperSrc` snapshot is reviewable as `section-formatting`
   with accept/reject, live track-changes for orientation, page-geometry,
-  page-margin, paper-source, differentFirstPage (`w:titlePg`), rtlGutter, and
-  bounded `w:docGrid` (`w:type`/`w:linePitch` only) edits, and native export.
+  page-margin, paper-source, differentFirstPage (`w:titlePg`), rtlGutter,
+  bounded `w:docGrid` (`w:type`/`w:linePitch` only), and bounded `w:lnNumType`
+  (`w:countBy`/`w:start`/`w:distance`/`w:restart`) edits, and native export.
   Equal-width `w:cols` (num/space/sep, no unequal `w:col` children) and
   unequal-width `w:cols` (`w:equalWidth` off with bounded `w:col` children) are
   also reviewable as `section-formatting` with live column edits. Broader

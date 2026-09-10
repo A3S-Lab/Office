@@ -25,6 +25,7 @@ import type {
   WorkDocumentColumns,
   WorkDocumentGrid,
   WorkDocumentGridType,
+  WorkDocumentLnNumType,
   WorkDocumentPaperSize,
 } from './work-types';
 
@@ -53,7 +54,7 @@ export type DocumentSectionEqualColumnsSnapshot = DocumentSectionColumnsSnapshot
 /**
  * Prior snapshot for reviewable section-property revisions.
  * At least one of orientation, pageGeometry, pageMargins, paperSource,
- * columns, differentFirstPage, rtlGutter, or documentGrid must be present.
+ * columns, differentFirstPage, rtlGutter, documentGrid, or lnNumType must be present.
  */
 export interface DocumentSectionFormattingSnapshot {
   orientation?: 'portrait' | 'landscape';
@@ -64,6 +65,7 @@ export interface DocumentSectionFormattingSnapshot {
   differentFirstPage?: boolean;
   rtlGutter?: boolean;
   documentGrid?: WorkDocumentGrid;
+  lnNumType?: WorkDocumentLnNumType;
 }
 
 const MAX_SECTION_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -86,11 +88,12 @@ export function serializeDocumentSectionFormatting(attributes: {
   differentFirstPage?: unknown;
   rtlGutter?: unknown;
   documentGrid?: unknown;
+  lnNumType?: unknown;
 }): string {
   const snapshot = normalizeDocumentSectionFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, or documentGrid.',
+      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, or lnNumType.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -128,7 +131,8 @@ export function parseDocumentSectionFormatting(
         key !== 'columns' &&
         key !== 'differentFirstPage' &&
         key !== 'rtlGutter' &&
-        key !== 'documentGrid',
+        key !== 'documentGrid' &&
+        key !== 'lnNumType',
     )
   ) {
     return null;
@@ -147,6 +151,7 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
   differentFirstPage?: unknown;
   rtlGutter?: unknown;
   documentGrid?: unknown;
+  lnNumType?: unknown;
 }): DocumentSectionFormattingSnapshot | null {
   const snapshot: DocumentSectionFormattingSnapshot = {};
   if ('orientation' in attributes && attributes.orientation !== undefined) {
@@ -194,6 +199,11 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     if (!documentGrid) return null;
     snapshot.documentGrid = documentGrid;
   }
+  if ('lnNumType' in attributes && attributes.lnNumType !== undefined) {
+    const lnNumType = normalizeRevisionLnNumType(attributes.lnNumType);
+    if (!lnNumType) return null;
+    snapshot.lnNumType = lnNumType;
+  }
   return snapshot.orientation ||
     snapshot.pageGeometry ||
     snapshot.pageMargins ||
@@ -201,7 +211,8 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     snapshot.columns ||
     snapshot.differentFirstPage !== undefined ||
     snapshot.rtlGutter !== undefined ||
-    snapshot.documentGrid
+    snapshot.documentGrid ||
+    snapshot.lnNumType
     ? snapshot
     : null;
 }
@@ -346,6 +357,16 @@ export function restoredDocumentSectionAttributes(
     documentGridType = formatting.documentGrid.type;
     documentGridLinePitch = formatting.documentGrid.linePitch;
   }
+  let lnNumCountBy = attributes.lnNumCountBy;
+  let lnNumStart = attributes.lnNumStart;
+  let lnNumDistance = attributes.lnNumDistance;
+  let lnNumRestart = attributes.lnNumRestart;
+  if (formatting.lnNumType) {
+    lnNumCountBy = formatting.lnNumType.countBy ?? null;
+    lnNumStart = formatting.lnNumType.start ?? null;
+    lnNumDistance = formatting.lnNumType.distance ?? null;
+    lnNumRestart = formatting.lnNumType.restart ?? '';
+  }
   return clearDocumentSectionChangeAttributes({
     ...attributes,
     orientation,
@@ -363,6 +384,10 @@ export function restoredDocumentSectionAttributes(
     columnLayout,
     documentGridType,
     documentGridLinePitch,
+    lnNumCountBy,
+    lnNumStart,
+    lnNumDistance,
+    lnNumRestart,
   });
 }
 
@@ -376,6 +401,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
   columns?: WorkDocumentColumns;
   pageChrome?: unknown;
   documentGrid?: WorkDocumentGrid;
+  lnNumType?: WorkDocumentLnNumType;
   headerText?: string;
   footerText?: string;
   showPageNumbers?: boolean;
@@ -405,6 +431,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
     },
   );
   const documentGrid = normalizeRevisionDocumentGrid(layout.documentGrid);
+  const lnNumType = normalizeRevisionLnNumType(layout.lnNumType);
   return normalizeDocumentSectionFormattingSnapshot({
     orientation: layout.orientation,
     pageGeometry,
@@ -414,6 +441,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
     differentFirstPage: chrome.differentFirstPage,
     rtlGutter: pageMargins.gutterOnRight === true,
     ...(documentGrid ? { documentGrid } : {}),
+    ...(lnNumType ? { lnNumType } : {}),
   });
 }
 
@@ -595,6 +623,73 @@ function orderedDocumentGrid(grid: WorkDocumentGrid): WorkDocumentGrid {
   };
 }
 
+function normalizeRevisionLnNumType(
+  value: unknown,
+): WorkDocumentLnNumType | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record);
+  if (
+    !keys.length ||
+    keys.some(
+      (key) =>
+        key !== 'countBy' &&
+        key !== 'start' &&
+        key !== 'distance' &&
+        key !== 'restart',
+    )
+  ) {
+    return null;
+  }
+  const next: WorkDocumentLnNumType = {};
+  if ('countBy' in record) {
+    const countBy = Number(record.countBy);
+    if (!Number.isInteger(countBy) || countBy < 1 || countBy > 32_767) {
+      return null;
+    }
+    next.countBy = countBy;
+  }
+  if ('start' in record) {
+    const start = Number(record.start);
+    if (!Number.isInteger(start) || start < 0 || start > 32_767) {
+      return null;
+    }
+    next.start = start;
+  }
+  if ('distance' in record) {
+    const distance = Number(record.distance);
+    if (!Number.isInteger(distance) || distance < 1 || distance > 31_680) {
+      return null;
+    }
+    next.distance = distance;
+  }
+  if ('restart' in record) {
+    if (
+      record.restart !== 'newPage' &&
+      record.restart !== 'newSection' &&
+      record.restart !== 'continuous'
+    ) {
+      return null;
+    }
+    next.restart = record.restart;
+  }
+  return next.countBy !== undefined ||
+    next.start !== undefined ||
+    next.distance !== undefined ||
+    next.restart !== undefined
+    ? orderedLnNumType(next)
+    : null;
+}
+
+function orderedLnNumType(value: WorkDocumentLnNumType): WorkDocumentLnNumType {
+  return {
+    ...(value.countBy !== undefined ? { countBy: value.countBy } : {}),
+    ...(value.start !== undefined ? { start: value.start } : {}),
+    ...(value.distance !== undefined ? { distance: value.distance } : {}),
+    ...(value.restart !== undefined ? { restart: value.restart } : {}),
+  };
+}
+
 function orderedSnapshot(
   snapshot: DocumentSectionFormattingSnapshot,
 ): Record<string, unknown> {
@@ -621,6 +716,9 @@ function orderedSnapshot(
   }
   if (snapshot.documentGrid) {
     ordered.documentGrid = orderedDocumentGrid(snapshot.documentGrid);
+  }
+  if (snapshot.lnNumType) {
+    ordered.lnNumType = orderedLnNumType(snapshot.lnNumType);
   }
   if (snapshot.columns) {
     ordered.columns = snapshot.columns.custom

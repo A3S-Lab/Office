@@ -17,7 +17,7 @@ interface DocumentSectionFormattingTrackingOptions {
 /**
  * When track-changes is on, section orientation, page-geometry, page-margin,
  * paper-source, equal-width or unequal-width column, different-first-page,
- * rtlGutter, and/or document-grid edits become
+ * rtlGutter, document-grid, and/or line-number (lnNumType) edits become
  * reviewable `section-formatting` revisions. Companion `pageGeometry` / `pageSize`
  * swaps that follow orientation or geometry edits are allowed; other section
  * layout fields must stay unchanged.
@@ -88,6 +88,7 @@ function layoutSnapshotIgnoringFormatting(node: ProseMirrorNode): unknown {
     paperSource: _paperSource,
     columns: _columns,
     documentGrid: _documentGrid,
+    lnNumType: _lnNumType,
     pageChrome,
     propertyRevisionOmml: _propertyRevisionOmml,
     formattingChange: _formattingChange,
