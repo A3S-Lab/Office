@@ -215,19 +215,17 @@ function listFrozenDirs() {
     .sort((a, b) => compareVersion(b, a));
 }
 
-/** Inclusive lower bound for the continuously published release window. */
-const MIN_PUBLISHED_FROZEN_VERSION = '0.61.0';
+/** Newest continuous freezes published in the version selector / Pages site. */
+const MAX_PUBLISHED_FROZEN_VERSIONS = 20;
 /** Frozen trees that visual contracts still deep-link. */
 const REQUIRED_PUBLISHED_FROZEN_VERSIONS = ['0.38.0', '0.1.0'];
 
 function registerVersions() {
-  const fromWindow = listFrozenDirs().filter(
-    (version) => compareVersion(version, MIN_PUBLISHED_FROZEN_VERSION) >= 0,
-  );
+  const newest = listFrozenDirs().slice(0, MAX_PUBLISHED_FROZEN_VERSIONS);
   const required = REQUIRED_PUBLISHED_FROZEN_VERSIONS.filter((version) =>
     fs.existsSync(path.join(docsRoot, version)),
   );
-  const frozen = [...new Set([...fromWindow, ...required])].sort((a, b) =>
+  const frozen = [...new Set([...newest, ...required])].sort((a, b) =>
     compareVersion(b, a),
   );
   const merged = ['latest', ...frozen];

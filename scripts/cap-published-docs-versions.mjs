@@ -1,8 +1,7 @@
 /**
- * Cap DOCUMENTATION_VERSIONS so Pages/Rspress can build.
- * Publish every frozen tree from MIN_PUBLISHED_FROZEN_VERSION upward,
- * plus any REQUIRED pins used by visual contracts. Older trees stay on
- * disk and are parked during `docs:build`.
+ * Cap DOCUMENTATION_VERSIONS to latest + newest frozen trees so Pages builds fit.
+ * Older frozen trees remain on disk for archaeology; they are just not published.
+ * Required pins stay published for visual deep-links.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,8 +9,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const docsRoot = path.join(root, 'docs');
-/** Inclusive lower bound for the continuously published release window. */
-const MIN_PUBLISHED_FROZEN_VERSION = '0.61.0';
+/** Newest continuous freezes published in the version selector / Pages site. */
+const MAX_PUBLISHED_FROZEN_VERSIONS = 20;
+/** Frozen trees that visual contracts still deep-link. */
 const REQUIRED_PUBLISHED_FROZEN_VERSIONS = ['0.38.0', '0.1.0'];
 
 function compareVersion(a, b) {
@@ -24,18 +24,16 @@ function compareVersion(a, b) {
   return 0;
 }
 
-const fromWindow = fs
+const newest = fs
   .readdirSync(docsRoot, { withFileTypes: true })
   .filter((d) => d.isDirectory() && /^\d+\.\d+\.\d+$/.test(d.name))
   .map((d) => d.name)
-  .filter(
-    (version) => compareVersion(version, MIN_PUBLISHED_FROZEN_VERSION) >= 0,
-  )
-  .sort((a, b) => compareVersion(b, a));
+  .sort((a, b) => compareVersion(b, a))
+  .slice(0, MAX_PUBLISHED_FROZEN_VERSIONS);
 const required = REQUIRED_PUBLISHED_FROZEN_VERSIONS.filter((version) =>
   fs.existsSync(path.join(docsRoot, version)),
 );
-const frozen = [...new Set([...fromWindow, ...required])].sort((a, b) =>
+const frozen = [...new Set([...newest, ...required])].sort((a, b) =>
   compareVersion(b, a),
 );
 const merged = ['latest', ...frozen];
@@ -68,5 +66,5 @@ if (replaced === test) {
 fs.writeFileSync(testFile, replaced);
 
 console.log(
-  `Published ${merged.length} versions (latest + ${frozen.length} frozen from ${MIN_PUBLISHED_FROZEN_VERSION}: ${frozen[0]} … ${frozen.at(-1)}; required ${required.join(',') || 'none'})`,
+  `Published ${merged.length} versions (latest + ${frozen.length} frozen: ${frozen[0]} … ${frozen.at(-1)}; required ${required.join(',') || 'none'})`,
 );

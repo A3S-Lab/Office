@@ -9,7 +9,7 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(101);
+  await expect(cards).toHaveCount(105);
   await expect(cards.first()).toHaveAttribute('data-version', '0.124.0');
   await expect(cards.first()).toContainText(
     'Writer 扩展可审阅段落分隔修订正文',
