@@ -10,6 +10,7 @@ import { collectDocumentChanges } from '../src/internal/features/work/work-docum
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import {
   applyImportedDocxParagraphMarkChangeMarkers,
+  createDocxExternalHyperlinkTargets,
   inspectDocxParagraphBreakMarkChanges,
   isIsolatedDocxParagraphBreakMarkChange,
   isSupportedDocxParagraphMarkChange,
@@ -604,7 +605,48 @@ describe('DOCX paragraph-mark revisions', () => {
     ]);
   });
 
-  test('rejects relationship-bound hyperlinks inside whole-paragraph mark revisions', () => {
+  test('admits relationship-bound external hyperlinks inside whole-paragraph mark revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:ins w:id="53" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:ins w:id="54" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
+              <w:hyperlink r:id="rId5" w:tooltip="Site">
+                <w:r><w:t>External</w:t></w:r>
+              </w:hyperlink>
+            </w:ins>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const externalHyperlinks = createDocxExternalHyperlinkTargets([
+      {
+        id: 'rId5',
+        target: 'https://a3s.dev/office',
+        type: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink',
+        targetMode: 'External',
+      },
+    ]);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(
+      mark && isSupportedDocxParagraphMarkChange(mark, externalHyperlinks),
+    ).toBe(true);
+    expect(
+      markDocxParagraphMarkChanges(document, externalHyperlinks).paragraphs,
+    ).toEqual([
+      expect.objectContaining({
+        id: 'docx-paragraph-mark-change-53',
+        kind: 'insertion',
+      }),
+    ]);
+  });
+
+  test('rejects unresolved or unsafe relationship-bound hyperlinks inside whole-paragraph mark revisions', () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
         <w:body>
@@ -625,6 +667,76 @@ describe('DOCX paragraph-mark revisions', () => {
       (revision) => revision.parentElement?.localName === 'rPr',
     );
     expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(false);
+    expect(
+      mark &&
+        isSupportedDocxParagraphMarkChange(
+          mark,
+          createDocxExternalHyperlinkTargets([
+            {
+              id: 'rId5',
+              target: 'javascript:alert(1)',
+              type: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink',
+              targetMode: 'External',
+            },
+          ]),
+        ),
+    ).toBe(false);
+    expect(
+      mark &&
+        isSupportedDocxParagraphMarkChange(
+          mark,
+          createDocxExternalHyperlinkTargets([
+            {
+              id: 'rId5',
+              target: 'ftp://example.test/file',
+              type: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink',
+              targetMode: 'External',
+            },
+          ]),
+        ),
+    ).toBe(false);
+  });
+
+  test('imports package paragraph-mark revisions with safe external hyperlinks', async () => {
+    const archive = new JSZip();
+    archive.file(
+      'word/document.xml',
+      `<w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body><w:p><w:pPr><w:rPr><w:ins w:id="53" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/></w:rPr></w:pPr><w:ins w:id="54" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"><w:hyperlink r:id="rId5"><w:r><w:t>External</w:t></w:r></w:hyperlink></w:ins></w:p><w:sectPr/></w:body></w:document>`,
+    );
+    archive.file(
+      '[Content_Types].xml',
+      `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`,
+    );
+    archive.file(
+      'word/_rels/document.xml.rels',
+      `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://a3s.dev/office" TargetMode="External"/></Relationships>`,
+    );
+    const bytes = await archive.generateAsync({ type: 'uint8array' });
+    const reopened = await importOfficeFile(
+      new File([bytes], 'paragraph-mark-external-link.docx', {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: reopened.content.html,
+    });
+    const change = collectDocumentChanges(editor.state.doc).find(
+      (candidate) => candidate.kind === 'insertion',
+    );
+    expect(change).toEqual(
+      expect.objectContaining({
+        text: 'External',
+        author: 'Ada Reviewer',
+      }),
+    );
+    expect(reopened.content.html).toMatch(
+      /href=["']https:\/\/a3s\.dev\/office["']/,
+    );
+    editor.destroy();
   });
 
   test('rejects relationship-spoofed bookmarks beside whole-paragraph mark revisions', () => {

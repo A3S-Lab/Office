@@ -42,13 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.131.0）
+## `main` 更新内容（0.132.0）
 
-Writer Phase 0 准入跨分节 companion 移动范围书签：
+Writer Phase 0 在整段段落标记与段落分隔符修订正文中准入安全的关系绑定外部超链接：
 
-- 受支持的纯文本 `w:moveFrom` / `w:moveTo` 成对修订在目标侧位于另一分节时仍保留
-  companion `w:move*Range*` 书签。
-- 把分节符夹进 sandwich 的形态，以及跨表格范围，仍失败闭合。
+- 解析到 `http` / `https` / `mailto` 的 `r:id` 与无关系内部链接一并作为可审阅纯文本内容导入。
+- 未解析或不安全的目标以及绘图仍失败闭合。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

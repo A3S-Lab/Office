@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(112);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.131.0');
+  await expect(cards).toHaveCount(113);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.132.0');
   await expect(cards.first()).toContainText(
-    'Writer 准入跨分节 companion 移动范围书签',
+    'Writer 整段标记修订准入安全外部超链接',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.132.0')).toContainText('安全外部超链接准入');
+  await expect(releaseCard('0.132.0')).toContainText(
+    '已解析的 http/https/mailto',
+  );
   await expect(releaseCard('0.131.0')).toContainText('跨分节 companion 书签');
   await expect(releaseCard('0.131.0')).toContainText(
     '未配对标记仍诊断',

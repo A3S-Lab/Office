@@ -31,15 +31,15 @@ Enough means embeddable format-native editors for host daily workflows—not
 full Traditional Office parity and not every R6 enterprise row. The ordered
 remaining backlog, surface exit criteria, and explicit out-of-scope list live
 in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
-Active tip through `0.131.0` admits companion `w:move*Range*` bookmarks across
-section boundaries for supported text-only moves (and earlier admitted
-untracked text-only sibling runs beside whole-paragraph marks through
-`0.130.0`). Next R0 work is drawings and relationship-bound hyperlinks in
-mixed paragraph-mark bodies, table-spanning move-range sandwiches, broader
-Compare move-range generation, numbering edges, bounded property-revision
-subsets, searchable/tagged PDF output, and continuous no-clobber fixtures—then
-R1 Writer daily leftovers, R2 calculation fidelity, R3 animation/media, and R4
-PDF content editing.
+Active tip through `0.132.0` admits safe relationship-bound external hyperlinks
+in whole-paragraph mark and paragraph-break bodies (and earlier admitted
+cross-section companion move-range bookmarks through `0.131.0` plus untracked
+text-only sibling runs beside whole-paragraph marks through `0.130.0`). Next R0
+work is drawings in mixed paragraph-mark bodies, table-spanning move-range
+sandwiches, broader Compare move-range generation, numbering edges, bounded
+property-revision subsets, searchable/tagged PDF output, and continuous
+no-clobber fixtures—then R1 Writer daily leftovers, R2 calculation fidelity, R3
+animation/media, and R4 PDF content editing.
 
 ## Current Spreadsheet Milestone
 

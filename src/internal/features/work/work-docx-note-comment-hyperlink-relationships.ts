@@ -62,6 +62,41 @@ export interface DocxExternalHyperlinkRequest {
   target: string;
 }
 
+/** Safe external hyperlink targets keyed by relationship Id. */
+export type DocxExternalHyperlinkTargets = ReadonlyMap<string, string>;
+
+export const EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS: DocxExternalHyperlinkTargets =
+  new Map();
+
+/**
+ * Builds the admission lookup for relationship-bound external hyperlinks.
+ * Only http(s)/mailto targets with TargetMode=External and a hyperlink
+ * relationship type are retained; unsafe or internal targets stay absent.
+ */
+export function createDocxExternalHyperlinkTargets(
+  relationships: Iterable<{
+    id: string;
+    target: string;
+    type: string;
+    targetMode?: string;
+  }>,
+): DocxExternalHyperlinkTargets {
+  const targets = new Map<string, string>();
+  for (const relationship of relationships) {
+    if (
+      !RELATIONSHIP_ID_PATTERN.test(relationship.id) ||
+      !HYPERLINK_RELATIONSHIP_TYPES.has(relationship.type) ||
+      (relationship.targetMode ?? '').toLowerCase() !== 'external'
+    ) {
+      continue;
+    }
+    const target = normalizeDocumentHref(relationship.target);
+    if (!target || target.startsWith('#')) continue;
+    targets.set(relationship.id, target);
+  }
+  return targets;
+}
+
 export async function loadDocxHyperlinkRelationshipState(
   generatedArchive: JSZip,
   sourceArchive: JSZip,

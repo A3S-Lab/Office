@@ -33,6 +33,7 @@ import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diag
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import { isSupportedDocxParagraphFormattingChange } from './work-docx-paragraph-format-change-import';
 import {
+  createDocxExternalHyperlinkTargets,
   isIsolatedDocxParagraphBreakMarkChange,
   isSupportedDocxParagraphMarkChange,
 } from './work-docx-paragraph-mark-change-import';
@@ -152,6 +153,9 @@ export async function analyzeDocxCompatibility(
     const document = archive.has('word/document.xml')
       ? await archive.xml('word/document.xml')
       : null;
+    const externalHyperlinks = createDocxExternalHyperlinkTargets(
+      (await archive.relationships('word/document.xml')).values(),
+    );
     if (
       normalizedPackagePaths.some((path) => path.startsWith('_xmlsignatures/'))
     ) {
@@ -422,14 +426,15 @@ export async function analyzeDocxCompatibility(
           isSupportedDocxParagraphFormattingChange,
         ).length;
       const supportedParagraphMarkRevisions = paragraphMarkRevisions.filter(
-        isSupportedDocxParagraphMarkChange,
+        (revision) =>
+          isSupportedDocxParagraphMarkChange(revision, externalHyperlinks),
       );
       const supportedParagraphMarkRevisionCount =
         supportedParagraphMarkRevisions.length;
       const isolatedParagraphBreakMarkRevisions = paragraphMarkRevisions.filter(
         (revision) =>
-          !isSupportedDocxParagraphMarkChange(revision) &&
-          isIsolatedDocxParagraphBreakMarkChange(revision),
+          !isSupportedDocxParagraphMarkChange(revision, externalHyperlinks) &&
+          isIsolatedDocxParagraphBreakMarkChange(revision, externalHyperlinks),
       );
       const isolatedParagraphBreakMarkRevisionCount =
         isolatedParagraphBreakMarkRevisions.length;
@@ -571,7 +576,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.paragraph-mark',
             'Paragraph-mark revisions',
-            `${supportedParagraphMarkRevisionCount} bounded paragraph-mark insertion/deletion revision(s) preserve author, date, and whole-paragraph accept/reject semantics through Work and native DOCX w:pPr/w:rPr/w:ins or w:del round trips, including multi-wrapper text-only bodies that share the mark author and date plus soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and date-field glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, relationship-free bookmarks, and untracked text-only sibling runs (including empty/rPr-only).`,
+            `${supportedParagraphMarkRevisionCount} bounded paragraph-mark insertion/deletion revision(s) preserve author, date, and whole-paragraph accept/reject semantics through Work and native DOCX w:pPr/w:rPr/w:ins or w:del round trips, including multi-wrapper text-only bodies that share the mark author and date plus soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and date-field glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, safe relationship-bound external hyperlinks, relationship-free bookmarks, and untracked text-only sibling runs (including empty/rPr-only).`,
             'info',
           ),
         );
@@ -581,7 +586,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.paragraph-break',
             'Paragraph-break revisions',
-            `${isolatedParagraphBreakMarkRevisionCount} isolated paragraph-mark revision(s) look like paragraph-break merge or split candidates. Eligible text-only neighbor pairs (including soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and date-field glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/rPr-only runs) become reviewable paragraph-break changes; others stay fail-closed diagnostics instead of whole-paragraph guesses.`,
+            `${isolatedParagraphBreakMarkRevisionCount} isolated paragraph-mark revision(s) look like paragraph-break merge or split candidates. Eligible text-only neighbor pairs (including soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and date-field glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, safe relationship-bound external hyperlinks, relationship-free bookmarks, and empty/rPr-only runs) become reviewable paragraph-break changes; others stay fail-closed diagnostics instead of whole-paragraph guesses.`,
           ),
         );
       }

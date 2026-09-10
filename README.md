@@ -371,14 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.131.0` admits cross-section companion move-range bookmarks:
+Version `0.132.0` admits safe relationship-bound external hyperlinks in
+whole-paragraph mark and paragraph-break revision bodies:
 
-- **Cross-section companions** — supported text-only `w:moveFrom` / `w:moveTo`
-  pairs keep companion `w:move*Range*` bookmarks when the destination lives in
-  a later section than the source.
-- **Boundary** — sandwiches that enclose a section break with the move,
-  table-spanning ranges, unpaired markers, drawings, and relationship-bound
-  hyperlinks stay fail-closed diagnostics.
+- **External hyperlinks** — `http` / `https` / `mailto` targets with a resolved
+  `r:id` import as reviewable text-only revision content next to the existing
+  relationship-free internal hyperlink path.
+- **Boundary** — unresolved or unsafe targets, drawings, and relationship-bound
+  links inside move revisions stay fail-closed diagnostics.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

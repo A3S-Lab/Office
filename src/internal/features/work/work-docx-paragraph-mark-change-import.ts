@@ -1,9 +1,16 @@
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
+  EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+  type DocxExternalHyperlinkTargets,
+} from './work-docx-note-comment-hyperlink-relationships';
+import {
   xmlAttributeLocalName,
   xmlAttributeNamespace,
 } from './work-docx-settings-xml';
 import { descendants, directChildren } from './work-ooxml-package';
+
+export type { DocxExternalHyperlinkTargets } from './work-docx-note-comment-hyperlink-relationships';
+export { createDocxExternalHyperlinkTargets } from './work-docx-note-comment-hyperlink-relationships';
 
 export type DocxParagraphMarkChangeKind = 'insertion' | 'deletion';
 
@@ -40,6 +47,7 @@ const REVISION_ATTRIBUTES = new Set(['id', 'author', 'date']);
  */
 export function markDocxParagraphMarkChanges(
   document: Document,
+  externalHyperlinks: DocxExternalHyperlinkTargets = EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
 ): ImportedDocxParagraphMarkChangeMarkers {
   const paragraphs: ImportedDocxParagraphMarkChangeMarker[] = [];
   const changeIds = new Set<string>();
@@ -47,7 +55,7 @@ export function markDocxParagraphMarkChanges(
     if (!DOCX_WORDPROCESSING_NAMESPACES.has(paragraph.namespaceURI ?? '')) {
       continue;
     }
-    const change = supportedParagraphMarkChange(paragraph);
+    const change = supportedParagraphMarkChange(paragraph, externalHyperlinks);
     if (!change) continue;
     if (paragraphs.length >= MAX_PARAGRAPH_MARK_CHANGES) {
       throw new Error('Document exceeds the paragraph-mark revision limit.');
@@ -107,7 +115,10 @@ export function hasImportedDocxParagraphMarkChangeMarkers(
 }
 
 /** Returns true only for a native, unambiguous paragraph-mark revision. */
-export function isSupportedDocxParagraphMarkChange(change: Element): boolean {
+export function isSupportedDocxParagraphMarkChange(
+  change: Element,
+  externalHyperlinks: DocxExternalHyperlinkTargets = EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+): boolean {
   const runProperties = change.parentElement;
   const properties = runProperties?.parentElement;
   const paragraph = properties?.parentElement;
@@ -119,7 +130,10 @@ export function isSupportedDocxParagraphMarkChange(change: Element): boolean {
     properties.namespaceURI === change.namespaceURI &&
     paragraph.namespaceURI === change.namespaceURI
   ) {
-    return supportedParagraphMarkChange(paragraph)?.element === change;
+    return (
+      supportedParagraphMarkChange(paragraph, externalHyperlinks)?.element ===
+      change
+    );
   }
   return false;
 }
@@ -155,19 +169,24 @@ const PARAGRAPH_BREAK_CHANGE_MARKER_PATTERN =
  */
 export function isIsolatedDocxParagraphBreakMarkChange(
   change: Element,
+  externalHyperlinks: DocxExternalHyperlinkTargets = EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
 ): boolean {
-  return isolatedParagraphBreakMarkChange(change) !== null;
+  return isolatedParagraphBreakMarkChange(change, externalHyperlinks) !== null;
 }
 
 export function inspectDocxParagraphBreakMarkChanges(
   document: Document,
+  externalHyperlinks: DocxExternalHyperlinkTargets = EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
 ): InspectedDocxParagraphBreakMark[] {
   const inspected: InspectedDocxParagraphBreakMark[] = [];
   for (const change of [
     ...descendants(document, 'ins'),
     ...descendants(document, 'del'),
   ]) {
-    const breakMark = isolatedParagraphBreakMarkChange(change);
+    const breakMark = isolatedParagraphBreakMarkChange(
+      change,
+      externalHyperlinks,
+    );
     if (breakMark) inspected.push(breakMark);
   }
   return inspected;
@@ -180,6 +199,7 @@ export function inspectDocxParagraphBreakMarkChanges(
  */
 export function markDocxParagraphBreakChanges(
   document: Document,
+  externalHyperlinks: DocxExternalHyperlinkTargets = EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
 ): ImportedDocxParagraphBreakChangeMarkers {
   const paragraphs: ImportedDocxParagraphBreakChangeMarker[] = [];
   const changeIds = new Set<string>();
@@ -187,7 +207,10 @@ export function markDocxParagraphBreakChanges(
     if (!DOCX_WORDPROCESSING_NAMESPACES.has(paragraph.namespaceURI ?? '')) {
       continue;
     }
-    const change = reviewableParagraphBreakMarkChange(paragraph);
+    const change = reviewableParagraphBreakMarkChange(
+      paragraph,
+      externalHyperlinks,
+    );
     if (!change) continue;
     if (paragraphs.length >= MAX_PARAGRAPH_MARK_CHANGES) {
       throw new Error('Document exceeds the paragraph-break revision limit.');
@@ -244,6 +267,7 @@ export function hasImportedDocxParagraphBreakChangeMarkers(
 
 function reviewableParagraphBreakMarkChange(
   paragraph: Element,
+  externalHyperlinks: DocxExternalHyperlinkTargets,
 ): (InspectedDocxParagraphBreakMark & { element: Element }) | null {
   const properties = directChildren(paragraph, 'pPr').filter(
     (element) => element.namespaceURI === paragraph.namespaceURI,
@@ -259,9 +283,18 @@ function reviewableParagraphBreakMarkChange(
       element.namespaceURI === paragraph.namespaceURI,
   );
   if (!revision) return null;
-  const inspected = isolatedParagraphBreakMarkChange(revision);
+  const inspected = isolatedParagraphBreakMarkChange(
+    revision,
+    externalHyperlinks,
+  );
   if (!inspected) return null;
-  if (!paragraphBreakNeighborIsEligible(paragraph, inspected.kind)) {
+  if (
+    !paragraphBreakNeighborIsEligible(
+      paragraph,
+      inspected.kind,
+      externalHyperlinks,
+    )
+  ) {
     return null;
   }
   return { ...inspected, element: revision };
@@ -270,6 +303,7 @@ function reviewableParagraphBreakMarkChange(
 function paragraphBreakNeighborIsEligible(
   paragraph: Element,
   kind: DocxParagraphBreakMarkKind,
+  externalHyperlinks: DocxExternalHyperlinkTargets,
 ): boolean {
   const sibling =
     kind === 'merge'
@@ -279,7 +313,11 @@ function paragraphBreakNeighborIsEligible(
   const properties = directChildren(sibling, 'pPr').find(
     (element) => element.namespaceURI === sibling.namespaceURI,
   );
-  return paragraphBodyIsUntrackedTextOnly(sibling, properties);
+  return paragraphBodyIsUntrackedTextOnly(
+    sibling,
+    properties,
+    externalHyperlinks,
+  );
 }
 
 function nextWordParagraphSibling(paragraph: Element): Element | null {
@@ -326,6 +364,7 @@ function previousWordParagraphSibling(paragraph: Element): Element | null {
 
 function isolatedParagraphBreakMarkChange(
   change: Element,
+  externalHyperlinks: DocxExternalHyperlinkTargets,
 ): InspectedDocxParagraphBreakMark | null {
   const runProperties = change.parentElement;
   const properties = runProperties?.parentElement;
@@ -341,7 +380,10 @@ function isolatedParagraphBreakMarkChange(
   ) {
     return null;
   }
-  if (supportedParagraphMarkChange(paragraph)?.element === change) {
+  if (
+    supportedParagraphMarkChange(paragraph, externalHyperlinks)?.element ===
+    change
+  ) {
     return null;
   }
   const markChanges = Array.from(runProperties.children).filter(
@@ -352,7 +394,11 @@ function isolatedParagraphBreakMarkChange(
   if (markChanges.length !== 1 || markChanges[0] !== change) return null;
   const parsed = paragraphMarkChangeFromElement(change);
   if (!parsed) return null;
-  if (!paragraphBodyIsUntrackedTextOnly(paragraph, properties)) return null;
+  if (
+    !paragraphBodyIsUntrackedTextOnly(paragraph, properties, externalHyperlinks)
+  ) {
+    return null;
+  }
   return {
     author: parsed.author,
     date: parsed.date,
@@ -366,13 +412,14 @@ function isolatedParagraphBreakMarkChange(
  * marked paragraph and its eligible neighbor. Soft breaks, tabs, carriage
  * returns, last-rendered page breaks, page-number and date-field glyphs,
  * non-breaking and soft hyphens, empty/`rPr`-only runs, relationship-free
- * internal hyperlinks, and relationship-free bookmarks match the
- * whole-paragraph mark admission set; drawings, tracked wrappers, and
- * relationship-bound links stay fail-closed.
+ * internal hyperlinks, safe relationship-bound external hyperlinks, and
+ * relationship-free bookmarks match the whole-paragraph mark admission set;
+ * drawings, tracked wrappers, and unsafe or unresolved links stay fail-closed.
  */
 function paragraphBodyIsUntrackedTextOnly(
   paragraph: Element,
   properties: Element | undefined,
+  externalHyperlinks: DocxExternalHyperlinkTargets,
 ): boolean {
   const body = directChildren(paragraph).filter(
     (element) => element !== properties,
@@ -388,7 +435,7 @@ function paragraphBodyIsUntrackedTextOnly(
       continue;
     }
     if (child.localName === 'hyperlink') {
-      if (!isRelationshipFreeInternalHyperlink(child)) return false;
+      if (!isAdmittedHyperlink(child, externalHyperlinks)) return false;
       const runs = directChildren(child);
       if (!runs.length) return false;
       let hasText = false;
@@ -428,6 +475,7 @@ function runHasTrackedMark(run: Element): boolean {
 
 function supportedParagraphMarkChange(
   paragraph: Element,
+  externalHyperlinks: DocxExternalHyperlinkTargets,
 ): SupportedDocxParagraphMarkChange | null {
   const properties = directChildren(paragraph, 'pPr').filter(
     (element) => element.namespaceURI === paragraph.namespaceURI,
@@ -454,7 +502,13 @@ function supportedParagraphMarkChange(
     return null;
   }
   const change = paragraphMarkChangeFromElement(revision);
-  return change && paragraphBodyMatchesChange(paragraph, properties[0], change)
+  return change &&
+    paragraphBodyMatchesChange(
+      paragraph,
+      properties[0],
+      change,
+      externalHyperlinks,
+    )
     ? { element: revision, ...change }
     : null;
 }
@@ -495,6 +549,7 @@ function paragraphBodyMatchesChange(
   paragraph: Element,
   properties: Element | undefined,
   change: Omit<ImportedDocxParagraphMarkChangeMarker, 'marker'>,
+  externalHyperlinks: DocxExternalHyperlinkTargets,
 ): boolean {
   const body = directChildren(paragraph).filter(
     (element) => element !== properties,
@@ -503,7 +558,7 @@ function paragraphBodyMatchesChange(
   const expectedName = change.kind === 'deletion' ? 'del' : 'ins';
   // Admit one or more consecutive matching body wrappers (Word/WPS often
   // split a whole-paragraph revision across run formatting siblings).
-  // Drawings, relationship-bound hyperlinks, and mismatched authors stay
+  // Drawings, unsafe relationship-bound hyperlinks, and mismatched authors stay
   // excluded. Relationship-free bookmarkStart/End markers and untracked
   // text-only runs (including empty/rPr-only) may appear as siblings of the
   // revision wrappers without blocking admission.
@@ -529,7 +584,7 @@ function paragraphBodyMatchesChange(
       revision.localName !== expectedName ||
       revision.namespaceURI !== paragraph.namespaceURI ||
       hasUnsupportedWordAttributes(revision) ||
-      !revisionBodyIsTextOnly(revision, change.kind)
+      !revisionBodyIsTextOnly(revision, change.kind, externalHyperlinks)
     ) {
       return false;
     }
@@ -552,6 +607,7 @@ function paragraphBodyMatchesChange(
 function revisionBodyIsTextOnly(
   revision: Element,
   kind: DocxParagraphMarkChangeKind,
+  externalHyperlinks: DocxExternalHyperlinkTargets,
 ): boolean {
   const children = directChildren(revision);
   if (!children.length) return false;
@@ -564,7 +620,7 @@ function revisionBodyIsTextOnly(
       continue;
     }
     if (child.localName === 'hyperlink') {
-      if (!isRelationshipFreeInternalHyperlink(child)) return false;
+      if (!isAdmittedHyperlink(child, externalHyperlinks)) return false;
       const runs = directChildren(child);
       if (!runs.length) return false;
       for (const run of runs) {
@@ -664,6 +720,16 @@ const RELATIONSHIP_NAMESPACES = new Set([
   'http://schemas.openxmlformats.org/package/2006/relationships',
 ]);
 
+function isAdmittedHyperlink(
+  element: Element,
+  externalHyperlinks: DocxExternalHyperlinkTargets,
+): boolean {
+  return (
+    isRelationshipFreeInternalHyperlink(element) ||
+    isSupportedExternalHyperlink(element, externalHyperlinks)
+  );
+}
+
 function isRelationshipFreeInternalHyperlink(element: Element): boolean {
   if (!DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')) {
     return false;
@@ -691,6 +757,40 @@ function isRelationshipFreeInternalHyperlink(element: Element): boolean {
     }
   }
   return hasAnchor;
+}
+
+/**
+ * Relationship-bound external hyperlinks are admitted only when the r:id
+ * resolves to a safe http(s)/mailto destination from document relationships.
+ * Anchors mixed with r:id, missing targets, and non-hyperlink relationships
+ * stay fail-closed.
+ */
+function isSupportedExternalHyperlink(
+  element: Element,
+  externalHyperlinks: DocxExternalHyperlinkTargets,
+): boolean {
+  if (!DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')) {
+    return false;
+  }
+  let relationshipId: string | null = null;
+  for (const attribute of Array.from(element.attributes)) {
+    const namespace =
+      attribute.namespaceURI || xmlAttributeNamespace(element, attribute) || '';
+    const localName = xmlAttributeLocalName(attribute);
+    if (RELATIONSHIP_NAMESPACES.has(namespace)) {
+      if (localName !== 'id' || relationshipId !== null) return false;
+      const value = attribute.value.trim();
+      if (!value) return false;
+      relationshipId = value;
+      continue;
+    }
+    if (namespace && namespace !== element.namespaceURI) return false;
+    if (namespace === element.namespaceURI || !namespace) {
+      if (!HYPERLINK_ATTRIBUTES.has(localName)) return false;
+      if (localName === 'anchor') return false;
+    }
+  }
+  return Boolean(relationshipId && externalHyperlinks.has(relationshipId));
 }
 
 function isRelationshipFreeBookmarkMarker(element: Element): boolean {

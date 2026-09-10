@@ -740,7 +740,9 @@ a reviewable `paragraph-break` change with accept/reject join semantics and
 mark-only DOCX export. Otherwise it is not guessed as a whole-paragraph change.
 Untracked text-only sibling runs (including empty/`rPr`-only) may sit beside
 matching body wrappers and still import as one atomic whole-paragraph revision.
-Drawings, relationship-bound hyperlinks, mismatched kind/author/date, malformed
+Safe relationship-bound external hyperlinks (`http`/`https`/`mailto` with a
+resolved `r:id`) are admitted alongside relationship-free internal links.
+Drawings, unresolved or unsafe hyperlinks, mismatched kind/author/date, malformed
 or namespace-spoofed attributes, unsupported nodes, and over-limit input stay on
 the structural compatibility path with explicit diagnostics.
 

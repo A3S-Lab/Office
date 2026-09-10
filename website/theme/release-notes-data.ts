@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.132.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits safe external hyperlinks in paragraph-mark revisions',
+      zh: 'Writer 整段标记修订准入安全外部超链接',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: whole-paragraph mark and paragraph-break revision bodies now admit safe relationship-bound external hyperlinks (http/https/mailto with a resolved r:id) alongside relationship-free internal links. Unresolved or unsafe targets, drawings, and move-body relationship-bound links stay fail-closed.',
+      zh: 'Phase 0 保真：整段段落标记与段落分隔符修订正文现可准入安全的关系绑定外部超链接（解析到 http/https/mailto 的 r:id），并与无关系内部链接并存。未解析或不安全目标、绘图以及移动修订正文中的关系绑定链接仍失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Safe external hyperlink admission',
+          zh: '安全外部超链接准入',
+        },
+        detail: {
+          en: 'Resolved http/https/mailto relationship targets import as reviewable text-only revision content.',
+          zh: '已解析的 http/https/mailto 关系目标作为可审阅纯文本修订内容导入。',
+        },
+      },
+      {
+        title: {
+          en: 'Paragraph-break bodies included',
+          zh: '覆盖段落分隔符正文',
+        },
+        detail: {
+          en: 'The same external-link rules apply to eligible paragraph-break merge/split neighbors.',
+          zh: '同一外部链接规则也适用于符合条件的段落分隔符合并/拆分相邻段落。',
+        },
+      },
+      {
+        title: {
+          en: 'Unsafe targets stay fail-closed',
+          zh: '不安全目标仍失败闭合',
+        },
+        detail: {
+          en: 'Missing r:id targets, javascript/file/ftp schemes, drawings, and move-body links remain diagnostics-only.',
+          zh: '缺失的 r:id、javascript/file/ftp 方案、绘图与移动正文链接仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.132.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.132.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.131.0',
     date: '2026-09-10',
     kind: 'improved',

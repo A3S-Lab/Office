@@ -158,6 +158,7 @@ import {
 import {
   applyImportedDocxParagraphBreakChangeMarkers,
   applyImportedDocxParagraphMarkChangeMarkers,
+  createDocxExternalHyperlinkTargets,
   hasImportedDocxParagraphBreakChangeMarkers,
   hasImportedDocxParagraphMarkChangeMarkers,
   type ImportedDocxParagraphBreakChangeMarkers,
@@ -363,8 +364,17 @@ export async function prepareDocxImport(
 
   const document = await archive.xml('word/document.xml');
   const pageColor = importDocxPageColor(document);
-  const paragraphMarkChangeMarkers = markDocxParagraphMarkChanges(document);
-  const paragraphBreakChangeMarkers = markDocxParagraphBreakChanges(document);
+  const externalHyperlinks = createDocxExternalHyperlinkTargets(
+    (await archive.relationships('word/document.xml')).values(),
+  );
+  const paragraphMarkChangeMarkers = markDocxParagraphMarkChanges(
+    document,
+    externalHyperlinks,
+  );
+  const paragraphBreakChangeMarkers = markDocxParagraphBreakChanges(
+    document,
+    externalHyperlinks,
+  );
   const tableOfContentsMarkers = markDocxTablesOfContents(document);
   const indexMarkers = markDocxIndexes(document);
   const contentControlMarkers = markDocxContentControls(document);

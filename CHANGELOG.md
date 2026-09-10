@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.132.0 - 2026-09-10
+
+### Writer
+
+- Eligible whole-paragraph mark and paragraph-break revision bodies now admit
+  safe relationship-bound external hyperlinks (`http` / `https` / `mailto` with
+  a resolved `r:id` from `word/_rels/document.xml.rels`) alongside
+  relationship-free internal links. Unresolved, unsafe, or non-external
+  relationship targets, drawings, and move-body relationship-bound links stay
+  fail-closed.
+
 ## 0.131.0 - 2026-09-10
 
 ### Writer
