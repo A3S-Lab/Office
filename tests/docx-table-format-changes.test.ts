@@ -2033,7 +2033,10 @@ async function tableDocxWithDescriptionChange(options: {
     existing.remove();
   }
   if (options.current) {
-    const current = document.createElementNS(WORD_NAMESPACE, 'w:tblDescription');
+    const current = document.createElementNS(
+      WORD_NAMESPACE,
+      'w:tblDescription',
+    );
     current.setAttributeNS(WORD_NAMESPACE, 'w:val', options.current);
     properties.append(current);
   }

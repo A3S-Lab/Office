@@ -1025,7 +1025,6 @@ describe('DOCX row-formatting revisions', () => {
     expect(row?.dataset.officeRowPropertyRevisionOmml).toBeTruthy();
   });
 
-
   test('imports divId-only w:trPrChange as a reviewable row-formatting change', async () => {
     const source = await rowDocxWithDivIdChange({
       prior: 12345678,
@@ -1694,7 +1693,6 @@ async function rowDocxWithGridAfterChange(options: {
   return archive.generateAsync({ type: 'arraybuffer' });
 }
 
-
 async function rowDocxWithTblCellSpacingChange(options: {
   prior: { type: string; w: string };
   current?: { type: string; w: string };
@@ -1771,8 +1769,7 @@ async function rowDocxWithDivIdChange(options: {
       return created;
     })();
   for (const existing of Array.from(properties.children).filter(
-    (child) =>
-      child.localName === 'divId' || child.localName === 'trPrChange',
+    (child) => child.localName === 'divId' || child.localName === 'trPrChange',
   )) {
     existing.remove();
   }

@@ -1455,7 +1455,7 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 
-    test('imports rtlGutter-only w:sectPrChange as a reviewable section-formatting change', async () => {
+  test('imports rtlGutter-only w:sectPrChange as a reviewable section-formatting change', async () => {
     const source = await sectionDocxWithRtlGutterChange({
       prior: true,
       current: false,
@@ -1898,8 +1898,14 @@ describe('DOCX section-formatting revisions', () => {
 });
 
 async function sectionDocxWithDocGridChange(options: {
-  prior: { type: 'default' | 'lines' | 'linesAndChars' | 'snapToChars'; linePitch: number };
-  current: { type: 'default' | 'lines' | 'linesAndChars' | 'snapToChars'; linePitch: number };
+  prior: {
+    type: 'default' | 'lines' | 'linesAndChars' | 'snapToChars';
+    linePitch: number;
+  };
+  current: {
+    type: 'default' | 'lines' | 'linesAndChars' | 'snapToChars';
+    linePitch: number;
+  };
 }): Promise<ArrayBuffer> {
   const artifact = createArtifact('blank-document');
   if (artifact.content.type !== 'document') {
@@ -2626,7 +2632,11 @@ function createUnequalWidthCols(
   }
   for (const [index, column] of columns.custom.entries()) {
     const col = document.createElementNS(WORD_NAMESPACE, 'w:col');
-    col.setAttributeNS(WORD_NAMESPACE, 'w:w', String(Math.round(column.widthPercent)));
+    col.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:w',
+      String(Math.round(column.widthPercent)),
+    );
     if (index < columns.custom.length - 1) {
       col.setAttributeNS(
         WORD_NAMESPACE,
