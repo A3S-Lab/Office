@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.112.0` makes section formProt revisions reviewable:
+Version `0.113.0` makes section vAlign revisions reviewable:
 
-- **Section form protection** — relationship-free `sectPrChange` priors with
-  onOff `formProt` become reviewable `section-formatting` with accept/reject,
-  live track-changes, and native DOCX export.
-- **Boundary** — unknown attributes stay fail-closed; opaque section fixtures
-  stay on `vAlign`.
+- **Section vertical align** — relationship-free `sectPrChange` priors with
+  `vAlign` (`top`/`center`/`both`/`bottom`) become reviewable
+  `section-formatting` with accept/reject, live track-changes, and native DOCX export.
+- **Boundary** — unknown attributes/values stay fail-closed; opaque section
+  fixtures stay on `noEndnote`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
