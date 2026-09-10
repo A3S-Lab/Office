@@ -9,15 +9,16 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(83);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.102.0');
+  await expect(cards).toHaveCount(84);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.103.0');
   await expect(cards.first()).toContainText(
-    'Writer 让单元格 cnfStyle 修订可审阅',
+    'Writer 让单元格 tcBorders 修订可审阅',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.103.0')).toContainText('单元格边框');
+  await expect(releaseCard('0.103.0')).toContainText('实时修订跟踪');
   await expect(releaseCard('0.102.0')).toContainText('单元格条件格式位掩码');
-  await expect(releaseCard('0.102.0')).toContainText('实时修订跟踪');
   await expect(releaseCard('0.101.0')).toContainText('行条件格式位掩码');
   await expect(releaseCard('0.100.0')).toContainText('不等宽分栏');
   await expect(releaseCard('0.99.0')).toContainText('行带大小');

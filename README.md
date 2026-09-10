@@ -371,12 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.102.0` makes cell cnfStyle revisions reviewable:
+Version `0.103.0` makes cell tcBorders revisions reviewable:
 
-- **Cell conditional formatting** — relationship-free `tcPrChange` priors with
-  `cnfStyle` become reviewable `cell-formatting` with accept/reject, live
+- **Cell borders** — relationship-free `tcPrChange` priors with direct-color
+  `tcBorders` become reviewable `cell-formatting` with accept/reject, live
   track-changes, and native DOCX export.
-- **Boundary** — broader `tcPr` shapes stay opaque metadata or fail-closed;
+- **Boundary** — theme-bound or malformed borders stay fail-closed or opaque;
   opaque cell fixtures stay on `hMerge`.
 
 Earlier releases stay on the product
