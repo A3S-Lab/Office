@@ -1,8 +1,13 @@
 import JSZip from 'jszip';
 import {
+  DOCUMENT_PAGE_BORDER_EDGES,
+  type WorkDocumentPageBorders,
+} from './work-document-page-borders';
+import {
   type DocumentSectionColumnsSnapshot,
   parseDocumentSectionFormatting,
 } from './work-document-section-format-changes';
+import { setDocxBorderAttributes } from './work-docx-paragraph-borders-export';
 import { descendants, directChild, parseXml } from './work-ooxml-package';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 import type { WorkDocumentSectionLayout } from './work-types';
@@ -191,6 +196,11 @@ function setSectionFormattingChange(
     }
     prior.append(paperSource);
   }
+  if (formatting.pageBorders !== undefined) {
+    prior.append(
+      createSectionFormattingPageBorders(document, formatting.pageBorders),
+    );
+  }
   if (formatting.columns) {
     prior.append(createSectionFormattingColumns(document, formatting.columns));
   }
@@ -328,6 +338,30 @@ function normalizedRevisionDate(value: string | undefined): string {
   if (!value?.trim()) return '';
   const time = Date.parse(value);
   return Number.isFinite(time) ? new Date(time).toISOString() : '';
+}
+
+function createSectionFormattingPageBorders(
+  document: Document,
+  value: WorkDocumentPageBorders,
+): Element {
+  const container = document.createElementNS(WORD_NAMESPACE, 'w:pgBorders');
+  if (value.zOrder) {
+    container.setAttributeNS(WORD_NAMESPACE, 'w:zOrder', value.zOrder);
+  }
+  if (value.display) {
+    container.setAttributeNS(WORD_NAMESPACE, 'w:display', value.display);
+  }
+  if (value.offsetFrom) {
+    container.setAttributeNS(WORD_NAMESPACE, 'w:offsetFrom', value.offsetFrom);
+  }
+  for (const edge of DOCUMENT_PAGE_BORDER_EDGES) {
+    const border = value.edges[edge];
+    if (!border) continue;
+    const element = document.createElementNS(WORD_NAMESPACE, `w:${edge}`);
+    setDocxBorderAttributes(document, element, border);
+    container.append(element);
+  }
+  return container;
 }
 
 function createSectionFormattingFootnotePr(

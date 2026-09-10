@@ -1,4 +1,12 @@
 import { DEFAULT_DOCUMENT_COLUMNS } from './work-document-columns';
+import {
+  DOCUMENT_PAGE_BORDER_EDGES,
+  type WorkDocumentPageBorderEdge,
+  type WorkDocumentPageBorders,
+  normalizeDocumentPageBorders,
+} from './work-document-page-borders';
+import { parseDocxBorderElement } from './work-docx-paragraph-borders-import';
+import { resolveDocxThemeResolver } from './work-docx-theme';
 import { importDocxColumns } from './work-docx-column-import';
 import {
   type DocumentSectionColumnsSnapshot,
@@ -65,6 +73,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'footnotePr',
   'endnotePr',
   'type',
+  'pgBorders',
 ]);
 const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch']);
 const FORM_PROT_ATTRIBUTE_SET = new Set(['val']);
@@ -179,7 +188,10 @@ export interface SupportedDocxSectionFormattingChange {
  * relationship-free empty `w:endnotePr` or children only
  * (`pos`/`numFmt`/`numStart`/`numRestart` with ST_EdnPos), and/or
  * relationship-free `w:type` with required known `w:val`
- * (`nextPage`/`nextColumn`/`continuous`/`evenPage`/`oddPage`).
+ * (`nextPage`/`nextColumn`/`continuous`/`evenPage`/`oddPage`), and/or
+ * bounded relationship-free `w:pgBorders` (optional display/offsetFrom/zOrder
+ * plus ordered top/left/bottom/right edge borders). Nested track-change
+ * children stay fail-closed.
  * Broader section property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxSectionFormattingChange(
@@ -237,7 +249,7 @@ function supportedSectionFormattingChange(
   const prior = priors[0];
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
-  if (!children.length || children.length > 15) return null;
+  if (!children.length || children.length > 16) return null;
   if (
     children.some((child) => !isSupportedSectionFormattingPriorChild(child))
   ) {
@@ -264,6 +276,7 @@ function supportedSectionFormattingChange(
   let bidi: boolean | undefined;
   let footnotePr: WorkDocumentFootnotePr | undefined;
   let endnotePr: WorkDocumentEndnotePr | undefined;
+  let pageBorders: WorkDocumentPageBorders | undefined;
   for (const child of children) {
     if (child.localName === 'type') {
       const value = importedSectionType(child);
@@ -362,6 +375,12 @@ function supportedSectionFormattingChange(
       const value = importedEndnotePr(child);
       if (value === null) return null;
       endnotePr = value;
+      continue;
+    }
+    if (child.localName === 'pgBorders') {
+      const value = importedPageBorders(child);
+      if (value === null) return null;
+      pageBorders = value;
     }
   }
   const before = serializeDocumentSectionFormatting({
@@ -383,6 +402,7 @@ function supportedSectionFormattingChange(
     ...(bidi !== undefined ? { bidi } : {}),
     ...(footnotePr !== undefined ? { footnotePr } : {}),
     ...(endnotePr !== undefined ? { endnotePr } : {}),
+    ...(pageBorders !== undefined ? { pageBorders } : {}),
   });
   return {
     id: `docx-section-format-change-${id}`,
@@ -479,6 +499,9 @@ function isSupportedSectionFormattingPriorChild(child: Element): boolean {
   }
   if (child.localName === 'endnotePr') {
     return isSupportedEndnotePr(child);
+  }
+  if (child.localName === 'pgBorders') {
+    return isSupportedPageBorders(child);
   }
   return child.children.length === 0;
 }
@@ -968,6 +991,92 @@ function importedTextDirection(
     ?.value.trim();
   if (!value || !TEXT_DIRECTION_VALUES.has(value)) return null;
   return value as WorkDocumentSectionTextDirection;
+}
+
+function isSupportedPageBorders(element: Element): boolean {
+  return importedPageBorders(element) !== null;
+}
+
+function importedPageBorders(element: Element): WorkDocumentPageBorders | null {
+  if (hasNonWhitespaceText(element)) return null;
+  const attributes = Array.from(element.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if (
+    [...names].some(
+      (name) =>
+        name !== 'display' && name !== 'offsetFrom' && name !== 'zOrder',
+    )
+  ) {
+    return null;
+  }
+  if (names.size !== attributes.length) return null;
+  const byName = new Map(
+    attributes.map((candidate) => [
+      xmlAttributeLocalName(candidate),
+      candidate.value.trim(),
+    ]),
+  );
+  const display = optionalPageBorderEnum(byName.get('display'), [
+    'allPages',
+    'firstPage',
+    'notFirstPage',
+  ]);
+  const offsetFrom = optionalPageBorderEnum(byName.get('offsetFrom'), [
+    'page',
+    'text',
+  ]);
+  const zOrder = optionalPageBorderEnum(byName.get('zOrder'), [
+    'front',
+    'back',
+  ]);
+  if (display === null || offsetFrom === null || zOrder === null) return null;
+
+  const theme = resolveDocxThemeResolver(undefined);
+  const edges: WorkDocumentPageBorders['edges'] = {};
+  let previousIndex = -1;
+  const seen = new Set<WorkDocumentPageBorderEdge>();
+  for (const child of Array.from(element.children)) {
+    if (child.namespaceURI !== element.namespaceURI) return null;
+    const edge = child.localName as WorkDocumentPageBorderEdge;
+    const index = DOCUMENT_PAGE_BORDER_EDGES.indexOf(edge);
+    if (
+      !DOCUMENT_PAGE_BORDER_EDGES.includes(edge) ||
+      index < previousIndex ||
+      seen.has(edge)
+    ) {
+      return null;
+    }
+    previousIndex = index;
+    seen.add(edge);
+    const border = parseDocxBorderElement(child, theme);
+    if (!border) return null;
+    edges[edge] = border;
+  }
+  return normalizeDocumentPageBorders({
+    ...(display ? { display } : {}),
+    ...(offsetFrom ? { offsetFrom } : {}),
+    ...(zOrder ? { zOrder } : {}),
+    edges,
+  });
+}
+
+function optionalPageBorderEnum<T extends string>(
+  value: string | undefined,
+  allowed: readonly T[],
+): T | null | undefined {
+  if (value === undefined) return undefined;
+  return (allowed as readonly string[]).includes(value) ? (value as T) : null;
+}
+
+function hasNonWhitespaceText(element: Element): boolean {
+  return Array.from(element.childNodes).some(
+    (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+  );
 }
 
 function importedSectionType(

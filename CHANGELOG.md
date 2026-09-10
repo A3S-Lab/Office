@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:sectPrChange` priors that include bounded relationship-free
+  `w:pgBorders` (optional `w:display` / `w:offsetFrom` / `w:zOrder` plus ordered
+  `w:top` / `w:left` / `w:bottom` / `w:right` edge borders with known styles and
+  direct/theme colors) are now reviewable as `section-formatting` with
+  accept/reject, live track-changes, and native export through the existing
+  section `pageBorders` model. Unknown attributes/values and nested track-change
+  children stay fail-closed; opaque section fixtures moved off `pgBorders` to
+  `printerSettings`.
+
 ## 0.119.0 - 2026-09-10
 
 ### Writer

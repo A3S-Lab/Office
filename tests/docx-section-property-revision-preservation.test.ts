@@ -39,9 +39,12 @@ describe('DOCX section property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:id', '21');
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
-    // type is reviewable as section-formatting; keep opaque on pgBorders.
-    const pgBorders = document.createElementNS(WORD_NAMESPACE, 'w:pgBorders');
-    prior.append(pgBorders);
+    // pgBorders is reviewable as section-formatting; keep opaque on printerSettings.
+    const printerSettings = document.createElementNS(
+      WORD_NAMESPACE,
+      'w:printerSettings',
+    );
+    prior.append(printerSettings);
     change.append(prior);
     section.append(change);
     archive.file(
@@ -87,11 +90,11 @@ describe('DOCX section property-revision preservation', () => {
       id: '21',
       author: 'Reviewer',
     });
-    const priorPgBorders = directChild(
+    const priorPrinterSettings = directChild(
       directChild(exportedChange!, 'sectPr'),
-      'pgBorders',
+      'printerSettings',
     );
-    expect(priorPgBorders).toBeTruthy();
+    expect(priorPrinterSettings).toBeTruthy();
   });
 
   test('drops relationship-bound w:sectPrChange instead of inventing opaque metadata', async () => {

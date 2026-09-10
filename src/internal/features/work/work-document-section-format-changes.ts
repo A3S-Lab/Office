@@ -7,6 +7,12 @@ import {
   type WorkDocumentPageMargins,
 } from './work-document-page-margins';
 import {
+  DOCUMENT_PAGE_BORDER_EDGES,
+  normalizeDocumentPageBorders,
+  serializeDocumentPageBorders,
+  type WorkDocumentPageBorders,
+} from './work-document-page-borders';
+import {
   documentPageGeometryForLayout,
   normalizeDocumentPageGeometry,
   normalizeDocumentPaperSource,
@@ -67,7 +73,7 @@ export type DocumentSectionEqualColumnsSnapshot =
  * At least one of orientation, pageGeometry, pageMargins, paperSource,
  * columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType,
  * formProt, noEndnote, verticalAlign, textDirection, bidi, footnotePr,
- * endnotePr, or breakAfter must be present.
+ * endnotePr, breakAfter, or pageBorders must be present.
  */
 export interface DocumentSectionFormattingSnapshot {
   orientation?: 'portrait' | 'landscape';
@@ -76,6 +82,8 @@ export interface DocumentSectionFormattingSnapshot {
   pageGeometry?: WorkDocumentPageGeometry;
   pageMargins?: WorkDocumentPageMargins;
   paperSource?: WorkDocumentPaperSource;
+  /** Bounded section page borders (`w:pgBorders`). */
+  pageBorders?: WorkDocumentPageBorders;
   columns?: DocumentSectionColumnsSnapshot;
   differentFirstPage?: boolean;
   rtlGutter?: boolean;
@@ -108,6 +116,7 @@ export function serializeDocumentSectionFormatting(attributes: {
   pageGeometry?: unknown;
   pageMargins?: unknown;
   paperSource?: unknown;
+  pageBorders?: unknown;
   columns?: unknown;
   differentFirstPage?: unknown;
   rtlGutter?: unknown;
@@ -125,7 +134,7 @@ export function serializeDocumentSectionFormatting(attributes: {
   const snapshot = normalizeDocumentSectionFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Section-formatting snapshot requires orientation, breakAfter, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType, formProt, noEndnote, verticalAlign, textDirection, bidi, footnotePr, or endnotePr.',
+      'Section-formatting snapshot requires orientation, breakAfter, pageGeometry, pageMargins, paperSource, pageBorders, columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType, formProt, noEndnote, verticalAlign, textDirection, bidi, footnotePr, or endnotePr.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -161,6 +170,7 @@ export function parseDocumentSectionFormatting(
         key !== 'pageGeometry' &&
         key !== 'pageMargins' &&
         key !== 'paperSource' &&
+        key !== 'pageBorders' &&
         key !== 'columns' &&
         key !== 'differentFirstPage' &&
         key !== 'rtlGutter' &&
@@ -189,6 +199,7 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
   pageGeometry?: unknown;
   pageMargins?: unknown;
   paperSource?: unknown;
+  pageBorders?: unknown;
   columns?: unknown;
   differentFirstPage?: unknown;
   rtlGutter?: unknown;
@@ -231,6 +242,11 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     const paperSource = normalizeRevisionPaperSource(attributes.paperSource);
     if (!paperSource) return null;
     snapshot.paperSource = paperSource;
+  }
+  if ('pageBorders' in attributes && attributes.pageBorders !== undefined) {
+    const pageBorders = normalizeRevisionPageBorders(attributes.pageBorders);
+    if (pageBorders === null) return null;
+    snapshot.pageBorders = pageBorders;
   }
   if ('columns' in attributes && attributes.columns !== undefined) {
     const columns = normalizeRevisionColumns(attributes.columns);
@@ -298,6 +314,7 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     snapshot.pageGeometry ||
     snapshot.pageMargins ||
     snapshot.paperSource ||
+    snapshot.pageBorders !== undefined ||
     snapshot.columns ||
     snapshot.differentFirstPage !== undefined ||
     snapshot.rtlGutter !== undefined ||
@@ -500,6 +517,10 @@ export function restoredDocumentSectionAttributes(
   if (formatting.bidi !== undefined) {
     bidi = formatting.bidi;
   }
+  let pageBorders = attributes.pageBorders;
+  if (formatting.pageBorders !== undefined) {
+    pageBorders = serializeDocumentPageBorders(formatting.pageBorders) ?? '';
+  }
   let footnotePr = attributes.footnotePr;
   if (formatting.footnotePr !== undefined) {
     footnotePr = serializeDocumentFootnotePr(formatting.footnotePr);
@@ -515,6 +536,7 @@ export function restoredDocumentSectionAttributes(
     pageGeometry,
     pageMargins,
     paperSource,
+    pageBorders,
     pageChrome,
     marginTop,
     marginRight,
@@ -563,6 +585,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
   bidi?: boolean;
   footnotePr?: WorkDocumentFootnotePr;
   endnotePr?: WorkDocumentEndnotePr;
+  pageBorders?: WorkDocumentPageBorders;
   pageNumberStart?: number;
   headerText?: string;
   footerText?: string;
@@ -627,6 +650,9 @@ export function sectionFormattingSnapshotFromLayout(layout: {
       ? { footnotePr: layout.footnotePr }
       : {}),
     ...(layout.endnotePr !== undefined ? { endnotePr: layout.endnotePr } : {}),
+    ...(layout.pageBorders !== undefined
+      ? { pageBorders: layout.pageBorders }
+      : {}),
   });
 }
 
@@ -691,6 +717,31 @@ function orderedPaperSource(
   return {
     ...(source.first !== undefined ? { first: source.first } : {}),
     ...(source.other !== undefined ? { other: source.other } : {}),
+  };
+}
+
+function normalizeRevisionPageBorders(
+  value: unknown,
+): WorkDocumentPageBorders | null {
+  const normalized = normalizeDocumentPageBorders(value);
+  if (!normalized) return null;
+  return orderedPageBorders(normalized);
+}
+
+function orderedPageBorders(
+  borders: WorkDocumentPageBorders,
+): WorkDocumentPageBorders {
+  const edges: WorkDocumentPageBorders['edges'] = {};
+  for (const edge of DOCUMENT_PAGE_BORDER_EDGES) {
+    const border = borders.edges[edge];
+    if (!border) continue;
+    edges[edge] = border;
+  }
+  return {
+    ...(borders.display ? { display: borders.display } : {}),
+    ...(borders.offsetFrom ? { offsetFrom: borders.offsetFrom } : {}),
+    ...(borders.zOrder ? { zOrder: borders.zOrder } : {}),
+    edges,
   };
 }
 
@@ -1167,6 +1218,9 @@ function orderedSnapshot(
   }
   if (snapshot.paperSource) {
     ordered.paperSource = orderedPaperSource(snapshot.paperSource);
+  }
+  if (snapshot.pageBorders !== undefined) {
+    ordered.pageBorders = orderedPageBorders(snapshot.pageBorders);
   }
   if (snapshot.differentFirstPage !== undefined) {
     ordered.differentFirstPage = snapshot.differentFirstPage;

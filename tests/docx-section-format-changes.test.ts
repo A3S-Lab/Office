@@ -2319,6 +2319,256 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 
+  test('imports pgBorders w:sectPrChange as a reviewable section-formatting change', async () => {
+    const prior = {
+      display: 'allPages' as const,
+      offsetFrom: 'page' as const,
+      zOrder: 'front' as const,
+      edges: {
+        top: {
+          style: 'single' as const,
+          color: { value: '#ff0000' as const },
+          size: 24,
+          space: 24,
+        },
+        bottom: {
+          style: 'single' as const,
+          color: { value: '#ff0000' as const },
+          size: 24,
+          space: 24,
+        },
+      },
+    };
+    const current = {
+      display: 'firstPage' as const,
+      offsetFrom: 'text' as const,
+      zOrder: 'back' as const,
+      edges: {
+        left: {
+          style: 'double' as const,
+          color: { value: '#0000ff' as const },
+          size: 12,
+          space: 4,
+        },
+        right: {
+          style: 'double' as const,
+          color: { value: '#0000ff' as const },
+          size: 12,
+          space: 4,
+        },
+      },
+    };
+    const source = await sectionDocxWithPageBordersChange({ prior, current });
+    const imported = await importOfficeFile(
+      new File([source], 'section-pgborders-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const section = html.body.querySelector('section[data-document-section]');
+    expect(section?.getAttribute('data-change-kind')).toBe(
+      'section-formatting',
+    );
+    expect(
+      section?.getAttribute('data-section-property-revision-omml'),
+    ).toBeNull();
+    expect(
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
+    ).toEqual({ pageBorders: prior });
+    expect(section?.dataset.sectionPageBorders).toBe(JSON.stringify(current));
+  });
+
+  test('pending pgBorders section-formatting change round-trips as native w:sectPrChange', async () => {
+    const prior = {
+      display: 'allPages' as const,
+      offsetFrom: 'page' as const,
+      edges: {
+        top: {
+          style: 'single' as const,
+          color: { value: '#112233' as const },
+          size: 18,
+        },
+      },
+    };
+    const current = {
+      offsetFrom: 'text' as const,
+      zOrder: 'front' as const,
+      edges: {
+        left: {
+          style: 'dashed' as const,
+          color: { value: '#aabbcc' as const },
+          size: 8,
+          space: 1,
+        },
+      },
+    };
+    const source = await sectionDocxWithPageBordersChange({ prior, current });
+    const imported = await importOfficeFile(
+      new File([source], 'section-pgborders-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const section = descendants(exported, 'sectPr').find(
+      (element) => element.parentElement?.localName !== 'sectPrChange',
+    );
+    const change = directChild(section!, 'sectPrChange');
+    expect(change).toBeTruthy();
+    const priorBorders = directChild(
+      directChild(change!, 'sectPr'),
+      'pgBorders',
+    );
+    expect(priorBorders).toBeTruthy();
+    expect(
+      priorBorders?.getAttributeNS(WORD_NAMESPACE, 'display') ??
+        priorBorders?.getAttribute('w:display') ??
+        priorBorders?.getAttribute('display'),
+    ).toBe('allPages');
+    expect(
+      priorBorders?.getAttributeNS(WORD_NAMESPACE, 'offsetFrom') ??
+        priorBorders?.getAttribute('w:offsetFrom') ??
+        priorBorders?.getAttribute('offsetFrom'),
+    ).toBe('page');
+    const priorTop = directChild(priorBorders!, 'top');
+    expect(priorTop).toBeTruthy();
+    expect(
+      priorTop?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorTop?.getAttribute('w:val') ??
+        priorTop?.getAttribute('val'),
+    ).toBe('single');
+    const currentBorders = directChild(section!, 'pgBorders');
+    expect(currentBorders).toBeTruthy();
+    expect(
+      currentBorders?.getAttributeNS(WORD_NAMESPACE, 'offsetFrom') ??
+        currentBorders?.getAttribute('w:offsetFrom') ??
+        currentBorders?.getAttribute('offsetFrom'),
+    ).toBe('text');
+    expect(directChild(currentBorders!, 'left')).toBeTruthy();
+  });
+
+  test('reject restores prior pgBorders and drops the pending change', async () => {
+    const prior = {
+      edges: {
+        top: {
+          style: 'single' as const,
+          color: { value: '#010101' as const },
+          size: 6,
+        },
+      },
+    };
+    const current = {
+      edges: {
+        bottom: {
+          style: 'thick' as const,
+          color: { value: '#020202' as const },
+          size: 36,
+        },
+      },
+    };
+    const source = await sectionDocxWithPageBordersChange({ prior, current });
+    const imported = await importOfficeFile(
+      new File([source], 'section-pgborders-reject.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBeNull();
+      expect(section?.dataset.sectionPageBorders).toBe(JSON.stringify(prior));
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('live section pageBorders edits become reviewable when track changes is on', () => {
+    const prior = {
+      edges: {
+        top: {
+          style: 'single' as const,
+          color: { value: '#333333' as const },
+          size: 12,
+        },
+      },
+    };
+    const current = {
+      display: 'notFirstPage' as const,
+      edges: {
+        right: {
+          style: 'dotted' as const,
+          color: { value: '#444444' as const },
+          size: 18,
+        },
+      },
+    };
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1"',
+        ' data-section-orientation="portrait"',
+        ' data-section-page-borders="' +
+          JSON.stringify(prior).replace(/"/g, '&quot;') +
+          '">',
+        '<p>Body</p>',
+        '</section>',
+      ].join(''),
+    });
+    try {
+      const active = activeDocumentSection(editor);
+      expect(active).not.toBeNull();
+      if (!active) throw new Error('Expected an active document section.');
+      expect(
+        editor.commands.updateActiveDocumentSection({
+          ...active.layout,
+          pageBorders: current,
+        }),
+      ).toBe(true);
+      const changes = collectDocumentChanges(editor.state.doc);
+      expect(changes).toHaveLength(1);
+      expect(changes[0]?.kind).toBe('section-formatting');
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBe(
+        'section-formatting',
+      );
+      expect(
+        parseDocumentSectionFormatting(
+          section?.getAttribute('data-change-before'),
+        ),
+      ).toMatchObject({
+        pageBorders: prior,
+      });
+      expect(section?.dataset.sectionPageBorders).toBe(JSON.stringify(current));
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('imports rtlGutter-only w:sectPrChange as a reviewable section-formatting change', async () => {
     const source = await sectionDocxWithRtlGutterChange({
       prior: true,
@@ -3035,6 +3285,122 @@ async function sectionDocxWithTextDirectionChange(options: {
     new XMLSerializer().serializeToString(document),
   );
   return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function sectionDocxWithPageBordersChange(options: {
+  prior: {
+    display?: 'allPages' | 'firstPage' | 'notFirstPage';
+    offsetFrom?: 'page' | 'text';
+    zOrder?: 'front' | 'back';
+    edges: Partial<
+      Record<
+        'top' | 'left' | 'bottom' | 'right',
+        {
+          style: string;
+          color?: { value: `#${string}` };
+          size?: number;
+          space?: number;
+        }
+      >
+    >;
+  };
+  current: {
+    display?: 'allPages' | 'firstPage' | 'notFirstPage';
+    offsetFrom?: 'page' | 'text';
+    zOrder?: 'front' | 'back';
+    edges: Partial<
+      Record<
+        'top' | 'left' | 'bottom' | 'right',
+        {
+          style: string;
+          color?: { value: `#${string}` };
+          size?: number;
+          space?: number;
+        }
+      >
+    >;
+  };
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const section = descendants(document, 'sectPr').find(
+    (element) => element.parentElement?.localName !== 'sectPrChange',
+  );
+  if (!section) throw new Error('Expected body sectPr.');
+  for (const existing of Array.from(section.children).filter(
+    (child) =>
+      child.localName === 'pgBorders' || child.localName === 'sectPrChange',
+  )) {
+    existing.remove();
+  }
+  section.append(createPageBordersElement(document, options.current));
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:sectPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '43');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-10T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
+  prior.append(createPageBordersElement(document, options.prior));
+  change.append(prior);
+  section.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function createPageBordersElement(
+  document: Document,
+  value: {
+    display?: string;
+    offsetFrom?: string;
+    zOrder?: string;
+    edges: Partial<
+      Record<
+        'top' | 'left' | 'bottom' | 'right',
+        {
+          style: string;
+          color?: { value: string };
+          size?: number;
+          space?: number;
+        }
+      >
+    >;
+  },
+): Element {
+  const container = document.createElementNS(WORD_NAMESPACE, 'w:pgBorders');
+  if (value.display !== undefined) {
+    container.setAttributeNS(WORD_NAMESPACE, 'w:display', value.display);
+  }
+  if (value.offsetFrom !== undefined) {
+    container.setAttributeNS(WORD_NAMESPACE, 'w:offsetFrom', value.offsetFrom);
+  }
+  if (value.zOrder !== undefined) {
+    container.setAttributeNS(WORD_NAMESPACE, 'w:zOrder', value.zOrder);
+  }
+  for (const edge of ['top', 'left', 'bottom', 'right'] as const) {
+    const border = value.edges[edge];
+    if (!border) continue;
+    const element = document.createElementNS(WORD_NAMESPACE, `w:${edge}`);
+    element.setAttributeNS(WORD_NAMESPACE, 'w:val', border.style);
+    if (border.color?.value) {
+      const hex = border.color.value.replace(/^#/, '').toUpperCase();
+      element.setAttributeNS(WORD_NAMESPACE, 'w:color', hex);
+    }
+    if (border.size !== undefined) {
+      element.setAttributeNS(WORD_NAMESPACE, 'w:sz', String(border.size));
+    }
+    if (border.space !== undefined) {
+      element.setAttributeNS(WORD_NAMESPACE, 'w:space', String(border.space));
+    }
+    container.append(element);
+  }
+  return container;
 }
 
 async function sectionDocxWithTypeChange(options: {
