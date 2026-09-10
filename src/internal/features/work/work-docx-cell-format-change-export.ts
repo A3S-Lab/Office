@@ -1,7 +1,22 @@
 import JSZip from 'jszip';
 import { parseDocumentCellFormatting } from './work-document-cell-format-changes';
 import { normalizeDocumentCnfStyle } from './work-document-cnf-style';
+import {
+  documentTableBordersFromElement,
+  normalizeDocumentTableBorderStyle,
+  normalizeDocumentTableBorderWidth,
+  normalizeTableColor,
+  type DocumentTableBorder,
+} from './work-document-table-borders';
 import type { DocumentTablePreferredWidth } from './work-document-table-geometry';
+import {
+  DOCUMENT_CELL_FORMATTING_BORDER_EDGES,
+  docxSzFromSnapshotBorderWidth,
+  mapSnapshotBorderStyleToDocx,
+  normalizeDocumentCellFormattingBorders,
+  orderedDocumentCellFormattingBorders,
+  type DocumentCellFormattingBorders,
+} from './work-document-table-formatting-borders';
 import { descendants, directChild, parseXml } from './work-ooxml-package';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 
@@ -24,6 +39,7 @@ export class DocxCellFormattingChangePatchCollector {
   readonly fitText: boolean[] = [];
   readonly hideMark: boolean[] = [];
   readonly cnfStyles: Array<string | null> = [];
+  readonly borders: Array<DocumentCellFormattingBorders | null> = [];
 
   record(element: HTMLTableCellElement, id: number): void {
     this.noWrap.push(element.dataset.officeCellNoWrap === 'true');
@@ -35,6 +51,7 @@ export class DocxCellFormattingChangePatchCollector {
     this.cnfStyles.push(
       normalizeDocumentCnfStyle(element.dataset.officeCellCnfStyle),
     );
+    this.borders.push(cellFormattingBordersFromElement(element));
     if (
       element.dataset.changeKind !== 'cell-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -69,6 +86,7 @@ export async function patchDocxCellFormattingChanges(
   fitText: readonly boolean[] = [],
   hideMark: readonly boolean[] = [],
   cnfStyles: readonly (string | null)[] = [],
+  borders: readonly (DocumentCellFormattingBorders | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
@@ -76,7 +94,8 @@ export async function patchDocxCellFormattingChanges(
     !textDirection.some(Boolean) &&
     !fitText.some(Boolean) &&
     !hideMark.some(Boolean) &&
-    !cnfStyles.some((value) => value !== null)
+    !cnfStyles.some((value) => value !== null) &&
+    !borders.some(Boolean)
   ) {
     return buffer;
   }
@@ -105,6 +124,7 @@ export async function patchDocxCellFormattingChanges(
     const cellFitText = fitText[index] === true;
     const cellHideMark = hideMark[index] === true;
     const cellCnfStyle = cnfStyles[index] ?? null;
+    const cellBorders = borders[index] ?? null;
     index += 1;
     if (patch) {
       setCellFormattingChange(document, cell, patch);
@@ -128,6 +148,9 @@ export async function patchDocxCellFormattingChanges(
     }
     if (cellCnfStyle) {
       setCellCnfStyle(document, cell, cellCnfStyle);
+      changed = true;
+    }
+    if (setCellBorders(document, cell, cellBorders)) {
       changed = true;
     }
   }
@@ -337,8 +360,112 @@ function setCellFormattingChange(
     cnfStyle.setAttributeNS(WORD_NAMESPACE, 'w:val', formatting.cnfStyle);
     prior.append(cnfStyle);
   }
+  if (formatting.borders !== undefined) {
+    prior.append(createTcBordersElement(document, formatting.borders));
+  }
   change.append(prior);
   properties.append(change);
+}
+
+function setCellBorders(
+  document: Document,
+  cell: Element,
+  borders: DocumentCellFormattingBorders | null,
+): boolean {
+  const normalized = normalizeDocumentCellFormattingBorders(borders);
+  let properties = directChild(cell, 'tcPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    if (!normalized) return false;
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+    cell.insertBefore(properties, cell.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tcBorders' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  if (!normalized) return true;
+  properties.append(createTcBordersElement(document, normalized));
+  return true;
+}
+
+function createTcBordersElement(
+  document: Document,
+  borders: DocumentCellFormattingBorders,
+): Element {
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:tcBorders');
+  const ordered = orderedDocumentCellFormattingBorders(borders);
+  for (const edge of DOCUMENT_CELL_FORMATTING_BORDER_EDGES) {
+    const border = ordered[edge];
+    if (!border) continue;
+    const child = document.createElementNS(WORD_NAMESPACE, `w:${edge}`);
+    child.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:val',
+      mapSnapshotBorderStyleToDocx(border.style),
+    );
+    child.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:sz',
+      border.style === 'none' ? '0' : docxSzFromSnapshotBorderWidth(border.width),
+    );
+    child.setAttributeNS(WORD_NAMESPACE, 'w:space', '0');
+    child.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:color',
+      border.style === 'none'
+        ? 'auto'
+        : border.color.replace(/^#/, '').toUpperCase(),
+    );
+    element.append(child);
+  }
+  return element;
+}
+
+function cellFormattingBordersFromElement(
+  cell: HTMLTableCellElement,
+): DocumentCellFormattingBorders | null {
+  if (!hasDocumentTableCellBorderPresentation(cell)) return null;
+  const fallback = defaultCellBorderFromElement(cell);
+  const full = documentTableBordersFromElement(cell, fallback);
+  return normalizeDocumentCellFormattingBorders(full);
+}
+
+function hasDocumentTableCellBorderPresentation(
+  cell: HTMLTableCellElement,
+): boolean {
+  return Boolean(
+    Object.keys(cell.dataset).some((key) =>
+      key.startsWith('officeCellBorder'),
+    ) ||
+      cell.style.borderStyle ||
+      cell.style.borderTopStyle ||
+      cell.style.borderRightStyle ||
+      cell.style.borderBottomStyle ||
+      cell.style.borderLeftStyle,
+  );
+}
+
+function defaultCellBorderFromElement(
+  cell: HTMLTableCellElement,
+): DocumentTableBorder {
+  const legacyStyle = normalizeDocumentTableBorderStyle(
+    cell.dataset.officeCellBorderStyle || cell.style.borderStyle,
+  );
+  return {
+    color:
+      normalizeTableColor(
+        cell.dataset.officeCellBorderColor || cell.style.borderColor,
+      ) ?? '#cfd5df',
+    style: legacyStyle ?? 'solid',
+    width:
+      legacyStyle === 'none'
+        ? 0
+        : (normalizeDocumentTableBorderWidth(
+            cell.dataset.officeCellBorderWidth || cell.style.borderWidth,
+          ) ?? 1),
+  };
 }
 
 function createPreferredWidthElement(

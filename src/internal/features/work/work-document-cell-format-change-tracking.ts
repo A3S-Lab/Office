@@ -11,6 +11,13 @@ import {
 import { normalizeDocumentCnfStyle } from './work-document-cnf-style';
 import { normalizeTableColor } from './work-document-table-borders';
 import {
+  type DocumentCellFormattingBorders,
+  DOCUMENT_CELL_FORMATTING_BORDER_EDGES,
+  normalizeDocumentCellFormattingBorders,
+  orderedDocumentCellFormattingBorders,
+} from './work-document-table-formatting-borders';
+import type { DocumentTableBorder } from './work-document-table-borders';
+import {
   normalizeDocumentTableVerticalAlign,
   type DocumentTableVerticalAlign,
 } from './work-document-table-cell-formatting';
@@ -26,8 +33,8 @@ interface DocumentCellFormattingTrackingOptions {
 
 /**
  * When track-changes is on, cell verticalAlign / solid fill / margin /
- * preferred-width / noWrap / textDirection / fitText / hideMark / cnfStyle edits become reviewable
- * `cell-formatting` revisions.
+ * preferred-width / noWrap / textDirection / fitText / hideMark / cnfStyle / tcBorders
+ * edits become reviewable `cell-formatting` revisions.
  */
 export function trackDocumentCellFormattingTransaction(
   transaction: Transaction,
@@ -76,6 +83,7 @@ function cellFormatting(node: ProseMirrorNode): {
   fitText?: boolean;
   hideMark?: boolean;
   cnfStyle?: string;
+  borders?: ReturnType<typeof normalizeDocumentCellFormattingBorders>;
 } | null {
   const verticalAlign =
     normalizeDocumentTableVerticalAlign(node.attrs.verticalAlign) ?? 'top';
@@ -96,6 +104,7 @@ function cellFormatting(node: ProseMirrorNode): {
   const hideMark =
     typeof node.attrs.hideMark === 'boolean' ? node.attrs.hideMark : false;
   const cnfStyle = normalizeDocumentCnfStyle(node.attrs.cnfStyle);
+  const borders = cellFormattingBordersForSnapshot(node.attrs.borders);
   return normalizeDocumentCellFormattingSnapshot({
     verticalAlign,
     ...(fill ? { fill } : {}),
@@ -106,6 +115,9 @@ function cellFormatting(node: ProseMirrorNode): {
     fitText,
     hideMark,
     ...(cnfStyle ? { cnfStyle } : {}),
+    ...(borders
+      ? { borders: orderedDocumentCellFormattingBorders(borders) }
+      : {}),
   });
 }
 
@@ -126,6 +138,10 @@ function onlyReviewableCellFormattingChanged(
     'fitText',
     'hideMark',
     'cnfStyle',
+    'borders',
+    'borderColor',
+    'borderStyle',
+    'borderWidth',
     'cellChangeKind',
     'cellChangeId',
     'cellChangeAuthor',
@@ -154,4 +170,37 @@ function sameCellContentIgnoringFormatting(
 
 function isTableCell(node: ProseMirrorNode): boolean {
   return node.type.name === 'tableCell' || node.type.name === 'tableHeader';
+}
+
+const DEFAULT_CELL_BORDER: DocumentTableBorder = {
+  color: '#cfd5df',
+  style: 'solid',
+  width: 1,
+};
+
+function cellFormattingBordersForSnapshot(
+  value: unknown,
+): DocumentCellFormattingBorders | null {
+  const normalized = normalizeDocumentCellFormattingBorders(value);
+  if (!normalized) return null;
+  const borders: DocumentCellFormattingBorders = {};
+  for (const edge of DOCUMENT_CELL_FORMATTING_BORDER_EDGES) {
+    const border = normalized[edge];
+    if (!border || sameCellBorder(border, DEFAULT_CELL_BORDER)) continue;
+    borders[edge] = border;
+  }
+  return Object.keys(borders).length
+    ? orderedDocumentCellFormattingBorders(borders)
+    : null;
+}
+
+function sameCellBorder(
+  left: DocumentTableBorder,
+  right: DocumentTableBorder,
+): boolean {
+  return (
+    left.color === right.color &&
+    left.style === right.style &&
+    left.width === right.width
+  );
 }

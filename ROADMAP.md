@@ -208,9 +208,9 @@ a phase exits only when its evidence is complete.
   cantSplit/repeat-header/row-height/hidden/alignment/gridBefore/gridAfter/width-before/width-after/cnfStyle edits, and native export.
   Relationship-free `w:tcPrChange`
   with a prior `w:vAlign` and/or solid direct-color `w:shd` and/or `w:tcMar`
-  and/or `w:tcW` and/or `w:noWrap` and/or `w:textDirection` and/or `w:tcFitText` and/or `w:hideMark` and/or `w:cnfStyle` snapshot is reviewable as `cell-formatting`
+  and/or `w:tcW` and/or `w:noWrap` and/or `w:textDirection` and/or `w:tcFitText` and/or `w:hideMark` and/or `w:cnfStyle` and/or direct-color `w:tcBorders` snapshot is reviewable as `cell-formatting`
   with accept/reject, live track-changes for
-  vertical-align/solid-fill/cell-margin/preferred-width/noWrap/textDirection/tcFitText/hideMark/cnfStyle edits, and
+  vertical-align/solid-fill/cell-margin/preferred-width/noWrap/textDirection/tcFitText/hideMark/cnfStyle/tcBorders edits, and
   native export.   Relationship-free
   `w:sectPrChange` with a prior orientation-only or complete `w:pgSz`
   (width/height with optional orientation/code), complete seven-edge

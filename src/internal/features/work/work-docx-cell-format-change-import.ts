@@ -5,6 +5,10 @@ import {
 } from './work-document-cell-format-changes';
 import { parseDocxCnfStyleElement } from './work-document-cnf-style';
 import { normalizeTableColor } from './work-document-table-borders';
+import {
+  importedDocxCellFormattingBorders,
+  type DocumentCellFormattingBorders,
+} from './work-document-table-formatting-borders';
 import { normalizeDocumentTableVerticalAlign } from './work-document-table-cell-formatting';
 import {
   normalizeDocumentTableCellMarginOverrides,
@@ -36,6 +40,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tcFitText',
   'hideMark',
   'cnfStyle',
+  'tcBorders',
 ]);
 const SOLID_SHADING_VALUES = new Set(['clear', 'nil', 'none', '']);
 const MARGIN_SIDES = new Set([
@@ -58,8 +63,8 @@ export interface SupportedDocxCellFormattingChange {
 /**
  * Relationship-free `w:tcPrChange` whose prior snapshot contains only
  * `w:vAlign`, solid direct-color `w:shd`, `w:tcMar`, `w:tcW`, `w:noWrap`,
- * `w:textDirection`, `w:tcFitText`, `w:hideMark`, and/or `w:cnfStyle`. Broader cell
- * property sets stay on the opaque OMML path.
+ * `w:textDirection`, `w:tcFitText`, `w:hideMark`, `w:cnfStyle`, and/or direct-color
+ * `w:tcBorders`. Broader cell property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxCellFormattingChange(change: Element): boolean {
   return supportedCellFormattingChange(change) !== null;
@@ -141,7 +146,8 @@ function supportedCellFormattingChange(
         child.localName === 'textDirection' ||
         child.localName === 'tcFitText' ||
         child.localName === 'hideMark' ||
-        child.localName === 'cnfStyle'
+        child.localName === 'cnfStyle' ||
+        child.localName === 'tcBorders'
       ) {
         return false;
       }
@@ -162,6 +168,7 @@ function supportedCellFormattingChange(
     fitText?: boolean;
     hideMark?: boolean;
     cnfStyle?: string;
+    borders?: DocumentCellFormattingBorders;
   } = {};
   for (const child of children) {
     if (child.localName === 'vAlign') {
@@ -214,6 +221,12 @@ function supportedCellFormattingChange(
       const cnfStyle = parseDocxCnfStyleElement(child);
       if (!cnfStyle) return null;
       snapshot.cnfStyle = cnfStyle;
+      continue;
+    }
+    if (child.localName === 'tcBorders') {
+      const borders = importedDocxCellFormattingBorders(child, attribute);
+      if (!borders) return null;
+      snapshot.borders = borders;
     }
   }
   return {

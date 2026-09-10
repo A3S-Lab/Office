@@ -198,3 +198,97 @@ export function revisionBorderFromDocxEdge(
 export function docxSzFromSnapshotBorderWidth(width: number): string {
   return String(Math.max(2, Math.round(width * 6)));
 }
+
+export type DocumentCellFormattingBorderEdge =
+  | 'top'
+  | 'left'
+  | 'bottom'
+  | 'right';
+
+export type DocumentCellFormattingBorders = Partial<
+  Record<DocumentCellFormattingBorderEdge, DocumentTableBorder>
+>;
+
+export const DOCUMENT_CELL_FORMATTING_BORDER_EDGES: readonly DocumentCellFormattingBorderEdge[] =
+  ['top', 'left', 'bottom', 'right'];
+
+const CELL_EDGE_ALIASES: Record<string, DocumentCellFormattingBorderEdge> = {
+  top: 'top',
+  left: 'left',
+  start: 'left',
+  bottom: 'bottom',
+  right: 'right',
+  end: 'right',
+};
+
+export function normalizeDocumentCellFormattingBorders(
+  value: unknown,
+): DocumentCellFormattingBorders | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record);
+  if (!keys.length) return null;
+  if (
+    keys.some(
+      (key) =>
+        !DOCUMENT_CELL_FORMATTING_BORDER_EDGES.includes(
+          key as DocumentCellFormattingBorderEdge,
+        ),
+    )
+  ) {
+    return null;
+  }
+  const borders: DocumentCellFormattingBorders = {};
+  for (const edge of DOCUMENT_CELL_FORMATTING_BORDER_EDGES) {
+    if (!(edge in record)) continue;
+    const border = normalizeDocumentTableBorder(record[edge]);
+    if (!border) return null;
+    borders[edge] = border;
+  }
+  return Object.keys(borders).length
+    ? orderedDocumentCellFormattingBorders(borders)
+    : null;
+}
+
+export function orderedDocumentCellFormattingBorders(
+  borders: DocumentCellFormattingBorders,
+): DocumentCellFormattingBorders {
+  const ordered: DocumentCellFormattingBorders = {};
+  for (const edge of DOCUMENT_CELL_FORMATTING_BORDER_EDGES) {
+    if (borders[edge]) ordered[edge] = { ...borders[edge]! };
+  }
+  return ordered;
+}
+
+export function resolveCellFormattingBorderEdge(
+  localName: string,
+): DocumentCellFormattingBorderEdge | null {
+  return CELL_EDGE_ALIASES[localName] ?? null;
+}
+
+export function importedDocxCellFormattingBorders(
+  element: Element,
+  readAttribute: (element: Element, localName: string) => string | null,
+): DocumentCellFormattingBorders | null {
+  const children = Array.from(element.children);
+  if (!children.length) return null;
+  if (
+    children.some(
+      (child) =>
+        child.namespaceURI !== element.namespaceURI ||
+        child.children.length > 0,
+    )
+  ) {
+    return null;
+  }
+  const borders: DocumentCellFormattingBorders = {};
+  for (const child of children) {
+    const edge = resolveCellFormattingBorderEdge(child.localName);
+    if (!edge) return null;
+    if (borders[edge]) return null;
+    const border = revisionBorderFromDocxEdge(child, readAttribute);
+    if (!border) return null;
+    borders[edge] = border;
+  }
+  return orderedDocumentCellFormattingBorders(borders);
+}

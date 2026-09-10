@@ -4,6 +4,13 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:tcPrChange` priors that include direct-color `w:tcBorders`
+  are now reviewable as `cell-formatting` with accept/reject, live
+  track-changes, and native export. Theme-bound or malformed border edges stay
+  fail-closed or opaque; opaque cell fixtures stay on `hMerge`.
+
 ## 0.102.0 - 2026-09-10
 
 ### Writer

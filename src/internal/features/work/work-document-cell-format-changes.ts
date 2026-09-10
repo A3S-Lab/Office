@@ -1,5 +1,14 @@
 import { normalizeDocumentCnfStyle } from './work-document-cnf-style';
-import { normalizeTableColor } from './work-document-table-borders';
+import {
+  normalizeTableColor,
+  type DocumentTableBorder,
+  type DocumentTableCellBorders,
+} from './work-document-table-borders';
+import {
+  normalizeDocumentCellFormattingBorders,
+  orderedDocumentCellFormattingBorders,
+  type DocumentCellFormattingBorders,
+} from './work-document-table-formatting-borders';
 import {
   normalizeDocumentTableVerticalAlign,
   normalizeDocumentTableCellTextDirection,
@@ -28,7 +37,7 @@ export { normalizeDocumentTableCellTextDirection } from './work-document-table-c
 /**
  * Prior snapshot for reviewable cell-property revisions.
  * At least one of verticalAlign, fill, margins, width, noWrap, textDirection,
- * fitText, hideMark, or cnfStyle must be present.
+ * fitText, hideMark, cnfStyle, or borders must be present.
  */
 export interface DocumentCellFormattingSnapshot {
   verticalAlign?: DocumentTableVerticalAlign;
@@ -40,7 +49,10 @@ export interface DocumentCellFormattingSnapshot {
   fitText?: boolean;
   hideMark?: boolean;
   cnfStyle?: string;
+  borders?: DocumentCellFormattingBorders;
 }
+
+export type { DocumentCellFormattingBorders } from './work-document-table-formatting-borders';
 
 const MAX_CELL_FORMAT_SNAPSHOT_BYTES = 4_096;
 const MARGIN_SIDES: readonly DocumentTableCellMarginSide[] = [
@@ -60,11 +72,12 @@ export function serializeDocumentCellFormatting(attributes: {
   fitText?: unknown;
   hideMark?: unknown;
   cnfStyle?: unknown;
+  borders?: unknown;
 }): string {
   const snapshot = normalizeDocumentCellFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, textDirection, fitText, hideMark, or cnfStyle.',
+      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, textDirection, fitText, hideMark, cnfStyle, or borders.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -103,7 +116,8 @@ export function parseDocumentCellFormatting(
         key !== 'textDirection' &&
         key !== 'fitText' &&
         key !== 'hideMark' &&
-        key !== 'cnfStyle',
+        key !== 'cnfStyle' &&
+        key !== 'borders',
     )
   ) {
     return null;
@@ -123,6 +137,7 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
   fitText?: unknown;
   hideMark?: unknown;
   cnfStyle?: unknown;
+  borders?: unknown;
 }): DocumentCellFormattingSnapshot | null {
   const snapshot: DocumentCellFormattingSnapshot = {};
   if ('verticalAlign' in attributes && attributes.verticalAlign !== undefined) {
@@ -177,6 +192,11 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
     if (!cnfStyle) return null;
     snapshot.cnfStyle = cnfStyle;
   }
+  if ('borders' in attributes && attributes.borders !== undefined) {
+    const borders = normalizeDocumentCellFormattingBorders(attributes.borders);
+    if (!borders) return null;
+    snapshot.borders = orderedDocumentCellFormattingBorders(borders);
+  }
   return snapshot.verticalAlign ||
     snapshot.fill ||
     snapshot.margins ||
@@ -185,7 +205,8 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
     snapshot.textDirection !== undefined ||
     snapshot.fitText !== undefined ||
     snapshot.hideMark !== undefined ||
-    snapshot.cnfStyle !== undefined
+    snapshot.cnfStyle !== undefined ||
+    snapshot.borders !== undefined
     ? snapshot
     : null;
 }
@@ -233,7 +254,67 @@ export function restoredDocumentCellAttributes(
     ...(formatting.cnfStyle !== undefined
       ? { cnfStyle: formatting.cnfStyle }
       : {}),
+    ...(formatting.borders !== undefined
+      ? restoredCellBorderAttributes(formatting.borders)
+      : {}),
   });
+}
+
+function restoredCellBorderAttributes(
+  borders: DocumentCellFormattingBorders,
+): Record<string, unknown> {
+  const ordered = orderedDocumentCellFormattingBorders(borders);
+  const full = fullCellBordersFromPartial(ordered);
+  const representative =
+    uniformCellBorder(full) ?? full.top ?? defaultCellBorder();
+  return {
+    borders: full,
+    borderColor: representative.color,
+    borderStyle: representative.style,
+    borderWidth: representative.width,
+  };
+}
+
+function fullCellBordersFromPartial(
+  borders: DocumentCellFormattingBorders,
+): DocumentTableCellBorders {
+  const fallback = defaultCellBorder();
+  return {
+    top: borders.top ?? fallback,
+    right: borders.right ?? fallback,
+    bottom: borders.bottom ?? fallback,
+    left: borders.left ?? fallback,
+  };
+}
+
+function defaultCellBorder(): DocumentTableBorder {
+  return { color: '#cfd5df', style: 'solid', width: 1 };
+}
+
+function uniformCellBorder(
+  borders: DocumentTableCellBorders,
+): DocumentTableBorder | null {
+  const first = borders.top;
+  if (
+    sameCellBorder(borders.top, first) &&
+    sameCellBorder(borders.right, first) &&
+    sameCellBorder(borders.bottom, first) &&
+    sameCellBorder(borders.left, first)
+  ) {
+    return first;
+  }
+  return null;
+}
+
+function sameCellBorder(
+  left: DocumentTableBorder,
+  right: DocumentTableBorder,
+): boolean {
+  return (
+    left.color === right.color &&
+    left.style === right.style &&
+    left.width === right.width
+  );
 }
 
 export function preferredWidthFromCellAttributes(
@@ -318,6 +399,9 @@ function orderedSnapshot(
   if (snapshot.fitText !== undefined) ordered.fitText = snapshot.fitText;
   if (snapshot.hideMark !== undefined) ordered.hideMark = snapshot.hideMark;
   if (snapshot.cnfStyle !== undefined) ordered.cnfStyle = snapshot.cnfStyle;
+  if (snapshot.borders) {
+    ordered.borders = orderedDocumentCellFormattingBorders(snapshot.borders);
+  }
   return ordered;
 }
 

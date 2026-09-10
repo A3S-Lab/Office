@@ -952,6 +952,166 @@ describe('DOCX cell-formatting revisions', () => {
     expect(cell?.dataset.officeCellPropertyRevisionOmml).toBeTruthy();
   });
 
+  test('imports tcBorders-only w:tcPrChange as a reviewable cell-formatting change', async () => {
+    const source = await cellDocxWithBordersChange({
+      prior: {
+        top: { val: 'single', sz: '12', color: 'FF0000' },
+      },
+      current: {
+        top: { val: 'double', sz: '24', color: '0000FF' },
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-borders-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const cell = html.body.querySelector('td');
+    expect(cell?.dataset.changeKind).toBe('cell-formatting');
+    expect(cell?.dataset.officeCellPropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentCellFormatting(cell?.dataset.changeBefore)).toEqual({
+      borders: {
+        top: { color: '#ff0000', style: 'solid', width: 2 },
+      },
+    });
+    expect(cell?.dataset.officeCellBorderTopColor?.toLowerCase()).toBe(
+      '#0000ff',
+    );
+  });
+
+  test('pending tcBorders cell-formatting change round-trips as native w:tcPrChange', async () => {
+    const source = await cellDocxWithBordersChange({
+      prior: {
+        top: { val: 'single', sz: '12', color: 'FF0000' },
+      },
+      current: {
+        top: { val: 'double', sz: '24', color: '0000FF' },
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-borders-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await xmlEntry(
+      await JSZip.loadAsync(
+        await (await createArtifactBlob(imported)).arrayBuffer(),
+      ),
+      'word/document.xml',
+    );
+    const properties = directChild(descendants(exported, 'tc')[0], 'tcPr');
+    const change = directChild(properties, 'tcPrChange');
+    expect(change).toBeTruthy();
+    expect(
+      directChild(directChild(change!, 'tcPr'), 'tcBorders'),
+    ).toBeTruthy();
+    expect(directChild(properties, 'tcBorders')).toBeTruthy();
+  });
+
+  test('theme-bound tcBorders w:tcPrChange stays on the opaque cell metadata path', async () => {
+    const source = await cellDocxWithBordersChange({
+      prior: {
+        top: { val: 'single', sz: '12', color: 'FF0000', themeColor: 'accent1' },
+      },
+      current: {
+        top: { val: 'double', sz: '24', color: '0000FF' },
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-borders-opaque.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const cell = html.body.querySelector('td');
+    expect(cell?.dataset.changeKind).toBeUndefined();
+    expect(cell?.dataset.officeCellPropertyRevisionOmml).toBeTruthy();
+  });
+
+  test('live cell border edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<table><tbody><tr><td',
+        ' data-office-cell-border-top-color="#ff0000"',
+        ' data-office-cell-border-top-style="solid"',
+        ' data-office-cell-border-top-width="1"',
+        ' data-office-cell-border-right-color="#ff0000"',
+        ' data-office-cell-border-right-style="solid"',
+        ' data-office-cell-border-right-width="1"',
+        ' data-office-cell-border-bottom-color="#ff0000"',
+        ' data-office-cell-border-bottom-style="solid"',
+        ' data-office-cell-border-bottom-width="1"',
+        ' data-office-cell-border-left-color="#ff0000"',
+        ' data-office-cell-border-left-style="solid"',
+        ' data-office-cell-border-left-width="1"',
+        ' style="border-top: 1px solid #ff0000; border-right: 1px solid #ff0000; border-bottom: 1px solid #ff0000; border-left: 1px solid #ff0000">',
+        '<p>Cell</p></td></tr></tbody></table>',
+      ].join(''),
+    });
+    try {
+      let cellPos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'tableCell' && cellPos === null) {
+          cellPos = position;
+        }
+      });
+      expect(cellPos).not.toBeNull();
+      const cell = editor.state.doc.nodeAt(cellPos!)!;
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(cellPos!, undefined, {
+          ...cell.attrs,
+          borders: {
+            top: { color: '#0000ff', style: 'double', width: 2 },
+            right: cell.attrs.borders.right,
+            bottom: cell.attrs.borders.bottom,
+            left: cell.attrs.borders.left,
+          },
+          borderColor: '#0000ff',
+          borderStyle: 'double',
+          borderWidth: 2,
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'cell-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rendered = html.body.querySelector('td');
+      expect(rendered?.dataset.changeKind).toBe('cell-formatting');
+      expect(
+        parseDocumentCellFormatting(rendered?.dataset.changeBefore),
+      ).toMatchObject({
+        borders: {
+          top: { color: '#ff0000', style: 'solid', width: 1 },
+          right: { color: '#ff0000', style: 'solid', width: 1 },
+          bottom: { color: '#ff0000', style: 'solid', width: 1 },
+          left: { color: '#ff0000', style: 'solid', width: 1 },
+        },
+      });
+      expect(rendered?.dataset.officeCellBorderTopColor?.toLowerCase()).toBe(
+        '#0000ff',
+      );
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('live cell cnfStyle edits become reviewable when track changes is on', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions({
@@ -1352,6 +1512,79 @@ async function cellDocxWithFitTextChange(options: {
     new XMLSerializer().serializeToString(document),
   );
   return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function cellDocxWithBordersChange(options: {
+  prior: Record<
+    string,
+    { val: string; sz: string; color: string; themeColor?: string }
+  >;
+  current: Record<
+    string,
+    { val: string; sz: string; color: string; themeColor?: string }
+  > | null;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const cell = descendants(document, 'tc')[0];
+  const properties =
+    directChild(cell, 'tcPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+      cell.insertBefore(created, cell.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tcBorders' || child.localName === 'tcPrChange',
+  )) {
+    existing.remove();
+  }
+  if (options.current) {
+    properties.append(createCellBordersElement(document, options.current));
+  }
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:tcPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '47');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-10T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+  prior.append(createCellBordersElement(document, options.prior));
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function createCellBordersElement(
+  document: Document,
+  edges: Record<
+    string,
+    { val: string; sz: string; color: string; themeColor?: string }
+  >,
+): Element {
+  const borders = document.createElementNS(WORD_NAMESPACE, 'w:tcBorders');
+  for (const [name, edge] of Object.entries(edges)) {
+    const child = document.createElementNS(WORD_NAMESPACE, `w:${name}`);
+    child.setAttributeNS(WORD_NAMESPACE, 'w:val', edge.val);
+    child.setAttributeNS(WORD_NAMESPACE, 'w:sz', edge.sz);
+    child.setAttributeNS(WORD_NAMESPACE, 'w:space', '0');
+    child.setAttributeNS(WORD_NAMESPACE, 'w:color', edge.color);
+    if (edge.themeColor) {
+      child.setAttributeNS(WORD_NAMESPACE, 'w:themeColor', edge.themeColor);
+    }
+    borders.append(child);
+  }
+  return borders;
 }
 
 async function cellDocxWithCnfStyleChange(options: {
