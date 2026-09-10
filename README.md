@@ -371,14 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.132.0` admits safe relationship-bound external hyperlinks in
+Version `0.133.0` admits supported inline DrawingML pictures in
 whole-paragraph mark and paragraph-break revision bodies:
 
-- **External hyperlinks** — `http` / `https` / `mailto` targets with a resolved
-  `r:id` import as reviewable text-only revision content next to the existing
-  relationship-free internal hyperlink path.
-- **Boundary** — unresolved or unsafe targets, drawings, and relationship-bound
-  links inside move revisions stay fail-closed diagnostics.
+- **Inline pictures** — `wp:inline` drawings with a resolved image `r:embed`
+  import as reviewable revision content alongside visible text.
+- **Boundary** — untracked drawing siblings beside mark wrappers, floating
+  anchors, empty or malformed drawings, unresolved embeds, and picture-only
+  paragraphs stay fail-closed.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

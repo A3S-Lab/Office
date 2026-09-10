@@ -262,7 +262,7 @@ function browserParagraphBodyMatchesChange(
   }
   if (
     paragraph.querySelector(
-      'img, svg, math, audio, video, canvas, iframe, object, embed, [contenteditable="false"]',
+      'svg, math, audio, video, canvas, iframe, object, embed',
     )
   ) {
     return false;
@@ -294,6 +294,26 @@ function browserParagraphBodyMatchesChange(
       '[data-document-change="true"]:not(ins):not(del), ins:not([data-document-change="true"]), del:not([data-document-change="true"])',
     )
   ) {
+    return false;
+  }
+  for (const image of Array.from(paragraph.querySelectorAll('img'))) {
+    const revision = image.closest<HTMLElement>(
+      'ins[data-document-change="true"], del[data-document-change="true"]',
+    );
+    if (
+      !revision ||
+      !paragraph.contains(revision) ||
+      !revisions.includes(revision)
+    ) {
+      return false;
+    }
+  }
+  for (const locked of Array.from(
+    paragraph.querySelectorAll('[contenteditable="false"]'),
+  )) {
+    if (locked.tagName.toLowerCase() === 'img' || locked.querySelector('img')) {
+      continue;
+    }
     return false;
   }
   const walker = paragraph.ownerDocument.createTreeWalker(

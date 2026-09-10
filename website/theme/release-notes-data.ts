@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.133.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits inline DrawingML pictures in paragraph-mark revisions',
+      zh: 'Writer 整段标记修订准入行内 DrawingML 图片',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: whole-paragraph mark and paragraph-break revision bodies now admit supported inline DrawingML pictures (wp:inline with a resolved image r:embed) alongside visible text. Untracked drawing siblings, floating anchors, empty or malformed drawings, unresolved embeds, and picture-only paragraphs stay fail-closed.',
+      zh: 'Phase 0 保真：整段段落标记与段落分隔符修订正文现可准入受支持的行内 DrawingML 图片（带已解析图片 r:embed 的 wp:inline），并与可见文本并存。标记旁未跟踪绘图兄弟、浮动锚点、空或畸形绘图、未解析嵌入以及仅含图片的段落仍失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Inline DrawingML picture admission',
+          zh: '行内 DrawingML 图片准入',
+        },
+        detail: {
+          en: 'Resolved wp:inline image embeds import as reviewable revision content next to visible text.',
+          zh: '已解析的 wp:inline 图片嵌入与可见文本一并作为可审阅修订内容导入。',
+        },
+      },
+      {
+        title: {
+          en: 'Paragraph-break bodies included',
+          zh: '覆盖段落分隔符正文',
+        },
+        detail: {
+          en: 'The same inline-picture rules apply to eligible paragraph-break merge/split neighbors.',
+          zh: '同一行内图片规则也适用于符合条件的段落分隔符合并/拆分相邻段落。',
+        },
+      },
+      {
+        title: {
+          en: 'Untracked siblings and anchors stay fail-closed',
+          zh: '未跟踪兄弟与锚点仍失败闭合',
+        },
+        detail: {
+          en: 'Untracked drawing siblings, floating anchors, unresolved embeds, and picture-only paragraphs remain diagnostics-only.',
+          zh: '未跟踪绘图兄弟、浮动锚点、未解析嵌入与仅含图片的段落仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.133.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.133.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.132.0',
     date: '2026-09-10',
     kind: 'improved',

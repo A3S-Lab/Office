@@ -11,6 +11,8 @@ import { createWorkDocumentExtensions } from '../src/internal/features/work/work
 import {
   applyImportedDocxParagraphBreakChangeMarkers,
   createDocxExternalHyperlinkTargets,
+  createDocxImageEmbedTargets,
+  EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
   inspectDocxParagraphBreakMarkChanges,
   isIsolatedDocxParagraphBreakMarkChange,
   markDocxParagraphBreakChanges,
@@ -22,6 +24,26 @@ import {
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const WORDPROCESSING_DRAWING_NAMESPACE =
+  'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
+const DRAWINGML_NAMESPACE =
+  'http://schemas.openxmlformats.org/drawingml/2006/main';
+const PICTURE_NAMESPACE =
+  'http://schemas.openxmlformats.org/drawingml/2006/picture';
+const RELATIONSHIP_NAMESPACE =
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const IMAGE_RELATIONSHIP_TYPE = `${RELATIONSHIP_NAMESPACE}/image`;
+
+const INLINE_PICTURE_DRAWING = [
+  `<w:drawing xmlns:wp="${WORDPROCESSING_DRAWING_NAMESPACE}"`,
+  ` xmlns:a="${DRAWINGML_NAMESPACE}"`,
+  ` xmlns:pic="${PICTURE_NAMESPACE}"`,
+  ` xmlns:r="${RELATIONSHIP_NAMESPACE}">`,
+  '<wp:inline><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">',
+  '<pic:pic><pic:blipFill><a:blip r:embed="rId1"/></pic:blipFill></pic:pic>',
+  '</a:graphicData></a:graphic></wp:inline>',
+  '</w:drawing>',
+].join('');
 
 describe('DOCX paragraph-break merge/split revisions', () => {
   test('imports an eligible mark-only merge as a reviewable paragraph-break change', () => {
@@ -440,6 +462,47 @@ describe('DOCX paragraph-break merge/split revisions', () => {
     ).toBe(true);
     expect(
       markDocxParagraphBreakChanges(document, externalHyperlinks).paragraphs,
+    ).toEqual([
+      expect.objectContaining({
+        kind: 'merge',
+        author: 'Ada',
+      }),
+    ]);
+  });
+
+  test('admits inline DrawingML pictures in paragraph-break bodies', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:del w:id="21" w:author="Ada" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:r><w:t>Alpha </w:t></w:r>
+            <w:r>${INLINE_PICTURE_DRAWING}</w:r>
+          </w:p>
+          <w:p><w:r><w:t>Bravo</w:t></w:r></w:p>
+        </w:body>
+      </w:document>
+    `);
+    const imageEmbeds = createDocxImageEmbedTargets([
+      { id: 'rId1', type: IMAGE_RELATIONSHIP_TYPE },
+    ]);
+    const mark = descendants(document, 'del')[0];
+    expect(
+      mark &&
+        isIsolatedDocxParagraphBreakMarkChange(
+          mark,
+          EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+          imageEmbeds,
+        ),
+    ).toBe(true);
+    expect(
+      markDocxParagraphBreakChanges(
+        document,
+        EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+        imageEmbeds,
+      ).paragraphs,
     ).toEqual([
       expect.objectContaining({
         kind: 'merge',

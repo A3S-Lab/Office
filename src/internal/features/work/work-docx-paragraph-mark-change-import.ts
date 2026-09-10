@@ -1,4 +1,5 @@
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
+import { readDocxImageTransform } from './work-docx-image-transform';
 import {
   EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
   type DocxExternalHyperlinkTargets,
@@ -10,7 +11,51 @@ import {
 import { descendants, directChildren } from './work-ooxml-package';
 
 export type { DocxExternalHyperlinkTargets } from './work-docx-note-comment-hyperlink-relationships';
-export { createDocxExternalHyperlinkTargets } from './work-docx-note-comment-hyperlink-relationships';
+export {
+  createDocxExternalHyperlinkTargets,
+  EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+} from './work-docx-note-comment-hyperlink-relationships';
+
+const TRANSITIONAL_RELATIONSHIP_NAMESPACE =
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const STRICT_RELATIONSHIP_NAMESPACE =
+  'http://purl.oclc.org/ooxml/officeDocument/relationships';
+const IMAGE_RELATIONSHIP_TYPES = new Set([
+  `${TRANSITIONAL_RELATIONSHIP_NAMESPACE}/image`,
+  `${STRICT_RELATIONSHIP_NAMESPACE}/image`,
+]);
+const RELATIONSHIP_ID_PATTERN = /^[A-Za-z_][A-Za-z0-9_.-]{0,254}$/;
+
+/** Relationship Ids that resolve to package image parts. */
+export type DocxImageEmbedTargets = ReadonlySet<string>;
+
+export const EMPTY_DOCX_IMAGE_EMBED_TARGETS: DocxImageEmbedTargets = new Set();
+
+/**
+ * Builds the admission lookup for relationship-bound inline pictures.
+ * Only image relationship types without TargetMode (or with an empty one)
+ * are retained; hyperlinks and external targets stay absent.
+ */
+export function createDocxImageEmbedTargets(
+  relationships: Iterable<{
+    id: string;
+    type: string;
+    targetMode?: string;
+  }>,
+): DocxImageEmbedTargets {
+  const embeds = new Set<string>();
+  for (const relationship of relationships) {
+    if (
+      !RELATIONSHIP_ID_PATTERN.test(relationship.id) ||
+      !IMAGE_RELATIONSHIP_TYPES.has(relationship.type) ||
+      (relationship.targetMode ?? '').trim() !== ''
+    ) {
+      continue;
+    }
+    embeds.add(relationship.id);
+  }
+  return embeds;
+}
 
 export type DocxParagraphMarkChangeKind = 'insertion' | 'deletion';
 
@@ -34,6 +79,18 @@ interface SupportedDocxParagraphMarkChange
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
+const WORDPROCESSING_DRAWING_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
+  'http://purl.oclc.org/ooxml/drawingml/wordprocessingDrawing',
+]);
+const DRAWINGML_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/drawingml/2006/main',
+  'http://purl.oclc.org/ooxml/drawingml/main',
+]);
+const PICTURE_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/drawingml/2006/picture',
+  'http://purl.oclc.org/ooxml/drawingml/picture',
+]);
 const MAX_PARAGRAPH_MARK_CHANGES = 65_536;
 const MAX_REVISION_DATE_LENGTH = 64;
 const PARAGRAPH_MARK_CHANGE_MARKER_PATTERN =
@@ -48,6 +105,7 @@ const REVISION_ATTRIBUTES = new Set(['id', 'author', 'date']);
 export function markDocxParagraphMarkChanges(
   document: Document,
   externalHyperlinks: DocxExternalHyperlinkTargets = EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+  imageEmbeds: DocxImageEmbedTargets = EMPTY_DOCX_IMAGE_EMBED_TARGETS,
 ): ImportedDocxParagraphMarkChangeMarkers {
   const paragraphs: ImportedDocxParagraphMarkChangeMarker[] = [];
   const changeIds = new Set<string>();
@@ -55,7 +113,11 @@ export function markDocxParagraphMarkChanges(
     if (!DOCX_WORDPROCESSING_NAMESPACES.has(paragraph.namespaceURI ?? '')) {
       continue;
     }
-    const change = supportedParagraphMarkChange(paragraph, externalHyperlinks);
+    const change = supportedParagraphMarkChange(
+      paragraph,
+      externalHyperlinks,
+      imageEmbeds,
+    );
     if (!change) continue;
     if (paragraphs.length >= MAX_PARAGRAPH_MARK_CHANGES) {
       throw new Error('Document exceeds the paragraph-mark revision limit.');
@@ -118,6 +180,7 @@ export function hasImportedDocxParagraphMarkChangeMarkers(
 export function isSupportedDocxParagraphMarkChange(
   change: Element,
   externalHyperlinks: DocxExternalHyperlinkTargets = EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+  imageEmbeds: DocxImageEmbedTargets = EMPTY_DOCX_IMAGE_EMBED_TARGETS,
 ): boolean {
   const runProperties = change.parentElement;
   const properties = runProperties?.parentElement;
@@ -131,8 +194,8 @@ export function isSupportedDocxParagraphMarkChange(
     paragraph.namespaceURI === change.namespaceURI
   ) {
     return (
-      supportedParagraphMarkChange(paragraph, externalHyperlinks)?.element ===
-      change
+      supportedParagraphMarkChange(paragraph, externalHyperlinks, imageEmbeds)
+        ?.element === change
     );
   }
   return false;
@@ -170,13 +233,21 @@ const PARAGRAPH_BREAK_CHANGE_MARKER_PATTERN =
 export function isIsolatedDocxParagraphBreakMarkChange(
   change: Element,
   externalHyperlinks: DocxExternalHyperlinkTargets = EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+  imageEmbeds: DocxImageEmbedTargets = EMPTY_DOCX_IMAGE_EMBED_TARGETS,
 ): boolean {
-  return isolatedParagraphBreakMarkChange(change, externalHyperlinks) !== null;
+  return (
+    isolatedParagraphBreakMarkChange(
+      change,
+      externalHyperlinks,
+      imageEmbeds,
+    ) !== null
+  );
 }
 
 export function inspectDocxParagraphBreakMarkChanges(
   document: Document,
   externalHyperlinks: DocxExternalHyperlinkTargets = EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+  imageEmbeds: DocxImageEmbedTargets = EMPTY_DOCX_IMAGE_EMBED_TARGETS,
 ): InspectedDocxParagraphBreakMark[] {
   const inspected: InspectedDocxParagraphBreakMark[] = [];
   for (const change of [
@@ -186,6 +257,7 @@ export function inspectDocxParagraphBreakMarkChanges(
     const breakMark = isolatedParagraphBreakMarkChange(
       change,
       externalHyperlinks,
+      imageEmbeds,
     );
     if (breakMark) inspected.push(breakMark);
   }
@@ -200,6 +272,7 @@ export function inspectDocxParagraphBreakMarkChanges(
 export function markDocxParagraphBreakChanges(
   document: Document,
   externalHyperlinks: DocxExternalHyperlinkTargets = EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+  imageEmbeds: DocxImageEmbedTargets = EMPTY_DOCX_IMAGE_EMBED_TARGETS,
 ): ImportedDocxParagraphBreakChangeMarkers {
   const paragraphs: ImportedDocxParagraphBreakChangeMarker[] = [];
   const changeIds = new Set<string>();
@@ -210,6 +283,7 @@ export function markDocxParagraphBreakChanges(
     const change = reviewableParagraphBreakMarkChange(
       paragraph,
       externalHyperlinks,
+      imageEmbeds,
     );
     if (!change) continue;
     if (paragraphs.length >= MAX_PARAGRAPH_MARK_CHANGES) {
@@ -268,6 +342,7 @@ export function hasImportedDocxParagraphBreakChangeMarkers(
 function reviewableParagraphBreakMarkChange(
   paragraph: Element,
   externalHyperlinks: DocxExternalHyperlinkTargets,
+  imageEmbeds: DocxImageEmbedTargets,
 ): (InspectedDocxParagraphBreakMark & { element: Element }) | null {
   const properties = directChildren(paragraph, 'pPr').filter(
     (element) => element.namespaceURI === paragraph.namespaceURI,
@@ -286,6 +361,7 @@ function reviewableParagraphBreakMarkChange(
   const inspected = isolatedParagraphBreakMarkChange(
     revision,
     externalHyperlinks,
+    imageEmbeds,
   );
   if (!inspected) return null;
   if (
@@ -293,6 +369,7 @@ function reviewableParagraphBreakMarkChange(
       paragraph,
       inspected.kind,
       externalHyperlinks,
+      imageEmbeds,
     )
   ) {
     return null;
@@ -304,6 +381,7 @@ function paragraphBreakNeighborIsEligible(
   paragraph: Element,
   kind: DocxParagraphBreakMarkKind,
   externalHyperlinks: DocxExternalHyperlinkTargets,
+  imageEmbeds: DocxImageEmbedTargets,
 ): boolean {
   const sibling =
     kind === 'merge'
@@ -317,6 +395,7 @@ function paragraphBreakNeighborIsEligible(
     sibling,
     properties,
     externalHyperlinks,
+    imageEmbeds,
   );
 }
 
@@ -365,6 +444,7 @@ function previousWordParagraphSibling(paragraph: Element): Element | null {
 function isolatedParagraphBreakMarkChange(
   change: Element,
   externalHyperlinks: DocxExternalHyperlinkTargets,
+  imageEmbeds: DocxImageEmbedTargets,
 ): InspectedDocxParagraphBreakMark | null {
   const runProperties = change.parentElement;
   const properties = runProperties?.parentElement;
@@ -381,8 +461,8 @@ function isolatedParagraphBreakMarkChange(
     return null;
   }
   if (
-    supportedParagraphMarkChange(paragraph, externalHyperlinks)?.element ===
-    change
+    supportedParagraphMarkChange(paragraph, externalHyperlinks, imageEmbeds)
+      ?.element === change
   ) {
     return null;
   }
@@ -395,7 +475,12 @@ function isolatedParagraphBreakMarkChange(
   const parsed = paragraphMarkChangeFromElement(change);
   if (!parsed) return null;
   if (
-    !paragraphBodyIsUntrackedTextOnly(paragraph, properties, externalHyperlinks)
+    !paragraphBodyIsUntrackedTextOnly(
+      paragraph,
+      properties,
+      externalHyperlinks,
+      imageEmbeds,
+    )
   ) {
     return null;
   }
@@ -412,19 +497,23 @@ function isolatedParagraphBreakMarkChange(
  * marked paragraph and its eligible neighbor. Soft breaks, tabs, carriage
  * returns, last-rendered page breaks, page-number and date-field glyphs,
  * non-breaking and soft hyphens, empty/`rPr`-only runs, relationship-free
- * internal hyperlinks, safe relationship-bound external hyperlinks, and
- * relationship-free bookmarks match the whole-paragraph mark admission set;
- * drawings, tracked wrappers, and unsafe or unresolved links stay fail-closed.
+ * internal hyperlinks, safe relationship-bound external hyperlinks,
+ * relationship-free bookmarks, and supported inline DrawingML pictures match
+ * the whole-paragraph mark admission set; floating anchors, untracked drawing
+ * siblings, tracked wrappers, and unsafe or unresolved links stay fail-closed.
  */
 function paragraphBodyIsUntrackedTextOnly(
   paragraph: Element,
   properties: Element | undefined,
   externalHyperlinks: DocxExternalHyperlinkTargets,
+  imageEmbeds: DocxImageEmbedTargets,
 ): boolean {
   const body = directChildren(paragraph).filter(
     (element) => element !== properties,
   );
   if (!body.length) return true;
+  let hasText = false;
+  let hasPicture = false;
   for (const child of body) {
     if (child.namespaceURI !== paragraph.namespaceURI) return false;
     if (
@@ -438,7 +527,7 @@ function paragraphBodyIsUntrackedTextOnly(
       if (!isAdmittedHyperlink(child, externalHyperlinks)) return false;
       const runs = directChildren(child);
       if (!runs.length) return false;
-      let hasText = false;
+      let linkHasText = false;
       for (const run of runs) {
         if (
           run.localName !== 'r' ||
@@ -448,17 +537,22 @@ function paragraphBodyIsUntrackedTextOnly(
         ) {
           return false;
         }
-        hasText ||= runHasVisibleText(run, 'insertion');
+        linkHasText ||= runHasVisibleText(run, 'insertion');
       }
-      if (!hasText) return false;
+      if (!linkHasText) return false;
+      hasText = true;
       continue;
     }
     if (child.localName !== 'r') return false;
-    if (!runIsTextOnly(child, 'insertion') || runHasTrackedMark(child)) {
-      return false;
+    if (runHasTrackedMark(child)) return false;
+    if (runIsSupportedInlinePicture(child, imageEmbeds)) {
+      hasPicture = true;
+      continue;
     }
+    if (!runIsTextOnly(child, 'insertion')) return false;
+    hasText ||= runHasVisibleText(child, 'insertion');
   }
-  return true;
+  return !hasPicture || hasText;
 }
 
 function runHasTrackedMark(run: Element): boolean {
@@ -476,6 +570,7 @@ function runHasTrackedMark(run: Element): boolean {
 function supportedParagraphMarkChange(
   paragraph: Element,
   externalHyperlinks: DocxExternalHyperlinkTargets,
+  imageEmbeds: DocxImageEmbedTargets,
 ): SupportedDocxParagraphMarkChange | null {
   const properties = directChildren(paragraph, 'pPr').filter(
     (element) => element.namespaceURI === paragraph.namespaceURI,
@@ -508,6 +603,7 @@ function supportedParagraphMarkChange(
       properties[0],
       change,
       externalHyperlinks,
+      imageEmbeds,
     )
     ? { element: revision, ...change }
     : null;
@@ -550,6 +646,7 @@ function paragraphBodyMatchesChange(
   properties: Element | undefined,
   change: Omit<ImportedDocxParagraphMarkChangeMarker, 'marker'>,
   externalHyperlinks: DocxExternalHyperlinkTargets,
+  imageEmbeds: DocxImageEmbedTargets,
 ): boolean {
   const body = directChildren(paragraph).filter(
     (element) => element !== properties,
@@ -561,7 +658,8 @@ function paragraphBodyMatchesChange(
   // Drawings, unsafe relationship-bound hyperlinks, and mismatched authors stay
   // excluded. Relationship-free bookmarkStart/End markers and untracked
   // text-only runs (including empty/rPr-only) may appear as siblings of the
-  // revision wrappers without blocking admission.
+  // revision wrappers without blocking admission. Supported inline pictures
+  // are admitted only inside the matching wrappers, not as untracked siblings.
   let sawRevision = false;
   for (const revision of body) {
     if (
@@ -584,7 +682,12 @@ function paragraphBodyMatchesChange(
       revision.localName !== expectedName ||
       revision.namespaceURI !== paragraph.namespaceURI ||
       hasUnsupportedWordAttributes(revision) ||
-      !revisionBodyIsTextOnly(revision, change.kind, externalHyperlinks)
+      !revisionBodyIsTextOnly(
+        revision,
+        change.kind,
+        externalHyperlinks,
+        imageEmbeds,
+      )
     ) {
       return false;
     }
@@ -608,6 +711,7 @@ function revisionBodyIsTextOnly(
   revision: Element,
   kind: DocxParagraphMarkChangeKind,
   externalHyperlinks: DocxExternalHyperlinkTargets,
+  imageEmbeds: DocxImageEmbedTargets,
 ): boolean {
   const children = directChildren(revision);
   if (!children.length) return false;
@@ -615,6 +719,7 @@ function revisionBodyIsTextOnly(
   for (const child of children) {
     if (child.namespaceURI !== revision.namespaceURI) return false;
     if (child.localName === 'r') {
+      if (runIsSupportedInlinePicture(child, imageEmbeds)) continue;
       if (!runIsTextOnly(child, kind)) return false;
       hasText ||= runHasVisibleText(child, kind);
       continue;
@@ -645,6 +750,94 @@ function revisionBodyIsTextOnly(
     return false;
   }
   return hasText;
+}
+
+/**
+ * Supported inline DrawingML picture run: optional rPr plus exactly one
+ * w:drawing that resolves to a package image embed with a supported transform.
+ */
+function runIsSupportedInlinePicture(
+  run: Element,
+  imageEmbeds: DocxImageEmbedTargets,
+): boolean {
+  if (!DOCX_WORDPROCESSING_NAMESPACES.has(run.namespaceURI ?? '')) return false;
+  const children = directChildren(run);
+  const properties = children.filter(
+    (child) =>
+      child.localName === 'rPr' && child.namespaceURI === run.namespaceURI,
+  );
+  if (properties.length > 1) return false;
+  const drawings = children.filter(
+    (child) =>
+      child.localName === 'drawing' && child.namespaceURI === run.namespaceURI,
+  );
+  if (drawings.length !== 1) return false;
+  for (const child of children) {
+    if (child.namespaceURI !== run.namespaceURI) return false;
+    if (child.localName === 'rPr') {
+      if (
+        Array.from(child.querySelectorAll('*')).some(
+          (descendant) => descendant.namespaceURI !== run.namespaceURI,
+        )
+      ) {
+        return false;
+      }
+      continue;
+    }
+    if (child.localName !== 'drawing') return false;
+  }
+  return isSupportedInlinePictureDrawing(drawings[0] as Element, imageEmbeds);
+}
+
+function isSupportedInlinePictureDrawing(
+  drawing: Element,
+  imageEmbeds: DocxImageEmbedTargets,
+): boolean {
+  if (!DOCX_WORDPROCESSING_NAMESPACES.has(drawing.namespaceURI ?? '')) {
+    return false;
+  }
+  const containers = directChildren(drawing).filter(
+    (element) =>
+      (element.localName === 'anchor' || element.localName === 'inline') &&
+      WORDPROCESSING_DRAWING_NAMESPACES.has(element.namespaceURI ?? ''),
+  );
+  if (containers.length !== 1 || containers[0]?.localName !== 'inline') {
+    return false;
+  }
+  const container = containers[0] as Element;
+  const graphicData = descendants(container, 'graphicData').filter((element) =>
+    DRAWINGML_NAMESPACES.has(element.namespaceURI ?? ''),
+  );
+  const pictures = descendants(container, 'pic').filter((element) =>
+    PICTURE_NAMESPACES.has(element.namespaceURI ?? ''),
+  );
+  const blips = descendants(container, 'blip').filter((element) =>
+    DRAWINGML_NAMESPACES.has(element.namespaceURI ?? ''),
+  );
+  if (
+    graphicData.length !== 1 ||
+    !PICTURE_NAMESPACES.has(graphicData[0]?.getAttribute('uri') ?? '') ||
+    pictures.length !== 1 ||
+    blips.length !== 1
+  ) {
+    return false;
+  }
+  const embedId = relationshipEmbedId(blips[0] as Element);
+  return (
+    Boolean(embedId && imageEmbeds.has(embedId)) &&
+    readDocxImageTransform(drawing).supported
+  );
+}
+
+function relationshipEmbedId(element: Element): string | null {
+  const matches = Array.from(element.attributes).filter(
+    (item) =>
+      xmlAttributeLocalName(item) === 'embed' &&
+      RELATIONSHIP_NAMESPACES.has(xmlAttributeNamespace(element, item) ?? ''),
+  );
+  if (matches.length !== 1) return null;
+  const value = matches[0]?.value.trim() ?? '';
+  return value || null;
 }
 
 function runIsTextOnly(

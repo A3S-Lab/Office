@@ -44,14 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.132.0)
+## What's new on `main` (0.133.0)
 
-Writer Phase 0 admits safe relationship-bound external hyperlinks in
-whole-paragraph mark and paragraph-break revision bodies:
+Writer Phase 0 admits supported inline DrawingML pictures in whole-paragraph
+mark and paragraph-break revision bodies:
 
-- `http` / `https` / `mailto` targets with a resolved `r:id` import as
-  reviewable text-only content next to relationship-free internal links.
-- Unresolved or unsafe targets and drawings stay fail-closed.
+- `wp:inline` drawings with a resolved image `r:embed` import alongside
+  visible text as reviewable revision content.
+- Untracked drawing siblings, floating anchors, and picture-only paragraphs
+  stay fail-closed.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

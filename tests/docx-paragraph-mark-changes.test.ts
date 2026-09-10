@@ -11,6 +11,8 @@ import { createWorkDocumentExtensions } from '../src/internal/features/work/work
 import {
   applyImportedDocxParagraphMarkChangeMarkers,
   createDocxExternalHyperlinkTargets,
+  createDocxImageEmbedTargets,
+  EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
   inspectDocxParagraphBreakMarkChanges,
   isIsolatedDocxParagraphBreakMarkChange,
   isSupportedDocxParagraphMarkChange,
@@ -26,6 +28,26 @@ const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const STRICT_WORD_NAMESPACE =
   'http://purl.oclc.org/ooxml/wordprocessingml/main';
+const WORDPROCESSING_DRAWING_NAMESPACE =
+  'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
+const DRAWINGML_NAMESPACE =
+  'http://schemas.openxmlformats.org/drawingml/2006/main';
+const PICTURE_NAMESPACE =
+  'http://schemas.openxmlformats.org/drawingml/2006/picture';
+const RELATIONSHIP_NAMESPACE =
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const IMAGE_RELATIONSHIP_TYPE = `${RELATIONSHIP_NAMESPACE}/image`;
+
+const INLINE_PICTURE_DRAWING = [
+  `<w:drawing xmlns:wp="${WORDPROCESSING_DRAWING_NAMESPACE}"`,
+  ` xmlns:a="${DRAWINGML_NAMESPACE}"`,
+  ` xmlns:pic="${PICTURE_NAMESPACE}"`,
+  ` xmlns:r="${RELATIONSHIP_NAMESPACE}">`,
+  '<wp:inline><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">',
+  '<pic:pic><pic:blipFill><a:blip r:embed="rId1"/></pic:blipFill></pic:pic>',
+  '</a:graphicData></a:graphic></wp:inline>',
+  '</w:drawing>',
+].join('');
 
 describe('DOCX paragraph-mark revisions', () => {
   test.each([
@@ -272,6 +294,50 @@ describe('DOCX paragraph-mark revisions', () => {
     editor.destroy();
   });
 
+  test('admits inline DrawingML pictures inside whole-paragraph mark revision wrappers', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:ins w:id="91" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:ins w:id="92" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
+              <w:r><w:t>Caption </w:t></w:r>
+              <w:r>${INLINE_PICTURE_DRAWING}</w:r>
+            </w:ins>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const imageEmbeds = createDocxImageEmbedTargets([
+      { id: 'rId1', type: IMAGE_RELATIONSHIP_TYPE },
+    ]);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(
+      mark &&
+        isSupportedDocxParagraphMarkChange(
+          mark,
+          EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+          imageEmbeds,
+        ),
+    ).toBe(true);
+    expect(
+      markDocxParagraphMarkChanges(
+        document,
+        EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+        imageEmbeds,
+      ).paragraphs,
+    ).toEqual([
+      expect.objectContaining({
+        id: 'docx-paragraph-mark-change-91',
+        kind: 'insertion',
+      }),
+    ]);
+  });
+
   test('still rejects drawings beside whole-paragraph mark revisions', () => {
     const document = wordXml(`
       <w:p>
@@ -286,6 +352,107 @@ describe('DOCX paragraph-mark revisions', () => {
       (revision) => revision.parentElement?.localName === 'rPr',
     );
     expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(false);
+    expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([]);
+  });
+
+  test('rejects floating-anchor pictures inside whole-paragraph mark revisions', () => {
+    const drawing = [
+      `<w:drawing xmlns:wp="${WORDPROCESSING_DRAWING_NAMESPACE}"`,
+      ` xmlns:a="${DRAWINGML_NAMESPACE}"`,
+      ` xmlns:pic="${PICTURE_NAMESPACE}"`,
+      ` xmlns:r="${RELATIONSHIP_NAMESPACE}">`,
+      '<wp:anchor><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">',
+      '<pic:pic><pic:blipFill><a:blip r:embed="rId1"/></pic:blipFill></pic:pic>',
+      '</a:graphicData></a:graphic></wp:anchor>',
+      '</w:drawing>',
+    ].join('');
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:ins w:id="93" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:ins w:id="94" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
+              <w:r><w:t>Caption </w:t></w:r>
+              <w:r>${drawing}</w:r>
+            </w:ins>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const imageEmbeds = createDocxImageEmbedTargets([
+      { id: 'rId1', type: IMAGE_RELATIONSHIP_TYPE },
+    ]);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(
+      mark &&
+        isSupportedDocxParagraphMarkChange(
+          mark,
+          EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+          imageEmbeds,
+        ),
+    ).toBe(false);
+    expect(
+      markDocxParagraphMarkChanges(
+        document,
+        EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+        imageEmbeds,
+      ).paragraphs,
+    ).toEqual([]);
+  });
+
+  test('rejects empty drawings inside whole-paragraph mark revisions', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:pPr><w:rPr>
+          <w:ins w:id="95" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+        </w:rPr></w:pPr>
+        <w:ins w:id="96" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
+          <w:r><w:t>Caption </w:t></w:r>
+          <w:r><w:drawing/></w:r>
+        </w:ins>
+      </w:p>
+    `);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(false);
+    expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([]);
+  });
+
+  test('rejects unresolved image embeds inside whole-paragraph mark revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:ins w:id="97" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:ins w:id="98" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
+              <w:r><w:t>Caption </w:t></w:r>
+              <w:r>${INLINE_PICTURE_DRAWING}</w:r>
+            </w:ins>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(false);
+    expect(
+      mark &&
+        isSupportedDocxParagraphMarkChange(
+          mark,
+          EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+          createDocxImageEmbedTargets([
+            { id: 'rId9', type: IMAGE_RELATIONSHIP_TYPE },
+          ]),
+        ),
+    ).toBe(false);
     expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([]);
   });
 
