@@ -371,14 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.119.0` makes section type revisions reviewable:
+Version `0.120.0` makes section page-border revisions reviewable:
 
-- **Section break type** — relationship-free `sectPrChange` priors with known
-  `type` (`nextPage`/`nextColumn`/`continuous`/`evenPage`/`oddPage`) become
-  reviewable `section-formatting` via the existing `breakAfter` model, with
-  accept/reject, live track-changes, and native DOCX export.
-- **Boundary** — unknown attributes/values stay fail-closed; opaque section
-  fixtures stay on `pgBorders`.
+- **Section page borders** — relationship-free `sectPrChange` priors with bounded
+  `pgBorders` (optional `display` / `offsetFrom` / `zOrder` plus ordered
+  `top` / `left` / `bottom` / `right` edges) become reviewable
+  `section-formatting` via the existing `pageBorders` model, with accept/reject,
+  live track-changes, and native DOCX export.
+- **Boundary** — unknown attributes/values and nested track-change children stay
+  fail-closed; opaque section fixtures stay on `printerSettings`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
