@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.139.0 - 2026-09-11
+
+### Writer
+
+- Companion `w:move*Range*` bookmarks that enclose a simple `w:sdt` are now
+  admitted on import when at most one `w:sdt` contains the supported text-only
+  move (paragraph or table) and may carry `w:sdtPr` chrome. Nested SDT, SDT
+  beside the move, nested tables, and section sandwiches stay fail-closed.
+
 ## 0.138.0 - 2026-09-10
 
 ### Writer

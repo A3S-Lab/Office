@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.139.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits simple SDT-wrapped companion move-range bookmarks',
+      zh: 'Writer 准入简单 SDT 包装的 companion 移动范围书签',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: companion w:move*Range* bookmarks are admitted on import when at most one w:sdt contains the supported text-only move (paragraph or table) and may carry w:sdtPr chrome. Nested SDT, SDT beside the move, nested tables, and section sandwiches stay fail-closed.',
+      zh: 'Phase 0 保真：至多一个含受支持纯文本移动（段落或表格）的 w:sdt（可带 w:sdtPr chrome）时，companion w:move*Range* 书签可在导入时准入。嵌套 SDT、移动旁的 SDT、嵌套表与分节 sandwich 仍失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Simple SDT companions',
+          zh: '简单 SDT companion',
+        },
+        detail: {
+          en: 'Body-level move*Range* Start/End around one simple w:sdt keep matching bookmarks with the text move.',
+          zh: '正文级 move*Range* Start/End 夹住一个简单 w:sdt 时，仍与文字移动保留匹配书签。',
+        },
+      },
+      {
+        title: {
+          en: 'sdtPr chrome allowed',
+          zh: '允许 sdtPr chrome',
+        },
+        detail: {
+          en: 'The admitted SDT may carry w:sdtPr property chrome beside w:sdtContent.',
+          zh: '准入的 SDT 可在 w:sdtContent 旁携带 w:sdtPr 属性 chrome。',
+        },
+      },
+      {
+        title: {
+          en: 'Nested SDT and nested tables stay fail-closed',
+          zh: '嵌套 SDT 与嵌套表仍失败闭合',
+        },
+        detail: {
+          en: 'Nested SDT, SDT beside the move, nested tables, and section sandwiches stay diagnostics-only.',
+          zh: '嵌套 SDT、移动旁的 SDT、嵌套表与分节 sandwich 仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.139.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.139.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.138.0',
     date: '2026-09-10',
     kind: 'improved',

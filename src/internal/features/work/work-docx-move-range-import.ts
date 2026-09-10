@@ -15,7 +15,7 @@ const MAX_MOVE_DATE_LENGTH = 64;
 const START_ATTRIBUTES = new Set(['id', 'author', 'date', 'name']);
 const END_ATTRIBUTES = new Set(['id']);
 const SECTION_BREAK = 'sectPr';
-const ALWAYS_BLOCKED_CONTAINERS = new Set(['sdt', SECTION_BREAK]);
+const ALWAYS_BLOCKED_CONTAINERS = new Set([SECTION_BREAK]);
 const TABLE_CHROME = new Set([
   'tblPr',
   'tblGrid',
@@ -23,6 +23,7 @@ const TABLE_CHROME = new Set([
   'trPr',
   'tcPr',
 ]);
+const SDT_CHROME = new Set(['sdtPr']);
 const OFF_PATH_CONTENT = new Set(['p', MOVE_FROM, MOVE_TO, 'ins', 'del']);
 const TRACKED_REVISION_NAMES = new Set([MOVE_FROM, MOVE_TO, 'ins', 'del']);
 const BOOKMARK_START_ATTRIBUTES = new Set(['id', 'name']);
@@ -47,9 +48,11 @@ export interface DocxMoveRangeCompanion {
  * uniquely sandwich each supported move wrapper in document order (immediate
  * siblings, cross-paragraph placement including across section breaks, or one
  * table with the move in exactly one cell and allowlisted chrome / sibling
- * cell text-only content). They may be stripped after capture so the text
- * move stays reviewable. Nested-table, SDT, section-sandwich, tracked or
- * rich sibling-cell content, and unpaired markers stay fail-closed. */
+ * cell text-only content, or one simple `w:sdt` whose content path holds the
+ * move's paragraph or table). They may be stripped after capture so the text
+ * move stays reviewable. Nested-table, nested/sibling SDT, section-sandwich,
+ * tracked or rich sibling-cell content, and unpaired markers stay
+ * fail-closed. */
 export function companionDocxMoveRangeBookmarks(
   document: Document,
   movePairs: ReadonlyArray<{ from: Element; to: Element }>,
@@ -132,10 +135,11 @@ function companionForMovePair(
     return null;
   }
   // Each side's sandwich must stay move-only aside from allowlisted table
-  // chrome and sibling-cell text-only content (nested tables, SDT, section
-  // breaks, and tracked/rich sibling cells remain fail-closed via
-  // sandwichContainsOnlyMove). The destination may live in a later section
-  // than the source; that does not block companion admission.
+  // chrome, sibling-cell text-only content, and one simple SDT wrapper
+  // (nested tables, nested/sibling SDT, section breaks, and tracked/rich
+  // sibling cells remain fail-closed via sandwichContainsOnlyMove). The
+  // destination may live in a later section than the source; that does not
+  // block companion admission.
   return { rangeId, rangeName, from, to, markers };
 }
 
@@ -183,11 +187,11 @@ function findSandwichMarkers(
 /**
  * Every element strictly between the range bookmarks must lie on the move
  * wrapper's ancestor chain, be the wrapper, be inside the wrapper, be
- * allowlisted table chrome on the move table, or be untracked text-only
- * content in a sibling cell of that same table. At most one `w:tbl` may
- * appear, it must contain the move in exactly one `w:tc`, and `w:sdt` /
- * `w:sectPr` stay blocked. Nested tables, tracked revisions, and rich
- * sibling-cell content reject.
+ * allowlisted table chrome on the move table, be allowlisted `w:sdtPr`
+ * chrome on one simple move SDT, or be untracked text-only content in a
+ * sibling cell of that same table. At most one `w:tbl` and one `w:sdt` may
+ * appear; each must contain the move. `w:sectPr`, nested tables, nested or
+ * off-path SDTs, tracked revisions, and rich sibling-cell content reject.
  */
 function sandwichContainsOnlyMove(
   start: Element,
@@ -196,10 +200,12 @@ function sandwichContainsOnlyMove(
 ): boolean {
   const moveTable = nearestAncestorNamed(move, 'tbl');
   const moveCell = nearestAncestorNamed(move, 'tc');
+  const moveSdt = nearestAncestorNamed(move, 'sdt');
   if (moveTable && !moveCell) return false;
 
   let sawMove = false;
   let tableCount = 0;
+  let sdtCount = 0;
   for (const element of elementsBetween(start, end)) {
     if (element === move) {
       sawMove = true;
@@ -207,6 +213,11 @@ function sandwichContainsOnlyMove(
     }
     if (move.contains(element)) continue;
     if (ALWAYS_BLOCKED_CONTAINERS.has(element.localName)) return false;
+    if (element.localName === 'sdt') {
+      sdtCount += 1;
+      if (sdtCount > 1 || !element.contains(move)) return false;
+      continue;
+    }
     if (element.localName === 'tbl') {
       tableCount += 1;
       if (tableCount > 1 || !element.contains(move)) return false;
@@ -214,6 +225,9 @@ function sandwichContainsOnlyMove(
     }
     if (element.contains(move)) continue;
     if (isTableChromeOnMovePath(element, moveTable)) {
+      continue;
+    }
+    if (isSdtChromeOnMovePath(element, moveSdt)) {
       continue;
     }
     if (isAdmittedSiblingTableContent(element, moveTable, moveCell)) {
@@ -269,6 +283,21 @@ function isTableChromeOnMovePath(
     default:
       return false;
   }
+}
+
+/**
+ * Property chrome under the one admitted `w:sdt` that contains the move may
+ * appear beside `w:sdtContent`. Nested SDTs, tracked revisions, and
+ * non-wordprocessing markup stay fail-closed.
+ */
+function isSdtChromeOnMovePath(
+  element: Element,
+  moveSdt: Element | null,
+): boolean {
+  const chrome = nearestSdtChrome(element);
+  if (!chrome || chromeContainsTrackedRevision(chrome)) return false;
+  if (!isWordprocessingOnlySubtree(chrome)) return false;
+  return moveSdt !== null && chrome.parentElement === moveSdt;
 }
 
 /**
@@ -381,6 +410,28 @@ function nearestTableChrome(element: Element): Element | null {
   while (current) {
     if (TABLE_CHROME.has(current.localName)) return current;
     if (
+      current.localName === 'tbl' ||
+      current.localName === 'tr' ||
+      current.localName === 'tc' ||
+      current.localName === 'p' ||
+      current.localName === 'body' ||
+      current.localName === 'hdr' ||
+      current.localName === 'ftr'
+    ) {
+      return null;
+    }
+    current = current.parentElement;
+  }
+  return null;
+}
+
+function nearestSdtChrome(element: Element): Element | null {
+  let current: Element | null = element;
+  while (current) {
+    if (SDT_CHROME.has(current.localName)) return current;
+    if (
+      current.localName === 'sdt' ||
+      current.localName === 'sdtContent' ||
       current.localName === 'tbl' ||
       current.localName === 'tr' ||
       current.localName === 'tc' ||

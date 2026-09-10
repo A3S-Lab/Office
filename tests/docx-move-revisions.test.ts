@@ -1165,18 +1165,140 @@ describe('DOCX move revisions', () => {
     expect(descendants(document, 'moveFromRangeStart')).toHaveLength(1);
   });
 
-  test('rejects companion move-range bookmarks that sandwich an SDT with the move', () => {
+  test('imports companion move-range bookmarks around a simple SDT paragraph move', () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}">
         <w:body>
           <w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
           <w:sdt>
+            <w:sdtPr><w:alias w:val="moved"/></w:sdtPr>
             <w:sdtContent>
               <w:p>
                 <w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom>
               </w:p>
             </w:sdtContent>
           </w:sdt>
+          <w:moveFromRangeEnd w:id="0"/>
+          <w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:p>
+            <w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:t>old</w:t></w:r></w:moveTo>
+          </w:p>
+          <w:moveToRangeEnd w:id="0"/>
+        </w:body>
+      </w:document>
+    `);
+    const markers = markDocxTextChanges(document);
+    expect(markers.changes).toEqual([
+      expect.objectContaining({
+        kind: 'move',
+        moveRole: 'from',
+        moveRangeId: '0',
+        moveRangeName: 'move0',
+      }),
+      expect.objectContaining({
+        kind: 'move',
+        moveRole: 'to',
+        moveRangeId: '0',
+        moveRangeName: 'move0',
+      }),
+    ]);
+    expect(descendants(document, 'moveFromRangeStart')).toHaveLength(0);
+    expect(descendants(document, 'sdt')).toHaveLength(1);
+  });
+
+  test('imports companion move-range bookmarks around a simple SDT table move', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:sdt>
+            <w:sdtContent>
+              <w:tbl>
+                <w:tblPr/>
+                <w:tblGrid><w:tblGridCol/></w:tblGrid>
+                <w:tr>
+                  <w:tc>
+                    <w:tcPr/>
+                    <w:p>
+                      <w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom>
+                    </w:p>
+                  </w:tc>
+                </w:tr>
+              </w:tbl>
+            </w:sdtContent>
+          </w:sdt>
+          <w:moveFromRangeEnd w:id="0"/>
+          <w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:p>
+            <w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:t>old</w:t></w:r></w:moveTo>
+          </w:p>
+          <w:moveToRangeEnd w:id="0"/>
+        </w:body>
+      </w:document>
+    `);
+    const markers = markDocxTextChanges(document);
+    expect(markers.changes).toEqual([
+      expect.objectContaining({
+        kind: 'move',
+        moveRole: 'from',
+        moveRangeId: '0',
+        moveRangeName: 'move0',
+      }),
+      expect.objectContaining({
+        kind: 'move',
+        moveRole: 'to',
+        moveRangeId: '0',
+        moveRangeName: 'move0',
+      }),
+    ]);
+    expect(descendants(document, 'moveFromRangeStart')).toHaveLength(0);
+    expect(descendants(document, 'sdt')).toHaveLength(1);
+    expect(descendants(document, 'tbl')).toHaveLength(1);
+  });
+
+  test('rejects companion move-range bookmarks that sandwich nested SDTs', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:sdt>
+            <w:sdtContent>
+              <w:sdt>
+                <w:sdtContent>
+                  <w:p>
+                    <w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom>
+                  </w:p>
+                </w:sdtContent>
+              </w:sdt>
+            </w:sdtContent>
+          </w:sdt>
+          <w:moveFromRangeEnd w:id="0"/>
+          <w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:p>
+            <w:moveTo w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:t>old</w:t></w:r></w:moveTo>
+          </w:p>
+          <w:moveToRangeEnd w:id="0"/>
+        </w:body>
+      </w:document>
+    `);
+    const markers = markDocxTextChanges(document);
+    expect(markers.changes.every((change) => !change.moveRangeId)).toBe(true);
+    expect(descendants(document, 'moveFromRangeStart')).toHaveLength(1);
+  });
+
+  test('rejects companion move-range bookmarks when an SDT sits beside the move', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:moveFromRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
+          <w:sdt>
+            <w:sdtContent>
+              <w:p><w:r><w:t>extra</w:t></w:r></w:p>
+            </w:sdtContent>
+          </w:sdt>
+          <w:p>
+            <w:moveFrom w:id="7" w:author="Ada" w:date="2026-09-01T00:00:00Z"><w:r><w:delText>old</w:delText></w:r></w:moveFrom>
+          </w:p>
           <w:moveFromRangeEnd w:id="0"/>
           <w:moveToRangeStart w:id="0" w:author="Ada" w:date="2026-09-01T00:00:00Z" w:name="move0"/>
           <w:p>

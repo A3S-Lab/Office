@@ -773,20 +773,21 @@ DOCX export first gives the `docx` writer transient negative IDs, then rewrites
 those wrappers to native `w:moveFrom` and `w:moveTo` elements with the shared
 positive ID, author, and UTC date. Companion `w:move*Range*` bookmarks that
 uniquely sandwich each supported side also round-trip, including when the
-destination lives in a later section than the source or when body-level
+destination lives in a later section than the source, when body-level
 Start/End enclose one `w:tbl` with a supported text-only move in exactly one
 `w:tc` (single-cell tables, or multi-cell tables whose sibling cells hold only
-untracked text-only content). Reopening therefore returns the same one-card
-review identity without `data-document-change` leakage or transient IDs. The
-bounded import/export budget is 65,536 move sides and 1,000,000 characters per
-move. Rich runs outside ordinary text, nested-table / SDT sandwiches, tracked
-revisions in sibling cells, section-sandwiching range markers, unpaired
-markers, relationship-bound objects, malformed metadata, and duplicate
-identities remain on the structural compatibility path and are reported rather
-than flattened into an inexact editable move. Compare / same-document
-text-only inferred moves also emit companion `w:move*Range*` bookmarks on
-export with deterministic `rangeId` / `rangeName`; section-crossing and
-table/complex Compare moves stay fail-closed.
+untracked text-only content), or when at most one simple `w:sdt` (with
+`w:sdtPr` chrome) contains the move's paragraph or table. Reopening therefore
+returns the same one-card review identity without `data-document-change`
+leakage or transient IDs. The bounded import/export budget is 65,536 move sides
+and 1,000,000 characters per move. Rich runs outside ordinary text, nested
+tables, nested or sibling SDT sandwiches, tracked revisions in sibling cells,
+section-sandwiching range markers, unpaired markers, relationship-bound
+objects, malformed metadata, and duplicate identities remain on the structural
+compatibility path and are reported rather than flattened into an inexact
+editable move. Compare / same-document text-only inferred moves also emit
+companion `w:move*Range*` bookmarks on export with deterministic `rangeId` /
+`rangeName`; section-crossing and table/complex Compare moves stay fail-closed.
 
 Compare can infer a move inside a simple paragraph or heading, and can pair a
 range across aligned simple text blocks when both blocks belong to the same
