@@ -1228,6 +1228,8 @@ function parseTextDirection(
   return undefined;
 }
 
+const MAX_DOCUMENT_GRID_CHAR_SPACE = 720 * 4096;
+
 function parseDocumentGrid(element: Element): WorkDocumentGrid {
   const sourceType = attribute(element, 'type');
   const type: WorkDocumentGridType =
@@ -1237,11 +1239,20 @@ function parseDocumentGrid(element: Element): WorkDocumentGrid {
       ? sourceType
       : 'default';
   const sourceLinePitch = numberAttribute(element, 'linePitch');
-  return {
+  const next: WorkDocumentGrid = {
     type,
     linePitch:
       sourceLinePitch > 0 ? Number((sourceLinePitch / 20).toFixed(2)) : 18,
   };
+  const charSpace = numberAttribute(element, 'charSpace');
+  if (
+    Number.isInteger(charSpace) &&
+    charSpace >= -MAX_DOCUMENT_GRID_CHAR_SPACE &&
+    charSpace <= MAX_DOCUMENT_GRID_CHAR_SPACE
+  ) {
+    next.charSpace = charSpace;
+  }
+  return next;
 }
 
 function parseLnNumType(element: Element): WorkDocumentLnNumType {

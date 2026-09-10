@@ -308,6 +308,7 @@ function documentSectionModelAttributes(
     paperSource: attributes['data-section-paper-source'] ?? '',
     documentGridType: attributes['data-section-document-grid-type'] ?? '',
     documentGridLinePitch: null,
+    documentGridCharSpace: null,
     lnNumCountBy: null,
     lnNumStart: null,
     lnNumDistance: null,

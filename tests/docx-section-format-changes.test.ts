@@ -683,6 +683,167 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 
+  test('imports docGrid charSpace w:sectPrChange as reviewable section-formatting', async () => {
+    const source = await sectionDocxWithDocGridChange({
+      prior: { type: 'linesAndChars', linePitch: 18, charSpace: 40960 },
+      current: { type: 'linesAndChars', linePitch: 18, charSpace: 81920 },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-docgrid-charspace-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const section = html.body.querySelector('section[data-document-section]');
+    expect(section?.getAttribute('data-change-kind')).toBe(
+      'section-formatting',
+    );
+    expect(
+      section?.getAttribute('data-section-property-revision-omml'),
+    ).toBeNull();
+    expect(
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
+    ).toEqual({
+      documentGrid: {
+        type: 'linesAndChars',
+        linePitch: 18,
+        charSpace: 40960,
+      },
+    });
+    expect(section?.dataset.sectionDocumentGridType).toBe('linesAndChars');
+    expect(section?.dataset.sectionDocumentGridLinePitch).toBe('18');
+    expect(section?.dataset.sectionDocumentGridCharSpace).toBe('81920');
+  });
+
+  test('pending docGrid charSpace change round-trips as native w:sectPrChange', async () => {
+    const source = await sectionDocxWithDocGridChange({
+      prior: { type: 'snapToChars', linePitch: 20, charSpace: -4096 },
+      current: { type: 'snapToChars', linePitch: 20, charSpace: 40960 },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-docgrid-charspace-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const section = descendants(exported, 'sectPr').find(
+      (element) => element.parentElement?.localName !== 'sectPrChange',
+    );
+    const change = directChild(section!, 'sectPrChange');
+    expect(change).toBeTruthy();
+    const priorDocGrid = directChild(directChild(change!, 'sectPr'), 'docGrid');
+    expect(
+      priorDocGrid?.getAttributeNS(WORD_NAMESPACE, 'charSpace') ??
+        priorDocGrid?.getAttribute('w:charSpace') ??
+        priorDocGrid?.getAttribute('charSpace'),
+    ).toBe('-4096');
+    const currentDocGrid = directChild(section!, 'docGrid');
+    expect(
+      currentDocGrid?.getAttributeNS(WORD_NAMESPACE, 'charSpace') ??
+        currentDocGrid?.getAttribute('w:charSpace') ??
+        currentDocGrid?.getAttribute('charSpace'),
+    ).toBe('40960');
+  });
+
+  test('reject restores prior docGrid charSpace and drops the pending change', async () => {
+    const source = await sectionDocxWithDocGridChange({
+      prior: { type: 'linesAndChars', linePitch: 18, charSpace: 40960 },
+      current: { type: 'linesAndChars', linePitch: 24, charSpace: 81920 },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-docgrid-charspace-reject.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBeNull();
+      expect(section?.dataset.sectionDocumentGridType).toBe('linesAndChars');
+      expect(section?.dataset.sectionDocumentGridLinePitch).toBe('18');
+      expect(section?.dataset.sectionDocumentGridCharSpace).toBe('40960');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('live section docGrid charSpace edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1"',
+        ' data-section-orientation="portrait"',
+        ' data-section-document-grid-type="linesAndChars"',
+        ' data-section-document-grid-line-pitch="18"',
+        ' data-section-document-grid-char-space="40960">',
+        '<p>Body</p>',
+        '</section>',
+      ].join(''),
+    });
+    try {
+      const active = activeDocumentSection(editor);
+      expect(active).not.toBeNull();
+      if (!active) throw new Error('Expected an active document section.');
+      expect(
+        editor.commands.updateActiveDocumentSection({
+          ...active.layout,
+          documentGrid: {
+            type: 'linesAndChars',
+            linePitch: 18,
+            charSpace: 81920,
+          },
+        }),
+      ).toBe(true);
+      const changes = collectDocumentChanges(editor.state.doc);
+      expect(changes).toHaveLength(1);
+      expect(changes[0]?.kind).toBe('section-formatting');
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBe(
+        'section-formatting',
+      );
+      expect(
+        parseDocumentSectionFormatting(
+          section?.getAttribute('data-change-before'),
+        ),
+      ).toMatchObject({
+        documentGrid: {
+          type: 'linesAndChars',
+          linePitch: 18,
+          charSpace: 40960,
+        },
+      });
+      expect(section?.dataset.sectionDocumentGridCharSpace).toBe('81920');
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('imports lnNumType-only w:sectPrChange as a reviewable section-formatting change', async () => {
     const source = await sectionDocxWithLnNumTypeChange({
       prior: { countBy: 1, start: 1, restart: 'newPage' },
@@ -3177,10 +3338,12 @@ async function sectionDocxWithDocGridChange(options: {
   prior: {
     type: 'default' | 'lines' | 'linesAndChars' | 'snapToChars';
     linePitch: number;
+    charSpace?: number;
   };
   current: {
     type: 'default' | 'lines' | 'linesAndChars' | 'snapToChars';
     linePitch: number;
+    charSpace?: number;
   };
 }): Promise<ArrayBuffer> {
   const artifact = createArtifact('blank-document');
@@ -3207,6 +3370,13 @@ async function sectionDocxWithDocGridChange(options: {
     'w:linePitch',
     String(Math.max(1, Math.round(options.current.linePitch * 20))),
   );
+  if (options.current.charSpace !== undefined) {
+    current.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:charSpace',
+      String(options.current.charSpace),
+    );
+  }
   section.append(current);
   const change = document.createElementNS(WORD_NAMESPACE, 'w:sectPrChange');
   change.setAttributeNS(WORD_NAMESPACE, 'w:id', '33');
@@ -3220,6 +3390,13 @@ async function sectionDocxWithDocGridChange(options: {
     'w:linePitch',
     String(Math.max(1, Math.round(options.prior.linePitch * 20))),
   );
+  if (options.prior.charSpace !== undefined) {
+    priorGrid.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:charSpace',
+      String(options.prior.charSpace),
+    );
+  }
   prior.append(priorGrid);
   change.append(prior);
   section.append(change);

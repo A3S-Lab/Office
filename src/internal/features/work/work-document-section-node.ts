@@ -69,6 +69,7 @@ export const DocumentSection = Node.create({
       paperSource: hiddenAttribute(''),
       documentGridType: hiddenAttribute(''),
       documentGridLinePitch: hiddenAttribute(null),
+      documentGridCharSpace: hiddenAttribute(null),
       lnNumCountBy: hiddenAttribute(null),
       lnNumStart: hiddenAttribute(null),
       lnNumDistance: hiddenAttribute(null),
@@ -177,6 +178,10 @@ export const DocumentSection = Node.create({
             documentGridLinePitch: nullableNumberAttribute(
               node,
               'sectionDocumentGridLinePitch',
+            ),
+            documentGridCharSpace: nullableNumberAttribute(
+              node,
+              'sectionDocumentGridCharSpace',
             ),
             lnNumCountBy: nullableNumberAttribute(node, 'sectionLnNumCountBy'),
             lnNumStart: nullableNumberAttribute(node, 'sectionLnNumStart'),

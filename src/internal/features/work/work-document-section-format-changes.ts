@@ -472,9 +472,11 @@ export function restoredDocumentSectionAttributes(
   }
   let documentGridType = attributes.documentGridType;
   let documentGridLinePitch = attributes.documentGridLinePitch;
+  let documentGridCharSpace = attributes.documentGridCharSpace;
   if (formatting.documentGrid) {
     documentGridType = formatting.documentGrid.type;
     documentGridLinePitch = formatting.documentGrid.linePitch;
+    documentGridCharSpace = formatting.documentGrid.charSpace ?? null;
   }
   let lnNumCountBy = attributes.lnNumCountBy;
   let lnNumStart = attributes.lnNumStart;
@@ -552,6 +554,7 @@ export function restoredDocumentSectionAttributes(
     columnLayout,
     documentGridType,
     documentGridLinePitch,
+    documentGridCharSpace,
     lnNumCountBy,
     lnNumStart,
     lnNumDistance,
@@ -841,7 +844,9 @@ function normalizeRevisionDocumentGrid(
   const keys = Object.keys(record);
   if (
     !keys.length ||
-    keys.some((key) => key !== 'type' && key !== 'linePitch')
+    keys.some(
+      (key) => key !== 'type' && key !== 'linePitch' && key !== 'charSpace',
+    )
   ) {
     return null;
   }
@@ -849,10 +854,22 @@ function normalizeRevisionDocumentGrid(
   if (!validDocumentGridType(record.type)) return null;
   const linePitch = Number(record.linePitch);
   if (!Number.isFinite(linePitch) || linePitch <= 0) return null;
-  return {
+  const next: WorkDocumentGrid = {
     type: record.type,
     linePitch: Math.min(720, Number(linePitch.toFixed(2))),
   };
+  if ('charSpace' in record) {
+    const charSpace = Number(record.charSpace);
+    if (
+      !Number.isInteger(charSpace) ||
+      charSpace < -MAX_REVISION_DOC_GRID_CHAR_SPACE ||
+      charSpace > MAX_REVISION_DOC_GRID_CHAR_SPACE
+    ) {
+      return null;
+    }
+    next.charSpace = charSpace;
+  }
+  return next;
 }
 
 function validDocumentGridType(value: unknown): value is WorkDocumentGridType {
@@ -864,10 +881,13 @@ function validDocumentGridType(value: unknown): value is WorkDocumentGridType {
   );
 }
 
+const MAX_REVISION_DOC_GRID_CHAR_SPACE = 720 * 4096;
+
 function orderedDocumentGrid(grid: WorkDocumentGrid): WorkDocumentGrid {
   return {
     type: grid.type,
     linePitch: grid.linePitch,
+    ...(grid.charSpace !== undefined ? { charSpace: grid.charSpace } : {}),
   };
 }
 

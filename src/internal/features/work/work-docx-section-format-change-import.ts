@@ -75,7 +75,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'type',
   'pgBorders',
 ]);
-const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch']);
+const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch', 'charSpace']);
 const FORM_PROT_ATTRIBUTE_SET = new Set(['val']);
 const NO_ENDNOTE_ATTRIBUTE_SET = new Set(['val']);
 const BIDI_ATTRIBUTE_SET = new Set(['val']);
@@ -153,6 +153,8 @@ const DOC_GRID_TYPES = new Set([
   'snapToChars',
 ]);
 const MAX_DOC_GRID_LINE_PITCH_TWIPS = 14_400;
+/** Max |charSpace| = 720pt pitch delta * 4096 (matches max reviewable linePitch points). */
+const MAX_DOC_GRID_CHAR_SPACE = 720 * 4096;
 const PAGE_SIZE_ATTRIBUTE_SET = new Set(['w', 'h', 'orient', 'code']);
 const PAPER_SOURCE_ATTRIBUTE_SET = new Set(['first', 'other']);
 const COLUMNS_ATTRIBUTE_SET = new Set(['num', 'space', 'sep', 'equalWidth']);
@@ -188,7 +190,7 @@ export interface SupportedDocxSectionFormattingChange {
  * orientation-only or complete `w:pgSz` (w/h with optional orient/code), a
  * complete seven-edge `w:pgMar`, `w:paperSrc`, equal-width or unequal-width
  * `w:cols`, and/or `w:titlePg`, and/or `w:rtlGutter`, and/or bounded
- * relationship-free `w:docGrid`, and/or bounded relationship-free `w:lnNumType`,
+ * relationship-free `w:docGrid` (`type`/`linePitch`/`charSpace`), and/or bounded relationship-free `w:lnNumType`,
  * and/or bounded relationship-free `w:pgNumType` (`fmt`/`start`/`chapStyle`/`chapSep`), and/or
  * relationship-free empty/onOff `w:formProt`, and/or relationship-free
  * `w:vAlign` with required known `w:val` (`top`/`center`/`both`/`bottom`),
@@ -1225,10 +1227,20 @@ function importedDocumentGrid(element: Element): WorkDocumentGrid | null {
           maximum: MAX_DOC_GRID_LINE_PITCH_TWIPS,
         });
   if (linePitchTwips === null) return null;
-  return {
+  const next: WorkDocumentGrid = {
     type,
     linePitch: Number((linePitchTwips / 20).toFixed(2)),
   };
+  if (byName.has('charSpace')) {
+    const charSpace = parseBoundedDocxInteger(byName.get('charSpace') ?? '', {
+      minimum: -MAX_DOC_GRID_CHAR_SPACE,
+      maximum: MAX_DOC_GRID_CHAR_SPACE,
+      signed: true,
+    });
+    if (charSpace === null) return null;
+    next.charSpace = charSpace;
+  }
+  return next;
 }
 
 function onOffValue(element: Element): boolean {

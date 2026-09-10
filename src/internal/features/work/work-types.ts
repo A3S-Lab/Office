@@ -84,6 +84,11 @@ export type WorkDocumentGridType =
 export interface WorkDocumentGrid {
   type: WorkDocumentGridType;
   linePitch: number;
+  /**
+   * Optional document-grid character pitch adjustment (`w:charSpace`).
+   * OOXML stores (desiredPitchPt - normalPitchPt) * 4096 as a signed integer.
+   */
+  charSpace?: number;
 }
 
 export type WorkDocumentLnNumRestart = 'newPage' | 'newSection' | 'continuous';

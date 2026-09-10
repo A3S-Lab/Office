@@ -230,6 +230,13 @@ function setSectionFormattingChange(
       'w:linePitch',
       String(Math.max(1, Math.round(formatting.documentGrid.linePitch * 20))),
     );
+    if (formatting.documentGrid.charSpace !== undefined) {
+      docGrid.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:charSpace',
+        String(formatting.documentGrid.charSpace),
+      );
+    }
     prior.append(docGrid);
   }
   if (formatting.lnNumType) {

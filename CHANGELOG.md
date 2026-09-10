@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:sectPrChange` priors that include bounded relationship-free
+  `w:docGrid` `w:charSpace` (signed integer pitch delta scaled by 4096, alone or
+  with `type`/`linePitch`) are now reviewable as `section-formatting` with
+  accept/reject, live track-changes, and native export. Unknown attributes/values
+  stay fail-closed; `w:printerSettings` remains the permanent opaque section
+  marker (required `r:id` / `CT_Rel`).
+
 ## 0.121.0 - 2026-09-10
 
 ### Writer

@@ -350,6 +350,13 @@ function patchSectionDocumentGrids(
       'w:linePitch',
       String(Math.max(1, Math.round(value.linePitch * 20))),
     );
+    if (value.charSpace !== undefined) {
+      grid.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:charSpace',
+        String(value.charSpace),
+      );
+    }
     insertSectionProperty(properties, grid);
   }
 }

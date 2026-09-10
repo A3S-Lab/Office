@@ -96,6 +96,7 @@ export interface DocumentSectionNodeAttributes {
   paperSource: string;
   documentGridType: WorkDocumentGridType | '';
   documentGridLinePitch: number | null;
+  documentGridCharSpace: number | null;
   lnNumCountBy: number | null;
   lnNumStart: number | null;
   lnNumDistance: number | null;
@@ -257,6 +258,8 @@ export function documentSectionNodeAttributes(
     documentGridType: layout.documentGrid?.type ?? '',
     documentGridLinePitch:
       normalizedDocumentGrid(layout.documentGrid)?.linePitch ?? null,
+    documentGridCharSpace:
+      normalizedDocumentGrid(layout.documentGrid)?.charSpace ?? null,
     ...lnNumTypeNodeFields(layout.lnNumType),
     ...pgNumTypeNodeFields(layout.pgNumType, layout.pageNumberStart),
     formProt: layout.formProt ?? null,
@@ -459,6 +462,10 @@ export function documentSectionDomAttributes(
       attributes.documentGridLinePitch === null
         ? ''
         : String(attributes.documentGridLinePitch),
+    'data-section-document-grid-char-space':
+      attributes.documentGridCharSpace === null
+        ? ''
+        : String(attributes.documentGridCharSpace),
     'data-section-ln-num-count-by':
       attributes.lnNumCountBy === null ? '' : String(attributes.lnNumCountBy),
     'data-section-ln-num-start':
@@ -537,6 +544,8 @@ export function documentSectionLayoutFromElement(
         .sectionDocumentGridType as WorkDocumentGridType,
       documentGridLinePitch:
         numberValue(element.dataset.sectionDocumentGridLinePitch) ?? null,
+      documentGridCharSpace:
+        numberValue(element.dataset.sectionDocumentGridCharSpace) ?? null,
       lnNumCountBy: numberValue(element.dataset.sectionLnNumCountBy) ?? null,
       lnNumStart: numberValue(element.dataset.sectionLnNumStart) ?? null,
       lnNumDistance: numberValue(element.dataset.sectionLnNumDistance) ?? null,
@@ -712,15 +721,21 @@ function documentGridFromNodeAttributes(
 ): WorkDocumentGrid | undefined {
   if (
     attributes.documentGridType === undefined &&
-    attributes.documentGridLinePitch === undefined
+    attributes.documentGridLinePitch === undefined &&
+    attributes.documentGridCharSpace === undefined
   ) {
     return normalizedDocumentGrid(base.documentGrid);
   }
   return normalizedDocumentGrid({
     type: attributes.documentGridType as WorkDocumentGridType,
     linePitch: Number(attributes.documentGridLinePitch),
+    ...(attributes.documentGridCharSpace != null
+      ? { charSpace: Number(attributes.documentGridCharSpace) }
+      : {}),
   });
 }
+
+const MAX_DOCUMENT_GRID_CHAR_SPACE = 720 * 4096;
 
 function normalizedDocumentGrid(
   value: WorkDocumentGrid | undefined,
@@ -728,10 +743,22 @@ function normalizedDocumentGrid(
   if (!value || !validDocumentGridType(value.type)) return undefined;
   const linePitch = Number(value.linePitch);
   if (!Number.isFinite(linePitch) || linePitch <= 0) return undefined;
-  return {
+  const next: WorkDocumentGrid = {
     type: value.type,
     linePitch: Math.min(720, Number(linePitch.toFixed(2))),
   };
+  if (value.charSpace !== undefined) {
+    const charSpace = Number(value.charSpace);
+    if (
+      !Number.isInteger(charSpace) ||
+      charSpace < -MAX_DOCUMENT_GRID_CHAR_SPACE ||
+      charSpace > MAX_DOCUMENT_GRID_CHAR_SPACE
+    ) {
+      return undefined;
+    }
+    next.charSpace = charSpace;
+  }
+  return next;
 }
 
 function validDocumentGridType(value: unknown): value is WorkDocumentGridType {

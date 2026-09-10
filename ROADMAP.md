@@ -217,11 +217,11 @@ a phase exits only when its evidence is complete.
   `w:pgMar`, and/or `w:paperSrc` snapshot is reviewable as `section-formatting`
   with accept/reject, live track-changes for orientation, page-geometry,
   page-margin, paper-source, differentFirstPage (`w:titlePg`), rtlGutter,
-  bounded `w:docGrid` (`w:type`/`w:linePitch` only), bounded `w:lnNumType`
+  bounded `w:docGrid` (`w:type`/`w:linePitch`/`w:charSpace`), bounded `w:lnNumType`
   (`w:countBy`/`w:start`/`w:distance`/`w:restart`), bounded `w:pgNumType`
   (`w:fmt`/`w:start`/`w:chapStyle`/`w:chapSep`), `w:formProt`, `w:vAlign`, `w:noEndnote`, `w:textDirection`, `w:bidi`, bounded `w:footnotePr`, bounded `w:endnotePr`, `w:type` (`breakAfter`), and bounded `w:pgBorders` edits, and native export.
-  `w:printerSettings` stays opaque (required `r:id` / `CT_Rel`); remaining
-  relationship-free expansion is `w:docGrid` `w:charSpace`.
+  `w:printerSettings` stays permanently opaque (required `r:id` / `CT_Rel`);
+  `headerReference`/`footerReference` stay relationship-bound.
   Equal-width `w:cols` (num/space/sep, no unequal `w:col` children) and
   unequal-width `w:cols` (`w:equalWidth` off with bounded `w:col` children) are
   also reviewable as `section-formatting` with live column edits. Broader
