@@ -248,6 +248,8 @@ import type {
   WorkDocumentFootnoteNumRestart,
   WorkDocumentFootnotePos,
   WorkDocumentFootnotePr,
+  WorkDocumentEndnotePos,
+  WorkDocumentEndnotePr,
   WorkDocumentPgNumType,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
@@ -873,6 +875,7 @@ async function parseSectionLayout(
   const textDirectionElement = directChild(section, 'textDirection');
   const bidiElement = directChild(section, 'bidi');
   const footnotePrElement = directChild(section, 'footnotePr');
+  const endnotePrElement = directChild(section, 'endnotePr');
   const pageBorders = parseDocxPageBorders(section, theme);
   const parsedPageMargins = parseDocxPageMargins(
     section,
@@ -908,6 +911,9 @@ async function parseSectionLayout(
   const parsedBidi = bidiElement ? parseBidi(bidiElement) : undefined;
   const parsedFootnotePr = footnotePrElement
     ? parseFootnotePr(footnotePrElement)
+    : undefined;
+  const parsedEndnotePr = endnotePrElement
+    ? parseEndnotePr(endnotePrElement)
     : undefined;
   const pageNumberStart =
     parsedPgNumType?.start !== undefined && parsedPgNumType.start > 0
@@ -968,6 +974,11 @@ async function parseSectionLayout(
       ? { footnotePr: parsedFootnotePr }
       : previous.footnotePr
         ? { footnotePr: { ...previous.footnotePr } }
+        : {}),
+    ...(parsedEndnotePr !== undefined
+      ? { endnotePr: parsedEndnotePr }
+      : previous.endnotePr
+        ? { endnotePr: { ...previous.endnotePr } }
         : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
@@ -1059,6 +1070,62 @@ function parseFootnotePr(element: Element): WorkDocumentFootnotePr | undefined {
         return undefined;
       }
       next.pos = value as WorkDocumentFootnotePos;
+      continue;
+    }
+    if (child.localName === 'numFmt') {
+      if (
+        value !== 'decimal' &&
+        value !== 'upperRoman' &&
+        value !== 'lowerRoman' &&
+        value !== 'upperLetter' &&
+        value !== 'lowerLetter'
+      ) {
+        return undefined;
+      }
+      next.numFmt = value as WorkDocumentPgNumFmt;
+      continue;
+    }
+    if (child.localName === 'numStart') {
+      const start = numberAttribute(child, 'val');
+      if (!Number.isInteger(start) || start < 0 || start > 32_767) {
+        return undefined;
+      }
+      next.numStart = start;
+      continue;
+    }
+    if (child.localName === 'numRestart') {
+      if (
+        value !== 'continuous' &&
+        value !== 'eachSect' &&
+        value !== 'eachPage'
+      ) {
+        return undefined;
+      }
+      next.numRestart = value as WorkDocumentFootnoteNumRestart;
+      continue;
+    }
+    return undefined;
+  }
+  return next;
+}
+
+function parseEndnotePr(element: Element): WorkDocumentEndnotePr | undefined {
+  const children = Array.from(element.children).filter(
+    (child) => child.namespaceURI === element.namespaceURI,
+  );
+  if (children.length > 4) return undefined;
+  const names = children.map((child) => child.localName);
+  if (new Set(names).size !== names.length) return undefined;
+  const next: WorkDocumentEndnotePr = {};
+  for (const child of children) {
+    if (child.children.length > 0) return undefined;
+    const value = attribute(child, 'val')?.trim();
+    if (!value) return undefined;
+    if (child.localName === 'pos') {
+      if (value !== 'sectEnd' && value !== 'docEnd') {
+        return undefined;
+      }
+      next.pos = value as WorkDocumentEndnotePos;
       continue;
     }
     if (child.localName === 'numFmt') {

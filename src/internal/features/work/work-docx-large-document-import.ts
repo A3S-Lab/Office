@@ -320,6 +320,7 @@ function documentSectionModelAttributes(
     textDirection: '',
     bidi: null,
     footnotePr: '',
+    endnotePr: '',
   };
 }
 

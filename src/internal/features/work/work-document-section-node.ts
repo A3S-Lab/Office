@@ -81,6 +81,7 @@ export const DocumentSection = Node.create({
       textDirection: hiddenAttribute(''),
       bidi: hiddenAttribute(null),
       footnotePr: hiddenAttribute(''),
+      endnotePr: hiddenAttribute(''),
       propertyRevisionOmml: hiddenAttribute(''),
       sectionChangeKind: hiddenAttribute(null),
       sectionChangeId: hiddenAttribute(''),
@@ -209,6 +210,7 @@ export const DocumentSection = Node.create({
                   ? false
                   : null,
             footnotePr: node.dataset.sectionFootnotePr ?? '',
+            endnotePr: node.dataset.sectionEndnotePr ?? '',
             propertyRevisionOmml:
               node.dataset.sectionPropertyRevisionOmml ?? '',
             sectionChangeKind:

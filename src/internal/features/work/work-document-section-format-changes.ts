@@ -30,6 +30,8 @@ import type {
   WorkDocumentFootnoteNumRestart,
   WorkDocumentFootnotePos,
   WorkDocumentFootnotePr,
+  WorkDocumentEndnotePos,
+  WorkDocumentEndnotePr,
   WorkDocumentPgNumFmt,
   WorkDocumentPgNumType,
   WorkDocumentSectionTextDirection,
@@ -63,7 +65,7 @@ export type DocumentSectionEqualColumnsSnapshot =
  * Prior snapshot for reviewable section-property revisions.
  * At least one of orientation, pageGeometry, pageMargins, paperSource,
  * columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType,
- * formProt, noEndnote, verticalAlign, textDirection, bidi, or footnotePr must be present.
+ * formProt, noEndnote, verticalAlign, textDirection, bidi, footnotePr, or endnotePr must be present.
  */
 export interface DocumentSectionFormattingSnapshot {
   orientation?: 'portrait' | 'landscape';
@@ -82,6 +84,7 @@ export interface DocumentSectionFormattingSnapshot {
   textDirection?: WorkDocumentSectionTextDirection;
   bidi?: boolean;
   footnotePr?: WorkDocumentFootnotePr;
+  endnotePr?: WorkDocumentEndnotePr;
 }
 
 const MAX_SECTION_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -112,11 +115,12 @@ export function serializeDocumentSectionFormatting(attributes: {
   textDirection?: unknown;
   bidi?: unknown;
   footnotePr?: unknown;
+  endnotePr?: unknown;
 }): string {
   const snapshot = normalizeDocumentSectionFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType, formProt, noEndnote, verticalAlign, textDirection, bidi, or footnotePr.',
+      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType, formProt, noEndnote, verticalAlign, textDirection, bidi, footnotePr, or endnotePr.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -162,7 +166,8 @@ export function parseDocumentSectionFormatting(
         key !== 'verticalAlign' &&
         key !== 'textDirection' &&
         key !== 'bidi' &&
-        key !== 'footnotePr',
+        key !== 'footnotePr' &&
+        key !== 'endnotePr',
     )
   ) {
     return null;
@@ -189,6 +194,7 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
   textDirection?: unknown;
   bidi?: unknown;
   footnotePr?: unknown;
+  endnotePr?: unknown;
 }): DocumentSectionFormattingSnapshot | null {
   const snapshot: DocumentSectionFormattingSnapshot = {};
   if ('orientation' in attributes && attributes.orientation !== undefined) {
@@ -271,6 +277,11 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     if (footnotePr === null) return null;
     snapshot.footnotePr = footnotePr;
   }
+  if ('endnotePr' in attributes && attributes.endnotePr !== undefined) {
+    const endnotePr = normalizeRevisionEndnotePr(attributes.endnotePr);
+    if (endnotePr === null) return null;
+    snapshot.endnotePr = endnotePr;
+  }
   return snapshot.orientation ||
     snapshot.pageGeometry ||
     snapshot.pageMargins ||
@@ -286,7 +297,8 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     snapshot.verticalAlign !== undefined ||
     snapshot.textDirection !== undefined ||
     snapshot.bidi !== undefined ||
-    snapshot.footnotePr !== undefined
+    snapshot.footnotePr !== undefined ||
+    snapshot.endnotePr !== undefined
     ? snapshot
     : null;
 }
@@ -476,6 +488,10 @@ export function restoredDocumentSectionAttributes(
   if (formatting.footnotePr !== undefined) {
     footnotePr = serializeDocumentFootnotePr(formatting.footnotePr);
   }
+  let endnotePr = attributes.endnotePr;
+  if (formatting.endnotePr !== undefined) {
+    endnotePr = serializeDocumentEndnotePr(formatting.endnotePr);
+  }
   return clearDocumentSectionChangeAttributes({
     ...attributes,
     orientation,
@@ -506,6 +522,7 @@ export function restoredDocumentSectionAttributes(
     textDirection,
     bidi,
     footnotePr,
+    endnotePr,
   });
 }
 
@@ -527,6 +544,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
   textDirection?: WorkDocumentSectionTextDirection;
   bidi?: boolean;
   footnotePr?: WorkDocumentFootnotePr;
+  endnotePr?: WorkDocumentEndnotePr;
   pageNumberStart?: number;
   headerText?: string;
   footerText?: string;
@@ -587,6 +605,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
     ...(layout.footnotePr !== undefined
       ? { footnotePr: layout.footnotePr }
       : {}),
+    ...(layout.endnotePr !== undefined ? { endnotePr: layout.endnotePr } : {}),
   });
 }
 
@@ -974,7 +993,95 @@ function normalizeRevisionFootnotePr(
   return orderedFootnotePr(next);
 }
 
-function orderedFootnotePr(value: WorkDocumentFootnotePr): WorkDocumentFootnotePr {
+function orderedFootnotePr(
+  value: WorkDocumentFootnotePr,
+): WorkDocumentFootnotePr {
+  return {
+    ...(value.pos !== undefined ? { pos: value.pos } : {}),
+    ...(value.numFmt !== undefined ? { numFmt: value.numFmt } : {}),
+    ...(value.numStart !== undefined ? { numStart: value.numStart } : {}),
+    ...(value.numRestart !== undefined ? { numRestart: value.numRestart } : {}),
+  };
+}
+
+const ENDNOTE_POS = new Set(['sectEnd', 'docEnd']);
+
+export function serializeDocumentEndnotePr(
+  value: WorkDocumentEndnotePr,
+): string {
+  return JSON.stringify(orderedEndnotePr(value));
+}
+
+export function parseDocumentEndnotePr(
+  value: unknown,
+): WorkDocumentEndnotePr | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'string') {
+    return normalizeRevisionEndnotePr(value) ?? undefined;
+  }
+  if (!value.length) return undefined;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+  return normalizeRevisionEndnotePr(parsed) ?? undefined;
+}
+
+function normalizeRevisionEndnotePr(
+  value: unknown,
+): WorkDocumentEndnotePr | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record);
+  if (
+    keys.some(
+      (key) =>
+        key !== 'pos' &&
+        key !== 'numFmt' &&
+        key !== 'numStart' &&
+        key !== 'numRestart',
+    )
+  ) {
+    return null;
+  }
+  const next: WorkDocumentEndnotePr = {};
+  if ('pos' in record && record.pos !== undefined) {
+    if (typeof record.pos !== 'string' || !ENDNOTE_POS.has(record.pos)) {
+      return null;
+    }
+    next.pos = record.pos as WorkDocumentEndnotePos;
+  }
+  if ('numFmt' in record && record.numFmt !== undefined) {
+    if (
+      typeof record.numFmt !== 'string' ||
+      !FOOTNOTE_NUM_FMTS.has(record.numFmt)
+    ) {
+      return null;
+    }
+    next.numFmt = record.numFmt as WorkDocumentPgNumFmt;
+  }
+  if ('numStart' in record && record.numStart !== undefined) {
+    const start = Number(record.numStart);
+    if (!Number.isInteger(start) || start < 0 || start > 32_767) return null;
+    next.numStart = start;
+  }
+  if ('numRestart' in record && record.numRestart !== undefined) {
+    if (
+      typeof record.numRestart !== 'string' ||
+      !FOOTNOTE_NUM_RESTARTS.has(record.numRestart)
+    ) {
+      return null;
+    }
+    next.numRestart = record.numRestart as WorkDocumentFootnoteNumRestart;
+  }
+  return orderedEndnotePr(next);
+}
+
+function orderedEndnotePr(value: WorkDocumentEndnotePr): WorkDocumentEndnotePr {
   return {
     ...(value.pos !== undefined ? { pos: value.pos } : {}),
     ...(value.numFmt !== undefined ? { numFmt: value.numFmt } : {}),
@@ -1057,6 +1164,9 @@ function orderedSnapshot(
   }
   if (snapshot.footnotePr !== undefined) {
     ordered.footnotePr = orderedFootnotePr(snapshot.footnotePr);
+  }
+  if (snapshot.endnotePr !== undefined) {
+    ordered.endnotePr = orderedEndnotePr(snapshot.endnotePr);
   }
   if (snapshot.columns) {
     ordered.columns = snapshot.columns.custom

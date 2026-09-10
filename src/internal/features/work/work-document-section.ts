@@ -35,7 +35,9 @@ import {
   serializeDocumentPaperSource,
 } from './work-document-page-size';
 import {
+  parseDocumentEndnotePr,
   parseDocumentFootnotePr,
+  serializeDocumentEndnotePr,
   serializeDocumentFootnotePr,
 } from './work-document-section-format-changes';
 import {
@@ -105,6 +107,7 @@ export interface DocumentSectionNodeAttributes {
   textDirection: WorkDocumentSectionTextDirection | '';
   bidi: boolean | null;
   footnotePr: string;
+  endnotePr: string;
   propertyRevisionOmml: string;
   sectionChangeKind: 'section-formatting' | null;
   sectionChangeId: string;
@@ -261,6 +264,9 @@ export function documentSectionNodeAttributes(
     footnotePr: layout.footnotePr
       ? serializeDocumentFootnotePr(layout.footnotePr)
       : '',
+    endnotePr: layout.endnotePr
+      ? serializeDocumentEndnotePr(layout.endnotePr)
+      : '',
     propertyRevisionOmml: layout.propertyRevisionOmml
       ? encodeDocumentTablePropertyRevisionOmml(layout.propertyRevisionOmml)
       : '',
@@ -301,6 +307,7 @@ export function documentSectionLayoutFromNodeAttributes(
   const footnotePrFromAttributes = parseDocumentFootnotePr(
     attributes.footnotePr,
   );
+  const endnotePrFromAttributes = parseDocumentEndnotePr(attributes.endnotePr);
   const pageBorders = parseDocumentPageBorders(attributes.pageBorders);
   const pageMargins = parseDocumentPageMargins(attributes.pageMargins);
   const pageGeometry = parseDocumentPageGeometry(attributes.pageGeometry);
@@ -386,6 +393,11 @@ export function documentSectionLayoutFromNodeAttributes(
       : base.footnotePr
         ? { footnotePr: { ...base.footnotePr } }
         : {}),
+    ...(endnotePrFromAttributes
+      ? { endnotePr: endnotePrFromAttributes }
+      : base.endnotePr
+        ? { endnotePr: { ...base.endnotePr } }
+        : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
     ...(pageGeometry ? { pageGeometry } : {}),
@@ -463,6 +475,7 @@ export function documentSectionDomAttributes(
     'data-section-bidi':
       attributes.bidi === null ? '' : String(attributes.bidi),
     'data-section-footnote-pr': attributes.footnotePr,
+    'data-section-endnote-pr': attributes.endnotePr,
     ...(attributes.propertyRevisionOmml
       ? {
           'data-section-property-revision-omml':
@@ -551,6 +564,7 @@ export function documentSectionLayoutFromElement(
             ? false
             : null,
       footnotePr: element.dataset.sectionFootnotePr ?? '',
+      endnotePr: element.dataset.sectionEndnotePr ?? '',
       propertyRevisionOmml: element.dataset.sectionPropertyRevisionOmml ?? '',
       sectionChangeKind:
         element.getAttribute('data-document-change') === 'true' &&

@@ -87,6 +87,7 @@ export async function patchDocxDocumentLayout(
   patchSectionTextDirections(document, sections);
   patchSectionBidis(document, sections);
   patchSectionFootnotePrs(document, sections);
+  patchSectionEndnotePrs(document, sections);
   archive.file(
     'word/document.xml',
     new XMLSerializer().serializeToString(document),
@@ -542,6 +543,45 @@ function patchSectionFootnotePrs(
       footnotePr.append(numRestart);
     }
     insertSectionProperty(properties, footnotePr);
+  }
+}
+
+function patchSectionEndnotePrs(
+  document: Document,
+  sections: readonly WorkDocumentSection[],
+): void {
+  const sectionProperties = effectiveSectionProperties(document);
+  for (const [index, properties] of sectionProperties.entries()) {
+    for (const existing of directChildren(properties, 'endnotePr')) {
+      existing.remove();
+    }
+    const value = sections[index]?.layout.endnotePr;
+    if (value === undefined) continue;
+    const endnotePr = document.createElementNS(WORD_NAMESPACE, 'w:endnotePr');
+    if (value.pos !== undefined) {
+      const pos = document.createElementNS(WORD_NAMESPACE, 'w:pos');
+      pos.setAttributeNS(WORD_NAMESPACE, 'w:val', value.pos);
+      endnotePr.append(pos);
+    }
+    if (value.numFmt !== undefined) {
+      const numFmt = document.createElementNS(WORD_NAMESPACE, 'w:numFmt');
+      numFmt.setAttributeNS(WORD_NAMESPACE, 'w:val', value.numFmt);
+      endnotePr.append(numFmt);
+    }
+    if (value.numStart !== undefined) {
+      const numStart = document.createElementNS(WORD_NAMESPACE, 'w:numStart');
+      numStart.setAttributeNS(WORD_NAMESPACE, 'w:val', String(value.numStart));
+      endnotePr.append(numStart);
+    }
+    if (value.numRestart !== undefined) {
+      const numRestart = document.createElementNS(
+        WORD_NAMESPACE,
+        'w:numRestart',
+      );
+      numRestart.setAttributeNS(WORD_NAMESPACE, 'w:val', value.numRestart);
+      endnotePr.append(numRestart);
+    }
+    insertSectionProperty(properties, endnotePr);
   }
 }
 

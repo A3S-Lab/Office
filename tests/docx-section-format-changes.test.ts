@@ -1961,6 +1961,221 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 
+  test('imports endnotePr w:sectPrChange as a reviewable section-formatting change', async () => {
+    const source = await sectionDocxWithEndnotePrChange({
+      prior: {
+        pos: 'sectEnd',
+        numFmt: 'decimal',
+        numStart: 1,
+        numRestart: 'eachSect',
+      },
+      current: {
+        pos: 'docEnd',
+        numFmt: 'upperRoman',
+        numStart: 5,
+        numRestart: 'continuous',
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-endnotepr-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const section = html.body.querySelector('section[data-document-section]');
+    expect(section?.getAttribute('data-change-kind')).toBe(
+      'section-formatting',
+    );
+    expect(
+      section?.getAttribute('data-section-property-revision-omml'),
+    ).toBeNull();
+    expect(
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
+    ).toEqual({
+      endnotePr: {
+        pos: 'sectEnd',
+        numFmt: 'decimal',
+        numStart: 1,
+        numRestart: 'eachSect',
+      },
+    });
+    expect(section?.dataset.sectionEndnotePr).toBe(
+      JSON.stringify({
+        pos: 'docEnd',
+        numFmt: 'upperRoman',
+        numStart: 5,
+        numRestart: 'continuous',
+      }),
+    );
+  });
+
+  test('pending endnotePr section-formatting change round-trips as native w:sectPrChange', async () => {
+    const source = await sectionDocxWithEndnotePrChange({
+      prior: {
+        pos: 'sectEnd',
+        numFmt: 'decimal',
+        numStart: 1,
+        numRestart: 'eachSect',
+      },
+      current: {
+        pos: 'docEnd',
+        numFmt: 'upperRoman',
+        numStart: 5,
+        numRestart: 'continuous',
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-endnotepr-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const section = descendants(exported, 'sectPr').find(
+      (element) => element.parentElement?.localName !== 'sectPrChange',
+    );
+    const change = directChild(section!, 'sectPrChange');
+    expect(change).toBeTruthy();
+    const priorEndnotePr = directChild(
+      directChild(change!, 'sectPr'),
+      'endnotePr',
+    );
+    expect(priorEndnotePr).toBeTruthy();
+    expect(priorFootnotePrChildVal(priorEndnotePr!, 'pos')).toBe('sectEnd');
+    expect(priorFootnotePrChildVal(priorEndnotePr!, 'numFmt')).toBe('decimal');
+    expect(priorFootnotePrChildVal(priorEndnotePr!, 'numStart')).toBe('1');
+    expect(priorFootnotePrChildVal(priorEndnotePr!, 'numRestart')).toBe(
+      'eachSect',
+    );
+    const currentEndnotePr = directChild(section!, 'endnotePr');
+    expect(currentEndnotePr).toBeTruthy();
+    expect(priorFootnotePrChildVal(currentEndnotePr!, 'pos')).toBe('docEnd');
+    expect(priorFootnotePrChildVal(currentEndnotePr!, 'numFmt')).toBe(
+      'upperRoman',
+    );
+    expect(priorFootnotePrChildVal(currentEndnotePr!, 'numStart')).toBe('5');
+    expect(priorFootnotePrChildVal(currentEndnotePr!, 'numRestart')).toBe(
+      'continuous',
+    );
+  });
+
+  test('reject restores prior endnotePr and drops the pending change', async () => {
+    const source = await sectionDocxWithEndnotePrChange({
+      prior: {
+        pos: 'sectEnd',
+        numFmt: 'decimal',
+        numStart: 1,
+        numRestart: 'eachSect',
+      },
+      current: {
+        pos: 'docEnd',
+        numFmt: 'upperRoman',
+        numStart: 5,
+        numRestart: 'continuous',
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-endnotepr-reject.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBeNull();
+      expect(section?.dataset.sectionEndnotePr).toBe(
+        JSON.stringify({
+          pos: 'sectEnd',
+          numFmt: 'decimal',
+          numStart: 1,
+          numRestart: 'eachSect',
+        }),
+      );
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('live section endnotePr edits become reviewable when track changes is on', () => {
+    const prior = {
+      pos: 'sectEnd',
+      numFmt: 'decimal',
+      numStart: 1,
+      numRestart: 'eachSect',
+    };
+    const current = {
+      pos: 'docEnd',
+      numFmt: 'upperRoman',
+      numStart: 5,
+      numRestart: 'continuous',
+    };
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1"',
+        ' data-section-orientation="portrait"',
+        ' data-section-endnote-pr="' +
+          JSON.stringify(prior).replace(/"/g, '&quot;') +
+          '">',
+        '<p>Body</p>',
+        '</section>',
+      ].join(''),
+    });
+    try {
+      const active = activeDocumentSection(editor);
+      expect(active).not.toBeNull();
+      if (!active) throw new Error('Expected an active document section.');
+      expect(
+        editor.commands.updateActiveDocumentSection({
+          ...active.layout,
+          endnotePr: current,
+        }),
+      ).toBe(true);
+      const changes = collectDocumentChanges(editor.state.doc);
+      expect(changes).toHaveLength(1);
+      expect(changes[0]?.kind).toBe('section-formatting');
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBe(
+        'section-formatting',
+      );
+      expect(
+        parseDocumentSectionFormatting(
+          section?.getAttribute('data-change-before'),
+        ),
+      ).toMatchObject({
+        endnotePr: prior,
+      });
+      expect(section?.dataset.sectionEndnotePr).toBe(JSON.stringify(current));
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('imports rtlGutter-only w:sectPrChange as a reviewable section-formatting change', async () => {
     const source = await sectionDocxWithRtlGutterChange({
       prior: true,
@@ -2702,6 +2917,86 @@ function priorFootnotePrChildVal(
     child?.getAttribute('val') ??
     null
   );
+}
+
+async function sectionDocxWithEndnotePrChange(options: {
+  prior: {
+    pos?: string;
+    numFmt?: string;
+    numStart?: number;
+    numRestart?: string;
+  };
+  current: {
+    pos?: string;
+    numFmt?: string;
+    numStart?: number;
+    numRestart?: string;
+  };
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const section = descendants(document, 'sectPr').find(
+    (element) => element.parentElement?.localName !== 'sectPrChange',
+  );
+  if (!section) throw new Error('Expected body sectPr.');
+  for (const existing of Array.from(section.children).filter(
+    (child) =>
+      child.localName === 'endnotePr' || child.localName === 'sectPrChange',
+  )) {
+    existing.remove();
+  }
+  section.append(createEndnotePrElement(document, options.current));
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:sectPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '42');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-10T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
+  prior.append(createEndnotePrElement(document, options.prior));
+  change.append(prior);
+  section.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function createEndnotePrElement(
+  document: Document,
+  value: {
+    pos?: string;
+    numFmt?: string;
+    numStart?: number;
+    numRestart?: string;
+  },
+): Element {
+  const endnotePr = document.createElementNS(WORD_NAMESPACE, 'w:endnotePr');
+  if (value.pos !== undefined) {
+    const pos = document.createElementNS(WORD_NAMESPACE, 'w:pos');
+    pos.setAttributeNS(WORD_NAMESPACE, 'w:val', value.pos);
+    endnotePr.append(pos);
+  }
+  if (value.numFmt !== undefined) {
+    const numFmt = document.createElementNS(WORD_NAMESPACE, 'w:numFmt');
+    numFmt.setAttributeNS(WORD_NAMESPACE, 'w:val', value.numFmt);
+    endnotePr.append(numFmt);
+  }
+  if (value.numStart !== undefined) {
+    const numStart = document.createElementNS(WORD_NAMESPACE, 'w:numStart');
+    numStart.setAttributeNS(WORD_NAMESPACE, 'w:val', String(value.numStart));
+    endnotePr.append(numStart);
+  }
+  if (value.numRestart !== undefined) {
+    const numRestart = document.createElementNS(WORD_NAMESPACE, 'w:numRestart');
+    numRestart.setAttributeNS(WORD_NAMESPACE, 'w:val', value.numRestart);
+    endnotePr.append(numRestart);
+  }
+  return endnotePr;
 }
 
 async function sectionDocxWithFootnotePrChange(options: {

@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:sectPrChange` priors that include bounded relationship-free
+  empty `w:endnotePr` or children only (`w:pos` / `w:numFmt` / `w:numStart` /
+  `w:numRestart`, with ST_EdnPos `sectEnd`/`docEnd`) are now reviewable as
+  `section-formatting` with accept/reject, live track-changes, and native export
+  (including current-section `w:endnotePr` on DOCX write). Unknown
+  children/attributes, duplicates, grandchildren, and relationship bindings stay
+  fail-closed; opaque section fixtures moved off `endnotePr` to `type`.
+
 ## 0.117.0 - 2026-09-10
 
 ### Writer
