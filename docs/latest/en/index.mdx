@@ -44,14 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.103.0)
+## What's new on `main` (0.104.0)
 
-Writer Phase 0 makes cell tcBorders reviewable:
+Writer Phase 0 makes section docGrid reviewable:
 
-- direct-color cell `tcBorders` imports as reviewable `cell-formatting` with
-  accept/reject, live track-changes, and native DOCX export.
-- Broader table property sets stay opaque or fail-closed
-  (`tblCaption` and other unsupported priors).
+- bounded section `docGrid` (`type` + `linePitch`) imports as reviewable
+  `section-formatting` with accept/reject, live track-changes, and native DOCX
+  export.
+- Unknown `docGrid` attributes stay fail-closed; opaque section fixtures stay on
+  `lnNumType`.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

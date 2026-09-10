@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.103.0` makes cell tcBorders revisions reviewable:
+Version `0.104.0` makes section docGrid revisions reviewable:
 
-- **Cell borders** — relationship-free `tcPrChange` priors with direct-color
-  `tcBorders` become reviewable `cell-formatting` with accept/reject, live
-  track-changes, and native DOCX export.
-- **Boundary** — theme-bound or malformed borders stay fail-closed or opaque;
-  opaque cell fixtures stay on `hMerge`.
+- **Document grid** — relationship-free `sectPrChange` priors with bounded
+  `docGrid` (`type` + `linePitch`) become reviewable `section-formatting` with
+  accept/reject, live track-changes, and native DOCX export.
+- **Boundary** — unknown `docGrid` attributes stay fail-closed; opaque section
+  fixtures stay on `lnNumType`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
