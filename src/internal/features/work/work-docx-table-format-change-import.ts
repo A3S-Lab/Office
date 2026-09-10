@@ -35,6 +35,10 @@ import {
   parseDocxTblLookElement,
   type DocumentTableLook,
 } from './work-document-table-look';
+import {
+  parseReviewableDocxTableFloatElement,
+  type DocumentTableFloatPosition,
+} from './work-document-table-float';
 import { attribute, directChildren } from './work-ooxml-package';
 
 const MAX_REVISION_DATE_LENGTH = 64;
@@ -56,6 +60,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tblBorders',
   'tblCaption',
   'tblDescription',
+  'tblpPr',
 ]);
 const MARGIN_SIDES = new Set([
   'top',
@@ -85,7 +90,8 @@ export interface SupportedDocxTableFormattingChange {
  * `w:bidiVisual`, solid `w:shd`, `w:tblLook`, `w:tblOverlap`, relationship-free
  * `w:tblStyle`, dxa `w:tblCellSpacing`, relationship-free `w:tblStyleColBandSize`,
  * relationship-free `w:tblStyleRowBandSize`, direct-color `w:tblBorders`,
- * relationship-free `w:tblCaption`, and/or relationship-free `w:tblDescription`.
+ * relationship-free `w:tblCaption`, relationship-free `w:tblDescription`,
+ * and/or relationship-free attribute-only `w:tblpPr`.
  * Broader property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxTableFormattingChange(change: Element): boolean {
@@ -191,6 +197,7 @@ function supportedTableFormattingChange(
   let borders: DocumentTableFormattingBorders | undefined;
   let caption: string | undefined;
   let description: string | undefined;
+  let float: DocumentTableFloatPosition | undefined;
   for (const child of children) {
     if (child.localName === 'tblLayout') {
       const value = normalizeDocumentTableLayoutAlgorithm(
@@ -295,6 +302,12 @@ function supportedTableFormattingChange(
       const value = normalizeDocumentTableDescription(attribute(child, 'val'));
       if (!value) return null;
       description = value;
+      continue;
+    }
+    if (child.localName === 'tblpPr') {
+      const value = parseReviewableDocxTableFloatElement(child);
+      if (!value) return null;
+      float = value;
     }
   }
   const snapshot = normalizeDocumentTableFormattingSnapshot({
@@ -314,6 +327,7 @@ function supportedTableFormattingChange(
     ...(borders ? { borders } : {}),
     ...(caption ? { caption } : {}),
     ...(description ? { description } : {}),
+    ...(float ? { float } : {}),
   });
   if (!snapshot) return null;
   const date = normalizeRevisionDate(rawDate);

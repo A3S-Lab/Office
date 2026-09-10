@@ -12,6 +12,10 @@ import {
   type DocumentTableOverlap,
 } from './work-document-table-format-changes';
 import {
+  applyDocumentTableFloatPositionToElement,
+  type DocumentTableFloatPosition,
+} from './work-document-table-float';
+import {
   DOCUMENT_TABLE_FORMATTING_BORDER_EDGES,
   docxSzFromSnapshotBorderWidth,
   mapSnapshotBorderStyleToDocx,
@@ -380,6 +384,9 @@ function setTableFormattingChange(
   if (formatting.description) {
     prior.append(createTblDescriptionElement(document, formatting.description));
   }
+  if (formatting.float) {
+    prior.append(createTblpPrElement(document, formatting.float));
+  }
   change.append(prior);
   properties.append(change);
 }
@@ -684,6 +691,15 @@ function createTblDescriptionElement(
 ): Element {
   const element = document.createElementNS(WORD_NAMESPACE, 'w:tblDescription');
   element.setAttributeNS(WORD_NAMESPACE, 'w:val', description);
+  return element;
+}
+
+function createTblpPrElement(
+  document: Document,
+  float: DocumentTableFloatPosition,
+): Element {
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:tblpPr');
+  applyDocumentTableFloatPositionToElement(element, float);
   return element;
 }
 

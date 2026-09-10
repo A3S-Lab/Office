@@ -9,6 +9,11 @@ import {
 import { collectDocumentChanges } from '../src/internal/features/work/work-document-changes';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { parseDocumentTableFormatting } from '../src/internal/features/work/work-document-table-format-changes';
+import {
+  decodeDocumentTableFloatOmml,
+  parseReviewableDocumentTableFloatFromOmml,
+  type DocumentTableFloatPosition,
+} from '../src/internal/features/work/work-document-table-float';
 import { analyzeDocxCompatibility } from '../src/internal/features/work/work-office-diagnostics';
 import {
   descendants,
@@ -22,6 +27,8 @@ import {
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const RELATIONSHIP_NAMESPACE =
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 
 describe('DOCX table-formatting revisions', () => {
   test('imports jc-only w:tblPrChange as a reviewable table-formatting change', async () => {
@@ -1475,6 +1482,242 @@ describe('DOCX table-formatting revisions', () => {
     }
   });
 
+  test('imports tblpPr-only w:tblPrChange as a reviewable table-formatting change', async () => {
+    const source = await tableDocxWithFloatChange({
+      prior: {
+        horzAnchor: 'page',
+        vertAnchor: 'text',
+        tblpX: 720,
+        tblpY: 360,
+        leftFromText: 120,
+        rightFromText: 120,
+        topFromText: 0,
+        bottomFromText: 0,
+      },
+      current: {
+        horzAnchor: 'margin',
+        vertAnchor: 'page',
+        tblpX: 1440,
+        tblpY: 720,
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-float-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const table = html.body.querySelector('table');
+    expect(table?.dataset.changeKind).toBe('table-formatting');
+    expect(table?.dataset.officeTablePropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentTableFormatting(table?.dataset.changeBefore)).toEqual({
+      float: {
+        horzAnchor: 'page',
+        vertAnchor: 'text',
+        tblpX: 720,
+        tblpY: 360,
+        leftFromText: 120,
+        rightFromText: 120,
+        topFromText: 0,
+        bottomFromText: 0,
+      },
+    });
+    expect(table?.dataset.officeTableFloatOmml).toBeTruthy();
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const changes = collectDocumentChanges(editor.state.doc);
+      expect(changes).toHaveLength(1);
+      expect(changes[0]).toMatchObject({
+        kind: 'table-formatting',
+        author: 'Reviewer',
+      });
+      expect(editor.commands.acceptDocumentChange(changes[0]?.id ?? '')).toBe(
+        true,
+      );
+      expect(collectDocumentChanges(editor.state.doc)).toHaveLength(0);
+      const accepted = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const acceptedTable = accepted.body.querySelector('table');
+      expect(acceptedTable?.dataset.changeKind).toBeUndefined();
+      expect(acceptedTable?.dataset.officeTableFloatOmml).toBeTruthy();
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('reject restores prior table float and drops the pending change', async () => {
+    const source = await tableDocxWithFloatChange({
+      prior: {
+        horzAnchor: 'page',
+        vertAnchor: 'text',
+        tblpX: 720,
+        tblpY: 360,
+      },
+      current: {
+        horzAnchor: 'margin',
+        vertAnchor: 'page',
+        tblpX: 1440,
+        tblpY: 720,
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-float-formatting-reject.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('table-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      expect(collectDocumentChanges(editor.state.doc)).toHaveLength(0);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const table = html.body.querySelector('table');
+      expect(table?.dataset.changeKind).toBeUndefined();
+      expect(
+        parseReviewableDocumentTableFloatFromOmml(
+          table?.dataset.officeTableFloatOmml
+            ? decodeDocumentTableFloatOmml(table.dataset.officeTableFloatOmml)
+            : null,
+        ),
+      ).toEqual({
+        horzAnchor: 'page',
+        vertAnchor: 'text',
+        tblpX: 720,
+        tblpY: 360,
+      });
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending tblpPr table-formatting change round-trips as native w:tblPrChange', async () => {
+    const source = await tableDocxWithFloatChange({
+      prior: {
+        horzAnchor: 'page',
+        vertAnchor: 'text',
+        tblpX: 720,
+        tblpY: 360,
+        leftFromText: 120,
+      },
+      current: {
+        horzAnchor: 'margin',
+        vertAnchor: 'page',
+        tblpXSpec: 'center',
+        tblpYSpec: 'top',
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-float-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const properties = directChild(descendants(exported, 'tbl')[0], 'tblPr');
+    const change = directChild(properties, 'tblPrChange');
+    expect(change).toBeTruthy();
+    const priorFloat = directChild(directChild(change!, 'tblPr'), 'tblpPr');
+    expect(priorFloat).toBeTruthy();
+    expect(floatAttributes(priorFloat!)).toMatchObject({
+      horzAnchor: 'page',
+      vertAnchor: 'text',
+      tblpX: '720',
+      tblpY: '360',
+      leftFromText: '120',
+    });
+    const currentFloat = directChild(properties, 'tblpPr');
+    expect(currentFloat).toBeTruthy();
+    expect(floatAttributes(currentFloat!)).toMatchObject({
+      horzAnchor: 'margin',
+      vertAnchor: 'page',
+      tblpXSpec: 'center',
+      tblpYSpec: 'top',
+    });
+  });
+
+  test('keeps invalid prior tblpPr on the opaque path instead of inventing review UI', async () => {
+    const source = await tableDocxWithFloatChange({
+      prior: {
+        horzAnchor: 'page',
+        vertAnchor: 'text',
+        tblpX: 720,
+        tblpY: 360,
+        invalidAnchor: true,
+      },
+      current: {
+        horzAnchor: 'margin',
+        vertAnchor: 'page',
+        tblpX: 1440,
+        tblpY: 720,
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-float-invalid-prior.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const table = html.body.querySelector('table');
+    expect(table?.dataset.changeKind).toBeUndefined();
+    expect(table?.dataset.officeTablePropertyRevisionOmml).toBeTruthy();
+  });
+
+  test('fails closed for relationship-bound prior tblpPr instead of reviewing it', async () => {
+    const source = await tableDocxWithFloatChange({
+      prior: {
+        horzAnchor: 'page',
+        vertAnchor: 'text',
+        tblpX: 720,
+        tblpY: 360,
+        relationshipBound: true,
+      },
+      current: {
+        horzAnchor: 'margin',
+        vertAnchor: 'page',
+        tblpX: 1440,
+        tblpY: 720,
+      },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'table-float-bound-prior.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const table = html.body.querySelector('table');
+    expect(table?.dataset.changeKind).toBeUndefined();
+    expect(table?.dataset.officeTablePropertyRevisionOmml).toBeFalsy();
+  });
+
   test('live table description edits become reviewable when track changes is on', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions({
@@ -2003,6 +2246,122 @@ async function tableDocxWithRowBandSizeChange(options: {
     new XMLSerializer().serializeToString(document),
   );
   return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+type TestTableFloatAttrs = DocumentTableFloatPosition & {
+  invalidAnchor?: boolean;
+  relationshipBound?: boolean;
+};
+
+async function tableDocxWithFloatChange(options: {
+  prior: TestTableFloatAttrs;
+  current: DocumentTableFloatPosition;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const table = descendants(document, 'tbl')[0];
+  const properties =
+    directChild(table, 'tblPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+      table.insertBefore(created, table.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'tblpPr' || child.localName === 'tblPrChange',
+  )) {
+    existing.remove();
+  }
+  properties.append(createTblpPrElement(document, options.current));
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:tblPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '68');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-09T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:tblPr');
+  prior.append(createTblpPrElement(document, options.prior));
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function createTblpPrElement(
+  document: Document,
+  float: TestTableFloatAttrs,
+): Element {
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:tblpPr');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:horzAnchor', float.horzAnchor);
+  element.setAttributeNS(WORD_NAMESPACE, 'w:vertAnchor', float.vertAnchor);
+  if (float.tblpX !== undefined) {
+    element.setAttributeNS(WORD_NAMESPACE, 'w:tblpX', String(float.tblpX));
+  }
+  if (float.tblpY !== undefined) {
+    element.setAttributeNS(WORD_NAMESPACE, 'w:tblpY', String(float.tblpY));
+  }
+  if (float.tblpXSpec) {
+    element.setAttributeNS(WORD_NAMESPACE, 'w:tblpXSpec', float.tblpXSpec);
+  }
+  if (float.tblpYSpec) {
+    element.setAttributeNS(WORD_NAMESPACE, 'w:tblpYSpec', float.tblpYSpec);
+  }
+  if (float.leftFromText !== undefined) {
+    element.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:leftFromText',
+      String(float.leftFromText),
+    );
+  }
+  if (float.rightFromText !== undefined) {
+    element.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:rightFromText',
+      String(float.rightFromText),
+    );
+  }
+  if (float.topFromText !== undefined) {
+    element.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:topFromText',
+      String(float.topFromText),
+    );
+  }
+  if (float.bottomFromText !== undefined) {
+    element.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:bottomFromText',
+      String(float.bottomFromText),
+    );
+  }
+  if (float.invalidAnchor) {
+    element.setAttributeNS(WORD_NAMESPACE, 'w:horzAnchor', 'not-a-real-anchor');
+  }
+  if (float.relationshipBound) {
+    element.setAttributeNS(RELATIONSHIP_NAMESPACE, 'r:id', 'rIdUnsafe');
+  }
+  return element;
+}
+
+function floatAttributes(element: Element): Record<string, string> {
+  return Object.fromEntries(
+    Array.from(element.attributes)
+      .filter(
+        (item) =>
+          xmlAttributeNamespace(element, item) === WORD_NAMESPACE ||
+          item.namespaceURI === WORD_NAMESPACE,
+      )
+      .map((item) => [xmlAttributeLocalName(item), item.value]),
+  );
 }
 
 async function tableDocxWithDescriptionChange(options: {

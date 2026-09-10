@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.142.0 - 2026-09-11
+
+### Writer
+
+- Reviewable `w:tblPrChange` now admits relationship-free attribute-only
+  `w:tblpPr` priors (known anchors/specs, bounded twips, optional FromText).
+  Invalid or relationship-bound `tblpPr` stays fail-closed.
+
 ## 0.141.0 - 2026-09-11
 
 ### Writer

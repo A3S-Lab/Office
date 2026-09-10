@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.141.0` admits opaque sibling `ST_NumberFormat` values in multi-level
-numbering originals:
+Version `0.142.0` admits relationship-free attribute-only `w:tblpPr` priors in
+reviewable `w:tblPrChange`:
 
-- **Opaque sibling formats** — sibling `%[ilvl]:[start]:[nfc]:[suff]` segments in
-  `w:original` may round-trip non-common `ST_NumberFormat` values as opaque
-  prior text while the current `w:ilvl` stays common nfc 0–4.
-- **Boundary** — current-level bullet and picture formats stay fail-closed.
+- **Attribute-only float priors** — known anchors/specs, bounded twips, and
+  optional FromText distances round-trip as reviewable `table-formatting`
+  float snapshots.
+- **Boundary** — invalid or relationship-bound `tblpPr` stays fail-closed.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

@@ -13,6 +13,7 @@ import {
   serializeDocumentTableFormatting,
   type DocumentTableFormattingSnapshot,
 } from './work-document-table-format-changes';
+import { parseReviewableDocumentTableFloatFromOmml } from './work-document-table-float';
 import { normalizeTableColor } from './work-document-table-borders';
 import {
   normalizeDocumentTableFormattingBorders,
@@ -29,7 +30,7 @@ interface DocumentTableFormattingTrackingOptions {
 
 /**
  * When track-changes is on, table layout / alignment / preferred-width /
- * indent / default cell-margin / bidiVisual / solid-fill / tblLook / tblOverlap / tblStyle / tblCellSpacing / tblStyleColBandSize / tblStyleRowBandSize / tblBorders / tblCaption / tblDescription edits become
+ * indent / default cell-margin / bidiVisual / solid-fill / tblLook / tblOverlap / tblStyle / tblCellSpacing / tblStyleColBandSize / tblStyleRowBandSize / tblBorders / tblCaption / tblDescription / reviewable tblpPr float edits become
  * reviewable `table-formatting` revisions.
  *
  * Layout-mode switches (`setDocumentTableLayoutMode`) also rewrite cell
@@ -83,6 +84,9 @@ function geometryFormatting(
       ? (node.attrs.geometry as Record<string, unknown>)
       : null;
   if (!geometry) return null;
+  const float = parseReviewableDocumentTableFloatFromOmml(
+    typeof node.attrs.floatOmml === 'string' ? node.attrs.floatOmml : null,
+  );
   return normalizeDocumentTableFormattingSnapshot({
     layout: geometry.layout,
     alignment: geometry.alignment,
@@ -153,6 +157,7 @@ function geometryFormatting(
           )!,
         }
       : {}),
+    ...(float ? { float } : {}),
   });
 }
 
@@ -211,6 +216,7 @@ function tableSnapshotIgnoringGeometry(node: ProseMirrorNode): unknown {
   delete attrs.borders;
   delete attrs.caption;
   delete attrs.description;
+  delete attrs.floatOmml;
   delete attrs.tableChangeKind;
   delete attrs.tableChangeId;
   delete attrs.tableChangeAuthor;

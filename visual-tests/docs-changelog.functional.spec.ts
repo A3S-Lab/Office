@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(122);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.141.0');
+  await expect(cards).toHaveCount(123);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.142.0');
   await expect(cards.first()).toContainText(
-    'Writer 准入多级编号先验中的不透明兄弟 ST_NumberFormat 值',
+    'Writer 准入无关系仅属性 tblpPr 表格式修订先验',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.142.0')).toContainText(
+    '仅属性浮动先验',
+  );
+  await expect(releaseCard('0.142.0')).toContainText(
+    '已知锚点/规格、有界 twips 与可选 FromText 距离作为可审阅 table-formatting 浮动快照往返',
+  );
   await expect(releaseCard('0.141.0')).toContainText(
     'w:original 中的不透明兄弟格式',
   );

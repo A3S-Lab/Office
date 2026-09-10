@@ -44,15 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.141.0)
+## What's new on `main` (0.142.0)
 
-Writer Phase 0 admits opaque sibling `ST_NumberFormat` values in multi-level
-numbering originals:
+Writer Phase 0 admits relationship-free attribute-only `w:tblpPr` priors in
+reviewable `w:tblPrChange`:
 
-- Multi-level `numberingChange` `w:original` strings may carry opaque sibling
-  `ST_NumberFormat` nfc values while the current `w:ilvl` stays common decimal,
-  letter, or Roman (nfc 0–4).
-- Current-level bullet and picture formats stay fail-closed.
+- Known anchors/specs, bounded twips, and optional FromText distances import as
+  reviewable `table-formatting` float snapshots.
+- Invalid or relationship-bound `tblpPr` stays fail-closed.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

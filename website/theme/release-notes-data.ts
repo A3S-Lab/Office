@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.142.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits relationship-free attribute-only tblpPr table-formatting priors',
+      zh: 'Writer 准入无关系仅属性 tblpPr 表格式修订先验',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: reviewable w:tblPrChange now admits relationship-free attribute-only w:tblpPr priors (known anchors/specs, bounded twips, optional FromText). Invalid or relationship-bound tblpPr stays fail-closed.',
+      zh: 'Phase 0 保真：可审阅 w:tblPrChange 现准入无关系仅属性 w:tblpPr 先验（已知锚点/规格、有界 twips、可选 FromText）。非法或关系绑定的 tblpPr 仍失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Attribute-only float priors',
+          zh: '仅属性浮动先验',
+        },
+        detail: {
+          en: 'Known anchors/specs, bounded twips, and optional FromText distances round-trip as reviewable table-formatting float snapshots.',
+          zh: '已知锚点/规格、有界 twips 与可选 FromText 距离作为可审阅 table-formatting 浮动快照往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing table float under track-changes creates a pending table-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑表浮动会生成待审阅的 table-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Invalid tblpPr stays fail-closed',
+          zh: '非法 tblpPr 仍失败闭合',
+        },
+        detail: {
+          en: 'Malformed, relationship-bound, or out-of-bound tblpPr priors stay diagnostics-only instead of inventing review UI.',
+          zh: '格式错误、关系绑定或越界的 tblpPr 先验仍仅作诊断，不会虚构审阅 UI。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.142.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.142.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.141.0',
     date: '2026-09-11',
     kind: 'improved',

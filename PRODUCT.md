@@ -31,9 +31,11 @@ Enough means embeddable format-native editors for host daily workflows—not
 full Traditional Office parity and not every R6 enterprise row. The ordered
 remaining backlog, surface exit criteria, and explicit out-of-scope list live
 in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
-Active tip through `0.141.0` admits opaque sibling `ST_NumberFormat` values in
-multi-level numbering `w:original` while the current `w:ilvl` stays common nfc
-0–4 (current-level bullet and picture formats stay fail-closed; and earlier
+Active tip through `0.142.0` admits relationship-free attribute-only `w:tblpPr`
+priors in reviewable `w:tblPrChange` (known anchors/specs, bounded twips,
+optional FromText; invalid or relationship-bound `tblpPr` stays fail-closed;
+and earlier opaque sibling `ST_NumberFormat` values in multi-level numbering
+`w:original` while the current `w:ilvl` stays common nfc 0–4 through `0.141.0`,
 one-level nested-table companion `w:move*Range*` bookmarks through `0.140.0`,
 simple SDT-wrapped companions through `0.139.0`, multi-cell table-spanning
 companions through `0.138.0`, Compare / same-document text-only move-range
@@ -45,7 +47,7 @@ companion move-range bookmarks through `0.131.0`, plus untracked text-only
 sibling runs beside whole-paragraph marks through `0.130.0`). The move-range
 family is largely complete; residual fail-closed edges are deeper nesting, a
 nested table beside the move, and SDT+nested-table combinations. Next R0 work
-is remaining numbering edges, bounded property-revision subsets,
+is remaining numbering edges, broader bounded property-revision subsets,
 searchable/tagged PDF output, and continuous no-clobber fixtures—then R1
 Writer daily leftovers, R2 calculation fidelity, R3 animation/media, and R4
 PDF content editing.
@@ -909,7 +911,7 @@ and clean diagnostics. Remaining exotic numbering pictures and deeper
 inherited-list metadata, residual move-range edges,
 cell/section property revisions, and table/row property revisions outside the
 reviewable subsets remain explicit follow-up work. `w:tblPrChange` with prior
-`w:jc` and/or `w:tblW` is reviewable as `table-formatting`; `w:trPrChange`
+`w:jc` and/or `w:tblW` and/or relationship-free attribute-only `w:tblpPr` is reviewable as `table-formatting`; `w:trPrChange`
 with prior `w:cantSplit` and/or `w:tblHeader` is reviewable as `row-formatting`; `w:tcPrChange`
 with prior `w:vAlign` and/or solid direct-color `w:shd` is reviewable as
 `cell-formatting`; `w:sectPrChange`
