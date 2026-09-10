@@ -36,8 +36,14 @@ import {
   type SupportedDocxCellFormattingChange,
 } from './work-docx-cell-format-change-import';
 import { parseDocxCnfStyleElement } from './work-document-cnf-style';
-import { normalizeDocumentTableCellTextDirection } from './work-document-table-cell-formatting';
-import type { DocumentTableCellTextDirection } from './work-document-table-cell-formatting';
+import {
+  normalizeDocumentTableCellTextDirection,
+  parseDocxHMergeValue,
+} from './work-document-table-cell-formatting';
+import type {
+  DocumentTableCellHMerge,
+  DocumentTableCellTextDirection,
+} from './work-document-table-cell-formatting';
 import {
   type DocxThemeColorReference,
   serializeDocxThemeReference,
@@ -63,6 +69,7 @@ export interface ImportedDocxTableCellMarker {
   fitText?: boolean;
   hideMark?: boolean;
   cnfStyle?: string;
+  hMerge?: DocumentTableCellHMerge;
   propertyRevisionOmml?: string;
   formattingChange?: SupportedDocxCellFormattingChange;
 }
@@ -152,6 +159,13 @@ export function markDocxTableCells(
       ? parseDocxCnfStyleElement(cnfStyleElement)
       : null;
     const cnfStyle = cnfStyleParsed ?? undefined;
+    const hMergeElement = properties
+      ? directChild(properties, 'hMerge')
+      : undefined;
+    const hMergeParsed = hMergeElement
+      ? parseDocxHMergeValue(attribute(hMergeElement, 'val'))
+      : null;
+    const hMerge = hMergeParsed ?? undefined;
     const formattingChange =
       supportedDocxCellFormattingChangeFromProperties(properties);
     const propertyRevisionOmml = formattingChange
@@ -167,6 +181,7 @@ export function markDocxTableCells(
       fitText === undefined &&
       hideMark === undefined &&
       cnfStyle === undefined &&
+      hMerge === undefined &&
       !propertyRevisionOmml &&
       !formattingChange
     ) {
@@ -188,6 +203,7 @@ export function markDocxTableCells(
       ...(fitText !== undefined ? { fitText } : {}),
       ...(hideMark !== undefined ? { hideMark } : {}),
       ...(cnfStyle !== undefined ? { cnfStyle } : {}),
+      ...(hMerge !== undefined ? { hMerge } : {}),
       ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
       ...(formattingChange ? { formattingChange } : {}),
     });
@@ -276,6 +292,9 @@ function applyCellFormat(
   }
   if (format.cnfStyle !== undefined) {
     cell.dataset.officeCellCnfStyle = format.cnfStyle;
+  }
+  if (format.hMerge !== undefined) {
+    cell.dataset.officeCellHMerge = format.hMerge;
   }
   applyDocumentCellPropertyRevisionOmmlToElement(
     cell,

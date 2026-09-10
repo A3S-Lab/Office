@@ -1,8 +1,10 @@
 import {
   normalizeDocumentTableCellTextDirection,
   serializeDocumentCellFormatting,
+  type DocumentTableCellHMerge,
   type DocumentTableCellTextDirection,
 } from './work-document-cell-format-changes';
+import { parseDocxHMergeValue } from './work-document-table-cell-formatting';
 import { parseDocxCnfStyleElement } from './work-document-cnf-style';
 import { normalizeTableColor } from './work-document-table-borders';
 import {
@@ -40,6 +42,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'tcFitText',
   'hideMark',
   'cnfStyle',
+  'hMerge',
   'tcBorders',
 ]);
 const SOLID_SHADING_VALUES = new Set(['clear', 'nil', 'none', '']);
@@ -63,8 +66,8 @@ export interface SupportedDocxCellFormattingChange {
 /**
  * Relationship-free `w:tcPrChange` whose prior snapshot contains only
  * `w:vAlign`, solid direct-color `w:shd`, `w:tcMar`, `w:tcW`, `w:noWrap`,
- * `w:textDirection`, `w:tcFitText`, `w:hideMark`, `w:cnfStyle`, and/or direct-color
- * `w:tcBorders`. Broader cell property sets stay on the opaque OMML path.
+ * `w:textDirection`, `w:tcFitText`, `w:hideMark`, `w:cnfStyle`, `w:hMerge`, and/or
+ * direct-color `w:tcBorders`. Broader cell property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxCellFormattingChange(change: Element): boolean {
   return supportedCellFormattingChange(change) !== null;
@@ -147,6 +150,7 @@ function supportedCellFormattingChange(
         child.localName === 'tcFitText' ||
         child.localName === 'hideMark' ||
         child.localName === 'cnfStyle' ||
+        child.localName === 'hMerge' ||
         child.localName === 'tcBorders'
       ) {
         return false;
@@ -168,6 +172,7 @@ function supportedCellFormattingChange(
     fitText?: boolean;
     hideMark?: boolean;
     cnfStyle?: string;
+    hMerge?: DocumentTableCellHMerge;
     borders?: DocumentCellFormattingBorders;
   } = {};
   for (const child of children) {
@@ -221,6 +226,12 @@ function supportedCellFormattingChange(
       const cnfStyle = parseDocxCnfStyleElement(child);
       if (!cnfStyle) return null;
       snapshot.cnfStyle = cnfStyle;
+      continue;
+    }
+    if (child.localName === 'hMerge') {
+      const hMerge = parseDocxHMergeValue(attribute(child, 'val'));
+      if (!hMerge) return null;
+      snapshot.hMerge = hMerge;
       continue;
     }
     if (child.localName === 'tcBorders') {

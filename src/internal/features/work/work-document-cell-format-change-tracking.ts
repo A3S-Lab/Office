@@ -6,6 +6,7 @@ import {
   normalizeDocumentTableCellTextDirection,
   preferredWidthFromCellAttributes,
   serializeDocumentCellFormatting,
+  type DocumentTableCellHMerge,
   type DocumentTableCellTextDirection,
 } from './work-document-cell-format-changes';
 import { normalizeDocumentCnfStyle } from './work-document-cnf-style';
@@ -18,6 +19,7 @@ import {
 } from './work-document-table-formatting-borders';
 import type { DocumentTableBorder } from './work-document-table-borders';
 import {
+  normalizeDocumentTableCellHMerge,
   normalizeDocumentTableVerticalAlign,
   type DocumentTableVerticalAlign,
 } from './work-document-table-cell-formatting';
@@ -33,7 +35,7 @@ interface DocumentCellFormattingTrackingOptions {
 
 /**
  * When track-changes is on, cell verticalAlign / solid fill / margin /
- * preferred-width / noWrap / textDirection / fitText / hideMark / cnfStyle / tcBorders
+ * preferred-width / noWrap / textDirection / fitText / hideMark / cnfStyle / hMerge / tcBorders
  * edits become reviewable `cell-formatting` revisions.
  */
 export function trackDocumentCellFormattingTransaction(
@@ -83,6 +85,7 @@ function cellFormatting(node: ProseMirrorNode): {
   fitText?: boolean;
   hideMark?: boolean;
   cnfStyle?: string;
+  hMerge?: DocumentTableCellHMerge;
   borders?: ReturnType<typeof normalizeDocumentCellFormattingBorders>;
 } | null {
   const verticalAlign =
@@ -104,6 +107,7 @@ function cellFormatting(node: ProseMirrorNode): {
   const hideMark =
     typeof node.attrs.hideMark === 'boolean' ? node.attrs.hideMark : false;
   const cnfStyle = normalizeDocumentCnfStyle(node.attrs.cnfStyle);
+  const hMerge = normalizeDocumentTableCellHMerge(node.attrs.hMerge);
   const borders = cellFormattingBordersForSnapshot(node.attrs.borders);
   return normalizeDocumentCellFormattingSnapshot({
     verticalAlign,
@@ -115,6 +119,7 @@ function cellFormatting(node: ProseMirrorNode): {
     fitText,
     hideMark,
     ...(cnfStyle ? { cnfStyle } : {}),
+    ...(hMerge ? { hMerge } : {}),
     ...(borders
       ? { borders: orderedDocumentCellFormattingBorders(borders) }
       : {}),
@@ -138,6 +143,7 @@ function onlyReviewableCellFormattingChanged(
     'fitText',
     'hideMark',
     'cnfStyle',
+    'hMerge',
     'borders',
     'borderColor',
     'borderStyle',

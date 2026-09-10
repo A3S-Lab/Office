@@ -70,6 +70,7 @@ export type DocumentTableCellTextDirection =
   | 'lrTbV'
   | 'tbRlV'
   | 'tbLrV';
+export type DocumentTableCellHMerge = 'restart' | 'continue';
 
 const DOCUMENT_TABLE_CELL_TEXT_DIRECTIONS =
   new Set<DocumentTableCellTextDirection>([
@@ -80,6 +81,10 @@ const DOCUMENT_TABLE_CELL_TEXT_DIRECTIONS =
     'tbRlV',
     'tbLrV',
   ]);
+const DOCUMENT_TABLE_CELL_H_MERGES = new Set<DocumentTableCellHMerge>([
+  'restart',
+  'continue',
+]);
 export interface DocumentTableCellFormat {
   backgroundColor: string;
   verticalAlign: DocumentTableVerticalAlign;
@@ -481,6 +486,15 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
         return cnfStyle ? { 'data-office-cell-cnf-style': cnfStyle } : {};
       },
     },
+    hMerge: {
+      default: null,
+      parseHTML: (element: HTMLElement) =>
+        normalizeDocumentTableCellHMerge(element.dataset.officeCellHMerge),
+      renderHTML: (attributes: Record<string, unknown>) => {
+        const hMerge = normalizeDocumentTableCellHMerge(attributes.hMerge);
+        return hMerge ? { 'data-office-cell-h-merge': hMerge } : {};
+      },
+    },
     propertyRevisionOmml: {
       default: null,
       parseHTML: (element: HTMLElement) =>
@@ -807,6 +821,28 @@ export function normalizeDocumentTableCellTextDirection(
   )
     ? (normalized as DocumentTableCellTextDirection)
     : null;
+}
+
+export function normalizeDocumentTableCellHMerge(
+  value: unknown,
+): DocumentTableCellHMerge | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return DOCUMENT_TABLE_CELL_H_MERGES.has(
+    normalized as DocumentTableCellHMerge,
+  )
+    ? (normalized as DocumentTableCellHMerge)
+    : null;
+}
+
+/** Parse w:hMerge: omitted/empty val means continue; unknown vals fail closed. */
+export function parseDocxHMergeValue(
+  value: string | null | undefined,
+): DocumentTableCellHMerge | null {
+  if (value === null || value === undefined) return 'continue';
+  const normalized = value.trim();
+  if (!normalized) return 'continue';
+  return normalizeDocumentTableCellHMerge(normalized);
 }
 
 function cellChangeAttribute(

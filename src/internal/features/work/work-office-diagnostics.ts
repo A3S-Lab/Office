@@ -551,7 +551,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.cell-formatting',
             'Cell-formatting revisions',
-            `${supportedCellFormattingRevisionCount} relationship-free w:tcPrChange record(s) with a prior vAlign, solid direct-color shd, tcMar, tcW, noWrap, textDirection, tcFitText, hideMark, cnfStyle, and/or direct-color tcBorders snapshot remain reviewable in Work as cell-formatting changes and round-trip as native w:tcPrChange records.`,
+            `${supportedCellFormattingRevisionCount} relationship-free w:tcPrChange record(s) with a prior vAlign, solid direct-color shd, tcMar, tcW, noWrap, textDirection, tcFitText, hideMark, cnfStyle, hMerge, and/or direct-color tcBorders snapshot remain reviewable in Work as cell-formatting changes and round-trip as native w:tcPrChange records.`,
             'info',
           ),
         );
@@ -633,7 +633,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.cell-property',
             'Cell-property revisions',
-            `${preservableCellPropertyRevisionCount} relationship-free w:tcPrChange record(s) outside the reviewable vAlign/solid-shd/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark/cnfStyle/tcBorders subset round-trip as opaque cell metadata on untouched cells. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. vAlign, solid-shd, tcMar, tcW, noWrap, textDirection, tcFitText, hideMark, cnfStyle, and/or tcBorders records are reported separately as reviewable cell-formatting revisions.`,
+            `${preservableCellPropertyRevisionCount} relationship-free w:tcPrChange record(s) outside the reviewable vAlign/solid-shd/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark/cnfStyle/hMerge/tcBorders subset round-trip as opaque cell metadata on untouched cells. They are not yet reviewable in Work; relationship-bound or spoofed records stay fail-closed. vAlign, solid-shd, tcMar, tcW, noWrap, textDirection, tcFitText, hideMark, cnfStyle, hMerge, and/or tcBorders records are reported separately as reviewable cell-formatting revisions.`,
             'info',
           ),
         );
@@ -702,7 +702,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.structural',
             'Structural revisions',
-            'Moved content plus unsupported character formatting, paragraph formatting, numbering, and unpreservable table/row/cell/section-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded whole-paragraph mark, text-move, character-, paragraph-, table-formatting (alignment/preferred-width/indent/cell margins/layout/bidiVisual/solid fill/tblLook/tblOverlap/tblStyle/tblCellSpacing/tblStyleColBandSize/tblStyleRowBandSize/tblBorders/tblCaption/tblDescription), row-formatting (cantSplit/tblHeader/trHeight/hidden/jc/gridBefore/gridAfter/wBefore/wAfter/cnfStyle), cell-formatting (vAlign/solid fill/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark/cnfStyle/tcBorders), section-formatting (orientation/page geometry/page margins/paper source/equal-width or unequal-width columns/titlePg/rtlGutter/docGrid), and ordered-list-numbering subsets, including live track-changes for those formatting families. Relationship-free non-reviewable w:tblPrChange plus broader w:trPrChange, w:tcPrChange, and w:sectPrChange records are reported separately. Isolated paragraph-break mark revisions are reported separately as docx.revisions.paragraph-break. Unpaired w:move*Range* markers are reported separately as docx.revisions.move-range.',
+            'Moved content plus unsupported character formatting, paragraph formatting, numbering, and unpreservable table/row/cell/section-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded whole-paragraph mark, text-move, character-, paragraph-, table-formatting (alignment/preferred-width/indent/cell margins/layout/bidiVisual/solid fill/tblLook/tblOverlap/tblStyle/tblCellSpacing/tblStyleColBandSize/tblStyleRowBandSize/tblBorders/tblCaption/tblDescription), row-formatting (cantSplit/tblHeader/trHeight/hidden/jc/gridBefore/gridAfter/wBefore/wAfter/cnfStyle), cell-formatting (vAlign/solid fill/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark/cnfStyle/hMerge/tcBorders), section-formatting (orientation/page geometry/page margins/paper source/equal-width or unequal-width columns/titlePg/rtlGutter/docGrid), and ordered-list-numbering subsets, including live track-changes for those formatting families. Relationship-free non-reviewable w:tblPrChange plus broader w:trPrChange, w:tcPrChange, and w:sectPrChange records are reported separately. Isolated paragraph-break mark revisions are reported separately as docx.revisions.paragraph-break. Unpaired w:move*Range* markers are reported separately as docx.revisions.move-range.',
           ),
         );
       }

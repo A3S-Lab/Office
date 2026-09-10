@@ -720,6 +720,7 @@ export async function createDocxBlob(
     noteContext.cellFormattingChangePatches.fitText,
     noteContext.cellFormattingChangePatches.hideMark,
     noteContext.cellFormattingChangePatches.cnfStyles,
+    noteContext.cellFormattingChangePatches.hMerges,
     noteContext.cellFormattingChangePatches.borders,
   );
   const sectionFormattingChangesPatched =

@@ -1154,6 +1154,143 @@ describe('DOCX cell-formatting revisions', () => {
       editor.destroy();
     }
   });
+
+  test('imports hMerge-only w:tcPrChange as a reviewable cell-formatting change', async () => {
+    const source = await cellDocxWithHMergeChange({
+      prior: 'restart',
+      current: 'continue',
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-formatting-h-merge.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const cell = html.body.querySelector('td');
+    expect(cell?.dataset.changeKind).toBe('cell-formatting');
+    expect(cell?.dataset.officeCellPropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentCellFormatting(cell?.dataset.changeBefore)).toEqual({
+      hMerge: 'restart',
+    });
+    expect(cell?.dataset.officeCellHMerge).toBe('continue');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('cell-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const rejected = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rejectedCell = rejected.body.querySelector('td');
+      expect(rejectedCell?.dataset.changeKind).toBeUndefined();
+      expect(rejectedCell?.dataset.officeCellHMerge).toBe('restart');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending hMerge cell-formatting change round-trips as native w:tcPrChange', async () => {
+    const source = await cellDocxWithHMergeChange({
+      prior: 'continue',
+      omitPriorVal: true,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-formatting-h-merge-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await xmlEntry(
+      await JSZip.loadAsync(
+        await (await createArtifactBlob(imported)).arrayBuffer(),
+      ),
+      'word/document.xml',
+    );
+    const change = directChild(
+      directChild(descendants(exported, 'tc')[0], 'tcPr'),
+      'tcPrChange',
+    );
+    expect(change).toBeTruthy();
+    const priorHMerge = directChild(directChild(change!, 'tcPr'), 'hMerge');
+    expect(
+      priorHMerge?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorHMerge?.getAttribute('w:val') ??
+        priorHMerge?.getAttribute('val'),
+    ).toBe('continue');
+  });
+
+  test('malformed hMerge w:tcPrChange stays on the opaque cell metadata path', async () => {
+    const source = await cellDocxWithHMergeChange({
+      prior: 'restart',
+      malformedPrior: true,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-formatting-h-merge-opaque.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const cell = html.body.querySelector('td');
+    expect(cell?.dataset.changeKind).toBeUndefined();
+    expect(cell?.dataset.officeCellPropertyRevisionOmml).toBeTruthy();
+  });
+
+  test('live cell hMerge edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content:
+        '<table><tbody><tr><td data-office-cell-h-merge="continue"><p>Cell</p></td></tr></tbody></table>',
+    });
+    try {
+      let cellPos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'tableCell' && cellPos === null) {
+          cellPos = position;
+        }
+      });
+      expect(cellPos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(cellPos!, undefined, {
+          ...editor.state.doc.nodeAt(cellPos!)!.attrs,
+          hMerge: 'restart',
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'cell-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const cell = html.body.querySelector('td');
+      expect(cell?.dataset.changeKind).toBe('cell-formatting');
+      expect(
+        parseDocumentCellFormatting(cell?.dataset.changeBefore),
+      ).toMatchObject({
+        hMerge: 'continue',
+      });
+      expect(cell?.dataset.officeCellHMerge).toBe('restart');
+    } finally {
+      editor.destroy();
+    }
+  });
+
 });
 
 async function cellDocxWithVAlignChange(options: {
@@ -1634,6 +1771,64 @@ async function cellDocxWithCnfStyleChange(options: {
     options.malformedPrior ? '10000000000' : options.prior,
   );
   prior.append(priorCnfStyle);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+
+async function cellDocxWithHMergeChange(options: {
+  prior: 'restart' | 'continue';
+  current?: 'restart' | 'continue';
+  omitPriorVal?: boolean;
+  malformedPrior?: boolean;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const cell = descendants(document, 'tc')[0];
+  const properties =
+    directChild(cell, 'tcPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+      cell.insertBefore(created, cell.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'hMerge' || child.localName === 'tcPrChange',
+  )) {
+    existing.remove();
+  }
+  const current = document.createElementNS(WORD_NAMESPACE, 'w:hMerge');
+  current.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:val',
+    options.current ?? options.prior,
+  );
+  properties.append(current);
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:tcPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '47');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+  const priorHMerge = document.createElementNS(WORD_NAMESPACE, 'w:hMerge');
+  if (options.malformedPrior) {
+    priorHMerge.setAttributeNS(WORD_NAMESPACE, 'w:val', 'diagonal');
+  } else if (!options.omitPriorVal) {
+    priorHMerge.setAttributeNS(WORD_NAMESPACE, 'w:val', options.prior);
+  }
+  prior.append(priorHMerge);
   change.append(prior);
   properties.append(change);
   archive.file(

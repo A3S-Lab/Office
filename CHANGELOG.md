@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:tcPrChange` priors that include bounded `w:hMerge`
+  (`restart` / `continue`, omitted val = continue) are now reviewable as
+  `cell-formatting` with accept/reject, live track-changes, and native export.
+  Unknown merge values stay fail-closed; opaque cell fixtures moved off `hMerge`
+  to `vMerge`.
+
 ## 0.104.0 - 2026-09-10
 
 ### Writer

@@ -12,6 +12,8 @@ import {
 import {
   normalizeDocumentTableVerticalAlign,
   normalizeDocumentTableCellTextDirection,
+  normalizeDocumentTableCellHMerge,
+  type DocumentTableCellHMerge,
   type DocumentTableCellTextDirection,
   type DocumentTableVerticalAlign,
 } from './work-document-table-cell-formatting';
@@ -31,13 +33,19 @@ export const DOCUMENT_CELL_CHANGE_ATTRIBUTES = [
   'cellChangeBefore',
 ] as const;
 
-export type { DocumentTableCellTextDirection } from './work-document-table-cell-formatting';
-export { normalizeDocumentTableCellTextDirection } from './work-document-table-cell-formatting';
+export type {
+  DocumentTableCellHMerge,
+  DocumentTableCellTextDirection,
+} from './work-document-table-cell-formatting';
+export {
+  normalizeDocumentTableCellHMerge,
+  normalizeDocumentTableCellTextDirection,
+} from './work-document-table-cell-formatting';
 
 /**
  * Prior snapshot for reviewable cell-property revisions.
  * At least one of verticalAlign, fill, margins, width, noWrap, textDirection,
- * fitText, hideMark, cnfStyle, or borders must be present.
+ * fitText, hideMark, cnfStyle, hMerge, or borders must be present.
  */
 export interface DocumentCellFormattingSnapshot {
   verticalAlign?: DocumentTableVerticalAlign;
@@ -49,6 +57,7 @@ export interface DocumentCellFormattingSnapshot {
   fitText?: boolean;
   hideMark?: boolean;
   cnfStyle?: string;
+  hMerge?: DocumentTableCellHMerge;
   borders?: DocumentCellFormattingBorders;
 }
 
@@ -72,12 +81,13 @@ export function serializeDocumentCellFormatting(attributes: {
   fitText?: unknown;
   hideMark?: unknown;
   cnfStyle?: unknown;
+  hMerge?: unknown;
   borders?: unknown;
 }): string {
   const snapshot = normalizeDocumentCellFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, textDirection, fitText, hideMark, cnfStyle, or borders.',
+      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, textDirection, fitText, hideMark, cnfStyle, hMerge, or borders.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -117,6 +127,7 @@ export function parseDocumentCellFormatting(
         key !== 'fitText' &&
         key !== 'hideMark' &&
         key !== 'cnfStyle' &&
+        key !== 'hMerge' &&
         key !== 'borders',
     )
   ) {
@@ -137,6 +148,7 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
   fitText?: unknown;
   hideMark?: unknown;
   cnfStyle?: unknown;
+  hMerge?: unknown;
   borders?: unknown;
 }): DocumentCellFormattingSnapshot | null {
   const snapshot: DocumentCellFormattingSnapshot = {};
@@ -192,6 +204,11 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
     if (!cnfStyle) return null;
     snapshot.cnfStyle = cnfStyle;
   }
+  if ('hMerge' in attributes && attributes.hMerge !== undefined) {
+    const hMerge = normalizeDocumentTableCellHMerge(attributes.hMerge);
+    if (!hMerge) return null;
+    snapshot.hMerge = hMerge;
+  }
   if ('borders' in attributes && attributes.borders !== undefined) {
     const borders = normalizeDocumentCellFormattingBorders(attributes.borders);
     if (!borders) return null;
@@ -206,6 +223,7 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
     snapshot.fitText !== undefined ||
     snapshot.hideMark !== undefined ||
     snapshot.cnfStyle !== undefined ||
+    snapshot.hMerge !== undefined ||
     snapshot.borders !== undefined
     ? snapshot
     : null;
@@ -253,6 +271,9 @@ export function restoredDocumentCellAttributes(
       : {}),
     ...(formatting.cnfStyle !== undefined
       ? { cnfStyle: formatting.cnfStyle }
+      : {}),
+    ...(formatting.hMerge !== undefined
+      ? { hMerge: formatting.hMerge }
       : {}),
     ...(formatting.borders !== undefined
       ? restoredCellBorderAttributes(formatting.borders)
@@ -399,6 +420,7 @@ function orderedSnapshot(
   if (snapshot.fitText !== undefined) ordered.fitText = snapshot.fitText;
   if (snapshot.hideMark !== undefined) ordered.hideMark = snapshot.hideMark;
   if (snapshot.cnfStyle !== undefined) ordered.cnfStyle = snapshot.cnfStyle;
+  if (snapshot.hMerge !== undefined) ordered.hMerge = snapshot.hMerge;
   if (snapshot.borders) {
     ordered.borders = orderedDocumentCellFormattingBorders(snapshot.borders);
   }
