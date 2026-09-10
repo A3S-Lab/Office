@@ -426,10 +426,20 @@ function createTcBordersElement(
 function cellFormattingBordersFromElement(
   cell: HTMLTableCellElement,
 ): DocumentCellFormattingBorders | null {
+  // Theme-bound borders are exported via documentTableCellDocxOptions +
+  // DocxThemePatchCollector. Rewriting them here drops w:themeColor /
+  // themeTint / themeShade and breaks semantic theme round-trip.
+  if (cellHasThemeBorders(cell)) return null;
   if (!hasDocumentTableCellBorderPresentation(cell)) return null;
   const fallback = defaultCellBorderFromElement(cell);
   const full = documentTableBordersFromElement(cell, fallback);
   return normalizeDocumentCellFormattingBorders(full);
+}
+
+function cellHasThemeBorders(cell: HTMLTableCellElement): boolean {
+  return Object.keys(cell.dataset).some((key) =>
+    key.startsWith('officeCellBorderTheme'),
+  );
 }
 
 function hasDocumentTableCellBorderPresentation(
