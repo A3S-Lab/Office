@@ -282,15 +282,15 @@ describe('DOCX table property-revision preservation', () => {
     vAlign.setAttributeNS(WORD_NAMESPACE, 'w:val', 'center');
     prior.append(vAlign);
     // Multi-property prior outside the reviewable
-    // vAlign/solid-shd/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark/cnfStyle/hMerge/tcBorders subset
-    // (vMerge stays opaque).
+    // vAlign/solid-shd/tcMar/tcW/noWrap/textDirection/tcFitText/hideMark/cnfStyle/hMerge/vMerge/tcBorders subset
+    // (gridSpan stays opaque).
     const shading = document.createElementNS(WORD_NAMESPACE, 'w:shd');
     shading.setAttributeNS(WORD_NAMESPACE, 'w:val', 'clear');
     shading.setAttributeNS(WORD_NAMESPACE, 'w:fill', 'FFFF00');
     prior.append(shading);
-    const vMerge = document.createElementNS(WORD_NAMESPACE, 'w:vMerge');
-    vMerge.setAttributeNS(WORD_NAMESPACE, 'w:val', 'restart');
-    prior.append(vMerge);
+    const gridSpan = document.createElementNS(WORD_NAMESPACE, 'w:gridSpan');
+    gridSpan.setAttributeNS(WORD_NAMESPACE, 'w:val', '2');
+    prior.append(gridSpan);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -347,7 +347,7 @@ describe('DOCX table property-revision preservation', () => {
         priorAlign?.getAttribute('val'),
     ).toBe('center');
     expect(directChild(priorProperties, 'shd')).toBeTruthy();
-    expect(directChild(priorProperties, 'vMerge')).toBeTruthy();
+    expect(directChild(priorProperties, 'gridSpan')).toBeTruthy();
   });
 });
 

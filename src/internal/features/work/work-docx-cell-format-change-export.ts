@@ -1,7 +1,10 @@
 import JSZip from 'jszip';
 import { parseDocumentCellFormatting } from './work-document-cell-format-changes';
 import { normalizeDocumentCnfStyle } from './work-document-cnf-style';
-import { normalizeDocumentTableCellHMerge } from './work-document-table-cell-formatting';
+import {
+  normalizeDocumentTableCellHMerge,
+  normalizeDocumentTableCellVMerge,
+} from './work-document-table-cell-formatting';
 import {
   documentTableBordersFromElement,
   normalizeDocumentTableBorderStyle,
@@ -41,6 +44,7 @@ export class DocxCellFormattingChangePatchCollector {
   readonly hideMark: boolean[] = [];
   readonly cnfStyles: Array<string | null> = [];
   readonly hMerges: Array<string | null> = [];
+  readonly vMerges: Array<string | null> = [];
   readonly borders: Array<DocumentCellFormattingBorders | null> = [];
 
   record(element: HTMLTableCellElement, id: number): void {
@@ -55,6 +59,9 @@ export class DocxCellFormattingChangePatchCollector {
     );
     this.hMerges.push(
       normalizeDocumentTableCellHMerge(element.dataset.officeCellHMerge),
+    );
+    this.vMerges.push(
+      normalizeDocumentTableCellVMerge(element.dataset.officeCellVMerge),
     );
     this.borders.push(cellFormattingBordersFromElement(element));
     if (
@@ -92,6 +99,7 @@ export async function patchDocxCellFormattingChanges(
   hideMark: readonly boolean[] = [],
   cnfStyles: readonly (string | null)[] = [],
   hMerges: readonly (string | null)[] = [],
+  vMerges: readonly (string | null)[] = [],
   borders: readonly (DocumentCellFormattingBorders | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
@@ -102,6 +110,7 @@ export async function patchDocxCellFormattingChanges(
     !hideMark.some(Boolean) &&
     !cnfStyles.some((value) => value !== null) &&
     !hMerges.some((value) => value !== null) &&
+    !vMerges.some((value) => value !== null) &&
     !borders.some(Boolean)
   ) {
     return buffer;
@@ -132,6 +141,7 @@ export async function patchDocxCellFormattingChanges(
     const cellHideMark = hideMark[index] === true;
     const cellCnfStyle = cnfStyles[index] ?? null;
     const cellHMerge = hMerges[index] ?? null;
+    const cellVMerge = vMerges[index] ?? null;
     const cellBorders = borders[index] ?? null;
     index += 1;
     if (patch) {
@@ -160,6 +170,10 @@ export async function patchDocxCellFormattingChanges(
     }
     if (cellHMerge) {
       setCellHMerge(document, cell, cellHMerge);
+      changed = true;
+    }
+    if (cellVMerge) {
+      setCellVMerge(document, cell, cellVMerge);
       changed = true;
     }
     if (setCellBorders(document, cell, cellBorders)) {
@@ -301,6 +315,27 @@ function setCellHMerge(
   properties.append(element);
 }
 
+function setCellVMerge(
+  document: Document,
+  cell: Element,
+  vMerge: string,
+): void {
+  let properties = directChild(cell, 'tcPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+    cell.insertBefore(properties, cell.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'vMerge' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:vMerge');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', vMerge);
+  properties.append(element);
+}
+
 function setCellFormattingChange(
   document: Document,
   cell: Element,
@@ -397,6 +432,11 @@ function setCellFormattingChange(
     const hMerge = document.createElementNS(WORD_NAMESPACE, 'w:hMerge');
     hMerge.setAttributeNS(WORD_NAMESPACE, 'w:val', formatting.hMerge);
     prior.append(hMerge);
+  }
+  if (formatting.vMerge !== undefined) {
+    const vMerge = document.createElementNS(WORD_NAMESPACE, 'w:vMerge');
+    vMerge.setAttributeNS(WORD_NAMESPACE, 'w:val', formatting.vMerge);
+    prior.append(vMerge);
   }
   if (formatting.borders !== undefined) {
     prior.append(createTcBordersElement(document, formatting.borders));

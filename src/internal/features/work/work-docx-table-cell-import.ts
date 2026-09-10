@@ -39,9 +39,11 @@ import { parseDocxCnfStyleElement } from './work-document-cnf-style';
 import {
   normalizeDocumentTableCellTextDirection,
   parseDocxHMergeValue,
+  parseDocxVMergeValue,
 } from './work-document-table-cell-formatting';
 import type {
   DocumentTableCellHMerge,
+  DocumentTableCellVMerge,
   DocumentTableCellTextDirection,
 } from './work-document-table-cell-formatting';
 import {
@@ -70,6 +72,7 @@ export interface ImportedDocxTableCellMarker {
   hideMark?: boolean;
   cnfStyle?: string;
   hMerge?: DocumentTableCellHMerge;
+  vMerge?: DocumentTableCellVMerge;
   propertyRevisionOmml?: string;
   formattingChange?: SupportedDocxCellFormattingChange;
 }
@@ -166,6 +169,13 @@ export function markDocxTableCells(
       ? parseDocxHMergeValue(attribute(hMergeElement, 'val'))
       : null;
     const hMerge = hMergeParsed ?? undefined;
+    const vMergeElement = properties
+      ? directChild(properties, 'vMerge')
+      : undefined;
+    const vMergeParsed = vMergeElement
+      ? parseDocxVMergeValue(attribute(vMergeElement, 'val'))
+      : null;
+    const vMerge = vMergeParsed ?? undefined;
     const formattingChange =
       supportedDocxCellFormattingChangeFromProperties(properties);
     const propertyRevisionOmml = formattingChange
@@ -182,6 +192,7 @@ export function markDocxTableCells(
       hideMark === undefined &&
       cnfStyle === undefined &&
       hMerge === undefined &&
+      vMerge === undefined &&
       !propertyRevisionOmml &&
       !formattingChange
     ) {
@@ -204,6 +215,7 @@ export function markDocxTableCells(
       ...(hideMark !== undefined ? { hideMark } : {}),
       ...(cnfStyle !== undefined ? { cnfStyle } : {}),
       ...(hMerge !== undefined ? { hMerge } : {}),
+      ...(vMerge !== undefined ? { vMerge } : {}),
       ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
       ...(formattingChange ? { formattingChange } : {}),
     });
@@ -295,6 +307,9 @@ function applyCellFormat(
   }
   if (format.hMerge !== undefined) {
     cell.dataset.officeCellHMerge = format.hMerge;
+  }
+  if (format.vMerge !== undefined) {
+    cell.dataset.officeCellVMerge = format.vMerge;
   }
   applyDocumentCellPropertyRevisionOmmlToElement(
     cell,

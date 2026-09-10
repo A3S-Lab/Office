@@ -13,7 +13,9 @@ import {
   normalizeDocumentTableVerticalAlign,
   normalizeDocumentTableCellTextDirection,
   normalizeDocumentTableCellHMerge,
+  normalizeDocumentTableCellVMerge,
   type DocumentTableCellHMerge,
+  type DocumentTableCellVMerge,
   type DocumentTableCellTextDirection,
   type DocumentTableVerticalAlign,
 } from './work-document-table-cell-formatting';
@@ -35,17 +37,19 @@ export const DOCUMENT_CELL_CHANGE_ATTRIBUTES = [
 
 export type {
   DocumentTableCellHMerge,
+  DocumentTableCellVMerge,
   DocumentTableCellTextDirection,
 } from './work-document-table-cell-formatting';
 export {
   normalizeDocumentTableCellHMerge,
+  normalizeDocumentTableCellVMerge,
   normalizeDocumentTableCellTextDirection,
 } from './work-document-table-cell-formatting';
 
 /**
  * Prior snapshot for reviewable cell-property revisions.
  * At least one of verticalAlign, fill, margins, width, noWrap, textDirection,
- * fitText, hideMark, cnfStyle, hMerge, or borders must be present.
+ * fitText, hideMark, cnfStyle, hMerge, vMerge, or borders must be present.
  */
 export interface DocumentCellFormattingSnapshot {
   verticalAlign?: DocumentTableVerticalAlign;
@@ -58,6 +62,7 @@ export interface DocumentCellFormattingSnapshot {
   hideMark?: boolean;
   cnfStyle?: string;
   hMerge?: DocumentTableCellHMerge;
+  vMerge?: DocumentTableCellVMerge;
   borders?: DocumentCellFormattingBorders;
 }
 
@@ -82,12 +87,13 @@ export function serializeDocumentCellFormatting(attributes: {
   hideMark?: unknown;
   cnfStyle?: unknown;
   hMerge?: unknown;
+  vMerge?: unknown;
   borders?: unknown;
 }): string {
   const snapshot = normalizeDocumentCellFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, textDirection, fitText, hideMark, cnfStyle, hMerge, or borders.',
+      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, textDirection, fitText, hideMark, cnfStyle, hMerge, vMerge, or borders.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -128,6 +134,7 @@ export function parseDocumentCellFormatting(
         key !== 'hideMark' &&
         key !== 'cnfStyle' &&
         key !== 'hMerge' &&
+        key !== 'vMerge' &&
         key !== 'borders',
     )
   ) {
@@ -149,6 +156,7 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
   hideMark?: unknown;
   cnfStyle?: unknown;
   hMerge?: unknown;
+  vMerge?: unknown;
   borders?: unknown;
 }): DocumentCellFormattingSnapshot | null {
   const snapshot: DocumentCellFormattingSnapshot = {};
@@ -209,6 +217,11 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
     if (!hMerge) return null;
     snapshot.hMerge = hMerge;
   }
+  if ('vMerge' in attributes && attributes.vMerge !== undefined) {
+    const vMerge = normalizeDocumentTableCellVMerge(attributes.vMerge);
+    if (!vMerge) return null;
+    snapshot.vMerge = vMerge;
+  }
   if ('borders' in attributes && attributes.borders !== undefined) {
     const borders = normalizeDocumentCellFormattingBorders(attributes.borders);
     if (!borders) return null;
@@ -224,6 +237,7 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
     snapshot.hideMark !== undefined ||
     snapshot.cnfStyle !== undefined ||
     snapshot.hMerge !== undefined ||
+    snapshot.vMerge !== undefined ||
     snapshot.borders !== undefined
     ? snapshot
     : null;
@@ -274,6 +288,9 @@ export function restoredDocumentCellAttributes(
       : {}),
     ...(formatting.hMerge !== undefined
       ? { hMerge: formatting.hMerge }
+      : {}),
+    ...(formatting.vMerge !== undefined
+      ? { vMerge: formatting.vMerge }
       : {}),
     ...(formatting.borders !== undefined
       ? restoredCellBorderAttributes(formatting.borders)
@@ -421,6 +438,7 @@ function orderedSnapshot(
   if (snapshot.hideMark !== undefined) ordered.hideMark = snapshot.hideMark;
   if (snapshot.cnfStyle !== undefined) ordered.cnfStyle = snapshot.cnfStyle;
   if (snapshot.hMerge !== undefined) ordered.hMerge = snapshot.hMerge;
+  if (snapshot.vMerge !== undefined) ordered.vMerge = snapshot.vMerge;
   if (snapshot.borders) {
     ordered.borders = orderedDocumentCellFormattingBorders(snapshot.borders);
   }

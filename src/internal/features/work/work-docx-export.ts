@@ -721,6 +721,7 @@ export async function createDocxBlob(
     noteContext.cellFormattingChangePatches.hideMark,
     noteContext.cellFormattingChangePatches.cnfStyles,
     noteContext.cellFormattingChangePatches.hMerges,
+    noteContext.cellFormattingChangePatches.vMerges,
     noteContext.cellFormattingChangePatches.borders,
   );
   const sectionFormattingChangesPatched =
