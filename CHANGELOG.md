@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.135.0 - 2026-09-10
+
+### Writer
+
+- Picture-only paragraph bodies are now admitted for whole-paragraph mark
+  wrappers and paragraph-break neighbors when the only content is supported
+  inline DrawingML pictures (`wp:inline` + resolved image `r:embed`). Visible
+  text is no longer required. Empty or malformed drawings, floating anchors,
+  and unresolved embeds stay fail-closed.
+
 ## 0.134.0 - 2026-09-10
 
 ### Writer

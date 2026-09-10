@@ -511,6 +511,46 @@ describe('DOCX paragraph-break merge/split revisions', () => {
     ]);
   });
 
+  test('admits picture-only paragraph-break bodies', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:del w:id="31" w:author="Ada" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:r>${INLINE_PICTURE_DRAWING}</w:r>
+          </w:p>
+          <w:p><w:r><w:t>Bravo</w:t></w:r></w:p>
+        </w:body>
+      </w:document>
+    `);
+    const imageEmbeds = createDocxImageEmbedTargets([
+      { id: 'rId1', type: IMAGE_RELATIONSHIP_TYPE },
+    ]);
+    const mark = descendants(document, 'del')[0];
+    expect(
+      mark &&
+        isIsolatedDocxParagraphBreakMarkChange(
+          mark,
+          EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+          imageEmbeds,
+        ),
+    ).toBe(true);
+    expect(
+      markDocxParagraphBreakChanges(
+        document,
+        EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+        imageEmbeds,
+      ).paragraphs,
+    ).toEqual([
+      expect.objectContaining({
+        kind: 'merge',
+        author: 'Ada',
+      }),
+    ]);
+  });
+
   test('rejects unresolved relationship-bound hyperlinks in paragraph-break bodies', () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">

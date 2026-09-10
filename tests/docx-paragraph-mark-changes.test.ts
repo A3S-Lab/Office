@@ -338,6 +338,49 @@ describe('DOCX paragraph-mark revisions', () => {
     ]);
   });
 
+  test('admits picture-only whole-paragraph mark revision wrappers', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:ins w:id="101" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:ins w:id="102" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
+              <w:r>${INLINE_PICTURE_DRAWING}</w:r>
+            </w:ins>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const imageEmbeds = createDocxImageEmbedTargets([
+      { id: 'rId1', type: IMAGE_RELATIONSHIP_TYPE },
+    ]);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(
+      mark &&
+        isSupportedDocxParagraphMarkChange(
+          mark,
+          EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+          imageEmbeds,
+        ),
+    ).toBe(true);
+    expect(
+      markDocxParagraphMarkChanges(
+        document,
+        EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+        imageEmbeds,
+      ).paragraphs,
+    ).toEqual([
+      expect.objectContaining({
+        id: 'docx-paragraph-mark-change-101',
+        kind: 'insertion',
+      }),
+    ]);
+  });
+
   test('admits untracked inline DrawingML picture siblings beside whole-paragraph mark revisions', () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}">

@@ -44,16 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.134.0)
+## What's new on `main` (0.135.0)
 
-Writer Phase 0 admits untracked supported inline DrawingML picture siblings
-beside whole-paragraph mark revision wrappers:
+Writer Phase 0 admits picture-only paragraph bodies for whole-paragraph mark
+wrappers and paragraph-break neighbors:
 
-- `wp:inline` drawings with a resolved image `r:embed` may sit beside matching
-  `w:ins` / `w:del` wrappers, mirroring the 0.130 text-sibling path.
-- Empty or malformed drawings, floating anchors, unresolved embeds, and
-  picture-only mark bodies stay fail-closed. Paragraph-break bodies already
-  admitted inline pictures through `0.133.0`.
+- When the only content is supported inline DrawingML pictures (`wp:inline` +
+  resolved image `r:embed`), visible text is no longer required.
+- Empty or malformed drawings, floating anchors, and unresolved embeds stay
+  fail-closed.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

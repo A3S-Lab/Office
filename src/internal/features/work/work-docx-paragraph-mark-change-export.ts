@@ -296,6 +296,7 @@ function browserParagraphBodyMatchesChange(
   ) {
     return false;
   }
+  let hasTrackedImage = false;
   for (const image of Array.from(paragraph.querySelectorAll('img'))) {
     const revision = image.closest<HTMLElement>(
       'ins[data-document-change="true"], del[data-document-change="true"]',
@@ -307,6 +308,7 @@ function browserParagraphBodyMatchesChange(
     if (!paragraph.contains(revision) || !revisions.includes(revision)) {
       return false;
     }
+    hasTrackedImage = true;
   }
   for (const locked of Array.from(
     paragraph.querySelectorAll('[contenteditable="false"]'),
@@ -335,7 +337,7 @@ function browserParagraphBodyMatchesChange(
     }
     hasTrackedText = true;
   }
-  return hasText && hasTrackedText;
+  return (hasText && hasTrackedText) || hasTrackedImage;
 }
 
 function isBrowserTextWrappingBreak(element: Element): boolean {

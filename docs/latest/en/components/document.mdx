@@ -743,13 +743,14 @@ matching body wrappers and still import as one atomic whole-paragraph revision.
 Safe relationship-bound external hyperlinks (`http`/`https`/`mailto` with a
 resolved `r:id`) are admitted alongside relationship-free internal links.
 Supported inline DrawingML pictures (`wp:inline` with a resolved image
-`r:embed`) are admitted alongside visible text. Untracked supported inline
-DrawingML picture siblings may sit beside matching body wrappers, mirroring
-untracked text siblings. Floating anchors, empty or malformed drawings,
-unresolved embeds, picture-only paragraphs, unresolved or unsafe hyperlinks,
-mismatched kind/author/date, malformed or namespace-spoofed attributes,
-unsupported nodes, and over-limit input stay on the structural compatibility
-path with explicit diagnostics.
+`r:embed`) are admitted alongside visible text, or as picture-only paragraph
+bodies for whole-paragraph mark wrappers and paragraph-break neighbors when
+that is the only content. Untracked supported inline DrawingML picture siblings
+may sit beside matching body wrappers, mirroring untracked text siblings.
+Floating anchors, empty or malformed drawings, unresolved embeds, unresolved
+or unsafe hyperlinks, mismatched kind/author/date, malformed or
+namespace-spoofed attributes, unsupported nodes, and over-limit input stay on
+the structural compatibility path with explicit diagnostics.
 
 ## Move revisions
 

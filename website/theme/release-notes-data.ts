@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.135.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits picture-only paragraph bodies for mark and break revisions',
+      zh: 'Writer 整段标记与段落分隔符修订准入仅含图片正文',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: whole-paragraph mark wrappers and paragraph-break neighbors now admit picture-only bodies when the only content is supported inline DrawingML pictures (wp:inline with a resolved image r:embed). Visible text is no longer required. Empty or malformed drawings, floating anchors, and unresolved embeds stay fail-closed.',
+      zh: 'Phase 0 保真：整段段落标记包装与段落分隔符相邻段落现可在唯一内容为受支持的行内 DrawingML 图片（带已解析图片 r:embed 的 wp:inline）时准入仅含图片正文。不再要求可见文本。空或畸形绘图、浮动锚点以及未解析嵌入仍失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Picture-only bodies admitted',
+          zh: '仅含图片正文准入',
+        },
+        detail: {
+          en: 'Supported wp:inline image embeds alone satisfy whole-paragraph mark and paragraph-break body admission without visible text.',
+          zh: '仅含受支持的 wp:inline 图片嵌入即可满足整段标记与段落分隔符正文准入，无需可见文本。',
+        },
+      },
+      {
+        title: {
+          en: 'Mark wrappers and break neighbors',
+          zh: '覆盖标记包装与分隔符邻居',
+        },
+        detail: {
+          en: 'The same picture-only rules apply to whole-paragraph mark wrappers and eligible paragraph-break merge/split neighbors.',
+          zh: '同一仅含图片规则适用于整段标记包装与符合条件的段落分隔符合并/拆分相邻段落。',
+        },
+      },
+      {
+        title: {
+          en: 'Empty drawings stay fail-closed',
+          zh: '空绘图仍失败闭合',
+        },
+        detail: {
+          en: 'Empty or malformed drawings, floating anchors, and unresolved embeds remain diagnostics-only.',
+          zh: '空或畸形绘图、浮动锚点与未解析嵌入仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.135.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.135.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.134.0',
     date: '2026-09-10',
     kind: 'improved',

@@ -499,8 +499,9 @@ function isolatedParagraphBreakMarkChange(
  * non-breaking and soft hyphens, empty/`rPr`-only runs, relationship-free
  * internal hyperlinks, safe relationship-bound external hyperlinks,
  * relationship-free bookmarks, and supported inline DrawingML pictures match
- * the whole-paragraph mark admission set; floating anchors, untracked drawing
- * siblings, tracked wrappers, and unsafe or unresolved links stay fail-closed.
+ * the whole-paragraph mark admission set (including picture-only bodies);
+ * floating anchors, tracked wrappers, and unsafe or unresolved links stay
+ * fail-closed.
  */
 function paragraphBodyIsUntrackedTextOnly(
   paragraph: Element,
@@ -512,8 +513,6 @@ function paragraphBodyIsUntrackedTextOnly(
     (element) => element !== properties,
   );
   if (!body.length) return true;
-  let hasText = false;
-  let hasPicture = false;
   for (const child of body) {
     if (child.namespaceURI !== paragraph.namespaceURI) return false;
     if (
@@ -540,19 +539,16 @@ function paragraphBodyIsUntrackedTextOnly(
         linkHasText ||= runHasVisibleText(run, 'insertion');
       }
       if (!linkHasText) return false;
-      hasText = true;
       continue;
     }
     if (child.localName !== 'r') return false;
     if (runHasTrackedMark(child)) return false;
     if (runIsSupportedInlinePicture(child, imageEmbeds)) {
-      hasPicture = true;
       continue;
     }
     if (!runIsTextOnly(child, 'insertion')) return false;
-    hasText ||= runHasVisibleText(child, 'insertion');
   }
-  return !hasPicture || hasText;
+  return true;
 }
 
 function runHasTrackedMark(run: Element): boolean {
@@ -720,10 +716,14 @@ function revisionBodyIsTextOnly(
   const children = directChildren(revision);
   if (!children.length) return false;
   let hasText = false;
+  let hasPicture = false;
   for (const child of children) {
     if (child.namespaceURI !== revision.namespaceURI) return false;
     if (child.localName === 'r') {
-      if (runIsSupportedInlinePicture(child, imageEmbeds)) continue;
+      if (runIsSupportedInlinePicture(child, imageEmbeds)) {
+        hasPicture = true;
+        continue;
+      }
       if (!runIsTextOnly(child, kind)) return false;
       hasText ||= runHasVisibleText(child, kind);
       continue;
@@ -753,7 +753,7 @@ function revisionBodyIsTextOnly(
     }
     return false;
   }
-  return hasText;
+  return hasText || hasPicture;
 }
 
 /**
