@@ -27,6 +27,8 @@ import type {
   WorkDocumentGridType,
   WorkDocumentLnNumType,
   WorkDocumentPaperSize,
+  WorkDocumentPgNumFmt,
+  WorkDocumentPgNumType,
 } from './work-types';
 
 export const DOCUMENT_SECTION_CHANGE_ATTRIBUTES = [
@@ -54,7 +56,7 @@ export type DocumentSectionEqualColumnsSnapshot = DocumentSectionColumnsSnapshot
 /**
  * Prior snapshot for reviewable section-property revisions.
  * At least one of orientation, pageGeometry, pageMargins, paperSource,
- * columns, differentFirstPage, rtlGutter, documentGrid, or lnNumType must be present.
+ * columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, or pgNumType must be present.
  */
 export interface DocumentSectionFormattingSnapshot {
   orientation?: 'portrait' | 'landscape';
@@ -66,6 +68,7 @@ export interface DocumentSectionFormattingSnapshot {
   rtlGutter?: boolean;
   documentGrid?: WorkDocumentGrid;
   lnNumType?: WorkDocumentLnNumType;
+  pgNumType?: WorkDocumentPgNumType;
 }
 
 const MAX_SECTION_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -89,11 +92,12 @@ export function serializeDocumentSectionFormatting(attributes: {
   rtlGutter?: unknown;
   documentGrid?: unknown;
   lnNumType?: unknown;
+  pgNumType?: unknown;
 }): string {
   const snapshot = normalizeDocumentSectionFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, or lnNumType.',
+      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, or pgNumType.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -132,7 +136,8 @@ export function parseDocumentSectionFormatting(
         key !== 'differentFirstPage' &&
         key !== 'rtlGutter' &&
         key !== 'documentGrid' &&
-        key !== 'lnNumType',
+        key !== 'lnNumType' &&
+        key !== 'pgNumType',
     )
   ) {
     return null;
@@ -152,6 +157,7 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
   rtlGutter?: unknown;
   documentGrid?: unknown;
   lnNumType?: unknown;
+  pgNumType?: unknown;
 }): DocumentSectionFormattingSnapshot | null {
   const snapshot: DocumentSectionFormattingSnapshot = {};
   if ('orientation' in attributes && attributes.orientation !== undefined) {
@@ -204,6 +210,11 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     if (!lnNumType) return null;
     snapshot.lnNumType = lnNumType;
   }
+  if ('pgNumType' in attributes && attributes.pgNumType !== undefined) {
+    const pgNumType = normalizeRevisionPgNumType(attributes.pgNumType);
+    if (!pgNumType) return null;
+    snapshot.pgNumType = pgNumType;
+  }
   return snapshot.orientation ||
     snapshot.pageGeometry ||
     snapshot.pageMargins ||
@@ -212,7 +223,8 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     snapshot.differentFirstPage !== undefined ||
     snapshot.rtlGutter !== undefined ||
     snapshot.documentGrid ||
-    snapshot.lnNumType
+    snapshot.lnNumType ||
+    snapshot.pgNumType
     ? snapshot
     : null;
 }
@@ -367,6 +379,17 @@ export function restoredDocumentSectionAttributes(
     lnNumDistance = formatting.lnNumType.distance ?? null;
     lnNumRestart = formatting.lnNumType.restart ?? '';
   }
+  let pgNumFmt = attributes.pgNumFmt;
+  let pgNumStart = attributes.pgNumStart;
+  let pageNumberStart = attributes.pageNumberStart;
+  if (formatting.pgNumType) {
+    pgNumFmt = formatting.pgNumType.fmt ?? '';
+    pgNumStart = formatting.pgNumType.start ?? null;
+    pageNumberStart =
+      formatting.pgNumType.start !== undefined && formatting.pgNumType.start > 0
+        ? Math.min(9999, formatting.pgNumType.start)
+        : null;
+  }
   return clearDocumentSectionChangeAttributes({
     ...attributes,
     orientation,
@@ -388,6 +411,9 @@ export function restoredDocumentSectionAttributes(
     lnNumStart,
     lnNumDistance,
     lnNumRestart,
+    pgNumFmt,
+    pgNumStart,
+    pageNumberStart,
   });
 }
 
@@ -402,6 +428,8 @@ export function sectionFormattingSnapshotFromLayout(layout: {
   pageChrome?: unknown;
   documentGrid?: WorkDocumentGrid;
   lnNumType?: WorkDocumentLnNumType;
+  pgNumType?: WorkDocumentPgNumType;
+  pageNumberStart?: number;
   headerText?: string;
   footerText?: string;
   showPageNumbers?: boolean;
@@ -432,6 +460,12 @@ export function sectionFormattingSnapshotFromLayout(layout: {
   );
   const documentGrid = normalizeRevisionDocumentGrid(layout.documentGrid);
   const lnNumType = normalizeRevisionLnNumType(layout.lnNumType);
+  const pgNumType = normalizeRevisionPgNumType(
+    layout.pgNumType ??
+      (layout.pageNumberStart !== undefined
+        ? { start: layout.pageNumberStart }
+        : undefined),
+  );
   return normalizeDocumentSectionFormattingSnapshot({
     orientation: layout.orientation,
     pageGeometry,
@@ -442,6 +476,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
     rtlGutter: pageMargins.gutterOnRight === true,
     ...(documentGrid ? { documentGrid } : {}),
     ...(lnNumType ? { lnNumType } : {}),
+    ...(pgNumType ? { pgNumType } : {}),
   });
 }
 
@@ -690,6 +725,52 @@ function orderedLnNumType(value: WorkDocumentLnNumType): WorkDocumentLnNumType {
   };
 }
 
+function normalizeRevisionPgNumType(
+  value: unknown,
+): WorkDocumentPgNumType | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record);
+  if (
+    !keys.length ||
+    keys.some((key) => key !== 'fmt' && key !== 'start')
+  ) {
+    return null;
+  }
+  const next: WorkDocumentPgNumType = {};
+  if ('fmt' in record) {
+    if (!validPgNumFmt(record.fmt)) return null;
+    next.fmt = record.fmt;
+  }
+  if ('start' in record) {
+    const start = Number(record.start);
+    if (!Number.isInteger(start) || start < 0 || start > 32_767) {
+      return null;
+    }
+    next.start = start;
+  }
+  return next.fmt !== undefined || next.start !== undefined
+    ? orderedPgNumType(next)
+    : null;
+}
+
+function validPgNumFmt(value: unknown): value is WorkDocumentPgNumFmt {
+  return (
+    value === 'decimal' ||
+    value === 'upperRoman' ||
+    value === 'lowerRoman' ||
+    value === 'upperLetter' ||
+    value === 'lowerLetter'
+  );
+}
+
+function orderedPgNumType(value: WorkDocumentPgNumType): WorkDocumentPgNumType {
+  return {
+    ...(value.fmt !== undefined ? { fmt: value.fmt } : {}),
+    ...(value.start !== undefined ? { start: value.start } : {}),
+  };
+}
+
 function orderedSnapshot(
   snapshot: DocumentSectionFormattingSnapshot,
 ): Record<string, unknown> {
@@ -719,6 +800,9 @@ function orderedSnapshot(
   }
   if (snapshot.lnNumType) {
     ordered.lnNumType = orderedLnNumType(snapshot.lnNumType);
+  }
+  if (snapshot.pgNumType) {
+    ordered.pgNumType = orderedPgNumType(snapshot.pgNumType);
   }
   if (snapshot.columns) {
     ordered.columns = snapshot.columns.custom

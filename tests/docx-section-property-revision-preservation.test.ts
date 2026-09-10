@@ -39,10 +39,10 @@ describe('DOCX section property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:id', '21');
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
-    // lnNumType is reviewable as section-formatting; keep opaque on pgNumType.
-    const pgNumType = document.createElementNS(WORD_NAMESPACE, 'w:pgNumType');
-    pgNumType.setAttributeNS(WORD_NAMESPACE, 'w:start', '3');
-    prior.append(pgNumType);
+    // pgNumType is reviewable as section-formatting; keep opaque on formProt.
+    const formProt = document.createElementNS(WORD_NAMESPACE, 'w:formProt');
+    formProt.setAttributeNS(WORD_NAMESPACE, 'w:val', '1');
+    prior.append(formProt);
     change.append(prior);
     section.append(change);
     archive.file(
@@ -88,16 +88,16 @@ describe('DOCX section property-revision preservation', () => {
       id: '21',
       author: 'Reviewer',
     });
-    const priorPgNumType = directChild(
+    const priorFormProt = directChild(
       directChild(exportedChange!, 'sectPr'),
-      'pgNumType',
+      'formProt',
     );
-    expect(priorPgNumType).toBeTruthy();
+    expect(priorFormProt).toBeTruthy();
     expect(
-      priorPgNumType?.getAttributeNS(WORD_NAMESPACE, 'start') ??
-        priorPgNumType?.getAttribute('w:start') ??
-        priorPgNumType?.getAttribute('start'),
-    ).toBe('3');
+      priorFormProt?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorFormProt?.getAttribute('w:val') ??
+        priorFormProt?.getAttribute('val'),
+    ).toBe('1');
   });
 
   test('drops relationship-bound w:sectPrChange instead of inventing opaque metadata', async () => {

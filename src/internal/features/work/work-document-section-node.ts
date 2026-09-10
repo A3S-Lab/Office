@@ -73,6 +73,8 @@ export const DocumentSection = Node.create({
       lnNumStart: hiddenAttribute(null),
       lnNumDistance: hiddenAttribute(null),
       lnNumRestart: hiddenAttribute(''),
+      pgNumFmt: hiddenAttribute(''),
+      pgNumStart: hiddenAttribute(null),
       propertyRevisionOmml: hiddenAttribute(''),
       sectionChangeKind: hiddenAttribute(null),
       sectionChangeId: hiddenAttribute(''),
@@ -175,6 +177,9 @@ export const DocumentSection = Node.create({
             ),
             lnNumRestart: (node.dataset.sectionLnNumRestart ??
               '') as DocumentSectionNodeAttributes['lnNumRestart'],
+            pgNumFmt: (node.dataset.sectionPgNumFmt ??
+              '') as DocumentSectionNodeAttributes['pgNumFmt'],
+            pgNumStart: nullableNumberAttribute(node, 'sectionPgNumStart'),
             propertyRevisionOmml:
               node.dataset.sectionPropertyRevisionOmml ?? '',
             sectionChangeKind:

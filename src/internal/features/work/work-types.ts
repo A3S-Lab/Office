@@ -100,6 +100,23 @@ export interface WorkDocumentLnNumType {
   restart?: WorkDocumentLnNumRestart;
 }
 
+/** Common ST_NumberFormat values Word uses for section page numbers. */
+export type WorkDocumentPgNumFmt =
+  | 'decimal'
+  | 'upperRoman'
+  | 'lowerRoman'
+  | 'upperLetter'
+  | 'lowerLetter';
+
+/**
+ * Bounded CT_PageNumber subset for Traditional Office section page numbering.
+ * Only `fmt` and `start` are reviewable; chapStyle/chapSep stay fail-closed.
+ */
+export interface WorkDocumentPgNumType {
+  fmt?: WorkDocumentPgNumFmt;
+  start?: number;
+}
+
 export type WorkDocumentPaperSize =
   | 'a3'
   | 'a4'
@@ -122,6 +139,7 @@ export interface WorkDocumentSectionLayout {
   pageChrome?: WorkDocumentPageChrome;
   documentGrid?: WorkDocumentGrid;
   lnNumType?: WorkDocumentLnNumType;
+  pgNumType?: WorkDocumentPgNumType;
   pageBorders?: WorkDocumentPageBorders;
   pageMargins?: WorkDocumentPageMargins;
   pageGeometry?: WorkDocumentPageGeometry;

@@ -251,6 +251,24 @@ function setSectionFormattingChange(
     }
     prior.append(lnNumType);
   }
+  if (formatting.pgNumType) {
+    const pgNumType = document.createElementNS(WORD_NAMESPACE, 'w:pgNumType');
+    if (formatting.pgNumType.fmt !== undefined) {
+      pgNumType.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:fmt',
+        formatting.pgNumType.fmt,
+      );
+    }
+    if (formatting.pgNumType.start !== undefined) {
+      pgNumType.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:start',
+        String(formatting.pgNumType.start),
+      );
+    }
+    prior.append(pgNumType);
+  }
   change.append(prior);
   section.append(change);
 }

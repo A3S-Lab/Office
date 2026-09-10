@@ -244,6 +244,8 @@ import type {
   WorkDocumentGrid,
   WorkDocumentGridType,
   WorkDocumentLnNumType,
+  WorkDocumentPgNumFmt,
+  WorkDocumentPgNumType,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
 } from './work-types';
@@ -859,6 +861,7 @@ async function parseSectionLayout(
   const columnsElement = firstDescendant(section, 'cols');
   const documentGridElement = directChild(section, 'docGrid');
   const lnNumTypeElement = directChild(section, 'lnNumType');
+  const pgNumTypeElement = directChild(section, 'pgNumType');
   const pageBorders = parseDocxPageBorders(section, theme);
   const parsedPageMargins = parseDocxPageMargins(
     section,
@@ -876,10 +879,13 @@ async function parseSectionLayout(
     previous,
     oddEvenPageChrome,
   );
-  const pageNumberStart = numberAttribute(
-    firstDescendant(section, 'pgNumType'),
-    'start',
-  );
+  const parsedPgNumType = pgNumTypeElement
+    ? parsePgNumType(pgNumTypeElement)
+    : undefined;
+  const pageNumberStart =
+    parsedPgNumType?.start !== undefined && parsedPgNumType.start > 0
+      ? parsedPgNumType.start
+      : numberAttribute(firstDescendant(section, 'pgNumType'), 'start');
   const propertyRevisionOmml =
     serializePreservableDocxSectionPropertyRevision(section);
   const formattingChange =
@@ -900,6 +906,11 @@ async function parseSectionLayout(
       ? { lnNumType: parseLnNumType(lnNumTypeElement) }
       : previous.lnNumType
         ? { lnNumType: { ...previous.lnNumType } }
+        : {}),
+    ...(parsedPgNumType
+      ? { pgNumType: parsedPgNumType }
+      : previous.pgNumType
+        ? { pgNumType: { ...previous.pgNumType } }
         : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
@@ -924,6 +935,25 @@ async function parseSectionLayout(
   return pageGeometry
     ? applyDocumentPageGeometry(layout, pageGeometry)
     : layout;
+}
+
+function parsePgNumType(element: Element): WorkDocumentPgNumType | undefined {
+  const next: WorkDocumentPgNumType = {};
+  const fmt = attribute(element, 'fmt');
+  if (
+    fmt === 'decimal' ||
+    fmt === 'upperRoman' ||
+    fmt === 'lowerRoman' ||
+    fmt === 'upperLetter' ||
+    fmt === 'lowerLetter'
+  ) {
+    next.fmt = fmt as WorkDocumentPgNumFmt;
+  }
+  const start = numberAttribute(element, 'start');
+  if (Number.isInteger(start) && start >= 0 && start <= 32_767) {
+    next.start = start;
+  }
+  return next.fmt !== undefined || next.start !== undefined ? next : undefined;
 }
 
 function parseDocumentGrid(element: Element): WorkDocumentGrid {

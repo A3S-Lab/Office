@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:sectPrChange` priors that include bounded relationship-free
+  `w:pgNumType` (`w:fmt` / `w:start` only; common ST_NumberFormat:
+  `decimal` / `upperRoman` / `lowerRoman` / `upperLetter` / `lowerLetter`) are now
+  reviewable as `section-formatting` with accept/reject, live track-changes, and
+  native export (including current-section `w:pgNumType` on DOCX write).
+  `pageNumberStart` stays aligned with `pgNumType.start` for pagination.
+  Unknown attributes such as `chapStyle` / `chapSep` stay fail-closed; opaque
+  section fixtures moved off `pgNumType` to `formProt`.
+
 ## 0.110.0 - 2026-09-10
 
 ### Writer

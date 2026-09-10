@@ -33,6 +33,8 @@ import type {
   WorkDocumentGridType,
   WorkDocumentLnNumRestart,
   WorkDocumentLnNumType,
+  WorkDocumentPgNumFmt,
+  WorkDocumentPgNumType,
 } from './work-types';
 
 const MAX_REVISION_DATE_LENGTH = 64;
@@ -46,6 +48,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'rtlGutter',
   'docGrid',
   'lnNumType',
+  'pgNumType',
 ]);
 const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch']);
 const LN_NUM_TYPE_ATTRIBUTE_SET = new Set([
@@ -55,6 +58,14 @@ const LN_NUM_TYPE_ATTRIBUTE_SET = new Set([
   'restart',
 ]);
 const LN_NUM_RESTARTS = new Set(['newPage', 'newSection', 'continuous']);
+const PG_NUM_TYPE_ATTRIBUTE_SET = new Set(['fmt', 'start']);
+const PG_NUM_FMTS = new Set([
+  'decimal',
+  'upperRoman',
+  'lowerRoman',
+  'upperLetter',
+  'lowerLetter',
+]);
 const DOC_GRID_TYPES = new Set([
   'default',
   'lines',
@@ -97,7 +108,8 @@ export interface SupportedDocxSectionFormattingChange {
  * orientation-only or complete `w:pgSz` (w/h with optional orient/code), a
  * complete seven-edge `w:pgMar`, `w:paperSrc`, equal-width or unequal-width
  * `w:cols`, and/or `w:titlePg`, and/or `w:rtlGutter`, and/or bounded
- * relationship-free `w:docGrid`, and/or bounded relationship-free `w:lnNumType`.
+ * relationship-free `w:docGrid`, and/or bounded relationship-free `w:lnNumType`,
+ * and/or bounded relationship-free `w:pgNumType` (`fmt`/`start` only).
  * Broader section property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxSectionFormattingChange(
@@ -155,7 +167,7 @@ function supportedSectionFormattingChange(
   const prior = priors[0];
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
-  if (!children.length || children.length > 7) return null;
+  if (!children.length || children.length > 8) return null;
   if (children.some((child) => !isSupportedSectionFormattingPriorChild(child))) {
     return null;
   }
@@ -171,6 +183,7 @@ function supportedSectionFormattingChange(
   let rtlGutter: boolean | undefined;
   let documentGrid: WorkDocumentGrid | undefined;
   let lnNumType: WorkDocumentLnNumType | undefined;
+  let pgNumType: WorkDocumentPgNumType | undefined;
   for (const child of children) {
     if (child.localName === 'pgSz') {
       const value = importedPageSize(child);
@@ -215,6 +228,12 @@ function supportedSectionFormattingChange(
       const value = importedLnNumType(child);
       if (!value) return null;
       lnNumType = value;
+      continue;
+    }
+    if (child.localName === 'pgNumType') {
+      const value = importedPgNumType(child);
+      if (!value) return null;
+      pgNumType = value;
     }
   }
   const before = serializeDocumentSectionFormatting({
@@ -227,6 +246,7 @@ function supportedSectionFormattingChange(
     ...(rtlGutter !== undefined ? { rtlGutter } : {}),
     ...(documentGrid ? { documentGrid } : {}),
     ...(lnNumType ? { lnNumType } : {}),
+    ...(pgNumType ? { pgNumType } : {}),
   });
   return {
     id: `docx-section-format-change-${id}`,
@@ -518,6 +538,43 @@ function importedPageMargins(element: Element): WorkDocumentPageMargins | null {
   }
   if (seen.size !== PAGE_MARGIN_KEYS.length) return null;
   return normalizeDocumentPageMargins(values);
+}
+
+function importedPgNumType(element: Element): WorkDocumentPgNumType | null {
+  if (Array.from(element.children).length) return null;
+  const attributes = Array.from(element.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if ([...names].some((name) => !PG_NUM_TYPE_ATTRIBUTE_SET.has(name))) {
+    return null;
+  }
+  if (names.size !== attributes.length) return null;
+  const byName = new Map(
+    attributes.map((candidate) => [
+      xmlAttributeLocalName(candidate),
+      candidate.value.trim(),
+    ]),
+  );
+  const next: WorkDocumentPgNumType = {};
+  if (byName.has('fmt')) {
+    const fmt = byName.get('fmt') ?? '';
+    if (!PG_NUM_FMTS.has(fmt)) return null;
+    next.fmt = fmt as WorkDocumentPgNumFmt;
+  }
+  if (byName.has('start')) {
+    const start = parseBoundedDocxInteger(byName.get('start') ?? '', {
+      minimum: 0,
+      maximum: 32_767,
+    });
+    if (start === null) return null;
+    next.start = start;
+  }
+  if (next.fmt === undefined && next.start === undefined) return null;
+  return next;
 }
 
 function importedLnNumType(element: Element): WorkDocumentLnNumType | null {

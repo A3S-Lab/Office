@@ -50,6 +50,8 @@ import type {
   WorkDocumentGridType,
   WorkDocumentLnNumRestart,
   WorkDocumentLnNumType,
+  WorkDocumentPgNumFmt,
+  WorkDocumentPgNumType,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionFormattingChange,
   WorkDocumentSectionLayout,
@@ -89,6 +91,8 @@ export interface DocumentSectionNodeAttributes {
   lnNumStart: number | null;
   lnNumDistance: number | null;
   lnNumRestart: WorkDocumentLnNumRestart | '';
+  pgNumFmt: WorkDocumentPgNumFmt | '';
+  pgNumStart: number | null;
   propertyRevisionOmml: string;
   sectionChangeKind: 'section-formatting' | null;
   sectionChangeId: string;
@@ -224,7 +228,7 @@ export function documentSectionNodeAttributes(
     headerText: legacy.headerText ?? '',
     footerText: legacy.footerText ?? '',
     showPageNumbers: Boolean(legacy.showPageNumbers),
-    pageNumberStart: validPageNumber(layout.pageNumberStart) ?? null,
+    pageNumberStart: validPageNumber(layout.pgNumType?.start ?? layout.pageNumberStart) ?? null,
     pageChrome: serializeDocumentPageChrome(pageChrome),
     pageBorders: serializeDocumentPageBorders(layout.pageBorders) ?? '',
     pageMargins: serializeDocumentPageMargins(layout.pageMargins) ?? '',
@@ -234,6 +238,7 @@ export function documentSectionNodeAttributes(
     documentGridLinePitch:
       normalizedDocumentGrid(layout.documentGrid)?.linePitch ?? null,
     ...lnNumTypeNodeFields(layout.lnNumType),
+    ...pgNumTypeNodeFields(layout.pgNumType, layout.pageNumberStart),
     propertyRevisionOmml: layout.propertyRevisionOmml
       ? encodeDocumentTablePropertyRevisionOmml(layout.propertyRevisionOmml)
       : '',
@@ -270,6 +275,7 @@ export function documentSectionLayoutFromNodeAttributes(
   const legacy = documentPageChromeLegacyFields(pageChrome);
   const documentGrid = documentGridFromNodeAttributes(attributes, base);
   const lnNumType = lnNumTypeFromNodeAttributes(attributes, base);
+  const pgNumType = pgNumTypeFromNodeAttributes(attributes, base);
   const pageBorders = parseDocumentPageBorders(attributes.pageBorders);
   const pageMargins = parseDocumentPageMargins(attributes.pageMargins);
   const pageGeometry = parseDocumentPageGeometry(attributes.pageGeometry);
@@ -310,10 +316,13 @@ export function documentSectionLayoutFromNodeAttributes(
     headerText: legacy.headerText,
     footerText: legacy.footerText,
     showPageNumbers: legacy.showPageNumbers,
-    pageNumberStart: validPageNumber(attributes.pageNumberStart ?? undefined),
+    pageNumberStart: validPageNumber(
+      pgNumType?.start ?? attributes.pageNumberStart ?? undefined,
+    ),
     pageChrome,
     ...(documentGrid ? { documentGrid } : {}),
     ...(lnNumType ? { lnNumType } : {}),
+    ...(pgNumType ? { pgNumType } : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
     ...(pageGeometry ? { pageGeometry } : {}),
@@ -379,6 +388,9 @@ export function documentSectionDomAttributes(
     'data-section-ln-num-distance':
       attributes.lnNumDistance === null ? '' : String(attributes.lnNumDistance),
     'data-section-ln-num-restart': attributes.lnNumRestart,
+    'data-section-pg-num-fmt': attributes.pgNumFmt,
+    'data-section-pg-num-start':
+      attributes.pgNumStart === null ? '' : String(attributes.pgNumStart),
     ...(attributes.propertyRevisionOmml
       ? {
           'data-section-property-revision-omml':
@@ -437,6 +449,9 @@ export function documentSectionLayoutFromElement(
       lnNumDistance: numberValue(element.dataset.sectionLnNumDistance) ?? null,
       lnNumRestart: (element.dataset.sectionLnNumRestart ??
         '') as WorkDocumentLnNumRestart | '',
+      pgNumFmt: (element.dataset.sectionPgNumFmt ??
+        '') as WorkDocumentPgNumFmt | '',
+      pgNumStart: numberValue(element.dataset.sectionPgNumStart) ?? null,
       propertyRevisionOmml: element.dataset.sectionPropertyRevisionOmml ?? '',
       sectionChangeKind:
         element.getAttribute('data-document-change') === 'true' &&
@@ -617,6 +632,23 @@ function lnNumTypeNodeFields(value: WorkDocumentLnNumType | undefined): {
   };
 }
 
+function pgNumTypeNodeFields(
+  value: WorkDocumentPgNumType | undefined,
+  pageNumberStart?: number,
+): {
+  pgNumFmt: WorkDocumentPgNumFmt | '';
+  pgNumStart: number | null;
+} {
+  const normalized = normalizedPgNumType(
+    value ??
+      (pageNumberStart !== undefined ? { start: pageNumberStart } : undefined),
+  );
+  return {
+    pgNumFmt: normalized?.fmt ?? '',
+    pgNumStart: normalized?.start ?? null,
+  };
+}
+
 function lnNumTypeFromNodeAttributes(
   attributes: Partial<DocumentSectionNodeAttributes>,
   base: WorkDocumentSectionLayout,
@@ -643,6 +675,55 @@ function lnNumTypeFromNodeAttributes(
       ? { restart: attributes.lnNumRestart as WorkDocumentLnNumRestart }
       : {}),
   });
+}
+
+function pgNumTypeFromNodeAttributes(
+  attributes: Partial<DocumentSectionNodeAttributes>,
+  base: WorkDocumentSectionLayout,
+): WorkDocumentPgNumType | undefined {
+  if (attributes.pgNumFmt === undefined && attributes.pgNumStart === undefined) {
+    return normalizedPgNumType(
+      base.pgNumType ??
+        (base.pageNumberStart !== undefined
+          ? { start: base.pageNumberStart }
+          : undefined),
+    );
+  }
+  return normalizedPgNumType({
+    ...(attributes.pgNumFmt
+      ? { fmt: attributes.pgNumFmt as WorkDocumentPgNumFmt }
+      : {}),
+    ...(attributes.pgNumStart != null
+      ? { start: Number(attributes.pgNumStart) }
+      : {}),
+  });
+}
+
+function normalizedPgNumType(
+  value: WorkDocumentPgNumType | undefined,
+): WorkDocumentPgNumType | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const next: WorkDocumentPgNumType = {};
+  if (value.fmt !== undefined) {
+    if (
+      value.fmt !== 'decimal' &&
+      value.fmt !== 'upperRoman' &&
+      value.fmt !== 'lowerRoman' &&
+      value.fmt !== 'upperLetter' &&
+      value.fmt !== 'lowerLetter'
+    ) {
+      return undefined;
+    }
+    next.fmt = value.fmt;
+  }
+  if (value.start !== undefined) {
+    const start = Number(value.start);
+    if (!Number.isInteger(start) || start < 0 || start > 32_767) {
+      return undefined;
+    }
+    next.start = start;
+  }
+  return next.fmt !== undefined || next.start !== undefined ? next : undefined;
 }
 
 function normalizedLnNumType(

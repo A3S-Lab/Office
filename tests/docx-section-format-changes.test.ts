@@ -857,7 +857,170 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 
-  test('imports rtlGutter-only w:sectPrChange as a reviewable section-formatting change', async () => {
+  test('imports pgNumType-only w:sectPrChange as a reviewable section-formatting change', async () => {
+    const source = await sectionDocxWithPgNumTypeChange({
+      prior: { fmt: 'decimal', start: 1 },
+      current: { fmt: 'upperRoman', start: 5 },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-pgnumtype-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const section = html.body.querySelector('section[data-document-section]');
+    expect(section?.getAttribute('data-change-kind')).toBe(
+      'section-formatting',
+    );
+    expect(
+      section?.getAttribute('data-section-property-revision-omml'),
+    ).toBeNull();
+    expect(
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
+    ).toEqual({
+      pgNumType: { fmt: 'decimal', start: 1 },
+    });
+    expect(section?.dataset.sectionPgNumFmt).toBe('upperRoman');
+    expect(section?.dataset.sectionPgNumStart).toBe('5');
+    expect(section?.dataset.sectionPageNumberStart).toBe('5');
+  });
+
+  test('pending pgNumType section-formatting change round-trips as native w:sectPrChange', async () => {
+    const source = await sectionDocxWithPgNumTypeChange({
+      prior: { fmt: 'decimal', start: 1 },
+      current: { fmt: 'upperRoman', start: 5 },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-pgnumtype-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const section = descendants(exported, 'sectPr').find(
+      (element) => element.parentElement?.localName !== 'sectPrChange',
+    );
+    const change = directChild(section!, 'sectPrChange');
+    expect(change).toBeTruthy();
+    const priorPgNum = directChild(directChild(change!, 'sectPr'), 'pgNumType');
+    expect(priorPgNum).toBeTruthy();
+    expect(
+      priorPgNum?.getAttributeNS(WORD_NAMESPACE, 'fmt') ??
+        priorPgNum?.getAttribute('w:fmt') ??
+        priorPgNum?.getAttribute('fmt'),
+    ).toBe('decimal');
+    expect(
+      priorPgNum?.getAttributeNS(WORD_NAMESPACE, 'start') ??
+        priorPgNum?.getAttribute('w:start') ??
+        priorPgNum?.getAttribute('start'),
+    ).toBe('1');
+    const currentPgNum = directChild(section!, 'pgNumType');
+    expect(
+      currentPgNum?.getAttributeNS(WORD_NAMESPACE, 'fmt') ??
+        currentPgNum?.getAttribute('w:fmt') ??
+        currentPgNum?.getAttribute('fmt'),
+    ).toBe('upperRoman');
+    expect(
+      currentPgNum?.getAttributeNS(WORD_NAMESPACE, 'start') ??
+        currentPgNum?.getAttribute('w:start') ??
+        currentPgNum?.getAttribute('start'),
+    ).toBe('5');
+  });
+
+  test('reject restores prior pgNumType and drops the pending change', async () => {
+    const source = await sectionDocxWithPgNumTypeChange({
+      prior: { fmt: 'decimal', start: 1 },
+      current: { fmt: 'upperRoman', start: 5 },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-pgnumtype-reject.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBeNull();
+      expect(section?.dataset.sectionPgNumFmt).toBe('decimal');
+      expect(section?.dataset.sectionPgNumStart).toBe('1');
+      expect(section?.dataset.sectionPageNumberStart).toBe('1');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('live section pgNumType edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1"',
+        ' data-section-orientation="portrait"',
+        ' data-section-pg-num-fmt="decimal"',
+        ' data-section-pg-num-start="1"',
+        ' data-section-page-number-start="1">',
+        '<p>Body</p>',
+        '</section>',
+      ].join(''),
+    });
+    try {
+      const active = activeDocumentSection(editor);
+      expect(active).not.toBeNull();
+      if (!active) throw new Error('Expected an active document section.');
+      expect(
+        editor.commands.updateActiveDocumentSection({
+          ...active.layout,
+          pgNumType: { fmt: 'lowerRoman', start: 3 },
+          pageNumberStart: 3,
+        }),
+      ).toBe(true);
+      const changes = collectDocumentChanges(editor.state.doc);
+      expect(changes).toHaveLength(1);
+      expect(changes[0]?.kind).toBe('section-formatting');
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBe(
+        'section-formatting',
+      );
+      expect(
+        parseDocumentSectionFormatting(
+          section?.getAttribute('data-change-before'),
+        ),
+      ).toMatchObject({
+        pgNumType: { fmt: 'decimal', start: 1 },
+      });
+      expect(section?.dataset.sectionPgNumFmt).toBe('lowerRoman');
+      expect(section?.dataset.sectionPgNumStart).toBe('3');
+      expect(section?.dataset.sectionPageNumberStart).toBe('3');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+    test('imports rtlGutter-only w:sectPrChange as a reviewable section-formatting change', async () => {
     const source = await sectionDocxWithRtlGutterChange({
       prior: true,
       current: false,
@@ -1348,6 +1511,59 @@ async function sectionDocxWithDocGridChange(options: {
     new XMLSerializer().serializeToString(document),
   );
   return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function sectionDocxWithPgNumTypeChange(options: {
+  prior: { fmt?: string; start?: number };
+  current: { fmt?: string; start?: number };
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const section = descendants(document, 'sectPr').find(
+    (element) => element.parentElement?.localName !== 'sectPrChange',
+  );
+  if (!section) throw new Error('Expected body sectPr.');
+  for (const existing of Array.from(section.children).filter(
+    (child) =>
+      child.localName === 'pgNumType' || child.localName === 'sectPrChange',
+  )) {
+    existing.remove();
+  }
+  const current = document.createElementNS(WORD_NAMESPACE, 'w:pgNumType');
+  applyPgNumTypeAttributes(current, options.current);
+  section.append(current);
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:sectPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '35');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-10T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
+  const priorPg = document.createElementNS(WORD_NAMESPACE, 'w:pgNumType');
+  applyPgNumTypeAttributes(priorPg, options.prior);
+  prior.append(priorPg);
+  change.append(prior);
+  section.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function applyPgNumTypeAttributes(
+  element: Element,
+  value: { fmt?: string; start?: number },
+): void {
+  if (value.fmt !== undefined) {
+    element.setAttributeNS(WORD_NAMESPACE, 'w:fmt', value.fmt);
+  }
+  if (value.start !== undefined) {
+    element.setAttributeNS(WORD_NAMESPACE, 'w:start', String(value.start));
+  }
 }
 
 async function sectionDocxWithLnNumTypeChange(options: {

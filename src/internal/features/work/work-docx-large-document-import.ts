@@ -312,6 +312,8 @@ function documentSectionModelAttributes(
     lnNumStart: null,
     lnNumDistance: null,
     lnNumRestart: '',
+    pgNumFmt: '',
+    pgNumStart: null,
   };
 }
 

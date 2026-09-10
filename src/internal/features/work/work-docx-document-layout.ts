@@ -80,6 +80,7 @@ export async function patchDocxDocumentLayout(
   patchSectionPageBorders(document, sections);
   patchSectionDocumentGrids(document, sections);
   patchSectionLnNumTypes(document, sections);
+  patchSectionPgNumTypes(document, sections);
   archive.file(
     'word/document.xml',
     new XMLSerializer().serializeToString(document),
@@ -374,6 +375,33 @@ function patchSectionLnNumTypes(
       lnNumType.setAttributeNS(WORD_NAMESPACE, 'w:restart', value.restart);
     }
     insertSectionProperty(properties, lnNumType);
+  }
+}
+
+function patchSectionPgNumTypes(
+  document: Document,
+  sections: readonly WorkDocumentSection[],
+): void {
+  const sectionProperties = effectiveSectionProperties(document);
+  for (const [index, properties] of sectionProperties.entries()) {
+    for (const existing of directChildren(properties, 'pgNumType')) {
+      existing.remove();
+    }
+    const layout = sections[index]?.layout;
+    const value =
+      layout?.pgNumType ??
+      (layout?.pageNumberStart !== undefined
+        ? { start: layout.pageNumberStart }
+        : undefined);
+    if (!value) continue;
+    const pgNumType = document.createElementNS(WORD_NAMESPACE, 'w:pgNumType');
+    if (value.fmt !== undefined) {
+      pgNumType.setAttributeNS(WORD_NAMESPACE, 'w:fmt', value.fmt);
+    }
+    if (value.start !== undefined) {
+      pgNumType.setAttributeNS(WORD_NAMESPACE, 'w:start', String(value.start));
+    }
+    insertSectionProperty(properties, pgNumType);
   }
 }
 
