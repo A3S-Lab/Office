@@ -9,15 +9,16 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(87);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.106.0');
+  await expect(cards).toHaveCount(88);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.107.0');
   await expect(cards.first()).toContainText(
-    'Writer 让单元格 vMerge 修订可审阅',
+    'Writer 让单元格 gridSpan 修订可审阅',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.107.0')).toContainText('网格跨度');
+  await expect(releaseCard('0.107.0')).toContainText('实时修订跟踪');
   await expect(releaseCard('0.106.0')).toContainText('垂直合并');
-  await expect(releaseCard('0.106.0')).toContainText('实时修订跟踪');
   await expect(releaseCard('0.105.0')).toContainText('水平合并');
   await expect(releaseCard('0.104.0')).toContainText('文档网格');
   await expect(releaseCard('0.103.0')).toContainText('单元格边框');

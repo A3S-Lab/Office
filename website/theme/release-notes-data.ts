@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.107.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes cell gridSpan revisions reviewable',
+      zh: 'Writer 让单元格 gridSpan 修订可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free tcPrChange priors with bounded positive gridSpan import as cell-formatting with accept/reject, live track-changes, and native DOCX export.',
+      zh: 'Phase 0 保真：含有界正整数 gridSpan 的无关系 tcPrChange 先验导入为 cell-formatting，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Grid span',
+          zh: '网格跨度',
+        },
+        detail: {
+          en: 'Bounded gridSpan priors round-trip as reviewable cell-formatting snapshots.',
+          zh: '有界 gridSpan 先验作为可审阅 cell-formatting 快照往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing cell gridSpan under track-changes creates a pending cell-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑单元格 gridSpan 会生成待审阅的 cell-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'Missing or non-positive values stay fail-closed; opaque cell fixtures stay on cellIns.',
+          zh: '缺失或非正值保持失败闭合；不透明单元格夹具仍为 cellIns。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.107.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.107.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.106.0',
     date: '2026-09-10',
     kind: 'improved',

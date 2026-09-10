@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.107.0 - 2026-09-10
+
 ### Writer
 
 - Relationship-free `w:tcPrChange` priors that include bounded `w:gridSpan`
