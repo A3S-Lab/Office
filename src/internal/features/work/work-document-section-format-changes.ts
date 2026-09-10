@@ -60,7 +60,7 @@ export type DocumentSectionEqualColumnsSnapshot =
  * Prior snapshot for reviewable section-property revisions.
  * At least one of orientation, pageGeometry, pageMargins, paperSource,
  * columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType,
- * formProt, noEndnote, verticalAlign, or textDirection must be present.
+ * formProt, noEndnote, verticalAlign, textDirection, or bidi must be present.
  */
 export interface DocumentSectionFormattingSnapshot {
   orientation?: 'portrait' | 'landscape';
@@ -77,6 +77,7 @@ export interface DocumentSectionFormattingSnapshot {
   noEndnote?: boolean;
   verticalAlign?: WorkDocumentSectionVerticalAlign;
   textDirection?: WorkDocumentSectionTextDirection;
+  bidi?: boolean;
 }
 
 const MAX_SECTION_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -105,11 +106,12 @@ export function serializeDocumentSectionFormatting(attributes: {
   noEndnote?: unknown;
   verticalAlign?: unknown;
   textDirection?: unknown;
+  bidi?: unknown;
 }): string {
   const snapshot = normalizeDocumentSectionFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType, formProt, noEndnote, verticalAlign, or textDirection.',
+      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType, formProt, noEndnote, verticalAlign, textDirection, or bidi.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -153,7 +155,8 @@ export function parseDocumentSectionFormatting(
         key !== 'formProt' &&
         key !== 'noEndnote' &&
         key !== 'verticalAlign' &&
-        key !== 'textDirection',
+        key !== 'textDirection' &&
+        key !== 'bidi',
     )
   ) {
     return null;
@@ -178,6 +181,7 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
   noEndnote?: unknown;
   verticalAlign?: unknown;
   textDirection?: unknown;
+  bidi?: unknown;
 }): DocumentSectionFormattingSnapshot | null {
   const snapshot: DocumentSectionFormattingSnapshot = {};
   if ('orientation' in attributes && attributes.orientation !== undefined) {
@@ -251,6 +255,10 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     if (!isSectionTextDirection(attributes.textDirection)) return null;
     snapshot.textDirection = attributes.textDirection;
   }
+  if ('bidi' in attributes && attributes.bidi !== undefined) {
+    if (typeof attributes.bidi !== 'boolean') return null;
+    snapshot.bidi = attributes.bidi;
+  }
   return snapshot.orientation ||
     snapshot.pageGeometry ||
     snapshot.pageMargins ||
@@ -264,7 +272,8 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     snapshot.formProt !== undefined ||
     snapshot.noEndnote !== undefined ||
     snapshot.verticalAlign !== undefined ||
-    snapshot.textDirection !== undefined
+    snapshot.textDirection !== undefined ||
+    snapshot.bidi !== undefined
     ? snapshot
     : null;
 }
@@ -446,6 +455,10 @@ export function restoredDocumentSectionAttributes(
   if (formatting.textDirection !== undefined) {
     textDirection = formatting.textDirection;
   }
+  let bidi = attributes.bidi;
+  if (formatting.bidi !== undefined) {
+    bidi = formatting.bidi;
+  }
   return clearDocumentSectionChangeAttributes({
     ...attributes,
     orientation,
@@ -474,6 +487,7 @@ export function restoredDocumentSectionAttributes(
     noEndnote,
     verticalAlign,
     textDirection,
+    bidi,
   });
 }
 
@@ -493,6 +507,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
   noEndnote?: boolean;
   verticalAlign?: WorkDocumentSectionVerticalAlign;
   textDirection?: WorkDocumentSectionTextDirection;
+  bidi?: boolean;
   pageNumberStart?: number;
   headerText?: string;
   footerText?: string;
@@ -549,6 +564,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
     ...(layout.textDirection !== undefined
       ? { textDirection: layout.textDirection }
       : {}),
+    bidi: layout.bidi === true,
   });
 }
 
@@ -914,6 +930,9 @@ function orderedSnapshot(
   }
   if (snapshot.textDirection !== undefined) {
     ordered.textDirection = snapshot.textDirection;
+  }
+  if (snapshot.bidi !== undefined) {
+    ordered.bidi = snapshot.bidi;
   }
   if (snapshot.columns) {
     ordered.columns = snapshot.columns.custom

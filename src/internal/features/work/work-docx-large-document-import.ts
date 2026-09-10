@@ -318,6 +318,7 @@ function documentSectionModelAttributes(
     noEndnote: null,
     verticalAlign: '',
     textDirection: '',
+    bidi: null,
   };
 }
 

@@ -868,6 +868,7 @@ async function parseSectionLayout(
   const vAlignElement = directChild(section, 'vAlign');
   const noEndnoteElement = directChild(section, 'noEndnote');
   const textDirectionElement = directChild(section, 'textDirection');
+  const bidiElement = directChild(section, 'bidi');
   const pageBorders = parseDocxPageBorders(section, theme);
   const parsedPageMargins = parseDocxPageMargins(
     section,
@@ -900,6 +901,7 @@ async function parseSectionLayout(
   const parsedTextDirection = textDirectionElement
     ? parseTextDirection(textDirectionElement)
     : undefined;
+  const parsedBidi = bidiElement ? parseBidi(bidiElement) : undefined;
   const pageNumberStart =
     parsedPgNumType?.start !== undefined && parsedPgNumType.start > 0
       ? parsedPgNumType.start
@@ -949,6 +951,11 @@ async function parseSectionLayout(
       ? { textDirection: parsedTextDirection }
       : previous.textDirection !== undefined
         ? { textDirection: previous.textDirection }
+        : {}),
+    ...(parsedBidi !== undefined
+      ? { bidi: parsedBidi }
+      : previous.bidi !== undefined
+        ? { bidi: previous.bidi }
         : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
@@ -1007,6 +1014,18 @@ function parseFormProt(element: Element): boolean {
 }
 
 function parseNoEndnote(element: Element): boolean {
+  const value = attribute(element, 'val');
+  if (value === null || value === '') return true;
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized === '1' ||
+    normalized === 'true' ||
+    normalized === 'on' ||
+    normalized === 'yes'
+  );
+}
+
+function parseBidi(element: Element): boolean {
   const value = attribute(element, 'val');
   if (value === null || value === '') return true;
   const normalized = value.trim().toLowerCase();

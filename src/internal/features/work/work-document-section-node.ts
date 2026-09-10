@@ -79,6 +79,7 @@ export const DocumentSection = Node.create({
       noEndnote: hiddenAttribute(null),
       verticalAlign: hiddenAttribute(''),
       textDirection: hiddenAttribute(''),
+      bidi: hiddenAttribute(null),
       propertyRevisionOmml: hiddenAttribute(''),
       sectionChangeKind: hiddenAttribute(null),
       sectionChangeId: hiddenAttribute(''),
@@ -200,6 +201,12 @@ export const DocumentSection = Node.create({
               '') as DocumentSectionNodeAttributes['verticalAlign'],
             textDirection: (node.dataset.sectionTextDirection ??
               '') as DocumentSectionNodeAttributes['textDirection'],
+            bidi:
+              node.dataset.sectionBidi === 'true'
+                ? true
+                : node.dataset.sectionBidi === 'false'
+                  ? false
+                  : null,
             propertyRevisionOmml:
               node.dataset.sectionPropertyRevisionOmml ?? '',
             sectionChangeKind:

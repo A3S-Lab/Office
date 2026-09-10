@@ -99,6 +99,7 @@ export interface DocumentSectionNodeAttributes {
   noEndnote: boolean | null;
   verticalAlign: WorkDocumentSectionVerticalAlign | '';
   textDirection: WorkDocumentSectionTextDirection | '';
+  bidi: boolean | null;
   propertyRevisionOmml: string;
   sectionChangeKind: 'section-formatting' | null;
   sectionChangeId: string;
@@ -251,6 +252,7 @@ export function documentSectionNodeAttributes(
     noEndnote: layout.noEndnote ?? null,
     verticalAlign: layout.verticalAlign ?? '',
     textDirection: layout.textDirection ?? '',
+    bidi: layout.bidi ?? null,
     propertyRevisionOmml: layout.propertyRevisionOmml
       ? encodeDocumentTablePropertyRevisionOmml(layout.propertyRevisionOmml)
       : '',
@@ -363,6 +365,11 @@ export function documentSectionLayoutFromNodeAttributes(
       : base.textDirection !== undefined
         ? { textDirection: base.textDirection }
         : {}),
+    ...(attributes.bidi === true || attributes.bidi === false
+      ? { bidi: attributes.bidi }
+      : base.bidi !== undefined
+        ? { bidi: base.bidi }
+        : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
     ...(pageGeometry ? { pageGeometry } : {}),
@@ -437,6 +444,8 @@ export function documentSectionDomAttributes(
       attributes.noEndnote === null ? '' : String(attributes.noEndnote),
     'data-section-vertical-align': attributes.verticalAlign,
     'data-section-text-direction': attributes.textDirection,
+    'data-section-bidi':
+      attributes.bidi === null ? '' : String(attributes.bidi),
     ...(attributes.propertyRevisionOmml
       ? {
           'data-section-property-revision-omml':
@@ -518,6 +527,12 @@ export function documentSectionLayoutFromElement(
       textDirection: (element.dataset.sectionTextDirection ?? '') as
         | WorkDocumentSectionTextDirection
         | '',
+      bidi:
+        element.dataset.sectionBidi === 'true'
+          ? true
+          : element.dataset.sectionBidi === 'false'
+            ? false
+            : null,
       propertyRevisionOmml: element.dataset.sectionPropertyRevisionOmml ?? '',
       sectionChangeKind:
         element.getAttribute('data-document-change') === 'true' &&

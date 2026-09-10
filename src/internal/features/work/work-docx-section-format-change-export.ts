@@ -298,6 +298,13 @@ function setSectionFormattingChange(
     );
     prior.append(textDirection);
   }
+  if (formatting.bidi !== undefined) {
+    const bidi = document.createElementNS(WORD_NAMESPACE, 'w:bidi');
+    if (!formatting.bidi) {
+      bidi.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    }
+    prior.append(bidi);
+  }
   change.append(prior);
   section.append(change);
 }

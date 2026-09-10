@@ -85,6 +85,7 @@ export async function patchDocxDocumentLayout(
   patchSectionVerticalAligns(document, sections);
   patchSectionNoEndnotes(document, sections);
   patchSectionTextDirections(document, sections);
+  patchSectionBidis(document, sections);
   archive.file(
     'word/document.xml',
     new XMLSerializer().serializeToString(document),
@@ -481,6 +482,25 @@ function patchSectionTextDirections(
     if (textDirection === undefined) continue;
     const element = document.createElementNS(WORD_NAMESPACE, 'w:textDirection');
     element.setAttributeNS(WORD_NAMESPACE, 'w:val', textDirection);
+    insertSectionProperty(properties, element);
+  }
+}
+
+function patchSectionBidis(
+  document: Document,
+  sections: readonly WorkDocumentSection[],
+): void {
+  const sectionProperties = effectiveSectionProperties(document);
+  for (const [index, properties] of sectionProperties.entries()) {
+    for (const existing of directChildren(properties, 'bidi')) {
+      existing.remove();
+    }
+    const bidi = sections[index]?.layout.bidi;
+    if (bidi === undefined) continue;
+    const element = document.createElementNS(WORD_NAMESPACE, 'w:bidi');
+    if (!bidi) {
+      element.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    }
     insertSectionProperty(properties, element);
   }
 }

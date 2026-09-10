@@ -161,6 +161,8 @@ export interface WorkDocumentSectionLayout {
   verticalAlign?: WorkDocumentSectionVerticalAlign;
   /** Text flow direction (`w:textDirection`); CT_TextDirection / ST_TextDirection. */
   textDirection?: WorkDocumentSectionTextDirection;
+  /** Right-to-left section setting (`w:bidi`); CT_OnOff. */
+  bidi?: boolean;
   pageBorders?: WorkDocumentPageBorders;
   pageMargins?: WorkDocumentPageMargins;
   pageGeometry?: WorkDocumentPageGeometry;
