@@ -1,0 +1,78 @@
+---
+title: MarkdownEditor
+description: Markdown 内容、分栏模式、选区菜单与 TipTap Extension。
+---
+
+# MarkdownEditor
+
+`MarkdownEditor` 默认使用可拖动分隔线的“左侧源码、右侧预览”模式。
+Markdown 字符串始终是唯一持久化来源，TipTap 提供可视化编辑能力。
+
+桌面与平板端保持左右分栏，分隔线同时支持鼠标和键盘调整。预览区直接使用完整阅读
+界面，不再在工作区内重复嵌套卡片；正文宽度、标题、引用、代码、表格和任务列表使用
+统一的阅读排版。
+
+手机端默认显示源码，并提供“源码 / 预览”切换。每个界面独占剩余工作区，切换不会
+改变当前编辑模式或受控内容，两个操作都保留适合触控的尺寸。
+
+## 属性
+
+| 属性 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `content` | `MarkdownContent` | 是 | — | 受控 Markdown 内容。 |
+| `onChange` | `(content: MarkdownContent) => void` | 是 | — | 返回完整的新内容。 |
+| `preview` | `boolean` | 否 | `false` | 只读渲染。 |
+| `saveStatus` | `string` | 否 | — | 由宿主管理的保存状态。 |
+| `fileActions` | `readonly OfficeFileAction[]` | 否 | `[]` | 宿主文件操作。 |
+| `extensions` | `Extensions` | 否 | `[]` | 附加 TipTap Extension。 |
+| `getSelectionMenuItems` | `GetMarkdownSelectionMenuItems` | 否 | 内置菜单 | 替换源码与可视化界面的选区菜单。 |
+| `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
+
+## 内容结构
+
+```ts
+interface MarkdownContent {
+  type: 'markdown';
+  markdown: string;
+}
+```
+
+受控源码历史会合并连续输入，把明确命令保留为独立记录，在撤销和重做时恢复源码选区，
+并在宿主替换内容后重新建立历史基线。
+
+## 可视化编辑器的输入法行为
+
+TipTap 可视化界面会把组合输入的预编辑文字保留在本地，等 ProseMirror 完成
+`compositionend` 最终值结算后，再一次性序列化并发布 Markdown。组合期间收到的受控
+Markdown 替换会延后到最终发布之后协调，因此宿主回显不会把原始拼音与最终中文同时
+保留下来。源码模式继续使用浏览器原生 textarea 输入生命周期。
+
+## 响应式分栏
+
+- 桌面分隔线可在 30% 至 70% 之间拖动，也支持方向键、Home、End 和 Enter，并保持
+  两侧按比例同步滚动。
+- 手机切换按钮会明确标记当前界面，触控高度不小于 44 px。
+- 仅源码和仅可视化模式继续独占工作区，不显示分栏切换。
+
+## 选区菜单
+
+宿主菜单同时覆盖源码和可视化选区。快照通过 `selection.surface` 标识当前界面，并提供
+精确选中文本、相邻内容、完整 Markdown、渲染后的纯文本和安全的替换、插入命令。
+
+```tsx
+import type { GetMarkdownSelectionMenuItems } from '@a3s-lab/office/core';
+
+const getSelectionMenuItems: GetMarkdownSelectionMenuItems = (context) => [
+  {
+    id: 'summarize',
+    label: '总结',
+    run: async () => {
+      const summary = await summarize(context.document.markdown);
+      await context.commands.replaceText(summary);
+    },
+  },
+];
+```
+
+新增 Node 或 Mark 的 Extension 必须同时提供 Markdown 解析与序列化规则，否则结构无法
+在切换源码视图后保留。
