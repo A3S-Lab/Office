@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.115.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes section textDirection revisions reviewable',
+      zh: 'Writer 让节 textDirection 修订可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free sectPrChange priors with known textDirection (lrTb/tbRl/btLr/lrTbV/tbRlV/tbLrV) import as section-formatting with accept/reject, live track-changes, and native DOCX export.',
+      zh: 'Phase 0 保真：含已知 textDirection（lrTb/tbRl/btLr/lrTbV/tbRlV/tbLrV）的无关系 sectPrChange 先验导入为 section-formatting，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Section text direction',
+          zh: '节文字方向',
+        },
+        detail: {
+          en: 'Bounded textDirection priors round-trip as reviewable section-formatting snapshots.',
+          zh: '有界 textDirection 先验作为可审阅 section-formatting 快照往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing section textDirection under track-changes creates a pending section-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑节 textDirection 会生成待审阅的 section-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'Unknown attributes/values stay fail-closed; opaque section fixtures stay on bidi.',
+          zh: '未知属性/值保持失败闭合；不透明节夹具仍为 bidi。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.115.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.115.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.114.0',
     date: '2026-09-10',
     kind: 'improved',

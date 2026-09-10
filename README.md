@@ -371,13 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.114.0` makes section noEndnote revisions reviewable:
+Version `0.115.0` makes section textDirection revisions reviewable:
 
-- **Section endnote suppression** — relationship-free `sectPrChange` priors with
-  empty or onOff `noEndnote` become reviewable `section-formatting` with
-  accept/reject, live track-changes, and native DOCX export.
-- **Boundary** — unknown attributes stay fail-closed; opaque section fixtures
-  stay on `textDirection`.
+- **Section text direction** — relationship-free `sectPrChange` priors with
+  known `textDirection` (`lrTb`/`tbRl`/`btLr`/`lrTbV`/`tbRlV`/`tbLrV`) become
+  reviewable `section-formatting` with accept/reject, live track-changes, and
+  native DOCX export.
+- **Boundary** — unknown attributes/values stay fail-closed; opaque section
+  fixtures stay on `bidi`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
