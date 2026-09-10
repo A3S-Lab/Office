@@ -415,6 +415,74 @@ describe('DOCX ordered-list numbering revisions', () => {
     editor.destroy();
   });
 
+  test('defaults omitted w:ilvl to 0 for supported numberingChange with w:numId', () => {
+    const document = wordXml(`
+      <w:p><w:pPr><w:numPr>
+        <w:numId w:val="11"/>
+        <w:numberingChange w:id="31" w:author="Ada Reviewer" w:date="2026-09-01T09:30:00Z" w:original="%1:2:0:."/>
+      </w:numPr></w:pPr><w:r><w:t>Only</w:t></w:r></w:p>
+      <w:p><w:pPr><w:numPr>
+        <w:numId w:val="11"/>
+        <w:numberingChange w:id="32" w:author="Ada Reviewer" w:date="2026-09-01T09:30:00Z" w:original="%1:3:0:."/>
+      </w:numPr></w:pPr><w:r><w:t>Next</w:t></w:r></w:p>
+    `);
+
+    const markers = markDocxNumberingChanges(document);
+    expect(markers.groups).toHaveLength(1);
+    const group = markers.groups[0];
+    if (!group)
+      throw new Error('Expected an omitted-ilvl numbering-change group.');
+    expect(group).toMatchObject({
+      id: 'docx-numbering-change-31',
+      author: 'Ada Reviewer',
+      start: 2,
+      level: 0,
+      format: 0,
+      suffix: '.',
+    });
+    expect(group.markers).toHaveLength(2);
+
+    const html = new DOMParser().parseFromString(
+      [
+        '<ol start="1" type="1" data-office-numbering-id="11" data-office-numbering-level="0">',
+        `<li><p>${group.markers[0]}Only</p></li>`,
+        `<li><p>${group.markers[1]}Next</p></li>`,
+        '</ol>',
+      ].join(''),
+      'text/html',
+    );
+    applyImportedDocxNumberingChangeMarkers(html, markers);
+    const list = html.querySelector('ol');
+    expect(list?.dataset.changeKind).toBe('numbering');
+    expect(parseDocumentNumberingChange(list?.dataset.changeBefore)).toEqual(
+      expect.objectContaining({
+        start: 2,
+        type: null,
+        level: 0,
+        originalFormat: 0,
+        originalSuffix: '.',
+      }),
+    );
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: html.body.innerHTML,
+    });
+    const changes = collectDocumentChanges(editor.state.doc);
+    expect(changes).toEqual([
+      expect.objectContaining({
+        id: 'docx-numbering-change-31',
+        kind: 'numbering',
+      }),
+    ]);
+    expect(editor.commands.rejectDocumentChange(changes[0]?.id ?? '')).toBe(
+      true,
+    );
+    expect(editor.getHTML()).toContain('start="2"');
+    expect(editor.getHTML()).not.toContain('data-change-kind="numbering"');
+    editor.destroy();
+  });
+
   test('fails closed for malformed, duplicated, spoofed, or unsupported native forms', async () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:s="${STRICT_WORD_NAMESPACE}" xmlns:evil="https://example.test/evil">
@@ -425,6 +493,13 @@ describe('DOCX ordered-list numbering revisions', () => {
           <s:p><s:pPr><s:numPr><s:ilvl s:val="0"/><s:numId s:val="2"/>
             <s:numberingChange s:id="2" s:author="Strict" s:original="%1:1:2:."/>
           </s:numPr></s:pPr></s:p>
+          <w:p><w:pPr><w:numPr>
+            <w:numId w:val="12"/>
+            <w:numberingChange w:id="10" w:author="OmittedIlvl" w:original="%1:1:1:."/>
+          </w:numPr></w:pPr></w:p>
+          <w:p><w:pPr><w:numPr>
+            <w:numberingChange w:id="11" w:author="MissingNumId" w:original="%1:1:0:."/>
+          </w:numPr></w:pPr></w:p>
           <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="3"/>
             <w:numberingChange w:id="3" w:author="First" w:original="%1:1:0:."/>
             <w:numberingChange w:id="4" w:author="Duplicate" w:original="%1:1:0:."/>
@@ -434,6 +509,10 @@ describe('DOCX ordered-list numbering revisions', () => {
           </w:numPr></w:pPr></w:p>
           <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="5"/>
             <w:numberingChange w:id="6" w:author="Unsupported" w:original="%1:1:23:•"/>
+          </w:numPr></w:pPr></w:p>
+          <w:p><w:pPr><w:numPr>
+            <w:numId w:val="13"/>
+            <w:numberingChange w:id="12" w:author="OmittedIlvlBullet" w:original="%1:1:23:•"/>
           </w:numPr></w:pPr></w:p>
           <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="6"/>
             <w:numberingChange w:id="7" w:author="Complex" w:original="%1:1:0:.%2:1:4:)"/>
@@ -449,6 +528,9 @@ describe('DOCX ordered-list numbering revisions', () => {
     expect(changes.map(isSupportedDocxNumberingChange)).toEqual([
       true,
       true,
+      true,
+      false,
+      false,
       false,
       false,
       false,
@@ -458,7 +540,15 @@ describe('DOCX ordered-list numbering revisions', () => {
       false,
     ]);
     const marked = markDocxNumberingChanges(document);
-    expect(marked.groups).toHaveLength(4);
+    expect(marked.groups).toHaveLength(5);
+    expect(
+      marked.groups.find((group) => group.author === 'OmittedIlvl'),
+    ).toMatchObject({
+      start: 1,
+      level: 0,
+      format: 1,
+      suffix: '.',
+    });
     expect(
       marked.groups.find((group) => group.author === 'SiblingFormat'),
     ).toMatchObject({
@@ -518,6 +608,35 @@ describe('DOCX ordered-list numbering revisions', () => {
     expect(
       supported.issues.some(({ code }) => code === 'docx.revisions.structural'),
     ).toBe(false);
+
+    const omittedIlvl = await revisionCompatibility(`
+      <w:p><w:pPr><w:numPr><w:numId w:val="1"/>
+        <w:numberingChange w:id="1" w:author="Ada" w:original="%1:1:0:."/>
+      </w:numPr></w:pPr><w:r><w:t>Omitted ilvl</w:t></w:r></w:p>
+    `);
+    expect(omittedIlvl.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'docx.revisions.numbering',
+        severity: 'info',
+      }),
+    );
+    expect(
+      omittedIlvl.issues.some(
+        ({ code }) => code === 'docx.revisions.structural',
+      ),
+    ).toBe(false);
+
+    const missingNumId = await revisionCompatibility(`
+      <w:p><w:pPr><w:numPr>
+        <w:numberingChange w:id="1" w:author="Ada" w:original="%1:1:0:."/>
+      </w:numPr></w:pPr><w:r><w:t>Missing numId</w:t></w:r></w:p>
+    `);
+    expect(missingNumId.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'docx.revisions.structural',
+        severity: 'warning',
+      }),
+    );
 
     const unsupported = await revisionCompatibility(`
       <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/>

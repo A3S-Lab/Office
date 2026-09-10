@@ -371,13 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.142.0` admits relationship-free attribute-only `w:tblpPr` priors in
-reviewable `w:tblPrChange`:
+Version `0.143.0` admits omitted `w:ilvl` as OOXML default level `0` on
+numbering revisions when `w:numId` and a supported `w:numberingChange` are
+present:
 
-- **Attribute-only float priors** — known anchors/specs, bounded twips, and
-  optional FromText distances round-trip as reviewable `table-formatting`
-  float snapshots.
-- **Boundary** — invalid or relationship-bound `tblpPr` stays fail-closed.
+- **Omitted `w:ilvl` → level 0** — CT_NumPr without an explicit `w:ilvl`
+  imports as reviewable numbering at the OOXML default level.
+- **Boundary** — missing `numId`, current-level bullet/picture formats, and
+  malformed originals stay fail-closed.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

@@ -31,10 +31,12 @@ Enough means embeddable format-native editors for host daily workflows—not
 full Traditional Office parity and not every R6 enterprise row. The ordered
 remaining backlog, surface exit criteria, and explicit out-of-scope list live
 in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
-Active tip through `0.142.0` admits relationship-free attribute-only `w:tblpPr`
-priors in reviewable `w:tblPrChange` (known anchors/specs, bounded twips,
-optional FromText; invalid or relationship-bound `tblpPr` stays fail-closed;
-and earlier opaque sibling `ST_NumberFormat` values in multi-level numbering
+Active tip through `0.143.0` admits omitted `w:ilvl` as OOXML default level
+`0` on numbering revisions when `w:numId` and a supported `w:numberingChange`
+are present (missing `numId`, current-level bullet/picture formats, and
+malformed originals stay fail-closed; and earlier relationship-free
+attribute-only `w:tblpPr` priors in reviewable `w:tblPrChange` through
+`0.142.0`, opaque sibling `ST_NumberFormat` values in multi-level numbering
 `w:original` while the current `w:ilvl` stays common nfc 0–4 through `0.141.0`,
 one-level nested-table companion `w:move*Range*` bookmarks through `0.140.0`,
 simple SDT-wrapped companions through `0.139.0`, multi-cell table-spanning

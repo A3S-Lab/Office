@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.143.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits omitted w:ilvl as OOXML default level 0 on numbering revisions',
+      zh: 'Writer 准入编号修订中省略的 w:ilvl 作为 OOXML 默认级别 0',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: numbering revisions admit omitted w:ilvl as OOXML default level 0 when w:numId and a supported w:numberingChange are present. Missing numId, current-level bullet/picture formats, and malformed originals stay fail-closed.',
+      zh: 'Phase 0 保真：编号修订在存在 w:numId 与受支持的 w:numberingChange 时，将省略的 w:ilvl 按 OOXML 默认级别 0 准入。缺少 numId、当前级项目符号/图片格式，以及格式错误的先验仍失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Omitted w:ilvl defaults to level 0',
+          zh: '省略的 w:ilvl 默认为级别 0',
+        },
+        detail: {
+          en: 'CT_NumPr without an explicit w:ilvl imports as reviewable numbering at the OOXML default level.',
+          zh: '无显式 w:ilvl 的 CT_NumPr 导入为可审阅的 OOXML 默认级别编号修订。',
+        },
+      },
+      {
+        title: {
+          en: 'Requires numId and supported numberingChange',
+          zh: '需 numId 与受支持的 numberingChange',
+        },
+        detail: {
+          en: 'Admission still requires exactly one w:numId plus a supported w:numberingChange marker on the paragraph.',
+          zh: '准入仍要求段落上恰好一个 w:numId，以及受支持的 w:numberingChange 标记。',
+        },
+      },
+      {
+        title: {
+          en: 'Missing numId and bullet/picture stay fail-closed',
+          zh: '缺少 numId 与项目符号/图片仍失败闭合',
+        },
+        detail: {
+          en: 'Missing numId, current-level bullet/picture formats, and malformed originals remain diagnostics-only.',
+          zh: '缺少 numId、当前级项目符号/图片格式，以及格式错误的先验仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.143.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.143.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.142.0',
     date: '2026-09-11',
     kind: 'improved',

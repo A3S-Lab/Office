@@ -180,7 +180,6 @@ function supportedNumberingChange(
   }
   const numberingChildren = directChildren(numbering);
   if (
-    numberingChildren.length !== 3 ||
     numberingChildren.some((child) => child.namespaceURI !== namespace) ||
     directChildren(numbering, 'numberingChange').length !== 1 ||
     change.children.length !== 0 ||
@@ -190,8 +189,12 @@ function supportedNumberingChange(
   }
   const levels = directWordChildren(numbering, 'ilvl');
   const numberingIds = directWordChildren(numbering, 'numId');
-  if (levels.length !== 1 || numberingIds.length !== 1) return null;
-  const level = boundedWordInteger(levels[0], 'val', 0, 8);
+  // OOXML CT_NumPr: w:ilvl is optional and defaults to 0. Require exactly one
+  // w:numId; admit either {ilvl,numId,numberingChange} or {numId,numberingChange}.
+  if (numberingIds.length !== 1 || levels.length > 1) return null;
+  if (numberingChildren.length !== (levels.length === 1 ? 3 : 2)) return null;
+  const level =
+    levels.length === 1 ? boundedWordInteger(levels[0], 'val', 0, 8) : 0;
   const numberingId = boundedWordInteger(
     numberingIds[0],
     'val',

@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.143.0 - 2026-09-11
+
+### Writer
+
+- Numbering revisions now admit omitted `w:ilvl` as OOXML default level `0`
+  when `w:numId` and a supported `w:numberingChange` are present. Missing
+  `numId`, current-level bullet/picture formats, and malformed originals stay
+  fail-closed.
+
 ## 0.142.0 - 2026-09-11
 
 ### Writer
