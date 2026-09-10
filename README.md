@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.104.0` makes section docGrid revisions reviewable:
+Version `0.105.0` makes cell hMerge revisions reviewable:
 
-- **Document grid** — relationship-free `sectPrChange` priors with bounded
-  `docGrid` (`type` + `linePitch`) become reviewable `section-formatting` with
+- **Horizontal merge** — relationship-free `tcPrChange` priors with bounded
+  `hMerge` (`restart` / `continue`) become reviewable `cell-formatting` with
   accept/reject, live track-changes, and native DOCX export.
-- **Boundary** — unknown `docGrid` attributes stay fail-closed; opaque section
-  fixtures stay on `lnNumType`.
+- **Boundary** — unknown merge values stay fail-closed; opaque cell fixtures stay
+  on `vMerge`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
