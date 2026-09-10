@@ -371,14 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.115.0` makes section textDirection revisions reviewable:
+Version `0.116.0` makes section bidi revisions reviewable:
 
-- **Section text direction** — relationship-free `sectPrChange` priors with
-  known `textDirection` (`lrTb`/`tbRl`/`btLr`/`lrTbV`/`tbRlV`/`tbLrV`) become
-  reviewable `section-formatting` with accept/reject, live track-changes, and
-  native DOCX export.
-- **Boundary** — unknown attributes/values stay fail-closed; opaque section
-  fixtures stay on `bidi`.
+- **Section bidirectional layout** — relationship-free `sectPrChange` priors with
+  empty or onOff `bidi` become reviewable `section-formatting` with
+  accept/reject, live track-changes, and native DOCX export.
+- **Boundary** — unknown attributes stay fail-closed; opaque section fixtures
+  stay on `footnotePr`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

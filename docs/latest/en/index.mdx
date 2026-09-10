@@ -44,13 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.115.0)
+## What's new on `main` (0.116.0)
 
-Writer Phase 0 makes section textDirection reviewable:
+Writer Phase 0 makes section bidi reviewable:
 
-- section `textDirection` (`lrTb`/`tbRl`/`btLr`/`lrTbV`/`tbRlV`/`tbLrV`) imports as
-  reviewable `section-formatting` with accept/reject, live track-changes, and native DOCX export.
-- Unknown attributes/values stay fail-closed; opaque section fixtures stay on `bidi`.
+- section empty or onOff `bidi` imports as reviewable `section-formatting`
+  with accept/reject, live track-changes, and native DOCX export.
+- Unknown attributes stay fail-closed; opaque section fixtures stay on `footnotePr`.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).
