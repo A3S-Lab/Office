@@ -1,7 +1,9 @@
 import { MAX_DOCUMENT_NUMBERING_START } from './work-document-lists';
 import {
   numberingTypeFromFormat,
+  parseNumberingOriginalLevels,
   serializeDocumentNumberingChange,
+  serializeNumberingOriginalLevels,
 } from './work-document-numbering-changes';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
@@ -19,6 +21,7 @@ export interface ImportedDocxNumberingChangeGroup {
   level: number;
   format: number;
   suffix: string;
+  originalLevels: string;
 }
 
 export interface ImportedDocxNumberingChangeMarkers {
@@ -34,6 +37,7 @@ interface SupportedDocxNumberingChange {
   value: number;
   format: number;
   suffix: string;
+  originalLevels: string;
   paragraph: Element;
   properties: Element;
 }
@@ -43,8 +47,6 @@ const WORD_NAMESPACE =
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const MAX_NUMBERING_CHANGES = 65_536;
 const NUMBERING_CHANGE_MARKER_PATTERN = /__A3S_WORK_NUMBERING_CHANGE_\d+__/g;
-const ORIGINAL_SEGMENT_PATTERN =
-  /%([1-9]):([1-9]\d{0,9}):(\d{1,2}):([^%\u0000-\u001f\u007f]{1,32})/gy;
 
 export function markDocxNumberingChanges(
   document: Document,
@@ -79,6 +81,7 @@ export function markDocxNumberingChanges(
         level: change.level,
         format: change.format,
         suffix: change.suffix,
+        originalLevels: change.originalLevels,
       };
       groups.push(group);
       active = { change, group };
@@ -209,9 +212,11 @@ function supportedNumberingChange(
   ) {
     return null;
   }
-  const definitions = parseOriginalNumbering(original);
+  const definitions = parseNumberingOriginalLevels(original);
   const definition = definitions?.get(level + 1);
-  if (!definition || definitions?.size !== 1) return null;
+  if (!definition || !definitions) return null;
+  const originalLevels =
+    definitions.size >= 2 ? serializeNumberingOriginalLevels(definitions) : '';
   return {
     id,
     author,
@@ -219,41 +224,10 @@ function supportedNumberingChange(
     numberingId,
     level,
     ...definition,
+    originalLevels,
     paragraph,
     properties,
   };
-}
-
-function parseOriginalNumbering(
-  value: string,
-): Map<number, { value: number; format: number; suffix: string }> | null {
-  if (!value || value.length > 1_024) return null;
-  const definitions = new Map<
-    number,
-    { value: number; format: number; suffix: string }
-  >();
-  ORIGINAL_SEGMENT_PATTERN.lastIndex = 0;
-  while (ORIGINAL_SEGMENT_PATTERN.lastIndex < value.length) {
-    const match = ORIGINAL_SEGMENT_PATTERN.exec(value);
-    if (!match) return null;
-    const level = Number(match[1]);
-    const number = Number(match[2]);
-    const format = Number(match[3]);
-    const suffix = match[4] ?? '';
-    if (
-      definitions.has(level) ||
-      !Number.isSafeInteger(number) ||
-      number < 1 ||
-      number > MAX_DOCUMENT_NUMBERING_START ||
-      !Number.isSafeInteger(format) ||
-      format < 0 ||
-      format > 4
-    ) {
-      return null;
-    }
-    definitions.set(level, { value: number, format, suffix });
-  }
-  return definitions.size ? definitions : null;
 }
 
 function continuesGroup(
@@ -267,8 +241,33 @@ function continuesGroup(
     current.date === previous.date &&
     current.format === previous.format &&
     current.suffix === previous.suffix &&
-    current.value === previous.value + 1
+    current.value === previous.value + 1 &&
+    sameOriginalSiblingLevels(previous, current)
   );
+}
+
+function sameOriginalSiblingLevels(
+  previous: SupportedDocxNumberingChange,
+  current: SupportedDocxNumberingChange,
+): boolean {
+  if (!previous.originalLevels && !current.originalLevels) return true;
+  const left = parseNumberingOriginalLevels(previous.originalLevels);
+  const right = parseNumberingOriginalLevels(current.originalLevels);
+  if (!left || !right || left.size !== right.size) return false;
+  const currentLevel = previous.level + 1;
+  for (const [level, definition] of left) {
+    const other = right.get(level);
+    if (!other) return false;
+    if (level === currentLevel) continue;
+    if (
+      other.value !== definition.value ||
+      other.format !== definition.format ||
+      other.suffix !== definition.suffix
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function applyNumberingChange(
@@ -319,6 +318,7 @@ function applyNumberingChange(
     level: change.level,
     originalFormat: change.format,
     originalSuffix: change.suffix,
+    originalLevels: change.originalLevels,
   };
   list.dataset.documentChange = 'true';
   list.dataset.changeKind = 'numbering';

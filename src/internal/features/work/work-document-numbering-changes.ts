@@ -22,6 +22,8 @@ export interface DocumentNumberingChangeSnapshot {
   level: number;
   originalFormat: number;
   originalSuffix: string;
+  /** Full w:original when 2+ levels; empty for single-level. */
+  originalLevels: string;
 }
 
 export const DOCUMENT_NUMBERING_CHANGE_ATTRIBUTES = [
@@ -53,6 +55,7 @@ const NUMBERING_SNAPSHOT_KEYS = [
   'level',
   'originalFormat',
   'originalSuffix',
+  'originalLevels',
 ] as const satisfies readonly (keyof DocumentNumberingChangeSnapshot)[];
 
 const MAX_NUMBERING_SNAPSHOT_BYTES = 65_536;
@@ -201,7 +204,76 @@ function normalizeDocumentNumberingChange(
     level,
     originalFormat,
     originalSuffix: originalSuffix(source.originalSuffix),
+    originalLevels: originalLevels(source.originalLevels),
   };
+}
+
+export function rewriteNumberingChangeOriginal(
+  original: string,
+  levelOneBased: number,
+  value: number,
+): string | null {
+  const definitions = parseNumberingOriginalLevels(original);
+  if (!definitions?.has(levelOneBased)) return null;
+  const current = definitions.get(levelOneBased);
+  if (!current) return null;
+  definitions.set(levelOneBased, { ...current, value });
+  return serializeNumberingOriginalLevels(definitions);
+}
+
+export function parseNumberingOriginalLevels(
+  value: string,
+): Map<number, { value: number; format: number; suffix: string }> | null {
+  if (!value || value.length > 1_024) return null;
+  const definitions = new Map<
+    number,
+    { value: number; format: number; suffix: string }
+  >();
+  const pattern =
+    /%([1-9]):([1-9]\d{0,9}):(\d{1,2}):([^%\u0000-\u001f\u007f]{1,32})/gy;
+  while (pattern.lastIndex < value.length) {
+    const match = pattern.exec(value);
+    if (!match) return null;
+    const level = Number(match[1]);
+    const number = Number(match[2]);
+    const format = Number(match[3]);
+    const suffix = match[4] ?? '';
+    if (
+      definitions.has(level) ||
+      !Number.isSafeInteger(number) ||
+      number < 1 ||
+      number > MAX_DOCUMENT_NUMBERING_START ||
+      !Number.isSafeInteger(format) ||
+      format < 0 ||
+      format > 4
+    ) {
+      return null;
+    }
+    definitions.set(level, { value: number, format, suffix });
+  }
+  return definitions.size >= 1 && definitions.size <= 9 ? definitions : null;
+}
+
+export function serializeNumberingOriginalLevels(
+  definitions: ReadonlyMap<
+    number,
+    { value: number; format: number; suffix: string }
+  >,
+): string {
+  return [...definitions.entries()]
+    .map(
+      ([level, definition]) =>
+        `%${level}:${definition.value}:${definition.format}:${definition.suffix}`,
+    )
+    .join('');
+}
+
+function originalLevels(value: unknown): string {
+  if (typeof value !== 'string' || !value.length) return '';
+  if (value.length > 1_024) return '';
+  const definitions = parseNumberingOriginalLevels(value);
+  if (!definitions || definitions.size < 2) return '';
+  return serializeNumberingOriginalLevels(definitions);
 }
 
 function numberingType(value: unknown): DocumentNumberingChangeType {

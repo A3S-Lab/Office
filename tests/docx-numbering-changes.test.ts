@@ -236,6 +236,132 @@ describe('DOCX ordered-list numbering revisions', () => {
     );
   });
 
+  test('imports a bounded multi-level numbering revision with sibling original levels', () => {
+    const document = wordXml(`
+      <w:p><w:pPr><w:numPr>
+        <w:ilvl w:val="0"/><w:numId w:val="9"/>
+        <w:numberingChange w:id="21" w:author="Ada Reviewer" w:date="2026-09-01T09:30:00Z" w:original="%1:3:0:.%2:1:4:)"/>
+      </w:numPr></w:pPr><w:r><w:t>First</w:t></w:r></w:p>
+      <w:p><w:pPr><w:numPr>
+        <w:ilvl w:val="0"/><w:numId w:val="9"/>
+        <w:numberingChange w:id="22" w:author="Ada Reviewer" w:date="2026-09-01T09:30:00Z" w:original="%1:4:0:.%2:1:4:)"/>
+      </w:numPr></w:pPr><w:r><w:t>Second</w:t></w:r></w:p>
+    `);
+
+    const markers = markDocxNumberingChanges(document);
+    expect(markers.groups).toHaveLength(1);
+    const group = markers.groups[0];
+    if (!group)
+      throw new Error('Expected a multi-level numbering-change group.');
+    expect(group).toMatchObject({
+      id: 'docx-numbering-change-21',
+      author: 'Ada Reviewer',
+      start: 3,
+      level: 0,
+      format: 0,
+      suffix: '.',
+      originalLevels: '%1:3:0:.%2:1:4:)',
+    });
+    expect(group.markers).toHaveLength(2);
+
+    const html = new DOMParser().parseFromString(
+      [
+        '<ol start="1" type="1" data-office-numbering-id="9" data-office-numbering-level="0">',
+        `<li><p>${group.markers[0]}First</p></li>`,
+        `<li><p>${group.markers[1]}Second</p></li>`,
+        '</ol>',
+      ].join(''),
+      'text/html',
+    );
+    applyImportedDocxNumberingChangeMarkers(html, markers);
+    const list = html.querySelector('ol');
+    expect(list?.dataset.changeKind).toBe('numbering');
+    expect(parseDocumentNumberingChange(list?.dataset.changeBefore)).toEqual(
+      expect.objectContaining({
+        start: 3,
+        type: null,
+        level: 0,
+        originalFormat: 0,
+        originalSuffix: '.',
+        originalLevels: '%1:3:0:.%2:1:4:)',
+      }),
+    );
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: html.body.innerHTML,
+    });
+    const changes = collectDocumentChanges(editor.state.doc);
+    expect(changes).toEqual([
+      expect.objectContaining({
+        id: 'docx-numbering-change-21',
+        kind: 'numbering',
+      }),
+    ]);
+    expect(editor.commands.rejectDocumentChange(changes[0]?.id ?? '')).toBe(
+      true,
+    );
+    expect(editor.getHTML()).toContain('start="3"');
+    expect(editor.getHTML()).not.toContain('data-change-kind="numbering"');
+    editor.destroy();
+  });
+
+  test('exports and reopens multi-level numbering originals without dropping sibling levels', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const before = serializeDocumentNumberingChange({
+      start: 3,
+      type: null,
+      level: 0,
+      originalFormat: 0,
+      originalSuffix: '.',
+      originalLevels: '%1:3:0:.%2:1:4:)',
+    });
+    artifact.content.html = [
+      '<section data-document-section="true">',
+      `<ol start="1" type="1" data-document-change="true" data-change-kind="numbering" data-change-before='${before}' data-change-id="numbering-ml" data-change-author="Ada Reviewer" data-change-date="2026-09-01T10:30:00.000Z">`,
+      '<li><p>First</p></li><li><p>Second</p></li>',
+      '</ol></section>',
+    ].join('');
+    artifact.content.trackChanges = false;
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(xml).toMatch(
+      /<w:numberingChange\b[^>]*w:original="%1:3:0:\.%2:1:4:\)"/,
+    );
+    expect(xml).toMatch(
+      /<w:numberingChange\b[^>]*w:original="%1:4:0:\.%2:1:4:\)"/,
+    );
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'numbering-multilevel.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain('data-change-kind="numbering"');
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: reopened.content.html,
+    });
+    const dom = new DOMParser().parseFromString(editor.getHTML(), 'text/html');
+    expect(
+      parseDocumentNumberingChange(
+        dom.querySelector('ol')?.dataset.changeBefore,
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        originalLevels: '%1:3:0:.%2:1:4:)',
+        start: 3,
+      }),
+    );
+    editor.destroy();
+  });
+
   test('fails closed for malformed, duplicated, spoofed, or unsupported native forms', async () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:s="${STRICT_WORD_NAMESPACE}" xmlns:evil="https://example.test/evil">
@@ -259,7 +385,10 @@ describe('DOCX ordered-list numbering revisions', () => {
           <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="6"/>
             <w:numberingChange w:id="7" w:author="Complex" w:original="%1:1:0:.%2:1:4:)"/>
           </w:numPr></w:pPr></w:p>
-          <w:p><w:pPr><evil:numPr><evil:numberingChange evil:id="8" evil:author="Spoofed" evil:original="%1:1:0:."/></evil:numPr></w:pPr></w:p>
+          <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="7"/>
+            <w:numberingChange w:id="8" w:author="SiblingFormat" w:original="%1:1:0:.%2:1:23:)"/>
+          </w:numPr></w:pPr></w:p>
+          <w:p><w:pPr><evil:numPr><evil:numberingChange evil:id="9" evil:author="Spoofed" evil:original="%1:1:0:."/></evil:numPr></w:pPr></w:p>
         </w:body>
       </w:document>
     `);
@@ -271,10 +400,11 @@ describe('DOCX ordered-list numbering revisions', () => {
       false,
       false,
       false,
+      true,
       false,
       false,
     ]);
-    expect(markDocxNumberingChanges(document).groups).toHaveLength(2);
+    expect(markDocxNumberingChanges(document).groups).toHaveLength(3);
 
     const conflictingHtml = new DOMParser().parseFromString(
       '<ol><li><p>__A3S_WORK_NUMBERING_CHANGE_1__First</p></li><li><p>__A3S_WORK_NUMBERING_CHANGE_2__Second</p></li></ol>',
@@ -291,6 +421,7 @@ describe('DOCX ordered-list numbering revisions', () => {
           level: 0,
           format: 0,
           suffix: '.',
+          originalLevels: '',
         },
         {
           markers: ['__A3S_WORK_NUMBERING_CHANGE_2__'],
@@ -301,6 +432,7 @@ describe('DOCX ordered-list numbering revisions', () => {
           level: 0,
           format: 0,
           suffix: '.',
+          originalLevels: '',
         },
       ],
     });

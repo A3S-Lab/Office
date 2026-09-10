@@ -1,9 +1,16 @@
 import type { WorkBook, WorkSheet } from 'xlsx';
+import {
+  serializePreservableDocxCellPropertyRevision,
+  serializePreservableDocxRowPropertyRevision,
+  serializePreservableDocxSectionPropertyRevision,
+  serializePreservableDocxTablePropertyRevision,
+} from './work-document-table-property-revision';
 import { diagnoseDocxBookmarksAndLinks } from './work-docx-bookmark-diagnostics';
 import { diagnoseDocxCaptions } from './work-docx-caption-diagnostics';
+import { isSupportedDocxCellFormattingChange } from './work-docx-cell-format-change-import';
 import {
-  isSupportedDocxMoveChange,
   inspectDocxMoveRangeCompanions,
+  isSupportedDocxMoveChange,
   supportedDocxMovePairCount,
 } from './work-docx-change-import';
 import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
@@ -25,27 +32,20 @@ import { diagnoseDocxPageSize } from './work-docx-page-size-diagnostics';
 import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diagnostics';
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import { isSupportedDocxParagraphFormattingChange } from './work-docx-paragraph-format-change-import';
-import { isSupportedDocxTableFormattingChange } from './work-docx-table-format-change-import';
-import { isSupportedDocxRowFormattingChange } from './work-docx-row-format-change-import';
-import { isSupportedDocxCellFormattingChange } from './work-docx-cell-format-change-import';
-import { isSupportedDocxSectionFormattingChange } from './work-docx-section-format-change-import';
 import {
   isIsolatedDocxParagraphBreakMarkChange,
   isSupportedDocxParagraphMarkChange,
 } from './work-docx-paragraph-mark-change-import';
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { diagnoseDocxProofing } from './work-docx-proofing-diagnostics';
+import { isSupportedDocxRowFormattingChange } from './work-docx-row-format-change-import';
 import { diagnoseDocxRunBorders } from './work-docx-run-border-diagnostics';
 import { diagnoseDocxRunFonts } from './work-docx-run-fonts-diagnostics';
 import { isSupportedDocxRunFormattingChange } from './work-docx-run-formatting-import';
 import { diagnoseDocxRunShading } from './work-docx-run-shading-diagnostics';
+import { isSupportedDocxSectionFormattingChange } from './work-docx-section-format-change-import';
+import { isSupportedDocxTableFormattingChange } from './work-docx-table-format-change-import';
 import { inspectDocxTextBoxes } from './work-docx-text-box-import';
-import {
-  serializePreservableDocxCellPropertyRevision,
-  serializePreservableDocxRowPropertyRevision,
-  serializePreservableDocxSectionPropertyRevision,
-  serializePreservableDocxTablePropertyRevision,
-} from './work-document-table-property-revision';
 import {
   attribute,
   contentTypeForPart,
@@ -561,7 +561,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.numbering',
             'Numbering revisions',
-            `${supportedNumberingRevisionCount} bounded ordered-list numbering revision(s) preserve author, date, prior start, and common decimal, letter, or Roman formats. Contiguous list-item records remain reviewable as one Work change and round-trip as native w:numberingChange records.`,
+            `${supportedNumberingRevisionCount} bounded ordered-list numbering revision(s) preserve author, date, prior start, and common decimal, letter, or Roman formats, including bounded multi-level originals. Contiguous list-item records remain reviewable as one Work change and round-trip as native w:numberingChange records.`,
             'info',
           ),
         );

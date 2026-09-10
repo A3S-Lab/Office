@@ -791,7 +791,9 @@ test('publishes Writer numbering revisions across implementation, native collabo
 
   expect(changelog).toContain('## 0.40.0 - 2026-09-02');
   expect(changelog).toContain('Writer ordered-list numbering revisions');
-  expect(roadmap).toContain('common single-level `w:numberingChange`');
+  expect(roadmap).toContain(
+    'common single-level and bounded multi-level `w:numberingChange`',
+  );
   expect(product).toContain('The sixty-first Writer milestone');
   expect(releaseEnglishHome).toContain('Released in 0.40.0');
   expect(releaseEnglishHome).toContain(

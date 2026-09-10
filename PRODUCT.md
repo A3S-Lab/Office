@@ -862,11 +862,11 @@ Undo each remain one atomic transaction.
 
 Strict and transitional WordprocessingML `w:numberingChange` records import
 only when the paragraph numbering properties, revision metadata, original
-single-level definition, and contiguous per-item sequence are unambiguous.
+single-level or bounded multi-level definition, and contiguous per-item sequence are unambiguous.
 Export writes one native record per list item with sequential original values
-and enables native revision settings without leaking browser transport markers.
+(preserving sibling level priors for multi-level originals) and enables native revision settings without leaking browser transport markers.
 The importer and diagnostics fail closed for malformed, duplicated,
-conflicting, namespace-spoofed, unsupported-format, or multi-level definitions.
+conflicting, namespace-spoofed, unsupported-format, or over-limit multi-level definitions.
 The model caps one snapshot at 64 KiB and one package at 65,536 numbering
 records; ordinary typing avoids numbering-tree scans because tracking runs only
 for structural list transactions.
@@ -877,7 +877,7 @@ browser fixture, authenticated text suggestions preserve the numbering intent,
 and attempted metadata removal is rejected before state changes. Focused
 Rstest, DOCX export/import/reopen, responsive browser coverage, and the pinned
 local A3S Test numbering suite cover review, rejection, Undo, accessibility,
-and clean diagnostics. Complex and multi-level numbering changes, move ranges,
+and clean diagnostics. Remaining complex numbering edge cases, move ranges,
 cell/section property revisions, and table/row property revisions outside the
 reviewable subsets remain explicit follow-up work. `w:tblPrChange` with prior
 `w:jc` and/or `w:tblW` is reviewable as `table-formatting`; `w:trPrChange`

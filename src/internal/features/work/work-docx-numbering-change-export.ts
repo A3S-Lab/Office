@@ -1,6 +1,9 @@
 import JSZip from 'jszip';
 import { MAX_DOCUMENT_NUMBERING_START } from './work-document-lists';
-import { parseDocumentNumberingChange } from './work-document-numbering-changes';
+import {
+  parseDocumentNumberingChange,
+  rewriteNumberingChangeOriginal,
+} from './work-document-numbering-changes';
 import {
   descendants,
   directChildren,
@@ -58,12 +61,23 @@ export class DocxNumberingChangePatchCollector {
       throw new Error('Document exceeds the numbering revision limit.');
     }
     const marker = `__A3S_WORK_NUMBERING_CHANGE_EXPORT_${this.patches.length + 1}__`;
+    const original =
+      snapshot.originalLevels.length > 0
+        ? rewriteNumberingChangeOriginal(
+            snapshot.originalLevels,
+            snapshot.level + 1,
+            value,
+          )
+        : `%${snapshot.level + 1}:${value}:${snapshot.originalFormat}:${snapshot.originalSuffix}`;
+    if (!original) {
+      throw new Error('Document contains an invalid numbering revision.');
+    }
     this.patches.push({
       marker,
       id,
       author,
       date,
-      original: `%${snapshot.level + 1}:${value}:${snapshot.originalFormat}:${snapshot.originalSuffix}`,
+      original,
     });
     return marker;
   }
