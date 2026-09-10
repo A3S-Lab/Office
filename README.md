@@ -371,14 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.117.0` makes section footnotePr revisions reviewable:
+Version `0.118.0` makes section endnotePr revisions reviewable:
 
-- **Section footnote properties** — relationship-free `sectPrChange` priors with
-  bounded empty or `pos`/`numFmt`/`numStart`/`numRestart` `footnotePr` become
-  reviewable `section-formatting` with accept/reject, live track-changes, and
-  native DOCX export.
+- **Section endnote properties** — relationship-free `sectPrChange` priors with
+  bounded empty or `pos` (`sectEnd`/`docEnd`) / `numFmt` / `numStart` /
+  `numRestart` `endnotePr` become reviewable `section-formatting` with
+  accept/reject, live track-changes, and native DOCX export.
 - **Boundary** — unknown children/attributes stay fail-closed; opaque section
-  fixtures stay on `endnotePr`.
+  fixtures stay on `type`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
