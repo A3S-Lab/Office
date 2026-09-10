@@ -9,7 +9,7 @@ All notable changes to A3S Office will be documented in this file.
 ### Writer
 
 - Bounded multi-level relationship-free `w:numberingChange` originals
-  (`%[ilvl]:[start]:[nfc]:[suff]` segments for 2–9 common decimal/letter/Roman
+  (`%[ilvl]:[start]:[nfc]:[suff]` segments for 2-9 common decimal/letter/Roman
   levels that include the paragraph `w:ilvl`) now import as reviewable ordered-list
   numbering revisions with accept/reject, contiguous grouping, and native export
   that preserves sibling level priors. Unsupported formats, missing current-level
