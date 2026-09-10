@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.117.0 - 2026-09-10
+
 ### Writer
 
 - Relationship-free `w:sectPrChange` priors that include bounded relationship-free

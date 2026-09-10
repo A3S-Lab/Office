@@ -371,13 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.116.0` makes section bidi revisions reviewable:
+Version `0.117.0` makes section footnotePr revisions reviewable:
 
-- **Section bidirectional layout** — relationship-free `sectPrChange` priors with
-  empty or onOff `bidi` become reviewable `section-formatting` with
-  accept/reject, live track-changes, and native DOCX export.
-- **Boundary** — unknown attributes stay fail-closed; opaque section fixtures
-  stay on `footnotePr`.
+- **Section footnote properties** — relationship-free `sectPrChange` priors with
+  bounded empty or `pos`/`numFmt`/`numStart`/`numRestart` `footnotePr` become
+  reviewable `section-formatting` with accept/reject, live track-changes, and
+  native DOCX export.
+- **Boundary** — unknown children/attributes stay fail-closed; opaque section
+  fixtures stay on `endnotePr`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
