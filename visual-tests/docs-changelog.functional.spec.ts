@@ -9,11 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(107);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.126.0');
-  await expect(cards.first()).toContainText('Writer 修订正文准入空回车符');
+  await expect(cards).toHaveCount(108);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.127.0');
+  await expect(cards.first()).toContainText(
+    'Writer 修订正文准入空最后渲染分页符',
+  );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.127.0')).toContainText(
+    '修订正文中的空最后渲染分页符',
+  );
+  await expect(releaseCard('0.127.0')).toContainText(
+    '带属性最后渲染分页符保持失败闭合',
+  );
   await expect(releaseCard('0.126.0')).toContainText('修订正文中的空回车符');
   await expect(releaseCard('0.126.0')).toContainText(
     '带属性回车符保持失败闭合',
