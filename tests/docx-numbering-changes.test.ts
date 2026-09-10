@@ -362,6 +362,59 @@ describe('DOCX ordered-list numbering revisions', () => {
     editor.destroy();
   });
 
+  test('exports and reopens opaque sibling ST_NumberFormat levels in originalLevels', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const before = serializeDocumentNumberingChange({
+      start: 1,
+      type: null,
+      level: 0,
+      originalFormat: 0,
+      originalSuffix: '.',
+      originalLevels: '%1:1:0:.%2:1:23:)',
+    });
+    artifact.content.html = [
+      '<section data-document-section="true">',
+      `<ol start="1" type="1" data-document-change="true" data-change-kind="numbering" data-change-before='${before}' data-change-id="numbering-opaque-sib" data-change-author="SiblingFormat" data-change-date="2026-09-01T10:30:00.000Z">`,
+      '<li><p>Item</p></li>',
+      '</ol></section>',
+    ].join('');
+    artifact.content.trackChanges = false;
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(xml).toMatch(
+      /<w:numberingChange\b[^>]*w:original="%1:1:0:\.%2:1:23:\)"/,
+    );
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'numbering-opaque-sibling.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: reopened.content.html,
+    });
+    const dom = new DOMParser().parseFromString(editor.getHTML(), 'text/html');
+    expect(
+      parseDocumentNumberingChange(
+        dom.querySelector('ol')?.dataset.changeBefore,
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        originalLevels: '%1:1:0:.%2:1:23:)',
+        start: 1,
+        originalFormat: 0,
+      }),
+    );
+    editor.destroy();
+  });
+
   test('fails closed for malformed, duplicated, spoofed, or unsupported native forms', async () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:s="${STRICT_WORD_NAMESPACE}" xmlns:evil="https://example.test/evil">
@@ -401,10 +454,20 @@ describe('DOCX ordered-list numbering revisions', () => {
       false,
       false,
       true,
-      false,
+      true,
       false,
     ]);
-    expect(markDocxNumberingChanges(document).groups).toHaveLength(3);
+    const marked = markDocxNumberingChanges(document);
+    expect(marked.groups).toHaveLength(4);
+    expect(
+      marked.groups.find((group) => group.author === 'SiblingFormat'),
+    ).toMatchObject({
+      start: 1,
+      level: 0,
+      format: 0,
+      suffix: '.',
+      originalLevels: '%1:1:0:.%2:1:23:)',
+    });
 
     const conflictingHtml = new DOMParser().parseFromString(
       '<ol><li><p>__A3S_WORK_NUMBERING_CHANGE_1__First</p></li><li><p>__A3S_WORK_NUMBERING_CHANGE_2__Second</p></li></ol>',

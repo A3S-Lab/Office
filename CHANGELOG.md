@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.141.0 - 2026-09-11
+
+### Writer
+
+- Multi-level numbering revisions now admit opaque sibling `ST_NumberFormat`
+  values in `w:original` while the current `w:ilvl` stays common nfc 0–4
+  (decimal, letter, or Roman). Current-level bullet and picture formats stay
+  fail-closed.
+
 ## 0.140.0 - 2026-09-11
 
 ### Writer

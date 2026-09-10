@@ -31,22 +31,24 @@ Enough means embeddable format-native editors for host daily workflows—not
 full Traditional Office parity and not every R6 enterprise row. The ordered
 remaining backlog, surface exit criteria, and explicit out-of-scope list live
 in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
-Active tip through `0.140.0` admits one-level nested-table companion
-`w:move*Range*` bookmarks on import when move ancestry is at most two `w:tbl`
-elements that both contain the supported text-only move (and earlier simple
-SDT-wrapped companions through `0.139.0`, multi-cell table-spanning companions
-through `0.138.0`, Compare / same-document text-only move-range generation
-through `0.137.0`, single-cell table companions through `0.136.0`, picture-only
-paragraph bodies through `0.135.0`, untracked picture siblings through
-`0.134.0`, inline pictures inside wrappers through `0.133.0`, safe
+Active tip through `0.141.0` admits opaque sibling `ST_NumberFormat` values in
+multi-level numbering `w:original` while the current `w:ilvl` stays common nfc
+0–4 (current-level bullet and picture formats stay fail-closed; and earlier
+one-level nested-table companion `w:move*Range*` bookmarks through `0.140.0`,
+simple SDT-wrapped companions through `0.139.0`, multi-cell table-spanning
+companions through `0.138.0`, Compare / same-document text-only move-range
+generation through `0.137.0`, single-cell table companions through `0.136.0`,
+picture-only paragraph bodies through `0.135.0`, untracked picture siblings
+through `0.134.0`, inline pictures inside wrappers through `0.133.0`, safe
 relationship-bound external hyperlinks through `0.132.0`, cross-section
 companion move-range bookmarks through `0.131.0`, plus untracked text-only
 sibling runs beside whole-paragraph marks through `0.130.0`). The move-range
 family is largely complete; residual fail-closed edges are deeper nesting, a
 nested table beside the move, and SDT+nested-table combinations. Next R0 work
-is numbering edges, bounded property-revision subsets, searchable/tagged PDF
-output, and continuous no-clobber fixtures—then R1 Writer daily leftovers, R2
-calculation fidelity, R3 animation/media, and R4 PDF content editing.
+is remaining numbering edges, bounded property-revision subsets,
+searchable/tagged PDF output, and continuous no-clobber fixtures—then R1
+Writer daily leftovers, R2 calculation fidelity, R3 animation/media, and R4
+PDF content editing.
 
 ## Current Spreadsheet Milestone
 
@@ -886,10 +888,13 @@ Undo each remain one atomic transaction.
 Strict and transitional WordprocessingML `w:numberingChange` records import
 only when the paragraph numbering properties, revision metadata, original
 single-level or bounded multi-level definition, and contiguous per-item sequence are unambiguous.
+Sibling levels in `w:original` may carry other `ST_NumberFormat` values as
+opaque prior text while the current `w:ilvl` stays common nfc 0–4.
 Export writes one native record per list item with sequential original values
 (preserving sibling level priors for multi-level originals) and enables native revision settings without leaking browser transport markers.
 The importer and diagnostics fail closed for malformed, duplicated,
-conflicting, namespace-spoofed, unsupported-format, or over-limit multi-level definitions.
+conflicting, namespace-spoofed, unsupported current-level formats (including
+bullet/picture), or over-limit multi-level definitions.
 The model caps one snapshot at 64 KiB and one package at 65,536 numbering
 records; ordinary typing avoids numbering-tree scans because tracking runs only
 for structural list transactions.
@@ -900,7 +905,8 @@ browser fixture, authenticated text suggestions preserve the numbering intent,
 and attempted metadata removal is rejected before state changes. Focused
 Rstest, DOCX export/import/reopen, responsive browser coverage, and the pinned
 local A3S Test numbering suite cover review, rejection, Undo, accessibility,
-and clean diagnostics. Remaining complex numbering edge cases, move ranges,
+and clean diagnostics. Remaining exotic numbering pictures and deeper
+inherited-list metadata, residual move-range edges,
 cell/section property revisions, and table/row property revisions outside the
 reviewable subsets remain explicit follow-up work. `w:tblPrChange` with prior
 `w:jc` and/or `w:tblW` is reviewable as `table-formatting`; `w:trPrChange`

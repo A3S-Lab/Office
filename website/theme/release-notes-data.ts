@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.141.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits opaque sibling ST_NumberFormat values in multi-level numbering originals',
+      zh: 'Writer 准入多级编号先验中的不透明兄弟 ST_NumberFormat 值',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: multi-level numberingChange w:original strings may carry opaque sibling ST_NumberFormat nfc values while the current w:ilvl stays common decimal, letter, or Roman (nfc 0–4). Current-level bullet and picture formats stay fail-closed.',
+      zh: 'Phase 0 保真：多级 numberingChange 的 w:original 可携带不透明兄弟 ST_NumberFormat nfc，同时当前 w:ilvl 保持常见十进制、字母或罗马数字（nfc 0–4）。当前级项目符号与图片格式仍失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Opaque sibling formats in w:original',
+          zh: 'w:original 中的不透明兄弟格式',
+        },
+        detail: {
+          en: 'Sibling %[ilvl]:[start]:[nfc]:[suff] segments may round-trip non-common ST_NumberFormat values as opaque prior text.',
+          zh: '兄弟 %[ilvl]:[start]:[nfc]:[suff] 段可将非常见 ST_NumberFormat 值作为不透明先验文本往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Current ilvl stays common nfc 0–4',
+          zh: '当前 ilvl 保持常见 nfc 0–4',
+        },
+        detail: {
+          en: 'The paragraph w:ilvl segment must remain decimal, letter, or Roman for the change to stay reviewable.',
+          zh: '段落 w:ilvl 段须保持十进制、字母或罗马数字，修订才可继续审阅。',
+        },
+      },
+      {
+        title: {
+          en: 'Current-level bullet/picture stay fail-closed',
+          zh: '当前级项目符号/图片仍失败闭合',
+        },
+        detail: {
+          en: 'Bullet, picture, and other non-common formats at the current level remain diagnostics-only.',
+          zh: '当前级的项目符号、图片及其他非常见格式仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.141.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.141.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.140.0',
     date: '2026-09-11',
     kind: 'improved',

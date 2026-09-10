@@ -1,5 +1,6 @@
 import { MAX_DOCUMENT_NUMBERING_START } from './work-document-lists';
 import {
+  isCommonNumberingFormat,
   numberingTypeFromFormat,
   parseNumberingOriginalLevels,
   serializeDocumentNumberingChange,
@@ -214,7 +215,16 @@ function supportedNumberingChange(
   }
   const definitions = parseNumberingOriginalLevels(original);
   const definition = definitions?.get(level + 1);
-  if (!definition || !definitions) return null;
+  // Current w:ilvl must stay common nfc 0–4; sibling segments may carry other
+  // ST_NumberFormat values and round-trip as opaque prior text in originalLevels.
+  // Bullet/picture (and other non-common) current-level changes stay fail-closed.
+  if (
+    !definition ||
+    !definitions ||
+    !isCommonNumberingFormat(definition.format)
+  ) {
+    return null;
+  }
   const originalLevels =
     definitions.size >= 2 ? serializeNumberingOriginalLevels(definitions) : '';
   return {

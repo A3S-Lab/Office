@@ -42,13 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.140.0）
+## `main` 更新内容（0.141.0）
 
-Writer Phase 0 准入一层嵌套表 companion 移动范围书签：
+Writer Phase 0 准入多级编号先验中的不透明兄弟 `ST_NumberFormat` 值：
 
-- 移动祖先至多两层且均含受支持纯文本移动的 `w:tbl` 时，companion
-  `w:move*Range*` 书签可在导入时准入。
-- 更深嵌套、移动旁的嵌套表，以及 SDT 与嵌套表组合仍失败闭合。
+- 多级 `numberingChange` 的 `w:original` 可携带不透明兄弟 `ST_NumberFormat`
+  nfc，同时当前 `w:ilvl` 保持常见十进制、字母或罗马数字（nfc 0–4）。
+- 当前级项目符号与图片格式仍失败闭合。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

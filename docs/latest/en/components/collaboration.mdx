@@ -745,10 +745,12 @@ authenticated `suggest` participant may add attributed text proposals but
 cannot create, remove, rewrite, or hide an existing numbering revision.
 
 Strict and transitional DOCX `w:numberingChange` records use the same model for
-unambiguous single-level decimal, letter, and Roman lists. Consecutive native
+unambiguous single-level and bounded multi-level decimal, letter, and Roman
+lists at the current `w:ilvl`. Sibling levels in `w:original` may carry other
+`ST_NumberFormat` values as opaque prior text. Consecutive native
 per-item records group only when their identity and old-number sequence agree;
-malformed, conflicting, multi-level, unsupported, or namespace-spoofed forms
-stay on the structural-diagnostic path. The deterministic
+malformed, conflicting, unsupported current-level bullet/picture formats, or
+namespace-spoofed forms stay on the structural-diagnostic path. The deterministic
 `word-numbering-revision.acl` A3S Test opens the public Playground, checks the
 **编号格式** card, rejects it, verifies the original Roman numbering and intact
 list text, then verifies Undo, accessibility, and clean browser diagnostics.

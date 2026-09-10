@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(121);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.140.0');
+  await expect(cards).toHaveCount(122);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.141.0');
   await expect(cards.first()).toContainText(
-    'Writer 准入一层嵌套表 companion 移动范围书签',
+    'Writer 准入多级编号先验中的不透明兄弟 ST_NumberFormat 值',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.141.0')).toContainText(
+    'w:original 中的不透明兄弟格式',
+  );
+  await expect(releaseCard('0.141.0')).toContainText(
+    '兄弟 %[ilvl]:[start]:[nfc]:[suff] 段可将非常见 ST_NumberFormat 值作为不透明先验文本往返',
+  );
   await expect(releaseCard('0.140.0')).toContainText('一层嵌套表 companion');
   await expect(releaseCard('0.140.0')).toContainText(
     '正文级 move*Range* Start/End 夹住外层表，且内层嵌套表含受支持移动时',

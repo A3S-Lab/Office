@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.140.0` admits one-level nested-table companion move-range bookmarks:
+Version `0.141.0` admits opaque sibling `ST_NumberFormat` values in multi-level
+numbering originals:
 
-- **One-level nested-table companions** — move ancestry of at most two `w:tbl`
-  elements that both contain the supported text-only move keeps matching
-  `w:move*Range*` bookmarks on import.
-- **Boundary** — deeper nesting, a nested table beside the move, and SDT
-  combined with nested tables stay fail-closed.
+- **Opaque sibling formats** — sibling `%[ilvl]:[start]:[nfc]:[suff]` segments in
+  `w:original` may round-trip non-common `ST_NumberFormat` values as opaque
+  prior text while the current `w:ilvl` stays common nfc 0–4.
+- **Boundary** — current-level bullet and picture formats stay fail-closed.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

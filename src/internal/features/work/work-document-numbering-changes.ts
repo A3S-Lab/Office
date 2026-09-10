@@ -221,6 +221,16 @@ export function rewriteNumberingChangeOriginal(
   return serializeNumberingOriginalLevels(definitions);
 }
 
+/** Common reviewable nfc values: decimal, upper/lower Roman, upper/lower letter. */
+export function isCommonNumberingFormat(format: number): boolean {
+  return Number.isSafeInteger(format) && format >= 0 && format <= 4;
+}
+
+/**
+ * Parses `%[ilvl]:[start]:[nfc]:[suff]` segments. Sibling levels may carry any
+ * ST_NumberFormat nfc (0–99); callers that admit reviewable changes must still
+ * require the current `w:ilvl` segment to be common (0–4).
+ */
 export function parseNumberingOriginalLevels(
   value: string,
 ): Map<number, { value: number; format: number; suffix: string }> | null {
@@ -245,7 +255,7 @@ export function parseNumberingOriginalLevels(
       number > MAX_DOCUMENT_NUMBERING_START ||
       !Number.isSafeInteger(format) ||
       format < 0 ||
-      format > 4
+      format > 99
     ) {
       return null;
     }

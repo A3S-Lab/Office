@@ -696,12 +696,15 @@ boundaries. The review panel presents one **编号格式** card, so a native rec
 per list item is not exposed as a misleading stack of paragraph changes.
 
 Supported strict or transitional DOCX `w:numberingChange` records import for
-unambiguous single-level decimal, letter, and Roman definitions. Consecutive
+unambiguous single-level and bounded multi-level decimal, letter, and Roman
+definitions at the current `w:ilvl`. Sibling levels in `w:original` may carry
+other `ST_NumberFormat` values as opaque prior text. Consecutive
 per-item records become one atomic list intent only when author, date, numbering
 identity, level, format, suffix, and original sequence agree. Export writes
 native sequential records back under `w:numPr`, enables `w:trackRevisions`, and
-removes every private marker. Malformed, duplicated, conflicting, multi-level,
-unsupported, or namespace-spoofed records remain structural diagnostics.
+removes every private marker. Malformed, duplicated, conflicting, unsupported
+current-level bullet/picture formats, or namespace-spoofed records remain
+structural diagnostics.
 
 The snapshot is capped at 64 KiB and native import/export at 65,536 records.
 Tracking first checks for a structural `ReplaceAroundStep`, so ordinary typing
