@@ -371,14 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.133.0` admits supported inline DrawingML pictures in
-whole-paragraph mark and paragraph-break revision bodies:
+Version `0.134.0` admits untracked supported inline DrawingML picture siblings
+beside whole-paragraph mark revision wrappers:
 
-- **Inline pictures** — `wp:inline` drawings with a resolved image `r:embed`
-  import as reviewable revision content alongside visible text.
-- **Boundary** — untracked drawing siblings beside mark wrappers, floating
-  anchors, empty or malformed drawings, unresolved embeds, and picture-only
-  paragraphs stay fail-closed.
+- **Untracked picture siblings** — `wp:inline` drawings with a resolved image
+  `r:embed` may sit beside matching `w:ins` / `w:del` wrappers, mirroring the
+  0.130 text-sibling path.
+- **Boundary** — empty or malformed drawings, floating anchors, unresolved
+  embeds, and picture-only mark bodies stay fail-closed. Paragraph-break
+  bodies already admitted inline pictures through `0.133.0`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

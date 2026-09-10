@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.134.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits untracked inline picture siblings beside mark wrappers',
+      zh: 'Writer 整段标记包装旁准入未跟踪行内图片兄弟',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: whole-paragraph mark revision bodies now admit untracked supported inline DrawingML picture siblings (wp:inline with a resolved image r:embed) beside matching w:ins / w:del wrappers, mirroring the 0.130 text-sibling path. Empty or malformed drawings, floating anchors, unresolved embeds, and picture-only mark bodies stay fail-closed. Paragraph-break bodies already admitted inline pictures through 0.133.0.',
+      zh: 'Phase 0 保真：整段段落标记修订正文现可在匹配的 w:ins / w:del 包装旁准入未跟踪、受支持的行内 DrawingML 图片兄弟（带已解析图片 r:embed 的 wp:inline），镜像 0.130 纯文本兄弟路径。空或畸形绘图、浮动锚点、未解析嵌入以及仅含图片的标记正文仍失败闭合。段落分隔符正文已在 0.133.0 准入行内图片。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Untracked inline picture siblings',
+          zh: '未跟踪行内图片兄弟',
+        },
+        detail: {
+          en: 'Resolved wp:inline image embeds may sit beside matching mark wrappers as one atomic whole-paragraph revision.',
+          zh: '已解析的 wp:inline 图片嵌入可位于匹配的标记包装旁，作为一项原子整段修订。',
+        },
+      },
+      {
+        title: {
+          en: 'Mirrors the 0.130 text-sibling path',
+          zh: '镜像 0.130 纯文本兄弟路径',
+        },
+        detail: {
+          en: 'Sibling admission beside wrappers follows the same shape as untracked text-only runs from 0.130.',
+          zh: '包装旁兄弟准入与 0.130 未跟踪纯文本 run 同一形态。',
+        },
+      },
+      {
+        title: {
+          en: 'Picture-only bodies stay fail-closed',
+          zh: '仅含图片正文仍失败闭合',
+        },
+        detail: {
+          en: 'Empty or malformed drawings, floating anchors, unresolved embeds, and picture-only mark bodies remain diagnostics-only.',
+          zh: '空或畸形绘图、浮动锚点、未解析嵌入与仅含图片的标记正文仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.134.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.134.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.133.0',
     date: '2026-09-10',
     kind: 'improved',

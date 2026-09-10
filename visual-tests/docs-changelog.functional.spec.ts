@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(114);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.133.0');
+  await expect(cards).toHaveCount(115);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.134.0');
   await expect(cards.first()).toContainText(
-    'Writer 整段标记修订准入行内 DrawingML 图片',
+    'Writer 整段标记包装旁准入未跟踪行内图片兄弟',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.134.0')).toContainText('未跟踪行内图片兄弟');
+  await expect(releaseCard('0.134.0')).toContainText(
+    '已解析的 wp:inline 图片嵌入可位于匹配的标记包装旁',
+  );
   await expect(releaseCard('0.133.0')).toContainText('行内 DrawingML 图片准入');
   await expect(releaseCard('0.133.0')).toContainText(
     '已解析的 wp:inline 图片嵌入',

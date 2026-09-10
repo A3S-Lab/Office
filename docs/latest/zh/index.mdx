@@ -42,12 +42,14 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.133.0）
+## `main` 更新内容（0.134.0）
 
-Writer Phase 0 在整段段落标记与段落分隔符修订正文中准入受支持的行内 DrawingML 图片：
+Writer Phase 0 在整段段落标记修订包装旁准入未跟踪、受支持的行内 DrawingML 图片兄弟：
 
-- 带已解析图片 `r:embed` 的 `wp:inline` 绘图与可见文本一并作为可审阅修订内容导入。
-- 标记包装旁未跟踪的绘图兄弟、浮动锚点以及仅含图片的段落仍失败闭合。
+- 带已解析图片 `r:embed` 的 `wp:inline` 绘图可位于匹配的 `w:ins` / `w:del`
+  包装旁，镜像 0.130 纯文本兄弟路径。
+- 空或畸形绘图、浮动锚点、未解析嵌入以及仅含图片的标记正文仍失败闭合。段落分隔符
+  正文已在 `0.133.0` 准入行内图片。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

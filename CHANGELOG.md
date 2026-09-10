@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.134.0 - 2026-09-10
+
+### Writer
+
+- Eligible whole-paragraph mark revision bodies now admit untracked supported
+  inline DrawingML picture siblings (`wp:inline` + resolved image `r:embed`)
+  beside matching `w:ins` / `w:del` wrappers, mirroring the 0.130 text-sibling
+  path. Empty or malformed drawings, floating anchors, unresolved embeds, and
+  picture-only mark bodies stay fail-closed. Paragraph-break bodies already
+  admitted inline pictures through `0.133.0`.
+
 ## 0.133.0 - 2026-09-10
 
 ### Writer

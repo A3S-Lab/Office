@@ -655,11 +655,12 @@ function paragraphBodyMatchesChange(
   const expectedName = change.kind === 'deletion' ? 'del' : 'ins';
   // Admit one or more consecutive matching body wrappers (Word/WPS often
   // split a whole-paragraph revision across run formatting siblings).
-  // Drawings, unsafe relationship-bound hyperlinks, and mismatched authors stay
-  // excluded. Relationship-free bookmarkStart/End markers and untracked
-  // text-only runs (including empty/rPr-only) may appear as siblings of the
-  // revision wrappers without blocking admission. Supported inline pictures
-  // are admitted only inside the matching wrappers, not as untracked siblings.
+  // Unsafe relationship-bound hyperlinks and mismatched authors stay
+  // excluded. Relationship-free bookmarkStart/End markers, untracked
+  // text-only runs (including empty/rPr-only), and untracked supported
+  // inline DrawingML picture runs may appear as siblings of the revision
+  // wrappers without blocking admission. Floating anchors, empty or
+  // malformed drawings, and unresolved embeds stay fail-closed.
   let sawRevision = false;
   for (const revision of body) {
     if (
@@ -672,7 +673,10 @@ function paragraphBodyMatchesChange(
     if (revision.localName === 'r') {
       if (
         revision.namespaceURI !== paragraph.namespaceURI ||
-        !isUntrackedTextOnlySiblingRun(revision)
+        !(
+          isUntrackedTextOnlySiblingRun(revision) ||
+          runIsSupportedInlinePicture(revision, imageEmbeds)
+        )
       ) {
         return false;
       }

@@ -338,7 +338,50 @@ describe('DOCX paragraph-mark revisions', () => {
     ]);
   });
 
-  test('still rejects drawings beside whole-paragraph mark revisions', () => {
+  test('admits untracked inline DrawingML picture siblings beside whole-paragraph mark revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:ins w:id="33" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:r>${INLINE_PICTURE_DRAWING}</w:r>
+            <w:ins w:id="34" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"><w:r><w:t>Added</w:t></w:r></w:ins>
+            <w:r><w:t> trailing</w:t></w:r>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const imageEmbeds = createDocxImageEmbedTargets([
+      { id: 'rId1', type: IMAGE_RELATIONSHIP_TYPE },
+    ]);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(
+      mark &&
+        isSupportedDocxParagraphMarkChange(
+          mark,
+          EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+          imageEmbeds,
+        ),
+    ).toBe(true);
+    expect(
+      markDocxParagraphMarkChanges(
+        document,
+        EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+        imageEmbeds,
+      ).paragraphs,
+    ).toEqual([
+      expect.objectContaining({
+        id: 'docx-paragraph-mark-change-33',
+        kind: 'insertion',
+      }),
+    ]);
+  });
+
+  test('still rejects empty drawings beside whole-paragraph mark revisions', () => {
     const document = wordXml(`
       <w:p>
         <w:pPr><w:rPr>
@@ -353,6 +396,87 @@ describe('DOCX paragraph-mark revisions', () => {
     );
     expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(false);
     expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([]);
+  });
+
+  test('rejects floating-anchor picture siblings beside whole-paragraph mark revisions', () => {
+    const drawing = [
+      `<w:drawing xmlns:wp="${WORDPROCESSING_DRAWING_NAMESPACE}"`,
+      ` xmlns:a="${DRAWINGML_NAMESPACE}"`,
+      ` xmlns:pic="${PICTURE_NAMESPACE}"`,
+      ` xmlns:r="${RELATIONSHIP_NAMESPACE}">`,
+      '<wp:anchor><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">',
+      '<pic:pic><pic:blipFill><a:blip r:embed="rId1"/></pic:blipFill></pic:pic>',
+      '</a:graphicData></a:graphic></wp:anchor>',
+      '</w:drawing>',
+    ].join('');
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:ins w:id="95" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:r>${drawing}</w:r>
+            <w:ins w:id="96" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"><w:r><w:t>Added</w:t></w:r></w:ins>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const imageEmbeds = createDocxImageEmbedTargets([
+      { id: 'rId1', type: IMAGE_RELATIONSHIP_TYPE },
+    ]);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(
+      mark &&
+        isSupportedDocxParagraphMarkChange(
+          mark,
+          EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+          imageEmbeds,
+        ),
+    ).toBe(false);
+    expect(
+      markDocxParagraphMarkChanges(
+        document,
+        EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+        imageEmbeds,
+      ).paragraphs,
+    ).toEqual([]);
+  });
+
+  test('rejects unresolved image-embed siblings beside whole-paragraph mark revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:ins w:id="97" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:r>${INLINE_PICTURE_DRAWING}</w:r>
+            <w:ins w:id="98" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"><w:r><w:t>Added</w:t></w:r></w:ins>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(
+      mark &&
+        isSupportedDocxParagraphMarkChange(
+          mark,
+          EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+          createDocxImageEmbedTargets([]),
+        ),
+    ).toBe(false);
+    expect(
+      markDocxParagraphMarkChanges(
+        document,
+        EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
+        createDocxImageEmbedTargets([]),
+      ).paragraphs,
+    ).toEqual([]);
   });
 
   test('rejects floating-anchor pictures inside whole-paragraph mark revisions', () => {
@@ -1052,6 +1176,32 @@ describe('DOCX paragraph-mark revisions', () => {
     expect(editor.getText()).not.toContain('Added');
     expect(editor.getText()).toContain('Stable paragraph');
     editor.destroy();
+  });
+
+  test('exports paragraph-mark insertions that include untracked picture siblings', async () => {
+    const pixelPng =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true">',
+      '<p data-document-block-change="true" data-block-change-kind="insertion" data-block-change-id="block-picture-sibling" data-block-change-author="Ada Reviewer" data-block-change-date="2026-09-05T01:00:00.000Z">',
+      `<img src="${pixelPng}" alt="pixel" width="1" height="1" />`,
+      '<ins data-document-change="true" data-change-kind="insertion" data-change-id="text-added" data-change-author="Ada Reviewer" data-change-date="2026-09-05T01:00:00.000Z">Added</ins>',
+      '</p><p>Stable paragraph</p></section>',
+    ].join('');
+    artifact.content.trackChanges = true;
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(xml).toMatch(
+      /<w:pPr>[\s\S]*?<w:rPr>[\s\S]*?<w:ins\b[^>]*w:author="Ada Reviewer"/,
+    );
+    expect(xml).toContain('<w:drawing');
+    expect(xml).toContain('Added');
   });
 
   test('exports and reopens multi-wrapper mixed paragraph-mark insertions', async () => {

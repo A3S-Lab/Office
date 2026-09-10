@@ -300,11 +300,11 @@ function browserParagraphBodyMatchesChange(
     const revision = image.closest<HTMLElement>(
       'ins[data-document-change="true"], del[data-document-change="true"]',
     );
-    if (
-      !revision ||
-      !paragraph.contains(revision) ||
-      !revisions.includes(revision)
-    ) {
+    if (!revision) {
+      // Untracked inline picture siblings beside mark wrappers are admitted.
+      continue;
+    }
+    if (!paragraph.contains(revision) || !revisions.includes(revision)) {
       return false;
     }
   }
