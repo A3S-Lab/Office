@@ -56,6 +56,7 @@ import type {
   WorkDocumentGridType,
   WorkDocumentLnNumRestart,
   WorkDocumentLnNumType,
+  WorkDocumentPgNumChapSep,
   WorkDocumentPgNumFmt,
   WorkDocumentPgNumType,
   WorkDocumentSectionBreakType,
@@ -101,6 +102,8 @@ export interface DocumentSectionNodeAttributes {
   lnNumRestart: WorkDocumentLnNumRestart | '';
   pgNumFmt: WorkDocumentPgNumFmt | '';
   pgNumStart: number | null;
+  pgNumChapStyle: number | null;
+  pgNumChapSep: WorkDocumentPgNumChapSep | '';
   formProt: boolean | null;
   noEndnote: boolean | null;
   verticalAlign: WorkDocumentSectionVerticalAlign | '';
@@ -466,6 +469,11 @@ export function documentSectionDomAttributes(
     'data-section-pg-num-fmt': attributes.pgNumFmt,
     'data-section-pg-num-start':
       attributes.pgNumStart === null ? '' : String(attributes.pgNumStart),
+    'data-section-pg-num-chap-style':
+      attributes.pgNumChapStyle === null
+        ? ''
+        : String(attributes.pgNumChapStyle),
+    'data-section-pg-num-chap-sep': attributes.pgNumChapSep,
     'data-section-form-prot':
       attributes.formProt === null ? '' : String(attributes.formProt),
     'data-section-no-endnote':
@@ -539,6 +547,11 @@ export function documentSectionLayoutFromElement(
         | WorkDocumentPgNumFmt
         | '',
       pgNumStart: numberValue(element.dataset.sectionPgNumStart) ?? null,
+      pgNumChapStyle:
+        numberValue(element.dataset.sectionPgNumChapStyle) ?? null,
+      pgNumChapSep: (element.dataset.sectionPgNumChapSep ?? '') as
+        | WorkDocumentPgNumChapSep
+        | '',
       formProt:
         element.dataset.sectionFormProt === 'true'
           ? true
@@ -751,6 +764,8 @@ function pgNumTypeNodeFields(
 ): {
   pgNumFmt: WorkDocumentPgNumFmt | '';
   pgNumStart: number | null;
+  pgNumChapStyle: number | null;
+  pgNumChapSep: WorkDocumentPgNumChapSep | '';
 } {
   const normalized = normalizedPgNumType(
     value ??
@@ -759,6 +774,8 @@ function pgNumTypeNodeFields(
   return {
     pgNumFmt: normalized?.fmt ?? '',
     pgNumStart: normalized?.start ?? null,
+    pgNumChapStyle: normalized?.chapStyle ?? null,
+    pgNumChapSep: normalized?.chapSep ?? '',
   };
 }
 
@@ -796,7 +813,9 @@ function pgNumTypeFromNodeAttributes(
 ): WorkDocumentPgNumType | undefined {
   if (
     attributes.pgNumFmt === undefined &&
-    attributes.pgNumStart === undefined
+    attributes.pgNumStart === undefined &&
+    attributes.pgNumChapStyle === undefined &&
+    attributes.pgNumChapSep === undefined
   ) {
     return normalizedPgNumType(
       base.pgNumType ??
@@ -811,6 +830,12 @@ function pgNumTypeFromNodeAttributes(
       : {}),
     ...(attributes.pgNumStart != null
       ? { start: Number(attributes.pgNumStart) }
+      : {}),
+    ...(attributes.pgNumChapStyle != null
+      ? { chapStyle: Number(attributes.pgNumChapStyle) }
+      : {}),
+    ...(attributes.pgNumChapSep
+      ? { chapSep: attributes.pgNumChapSep as WorkDocumentPgNumChapSep }
       : {}),
   });
 }
@@ -839,7 +864,31 @@ function normalizedPgNumType(
     }
     next.start = start;
   }
-  return next.fmt !== undefined || next.start !== undefined ? next : undefined;
+  if (value.chapStyle !== undefined) {
+    const chapStyle = Number(value.chapStyle);
+    if (!Number.isInteger(chapStyle) || chapStyle < 1 || chapStyle > 9) {
+      return undefined;
+    }
+    next.chapStyle = chapStyle;
+  }
+  if (value.chapSep !== undefined) {
+    if (
+      value.chapSep !== 'hyphen' &&
+      value.chapSep !== 'period' &&
+      value.chapSep !== 'colon' &&
+      value.chapSep !== 'emDash' &&
+      value.chapSep !== 'enDash'
+    ) {
+      return undefined;
+    }
+    next.chapSep = value.chapSep;
+  }
+  return next.fmt !== undefined ||
+    next.start !== undefined ||
+    next.chapStyle !== undefined ||
+    next.chapSep !== undefined
+    ? next
+    : undefined;
 }
 
 function normalizedLnNumType(

@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Skipped promoting `w:printerSettings` to reviewable `section-formatting`:
+  OOXML types it as `CT_Rel` with a required `r:id` into a printer-settings
+  binary part, so it cannot provide a relationship-free prior. Empty
+  `printerSettings` fixtures without `r:id` remain the permanent opaque section
+  marker; `headerReference` / `footerReference` stay relationship-bound the same
+  way.
+- Relationship-free `w:sectPrChange` priors that include bounded relationship-free
+  `w:pgNumType` `w:chapStyle` (1-9) and/or `w:chapSep`
+  (`hyphen`/`period`/`colon`/`emDash`/`enDash`), alone or with `fmt`/`start`,
+  are now reviewable as `section-formatting` with accept/reject, live
+  track-changes, and native export. Unknown attributes/values stay fail-closed;
+  next remaining section expansion is `w:docGrid` `w:charSpace`.
+
 ## 0.120.0 - 2026-09-10
 
 ### Writer

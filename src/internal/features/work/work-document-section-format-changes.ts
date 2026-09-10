@@ -489,9 +489,13 @@ export function restoredDocumentSectionAttributes(
   let pgNumFmt = attributes.pgNumFmt;
   let pgNumStart = attributes.pgNumStart;
   let pageNumberStart = attributes.pageNumberStart;
+  let pgNumChapStyle = attributes.pgNumChapStyle;
+  let pgNumChapSep = attributes.pgNumChapSep;
   if (formatting.pgNumType) {
     pgNumFmt = formatting.pgNumType.fmt ?? '';
     pgNumStart = formatting.pgNumType.start ?? null;
+    pgNumChapStyle = formatting.pgNumType.chapStyle ?? null;
+    pgNumChapSep = formatting.pgNumType.chapSep ?? '';
     pageNumberStart =
       formatting.pgNumType.start !== undefined && formatting.pgNumType.start > 0
         ? Math.min(9999, formatting.pgNumType.start)
@@ -554,6 +558,8 @@ export function restoredDocumentSectionAttributes(
     lnNumRestart,
     pgNumFmt,
     pgNumStart,
+    pgNumChapStyle,
+    pgNumChapSep,
     pageNumberStart,
     formProt,
     noEndnote,
@@ -938,7 +944,16 @@ function normalizeRevisionPgNumType(
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
   const keys = Object.keys(record);
-  if (!keys.length || keys.some((key) => key !== 'fmt' && key !== 'start')) {
+  if (
+    !keys.length ||
+    keys.some(
+      (key) =>
+        key !== 'fmt' &&
+        key !== 'start' &&
+        key !== 'chapStyle' &&
+        key !== 'chapSep',
+    )
+  ) {
     return null;
   }
   const next: WorkDocumentPgNumType = {};
@@ -953,7 +968,21 @@ function normalizeRevisionPgNumType(
     }
     next.start = start;
   }
-  return next.fmt !== undefined || next.start !== undefined
+  if ('chapStyle' in record) {
+    const chapStyle = Number(record.chapStyle);
+    if (!Number.isInteger(chapStyle) || chapStyle < 1 || chapStyle > 9) {
+      return null;
+    }
+    next.chapStyle = chapStyle;
+  }
+  if ('chapSep' in record) {
+    if (!validPgNumChapSep(record.chapSep)) return null;
+    next.chapSep = record.chapSep;
+  }
+  return next.fmt !== undefined ||
+    next.start !== undefined ||
+    next.chapStyle !== undefined ||
+    next.chapSep !== undefined
     ? orderedPgNumType(next)
     : null;
 }
@@ -968,10 +997,24 @@ function validPgNumFmt(value: unknown): value is WorkDocumentPgNumFmt {
   );
 }
 
+function validPgNumChapSep(
+  value: unknown,
+): value is NonNullable<WorkDocumentPgNumType['chapSep']> {
+  return (
+    value === 'hyphen' ||
+    value === 'period' ||
+    value === 'colon' ||
+    value === 'emDash' ||
+    value === 'enDash'
+  );
+}
+
 function orderedPgNumType(value: WorkDocumentPgNumType): WorkDocumentPgNumType {
   return {
     ...(value.fmt !== undefined ? { fmt: value.fmt } : {}),
     ...(value.start !== undefined ? { start: value.start } : {}),
+    ...(value.chapStyle !== undefined ? { chapStyle: value.chapStyle } : {}),
+    ...(value.chapSep !== undefined ? { chapSep: value.chapSep } : {}),
   };
 }
 

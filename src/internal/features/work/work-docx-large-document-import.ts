@@ -314,6 +314,8 @@ function documentSectionModelAttributes(
     lnNumRestart: '',
     pgNumFmt: '',
     pgNumStart: null,
+    pgNumChapStyle: null,
+    pgNumChapSep: '',
     formProt: null,
     noEndnote: null,
     verticalAlign: '',

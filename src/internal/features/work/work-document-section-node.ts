@@ -75,6 +75,8 @@ export const DocumentSection = Node.create({
       lnNumRestart: hiddenAttribute(''),
       pgNumFmt: hiddenAttribute(''),
       pgNumStart: hiddenAttribute(null),
+      pgNumChapStyle: hiddenAttribute(null),
+      pgNumChapSep: hiddenAttribute(''),
       formProt: hiddenAttribute(null),
       noEndnote: hiddenAttribute(null),
       verticalAlign: hiddenAttribute(''),
@@ -187,6 +189,12 @@ export const DocumentSection = Node.create({
             pgNumFmt: (node.dataset.sectionPgNumFmt ??
               '') as DocumentSectionNodeAttributes['pgNumFmt'],
             pgNumStart: nullableNumberAttribute(node, 'sectionPgNumStart'),
+            pgNumChapStyle: nullableNumberAttribute(
+              node,
+              'sectionPgNumChapStyle',
+            ),
+            pgNumChapSep: (node.dataset.sectionPgNumChapSep ??
+              '') as DocumentSectionNodeAttributes['pgNumChapSep'],
             formProt:
               node.dataset.sectionFormProt === 'true'
                 ? true

@@ -1020,6 +1020,168 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 
+  test('imports pgNumType chapStyle/chapSep w:sectPrChange as reviewable section-formatting', async () => {
+    const sourceDoc = await sectionDocxWithPgNumTypeChange({
+      prior: { chapStyle: 1, chapSep: 'hyphen' },
+      current: { chapStyle: 2, chapSep: 'colon', fmt: 'decimal', start: 4 },
+    });
+    const imported = await importOfficeFile(
+      new File([sourceDoc], 'section-pgnumtype-chap-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const section = html.body.querySelector('section[data-document-section]');
+    expect(section?.getAttribute('data-change-kind')).toBe(
+      'section-formatting',
+    );
+    expect(
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
+    ).toEqual({
+      pgNumType: { chapStyle: 1, chapSep: 'hyphen' },
+    });
+    expect(section?.dataset.sectionPgNumChapStyle).toBe('2');
+    expect(section?.dataset.sectionPgNumChapSep).toBe('colon');
+    expect(section?.dataset.sectionPgNumFmt).toBe('decimal');
+    expect(section?.dataset.sectionPgNumStart).toBe('4');
+  });
+
+  test('pending pgNumType chapStyle/chapSep change round-trips as native w:sectPrChange', async () => {
+    const sourceDoc = await sectionDocxWithPgNumTypeChange({
+      prior: { chapStyle: 1, chapSep: 'period' },
+      current: { chapStyle: 3, chapSep: 'emDash', start: 2 },
+    });
+    const imported = await importOfficeFile(
+      new File([sourceDoc], 'section-pgnumtype-chap-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const section = descendants(exported, 'sectPr').find(
+      (element) => element.parentElement?.localName !== 'sectPrChange',
+    );
+    const change = directChild(section!, 'sectPrChange');
+    expect(change).toBeTruthy();
+    const priorPgNum = directChild(directChild(change!, 'sectPr'), 'pgNumType');
+    expect(
+      priorPgNum?.getAttributeNS(WORD_NAMESPACE, 'chapStyle') ??
+        priorPgNum?.getAttribute('w:chapStyle') ??
+        priorPgNum?.getAttribute('chapStyle'),
+    ).toBe('1');
+    expect(
+      priorPgNum?.getAttributeNS(WORD_NAMESPACE, 'chapSep') ??
+        priorPgNum?.getAttribute('w:chapSep') ??
+        priorPgNum?.getAttribute('chapSep'),
+    ).toBe('period');
+    const currentPgNum = directChild(section!, 'pgNumType');
+    expect(
+      currentPgNum?.getAttributeNS(WORD_NAMESPACE, 'chapStyle') ??
+        currentPgNum?.getAttribute('w:chapStyle') ??
+        currentPgNum?.getAttribute('chapStyle'),
+    ).toBe('3');
+    expect(
+      currentPgNum?.getAttributeNS(WORD_NAMESPACE, 'chapSep') ??
+        currentPgNum?.getAttribute('w:chapSep') ??
+        currentPgNum?.getAttribute('chapSep'),
+    ).toBe('emDash');
+  });
+
+  test('reject restores prior pgNumType chapStyle/chapSep and drops the pending change', async () => {
+    const sourceDoc = await sectionDocxWithPgNumTypeChange({
+      prior: { chapStyle: 1, chapSep: 'hyphen', fmt: 'decimal' },
+      current: { chapStyle: 2, chapSep: 'colon', fmt: 'upperRoman' },
+    });
+    const imported = await importOfficeFile(
+      new File([sourceDoc], 'section-pgnumtype-chap-reject.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBeNull();
+      expect(section?.dataset.sectionPgNumChapStyle).toBe('1');
+      expect(section?.dataset.sectionPgNumChapSep).toBe('hyphen');
+      expect(section?.dataset.sectionPgNumFmt).toBe('decimal');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('live section pgNumType chapStyle/chapSep edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1"',
+        ' data-section-orientation="portrait"',
+        ' data-section-pg-num-fmt="decimal"',
+        ' data-section-pg-num-chap-style="1"',
+        ' data-section-pg-num-chap-sep="hyphen">',
+        '<p>Body</p>',
+        '</section>',
+      ].join(''),
+    });
+    try {
+      const active = activeDocumentSection(editor);
+      expect(active).not.toBeNull();
+      if (!active) throw new Error('Expected an active document section.');
+      expect(
+        editor.commands.updateActiveDocumentSection({
+          ...active.layout,
+          pgNumType: {
+            fmt: 'decimal',
+            chapStyle: 2,
+            chapSep: 'colon',
+          },
+        }),
+      ).toBe(true);
+      const changes = collectDocumentChanges(editor.state.doc);
+      expect(changes).toHaveLength(1);
+      expect(changes[0]?.kind).toBe('section-formatting');
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBe(
+        'section-formatting',
+      );
+      expect(
+        parseDocumentSectionFormatting(
+          section?.getAttribute('data-change-before'),
+        ),
+      ).toMatchObject({
+        pgNumType: { fmt: 'decimal', chapStyle: 1, chapSep: 'hyphen' },
+      });
+      expect(section?.dataset.sectionPgNumChapStyle).toBe('2');
+      expect(section?.dataset.sectionPgNumChapSep).toBe('colon');
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('imports formProt-only w:sectPrChange as a reviewable section-formatting change', async () => {
     const source = await sectionDocxWithFormProtChange({
       prior: true,
@@ -3069,8 +3231,18 @@ async function sectionDocxWithDocGridChange(options: {
 }
 
 async function sectionDocxWithPgNumTypeChange(options: {
-  prior: { fmt?: string; start?: number };
-  current: { fmt?: string; start?: number };
+  prior: {
+    fmt?: string;
+    start?: number;
+    chapStyle?: number;
+    chapSep?: string;
+  };
+  current: {
+    fmt?: string;
+    start?: number;
+    chapStyle?: number;
+    chapSep?: string;
+  };
 }): Promise<ArrayBuffer> {
   const artifact = createArtifact('blank-document');
   if (artifact.content.type !== 'document') {
@@ -3445,13 +3617,28 @@ async function sectionDocxWithTypeChange(options: {
 
 function applyPgNumTypeAttributes(
   element: Element,
-  value: { fmt?: string; start?: number },
+  value: {
+    fmt?: string;
+    start?: number;
+    chapStyle?: number;
+    chapSep?: string;
+  },
 ): void {
   if (value.fmt !== undefined) {
     element.setAttributeNS(WORD_NAMESPACE, 'w:fmt', value.fmt);
   }
   if (value.start !== undefined) {
     element.setAttributeNS(WORD_NAMESPACE, 'w:start', String(value.start));
+  }
+  if (value.chapStyle !== undefined) {
+    element.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:chapStyle',
+      String(value.chapStyle),
+    );
+  }
+  if (value.chapSep !== undefined) {
+    element.setAttributeNS(WORD_NAMESPACE, 'w:chapSep', value.chapSep);
   }
 }
 

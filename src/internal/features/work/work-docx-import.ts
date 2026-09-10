@@ -1021,7 +1021,26 @@ function parsePgNumType(element: Element): WorkDocumentPgNumType | undefined {
   if (Number.isInteger(start) && start >= 0 && start <= 32_767) {
     next.start = start;
   }
-  return next.fmt !== undefined || next.start !== undefined ? next : undefined;
+  const chapStyle = numberAttribute(element, 'chapStyle');
+  if (Number.isInteger(chapStyle) && chapStyle >= 1 && chapStyle <= 9) {
+    next.chapStyle = chapStyle;
+  }
+  const chapSep = attribute(element, 'chapSep');
+  if (
+    chapSep === 'hyphen' ||
+    chapSep === 'period' ||
+    chapSep === 'colon' ||
+    chapSep === 'emDash' ||
+    chapSep === 'enDash'
+  ) {
+    next.chapSep = chapSep;
+  }
+  return next.fmt !== undefined ||
+    next.start !== undefined ||
+    next.chapStyle !== undefined ||
+    next.chapSep !== undefined
+    ? next
+    : undefined;
 }
 
 function parseFormProt(element: Element): boolean {

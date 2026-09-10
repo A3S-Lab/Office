@@ -105,7 +105,19 @@ const LN_NUM_TYPE_ATTRIBUTE_SET = new Set([
   'restart',
 ]);
 const LN_NUM_RESTARTS = new Set(['newPage', 'newSection', 'continuous']);
-const PG_NUM_TYPE_ATTRIBUTE_SET = new Set(['fmt', 'start']);
+const PG_NUM_TYPE_ATTRIBUTE_SET = new Set([
+  'fmt',
+  'start',
+  'chapStyle',
+  'chapSep',
+]);
+const PG_NUM_CHAP_SEPS = new Set([
+  'hyphen',
+  'period',
+  'colon',
+  'emDash',
+  'enDash',
+]);
 const PG_NUM_FMTS = new Set([
   'decimal',
   'upperRoman',
@@ -177,7 +189,7 @@ export interface SupportedDocxSectionFormattingChange {
  * complete seven-edge `w:pgMar`, `w:paperSrc`, equal-width or unequal-width
  * `w:cols`, and/or `w:titlePg`, and/or `w:rtlGutter`, and/or bounded
  * relationship-free `w:docGrid`, and/or bounded relationship-free `w:lnNumType`,
- * and/or bounded relationship-free `w:pgNumType` (`fmt`/`start` only), and/or
+ * and/or bounded relationship-free `w:pgNumType` (`fmt`/`start`/`chapStyle`/`chapSep`), and/or
  * relationship-free empty/onOff `w:formProt`, and/or relationship-free
  * `w:vAlign` with required known `w:val` (`top`/`center`/`both`/`bottom`),
  * and/or relationship-free empty/onOff `w:noEndnote`, and/or relationship-free
@@ -735,7 +747,27 @@ function importedPgNumType(element: Element): WorkDocumentPgNumType | null {
     if (start === null) return null;
     next.start = start;
   }
-  if (next.fmt === undefined && next.start === undefined) return null;
+  if (byName.has('chapStyle')) {
+    const chapStyle = parseBoundedDocxInteger(byName.get('chapStyle') ?? '', {
+      minimum: 1,
+      maximum: 9,
+    });
+    if (chapStyle === null) return null;
+    next.chapStyle = chapStyle;
+  }
+  if (byName.has('chapSep')) {
+    const chapSep = byName.get('chapSep') ?? '';
+    if (!PG_NUM_CHAP_SEPS.has(chapSep)) return null;
+    next.chapSep = chapSep as WorkDocumentPgNumType['chapSep'];
+  }
+  if (
+    next.fmt === undefined &&
+    next.start === undefined &&
+    next.chapStyle === undefined &&
+    next.chapSep === undefined
+  ) {
+    return null;
+  }
   return next;
 }
 

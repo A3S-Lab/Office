@@ -39,7 +39,7 @@ describe('DOCX section property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:id', '21');
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
-    // pgBorders is reviewable as section-formatting; keep opaque on printerSettings.
+    // printerSettings is CT_Rel (required r:id); keep empty relationship-free fixture opaque.
     const printerSettings = document.createElementNS(
       WORD_NAMESPACE,
       'w:printerSettings',

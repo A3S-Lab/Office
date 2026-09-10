@@ -105,13 +105,26 @@ export type WorkDocumentPgNumFmt =
   | 'upperLetter'
   | 'lowerLetter';
 
+/** ST_ChapterSep values for chapter/page number separators. */
+export type WorkDocumentPgNumChapSep =
+  | 'hyphen'
+  | 'period'
+  | 'colon'
+  | 'emDash'
+  | 'enDash';
+
 /**
  * Bounded CT_PageNumber subset for Traditional Office section page numbering.
- * Only `fmt` and `start` are reviewable; chapStyle/chapSep stay fail-closed.
+ * Optional `fmt` / `start` / `chapStyle` (1-9) / `chapSep` are reviewable;
+ * unknown attributes or values stay fail-closed.
  */
 export interface WorkDocumentPgNumType {
   fmt?: WorkDocumentPgNumFmt;
   start?: number;
+  /** One-based heading style index used as the chapter number (Heading 1-9). */
+  chapStyle?: number;
+  /** Separator between chapter and page number when `chapStyle` is set. */
+  chapSep?: WorkDocumentPgNumChapSep;
 }
 
 /** ST_FtnPos values for section footnote placement (`w:footnotePr/w:pos`). */

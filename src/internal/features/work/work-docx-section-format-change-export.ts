@@ -280,6 +280,20 @@ function setSectionFormattingChange(
         String(formatting.pgNumType.start),
       );
     }
+    if (formatting.pgNumType.chapStyle !== undefined) {
+      pgNumType.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:chapStyle',
+        String(formatting.pgNumType.chapStyle),
+      );
+    }
+    if (formatting.pgNumType.chapSep !== undefined) {
+      pgNumType.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:chapSep',
+        formatting.pgNumType.chapSep,
+      );
+    }
     prior.append(pgNumType);
   }
   if (formatting.formProt !== undefined) {

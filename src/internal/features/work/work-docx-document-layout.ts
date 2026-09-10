@@ -413,6 +413,16 @@ function patchSectionPgNumTypes(
     if (value.start !== undefined) {
       pgNumType.setAttributeNS(WORD_NAMESPACE, 'w:start', String(value.start));
     }
+    if (value.chapStyle !== undefined) {
+      pgNumType.setAttributeNS(
+        WORD_NAMESPACE,
+        'w:chapStyle',
+        String(value.chapStyle),
+      );
+    }
+    if (value.chapSep !== undefined) {
+      pgNumType.setAttributeNS(WORD_NAMESPACE, 'w:chapSep', value.chapSep);
+    }
     insertSectionProperty(properties, pgNumType);
   }
 }
