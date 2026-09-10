@@ -44,15 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.136.0)
+## What's new on `main` (0.137.0)
 
-Writer Phase 0 admits single-cell table companion move-range bookmarks:
+Writer Phase 0 generates Compare companion move-range bookmarks:
 
-- Body-level `w:move*Range*` Start/End that enclose one `w:tbl` with a supported
-  text-only move in exactly one `w:tc` round-trip with the move.
-- Multi-cell sibling-cell text, nested tables, SDT sandwiches, section
-  sandwiches, unpaired markers, and Compare move-range generation stay
-  fail-closed.
+- Compare / same-document text-only inferred moves emit companion
+  `w:move*Range*` bookmarks on export with deterministic `rangeId` /
+  `rangeName`.
+- Section-crossing and table/complex Compare moves stay fail-closed; multi-cell,
+  nested-table, and SDT import sandwiches remain for a later slice.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

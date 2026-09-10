@@ -43,10 +43,19 @@ export interface InlineMoveComparison {
   changes: readonly InlineDiffStep[];
 }
 
+export interface InlineMoveRangeCompanion {
+  /** Decimal bookmark id shared by both move*Range* sides. */
+  rangeId: string;
+  /** Word-style range name shared by both move*Range* sides. */
+  rangeName: string;
+}
+
 export interface InlineMoveAssignment {
   role: WorkDocumentMoveRole;
   candidate: InlineMoveCandidate;
   identity: WorkDocumentChangeIdentity;
+  /** Companion range bookmark when Compare generates same-document markers. */
+  range?: InlineMoveRangeCompanion;
 }
 
 export interface ComparisonMoveIdentityFactory {
@@ -261,6 +270,7 @@ export function appendComparisonRevisionUnits(
         move.identity,
         schema,
         stripReviewMarks,
+        move.range,
       );
     }
     ordinary = suffix ? [{ text: suffix, marks: unit.marks }] : [];
@@ -446,6 +456,7 @@ function appendMoveRevisionUnits(
   identity: WorkDocumentChangeIdentity,
   schema: Schema,
   stripReviewMarks: StripReviewMarks,
+  range?: InlineMoveRangeCompanion,
 ): void {
   for (const unit of units) {
     target.push(
@@ -459,6 +470,12 @@ function appendMoveRevisionUnits(
           author: identity.author,
           date: identity.date,
           before: '',
+          ...(range
+            ? {
+                moveRangeId: range.rangeId,
+                moveRangeName: range.rangeName,
+              }
+            : {}),
         }),
       ]),
     );

@@ -459,10 +459,16 @@ function compareSectionBlocks(
   const useAttachedVariants =
     attachedScopes.size > 0 && movePairs.length >= initialMovePairs.length;
   const movesByScope = new Map<string, InlineMoveAssignment[]>();
+  let nextMoveRange = 0;
   for (const pair of useAttachedVariants ? movePairs : initialMovePairs) {
     const identity = factory.create('move');
-    appendMoveAssignment(movesByScope, pair.deletion, 'from', identity);
-    appendMoveAssignment(movesByScope, pair.insertion, 'to', identity);
+    const range = {
+      rangeId: String(nextMoveRange),
+      rangeName: `move${nextMoveRange}`,
+    };
+    nextMoveRange += 1;
+    appendMoveAssignment(movesByScope, pair.deletion, 'from', identity, range);
+    appendMoveAssignment(movesByScope, pair.insertion, 'to', identity, range);
   }
 
   return slots.flatMap((slot) => {
@@ -484,10 +490,11 @@ function appendMoveAssignment(
   candidate: InlineMovePair['deletion'],
   role: InlineMoveAssignment['role'],
   identity: WorkDocumentChangeIdentity,
+  range: InlineMoveAssignment['range'],
 ): void {
   const scope = candidate.scope ?? '';
   const assignments = target.get(scope) ?? [];
-  assignments.push({ role, candidate, identity });
+  assignments.push({ role, candidate, identity, ...(range ? { range } : {}) });
   target.set(scope, assignments);
 }
 

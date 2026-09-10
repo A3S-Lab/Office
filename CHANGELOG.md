@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.137.0 - 2026-09-10
+
+### Writer
+
+- Compare / same-document text-only moves now generate companion
+  `w:move*Range*` bookmarks on export, with deterministic `rangeId` /
+  `rangeName` on inferred move pairs. Section-crossing and table/complex
+  Compare moves stay fail-closed. Multi-cell, nested-table, and SDT import
+  sandwiches remain for a later slice.
+
 ## 0.136.0 - 2026-09-10
 
 ### Writer

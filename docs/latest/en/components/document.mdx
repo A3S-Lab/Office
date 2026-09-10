@@ -782,18 +782,21 @@ Rich runs outside ordinary text, multi-cell sibling-cell / nested-table / SDT
 sandwiches, section-sandwiching range markers, unpaired markers,
 relationship-bound objects, malformed metadata, and duplicate identities remain
 on the structural compatibility path and are reported rather than flattened
-into an inexact editable move. Compare move-range generation is not in this
-slice.
+into an inexact editable move. Compare / same-document text-only inferred moves
+also emit companion `w:move*Range*` bookmarks on export with deterministic
+`rangeId` / `rangeName`; section-crossing and table/complex Compare moves stay
+fail-closed.
 
 Compare can infer a move inside a simple paragraph or heading, and can pair a
 range across aligned simple text blocks when both blocks belong to the same
 document section. In either case the unique lexical range must appear once in
 each aligned delete/insert chunk, with matching marks and safely carried
-separators. Arbitrary source/destination edits, duplicate or mark-mismatched
-candidates, rich runs, section-boundary ranges, tables, and over-limit text
-continue to produce deterministic insertion/deletion or diagnostic results.
-Use a native paired move or an explicit browser move mark when broader exact
-move-review semantics are required.
+separators. Those admitted inferred pairs export the same companion range
+bookmarks as native moves. Arbitrary source/destination edits, duplicate or
+mark-mismatched candidates, rich runs, section-boundary ranges, tables, and
+over-limit text continue to produce deterministic insertion/deletion or
+diagnostic results. Use a native paired move or an explicit browser move mark
+when broader exact move-review semantics are required.
 
 The Playground's **体验移动修订** button provides a repeatable text-only
 fixture for checking this atomic accept/reject interaction without a file
@@ -812,7 +815,9 @@ heading, or across aligned simple text blocks in the same document section,
 Compare additionally emits one paired `move` review item. Matching marks and
 safely carried separators are required; ambiguous duplicates, mark mismatches,
 rich runs, section-boundary ranges, tables, and over-limit text remain ordinary
-revisions or explicit diagnostics. The selected author is attached to every generated
+revisions or explicit diagnostics. Admitted inferred pairs export companion
+`w:move*Range*` bookmarks with deterministic `rangeId` / `rangeName` alongside
+native `w:moveFrom` / `w:moveTo`. The selected author is attached to every generated
 revision, the source name is bounded transaction metadata, the whole result
 publishes through one controlled `onChange`, and Undo restores the
 pre-comparison document in one step. After a successful comparison, the

@@ -53,7 +53,7 @@ plus the R1 / R2 / R3 / R4 main paths already called out.
 
 ## Remaining roadmap (product-enough bar)
 
-Tip reviewed against `@a3s-lab/office@0.136.0`. Use this section as the active
+Tip reviewed against `@a3s-lab/office@0.137.0`. Use this section as the active
 backlog; the comparison tables below remain the gap inventory.
 
 ### Cross-surface permanent gates
@@ -100,10 +100,10 @@ Still required for R0 exit:
    wrappers through `0.133.0`; safe relationship-bound external hyperlinks
    through `0.132.0`; untracked text-only sibling runs through `0.130.0`) with
    fail-closed ineligible shapes.
-2. Broader Compare / same-document move-range generation and remaining
-   multi-cell, nested-table, and SDT move-range sandwiches (single-cell table
-   companion `w:move*Range*` bookmarks for supported text-only moves are
-   admitted through `0.136.0`; cross-section companions through `0.131.0`).
+2. Remaining multi-cell, nested-table, and SDT move-range sandwiches (Compare /
+   same-document text-only move-range generation through `0.137.0`; single-cell
+   table companion `w:move*Range*` bookmarks for supported text-only moves
+   through `0.136.0`; cross-section companions through `0.131.0`).
 3. Remaining complex numbering edge cases that still normalize or diagnose as
    opaque.
 4. Broader relationship-free `w:tblPr` / `w:trPr` / `w:tcPr` / `w:sectPr`
@@ -383,10 +383,11 @@ above this section.
   paragraph bodies for whole-paragraph mark wrappers and paragraph-break
   neighbors are admitted through `0.135.0`. Single-cell table companion
   `w:move*Range*` bookmarks for supported text-only moves are admitted through
-  `0.136.0`. Floating anchors, empty or malformed drawings, unresolved embeds,
-  remaining multi-cell / nested / SDT move-range sandwiches, remaining complex
-  numbering edge cases, and broader Compare move-range generation remain
-  explicit follow-up work. Relationship-free `w:tblPrChange` with a prior `w:jc`
+  `0.136.0`. Compare / same-document text-only moves generate companion
+  `w:move*Range*` bookmarks on export through `0.137.0`. Floating anchors,
+  empty or malformed drawings, unresolved embeds, remaining multi-cell /
+  nested / SDT move-range sandwiches, and remaining complex numbering edge
+  cases remain explicit follow-up work. Relationship-free `w:tblPrChange` with a prior `w:jc`
   and/or `w:tblW` and/or `w:tblInd` and/or `w:tblCellMar` and/or `w:tblLayout`   and/or `w:bidiVisual` and/or solid direct-color `w:shd` and/or `w:tblLook` and/or `w:tblOverlap` and/or relationship-free `w:tblStyle` and/or dxa `w:tblCellSpacing` and/or relationship-free `w:tblStyleColBandSize` and/or relationship-free `w:tblStyleRowBandSize` and/or direct-color `w:tblBorders` and/or relationship-free `w:tblCaption` and/or relationship-free `w:tblDescription`
   snapshot is reviewable as `table-formatting` with accept/reject, live
   track-changes for alignment/preferred-width/indent/default-cell-margin/layout-mode/bidiVisual/solid-fill/tblLook/tblOverlap/tblStyle/tblCellSpacing/tblStyleColBandSize/tblStyleRowBandSize/tblBorders/tblCaption/tblDescription

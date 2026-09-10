@@ -149,6 +149,8 @@ describe('document compare and combine', () => {
         (change) => change.kind === 'move',
       ),
     ).toHaveLength(1);
+    expect(editor.getHTML()).toContain('data-change-move-range-id="0"');
+    expect(editor.getHTML()).toContain('data-change-move-range-name="move0"');
 
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document') {
@@ -162,6 +164,14 @@ describe('document compare and combine', () => {
       (await archive.file('word/document.xml')?.async('text')) ?? '';
     expect(documentXml).toContain('<w:moveFrom');
     expect(documentXml).toContain('<w:moveTo');
+    expect(documentXml).toMatch(
+      /<w:moveFromRangeStart\b[^>]*w:id="0"[^>]*w:name="move0"/,
+    );
+    expect(documentXml).toMatch(/<w:moveFromRangeEnd\b[^>]*w:id="0"/);
+    expect(documentXml).toMatch(
+      /<w:moveToRangeStart\b[^>]*w:id="0"[^>]*w:name="move0"/,
+    );
+    expect(documentXml).toMatch(/<w:moveToRangeEnd\b[^>]*w:id="0"/);
     expect(documentXml).not.toContain('data-change-move-role');
 
     const reopened = await importOfficeFile(
@@ -172,6 +182,10 @@ describe('document compare and combine', () => {
     if (reopened.content.type !== 'document') {
       throw new Error('Expected a reopened Writer artifact.');
     }
+    expect(reopened.content.html).toContain('data-change-move-range-id="0"');
+    expect(reopened.content.html).toContain(
+      'data-change-move-range-name="move0"',
+    );
     const reopenedEditor = createEditor(reopened.content.html);
     expect(
       collectDocumentChanges(reopenedEditor.state.doc).filter(
@@ -217,6 +231,8 @@ describe('document compare and combine', () => {
     expect(collectDocumentChanges(editor.state.doc)).toEqual([
       expect.objectContaining({ kind: 'move', text: ' move phrase' }),
     ]);
+    expect(editor.getHTML()).toContain('data-change-move-range-id="0"');
+    expect(editor.getHTML()).toContain('data-change-move-range-name="move0"');
 
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document') {
@@ -230,6 +246,14 @@ describe('document compare and combine', () => {
       (await archive.file('word/document.xml')?.async('text')) ?? '';
     expect(documentXml).toContain('<w:moveFrom');
     expect(documentXml).toContain('<w:moveTo');
+    expect(documentXml).toMatch(
+      /<w:moveFromRangeStart\b[^>]*w:id="0"[^>]*w:name="move0"/,
+    );
+    expect(documentXml).toMatch(/<w:moveFromRangeEnd\b[^>]*w:id="0"/);
+    expect(documentXml).toMatch(
+      /<w:moveToRangeStart\b[^>]*w:id="0"[^>]*w:name="move0"/,
+    );
+    expect(documentXml).toMatch(/<w:moveToRangeEnd\b[^>]*w:id="0"/);
     expect(documentXml).not.toContain('data-change-move-role');
 
     const reopened = await importOfficeFile(
@@ -240,6 +264,10 @@ describe('document compare and combine', () => {
     if (reopened.content.type !== 'document') {
       throw new Error('Expected a reopened Writer artifact.');
     }
+    expect(reopened.content.html).toContain('data-change-move-range-id="0"');
+    expect(reopened.content.html).toContain(
+      'data-change-move-range-name="move0"',
+    );
     const reopenedEditor = createEditor(reopened.content.html);
     expect(
       collectDocumentChanges(reopenedEditor.state.doc).filter(

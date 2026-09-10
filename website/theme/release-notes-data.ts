@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.137.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Compare generates companion move-range bookmarks for text-only moves',
+      zh: 'Compare 为纯文本移动生成 companion 移动范围书签',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: Compare / same-document text-only moves now emit companion w:move*Range* bookmarks on export with deterministic rangeId/rangeName on inferred move pairs. Section-crossing and table/complex Compare moves stay fail-closed. Multi-cell, nested-table, and SDT import sandwiches remain for a later slice.',
+      zh: 'Phase 0 保真：Compare / 同文档纯文本移动在导出时现会生成 companion w:move*Range* 书签，推断移动对使用确定性 rangeId/rangeName。跨分节与表格/复杂 Compare 移动仍失败闭合。多单元格、嵌套表与 SDT 导入 sandwich 留待后续切片。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Companion bookmarks on export',
+          zh: '导出时生成 companion 书签',
+        },
+        detail: {
+          en: 'Admitted Compare / same-document text-only inferred moves emit matching w:move*Range* Start/End bookmarks with the move wrappers.',
+          zh: '准入的 Compare / 同文档纯文本推断移动会随移动包装一并导出匹配的 w:move*Range* Start/End 书签。',
+        },
+      },
+      {
+        title: {
+          en: 'Deterministic range identities',
+          zh: '确定性范围身份',
+        },
+        detail: {
+          en: 'Inferred move pairs receive stable decimal rangeId values and Word-style rangeName values such as move0.',
+          zh: '推断移动对获得稳定的十进制 rangeId 与 Word 风格 rangeName（例如 move0）。',
+        },
+      },
+      {
+        title: {
+          en: 'Complex Compare paths stay fail-closed',
+          zh: '复杂 Compare 路径仍失败闭合',
+        },
+        detail: {
+          en: 'Section-crossing and table/complex Compare moves stay diagnostics-only; multi-cell, nested, and SDT import sandwiches remain later work.',
+          zh: '跨分节与表格/复杂 Compare 移动仍仅作诊断；多单元格、嵌套与 SDT 导入 sandwich 留待后续工作。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.137.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.137.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.136.0',
     date: '2026-09-10',
     kind: 'improved',
