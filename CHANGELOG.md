@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:trPrChange` priors that include bounded `w:divId`
+  (non-negative safe-integer `w:val`) are now reviewable as `row-formatting`
+  with accept/reject, live track-changes, and native export. Missing, negative,
+  non-integer, or malformed values stay fail-closed; opaque row fixtures moved
+  off `divId` to `tblCellSpacing`. `w:cellIns` / `w:cellDel` remain opaque:
+  nested `CT_TrackChange` identity does not fit the cell-formatting snapshot model.
+
 ## 0.107.0 - 2026-09-10
 
 ### Writer

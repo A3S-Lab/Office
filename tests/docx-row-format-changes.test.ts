@@ -1021,6 +1021,142 @@ describe('DOCX row-formatting revisions', () => {
     expect(row?.dataset.officeRowPropertyRevisionOmml).toBeTruthy();
   });
 
+
+  test('imports divId-only w:trPrChange as a reviewable row-formatting change', async () => {
+    const source = await rowDocxWithDivIdChange({
+      prior: 12345678,
+      current: 87654321,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-div-id.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const row = html.body.querySelector('tr');
+    expect(row?.dataset.changeKind).toBe('row-formatting');
+    expect(row?.dataset.officeRowPropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentRowFormatting(row?.dataset.changeBefore)).toEqual({
+      divId: 12345678,
+    });
+    expect(row?.dataset.officeRowDivId).toBe('87654321');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('row-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const rejected = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rejectedRow = rejected.body.querySelector('tr');
+      expect(rejectedRow?.dataset.changeKind).toBeUndefined();
+      expect(rejectedRow?.dataset.officeRowDivId).toBe('12345678');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending divId row-formatting change round-trips as native w:trPrChange', async () => {
+    const source = await rowDocxWithDivIdChange({
+      prior: 42,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-div-id-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await xmlEntry(
+      await JSZip.loadAsync(
+        await (await createArtifactBlob(imported)).arrayBuffer(),
+      ),
+      'word/document.xml',
+    );
+    const change = directChild(
+      directChild(descendants(exported, 'tr')[0], 'trPr'),
+      'trPrChange',
+    );
+    expect(change).toBeTruthy();
+    const priorDivId = directChild(directChild(change!, 'trPr'), 'divId');
+    expect(
+      priorDivId?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorDivId?.getAttribute('w:val') ??
+        priorDivId?.getAttribute('val'),
+    ).toBe('42');
+  });
+
+  test('malformed divId w:trPrChange stays on the opaque row metadata path', async () => {
+    const source = await rowDocxWithDivIdChange({
+      prior: 12345678,
+      malformedPrior: true,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'row-formatting-div-id-opaque.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const row = html.body.querySelector('tr');
+    expect(row?.dataset.changeKind).toBeUndefined();
+    expect(row?.dataset.officeRowPropertyRevisionOmml).toBeTruthy();
+  });
+
+  test('live row divId edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content:
+        '<table><tbody><tr data-office-row-div-id="1"><td><p>Cell</p></td></tr></tbody></table>',
+    });
+    try {
+      let rowPos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'tableRow' && rowPos === null) {
+          rowPos = position;
+        }
+      });
+      expect(rowPos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(rowPos!, undefined, {
+          ...editor.state.doc.nodeAt(rowPos!)!.attrs,
+          divId: 99,
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'row-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const row = html.body.querySelector('tr');
+      expect(row?.dataset.changeKind).toBe('row-formatting');
+      expect(
+        parseDocumentRowFormatting(row?.dataset.changeBefore),
+      ).toMatchObject({
+        divId: 1,
+      });
+      expect(row?.dataset.officeRowDivId).toBe('99');
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('live row cnfStyle edits become reviewable when track changes is on', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions({
@@ -1400,6 +1536,63 @@ async function rowDocxWithGridAfterChange(options: {
   const priorGrid = document.createElementNS(WORD_NAMESPACE, 'w:gridAfter');
   priorGrid.setAttributeNS(WORD_NAMESPACE, 'w:val', String(options.prior));
   prior.append(priorGrid);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+
+async function rowDocxWithDivIdChange(options: {
+  prior: number;
+  current?: number;
+  malformedPrior?: boolean;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const row = descendants(document, 'tr')[0];
+  const properties =
+    directChild(row, 'trPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+      row.insertBefore(created, row.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'divId' || child.localName === 'trPrChange',
+  )) {
+    existing.remove();
+  }
+  const current = document.createElementNS(WORD_NAMESPACE, 'w:divId');
+  current.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:val',
+    String(options.current ?? options.prior),
+  );
+  properties.append(current);
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:trPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '34');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-10T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:trPr');
+  const priorDivId = document.createElementNS(WORD_NAMESPACE, 'w:divId');
+  priorDivId.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:val',
+    options.malformedPrior ? 'not-a-number' : String(options.prior),
+  );
+  prior.append(priorDivId);
   change.append(prior);
   properties.append(change);
   archive.file(

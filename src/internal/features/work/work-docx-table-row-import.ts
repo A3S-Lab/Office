@@ -8,6 +8,7 @@ import {
   serializePreservableDocxRowPropertyRevision,
 } from './work-document-table-property-revision';
 import { parseDocxRowCnfStyleElement } from './work-document-row-cnf-style';
+import { parseDocxRowDivIdValue } from './work-document-row-format-changes';
 import {
   applyDocumentRowFormattingChangeToElement,
   supportedDocxRowFormattingChangeFromProperties,
@@ -32,6 +33,7 @@ export interface ImportedDocxTableRowMarker {
   widthBefore?: { type: 'auto' | 'percent' | 'pixels'; value: number | null };
   widthAfter?: { type: 'auto' | 'percent' | 'pixels'; value: number | null };
   cnfStyle?: string;
+  divId?: number;
   rowId?: string;
   rowHeight?: number;
   rowHeightRule?: 'atLeast' | 'exact';
@@ -122,6 +124,13 @@ export function markDocxTableRows(
       ? parseDocxRowCnfStyleElement(cnfStyleElement)
       : null;
     const cnfStyle = cnfStyleParsed ?? undefined;
+    const divIdElement = properties
+      ? directChild(properties, 'divId')
+      : undefined;
+    const divIdParsed = divIdElement
+      ? parseDocxRowDivIdValue(attribute(divIdElement, 'val'))
+      : null;
+    const divId = divIdParsed ?? undefined;
     const height = properties ? directChild(properties, 'trHeight') : undefined;
     const rowHeight = height
       ? twipsToPixels(Number(attribute(height, 'val')))
@@ -147,6 +156,7 @@ export function markDocxTableRows(
       widthBefore === undefined &&
       widthAfter === undefined &&
       cnfStyle === undefined &&
+      divId === undefined &&
       rowHeight === null &&
       !uniqueIdentity &&
       !propertyRevisionOmml &&
@@ -169,6 +179,7 @@ export function markDocxTableRows(
       ...(widthBefore !== undefined ? { widthBefore } : {}),
       ...(widthAfter !== undefined ? { widthAfter } : {}),
       ...(cnfStyle !== undefined ? { cnfStyle } : {}),
+      ...(divId !== undefined ? { divId } : {}),
       ...(uniqueIdentity ?? {}),
       ...(rowHeight !== null ? { rowHeight } : {}),
       ...(rowHeight !== null && rowHeightRule ? { rowHeightRule } : {}),
@@ -252,6 +263,9 @@ export function applyImportedDocxTableRowMarkers(
         }
         if (properties.cnfStyle !== undefined) {
           row.dataset.officeRowCnfStyle = properties.cnfStyle;
+        }
+        if (properties.divId !== undefined) {
+          row.dataset.officeRowDivId = String(properties.divId);
         }
         if (properties.rowHeight !== undefined) {
           row.dataset.officeRowHeight = String(properties.rowHeight);

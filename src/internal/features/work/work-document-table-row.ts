@@ -160,6 +160,32 @@ export const DocumentTableRow = TableRow.extend({
           return cnfStyle ? { 'data-office-row-cnf-style': cnfStyle } : {};
         },
       },
+      divId: {
+        default: null,
+        parseHTML: (element: HTMLElement) => {
+          const raw = element.dataset.officeRowDivId;
+          if (raw === undefined || raw === '') return null;
+          if (!/^[0-9]+$/.test(raw.trim())) return null;
+          const value = Number(raw.trim());
+          return Number.isInteger(value) &&
+            Number.isSafeInteger(value) &&
+            value >= 0
+            ? value
+            : null;
+        },
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const value =
+            typeof attributes.divId === 'number' &&
+            Number.isInteger(attributes.divId) &&
+            Number.isSafeInteger(attributes.divId) &&
+            attributes.divId >= 0
+              ? attributes.divId
+              : null;
+          return value === null
+            ? {}
+            : { 'data-office-row-div-id': String(value) };
+        },
+      },
       rowHeight: {
         default: null,
         parseHTML: (element: HTMLElement) =>

@@ -22,7 +22,7 @@ export const DOCUMENT_ROW_CHANGE_ATTRIBUTES = [
 /**
  * Prior snapshot for reviewable row-property revisions.
  * At least one of cantSplit, repeatHeader, height, hidden, alignment,
- * gridBefore, gridAfter, widthBefore, widthAfter, or cnfStyle must be present.
+ * gridBefore, gridAfter, widthBefore, widthAfter, cnfStyle, or divId must be present.
  */
 export interface DocumentRowFormattingSnapshot {
   cantSplit?: boolean;
@@ -35,6 +35,7 @@ export interface DocumentRowFormattingSnapshot {
   widthBefore?: DocumentTablePreferredWidth;
   widthAfter?: DocumentTablePreferredWidth;
   cnfStyle?: string;
+  divId?: number;
 }
 
 export interface DocumentRowFormattingHeight {
@@ -55,11 +56,12 @@ export function serializeDocumentRowFormatting(attributes: {
   widthBefore?: unknown;
   widthAfter?: unknown;
   cnfStyle?: unknown;
+  divId?: unknown;
 }): string {
   const snapshot = normalizeDocumentRowFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, gridBefore, gridAfter, widthBefore, widthAfter, or cnfStyle.',
+      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, gridBefore, gridAfter, widthBefore, widthAfter, cnfStyle, or divId.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -99,7 +101,8 @@ export function parseDocumentRowFormatting(
         key !== 'gridAfter' &&
         key !== 'widthBefore' &&
         key !== 'widthAfter' &&
-        key !== 'cnfStyle',
+        key !== 'cnfStyle' &&
+        key !== 'divId',
     )
   ) {
     return null;
@@ -120,6 +123,7 @@ export function normalizeDocumentRowFormattingSnapshot(attributes: {
   widthBefore?: unknown;
   widthAfter?: unknown;
   cnfStyle?: unknown;
+  divId?: unknown;
 }): DocumentRowFormattingSnapshot | null {
   const snapshot: DocumentRowFormattingSnapshot = {};
   if ('cantSplit' in attributes && attributes.cantSplit !== undefined) {
@@ -173,6 +177,11 @@ export function normalizeDocumentRowFormattingSnapshot(attributes: {
     if (!cnfStyle) return null;
     snapshot.cnfStyle = cnfStyle;
   }
+  if ('divId' in attributes && attributes.divId !== undefined) {
+    const divId = normalizeDocumentRowDivId(attributes.divId);
+    if (divId === null) return null;
+    snapshot.divId = divId;
+  }
   return snapshot.cantSplit !== undefined ||
     snapshot.repeatHeader !== undefined ||
     snapshot.height !== undefined ||
@@ -182,7 +191,8 @@ export function normalizeDocumentRowFormattingSnapshot(attributes: {
     snapshot.gridAfter !== undefined ||
     snapshot.widthBefore !== undefined ||
     snapshot.widthAfter !== undefined ||
-    snapshot.cnfStyle !== undefined
+    snapshot.cnfStyle !== undefined ||
+    snapshot.divId !== undefined
     ? snapshot
     : null;
 }
@@ -236,6 +246,7 @@ export function restoredDocumentRowAttributes(
     ...(formatting.cnfStyle !== undefined
       ? { cnfStyle: formatting.cnfStyle }
       : {}),
+    ...(formatting.divId !== undefined ? { divId: formatting.divId } : {}),
   });
 }
 
@@ -286,6 +297,7 @@ function orderedSnapshot(
     };
   }
   if (snapshot.cnfStyle !== undefined) ordered.cnfStyle = snapshot.cnfStyle;
+  if (snapshot.divId !== undefined) ordered.divId = snapshot.divId;
   return ordered;
 }
 
@@ -294,6 +306,36 @@ export function normalizeDocumentRowGridSpan(value: unknown): number | null {
     return null;
   }
   return value;
+}
+
+/** Non-negative safe-integer HTML div association for w:divId / data-office-row-div-id. */
+export function normalizeDocumentRowDivId(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return Number.isInteger(value) &&
+      Number.isSafeInteger(value) &&
+      value >= 0
+      ? value
+      : null;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (!normalized || !/^[0-9]+$/.test(normalized)) return null;
+    const numeric = Number(normalized);
+    return Number.isInteger(numeric) &&
+      Number.isSafeInteger(numeric) &&
+      numeric >= 0
+      ? numeric
+      : null;
+  }
+  return null;
+}
+
+/** Parse w:divId: missing/negative/non-integer/malformed fail closed. */
+export function parseDocxRowDivIdValue(
+  value: string | null | undefined,
+): number | null {
+  if (value === null || value === undefined) return null;
+  return normalizeDocumentRowDivId(value);
 }
 
 /** @deprecated Prefer normalizeDocumentRowGridSpan */
