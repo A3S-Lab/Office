@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Eligible paragraph-break merge/split, whole-paragraph mark, and text-move
+  revision bodies now admit relationship-free empty `w:lastRenderedPageBreak`
+  glyphs alongside the existing soft-break / tab / carriage-return / hyphen /
+  hyperlink / bookmark set. Attributed or non-empty `w:lastRenderedPageBreak`
+  stays fail-closed.
+
 ## 0.126.0 - 2026-09-10
 
 ### Writer

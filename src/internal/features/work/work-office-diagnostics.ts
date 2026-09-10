@@ -571,7 +571,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.paragraph-mark',
             'Paragraph-mark revisions',
-            `${supportedParagraphMarkRevisionCount} bounded paragraph-mark insertion/deletion revision(s) preserve author, date, and whole-paragraph accept/reject semantics through Work and native DOCX w:pPr/w:rPr/w:ins or w:del round trips, including multi-wrapper text-only bodies that share the mark author and date plus soft breaks, tabs, carriage returns, non-breaking and soft hyphens, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/rPr-only untracked sibling runs.`,
+            `${supportedParagraphMarkRevisionCount} bounded paragraph-mark insertion/deletion revision(s) preserve author, date, and whole-paragraph accept/reject semantics through Work and native DOCX w:pPr/w:rPr/w:ins or w:del round trips, including multi-wrapper text-only bodies that share the mark author and date plus soft breaks, tabs, carriage returns, last-rendered page breaks, non-breaking and soft hyphens, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/rPr-only untracked sibling runs.`,
             'info',
           ),
         );
@@ -581,7 +581,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.paragraph-break',
             'Paragraph-break revisions',
-            `${isolatedParagraphBreakMarkRevisionCount} isolated paragraph-mark revision(s) look like paragraph-break merge or split candidates. Eligible text-only neighbor pairs (including soft breaks, tabs, carriage returns, non-breaking and soft hyphens, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/rPr-only runs) become reviewable paragraph-break changes; others stay fail-closed diagnostics instead of whole-paragraph guesses.`,
+            `${isolatedParagraphBreakMarkRevisionCount} isolated paragraph-mark revision(s) look like paragraph-break merge or split candidates. Eligible text-only neighbor pairs (including soft breaks, tabs, carriage returns, last-rendered page breaks, non-breaking and soft hyphens, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/rPr-only runs) become reviewable paragraph-break changes; others stay fail-closed diagnostics instead of whole-paragraph guesses.`,
           ),
         );
       }
