@@ -8,6 +8,7 @@ import {
 import {
   parseDocxHMergeValue,
   parseDocxVMergeValue,
+  parseDocxGridSpanValue,
 } from './work-document-table-cell-formatting';
 import { parseDocxCnfStyleElement } from './work-document-cnf-style';
 import { normalizeTableColor } from './work-document-table-borders';
@@ -48,6 +49,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'cnfStyle',
   'hMerge',
   'vMerge',
+  'gridSpan',
   'tcBorders',
 ]);
 const SOLID_SHADING_VALUES = new Set(['clear', 'nil', 'none', '']);
@@ -71,7 +73,7 @@ export interface SupportedDocxCellFormattingChange {
 /**
  * Relationship-free `w:tcPrChange` whose prior snapshot contains only
  * `w:vAlign`, solid direct-color `w:shd`, `w:tcMar`, `w:tcW`, `w:noWrap`,
- * `w:textDirection`, `w:tcFitText`, `w:hideMark`, `w:cnfStyle`, `w:hMerge`, `w:vMerge`, and/or
+ * `w:textDirection`, `w:tcFitText`, `w:hideMark`, `w:cnfStyle`, `w:hMerge`, `w:vMerge`, `w:gridSpan`, and/or
  * direct-color `w:tcBorders`. Broader cell property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxCellFormattingChange(change: Element): boolean {
@@ -157,6 +159,7 @@ function supportedCellFormattingChange(
         child.localName === 'cnfStyle' ||
         child.localName === 'hMerge' ||
         child.localName === 'vMerge' ||
+        child.localName === 'gridSpan' ||
         child.localName === 'tcBorders'
       ) {
         return false;
@@ -180,6 +183,7 @@ function supportedCellFormattingChange(
     cnfStyle?: string;
     hMerge?: DocumentTableCellHMerge;
     vMerge?: DocumentTableCellVMerge;
+    gridSpan?: number;
     borders?: DocumentCellFormattingBorders;
   } = {};
   for (const child of children) {
@@ -245,6 +249,12 @@ function supportedCellFormattingChange(
       const vMerge = parseDocxVMergeValue(attribute(child, 'val'));
       if (!vMerge) return null;
       snapshot.vMerge = vMerge;
+      continue;
+    }
+    if (child.localName === 'gridSpan') {
+      const gridSpan = parseDocxGridSpanValue(attribute(child, 'val'));
+      if (gridSpan === null) return null;
+      snapshot.gridSpan = gridSpan;
       continue;
     }
     if (child.localName === 'tcBorders') {

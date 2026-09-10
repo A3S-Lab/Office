@@ -4,6 +4,7 @@ import { normalizeDocumentCnfStyle } from './work-document-cnf-style';
 import {
   normalizeDocumentTableCellHMerge,
   normalizeDocumentTableCellVMerge,
+  normalizeDocumentTableCellGridSpan,
 } from './work-document-table-cell-formatting';
 import {
   documentTableBordersFromElement,
@@ -45,6 +46,7 @@ export class DocxCellFormattingChangePatchCollector {
   readonly cnfStyles: Array<string | null> = [];
   readonly hMerges: Array<string | null> = [];
   readonly vMerges: Array<string | null> = [];
+  readonly gridSpans: Array<number | null> = [];
   readonly borders: Array<DocumentCellFormattingBorders | null> = [];
 
   record(element: HTMLTableCellElement, id: number): void {
@@ -62,6 +64,9 @@ export class DocxCellFormattingChangePatchCollector {
     );
     this.vMerges.push(
       normalizeDocumentTableCellVMerge(element.dataset.officeCellVMerge),
+    );
+    this.gridSpans.push(
+      normalizeDocumentTableCellGridSpan(element.dataset.officeCellGridSpan),
     );
     this.borders.push(cellFormattingBordersFromElement(element));
     if (
@@ -100,6 +105,7 @@ export async function patchDocxCellFormattingChanges(
   cnfStyles: readonly (string | null)[] = [],
   hMerges: readonly (string | null)[] = [],
   vMerges: readonly (string | null)[] = [],
+  gridSpans: readonly (number | null)[] = [],
   borders: readonly (DocumentCellFormattingBorders | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
@@ -111,6 +117,7 @@ export async function patchDocxCellFormattingChanges(
     !cnfStyles.some((value) => value !== null) &&
     !hMerges.some((value) => value !== null) &&
     !vMerges.some((value) => value !== null) &&
+    !gridSpans.some((value) => value !== null) &&
     !borders.some(Boolean)
   ) {
     return buffer;
@@ -142,6 +149,7 @@ export async function patchDocxCellFormattingChanges(
     const cellCnfStyle = cnfStyles[index] ?? null;
     const cellHMerge = hMerges[index] ?? null;
     const cellVMerge = vMerges[index] ?? null;
+    const cellGridSpan = gridSpans[index] ?? null;
     const cellBorders = borders[index] ?? null;
     index += 1;
     if (patch) {
@@ -174,6 +182,10 @@ export async function patchDocxCellFormattingChanges(
     }
     if (cellVMerge) {
       setCellVMerge(document, cell, cellVMerge);
+      changed = true;
+    }
+    if (cellGridSpan !== null) {
+      setCellGridSpan(document, cell, cellGridSpan);
       changed = true;
     }
     if (setCellBorders(document, cell, cellBorders)) {
@@ -336,6 +348,27 @@ function setCellVMerge(
   properties.append(element);
 }
 
+function setCellGridSpan(
+  document: Document,
+  cell: Element,
+  gridSpan: number,
+): void {
+  let properties = directChild(cell, 'tcPr');
+  if (!properties || properties.namespaceURI !== WORD_NAMESPACE) {
+    properties = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+    cell.insertBefore(properties, cell.firstChild);
+  }
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'gridSpan' && child.namespaceURI === WORD_NAMESPACE,
+  )) {
+    existing.remove();
+  }
+  const element = document.createElementNS(WORD_NAMESPACE, 'w:gridSpan');
+  element.setAttributeNS(WORD_NAMESPACE, 'w:val', String(gridSpan));
+  properties.append(element);
+}
+
 function setCellFormattingChange(
   document: Document,
   cell: Element,
@@ -437,6 +470,15 @@ function setCellFormattingChange(
     const vMerge = document.createElementNS(WORD_NAMESPACE, 'w:vMerge');
     vMerge.setAttributeNS(WORD_NAMESPACE, 'w:val', formatting.vMerge);
     prior.append(vMerge);
+  }
+  if (formatting.gridSpan !== undefined) {
+    const gridSpan = document.createElementNS(WORD_NAMESPACE, 'w:gridSpan');
+    gridSpan.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:val',
+      String(formatting.gridSpan),
+    );
+    prior.append(gridSpan);
   }
   if (formatting.borders !== undefined) {
     prior.append(createTcBordersElement(document, formatting.borders));

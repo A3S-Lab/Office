@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:tcPrChange` priors that include bounded `w:gridSpan`
+  (positive integer `w:val`) are now reviewable as `cell-formatting` with
+  accept/reject, live track-changes, and native export. Missing, non-positive,
+  non-integer, or malformed values stay fail-closed; opaque cell fixtures moved
+  off `gridSpan` to `cellIns`.
+
 ## 0.106.0 - 2026-09-10
 
 ### Writer

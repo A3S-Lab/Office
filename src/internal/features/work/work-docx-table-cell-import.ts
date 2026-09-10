@@ -40,6 +40,7 @@ import {
   normalizeDocumentTableCellTextDirection,
   parseDocxHMergeValue,
   parseDocxVMergeValue,
+  parseDocxGridSpanValue,
 } from './work-document-table-cell-formatting';
 import type {
   DocumentTableCellHMerge,
@@ -73,6 +74,7 @@ export interface ImportedDocxTableCellMarker {
   cnfStyle?: string;
   hMerge?: DocumentTableCellHMerge;
   vMerge?: DocumentTableCellVMerge;
+  gridSpan?: number;
   propertyRevisionOmml?: string;
   formattingChange?: SupportedDocxCellFormattingChange;
 }
@@ -176,6 +178,13 @@ export function markDocxTableCells(
       ? parseDocxVMergeValue(attribute(vMergeElement, 'val'))
       : null;
     const vMerge = vMergeParsed ?? undefined;
+    const gridSpanElement = properties
+      ? directChild(properties, 'gridSpan')
+      : undefined;
+    const gridSpanParsed = gridSpanElement
+      ? parseDocxGridSpanValue(attribute(gridSpanElement, 'val'))
+      : null;
+    const gridSpan = gridSpanParsed ?? undefined;
     const formattingChange =
       supportedDocxCellFormattingChangeFromProperties(properties);
     const propertyRevisionOmml = formattingChange
@@ -193,6 +202,7 @@ export function markDocxTableCells(
       cnfStyle === undefined &&
       hMerge === undefined &&
       vMerge === undefined &&
+      gridSpan === undefined &&
       !propertyRevisionOmml &&
       !formattingChange
     ) {
@@ -216,6 +226,7 @@ export function markDocxTableCells(
       ...(cnfStyle !== undefined ? { cnfStyle } : {}),
       ...(hMerge !== undefined ? { hMerge } : {}),
       ...(vMerge !== undefined ? { vMerge } : {}),
+      ...(gridSpan !== undefined ? { gridSpan } : {}),
       ...(propertyRevisionOmml ? { propertyRevisionOmml } : {}),
       ...(formattingChange ? { formattingChange } : {}),
     });
@@ -310,6 +321,9 @@ function applyCellFormat(
   }
   if (format.vMerge !== undefined) {
     cell.dataset.officeCellVMerge = format.vMerge;
+  }
+  if (format.gridSpan !== undefined) {
+    cell.dataset.officeCellGridSpan = String(format.gridSpan);
   }
   applyDocumentCellPropertyRevisionOmmlToElement(
     cell,

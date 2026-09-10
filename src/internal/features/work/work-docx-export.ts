@@ -722,6 +722,7 @@ export async function createDocxBlob(
     noteContext.cellFormattingChangePatches.cnfStyles,
     noteContext.cellFormattingChangePatches.hMerges,
     noteContext.cellFormattingChangePatches.vMerges,
+    noteContext.cellFormattingChangePatches.gridSpans,
     noteContext.cellFormattingChangePatches.borders,
   );
   const sectionFormattingChangesPatched =

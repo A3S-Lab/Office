@@ -509,6 +509,17 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
         return vMerge ? { 'data-office-cell-v-merge': vMerge } : {};
       },
     },
+    gridSpan: {
+      default: null,
+      parseHTML: (element: HTMLElement) =>
+        normalizeDocumentTableCellGridSpan(element.dataset.officeCellGridSpan),
+      renderHTML: (attributes: Record<string, unknown>) => {
+        const gridSpan = normalizeDocumentTableCellGridSpan(attributes.gridSpan);
+        return gridSpan !== null
+          ? { 'data-office-cell-grid-span': String(gridSpan) }
+          : {};
+      },
+    },
     propertyRevisionOmml: {
       default: null,
       parseHTML: (element: HTMLElement) =>
@@ -879,6 +890,30 @@ export function parseDocxVMergeValue(
   const normalized = value.trim();
   if (!normalized) return 'continue';
   return normalizeDocumentTableCellVMerge(normalized);
+}
+
+/** Positive integer column span for w:gridSpan / data-office-cell-grid-span. */
+export function normalizeDocumentTableCellGridSpan(
+  value: unknown,
+): number | null {
+  if (typeof value === 'number') {
+    return Number.isInteger(value) && value >= 1 ? value : null;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (!normalized || !/^\d+$/.test(normalized)) return null;
+    const numeric = Number(normalized);
+    return Number.isInteger(numeric) && numeric >= 1 ? numeric : null;
+  }
+  return null;
+}
+
+/** Parse w:gridSpan: missing/non-positive/non-integer/malformed fail closed. */
+export function parseDocxGridSpanValue(
+  value: string | null | undefined,
+): number | null {
+  if (value === null || value === undefined) return null;
+  return normalizeDocumentTableCellGridSpan(value);
 }
 
 function cellChangeAttribute(

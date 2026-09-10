@@ -1427,6 +1427,142 @@ describe('DOCX cell-formatting revisions', () => {
     }
   });
 
+  test('imports gridSpan-only w:tcPrChange as a reviewable cell-formatting change', async () => {
+    const source = await cellDocxWithGridSpanChange({
+      prior: 2,
+      current: 3,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-formatting-grid-span.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const cell = html.body.querySelector('td');
+    expect(cell?.dataset.changeKind).toBe('cell-formatting');
+    expect(cell?.dataset.officeCellPropertyRevisionOmml).toBeUndefined();
+    expect(parseDocumentCellFormatting(cell?.dataset.changeBefore)).toEqual({
+      gridSpan: 2,
+    });
+    expect(cell?.dataset.officeCellGridSpan).toBe('3');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(change?.kind).toBe('cell-formatting');
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const rejected = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const rejectedCell = rejected.body.querySelector('td');
+      expect(rejectedCell?.dataset.changeKind).toBeUndefined();
+      expect(rejectedCell?.dataset.officeCellGridSpan).toBe('2');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('pending gridSpan cell-formatting change round-trips as native w:tcPrChange', async () => {
+    const source = await cellDocxWithGridSpanChange({
+      prior: 4,
+      current: 2,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-formatting-grid-span-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const exported = await xmlEntry(
+      await JSZip.loadAsync(
+        await (await createArtifactBlob(imported)).arrayBuffer(),
+      ),
+      'word/document.xml',
+    );
+    const change = directChild(
+      directChild(descendants(exported, 'tc')[0], 'tcPr'),
+      'tcPrChange',
+    );
+    expect(change).toBeTruthy();
+    const priorGridSpan = directChild(directChild(change!, 'tcPr'), 'gridSpan');
+    expect(
+      priorGridSpan?.getAttributeNS(WORD_NAMESPACE, 'val') ??
+        priorGridSpan?.getAttribute('w:val') ??
+        priorGridSpan?.getAttribute('val'),
+    ).toBe('4');
+  });
+
+  test('malformed gridSpan w:tcPrChange stays on the opaque cell metadata path', async () => {
+    const source = await cellDocxWithGridSpanChange({
+      prior: 2,
+      malformedPrior: true,
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'cell-formatting-grid-span-opaque.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const cell = html.body.querySelector('td');
+    expect(cell?.dataset.changeKind).toBeUndefined();
+    expect(cell?.dataset.officeCellPropertyRevisionOmml).toBeTruthy();
+  });
+
+  test('live cell gridSpan edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content:
+        '<table><tbody><tr><td data-office-cell-grid-span="2"><p>Cell</p></td></tr></tbody></table>',
+    });
+    try {
+      let cellPos: number | null = null;
+      editor.state.doc.descendants((node, position) => {
+        if (node.type.name === 'tableCell' && cellPos === null) {
+          cellPos = position;
+        }
+      });
+      expect(cellPos).not.toBeNull();
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(cellPos!, undefined, {
+          ...editor.state.doc.nodeAt(cellPos!)!.attrs,
+          gridSpan: 3,
+        }),
+      );
+      const changes = collectDocumentChanges(editor.state.doc).filter(
+        (change) => change.kind === 'cell-formatting',
+      );
+      expect(changes).toHaveLength(1);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const cell = html.body.querySelector('td');
+      expect(cell?.dataset.changeKind).toBe('cell-formatting');
+      expect(
+        parseDocumentCellFormatting(cell?.dataset.changeBefore),
+      ).toMatchObject({
+        gridSpan: 2,
+      });
+      expect(cell?.dataset.officeCellGridSpan).toBe('3');
+    } finally {
+      editor.destroy();
+    }
+  });
+
 });
 
 async function cellDocxWithVAlignChange(options: {
@@ -1965,6 +2101,66 @@ async function cellDocxWithHMergeChange(options: {
     priorHMerge.setAttributeNS(WORD_NAMESPACE, 'w:val', options.prior);
   }
   prior.append(priorHMerge);
+  change.append(prior);
+  properties.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+async function cellDocxWithGridSpanChange(options: {
+  prior: number;
+  current?: number;
+  malformedPrior?: boolean;
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  artifact.content.html =
+    '<table><tbody><tr><td><p>Cell</p></td></tr></tbody></table>';
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const cell = descendants(document, 'tc')[0];
+  const properties =
+    directChild(cell, 'tcPr') ??
+    (() => {
+      const created = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+      cell.insertBefore(created, cell.firstChild);
+      return created;
+    })();
+  for (const existing of Array.from(properties.children).filter(
+    (child) =>
+      child.localName === 'gridSpan' || child.localName === 'tcPrChange',
+  )) {
+    existing.remove();
+  }
+  const current = document.createElementNS(WORD_NAMESPACE, 'w:gridSpan');
+  current.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:val',
+    String(options.current ?? options.prior),
+  );
+  properties.append(current);
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:tcPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '49');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-08T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:tcPr');
+  const priorGridSpan = document.createElementNS(WORD_NAMESPACE, 'w:gridSpan');
+  if (options.malformedPrior) {
+    priorGridSpan.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+  } else {
+    priorGridSpan.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:val',
+      String(options.prior),
+    );
+  }
+  prior.append(priorGridSpan);
   change.append(prior);
   properties.append(change);
   archive.file(

@@ -14,6 +14,7 @@ import {
   normalizeDocumentTableCellTextDirection,
   normalizeDocumentTableCellHMerge,
   normalizeDocumentTableCellVMerge,
+  normalizeDocumentTableCellGridSpan,
   type DocumentTableCellHMerge,
   type DocumentTableCellVMerge,
   type DocumentTableCellTextDirection,
@@ -43,13 +44,14 @@ export type {
 export {
   normalizeDocumentTableCellHMerge,
   normalizeDocumentTableCellVMerge,
+  normalizeDocumentTableCellGridSpan,
   normalizeDocumentTableCellTextDirection,
 } from './work-document-table-cell-formatting';
 
 /**
  * Prior snapshot for reviewable cell-property revisions.
  * At least one of verticalAlign, fill, margins, width, noWrap, textDirection,
- * fitText, hideMark, cnfStyle, hMerge, vMerge, or borders must be present.
+ * fitText, hideMark, cnfStyle, hMerge, vMerge, gridSpan, or borders must be present.
  */
 export interface DocumentCellFormattingSnapshot {
   verticalAlign?: DocumentTableVerticalAlign;
@@ -63,6 +65,7 @@ export interface DocumentCellFormattingSnapshot {
   cnfStyle?: string;
   hMerge?: DocumentTableCellHMerge;
   vMerge?: DocumentTableCellVMerge;
+  gridSpan?: number;
   borders?: DocumentCellFormattingBorders;
 }
 
@@ -88,12 +91,13 @@ export function serializeDocumentCellFormatting(attributes: {
   cnfStyle?: unknown;
   hMerge?: unknown;
   vMerge?: unknown;
+  gridSpan?: unknown;
   borders?: unknown;
 }): string {
   const snapshot = normalizeDocumentCellFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, textDirection, fitText, hideMark, cnfStyle, hMerge, vMerge, or borders.',
+      'Cell-formatting snapshot requires verticalAlign, fill, margins, width, noWrap, textDirection, fitText, hideMark, cnfStyle, hMerge, vMerge, gridSpan, or borders.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -135,6 +139,7 @@ export function parseDocumentCellFormatting(
         key !== 'cnfStyle' &&
         key !== 'hMerge' &&
         key !== 'vMerge' &&
+        key !== 'gridSpan' &&
         key !== 'borders',
     )
   ) {
@@ -157,6 +162,7 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
   cnfStyle?: unknown;
   hMerge?: unknown;
   vMerge?: unknown;
+  gridSpan?: unknown;
   borders?: unknown;
 }): DocumentCellFormattingSnapshot | null {
   const snapshot: DocumentCellFormattingSnapshot = {};
@@ -222,6 +228,11 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
     if (!vMerge) return null;
     snapshot.vMerge = vMerge;
   }
+  if ('gridSpan' in attributes && attributes.gridSpan !== undefined) {
+    const gridSpan = normalizeDocumentTableCellGridSpan(attributes.gridSpan);
+    if (gridSpan === null) return null;
+    snapshot.gridSpan = gridSpan;
+  }
   if ('borders' in attributes && attributes.borders !== undefined) {
     const borders = normalizeDocumentCellFormattingBorders(attributes.borders);
     if (!borders) return null;
@@ -238,6 +249,7 @@ export function normalizeDocumentCellFormattingSnapshot(attributes: {
     snapshot.cnfStyle !== undefined ||
     snapshot.hMerge !== undefined ||
     snapshot.vMerge !== undefined ||
+    snapshot.gridSpan !== undefined ||
     snapshot.borders !== undefined
     ? snapshot
     : null;
@@ -291,6 +303,9 @@ export function restoredDocumentCellAttributes(
       : {}),
     ...(formatting.vMerge !== undefined
       ? { vMerge: formatting.vMerge }
+      : {}),
+    ...(formatting.gridSpan !== undefined
+      ? { gridSpan: formatting.gridSpan }
       : {}),
     ...(formatting.borders !== undefined
       ? restoredCellBorderAttributes(formatting.borders)
@@ -439,6 +454,7 @@ function orderedSnapshot(
   if (snapshot.cnfStyle !== undefined) ordered.cnfStyle = snapshot.cnfStyle;
   if (snapshot.hMerge !== undefined) ordered.hMerge = snapshot.hMerge;
   if (snapshot.vMerge !== undefined) ordered.vMerge = snapshot.vMerge;
+  if (snapshot.gridSpan !== undefined) ordered.gridSpan = snapshot.gridSpan;
   if (snapshot.borders) {
     ordered.borders = orderedDocumentCellFormattingBorders(snapshot.borders);
   }

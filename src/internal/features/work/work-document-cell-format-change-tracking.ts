@@ -22,6 +22,7 @@ import type { DocumentTableBorder } from './work-document-table-borders';
 import {
   normalizeDocumentTableCellHMerge,
   normalizeDocumentTableCellVMerge,
+  normalizeDocumentTableCellGridSpan,
   normalizeDocumentTableVerticalAlign,
   type DocumentTableVerticalAlign,
 } from './work-document-table-cell-formatting';
@@ -37,7 +38,7 @@ interface DocumentCellFormattingTrackingOptions {
 
 /**
  * When track-changes is on, cell verticalAlign / solid fill / margin /
- * preferred-width / noWrap / textDirection / fitText / hideMark / cnfStyle / hMerge / vMerge / tcBorders
+ * preferred-width / noWrap / textDirection / fitText / hideMark / cnfStyle / hMerge / vMerge / gridSpan / tcBorders
  * edits become reviewable `cell-formatting` revisions.
  */
 export function trackDocumentCellFormattingTransaction(
@@ -89,6 +90,7 @@ function cellFormatting(node: ProseMirrorNode): {
   cnfStyle?: string;
   hMerge?: DocumentTableCellHMerge;
   vMerge?: DocumentTableCellVMerge;
+  gridSpan?: number;
   borders?: ReturnType<typeof normalizeDocumentCellFormattingBorders>;
 } | null {
   const verticalAlign =
@@ -112,6 +114,7 @@ function cellFormatting(node: ProseMirrorNode): {
   const cnfStyle = normalizeDocumentCnfStyle(node.attrs.cnfStyle);
   const hMerge = normalizeDocumentTableCellHMerge(node.attrs.hMerge);
   const vMerge = normalizeDocumentTableCellVMerge(node.attrs.vMerge);
+  const gridSpan = normalizeDocumentTableCellGridSpan(node.attrs.gridSpan);
   const borders = cellFormattingBordersForSnapshot(node.attrs.borders);
   return normalizeDocumentCellFormattingSnapshot({
     verticalAlign,
@@ -125,6 +128,7 @@ function cellFormatting(node: ProseMirrorNode): {
     ...(cnfStyle ? { cnfStyle } : {}),
     ...(hMerge ? { hMerge } : {}),
     ...(vMerge ? { vMerge } : {}),
+    ...(gridSpan !== null ? { gridSpan } : {}),
     ...(borders
       ? { borders: orderedDocumentCellFormattingBorders(borders) }
       : {}),
@@ -150,6 +154,7 @@ function onlyReviewableCellFormattingChanged(
     'cnfStyle',
     'hMerge',
     'vMerge',
+    'gridSpan',
     'borders',
     'borderColor',
     'borderStyle',
