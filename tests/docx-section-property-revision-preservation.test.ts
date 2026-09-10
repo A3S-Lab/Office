@@ -39,11 +39,11 @@ describe('DOCX section property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:id', '21');
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
-    // Unequal-width cols are reviewable as section-formatting; keep opaque on docGrid.
-    const docGrid = document.createElementNS(WORD_NAMESPACE, 'w:docGrid');
-    docGrid.setAttributeNS(WORD_NAMESPACE, 'w:linePitch', '360');
-    docGrid.setAttributeNS(WORD_NAMESPACE, 'w:type', 'lines');
-    prior.append(docGrid);
+    // docGrid is reviewable as section-formatting; keep opaque on lnNumType.
+    const lnNumType = document.createElementNS(WORD_NAMESPACE, 'w:lnNumType');
+    lnNumType.setAttributeNS(WORD_NAMESPACE, 'w:countBy', '1');
+    lnNumType.setAttributeNS(WORD_NAMESPACE, 'w:start', '1');
+    prior.append(lnNumType);
     change.append(prior);
     section.append(change);
     archive.file(
@@ -89,16 +89,16 @@ describe('DOCX section property-revision preservation', () => {
       id: '21',
       author: 'Reviewer',
     });
-    const priorDocGrid = directChild(
+    const priorLnNumType = directChild(
       directChild(exportedChange!, 'sectPr'),
-      'docGrid',
+      'lnNumType',
     );
-    expect(priorDocGrid).toBeTruthy();
+    expect(priorLnNumType).toBeTruthy();
     expect(
-      priorDocGrid?.getAttributeNS(WORD_NAMESPACE, 'linePitch') ??
-        priorDocGrid?.getAttribute('w:linePitch') ??
-        priorDocGrid?.getAttribute('linePitch'),
-    ).toBe('360');
+      priorLnNumType?.getAttributeNS(WORD_NAMESPACE, 'countBy') ??
+        priorLnNumType?.getAttribute('w:countBy') ??
+        priorLnNumType?.getAttribute('countBy'),
+    ).toBe('1');
   });
 
   test('drops relationship-bound w:sectPrChange instead of inventing opaque metadata', async () => {

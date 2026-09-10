@@ -21,7 +21,12 @@ import {
   parseDocumentPageChrome,
   serializeDocumentPageChrome,
 } from './work-document-page-chrome';
-import type { WorkDocumentColumns, WorkDocumentPaperSize } from './work-types';
+import type {
+  WorkDocumentColumns,
+  WorkDocumentGrid,
+  WorkDocumentGridType,
+  WorkDocumentPaperSize,
+} from './work-types';
 
 export const DOCUMENT_SECTION_CHANGE_ATTRIBUTES = [
   'sectionChangeKind',
@@ -48,7 +53,7 @@ export type DocumentSectionEqualColumnsSnapshot = DocumentSectionColumnsSnapshot
 /**
  * Prior snapshot for reviewable section-property revisions.
  * At least one of orientation, pageGeometry, pageMargins, paperSource,
- * columns, differentFirstPage, or rtlGutter must be present.
+ * columns, differentFirstPage, rtlGutter, or documentGrid must be present.
  */
 export interface DocumentSectionFormattingSnapshot {
   orientation?: 'portrait' | 'landscape';
@@ -58,6 +63,7 @@ export interface DocumentSectionFormattingSnapshot {
   columns?: DocumentSectionColumnsSnapshot;
   differentFirstPage?: boolean;
   rtlGutter?: boolean;
+  documentGrid?: WorkDocumentGrid;
 }
 
 const MAX_SECTION_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -79,11 +85,12 @@ export function serializeDocumentSectionFormatting(attributes: {
   columns?: unknown;
   differentFirstPage?: unknown;
   rtlGutter?: unknown;
+  documentGrid?: unknown;
 }): string {
   const snapshot = normalizeDocumentSectionFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, or rtlGutter.',
+      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, or documentGrid.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -120,7 +127,8 @@ export function parseDocumentSectionFormatting(
         key !== 'paperSource' &&
         key !== 'columns' &&
         key !== 'differentFirstPage' &&
-        key !== 'rtlGutter',
+        key !== 'rtlGutter' &&
+        key !== 'documentGrid',
     )
   ) {
     return null;
@@ -138,6 +146,7 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
   columns?: unknown;
   differentFirstPage?: unknown;
   rtlGutter?: unknown;
+  documentGrid?: unknown;
 }): DocumentSectionFormattingSnapshot | null {
   const snapshot: DocumentSectionFormattingSnapshot = {};
   if ('orientation' in attributes && attributes.orientation !== undefined) {
@@ -180,13 +189,19 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     if (typeof attributes.rtlGutter !== 'boolean') return null;
     snapshot.rtlGutter = attributes.rtlGutter;
   }
+  if ('documentGrid' in attributes && attributes.documentGrid !== undefined) {
+    const documentGrid = normalizeRevisionDocumentGrid(attributes.documentGrid);
+    if (!documentGrid) return null;
+    snapshot.documentGrid = documentGrid;
+  }
   return snapshot.orientation ||
     snapshot.pageGeometry ||
     snapshot.pageMargins ||
     snapshot.paperSource ||
     snapshot.columns ||
     snapshot.differentFirstPage !== undefined ||
-    snapshot.rtlGutter !== undefined
+    snapshot.rtlGutter !== undefined ||
+    snapshot.documentGrid
     ? snapshot
     : null;
 }
@@ -325,6 +340,12 @@ export function restoredDocumentSectionAttributes(
     if (!restored) return null;
     pageMargins = serializeDocumentPageMargins(restored) ?? '';
   }
+  let documentGridType = attributes.documentGridType;
+  let documentGridLinePitch = attributes.documentGridLinePitch;
+  if (formatting.documentGrid) {
+    documentGridType = formatting.documentGrid.type;
+    documentGridLinePitch = formatting.documentGrid.linePitch;
+  }
   return clearDocumentSectionChangeAttributes({
     ...attributes,
     orientation,
@@ -340,6 +361,8 @@ export function restoredDocumentSectionAttributes(
     columnSpacing,
     columnSeparator,
     columnLayout,
+    documentGridType,
+    documentGridLinePitch,
   });
 }
 
@@ -352,6 +375,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
   paperSource?: WorkDocumentPaperSource;
   columns?: WorkDocumentColumns;
   pageChrome?: unknown;
+  documentGrid?: WorkDocumentGrid;
   headerText?: string;
   footerText?: string;
   showPageNumbers?: boolean;
@@ -380,6 +404,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
       showPageNumbers: layout.showPageNumbers,
     },
   );
+  const documentGrid = normalizeRevisionDocumentGrid(layout.documentGrid);
   return normalizeDocumentSectionFormattingSnapshot({
     orientation: layout.orientation,
     pageGeometry,
@@ -388,6 +413,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
     ...(columns ? { columns } : {}),
     differentFirstPage: chrome.differentFirstPage,
     rtlGutter: pageMargins.gutterOnRight === true,
+    ...(documentGrid ? { documentGrid } : {}),
   });
 }
 
@@ -534,6 +560,41 @@ function normalizeRevisionColumns(
   return snapshot;
 }
 
+function normalizeRevisionDocumentGrid(
+  value: unknown,
+): WorkDocumentGrid | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const keys = Object.keys(record);
+  if (!keys.length || keys.some((key) => key !== 'type' && key !== 'linePitch')) {
+    return null;
+  }
+  if (!('type' in record) || !('linePitch' in record)) return null;
+  if (!validDocumentGridType(record.type)) return null;
+  const linePitch = Number(record.linePitch);
+  if (!Number.isFinite(linePitch) || linePitch <= 0) return null;
+  return {
+    type: record.type,
+    linePitch: Math.min(720, Number(linePitch.toFixed(2))),
+  };
+}
+
+function validDocumentGridType(value: unknown): value is WorkDocumentGridType {
+  return (
+    value === 'default' ||
+    value === 'lines' ||
+    value === 'linesAndChars' ||
+    value === 'snapToChars'
+  );
+}
+
+function orderedDocumentGrid(grid: WorkDocumentGrid): WorkDocumentGrid {
+  return {
+    type: grid.type,
+    linePitch: grid.linePitch,
+  };
+}
+
 function orderedSnapshot(
   snapshot: DocumentSectionFormattingSnapshot,
 ): Record<string, unknown> {
@@ -557,6 +618,9 @@ function orderedSnapshot(
   }
   if (snapshot.rtlGutter !== undefined) {
     ordered.rtlGutter = snapshot.rtlGutter;
+  }
+  if (snapshot.documentGrid) {
+    ordered.documentGrid = orderedDocumentGrid(snapshot.documentGrid);
   }
   if (snapshot.columns) {
     ordered.columns = snapshot.columns.custom

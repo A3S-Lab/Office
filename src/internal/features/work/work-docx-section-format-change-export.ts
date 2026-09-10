@@ -205,6 +205,20 @@ function setSectionFormattingChange(
     }
     prior.append(rtlGutter);
   }
+  if (formatting.documentGrid) {
+    const docGrid = document.createElementNS(WORD_NAMESPACE, 'w:docGrid');
+    docGrid.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:type',
+      formatting.documentGrid.type,
+    );
+    docGrid.setAttributeNS(
+      WORD_NAMESPACE,
+      'w:linePitch',
+      String(Math.max(1, Math.round(formatting.documentGrid.linePitch * 20))),
+    );
+    prior.append(docGrid);
+  }
   change.append(prior);
   section.append(change);
 }

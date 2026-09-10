@@ -28,6 +28,7 @@ import {
   parseDocxTwipsMeasure,
 } from './work-docx-twips';
 import { attribute, directChildren } from './work-ooxml-package';
+import type { WorkDocumentGrid, WorkDocumentGridType } from './work-types';
 
 const MAX_REVISION_DATE_LENGTH = 64;
 const REVISION_ATTRIBUTES = new Set(['id', 'author', 'date']);
@@ -38,7 +39,16 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'cols',
   'titlePg',
   'rtlGutter',
+  'docGrid',
 ]);
+const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch']);
+const DOC_GRID_TYPES = new Set([
+  'default',
+  'lines',
+  'linesAndChars',
+  'snapToChars',
+]);
+const MAX_DOC_GRID_LINE_PITCH_TWIPS = 14_400;
 const PAGE_SIZE_ATTRIBUTE_SET = new Set(['w', 'h', 'orient', 'code']);
 const PAPER_SOURCE_ATTRIBUTE_SET = new Set(['first', 'other']);
 const COLUMNS_ATTRIBUTE_SET = new Set(['num', 'space', 'sep', 'equalWidth']);
@@ -73,8 +83,9 @@ export interface SupportedDocxSectionFormattingChange {
  * Relationship-free `w:sectPrChange` whose prior snapshot contains only
  * orientation-only or complete `w:pgSz` (w/h with optional orient/code), a
  * complete seven-edge `w:pgMar`, `w:paperSrc`, equal-width or unequal-width
- * `w:cols`, and/or `w:titlePg` and/or `w:rtlGutter`. Broader section property
- * sets stay on the opaque OMML path.
+ * `w:cols`, and/or `w:titlePg`, and/or `w:rtlGutter`, and/or bounded
+ * relationship-free `w:docGrid`. Broader section property sets stay on the
+ * opaque OMML path.
  */
 export function isSupportedDocxSectionFormattingChange(
   change: Element,
@@ -145,6 +156,7 @@ function supportedSectionFormattingChange(
   let columns: DocumentSectionColumnsSnapshot | undefined;
   let differentFirstPage: boolean | undefined;
   let rtlGutter: boolean | undefined;
+  let documentGrid: WorkDocumentGrid | undefined;
   for (const child of children) {
     if (child.localName === 'pgSz') {
       const value = importedPageSize(child);
@@ -177,6 +189,12 @@ function supportedSectionFormattingChange(
     }
     if (child.localName === 'rtlGutter') {
       rtlGutter = onOffValue(child);
+      continue;
+    }
+    if (child.localName === 'docGrid') {
+      const value = importedDocumentGrid(child);
+      if (!value) return null;
+      documentGrid = value;
     }
   }
   const before = serializeDocumentSectionFormatting({
@@ -187,6 +205,7 @@ function supportedSectionFormattingChange(
     ...(columns ? { columns } : {}),
     ...(differentFirstPage !== undefined ? { differentFirstPage } : {}),
     ...(rtlGutter !== undefined ? { rtlGutter } : {}),
+    ...(documentGrid ? { documentGrid } : {}),
   });
   return {
     id: `docx-section-format-change-${id}`,
@@ -478,6 +497,45 @@ function importedPageMargins(element: Element): WorkDocumentPageMargins | null {
   }
   if (seen.size !== PAGE_MARGIN_KEYS.length) return null;
   return normalizeDocumentPageMargins(values);
+}
+
+function importedDocumentGrid(element: Element): WorkDocumentGrid | null {
+  const attributes = Array.from(element.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if ([...names].some((name) => !DOC_GRID_ATTRIBUTE_SET.has(name))) {
+    return null;
+  }
+  if (names.size !== attributes.length) return null;
+  const byName = new Map(
+    attributes.map((candidate) => [
+      xmlAttributeLocalName(candidate),
+      candidate.value.trim(),
+    ]),
+  );
+  const typeSource = byName.get('type');
+  if (typeSource !== undefined && !DOC_GRID_TYPES.has(typeSource)) {
+    return null;
+  }
+  const type: WorkDocumentGridType =
+    typeSource === undefined ? 'default' : (typeSource as WorkDocumentGridType);
+  const linePitchSource = byName.get('linePitch');
+  const linePitchTwips =
+    linePitchSource === undefined
+      ? 360
+      : parseBoundedDocxInteger(linePitchSource, {
+          minimum: 1,
+          maximum: MAX_DOC_GRID_LINE_PITCH_TWIPS,
+        });
+  if (linePitchTwips === null) return null;
+  return {
+    type,
+    linePitch: Number((linePitchTwips / 20).toFixed(2)),
+  };
 }
 
 function onOffValue(element: Element): boolean {

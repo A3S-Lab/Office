@@ -540,6 +540,149 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 
+  test('imports docGrid-only w:sectPrChange as a reviewable section-formatting change', async () => {
+    const source = await sectionDocxWithDocGridChange({
+      prior: { type: 'lines', linePitch: 18 },
+      current: { type: 'linesAndChars', linePitch: 24 },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-docgrid-formatting.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const section = html.body.querySelector('section[data-document-section]');
+    expect(section?.getAttribute('data-change-kind')).toBe(
+      'section-formatting',
+    );
+    expect(
+      section?.getAttribute('data-section-property-revision-omml'),
+    ).toBeNull();
+    expect(
+      parseDocumentSectionFormatting(
+        section?.getAttribute('data-change-before'),
+      ),
+    ).toEqual({ documentGrid: { type: 'lines', linePitch: 18 } });
+    expect(section?.dataset.sectionDocumentGridType).toBe('linesAndChars');
+    expect(section?.dataset.sectionDocumentGridLinePitch).toBe('24');
+  });
+
+  test('pending docGrid section-formatting change round-trips as native w:sectPrChange', async () => {
+    const source = await sectionDocxWithDocGridChange({
+      prior: { type: 'lines', linePitch: 18 },
+      current: { type: 'linesAndChars', linePitch: 24 },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-docgrid-roundtrip.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const output = await JSZip.loadAsync(
+      await (await createArtifactBlob(imported)).arrayBuffer(),
+    );
+    const exported = await xmlEntry(output, 'word/document.xml');
+    const section = descendants(exported, 'sectPr').find(
+      (element) => element.parentElement?.localName !== 'sectPrChange',
+    );
+    const change = directChild(section!, 'sectPrChange');
+    expect(change).toBeTruthy();
+    const priorDocGrid = directChild(directChild(change!, 'sectPr'), 'docGrid');
+    expect(priorDocGrid).toBeTruthy();
+    expect(
+      priorDocGrid?.getAttributeNS(WORD_NAMESPACE, 'type') ??
+        priorDocGrid?.getAttribute('w:type') ??
+        priorDocGrid?.getAttribute('type'),
+    ).toBe('lines');
+    expect(
+      priorDocGrid?.getAttributeNS(WORD_NAMESPACE, 'linePitch') ??
+        priorDocGrid?.getAttribute('w:linePitch') ??
+        priorDocGrid?.getAttribute('linePitch'),
+    ).toBe('360');
+  });
+
+  test('reject restores prior docGrid and drops the pending change', async () => {
+    const source = await sectionDocxWithDocGridChange({
+      prior: { type: 'lines', linePitch: 18 },
+      current: { type: 'linesAndChars', linePitch: 24 },
+    });
+    const imported = await importOfficeFile(
+      new File([source], 'section-docgrid-reject.docx'),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      const change = collectDocumentChanges(editor.state.doc)[0];
+      expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBeNull();
+      expect(section?.dataset.sectionDocumentGridType).toBe('lines');
+      expect(section?.dataset.sectionDocumentGridLinePitch).toBe('18');
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('live section docGrid edits become reviewable when track changes is on', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+      }),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1"',
+        ' data-section-orientation="portrait"',
+        ' data-section-document-grid-type="lines"',
+        ' data-section-document-grid-line-pitch="18">',
+        '<p>Body</p>',
+        '</section>',
+      ].join(''),
+    });
+    try {
+      const active = activeDocumentSection(editor);
+      expect(active).not.toBeNull();
+      if (!active) throw new Error('Expected an active document section.');
+      expect(
+        editor.commands.updateActiveDocumentSection({
+          ...active.layout,
+          documentGrid: { type: 'linesAndChars', linePitch: 24 },
+        }),
+      ).toBe(true);
+      const changes = collectDocumentChanges(editor.state.doc);
+      expect(changes).toHaveLength(1);
+      expect(changes[0]?.kind).toBe('section-formatting');
+      const html = new DOMParser().parseFromString(
+        editor.getHTML(),
+        'text/html',
+      );
+      const section = html.body.querySelector('section[data-document-section]');
+      expect(section?.getAttribute('data-change-kind')).toBe(
+        'section-formatting',
+      );
+      expect(
+        parseDocumentSectionFormatting(
+          section?.getAttribute('data-change-before'),
+        ),
+      ).toMatchObject({ documentGrid: { type: 'lines', linePitch: 18 } });
+      expect(section?.dataset.sectionDocumentGridType).toBe('linesAndChars');
+      expect(section?.dataset.sectionDocumentGridLinePitch).toBe('24');
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('imports rtlGutter-only w:sectPrChange as a reviewable section-formatting change', async () => {
     const source = await sectionDocxWithRtlGutterChange({
       prior: true,
@@ -981,6 +1124,57 @@ describe('DOCX section-formatting revisions', () => {
     }
   });
 });
+
+async function sectionDocxWithDocGridChange(options: {
+  prior: { type: 'default' | 'lines' | 'linesAndChars' | 'snapToChars'; linePitch: number };
+  current: { type: 'default' | 'lines' | 'linesAndChars' | 'snapToChars'; linePitch: number };
+}): Promise<ArrayBuffer> {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  const seed = await createArtifactBlob(artifact);
+  const archive = await JSZip.loadAsync(await seed.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const section = descendants(document, 'sectPr').find(
+    (element) => element.parentElement?.localName !== 'sectPrChange',
+  );
+  if (!section) throw new Error('Expected body sectPr.');
+  for (const existing of Array.from(section.children).filter(
+    (child) =>
+      child.localName === 'docGrid' || child.localName === 'sectPrChange',
+  )) {
+    existing.remove();
+  }
+  const current = document.createElementNS(WORD_NAMESPACE, 'w:docGrid');
+  current.setAttributeNS(WORD_NAMESPACE, 'w:type', options.current.type);
+  current.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:linePitch',
+    String(Math.max(1, Math.round(options.current.linePitch * 20))),
+  );
+  section.append(current);
+  const change = document.createElementNS(WORD_NAMESPACE, 'w:sectPrChange');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:id', '33');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
+  change.setAttributeNS(WORD_NAMESPACE, 'w:date', '2026-09-10T00:00:00Z');
+  const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
+  const priorGrid = document.createElementNS(WORD_NAMESPACE, 'w:docGrid');
+  priorGrid.setAttributeNS(WORD_NAMESPACE, 'w:type', options.prior.type);
+  priorGrid.setAttributeNS(
+    WORD_NAMESPACE,
+    'w:linePitch',
+    String(Math.max(1, Math.round(options.prior.linePitch * 20))),
+  );
+  prior.append(priorGrid);
+  change.append(prior);
+  section.append(change);
+  archive.file(
+    'word/document.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
 
 async function sectionDocxWithRtlGutterChange(options: {
   prior: boolean;
