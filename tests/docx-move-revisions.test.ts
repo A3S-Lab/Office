@@ -677,6 +677,64 @@ describe('DOCX move revisions', () => {
     expect(supportedDocxMovePairCount(document)).toBe(1);
   });
 
+  test('admits empty separator glyphs inside move revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:moveFrom w:id="31" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:r>
+                <w:delText>old</w:delText><w:separator/><w:delText>line</w:delText>
+              </w:r>
+            </w:moveFrom>
+          </w:p>
+          <w:p>
+            <w:moveTo w:id="31" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:r>
+                <w:t>old</w:t><w:separator/><w:t>line</w:t>
+              </w:r>
+            </w:moveTo>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const moves = [
+      ...descendants(document, 'moveFrom'),
+      ...descendants(document, 'moveTo'),
+    ];
+    expect(moves.map(isSupportedDocxMoveChange)).toEqual([true, true]);
+    expect(supportedDocxMovePairCount(document)).toBe(1);
+  });
+
+  test('admits empty continuationSeparator glyphs inside move revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:moveFrom w:id="32" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:r>
+                <w:delText>old</w:delText><w:continuationSeparator/><w:delText>line</w:delText>
+              </w:r>
+            </w:moveFrom>
+          </w:p>
+          <w:p>
+            <w:moveTo w:id="32" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:r>
+                <w:t>old</w:t><w:continuationSeparator/><w:t>line</w:t>
+              </w:r>
+            </w:moveTo>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const moves = [
+      ...descendants(document, 'moveFrom'),
+      ...descendants(document, 'moveTo'),
+    ];
+    expect(moves.map(isSupportedDocxMoveChange)).toEqual([true, true]);
+    expect(supportedDocxMovePairCount(document)).toBe(1);
+  });
+
   test('rejects attributed footnoteRef glyphs inside move revisions', () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}">

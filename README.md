@@ -371,14 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.146.0` admits attribute-free empty `w:annotationRef` CT_Empty
-glyphs inside whole-paragraph mark, paragraph-break, and text-move revision
-bodies:
+Version `0.147.0` admits attribute-free empty `w:separator` and
+`w:continuationSeparator` CT_Empty glyphs inside whole-paragraph mark,
+paragraph-break, and text-move revision bodies:
 
-- **Empty `w:annotationRef`** — attribute-free CT_Empty annotation
-  reference glyphs import inside eligible mark, break, and move revision
-  bodies.
-- **Boundary** — attributed `annotationRef` and separators stay
+- **Empty `w:separator` / `w:continuationSeparator`** — attribute-free
+  CT_Empty note-adjacent separator glyphs import inside eligible mark, break,
+  and move revision bodies.
+- **Boundary** — attributed separators and attributed note refs stay
   fail-closed.
 
 Earlier releases stay on the product

@@ -31,13 +31,14 @@ Enough means embeddable format-native editors for host daily workflows—not
 full Traditional Office parity and not every R6 enterprise row. The ordered
 remaining backlog, surface exit criteria, and explicit out-of-scope list live
 in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
-Active tip through `0.146.0` admits attribute-free empty `w:annotationRef`
-CT_Empty glyphs inside whole-paragraph mark, paragraph-break, and text-move
-revision bodies (attributed `annotationRef` and separators stay fail-closed;
-and earlier attribute-free empty `w:endnoteRef` through `0.145.0`,
-attribute-free empty `w:footnoteRef` through `0.144.0`, omitted `w:ilvl` as
-OOXML default level `0` on numbering revisions through `0.143.0`,
-relationship-free attribute-only `w:tblpPr` priors in reviewable
+Active tip through `0.147.0` admits attribute-free empty `w:separator` and
+`w:continuationSeparator` CT_Empty glyphs inside whole-paragraph mark,
+paragraph-break, and text-move revision bodies (attributed separators and
+attributed note refs stay fail-closed; and earlier attribute-free empty
+`w:annotationRef` through `0.146.0`, attribute-free empty `w:endnoteRef`
+through `0.145.0`, attribute-free empty `w:footnoteRef` through `0.144.0`,
+omitted `w:ilvl` as OOXML default level `0` on numbering revisions through
+`0.143.0`, relationship-free attribute-only `w:tblpPr` priors in reviewable
 `w:tblPrChange` through `0.142.0`, opaque sibling `ST_NumberFormat` values in
 multi-level numbering `w:original` while the current `w:ilvl` stays common
 nfc 0–4 through `0.141.0`, one-level nested-table companion `w:move*Range*`
@@ -49,13 +50,14 @@ table companions through `0.136.0`, picture-only paragraph bodies through
 inside wrappers through `0.133.0`, safe relationship-bound external
 hyperlinks through `0.132.0`, cross-section companion move-range bookmarks
 through `0.131.0`, plus untracked text-only sibling runs beside
-whole-paragraph marks through `0.130.0`). The move-range family is largely
+whole-paragraph marks through `0.130.0`). The note-adjacent empty glyphs
+family is complete through `0.147.0`; the move-range family is largely
 complete; residual fail-closed edges are deeper nesting, a nested table
-beside the move, and SDT+nested-table combinations. Next R0 work is remaining
-note-adjacent separators and attributed note refs, broader bounded
-property-revision subsets, searchable/tagged PDF output, and continuous
-no-clobber fixtures—then R1 Writer daily leftovers, R2 calculation fidelity,
-R3 animation/media, and R4 PDF content editing.
+beside the move, and SDT+nested-table combinations. Next R0 work is
+attributed note refs, broader bounded property-revision subsets,
+searchable/tagged PDF output, and continuous no-clobber fixtures—then R1
+Writer daily leftovers, R2 calculation fidelity, R3 animation/media, and R4
+PDF content editing.
 
 ## Current Spreadsheet Milestone
 

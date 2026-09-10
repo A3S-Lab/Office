@@ -44,14 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.146.0)
+## What's new on `main` (0.147.0)
 
-Writer Phase 0 admits attribute-free empty `w:annotationRef` CT_Empty glyphs
-inside whole-paragraph mark, paragraph-break, and text-move revision bodies:
+Writer Phase 0 admits attribute-free empty `w:separator` and
+`w:continuationSeparator` CT_Empty glyphs inside whole-paragraph mark,
+paragraph-break, and text-move revision bodies:
 
-- Attribute-free empty `w:annotationRef` imports inside eligible mark, break,
-  and move revision bodies.
-- Attributed `annotationRef` and separators stay fail-closed.
+- Attribute-free empty `w:separator` and `w:continuationSeparator` import
+  inside eligible mark, break, and move revision bodies.
+- Attributed separators and attributed note refs stay fail-closed.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).
