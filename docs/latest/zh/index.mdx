@@ -42,14 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.137.0）
+## `main` 更新内容（0.138.0）
 
-Writer Phase 0 为 Compare 生成 companion 移动范围书签：
+Writer Phase 0 准入多单元格表格 companion 移动范围书签：
 
-- Compare / 同文档纯文本推断移动在导出时生成 companion `w:move*Range*` 书签，
-  并使用确定性的 `rangeId` / `rangeName`。
-- 跨分节与表格/复杂 Compare 移动仍失败闭合；多单元格、嵌套表与 SDT 导入
-  sandwich 留待后续切片。
+- 一张 `w:tbl` 恰好在一个 `w:tc` 内含受支持纯文本移动，且兄弟单元格仅含未跟踪
+  纯文本内容时，companion `w:move*Range*` 书签可在导入时准入。
+- 嵌套表、SDT、分节 sandwich，以及兄弟单元格中的跟踪修订仍失败闭合。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

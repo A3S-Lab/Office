@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(118);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.137.0');
+  await expect(cards).toHaveCount(119);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.138.0');
   await expect(cards.first()).toContainText(
-    'Compare 为纯文本移动生成 companion 移动范围书签',
+    'Writer 准入多单元格表格 companion 移动范围书签',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.138.0')).toContainText('多单元格表格 companion');
+  await expect(releaseCard('0.138.0')).toContainText(
+    '正文级 move*Range* Start/End 夹住多单元格表格时',
+  );
   await expect(releaseCard('0.137.0')).toContainText(
     '导出时生成 companion 书签',
   );

@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.138.0 - 2026-09-10
+
+### Writer
+
+- Companion `w:move*Range*` bookmarks that enclose a multi-cell table are now
+  admitted on import when one `w:tbl` holds a supported text-only move in
+  exactly one `w:tc` and sibling cells hold only untracked text-only content.
+  Nested tables, SDT, section sandwiches, and tracked revisions in sibling
+  cells stay fail-closed.
+
 ## 0.137.0 - 2026-09-10
 
 ### Writer

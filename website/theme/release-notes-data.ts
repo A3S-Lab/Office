@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.138.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits multi-cell table companion move-range bookmarks',
+      zh: 'Writer 准入多单元格表格 companion 移动范围书签',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: companion w:move*Range* bookmarks are admitted on import when one w:tbl encloses a supported text-only move in exactly one w:tc and sibling cells hold only untracked text-only content. Nested tables, SDT, section sandwiches, and tracked revisions in sibling cells stay fail-closed.',
+      zh: 'Phase 0 保真：一张 w:tbl 恰好在一个 w:tc 内含受支持纯文本移动，且兄弟单元格仅含未跟踪纯文本内容时，companion w:move*Range* 书签可在导入时准入。嵌套表、SDT、分节 sandwich，以及兄弟单元格中的跟踪修订仍失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Multi-cell table companions',
+          zh: '多单元格表格 companion',
+        },
+        detail: {
+          en: 'Body-level move*Range* Start/End around one multi-cell table keep matching bookmarks with the text move.',
+          zh: '正文级 move*Range* Start/End 夹住多单元格表格时，仍与文字移动保留匹配书签。',
+        },
+      },
+      {
+        title: {
+          en: 'Untracked sibling-cell text only',
+          zh: '兄弟单元格仅未跟踪纯文本',
+        },
+        detail: {
+          en: 'Sibling cells may hold only untracked text-only content beside the one supported move cell.',
+          zh: '兄弟单元格在唯一受支持移动单元格旁仅可含未跟踪纯文本内容。',
+        },
+      },
+      {
+        title: {
+          en: 'Nested, SDT, and tracked sibling paths stay fail-closed',
+          zh: '嵌套、SDT 与带修订兄弟路径仍失败闭合',
+        },
+        detail: {
+          en: 'Nested tables, SDT sandwiches, section sandwiches, and tracked revisions in sibling cells stay diagnostics-only.',
+          zh: '嵌套表、SDT sandwich、分节 sandwich，以及兄弟单元格中的跟踪修订仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.138.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.138.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.137.0',
     date: '2026-09-10',
     kind: 'improved',

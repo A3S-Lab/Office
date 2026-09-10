@@ -626,7 +626,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.move-range',
             'Move-range revisions',
-            `${moveRangeCompanions.unpairedMarkerCount} w:move*Range* marker(s) are not companions of a supported text-only moveFrom/moveTo pair. Multi-cell, nested-table, SDT, and section-sandwich ranges, plus unpaired markers, stay fail-closed.`,
+            `${moveRangeCompanions.unpairedMarkerCount} w:move*Range* marker(s) are not companions of a supported text-only moveFrom/moveTo pair. Nested-table, SDT, section-sandwich, and tracked or rich sibling-cell ranges, plus unpaired markers, stay fail-closed.`,
           ),
         );
       }

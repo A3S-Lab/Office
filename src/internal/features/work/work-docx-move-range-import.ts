@@ -24,6 +24,14 @@ const TABLE_CHROME = new Set([
   'tcPr',
 ]);
 const OFF_PATH_CONTENT = new Set(['p', MOVE_FROM, MOVE_TO, 'ins', 'del']);
+const TRACKED_REVISION_NAMES = new Set([MOVE_FROM, MOVE_TO, 'ins', 'del']);
+const BOOKMARK_START_ATTRIBUTES = new Set(['id', 'name']);
+const BOOKMARK_END_ATTRIBUTES = new Set(['id']);
+const RELATIONSHIP_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+  'http://purl.oclc.org/ooxml/officeDocument/relationships',
+  'http://schemas.openxmlformats.org/package/2006/relationships',
+]);
 
 export interface DocxMoveRangeCompanion {
   rangeId: string;
@@ -37,10 +45,11 @@ export interface DocxMoveRangeCompanion {
  * Word often wraps bounded `w:moveFrom`/`w:moveTo` pairs with matching
  * `w:move*Range*` bookmarks. Companion bookmarks are relationship-free and
  * uniquely sandwich each supported move wrapper in document order (immediate
- * siblings, cross-paragraph placement including across section breaks, or a
- * single-cell table with allowlisted table chrome). They may be stripped after
- * capture so the text move stays reviewable. Multi-cell, nested-table, SDT,
- * section-sandwich, and unpaired markers stay fail-closed. */
+ * siblings, cross-paragraph placement including across section breaks, or one
+ * table with the move in exactly one cell and allowlisted chrome / sibling
+ * cell text-only content). They may be stripped after capture so the text
+ * move stays reviewable. Nested-table, SDT, section-sandwich, tracked or
+ * rich sibling-cell content, and unpaired markers stay fail-closed. */
 export function companionDocxMoveRangeBookmarks(
   document: Document,
   movePairs: ReadonlyArray<{ from: Element; to: Element }>,
@@ -122,11 +131,11 @@ function companionForMovePair(
   ) {
     return null;
   }
-  // Each side's sandwich must stay move-only (extra siblings, multi-cell or
-  // nested tables, SDT, and section breaks inside one sandwich remain
-  // fail-closed via sandwichContainsOnlyMove). A single-cell table with
-  // allowlisted chrome is admitted. The destination may live in a later
-  // section than the source; that does not block companion admission.
+  // Each side's sandwich must stay move-only aside from allowlisted table
+  // chrome and sibling-cell text-only content (nested tables, SDT, section
+  // breaks, and tracked/rich sibling cells remain fail-closed via
+  // sandwichContainsOnlyMove). The destination may live in a later section
+  // than the source; that does not block companion admission.
   return { rangeId, rangeName, from, to, markers };
 }
 
@@ -173,10 +182,12 @@ function findSandwichMarkers(
 
 /**
  * Every element strictly between the range bookmarks must lie on the move
- * wrapper's ancestor chain, be the wrapper, be inside the wrapper, or be
- * allowlisted single-cell table chrome on that path. At most one `w:tbl` may
+ * wrapper's ancestor chain, be the wrapper, be inside the wrapper, be
+ * allowlisted table chrome on the move table, or be untracked text-only
+ * content in a sibling cell of that same table. At most one `w:tbl` may
  * appear, it must contain the move in exactly one `w:tc`, and `w:sdt` /
- * `w:sectPr` stay blocked. Off-path paragraphs and tracked ranges reject.
+ * `w:sectPr` stay blocked. Nested tables, tracked revisions, and rich
+ * sibling-cell content reject.
  */
 function sandwichContainsOnlyMove(
   start: Element,
@@ -184,7 +195,6 @@ function sandwichContainsOnlyMove(
   move: Element,
 ): boolean {
   const moveTable = nearestAncestorNamed(move, 'tbl');
-  const moveRow = nearestAncestorNamed(move, 'tr');
   const moveCell = nearestAncestorNamed(move, 'tc');
   if (moveTable && !moveCell) return false;
 
@@ -203,10 +213,13 @@ function sandwichContainsOnlyMove(
       continue;
     }
     if (element.contains(move)) continue;
-    if (OFF_PATH_CONTENT.has(element.localName)) return false;
-    if (isTableChromeOnMovePath(element, moveTable, moveRow, moveCell)) {
+    if (isTableChromeOnMovePath(element, moveTable)) {
       continue;
     }
+    if (isAdmittedSiblingTableContent(element, moveTable, moveCell)) {
+      continue;
+    }
+    if (OFF_PATH_CONTENT.has(element.localName)) return false;
     return false;
   }
   return sawMove;
@@ -227,17 +240,23 @@ function nearestAncestorNamed(
 function isTableChromeOnMovePath(
   element: Element,
   moveTable: Element | null,
-  moveRow: Element | null,
-  moveCell: Element | null,
 ): boolean {
   const chrome = nearestTableChrome(element);
   if (!chrome || chromeContainsTrackedRevision(chrome)) return false;
   const parent = chrome.parentElement;
   switch (chrome.localName) {
     case 'tcPr':
-      return moveCell !== null && parent === moveCell;
+      return (
+        moveTable !== null &&
+        parent?.localName === 'tc' &&
+        moveTable.contains(parent)
+      );
     case 'trPr':
-      return moveRow !== null && parent === moveRow;
+      return (
+        moveTable !== null &&
+        parent?.localName === 'tr' &&
+        moveTable.contains(parent)
+      );
     case 'tblPr':
     case 'tblGrid':
       return moveTable !== null && parent === moveTable;
@@ -250,6 +269,111 @@ function isTableChromeOnMovePath(
     default:
       return false;
   }
+}
+
+/**
+ * Sibling cells (and rows that do not contain the move) in the one admitted
+ * table may carry untracked text-only paragraphs, empty/`rPr`-only runs, and
+ * relationship-free bookmarks. Drawings, hyperlinks, nested containers, and
+ * tracked revisions stay fail-closed.
+ */
+function isAdmittedSiblingTableContent(
+  element: Element,
+  moveTable: Element | null,
+  moveCell: Element | null,
+): boolean {
+  if (!moveTable || !moveCell) return false;
+  if (!moveTable.contains(element) || moveCell.contains(element)) return false;
+  if (!DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')) {
+    return false;
+  }
+  if (TRACKED_REVISION_NAMES.has(element.localName)) return false;
+
+  switch (element.localName) {
+    case 'tr':
+    case 'tc':
+    case 'p':
+      return true;
+    case 'pPr':
+    case 'rPr':
+      return isWordprocessingOnlySubtree(element);
+    case 'r':
+      return isEmptyOrTextOnlyUntrackedRun(element);
+    case 't':
+      return element.children.length === 0;
+    case 'bookmarkStart':
+    case 'bookmarkEnd':
+      return isRelationshipFreeBookmarkMarker(element);
+    default:
+      return false;
+  }
+}
+
+function isEmptyOrTextOnlyUntrackedRun(run: Element): boolean {
+  const properties = Array.from(run.children).filter(
+    (child) => child.localName === 'rPr',
+  );
+  if (properties.length > 1) return false;
+  for (const child of Array.from(run.children)) {
+    if (!DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '')) {
+      return false;
+    }
+    if (TRACKED_REVISION_NAMES.has(child.localName)) return false;
+    if (child.localName === 'rPr') {
+      if (!isWordprocessingOnlySubtree(child)) return false;
+      continue;
+    }
+    if (child.localName === 't') {
+      if (child.children.length > 0) return false;
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
+
+function isWordprocessingOnlySubtree(element: Element): boolean {
+  return !Array.from(element.querySelectorAll('*')).some(
+    (descendant) =>
+      !DOCX_WORDPROCESSING_NAMESPACES.has(descendant.namespaceURI ?? ''),
+  );
+}
+
+function isRelationshipFreeBookmarkMarker(element: Element): boolean {
+  if (
+    !DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '') ||
+    element.children.length > 0
+  ) {
+    return false;
+  }
+  const allowed =
+    element.localName === 'bookmarkStart'
+      ? BOOKMARK_START_ATTRIBUTES
+      : element.localName === 'bookmarkEnd'
+        ? BOOKMARK_END_ATTRIBUTES
+        : null;
+  if (!allowed) return false;
+  let hasId = false;
+  let hasName = element.localName !== 'bookmarkStart';
+  for (const attribute of Array.from(element.attributes)) {
+    const namespace =
+      attribute.namespaceURI || xmlAttributeNamespace(element, attribute) || '';
+    if (RELATIONSHIP_NAMESPACES.has(namespace)) return false;
+    if (namespace && namespace !== element.namespaceURI) return false;
+    const localName = xmlAttributeLocalName(attribute);
+    if (!(namespace === element.namespaceURI || !namespace)) return false;
+    if (!allowed.has(localName)) return false;
+    const value = attribute.value.trim();
+    if (!value || value.length > 255 || /[\u0000-\u001f\u007f]/.test(value)) {
+      return false;
+    }
+    if (localName === 'id') {
+      if (!/^\+?\d{1,10}$/.test(value)) return false;
+      hasId = true;
+    }
+    if (localName === 'name') hasName = true;
+  }
+  return hasId && hasName;
 }
 
 function nearestTableChrome(element: Element): Element | null {

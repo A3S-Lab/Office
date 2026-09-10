@@ -371,14 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.137.0` generates Compare companion move-range bookmarks:
+Version `0.138.0` admits multi-cell table companion move-range bookmarks:
 
-- **Compare export companions** — same-document text-only inferred moves emit
-  companion `w:move*Range*` bookmarks on export with deterministic `rangeId` /
-  `rangeName`.
-- **Boundary** — section-crossing and table/complex Compare moves stay
-  fail-closed; multi-cell, nested-table, and SDT import sandwiches remain for a
-  later slice.
+- **Multi-cell table companions** — one `w:tbl` with a supported text-only move
+  in exactly one `w:tc` and untracked text-only sibling cells keeps matching
+  `w:move*Range*` bookmarks on import.
+- **Boundary** — nested tables, SDT, section sandwiches, and tracked revisions
+  in sibling cells stay fail-closed.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

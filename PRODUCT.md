@@ -31,18 +31,20 @@ Enough means embeddable format-native editors for host daily workflows—not
 full Traditional Office parity and not every R6 enterprise row. The ordered
 remaining backlog, surface exit criteria, and explicit out-of-scope list live
 in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
-Active tip through `0.137.0` generates companion `w:move*Range*` bookmarks on
-export for Compare / same-document text-only inferred moves (and earlier
-admitted single-cell table companions through `0.136.0`, picture-only paragraph
-bodies through `0.135.0`, untracked picture siblings through `0.134.0`, inline
-pictures inside wrappers through `0.133.0`, safe relationship-bound external
-hyperlinks through `0.132.0`, cross-section companion move-range bookmarks
-through `0.131.0`, plus untracked text-only sibling runs beside whole-paragraph
-marks through `0.130.0`). Next R0 work is remaining multi-cell / nested / SDT
-move-range sandwiches, numbering edges, bounded property-revision subsets,
-searchable/tagged PDF output, and continuous no-clobber fixtures—then R1 Writer
-daily leftovers, R2 calculation fidelity, R3 animation/media, and R4 PDF
-content editing.
+Active tip through `0.138.0` admits multi-cell table-spanning companion
+`w:move*Range*` bookmarks on import when one `w:tbl` encloses a supported
+text-only move in exactly one `w:tc` and sibling cells hold only untracked
+text-only content (and earlier Compare / same-document text-only move-range
+generation through `0.137.0`, single-cell table companions through `0.136.0`,
+picture-only paragraph bodies through `0.135.0`, untracked picture siblings
+through `0.134.0`, inline pictures inside wrappers through `0.133.0`, safe
+relationship-bound external hyperlinks through `0.132.0`, cross-section
+companion move-range bookmarks through `0.131.0`, plus untracked text-only
+sibling runs beside whole-paragraph marks through `0.130.0`). Next R0 work is
+remaining nested / SDT move-range sandwiches, numbering edges, bounded
+property-revision subsets, searchable/tagged PDF output, and continuous
+no-clobber fixtures—then R1 Writer daily leftovers, R2 calculation fidelity,
+R3 animation/media, and R4 PDF content editing.
 
 ## Current Spreadsheet Milestone
 
