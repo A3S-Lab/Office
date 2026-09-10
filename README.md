@@ -371,14 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.128.0` admits empty page-number and date-field glyphs in revision run bodies:
+Version `0.129.0` admits empty short date-field glyphs in revision run bodies:
 
-- **Page-number and date-field admission** — eligible paragraph-break merge/split,
+- **Short date-field admission** — eligible paragraph-break merge/split,
   whole-paragraph mark, and text-move revision bodies now admit relationship-free
-  empty `w:pgNum`, `w:dayLong`, `w:monthLong`, and `w:yearLong` glyphs alongside
+  empty `w:dayShort`, `w:monthShort`, and `w:yearShort` glyphs alongside
   the existing soft-break / tab / carriage-return / last-rendered page break /
-  hyphen / hyperlink / bookmark set, with reviewable accept/reject.
-- **Boundary** — attributed or non-empty page-number and date-field glyphs,
+  page-number / long date-field / hyphen / hyperlink / bookmark set, with
+  reviewable accept/reject.
+- **Boundary** — attributed or non-empty short date-field glyphs,
   relationship-bound or spoofed links/bookmarks, drawings, and tracked wrappers
   stay fail-closed diagnostics.
 

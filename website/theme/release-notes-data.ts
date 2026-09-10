@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.129.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits empty short date-field glyphs in revision bodies',
+      zh: 'Writer 修订正文准入空短日期字段',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: eligible paragraph-break merge/split, whole-paragraph mark, and text-move revision bodies now admit relationship-free empty w:dayShort, w:monthShort, and w:yearShort glyphs alongside soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and long date-field glyphs, hyphens, hyperlinks, and bookmarks. Attributed or non-empty short date-field glyphs stay fail-closed.',
+      zh: 'Phase 0 保真：可审阅段落分隔合并/拆分、整段段落标记与文字移动修订正文现可纳入无关系空 w:dayShort / w:monthShort / w:yearShort，以及软换行/制表符/回车符/最后渲染分页符/页码与长日期字段/连字符/超链接/书签。带属性或非空短日期字段字形保持失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Empty short date-field glyphs in revision bodies',
+          zh: '修订正文中的空短日期字段',
+        },
+        detail: {
+          en: 'Empty relationship-free w:dayShort, w:monthShort, and w:yearShort glyphs are admitted across paragraph-break, paragraph-mark, and move bodies.',
+          zh: '无关系空 w:dayShort / w:monthShort / w:yearShort 字形可进入段落分隔、段落标记与移动修订正文。',
+        },
+      },
+      {
+        title: {
+          en: 'Shared admission with page-number and long date fields',
+          zh: '与页码与长日期字段共享准入',
+        },
+        detail: {
+          en: 'Short date-field glyphs join the existing soft-break, tab, carriage-return, last-rendered page break, page-number, long date-field, hyphen, hyperlink, and bookmark admission set.',
+          zh: '短日期字段字形并入既有软换行、制表符、回车符、最后渲染分页符、页码、长日期字段、连字符、超链接与书签准入集合。',
+        },
+      },
+      {
+        title: {
+          en: 'Attributed short date-field glyphs stay fail-closed',
+          zh: '带属性短日期字段保持失败闭合',
+        },
+        detail: {
+          en: 'Attributed or non-empty short date-field glyphs and relationship-bound shapes stay diagnostics-only.',
+          zh: '带属性或非空短日期字段字形与有关系形态仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.129.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.129.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.128.0',
     date: '2026-09-10',
     kind: 'improved',
