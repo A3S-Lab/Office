@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:trPrChange` priors that include `w:tblCellSpacing`
+  (`CT_TblWidth`: `w:w` + `w:type` via the shared preferred-width model) are now
+  reviewable as `row-formatting` with accept/reject, live track-changes, and
+  native export (including current-row `w:tblCellSpacing` on DOCX write).
+  Malformed, unknown-type, or non-numeric widths stay fail-closed; opaque row
+  fixtures moved off `tblCellSpacing` to `ins`. CT_TrPrBase property coverage is
+  complete; remaining `w:ins` / `w:del` nested `CT_TrackChange` identity stays
+  opaque (same boundary as cell `cellIns` / `cellDel`).
+
 ## 0.108.0 - 2026-09-10
 
 ### Writer

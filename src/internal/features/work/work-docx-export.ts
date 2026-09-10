@@ -712,6 +712,7 @@ export async function createDocxBlob(
     noteContext.rowFormattingChangePatches.widthAfter,
     noteContext.rowFormattingChangePatches.cnfStyles,
     noteContext.rowFormattingChangePatches.divIds,
+    noteContext.rowFormattingChangePatches.tblCellSpacings,
   );
   const cellFormattingChangesPatched = await patchDocxCellFormattingChanges(
     rowFormattingChangesPatched,

@@ -24,8 +24,8 @@ interface DocumentRowFormattingTrackingOptions {
 
 /**
  * When track-changes is on, row cantSplit / repeatHeader / height / hidden /
- * alignment / gridBefore / gridAfter / widthBefore / widthAfter / cnfStyle / divId edits
- * become reviewable `row-formatting` revisions.
+ * alignment / gridBefore / gridAfter / widthBefore / widthAfter / cnfStyle / divId /
+ * tblCellSpacing edits become reviewable `row-formatting` revisions.
  */
 export function trackDocumentRowFormattingTransaction(
   transaction: Transaction,
@@ -75,6 +75,7 @@ function rowFormatting(node: ProseMirrorNode): {
   widthAfter?: DocumentTablePreferredWidth;
   cnfStyle?: string;
   divId?: number;
+  tblCellSpacing?: DocumentTablePreferredWidth;
 } | null {
   const height = normalizeDocumentTableRowHeight(node.attrs.rowHeight);
   const rule =
@@ -110,6 +111,12 @@ function rowFormatting(node: ProseMirrorNode): {
   };
   const cnfStyle = normalizeDocumentRowCnfStyle(node.attrs.cnfStyle);
   const divId = normalizeDocumentRowDivId(node.attrs.divId);
+  const tblCellSpacing = normalizeDocumentTablePreferredWidth(
+    node.attrs.tblCellSpacing,
+  ) ?? {
+    type: 'auto' as const,
+    value: null,
+  };
   return normalizeDocumentRowFormattingSnapshot({
     cantSplit:
       typeof node.attrs.cantSplit === 'boolean' ? node.attrs.cantSplit : false,
@@ -123,6 +130,7 @@ function rowFormatting(node: ProseMirrorNode): {
     gridAfter,
     widthBefore,
     widthAfter,
+    tblCellSpacing,
     ...(cnfStyle ? { cnfStyle } : {}),
     ...(divId !== null ? { divId } : {}),
     ...(height !== null && rule ? { height: { value: height, rule } } : {}),
@@ -147,6 +155,7 @@ function onlyRowFormattingChanged(
   delete beforeAttrs.widthAfter;
   delete beforeAttrs.cnfStyle;
   delete beforeAttrs.divId;
+  delete beforeAttrs.tblCellSpacing;
   delete beforeAttrs.rowChangeKind;
   delete beforeAttrs.rowChangeId;
   delete beforeAttrs.rowChangeAuthor;
@@ -165,6 +174,7 @@ function onlyRowFormattingChanged(
   delete afterAttrs.widthAfter;
   delete afterAttrs.cnfStyle;
   delete afterAttrs.divId;
+  delete afterAttrs.tblCellSpacing;
   delete afterAttrs.rowChangeKind;
   delete afterAttrs.rowChangeId;
   delete afterAttrs.rowChangeAuthor;

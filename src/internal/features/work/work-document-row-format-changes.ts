@@ -22,7 +22,7 @@ export const DOCUMENT_ROW_CHANGE_ATTRIBUTES = [
 /**
  * Prior snapshot for reviewable row-property revisions.
  * At least one of cantSplit, repeatHeader, height, hidden, alignment,
- * gridBefore, gridAfter, widthBefore, widthAfter, cnfStyle, or divId must be present.
+ * gridBefore, gridAfter, widthBefore, widthAfter, cnfStyle, divId, or tblCellSpacing must be present.
  */
 export interface DocumentRowFormattingSnapshot {
   cantSplit?: boolean;
@@ -36,6 +36,7 @@ export interface DocumentRowFormattingSnapshot {
   widthAfter?: DocumentTablePreferredWidth;
   cnfStyle?: string;
   divId?: number;
+  tblCellSpacing?: DocumentTablePreferredWidth;
 }
 
 export interface DocumentRowFormattingHeight {
@@ -57,11 +58,12 @@ export function serializeDocumentRowFormatting(attributes: {
   widthAfter?: unknown;
   cnfStyle?: unknown;
   divId?: unknown;
+  tblCellSpacing?: unknown;
 }): string {
   const snapshot = normalizeDocumentRowFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, gridBefore, gridAfter, widthBefore, widthAfter, cnfStyle, or divId.',
+      'Row-formatting snapshot requires cantSplit, repeatHeader, height, hidden, alignment, gridBefore, gridAfter, widthBefore, widthAfter, cnfStyle, divId, or tblCellSpacing.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -102,7 +104,8 @@ export function parseDocumentRowFormatting(
         key !== 'widthBefore' &&
         key !== 'widthAfter' &&
         key !== 'cnfStyle' &&
-        key !== 'divId',
+        key !== 'divId' &&
+        key !== 'tblCellSpacing',
     )
   ) {
     return null;
@@ -124,6 +127,7 @@ export function normalizeDocumentRowFormattingSnapshot(attributes: {
   widthAfter?: unknown;
   cnfStyle?: unknown;
   divId?: unknown;
+  tblCellSpacing?: unknown;
 }): DocumentRowFormattingSnapshot | null {
   const snapshot: DocumentRowFormattingSnapshot = {};
   if ('cantSplit' in attributes && attributes.cantSplit !== undefined) {
@@ -182,6 +186,13 @@ export function normalizeDocumentRowFormattingSnapshot(attributes: {
     if (divId === null) return null;
     snapshot.divId = divId;
   }
+  if ('tblCellSpacing' in attributes && attributes.tblCellSpacing !== undefined) {
+    const tblCellSpacing = normalizeDocumentTablePreferredWidth(
+      attributes.tblCellSpacing,
+    );
+    if (!tblCellSpacing) return null;
+    snapshot.tblCellSpacing = tblCellSpacing;
+  }
   return snapshot.cantSplit !== undefined ||
     snapshot.repeatHeader !== undefined ||
     snapshot.height !== undefined ||
@@ -192,7 +203,8 @@ export function normalizeDocumentRowFormattingSnapshot(attributes: {
     snapshot.widthBefore !== undefined ||
     snapshot.widthAfter !== undefined ||
     snapshot.cnfStyle !== undefined ||
-    snapshot.divId !== undefined
+    snapshot.divId !== undefined ||
+    snapshot.tblCellSpacing !== undefined
     ? snapshot
     : null;
 }
@@ -247,6 +259,9 @@ export function restoredDocumentRowAttributes(
       ? { cnfStyle: formatting.cnfStyle }
       : {}),
     ...(formatting.divId !== undefined ? { divId: formatting.divId } : {}),
+    ...(formatting.tblCellSpacing !== undefined
+      ? { tblCellSpacing: formatting.tblCellSpacing }
+      : {}),
   });
 }
 
@@ -298,6 +313,12 @@ function orderedSnapshot(
   }
   if (snapshot.cnfStyle !== undefined) ordered.cnfStyle = snapshot.cnfStyle;
   if (snapshot.divId !== undefined) ordered.divId = snapshot.divId;
+  if (snapshot.tblCellSpacing) {
+    ordered.tblCellSpacing = {
+      type: snapshot.tblCellSpacing.type,
+      value: snapshot.tblCellSpacing.value,
+    };
+  }
   return ordered;
 }
 

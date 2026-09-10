@@ -34,6 +34,7 @@ export interface ImportedDocxTableRowMarker {
   widthAfter?: { type: 'auto' | 'percent' | 'pixels'; value: number | null };
   cnfStyle?: string;
   divId?: number;
+  tblCellSpacing?: { type: 'auto' | 'percent' | 'pixels'; value: number | null };
   rowId?: string;
   rowHeight?: number;
   rowHeightRule?: 'atLeast' | 'exact';
@@ -131,6 +132,12 @@ export function markDocxTableRows(
       ? parseDocxRowDivIdValue(attribute(divIdElement, 'val'))
       : null;
     const divId = divIdParsed ?? undefined;
+    const tblCellSpacingElement = properties
+      ? directChild(properties, 'tblCellSpacing')
+      : undefined;
+    const tblCellSpacing = tblCellSpacingElement
+      ? importedRowPreferredWidth(tblCellSpacingElement)
+      : undefined;
     const height = properties ? directChild(properties, 'trHeight') : undefined;
     const rowHeight = height
       ? twipsToPixels(Number(attribute(height, 'val')))
@@ -157,6 +164,7 @@ export function markDocxTableRows(
       widthAfter === undefined &&
       cnfStyle === undefined &&
       divId === undefined &&
+      tblCellSpacing === undefined &&
       rowHeight === null &&
       !uniqueIdentity &&
       !propertyRevisionOmml &&
@@ -180,6 +188,7 @@ export function markDocxTableRows(
       ...(widthAfter !== undefined ? { widthAfter } : {}),
       ...(cnfStyle !== undefined ? { cnfStyle } : {}),
       ...(divId !== undefined ? { divId } : {}),
+      ...(tblCellSpacing !== undefined ? { tblCellSpacing } : {}),
       ...(uniqueIdentity ?? {}),
       ...(rowHeight !== null ? { rowHeight } : {}),
       ...(rowHeight !== null && rowHeightRule ? { rowHeightRule } : {}),
@@ -266,6 +275,18 @@ export function applyImportedDocxTableRowMarkers(
         }
         if (properties.divId !== undefined) {
           row.dataset.officeRowDivId = String(properties.divId);
+        }
+        if (properties.tblCellSpacing) {
+          row.dataset.officeRowTblCellSpacingType =
+            properties.tblCellSpacing.type;
+          if (
+            properties.tblCellSpacing.type !== 'auto' &&
+            properties.tblCellSpacing.value !== null
+          ) {
+            row.dataset.officeRowTblCellSpacing = String(
+              properties.tblCellSpacing.value,
+            );
+          }
         }
         if (properties.rowHeight !== undefined) {
           row.dataset.officeRowHeight = String(properties.rowHeight);

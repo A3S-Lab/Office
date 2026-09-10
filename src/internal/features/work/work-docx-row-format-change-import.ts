@@ -37,6 +37,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'wAfter',
   'cnfStyle',
   'divId',
+  'tblCellSpacing',
 ]);
 const PIXELS_PER_TWIP = 96 / 1440;
 
@@ -50,7 +51,8 @@ export interface SupportedDocxRowFormattingChange {
 /**
  * Relationship-free `w:trPrChange` whose prior snapshot contains only
  * `w:cantSplit`, `w:tblHeader`, `w:trHeight`, `w:hidden`, `w:jc`,
- * `w:gridBefore`, `w:gridAfter`, `w:wBefore`, `w:wAfter`, `w:cnfStyle`, and/or `w:divId`.
+ * `w:gridBefore`, `w:gridAfter`, `w:wBefore`, `w:wAfter`, `w:cnfStyle`, `w:divId`,
+ * and/or `w:tblCellSpacing`.
  * Broader row property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxRowFormattingChange(change: Element): boolean {
@@ -142,6 +144,7 @@ function supportedRowFormattingChange(
     widthAfter?: DocumentTablePreferredWidth;
     cnfStyle?: string;
     divId?: number;
+    tblCellSpacing?: DocumentTablePreferredWidth;
   } = {};
   for (const child of children) {
     if (child.localName === 'cantSplit') {
@@ -208,6 +211,12 @@ function supportedRowFormattingChange(
       const divId = parseDocxRowDivIdValue(attribute(child, 'val'));
       if (divId === null) return null;
       snapshot.divId = divId;
+      continue;
+    }
+    if (child.localName === 'tblCellSpacing') {
+      const tblCellSpacing = importedPreferredWidth(child);
+      if (!tblCellSpacing) return null;
+      snapshot.tblCellSpacing = tblCellSpacing;
     }
   }
   return {

@@ -186,6 +186,28 @@ export const DocumentTableRow = TableRow.extend({
             : { 'data-office-row-div-id': String(value) };
         },
       },
+      tblCellSpacing: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          preferredWidthFromRowDataset(
+            element.dataset,
+            'officeRowTblCellSpacingType',
+            'officeRowTblCellSpacing',
+          ),
+        renderHTML: (attributes: Record<string, unknown>) => {
+          const width = normalizeDocumentTablePreferredWidth(
+            attributes.tblCellSpacing,
+          );
+          if (!width) return {};
+          if (width.type === 'auto') {
+            return { 'data-office-row-tbl-cell-spacing-type': 'auto' };
+          }
+          return {
+            'data-office-row-tbl-cell-spacing-type': width.type,
+            'data-office-row-tbl-cell-spacing': String(width.value),
+          };
+        },
+      },
       rowHeight: {
         default: null,
         parseHTML: (element: HTMLElement) =>

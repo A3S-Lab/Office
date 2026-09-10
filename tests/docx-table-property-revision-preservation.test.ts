@@ -188,16 +188,15 @@ describe('DOCX table property-revision preservation', () => {
     const cantSplit = document.createElementNS(WORD_NAMESPACE, 'w:cantSplit');
     const header = document.createElementNS(WORD_NAMESPACE, 'w:tblHeader');
     // Extra property keeps this on the opaque path; cantSplit/tblHeader/trHeight/
-    // hidden/jc/gridBefore/gridAfter/wBefore/wAfter/cnfStyle/divId alone are reviewable as row-formatting.
+    // hidden/jc/gridBefore/gridAfter/wBefore/wAfter/cnfStyle/divId/tblCellSpacing alone
+    // are reviewable as row-formatting. CT_TrPrBase is exhausted; keep w:ins (row
+    // CT_TrackChange) as the relationship-free opaque keeper.
     const height = document.createElementNS(WORD_NAMESPACE, 'w:trHeight');
     height.setAttributeNS(WORD_NAMESPACE, 'w:val', '240');
-    const tblCellSpacing = document.createElementNS(
-      WORD_NAMESPACE,
-      'w:tblCellSpacing',
-    );
-    tblCellSpacing.setAttributeNS(WORD_NAMESPACE, 'w:w', '20');
-    tblCellSpacing.setAttributeNS(WORD_NAMESPACE, 'w:type', 'dxa');
-    prior.append(cantSplit, header, height, tblCellSpacing);
+    const ins = document.createElementNS(WORD_NAMESPACE, 'w:ins');
+    ins.setAttributeNS(WORD_NAMESPACE, 'w:id', '99');
+    ins.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Opaque');
+    prior.append(cantSplit, header, height, ins);
     change.append(prior);
     properties.append(change);
     archive.file(
@@ -256,7 +255,7 @@ describe('DOCX table property-revision preservation', () => {
       directChild(directChild(exportedChange!, 'trPr'), 'trHeight'),
     ).toBeTruthy();
     expect(
-      directChild(directChild(exportedChange!, 'trPr'), 'tblCellSpacing'),
+      directChild(directChild(exportedChange!, 'trPr'), 'ins'),
     ).toBeTruthy();
   });
 

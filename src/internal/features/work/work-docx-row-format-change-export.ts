@@ -33,6 +33,7 @@ export class DocxRowFormattingChangePatchCollector {
   readonly widthAfter: Array<DocumentTablePreferredWidth | null> = [];
   readonly cnfStyles: Array<string | null> = [];
   readonly divIds: Array<number | null> = [];
+  readonly tblCellSpacings: Array<DocumentTablePreferredWidth | null> = [];
 
   record(element: HTMLTableRowElement, id: number): void {
     this.hidden.push(element.dataset.officeRowHidden === 'true');
@@ -86,6 +87,13 @@ export class DocxRowFormattingChangePatchCollector {
     this.divIds.push(
       normalizeDocumentRowDivId(element.dataset.officeRowDivId),
     );
+    this.tblCellSpacings.push(
+      preferredWidthFromRowElement(
+        element,
+        'officeRowTblCellSpacingType',
+        'officeRowTblCellSpacing',
+      ),
+    );
     if (
       element.dataset.changeKind !== 'row-formatting' ||
       element.getAttribute('data-document-change') !== 'true'
@@ -119,6 +127,7 @@ export async function patchDocxRowFormattingChanges(
   widthAfter: readonly (DocumentTablePreferredWidth | null)[] = [],
   cnfStyles: readonly (string | null)[] = [],
   divIds: readonly (number | null)[] = [],
+  tblCellSpacings: readonly (DocumentTablePreferredWidth | null)[] = [],
 ): Promise<ArrayBuffer> {
   if (
     !patches.some(Boolean) &&
@@ -129,7 +138,8 @@ export async function patchDocxRowFormattingChanges(
     !widthBefore.some((value) => value !== null) &&
     !widthAfter.some((value) => value !== null) &&
     !cnfStyles.some((value) => value !== null) &&
-    !divIds.some((value) => value !== null)
+    !divIds.some((value) => value !== null) &&
+    !tblCellSpacings.some((value) => value !== null)
   ) {
     return buffer;
   }
@@ -161,6 +171,7 @@ export async function patchDocxRowFormattingChanges(
     const rowWidthAfter = widthAfter[index] ?? null;
     const rowCnfStyle = cnfStyles[index] ?? null;
     const rowDivId = divIds[index] ?? null;
+    const rowTblCellSpacing = tblCellSpacings[index] ?? null;
     index += 1;
     if (patch) {
       setRowFormattingChange(document, row, patch);
@@ -196,6 +207,10 @@ export async function patchDocxRowFormattingChanges(
     }
     if (rowDivId !== null) {
       setRowDivId(document, row, rowDivId);
+      changed = true;
+    }
+    if (rowTblCellSpacing) {
+      setRowPreferredWidth(document, row, 'tblCellSpacing', rowTblCellSpacing);
       changed = true;
     }
   }
@@ -398,6 +413,15 @@ function setRowFormattingChange(
     divId.setAttributeNS(WORD_NAMESPACE, 'w:val', String(formatting.divId));
     prior.append(divId);
   }
+  if (formatting.tblCellSpacing !== undefined) {
+    prior.append(
+      createPreferredWidthElement(
+        document,
+        'tblCellSpacing',
+        formatting.tblCellSpacing,
+      ),
+    );
+  }
   change.append(prior);
   properties.append(change);
 }
@@ -449,7 +473,7 @@ function setRowDivId(document: Document, row: Element, divId: number): void {
 function setRowPreferredWidth(
   document: Document,
   row: Element,
-  localName: 'wBefore' | 'wAfter',
+  localName: 'wBefore' | 'wAfter' | 'tblCellSpacing',
   width: DocumentTablePreferredWidth,
 ): void {
   let properties = directChild(row, 'trPr');
@@ -468,7 +492,7 @@ function setRowPreferredWidth(
 
 function createPreferredWidthElement(
   document: Document,
-  localName: 'wBefore' | 'wAfter',
+  localName: 'wBefore' | 'wAfter' | 'tblCellSpacing',
   width: DocumentTablePreferredWidth,
 ): Element {
   const element = document.createElementNS(WORD_NAMESPACE, `w:${localName}`);
