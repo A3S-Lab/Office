@@ -371,14 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.145.0` admits attribute-free empty `w:endnoteRef` CT_Empty
+Version `0.146.0` admits attribute-free empty `w:annotationRef` CT_Empty
 glyphs inside whole-paragraph mark, paragraph-break, and text-move revision
 bodies:
 
-- **Empty `w:endnoteRef`** — attribute-free CT_Empty endnote reference
-  glyphs import inside eligible mark, break, and move revision bodies.
-- **Boundary** — attributed `endnoteRef`, `endnoteReference` with id,
-  `annotationRef`, and separators stay fail-closed.
+- **Empty `w:annotationRef`** — attribute-free CT_Empty annotation
+  reference glyphs import inside eligible mark, break, and move revision
+  bodies.
+- **Boundary** — attributed `annotationRef` and separators stay
+  fail-closed.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

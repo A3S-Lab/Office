@@ -496,7 +496,7 @@ function isolatedParagraphBreakMarkChange(
  * Paragraph-break merge/split requires untracked text-only bodies on both the
  * marked paragraph and its eligible neighbor. Soft breaks, tabs, carriage
  * returns, last-rendered page breaks, page-number and date-field glyphs,
- * footnoteRef and endnoteRef glyphs, non-breaking and soft hyphens, empty/`rPr`-only runs,
+ * footnoteRef, endnoteRef, and annotationRef glyphs, non-breaking and soft hyphens, empty/`rPr`-only runs,
  * relationship-free internal hyperlinks, safe relationship-bound external
  * hyperlinks, relationship-free bookmarks, and supported inline DrawingML
  * pictures match the whole-paragraph mark admission set (including picture-only
@@ -1049,6 +1049,7 @@ const ADMITTED_EMPTY_RUN_GLYPHS = new Set([
   'yearShort',
   'footnoteRef',
   'endnoteRef',
+  'annotationRef',
 ]);
 
 function isAdmittedEmptyRunGlyph(element: Element): boolean {

@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.146.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits empty annotationRef glyphs in revision bodies',
+      zh: 'Writer 修订正文准入空 annotationRef 字形',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: whole-paragraph mark, paragraph-break, and text-move revision bodies now admit attribute-free empty w:annotationRef CT_Empty glyphs. Attributed annotationRef and separators stay fail-closed.',
+      zh: 'Phase 0 保真：整段段落标记、段落分隔与文字移动修订正文现准入无属性空 w:annotationRef CT_Empty 字形。带属性 annotationRef 与分隔符仍失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Empty annotationRef in revision bodies',
+          zh: '修订正文中的空 annotationRef',
+        },
+        detail: {
+          en: 'Attribute-free empty w:annotationRef glyphs are admitted across whole-paragraph mark, paragraph-break, and text-move bodies.',
+          zh: '无属性空 w:annotationRef 字形可进入整段段落标记、段落分隔与文字移动修订正文。',
+        },
+      },
+      {
+        title: {
+          en: 'Shared mark, break, and move admission',
+          zh: '标记、分隔与移动共享准入',
+        },
+        detail: {
+          en: 'The glyph joins the existing attribute-free CT_Empty admission set used by soft breaks, tabs, hyphens, field glyphs, footnoteRef, and endnoteRef.',
+          zh: '该字形并入既有软换行、制表符、连字符、域字形、footnoteRef 与 endnoteRef 所用的无属性 CT_Empty 准入集合。',
+        },
+      },
+      {
+        title: {
+          en: 'Attributed annotationRef and separators stay fail-closed',
+          zh: '带属性 annotationRef 与分隔符保持失败闭合',
+        },
+        detail: {
+          en: 'Attributed annotationRef and separators remain diagnostics-only.',
+          zh: '带属性 annotationRef 与分隔符仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.146.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.146.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.145.0',
     date: '2026-09-11',
     kind: 'improved',

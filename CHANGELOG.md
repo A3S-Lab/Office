@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.146.0 - 2026-09-11
+
+### Writer
+
+- Attribute-free empty `w:annotationRef` CT_Empty glyphs are now admitted
+  inside whole-paragraph mark, paragraph-break, and text-move revision
+  bodies. Attributed `annotationRef` and separators stay fail-closed.
+
 ## 0.145.0 - 2026-09-11
 
 ### Writer

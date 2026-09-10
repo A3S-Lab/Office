@@ -488,6 +488,34 @@ describe('DOCX paragraph-break merge/split revisions', () => {
     ]);
   });
 
+  test('admits empty annotationRef glyphs in paragraph-break bodies', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:del w:id="38" w:author="Ada" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:r>
+              <w:t>Alpha</w:t><w:annotationRef/><w:t>mark</w:t>
+            </w:r>
+          </w:p>
+          <w:p>
+            <w:r><w:t>Bravo</w:t><w:annotationRef/><w:t>next</w:t></w:r>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const mark = descendants(document, 'del')[0];
+    expect(mark && isIsolatedDocxParagraphBreakMarkChange(mark)).toBe(true);
+    expect(markDocxParagraphBreakChanges(document).paragraphs).toEqual([
+      expect.objectContaining({
+        kind: 'merge',
+        author: 'Ada',
+      }),
+    ]);
+  });
+
   test('admits relationship-bound external hyperlinks in paragraph-break bodies', () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">

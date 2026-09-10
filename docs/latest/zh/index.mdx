@@ -42,14 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.145.0）
+## `main` 更新内容（0.146.0）
 
 Writer Phase 0 准入整段段落标记、段落分隔与文字移动修订正文中的无属性空
-`w:endnoteRef` CT_Empty 字形：
+`w:annotationRef` CT_Empty 字形：
 
-- 无属性空 `w:endnoteRef` 可进入合格的标记、分隔与移动修订正文。
-- 带属性 `endnoteRef`、带 id 的 `endnoteReference`、`annotationRef` 与
-  分隔符仍失败闭合。
+- 无属性空 `w:annotationRef` 可进入合格的标记、分隔与移动修订正文。
+- 带属性 `annotationRef` 与分隔符仍失败闭合。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

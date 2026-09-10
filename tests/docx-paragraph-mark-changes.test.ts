@@ -1009,6 +1009,49 @@ describe('DOCX paragraph-mark revisions', () => {
     expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([]);
   });
 
+  test('admits empty annotationRef glyphs inside whole-paragraph mark revisions', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:pPr><w:rPr>
+          <w:ins w:id="77" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+        </w:rPr></w:pPr>
+        <w:ins w:id="78" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
+          <w:r>
+            <w:t>Left</w:t><w:annotationRef/><w:t>Right</w:t>
+          </w:r>
+        </w:ins>
+      </w:p>
+    `);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(true);
+    expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([
+      expect.objectContaining({
+        id: 'docx-paragraph-mark-change-77',
+        kind: 'insertion',
+      }),
+    ]);
+  });
+
+  test('rejects attributed annotationRef glyphs inside whole-paragraph mark revisions', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:pPr><w:rPr>
+          <w:ins w:id="79" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+        </w:rPr></w:pPr>
+        <w:ins w:id="80" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
+          <w:r><w:t>Left</w:t><w:annotationRef w:val="1"/><w:t>Right</w:t></w:r>
+        </w:ins>
+      </w:p>
+    `);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(false);
+    expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([]);
+  });
+
   test('admits relationship-free internal hyperlinks inside whole-paragraph mark revisions', () => {
     const document = wordXml(`
       <w:p>

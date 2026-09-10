@@ -517,6 +517,7 @@ const ADMITTED_EMPTY_RUN_GLYPHS = new Set([
   'yearShort',
   'footnoteRef',
   'endnoteRef',
+  'annotationRef',
 ]);
 
 function isAdmittedEmptyRunGlyph(element: Element): boolean {

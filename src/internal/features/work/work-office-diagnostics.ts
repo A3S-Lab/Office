@@ -593,7 +593,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.paragraph-mark',
             'Paragraph-mark revisions',
-            `${supportedParagraphMarkRevisionCount} bounded paragraph-mark insertion/deletion revision(s) preserve author, date, and whole-paragraph accept/reject semantics through Work and native DOCX w:pPr/w:rPr/w:ins or w:del round trips, including multi-wrapper text-only bodies that share the mark author and date plus soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and date-field glyphs, footnoteRef and endnoteRef glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, safe relationship-bound external hyperlinks, relationship-free bookmarks, supported inline DrawingML pictures (inside wrappers, as untracked siblings, and picture-only bodies), and untracked text-only sibling runs (including empty/rPr-only).`,
+            `${supportedParagraphMarkRevisionCount} bounded paragraph-mark insertion/deletion revision(s) preserve author, date, and whole-paragraph accept/reject semantics through Work and native DOCX w:pPr/w:rPr/w:ins or w:del round trips, including multi-wrapper text-only bodies that share the mark author and date plus soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and date-field glyphs, footnoteRef, endnoteRef, and annotationRef glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, safe relationship-bound external hyperlinks, relationship-free bookmarks, supported inline DrawingML pictures (inside wrappers, as untracked siblings, and picture-only bodies), and untracked text-only sibling runs (including empty/rPr-only).`,
             'info',
           ),
         );
@@ -603,7 +603,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.paragraph-break',
             'Paragraph-break revisions',
-            `${isolatedParagraphBreakMarkRevisionCount} isolated paragraph-mark revision(s) look like paragraph-break merge or split candidates. Eligible text-only neighbor pairs (including soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and date-field glyphs, footnoteRef and endnoteRef glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, safe relationship-bound external hyperlinks, relationship-free bookmarks, supported inline DrawingML pictures including picture-only bodies, and empty/rPr-only runs) become reviewable paragraph-break changes; others stay fail-closed diagnostics instead of whole-paragraph guesses.`,
+            `${isolatedParagraphBreakMarkRevisionCount} isolated paragraph-mark revision(s) look like paragraph-break merge or split candidates. Eligible text-only neighbor pairs (including soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and date-field glyphs, footnoteRef, endnoteRef, and annotationRef glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, safe relationship-bound external hyperlinks, relationship-free bookmarks, supported inline DrawingML pictures including picture-only bodies, and empty/rPr-only runs) become reviewable paragraph-break changes; others stay fail-closed diagnostics instead of whole-paragraph guesses.`,
           ),
         );
       }
