@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.124.0",
+  "version": "0.125.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",

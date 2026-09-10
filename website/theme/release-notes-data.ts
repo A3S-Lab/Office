@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.125.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits tab and hyphen glyphs in revision bodies',
+      zh: 'Writer 修订正文准入制表符与连字符',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: eligible paragraph-break merge/split, whole-paragraph mark, and text-move revision bodies now admit relationship-free empty w:tab, w:noBreakHyphen, and w:softHyphen glyphs alongside soft breaks, hyperlinks, and bookmarks. Attributed or non-empty glyphs stay fail-closed.',
+      zh: 'Phase 0 保真：可审阅段落分隔合并/拆分、整段段落标记与文字移动修订正文现可纳入无关系空 w:tab、w:noBreakHyphen、w:softHyphen，以及软换行/超链接/书签。带属性或非空字形保持失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Tabs and hyphens in revision bodies',
+          zh: '修订正文中的制表符与连字符',
+        },
+        detail: {
+          en: 'Empty relationship-free tab and hyphen glyphs are admitted across paragraph-break, paragraph-mark, and move bodies.',
+          zh: '无关系空制表符与连字符字形可进入段落分隔、段落标记与移动修订正文。',
+        },
+      },
+      {
+        title: {
+          en: 'Shared admission with soft breaks and links',
+          zh: '与软换行及链接共享准入',
+        },
+        detail: {
+          en: 'The new glyphs join the existing soft-break, hyperlink, and bookmark admission set.',
+          zh: '新字形并入既有软换行、超链接与书签准入集合。',
+        },
+      },
+      {
+        title: {
+          en: 'Attributed glyphs stay fail-closed',
+          zh: '带属性字形保持失败闭合',
+        },
+        detail: {
+          en: 'Attributed or non-empty tab/hyphen glyphs and relationship-bound shapes stay diagnostics-only.',
+          zh: '带属性或非空制表符/连字符字形与有关系形态仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.125.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.125.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.124.0',
     date: '2026-09-10',
     kind: 'improved',

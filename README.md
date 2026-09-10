@@ -371,14 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.124.0` expands eligible paragraph-break revision bodies:
+Version `0.125.0` admits tab and hyphen glyphs in revision run bodies:
 
-- **Paragraph-break body admission** — isolated merge/split candidates now admit
-  soft breaks, empty/`rPr`-only runs, relationship-free internal hyperlinks, and
-  relationship-free bookmarks on both the marked paragraph and its neighbor,
-  matching whole-paragraph mark admission, with reviewable accept/reject.
-- **Boundary** — relationship-bound or spoofed links/bookmarks, drawings, and
-  tracked wrappers stay fail-closed diagnostics.
+- **Tab / hyphen admission** — eligible paragraph-break merge/split, whole-paragraph
+  mark, and text-move revision bodies now admit relationship-free empty `w:tab`,
+  `w:noBreakHyphen`, and `w:softHyphen` glyphs alongside the existing soft-break /
+  hyperlink / bookmark set, with reviewable accept/reject.
+- **Boundary** — attributed or non-empty glyphs, relationship-bound or spoofed
+  links/bookmarks, drawings, and tracked wrappers stay fail-closed diagnostics.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
