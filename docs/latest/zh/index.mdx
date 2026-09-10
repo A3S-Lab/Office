@@ -42,12 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.129.0）
+## `main` 更新内容（0.130.0）
 
-Writer Phase 0 修订正文准入空短日期字段字形：
+Writer Phase 0 整段段落标记修订准入未跟踪文本兄弟：
 
-- 可审阅段落分隔、整段段落标记与文字移动正文现可纳入无关系空 `w:dayShort` / `w:monthShort` / `w:yearShort`，以及既有软换行/制表符/回车符/最后渲染分页符/页码与长日期字段/连字符/超链接/书签集合。
-- 带属性或非空短日期字段字形，以及有关系或伪造形态，仍失败闭合。
+- 可审阅整段段落标记正文现可在匹配的 `w:ins` / `w:del` 包装旁纳入未跟踪纯文本兄弟
+  run（含软换行与既有无属性空字形集合）。
+- 绘图、关系绑定超链接与孤立仅标记形态仍失败闭合。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

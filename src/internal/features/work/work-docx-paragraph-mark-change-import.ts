@@ -502,11 +502,11 @@ function paragraphBodyMatchesChange(
   if (!body.length) return false;
   const expectedName = change.kind === 'deletion' ? 'del' : 'ins';
   // Admit one or more consecutive matching body wrappers (Word/WPS often
-  // split a whole-paragraph revision across run formatting siblings). Mixed
-  // untracked text, drawings, or mismatched authors stay excluded.
-  // Relationship-free bookmarkStart/End markers and empty/rPr-only untracked
-  // runs may appear as siblings of the revision wrappers without blocking
-  // admission.
+  // split a whole-paragraph revision across run formatting siblings).
+  // Drawings, relationship-bound hyperlinks, and mismatched authors stay
+  // excluded. Relationship-free bookmarkStart/End markers and untracked
+  // text-only runs (including empty/rPr-only) may appear as siblings of the
+  // revision wrappers without blocking admission.
   let sawRevision = false;
   for (const revision of body) {
     if (
@@ -519,7 +519,7 @@ function paragraphBodyMatchesChange(
     if (revision.localName === 'r') {
       if (
         revision.namespaceURI !== paragraph.namespaceURI ||
-        !isPropertiesOnlyUntrackedRun(revision)
+        !isUntrackedTextOnlySiblingRun(revision)
       ) {
         return false;
       }
@@ -641,32 +641,12 @@ function runHasVisibleText(
 }
 
 /**
- * Word often emits empty or properties-only runs beside a whole-paragraph
- * mark revision. Those carry no visible body text and must not block
- * admission; runs with any text or break content stay fail-closed.
+ * Untracked sibling runs beside a whole-paragraph mark revision may carry
+ * visible text, soft breaks, and the same attribute-free empty glyphs as
+ * tracked text-only runs. Tracked marks inside the run stay fail-closed.
  */
-function isPropertiesOnlyUntrackedRun(run: Element): boolean {
-  const children = directChildren(run);
-  const properties = children.filter(
-    (child) =>
-      child.localName === 'rPr' && child.namespaceURI === run.namespaceURI,
-  );
-  if (properties.length > 1) return false;
-  for (const child of children) {
-    if (child.namespaceURI !== run.namespaceURI) return false;
-    if (child.localName === 'rPr') {
-      if (
-        Array.from(child.querySelectorAll('*')).some(
-          (descendant) => descendant.namespaceURI !== run.namespaceURI,
-        )
-      ) {
-        return false;
-      }
-      continue;
-    }
-    return false;
-  }
-  return true;
+function isUntrackedTextOnlySiblingRun(run: Element): boolean {
+  return runIsTextOnly(run, 'insertion') && !runHasTrackedMark(run);
 }
 
 const HYPERLINK_ATTRIBUTES = new Set([

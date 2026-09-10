@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.130.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer admits untracked text siblings in whole-paragraph mark revisions',
+      zh: 'Writer 整段标记修订准入未跟踪文本兄弟',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: whole-paragraph mark revision bodies now admit untracked text-only sibling runs beside matching w:ins / w:del wrappers, including soft breaks and the existing attribute-free empty glyph set. Empty/rPr-only untracked runs remain admitted. Drawings and relationship-bound hyperlinks stay fail-closed; accept/reject stays atomic for the whole paragraph.',
+      zh: 'Phase 0 保真：整段段落标记修订正文现可在匹配的 w:ins / w:del 包装旁纳入未跟踪纯文本兄弟 run（含软换行与既有无属性空字形集合）。空/rPr-only 未跟踪 run 仍准入。绘图与关系绑定超链接保持失败闭合；接受/拒绝仍对整段原子处理。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Untracked text-only sibling runs',
+          zh: '未跟踪纯文本兄弟 run',
+        },
+        detail: {
+          en: 'Visible untracked text beside matching body wrappers imports and exports as one whole-paragraph review item.',
+          zh: '匹配正文包装旁的可见未跟踪文本会作为一项整段审阅导入并导出。',
+        },
+      },
+      {
+        title: {
+          en: 'Empty and rPr-only untracked runs kept',
+          zh: '保留空与 rPr-only 未跟踪 run',
+        },
+        detail: {
+          en: 'The prior empty/rPr-only untracked sibling admission remains covered by the same text-only run rules.',
+          zh: '既有空/rPr-only 未跟踪兄弟准入仍由同一纯文本 run 规则覆盖。',
+        },
+      },
+      {
+        title: {
+          en: 'Drawings and relationship-bound links stay fail-closed',
+          zh: '绘图与关系绑定链接保持失败闭合',
+        },
+        detail: {
+          en: 'Drawings and relationship-bound hyperlinks in mixed paragraph-mark bodies remain diagnostics-only.',
+          zh: '混合段落标记正文中的绘图与关系绑定超链接仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.130.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.130.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.129.0',
     date: '2026-09-10',
     kind: 'improved',

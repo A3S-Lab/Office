@@ -44,16 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.129.0)
+## What's new on `main` (0.130.0)
 
-Writer Phase 0 admits empty short date-field glyphs in revision run bodies:
+Writer Phase 0 admits untracked text siblings in whole-paragraph mark revisions:
 
-- eligible paragraph-break, whole-paragraph mark, and text-move bodies now admit
-  relationship-free empty `w:dayShort`, `w:monthShort`, and `w:yearShort`
-  glyphs alongside soft breaks, tabs, carriage returns, last-rendered page breaks,
-  page-number and long date-field glyphs, hyphens, hyperlinks, and bookmarks.
-- Attributed or non-empty short date-field glyphs, and relationship-bound
-  or spoofed shapes, stay fail-closed.
+- eligible whole-paragraph mark bodies now admit untracked text-only sibling
+  runs beside matching `w:ins` / `w:del` wrappers, including soft breaks and the
+  existing attribute-free empty glyph set.
+- Drawings, relationship-bound hyperlinks, and isolated mark-only shapes stay
+  fail-closed.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

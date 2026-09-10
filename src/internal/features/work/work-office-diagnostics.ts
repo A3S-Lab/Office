@@ -571,7 +571,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.paragraph-mark',
             'Paragraph-mark revisions',
-            `${supportedParagraphMarkRevisionCount} bounded paragraph-mark insertion/deletion revision(s) preserve author, date, and whole-paragraph accept/reject semantics through Work and native DOCX w:pPr/w:rPr/w:ins or w:del round trips, including multi-wrapper text-only bodies that share the mark author and date plus soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and date-field glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/rPr-only untracked sibling runs.`,
+            `${supportedParagraphMarkRevisionCount} bounded paragraph-mark insertion/deletion revision(s) preserve author, date, and whole-paragraph accept/reject semantics through Work and native DOCX w:pPr/w:rPr/w:ins or w:del round trips, including multi-wrapper text-only bodies that share the mark author and date plus soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and date-field glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, relationship-free bookmarks, and untracked text-only sibling runs (including empty/rPr-only).`,
             'info',
           ),
         );

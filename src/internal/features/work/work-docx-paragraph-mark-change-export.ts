@@ -301,6 +301,7 @@ function browserParagraphBodyMatchesChange(
     NodeFilter.SHOW_TEXT,
   );
   let hasText = false;
+  let hasTrackedText = false;
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
     if (!node.data) continue;
@@ -308,9 +309,13 @@ function browserParagraphBodyMatchesChange(
     const revision = node.parentElement?.closest<HTMLElement>(
       '[data-document-change="true"]',
     );
-    if (!revision || !paragraph.contains(revision)) return false;
+    if (!revision) continue;
+    if (!paragraph.contains(revision) || !revisions.includes(revision)) {
+      return false;
+    }
+    hasTrackedText = true;
   }
-  return hasText;
+  return hasText && hasTrackedText;
 }
 
 function isBrowserTextWrappingBreak(element: Element): boolean {

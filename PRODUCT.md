@@ -31,8 +31,10 @@ Enough means embeddable format-native editors for host daily workflows—not
 full Traditional Office parity and not every R6 enterprise row. The ordered
 remaining backlog, surface exit criteria, and explicit out-of-scope list live
 in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
-Active tip through `0.129.0` closed the attribute-free paragraph `CT_Empty`
-revision-admission family; next R0 work is mixed paragraph-mark bodies,
+Active tip through `0.130.0` admits untracked text-only sibling runs beside
+whole-paragraph mark revisions (and earlier closed the attribute-free
+paragraph `CT_Empty` revision-admission family through `0.129.0`). Next R0 work
+is drawings and relationship-bound hyperlinks in mixed paragraph-mark bodies,
 cross-section/table moves, numbering edges, bounded property-revision subsets,
 searchable/tagged PDF output, and continuous no-clobber fixtures—then R1 Writer
 daily leftovers, R2 calculation fidelity, R3 animation/media, and R4 PDF
@@ -1024,12 +1026,12 @@ native paragraph mark without leaking browser metadata. Separate body and
 paragraph-mark IDs remain valid because WPS Office 12.1.0.22215 emitted that
 shape for the COM-observed `Bravo\r` deletion and `Delta\r` insertion ranges.
 
-The recognizer deliberately excludes relationship-bound content, untracked
-siblings mixed into a paragraph-mark body, drawings, relationship-bound
-hyperlinks, spoofed bookmark relationship attributes, malformed or
-namespace-spoofed metadata, identity conflicts, and over-limit inputs.
-Relationship-free internal hyperlinks, relationship-free bookmarks, empty
-or `w:rPr`-only untracked sibling runs, and empty `w:tab` / `w:cr` /
+The recognizer deliberately excludes relationship-bound content, drawings,
+relationship-bound hyperlinks, spoofed bookmark relationship attributes,
+malformed or namespace-spoofed metadata, identity conflicts, and over-limit
+inputs. Untracked text-only sibling runs (including empty or `w:rPr`-only),
+relationship-free internal hyperlinks, relationship-free bookmarks, and empty
+`w:tab` / `w:cr` /
 `w:lastRenderedPageBreak` / `w:pgNum` / `w:dayLong` / `w:monthLong` /
 `w:yearLong` / `w:dayShort` / `w:monthShort` / `w:yearShort` /
 `w:noBreakHyphen` / `w:softHyphen` glyphs inside or beside the

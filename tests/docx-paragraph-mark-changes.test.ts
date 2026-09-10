@@ -218,7 +218,7 @@ describe('DOCX paragraph-mark revisions', () => {
     editor.destroy();
   });
 
-  test('rejects mixed untracked body siblings as whole-paragraph mark revisions', () => {
+  test('admits mixed untracked text siblings beside whole-paragraph mark revisions', () => {
     const document = wordXml(`
       <w:p>
         <w:pPr><w:rPr>
@@ -226,6 +226,59 @@ describe('DOCX paragraph-mark revisions', () => {
         </w:rPr></w:pPr>
         <w:r><w:t>Keep </w:t></w:r>
         <w:ins w:id="32" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"><w:r><w:t>Added</w:t></w:r></w:ins>
+        <w:r><w:t> trailing</w:t></w:r>
+      </w:p>
+    `);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(true);
+    const markers = markDocxParagraphMarkChanges(document);
+    expect(markers.paragraphs).toEqual([
+      expect.objectContaining({
+        id: 'docx-paragraph-mark-change-31',
+        kind: 'insertion',
+      }),
+    ]);
+    const marker = markers.paragraphs[0];
+    if (!marker) throw new Error('Expected a paragraph-mark marker.');
+
+    const html = new DOMParser().parseFromString(
+      `<p>${marker.marker}Keep <ins data-document-change="true" data-change-kind="insertion">Added</ins> trailing</p>`,
+      'text/html',
+    );
+    applyImportedDocxParagraphMarkChangeMarkers(html, markers);
+    const paragraph = html.querySelector('p');
+    expect(paragraph?.dataset.documentBlockChange).toBe('true');
+    expect(paragraph?.dataset.blockChangeKind).toBe('insertion');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: `<section data-document-section="true">${html.body.innerHTML}</section>`,
+    });
+    const changes = collectDocumentChanges(editor.state.doc);
+    expect(changes).toEqual([
+      expect.objectContaining({
+        kind: 'insertion',
+        text: 'Keep Added trailing',
+      }),
+    ]);
+    expect(editor.commands.rejectDocumentChange(changes[0]?.id ?? '')).toBe(
+      true,
+    );
+    expect(editor.getText()).not.toContain('Keep');
+    expect(editor.getText()).not.toContain('Added');
+    editor.destroy();
+  });
+
+  test('still rejects drawings beside whole-paragraph mark revisions', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:pPr><w:rPr>
+          <w:ins w:id="33" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+        </w:rPr></w:pPr>
+        <w:r><w:drawing/></w:r>
+        <w:ins w:id="34" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"><w:r><w:t>Added</w:t></w:r></w:ins>
       </w:p>
     `);
     const mark = descendants(document, 'ins').find(
@@ -666,6 +719,59 @@ describe('DOCX paragraph-mark revisions', () => {
     ).toBe(true);
     expect(editor.getText()).toContain('Stable paragraph');
     expect(editor.getText()).not.toContain(changedText);
+    editor.destroy();
+  });
+
+  test('exports and reopens paragraph-mark insertions with untracked text siblings', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true">',
+      '<p data-document-block-change="true" data-block-change-kind="insertion" data-block-change-id="block-untracked" data-block-change-author="Ada Reviewer" data-block-change-date="2026-09-05T01:00:00.000Z">',
+      'Keep ',
+      '<ins data-document-change="true" data-change-kind="insertion" data-change-id="text-added" data-change-author="Ada Reviewer" data-change-date="2026-09-05T01:00:00.000Z">Added</ins>',
+      ' trailing',
+      '</p><p>Stable paragraph</p></section>',
+    ].join('');
+    artifact.content.trackChanges = true;
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(xml).toMatch(
+      /<w:pPr>[\s\S]*?<w:rPr>[\s\S]*?<w:ins\b[^>]*w:author="Ada Reviewer"/,
+    );
+    expect(xml).toContain('Keep');
+    expect(xml).toContain('Added');
+    expect(xml).toContain('trailing');
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'paragraph-mark-untracked-siblings.docx', {
+        type: blob.type,
+      }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: reopened.content.html,
+    });
+    const change = collectDocumentChanges(editor.state.doc).find(
+      (candidate) => candidate.kind === 'insertion',
+    );
+    expect(change).toEqual(
+      expect.objectContaining({
+        text: 'Keep Added trailing',
+        author: 'Ada Reviewer',
+      }),
+    );
+    expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+    expect(editor.getText()).not.toContain('Keep');
+    expect(editor.getText()).not.toContain('Added');
+    expect(editor.getText()).toContain('Stable paragraph');
     editor.destroy();
   });
 

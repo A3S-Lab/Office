@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.130.0 - 2026-09-10
+
+### Writer
+
+- Eligible whole-paragraph mark revision bodies now admit untracked text-only
+  sibling runs (including soft breaks and the existing attribute-free empty
+  glyph set) beside matching `w:ins` / `w:del` wrappers. Empty/`rPr`-only
+  untracked runs remain admitted. Drawings and relationship-bound hyperlinks
+  stay fail-closed. Export/reopen keeps atomic whole-paragraph accept/reject.
+
 ### Docs
 
 - Clarify the product-enough remaining backlog in `ROADMAP.md` and
