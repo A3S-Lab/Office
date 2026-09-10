@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.111.0` makes section pgNumType revisions reviewable:
+Version `0.112.0` makes section formProt revisions reviewable:
 
-- **Section page numbers** — relationship-free `sectPrChange` priors with bounded
-  `pgNumType` (`fmt`/`start`) become reviewable `section-formatting` with
-  accept/reject, live track-changes, and native DOCX export.
-- **Boundary** — `chapStyle`/`chapSep` stay fail-closed; opaque section fixtures
-  stay on `formProt`. `pageNumberStart` stays aligned with `pgNumType.start`.
+- **Section form protection** — relationship-free `sectPrChange` priors with
+  onOff `formProt` become reviewable `section-formatting` with accept/reject,
+  live track-changes, and native DOCX export.
+- **Boundary** — unknown attributes stay fail-closed; opaque section fixtures
+  stay on `vAlign`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
