@@ -319,6 +319,7 @@ function documentSectionModelAttributes(
     verticalAlign: '',
     textDirection: '',
     bidi: null,
+    footnotePr: '',
   };
 }
 

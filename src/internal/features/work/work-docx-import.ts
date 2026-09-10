@@ -245,6 +245,9 @@ import type {
   WorkDocumentGridType,
   WorkDocumentLnNumType,
   WorkDocumentPgNumFmt,
+  WorkDocumentFootnoteNumRestart,
+  WorkDocumentFootnotePos,
+  WorkDocumentFootnotePr,
   WorkDocumentPgNumType,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
@@ -869,6 +872,7 @@ async function parseSectionLayout(
   const noEndnoteElement = directChild(section, 'noEndnote');
   const textDirectionElement = directChild(section, 'textDirection');
   const bidiElement = directChild(section, 'bidi');
+  const footnotePrElement = directChild(section, 'footnotePr');
   const pageBorders = parseDocxPageBorders(section, theme);
   const parsedPageMargins = parseDocxPageMargins(
     section,
@@ -902,6 +906,9 @@ async function parseSectionLayout(
     ? parseTextDirection(textDirectionElement)
     : undefined;
   const parsedBidi = bidiElement ? parseBidi(bidiElement) : undefined;
+  const parsedFootnotePr = footnotePrElement
+    ? parseFootnotePr(footnotePrElement)
+    : undefined;
   const pageNumberStart =
     parsedPgNumType?.start !== undefined && parsedPgNumType.start > 0
       ? parsedPgNumType.start
@@ -956,6 +963,11 @@ async function parseSectionLayout(
       ? { bidi: parsedBidi }
       : previous.bidi !== undefined
         ? { bidi: previous.bidi }
+        : {}),
+    ...(parsedFootnotePr !== undefined
+      ? { footnotePr: parsedFootnotePr }
+      : previous.footnotePr
+        ? { footnotePr: { ...previous.footnotePr } }
         : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
@@ -1023,6 +1035,67 @@ function parseNoEndnote(element: Element): boolean {
     normalized === 'on' ||
     normalized === 'yes'
   );
+}
+
+function parseFootnotePr(element: Element): WorkDocumentFootnotePr | undefined {
+  const children = Array.from(element.children).filter(
+    (child) => child.namespaceURI === element.namespaceURI,
+  );
+  if (children.length > 4) return undefined;
+  const names = children.map((child) => child.localName);
+  if (new Set(names).size !== names.length) return undefined;
+  const next: WorkDocumentFootnotePr = {};
+  for (const child of children) {
+    if (child.children.length > 0) return undefined;
+    const value = attribute(child, 'val')?.trim();
+    if (!value) return undefined;
+    if (child.localName === 'pos') {
+      if (
+        value !== 'pageBottom' &&
+        value !== 'beneathText' &&
+        value !== 'sectEnd' &&
+        value !== 'docEnd'
+      ) {
+        return undefined;
+      }
+      next.pos = value as WorkDocumentFootnotePos;
+      continue;
+    }
+    if (child.localName === 'numFmt') {
+      if (
+        value !== 'decimal' &&
+        value !== 'upperRoman' &&
+        value !== 'lowerRoman' &&
+        value !== 'upperLetter' &&
+        value !== 'lowerLetter'
+      ) {
+        return undefined;
+      }
+      next.numFmt = value as WorkDocumentPgNumFmt;
+      continue;
+    }
+    if (child.localName === 'numStart') {
+      const start = numberAttribute(child, 'val');
+      if (!Number.isInteger(start) || start < 0 || start > 32_767) {
+        return undefined;
+      }
+      next.numStart = start;
+      continue;
+    }
+    if (child.localName === 'numRestart') {
+      if (
+        value !== 'continuous' &&
+        value !== 'eachSect' &&
+        value !== 'eachPage'
+      ) {
+        return undefined;
+      }
+      next.numRestart = value as WorkDocumentFootnoteNumRestart;
+      continue;
+    }
+    return undefined;
+  }
+  return next;
 }
 
 function parseBidi(element: Element): boolean {

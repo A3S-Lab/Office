@@ -86,6 +86,7 @@ export async function patchDocxDocumentLayout(
   patchSectionNoEndnotes(document, sections);
   patchSectionTextDirections(document, sections);
   patchSectionBidis(document, sections);
+  patchSectionFootnotePrs(document, sections);
   archive.file(
     'word/document.xml',
     new XMLSerializer().serializeToString(document),
@@ -502,6 +503,45 @@ function patchSectionBidis(
       element.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
     }
     insertSectionProperty(properties, element);
+  }
+}
+
+function patchSectionFootnotePrs(
+  document: Document,
+  sections: readonly WorkDocumentSection[],
+): void {
+  const sectionProperties = effectiveSectionProperties(document);
+  for (const [index, properties] of sectionProperties.entries()) {
+    for (const existing of directChildren(properties, 'footnotePr')) {
+      existing.remove();
+    }
+    const value = sections[index]?.layout.footnotePr;
+    if (value === undefined) continue;
+    const footnotePr = document.createElementNS(WORD_NAMESPACE, 'w:footnotePr');
+    if (value.pos !== undefined) {
+      const pos = document.createElementNS(WORD_NAMESPACE, 'w:pos');
+      pos.setAttributeNS(WORD_NAMESPACE, 'w:val', value.pos);
+      footnotePr.append(pos);
+    }
+    if (value.numFmt !== undefined) {
+      const numFmt = document.createElementNS(WORD_NAMESPACE, 'w:numFmt');
+      numFmt.setAttributeNS(WORD_NAMESPACE, 'w:val', value.numFmt);
+      footnotePr.append(numFmt);
+    }
+    if (value.numStart !== undefined) {
+      const numStart = document.createElementNS(WORD_NAMESPACE, 'w:numStart');
+      numStart.setAttributeNS(WORD_NAMESPACE, 'w:val', String(value.numStart));
+      footnotePr.append(numStart);
+    }
+    if (value.numRestart !== undefined) {
+      const numRestart = document.createElementNS(
+        WORD_NAMESPACE,
+        'w:numRestart',
+      );
+      numRestart.setAttributeNS(WORD_NAMESPACE, 'w:val', value.numRestart);
+      footnotePr.append(numRestart);
+    }
+    insertSectionProperty(properties, footnotePr);
   }
 }
 

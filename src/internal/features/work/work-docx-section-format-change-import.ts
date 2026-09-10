@@ -33,6 +33,9 @@ import type {
   WorkDocumentGridType,
   WorkDocumentLnNumRestart,
   WorkDocumentLnNumType,
+  WorkDocumentFootnoteNumRestart,
+  WorkDocumentFootnotePos,
+  WorkDocumentFootnotePr,
   WorkDocumentPgNumFmt,
   WorkDocumentPgNumType,
   WorkDocumentSectionTextDirection,
@@ -56,6 +59,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'noEndnote',
   'textDirection',
   'bidi',
+  'footnotePr',
 ]);
 const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch']);
 const FORM_PROT_ATTRIBUTE_SET = new Set(['val']);
@@ -87,6 +91,20 @@ const PG_NUM_FMTS = new Set([
   'upperLetter',
   'lowerLetter',
 ]);
+const FOOTNOTE_PR_CHILDREN = new Set([
+  'pos',
+  'numFmt',
+  'numStart',
+  'numRestart',
+]);
+const FOOTNOTE_POS = new Set([
+  'pageBottom',
+  'beneathText',
+  'sectEnd',
+  'docEnd',
+]);
+const FOOTNOTE_NUM_RESTARTS = new Set(['continuous', 'eachSect', 'eachPage']);
+const FOOTNOTE_CHILD_ATTRIBUTE_SET = new Set(['val']);
 const DOC_GRID_TYPES = new Set([
   'default',
   'lines',
@@ -136,7 +154,8 @@ export interface SupportedDocxSectionFormattingChange {
  * and/or relationship-free empty/onOff `w:noEndnote`, and/or relationship-free
  * `w:textDirection` with required known `w:val`
  * (`lrTb`/`tbRl`/`btLr`/`lrTbV`/`tbRlV`/`tbLrV`), and/or relationship-free
- * empty/onOff `w:bidi`.
+ * empty/onOff `w:bidi`, and/or bounded relationship-free empty `w:footnotePr`
+ * or children only (`pos`/`numFmt`/`numStart`/`numRestart`).
  * Broader section property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxSectionFormattingChange(
@@ -194,7 +213,7 @@ function supportedSectionFormattingChange(
   const prior = priors[0];
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
-  if (!children.length || children.length > 13) return null;
+  if (!children.length || children.length > 14) return null;
   if (
     children.some((child) => !isSupportedSectionFormattingPriorChild(child))
   ) {
@@ -218,6 +237,7 @@ function supportedSectionFormattingChange(
   let noEndnote: boolean | undefined;
   let textDirection: WorkDocumentSectionTextDirection | undefined;
   let bidi: boolean | undefined;
+  let footnotePr: WorkDocumentFootnotePr | undefined;
   for (const child of children) {
     if (child.localName === 'pgSz') {
       const value = importedPageSize(child);
@@ -298,6 +318,12 @@ function supportedSectionFormattingChange(
       const value = importedBidi(child);
       if (value === null) return null;
       bidi = value;
+      continue;
+    }
+    if (child.localName === 'footnotePr') {
+      const value = importedFootnotePr(child);
+      if (value === null) return null;
+      footnotePr = value;
     }
   }
   const before = serializeDocumentSectionFormatting({
@@ -316,6 +342,7 @@ function supportedSectionFormattingChange(
     ...(noEndnote !== undefined ? { noEndnote } : {}),
     ...(textDirection !== undefined ? { textDirection } : {}),
     ...(bidi !== undefined ? { bidi } : {}),
+    ...(footnotePr !== undefined ? { footnotePr } : {}),
   });
   return {
     id: `docx-section-format-change-${id}`,
@@ -406,6 +433,9 @@ function isSupportedSectionFormattingPriorChild(child: Element): boolean {
         column.namespaceURI === child.namespaceURI &&
         isSupportedColumnChild(column),
     );
+  }
+  if (child.localName === 'footnotePr') {
+    return isSupportedFootnotePr(child);
   }
   return child.children.length === 0;
 }
@@ -673,6 +703,87 @@ function importedNoEndnote(element: Element): boolean | null {
   }
   if (names.size !== attributes.length) return null;
   return onOffValue(element);
+}
+
+function isSupportedFootnotePr(element: Element): boolean {
+  const attributes = Array.from(element.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+  );
+  if (attributes.length > 0) return false;
+  const children = Array.from(element.children);
+  if (children.length > 4) return false;
+  const names = children.map((child) => child.localName);
+  if (new Set(names).size !== names.length) return false;
+  return children.every(
+    (child) =>
+      child.namespaceURI === element.namespaceURI &&
+      FOOTNOTE_PR_CHILDREN.has(child.localName) &&
+      isSupportedFootnotePrChild(child),
+  );
+}
+
+function isSupportedFootnotePrChild(child: Element): boolean {
+  if (child.children.length > 0) return false;
+  const attributes = Array.from(child.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(child, candidate) === child.namespaceURI,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if ([...names].some((name) => !FOOTNOTE_CHILD_ATTRIBUTE_SET.has(name))) {
+    return false;
+  }
+  if (names.size !== attributes.length || !names.has('val')) return false;
+  const value = attributes
+    .find((candidate) => xmlAttributeLocalName(candidate) === 'val')
+    ?.value.trim();
+  if (!value) return false;
+  if (child.localName === 'pos') return FOOTNOTE_POS.has(value);
+  if (child.localName === 'numFmt') return PG_NUM_FMTS.has(value);
+  if (child.localName === 'numStart') {
+    return (
+      parseBoundedDocxInteger(value, {
+        minimum: 0,
+        maximum: 32_767,
+      }) !== null
+    );
+  }
+  if (child.localName === 'numRestart') {
+    return FOOTNOTE_NUM_RESTARTS.has(value);
+  }
+  return false;
+}
+
+function importedFootnotePr(element: Element): WorkDocumentFootnotePr | null {
+  if (!isSupportedFootnotePr(element)) return null;
+  const next: WorkDocumentFootnotePr = {};
+  for (const child of Array.from(element.children)) {
+    const value = wordAttribute(child, 'val')?.trim();
+    if (!value) return null;
+    if (child.localName === 'pos') {
+      next.pos = value as WorkDocumentFootnotePos;
+      continue;
+    }
+    if (child.localName === 'numFmt') {
+      next.numFmt = value as WorkDocumentPgNumFmt;
+      continue;
+    }
+    if (child.localName === 'numStart') {
+      const start = parseBoundedDocxInteger(value, {
+        minimum: 0,
+        maximum: 32_767,
+      });
+      if (start === null) return null;
+      next.numStart = start;
+      continue;
+    }
+    if (child.localName === 'numRestart') {
+      next.numRestart = value as WorkDocumentFootnoteNumRestart;
+    }
+  }
+  return next;
 }
 
 function importedBidi(element: Element): boolean | null {

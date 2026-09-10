@@ -114,6 +114,32 @@ export interface WorkDocumentPgNumType {
   start?: number;
 }
 
+/** ST_FtnPos values for section footnote placement (`w:footnotePr/w:pos`). */
+export type WorkDocumentFootnotePos =
+  | 'pageBottom'
+  | 'beneathText'
+  | 'sectEnd'
+  | 'docEnd';
+
+/** ST_RestartNumber values for footnote numbering restart (`w:numRestart`). */
+export type WorkDocumentFootnoteNumRestart =
+  | 'continuous'
+  | 'eachSect'
+  | 'eachPage';
+
+/**
+ * Bounded CT_FtnProps subset for Traditional Office section footnote properties.
+ * Empty `w:footnotePr` and optional `pos` / `numFmt` / `numStart` / `numRestart`
+ * children are reviewable; unknown children or attributes stay fail-closed.
+ */
+export interface WorkDocumentFootnotePr {
+  pos?: WorkDocumentFootnotePos;
+  /** Reuses the common ST_NumberFormat subset shared with page numbers. */
+  numFmt?: WorkDocumentPgNumFmt;
+  numStart?: number;
+  numRestart?: WorkDocumentFootnoteNumRestart;
+}
+
 /** ST_VerticalJc values for section text vertical alignment (`w:vAlign`). */
 export type WorkDocumentSectionVerticalAlign =
   | 'top'
@@ -153,6 +179,8 @@ export interface WorkDocumentSectionLayout {
   documentGrid?: WorkDocumentGrid;
   lnNumType?: WorkDocumentLnNumType;
   pgNumType?: WorkDocumentPgNumType;
+  /** Section footnote properties (`w:footnotePr`); bounded CT_FtnProps. */
+  footnotePr?: WorkDocumentFootnotePr;
   /** Protect form fields (`w:formProt`); CT_OnOff. */
   formProt?: boolean;
   /** Suppress endnotes for this section (`w:noEndnote`); CT_OnOff. */

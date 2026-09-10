@@ -219,7 +219,7 @@ a phase exits only when its evidence is complete.
   page-margin, paper-source, differentFirstPage (`w:titlePg`), rtlGutter,
   bounded `w:docGrid` (`w:type`/`w:linePitch` only), bounded `w:lnNumType`
   (`w:countBy`/`w:start`/`w:distance`/`w:restart`), bounded `w:pgNumType`
-  (`w:fmt`/`w:start` only), `w:formProt`, `w:vAlign`, `w:noEndnote`, `w:textDirection`, and `w:bidi` edits, and native export.
+  (`w:fmt`/`w:start` only), `w:formProt`, `w:vAlign`, `w:noEndnote`, `w:textDirection`, `w:bidi`, and bounded `w:footnotePr` edits, and native export.
   Equal-width `w:cols` (num/space/sep, no unequal `w:col` children) and
   unequal-width `w:cols` (`w:equalWidth` off with bounded `w:col` children) are
   also reviewable as `section-formatting` with live column edits. Broader

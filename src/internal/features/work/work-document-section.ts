@@ -35,6 +35,10 @@ import {
   serializeDocumentPaperSource,
 } from './work-document-page-size';
 import {
+  parseDocumentFootnotePr,
+  serializeDocumentFootnotePr,
+} from './work-document-section-format-changes';
+import {
   documentPageChromeLegacyFields,
   normalizeDocumentPageChrome,
   parseDocumentPageChrome,
@@ -100,6 +104,7 @@ export interface DocumentSectionNodeAttributes {
   verticalAlign: WorkDocumentSectionVerticalAlign | '';
   textDirection: WorkDocumentSectionTextDirection | '';
   bidi: boolean | null;
+  footnotePr: string;
   propertyRevisionOmml: string;
   sectionChangeKind: 'section-formatting' | null;
   sectionChangeId: string;
@@ -253,6 +258,9 @@ export function documentSectionNodeAttributes(
     verticalAlign: layout.verticalAlign ?? '',
     textDirection: layout.textDirection ?? '',
     bidi: layout.bidi ?? null,
+    footnotePr: layout.footnotePr
+      ? serializeDocumentFootnotePr(layout.footnotePr)
+      : '',
     propertyRevisionOmml: layout.propertyRevisionOmml
       ? encodeDocumentTablePropertyRevisionOmml(layout.propertyRevisionOmml)
       : '',
@@ -290,6 +298,9 @@ export function documentSectionLayoutFromNodeAttributes(
   const documentGrid = documentGridFromNodeAttributes(attributes, base);
   const lnNumType = lnNumTypeFromNodeAttributes(attributes, base);
   const pgNumType = pgNumTypeFromNodeAttributes(attributes, base);
+  const footnotePrFromAttributes = parseDocumentFootnotePr(
+    attributes.footnotePr,
+  );
   const pageBorders = parseDocumentPageBorders(attributes.pageBorders);
   const pageMargins = parseDocumentPageMargins(attributes.pageMargins);
   const pageGeometry = parseDocumentPageGeometry(attributes.pageGeometry);
@@ -370,6 +381,11 @@ export function documentSectionLayoutFromNodeAttributes(
       : base.bidi !== undefined
         ? { bidi: base.bidi }
         : {}),
+    ...(footnotePrFromAttributes
+      ? { footnotePr: footnotePrFromAttributes }
+      : base.footnotePr
+        ? { footnotePr: { ...base.footnotePr } }
+        : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
     ...(pageGeometry ? { pageGeometry } : {}),
@@ -446,6 +462,7 @@ export function documentSectionDomAttributes(
     'data-section-text-direction': attributes.textDirection,
     'data-section-bidi':
       attributes.bidi === null ? '' : String(attributes.bidi),
+    'data-section-footnote-pr': attributes.footnotePr,
     ...(attributes.propertyRevisionOmml
       ? {
           'data-section-property-revision-omml':
@@ -533,6 +550,7 @@ export function documentSectionLayoutFromElement(
           : element.dataset.sectionBidi === 'false'
             ? false
             : null,
+      footnotePr: element.dataset.sectionFootnotePr ?? '',
       propertyRevisionOmml: element.dataset.sectionPropertyRevisionOmml ?? '',
       sectionChangeKind:
         element.getAttribute('data-document-change') === 'true' &&

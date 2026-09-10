@@ -305,6 +305,11 @@ function setSectionFormattingChange(
     }
     prior.append(bidi);
   }
+  if (formatting.footnotePr !== undefined) {
+    prior.append(
+      createSectionFormattingFootnotePr(document, formatting.footnotePr),
+    );
+  }
   change.append(prior);
   section.append(change);
 }
@@ -313,6 +318,39 @@ function normalizedRevisionDate(value: string | undefined): string {
   if (!value?.trim()) return '';
   const time = Date.parse(value);
   return Number.isFinite(time) ? new Date(time).toISOString() : '';
+}
+
+function createSectionFormattingFootnotePr(
+  document: Document,
+  value: {
+    pos?: string;
+    numFmt?: string;
+    numStart?: number;
+    numRestart?: string;
+  },
+): Element {
+  const footnotePr = document.createElementNS(WORD_NAMESPACE, 'w:footnotePr');
+  if (value.pos !== undefined) {
+    const pos = document.createElementNS(WORD_NAMESPACE, 'w:pos');
+    pos.setAttributeNS(WORD_NAMESPACE, 'w:val', value.pos);
+    footnotePr.append(pos);
+  }
+  if (value.numFmt !== undefined) {
+    const numFmt = document.createElementNS(WORD_NAMESPACE, 'w:numFmt');
+    numFmt.setAttributeNS(WORD_NAMESPACE, 'w:val', value.numFmt);
+    footnotePr.append(numFmt);
+  }
+  if (value.numStart !== undefined) {
+    const numStart = document.createElementNS(WORD_NAMESPACE, 'w:numStart');
+    numStart.setAttributeNS(WORD_NAMESPACE, 'w:val', String(value.numStart));
+    footnotePr.append(numStart);
+  }
+  if (value.numRestart !== undefined) {
+    const numRestart = document.createElementNS(WORD_NAMESPACE, 'w:numRestart');
+    numRestart.setAttributeNS(WORD_NAMESPACE, 'w:val', value.numRestart);
+    footnotePr.append(numRestart);
+  }
+  return footnotePr;
 }
 
 function createSectionFormattingColumns(
