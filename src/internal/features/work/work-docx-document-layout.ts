@@ -88,6 +88,7 @@ export async function patchDocxDocumentLayout(
   patchSectionBidis(document, sections);
   patchSectionFootnotePrs(document, sections);
   patchSectionEndnotePrs(document, sections);
+  patchSectionTypes(document, sections);
   archive.file(
     'word/document.xml',
     new XMLSerializer().serializeToString(document),
@@ -582,6 +583,23 @@ function patchSectionEndnotePrs(
       endnotePr.append(numRestart);
     }
     insertSectionProperty(properties, endnotePr);
+  }
+}
+
+function patchSectionTypes(
+  document: Document,
+  sections: readonly WorkDocumentSection[],
+): void {
+  const sectionProperties = effectiveSectionProperties(document);
+  for (const [index, properties] of sectionProperties.entries()) {
+    for (const existing of directChildren(properties, 'type')) {
+      existing.remove();
+    }
+    const breakAfter = sections[index]?.layout.breakAfter;
+    if (!breakAfter) continue;
+    const element = document.createElementNS(WORD_NAMESPACE, 'w:type');
+    element.setAttributeNS(WORD_NAMESPACE, 'w:val', breakAfter);
+    insertSectionProperty(properties, element);
   }
 }
 

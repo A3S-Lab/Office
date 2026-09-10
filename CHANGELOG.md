@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:sectPrChange` priors that include relationship-free
+  `w:type` with required known `w:val` (`nextPage` / `nextColumn` /
+  `continuous` / `evenPage` / `oddPage`) are now reviewable as
+  `section-formatting` with accept/reject, live track-changes, and native
+  export (including current-section `w:type` on DOCX write), mapped through the
+  existing section `breakAfter` model. Unknown attributes and values stay
+  fail-closed; opaque section fixtures moved off `type` to `pgBorders`.
+
 ## 0.118.0 - 2026-09-10
 
 ### Writer

@@ -40,6 +40,7 @@ import type {
   WorkDocumentEndnotePr,
   WorkDocumentPgNumFmt,
   WorkDocumentPgNumType,
+  WorkDocumentSectionBreakType,
   WorkDocumentSectionTextDirection,
   WorkDocumentSectionVerticalAlign,
 } from './work-types';
@@ -63,6 +64,7 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'bidi',
   'footnotePr',
   'endnotePr',
+  'type',
 ]);
 const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch']);
 const FORM_PROT_ATTRIBUTE_SET = new Set(['val']);
@@ -78,6 +80,14 @@ const TEXT_DIRECTION_VALUES = new Set([
   'lrTbV',
   'tbRlV',
   'tbLrV',
+]);
+const SECTION_TYPE_ATTRIBUTE_SET = new Set(['val']);
+const SECTION_TYPE_VALUES = new Set([
+  'nextPage',
+  'nextColumn',
+  'continuous',
+  'evenPage',
+  'oddPage',
 ]);
 const LN_NUM_TYPE_ATTRIBUTE_SET = new Set([
   'countBy',
@@ -167,7 +177,9 @@ export interface SupportedDocxSectionFormattingChange {
  * empty/onOff `w:bidi`, and/or bounded relationship-free empty `w:footnotePr`
  * or children only (`pos`/`numFmt`/`numStart`/`numRestart`), and/or bounded
  * relationship-free empty `w:endnotePr` or children only
- * (`pos`/`numFmt`/`numStart`/`numRestart` with ST_EdnPos).
+ * (`pos`/`numFmt`/`numStart`/`numRestart` with ST_EdnPos), and/or
+ * relationship-free `w:type` with required known `w:val`
+ * (`nextPage`/`nextColumn`/`continuous`/`evenPage`/`oddPage`).
  * Broader section property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxSectionFormattingChange(
@@ -225,7 +237,7 @@ function supportedSectionFormattingChange(
   const prior = priors[0];
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
-  if (!children.length || children.length > 14) return null;
+  if (!children.length || children.length > 15) return null;
   if (
     children.some((child) => !isSupportedSectionFormattingPriorChild(child))
   ) {
@@ -235,6 +247,7 @@ function supportedSectionFormattingChange(
   if (new Set(localNames).size !== localNames.length) return null;
 
   let orientation: 'portrait' | 'landscape' | undefined;
+  let breakAfter: WorkDocumentSectionBreakType | undefined;
   let pageGeometry: WorkDocumentPageGeometry | undefined;
   let pageMargins: WorkDocumentPageMargins | undefined;
   let paperSource: WorkDocumentPaperSource | undefined;
@@ -252,6 +265,12 @@ function supportedSectionFormattingChange(
   let footnotePr: WorkDocumentFootnotePr | undefined;
   let endnotePr: WorkDocumentEndnotePr | undefined;
   for (const child of children) {
+    if (child.localName === 'type') {
+      const value = importedSectionType(child);
+      if (value === null) return null;
+      breakAfter = value;
+      continue;
+    }
     if (child.localName === 'pgSz') {
       const value = importedPageSize(child);
       if (!value) return null;
@@ -347,6 +366,7 @@ function supportedSectionFormattingChange(
   }
   const before = serializeDocumentSectionFormatting({
     ...(orientation ? { orientation } : {}),
+    ...(breakAfter !== undefined ? { breakAfter } : {}),
     ...(pageGeometry ? { pageGeometry } : {}),
     ...(pageMargins ? { pageMargins } : {}),
     ...(paperSource ? { paperSource } : {}),
@@ -948,6 +968,28 @@ function importedTextDirection(
     ?.value.trim();
   if (!value || !TEXT_DIRECTION_VALUES.has(value)) return null;
   return value as WorkDocumentSectionTextDirection;
+}
+
+function importedSectionType(
+  element: Element,
+): WorkDocumentSectionBreakType | null {
+  if (element.children.length > 0) return null;
+  const attributes = Array.from(element.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if ([...names].some((name) => !SECTION_TYPE_ATTRIBUTE_SET.has(name))) {
+    return null;
+  }
+  if (names.size !== attributes.length || !names.has('val')) return null;
+  const value = attributes
+    .find((candidate) => xmlAttributeLocalName(candidate) === 'val')
+    ?.value.trim();
+  if (!value || !SECTION_TYPE_VALUES.has(value)) return null;
+  return value as WorkDocumentSectionBreakType;
 }
 
 function importedLnNumType(element: Element): WorkDocumentLnNumType | null {

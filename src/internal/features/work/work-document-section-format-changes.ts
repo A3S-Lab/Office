@@ -34,6 +34,7 @@ import type {
   WorkDocumentEndnotePr,
   WorkDocumentPgNumFmt,
   WorkDocumentPgNumType,
+  WorkDocumentSectionBreakType,
   WorkDocumentSectionTextDirection,
   WorkDocumentSectionVerticalAlign,
 } from './work-types';
@@ -65,10 +66,13 @@ export type DocumentSectionEqualColumnsSnapshot =
  * Prior snapshot for reviewable section-property revisions.
  * At least one of orientation, pageGeometry, pageMargins, paperSource,
  * columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType,
- * formProt, noEndnote, verticalAlign, textDirection, bidi, footnotePr, or endnotePr must be present.
+ * formProt, noEndnote, verticalAlign, textDirection, bidi, footnotePr,
+ * endnotePr, or breakAfter must be present.
  */
 export interface DocumentSectionFormattingSnapshot {
   orientation?: 'portrait' | 'landscape';
+  /** Section break type (`w:type` / ST_SectionMark); current-section field. */
+  breakAfter?: WorkDocumentSectionBreakType;
   pageGeometry?: WorkDocumentPageGeometry;
   pageMargins?: WorkDocumentPageMargins;
   paperSource?: WorkDocumentPaperSource;
@@ -100,6 +104,7 @@ const PAGE_MARGIN_TWIP_KEYS = [
 
 export function serializeDocumentSectionFormatting(attributes: {
   orientation?: unknown;
+  breakAfter?: unknown;
   pageGeometry?: unknown;
   pageMargins?: unknown;
   paperSource?: unknown;
@@ -120,7 +125,7 @@ export function serializeDocumentSectionFormatting(attributes: {
   const snapshot = normalizeDocumentSectionFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType, formProt, noEndnote, verticalAlign, textDirection, bidi, footnotePr, or endnotePr.',
+      'Section-formatting snapshot requires orientation, breakAfter, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType, formProt, noEndnote, verticalAlign, textDirection, bidi, footnotePr, or endnotePr.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -152,6 +157,7 @@ export function parseDocumentSectionFormatting(
     keys.some(
       (key) =>
         key !== 'orientation' &&
+        key !== 'breakAfter' &&
         key !== 'pageGeometry' &&
         key !== 'pageMargins' &&
         key !== 'paperSource' &&
@@ -179,6 +185,7 @@ export function parseDocumentSectionFormatting(
 
 export function normalizeDocumentSectionFormattingSnapshot(attributes: {
   orientation?: unknown;
+  breakAfter?: unknown;
   pageGeometry?: unknown;
   pageMargins?: unknown;
   paperSource?: unknown;
@@ -205,6 +212,10 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
       return null;
     }
     snapshot.orientation = attributes.orientation;
+  }
+  if ('breakAfter' in attributes && attributes.breakAfter !== undefined) {
+    if (!isSectionBreakAfter(attributes.breakAfter)) return null;
+    snapshot.breakAfter = attributes.breakAfter;
   }
   if ('pageGeometry' in attributes && attributes.pageGeometry !== undefined) {
     const pageGeometry = normalizeDocumentPageGeometry(attributes.pageGeometry);
@@ -283,6 +294,7 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     snapshot.endnotePr = endnotePr;
   }
   return snapshot.orientation ||
+    snapshot.breakAfter !== undefined ||
     snapshot.pageGeometry ||
     snapshot.pageMargins ||
     snapshot.paperSource ||
@@ -321,6 +333,10 @@ export function restoredDocumentSectionAttributes(
   if (!formatting) return null;
   let orientation =
     attributes.orientation === 'landscape' ? 'landscape' : 'portrait';
+  let breakAfter = attributes.breakAfter;
+  if (formatting.breakAfter !== undefined) {
+    breakAfter = formatting.breakAfter;
+  }
   let pageGeometry = attributes.pageGeometry;
   if (formatting.pageGeometry) {
     pageGeometry = serializeDocumentPageGeometry(formatting.pageGeometry) ?? '';
@@ -495,6 +511,7 @@ export function restoredDocumentSectionAttributes(
   return clearDocumentSectionChangeAttributes({
     ...attributes,
     orientation,
+    breakAfter,
     pageGeometry,
     pageMargins,
     paperSource,
@@ -528,6 +545,7 @@ export function restoredDocumentSectionAttributes(
 
 export function sectionFormattingSnapshotFromLayout(layout: {
   orientation: 'portrait' | 'landscape';
+  breakAfter?: WorkDocumentSectionBreakType;
   margins: { top: number; right: number; bottom: number; left: number };
   pageMargins?: WorkDocumentPageMargins;
   pageGeometry?: WorkDocumentPageGeometry;
@@ -584,6 +602,9 @@ export function sectionFormattingSnapshotFromLayout(layout: {
   );
   return normalizeDocumentSectionFormattingSnapshot({
     orientation: layout.orientation,
+    ...(layout.breakAfter !== undefined
+      ? { breakAfter: layout.breakAfter }
+      : {}),
     pageGeometry,
     pageMargins: twipOnlyPageMargins(pageMargins),
     ...(paperSource ? { paperSource } : {}),
@@ -1101,6 +1122,18 @@ function isSectionVerticalAlign(
   );
 }
 
+function isSectionBreakAfter(
+  value: unknown,
+): value is WorkDocumentSectionBreakType {
+  return (
+    value === 'nextPage' ||
+    value === 'nextColumn' ||
+    value === 'continuous' ||
+    value === 'evenPage' ||
+    value === 'oddPage'
+  );
+}
+
 function isSectionTextDirection(
   value: unknown,
 ): value is WorkDocumentSectionTextDirection {
@@ -1119,6 +1152,9 @@ function orderedSnapshot(
 ): Record<string, unknown> {
   const ordered: Record<string, unknown> = {};
   if (snapshot.orientation) ordered.orientation = snapshot.orientation;
+  if (snapshot.breakAfter !== undefined) {
+    ordered.breakAfter = snapshot.breakAfter;
+  }
   if (snapshot.pageGeometry) {
     ordered.pageGeometry = orderedPageGeometry(snapshot.pageGeometry);
   }

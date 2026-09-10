@@ -117,6 +117,11 @@ function setSectionFormattingChange(
     change.setAttributeNS(WORD_NAMESPACE, 'w:date', patch.date);
   }
   const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
+  if (formatting.breakAfter !== undefined) {
+    const type = document.createElementNS(WORD_NAMESPACE, 'w:type');
+    type.setAttributeNS(WORD_NAMESPACE, 'w:val', formatting.breakAfter);
+    prior.append(type);
+  }
   if (formatting.pageGeometry) {
     const pageSize = document.createElementNS(WORD_NAMESPACE, 'w:pgSz');
     pageSize.setAttributeNS(
