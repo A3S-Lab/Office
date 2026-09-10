@@ -437,13 +437,13 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.108.0`');
-  expect(readme).toContain('row divId revisions reviewable');
+  expect(readme).toContain('Version `0.109.0`');
+  expect(readme).toContain('row tblCellSpacing revisions reviewable');
   expect(readme).toContain('row-formatting');
   expect(readme).toContain('Earlier releases stay on the product');
-  expect(englishHome).toContain("## What's new on `main` (0.108.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.109.0)");
   expect(englishHome).toContain('row-formatting');
-  expect(chineseHome).toContain('## `main` 更新内容（0.108.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.109.0）');
   expect(chineseHome).toContain('row-formatting');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
@@ -456,7 +456,7 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.108.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.109.0)");
   expect(englishHome).toContain('## Explore by surface');
   expect(englishHome).not.toContain('Current product highlights');
   expect(englishHome).toContain("[What's new](./changelog.html)");
@@ -484,7 +484,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(englishHome).toContain('document.html#common-live-fields');
   expect(englishHome).toContain('document.html#built-in-content-controls');
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.108.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.109.0）');
   expect(chineseHome).toContain('## 按表面探索');
   expect(chineseHome).not.toContain('当前产品亮点');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
@@ -583,7 +583,7 @@ test('publishes the WPS VML connector boundary across code, docs, and A3S Test e
   expect(connectorTest).toContain('WPS connector compatibility boundary');
   expect(connectorAcl).toContain('scenario "edit-wps-vml-connector-boundary"');
   expect(packageManifest).toContain('test:e2e:writer-wps-connector:check');
-  expect(packageManifest).toContain('"version": "0.108.0"');
+  expect(packageManifest).toContain('"version": "0.109.0"');
 });
 
 test('publishes Writer connector arrow-style parity across the current and frozen release', async () => {
@@ -634,7 +634,7 @@ test('publishes Writer connector arrow-style parity across the current and froze
   expect(changelog).toContain('BeginArrowheadStyle=3');
   expect(releaseData).toContain("version: '0.56.0'");
   expect(releaseData).toContain('一个类型化箭头样式模型');
-  expect(packageManifest).toContain('"version": "0.108.0"');
+  expect(packageManifest).toContain('"version": "0.109.0"');
 });
 
 test('publishes the WPS connector-kind A3S Test matrix in the 0.57.0 release story', async () => {
@@ -661,7 +661,7 @@ test('publishes the WPS connector-kind A3S Test matrix in the 0.57.0 release sto
 
   for (const document of [latestEnglish, latestChinese]) {
     expect(document).toContain('A3S Test');
-    expect(document).toContain('0.108.0');
+    expect(document).toContain('0.109.0');
   }
   for (const document of [frozenEnglish, frozenChinese]) {
     expect(document).toContain('A3S Test');
@@ -673,7 +673,7 @@ test('publishes the WPS connector-kind A3S Test matrix in the 0.57.0 release sto
   expect(releaseData).toContain(
     'Writer connectors gain typed WPS shape parity',
   );
-  expect(packageManifest).toContain('"version": "0.108.0"');
+  expect(packageManifest).toContain('"version": "0.109.0"');
 });
 
 test('publishes Writer numbering revisions across implementation, native collaboration, docs, and release evidence', async () => {
@@ -1027,7 +1027,7 @@ test('publishes Writer move revisions across implementation, native collaboratio
   expect(moveTests).toContain(
     'round-trips native moveFrom and moveTo wrappers',
   );
-  expect(packageManifest).toContain('0.108.0');
+  expect(packageManifest).toContain('0.109.0');
 });
 
 test('publishes bounded Writer whole-paragraph revisions in the 0.52.0 frozen documentation', async () => {
@@ -1148,7 +1148,7 @@ test('publishes bounded Writer whole-paragraph revisions in the 0.52.0 frozen do
   expect(aclSuite).toContain(
     'scenario "review-wps-paragraph-mark-revisions-on-phone"',
   );
-  expect(packageManifest).toContain('"version": "0.108.0"');
+  expect(packageManifest).toContain('"version": "0.109.0"');
   expect(packageManifest).toContain('test:e2e:writer-paragraph-mark-revision');
 });
 
@@ -1214,7 +1214,7 @@ test('publishes bounded Writer Compare moves in the 0.51.0 frozen documentation'
   expect(changelog).toContain('WPS COM/UIA reference probe');
   expect(releaseData).toContain("version: '0.51.0'");
   expect(releaseData).toContain('document-compare-and-combine');
-  expect(packageManifest).toContain('"version": "0.108.0"');
+  expect(packageManifest).toContain('"version": "0.109.0"');
 });
 
 test('publishes Spreadsheet validation alert branches across implementation, docs, and release evidence', async () => {

@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.108.0` makes row divId revisions reviewable:
+Version `0.109.0` makes row tblCellSpacing revisions reviewable:
 
-- **Row div id** — relationship-free `trPrChange` priors with bounded
-  non-negative `divId` become reviewable `row-formatting` with accept/reject,
-  live track-changes, and native DOCX export.
-- **Boundary** — missing or malformed values stay fail-closed; opaque row
-  fixtures stay on `tblCellSpacing`. Nested cell `cellIns`/`cellDel` stay opaque.
+- **Row cell spacing** — relationship-free `trPrChange` priors with
+  `tblCellSpacing` (`CT_TblWidth`) become reviewable `row-formatting` with
+  accept/reject, live track-changes, and native DOCX export.
+- **Boundary** — malformed widths stay fail-closed; opaque row fixtures stay on
+  nested `ins`. CT_TrPrBase coverage is complete; `ins`/`del` stay opaque.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

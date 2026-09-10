@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.109.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes row tblCellSpacing revisions reviewable',
+      zh: 'Writer 让行 tblCellSpacing 修订可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free trPrChange priors with tblCellSpacing (CT_TblWidth) import as row-formatting with accept/reject, live track-changes, and native DOCX export. CT_TrPrBase coverage is complete.',
+      zh: 'Phase 0 保真：含 tblCellSpacing（CT_TblWidth）的无关系 trPrChange 先验导入为 row-formatting，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。CT_TrPrBase 覆盖已完成。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Row cell spacing',
+          zh: '行单元格间距',
+        },
+        detail: {
+          en: 'tblCellSpacing priors round-trip as reviewable row-formatting preferred-width snapshots.',
+          zh: 'tblCellSpacing 先验作为可审阅 row-formatting 首选宽度快照往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing row tblCellSpacing under track-changes creates a pending row-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑行 tblCellSpacing 会生成待审阅的 row-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'Malformed widths stay fail-closed; opaque row fixtures stay on nested ins. Remaining ins/del track-change identity stays opaque.',
+          zh: '畸形宽度保持失败闭合；不透明行夹具仍为嵌套 ins。剩余 ins/del 修订身份仍不透明。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.109.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.109.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.108.0',
     date: '2026-09-10',
     kind: 'improved',
