@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.124.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer expands eligible paragraph-break revision bodies',
+      zh: 'Writer 扩展可审阅段落分隔修订正文',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: eligible paragraph-break merge/split revisions now admit soft breaks, empty/rPr-only runs, relationship-free internal hyperlinks, and relationship-free bookmarks on both sides, matching whole-paragraph mark admission. Relationship-bound or spoofed shapes stay fail-closed.',
+      zh: 'Phase 0 保真：可审阅段落分隔合并/拆分修订现可在两侧纳入软换行、仅 rPr 的空 run、无关系内部超链接与无关系书签，与整段段落标记准入一致。有关系或伪造形态保持失败闭合。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Richer paragraph-break bodies',
+          zh: '更丰富的段落分隔正文',
+        },
+        detail: {
+          en: 'Soft breaks, bookmarks, and relationship-free internal hyperlinks are admitted for merge/split review.',
+          zh: '软换行、书签与无关系内部超链接可进入合并/拆分审阅。',
+        },
+      },
+      {
+        title: {
+          en: 'Aligned with paragraph-mark admission',
+          zh: '与段落标记准入对齐',
+        },
+        detail: {
+          en: 'Paragraph-break body rules now match the whole-paragraph mark text-only admission set.',
+          zh: '段落分隔正文规则现与整段段落标记纯文本准入集合对齐。',
+        },
+      },
+      {
+        title: {
+          en: 'Relationship-bound shapes stay fail-closed',
+          zh: '有关系形态保持失败闭合',
+        },
+        detail: {
+          en: 'Relationship-bound or spoofed links/bookmarks, drawings, and tracked wrappers stay diagnostics-only.',
+          zh: '有关系或伪造的链接/书签、图形与带修订包装仍仅作诊断。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.124.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.124.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.123.0',
     date: '2026-09-10',
     kind: 'improved',

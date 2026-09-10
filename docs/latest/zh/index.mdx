@@ -42,12 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.123.0）
+## `main` 更新内容（0.124.0）
 
-Writer Phase 0 让有界多级编号修订可审阅：
+Writer Phase 0 扩展可审阅段落分隔修订正文：
 
-- 连续同级 `w:numberingChange` 先验（2-9 级常见 decimal/letter/Roman，含段落 `w:ilvl`）作为可审阅有序列表编号修订：接受/拒绝与原生导出。
-- 不支持的格式、缺失当前级别段与畸形先验保持失败闭合。
+- 软换行、仅 `rPr` 的空 run、无关系内部超链接与无关系书签现可出现在合并/拆分候选两侧，与整段段落标记准入一致。
+- 有关系或伪造的链接/书签、图形与带修订包装仍失败闭合。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

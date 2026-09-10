@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.124.0 - 2026-09-10
+
 ### Writer
 
 - Eligible paragraph-break merge/split revisions now admit the same bounded

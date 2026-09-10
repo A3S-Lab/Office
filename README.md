@@ -371,15 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.123.0` makes bounded multi-level numbering revisions reviewable:
+Version `0.124.0` expands eligible paragraph-break revision bodies:
 
-- **Multi-level numberingChange** — relationship-free `w:numberingChange`
-  originals with contiguous sibling `%[ilvl]:[start]:[nfc]:[suff]` segments
-  (2-9 common decimal/letter/Roman levels including the paragraph `w:ilvl`)
-  become reviewable ordered-list numbering revisions with accept/reject,
-  contiguous grouping, and native export/reopen.
-- **Boundary** — unsupported formats, missing current-level segments, and
-  malformed originals stay fail-closed.
+- **Paragraph-break body admission** — isolated merge/split candidates now admit
+  soft breaks, empty/`rPr`-only runs, relationship-free internal hyperlinks, and
+  relationship-free bookmarks on both the marked paragraph and its neighbor,
+  matching whole-paragraph mark admission, with reviewable accept/reject.
+- **Boundary** — relationship-bound or spoofed links/bookmarks, drawings, and
+  tracked wrappers stay fail-closed diagnostics.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

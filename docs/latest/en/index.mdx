@@ -44,14 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.123.0)
+## What's new on `main` (0.124.0)
 
-Writer Phase 0 makes bounded multi-level numbering revisions reviewable:
+Writer Phase 0 expands eligible paragraph-break revision bodies:
 
-- contiguous sibling-level `w:numberingChange` originals (2-9 common
-  decimal/letter/Roman levels including the paragraph `w:ilvl`) import as
-  reviewable ordered-list numbering revisions with accept/reject and native export.
-- Unsupported formats, missing current-level segments, and malformed originals
+- soft breaks, empty/`rPr`-only runs, relationship-free internal hyperlinks, and
+  relationship-free bookmarks are now admitted on both sides of a merge/split
+  candidate, matching whole-paragraph mark admission.
+- Relationship-bound or spoofed links/bookmarks, drawings, and tracked wrappers
   stay fail-closed.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
