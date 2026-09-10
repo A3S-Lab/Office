@@ -1,0 +1,40 @@
+[
+  "index",
+  "changelog",
+  {
+    "type": "section-header",
+    "label": "开始"
+  },
+  {
+    "type": "dir",
+    "name": "guide",
+    "label": "快速开始"
+  },
+  {
+    "type": "section-header",
+    "label": "组件库"
+  },
+  {
+    "type": "dir",
+    "name": "components",
+    "label": "组件",
+    "collapsible": true
+  },
+  {
+    "type": "section-header",
+    "label": "自动化"
+  },
+  {
+    "type": "dir",
+    "name": "automation",
+    "label": "CLI 与智能体"
+  },
+  {
+    "type": "section-header",
+    "label": "工程参考"
+  },
+  "browser-editor-architecture",
+  "native-office-engine",
+  "editor-quality-roadmap",
+  "cli-reference"
+]
