@@ -363,10 +363,11 @@ function isolatedParagraphBreakMarkChange(
 
 /**
  * Paragraph-break merge/split requires untracked text-only bodies on both the
- * marked paragraph and its eligible neighbor. Soft breaks, empty/`rPr`-only
- * runs, relationship-free internal hyperlinks, and relationship-free bookmarks
- * match the whole-paragraph mark admission set; drawings, tracked wrappers,
- * and relationship-bound links stay fail-closed.
+ * marked paragraph and its eligible neighbor. Soft breaks, tabs, non-breaking
+ * and soft hyphens, empty/`rPr`-only runs, relationship-free internal
+ * hyperlinks, and relationship-free bookmarks match the whole-paragraph mark
+ * admission set; drawings, tracked wrappers, and relationship-bound links stay
+ * fail-closed.
  */
 function paragraphBodyIsUntrackedTextOnly(
   paragraph: Element,
@@ -616,6 +617,7 @@ function runIsTextOnly(
       if (!isTextWrappingBreak(child)) return false;
       continue;
     }
+    if (isAdmittedEmptyRunGlyph(child)) continue;
     if (child.localName !== textName || child.children.length) return false;
   }
   return true;
@@ -626,12 +628,15 @@ function runHasVisibleText(
   kind: DocxParagraphMarkChangeKind,
 ): boolean {
   const textName = kind === 'deletion' ? 'delText' : 't';
-  return directChildren(run).some(
-    (child) =>
+  return directChildren(run).some((child) => {
+    if (child.namespaceURI !== run.namespaceURI) return false;
+    if (isAdmittedEmptyRunGlyph(child)) return true;
+    return (
       child.localName === textName &&
-      child.namespaceURI === run.namespaceURI &&
-      Boolean(child.textContent),
-  );
+      Boolean(child.textContent) &&
+      child.children.length === 0
+    );
+  });
 }
 
 /**
@@ -748,6 +753,21 @@ function isTextWrappingBreak(element: Element): boolean {
   if (element.children.length) return false;
   const type = wordAttribute(element, 'type');
   return type === null || type === 'textWrapping';
+}
+
+/** Empty CT_Empty run glyphs already projected elsewhere in Writer import. */
+const ADMITTED_EMPTY_RUN_GLYPHS = new Set([
+  'tab',
+  'noBreakHyphen',
+  'softHyphen',
+]);
+
+function isAdmittedEmptyRunGlyph(element: Element): boolean {
+  return (
+    ADMITTED_EMPTY_RUN_GLYPHS.has(element.localName) &&
+    element.children.length === 0 &&
+    element.attributes.length === 0
+  );
 }
 
 function wordAttribute(element: Element, localName: string): string | null {

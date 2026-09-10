@@ -335,9 +335,7 @@ function moveChildrenAreTextOnly(
     }
     if (child.localName === 'r') {
       if (!moveRunIsTextOnly(child, allowedText)) return false;
-      hasText ||= Array.from(child.children).some(
-        (node) => allowedText.has(node.localName) && Boolean(node.textContent),
-      );
+      hasText ||= moveRunHasVisibleContent(child, allowedText);
       continue;
     }
     if (child.localName === 'hyperlink') {
@@ -352,10 +350,7 @@ function moveChildrenAreTextOnly(
         ) {
           return false;
         }
-        hasText ||= Array.from(run.children).some(
-          (node) =>
-            allowedText.has(node.localName) && Boolean(node.textContent),
-        );
+        hasText ||= moveRunHasVisibleContent(run, allowedText);
       }
       continue;
     }
@@ -398,11 +393,25 @@ function moveRunIsTextOnly(
       if (!isTextWrappingBreak(child)) return false;
       continue;
     }
+    if (isAdmittedEmptyRunGlyph(child)) continue;
     if (!allowedText.has(child.localName) || child.querySelector('*')) {
       return false;
     }
   }
   return true;
+}
+
+function moveRunHasVisibleContent(
+  run: Element,
+  allowedText: ReadonlySet<string>,
+): boolean {
+  return Array.from(run.children).some((node) => {
+    if (!DOCX_WORDPROCESSING_NAMESPACES.has(node.namespaceURI ?? '')) {
+      return false;
+    }
+    if (isAdmittedEmptyRunGlyph(node)) return true;
+    return allowedText.has(node.localName) && Boolean(node.textContent);
+  });
 }
 
 const HYPERLINK_ATTRIBUTES = new Set([
@@ -490,6 +499,21 @@ function isTextWrappingBreak(element: Element): boolean {
   if (element.children.length) return false;
   const type = wordAttribute(element, 'type');
   return type === null || type === 'textWrapping';
+}
+
+/** Empty CT_Empty run glyphs already projected elsewhere in Writer import. */
+const ADMITTED_EMPTY_RUN_GLYPHS = new Set([
+  'tab',
+  'noBreakHyphen',
+  'softHyphen',
+]);
+
+function isAdmittedEmptyRunGlyph(element: Element): boolean {
+  return (
+    ADMITTED_EMPTY_RUN_GLYPHS.has(element.localName) &&
+    element.children.length === 0 &&
+    element.attributes.length === 0
+  );
 }
 
 function wordAttribute(element: Element, localName: string): string | null {

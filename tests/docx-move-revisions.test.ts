@@ -318,6 +318,62 @@ describe('DOCX move revisions', () => {
     ]);
   });
 
+  test('admits tabs and hyphen glyphs inside move revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:moveFrom w:id="17" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:r>
+                <w:delText>old</w:delText><w:tab/>
+                <w:noBreakHyphen/><w:softHyphen/><w:delText>line</w:delText>
+              </w:r>
+            </w:moveFrom>
+          </w:p>
+          <w:p>
+            <w:moveTo w:id="17" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:r>
+                <w:t>old</w:t><w:tab/>
+                <w:noBreakHyphen/><w:softHyphen/><w:t>line</w:t>
+              </w:r>
+            </w:moveTo>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const moves = [
+      ...descendants(document, 'moveFrom'),
+      ...descendants(document, 'moveTo'),
+    ];
+    expect(moves.map(isSupportedDocxMoveChange)).toEqual([true, true]);
+    expect(supportedDocxMovePairCount(document)).toBe(1);
+  });
+
+  test('rejects attributed tab glyphs inside move revisions', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:moveFrom w:id="18" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:r><w:delText>old</w:delText><w:tab w:val="left"/><w:delText>line</w:delText></w:r>
+            </w:moveFrom>
+          </w:p>
+          <w:p>
+            <w:moveTo w:id="18" w:author="Ada" w:date="2026-09-01T00:00:00Z">
+              <w:r><w:t>old</w:t><w:tab w:val="left"/><w:t>line</w:t></w:r>
+            </w:moveTo>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const moves = [
+      ...descendants(document, 'moveFrom'),
+      ...descendants(document, 'moveTo'),
+    ];
+    expect(moves.map(isSupportedDocxMoveChange)).toEqual([false, false]);
+    expect(supportedDocxMovePairCount(document)).toBe(0);
+  });
+
   test('admits relationship-free bookmarks inside move revisions', () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}">
