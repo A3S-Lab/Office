@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.144.0 - 2026-09-11
+
+### Writer
+
+- Attribute-free empty `w:footnoteRef` CT_Empty glyphs are now admitted
+  inside whole-paragraph mark, paragraph-break, and text-move revision
+  bodies. Attributed `footnoteRef`, `footnoteReference` with id,
+  `endnoteRef`, `annotationRef`, and separators stay fail-closed.
+
 ## 0.143.0 - 2026-09-11
 
 ### Writer

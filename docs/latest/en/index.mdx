@@ -44,15 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.143.0)
+## What's new on `main` (0.144.0)
 
-Writer Phase 0 admits omitted `w:ilvl` as OOXML default level `0` on numbering
-revisions when `w:numId` and a supported `w:numberingChange` are present:
+Writer Phase 0 admits attribute-free empty `w:footnoteRef` CT_Empty glyphs
+inside whole-paragraph mark, paragraph-break, and text-move revision bodies:
 
-- CT_NumPr without an explicit `w:ilvl` imports as reviewable numbering at
-  level `0`.
-- Missing `numId`, current-level bullet/picture formats, and malformed
-  originals stay fail-closed.
+- Attribute-free empty `w:footnoteRef` imports inside eligible mark, break,
+  and move revision bodies.
+- Attributed `footnoteRef`, `footnoteReference` with id, `endnoteRef`,
+  `annotationRef`, and separators stay fail-closed.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

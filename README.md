@@ -371,14 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.143.0` admits omitted `w:ilvl` as OOXML default level `0` on
-numbering revisions when `w:numId` and a supported `w:numberingChange` are
-present:
+Version `0.144.0` admits attribute-free empty `w:footnoteRef` CT_Empty
+glyphs inside whole-paragraph mark, paragraph-break, and text-move revision
+bodies:
 
-- **Omitted `w:ilvl` → level 0** — CT_NumPr without an explicit `w:ilvl`
-  imports as reviewable numbering at the OOXML default level.
-- **Boundary** — missing `numId`, current-level bullet/picture formats, and
-  malformed originals stay fail-closed.
+- **Empty `w:footnoteRef`** — attribute-free CT_Empty footnote reference
+  glyphs import inside eligible mark, break, and move revision bodies.
+- **Boundary** — attributed `footnoteRef`, `footnoteReference` with id,
+  `endnoteRef`, `annotationRef`, and separators stay fail-closed.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
