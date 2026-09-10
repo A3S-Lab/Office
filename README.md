@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.105.0` makes cell hMerge revisions reviewable:
+Version `0.106.0` makes cell vMerge revisions reviewable:
 
-- **Horizontal merge** — relationship-free `tcPrChange` priors with bounded
-  `hMerge` (`restart` / `continue`) become reviewable `cell-formatting` with
+- **Vertical merge** — relationship-free `tcPrChange` priors with bounded
+  `vMerge` (`restart` / `continue`) become reviewable `cell-formatting` with
   accept/reject, live track-changes, and native DOCX export.
 - **Boundary** — unknown merge values stay fail-closed; opaque cell fixtures stay
-  on `vMerge`.
+  on `gridSpan`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
