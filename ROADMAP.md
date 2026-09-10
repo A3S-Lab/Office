@@ -218,8 +218,8 @@ a phase exits only when its evidence is complete.
   with accept/reject, live track-changes for orientation, page-geometry,
   page-margin, paper-source, differentFirstPage (`w:titlePg`), rtlGutter,
   bounded `w:docGrid` (`w:type`/`w:linePitch` only), bounded `w:lnNumType`
-  (`w:countBy`/`w:start`/`w:distance`/`w:restart`), and bounded `w:pgNumType`
-  (`w:fmt`/`w:start` only) edits, and native export.
+  (`w:countBy`/`w:start`/`w:distance`/`w:restart`), bounded `w:pgNumType`
+  (`w:fmt`/`w:start` only), and `w:formProt` edits, and native export.
   Equal-width `w:cols` (num/space/sep, no unequal `w:col` children) and
   unequal-width `w:cols` (`w:equalWidth` off with bounded `w:col` children) are
   also reviewable as `section-formatting` with live column edits. Broader

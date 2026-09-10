@@ -862,6 +862,7 @@ async function parseSectionLayout(
   const documentGridElement = directChild(section, 'docGrid');
   const lnNumTypeElement = directChild(section, 'lnNumType');
   const pgNumTypeElement = directChild(section, 'pgNumType');
+  const formProtElement = directChild(section, 'formProt');
   const pageBorders = parseDocxPageBorders(section, theme);
   const parsedPageMargins = parseDocxPageMargins(
     section,
@@ -881,6 +882,9 @@ async function parseSectionLayout(
   );
   const parsedPgNumType = pgNumTypeElement
     ? parsePgNumType(pgNumTypeElement)
+    : undefined;
+  const parsedFormProt = formProtElement
+    ? parseFormProt(formProtElement)
     : undefined;
   const pageNumberStart =
     parsedPgNumType?.start !== undefined && parsedPgNumType.start > 0
@@ -911,6 +915,11 @@ async function parseSectionLayout(
       ? { pgNumType: parsedPgNumType }
       : previous.pgNumType
         ? { pgNumType: { ...previous.pgNumType } }
+        : {}),
+    ...(parsedFormProt !== undefined
+      ? { formProt: parsedFormProt }
+      : previous.formProt !== undefined
+        ? { formProt: previous.formProt }
         : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
@@ -954,6 +963,18 @@ function parsePgNumType(element: Element): WorkDocumentPgNumType | undefined {
     next.start = start;
   }
   return next.fmt !== undefined || next.start !== undefined ? next : undefined;
+}
+
+function parseFormProt(element: Element): boolean {
+  const value = attribute(element, 'val');
+  if (value === null || value === '') return true;
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized === '1' ||
+    normalized === 'true' ||
+    normalized === 'on' ||
+    normalized === 'yes'
+  );
 }
 
 function parseDocumentGrid(element: Element): WorkDocumentGrid {

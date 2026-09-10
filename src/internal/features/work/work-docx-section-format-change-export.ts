@@ -269,6 +269,13 @@ function setSectionFormattingChange(
     }
     prior.append(pgNumType);
   }
+  if (formatting.formProt !== undefined) {
+    const formProt = document.createElementNS(WORD_NAMESPACE, 'w:formProt');
+    if (!formatting.formProt) {
+      formProt.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    }
+    prior.append(formProt);
+  }
   change.append(prior);
   section.append(change);
 }

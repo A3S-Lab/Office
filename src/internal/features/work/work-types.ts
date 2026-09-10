@@ -140,6 +140,8 @@ export interface WorkDocumentSectionLayout {
   documentGrid?: WorkDocumentGrid;
   lnNumType?: WorkDocumentLnNumType;
   pgNumType?: WorkDocumentPgNumType;
+  /** Protect form fields (`w:formProt`); CT_OnOff. */
+  formProt?: boolean;
   pageBorders?: WorkDocumentPageBorders;
   pageMargins?: WorkDocumentPageMargins;
   pageGeometry?: WorkDocumentPageGeometry;

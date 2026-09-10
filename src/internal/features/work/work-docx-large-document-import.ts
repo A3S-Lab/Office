@@ -314,6 +314,7 @@ function documentSectionModelAttributes(
     lnNumRestart: '',
     pgNumFmt: '',
     pgNumStart: null,
+    formProt: null,
   };
 }
 

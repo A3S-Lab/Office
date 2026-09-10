@@ -56,7 +56,8 @@ export type DocumentSectionEqualColumnsSnapshot = DocumentSectionColumnsSnapshot
 /**
  * Prior snapshot for reviewable section-property revisions.
  * At least one of orientation, pageGeometry, pageMargins, paperSource,
- * columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, or pgNumType must be present.
+ * columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType,
+ * or formProt must be present.
  */
 export interface DocumentSectionFormattingSnapshot {
   orientation?: 'portrait' | 'landscape';
@@ -69,6 +70,7 @@ export interface DocumentSectionFormattingSnapshot {
   documentGrid?: WorkDocumentGrid;
   lnNumType?: WorkDocumentLnNumType;
   pgNumType?: WorkDocumentPgNumType;
+  formProt?: boolean;
 }
 
 const MAX_SECTION_FORMAT_SNAPSHOT_BYTES = 4_096;
@@ -93,11 +95,12 @@ export function serializeDocumentSectionFormatting(attributes: {
   documentGrid?: unknown;
   lnNumType?: unknown;
   pgNumType?: unknown;
+  formProt?: unknown;
 }): string {
   const snapshot = normalizeDocumentSectionFormattingSnapshot(attributes);
   if (!snapshot) {
     throw new Error(
-      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, or pgNumType.',
+      'Section-formatting snapshot requires orientation, pageGeometry, pageMargins, paperSource, columns, differentFirstPage, rtlGutter, documentGrid, lnNumType, pgNumType, or formProt.',
     );
   }
   return JSON.stringify(orderedSnapshot(snapshot));
@@ -137,7 +140,8 @@ export function parseDocumentSectionFormatting(
         key !== 'rtlGutter' &&
         key !== 'documentGrid' &&
         key !== 'lnNumType' &&
-        key !== 'pgNumType',
+        key !== 'pgNumType' &&
+        key !== 'formProt',
     )
   ) {
     return null;
@@ -158,6 +162,7 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
   documentGrid?: unknown;
   lnNumType?: unknown;
   pgNumType?: unknown;
+  formProt?: unknown;
 }): DocumentSectionFormattingSnapshot | null {
   const snapshot: DocumentSectionFormattingSnapshot = {};
   if ('orientation' in attributes && attributes.orientation !== undefined) {
@@ -215,6 +220,10 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     if (!pgNumType) return null;
     snapshot.pgNumType = pgNumType;
   }
+  if ('formProt' in attributes && attributes.formProt !== undefined) {
+    if (typeof attributes.formProt !== 'boolean') return null;
+    snapshot.formProt = attributes.formProt;
+  }
   return snapshot.orientation ||
     snapshot.pageGeometry ||
     snapshot.pageMargins ||
@@ -224,7 +233,8 @@ export function normalizeDocumentSectionFormattingSnapshot(attributes: {
     snapshot.rtlGutter !== undefined ||
     snapshot.documentGrid ||
     snapshot.lnNumType ||
-    snapshot.pgNumType
+    snapshot.pgNumType ||
+    snapshot.formProt !== undefined
     ? snapshot
     : null;
 }
@@ -390,6 +400,10 @@ export function restoredDocumentSectionAttributes(
         ? Math.min(9999, formatting.pgNumType.start)
         : null;
   }
+  let formProt = attributes.formProt;
+  if (formatting.formProt !== undefined) {
+    formProt = formatting.formProt;
+  }
   return clearDocumentSectionChangeAttributes({
     ...attributes,
     orientation,
@@ -414,6 +428,7 @@ export function restoredDocumentSectionAttributes(
     pgNumFmt,
     pgNumStart,
     pageNumberStart,
+    formProt,
   });
 }
 
@@ -429,6 +444,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
   documentGrid?: WorkDocumentGrid;
   lnNumType?: WorkDocumentLnNumType;
   pgNumType?: WorkDocumentPgNumType;
+  formProt?: boolean;
   pageNumberStart?: number;
   headerText?: string;
   footerText?: string;
@@ -477,6 +493,7 @@ export function sectionFormattingSnapshotFromLayout(layout: {
     ...(documentGrid ? { documentGrid } : {}),
     ...(lnNumType ? { lnNumType } : {}),
     ...(pgNumType ? { pgNumType } : {}),
+    formProt: layout.formProt === true,
   });
 }
 
@@ -803,6 +820,9 @@ function orderedSnapshot(
   }
   if (snapshot.pgNumType) {
     ordered.pgNumType = orderedPgNumType(snapshot.pgNumType);
+  }
+  if (snapshot.formProt !== undefined) {
+    ordered.formProt = snapshot.formProt;
   }
   if (snapshot.columns) {
     ordered.columns = snapshot.columns.custom

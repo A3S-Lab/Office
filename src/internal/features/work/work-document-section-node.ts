@@ -75,6 +75,7 @@ export const DocumentSection = Node.create({
       lnNumRestart: hiddenAttribute(''),
       pgNumFmt: hiddenAttribute(''),
       pgNumStart: hiddenAttribute(null),
+      formProt: hiddenAttribute(null),
       propertyRevisionOmml: hiddenAttribute(''),
       sectionChangeKind: hiddenAttribute(null),
       sectionChangeId: hiddenAttribute(''),
@@ -180,6 +181,12 @@ export const DocumentSection = Node.create({
             pgNumFmt: (node.dataset.sectionPgNumFmt ??
               '') as DocumentSectionNodeAttributes['pgNumFmt'],
             pgNumStart: nullableNumberAttribute(node, 'sectionPgNumStart'),
+            formProt:
+              node.dataset.sectionFormProt === 'true'
+                ? true
+                : node.dataset.sectionFormProt === 'false'
+                  ? false
+                  : null,
             propertyRevisionOmml:
               node.dataset.sectionPropertyRevisionOmml ?? '',
             sectionChangeKind:

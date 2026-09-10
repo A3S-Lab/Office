@@ -49,8 +49,10 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'docGrid',
   'lnNumType',
   'pgNumType',
+  'formProt',
 ]);
 const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch']);
+const FORM_PROT_ATTRIBUTE_SET = new Set(['val']);
 const LN_NUM_TYPE_ATTRIBUTE_SET = new Set([
   'countBy',
   'start',
@@ -109,7 +111,8 @@ export interface SupportedDocxSectionFormattingChange {
  * complete seven-edge `w:pgMar`, `w:paperSrc`, equal-width or unequal-width
  * `w:cols`, and/or `w:titlePg`, and/or `w:rtlGutter`, and/or bounded
  * relationship-free `w:docGrid`, and/or bounded relationship-free `w:lnNumType`,
- * and/or bounded relationship-free `w:pgNumType` (`fmt`/`start` only).
+ * and/or bounded relationship-free `w:pgNumType` (`fmt`/`start` only), and/or
+ * relationship-free empty/onOff `w:formProt`.
  * Broader section property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxSectionFormattingChange(
@@ -167,7 +170,7 @@ function supportedSectionFormattingChange(
   const prior = priors[0];
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
-  if (!children.length || children.length > 8) return null;
+  if (!children.length || children.length > 9) return null;
   if (children.some((child) => !isSupportedSectionFormattingPriorChild(child))) {
     return null;
   }
@@ -184,6 +187,7 @@ function supportedSectionFormattingChange(
   let documentGrid: WorkDocumentGrid | undefined;
   let lnNumType: WorkDocumentLnNumType | undefined;
   let pgNumType: WorkDocumentPgNumType | undefined;
+  let formProt: boolean | undefined;
   for (const child of children) {
     if (child.localName === 'pgSz') {
       const value = importedPageSize(child);
@@ -234,6 +238,12 @@ function supportedSectionFormattingChange(
       const value = importedPgNumType(child);
       if (!value) return null;
       pgNumType = value;
+      continue;
+    }
+    if (child.localName === 'formProt') {
+      const value = importedFormProt(child);
+      if (value === null) return null;
+      formProt = value;
     }
   }
   const before = serializeDocumentSectionFormatting({
@@ -247,6 +257,7 @@ function supportedSectionFormattingChange(
     ...(documentGrid ? { documentGrid } : {}),
     ...(lnNumType ? { lnNumType } : {}),
     ...(pgNumType ? { pgNumType } : {}),
+    ...(formProt !== undefined ? { formProt } : {}),
   });
   return {
     id: `docx-section-format-change-${id}`,
@@ -575,6 +586,22 @@ function importedPgNumType(element: Element): WorkDocumentPgNumType | null {
   }
   if (next.fmt === undefined && next.start === undefined) return null;
   return next;
+}
+
+function importedFormProt(element: Element): boolean | null {
+  if (element.children.length > 0) return null;
+  const attributes = Array.from(element.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if ([...names].some((name) => !FORM_PROT_ATTRIBUTE_SET.has(name))) {
+    return null;
+  }
+  if (names.size !== attributes.length) return null;
+  return onOffValue(element);
 }
 
 function importedLnNumType(element: Element): WorkDocumentLnNumType | null {

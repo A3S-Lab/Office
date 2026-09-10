@@ -93,6 +93,7 @@ export interface DocumentSectionNodeAttributes {
   lnNumRestart: WorkDocumentLnNumRestart | '';
   pgNumFmt: WorkDocumentPgNumFmt | '';
   pgNumStart: number | null;
+  formProt: boolean | null;
   propertyRevisionOmml: string;
   sectionChangeKind: 'section-formatting' | null;
   sectionChangeId: string;
@@ -239,6 +240,7 @@ export function documentSectionNodeAttributes(
       normalizedDocumentGrid(layout.documentGrid)?.linePitch ?? null,
     ...lnNumTypeNodeFields(layout.lnNumType),
     ...pgNumTypeNodeFields(layout.pgNumType, layout.pageNumberStart),
+    formProt: layout.formProt ?? null,
     propertyRevisionOmml: layout.propertyRevisionOmml
       ? encodeDocumentTablePropertyRevisionOmml(layout.propertyRevisionOmml)
       : '',
@@ -323,6 +325,11 @@ export function documentSectionLayoutFromNodeAttributes(
     ...(documentGrid ? { documentGrid } : {}),
     ...(lnNumType ? { lnNumType } : {}),
     ...(pgNumType ? { pgNumType } : {}),
+    ...(attributes.formProt === true || attributes.formProt === false
+      ? { formProt: attributes.formProt }
+      : base.formProt !== undefined
+        ? { formProt: base.formProt }
+        : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
     ...(pageGeometry ? { pageGeometry } : {}),
@@ -391,6 +398,8 @@ export function documentSectionDomAttributes(
     'data-section-pg-num-fmt': attributes.pgNumFmt,
     'data-section-pg-num-start':
       attributes.pgNumStart === null ? '' : String(attributes.pgNumStart),
+    'data-section-form-prot':
+      attributes.formProt === null ? '' : String(attributes.formProt),
     ...(attributes.propertyRevisionOmml
       ? {
           'data-section-property-revision-omml':
@@ -452,6 +461,12 @@ export function documentSectionLayoutFromElement(
       pgNumFmt: (element.dataset.sectionPgNumFmt ??
         '') as WorkDocumentPgNumFmt | '',
       pgNumStart: numberValue(element.dataset.sectionPgNumStart) ?? null,
+      formProt:
+        element.dataset.sectionFormProt === 'true'
+          ? true
+          : element.dataset.sectionFormProt === 'false'
+            ? false
+            : null,
       propertyRevisionOmml: element.dataset.sectionPropertyRevisionOmml ?? '',
       sectionChangeKind:
         element.getAttribute('data-document-change') === 'true' &&

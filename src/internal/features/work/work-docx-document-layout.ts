@@ -81,6 +81,7 @@ export async function patchDocxDocumentLayout(
   patchSectionDocumentGrids(document, sections);
   patchSectionLnNumTypes(document, sections);
   patchSectionPgNumTypes(document, sections);
+  patchSectionFormProts(document, sections);
   archive.file(
     'word/document.xml',
     new XMLSerializer().serializeToString(document),
@@ -402,6 +403,25 @@ function patchSectionPgNumTypes(
       pgNumType.setAttributeNS(WORD_NAMESPACE, 'w:start', String(value.start));
     }
     insertSectionProperty(properties, pgNumType);
+  }
+}
+
+function patchSectionFormProts(
+  document: Document,
+  sections: readonly WorkDocumentSection[],
+): void {
+  const sectionProperties = effectiveSectionProperties(document);
+  for (const [index, properties] of sectionProperties.entries()) {
+    for (const existing of directChildren(properties, 'formProt')) {
+      existing.remove();
+    }
+    const formProt = sections[index]?.layout.formProt;
+    if (formProt === undefined) continue;
+    const element = document.createElementNS(WORD_NAMESPACE, 'w:formProt');
+    if (!formProt) {
+      element.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    }
+    insertSectionProperty(properties, element);
   }
 }
 
