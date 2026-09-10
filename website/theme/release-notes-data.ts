@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.122.0',
+    date: '2026-09-10',
+    kind: 'improved',
+    surfaces: ['writer', 'playground', 'documentation'],
+    title: {
+      en: 'Writer makes section docGrid charSpace revisions reviewable',
+      zh: 'Writer 让节 docGrid charSpace 修订可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: relationship-free sectPrChange priors with bounded docGrid charSpace (signed OOXML integer pitch delta × 4096), alone or with type/linePitch, import as section-formatting via documentGrid with accept/reject, live track-changes, and native DOCX export.',
+      zh: 'Phase 0 保真：含有界 docGrid charSpace（有符号 OOXML 整数字距增量 × 4096）的无关系 sectPrChange 先验（可与 type/linePitch 组合）经 documentGrid 导入为 section-formatting，支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Document-grid character spacing',
+          zh: '文档网格字符间距',
+        },
+        detail: {
+          en: 'Bounded charSpace priors round-trip as reviewable section-formatting snapshots on documentGrid.',
+          zh: '有界 charSpace 先验作为可审阅 section-formatting 快照在 documentGrid 上往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Live track-changes',
+          zh: '实时修订跟踪',
+        },
+        detail: {
+          en: 'Editing section documentGrid charSpace under track-changes creates a pending section-formatting revision that accept/reject can restore.',
+          zh: '在修订跟踪开启时编辑节 documentGrid charSpace 会生成待审阅的 section-formatting 修订，接受/拒绝可还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Opaque keepers stay fail-closed',
+          zh: '不透明路径保持失败闭合',
+        },
+        detail: {
+          en: 'Out-of-range/unknown attributes stay fail-closed; printerSettings remains permanently opaque.',
+          zh: '越界/未知属性保持失败闭合；printerSettings 保持永久不透明。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.122.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.122.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.121.0',
     date: '2026-09-10',
     kind: 'improved',
