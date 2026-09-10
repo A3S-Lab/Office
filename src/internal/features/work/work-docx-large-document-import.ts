@@ -315,6 +315,7 @@ function documentSectionModelAttributes(
     pgNumFmt: '',
     pgNumStart: null,
     formProt: null,
+    noEndnote: null,
     verticalAlign: '',
   };
 }

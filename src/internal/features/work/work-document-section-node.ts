@@ -76,6 +76,7 @@ export const DocumentSection = Node.create({
       pgNumFmt: hiddenAttribute(''),
       pgNumStart: hiddenAttribute(null),
       formProt: hiddenAttribute(null),
+      noEndnote: hiddenAttribute(null),
       verticalAlign: hiddenAttribute(''),
       propertyRevisionOmml: hiddenAttribute(''),
       sectionChangeKind: hiddenAttribute(null),
@@ -186,6 +187,12 @@ export const DocumentSection = Node.create({
               node.dataset.sectionFormProt === 'true'
                 ? true
                 : node.dataset.sectionFormProt === 'false'
+                  ? false
+                  : null,
+            noEndnote:
+              node.dataset.sectionNoEndnote === 'true'
+                ? true
+                : node.dataset.sectionNoEndnote === 'false'
                   ? false
                   : null,
             verticalAlign: (node.dataset.sectionVerticalAlign ??

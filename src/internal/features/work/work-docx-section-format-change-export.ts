@@ -281,6 +281,13 @@ function setSectionFormattingChange(
     vAlign.setAttributeNS(WORD_NAMESPACE, 'w:val', formatting.verticalAlign);
     prior.append(vAlign);
   }
+  if (formatting.noEndnote !== undefined) {
+    const noEndnote = document.createElementNS(WORD_NAMESPACE, 'w:noEndnote');
+    if (!formatting.noEndnote) {
+      noEndnote.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
+    }
+    prior.append(noEndnote);
+  }
   change.append(prior);
   section.append(change);
 }

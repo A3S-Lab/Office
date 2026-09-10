@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Writer
+
+- Relationship-free `w:sectPrChange` priors that include relationship-free empty
+  or onOff `w:noEndnote` (`w:val` on/off/true/false/0/1) are now reviewable as
+  `section-formatting` with accept/reject, live track-changes, and native
+  export (including current-section `w:noEndnote` on DOCX write). Unknown
+  attributes stay fail-closed; opaque section fixtures moved off `noEndnote` to
+  `textDirection`.
+
 ## 0.113.0 - 2026-09-10
 
 ### Writer

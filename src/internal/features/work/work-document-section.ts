@@ -95,6 +95,7 @@ export interface DocumentSectionNodeAttributes {
   pgNumFmt: WorkDocumentPgNumFmt | '';
   pgNumStart: number | null;
   formProt: boolean | null;
+  noEndnote: boolean | null;
   verticalAlign: WorkDocumentSectionVerticalAlign | '';
   propertyRevisionOmml: string;
   sectionChangeKind: 'section-formatting' | null;
@@ -243,6 +244,7 @@ export function documentSectionNodeAttributes(
     ...lnNumTypeNodeFields(layout.lnNumType),
     ...pgNumTypeNodeFields(layout.pgNumType, layout.pageNumberStart),
     formProt: layout.formProt ?? null,
+    noEndnote: layout.noEndnote ?? null,
     verticalAlign: layout.verticalAlign ?? '',
     propertyRevisionOmml: layout.propertyRevisionOmml
       ? encodeDocumentTablePropertyRevisionOmml(layout.propertyRevisionOmml)
@@ -333,6 +335,11 @@ export function documentSectionLayoutFromNodeAttributes(
       : base.formProt !== undefined
         ? { formProt: base.formProt }
         : {}),
+    ...(attributes.noEndnote === true || attributes.noEndnote === false
+      ? { noEndnote: attributes.noEndnote }
+      : base.noEndnote !== undefined
+        ? { noEndnote: base.noEndnote }
+        : {}),
     ...(attributes.verticalAlign === 'top' ||
     attributes.verticalAlign === 'center' ||
     attributes.verticalAlign === 'both' ||
@@ -411,6 +418,8 @@ export function documentSectionDomAttributes(
       attributes.pgNumStart === null ? '' : String(attributes.pgNumStart),
     'data-section-form-prot':
       attributes.formProt === null ? '' : String(attributes.formProt),
+    'data-section-no-endnote':
+      attributes.noEndnote === null ? '' : String(attributes.noEndnote),
     'data-section-vertical-align': attributes.verticalAlign,
     ...(attributes.propertyRevisionOmml
       ? {
@@ -477,6 +486,12 @@ export function documentSectionLayoutFromElement(
         element.dataset.sectionFormProt === 'true'
           ? true
           : element.dataset.sectionFormProt === 'false'
+            ? false
+            : null,
+      noEndnote:
+        element.dataset.sectionNoEndnote === 'true'
+          ? true
+          : element.dataset.sectionNoEndnote === 'false'
             ? false
             : null,
       verticalAlign: (element.dataset.sectionVerticalAlign ??

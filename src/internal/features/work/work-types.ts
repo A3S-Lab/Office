@@ -149,6 +149,8 @@ export interface WorkDocumentSectionLayout {
   pgNumType?: WorkDocumentPgNumType;
   /** Protect form fields (`w:formProt`); CT_OnOff. */
   formProt?: boolean;
+  /** Suppress endnotes for this section (`w:noEndnote`); CT_OnOff. */
+  noEndnote?: boolean;
   /** Text vertical alignment (`w:vAlign`); CT_VerticalJc / ST_VerticalJc. */
   verticalAlign?: WorkDocumentSectionVerticalAlign;
   pageBorders?: WorkDocumentPageBorders;

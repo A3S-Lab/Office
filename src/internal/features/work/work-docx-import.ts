@@ -865,6 +865,7 @@ async function parseSectionLayout(
   const pgNumTypeElement = directChild(section, 'pgNumType');
   const formProtElement = directChild(section, 'formProt');
   const vAlignElement = directChild(section, 'vAlign');
+  const noEndnoteElement = directChild(section, 'noEndnote');
   const pageBorders = parseDocxPageBorders(section, theme);
   const parsedPageMargins = parseDocxPageMargins(
     section,
@@ -890,6 +891,9 @@ async function parseSectionLayout(
     : undefined;
   const parsedVerticalAlign = vAlignElement
     ? parseVerticalAlign(vAlignElement)
+    : undefined;
+  const parsedNoEndnote = noEndnoteElement
+    ? parseNoEndnote(noEndnoteElement)
     : undefined;
   const pageNumberStart =
     parsedPgNumType?.start !== undefined && parsedPgNumType.start > 0
@@ -930,6 +934,11 @@ async function parseSectionLayout(
       ? { verticalAlign: parsedVerticalAlign }
       : previous.verticalAlign !== undefined
         ? { verticalAlign: previous.verticalAlign }
+        : {}),
+    ...(parsedNoEndnote !== undefined
+      ? { noEndnote: parsedNoEndnote }
+      : previous.noEndnote !== undefined
+        ? { noEndnote: previous.noEndnote }
         : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
@@ -976,6 +985,18 @@ function parsePgNumType(element: Element): WorkDocumentPgNumType | undefined {
 }
 
 function parseFormProt(element: Element): boolean {
+  const value = attribute(element, 'val');
+  if (value === null || value === '') return true;
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized === '1' ||
+    normalized === 'true' ||
+    normalized === 'on' ||
+    normalized === 'yes'
+  );
+}
+
+function parseNoEndnote(element: Element): boolean {
   const value = attribute(element, 'val');
   if (value === null || value === '') return true;
   const normalized = value.trim().toLowerCase();

@@ -52,9 +52,11 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'pgNumType',
   'formProt',
   'vAlign',
+  'noEndnote',
 ]);
 const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch']);
 const FORM_PROT_ATTRIBUTE_SET = new Set(['val']);
+const NO_ENDNOTE_ATTRIBUTE_SET = new Set(['val']);
 const V_ALIGN_ATTRIBUTE_SET = new Set(['val']);
 const V_ALIGN_VALUES = new Set(['top', 'center', 'both', 'bottom']);
 const LN_NUM_TYPE_ATTRIBUTE_SET = new Set([
@@ -117,7 +119,8 @@ export interface SupportedDocxSectionFormattingChange {
  * relationship-free `w:docGrid`, and/or bounded relationship-free `w:lnNumType`,
  * and/or bounded relationship-free `w:pgNumType` (`fmt`/`start` only), and/or
  * relationship-free empty/onOff `w:formProt`, and/or relationship-free
- * `w:vAlign` with required known `w:val` (`top`/`center`/`both`/`bottom`).
+ * `w:vAlign` with required known `w:val` (`top`/`center`/`both`/`bottom`),
+ * and/or relationship-free empty/onOff `w:noEndnote`.
  * Broader section property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxSectionFormattingChange(
@@ -175,7 +178,7 @@ function supportedSectionFormattingChange(
   const prior = priors[0];
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
-  if (!children.length || children.length > 10) return null;
+  if (!children.length || children.length > 11) return null;
   if (children.some((child) => !isSupportedSectionFormattingPriorChild(child))) {
     return null;
   }
@@ -194,6 +197,7 @@ function supportedSectionFormattingChange(
   let pgNumType: WorkDocumentPgNumType | undefined;
   let formProt: boolean | undefined;
   let verticalAlign: WorkDocumentSectionVerticalAlign | undefined;
+  let noEndnote: boolean | undefined;
   for (const child of children) {
     if (child.localName === 'pgSz') {
       const value = importedPageSize(child);
@@ -256,6 +260,12 @@ function supportedSectionFormattingChange(
       const value = importedVerticalAlign(child);
       if (value === null) return null;
       verticalAlign = value;
+      continue;
+    }
+    if (child.localName === 'noEndnote') {
+      const value = importedNoEndnote(child);
+      if (value === null) return null;
+      noEndnote = value;
     }
   }
   const before = serializeDocumentSectionFormatting({
@@ -271,6 +281,7 @@ function supportedSectionFormattingChange(
     ...(pgNumType ? { pgNumType } : {}),
     ...(formProt !== undefined ? { formProt } : {}),
     ...(verticalAlign !== undefined ? { verticalAlign } : {}),
+    ...(noEndnote !== undefined ? { noEndnote } : {}),
   });
   return {
     id: `docx-section-format-change-${id}`,
@@ -611,6 +622,22 @@ function importedFormProt(element: Element): boolean | null {
     attributes.map((candidate) => xmlAttributeLocalName(candidate)),
   );
   if ([...names].some((name) => !FORM_PROT_ATTRIBUTE_SET.has(name))) {
+    return null;
+  }
+  if (names.size !== attributes.length) return null;
+  return onOffValue(element);
+}
+
+function importedNoEndnote(element: Element): boolean | null {
+  if (element.children.length > 0) return null;
+  const attributes = Array.from(element.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if ([...names].some((name) => !NO_ENDNOTE_ATTRIBUTE_SET.has(name))) {
     return null;
   }
   if (names.size !== attributes.length) return null;
