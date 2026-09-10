@@ -42,12 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.109.0）
+## `main` 更新内容（0.110.0）
 
-Writer Phase 0 让行单元格间距 tblCellSpacing 可审阅：
+Writer Phase 0 让节行号 lnNumType 可审阅：
 
-- 行 `tblCellSpacing`（`CT_TblWidth`）作为可审阅 `row-formatting`：接受/拒绝、实时修订跟踪、原生 DOCX 导出。
-- 畸形宽度保持失败闭合；不透明行夹具仍为嵌套 `ins`。
+- 有界节 `lnNumType`（`countBy`/`start`/`distance`/`restart`）作为可审阅 `section-formatting`：接受/拒绝、实时修订跟踪、原生 DOCX 导出。
+- 未知属性保持失败闭合；不透明节夹具仍为 `pgNumType`。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

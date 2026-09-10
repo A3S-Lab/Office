@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.109.0` makes row tblCellSpacing revisions reviewable:
+Version `0.110.0` makes section lnNumType revisions reviewable:
 
-- **Row cell spacing** — relationship-free `trPrChange` priors with
-  `tblCellSpacing` (`CT_TblWidth`) become reviewable `row-formatting` with
-  accept/reject, live track-changes, and native DOCX export.
-- **Boundary** — malformed widths stay fail-closed; opaque row fixtures stay on
-  nested `ins`. CT_TrPrBase coverage is complete; `ins`/`del` stay opaque.
+- **Section line numbers** — relationship-free `sectPrChange` priors with bounded
+  `lnNumType` (`countBy`/`start`/`distance`/`restart`) become reviewable
+  `section-formatting` with accept/reject, live track-changes, and native DOCX export.
+- **Boundary** — unknown attributes stay fail-closed; opaque section fixtures stay
+  on `pgNumType`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

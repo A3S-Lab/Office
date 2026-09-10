@@ -10,12 +10,14 @@ test('documentation changelog stays scannable, localized, and version-aware', as
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
   await expect(cards).toHaveCount(90);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.109.0');
+  await expect(cards.first()).toHaveAttribute('data-version', '0.110.0');
   await expect(cards.first()).toContainText(
     'Writer 让行 tblCellSpacing 修订可审阅',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.110.0')).toContainText('节行号');
+  await expect(releaseCard('0.110.0')).toContainText('实时修订跟踪');
   await expect(releaseCard('0.109.0')).toContainText('行单元格间距');
   await expect(releaseCard('0.109.0')).toContainText('实时修订跟踪');
   await expect(releaseCard('0.108.0')).toContainText('行分区 ID');
