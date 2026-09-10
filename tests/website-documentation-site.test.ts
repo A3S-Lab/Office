@@ -456,12 +456,12 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain(
     'bounded multi-level numbering revisions reviewable',
   );
-  expect(readme).toContain('section-formatting');
+  expect(readme).toContain('numberingChange');
   expect(readme).toContain('Earlier releases stay on the product');
   expect(englishHome).toContain("## What's new on `main` (0.123.0)");
-  expect(englishHome).toContain('section-formatting');
+  expect(englishHome).toContain('numberingChange');
   expect(chineseHome).toContain('## `main` 更新内容（0.123.0）');
-  expect(chineseHome).toContain('section-formatting');
+  expect(chineseHome).toContain('numberingChange');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
   expect(readme).toContain(
