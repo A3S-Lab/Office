@@ -1008,16 +1008,19 @@ describe('DOCX cell-formatting revisions', () => {
     const properties = directChild(descendants(exported, 'tc')[0], 'tcPr');
     const change = directChild(properties, 'tcPrChange');
     expect(change).toBeTruthy();
-    expect(
-      directChild(directChild(change!, 'tcPr'), 'tcBorders'),
-    ).toBeTruthy();
+    expect(directChild(directChild(change!, 'tcPr'), 'tcBorders')).toBeTruthy();
     expect(directChild(properties, 'tcBorders')).toBeTruthy();
   });
 
   test('theme-bound tcBorders w:tcPrChange stays on the opaque cell metadata path', async () => {
     const source = await cellDocxWithBordersChange({
       prior: {
-        top: { val: 'single', sz: '12', color: 'FF0000', themeColor: 'accent1' },
+        top: {
+          val: 'single',
+          sz: '12',
+          color: 'FF0000',
+          themeColor: 'accent1',
+        },
       },
       current: {
         top: { val: 'double', sz: '24', color: '0000FF' },
@@ -1562,7 +1565,6 @@ describe('DOCX cell-formatting revisions', () => {
       editor.destroy();
     }
   });
-
 });
 
 async function cellDocxWithVAlignChange(options: {
@@ -2052,7 +2054,6 @@ async function cellDocxWithCnfStyleChange(options: {
   return archive.generateAsync({ type: 'arraybuffer' });
 }
 
-
 async function cellDocxWithHMergeChange(options: {
   prior: 'restart' | 'continue';
   current?: 'restart' | 'continue';
@@ -2077,8 +2078,7 @@ async function cellDocxWithHMergeChange(options: {
       return created;
     })();
   for (const existing of Array.from(properties.children).filter(
-    (child) =>
-      child.localName === 'hMerge' || child.localName === 'tcPrChange',
+    (child) => child.localName === 'hMerge' || child.localName === 'tcPrChange',
   )) {
     existing.remove();
   }
@@ -2194,8 +2194,7 @@ async function cellDocxWithVMergeChange(options: {
       return created;
     })();
   for (const existing of Array.from(properties.children).filter(
-    (child) =>
-      child.localName === 'vMerge' || child.localName === 'tcPrChange',
+    (child) => child.localName === 'vMerge' || child.localName === 'tcPrChange',
   )) {
     existing.remove();
   }
