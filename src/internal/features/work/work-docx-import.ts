@@ -248,6 +248,7 @@ import type {
   WorkDocumentPgNumType,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
+  WorkDocumentSectionVerticalAlign,
 } from './work-types';
 
 type ImportedDocumentLayout = Omit<WorkDocumentContent, 'type' | 'html'>;
@@ -863,6 +864,7 @@ async function parseSectionLayout(
   const lnNumTypeElement = directChild(section, 'lnNumType');
   const pgNumTypeElement = directChild(section, 'pgNumType');
   const formProtElement = directChild(section, 'formProt');
+  const vAlignElement = directChild(section, 'vAlign');
   const pageBorders = parseDocxPageBorders(section, theme);
   const parsedPageMargins = parseDocxPageMargins(
     section,
@@ -885,6 +887,9 @@ async function parseSectionLayout(
     : undefined;
   const parsedFormProt = formProtElement
     ? parseFormProt(formProtElement)
+    : undefined;
+  const parsedVerticalAlign = vAlignElement
+    ? parseVerticalAlign(vAlignElement)
     : undefined;
   const pageNumberStart =
     parsedPgNumType?.start !== undefined && parsedPgNumType.start > 0
@@ -920,6 +925,11 @@ async function parseSectionLayout(
       ? { formProt: parsedFormProt }
       : previous.formProt !== undefined
         ? { formProt: previous.formProt }
+        : {}),
+    ...(parsedVerticalAlign !== undefined
+      ? { verticalAlign: parsedVerticalAlign }
+      : previous.verticalAlign !== undefined
+        ? { verticalAlign: previous.verticalAlign }
         : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
@@ -975,6 +985,21 @@ function parseFormProt(element: Element): boolean {
     normalized === 'on' ||
     normalized === 'yes'
   );
+}
+
+function parseVerticalAlign(
+  element: Element,
+): WorkDocumentSectionVerticalAlign | undefined {
+  const value = attribute(element, 'val')?.trim();
+  if (
+    value === 'top' ||
+    value === 'center' ||
+    value === 'both' ||
+    value === 'bottom'
+  ) {
+    return value;
+  }
+  return undefined;
 }
 
 function parseDocumentGrid(element: Element): WorkDocumentGrid {

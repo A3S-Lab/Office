@@ -55,6 +55,7 @@ import type {
   WorkDocumentSectionBreakType,
   WorkDocumentSectionFormattingChange,
   WorkDocumentSectionLayout,
+  WorkDocumentSectionVerticalAlign,
 } from './work-types';
 
 export interface WorkDocumentSection {
@@ -94,6 +95,7 @@ export interface DocumentSectionNodeAttributes {
   pgNumFmt: WorkDocumentPgNumFmt | '';
   pgNumStart: number | null;
   formProt: boolean | null;
+  verticalAlign: WorkDocumentSectionVerticalAlign | '';
   propertyRevisionOmml: string;
   sectionChangeKind: 'section-formatting' | null;
   sectionChangeId: string;
@@ -241,6 +243,7 @@ export function documentSectionNodeAttributes(
     ...lnNumTypeNodeFields(layout.lnNumType),
     ...pgNumTypeNodeFields(layout.pgNumType, layout.pageNumberStart),
     formProt: layout.formProt ?? null,
+    verticalAlign: layout.verticalAlign ?? '',
     propertyRevisionOmml: layout.propertyRevisionOmml
       ? encodeDocumentTablePropertyRevisionOmml(layout.propertyRevisionOmml)
       : '',
@@ -330,6 +333,14 @@ export function documentSectionLayoutFromNodeAttributes(
       : base.formProt !== undefined
         ? { formProt: base.formProt }
         : {}),
+    ...(attributes.verticalAlign === 'top' ||
+    attributes.verticalAlign === 'center' ||
+    attributes.verticalAlign === 'both' ||
+    attributes.verticalAlign === 'bottom'
+      ? { verticalAlign: attributes.verticalAlign }
+      : base.verticalAlign !== undefined
+        ? { verticalAlign: base.verticalAlign }
+        : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
     ...(pageGeometry ? { pageGeometry } : {}),
@@ -400,6 +411,7 @@ export function documentSectionDomAttributes(
       attributes.pgNumStart === null ? '' : String(attributes.pgNumStart),
     'data-section-form-prot':
       attributes.formProt === null ? '' : String(attributes.formProt),
+    'data-section-vertical-align': attributes.verticalAlign,
     ...(attributes.propertyRevisionOmml
       ? {
           'data-section-property-revision-omml':
@@ -467,6 +479,8 @@ export function documentSectionLayoutFromElement(
           : element.dataset.sectionFormProt === 'false'
             ? false
             : null,
+      verticalAlign: (element.dataset.sectionVerticalAlign ??
+        '') as WorkDocumentSectionVerticalAlign | '',
       propertyRevisionOmml: element.dataset.sectionPropertyRevisionOmml ?? '',
       sectionChangeKind:
         element.getAttribute('data-document-change') === 'true' &&

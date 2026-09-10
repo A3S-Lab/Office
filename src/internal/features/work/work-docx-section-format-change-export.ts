@@ -276,6 +276,11 @@ function setSectionFormattingChange(
     }
     prior.append(formProt);
   }
+  if (formatting.verticalAlign !== undefined) {
+    const vAlign = document.createElementNS(WORD_NAMESPACE, 'w:vAlign');
+    vAlign.setAttributeNS(WORD_NAMESPACE, 'w:val', formatting.verticalAlign);
+    prior.append(vAlign);
+  }
   change.append(prior);
   section.append(change);
 }

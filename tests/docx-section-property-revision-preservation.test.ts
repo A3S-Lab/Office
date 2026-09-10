@@ -39,10 +39,9 @@ describe('DOCX section property-revision preservation', () => {
     change.setAttributeNS(WORD_NAMESPACE, 'w:id', '21');
     change.setAttributeNS(WORD_NAMESPACE, 'w:author', 'Reviewer');
     const prior = document.createElementNS(WORD_NAMESPACE, 'w:sectPr');
-    // formProt is reviewable as section-formatting; keep opaque on vAlign.
-    const vAlign = document.createElementNS(WORD_NAMESPACE, 'w:vAlign');
-    vAlign.setAttributeNS(WORD_NAMESPACE, 'w:val', 'center');
-    prior.append(vAlign);
+    // vAlign is reviewable as section-formatting; keep opaque on noEndnote.
+    const noEndnote = document.createElementNS(WORD_NAMESPACE, 'w:noEndnote');
+    prior.append(noEndnote);
     change.append(prior);
     section.append(change);
     archive.file(
@@ -88,16 +87,11 @@ describe('DOCX section property-revision preservation', () => {
       id: '21',
       author: 'Reviewer',
     });
-    const priorVAlign = directChild(
+    const priorNoEndnote = directChild(
       directChild(exportedChange!, 'sectPr'),
-      'vAlign',
+      'noEndnote',
     );
-    expect(priorVAlign).toBeTruthy();
-    expect(
-      priorVAlign?.getAttributeNS(WORD_NAMESPACE, 'val') ??
-        priorVAlign?.getAttribute('w:val') ??
-        priorVAlign?.getAttribute('val'),
-    ).toBe('center');
+    expect(priorNoEndnote).toBeTruthy();
   });
 
   test('drops relationship-bound w:sectPrChange instead of inventing opaque metadata', async () => {

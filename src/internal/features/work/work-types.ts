@@ -117,6 +117,13 @@ export interface WorkDocumentPgNumType {
   start?: number;
 }
 
+/** ST_VerticalJc values for section text vertical alignment (`w:vAlign`). */
+export type WorkDocumentSectionVerticalAlign =
+  | 'top'
+  | 'center'
+  | 'both'
+  | 'bottom';
+
 export type WorkDocumentPaperSize =
   | 'a3'
   | 'a4'
@@ -142,6 +149,8 @@ export interface WorkDocumentSectionLayout {
   pgNumType?: WorkDocumentPgNumType;
   /** Protect form fields (`w:formProt`); CT_OnOff. */
   formProt?: boolean;
+  /** Text vertical alignment (`w:vAlign`); CT_VerticalJc / ST_VerticalJc. */
+  verticalAlign?: WorkDocumentSectionVerticalAlign;
   pageBorders?: WorkDocumentPageBorders;
   pageMargins?: WorkDocumentPageMargins;
   pageGeometry?: WorkDocumentPageGeometry;

@@ -82,6 +82,7 @@ export async function patchDocxDocumentLayout(
   patchSectionLnNumTypes(document, sections);
   patchSectionPgNumTypes(document, sections);
   patchSectionFormProts(document, sections);
+  patchSectionVerticalAligns(document, sections);
   archive.file(
     'word/document.xml',
     new XMLSerializer().serializeToString(document),
@@ -421,6 +422,23 @@ function patchSectionFormProts(
     if (!formProt) {
       element.setAttributeNS(WORD_NAMESPACE, 'w:val', '0');
     }
+    insertSectionProperty(properties, element);
+  }
+}
+
+function patchSectionVerticalAligns(
+  document: Document,
+  sections: readonly WorkDocumentSection[],
+): void {
+  const sectionProperties = effectiveSectionProperties(document);
+  for (const [index, properties] of sectionProperties.entries()) {
+    for (const existing of directChildren(properties, 'vAlign')) {
+      existing.remove();
+    }
+    const verticalAlign = sections[index]?.layout.verticalAlign;
+    if (verticalAlign === undefined) continue;
+    const element = document.createElementNS(WORD_NAMESPACE, 'w:vAlign');
+    element.setAttributeNS(WORD_NAMESPACE, 'w:val', verticalAlign);
     insertSectionProperty(properties, element);
   }
 }

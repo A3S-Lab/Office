@@ -35,6 +35,7 @@ import type {
   WorkDocumentLnNumType,
   WorkDocumentPgNumFmt,
   WorkDocumentPgNumType,
+  WorkDocumentSectionVerticalAlign,
 } from './work-types';
 
 const MAX_REVISION_DATE_LENGTH = 64;
@@ -50,9 +51,12 @@ const SUPPORTED_PRIOR_CHILDREN = new Set([
   'lnNumType',
   'pgNumType',
   'formProt',
+  'vAlign',
 ]);
 const DOC_GRID_ATTRIBUTE_SET = new Set(['type', 'linePitch']);
 const FORM_PROT_ATTRIBUTE_SET = new Set(['val']);
+const V_ALIGN_ATTRIBUTE_SET = new Set(['val']);
+const V_ALIGN_VALUES = new Set(['top', 'center', 'both', 'bottom']);
 const LN_NUM_TYPE_ATTRIBUTE_SET = new Set([
   'countBy',
   'start',
@@ -112,7 +116,8 @@ export interface SupportedDocxSectionFormattingChange {
  * `w:cols`, and/or `w:titlePg`, and/or `w:rtlGutter`, and/or bounded
  * relationship-free `w:docGrid`, and/or bounded relationship-free `w:lnNumType`,
  * and/or bounded relationship-free `w:pgNumType` (`fmt`/`start` only), and/or
- * relationship-free empty/onOff `w:formProt`.
+ * relationship-free empty/onOff `w:formProt`, and/or relationship-free
+ * `w:vAlign` with required known `w:val` (`top`/`center`/`both`/`bottom`).
  * Broader section property sets stay on the opaque OMML path.
  */
 export function isSupportedDocxSectionFormattingChange(
@@ -170,7 +175,7 @@ function supportedSectionFormattingChange(
   const prior = priors[0];
   if (!prior || hasRelationshipBindings(prior)) return null;
   const children = Array.from(prior.children);
-  if (!children.length || children.length > 9) return null;
+  if (!children.length || children.length > 10) return null;
   if (children.some((child) => !isSupportedSectionFormattingPriorChild(child))) {
     return null;
   }
@@ -188,6 +193,7 @@ function supportedSectionFormattingChange(
   let lnNumType: WorkDocumentLnNumType | undefined;
   let pgNumType: WorkDocumentPgNumType | undefined;
   let formProt: boolean | undefined;
+  let verticalAlign: WorkDocumentSectionVerticalAlign | undefined;
   for (const child of children) {
     if (child.localName === 'pgSz') {
       const value = importedPageSize(child);
@@ -244,6 +250,12 @@ function supportedSectionFormattingChange(
       const value = importedFormProt(child);
       if (value === null) return null;
       formProt = value;
+      continue;
+    }
+    if (child.localName === 'vAlign') {
+      const value = importedVerticalAlign(child);
+      if (value === null) return null;
+      verticalAlign = value;
     }
   }
   const before = serializeDocumentSectionFormatting({
@@ -258,6 +270,7 @@ function supportedSectionFormattingChange(
     ...(lnNumType ? { lnNumType } : {}),
     ...(pgNumType ? { pgNumType } : {}),
     ...(formProt !== undefined ? { formProt } : {}),
+    ...(verticalAlign !== undefined ? { verticalAlign } : {}),
   });
   return {
     id: `docx-section-format-change-${id}`,
@@ -602,6 +615,28 @@ function importedFormProt(element: Element): boolean | null {
   }
   if (names.size !== attributes.length) return null;
   return onOffValue(element);
+}
+
+function importedVerticalAlign(
+  element: Element,
+): WorkDocumentSectionVerticalAlign | null {
+  if (element.children.length > 0) return null;
+  const attributes = Array.from(element.attributes).filter(
+    (candidate) =>
+      xmlAttributeNamespace(element, candidate) === element.namespaceURI,
+  );
+  const names = new Set(
+    attributes.map((candidate) => xmlAttributeLocalName(candidate)),
+  );
+  if ([...names].some((name) => !V_ALIGN_ATTRIBUTE_SET.has(name))) {
+    return null;
+  }
+  if (names.size !== attributes.length || !names.has('val')) return null;
+  const value = attributes
+    .find((candidate) => xmlAttributeLocalName(candidate) === 'val')
+    ?.value.trim();
+  if (!value || !V_ALIGN_VALUES.has(value)) return null;
+  return value as WorkDocumentSectionVerticalAlign;
 }
 
 function importedLnNumType(element: Element): WorkDocumentLnNumType | null {
