@@ -371,15 +371,16 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.127.0` admits empty last-rendered page-break glyphs in revision run bodies:
+Version `0.128.0` admits empty page-number and date-field glyphs in revision run bodies:
 
-- **Last-rendered page-break admission** — eligible paragraph-break merge/split,
+- **Page-number and date-field admission** — eligible paragraph-break merge/split,
   whole-paragraph mark, and text-move revision bodies now admit relationship-free
-  empty `w:lastRenderedPageBreak` glyphs alongside the existing soft-break / tab /
-  carriage-return / hyphen / hyperlink / bookmark set, with reviewable accept/reject.
-- **Boundary** — attributed or non-empty `w:lastRenderedPageBreak`, relationship-bound
-  or spoofed links/bookmarks, drawings, and tracked wrappers stay fail-closed
-  diagnostics.
+  empty `w:pgNum`, `w:dayLong`, `w:monthLong`, and `w:yearLong` glyphs alongside
+  the existing soft-break / tab / carriage-return / last-rendered page break /
+  hyphen / hyperlink / bookmark set, with reviewable accept/reject.
+- **Boundary** — attributed or non-empty page-number and date-field glyphs,
+  relationship-bound or spoofed links/bookmarks, drawings, and tracked wrappers
+  stay fail-closed diagnostics.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

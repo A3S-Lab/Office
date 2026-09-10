@@ -44,15 +44,16 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.127.0)
+## What's new on `main` (0.128.0)
 
-Writer Phase 0 admits empty last-rendered page-break glyphs in revision run bodies:
+Writer Phase 0 admits empty page-number and date-field glyphs in revision run bodies:
 
 - eligible paragraph-break, whole-paragraph mark, and text-move bodies now admit
-  relationship-free empty `w:lastRenderedPageBreak` glyphs alongside soft breaks,
-  tabs, carriage returns, hyphens, hyperlinks, and bookmarks.
-- Attributed or non-empty `w:lastRenderedPageBreak`, and relationship-bound or
-  spoofed shapes, stay fail-closed.
+  relationship-free empty `w:pgNum`, `w:dayLong`, `w:monthLong`, and `w:yearLong`
+  glyphs alongside soft breaks, tabs, carriage returns, last-rendered page breaks,
+  hyphens, hyperlinks, and bookmarks.
+- Attributed or non-empty page-number and date-field glyphs, and relationship-bound
+  or spoofed shapes, stay fail-closed.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).
