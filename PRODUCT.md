@@ -25,6 +25,19 @@ metadata, Office-oriented shortcuts, contextual tools, and a useful status bar.
 Each later editor adopts that baseline only where it matches the editor's own
 file model and workflows.
 
+## Product-enough remaining track
+
+Enough means embeddable format-native editors for host daily workflows—not
+full Traditional Office parity and not every R6 enterprise row. The ordered
+remaining backlog, surface exit criteria, and explicit out-of-scope list live
+in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
+Active tip through `0.129.0` closed the attribute-free paragraph `CT_Empty`
+revision-admission family; next R0 work is mixed paragraph-mark bodies,
+cross-section/table moves, numbering edges, bounded property-revision subsets,
+searchable/tagged PDF output, and continuous no-clobber fixtures—then R1 Writer
+daily leftovers, R2 calculation fidelity, R3 animation/media, and R4 PDF
+content editing.
+
 ## Current Spreadsheet Milestone
 
 Spreadsheet is the next vertical track after the Writer shell baseline. Its

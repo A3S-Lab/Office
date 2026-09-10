@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+### Docs
+
+- Clarify the product-enough remaining backlog in `ROADMAP.md` and
+  `PRODUCT.md`: freeze the completed attribute-free paragraph `CT_Empty`
+  revision-admission family through `0.129.0`, order the R0 close work, and
+  sequence R1–R6 main paths against embeddable daily-workflow exit criteria
+  rather than full Traditional Office parity.
+
 ## 0.129.0 - 2026-09-10
 
 ### Writer

@@ -1,6 +1,6 @@
 # A3S Office / Traditional Office Capability Gap Roadmap
 
-Last reviewed: 2026-09-04
+Last reviewed: 2026-09-10
 
 This roadmap compares the current `main` branch of A3S Office with the public
 capability surface of Traditional Office. It is a prioritization tool, not a
@@ -13,6 +13,14 @@ capability families rather than
 plan-specific limits. A3S Office is a browser-first, embeddable editor whose
 host application intentionally owns identity, storage, permissions,
 collaboration transport, and AI providers.
+
+**Product-enough** is not “finish every Traditional Office row.” The bar is a
+host-embeddable, format-native editor suite: open real Office files, complete
+common daily workflows without silent data loss, keep unsupported paths
+fail-closed and diagnosed, and leave identity / storage / collab relay / AI to
+the host. Completing R0→R6 in full is optional long-horizon work; shipping
+product-enough means closing the ordered remaining work below through R0 exit
+plus the R1 / R2 / R3 / R4 main paths already called out.
 
 ## Status and priority
 
@@ -42,6 +50,165 @@ collaboration transport, and AI providers.
 | PDF | PDFium rendering, search, forms, annotations, navigation, bounded long-file rendering, save, and Worker-backed insert/delete/rotate/reorder/extract/merge/split page organization | Native text/object editing, document-level catalog rewriting, conversion, OCR, signatures, redaction, compression | Evolve from viewer/annotator into an optional PDF workbench |
 | Markdown | GFM source, visual editing, split preview, tables, task lists, links, images, code | No direct Traditional Office equivalent | Maintain as an A3S differentiator |
 | Automation | Rust CLI, MCP server, Office Skill, bounded typed mutations | Office-style macro/add-in ecosystem | Prefer deterministic, auditable automation; do not execute Office macros |
+
+## Remaining roadmap (product-enough bar)
+
+Tip reviewed against `@a3s-lab/office@0.129.0`. Use this section as the active
+backlog; the comparison tables below remain the gap inventory.
+
+### Cross-surface permanent gates
+
+These are already the default contract. Do not trade them away for breadth:
+
+1. No silent clobber of critical identities or relationships; unsupported
+   structures stay fail-closed with diagnostics.
+2. One user intent produces one controlled update and one Undo record.
+3. Shared ribbon / shortcut / focus contracts across the five surfaces, with
+   a3s-test and Playwright evidence.
+4. Typed host ports for Yjs, presence, and agents—without shipping cloud
+   accounts, storage, or model providers inside this package.
+
+### Surface enough criteria
+
+| Surface | Enough when | Remaining priority (ordered) |
+| --- | --- | --- |
+| Document (Writer) | Report, contract, academic, and review workflows finish inside the embedded editor; DOCX round trips stay trustworthy | 1) Close remaining R0 revision / move / compare blockers; 2) R1 daily paths that still force leaving the editor; keep pagination predictable rather than pixel-cloning desktop Word |
+| Spreadsheet | Common finance / operations / reporting workbooks calculate, filter, and export XLSX with bounded diagnostics | 1) Versioned formula-compatibility corpus (locale, arrays, volatility, deps); 2) pivot / slicer depth; 3) replace remaining Fortune redraw ownership with an A3S virtual grid |
+| Presentation | Typical sales / training / classroom decks keep visual hierarchy and animation / media intent | 1) Broader native PPTX animation preservation; 2) safe audio / video relationships; 3) deeper master / layout authoring |
+| PDF | Annotate, form-fill, and page-organize with verified save / reopen | 1) Native text / image / link editing; 2) OCR and conversion provider contracts; 3) e-sign, true redaction, protection |
+| Markdown | Reliable GFM visual editing (A3S differentiator) | Maintain; do not expand via Office long-tail commands |
+
+### Ordered remaining work
+
+Do the next slice in this order. Skip a row only when a higher row’s exit
+evidence already exists in-repo.
+
+#### 1. R0 close (P0, active)
+
+Attribute-free paragraph `CT_Empty` glyph admission inside revision /
+paragraph-break / move bodies is a **completed** family through `0.129.0`
+(soft breaks, tabs, hyphens, `w:cr`, `w:lastRenderedPageBreak`, page-number
+and long/short date-field glyphs). Do not grow that treadmill without a
+review-workflow fixture that still fails closed today.
+
+Still required for R0 exit:
+
+1. Richer mixed paragraph-mark bodies (untracked text siblings, drawings,
+   relationship-bound hyperlinks) with fail-closed ineligible shapes.
+2. Cross-section / table-spanning moves and broader same-document move-range
+   generation where Compare / review needs them.
+3. Remaining complex numbering edge cases that still normalize or diagnose as
+   opaque.
+4. Broader relationship-free `w:tblPr` / `w:trPr` / `w:tcPr` / `w:sectPr`
+   reviewable subsets only when each property has a bounded fixture and
+   accept/reject contract (`w:printerSettings`, header/footer refs, and nested
+   cell/row ins/del stay permanently opaque).
+5. Note-adjacent empty glyphs (`footnoteRef`, `endnoteRef`, `annotationRef`,
+   separators) only with dedicated fixtures—keep fail-closed until then.
+6. Browser document PDF output toward searchable text, broader vector paint,
+   and tagged / PDF/UA structure without a second layout model.
+7. Continuous no-clobber corpus growth for representative Traditional Office
+   fixtures (diagnose every intentional normalization).
+
+R0 exit criteria (unchanged in substance): representative fixtures reopen
+without unreported data loss; edited native structures retain identity;
+malformed inputs fail closed; pagination and export have deterministic
+structural and visual evidence.
+
+#### 2. R1 — Writer daily-work parity (P0/P1, next after R0 exit)
+
+Already complete and must stay gated: typed TOC, native index, bounded
+compare/combine for same-layout paragraphs/headings, field-authoring slice,
+WPS UI-reference receipts, Writer shortcut evidence, quarter-turn picture
+transforms, isolated WPS connector subset.
+
+Remaining, in order:
+
+1. Structural / object compare and richer mixed-content paragraph-mark /
+   paragraph-break follow-ups that still leave review workflows incomplete.
+2. Typed DrawingML shape model expansion only after each branch has native
+   fixtures (no silent WordArt / chart / SmartArt approximations).
+3. Field instructions beyond the bounded authoring slice (nested fields,
+   document properties, mail fields) with independent contracts.
+4. Content-control depth beyond inline plain/rich text (block, form,
+   data-binding) with fail-closed fixtures.
+5. Mail merge only after fields and an explicit host data-source contract
+   exist.
+
+#### 3. R2 — Spreadsheet calculation and analysis (P0/P1)
+
+1. Versioned formula-compatibility corpus vs Traditional Office/Excel
+   (locale, errors, arrays, volatility, dates, dependency updates).
+2. Pivot depth: caches, grouping, calculated fields, slicers/timelines,
+   styles, pivot charts.
+3. Advanced sort/filter and conditional-format precedence gaps that still
+   diverge from common Excel workflows.
+4. Drawing/image fidelity before specialist analysis tools.
+5. Continue replacing Fortune-owned redraw with A3S virtual-grid ownership
+   for large workbooks.
+
+Totals-row authoring, automatic calculated-column fill, and bounded
+structured-reference calculation stay permanent gates.
+
+#### 4. R3 — Presentation expressiveness (P1)
+
+1. Broader native PPTX animation preservation (emphasis, motion paths,
+   trigger-on-object) with round-trip-safe unsupported states.
+2. Safe audio/video relationships and deterministic playback policy.
+3. Visual master/layout editing and dedicated sorter/master workflows.
+4. Shapes, connectors, effects, SmartArt fallback, and chart fidelity only
+   with fixtures.
+5. Slideshow evidence for timings, media, presenter tools, and printing.
+
+Composable bounded entrance/exit effects with PPTX timing-tree round trips
+remain a completed slice.
+
+#### 5. R4 — PDF workbench beyond page organization (P1/P2)
+
+Page organization is the first completed workbench slice and stays gated.
+
+1. Native text / image / link editing with strict font and content-stream
+   fallbacks.
+2. Provider contracts for OCR and conversion (confidence + geometry in typed
+   results).
+3. E-sign, watermark, true redaction, protection, and optimization with
+   byte-level safety tests.
+
+#### 6. R5 — Host collaboration and AI references (P1)
+
+Transport-neutral Yjs/Yrs replicas, host-channel sync, Awareness, and the
+shared participant roster are in place. Remaining:
+
+1. Map comments, revisions, selections, cursors, permissions, and conflicts
+   onto the controlled editor model for host relays.
+2. Provider-neutral examples for writing, formula, slide, and PDF AI tasks
+   using immutable context and bounded mutations.
+3. Keep production relay topology, sharing, and ACL enforcement host-owned.
+
+#### 7. R6 — Enterprise and long-tail (P2/P3, after enough bar)
+
+Defer until the product-enough bar above is met:
+
+- Encrypted-file providers, signature validation display, accessibility
+  metadata depth, localization/RTL depth, policy-driven passive macro
+  handling.
+- Legacy format conversion and specialist features only with authoritative
+  fixtures.
+- VBA / ActiveX / untrusted add-in **execution** stays outside the browser
+  editor permanently.
+
+### Explicitly out of product-enough scope
+
+Do not schedule these as substitutes for R0–R4 exit work:
+
+- Macro / ActiveX execution inside the browser editor
+- Suite-grade proofing dictionaries, grammar engines, or bundled translation
+- Template / asset marketplace (host-extensible catalogs only)
+- Full DrawingML / SmartArt / chart authoring parity without per-branch
+  fixtures
+- Mail merge without a host data-source contract
+- Pixel-perfect desktop Word pagination as a gate (predictable shared kernel
+  pagination is the bar)
 
 ## Shared product and platform comparison
 
@@ -79,7 +246,7 @@ collaboration transport, and AI providers.
 | Editable text boxes and bounded shape geometry | **Partial**, with isolated native WordprocessingML text boxes editable through inline/floating layout, five explicit presets (rectangle, rounded rectangle, ellipse, diamond, triangle), bounded geometry, fill, outline, padding, vertical alignment, WPS `mc:AlternateContent` import, and native DOCX round trips; isolated straight WPS VML connectors now have a typed endpoint/color/width/line-style/arrow model and native DrawingML export | Mixed paragraphs, routed or VML-only non-straight connectors, arbitrary shapes, WordArt, SmartArt, charts, malformed bodies, and unsupported DrawingML branches remain explicit compatibility boundaries | P1 editable drawings |
 | OMML equations | **Partial**, with a large bounded structured model and strict/transitional import/export; relationship-free unsupported roots preserve as atomic native OMML | Relationship-bound, spoofed, misplaced, or over-limit OMML still flatten; editable coverage of remaining branches is P2 | P0 no-clobber; P2 coverage |
 | Comments, replies, resolved state, anchors, modern IDs | **Supported** for editable review records and safe source preservation | Reactions, people sidecars, live presence, and server synchronization are absent/host-owned | P1 protocol |
-| Track changes review | **Partial**: body-text insertions/deletions plus bounded whole-paragraph mark insertion/deletion (including multi-wrapper text-only bodies, soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and long/short date-field glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/`rPr`-only untracked sibling runs), character-, paragraph-formatting, ordered-list numbering, **table-formatting** (`w:tblPrChange` with prior `w:jc` and/or `w:tblW` and/or `w:tblInd` and/or `w:tblCellMar` and/or `w:tblLayout` and/or `w:bidiVisual` and/or solid `w:shd`; live track-changes), **row-formatting** (`w:trPrChange` with prior `w:cantSplit`, `w:tblHeader`, and/or `w:trHeight` and/or `w:hidden` and/or `w:jc` and/or `w:gridBefore` and/or `w:gridAfter` and/or `w:wBefore` and/or `w:wAfter` and/or `w:cnfStyle` and/or `w:divId` and/or `w:tblCellSpacing`; live track-changes), **cell-formatting** (`w:tcPrChange` with prior `w:vAlign` and/or solid `w:shd` and/or `w:tcMar` and/or `w:tcW` and/or `w:noWrap` and/or `w:textDirection` and/or `w:tcFitText` and/or `w:hideMark` and/or `w:cnfStyle` and/or `w:hMerge` and/or `w:vMerge` and/or `w:gridSpan`; live track-changes), **section-formatting** (`w:sectPrChange` with prior orientation-only or complete `w:pgSz`, complete `w:pgMar`, `w:paperSrc`, equal-width `w:cols`, `w:titlePg`, `w:rtlGutter`, and/or bounded `w:docGrid`; live track-changes), text-only move revisions with soft breaks / internal hyperlinks / relationship-free bookmarks and same-section companion `w:move*Range*` bookmarks (including cross-paragraph sandwich), and eligible text-only paragraph-break merge/split revisions; native `w:pPr/w:rPr/w:ins`/`w:del`, `w:rPrChange`, `w:pPrChange`, `w:numberingChange`, `w:tblPrChange` (alignment/preferred-width/indent/cell-margins/layout), `w:trPrChange` (cantSplit/tblHeader/trHeight/hidden/jc), `w:tcPrChange` (vAlign/solid-shd/tcMar/tcW/noWrap), `w:sectPrChange` (orientation/page-geometry/page-margins/paper-source/equal-width-cols), `w:moveFrom`, and `w:moveTo` round trips; broader relationship-free `w:tblPrChange` / `w:trPrChange` / `w:tcPrChange` / `w:sectPrChange` opaque metadata round-trip; navigation, atomic accept/reject, immutable collaboration audit, and long-list virtualization; ineligible isolated paragraph-break shapes stay `docx.revisions.paragraph-break`; unpaired move-range markers stay `docx.revisions.move-range` | Richer mixed paragraph-mark shapes (untracked text siblings, drawings, relationship-bound hyperlinks); paragraph-break bodies now admit soft breaks, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/rPr-only runs, cross-section/table-spanning range moves, rich/relationship-bound moves, plus remaining complex numbering edge cases and remaining table/row/cell/section property revisions are not fully editable | P0 |
+| Track changes review | **Partial**: body-text insertions/deletions plus bounded whole-paragraph mark insertion/deletion (including multi-wrapper text-only bodies, soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and long/short date-field glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, relationship-free bookmarks, and empty/`rPr`-only untracked sibling runs), character-, paragraph-formatting, ordered-list numbering, **table-formatting** (`w:tblPrChange` with prior `w:jc` and/or `w:tblW` and/or `w:tblInd` and/or `w:tblCellMar` and/or `w:tblLayout` and/or `w:bidiVisual` and/or solid `w:shd`; live track-changes), **row-formatting** (`w:trPrChange` with prior `w:cantSplit`, `w:tblHeader`, and/or `w:trHeight` and/or `w:hidden` and/or `w:jc` and/or `w:gridBefore` and/or `w:gridAfter` and/or `w:wBefore` and/or `w:wAfter` and/or `w:cnfStyle` and/or `w:divId` and/or `w:tblCellSpacing`; live track-changes), **cell-formatting** (`w:tcPrChange` with prior `w:vAlign` and/or solid `w:shd` and/or `w:tcMar` and/or `w:tcW` and/or `w:noWrap` and/or `w:textDirection` and/or `w:tcFitText` and/or `w:hideMark` and/or `w:cnfStyle` and/or `w:hMerge` and/or `w:vMerge` and/or `w:gridSpan`; live track-changes), **section-formatting** (`w:sectPrChange` with prior orientation-only or complete `w:pgSz`, complete `w:pgMar`, `w:paperSrc`, equal-width `w:cols`, `w:titlePg`, `w:rtlGutter`, and/or bounded `w:docGrid`; live track-changes), text-only move revisions with soft breaks / internal hyperlinks / relationship-free bookmarks and same-section companion `w:move*Range*` bookmarks (including cross-paragraph sandwich), and eligible text-only paragraph-break merge/split revisions; native `w:pPr/w:rPr/w:ins`/`w:del`, `w:rPrChange`, `w:pPrChange`, `w:numberingChange`, `w:tblPrChange` (alignment/preferred-width/indent/cell-margins/layout), `w:trPrChange` (cantSplit/tblHeader/trHeight/hidden/jc), `w:tcPrChange` (vAlign/solid-shd/tcMar/tcW/noWrap), `w:sectPrChange` (orientation/page-geometry/page-margins/paper-source/equal-width-cols), `w:moveFrom`, and `w:moveTo` round trips; broader relationship-free `w:tblPrChange` / `w:trPrChange` / `w:tcPrChange` / `w:sectPrChange` opaque metadata round-trip; navigation, atomic accept/reject, immutable collaboration audit, and long-list virtualization; ineligible isolated paragraph-break shapes stay `docx.revisions.paragraph-break`; unpaired move-range markers stay `docx.revisions.move-range` | Attribute-free paragraph `CT_Empty` glyphs in revision bodies are admitted through `0.129.0`. Still open: richer mixed paragraph-mark shapes (untracked text siblings, drawings, relationship-bound hyperlinks); cross-section/table-spanning range moves; rich/relationship-bound moves; remaining complex numbering edge cases; remaining table/row/cell/section property revisions not yet reviewable | P0 |
 | Bookmarks, links, captions, cross-references, citations, bibliography, footnotes/endnotes | **Partial**, with native identity and editable common paths | Wider field instructions, tables of authorities/figures, citation styles, and reference dialogs remain incomplete | P1 |
 | Table of contents and outline authoring | **Supported**: shared semantic-heading/native-outline model plus typed insert/customize/refresh, levels 1–9, hyperlinks, live page numbers, alignment, four leader styles, stable paragraph-identity targets, one-step Undo, and native DOCX `TOC` round trips | Custom style-to-level mappings, tables of figures, and deeper TOC style formatting remain open | Maintain / P1 fidelity |
 | Native index authoring | **Supported**: primary/secondary `XE` entries, cross-references, bold/italic page intent, stable marker targets, merged page numbers, typed insert/customize/refresh, 1–4 columns, indented/run-in layouts, four leader styles, one-step Undo, and native DOCX `XE`/`INDEX` round trips | Entry ranges, custom index types, letter-heading formats, authorities, and locale-specific collation controls remain open | Maintain / P1 fidelity |
@@ -155,7 +322,10 @@ collaboration transport, and AI providers.
 ## Ordered delivery roadmap
 
 The sequence below is capability-driven. It intentionally has no date promise;
-a phase exits only when its evidence is complete.
+a phase exits only when its evidence is complete. For the active backlog and
+product-enough cut line, prefer
+[Remaining roadmap (product-enough bar)](#remaining-roadmap-product-enough-bar)
+above this section.
 
 ### R0 — Native fidelity and no-clobber baseline (P0, active)
 
@@ -194,7 +364,10 @@ a phase exits only when its evidence is complete.
   whole-paragraph records additionally require matching text-only body and
   `w:pPr/w:rPr` metadata while allowing distinct native IDs. Eligible paragraph-break merge/split revisions now admit soft
   breaks, tabs, carriage returns, last-rendered page breaks, page-number and long/short date-field glyphs, non-breaking and soft hyphens, relationship-free internal
-  hyperlinks, relationship-free bookmarks, and empty/rPr-only runs. Richer mixed
+  hyperlinks, relationship-free bookmarks, and empty/rPr-only runs. Treat that
+  attribute-free paragraph `CT_Empty` glyph family as a **completed** revision
+  admission slice through `0.129.0`; further empty glyphs need a failing
+  review-workflow fixture first. Richer mixed
   paragraph-mark content (untracked text
   siblings, drawings, relationship-bound hyperlinks), cross-section/table-spanning
   range moves, remaining complex numbering edge cases, and broader move-range
@@ -366,7 +539,9 @@ the current baseline. Exact text-only whole-paragraph changes now export and
 reopen with native paragraph-mark records. Complex structural changes, isolated
 paragraph-break merge/split or mixed-content paragraph-mark revisions,
 cross-section/range move generation, and multi-copy conflicts remain follow-up
-work rather than silent approximations.
+work rather than silent approximations. See
+[Remaining roadmap (product-enough bar)](#remaining-roadmap-product-enough-bar)
+for the ordered R1 leftovers after R0 exit.
 - Keep the bounded Writer picture transform slice native: quarter-turn rotation
   and horizontal/vertical reflection round-trip through DrawingML `a:xfrm`;
   arbitrary angles remain an explicit diagnostic boundary.
