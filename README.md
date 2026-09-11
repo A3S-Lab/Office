@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.155.0` links vector text runs through ParentTree and MCID in browser
-document PDF export:
+Version `0.156.0` paints Writer `wave` and `doubleWave` paragraph borders as
+explicit sine polylines in browser document PDF export:
 
-- **ParentTree / MCID** — vector `/Span` ActualText carries page-local `/MCID`;
-  pages set `/StructParents`; StructTreeRoot emits `/ParentTree` Span kids.
-- **Boundary** — outline role stubs keep empty `/K`; full PDF/UA certification
-  and art/wave/3D borders remain out of scope.
+- **Wave / doubleWave strokes** — OOXML wave styles paint as sine polylines,
+  not silent straight-line approximations.
+- **Boundary** — art and 3D borders and full PDF/UA certification remain out of
+  scope.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

@@ -44,13 +44,12 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.155.0)
+## What's new on `main` (0.156.0)
 
-Browser document PDF export now links vector text runs through ParentTree and MCID:
+Browser document PDF export now paints Writer wave and doubleWave borders as sine polylines:
 
-- Vector `/Span` ActualText carries page-local `/MCID`; pages set `/StructParents`.
-- StructTreeRoot emits `/ParentTree` Span kids; outline role stubs keep empty `/K`.
-- Full PDF/UA certification and art/wave/3D borders remain out of scope.
+- Explicit wave polylines — not silent straight-line approximations of those OOXML styles.
+- Art and 3D borders and full PDF/UA certification remain out of scope.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

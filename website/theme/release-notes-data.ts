@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.156.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF paints wave and doubleWave paragraph borders',
+      zh: '文档 PDF 绘制 wave 与 doubleWave 段落边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer wave and doubleWave paragraph borders as explicit sine polylines (not silent straight-line approximations). Art and 3D borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 wave 与 doubleWave 段落边框绘制为显式正弦折线（不会静默近似成直线）。艺术边框、三维边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Explicit wave polylines',
+          zh: '显式波形折线',
+        },
+        detail: {
+          en: 'wave borders stroke a sine polyline along the measured edge.',
+          zh: 'wave 边框沿测量边绘制正弦折线。',
+        },
+      },
+      {
+        title: {
+          en: 'doubleWave as parallel polylines',
+          zh: 'doubleWave 为平行折线',
+        },
+        detail: {
+          en: 'doubleWave paints two offset sine polylines for the same edge.',
+          zh: 'doubleWave 为同一边绘制两条偏移的正弦折线。',
+        },
+      },
+      {
+        title: {
+          en: 'Art and 3D borders stay out of scope',
+          zh: '艺术与三维边框仍不在范围内',
+        },
+        detail: {
+          en: 'Art borders, 3D emboss/engrave, and PDF/UA certification are not claimed.',
+          zh: '不宣称艺术边框、三维浮雕/雕刻与 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.156.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.156.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.155.0',
     date: '2026-09-11',
     kind: 'improved',

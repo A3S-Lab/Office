@@ -29,13 +29,15 @@ import {
 
 export type { WorkPdfRunHighlight, WorkPdfRunUnderline, WorkPdfUnderlineKind };
 
-/** Bounded PDF paragraph-border stroke kinds (art / 3D / wave styles skip). */
+/** Bounded PDF paragraph-border stroke kinds (art / 3D styles skip). */
 export type WorkPdfParagraphBorderKind =
   | 'single'
   | 'double'
   | 'thick'
   | 'dashed'
-  | 'dotted';
+  | 'dotted'
+  | 'wave'
+  | 'doubleWave';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -332,8 +334,9 @@ export function appendWorkPdfVectorUnderlineLayer(
 
 /**
  * Resolves Writer paragraph borders on a block into a bounded PDF stroke plan.
- * Admits top/left/bottom/right plus between/bar line styles; art, wave, and 3D
- * styles are skipped (fail closed). Not PDF/UA.
+ * Admits top/left/bottom/right plus between/bar line styles, including explicit
+ * `wave` / `doubleWave` polylines; art and 3D styles are skipped (fail closed).
+ * Not PDF/UA.
  */
 export function workPdfParagraphBordersFromElement(
   element: HTMLElement,
@@ -483,7 +486,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
- * geometry (common + between/bar line styles; not PDF/UA or art/wave/3D).
+ * geometry (common + between/bar + wave/doubleWave; not PDF/UA or art/3D).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -538,11 +541,24 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           : Math.max(0.6, stroke.width * scale);
       applyWorkPdfBorderDash(pdf, stroke.kind, thickness);
       pdf.setLineWidth(thickness);
-      strokeParagraphBorderEdge(pdf, edge, x, y, width, height, 0);
-      if (stroke.kind === 'double') {
-        const gap = Math.max(1.2, thickness * 1.75);
-        pdf.setLineWidth(Math.max(0.5, thickness * 0.85));
-        strokeParagraphBorderEdge(pdf, edge, x, y, width, height, gap);
+      if (stroke.kind === 'wave' || stroke.kind === 'doubleWave') {
+        strokeWaveParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind === 'doubleWave',
+        );
+      } else {
+        strokeParagraphBorderEdge(pdf, edge, x, y, width, height, 0);
+        if (stroke.kind === 'double') {
+          const gap = Math.max(1.2, thickness * 1.75);
+          pdf.setLineWidth(Math.max(0.5, thickness * 0.85));
+          strokeParagraphBorderEdge(pdf, edge, x, y, width, height, gap);
+        }
       }
       clearWorkPdfBorderDash(pdf);
     }
@@ -556,8 +572,6 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'nil' ||
     border.style === 'none' ||
     isDocumentParagraphArtBorderStyle(border.style) ||
-    border.style === 'wave' ||
-    border.style === 'doubleWave' ||
     border.style === 'threeDEmboss' ||
     border.style === 'threeDEngrave' ||
     border.style === 'inset' ||
@@ -572,6 +586,13 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     presentation.color === 'transparent'
   ) {
     return null;
+  }
+  if (border.style === 'wave' || border.style === 'doubleWave') {
+    return {
+      color: presentation.color,
+      kind: border.style,
+      width: presentation.width,
+    };
   }
   const kind = workPdfParagraphBorderKindFromPresentation(
     presentation.style,
@@ -634,6 +655,68 @@ function strokeParagraphBorderEdge(
     pdf.line(x + inset, y, x + inset, y + height);
   } else {
     pdf.line(x + width - inset, y, x + width - inset, y + height);
+  }
+}
+
+/**
+ * Strokes an explicit sine polyline for `wave` / `doubleWave` (not a silent
+ * straight-line approximation of those OOXML styles).
+ */
+function strokeWaveParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  doubleWave: boolean,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const amplitude = Math.max(1.2, thickness * 1.15);
+  const wavelength = Math.max(6, thickness * 8);
+  const offsets = doubleWave ? [-amplitude * 0.85, amplitude * 0.85] : [0];
+  for (const offset of offsets) {
+    if (paintEdge === 'top' || paintEdge === 'bottom') {
+      const yBase = (paintEdge === 'top' ? y : y + height) + offset;
+      strokeWavePolyline(pdf, x, yBase, width, 0, wavelength, amplitude);
+    } else {
+      const xBase = (paintEdge === 'left' ? x : x + width) + offset;
+      strokeWavePolyline(pdf, xBase, y, height, 1, wavelength, amplitude);
+    }
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeWavePolyline(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  wavelength: number,
+  amplitude: number,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(wavelength) ||
+    wavelength <= 0
+  ) {
+    return;
+  }
+  const steps = Math.max(8, Math.ceil((length / wavelength) * 4));
+  let prevX = originX;
+  let prevY = originY;
+  for (let index = 1; index <= steps; index += 1) {
+    const t = index / steps;
+    const along = length * t;
+    const wave = Math.sin((along / wavelength) * Math.PI * 2) * amplitude;
+    const nextX = axis === 0 ? originX + along : originX + wave;
+    const nextY = axis === 0 ? originY + wave : originY + along;
+    pdf.line(prevX, prevY, nextX, nextY);
+    prevX = nextX;
+    prevY = nextY;
   }
 }
 

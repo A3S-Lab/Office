@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(136);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.155.0');
+  await expect(cards).toHaveCount(137);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.156.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 通过 ParentTree 与 MCID 链接矢量文本',
+    '文档 PDF 绘制 wave 与 doubleWave 段落边框',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.156.0')).toContainText('显式波形折线');
+  await expect(releaseCard('0.156.0')).toContainText(
+    'wave 边框沿测量边绘制正弦折线',
+  );
   await expect(releaseCard('0.155.0')).toContainText(
     '矢量 ActualText Span 上的 MCID',
   );

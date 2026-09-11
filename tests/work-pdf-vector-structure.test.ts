@@ -361,7 +361,9 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     bar: { color: '#556677', kind: 'thick', width: 3 },
   });
   expect(workPdfParagraphBordersFromElement(art)).toBeNull();
-  expect(workPdfParagraphBordersFromElement(waveBetween)).toBeNull();
+  expect(workPdfParagraphBordersFromElement(waveBetween)).toEqual({
+    between: { color: '#112233', kind: 'wave', width: 2 },
+  });
   expect(workPdfParagraphBordersFromElement(plain)).toBeNull();
   expect(workPdfParagraphBordersFromElement(nil)).toBeNull();
 });
@@ -495,6 +497,40 @@ test('paints between and bar paragraph borders as PDF path operators', () => {
   expect(strokeCount).toBeGreaterThanOrEqual(2);
   expect(ascii).toMatch(/20\.\s+[\d.]+\s+m/);
   expect(ascii).toMatch(/120\.\s+[\d.]+\s+l/);
+});
+
+test('paints wave and doubleWave paragraph borders as sine polylines', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorParagraphBorderLayer(
+    pdf,
+    [
+      {
+        edges: {
+          top: { color: '#112233', kind: 'wave', width: 2 },
+          bottom: { color: '#445566', kind: 'doubleWave', width: 2 },
+        },
+        height: 40,
+        width: 100,
+        x: 20,
+        y: 30,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toMatch(/0\.07\s+0\.13\s+0\.2\s+RG/);
+  expect(ascii).toMatch(/0\.27\s+0\.33\s+0\.4\s+RG/);
+  const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
+  // wave: many segments; doubleWave: two parallel polylines
+  expect(strokeCount).toBeGreaterThanOrEqual(24);
+  expect(ascii).toMatch(/20\.\s+[\d.]+\s+m/);
+  expect(ascii).toMatch(/\s+l\n/);
 });
 
 test('clears border strips on the raster canvas before vector paint', () => {
