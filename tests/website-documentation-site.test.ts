@@ -105,6 +105,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.169.0',
     '0.168.0',
     '0.167.0',
     '0.166.0',
@@ -124,7 +125,6 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
     '0.152.0',
     '0.151.0',
     '0.150.0',
-    '0.149.0',
     '0.38.0',
     '0.1.0',
   ]);
