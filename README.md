@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.164.0` paints Writer `basicBlackSquares` / `basicWhiteSquares`
-art paragraph borders as discrete square stamps in browser document PDF export:
+Version `0.165.0` paints Writer `basicBlackDots` / `basicWhiteDots` art
+paragraph borders as discrete circular stamps in browser document PDF export:
 
-- **square stamps** — black densifies with nested square + diagonals; white is outline-only.
+- **dot stamps** — black densifies with a concentric inner circle; white is outline-only.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

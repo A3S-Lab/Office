@@ -55,7 +55,9 @@ export type WorkPdfParagraphBorderKind =
   | 'marqueeToothed'
   | 'moons'
   | 'basicBlackSquares'
-  | 'basicWhiteSquares';
+  | 'basicWhiteSquares'
+  | 'basicBlackDots'
+  | 'basicWhiteDots';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -356,8 +358,9 @@ export function appendWorkPdfVectorUnderlineLayer(
  * `wave` / `doubleWave` polylines, dual-tone 3D / inset / outset relief strokes,
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
- * `marqueeToothed` / `moons` / `basicBlackSquares` / `basicWhiteSquares` art
- * motifs; other art border styles are skipped (fail
+ * `marqueeToothed` / `moons` / `basicBlackSquares` / `basicWhiteSquares` /
+ * `basicBlackDots` / `basicWhiteDots` art motifs; other art border styles are
+ * skipped (fail
  * closed). Not PDF/UA.
  */
 export function workPdfParagraphBordersFromElement(
@@ -509,7 +512,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * basicSquares art; not PDF/UA or decorative art).
+ * basicSquares/basicDots art; not PDF/UA or decorative art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -662,6 +665,20 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           stroke.kind === 'basicBlackSquares',
         );
       } else if (
+        stroke.kind === 'basicBlackDots' ||
+        stroke.kind === 'basicWhiteDots'
+      ) {
+        strokeBasicDotsParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind === 'basicBlackDots',
+        );
+      } else if (
         stroke.kind === 'threeDEmboss' ||
         stroke.kind === 'threeDEngrave' ||
         stroke.kind === 'inset' ||
@@ -711,7 +728,9 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'marqueeToothed' ||
     border.style === 'moons' ||
     border.style === 'basicBlackSquares' ||
-    border.style === 'basicWhiteSquares'
+    border.style === 'basicWhiteSquares' ||
+    border.style === 'basicBlackDots' ||
+    border.style === 'basicWhiteDots'
   ) {
     const presentation = documentBorderPresentation(border);
     if (presentation.width <= 0 || presentation.color === 'transparent') {
@@ -1459,6 +1478,88 @@ function strokeSquareOutline(
   pdf.line(right, top, right, bottom);
   pdf.line(right, bottom, left, bottom);
   pdf.line(left, bottom, left, top);
+}
+
+/**
+ * Discrete circular stamps for geometric art borders `basicBlackDots` /
+ * `basicWhiteDots`. Black densifies with a concentric inner circle; white is
+ * outline-only with wider spacing.
+ */
+function strokeBasicDotsParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  filled: boolean,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const radius = Math.max(1.4, thickness * (filled ? 1.35 : 1.5));
+  const period = Math.max(4.2, thickness * (filled ? 3.8 : 5.2));
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeBasicDotStamps(
+      pdf,
+      x,
+      yBase,
+      width,
+      0,
+      period,
+      radius,
+      outward,
+      filled,
+    );
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeBasicDotStamps(
+      pdf,
+      xBase,
+      y,
+      height,
+      1,
+      period,
+      radius,
+      outward,
+      filled,
+    );
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeBasicDotStamps(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  radius: number,
+  outward: 1 | -1,
+  filled: boolean,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const r = Math.min(radius, length / (count * 2.4));
+    const centerX = axis === 0 ? originX + along : originX + outward * r;
+    const centerY = axis === 0 ? originY + outward * r : originY + along;
+    strokeEllipsePolyline(pdf, centerX, centerY, r, r);
+    if (filled) {
+      strokeEllipsePolyline(pdf, centerX, centerY, r * 0.45, r * 0.45);
+    }
+  }
 }
 
 /**

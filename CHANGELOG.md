@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.165.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer `basicBlackDots` /
+  `basicWhiteDots` art paragraph borders as discrete circular stamps
+  (black densifies with a concentric inner circle). Remaining decorative art
+  borders and full PDF/UA certification remain out of scope.
+
 ## 0.164.0 - 2026-09-11
 
 ### Writer
