@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.151.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer paragraph borders as vector strokes
+  (top/left/bottom/right; single/thick/double/dashed/dotted) from
+  `data-office-paragraph-borders` or CSS, after clearing border strips on the
+  raster canvas. Art/wave/3D borders, between/bar edges, and full PDF/UA
+  structure trees remain out of scope.
+
 ## 0.150.0 - 2026-09-11
 
 ### Writer

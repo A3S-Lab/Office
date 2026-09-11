@@ -7,11 +7,16 @@ import {
 } from '../src/internal/features/work/work-pdf-structure';
 import {
   appendWorkPdfVectorHighlightLayer,
+  appendWorkPdfVectorParagraphBorderLayer,
   appendWorkPdfVectorUnderlineLayer,
+  clearWorkPdfParagraphBorderStripsOnCanvas,
   clearWorkPdfUnderlineStripsOnCanvas,
+  collectWorkPdfParagraphBorderBoxes,
+  workPdfParagraphBordersFromElement,
   workPdfRunHighlightFromElement,
   workPdfRunUnderlineFromElement,
 } from '../src/internal/features/work/work-pdf-vector-paint';
+import { documentParagraphBordersDomAttributes } from '../src/internal/features/work/work-document-paragraph-borders';
 import {
   appendWorkPdfVectorTextLayer,
   clearWorkPdfTextRunsOnCanvas,
@@ -280,6 +285,163 @@ test('paints highlighted vector runs as PDF fill operators', () => {
   expect(ascii).toContain('1. 1. 0. rg');
   expect(ascii).toMatch(/20\.\s+240\.\s+90\.\s+-18\.\s+re/);
   expect(ascii).toMatch(/\nf\n/);
+});
+
+test('resolves Writer paragraph borders into PDF stroke plans', () => {
+  const attributes = documentParagraphBordersDomAttributes({
+    top: { style: 'single', color: { value: '#112233' }, size: 12 },
+    bottom: { style: 'double', color: { value: '#445566' }, size: 18 },
+    left: { style: 'dashed', color: { value: '#778899' }, size: 8 },
+    right: { style: 'thick', color: { value: '#aabbcc' }, size: 24 },
+  });
+  const artAttributes = documentParagraphBordersDomAttributes({
+    top: { style: 'apples', color: { value: '#112233' }, size: 12 },
+  });
+  document.body.innerHTML = `
+    <div id="root">
+      <p id="bordered" data-office-paragraph-borders='${attributes['data-office-paragraph-borders']}' style="${attributes.style}">Bordered</p>
+      <p id="art" data-office-paragraph-borders='${artAttributes['data-office-paragraph-borders']}' style="${artAttributes.style}">Art</p>
+      <p id="plain">Plain</p>
+      <p id="nil" data-office-paragraph-borders='{"top":{"style":"nil"}}'>Nil</p>
+    </div>
+  `;
+  const bordered = document.getElementById('bordered');
+  const art = document.getElementById('art');
+  const plain = document.getElementById('plain');
+  const nil = document.getElementById('nil');
+  if (
+    !(bordered instanceof HTMLElement) ||
+    !(art instanceof HTMLElement) ||
+    !(plain instanceof HTMLElement) ||
+    !(nil instanceof HTMLElement)
+  ) {
+    throw new Error('Expected paragraph border fixtures.');
+  }
+  expect(workPdfParagraphBordersFromElement(bordered)).toEqual({
+    top: { color: '#112233', kind: 'single', width: 2 },
+    bottom: { color: '#445566', kind: 'double', width: 3 },
+    left: { color: '#778899', kind: 'dashed', width: 8 / 6 },
+    right: { color: '#aabbcc', kind: 'thick', width: 4 },
+  });
+  expect(workPdfParagraphBordersFromElement(art)).toBeNull();
+  expect(workPdfParagraphBordersFromElement(plain)).toBeNull();
+  expect(workPdfParagraphBordersFromElement(nil)).toBeNull();
+});
+
+test('collects measured paragraph border boxes within page bounds', () => {
+  const attributes = documentParagraphBordersDomAttributes({
+    top: { style: 'single', color: { value: '#112233' }, size: 12 },
+    bottom: { style: 'single', color: { value: '#112233' }, size: 12 },
+  });
+  document.body.innerHTML = `
+    <div id="root" class="work-pdf-export-page">
+      <p id="on-page" data-office-paragraph-borders='${attributes['data-office-paragraph-borders']}' style="${attributes.style}">On page</p>
+      <p id="off-page" data-office-paragraph-borders='${attributes['data-office-paragraph-borders']}' style="${attributes.style}">Off page</p>
+    </div>
+  `;
+  const root = document.getElementById('root');
+  const onPage = document.getElementById('on-page');
+  const offPage = document.getElementById('off-page');
+  if (
+    !(root instanceof HTMLElement) ||
+    !(onPage instanceof HTMLElement) ||
+    !(offPage instanceof HTMLElement)
+  ) {
+    throw new Error('Expected border box fixtures.');
+  }
+  stubBoundingRect(onPage, { left: 12, top: 24, width: 160, height: 28 });
+  stubBoundingRect(offPage, { left: 12, top: 900, width: 160, height: 28 });
+  expect(
+    collectWorkPdfParagraphBorderBoxes(root, {
+      height: 200,
+      left: 0,
+      top: 0,
+      width: 400,
+    }),
+  ).toEqual([
+    {
+      edges: {
+        top: { color: '#112233', kind: 'single', width: 2 },
+        bottom: { color: '#112233', kind: 'single', width: 2 },
+      },
+      height: 28,
+      width: 160,
+      x: 12,
+      y: 24,
+    },
+  ]);
+});
+
+test('paints paragraph borders as PDF path operators', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorParagraphBorderLayer(
+    pdf,
+    [
+      {
+        edges: {
+          top: { color: '#112233', kind: 'single', width: 2 },
+          bottom: { color: '#112233', kind: 'double', width: 2 },
+          left: { color: '#112233', kind: 'dashed', width: 2 },
+          right: { color: '#112233', kind: 'single', width: 2 },
+        },
+        height: 40,
+        width: 100,
+        x: 20,
+        y: 30,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toContain('0.07 0.13 0.2 RG');
+  // top/left/right + double bottom (2) => at least 5 stroked segments
+  const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
+  expect(strokeCount).toBeGreaterThanOrEqual(5);
+  expect(ascii).toMatch(/20\.\s+[\d.]+\s+m/);
+  expect(ascii).toMatch(/120\.\s+[\d.]+\s+l/);
+});
+
+test('clears border strips on the raster canvas before vector paint', () => {
+  const fillRectCalls: Array<[number, number, number, number]> = [];
+  const canvas = {
+    width: 200,
+    height: 100,
+    getContext(kind: string) {
+      if (kind !== '2d') return null;
+      return {
+        fillStyle: '',
+        restore() {},
+        save() {},
+        fillRect(x: number, y: number, w: number, h: number) {
+          fillRectCalls.push([x, y, w, h]);
+        },
+      };
+    },
+  } as unknown as HTMLCanvasElement;
+  clearWorkPdfParagraphBorderStripsOnCanvas(
+    canvas,
+    [
+      {
+        edges: {
+          top: { color: '#000000', kind: 'single', width: 2 },
+          bottom: { color: '#000000', kind: 'single', width: 2 },
+        },
+        height: 20,
+        width: 40,
+        x: 10,
+        y: 15,
+      },
+    ],
+    { height: 50, width: 100 },
+    '#ffffff',
+  );
+  expect(fillRectCalls.length).toBe(2);
 });
 
 test('clears a strip under underlined runs before vector paint', () => {

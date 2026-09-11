@@ -44,14 +44,16 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.150.0)
+## What's new on `main` (0.151.0)
 
-Browser document PDF export now paints Writer text highlights as vector fill
-strips from `data-office-highlight` or matching CSS backgrounds in the portable
-highlight palette, under the searchable vector text layer:
+Browser document PDF export now paints Writer paragraph borders as vector
+strokes (top/left/bottom/right; single/thick/double/dashed/dotted) from
+`data-office-paragraph-borders` or CSS after clearing border strips on the
+raster canvas:
 
-- Highlighted measured runs fill PDF rectangles at the searchable vector geometry.
-- Paragraph borders and full PDF/UA structure trees remain out of scope.
+- Measured paragraph boxes stroke common edge styles at searchable vector geometry.
+- Art/wave/3D borders, between/bar edges, and full PDF/UA structure trees remain
+  out of scope.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

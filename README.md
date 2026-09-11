@@ -371,14 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.150.0` paints Writer text highlights as vector fill strips in browser
-document PDF export from `data-office-highlight` or matching CSS backgrounds in
-the portable highlight palette, under the searchable vector text layer:
+Version `0.151.0` paints Writer paragraph borders as vector strokes in browser
+document PDF export (top/left/bottom/right; single/thick/double/dashed/dotted)
+from `data-office-paragraph-borders` or CSS after clearing border strips on the
+raster canvas:
 
-- **Highlight vector paint** — highlighted measured runs fill PDF rectangles at
-  the same geometry as the searchable vector text layer.
-- **Boundary** — paragraph borders and full PDF/UA structure trees remain out of
-  scope.
+- **Paragraph border vector paint** — measured paragraph boxes stroke common
+  edge styles at the same geometry as the searchable vector text layer.
+- **Boundary** — art/wave/3D borders, between/bar edges, and full PDF/UA
+  structure trees remain out of scope.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

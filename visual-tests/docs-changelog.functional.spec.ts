@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(131);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.150.0');
+  await expect(cards).toHaveCount(132);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.151.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 将 Writer 突出显示绘制为矢量填充',
+    '文档 PDF 将 Writer 段落边框绘制为矢量描边',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.151.0')).toContainText(
+    'PDF 导出中的段落边框矢量描边',
+  );
+  await expect(releaseCard('0.151.0')).toContainText(
+    '测量得到的段落框在与矢量文本层相同的页面几何上描边上、左、下、右 PDF 路径',
+  );
   await expect(releaseCard('0.150.0')).toContainText(
     'PDF 导出中的突出显示矢量填充',
   );

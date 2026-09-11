@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.151.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF paints Writer paragraph borders as vector strokes',
+      zh: '文档 PDF 将 Writer 段落边框绘制为矢量描边',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer paragraph borders as vector strokes (top/left/bottom/right; single/thick/double/dashed/dotted) from data-office-paragraph-borders or CSS after clearing border strips on the raster canvas. Art/wave/3D borders, between/bar edges, and full PDF/UA structure trees remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 段落边框绘制为矢量描边（上/左/下/右；single/thick/double/dashed/dotted），来源为 data-office-paragraph-borders 或 CSS，并在栅格画布上清除边框条后再描边。艺术/波浪/三维边框、between/bar 边以及完整 PDF/UA 结构树仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Paragraph border vector strokes in PDF export',
+          zh: 'PDF 导出中的段落边框矢量描边',
+        },
+        detail: {
+          en: 'Measured paragraph boxes stroke top, left, bottom, and right PDF paths at the same page geometry as the vector text layer.',
+          zh: '测量得到的段落框在与矢量文本层相同的页面几何上描边上、左、下、右 PDF 路径。',
+        },
+      },
+      {
+        title: {
+          en: 'Common border styles admitted',
+          zh: '准入常见边框样式',
+        },
+        detail: {
+          en: 'Single, thick, double, dashed, and dotted edges resolve from data-office-paragraph-borders or CSS.',
+          zh: 'single、thick、double、dashed 与 dotted 边从 data-office-paragraph-borders 或 CSS 解析。',
+        },
+      },
+      {
+        title: {
+          en: 'Art borders and PDF/UA stay out of scope',
+          zh: '艺术边框与 PDF/UA 仍不在范围内',
+        },
+        detail: {
+          en: 'This slice deepens vector paint for common paragraph edges only; art/wave/3D borders, between/bar edges, and full PDF/UA structure trees are not claimed.',
+          zh: '本切片仅加深常见段落边的矢量绘制；不宣称艺术/波浪/三维边框、between/bar 边与完整 PDF/UA 结构树。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.151.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.151.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.150.0',
     date: '2026-09-11',
     kind: 'improved',

@@ -17,8 +17,11 @@ import {
 import { collectWorkPdfTextRuns } from './work-pdf-text-layer';
 import {
   appendWorkPdfVectorHighlightLayer,
+  appendWorkPdfVectorParagraphBorderLayer,
   appendWorkPdfVectorUnderlineLayer,
+  clearWorkPdfParagraphBorderStripsOnCanvas,
   clearWorkPdfUnderlineStripsOnCanvas,
+  collectWorkPdfParagraphBorderBoxes,
 } from './work-pdf-vector-paint';
 import {
   appendWorkPdfVectorTextLayer,
@@ -143,10 +146,15 @@ export async function exportWorkArtifactPdf(
               Math.max(1, sourceBottom - sourceTop),
               capture.backgroundColor,
             );
+            const pageBounds = liveCapturePageBounds(capture, page, firstPage);
             const textRuns = collectLiveCapturePageTextRuns(
               capture,
               page,
               firstPage,
+            );
+            const borderBoxes = collectWorkPdfParagraphBorderBoxes(
+              capture.viewport,
+              pageBounds,
             );
             clearWorkPdfTextRunsOnCanvas(
               pageCanvas,
@@ -160,17 +168,24 @@ export async function exportWorkArtifactPdf(
               page,
               capture.backgroundColor,
             );
+            clearWorkPdfParagraphBorderStripsOnCanvas(
+              pageCanvas,
+              borderBoxes,
+              page,
+              capture.backgroundColor,
+            );
             pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
             if (pdf) {
               appendWorkPdfVectorHighlightLayer(pdf, textRuns, page, page);
               appendWorkPdfVectorTextLayer(pdf, textRuns, page, page);
               appendWorkPdfVectorUnderlineLayer(pdf, textRuns, page, page);
-              exportedPageNumber += 1;
-              const pageBounds = liveCapturePageBounds(
-                capture,
+              appendWorkPdfVectorParagraphBorderLayer(
+                pdf,
+                borderBoxes,
                 page,
-                firstPage,
+                page,
               );
+              exportedPageNumber += 1;
               outline.push(
                 ...collectWorkPdfOutlineEntriesFromRoot(
                   capture.viewport,
@@ -197,7 +212,12 @@ export async function exportWorkArtifactPdf(
             windowHeight: Math.ceil(page.height),
             windowWidth: Math.ceil(page.width),
           });
+          const pageBounds = liveCapturePageBounds(capture, page, page);
           const textRuns = collectLiveCapturePageTextRuns(capture, page, page);
+          const borderBoxes = collectWorkPdfParagraphBorderBoxes(
+            capture.viewport,
+            pageBounds,
+          );
           clearWorkPdfTextRunsOnCanvas(
             pageCanvas,
             textRuns,
@@ -210,17 +230,29 @@ export async function exportWorkArtifactPdf(
             page,
             capture.backgroundColor,
           );
+          clearWorkPdfParagraphBorderStripsOnCanvas(
+            pageCanvas,
+            borderBoxes,
+            page,
+            capture.backgroundColor,
+          );
           pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
           if (pdf) {
             appendWorkPdfVectorHighlightLayer(pdf, textRuns, page, page);
             appendWorkPdfVectorTextLayer(pdf, textRuns, page, page);
             appendWorkPdfVectorUnderlineLayer(pdf, textRuns, page, page);
+            appendWorkPdfVectorParagraphBorderLayer(
+              pdf,
+              borderBoxes,
+              page,
+              page,
+            );
             exportedPageNumber += 1;
             outline.push(
               ...collectWorkPdfOutlineEntriesFromRoot(
                 capture.viewport,
                 exportedPageNumber,
-                liveCapturePageBounds(capture, page, page),
+                pageBounds,
               ),
             );
           }
@@ -258,10 +290,17 @@ export async function exportWorkArtifactPdf(
         width: pageBox.width || page.clientWidth,
       };
       const textRuns = collectWorkPdfTextRuns(page, pageCss);
+      const borderBoxes = collectWorkPdfParagraphBorderBoxes(page, pageCss);
       clearWorkPdfTextRunsOnCanvas(canvas, textRuns, pageCss, backgroundColor);
       clearWorkPdfUnderlineStripsOnCanvas(
         canvas,
         textRuns,
+        pageCss,
+        backgroundColor,
+      );
+      clearWorkPdfParagraphBorderStripsOnCanvas(
+        canvas,
+        borderBoxes,
         pageCss,
         backgroundColor,
       );
@@ -292,6 +331,12 @@ export async function exportWorkArtifactPdf(
         appendWorkPdfVectorUnderlineLayer(
           pdf,
           textRuns,
+          pageSizeCss,
+          pagePoints,
+        );
+        appendWorkPdfVectorParagraphBorderLayer(
+          pdf,
+          borderBoxes,
           pageSizeCss,
           pagePoints,
         );
