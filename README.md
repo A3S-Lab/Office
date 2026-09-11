@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.161.0` paints Writer `ovals` / `rings` art paragraph borders as
-ellipse motifs in browser document PDF export:
+Version `0.162.0` paints Writer `marquee` / `marqueeToothed` art paragraph
+borders as rectangle motifs in browser document PDF export:
 
-- **oval / ring strokes** — explicit ellipses along the edge (`rings` nests an
-  inner ellipse); not silent skips.
+- **marquee strokes** — explicit edge rectangles; `marqueeToothed` alternates
+  offset for a toothed look.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

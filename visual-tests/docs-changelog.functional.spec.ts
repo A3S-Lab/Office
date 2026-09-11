@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(142);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.161.0');
+  await expect(cards).toHaveCount(143);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.162.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 绘制 ovals 与 rings 艺术边框',
+    '文档 PDF 绘制 marquee 与 marqueeToothed 艺术边框',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.162.0')).toContainText('矩形母题');
+  await expect(releaseCard('0.162.0')).toContainText(
+    'marquee 沿测量边绘制矩形',
+  );
   await expect(releaseCard('0.161.0')).toContainText('椭圆母题');
   await expect(releaseCard('0.161.0')).toContainText('ovals 沿测量边绘制椭圆');
   await expect(releaseCard('0.160.0')).toContainText('闭合等腰三角');

@@ -50,7 +50,9 @@ export type WorkPdfParagraphBorderKind =
   | 'triangle1'
   | 'triangle2'
   | 'ovals'
-  | 'rings';
+  | 'rings'
+  | 'marquee'
+  | 'marqueeToothed';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -350,8 +352,9 @@ export function appendWorkPdfVectorUnderlineLayer(
  * Admits top/left/bottom/right plus between/bar line styles, including explicit
  * `wave` / `doubleWave` polylines, dual-tone 3D / inset / outset relief strokes,
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
- * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` art motifs;
- * other art border styles are skipped (fail closed). Not PDF/UA.
+ * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
+ * `marqueeToothed` art motifs; other art border styles are skipped (fail
+ * closed). Not PDF/UA.
  */
 export function workPdfParagraphBordersFromElement(
   element: HTMLElement,
@@ -501,8 +504,8 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
- * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval art; not PDF/UA
- * or decorative art).
+ * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee art;
+ * not PDF/UA or decorative art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -617,6 +620,20 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           stroke.kind === 'rings',
         );
       } else if (
+        stroke.kind === 'marquee' ||
+        stroke.kind === 'marqueeToothed'
+      ) {
+        strokeMarqueeParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind === 'marqueeToothed',
+        );
+      } else if (
         stroke.kind === 'threeDEmboss' ||
         stroke.kind === 'threeDEngrave' ||
         stroke.kind === 'inset' ||
@@ -661,7 +678,9 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'triangle1' ||
     border.style === 'triangle2' ||
     border.style === 'ovals' ||
-    border.style === 'rings'
+    border.style === 'rings' ||
+    border.style === 'marquee' ||
+    border.style === 'marqueeToothed'
   ) {
     const presentation = documentBorderPresentation(border);
     if (presentation.width <= 0 || presentation.color === 'transparent') {
@@ -1178,6 +1197,101 @@ function strokeEllipsePolyline(
     pdf.line(prevX, prevY, nextX, nextY);
     prevX = nextX;
     prevY = nextY;
+  }
+}
+
+/**
+ * Small rectangle motifs along the measured edge for geometric art borders
+ * `marquee` / `marqueeToothed`. `marqueeToothed` alternates perpendicular
+ * offset for a toothed look.
+ */
+function strokeMarqueeParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  toothed: boolean,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const cell = Math.max(2.2, thickness * (toothed ? 2.4 : 2.8));
+  const depth = Math.max(1.6, thickness * (toothed ? 1.35 : 1.15));
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeMarqueeRectangles(
+      pdf,
+      x,
+      yBase,
+      width,
+      0,
+      cell,
+      depth,
+      outward,
+      toothed,
+    );
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeMarqueeRectangles(
+      pdf,
+      xBase,
+      y,
+      height,
+      1,
+      cell,
+      depth,
+      outward,
+      toothed,
+    );
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeMarqueeRectangles(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  cell: number,
+  depth: number,
+  outward: 1 | -1,
+  toothed: boolean,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(cell) ||
+    cell <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / cell));
+  for (let index = 0; index < count; index += 1) {
+    const startAlong = (index * length) / count;
+    const endAlong = Math.min(length, ((index + 1) * length) / count);
+    const span = Math.max(0.8, endAlong - startAlong - 0.35);
+    const offset = toothed && index % 2 === 1 ? outward * depth * 0.55 : 0;
+    if (axis === 0) {
+      const left = originX + startAlong + 0.15;
+      const top = originY + offset;
+      const bottom = originY + outward * depth + offset;
+      pdf.line(left, top, left + span, top);
+      pdf.line(left + span, top, left + span, bottom);
+      pdf.line(left + span, bottom, left, bottom);
+      pdf.line(left, bottom, left, top);
+    } else {
+      const top = originY + startAlong + 0.15;
+      const left = originX + offset;
+      const right = originX + outward * depth + offset;
+      pdf.line(left, top, right, top);
+      pdf.line(right, top, right, top + span);
+      pdf.line(right, top + span, left, top + span);
+      pdf.line(left, top + span, left, top);
+    }
   }
 }
 
