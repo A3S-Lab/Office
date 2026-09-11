@@ -44,12 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.157.0)
+## What's new on `main` (0.158.0)
 
-Browser document PDF export now paints Writer 3D and inset/outset borders as dual-tone offsets:
+Browser document PDF export now paints Writer zigZag art borders and sets DisplayDocTitle:
 
-- Explicit highlight+shadow strokes — not silent single-line approximations of those OOXML styles.
-- Art borders and full PDF/UA certification remain out of scope.
+- Explicit `zigZag` / `zigZagStitch` chevron polylines — not silent skips of those art styles.
+- Catalog `/ViewerPreferences << /DisplayDocTitle true >>` for titled exports.
+- Remaining decorative art borders and full PDF/UA certification remain out of scope.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

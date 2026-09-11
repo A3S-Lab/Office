@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.158.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer `zigZag` / `zigZagStitch` art
+  paragraph borders as explicit chevron polylines, and catalog
+  `/ViewerPreferences << /DisplayDocTitle true >>` deepens the tagged PDF
+  bootstrap. Remaining decorative art borders and full PDF/UA certification
+  remain out of scope.
+
 ## 0.157.0 - 2026-09-11
 
 ### Writer

@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(138);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.157.0');
+  await expect(cards).toHaveCount(139);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.158.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 绘制三维与 inset/outset 段落边框',
+    '文档 PDF 绘制 zigZag 艺术边框并设置 DisplayDocTitle',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.158.0')).toContainText(
+    'zigZag 与 zigZagStitch 锯齿线',
+  );
+  await expect(releaseCard('0.158.0')).toContainText(
+    '这些艺术样式沿测量边绘制锯齿折线',
+  );
   await expect(releaseCard('0.157.0')).toContainText('双色三维浮雕与雕刻');
   await expect(releaseCard('0.157.0')).toContainText(
     'threeDEmboss 与 threeDEngrave 沿测量边绘制高光与阴影偏移',

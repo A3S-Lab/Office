@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.158.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF paints zigZag art borders and DisplayDocTitle',
+      zh: '文档 PDF 绘制 zigZag 艺术边框并设置 DisplayDocTitle',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer zigZag / zigZagStitch art paragraph borders as explicit chevron polylines and sets catalog /ViewerPreferences << /DisplayDocTitle true >>. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 zigZag / zigZagStitch 艺术段落边框绘制为显式锯齿折线，并设置目录 /ViewerPreferences << /DisplayDocTitle true >>。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'zigZag and zigZagStitch chevrons',
+          zh: 'zigZag 与 zigZagStitch 锯齿线',
+        },
+        detail: {
+          en: 'Those art styles stroke chevron polylines along the measured edge.',
+          zh: '这些艺术样式沿测量边绘制锯齿折线。',
+        },
+      },
+      {
+        title: {
+          en: 'DisplayDocTitle preference',
+          zh: 'DisplayDocTitle 首选项',
+        },
+        detail: {
+          en: 'Titled catalogs advertise /DisplayDocTitle true for viewer chrome.',
+          zh: '带标题的目录声明 /DisplayDocTitle true，供阅读器标题栏使用。',
+        },
+      },
+      {
+        title: {
+          en: 'Remaining art borders stay out of scope',
+          zh: '其余艺术边框仍不在范围内',
+        },
+        detail: {
+          en: 'Apples, vines, and other decorative art borders, plus full PDF/UA certification, are not claimed.',
+          zh: '不宣称苹果、藤蔓等其余装饰性艺术边框，也不宣称完整 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.158.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.158.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.157.0',
     date: '2026-09-11',
     kind: 'improved',

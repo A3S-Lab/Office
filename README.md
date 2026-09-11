@@ -371,13 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.157.0` paints Writer `threeDEmboss` / `threeDEngrave` / `inset` /
-`outset` paragraph borders as explicit dual-tone offsets in browser document
+Version `0.158.0` paints Writer `zigZag` / `zigZagStitch` art paragraph borders
+as chevron polylines and sets catalog `/DisplayDocTitle` in browser document
 PDF export:
 
-- **3D / inset / outset strokes** — highlight and shadow offsets, not silent
-  single-line approximations.
-- **Boundary** — art borders and full PDF/UA certification remain out of scope.
+- **zigZag art strokes** — explicit chevron polylines, not silent skips.
+- **DisplayDocTitle** — `/ViewerPreferences << /DisplayDocTitle true >>` on
+  titled catalogs.
+- **Boundary** — remaining decorative art borders and full PDF/UA certification
+  remain out of scope.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

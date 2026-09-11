@@ -29,7 +29,7 @@ import {
 
 export type { WorkPdfRunHighlight, WorkPdfRunUnderline, WorkPdfUnderlineKind };
 
-/** Bounded PDF paragraph-border stroke kinds (art styles skip). */
+/** Bounded PDF paragraph-border stroke kinds (most art styles skip). */
 export type WorkPdfParagraphBorderKind =
   | 'single'
   | 'double'
@@ -41,7 +41,9 @@ export type WorkPdfParagraphBorderKind =
   | 'threeDEmboss'
   | 'threeDEngrave'
   | 'inset'
-  | 'outset';
+  | 'outset'
+  | 'zigZag'
+  | 'zigZagStitch';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -339,8 +341,9 @@ export function appendWorkPdfVectorUnderlineLayer(
 /**
  * Resolves Writer paragraph borders on a block into a bounded PDF stroke plan.
  * Admits top/left/bottom/right plus between/bar line styles, including explicit
- * `wave` / `doubleWave` polylines and dual-tone 3D / inset / outset relief
- * strokes; art border styles are skipped (fail closed). Not PDF/UA.
+ * `wave` / `doubleWave` polylines, dual-tone 3D / inset / outset relief strokes,
+ * and geometric `zigZag` / `zigZagStitch` art motifs; other art border styles
+ * are skipped (fail closed). Not PDF/UA.
  */
 export function workPdfParagraphBordersFromElement(
   element: HTMLElement,
@@ -490,7 +493,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
- * geometry (common + between/bar + wave + 3D/inset/outset; not PDF/UA or art).
+ * geometry (common + wave + 3D + zigZag art; not PDF/UA or decorative art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -556,6 +559,17 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           thickness,
           stroke.kind === 'doubleWave',
         );
+      } else if (stroke.kind === 'zigZag' || stroke.kind === 'zigZagStitch') {
+        strokeZigZagParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind === 'zigZagStitch',
+        );
       } else if (
         stroke.kind === 'threeDEmboss' ||
         stroke.kind === 'threeDEngrave' ||
@@ -589,11 +603,21 @@ export function appendWorkPdfVectorParagraphBorderLayer(
 function workPdfParagraphBorderStrokeFromDocumentBorder(
   border: DocumentParagraphBorder,
 ): WorkPdfParagraphBorderEdgeStroke | null {
-  if (
-    border.style === 'nil' ||
-    border.style === 'none' ||
-    isDocumentParagraphArtBorderStyle(border.style)
-  ) {
+  if (border.style === 'nil' || border.style === 'none') {
+    return null;
+  }
+  if (border.style === 'zigZag' || border.style === 'zigZagStitch') {
+    const presentation = documentBorderPresentation(border);
+    if (presentation.width <= 0 || presentation.color === 'transparent') {
+      return null;
+    }
+    return {
+      color: presentation.color,
+      kind: border.style,
+      width: presentation.width,
+    };
+  }
+  if (isDocumentParagraphArtBorderStyle(border.style)) {
     return null;
   }
   const presentation = documentBorderPresentation(border);
@@ -781,6 +805,67 @@ function strokeWavePolyline(
     const wave = Math.sin((along / wavelength) * Math.PI * 2) * amplitude;
     const nextX = axis === 0 ? originX + along : originX + wave;
     const nextY = axis === 0 ? originY + wave : originY + along;
+    pdf.line(prevX, prevY, nextX, nextY);
+    prevX = nextX;
+    prevY = nextY;
+  }
+}
+
+/**
+ * Explicit chevron polylines for geometric art borders `zigZag` /
+ * `zigZagStitch`. Other decorative art styles remain skipped.
+ */
+function strokeZigZagParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  stitch: boolean,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const amplitude = Math.max(1.4, thickness * 1.35);
+  const period = Math.max(5, thickness * 5);
+  const offsets = stitch ? [-amplitude * 0.55, amplitude * 0.55] : [0];
+  for (const offset of offsets) {
+    if (paintEdge === 'top' || paintEdge === 'bottom') {
+      const yBase = (paintEdge === 'top' ? y : y + height) + offset;
+      strokeZigZagPolyline(pdf, x, yBase, width, 0, period, amplitude);
+    } else {
+      const xBase = (paintEdge === 'left' ? x : x + width) + offset;
+      strokeZigZagPolyline(pdf, xBase, y, height, 1, period, amplitude);
+    }
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeZigZagPolyline(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  amplitude: number,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const teeth = Math.max(2, Math.ceil(length / period));
+  let prevX = originX;
+  let prevY = originY;
+  for (let index = 1; index <= teeth * 2; index += 1) {
+    const along = Math.min(length, (length * index) / (teeth * 2));
+    const peak = index % 2 === 1 ? amplitude : -amplitude;
+    const nextX = axis === 0 ? originX + along : originX + peak;
+    const nextY = axis === 0 ? originY + peak : originY + along;
     pdf.line(prevX, prevY, nextX, nextY);
     prevX = nextX;
     prevY = nextY;

@@ -46,6 +46,7 @@ interface WorkPdfJsInternal {
   workPdfStructTreePlan?: WorkPdfStructTreePlan;
   workPdfStructTreeRootObjectId?: number;
   workPdfStructTreeSubscribed?: boolean;
+  workPdfViewerPreferencesSubscribed?: boolean;
 }
 
 const MAX_OUTLINE_ENTRIES = 512;
@@ -81,6 +82,7 @@ export function applyWorkPdfDocumentStructure(
     }
   }
   ensureWorkPdfMarkInfo(pdf);
+  ensureWorkPdfViewerPreferences(pdf);
   const outline = structure.outline ?? [];
   ensureWorkPdfStructTreeRoot(pdf, { language, outline });
   const stack: Array<{ item: OutlineItem; level: number }> = [];
@@ -130,6 +132,24 @@ export function ensureWorkPdfMarkInfo(pdf: JsPdf): void {
     });
   } catch {
     internal.workPdfMarkInfoSubscribed = false;
+  }
+}
+
+/**
+ * Declares `/ViewerPreferences << /DisplayDocTitle true >>` so tagged-PDF
+ * consumers prefer the document title. Not a PDF/UA certification claim.
+ */
+export function ensureWorkPdfViewerPreferences(pdf: JsPdf): void {
+  const internal = workPdfJsInternal(pdf);
+  if (!internal?.events?.subscribe || !internal.write) return;
+  if (internal.workPdfViewerPreferencesSubscribed) return;
+  internal.workPdfViewerPreferencesSubscribed = true;
+  try {
+    internal.events.subscribe('putCatalog', () => {
+      internal.write?.('/ViewerPreferences << /DisplayDocTitle true >>');
+    });
+  } catch {
+    internal.workPdfViewerPreferencesSubscribed = false;
   }
 }
 
