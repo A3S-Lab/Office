@@ -1,0 +1,101 @@
+---
+title: 快速开始
+description: 安装 A3S Office，并挂载第一个受控编辑器。
+---
+
+# 快速开始
+
+安装组件库，并在宿主应用中引入一次公共样式。
+
+```bash
+bun add @a3s-lab/office
+```
+
+```tsx title="DocumentPage.tsx"
+import { useState } from 'react';
+import type { DocumentContent } from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+import '@a3s-lab/office/styles.css';
+
+const initialContent: DocumentContent = {
+  type: 'document',
+  html: '<h1>项目说明</h1><p>从这里开始编辑。</p>',
+  pageSize: 'a4',
+};
+
+export function DocumentPage() {
+  const [content, setContent] = useState(initialContent);
+
+  return (
+    <main style={{ height: '100vh', minHeight: 0 }}>
+      <DocumentEditor content={content} onChange={setContent} />
+    </main>
+  );
+}
+```
+
+## 受控内容
+
+所有可编辑组件都是受控组件。编辑器通过 `onChange` 返回完整、类型化的新内容；
+宿主应用负责持久化、协作、版本记录，并把确认后的值传回组件。
+
+不要把渲染后的 DOM 当作主要文件模型保存。应保存编辑器返回的结构化内容，只在
+文件导入或导出边界调用组件库提供的 API。
+
+## 可取消的文件导入
+
+`importOfficeFile` 接受 `AbortSignal`，并为所有受支持的浏览器端导入返回单调递增的
+进度。四个阶段依次为 `reading`、`parsing`、`analyzing` 和 `finalizing`；
+`stageProgress` 与总进度 `progress` 都是从 `0` 到 `1` 的数值。
+
+```ts title="import-file.ts"
+import {
+  importOfficeFile,
+  type OfficeFileImportProgress,
+} from '@a3s-lab/office/core';
+
+const controller = new AbortController();
+
+const pending = importOfficeFile(file, {
+  signal: controller.signal,
+  onProgress(progress: OfficeFileImportProgress) {
+    renderImportProgress(progress.stage, progress.progress);
+  },
+});
+
+// 把这个调用连接到导入界面的“取消”操作。
+cancelButton.addEventListener('click', () => controller.abort(), { once: true });
+
+const artifact = await pending;
+```
+
+取消后 Promise 会抛出 `name` 为 `AbortError` 的错误。大文件会分块读取，解析器也会在
+稳定检查点主动让出主线程，让宿主及时刷新进度并处理取消操作。开始新的导入任务时，
+应取消前一个 controller，并忽略已被替代任务的后续进度。
+
+## 包入口
+
+| 导入路径 | 用途 |
+| --- | --- |
+| `@a3s-lab/office/core` | 内容类型、文件辅助函数、导入、导出与预加载 API |
+| `@a3s-lab/office/react` | React 编辑器组件 |
+| `@a3s-lab/office/vue` | Vue 组件绑定 |
+| `@a3s-lab/office/web-component` | Web Component 注册函数 |
+| `@a3s-lab/office/styles.css` | 编辑器与设计系统的必要样式 |
+
+## 宿主布局
+
+编辑器会填满宿主元素。宿主必须有确定高度；嵌套的 flex 或 grid 子项还需要允许
+收缩，避免编辑器把页面撑开。
+
+```css
+.office-editor-host {
+  width: 100%;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+}
+```
+
+接下来可以选择[框架绑定](../components/index.mdx)，或直接查看
+[`DocumentEditor` API](../components/document.mdx)。
