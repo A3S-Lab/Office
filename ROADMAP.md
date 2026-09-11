@@ -162,7 +162,9 @@ Still required for R0 exit:
    discrete square stamps through `0.164.0`; Writer `basicBlackDots` /
    `basicWhiteDots` art paragraph borders paint as discrete circular stamps
    through `0.165.0`; Writer `basicBlackDashes` / `basicWhiteDashes` art
-   paragraph borders paint as discrete dash stamps through `0.166.0`; remaining decorative art
+   paragraph borders paint as discrete dash stamps through `0.166.0`; Writer
+   `basicThinLines` art paragraph borders paint as parallel hairlines through
+   `0.167.0`; remaining decorative art
    borders and full PDF/UA certification remain open.
 7. Continuous no-clobber corpus growth for representative Traditional Office
    fixtures (diagnose every intentional normalization).
@@ -623,7 +625,9 @@ above this section.
   paragraph borders paint as discrete square stamps through `0.164.0`; Writer
   `basicBlackDots` / `basicWhiteDots` art paragraph borders paint as discrete
   circular stamps through `0.165.0`; Writer `basicBlackDashes` / `basicWhiteDashes` art
-  paragraph borders paint as discrete dash stamps through `0.166.0`; optional host
+  paragraph borders paint as discrete dash stamps through `0.166.0`; Writer
+  `basicThinLines` art paragraph borders paint as parallel hairlines through
+  `0.167.0`; optional host
   `registerWorkPdfCjkFont` TrueType enables searchable CJK vector text; full
   PDF/UA certification, remaining decorative art borders, and bundled CJK fonts
   remain open.

@@ -59,7 +59,8 @@ export type WorkPdfParagraphBorderKind =
   | 'basicBlackDots'
   | 'basicWhiteDots'
   | 'basicBlackDashes'
-  | 'basicWhiteDashes';
+  | 'basicWhiteDashes'
+  | 'basicThinLines';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -362,7 +363,7 @@ export function appendWorkPdfVectorUnderlineLayer(
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
  * `marqueeToothed` / `moons` / `basicBlackSquares` / `basicWhiteSquares` /
  * `basicBlackDots` / `basicWhiteDots` / `basicBlackDashes` /
- * `basicWhiteDashes` art motifs; other art border styles are
+ * `basicWhiteDashes` / `basicThinLines` art motifs; other art border styles are
  * skipped (fail
  * closed). Not PDF/UA.
  */
@@ -515,7 +516,8 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * basicSquares/basicDots/basicDashes art; not PDF/UA or decorative art).
+ * basicSquares/basicDots/basicDashes/basicThinLines art; not PDF/UA or
+ * decorative art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -695,6 +697,16 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           thickness,
           stroke.kind === 'basicBlackDashes',
         );
+      } else if (stroke.kind === 'basicThinLines') {
+        strokeBasicThinLinesParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+        );
       } else if (
         stroke.kind === 'threeDEmboss' ||
         stroke.kind === 'threeDEngrave' ||
@@ -749,7 +761,8 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'basicBlackDots' ||
     border.style === 'basicWhiteDots' ||
     border.style === 'basicBlackDashes' ||
-    border.style === 'basicWhiteDashes'
+    border.style === 'basicWhiteDashes' ||
+    border.style === 'basicThinLines'
   ) {
     const presentation = documentBorderPresentation(border);
     if (presentation.width <= 0 || presentation.color === 'transparent') {
@@ -1671,6 +1684,40 @@ function strokeBasicDashStamps(
         const cx2 = cx + outward * offset;
         pdf.line(cx2, cy - half * 0.75, cx2, cy + half * 0.75);
       }
+    }
+  }
+}
+
+/**
+ * Parallel thin strokes for geometric art border `basicThinLines`. Three
+ * spaced hairlines run along the measured edge (outward bias).
+ */
+function strokeBasicThinLinesParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const gap = Math.max(1.1, thickness * 0.95);
+  const lineWidth = Math.max(0.45, thickness * 0.35);
+  pdf.setLineWidth(lineWidth);
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    for (let index = 0; index < 3; index += 1) {
+      const yLine = yBase + outward * (gap * (index + 0.5));
+      pdf.line(x, yLine, x + width, yLine);
+    }
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    for (let index = 0; index < 3; index += 1) {
+      const xLine = xBase + outward * (gap * (index + 0.5));
+      pdf.line(xLine, y, xLine, y + height);
     }
   }
 }

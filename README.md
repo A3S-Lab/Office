@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.166.0` paints Writer `basicBlackDashes` / `basicWhiteDashes` art
-paragraph borders as discrete dash stamps in browser document PDF export:
+Version `0.167.0` paints Writer `basicThinLines` art paragraph borders as
+three parallel hairlines in browser document PDF export:
 
-- **dash stamps** — black densifies with a parallel companion dash; white is outline-only.
+- **thin lines** — three spaced hairlines along the measured edge.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 
