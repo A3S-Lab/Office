@@ -54,6 +54,7 @@ export type WorkPdfParagraphBorderKind =
   | 'marquee'
   | 'marqueeToothed'
   | 'moons'
+  | 'bats'
   | 'basicBlackSquares'
   | 'basicWhiteSquares'
   | 'basicBlackDots'
@@ -364,7 +365,7 @@ export function appendWorkPdfVectorUnderlineLayer(
  * `wave` / `doubleWave` polylines, dual-tone 3D / inset / outset relief strokes,
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
- * `marqueeToothed` / `moons` / `basicBlackSquares` / `basicWhiteSquares` /
+ * `marqueeToothed` / `moons` / `bats` / `basicBlackSquares` / `basicWhiteSquares` /
  * `basicBlackDots` / `basicWhiteDots` / `basicBlackDashes` /
  * `basicWhiteDashes` / `basicThinLines` / `basicWideInline` /
  * `basicWideMidline` / `basicWideOutline` art motifs; other art border styles are
@@ -520,8 +521,8 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * basicSquares/basicDots/basicDashes/basicThinLines/basicWide art; not PDF/UA
- * or decorative art).
+ * moons/bats/basicSquares/basicDots/basicDashes/basicThinLines/basicWide art; not
+ * PDF/UA or decorative fruit/vine art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -659,6 +660,16 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           height,
           thickness,
         );
+      } else if (stroke.kind === 'bats') {
+        strokeBatsParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+        );
       } else if (
         stroke.kind === 'basicBlackSquares' ||
         stroke.kind === 'basicWhiteSquares'
@@ -775,6 +786,7 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'marquee' ||
     border.style === 'marqueeToothed' ||
     border.style === 'moons' ||
+    border.style === 'bats' ||
     border.style === 'basicBlackSquares' ||
     border.style === 'basicWhiteSquares' ||
     border.style === 'basicBlackDots' ||
@@ -1301,6 +1313,121 @@ function strokeEllipsePolyline(
     pdf.line(prevX, prevY, nextX, nextY);
     prevX = nextX;
     prevY = nextY;
+  }
+}
+
+/**
+ * Winged bat motifs along the measured edge for geometric art border `bats`.
+ * Each motif is a closed head + dual-wing polyline silhouette.
+ */
+function strokeBatsParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const span = Math.max(3.2, thickness * 2.8);
+  const period = Math.max(7.2, thickness * 6.4);
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeBatSilhouettes(pdf, x, yBase, width, 0, period, span, outward);
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeBatSilhouettes(pdf, xBase, y, height, 1, period, span, outward);
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeBatSilhouettes(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  span: number,
+  outward: 1 | -1,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const centerX = axis === 0 ? originX + along : originX;
+    const centerY = axis === 0 ? originY : originY + along;
+    const half = Math.min(span / 2, length / (count * 2.2));
+    const depth = Math.max(1.2, half * 0.7);
+    const tangentX = axis === 0 ? 1 : 0;
+    const tangentY = axis === 0 ? 0 : 1;
+    const normalX = axis === 0 ? 0 : outward;
+    const normalY = axis === 0 ? outward : 0;
+    strokeBatPolyline(
+      pdf,
+      centerX + normalX * depth * 0.2,
+      centerY + normalY * depth * 0.2,
+      half,
+      depth,
+      tangentX,
+      tangentY,
+      normalX,
+      normalY,
+    );
+  }
+}
+
+function strokeBatPolyline(
+  pdf: JsPdf,
+  centerX: number,
+  centerY: number,
+  half: number,
+  depth: number,
+  tangentX: number,
+  tangentY: number,
+  normalX: number,
+  normalY: number,
+): void {
+  if (
+    !Number.isFinite(half) ||
+    half <= 0 ||
+    !Number.isFinite(depth) ||
+    depth <= 0
+  ) {
+    return;
+  }
+  const point = (along: number, out: number): [number, number] => [
+    centerX + tangentX * along + normalX * out,
+    centerY + tangentY * along + normalY * out,
+  ];
+  const path: Array<[number, number]> = [
+    point(0, depth * 0.15),
+    point(-half * 0.22, depth * 0.55),
+    point(-half * 0.55, depth * 0.25),
+    point(-half, depth * 0.85),
+    point(-half * 0.62, depth * 0.05),
+    point(-half * 0.28, depth * 0.35),
+    point(0, -depth * 0.15),
+    point(half * 0.28, depth * 0.35),
+    point(half * 0.62, depth * 0.05),
+    point(half, depth * 0.85),
+    point(half * 0.55, depth * 0.25),
+    point(half * 0.22, depth * 0.55),
+  ];
+  for (let index = 0; index < path.length; index += 1) {
+    const [x0, y0] = path[index]!;
+    const [x1, y1] = path[(index + 1) % path.length]!;
+    pdf.line(x0, y0, x1, y1);
   }
 }
 

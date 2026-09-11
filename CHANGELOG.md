@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.169.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer `bats` art paragraph borders as
+  winged silhouette motifs along the measured edge. Remaining decorative art
+  borders and full PDF/UA certification remain out of scope.
+
 ## 0.168.0 - 2026-09-11
 
 ### Writer

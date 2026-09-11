@@ -371,13 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.168.0` paints Writer `basicWideInline` / `basicWideMidline` /
-`basicWideOutline` art paragraph borders as thick geometric rails in browser
-document PDF export:
+Version `0.169.0` paints Writer `bats` art paragraph borders as winged
+silhouettes in browser document PDF export:
 
-- **wide outline** — dual thick rails along the measured edge.
-- **wide midline** — a single thick rail at mid offset.
-- **wide inline** — thick rail plus a thinner outer companion.
+- **bats** — closed head + dual-wing polyline motifs along the measured edge.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

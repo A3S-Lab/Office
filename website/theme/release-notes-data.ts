@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.169.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF paints bats art borders',
+      zh: '文档 PDF 绘制 bats 艺术边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer bats art paragraph borders as winged silhouette motifs along the measured edge. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 bats 艺术段落边框绘制为沿测量边的翅膀剪影母题。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Winged silhouettes',
+          zh: '翅膀剪影',
+        },
+        detail: {
+          en: 'bats draws closed head + dual-wing polyline motifs along the measured edge.',
+          zh: 'bats 沿测量边绘制闭合头部 + 双翼折线母题。',
+        },
+      },
+      {
+        title: {
+          en: 'Explicit art admission',
+          zh: '显式艺术边框准入',
+        },
+        detail: {
+          en: 'bats is admitted into the vector border plan; not a silent skip.',
+          zh: 'bats 进入矢量边框计划；不会静默跳过。',
+        },
+      },
+      {
+        title: {
+          en: 'Remaining art borders stay out of scope',
+          zh: '其余艺术边框仍不在范围内',
+        },
+        detail: {
+          en: 'Apples, vines, and other decorative art borders, plus full PDF/UA certification, are not claimed.',
+          zh: '不宣称苹果、藤蔓等其余装饰性艺术边框，也不宣称完整 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.169.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.169.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.168.0',
     date: '2026-09-11',
     kind: 'improved',
