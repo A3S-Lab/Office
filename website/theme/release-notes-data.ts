@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.168.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF paints basicWide art borders',
+      zh: '文档 PDF 绘制 basicWide 艺术边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer basicWideInline / basicWideMidline / basicWideOutline art paragraph borders as thick geometric rails along the measured edge. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 basicWideInline / basicWideMidline / basicWideOutline 艺术段落边框绘制为沿测量边的粗几何轨线。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Wide geometric rails',
+          zh: '粗几何轨线',
+        },
+        detail: {
+          en: 'basicWideOutline draws dual thick rails; basicWideMidline one thick rail; basicWideInline thick plus thin outer companion.',
+          zh: 'basicWideOutline 绘制双粗轨；basicWideMidline 单粗轨；basicWideInline 粗轨加外侧细伴线。',
+        },
+      },
+      {
+        title: {
+          en: 'Explicit art admission',
+          zh: '显式艺术边框准入',
+        },
+        detail: {
+          en: 'basicWideInline / basicWideMidline / basicWideOutline are admitted into the vector border plan; not a silent skip.',
+          zh: 'basicWideInline / basicWideMidline / basicWideOutline 进入矢量边框计划；不会静默跳过。',
+        },
+      },
+      {
+        title: {
+          en: 'Remaining art borders stay out of scope',
+          zh: '其余艺术边框仍不在范围内',
+        },
+        detail: {
+          en: 'Apples, vines, and other decorative art borders, plus full PDF/UA certification, are not claimed.',
+          zh: '不宣称苹果、藤蔓等其余装饰性艺术边框，也不宣称完整 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.168.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.168.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.167.0',
     date: '2026-09-11',
     kind: 'improved',

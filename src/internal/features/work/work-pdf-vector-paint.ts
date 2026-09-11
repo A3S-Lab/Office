@@ -60,7 +60,10 @@ export type WorkPdfParagraphBorderKind =
   | 'basicWhiteDots'
   | 'basicBlackDashes'
   | 'basicWhiteDashes'
-  | 'basicThinLines';
+  | 'basicThinLines'
+  | 'basicWideInline'
+  | 'basicWideMidline'
+  | 'basicWideOutline';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -363,7 +366,8 @@ export function appendWorkPdfVectorUnderlineLayer(
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
  * `marqueeToothed` / `moons` / `basicBlackSquares` / `basicWhiteSquares` /
  * `basicBlackDots` / `basicWhiteDots` / `basicBlackDashes` /
- * `basicWhiteDashes` / `basicThinLines` art motifs; other art border styles are
+ * `basicWhiteDashes` / `basicThinLines` / `basicWideInline` /
+ * `basicWideMidline` / `basicWideOutline` art motifs; other art border styles are
  * skipped (fail
  * closed). Not PDF/UA.
  */
@@ -516,8 +520,8 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * basicSquares/basicDots/basicDashes/basicThinLines art; not PDF/UA or
- * decorative art).
+ * basicSquares/basicDots/basicDashes/basicThinLines/basicWide art; not PDF/UA
+ * or decorative art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -708,6 +712,21 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           thickness,
         );
       } else if (
+        stroke.kind === 'basicWideInline' ||
+        stroke.kind === 'basicWideMidline' ||
+        stroke.kind === 'basicWideOutline'
+      ) {
+        strokeBasicWideParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind,
+        );
+      } else if (
         stroke.kind === 'threeDEmboss' ||
         stroke.kind === 'threeDEngrave' ||
         stroke.kind === 'inset' ||
@@ -762,7 +781,10 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'basicWhiteDots' ||
     border.style === 'basicBlackDashes' ||
     border.style === 'basicWhiteDashes' ||
-    border.style === 'basicThinLines'
+    border.style === 'basicThinLines' ||
+    border.style === 'basicWideInline' ||
+    border.style === 'basicWideMidline' ||
+    border.style === 'basicWideOutline'
   ) {
     const presentation = documentBorderPresentation(border);
     if (presentation.width <= 0 || presentation.color === 'transparent') {
@@ -1718,6 +1740,115 @@ function strokeBasicThinLinesParagraphBorderEdge(
     for (let index = 0; index < 3; index += 1) {
       const xLine = xBase + outward * (gap * (index + 0.5));
       pdf.line(xLine, y, xLine, y + height);
+    }
+  }
+}
+
+type BasicWideKind =
+  | 'basicWideInline'
+  | 'basicWideMidline'
+  | 'basicWideOutline';
+
+/**
+ * Wide geometric art borders `basicWideInline` / `basicWideMidline` /
+ * `basicWideOutline`. Outline uses dual thick rails; midline a single thick
+ * rail; inline a thick rail with a thinner outer companion.
+ */
+function strokeBasicWideParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  kind: BasicWideKind,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const thick = Math.max(1.6, thickness * 1.35);
+  const thin = Math.max(0.55, thickness * 0.4);
+  const gap = Math.max(2.2, thickness * 1.8);
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    if (kind === 'basicWideOutline') {
+      pdf.setLineWidth(thick);
+      pdf.line(
+        x,
+        yBase + outward * gap * 0.35,
+        x + width,
+        yBase + outward * gap * 0.35,
+      );
+      pdf.line(
+        x,
+        yBase + outward * gap * 1.15,
+        x + width,
+        yBase + outward * gap * 1.15,
+      );
+    } else if (kind === 'basicWideMidline') {
+      pdf.setLineWidth(thick);
+      pdf.line(
+        x,
+        yBase + outward * gap * 0.75,
+        x + width,
+        yBase + outward * gap * 0.75,
+      );
+    } else {
+      pdf.setLineWidth(thick);
+      pdf.line(
+        x,
+        yBase + outward * gap * 0.45,
+        x + width,
+        yBase + outward * gap * 0.45,
+      );
+      pdf.setLineWidth(thin);
+      pdf.line(
+        x,
+        yBase + outward * gap * 1.15,
+        x + width,
+        yBase + outward * gap * 1.15,
+      );
+    }
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    if (kind === 'basicWideOutline') {
+      pdf.setLineWidth(thick);
+      pdf.line(
+        xBase + outward * gap * 0.35,
+        y,
+        xBase + outward * gap * 0.35,
+        y + height,
+      );
+      pdf.line(
+        xBase + outward * gap * 1.15,
+        y,
+        xBase + outward * gap * 1.15,
+        y + height,
+      );
+    } else if (kind === 'basicWideMidline') {
+      pdf.setLineWidth(thick);
+      pdf.line(
+        xBase + outward * gap * 0.75,
+        y,
+        xBase + outward * gap * 0.75,
+        y + height,
+      );
+    } else {
+      pdf.setLineWidth(thick);
+      pdf.line(
+        xBase + outward * gap * 0.45,
+        y,
+        xBase + outward * gap * 0.45,
+        y + height,
+      );
+      pdf.setLineWidth(thin);
+      pdf.line(
+        xBase + outward * gap * 1.15,
+        y,
+        xBase + outward * gap * 1.15,
+        y + height,
+      );
     }
   }
 }

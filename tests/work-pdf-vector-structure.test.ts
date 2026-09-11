@@ -369,6 +369,15 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     top: { style: 'basicThinLines', color: { value: '#112233' }, size: 12 },
     bottom: { style: 'basicThinLines', color: { value: '#445566' }, size: 12 },
   });
+  const basicWideAttributes = documentParagraphBordersDomAttributes({
+    top: { style: 'basicWideInline', color: { value: '#112233' }, size: 12 },
+    bottom: {
+      style: 'basicWideMidline',
+      color: { value: '#445566' },
+      size: 12,
+    },
+    left: { style: 'basicWideOutline', color: { value: '#778899' }, size: 12 },
+  });
   const waveBetweenAttributes = documentParagraphBordersDomAttributes({
     between: { style: 'wave', color: { value: '#112233' }, size: 12 },
     bar: { style: 'threeDEmboss', color: { value: '#445566' }, size: 14 },
@@ -388,6 +397,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
       <p id="basic-dots" data-office-paragraph-borders='${basicDotsAttributes['data-office-paragraph-borders']}' style="${basicDotsAttributes.style}">Basic dots</p>
       <p id="basic-dashes" data-office-paragraph-borders='${basicDashesAttributes['data-office-paragraph-borders']}' style="${basicDashesAttributes.style}">Basic dashes</p>
       <p id="basic-thin-lines" data-office-paragraph-borders='${basicThinLinesAttributes['data-office-paragraph-borders']}' style="${basicThinLinesAttributes.style}">Basic thin lines</p>
+      <p id="basic-wide" data-office-paragraph-borders='${basicWideAttributes['data-office-paragraph-borders']}' style="${basicWideAttributes.style}">Basic wide</p>
       <p id="wave-between" data-office-paragraph-borders='${waveBetweenAttributes['data-office-paragraph-borders']}' style="${waveBetweenAttributes.style}">Wave between</p>
       <p id="plain">Plain</p>
       <p id="nil" data-office-paragraph-borders='{"top":{"style":"nil"}}'>Nil</p>
@@ -406,6 +416,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   const basicDots = document.getElementById('basic-dots');
   const basicDashes = document.getElementById('basic-dashes');
   const basicThinLines = document.getElementById('basic-thin-lines');
+  const basicWide = document.getElementById('basic-wide');
   const waveBetween = document.getElementById('wave-between');
   const plain = document.getElementById('plain');
   const nil = document.getElementById('nil');
@@ -423,6 +434,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     !(basicDots instanceof HTMLElement) ||
     !(basicDashes instanceof HTMLElement) ||
     !(basicThinLines instanceof HTMLElement) ||
+    !(basicWide instanceof HTMLElement) ||
     !(waveBetween instanceof HTMLElement) ||
     !(plain instanceof HTMLElement) ||
     !(nil instanceof HTMLElement)
@@ -480,6 +492,11 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   expect(workPdfParagraphBordersFromElement(basicThinLines)).toEqual({
     top: { color: '#112233', kind: 'basicThinLines', width: 16 },
     bottom: { color: '#445566', kind: 'basicThinLines', width: 16 },
+  });
+  expect(workPdfParagraphBordersFromElement(basicWide)).toEqual({
+    top: { color: '#112233', kind: 'basicWideInline', width: 16 },
+    bottom: { color: '#445566', kind: 'basicWideMidline', width: 16 },
+    left: { color: '#778899', kind: 'basicWideOutline', width: 16 },
   });
   expect(workPdfParagraphBordersFromElement(waveBetween)).toEqual({
     between: { color: '#112233', kind: 'wave', width: 2 },
@@ -1038,6 +1055,41 @@ test('paints basicThinLines art borders as parallel hairlines', () => {
   expect(ascii).toMatch(/0\.27\s+0\.33\s+0\.4\s+RG/);
   const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
   expect(strokeCount).toBeGreaterThanOrEqual(6);
+  expect(ascii).toMatch(/[\d.]+\s+[\d.]+\s+m/);
+  expect(ascii).toMatch(/\s+l\n/);
+});
+
+test('paints basicWideInline, basicWideMidline, and basicWideOutline art borders', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorParagraphBorderLayer(
+    pdf,
+    [
+      {
+        edges: {
+          top: { color: '#112233', kind: 'basicWideInline', width: 2 },
+          bottom: { color: '#445566', kind: 'basicWideMidline', width: 2 },
+          left: { color: '#778899', kind: 'basicWideOutline', width: 2 },
+        },
+        height: 40,
+        width: 100,
+        x: 20,
+        y: 30,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toMatch(/0\.07\s+0\.13\s+0\.2\s+RG/);
+  expect(ascii).toMatch(/0\.27\s+0\.33\s+0\.4\s+RG/);
+  expect(ascii).toMatch(/0\.47\s+0\.53\s+0\.6\s+RG/);
+  const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
+  expect(strokeCount).toBeGreaterThanOrEqual(5);
   expect(ascii).toMatch(/[\d.]+\s+[\d.]+\s+m/);
   expect(ascii).toMatch(/\s+l\n/);
 });

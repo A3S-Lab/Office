@@ -9,13 +9,15 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(148);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.167.0');
-  await expect(cards.first()).toContainText(
-    '文档 PDF 绘制 basicThinLines 艺术边框',
-  );
+  await expect(cards).toHaveCount(149);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.168.0');
+  await expect(cards.first()).toContainText('文档 PDF 绘制 basicWide 艺术边框');
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.168.0')).toContainText('粗几何轨线');
+  await expect(releaseCard('0.168.0')).toContainText(
+    'basicWideOutline 绘制双粗轨；basicWideMidline 单粗轨；basicWideInline 粗轨加外侧细伴线',
+  );
   await expect(releaseCard('0.167.0')).toContainText('平行细线');
   await expect(releaseCard('0.167.0')).toContainText(
     'basicThinLines 沿测量边绘制三条间距细线',

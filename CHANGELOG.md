@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.168.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer `basicWideInline` /
+  `basicWideMidline` / `basicWideOutline` art paragraph borders as thick
+  geometric rails (outline dual thick, midline single thick, inline thick plus
+  thin outer companion). Remaining decorative art borders and full PDF/UA
+  certification remain out of scope.
+
 ## 0.167.0 - 2026-09-11
 
 ### Writer

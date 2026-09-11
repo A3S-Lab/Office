@@ -44,11 +44,11 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.167.0)
+## What's new on `main` (0.168.0)
 
-Browser document PDF export now paints Writer basicThinLines art borders as parallel hairlines:
+Browser document PDF export now paints Writer basicWideInline / basicWideMidline / basicWideOutline art borders as thick geometric rails:
 
-- Explicit `basicThinLines` — three spaced hairlines along the measured edge; not a silent skip.
+- Explicit `basicWideOutline` — dual thick rails; `basicWideMidline` — one thick rail; `basicWideInline` — thick plus thin outer companion; not a silent skip.
 - Remaining decorative art borders and full PDF/UA certification remain out of scope.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:

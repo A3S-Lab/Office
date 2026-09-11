@@ -371,10 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.167.0` paints Writer `basicThinLines` art paragraph borders as
-three parallel hairlines in browser document PDF export:
+Version `0.168.0` paints Writer `basicWideInline` / `basicWideMidline` /
+`basicWideOutline` art paragraph borders as thick geometric rails in browser
+document PDF export:
 
-- **thin lines** — three spaced hairlines along the measured edge.
+- **wide outline** — dual thick rails along the measured edge.
+- **wide midline** — a single thick rail at mid offset.
+- **wide inline** — thick rail plus a thinner outer companion.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 
