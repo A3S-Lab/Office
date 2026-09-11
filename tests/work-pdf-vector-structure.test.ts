@@ -294,24 +294,38 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     left: { style: 'dashed', color: { value: '#778899' }, size: 8 },
     right: { style: 'thick', color: { value: '#aabbcc' }, size: 24 },
   });
+  const betweenBarAttributes = documentParagraphBordersDomAttributes({
+    between: { style: 'dotted', color: { value: '#334455' }, size: 12 },
+    bar: { style: 'single', color: { value: '#556677' }, size: 18 },
+  });
   const artAttributes = documentParagraphBordersDomAttributes({
     top: { style: 'apples', color: { value: '#112233' }, size: 12 },
+  });
+  const waveBetweenAttributes = documentParagraphBordersDomAttributes({
+    between: { style: 'wave', color: { value: '#112233' }, size: 12 },
+    bar: { style: 'threeDEmboss', color: { value: '#445566' }, size: 14 },
   });
   document.body.innerHTML = `
     <div id="root">
       <p id="bordered" data-office-paragraph-borders='${attributes['data-office-paragraph-borders']}' style="${attributes.style}">Bordered</p>
+      <p id="between-bar" data-office-paragraph-borders='${betweenBarAttributes['data-office-paragraph-borders']}' style="${betweenBarAttributes.style}">Between bar</p>
       <p id="art" data-office-paragraph-borders='${artAttributes['data-office-paragraph-borders']}' style="${artAttributes.style}">Art</p>
+      <p id="wave-between" data-office-paragraph-borders='${waveBetweenAttributes['data-office-paragraph-borders']}' style="${waveBetweenAttributes.style}">Wave between</p>
       <p id="plain">Plain</p>
       <p id="nil" data-office-paragraph-borders='{"top":{"style":"nil"}}'>Nil</p>
     </div>
   `;
   const bordered = document.getElementById('bordered');
+  const betweenBar = document.getElementById('between-bar');
   const art = document.getElementById('art');
+  const waveBetween = document.getElementById('wave-between');
   const plain = document.getElementById('plain');
   const nil = document.getElementById('nil');
   if (
     !(bordered instanceof HTMLElement) ||
+    !(betweenBar instanceof HTMLElement) ||
     !(art instanceof HTMLElement) ||
+    !(waveBetween instanceof HTMLElement) ||
     !(plain instanceof HTMLElement) ||
     !(nil instanceof HTMLElement)
   ) {
@@ -323,7 +337,12 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     left: { color: '#778899', kind: 'dashed', width: 8 / 6 },
     right: { color: '#aabbcc', kind: 'thick', width: 4 },
   });
+  expect(workPdfParagraphBordersFromElement(betweenBar)).toEqual({
+    between: { color: '#334455', kind: 'dotted', width: 2 },
+    bar: { color: '#556677', kind: 'thick', width: 3 },
+  });
   expect(workPdfParagraphBordersFromElement(art)).toBeNull();
+  expect(workPdfParagraphBordersFromElement(waveBetween)).toBeNull();
   expect(workPdfParagraphBordersFromElement(plain)).toBeNull();
   expect(workPdfParagraphBordersFromElement(nil)).toBeNull();
 });
@@ -333,23 +352,31 @@ test('collects measured paragraph border boxes within page bounds', () => {
     top: { style: 'single', color: { value: '#112233' }, size: 12 },
     bottom: { style: 'single', color: { value: '#112233' }, size: 12 },
   });
+  const betweenBarAttributes = documentParagraphBordersDomAttributes({
+    between: { style: 'dashed', color: { value: '#334455' }, size: 12 },
+    bar: { style: 'single', color: { value: '#556677' }, size: 12 },
+  });
   document.body.innerHTML = `
     <div id="root" class="work-pdf-export-page">
       <p id="on-page" data-office-paragraph-borders='${attributes['data-office-paragraph-borders']}' style="${attributes.style}">On page</p>
+      <p id="between-bar" data-office-paragraph-borders='${betweenBarAttributes['data-office-paragraph-borders']}' style="${betweenBarAttributes.style}">Between bar</p>
       <p id="off-page" data-office-paragraph-borders='${attributes['data-office-paragraph-borders']}' style="${attributes.style}">Off page</p>
     </div>
   `;
   const root = document.getElementById('root');
   const onPage = document.getElementById('on-page');
+  const betweenBar = document.getElementById('between-bar');
   const offPage = document.getElementById('off-page');
   if (
     !(root instanceof HTMLElement) ||
     !(onPage instanceof HTMLElement) ||
+    !(betweenBar instanceof HTMLElement) ||
     !(offPage instanceof HTMLElement)
   ) {
     throw new Error('Expected border box fixtures.');
   }
   stubBoundingRect(onPage, { left: 12, top: 24, width: 160, height: 28 });
+  stubBoundingRect(betweenBar, { left: 12, top: 60, width: 160, height: 28 });
   stubBoundingRect(offPage, { left: 12, top: 900, width: 160, height: 28 });
   expect(
     collectWorkPdfParagraphBorderBoxes(root, {
@@ -368,6 +395,16 @@ test('collects measured paragraph border boxes within page bounds', () => {
       width: 160,
       x: 12,
       y: 24,
+    },
+    {
+      edges: {
+        between: { color: '#334455', kind: 'dashed', width: 2 },
+        bar: { color: '#556677', kind: 'single', width: 2 },
+      },
+      height: 28,
+      width: 160,
+      x: 12,
+      y: 60,
     },
   ]);
 });
@@ -407,6 +444,40 @@ test('paints paragraph borders as PDF path operators', () => {
   expect(ascii).toMatch(/120\.\s+[\d.]+\s+l/);
 });
 
+test('paints between and bar paragraph borders as PDF path operators', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorParagraphBorderLayer(
+    pdf,
+    [
+      {
+        edges: {
+          between: { color: '#334455', kind: 'single', width: 2 },
+          bar: { color: '#556677', kind: 'thick', width: 3 },
+        },
+        height: 40,
+        width: 100,
+        x: 20,
+        y: 30,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  // between → bottom horizontal; bar → left vertical
+  expect(ascii).toContain('0.2 0.27 0.33 RG');
+  expect(ascii).toContain('0.33 0.4 0.47 RG');
+  const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
+  expect(strokeCount).toBeGreaterThanOrEqual(2);
+  expect(ascii).toMatch(/20\.\s+[\d.]+\s+m/);
+  expect(ascii).toMatch(/120\.\s+[\d.]+\s+l/);
+});
+
 test('clears border strips on the raster canvas before vector paint', () => {
   const fillRectCalls: Array<[number, number, number, number]> = [];
   const canvas = {
@@ -431,6 +502,8 @@ test('clears border strips on the raster canvas before vector paint', () => {
         edges: {
           top: { color: '#000000', kind: 'single', width: 2 },
           bottom: { color: '#000000', kind: 'single', width: 2 },
+          between: { color: '#000000', kind: 'dotted', width: 2 },
+          bar: { color: '#000000', kind: 'single', width: 2 },
         },
         height: 20,
         width: 40,
@@ -441,7 +514,8 @@ test('clears border strips on the raster canvas before vector paint', () => {
     { height: 50, width: 100 },
     '#ffffff',
   );
-  expect(fillRectCalls.length).toBe(2);
+  // top + bottom + between(bottom) + bar(left)
+  expect(fillRectCalls.length).toBe(4);
 });
 
 test('clears a strip under underlined runs before vector paint', () => {

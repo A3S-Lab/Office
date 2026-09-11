@@ -371,15 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.151.0` paints Writer paragraph borders as vector strokes in browser
-document PDF export (top/left/bottom/right; single/thick/double/dashed/dotted)
-from `data-office-paragraph-borders` or CSS after clearing border strips on the
-raster canvas:
+Version `0.152.0` paints Writer `between` and `bar` paragraph border edges as
+vector strokes in browser document PDF export (same common styles as 0.151.0),
+mapping between→bottom and bar→left at measured paragraph geometry:
 
-- **Paragraph border vector paint** — measured paragraph boxes stroke common
-  edge styles at the same geometry as the searchable vector text layer.
-- **Boundary** — art/wave/3D borders, between/bar edges, and full PDF/UA
-  structure trees remain out of scope.
+- **Between/bar vector paint** — measured paragraph boxes stroke between and
+  bar edges alongside top/left/bottom/right.
+- **Boundary** — art/wave/3D borders and full PDF/UA structure trees remain out
+  of scope.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

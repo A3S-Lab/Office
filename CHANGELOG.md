@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.152.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer `between` and `bar` paragraph
+  border edges as vector strokes (same common styles as 0.151.0), mapping
+  between→bottom and bar→left at measured paragraph geometry. Art/wave/3D
+  borders and full PDF/UA structure trees remain out of scope.
+
 ## 0.151.0 - 2026-09-11
 
 ### Writer

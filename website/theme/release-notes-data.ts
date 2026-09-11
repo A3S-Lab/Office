@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.152.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF paints Writer between and bar paragraph borders',
+      zh: '文档 PDF 绘制 Writer between 与 bar 段落边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer between and bar paragraph border edges as vector strokes (same common styles as 0.151.0), mapping between→bottom and bar→left at measured paragraph geometry. Art/wave/3D borders and full PDF/UA structure trees remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer between 与 bar 段落边绘制为矢量描边（样式同 0.151.0），并在测量段落几何上将 between→bottom、bar→left。艺术/波浪/三维边框与完整 PDF/UA 结构树仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Between and bar edges in PDF export',
+          zh: 'PDF 导出中的 between 与 bar 边',
+        },
+        detail: {
+          en: 'Measured paragraph boxes stroke between and bar edges with the same common styles as top/left/bottom/right.',
+          zh: '测量得到的段落框以与上/左/下/右相同的常见样式描边 between 与 bar 边。',
+        },
+      },
+      {
+        title: {
+          en: 'Geometry mapping for between and bar',
+          zh: 'between 与 bar 的几何映射',
+        },
+        detail: {
+          en: 'Between maps to the bottom edge and bar maps to the left edge at measured paragraph geometry.',
+          zh: '在测量段落几何上，between 映射为底边，bar 映射为左边。',
+        },
+      },
+      {
+        title: {
+          en: 'Art borders and PDF/UA stay out of scope',
+          zh: '艺术边框与 PDF/UA 仍不在范围内',
+        },
+        detail: {
+          en: 'This slice deepens vector paint for between/bar only; art/wave/3D borders and full PDF/UA structure trees are not claimed.',
+          zh: '本切片仅加深 between/bar 矢量绘制；不宣称艺术/波浪/三维边框与完整 PDF/UA 结构树。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.152.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.152.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.151.0',
     date: '2026-09-11',
     kind: 'improved',

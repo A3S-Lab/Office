@@ -37,7 +37,18 @@ export type WorkPdfParagraphBorderKind =
   | 'dashed'
   | 'dotted';
 
-export type WorkPdfParagraphBorderBoxEdge = 'top' | 'left' | 'bottom' | 'right';
+/**
+ * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
+ * of the measured box (DOM inset-bottom approximation); `bar` maps to the left
+ * (DOM inset-left / facing-page bar approximation).
+ */
+export type WorkPdfParagraphBorderBoxEdge =
+  | 'top'
+  | 'left'
+  | 'bottom'
+  | 'right'
+  | 'between'
+  | 'bar';
 
 export interface WorkPdfParagraphBorderEdgeStroke {
   color: string;
@@ -68,6 +79,8 @@ const PARAGRAPH_BORDER_BOX_EDGES = [
   'left',
   'bottom',
   'right',
+  'between',
+  'bar',
 ] as const satisfies readonly WorkPdfParagraphBorderBoxEdge[];
 const PARAGRAPH_BORDER_SELECTOR = `p, h1, h2, h3, h4, h5, h6, [${DOCUMENT_PARAGRAPH_BORDERS_ATTRIBUTE}]`;
 
@@ -319,8 +332,8 @@ export function appendWorkPdfVectorUnderlineLayer(
 
 /**
  * Resolves Writer paragraph borders on a block into a bounded PDF stroke plan.
- * Only top/left/bottom/right line styles are admitted; art, wave, 3D, between,
- * and bar edges are skipped (fail closed).
+ * Admits top/left/bottom/right plus between/bar line styles; art, wave, and 3D
+ * styles are skipped (fail closed). Not PDF/UA.
  */
 export function workPdfParagraphBordersFromElement(
   element: HTMLElement,
@@ -433,21 +446,22 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
       if (!stroke) continue;
       const strip = Math.max(stroke.width, 1) + 1;
       const pad = Math.max(1, scaleX * 0.5);
-      if (edge === 'top') {
+      const paintEdge = paragraphBorderPaintEdge(edge);
+      if (paintEdge === 'top') {
         context.fillRect(
           box.x * scaleX - pad,
           box.y * scaleY - pad,
           box.width * scaleX + pad * 2,
           strip * scaleY,
         );
-      } else if (edge === 'bottom') {
+      } else if (paintEdge === 'bottom') {
         context.fillRect(
           box.x * scaleX - pad,
           (box.y + box.height - strip) * scaleY,
           box.width * scaleX + pad * 2,
           strip * scaleY + pad,
         );
-      } else if (edge === 'left') {
+      } else if (paintEdge === 'left') {
         context.fillRect(
           box.x * scaleX - pad,
           box.y * scaleY - pad,
@@ -469,7 +483,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
- * geometry (bounded line styles only; not PDF/UA and not full border fidelity).
+ * geometry (common + between/bar line styles; not PDF/UA or art/wave/3D).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -594,6 +608,14 @@ function workPdfParagraphBorderKindFromPresentation(
   return 'single';
 }
 
+function paragraphBorderPaintEdge(
+  edge: WorkPdfParagraphBorderBoxEdge,
+): 'top' | 'left' | 'bottom' | 'right' {
+  if (edge === 'between') return 'bottom';
+  if (edge === 'bar') return 'left';
+  return edge;
+}
+
 function strokeParagraphBorderEdge(
   pdf: JsPdf,
   edge: WorkPdfParagraphBorderBoxEdge,
@@ -603,11 +625,12 @@ function strokeParagraphBorderEdge(
   height: number,
   inset: number,
 ): void {
-  if (edge === 'top') {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  if (paintEdge === 'top') {
     pdf.line(x, y + inset, x + width, y + inset);
-  } else if (edge === 'bottom') {
+  } else if (paintEdge === 'bottom') {
     pdf.line(x, y + height - inset, x + width, y + height - inset);
-  } else if (edge === 'left') {
+  } else if (paintEdge === 'left') {
     pdf.line(x + inset, y, x + inset, y + height);
   } else {
     pdf.line(x + width - inset, y, x + width - inset, y + height);

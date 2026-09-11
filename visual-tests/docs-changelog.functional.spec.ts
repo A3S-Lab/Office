@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(132);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.151.0');
+  await expect(cards).toHaveCount(133);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.152.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 将 Writer 段落边框绘制为矢量描边',
+    '文档 PDF 绘制 Writer between 与 bar 段落边框',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.152.0')).toContainText(
+    'PDF 导出中的 between 与 bar 边',
+  );
+  await expect(releaseCard('0.152.0')).toContainText(
+    '测量得到的段落框以与上/左/下/右相同的常见样式描边 between 与 bar 边',
+  );
   await expect(releaseCard('0.151.0')).toContainText(
     'PDF 导出中的段落边框矢量描边',
   );
