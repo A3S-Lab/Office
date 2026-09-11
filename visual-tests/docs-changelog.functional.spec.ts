@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(139);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.158.0');
+  await expect(cards).toHaveCount(140);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.159.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 绘制 zigZag 艺术边框并设置 DisplayDocTitle',
+    '文档 PDF 绘制 sawtooth 与 sharksTeeth 艺术边框',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.159.0')).toContainText('sawtooth 三角齿');
+  await expect(releaseCard('0.159.0')).toContainText(
+    'sawtooth 沿测量边绘制单侧三角齿',
+  );
   await expect(releaseCard('0.158.0')).toContainText(
     'zigZag 与 zigZagStitch 锯齿线',
   );

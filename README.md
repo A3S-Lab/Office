@@ -371,13 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.158.0` paints Writer `zigZag` / `zigZagStitch` art paragraph borders
-as chevron polylines and sets catalog `/DisplayDocTitle` in browser document
-PDF export:
+Version `0.159.0` paints Writer `sawtooth` / `sharksTeeth` art paragraph
+borders as triangular teeth in browser document PDF export:
 
-- **zigZag art strokes** — explicit chevron polylines, not silent skips.
-- **DisplayDocTitle** — `/ViewerPreferences << /DisplayDocTitle true >>` on
-  titled catalogs.
+- **sawtooth / sharksTeeth strokes** — explicit triangular teeth polylines, not
+  silent skips.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

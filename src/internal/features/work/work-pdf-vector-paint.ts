@@ -43,7 +43,9 @@ export type WorkPdfParagraphBorderKind =
   | 'inset'
   | 'outset'
   | 'zigZag'
-  | 'zigZagStitch';
+  | 'zigZagStitch'
+  | 'sawtooth'
+  | 'sharksTeeth';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -342,8 +344,8 @@ export function appendWorkPdfVectorUnderlineLayer(
  * Resolves Writer paragraph borders on a block into a bounded PDF stroke plan.
  * Admits top/left/bottom/right plus between/bar line styles, including explicit
  * `wave` / `doubleWave` polylines, dual-tone 3D / inset / outset relief strokes,
- * and geometric `zigZag` / `zigZagStitch` art motifs; other art border styles
- * are skipped (fail closed). Not PDF/UA.
+ * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` art
+ * motifs; other art border styles are skipped (fail closed). Not PDF/UA.
  */
 export function workPdfParagraphBordersFromElement(
   element: HTMLElement,
@@ -493,7 +495,8 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
- * geometry (common + wave + 3D + zigZag art; not PDF/UA or decorative art).
+ * geometry (common + wave + 3D + zigZag/sawtooth art; not PDF/UA or decorative
+ * art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -570,6 +573,17 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           thickness,
           stroke.kind === 'zigZagStitch',
         );
+      } else if (stroke.kind === 'sawtooth' || stroke.kind === 'sharksTeeth') {
+        strokeSawtoothParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind === 'sharksTeeth',
+        );
       } else if (
         stroke.kind === 'threeDEmboss' ||
         stroke.kind === 'threeDEngrave' ||
@@ -606,7 +620,12 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
   if (border.style === 'nil' || border.style === 'none') {
     return null;
   }
-  if (border.style === 'zigZag' || border.style === 'zigZagStitch') {
+  if (
+    border.style === 'zigZag' ||
+    border.style === 'zigZagStitch' ||
+    border.style === 'sawtooth' ||
+    border.style === 'sharksTeeth'
+  ) {
     const presentation = documentBorderPresentation(border);
     if (presentation.width <= 0 || presentation.color === 'transparent') {
       return null;
@@ -869,6 +888,71 @@ function strokeZigZagPolyline(
     pdf.line(prevX, prevY, nextX, nextY);
     prevX = nextX;
     prevY = nextY;
+  }
+}
+
+/**
+ * One-sided triangular teeth for geometric art borders `sawtooth` /
+ * `sharksTeeth`. `sharksTeeth` densifies the period and flips amplitude.
+ */
+function strokeSawtoothParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  sharks: boolean,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const amplitude = Math.max(1.6, thickness * (sharks ? 1.55 : 1.4));
+  const period = Math.max(4, thickness * (sharks ? 3.6 : 5.2));
+  const signedAmplitude =
+    sharks && (paintEdge === 'bottom' || paintEdge === 'right')
+      ? -amplitude
+      : amplitude;
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    strokeSawtoothPolyline(pdf, x, yBase, width, 0, period, signedAmplitude);
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    strokeSawtoothPolyline(pdf, xBase, y, height, 1, period, signedAmplitude);
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeSawtoothPolyline(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  amplitude: number,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const teeth = Math.max(2, Math.ceil(length / period));
+  let prevX = originX;
+  let prevY = originY;
+  for (let index = 1; index <= teeth; index += 1) {
+    const peakAlong = Math.min(length, ((index - 0.5) * length) / teeth);
+    const endAlong = Math.min(length, (index * length) / teeth);
+    const peakX = axis === 0 ? originX + peakAlong : originX + amplitude;
+    const peakY = axis === 0 ? originY + amplitude : originY + peakAlong;
+    const endX = axis === 0 ? originX + endAlong : originX;
+    const endY = axis === 0 ? originY : originY + endAlong;
+    pdf.line(prevX, prevY, peakX, peakY);
+    pdf.line(peakX, peakY, endX, endY);
+    prevX = endX;
+    prevY = endY;
   }
 }
 

@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.159.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF paints sawtooth and sharksTeeth art borders',
+      zh: '文档 PDF 绘制 sawtooth 与 sharksTeeth 艺术边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer sawtooth / sharksTeeth art paragraph borders as explicit triangular teeth polylines. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 sawtooth / sharksTeeth 艺术段落边框绘制为显式三角齿折线。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'sawtooth triangular teeth',
+          zh: 'sawtooth 三角齿',
+        },
+        detail: {
+          en: 'sawtooth strokes one-sided triangular teeth along the measured edge.',
+          zh: 'sawtooth 沿测量边绘制单侧三角齿。',
+        },
+      },
+      {
+        title: {
+          en: 'sharksTeeth denser teeth',
+          zh: 'sharksTeeth 更密齿形',
+        },
+        detail: {
+          en: 'sharksTeeth uses a denser period and flips amplitude on bottom/right edges.',
+          zh: 'sharksTeeth 使用更密周期，并在底边/右边翻转振幅。',
+        },
+      },
+      {
+        title: {
+          en: 'Remaining art borders stay out of scope',
+          zh: '其余艺术边框仍不在范围内',
+        },
+        detail: {
+          en: 'Apples, vines, and other decorative art borders, plus full PDF/UA certification, are not claimed.',
+          zh: '不宣称苹果、藤蔓等其余装饰性艺术边框，也不宣称完整 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.159.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.159.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.158.0',
     date: '2026-09-11',
     kind: 'improved',

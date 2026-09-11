@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.159.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer `sawtooth` / `sharksTeeth` art
+  paragraph borders as explicit triangular teeth polylines. Remaining
+  decorative art borders and full PDF/UA certification remain out of scope.
+
 ## 0.158.0 - 2026-09-11
 
 ### Writer
