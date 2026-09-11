@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.161.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer `ovals` / `rings` art paragraph
+  borders as explicit ellipse motifs (`rings` nests denser inner ellipses).
+  Remaining decorative art borders and full PDF/UA certification remain out of
+  scope.
+
 ## 0.160.0 - 2026-09-11
 
 ### Writer

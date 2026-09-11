@@ -371,10 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.160.0` paints Writer `triangles` / `triangle1` / `triangle2` art
-paragraph borders as closed isosceles triangles in browser document PDF export:
+Version `0.161.0` paints Writer `ovals` / `rings` art paragraph borders as
+ellipse motifs in browser document PDF export:
 
-- **triangle art strokes** — explicit closed triangles, not silent skips.
+- **oval / ring strokes** — explicit ellipses along the edge (`rings` nests an
+  inner ellipse); not silent skips.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

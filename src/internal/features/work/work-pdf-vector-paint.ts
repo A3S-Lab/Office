@@ -48,7 +48,9 @@ export type WorkPdfParagraphBorderKind =
   | 'sharksTeeth'
   | 'triangles'
   | 'triangle1'
-  | 'triangle2';
+  | 'triangle2'
+  | 'ovals'
+  | 'rings';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -348,8 +350,8 @@ export function appendWorkPdfVectorUnderlineLayer(
  * Admits top/left/bottom/right plus between/bar line styles, including explicit
  * `wave` / `doubleWave` polylines, dual-tone 3D / inset / outset relief strokes,
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
- * `triangles` / `triangle1` / `triangle2` art motifs; other art border styles
- * are skipped (fail closed). Not PDF/UA.
+ * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` art motifs;
+ * other art border styles are skipped (fail closed). Not PDF/UA.
  */
 export function workPdfParagraphBordersFromElement(
   element: HTMLElement,
@@ -499,8 +501,8 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
- * geometry (common + wave + 3D + zigZag/sawtooth/triangle art; not PDF/UA or
- * decorative art).
+ * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval art; not PDF/UA
+ * or decorative art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -603,6 +605,17 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           thickness,
           stroke.kind,
         );
+      } else if (stroke.kind === 'ovals' || stroke.kind === 'rings') {
+        strokeOvalParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind === 'rings',
+        );
       } else if (
         stroke.kind === 'threeDEmboss' ||
         stroke.kind === 'threeDEngrave' ||
@@ -646,7 +659,9 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'sharksTeeth' ||
     border.style === 'triangles' ||
     border.style === 'triangle1' ||
-    border.style === 'triangle2'
+    border.style === 'triangle2' ||
+    border.style === 'ovals' ||
+    border.style === 'rings'
   ) {
     const presentation = documentBorderPresentation(border);
     if (presentation.width <= 0 || presentation.color === 'transparent') {
@@ -1061,6 +1076,108 @@ function strokeClosedTrianglePolyline(
     pdf.line(startX, startY, peakX, peakY);
     pdf.line(peakX, peakY, endX, endY);
     pdf.line(endX, endY, startX, startY);
+  }
+}
+
+/**
+ * Repeating ellipses along the measured edge for geometric art borders
+ * `ovals` / `rings`. `rings` densifies and nests a second inner ellipse.
+ */
+function strokeOvalParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  rings: boolean,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const radius = Math.max(1.4, thickness * (rings ? 1.15 : 1.45));
+  const period = Math.max(4.2, thickness * (rings ? 3.8 : 5.6));
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    strokeOvalMotifs(pdf, x, yBase, width, 0, period, radius, rings);
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    strokeOvalMotifs(pdf, xBase, y, height, 1, period, radius, rings);
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeOvalMotifs(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  radius: number,
+  rings: boolean,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const centerX = axis === 0 ? originX + along : originX;
+    const centerY = axis === 0 ? originY : originY + along;
+    const rx =
+      axis === 0 ? Math.min(radius * 1.35, length / (count * 2.2)) : radius;
+    const ry =
+      axis === 0 ? radius : Math.min(radius * 1.35, length / (count * 2.2));
+    strokeEllipsePolyline(pdf, centerX, centerY, rx, ry);
+    if (rings) {
+      strokeEllipsePolyline(pdf, centerX, centerY, rx * 0.55, ry * 0.55);
+    }
+  }
+}
+
+function strokeEllipsePolyline(
+  pdf: JsPdf,
+  centerX: number,
+  centerY: number,
+  radiusX: number,
+  radiusY: number,
+): void {
+  if (
+    !Number.isFinite(radiusX) ||
+    !Number.isFinite(radiusY) ||
+    radiusX <= 0 ||
+    radiusY <= 0
+  ) {
+    return;
+  }
+  const ellipseCapable = pdf as JsPdf & {
+    ellipse?: (
+      x: number,
+      y: number,
+      rx: number,
+      ry: number,
+      style?: string | null,
+    ) => void;
+  };
+  if (typeof ellipseCapable.ellipse === 'function') {
+    ellipseCapable.ellipse(centerX, centerY, radiusX, radiusY, 'S');
+    return;
+  }
+  const steps = 16;
+  let prevX = centerX + radiusX;
+  let prevY = centerY;
+  for (let index = 1; index <= steps; index += 1) {
+    const angle = (Math.PI * 2 * index) / steps;
+    const nextX = centerX + Math.cos(angle) * radiusX;
+    const nextY = centerY + Math.sin(angle) * radiusY;
+    pdf.line(prevX, prevY, nextX, nextY);
+    prevX = nextX;
+    prevY = nextY;
   }
 }
 

@@ -333,6 +333,10 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     bottom: { style: 'triangle1', color: { value: '#445566' }, size: 12 },
     left: { style: 'triangle2', color: { value: '#778899' }, size: 12 },
   });
+  const ovalAttributes = documentParagraphBordersDomAttributes({
+    top: { style: 'ovals', color: { value: '#112233' }, size: 12 },
+    bottom: { style: 'rings', color: { value: '#445566' }, size: 12 },
+  });
   const waveBetweenAttributes = documentParagraphBordersDomAttributes({
     between: { style: 'wave', color: { value: '#112233' }, size: 12 },
     bar: { style: 'threeDEmboss', color: { value: '#445566' }, size: 14 },
@@ -345,6 +349,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
       <p id="zigzag" data-office-paragraph-borders='${zigZagAttributes['data-office-paragraph-borders']}' style="${zigZagAttributes.style}">Zigzag</p>
       <p id="sawtooth" data-office-paragraph-borders='${sawtoothAttributes['data-office-paragraph-borders']}' style="${sawtoothAttributes.style}">Sawtooth</p>
       <p id="triangles" data-office-paragraph-borders='${triangleAttributes['data-office-paragraph-borders']}' style="${triangleAttributes.style}">Triangles</p>
+      <p id="ovals" data-office-paragraph-borders='${ovalAttributes['data-office-paragraph-borders']}' style="${ovalAttributes.style}">Ovals</p>
       <p id="wave-between" data-office-paragraph-borders='${waveBetweenAttributes['data-office-paragraph-borders']}' style="${waveBetweenAttributes.style}">Wave between</p>
       <p id="plain">Plain</p>
       <p id="nil" data-office-paragraph-borders='{"top":{"style":"nil"}}'>Nil</p>
@@ -356,6 +361,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   const zigzag = document.getElementById('zigzag');
   const sawtooth = document.getElementById('sawtooth');
   const triangles = document.getElementById('triangles');
+  const ovals = document.getElementById('ovals');
   const waveBetween = document.getElementById('wave-between');
   const plain = document.getElementById('plain');
   const nil = document.getElementById('nil');
@@ -366,6 +372,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     !(zigzag instanceof HTMLElement) ||
     !(sawtooth instanceof HTMLElement) ||
     !(triangles instanceof HTMLElement) ||
+    !(ovals instanceof HTMLElement) ||
     !(waveBetween instanceof HTMLElement) ||
     !(plain instanceof HTMLElement) ||
     !(nil instanceof HTMLElement)
@@ -395,6 +402,10 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     top: { color: '#112233', kind: 'triangles', width: 16 },
     bottom: { color: '#445566', kind: 'triangle1', width: 16 },
     left: { color: '#778899', kind: 'triangle2', width: 16 },
+  });
+  expect(workPdfParagraphBordersFromElement(ovals)).toEqual({
+    top: { color: '#112233', kind: 'ovals', width: 16 },
+    bottom: { color: '#445566', kind: 'rings', width: 16 },
   });
   expect(workPdfParagraphBordersFromElement(waveBetween)).toEqual({
     between: { color: '#112233', kind: 'wave', width: 2 },
@@ -726,6 +737,38 @@ test('paints triangles, triangle1, and triangle2 art borders as closed triangles
   expect(strokeCount).toBeGreaterThanOrEqual(30);
   expect(ascii).toMatch(/20\.\s+[\d.]+\s+m/);
   expect(ascii).toMatch(/\s+l\n/);
+});
+
+test('paints ovals and rings art borders as ellipse motifs', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorParagraphBorderLayer(
+    pdf,
+    [
+      {
+        edges: {
+          top: { color: '#112233', kind: 'ovals', width: 2 },
+          bottom: { color: '#445566', kind: 'rings', width: 2 },
+        },
+        height: 40,
+        width: 100,
+        x: 20,
+        y: 30,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toMatch(/0\.07\s+0\.13\s+0\.2\s+RG/);
+  expect(ascii).toMatch(/0\.27\s+0\.33\s+0\.4\s+RG/);
+  const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
+  expect(strokeCount).toBeGreaterThanOrEqual(8);
+  expect(ascii).toMatch(/20\.\s+[\d.]+\s+m|c\n|[\d.]+\s+[\d.]+\s+m/);
 });
 
 test('clears border strips on the raster canvas before vector paint', () => {
