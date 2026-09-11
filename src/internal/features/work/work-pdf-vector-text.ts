@@ -19,9 +19,16 @@ export interface WorkPdfRunUnderline {
   kind: WorkPdfUnderlineKind;
 }
 
+/** Opaque fill color for a Writer/CSS highlight background strip. */
+export interface WorkPdfRunHighlight {
+  color: string;
+}
+
 export interface WorkPdfStyledTextRun extends WorkPdfTextRun {
   color: string;
   fontStyle: WorkPdfTextFontStyle;
+  /** When set, PDF export paints a vector highlight fill under the text run. */
+  highlight?: WorkPdfRunHighlight;
   /** When set, PDF export paints a vector underline after clearing raster text. */
   underline?: WorkPdfRunUnderline;
 }

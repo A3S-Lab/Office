@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.150.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer text highlights as vector fill
+  strips from `data-office-highlight` or matching CSS backgrounds in the
+  portable highlight palette, under the searchable vector text layer.
+  Paragraph borders and full PDF/UA structure trees remain out of scope.
+
 ## 0.149.0 - 2026-09-11
 
 ### Writer

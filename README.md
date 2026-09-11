@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.149.0` paints Writer underlines as vector paths in browser document
-PDF export (`single` / `double` / `thick`) from `data-office-underline-*`,
-`<u>`, or CSS decoration after clearing a thin strip under measured runs:
+Version `0.150.0` paints Writer text highlights as vector fill strips in browser
+document PDF export from `data-office-highlight` or matching CSS backgrounds in
+the portable highlight palette, under the searchable vector text layer:
 
-- **Underline vector paint** — underlined measured runs stroke PDF paths at the
-  same geometry as the searchable vector text layer.
-- **Boundary** — broader borders and full PDF/UA structure trees remain out of
+- **Highlight vector paint** — highlighted measured runs fill PDF rectangles at
+  the same geometry as the searchable vector text layer.
+- **Boundary** — paragraph borders and full PDF/UA structure trees remain out of
   scope.
 
 Earlier releases stay on the product

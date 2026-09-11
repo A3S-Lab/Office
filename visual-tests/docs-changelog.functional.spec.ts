@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(130);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.149.0');
+  await expect(cards).toHaveCount(131);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.150.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 将 Writer 下划线绘制为矢量路径',
+    '文档 PDF 将 Writer 突出显示绘制为矢量填充',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.150.0')).toContainText(
+    'PDF 导出中的突出显示矢量填充',
+  );
+  await expect(releaseCard('0.150.0')).toContainText(
+    '带突出显示的测量文本在与矢量文本层相同的页面几何上填充 PDF 矩形',
+  );
   await expect(releaseCard('0.149.0')).toContainText(
     'PDF 导出中的下划线矢量路径',
   );

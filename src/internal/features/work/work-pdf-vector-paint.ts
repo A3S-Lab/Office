@@ -1,23 +1,60 @@
 import type { jsPDF as JsPdf } from 'jspdf';
 import {
+  DOCUMENT_HIGHLIGHT_ATTRIBUTE,
+  documentHighlightCssColor,
+  documentHighlightForCssColor,
+  normalizeDocumentHighlight,
+} from './work-document-highlight';
+import {
   DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
   documentUnderlineFormattingFromElement,
   type WorkDocumentUnderlineStyle,
 } from './work-document-underline';
 import {
   workPdfTextColorFromCss,
+  type WorkPdfRunHighlight,
   type WorkPdfRunUnderline,
   type WorkPdfStyledTextRun,
   type WorkPdfUnderlineKind,
 } from './work-pdf-vector-text';
 
-export type { WorkPdfRunUnderline, WorkPdfUnderlineKind };
+export type { WorkPdfRunHighlight, WorkPdfRunUnderline, WorkPdfUnderlineKind };
 
 type WorkPdfPaintPageCss = { height: number; width: number };
 type WorkPdfPaintPagePoints = {
   pageHeightPoints: number;
   pageWidthPoints: number;
 };
+
+/**
+ * Resolves a Writer/CSS highlight on a text host into an opaque PDF fill color.
+ * Only the portable highlight palette is admitted; `none` and transparent skip.
+ */
+export function workPdfRunHighlightFromElement(
+  element: HTMLElement,
+): WorkPdfRunHighlight | null {
+  let host: HTMLElement | null = element;
+  for (
+    let depth = 0;
+    host && depth < 6;
+    depth += 1, host = host.parentElement
+  ) {
+    const attr = normalizeDocumentHighlight(
+      host.getAttribute(DOCUMENT_HIGHLIGHT_ATTRIBUTE),
+    );
+    if (attr === 'none') return null;
+    if (attr) {
+      const color = documentHighlightCssColor(attr);
+      if (color && color !== 'transparent') return { color };
+    }
+  }
+  const fromCss = documentHighlightForCssColor(
+    getComputedStyle(element).backgroundColor,
+  );
+  if (!fromCss || fromCss === 'none') return null;
+  const color = documentHighlightCssColor(fromCss);
+  return color && color !== 'transparent' ? { color } : null;
+}
 
 /**
  * Resolves a Writer/CSS underline on a text host into a PDF stroke plan.
@@ -67,6 +104,60 @@ export function workPdfRunUnderlineFromElement(
     ),
     kind: cssStyle === 'double' ? 'double' : thicknessHintFromCss(computed),
   };
+}
+
+/**
+ * Paints highlight background fills as native PDF path operators using the same
+ * page geometry as the vector text layer (under text, above the raster page).
+ */
+export function appendWorkPdfVectorHighlightLayer(
+  pdf: JsPdf,
+  runs: readonly WorkPdfStyledTextRun[],
+  pageCss: WorkPdfPaintPageCss,
+  pagePoints: WorkPdfPaintPagePoints,
+): void {
+  const highlighted = runs.filter((run) => run.highlight);
+  if (!highlighted.length) return;
+  if (
+    !Number.isFinite(pageCss.width) ||
+    !Number.isFinite(pageCss.height) ||
+    pageCss.width <= 0 ||
+    pageCss.height <= 0 ||
+    !Number.isFinite(pagePoints.pageWidthPoints) ||
+    !Number.isFinite(pagePoints.pageHeightPoints) ||
+    pagePoints.pageWidthPoints <= 0 ||
+    pagePoints.pageHeightPoints <= 0
+  ) {
+    return;
+  }
+  const scaleX = pagePoints.pageWidthPoints / pageCss.width;
+  const scaleY = pagePoints.pageHeightPoints / pageCss.height;
+  for (const run of highlighted) {
+    const highlight = run.highlight;
+    if (!highlight) continue;
+    const x = run.x * scaleX;
+    const y = run.y * scaleY;
+    const width = run.width * scaleX;
+    const height = run.height * scaleY;
+    if (
+      !Number.isFinite(x) ||
+      !Number.isFinite(y) ||
+      !Number.isFinite(width) ||
+      !Number.isFinite(height) ||
+      width <= 0 ||
+      height <= 0 ||
+      x < -1 ||
+      y < -1 ||
+      x + width > pagePoints.pageWidthPoints + 1 ||
+      y + height > pagePoints.pageHeightPoints + 1
+    ) {
+      continue;
+    }
+    const rgb = parseCssRgb(highlight.color);
+    if (rgb) pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+    else pdf.setFillColor(255, 255, 0);
+    pdf.rect(x, y, width, height, 'F');
+  }
 }
 
 /**

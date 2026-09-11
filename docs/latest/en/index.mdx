@@ -44,14 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.149.0)
+## What's new on `main` (0.150.0)
 
-Browser document PDF export now paints Writer underlines as vector paths
-(`single` / `double` / `thick`) from `data-office-underline-*`, `<u>`, or CSS
-decoration after clearing a thin strip under measured runs:
+Browser document PDF export now paints Writer text highlights as vector fill
+strips from `data-office-highlight` or matching CSS backgrounds in the portable
+highlight palette, under the searchable vector text layer:
 
-- Underlined measured runs stroke PDF paths at the searchable vector geometry.
-- Broader borders and full PDF/UA structure trees remain out of scope.
+- Highlighted measured runs fill PDF rectangles at the searchable vector geometry.
+- Paragraph borders and full PDF/UA structure trees remain out of scope.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

@@ -6,8 +6,10 @@ import {
   normalizePdfLanguage,
 } from '../src/internal/features/work/work-pdf-structure';
 import {
+  appendWorkPdfVectorHighlightLayer,
   appendWorkPdfVectorUnderlineLayer,
   clearWorkPdfUnderlineStripsOnCanvas,
+  workPdfRunHighlightFromElement,
   workPdfRunUnderlineFromElement,
 } from '../src/internal/features/work/work-pdf-vector-paint';
 import {
@@ -148,6 +150,56 @@ test('resolves Writer underline marks into PDF stroke kinds', () => {
   expect(workPdfRunUnderlineFromElement(plain)).toBeNull();
 });
 
+test('resolves Writer highlight marks into PDF fill colors', () => {
+  document.body.innerHTML = `
+    <p>
+      <span id="yellow" data-office-highlight="yellow">One</span>
+      <span id="cyan" data-office-highlight="cyan">Two</span>
+      <span id="none" data-office-highlight="none">Off</span>
+      <span id="plain">Plain</span>
+      <span id="css-yellow" style="background-color: #ffff00">Css</span>
+    </p>
+  `;
+  const yellow = document.getElementById('yellow');
+  const cyan = document.getElementById('cyan');
+  const none = document.getElementById('none');
+  const plain = document.getElementById('plain');
+  const cssYellow = document.getElementById('css-yellow');
+  if (
+    !(yellow instanceof HTMLElement) ||
+    !(cyan instanceof HTMLElement) ||
+    !(none instanceof HTMLElement) ||
+    !(plain instanceof HTMLElement) ||
+    !(cssYellow instanceof HTMLElement)
+  ) {
+    throw new Error('Expected highlight fixtures.');
+  }
+  Object.defineProperty(window, 'getComputedStyle', {
+    configurable: true,
+    value: (element: Element) => ({
+      backgroundColor:
+        element === cssYellow
+          ? 'rgb(255, 255, 0)'
+          : element === yellow
+            ? 'rgb(255, 255, 0)'
+            : element === cyan
+              ? 'rgb(0, 255, 255)'
+              : 'rgba(0, 0, 0, 0)',
+    }),
+  });
+  expect(workPdfRunHighlightFromElement(yellow)).toEqual({
+    color: '#ffff00',
+  });
+  expect(workPdfRunHighlightFromElement(cyan)).toEqual({
+    color: '#00ffff',
+  });
+  expect(workPdfRunHighlightFromElement(none)).toBeNull();
+  expect(workPdfRunHighlightFromElement(plain)).toBeNull();
+  expect(workPdfRunHighlightFromElement(cssYellow)).toEqual({
+    color: '#ffff00',
+  });
+});
+
 test('paints underlined vector runs as PDF path operators', () => {
   const pdf = new jsPDF({
     orientation: 'portrait',
@@ -188,6 +240,46 @@ test('paints underlined vector runs as PDF path operators', () => {
   expect(ascii).toContain('0.07 0.13 0.2 RG');
   const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
   expect(strokeCount).toBeGreaterThanOrEqual(2);
+});
+
+test('paints highlighted vector runs as PDF fill operators', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  const runs = [
+    {
+      color: '#112233',
+      fontSize: 16,
+      fontStyle: 'normal' as const,
+      height: 18,
+      highlight: { color: '#ffff00' },
+      text: 'Highlighted',
+      width: 90,
+      x: 20,
+      y: 40,
+    },
+  ];
+  appendWorkPdfVectorHighlightLayer(
+    pdf,
+    runs,
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  appendWorkPdfVectorTextLayer(
+    pdf,
+    runs,
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toContain('Highlighted');
+  // jsPDF normalizes fill RGB and flips y from top origin.
+  expect(ascii).toContain('1. 1. 0. rg');
+  expect(ascii).toMatch(/20\.\s+240\.\s+90\.\s+-18\.\s+re/);
+  expect(ascii).toMatch(/\nf\n/);
 });
 
 test('clears a strip under underlined runs before vector paint', () => {

@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.150.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF paints Writer highlights as vector fills',
+      zh: '文档 PDF 将 Writer 突出显示绘制为矢量填充',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer text highlights as vector fill strips from data-office-highlight or matching CSS backgrounds in the portable highlight palette, under the searchable vector text layer. Paragraph borders and full PDF/UA structure trees remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 文本突出显示绘制为矢量填充条，来源为 data-office-highlight 或可移植突出显示调色板中匹配的 CSS 背景，并位于可搜索矢量文本层之下。段落边框与完整 PDF/UA 结构树仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Highlight vector fills in PDF export',
+          zh: 'PDF 导出中的突出显示矢量填充',
+        },
+        detail: {
+          en: 'Measured highlighted runs fill PDF rectangles at the same page geometry as the vector text layer.',
+          zh: '带突出显示的测量文本在与矢量文本层相同的页面几何上填充 PDF 矩形。',
+        },
+      },
+      {
+        title: {
+          en: 'Writer and CSS highlight sources',
+          zh: 'Writer 与 CSS 突出显示来源',
+        },
+        detail: {
+          en: 'Highlight colors resolve from data-office-highlight or CSS backgrounds that match the portable palette.',
+          zh: '突出显示颜色从 data-office-highlight 或匹配可移植调色板的 CSS 背景解析。',
+        },
+      },
+      {
+        title: {
+          en: 'Borders and PDF/UA stay out of scope',
+          zh: '边框与 PDF/UA 仍不在范围内',
+        },
+        detail: {
+          en: 'This slice deepens vector paint for highlights only; paragraph borders and full PDF/UA structure trees are not claimed.',
+          zh: '本切片仅加深突出显示矢量绘制；不宣称段落边框与完整 PDF/UA 结构树。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.150.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.150.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.149.0',
     date: '2026-09-11',
     kind: 'improved',

@@ -16,6 +16,7 @@ import {
 } from './work-pdf-structure';
 import { collectWorkPdfTextRuns } from './work-pdf-text-layer';
 import {
+  appendWorkPdfVectorHighlightLayer,
   appendWorkPdfVectorUnderlineLayer,
   clearWorkPdfUnderlineStripsOnCanvas,
 } from './work-pdf-vector-paint';
@@ -161,6 +162,7 @@ export async function exportWorkArtifactPdf(
             );
             pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
             if (pdf) {
+              appendWorkPdfVectorHighlightLayer(pdf, textRuns, page, page);
               appendWorkPdfVectorTextLayer(pdf, textRuns, page, page);
               appendWorkPdfVectorUnderlineLayer(pdf, textRuns, page, page);
               exportedPageNumber += 1;
@@ -210,6 +212,7 @@ export async function exportWorkArtifactPdf(
           );
           pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
           if (pdf) {
+            appendWorkPdfVectorHighlightLayer(pdf, textRuns, page, page);
             appendWorkPdfVectorTextLayer(pdf, textRuns, page, page);
             appendWorkPdfVectorUnderlineLayer(pdf, textRuns, page, page);
             exportedPageNumber += 1;
@@ -279,6 +282,12 @@ export async function exportWorkArtifactPdf(
           height: pageCss.height,
           width: pageCss.width,
         };
+        appendWorkPdfVectorHighlightLayer(
+          pdf,
+          textRuns,
+          pageSizeCss,
+          pagePoints,
+        );
         appendWorkPdfVectorTextLayer(pdf, textRuns, pageSizeCss, pagePoints);
         appendWorkPdfVectorUnderlineLayer(
           pdf,

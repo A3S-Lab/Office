@@ -42,14 +42,14 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.149.0）
+## `main` 更新内容（0.150.0）
 
-浏览器文档 PDF 导出现将 Writer 下划线绘制为矢量路径（`single` / `double` /
-`thick`），来源为 `data-office-underline-*`、`<u>` 或 CSS 装饰，并在测量文本
-下方清除细条后再描边：
+浏览器文档 PDF 导出现将 Writer 文本突出显示绘制为矢量填充条，来源为
+`data-office-highlight` 或可移植突出显示调色板中匹配的 CSS 背景，并位于可搜索
+矢量文本层之下：
 
-- 带下划线的测量文本在可搜索矢量几何上描边 PDF 路径。
-- 更广边框与完整 PDF/UA 结构树仍不在范围内。
+- 带突出显示的测量文本在可搜索矢量几何上填充 PDF 矩形。
+- 段落边框与完整 PDF/UA 结构树仍不在范围内。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。
