@@ -328,6 +328,11 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     top: { style: 'sawtooth', color: { value: '#112233' }, size: 12 },
     bottom: { style: 'sharksTeeth', color: { value: '#445566' }, size: 12 },
   });
+  const triangleAttributes = documentParagraphBordersDomAttributes({
+    top: { style: 'triangles', color: { value: '#112233' }, size: 12 },
+    bottom: { style: 'triangle1', color: { value: '#445566' }, size: 12 },
+    left: { style: 'triangle2', color: { value: '#778899' }, size: 12 },
+  });
   const waveBetweenAttributes = documentParagraphBordersDomAttributes({
     between: { style: 'wave', color: { value: '#112233' }, size: 12 },
     bar: { style: 'threeDEmboss', color: { value: '#445566' }, size: 14 },
@@ -339,6 +344,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
       <p id="art" data-office-paragraph-borders='${artAttributes['data-office-paragraph-borders']}' style="${artAttributes.style}">Art</p>
       <p id="zigzag" data-office-paragraph-borders='${zigZagAttributes['data-office-paragraph-borders']}' style="${zigZagAttributes.style}">Zigzag</p>
       <p id="sawtooth" data-office-paragraph-borders='${sawtoothAttributes['data-office-paragraph-borders']}' style="${sawtoothAttributes.style}">Sawtooth</p>
+      <p id="triangles" data-office-paragraph-borders='${triangleAttributes['data-office-paragraph-borders']}' style="${triangleAttributes.style}">Triangles</p>
       <p id="wave-between" data-office-paragraph-borders='${waveBetweenAttributes['data-office-paragraph-borders']}' style="${waveBetweenAttributes.style}">Wave between</p>
       <p id="plain">Plain</p>
       <p id="nil" data-office-paragraph-borders='{"top":{"style":"nil"}}'>Nil</p>
@@ -349,6 +355,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   const art = document.getElementById('art');
   const zigzag = document.getElementById('zigzag');
   const sawtooth = document.getElementById('sawtooth');
+  const triangles = document.getElementById('triangles');
   const waveBetween = document.getElementById('wave-between');
   const plain = document.getElementById('plain');
   const nil = document.getElementById('nil');
@@ -358,6 +365,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     !(art instanceof HTMLElement) ||
     !(zigzag instanceof HTMLElement) ||
     !(sawtooth instanceof HTMLElement) ||
+    !(triangles instanceof HTMLElement) ||
     !(waveBetween instanceof HTMLElement) ||
     !(plain instanceof HTMLElement) ||
     !(nil instanceof HTMLElement)
@@ -382,6 +390,11 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   expect(workPdfParagraphBordersFromElement(sawtooth)).toEqual({
     top: { color: '#112233', kind: 'sawtooth', width: 16 },
     bottom: { color: '#445566', kind: 'sharksTeeth', width: 16 },
+  });
+  expect(workPdfParagraphBordersFromElement(triangles)).toEqual({
+    top: { color: '#112233', kind: 'triangles', width: 16 },
+    bottom: { color: '#445566', kind: 'triangle1', width: 16 },
+    left: { color: '#778899', kind: 'triangle2', width: 16 },
   });
   expect(workPdfParagraphBordersFromElement(waveBetween)).toEqual({
     between: { color: '#112233', kind: 'wave', width: 2 },
@@ -676,6 +689,41 @@ test('paints sawtooth and sharksTeeth art borders as triangular teeth', () => {
   expect(ascii).toMatch(/0\.27\s+0\.33\s+0\.4\s+RG/);
   const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
   expect(strokeCount).toBeGreaterThanOrEqual(20);
+  expect(ascii).toMatch(/20\.\s+[\d.]+\s+m/);
+  expect(ascii).toMatch(/\s+l\n/);
+});
+
+test('paints triangles, triangle1, and triangle2 art borders as closed triangles', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorParagraphBorderLayer(
+    pdf,
+    [
+      {
+        edges: {
+          top: { color: '#112233', kind: 'triangles', width: 2 },
+          bottom: { color: '#445566', kind: 'triangle1', width: 2 },
+          left: { color: '#778899', kind: 'triangle2', width: 2 },
+        },
+        height: 40,
+        width: 100,
+        x: 20,
+        y: 30,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toMatch(/0\.07\s+0\.13\s+0\.2\s+RG/);
+  expect(ascii).toMatch(/0\.27\s+0\.33\s+0\.4\s+RG/);
+  expect(ascii).toMatch(/0\.47\s+0\.53\s+0\.6\s+RG/);
+  const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
+  expect(strokeCount).toBeGreaterThanOrEqual(30);
   expect(ascii).toMatch(/20\.\s+[\d.]+\s+m/);
   expect(ascii).toMatch(/\s+l\n/);
 });

@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(140);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.159.0');
+  await expect(cards).toHaveCount(141);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.160.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 绘制 sawtooth 与 sharksTeeth 艺术边框',
+    '文档 PDF 绘制 triangles / triangle1 / triangle2 艺术边框',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.160.0')).toContainText('闭合等腰三角');
+  await expect(releaseCard('0.160.0')).toContainText(
+    'triangles 沿测量边绘制闭合等腰三角',
+  );
   await expect(releaseCard('0.159.0')).toContainText('sawtooth 三角齿');
   await expect(releaseCard('0.159.0')).toContainText(
     'sawtooth 沿测量边绘制单侧三角齿',

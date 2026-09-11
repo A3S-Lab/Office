@@ -45,7 +45,10 @@ export type WorkPdfParagraphBorderKind =
   | 'zigZag'
   | 'zigZagStitch'
   | 'sawtooth'
-  | 'sharksTeeth';
+  | 'sharksTeeth'
+  | 'triangles'
+  | 'triangle1'
+  | 'triangle2';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -344,8 +347,9 @@ export function appendWorkPdfVectorUnderlineLayer(
  * Resolves Writer paragraph borders on a block into a bounded PDF stroke plan.
  * Admits top/left/bottom/right plus between/bar line styles, including explicit
  * `wave` / `doubleWave` polylines, dual-tone 3D / inset / outset relief strokes,
- * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` art
- * motifs; other art border styles are skipped (fail closed). Not PDF/UA.
+ * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
+ * `triangles` / `triangle1` / `triangle2` art motifs; other art border styles
+ * are skipped (fail closed). Not PDF/UA.
  */
 export function workPdfParagraphBordersFromElement(
   element: HTMLElement,
@@ -495,8 +499,8 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
- * geometry (common + wave + 3D + zigZag/sawtooth art; not PDF/UA or decorative
- * art).
+ * geometry (common + wave + 3D + zigZag/sawtooth/triangle art; not PDF/UA or
+ * decorative art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -585,6 +589,21 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           stroke.kind === 'sharksTeeth',
         );
       } else if (
+        stroke.kind === 'triangles' ||
+        stroke.kind === 'triangle1' ||
+        stroke.kind === 'triangle2'
+      ) {
+        strokeTrianglesParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind,
+        );
+      } else if (
         stroke.kind === 'threeDEmboss' ||
         stroke.kind === 'threeDEngrave' ||
         stroke.kind === 'inset' ||
@@ -624,7 +643,10 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'zigZag' ||
     border.style === 'zigZagStitch' ||
     border.style === 'sawtooth' ||
-    border.style === 'sharksTeeth'
+    border.style === 'sharksTeeth' ||
+    border.style === 'triangles' ||
+    border.style === 'triangle1' ||
+    border.style === 'triangle2'
   ) {
     const presentation = documentBorderPresentation(border);
     if (presentation.width <= 0 || presentation.color === 'transparent') {
@@ -953,6 +975,92 @@ function strokeSawtoothPolyline(
     pdf.line(peakX, peakY, endX, endY);
     prevX = endX;
     prevY = endY;
+  }
+}
+
+/**
+ * Closed isosceles triangles along the measured edge for geometric art
+ * borders `triangles` / `triangle1` / `triangle2`. `triangle1` densifies;
+ * `triangle2` inverts amplitude.
+ */
+function strokeTrianglesParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  kind: 'triangles' | 'triangle1' | 'triangle2',
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const amplitude = Math.max(
+    1.8,
+    thickness * (kind === 'triangle1' ? 1.15 : 1.6),
+  );
+  const period = Math.max(4.5, thickness * (kind === 'triangle1' ? 3.4 : 5.4));
+  let signedAmplitude = amplitude;
+  if (kind === 'triangle2') signedAmplitude = -amplitude;
+  if (paintEdge === 'bottom' || paintEdge === 'right') {
+    signedAmplitude = -signedAmplitude;
+  }
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    strokeClosedTrianglePolyline(
+      pdf,
+      x,
+      yBase,
+      width,
+      0,
+      period,
+      signedAmplitude,
+    );
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    strokeClosedTrianglePolyline(
+      pdf,
+      xBase,
+      y,
+      height,
+      1,
+      period,
+      signedAmplitude,
+    );
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeClosedTrianglePolyline(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  amplitude: number,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const teeth = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < teeth; index += 1) {
+    const startAlong = (index * length) / teeth;
+    const peakAlong = Math.min(length, ((index + 0.5) * length) / teeth);
+    const endAlong = Math.min(length, ((index + 1) * length) / teeth);
+    const startX = axis === 0 ? originX + startAlong : originX;
+    const startY = axis === 0 ? originY : originY + startAlong;
+    const peakX = axis === 0 ? originX + peakAlong : originX + amplitude;
+    const peakY = axis === 0 ? originY + amplitude : originY + peakAlong;
+    const endX = axis === 0 ? originX + endAlong : originX;
+    const endY = axis === 0 ? originY : originY + endAlong;
+    pdf.line(startX, startY, peakX, peakY);
+    pdf.line(peakX, peakY, endX, endY);
+    pdf.line(endX, endY, startX, startY);
   }
 }
 

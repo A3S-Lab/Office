@@ -371,11 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.159.0` paints Writer `sawtooth` / `sharksTeeth` art paragraph
-borders as triangular teeth in browser document PDF export:
+Version `0.160.0` paints Writer `triangles` / `triangle1` / `triangle2` art
+paragraph borders as closed isosceles triangles in browser document PDF export:
 
-- **sawtooth / sharksTeeth strokes** — explicit triangular teeth polylines, not
-  silent skips.
+- **triangle art strokes** — explicit closed triangles, not silent skips.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 
