@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.164.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer `basicBlackSquares` /
+  `basicWhiteSquares` art paragraph borders as discrete square stamps
+  (black densifies with nested square + diagonals). Remaining decorative art
+  borders and full PDF/UA certification remain out of scope.
+
 ## 0.163.0 - 2026-09-11
 
 ### Writer

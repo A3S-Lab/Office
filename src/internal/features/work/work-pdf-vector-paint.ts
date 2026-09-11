@@ -53,7 +53,9 @@ export type WorkPdfParagraphBorderKind =
   | 'rings'
   | 'marquee'
   | 'marqueeToothed'
-  | 'moons';
+  | 'moons'
+  | 'basicBlackSquares'
+  | 'basicWhiteSquares';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -354,7 +356,8 @@ export function appendWorkPdfVectorUnderlineLayer(
  * `wave` / `doubleWave` polylines, dual-tone 3D / inset / outset relief strokes,
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
- * `marqueeToothed` / `moons` art motifs; other art border styles are skipped (fail
+ * `marqueeToothed` / `moons` / `basicBlackSquares` / `basicWhiteSquares` art
+ * motifs; other art border styles are skipped (fail
  * closed). Not PDF/UA.
  */
 export function workPdfParagraphBordersFromElement(
@@ -505,8 +508,8 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
- * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon
- * art; not PDF/UA or decorative art).
+ * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
+ * basicSquares art; not PDF/UA or decorative art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -645,6 +648,20 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           thickness,
         );
       } else if (
+        stroke.kind === 'basicBlackSquares' ||
+        stroke.kind === 'basicWhiteSquares'
+      ) {
+        strokeBasicSquaresParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind === 'basicBlackSquares',
+        );
+      } else if (
         stroke.kind === 'threeDEmboss' ||
         stroke.kind === 'threeDEngrave' ||
         stroke.kind === 'inset' ||
@@ -692,7 +709,9 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'rings' ||
     border.style === 'marquee' ||
     border.style === 'marqueeToothed' ||
-    border.style === 'moons'
+    border.style === 'moons' ||
+    border.style === 'basicBlackSquares' ||
+    border.style === 'basicWhiteSquares'
   ) {
     const presentation = documentBorderPresentation(border);
     if (presentation.width <= 0 || presentation.color === 'transparent') {
@@ -1326,6 +1345,120 @@ function strokeCrescentPolyline(
     const [x1, y1] = path[(index + 1) % path.length]!;
     pdf.line(x0, y0, x1, y1);
   }
+}
+
+/**
+ * Discrete square stamps for geometric art borders `basicBlackSquares` /
+ * `basicWhiteSquares`. Black densifies with a nested square and diagonals;
+ * white is outline-only with wider spacing.
+ */
+function strokeBasicSquaresParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  filled: boolean,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const size = Math.max(2.0, thickness * (filled ? 1.55 : 1.7));
+  const period = Math.max(4.8, thickness * (filled ? 4.2 : 5.6));
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeBasicSquareStamps(
+      pdf,
+      x,
+      yBase,
+      width,
+      0,
+      period,
+      size,
+      outward,
+      filled,
+    );
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeBasicSquareStamps(
+      pdf,
+      xBase,
+      y,
+      height,
+      1,
+      period,
+      size,
+      outward,
+      filled,
+    );
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeBasicSquareStamps(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  size: number,
+  outward: 1 | -1,
+  filled: boolean,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const half = Math.min(size / 2, length / (count * 2.4));
+    if (axis === 0) {
+      const cx = originX + along;
+      const cy = originY + outward * half;
+      strokeSquareOutline(pdf, cx - half, cy - half, half * 2);
+      if (filled) {
+        const inset = half * 0.45;
+        strokeSquareOutline(pdf, cx - inset, cy - inset, inset * 2);
+        pdf.line(cx - half, cy - half, cx + half, cy + half);
+        pdf.line(cx + half, cy - half, cx - half, cy + half);
+      }
+    } else {
+      const cx = originX + outward * half;
+      const cy = originY + along;
+      strokeSquareOutline(pdf, cx - half, cy - half, half * 2);
+      if (filled) {
+        const inset = half * 0.45;
+        strokeSquareOutline(pdf, cx - inset, cy - inset, inset * 2);
+        pdf.line(cx - half, cy - half, cx + half, cy + half);
+        pdf.line(cx + half, cy - half, cx - half, cy + half);
+      }
+    }
+  }
+}
+
+function strokeSquareOutline(
+  pdf: JsPdf,
+  left: number,
+  top: number,
+  side: number,
+): void {
+  if (!Number.isFinite(side) || side <= 0) {
+    return;
+  }
+  const right = left + side;
+  const bottom = top + side;
+  pdf.line(left, top, right, top);
+  pdf.line(right, top, right, bottom);
+  pdf.line(right, bottom, left, bottom);
+  pdf.line(left, bottom, left, top);
 }
 
 /**

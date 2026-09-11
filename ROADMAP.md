@@ -157,7 +157,9 @@ Still required for R0 exit:
    Writer `ovals` / `rings` art paragraph borders paint as ellipse motifs
    through `0.161.0`; Writer `marquee` / `marqueeToothed` art paragraph borders
    paint as rectangle motifs through `0.162.0`; Writer `moons` art paragraph
-   borders paint as crescent motifs through `0.163.0`; remaining decorative art
+   borders paint as crescent motifs through `0.163.0`; Writer
+   `basicBlackSquares` / `basicWhiteSquares` art paragraph borders paint as
+   discrete square stamps through `0.164.0`; remaining decorative art
    borders and full PDF/UA certification remain open.
 7. Continuous no-clobber corpus growth for representative Traditional Office
    fixtures (diagnose every intentional normalization).
@@ -614,7 +616,8 @@ above this section.
   paint as ellipse motifs through `0.161.0`; Writer `marquee` /
   `marqueeToothed` art paragraph borders paint as rectangle motifs through
   `0.162.0`; Writer `moons` art paragraph borders paint as crescent motifs
-  through `0.163.0`; optional host
+  through `0.163.0`; Writer `basicBlackSquares` / `basicWhiteSquares` art
+  paragraph borders paint as discrete square stamps through `0.164.0`; optional host
   `registerWorkPdfCjkFont` TrueType enables searchable CJK vector text; full
   PDF/UA certification, remaining decorative art borders, and bundled CJK fonts
   remain open.

@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.163.0` paints Writer `moons` art paragraph borders as crescent
-motifs in browser document PDF export:
+Version `0.164.0` paints Writer `basicBlackSquares` / `basicWhiteSquares`
+art paragraph borders as discrete square stamps in browser document PDF export:
 
-- **moon crescents** — closed outer-arc + inner-arc polylines along measured edges.
+- **square stamps** — black densifies with nested square + diagonals; white is outline-only.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 
