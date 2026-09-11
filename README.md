@@ -371,13 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.148.0` extends browser document PDF bookmarks to include Writer
-outline-level paragraphs (`p[data-office-outline-level]`) alongside h1–h6,
-with level nesting:
+Version `0.149.0` paints Writer underlines as vector paths in browser document
+PDF export (`single` / `double` / `thick`) from `data-office-underline-*`,
+`<u>`, or CSS decoration after clearing a thin strip under measured runs:
 
-- **Outline-level PDF bookmarks** — `p[data-office-outline-level]` paragraphs
-  join h1–h6 in the PDF outline with nested levels.
-- **Boundary** — full PDF/UA structure trees remain out of scope.
+- **Underline vector paint** — underlined measured runs stroke PDF paths at the
+  same geometry as the searchable vector text layer.
+- **Boundary** — broader borders and full PDF/UA structure trees remain out of
+  scope.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

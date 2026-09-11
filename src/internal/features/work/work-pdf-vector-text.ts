@@ -11,9 +11,19 @@ import type {
 
 export type WorkPdfTextFontStyle = 'normal' | 'bold' | 'italic' | 'bolditalic';
 
+/** Bounded PDF underline stroke kinds (CSS/Office styles collapse here). */
+export type WorkPdfUnderlineKind = 'single' | 'double' | 'thick';
+
+export interface WorkPdfRunUnderline {
+  color: string;
+  kind: WorkPdfUnderlineKind;
+}
+
 export interface WorkPdfStyledTextRun extends WorkPdfTextRun {
   color: string;
   fontStyle: WorkPdfTextFontStyle;
+  /** When set, PDF export paints a vector underline after clearing raster text. */
+  underline?: WorkPdfRunUnderline;
 }
 
 /**

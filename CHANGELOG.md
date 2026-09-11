@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.149.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer underlines as vector paths
+  (`single` / `double` / `thick`) from `data-office-underline-*`, `<u>`, or CSS
+  decoration after clearing a thin strip under measured runs. Broader borders
+  and full PDF/UA structure trees remain out of scope.
+
 ## 0.148.0 - 2026-09-11
 
 ### Writer

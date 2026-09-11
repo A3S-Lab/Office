@@ -8,6 +8,7 @@ import {
   workPdfTextColorFromCss,
   type WorkPdfStyledTextRun,
 } from './work-pdf-vector-text';
+import { workPdfRunUnderlineFromElement } from './work-pdf-vector-paint';
 
 /** One extractable PDF text run in page-local CSS pixels (origin: page top-left). */
 export interface WorkPdfTextRun {
@@ -157,9 +158,15 @@ export function collectWorkPdfTextRuns(
     );
     const color = workPdfTextColorFromCss(computed.color);
     const fontStyle = workPdfFontStyleFromCss(computed);
+    const underline = workPdfRunUnderlineFromElement(parent);
     for (const run of baseRuns) {
       if (runs.length >= MAX_TEXT_RUNS) break;
-      runs.push({ ...run, color, fontStyle });
+      runs.push({
+        ...run,
+        color,
+        fontStyle,
+        ...(underline ? { underline } : {}),
+      });
     }
   }
   return runs.slice(0, MAX_TEXT_RUNS);

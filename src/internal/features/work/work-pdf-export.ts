@@ -16,6 +16,10 @@ import {
 } from './work-pdf-structure';
 import { collectWorkPdfTextRuns } from './work-pdf-text-layer';
 import {
+  appendWorkPdfVectorUnderlineLayer,
+  clearWorkPdfUnderlineStripsOnCanvas,
+} from './work-pdf-vector-paint';
+import {
   appendWorkPdfVectorTextLayer,
   clearWorkPdfTextRunsOnCanvas,
 } from './work-pdf-vector-text';
@@ -149,9 +153,16 @@ export async function exportWorkArtifactPdf(
               page,
               capture.backgroundColor,
             );
+            clearWorkPdfUnderlineStripsOnCanvas(
+              pageCanvas,
+              textRuns,
+              page,
+              capture.backgroundColor,
+            );
             pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
             if (pdf) {
               appendWorkPdfVectorTextLayer(pdf, textRuns, page, page);
+              appendWorkPdfVectorUnderlineLayer(pdf, textRuns, page, page);
               exportedPageNumber += 1;
               const pageBounds = liveCapturePageBounds(
                 capture,
@@ -191,9 +202,16 @@ export async function exportWorkArtifactPdf(
             page,
             capture.backgroundColor,
           );
+          clearWorkPdfUnderlineStripsOnCanvas(
+            pageCanvas,
+            textRuns,
+            page,
+            capture.backgroundColor,
+          );
           pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
           if (pdf) {
             appendWorkPdfVectorTextLayer(pdf, textRuns, page, page);
+            appendWorkPdfVectorUnderlineLayer(pdf, textRuns, page, page);
             exportedPageNumber += 1;
             outline.push(
               ...collectWorkPdfOutlineEntriesFromRoot(
@@ -238,6 +256,12 @@ export async function exportWorkArtifactPdf(
       };
       const textRuns = collectWorkPdfTextRuns(page, pageCss);
       clearWorkPdfTextRunsOnCanvas(canvas, textRuns, pageCss, backgroundColor);
+      clearWorkPdfUnderlineStripsOnCanvas(
+        canvas,
+        textRuns,
+        pageCss,
+        backgroundColor,
+      );
       pdf = appendCanvas(
         pdf,
         canvas,
@@ -247,17 +271,20 @@ export async function exportWorkArtifactPdf(
         jsPDF,
       );
       if (pdf) {
-        appendWorkPdfVectorTextLayer(
+        const pagePoints = {
+          pageHeightPoints: pageDefinition.height,
+          pageWidthPoints: pageDefinition.width,
+        };
+        const pageSizeCss = {
+          height: pageCss.height,
+          width: pageCss.width,
+        };
+        appendWorkPdfVectorTextLayer(pdf, textRuns, pageSizeCss, pagePoints);
+        appendWorkPdfVectorUnderlineLayer(
           pdf,
           textRuns,
-          {
-            height: pageCss.height,
-            width: pageCss.width,
-          },
-          {
-            pageHeightPoints: pageDefinition.height,
-            pageWidthPoints: pageDefinition.width,
-          },
+          pageSizeCss,
+          pagePoints,
         );
         exportedPageNumber += 1;
         outline.push(

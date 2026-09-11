@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.149.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF paints Writer underlines as vector paths',
+      zh: '文档 PDF 将 Writer 下划线绘制为矢量路径',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer underlines as vector paths (single / double / thick) from data-office-underline-*, <u>, or CSS decoration after clearing a thin strip under measured runs. Broader borders and full PDF/UA structure trees remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 下划线绘制为矢量路径（single / double / thick），来源为 data-office-underline-*、<u> 或 CSS 装饰，并在测量文本下方清除细条后再描边。更广边框与完整 PDF/UA 结构树仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Underline vector paths in PDF export',
+          zh: 'PDF 导出中的下划线矢量路径',
+        },
+        detail: {
+          en: 'Measured underlined runs stroke single, double, or thick PDF paths at the same page geometry as the vector text layer.',
+          zh: '带下划线的测量文本在与矢量文本层相同的页面几何上描边 single、double 或 thick PDF 路径。',
+        },
+      },
+      {
+        title: {
+          en: 'Writer and CSS underline sources',
+          zh: 'Writer 与 CSS 下划线来源',
+        },
+        detail: {
+          en: 'Underline plans resolve from data-office-underline-* attributes, <u> marks, or CSS text-decoration.',
+          zh: '下划线方案从 data-office-underline-* 属性、<u> 标记或 CSS text-decoration 解析。',
+        },
+      },
+      {
+        title: {
+          en: 'Borders and PDF/UA stay out of scope',
+          zh: '边框与 PDF/UA 仍不在范围内',
+        },
+        detail: {
+          en: 'This slice deepens vector paint for underlines only; paragraph borders and full PDF/UA structure trees are not claimed.',
+          zh: '本切片仅加深下划线矢量绘制；不宣称段落边框与完整 PDF/UA 结构树。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.149.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.149.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.148.0',
     date: '2026-09-11',
     kind: 'improved',

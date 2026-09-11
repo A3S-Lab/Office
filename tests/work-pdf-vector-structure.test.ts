@@ -6,6 +6,11 @@ import {
   normalizePdfLanguage,
 } from '../src/internal/features/work/work-pdf-structure';
 import {
+  appendWorkPdfVectorUnderlineLayer,
+  clearWorkPdfUnderlineStripsOnCanvas,
+  workPdfRunUnderlineFromElement,
+} from '../src/internal/features/work/work-pdf-vector-paint';
+import {
   appendWorkPdfVectorTextLayer,
   clearWorkPdfTextRunsOnCanvas,
   workPdfFontStyleFromCss,
@@ -90,6 +95,143 @@ test('writes a visible vector text layer extractable from PDF bytes', () => {
   );
   const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
   expect(ascii).toContain('Vector milestone');
+});
+
+test('resolves Writer underline marks into PDF stroke kinds', () => {
+  document.body.innerHTML = `
+    <p>
+      <u id="single" data-office-underline-style="single" data-office-underline-color="#112233">One</u>
+      <u id="double" data-office-underline-style="double">Two</u>
+      <u id="thick" data-office-underline-style="thick">Three</u>
+      <u id="none" data-office-underline-style="none">Off</u>
+      <span id="plain">Plain</span>
+    </p>
+  `;
+  const single = document.getElementById('single');
+  const double = document.getElementById('double');
+  const thick = document.getElementById('thick');
+  const none = document.getElementById('none');
+  const plain = document.getElementById('plain');
+  if (
+    !(single instanceof HTMLElement) ||
+    !(double instanceof HTMLElement) ||
+    !(thick instanceof HTMLElement) ||
+    !(none instanceof HTMLElement) ||
+    !(plain instanceof HTMLElement)
+  ) {
+    throw new Error('Expected underline fixtures.');
+  }
+  Object.defineProperty(window, 'getComputedStyle', {
+    configurable: true,
+    value: (element: Element) => ({
+      color: 'rgb(0, 0, 0)',
+      textDecorationColor: 'currentcolor',
+      textDecorationLine:
+        element === plain ? 'none' : element === none ? 'none' : 'underline',
+      textDecorationStyle: 'solid',
+      textDecorationThickness: 'auto',
+    }),
+  });
+  expect(workPdfRunUnderlineFromElement(single)).toEqual({
+    color: '#112233',
+    kind: 'single',
+  });
+  expect(workPdfRunUnderlineFromElement(double)).toEqual({
+    color: '#000000',
+    kind: 'double',
+  });
+  expect(workPdfRunUnderlineFromElement(thick)).toEqual({
+    color: '#000000',
+    kind: 'thick',
+  });
+  expect(workPdfRunUnderlineFromElement(none)).toBeNull();
+  expect(workPdfRunUnderlineFromElement(plain)).toBeNull();
+});
+
+test('paints underlined vector runs as PDF path operators', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  const runs = [
+    {
+      color: '#112233',
+      fontSize: 16,
+      fontStyle: 'normal' as const,
+      height: 18,
+      text: 'Underlined',
+      underline: { color: '#112233', kind: 'double' as const },
+      width: 90,
+      x: 20,
+      y: 40,
+    },
+  ];
+  appendWorkPdfVectorTextLayer(
+    pdf,
+    runs,
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  appendWorkPdfVectorUnderlineLayer(
+    pdf,
+    runs,
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toContain('Underlined');
+  // jsPDF flips y from top origin: pageHeight - y
+  expect(ascii).toMatch(/20\.\s+[\d.]+\s+m/);
+  expect(ascii).toMatch(/110\.\s+[\d.]+\s+l/);
+  expect(ascii).toContain('0.07 0.13 0.2 RG');
+  const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
+  expect(strokeCount).toBeGreaterThanOrEqual(2);
+});
+
+test('clears a strip under underlined runs before vector paint', () => {
+  const fillRectCalls: Array<[number, number, number, number]> = [];
+  const canvas = {
+    width: 200,
+    height: 100,
+    getContext(kind: string) {
+      if (kind !== '2d') return null;
+      return {
+        fillStyle: '',
+        restore() {},
+        save() {},
+        fillRect(x: number, y: number, w: number, h: number) {
+          fillRectCalls.push([x, y, w, h]);
+        },
+      };
+    },
+  } as unknown as HTMLCanvasElement;
+  clearWorkPdfUnderlineStripsOnCanvas(
+    canvas,
+    [
+      {
+        color: '#000000',
+        fontSize: 12,
+        fontStyle: 'normal',
+        height: 10,
+        text: 'Hi',
+        underline: { color: '#000000', kind: 'single' },
+        width: 40,
+        x: 10,
+        y: 20,
+      },
+    ],
+    { height: 50, width: 100 },
+    '#ffffff',
+  );
+  expect(fillRectCalls.length).toBe(1);
+  const [x, y, w, h] = fillRectCalls[0];
+  // scaleX=2, scaleY=2; strip starts at y+height*0.75
+  expect(x).toBe(19);
+  expect(y).toBe(55);
+  expect(w).toBe(82);
+  expect(h).toBe(7);
 });
 
 test('normalizes PDF language tags and rejects junk', () => {

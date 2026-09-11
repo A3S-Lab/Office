@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(129);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.148.0');
+  await expect(cards).toHaveCount(130);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.149.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 书签纳入 Writer 大纲级别段落',
+    '文档 PDF 将 Writer 下划线绘制为矢量路径',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.149.0')).toContainText(
+    'PDF 导出中的下划线矢量路径',
+  );
+  await expect(releaseCard('0.149.0')).toContainText(
+    '带下划线的测量文本在与矢量文本层相同的页面几何上描边 single、double 或 thick PDF 路径',
+  );
   await expect(releaseCard('0.148.0')).toContainText(
     'PDF 书签中的大纲级别段落',
   );
