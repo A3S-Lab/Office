@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.148.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF bookmarks now include Writer outline-level paragraphs
+  (`p[data-office-outline-level]`) alongside h1–h6, with level nesting. Full
+  PDF/UA structure trees remain out of scope.
+
 ## 0.147.0 - 2026-09-11
 
 ### Writer

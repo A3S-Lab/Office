@@ -42,13 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.147.0）
+## `main` 更新内容（0.148.0）
 
-Writer Phase 0 准入整段段落标记、段落分隔与文字移动修订正文中的无属性空
-`w:separator` 与 `w:continuationSeparator` CT_Empty 字形：
+浏览器文档 PDF 书签现包含 Writer 大纲级别段落（`p[data-office-outline-level]`），
+并与 h1–h6 一并按级别嵌套：
 
-- 无属性空 `w:separator` 与 `w:continuationSeparator` 可进入合格的标记、分隔与移动修订正文。
-- 带属性分隔符与带属性批注字形仍失败闭合。
+- 大纲级别段落与标题一并进入 PDF 书签大纲。
+- 完整 PDF/UA 结构树仍不在范围内。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

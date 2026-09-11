@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.148.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF bookmarks include Writer outline-level paragraphs',
+      zh: '文档 PDF 书签纳入 Writer 大纲级别段落',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF bookmarks now collect p[data-office-outline-level] paragraphs alongside h1–h6, with level nesting. Full PDF/UA structure trees remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 书签现收集 p[data-office-outline-level] 段落与 h1–h6，并按级别嵌套。完整 PDF/UA 结构树仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Outline-level paragraphs in PDF bookmarks',
+          zh: 'PDF 书签中的大纲级别段落',
+        },
+        detail: {
+          en: 'Writer outline-level paragraphs (p[data-office-outline-level]) join h1–h6 in the exported PDF outline.',
+          zh: 'Writer 大纲级别段落（p[data-office-outline-level]）与 h1–h6 一并进入导出的 PDF 大纲。',
+        },
+      },
+      {
+        title: {
+          en: 'Level nesting preserved',
+          zh: '级别嵌套保留',
+        },
+        detail: {
+          en: 'Outline levels nest in the PDF bookmark tree the same way Writer outline levels nest in the editor.',
+          zh: '大纲级别在 PDF 书签树中的嵌套与编辑器中 Writer 大纲级别一致。',
+        },
+      },
+      {
+        title: {
+          en: 'Full PDF/UA structure stays out of scope',
+          zh: '完整 PDF/UA 结构仍不在范围内',
+        },
+        detail: {
+          en: 'This slice deepens the title/lang/heading outline bootstrap only; a full PDF/UA structure tree is not claimed.',
+          zh: '本切片仅加深标题/语言/标题大纲引导；不宣称完整 PDF/UA 结构树。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.148.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.148.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.147.0',
     date: '2026-09-11',
     kind: 'improved',

@@ -31,10 +31,11 @@ Enough means embeddable format-native editors for host daily workflows—not
 full Traditional Office parity and not every R6 enterprise row. The ordered
 remaining backlog, surface exit criteria, and explicit out-of-scope list live
 in [ROADMAP.md — Remaining roadmap (product-enough bar)](./ROADMAP.md#remaining-roadmap-product-enough-bar).
-Active tip through `0.147.0` admits attribute-free empty `w:separator` and
-`w:continuationSeparator` CT_Empty glyphs inside whole-paragraph mark,
-paragraph-break, and text-move revision bodies (attributed separators and
-attributed note refs stay fail-closed; and earlier attribute-free empty
+Active tip through `0.148.0` extends browser document PDF bookmarks to
+include Writer outline-level paragraphs (`p[data-office-outline-level]`)
+alongside h1–h6 with level nesting (full PDF/UA structure trees stay out of
+scope; and earlier attribute-free empty `w:separator` /
+`w:continuationSeparator` through `0.147.0`, attribute-free empty
 `w:annotationRef` through `0.146.0`, attribute-free empty `w:endnoteRef`
 through `0.145.0`, attribute-free empty `w:footnoteRef` through `0.144.0`,
 omitted `w:ilvl` as OOXML default level `0` on numbering revisions through
@@ -54,10 +55,10 @@ whole-paragraph marks through `0.130.0`). The note-adjacent empty glyphs
 family is complete through `0.147.0`; the move-range family is largely
 complete; residual fail-closed edges are deeper nesting, a nested table
 beside the move, and SDT+nested-table combinations. Next R0 work is
-attributed note refs, broader bounded property-revision subsets,
-searchable/tagged PDF output, and continuous no-clobber fixtures—then R1
-Writer daily leftovers, R2 calculation fidelity, R3 animation/media, and R4
-PDF content editing.
+attributed note refs, broader bounded property-revision subsets, full
+PDF/UA structure trees / broader vector paint, and continuous no-clobber
+fixtures—then R1 Writer daily leftovers, R2 calculation fidelity, R3
+animation/media, and R4 PDF content editing.
 
 ## Current Spreadsheet Milestone
 

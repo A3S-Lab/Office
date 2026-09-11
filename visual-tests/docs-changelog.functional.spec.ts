@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(128);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.147.0');
+  await expect(cards).toHaveCount(129);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.148.0');
   await expect(cards.first()).toContainText(
-    'Writer 修订正文准入空 separator 与 continuationSeparator 字形',
+    '文档 PDF 书签纳入 Writer 大纲级别段落',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.148.0')).toContainText(
+    'PDF 书签中的大纲级别段落',
+  );
+  await expect(releaseCard('0.148.0')).toContainText(
+    'Writer 大纲级别段落（p[data-office-outline-level]）与 h1–h6 一并进入导出的 PDF 大纲',
+  );
   await expect(releaseCard('0.147.0')).toContainText(
     '修订正文中的空分隔符字形',
   );

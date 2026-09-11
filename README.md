@@ -371,15 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.147.0` admits attribute-free empty `w:separator` and
-`w:continuationSeparator` CT_Empty glyphs inside whole-paragraph mark,
-paragraph-break, and text-move revision bodies:
+Version `0.148.0` extends browser document PDF bookmarks to include Writer
+outline-level paragraphs (`p[data-office-outline-level]`) alongside h1–h6,
+with level nesting:
 
-- **Empty `w:separator` / `w:continuationSeparator`** — attribute-free
-  CT_Empty note-adjacent separator glyphs import inside eligible mark, break,
-  and move revision bodies.
-- **Boundary** — attributed separators and attributed note refs stay
-  fail-closed.
+- **Outline-level PDF bookmarks** — `p[data-office-outline-level]` paragraphs
+  join h1–h6 in the PDF outline with nested levels.
+- **Boundary** — full PDF/UA structure trees remain out of scope.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
