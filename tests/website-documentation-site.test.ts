@@ -415,9 +415,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('Outline-level PDF bookmarks');
   expect(readme).toContain('Earlier releases stay on the product');
   expect(englishHome).toContain("## What's new on `main` (0.148.0)");
-  expect(englishHome).toContain(
-    'include Writer outline-level paragraphs',
-  );
+  expect(englishHome).toContain('include Writer outline-level paragraphs');
   expect(chineseHome).toContain('## `main` 更新内容（0.148.0）');
   expect(chineseHome).toContain(
     '浏览器文档 PDF 书签现包含 Writer 大纲级别段落',
