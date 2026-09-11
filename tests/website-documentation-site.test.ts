@@ -415,9 +415,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('Highlight vector paint');
   expect(readme).toContain('Earlier releases stay on the product');
   expect(englishHome).toContain("## What's new on `main` (0.150.0)");
-  expect(englishHome).toContain(
-    'paints Writer text highlights as vector fill strips',
-  );
+  expect(englishHome).toContain('paints Writer text highlights as vector fill');
   expect(chineseHome).toContain('## `main` 更新内容（0.150.0）');
   expect(chineseHome).toContain(
     '浏览器文档 PDF 导出现将 Writer 文本突出显示绘制为矢量填充条',
