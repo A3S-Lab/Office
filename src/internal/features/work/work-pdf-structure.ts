@@ -13,14 +13,25 @@ export interface WorkPdfDocumentStructure {
   title?: string;
 }
 
+interface WorkPdfJsInternal {
+  events?: {
+    subscribe?: (name: string, handler: () => void) => void;
+  };
+  out?: (content: string) => void;
+  write?: (...parts: string[]) => void;
+  workPdfMarkInfoSubscribed?: boolean;
+}
+
 const MAX_OUTLINE_ENTRIES = 512;
 const MAX_OUTLINE_TITLE_LENGTH = 200;
+const MAX_ACTUAL_TEXT_LENGTH = 2048;
 const OUTLINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p[data-office-outline-level]';
 
 /**
  * Applies bounded PDF document metadata and outline bookmarks. This is the
- * first tagged/accessibility bootstrap: language + title + heading outline,
- * without inventing a second layout model or a full PDF/UA structure tree.
+ * tagged/accessibility bootstrap: language + title + heading outline + MarkInfo
+ * for marked-content ActualText runs, without inventing a second layout model
+ * or a full PDF/UA structure tree / certification claim.
  */
 export function applyWorkPdfDocumentStructure(
   pdf: JsPdf,
@@ -42,6 +53,7 @@ export function applyWorkPdfDocumentStructure(
       // jsPDF only accepts a fixed language enum; ignore unknown tags.
     }
   }
+  ensureWorkPdfMarkInfo(pdf);
   const outline = structure.outline ?? [];
   const stack: Array<{ item: OutlineItem; level: number }> = [];
   let count = 0;
@@ -73,6 +85,87 @@ export function applyWorkPdfDocumentStructure(
       // Outline plugin may be unavailable in some builds.
     }
   }
+}
+
+/**
+ * Declares `/MarkInfo << /Marked true >>` once via jsPDF's putCatalog hook so
+ * ActualText Span marked content is catalog-visible. Not a StructTreeRoot.
+ */
+export function ensureWorkPdfMarkInfo(pdf: JsPdf): void {
+  const internal = workPdfJsInternal(pdf);
+  if (!internal?.events?.subscribe || !internal.write) return;
+  if (internal.workPdfMarkInfoSubscribed) return;
+  internal.workPdfMarkInfoSubscribed = true;
+  try {
+    internal.events.subscribe('putCatalog', () => {
+      internal.write?.('/MarkInfo << /Marked true >>');
+    });
+  } catch {
+    internal.workPdfMarkInfoSubscribed = false;
+  }
+}
+
+/**
+ * Opens a `/Span` BDC with `/ActualText` for a vector text run. Pairs with
+ * {@link endWorkPdfActualTextSpan}. Fail-soft when jsPDF internals are absent.
+ */
+export function beginWorkPdfActualTextSpan(pdf: JsPdf, text: string): boolean {
+  const internal = workPdfJsInternal(pdf);
+  if (!internal?.out) return false;
+  const clipped = text.slice(0, MAX_ACTUAL_TEXT_LENGTH);
+  if (!clipped) return false;
+  ensureWorkPdfMarkInfo(pdf);
+  try {
+    internal.out(
+      `/Span << /ActualText ${encodePdfActualTextOperand(clipped)} >> BDC`,
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Closes a Span marked-content sequence opened by {@link beginWorkPdfActualTextSpan}. */
+export function endWorkPdfActualTextSpan(pdf: JsPdf): void {
+  const internal = workPdfJsInternal(pdf);
+  if (!internal?.out) return;
+  try {
+    internal.out('EMC');
+  } catch {
+    // Ignore when the page stream is unavailable.
+  }
+}
+
+/**
+ * Encodes an ActualText operand: PDF literal for Latin-1, UTF-16BE hex (BOM)
+ * otherwise. Exported for unit coverage of the escape boundary.
+ */
+export function encodePdfActualTextOperand(text: string): string {
+  let latin1 = true;
+  for (let index = 0; index < text.length; index += 1) {
+    if (text.charCodeAt(index) > 0xff) {
+      latin1 = false;
+      break;
+    }
+  }
+  if (latin1) {
+    return `(${escapePdfLiteralString(text)})`;
+  }
+  let hex = 'FEFF';
+  for (const char of text) {
+    const codePoint = char.codePointAt(0);
+    if (codePoint === undefined) continue;
+    if (codePoint > 0xffff) {
+      const offset = codePoint - 0x10000;
+      const high = 0xd800 + (offset >> 10);
+      const low = 0xdc00 + (offset & 0x3ff);
+      hex += high.toString(16).toUpperCase().padStart(4, '0');
+      hex += low.toString(16).toUpperCase().padStart(4, '0');
+    } else {
+      hex += codePoint.toString(16).toUpperCase().padStart(4, '0');
+    }
+  }
+  return `<${hex}>`;
 }
 
 export function collectWorkPdfOutlineEntriesFromRoot(
@@ -147,4 +240,19 @@ function workPdfOutlineLevelFromElement(element: HTMLElement): number | null {
     outlineLevel <= 8
     ? outlineLevel + 1
     : null;
+}
+
+function workPdfJsInternal(pdf: JsPdf): WorkPdfJsInternal | null {
+  const internal = (pdf as unknown as { internal?: WorkPdfJsInternal })
+    .internal;
+  return internal ?? null;
+}
+
+function escapePdfLiteralString(text: string): string {
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n');
 }

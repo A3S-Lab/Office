@@ -371,13 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.152.0` paints Writer `between` and `bar` paragraph border edges as
-vector strokes in browser document PDF export (same common styles as 0.151.0),
-mapping between→bottom and bar→left at measured paragraph geometry:
+Version `0.153.0` deepens browser document PDF accessibility with catalog
+`/MarkInfo << /Marked true >>` and `/Span` ActualText around vector text runs:
 
-- **Between/bar vector paint** — measured paragraph boxes stroke between and
-  bar edges alongside top/left/bottom/right.
-- **Boundary** — art/wave/3D borders and full PDF/UA structure trees remain out
+- **MarkInfo + ActualText** — tagged-PDF consumers see a marked catalog and
+  ActualText on searchable vector text.
+- **Boundary** — a full PDF/UA structure tree and art/wave/3D borders remain out
   of scope.
 
 Earlier releases stay on the product

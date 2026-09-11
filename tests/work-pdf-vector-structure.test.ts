@@ -3,6 +3,7 @@ import { jsPDF } from 'jspdf';
 import {
   applyWorkPdfDocumentStructure,
   collectWorkPdfOutlineEntriesFromRoot,
+  encodePdfActualTextOperand,
   normalizePdfLanguage,
 } from '../src/internal/features/work/work-pdf-structure';
 import {
@@ -102,6 +103,18 @@ test('writes a visible vector text layer extractable from PDF bytes', () => {
   );
   const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
   expect(ascii).toContain('Vector milestone');
+  expect(ascii).toContain('/ActualText (Vector milestone)');
+  expect(ascii).toContain('/Span << /ActualText');
+  expect(ascii).toContain('BDC');
+  expect(ascii).toContain('EMC');
+  expect(ascii).toContain('/MarkInfo << /Marked true >>');
+});
+
+test('encodes ActualText operands for Latin and Unicode runs', () => {
+  expect(encodePdfActualTextOperand('Hello (world)')).toBe(
+    '(Hello \\(world\\))',
+  );
+  expect(encodePdfActualTextOperand('路径')).toBe('<FEFF8DEF5F84>');
 });
 
 test('resolves Writer underline marks into PDF stroke kinds', () => {
@@ -738,7 +751,7 @@ test('skips empty outline titles and caps entry count', () => {
   expect(entries.at(-1)?.title).toBe('Title 513');
 });
 
-test('applies title, language, and outline bookmarks to the PDF document', () => {
+test('applies title, language, outline bookmarks, and MarkInfo to the PDF document', () => {
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'pt',
@@ -754,6 +767,7 @@ test('applies title, language, and outline bookmarks to the PDF document', () =>
   expect(ascii).toContain('Quarterly plan');
   expect(ascii).toContain('A3S Work');
   expect(ascii).toContain('Overview');
+  expect(ascii).toContain('/MarkInfo << /Marked true >>');
 });
 
 function stubBoundingRect(

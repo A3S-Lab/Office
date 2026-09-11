@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.153.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF adds MarkInfo and ActualText for vector text',
+      zh: '文档 PDF 为矢量文本加入 MarkInfo 与 ActualText',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export deepens the accessibility bootstrap with catalog /MarkInfo << /Marked true >> and /Span ActualText around vector text runs. A full PDF/UA structure tree and art/wave/3D borders remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现加深无障碍引导，在目录写入 /MarkInfo << /Marked true >>，并在矢量文本运行周围写入 /Span ActualText。完整 PDF/UA 结构树与艺术/波浪/三维边框仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Catalog MarkInfo marked flag',
+          zh: '目录 MarkInfo 已标记标志',
+        },
+        detail: {
+          en: 'Exported PDFs set /MarkInfo << /Marked true >> on the catalog for tagged-PDF consumers.',
+          zh: '导出的 PDF 在目录上设置 /MarkInfo << /Marked true >>，供带标签 PDF 消费方使用。',
+        },
+      },
+      {
+        title: {
+          en: 'ActualText on vector text runs',
+          zh: '矢量文本运行上的 ActualText',
+        },
+        detail: {
+          en: 'Vector text paints wrap each run in a /Span ActualText marked content sequence.',
+          zh: '矢量文本绘制将每次运行包裹在 /Span ActualText 标记内容序列中。',
+        },
+      },
+      {
+        title: {
+          en: 'Full PDF/UA tree stays out of scope',
+          zh: '完整 PDF/UA 树仍不在范围内',
+        },
+        detail: {
+          en: 'This slice deepens the tagged bootstrap only; a StructTreeRoot / full PDF/UA structure tree is not claimed.',
+          zh: '本切片仅加深带标签引导；不宣称 StructTreeRoot / 完整 PDF/UA 结构树。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.153.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.153.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.152.0',
     date: '2026-09-11',
     kind: 'improved',

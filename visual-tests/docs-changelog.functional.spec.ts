@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(133);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.152.0');
+  await expect(cards).toHaveCount(134);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.153.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 绘制 Writer between 与 bar 段落边框',
+    '文档 PDF 为矢量文本加入 MarkInfo 与 ActualText',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.153.0')).toContainText(
+    '目录 MarkInfo 已标记标志',
+  );
+  await expect(releaseCard('0.153.0')).toContainText(
+    '导出的 PDF 在目录上设置 /MarkInfo << /Marked true >>，供带标签 PDF 消费方使用',
+  );
   await expect(releaseCard('0.152.0')).toContainText(
     'PDF 导出中的 between 与 bar 边',
   );

@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.153.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export deepens the accessibility bootstrap with catalog
+  `/MarkInfo << /Marked true >>` and `/Span` ActualText around vector text runs.
+  A full PDF/UA structure tree and art/wave/3D borders remain out of scope.
+
 ## 0.152.0 - 2026-09-11
 
 ### Writer

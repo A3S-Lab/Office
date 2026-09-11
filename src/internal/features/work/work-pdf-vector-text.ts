@@ -3,6 +3,10 @@ import {
   ensureWorkPdfCjkFontOnDocument,
   workPdfTextNeedsCjkFont,
 } from './work-pdf-cjk-font';
+import {
+  beginWorkPdfActualTextSpan,
+  endWorkPdfActualTextSpan,
+} from './work-pdf-structure';
 import type {
   WorkPdfPageBounds,
   WorkPdfPagePoints,
@@ -140,10 +144,13 @@ export function appendWorkPdfVectorTextLayer(
     pdf.setFontSize(fontSizePt);
     if (rgb) pdf.setTextColor(rgb[0], rgb[1], rgb[2]);
     else pdf.setTextColor(0, 0, 0);
+    const marked = beginWorkPdfActualTextSpan(pdf, run.text);
     try {
       pdf.text(run.text, x, y, { baseline: 'alphabetic' });
     } catch {
       // Skip runs the active font cannot encode.
+    } finally {
+      if (marked) endWorkPdfActualTextSpan(pdf);
     }
   }
 }

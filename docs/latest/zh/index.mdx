@@ -42,13 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.152.0）
+## `main` 更新内容（0.153.0）
 
-浏览器文档 PDF 导出现将 Writer `between` 与 `bar` 段落边绘制为矢量描边（样式同
-0.151.0），并在测量段落几何上将 between→bottom、bar→left：
+浏览器文档 PDF 导出现加深无障碍能力，在目录写入 `/MarkInfo << /Marked true >>`，
+并在矢量文本运行周围写入 `/Span` ActualText：
 
-- 测量得到的段落框在盒边之外一并描边 between 与 bar。
-- 艺术/波浪/三维边框与完整 PDF/UA 结构树仍不在范围内。
+- 带标签 PDF 消费方可看到 MarkInfo，以及可搜索矢量文本上的 ActualText。
+- 完整 PDF/UA 结构树与艺术/波浪/三维边框仍不在范围内。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。

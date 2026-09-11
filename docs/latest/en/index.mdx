@@ -44,14 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.152.0)
+## What's new on `main` (0.153.0)
 
-Browser document PDF export now paints Writer `between` and `bar` paragraph
-border edges as vector strokes (same common styles as 0.151.0), mapping
-between→bottom and bar→left at measured paragraph geometry:
+Browser document PDF export now deepens accessibility with catalog
+`/MarkInfo << /Marked true >>` and `/Span` ActualText around vector text runs:
 
-- Measured paragraph boxes stroke between and bar edges alongside the box edges.
-- Art/wave/3D borders and full PDF/UA structure trees remain out of scope.
+- Tagged-PDF consumers see MarkInfo and ActualText on searchable vector text.
+- A full PDF/UA structure tree and art/wave/3D borders remain out of scope.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).
