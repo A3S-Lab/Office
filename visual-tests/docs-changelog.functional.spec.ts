@@ -9,11 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(150);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.169.0');
-  await expect(cards.first()).toContainText('文档 PDF 绘制 bats 艺术边框');
+  await expect(cards).toHaveCount(151);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.170.0');
+  await expect(cards.first()).toContainText(
+    '文档 PDF 绘制 birds 与 birdsFlight 艺术边框',
+  );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.170.0')).toContainText('栖息与飞行剪影');
+  await expect(releaseCard('0.170.0')).toContainText(
+    'birds 绘制栖息侧影；birdsFlight 绘制展开双翼飞行姿态',
+  );
   await expect(releaseCard('0.169.0')).toContainText('翅膀剪影');
   await expect(releaseCard('0.169.0')).toContainText(
     'bats 沿测量边绘制闭合头部 + 双翼折线母题',

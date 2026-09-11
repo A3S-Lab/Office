@@ -167,7 +167,8 @@ Still required for R0 exit:
    `0.167.0`; Writer `basicWideInline` / `basicWideMidline` /
    `basicWideOutline` art paragraph borders paint as thick geometric rails
    through `0.168.0`; Writer `bats` art paragraph borders paint as winged
-   silhouettes through `0.169.0`; remaining decorative art
+   silhouettes through `0.169.0`; Writer `birds` / `birdsFlight` art paragraph borders
+   paint as bird silhouettes through `0.170.0`; remaining decorative art
    borders and full PDF/UA certification remain open.
 7. Continuous no-clobber corpus growth for representative Traditional Office
    fixtures (diagnose every intentional normalization).
@@ -633,7 +634,8 @@ above this section.
   `0.167.0`; Writer `basicWideInline` / `basicWideMidline` /
   `basicWideOutline` art paragraph borders paint as thick geometric rails
   through `0.168.0`; Writer `bats` art paragraph borders paint as winged
-  silhouettes through `0.169.0`; optional host
+  silhouettes through `0.169.0`; Writer `birds` / `birdsFlight` art paragraph borders
+  paint as bird silhouettes through `0.170.0`; optional host
   `registerWorkPdfCjkFont` TrueType enables searchable CJK vector text; full
   PDF/UA certification, remaining decorative art borders, and bundled CJK fonts
   remain open.

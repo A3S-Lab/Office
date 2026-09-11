@@ -371,10 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.169.0` paints Writer `bats` art paragraph borders as winged
-silhouettes in browser document PDF export:
+Version `0.170.0` paints Writer `birds` / `birdsFlight` art paragraph
+borders as bird silhouettes in browser document PDF export:
 
-- **bats** — closed head + dual-wing polyline motifs along the measured edge.
+- **birds** — perched side-profile polylines along the measured edge.
+- **birdsFlight** — swept dual-wing flight silhouettes.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

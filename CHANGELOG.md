@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.170.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export paints Writer `birds` / `birdsFlight` art
+  paragraph borders as perched and swept-flight bird silhouettes along the
+  measured edge. Remaining decorative art borders and full PDF/UA
+  certification remain out of scope.
+
 ## 0.169.0 - 2026-09-11
 
 ### Writer

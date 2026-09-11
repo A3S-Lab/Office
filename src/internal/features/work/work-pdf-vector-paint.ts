@@ -55,6 +55,8 @@ export type WorkPdfParagraphBorderKind =
   | 'marqueeToothed'
   | 'moons'
   | 'bats'
+  | 'birds'
+  | 'birdsFlight'
   | 'basicBlackSquares'
   | 'basicWhiteSquares'
   | 'basicBlackDots'
@@ -365,7 +367,8 @@ export function appendWorkPdfVectorUnderlineLayer(
  * `wave` / `doubleWave` polylines, dual-tone 3D / inset / outset relief strokes,
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
- * `marqueeToothed` / `moons` / `bats` / `basicBlackSquares` / `basicWhiteSquares` /
+ * `marqueeToothed` / `moons` / `bats` / `birds` / `birdsFlight` /
+ * `basicBlackSquares` / `basicWhiteSquares` /
  * `basicBlackDots` / `basicWhiteDots` / `basicBlackDashes` /
  * `basicWhiteDashes` / `basicThinLines` / `basicWideInline` /
  * `basicWideMidline` / `basicWideOutline` art motifs; other art border styles are
@@ -521,8 +524,8 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * moons/bats/basicSquares/basicDots/basicDashes/basicThinLines/basicWide art; not
- * PDF/UA or decorative fruit/vine art).
+ * moons/bats/birds/basicSquares/basicDots/basicDashes/basicThinLines/basicWide
+ * art; not PDF/UA or decorative fruit/vine art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -670,6 +673,17 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           height,
           thickness,
         );
+      } else if (stroke.kind === 'birds' || stroke.kind === 'birdsFlight') {
+        strokeBirdsParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind === 'birdsFlight',
+        );
       } else if (
         stroke.kind === 'basicBlackSquares' ||
         stroke.kind === 'basicWhiteSquares'
@@ -787,6 +801,8 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'marqueeToothed' ||
     border.style === 'moons' ||
     border.style === 'bats' ||
+    border.style === 'birds' ||
+    border.style === 'birdsFlight' ||
     border.style === 'basicBlackSquares' ||
     border.style === 'basicWhiteSquares' ||
     border.style === 'basicBlackDots' ||
@@ -1423,6 +1439,202 @@ function strokeBatPolyline(
     point(half, depth * 0.85),
     point(half * 0.55, depth * 0.25),
     point(half * 0.22, depth * 0.55),
+  ];
+  for (let index = 0; index < path.length; index += 1) {
+    const [x0, y0] = path[index]!;
+    const [x1, y1] = path[(index + 1) % path.length]!;
+    pdf.line(x0, y0, x1, y1);
+  }
+}
+
+/**
+ * Bird motifs along the measured edge for geometric art borders `birds` /
+ * `birdsFlight`. `birds` uses a perched side-profile; `birdsFlight` uses a
+ * swept dual-wing flight silhouette.
+ */
+function strokeBirdsParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  flight: boolean,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const span = Math.max(3.4, thickness * (flight ? 3.2 : 2.6));
+  const period = Math.max(7.6, thickness * (flight ? 7.0 : 6.2));
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeBirdSilhouettes(
+      pdf,
+      x,
+      yBase,
+      width,
+      0,
+      period,
+      span,
+      outward,
+      flight,
+    );
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeBirdSilhouettes(
+      pdf,
+      xBase,
+      y,
+      height,
+      1,
+      period,
+      span,
+      outward,
+      flight,
+    );
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeBirdSilhouettes(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  span: number,
+  outward: 1 | -1,
+  flight: boolean,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const centerX = axis === 0 ? originX + along : originX;
+    const centerY = axis === 0 ? originY : originY + along;
+    const half = Math.min(span / 2, length / (count * 2.2));
+    const depth = Math.max(1.2, half * (flight ? 0.85 : 0.65));
+    const facing = index % 2 === 0 ? 1 : -1;
+    const tangentX = axis === 0 ? facing : 0;
+    const tangentY = axis === 0 ? 0 : facing;
+    const normalX = axis === 0 ? 0 : outward;
+    const normalY = axis === 0 ? outward : 0;
+    if (flight) {
+      strokeBirdFlightPolyline(
+        pdf,
+        centerX + normalX * depth * 0.15,
+        centerY + normalY * depth * 0.15,
+        half,
+        depth,
+        tangentX,
+        tangentY,
+        normalX,
+        normalY,
+      );
+    } else {
+      strokeBirdPerchedPolyline(
+        pdf,
+        centerX + normalX * depth * 0.15,
+        centerY + normalY * depth * 0.15,
+        half,
+        depth,
+        tangentX,
+        tangentY,
+        normalX,
+        normalY,
+      );
+    }
+  }
+}
+
+function strokeBirdPerchedPolyline(
+  pdf: JsPdf,
+  centerX: number,
+  centerY: number,
+  half: number,
+  depth: number,
+  tangentX: number,
+  tangentY: number,
+  normalX: number,
+  normalY: number,
+): void {
+  if (
+    !Number.isFinite(half) ||
+    half <= 0 ||
+    !Number.isFinite(depth) ||
+    depth <= 0
+  ) {
+    return;
+  }
+  const point = (along: number, out: number): [number, number] => [
+    centerX + tangentX * along + normalX * out,
+    centerY + tangentY * along + normalY * out,
+  ];
+  // Side-profile: beak → head → back → tail → belly → chest.
+  const path: Array<[number, number]> = [
+    point(half * 0.95, depth * 0.1),
+    point(half * 0.55, depth * 0.45),
+    point(half * 0.15, depth * 0.55),
+    point(-half * 0.25, depth * 0.35),
+    point(-half * 0.85, depth * 0.55),
+    point(-half, depth * 0.05),
+    point(-half * 0.55, -depth * 0.25),
+    point(half * 0.05, -depth * 0.35),
+    point(half * 0.55, -depth * 0.1),
+  ];
+  for (let index = 0; index < path.length; index += 1) {
+    const [x0, y0] = path[index]!;
+    const [x1, y1] = path[(index + 1) % path.length]!;
+    pdf.line(x0, y0, x1, y1);
+  }
+}
+
+function strokeBirdFlightPolyline(
+  pdf: JsPdf,
+  centerX: number,
+  centerY: number,
+  half: number,
+  depth: number,
+  tangentX: number,
+  tangentY: number,
+  normalX: number,
+  normalY: number,
+): void {
+  if (
+    !Number.isFinite(half) ||
+    half <= 0 ||
+    !Number.isFinite(depth) ||
+    depth <= 0
+  ) {
+    return;
+  }
+  const point = (along: number, out: number): [number, number] => [
+    centerX + tangentX * along + normalX * out,
+    centerY + tangentY * along + normalY * out,
+  ];
+  // Flight: left wing tip → body → right wing tip → trailing edges.
+  const path: Array<[number, number]> = [
+    point(-half, depth * 0.75),
+    point(-half * 0.45, depth * 0.15),
+    point(-half * 0.12, depth * 0.35),
+    point(0, depth * 0.55),
+    point(half * 0.12, depth * 0.35),
+    point(half * 0.45, depth * 0.15),
+    point(half, depth * 0.75),
+    point(half * 0.4, -depth * 0.05),
+    point(half * 0.1, -depth * 0.25),
+    point(0, -depth * 0.1),
+    point(-half * 0.1, -depth * 0.25),
+    point(-half * 0.4, -depth * 0.05),
   ];
   for (let index = 0; index < path.length; index += 1) {
     const [x0, y0] = path[index]!;
