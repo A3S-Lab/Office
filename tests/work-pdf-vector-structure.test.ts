@@ -363,9 +363,34 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   expect(workPdfParagraphBordersFromElement(art)).toBeNull();
   expect(workPdfParagraphBordersFromElement(waveBetween)).toEqual({
     between: { color: '#112233', kind: 'wave', width: 2 },
+    bar: { color: '#445566', kind: 'threeDEmboss', width: 14 / 6 },
   });
   expect(workPdfParagraphBordersFromElement(plain)).toBeNull();
   expect(workPdfParagraphBordersFromElement(nil)).toBeNull();
+});
+
+test('resolves threeD, inset, and outset paragraph borders into relief plans', () => {
+  const attributes = documentParagraphBordersDomAttributes({
+    top: { style: 'threeDEmboss', color: { value: '#112233' }, size: 12 },
+    bottom: { style: 'threeDEngrave', color: { value: '#445566' }, size: 12 },
+    left: { style: 'inset', color: { value: '#778899' }, size: 12 },
+    right: { style: 'outset', color: { value: '#aabbcc' }, size: 12 },
+  });
+  document.body.innerHTML = `
+    <div id="root">
+      <p id="relief" data-office-paragraph-borders='${attributes['data-office-paragraph-borders']}' style="${attributes.style}">Relief</p>
+    </div>
+  `;
+  const relief = document.getElementById('relief');
+  if (!(relief instanceof HTMLElement)) {
+    throw new Error('Expected relief border fixture.');
+  }
+  expect(workPdfParagraphBordersFromElement(relief)).toEqual({
+    top: { color: '#112233', kind: 'threeDEmboss', width: 2 },
+    bottom: { color: '#445566', kind: 'threeDEngrave', width: 2 },
+    left: { color: '#778899', kind: 'inset', width: 2 },
+    right: { color: '#aabbcc', kind: 'outset', width: 2 },
+  });
 });
 
 test('collects measured paragraph border boxes within page bounds', () => {
@@ -531,6 +556,40 @@ test('paints wave and doubleWave paragraph borders as sine polylines', () => {
   expect(strokeCount).toBeGreaterThanOrEqual(24);
   expect(ascii).toMatch(/20\.\s+[\d.]+\s+m/);
   expect(ascii).toMatch(/\s+l\n/);
+});
+
+test('paints threeD emboss and engrave borders as dual-tone offsets', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorParagraphBorderLayer(
+    pdf,
+    [
+      {
+        edges: {
+          top: { color: '#112233', kind: 'threeDEmboss', width: 2 },
+          bottom: { color: '#445566', kind: 'threeDEngrave', width: 2 },
+        },
+        height: 40,
+        width: 100,
+        x: 20,
+        y: 30,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  // emboss: light then dark; engrave: dark then light (shifted from base)
+  expect(ascii).toMatch(/0\.5[89]\s+0\.6[01]\s+0\.6[34]\s+RG/);
+  expect(ascii).toMatch(/0\.0[23]\s+0\.0[56]\s+0\.0[89]\s+RG/);
+  expect(ascii).toMatch(/0\.1[12]\s+0\.1[45]\s+0\.1[78]\s+RG/);
+  expect(ascii).toMatch(/0\.6[67]\s+0\.7\s+0\.7[23]\s+RG/);
+  const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
+  expect(strokeCount).toBeGreaterThanOrEqual(4);
 });
 
 test('clears border strips on the raster canvas before vector paint', () => {

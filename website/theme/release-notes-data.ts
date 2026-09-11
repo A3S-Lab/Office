@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.157.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF paints 3D and inset/outset paragraph borders',
+      zh: '文档 PDF 绘制三维与 inset/outset 段落边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer threeDEmboss / threeDEngrave / inset / outset paragraph borders as explicit dual-tone highlight+shadow offsets (not silent single-line approximations). Art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 threeDEmboss / threeDEngrave / inset / outset 段落边框绘制为显式双色高光+阴影偏移（不会静默近似成单线）。艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Dual-tone 3D emboss and engrave',
+          zh: '双色三维浮雕与雕刻',
+        },
+        detail: {
+          en: 'threeDEmboss and threeDEngrave paint highlight and shadow offsets along the measured edge.',
+          zh: 'threeDEmboss 与 threeDEngrave 沿测量边绘制高光与阴影偏移。',
+        },
+      },
+      {
+        title: {
+          en: 'inset and outset relief',
+          zh: 'inset 与 outset 浮雕',
+        },
+        detail: {
+          en: 'inset follows the engrave lighting; outset follows emboss lighting.',
+          zh: 'inset 跟随雕刻光照；outset 跟随浮雕光照。',
+        },
+      },
+      {
+        title: {
+          en: 'Art borders stay out of scope',
+          zh: '艺术边框仍不在范围内',
+        },
+        detail: {
+          en: 'Decorative art borders and PDF/UA certification are not claimed.',
+          zh: '不宣称装饰性艺术边框与 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.157.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.157.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.156.0',
     date: '2026-09-11',
     kind: 'improved',

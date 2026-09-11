@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(137);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.156.0');
+  await expect(cards).toHaveCount(138);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.157.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 绘制 wave 与 doubleWave 段落边框',
+    '文档 PDF 绘制三维与 inset/outset 段落边框',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.157.0')).toContainText('双色三维浮雕与雕刻');
+  await expect(releaseCard('0.157.0')).toContainText(
+    'threeDEmboss 与 threeDEngrave 沿测量边绘制高光与阴影偏移',
+  );
   await expect(releaseCard('0.156.0')).toContainText('显式波形折线');
   await expect(releaseCard('0.156.0')).toContainText(
     'wave 边框沿测量边绘制正弦折线',

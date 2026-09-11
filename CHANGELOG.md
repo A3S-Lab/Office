@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.157.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer `threeDEmboss` / `threeDEngrave` /
+  `inset` / `outset` paragraph borders as explicit dual-tone highlight+shadow
+  offsets (not silent single-line approximations). Art borders and full PDF/UA
+  certification remain out of scope.
+
 ## 0.156.0 - 2026-09-11
 
 ### Writer

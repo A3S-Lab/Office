@@ -29,7 +29,7 @@ import {
 
 export type { WorkPdfRunHighlight, WorkPdfRunUnderline, WorkPdfUnderlineKind };
 
-/** Bounded PDF paragraph-border stroke kinds (art / 3D styles skip). */
+/** Bounded PDF paragraph-border stroke kinds (art styles skip). */
 export type WorkPdfParagraphBorderKind =
   | 'single'
   | 'double'
@@ -37,7 +37,11 @@ export type WorkPdfParagraphBorderKind =
   | 'dashed'
   | 'dotted'
   | 'wave'
-  | 'doubleWave';
+  | 'doubleWave'
+  | 'threeDEmboss'
+  | 'threeDEngrave'
+  | 'inset'
+  | 'outset';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -335,8 +339,8 @@ export function appendWorkPdfVectorUnderlineLayer(
 /**
  * Resolves Writer paragraph borders on a block into a bounded PDF stroke plan.
  * Admits top/left/bottom/right plus between/bar line styles, including explicit
- * `wave` / `doubleWave` polylines; art and 3D styles are skipped (fail closed).
- * Not PDF/UA.
+ * `wave` / `doubleWave` polylines and dual-tone 3D / inset / outset relief
+ * strokes; art border styles are skipped (fail closed). Not PDF/UA.
  */
 export function workPdfParagraphBordersFromElement(
   element: HTMLElement,
@@ -486,7 +490,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
- * geometry (common + between/bar + wave/doubleWave; not PDF/UA or art/3D).
+ * geometry (common + between/bar + wave + 3D/inset/outset; not PDF/UA or art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -552,6 +556,23 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           thickness,
           stroke.kind === 'doubleWave',
         );
+      } else if (
+        stroke.kind === 'threeDEmboss' ||
+        stroke.kind === 'threeDEngrave' ||
+        stroke.kind === 'inset' ||
+        stroke.kind === 'outset'
+      ) {
+        strokeThreeDParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind,
+          rgb ?? [0, 0, 0],
+        );
       } else {
         strokeParagraphBorderEdge(pdf, edge, x, y, width, height, 0);
         if (stroke.kind === 'double') {
@@ -571,20 +592,12 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
   if (
     border.style === 'nil' ||
     border.style === 'none' ||
-    isDocumentParagraphArtBorderStyle(border.style) ||
-    border.style === 'threeDEmboss' ||
-    border.style === 'threeDEngrave' ||
-    border.style === 'inset' ||
-    border.style === 'outset'
+    isDocumentParagraphArtBorderStyle(border.style)
   ) {
     return null;
   }
   const presentation = documentBorderPresentation(border);
-  if (
-    presentation.style === 'none' ||
-    presentation.width <= 0 ||
-    presentation.color === 'transparent'
-  ) {
+  if (presentation.width <= 0 || presentation.color === 'transparent') {
     return null;
   }
   if (border.style === 'wave' || border.style === 'doubleWave') {
@@ -594,6 +607,19 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
       width: presentation.width,
     };
   }
+  if (
+    border.style === 'threeDEmboss' ||
+    border.style === 'threeDEngrave' ||
+    border.style === 'inset' ||
+    border.style === 'outset'
+  ) {
+    return {
+      color: presentation.color,
+      kind: border.style,
+      width: presentation.width,
+    };
+  }
+  if (presentation.style === 'none') return null;
   const kind = workPdfParagraphBorderKindFromPresentation(
     presentation.style,
     presentation.width,
@@ -656,6 +682,47 @@ function strokeParagraphBorderEdge(
   } else {
     pdf.line(x + width - inset, y, x + width - inset, y + height);
   }
+}
+
+/**
+ * Dual-tone relief strokes for threeDEmboss / threeDEngrave / inset / outset.
+ * Not a silent single-line approximation: paints highlight + shadow offsets.
+ */
+function strokeThreeDParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  kind: 'threeDEmboss' | 'threeDEngrave' | 'inset' | 'outset',
+  baseRgb: [number, number, number],
+): void {
+  const gap = Math.max(0.8, thickness * 0.95);
+  const light = shiftRgbToward(baseRgb, 255, 0.55);
+  const dark = shiftRgbToward(baseRgb, 0, 0.55);
+  const embossed = kind === 'threeDEmboss' || kind === 'outset';
+  const first = embossed ? light : dark;
+  const second = embossed ? dark : light;
+  pdf.setLineWidth(Math.max(0.5, thickness * 0.85));
+  pdf.setDrawColor(first[0], first[1], first[2]);
+  strokeParagraphBorderEdge(pdf, edge, x, y, width, height, 0);
+  pdf.setDrawColor(second[0], second[1], second[2]);
+  strokeParagraphBorderEdge(pdf, edge, x, y, width, height, gap);
+}
+
+function shiftRgbToward(
+  rgb: [number, number, number],
+  target: number,
+  amount: number,
+): [number, number, number] {
+  const t = Math.min(1, Math.max(0, amount));
+  return [
+    Math.round(rgb[0] + (target - rgb[0]) * t),
+    Math.round(rgb[1] + (target - rgb[1]) * t),
+    Math.round(rgb[2] + (target - rgb[2]) * t),
+  ];
 }
 
 /**
