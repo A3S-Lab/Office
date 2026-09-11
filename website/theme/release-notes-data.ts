@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.154.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF adds a StructTreeRoot stub for outline roles',
+      zh: '文档 PDF 为大纲角色加入 StructTreeRoot 桩',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export adds a catalog-linked StructTreeRoot stub (Document plus outline-derived H1–H6/P kids with empty /K). ParentTree / MCID content links, full PDF/UA certification, and art/wave/3D borders remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现加入目录链接的 StructTreeRoot 桩（Document 以及由大纲派生的 H1–H6/P 子节点，/K 为空）。ParentTree / MCID 内容链接、完整 PDF/UA 认证与艺术/波浪/三维边框仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Catalog-linked StructTreeRoot stub',
+          zh: '目录链接的 StructTreeRoot 桩',
+        },
+        detail: {
+          en: 'Exported PDFs emit a StructTreeRoot with a Document parent and outline-derived heading or paragraph kids.',
+          zh: '导出的 PDF 发出带 Document 父节点以及由大纲派生的标题或段落子节点的 StructTreeRoot。',
+        },
+      },
+      {
+        title: {
+          en: 'Outline levels map to structure roles',
+          zh: '大纲级别映射到结构角色',
+        },
+        detail: {
+          en: 'Bookmark outline levels become H1–H6 or P roles in the stub tree.',
+          zh: '书签大纲级别在桩树中成为 H1–H6 或 P 角色。',
+        },
+      },
+      {
+        title: {
+          en: 'Full PDF/UA content links stay out of scope',
+          zh: '完整 PDF/UA 内容链接仍不在范围内',
+        },
+        detail: {
+          en: 'Kids keep empty /K; ParentTree, MCIDs, and PDF/UA certification are not claimed.',
+          zh: '子节点保持空 /K；不宣称 ParentTree、MCID 与 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.154.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.154.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.153.0',
     date: '2026-09-11',
     kind: 'improved',

@@ -5,6 +5,7 @@ import {
   collectWorkPdfOutlineEntriesFromRoot,
   encodePdfActualTextOperand,
   normalizePdfLanguage,
+  workPdfStructRoleFromOutlineLevel,
 } from '../src/internal/features/work/work-pdf-structure';
 import {
   appendWorkPdfVectorHighlightLayer,
@@ -751,7 +752,14 @@ test('skips empty outline titles and caps entry count', () => {
   expect(entries.at(-1)?.title).toBe('Title 513');
 });
 
-test('applies title, language, outline bookmarks, and MarkInfo to the PDF document', () => {
+test('maps outline levels to PDF structure roles', () => {
+  expect(workPdfStructRoleFromOutlineLevel(1)).toBe('H1');
+  expect(workPdfStructRoleFromOutlineLevel(6)).toBe('H6');
+  expect(workPdfStructRoleFromOutlineLevel(7)).toBe('P');
+  expect(workPdfStructRoleFromOutlineLevel(0)).toBe('P');
+});
+
+test('applies title, language, outline bookmarks, MarkInfo, and StructTreeRoot stubs', () => {
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'pt',
@@ -760,7 +768,11 @@ test('applies title, language, outline bookmarks, and MarkInfo to the PDF docume
   });
   applyWorkPdfDocumentStructure(pdf, {
     language: 'en-US',
-    outline: [{ pageNumber: 1, title: 'Overview' }],
+    outline: [
+      { level: 1, pageNumber: 1, title: 'Overview' },
+      { level: 2, pageNumber: 1, title: 'Details' },
+      { level: 7, pageNumber: 1, title: 'Note' },
+    ],
     title: 'Quarterly plan',
   });
   const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
@@ -768,6 +780,37 @@ test('applies title, language, outline bookmarks, and MarkInfo to the PDF docume
   expect(ascii).toContain('A3S Work');
   expect(ascii).toContain('Overview');
   expect(ascii).toContain('/MarkInfo << /Marked true >>');
+  expect(ascii).toContain('/Type /StructTreeRoot');
+  expect(ascii).toContain('/S /Document');
+  expect(ascii).toContain('/Lang (en-US)');
+  expect(ascii).toContain('/S /H1');
+  expect(ascii).toContain('/S /H2');
+  expect(ascii).toContain('/S /P');
+  expect(ascii).toContain('/Alt (Overview)');
+  expect(ascii).toContain('/Alt (Details)');
+  expect(ascii).toContain('/Alt (Note)');
+  const catalog = ascii.match(/\/Type \/Catalog[\s\S]*?endobj/);
+  expect(catalog?.[0]).toContain('/StructTreeRoot');
+  expect(catalog?.[0]).toMatch(/\/StructTreeRoot \d+ 0 R/);
+});
+
+test('emits Document StructTreeRoot stub when outline is empty', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  applyWorkPdfDocumentStructure(pdf, {
+    language: 'en',
+    title: 'Empty outline',
+  });
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toContain('/Type /StructTreeRoot');
+  expect(ascii).toContain('/S /Document');
+  expect(ascii).toContain('/Lang (en)');
+  expect(ascii).toContain('/MarkInfo << /Marked true >>');
+  expect(ascii).not.toContain('/S /H1');
 });
 
 function stubBoundingRect(

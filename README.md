@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.153.0` deepens browser document PDF accessibility with catalog
-`/MarkInfo << /Marked true >>` and `/Span` ActualText around vector text runs:
+Version `0.154.0` adds a catalog-linked StructTreeRoot stub to browser document
+PDF export (Document plus outline-derived H1–H6/P kids with empty /K):
 
-- **MarkInfo + ActualText** — tagged-PDF consumers see a marked catalog and
-  ActualText on searchable vector text.
-- **Boundary** — a full PDF/UA structure tree and art/wave/3D borders remain out
-  of scope.
+- **StructTreeRoot stub** — tagged-PDF consumers see a Document tree shaped by
+  the same outline used for bookmarks.
+- **Boundary** — ParentTree / MCID content links, full PDF/UA certification,
+  and art/wave/3D borders remain out of scope.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

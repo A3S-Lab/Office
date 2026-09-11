@@ -44,13 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.153.0)
+## What's new on `main` (0.154.0)
 
-Browser document PDF export now deepens accessibility with catalog
-`/MarkInfo << /Marked true >>` and `/Span` ActualText around vector text runs:
+Browser document PDF export now adds a catalog-linked StructTreeRoot stub
+(Document plus outline-derived H1–H6/P kids with empty /K):
 
-- Tagged-PDF consumers see MarkInfo and ActualText on searchable vector text.
-- A full PDF/UA structure tree and art/wave/3D borders remain out of scope.
+- Tagged-PDF consumers see a Document tree shaped by the bookmark outline.
+- ParentTree / MCID content links, full PDF/UA certification, and art/wave/3D
+  borders remain out of scope.
 
 Full product timeline: [What's new](./changelog.html). Engineering detail:
 repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).

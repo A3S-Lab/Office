@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(134);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.153.0');
+  await expect(cards).toHaveCount(135);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.154.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 为矢量文本加入 MarkInfo 与 ActualText',
+    '文档 PDF 为大纲角色加入 StructTreeRoot 桩',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.154.0')).toContainText(
+    '目录链接的 StructTreeRoot 桩',
+  );
+  await expect(releaseCard('0.154.0')).toContainText(
+    '导出的 PDF 发出带 Document 父节点以及由大纲派生的标题或段落子节点的 StructTreeRoot',
+  );
   await expect(releaseCard('0.153.0')).toContainText(
     '目录 MarkInfo 已标记标志',
   );

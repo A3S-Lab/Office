@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.154.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export adds a catalog-linked StructTreeRoot stub
+  (Document plus outline-derived H1–H6/P kids with empty /K). ParentTree /
+  MCID content links, full PDF/UA certification, and art/wave/3D borders
+  remain out of scope.
+
 ## 0.153.0 - 2026-09-11
 
 ### Writer
