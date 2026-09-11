@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.165.0` paints Writer `basicBlackDots` / `basicWhiteDots` art
-paragraph borders as discrete circular stamps in browser document PDF export:
+Version `0.166.0` paints Writer `basicBlackDashes` / `basicWhiteDashes` art
+paragraph borders as discrete dash stamps in browser document PDF export:
 
-- **dot stamps** — black densifies with a concentric inner circle; white is outline-only.
+- **dash stamps** — black densifies with a parallel companion dash; white is outline-only.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

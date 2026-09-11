@@ -57,7 +57,9 @@ export type WorkPdfParagraphBorderKind =
   | 'basicBlackSquares'
   | 'basicWhiteSquares'
   | 'basicBlackDots'
-  | 'basicWhiteDots';
+  | 'basicWhiteDots'
+  | 'basicBlackDashes'
+  | 'basicWhiteDashes';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -359,7 +361,8 @@ export function appendWorkPdfVectorUnderlineLayer(
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
  * `marqueeToothed` / `moons` / `basicBlackSquares` / `basicWhiteSquares` /
- * `basicBlackDots` / `basicWhiteDots` art motifs; other art border styles are
+ * `basicBlackDots` / `basicWhiteDots` / `basicBlackDashes` /
+ * `basicWhiteDashes` art motifs; other art border styles are
  * skipped (fail
  * closed). Not PDF/UA.
  */
@@ -512,7 +515,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * basicSquares/basicDots art; not PDF/UA or decorative art).
+ * basicSquares/basicDots/basicDashes art; not PDF/UA or decorative art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -679,6 +682,20 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           stroke.kind === 'basicBlackDots',
         );
       } else if (
+        stroke.kind === 'basicBlackDashes' ||
+        stroke.kind === 'basicWhiteDashes'
+      ) {
+        strokeBasicDashesParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+          stroke.kind === 'basicBlackDashes',
+        );
+      } else if (
         stroke.kind === 'threeDEmboss' ||
         stroke.kind === 'threeDEngrave' ||
         stroke.kind === 'inset' ||
@@ -730,7 +747,9 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'basicBlackSquares' ||
     border.style === 'basicWhiteSquares' ||
     border.style === 'basicBlackDots' ||
-    border.style === 'basicWhiteDots'
+    border.style === 'basicWhiteDots' ||
+    border.style === 'basicBlackDashes' ||
+    border.style === 'basicWhiteDashes'
   ) {
     const presentation = documentBorderPresentation(border);
     if (presentation.width <= 0 || presentation.color === 'transparent') {
@@ -1558,6 +1577,100 @@ function strokeBasicDotStamps(
     strokeEllipsePolyline(pdf, centerX, centerY, r, r);
     if (filled) {
       strokeEllipsePolyline(pdf, centerX, centerY, r * 0.45, r * 0.45);
+    }
+  }
+}
+
+/**
+ * Discrete dash stamps for geometric art borders `basicBlackDashes` /
+ * `basicWhiteDashes`. Black densifies with a parallel companion dash; white is
+ * outline-only with wider spacing.
+ */
+function strokeBasicDashesParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  filled: boolean,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const dashLength = Math.max(3.2, thickness * (filled ? 2.4 : 2.8));
+  const period = Math.max(5.6, thickness * (filled ? 4.4 : 6.0));
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeBasicDashStamps(
+      pdf,
+      x,
+      yBase,
+      width,
+      0,
+      period,
+      dashLength,
+      outward,
+      filled,
+    );
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeBasicDashStamps(
+      pdf,
+      xBase,
+      y,
+      height,
+      1,
+      period,
+      dashLength,
+      outward,
+      filled,
+    );
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeBasicDashStamps(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  dashLength: number,
+  outward: 1 | -1,
+  filled: boolean,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  const half = Math.min(dashLength / 2, length / (count * 2.4));
+  const offset = Math.max(0.9, half * 0.35);
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    if (axis === 0) {
+      const cx = originX + along;
+      const cy = originY + outward * offset;
+      pdf.line(cx - half, cy, cx + half, cy);
+      if (filled) {
+        const cy2 = cy + outward * offset;
+        pdf.line(cx - half * 0.75, cy2, cx + half * 0.75, cy2);
+      }
+    } else {
+      const cx = originX + outward * offset;
+      const cy = originY + along;
+      pdf.line(cx, cy - half, cx, cy + half);
+      if (filled) {
+        const cx2 = cx + outward * offset;
+        pdf.line(cx2, cy - half * 0.75, cx2, cy + half * 0.75);
+      }
     }
   }
 }

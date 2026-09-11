@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.166.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export paints Writer `basicBlackDashes` /
+  `basicWhiteDashes` art paragraph borders as discrete dash stamps
+  (black densifies with a parallel companion dash). Remaining decorative art
+  borders and full PDF/UA certification remain out of scope.
+
 ## 0.165.0 - 2026-09-11
 
 ### Writer

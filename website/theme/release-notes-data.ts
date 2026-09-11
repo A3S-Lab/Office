@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.166.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF paints basicBlackDashes and basicWhiteDashes art borders',
+      zh: '文档 PDF 绘制 basicBlackDashes 与 basicWhiteDashes 艺术边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer basicBlackDashes / basicWhiteDashes art paragraph borders as discrete dash stamps (black densifies with a parallel companion dash). Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 basicBlackDashes / basicWhiteDashes 艺术段落边框绘制为离散短划印章（黑色以平行伴划加密）。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Discrete dash stamps',
+          zh: '离散短划印章',
+        },
+        detail: {
+          en: 'basicBlackDashes / basicWhiteDashes place spaced dashes along the measured edge.',
+          zh: 'basicBlackDashes / basicWhiteDashes 沿测量边放置间距短划。',
+        },
+      },
+      {
+        title: {
+          en: 'Black densifies; white outlines',
+          zh: '黑色加密；白色描边',
+        },
+        detail: {
+          en: 'Black adds a parallel companion dash; white stays outline-only with wider spacing.',
+          zh: '黑色增加平行伴划；白色仅描边且间距更宽。',
+        },
+      },
+      {
+        title: {
+          en: 'Remaining art borders stay out of scope',
+          zh: '其余艺术边框仍不在范围内',
+        },
+        detail: {
+          en: 'Apples, vines, and other decorative art borders, plus full PDF/UA certification, are not claimed.',
+          zh: '不宣称苹果、藤蔓等其余装饰性艺术边框，也不宣称完整 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.166.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.166.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.165.0',
     date: '2026-09-11',
     kind: 'improved',
