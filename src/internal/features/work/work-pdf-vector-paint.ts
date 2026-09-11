@@ -52,7 +52,8 @@ export type WorkPdfParagraphBorderKind =
   | 'ovals'
   | 'rings'
   | 'marquee'
-  | 'marqueeToothed';
+  | 'marqueeToothed'
+  | 'moons';
 
 /**
  * PDF stroke edges for Writer paragraph borders. `between` maps to the bottom
@@ -353,7 +354,7 @@ export function appendWorkPdfVectorUnderlineLayer(
  * `wave` / `doubleWave` polylines, dual-tone 3D / inset / outset relief strokes,
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
- * `marqueeToothed` art motifs; other art border styles are skipped (fail
+ * `marqueeToothed` / `moons` art motifs; other art border styles are skipped (fail
  * closed). Not PDF/UA.
  */
 export function workPdfParagraphBordersFromElement(
@@ -504,8 +505,8 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
- * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee art;
- * not PDF/UA or decorative art).
+ * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon
+ * art; not PDF/UA or decorative art).
  */
 export function appendWorkPdfVectorParagraphBorderLayer(
   pdf: JsPdf,
@@ -633,6 +634,16 @@ export function appendWorkPdfVectorParagraphBorderLayer(
           thickness,
           stroke.kind === 'marqueeToothed',
         );
+      } else if (stroke.kind === 'moons') {
+        strokeMoonParagraphBorderEdge(
+          pdf,
+          edge,
+          x,
+          y,
+          width,
+          height,
+          thickness,
+        );
       } else if (
         stroke.kind === 'threeDEmboss' ||
         stroke.kind === 'threeDEngrave' ||
@@ -680,7 +691,8 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'ovals' ||
     border.style === 'rings' ||
     border.style === 'marquee' ||
-    border.style === 'marqueeToothed'
+    border.style === 'marqueeToothed' ||
+    border.style === 'moons'
   ) {
     const presentation = documentBorderPresentation(border);
     if (presentation.width <= 0 || presentation.color === 'transparent') {
@@ -1197,6 +1209,122 @@ function strokeEllipsePolyline(
     pdf.line(prevX, prevY, nextX, nextY);
     prevX = nextX;
     prevY = nextY;
+  }
+}
+
+/**
+ * Crescent moon motifs along the measured edge for geometric art border
+ * `moons`. Each motif is a closed outer-arc + inner-arc polyline.
+ */
+function strokeMoonParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const radius = Math.max(1.5, thickness * 1.35);
+  const period = Math.max(4.5, thickness * 5.4);
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeMoonCrescents(pdf, x, yBase, width, 0, period, radius, outward);
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeMoonCrescents(pdf, xBase, y, height, 1, period, radius, outward);
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeMoonCrescents(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  radius: number,
+  outward: 1 | -1,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const centerX = axis === 0 ? originX + along : originX;
+    const centerY = axis === 0 ? originY : originY + along;
+    const phase = index % 2 === 0 ? 1 : -1;
+    const normalX = axis === 0 ? 0 : outward;
+    const normalY = axis === 0 ? outward : 0;
+    const tangentX = axis === 0 ? phase : 0;
+    const tangentY = axis === 0 ? 0 : phase;
+    strokeCrescentPolyline(
+      pdf,
+      centerX + normalX * radius * 0.15,
+      centerY + normalY * radius * 0.15,
+      Math.min(radius, length / (count * 2.4)),
+      tangentX,
+      tangentY,
+    );
+  }
+}
+
+function strokeCrescentPolyline(
+  pdf: JsPdf,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  cutDirX: number,
+  cutDirY: number,
+): void {
+  if (!Number.isFinite(radius) || radius <= 0) {
+    return;
+  }
+  const dirLen = Math.hypot(cutDirX, cutDirY) || 1;
+  const ux = cutDirX / dirLen;
+  const uy = cutDirY / dirLen;
+  const cutRadius = radius * 0.82;
+  const cutCenterX = centerX + ux * radius * 0.55;
+  const cutCenterY = centerY + uy * radius * 0.55;
+  const start = -Math.PI * 0.72;
+  const end = Math.PI * 0.72;
+  const steps = 12;
+  const outer: Array<[number, number]> = [];
+  for (let index = 0; index <= steps; index += 1) {
+    const angle = start + ((end - start) * index) / steps;
+    // Orient the crescent opening along the cut direction.
+    const world =
+      Math.atan2(uy, ux) + angle + (ux === 0 && uy === 0 ? 0 : Math.PI / 2);
+    outer.push([
+      centerX + Math.cos(world) * radius,
+      centerY + Math.sin(world) * radius,
+    ]);
+  }
+  const inner: Array<[number, number]> = [];
+  for (let index = steps; index >= 0; index -= 1) {
+    const angle = start + ((end - start) * index) / steps;
+    const world =
+      Math.atan2(uy, ux) + angle + (ux === 0 && uy === 0 ? 0 : Math.PI / 2);
+    inner.push([
+      cutCenterX + Math.cos(world) * cutRadius,
+      cutCenterY + Math.sin(world) * cutRadius,
+    ]);
+  }
+  const path = [...outer, ...inner];
+  for (let index = 0; index < path.length; index += 1) {
+    const [x0, y0] = path[index]!;
+    const [x1, y1] = path[(index + 1) % path.length]!;
+    pdf.line(x0, y0, x1, y1);
   }
 }
 

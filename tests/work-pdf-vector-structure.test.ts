@@ -341,6 +341,10 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     top: { style: 'marquee', color: { value: '#112233' }, size: 12 },
     bottom: { style: 'marqueeToothed', color: { value: '#445566' }, size: 12 },
   });
+  const moonsAttributes = documentParagraphBordersDomAttributes({
+    top: { style: 'moons', color: { value: '#112233' }, size: 12 },
+    bottom: { style: 'moons', color: { value: '#445566' }, size: 12 },
+  });
   const waveBetweenAttributes = documentParagraphBordersDomAttributes({
     between: { style: 'wave', color: { value: '#112233' }, size: 12 },
     bar: { style: 'threeDEmboss', color: { value: '#445566' }, size: 14 },
@@ -355,6 +359,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
       <p id="triangles" data-office-paragraph-borders='${triangleAttributes['data-office-paragraph-borders']}' style="${triangleAttributes.style}">Triangles</p>
       <p id="ovals" data-office-paragraph-borders='${ovalAttributes['data-office-paragraph-borders']}' style="${ovalAttributes.style}">Ovals</p>
       <p id="marquee" data-office-paragraph-borders='${marqueeAttributes['data-office-paragraph-borders']}' style="${marqueeAttributes.style}">Marquee</p>
+      <p id="moons" data-office-paragraph-borders='${moonsAttributes['data-office-paragraph-borders']}' style="${moonsAttributes.style}">Moons</p>
       <p id="wave-between" data-office-paragraph-borders='${waveBetweenAttributes['data-office-paragraph-borders']}' style="${waveBetweenAttributes.style}">Wave between</p>
       <p id="plain">Plain</p>
       <p id="nil" data-office-paragraph-borders='{"top":{"style":"nil"}}'>Nil</p>
@@ -368,6 +373,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   const triangles = document.getElementById('triangles');
   const ovals = document.getElementById('ovals');
   const marquee = document.getElementById('marquee');
+  const moons = document.getElementById('moons');
   const waveBetween = document.getElementById('wave-between');
   const plain = document.getElementById('plain');
   const nil = document.getElementById('nil');
@@ -380,6 +386,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     !(triangles instanceof HTMLElement) ||
     !(ovals instanceof HTMLElement) ||
     !(marquee instanceof HTMLElement) ||
+    !(moons instanceof HTMLElement) ||
     !(waveBetween instanceof HTMLElement) ||
     !(plain instanceof HTMLElement) ||
     !(nil instanceof HTMLElement)
@@ -417,6 +424,10 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   expect(workPdfParagraphBordersFromElement(marquee)).toEqual({
     top: { color: '#112233', kind: 'marquee', width: 16 },
     bottom: { color: '#445566', kind: 'marqueeToothed', width: 16 },
+  });
+  expect(workPdfParagraphBordersFromElement(moons)).toEqual({
+    top: { color: '#112233', kind: 'moons', width: 16 },
+    bottom: { color: '#445566', kind: 'moons', width: 16 },
   });
   expect(workPdfParagraphBordersFromElement(waveBetween)).toEqual({
     between: { color: '#112233', kind: 'wave', width: 2 },
@@ -811,6 +822,39 @@ test('paints marquee and marqueeToothed art borders as rectangle motifs', () => 
   expect(ascii).toMatch(/0\.27\s+0\.33\s+0\.4\s+RG/);
   const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
   expect(strokeCount).toBeGreaterThanOrEqual(40);
+  expect(ascii).toMatch(/[\d.]+\s+[\d.]+\s+m/);
+  expect(ascii).toMatch(/\s+l\n/);
+});
+
+test('paints moons art borders as crescent motifs', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorParagraphBorderLayer(
+    pdf,
+    [
+      {
+        edges: {
+          top: { color: '#112233', kind: 'moons', width: 2 },
+          bottom: { color: '#445566', kind: 'moons', width: 2 },
+        },
+        height: 40,
+        width: 100,
+        x: 20,
+        y: 30,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toMatch(/0\.07\s+0\.13\s+0\.2\s+RG/);
+  expect(ascii).toMatch(/0\.27\s+0\.33\s+0\.4\s+RG/);
+  const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
+  expect(strokeCount).toBeGreaterThanOrEqual(8);
   expect(ascii).toMatch(/[\d.]+\s+[\d.]+\s+m/);
   expect(ascii).toMatch(/\s+l\n/);
 });

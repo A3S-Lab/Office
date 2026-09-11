@@ -371,11 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.162.0` paints Writer `marquee` / `marqueeToothed` art paragraph
-borders as rectangle motifs in browser document PDF export:
+Version `0.163.0` paints Writer `moons` art paragraph borders as crescent
+motifs in browser document PDF export:
 
-- **marquee strokes** — explicit edge rectangles; `marqueeToothed` alternates
-  offset for a toothed look.
+- **moon crescents** — closed outer-arc + inner-arc polylines along measured edges.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 
