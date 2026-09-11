@@ -371,12 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.154.0` adds a catalog-linked StructTreeRoot stub to browser document
-PDF export (Document plus outline-derived H1–H6/P kids with empty /K):
+Version `0.155.0` links vector text runs through ParentTree and MCID in browser
+document PDF export:
 
-- **StructTreeRoot stub** — tagged-PDF consumers see a Document tree shaped by
-  the same outline used for bookmarks.
-- **Boundary** — ParentTree / MCID content links, full PDF/UA certification,
+- **ParentTree / MCID** — vector `/Span` ActualText carries page-local `/MCID`;
+  pages set `/StructParents`; StructTreeRoot emits `/ParentTree` Span kids.
+- **Boundary** — outline role stubs keep empty `/K`; full PDF/UA certification
   and art/wave/3D borders remain out of scope.
 
 Earlier releases stay on the product

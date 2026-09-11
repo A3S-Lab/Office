@@ -144,8 +144,9 @@ Still required for R0 exit:
    catalog `/MarkInfo` and vector-run `/Span` ActualText deepen the tagged
    bootstrap through `0.153.0`; a catalog-linked StructTreeRoot stub
    (Document + outline-derived H1–H6/P with empty `/K`) lands through
-   `0.154.0`; ParentTree / MCID content links, full PDF/UA certification,
-   and art/wave/3D borders remain open.
+   `0.154.0`; ParentTree / MCID content links for vector-run Spans land
+   through `0.155.0`; full PDF/UA certification and art/wave/3D borders
+   remain open.
 7. Continuous no-clobber corpus growth for representative Traditional Office
    fixtures (diagnose every intentional normalization).
 
@@ -295,7 +296,7 @@ Do not schedule these as substitutes for R0–R4 exit work:
 | Content controls and forms | **Partial**: inline plain-text and rich-text controls are editable with aliases, tags, bounded locks, multiline text, appearance/color, and direct-paragraph DOCX `w:sdt` round trips; static controls in note/comment preservation remain separately bounded | Data binding, repeating sections, date/dropdown/picture/form controls, block controls, nested or relationship-bound semantics, placeholders, and active behavior are intentionally limited | P1/P2 |
 | Spelling, grammar, language, translation | **Partial**: native Latin/East Asian/bidi `w:lang` metadata, explicit `w:noProof` authoring and round trips, browser spellcheck, and host actions | No suite-grade proofing dictionaries, grammar engine, or bundled translation service | Host/provider-owned; P2 adapter |
 | Find, navigation, physical thumbnails, long-document review | **Supported** with transferable Worker import, bounded auxiliary-pane virtualization, model-level text/table-row NodeView windows for eligible structurally plain large DOCX files, and model-boundary keyboard navigation | Rich-feature giant DOCX fallback paths still need the same bounded body rendering and broader performance fixtures | P0 |
-| PDF output | **Partial**: live browser pages share editor pagination; Latin/Latin-1 vector text clears under measured runs and paints Helvetica at the same geometry for search/copy; optional host `registerWorkPdfCjkFont` TrueType face enables searchable CJK vector text (fail-soft without it); title/`lang`/heading outline bootstrap including Writer outline-level paragraphs (`p[data-office-outline-level]`) alongside h1–h6 with level nesting through `0.148.0`; Writer underlines paint as vector paths (`single` / `double` / `thick`) through `0.149.0`; Writer text highlights paint as vector fill strips through `0.150.0`; Writer paragraph borders paint as vector strokes (top/left/bottom/right; single/thick/double/dashed/dotted) through `0.151.0`; Writer `between` and `bar` paragraph border edges paint as vector strokes through `0.152.0`; catalog `/MarkInfo` and vector-run `/Span` ActualText deepen the tagged bootstrap through `0.153.0`; catalog-linked StructTreeRoot stub (Document + outline-derived H1–H6/P with empty `/K`) through `0.154.0` | ParentTree / MCID content links, full PDF/UA certification, bundled CJK fonts, art/wave/3D borders, and broader vector object fidelity remain gaps | P0/P1 |
+| PDF output | **Partial**: live browser pages share editor pagination; Latin/Latin-1 vector text clears under measured runs and paints Helvetica at the same geometry for search/copy; optional host `registerWorkPdfCjkFont` TrueType face enables searchable CJK vector text (fail-soft without it); title/`lang`/heading outline bootstrap including Writer outline-level paragraphs (`p[data-office-outline-level]`) alongside h1–h6 with level nesting through `0.148.0`; Writer underlines paint as vector paths (`single` / `double` / `thick`) through `0.149.0`; Writer text highlights paint as vector fill strips through `0.150.0`; Writer paragraph borders paint as vector strokes (top/left/bottom/right; single/thick/double/dashed/dotted) through `0.151.0`; Writer `between` and `bar` paragraph border edges paint as vector strokes through `0.152.0`; catalog `/MarkInfo` and vector-run `/Span` ActualText deepen the tagged bootstrap through `0.153.0`; catalog-linked StructTreeRoot stub (Document + outline-derived H1–H6/P with empty `/K`) through `0.154.0`; ParentTree / MCID content links for vector-run Spans through `0.155.0` | Full PDF/UA certification, bundled CJK fonts, art/wave/3D borders, and broader vector object fidelity remain gaps | P0/P1 |
 | DOCX no-clobber round trip | **Partial but strong**: safe source-only parts and stable identities are preserved under bounded rules | Unsupported, relationship-bound, ambiguous, active, or changed structures may normalize and must stay diagnosed | P0 continuous work |
 
 ## Spreadsheet comparison
@@ -588,9 +589,10 @@ above this section.
   `0.152.0`; catalog `/MarkInfo` and vector-run `/Span` ActualText deepen the
   tagged bootstrap through `0.153.0`; a catalog-linked StructTreeRoot stub
   (Document + outline-derived H1–H6/P with empty `/K`) lands through
-  `0.154.0`; optional host `registerWorkPdfCjkFont` TrueType enables searchable
-  CJK vector text; ParentTree / MCID content links, full PDF/UA certification,
-  art/wave/3D borders, and bundled CJK fonts remain open.
+  `0.154.0`; ParentTree / MCID content links for vector-run Spans land through
+  `0.155.0`; optional host `registerWorkPdfCjkFont` TrueType enables searchable
+  CJK vector text; full PDF/UA certification, art/wave/3D borders, and bundled
+  CJK fonts remain open.
 
 Exit criteria: representative Traditional Office/Word fixtures reopen without
 unreported data loss; edited native structures retain identity; malformed

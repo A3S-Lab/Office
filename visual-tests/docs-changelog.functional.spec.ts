@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(135);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.154.0');
+  await expect(cards).toHaveCount(136);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.155.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 为大纲角色加入 StructTreeRoot 桩',
+    '文档 PDF 通过 ParentTree 与 MCID 链接矢量文本',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.155.0')).toContainText(
+    '矢量 ActualText Span 上的 MCID',
+  );
+  await expect(releaseCard('0.155.0')).toContainText(
+    '每次矢量文本运行发出带 /ActualText 与页内 /MCID 的 /Span',
+  );
   await expect(releaseCard('0.154.0')).toContainText(
     '目录链接的 StructTreeRoot 桩',
   );

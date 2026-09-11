@@ -18,15 +18,31 @@ interface WorkPdfStructTreePlan {
   outline: readonly WorkPdfOutlineEntry[];
 }
 
+interface WorkPdfContentLink {
+  mcid: number;
+  pageNumber: number;
+  text: string;
+}
+
+interface WorkPdfPageInfo {
+  objId: number;
+  pageNumber: number;
+}
+
 interface WorkPdfJsInternal {
   events?: {
-    subscribe?: (name: string, handler: () => void) => void;
+    subscribe?: (name: string, handler: (...args: unknown[]) => void) => void;
   };
+  getCurrentPageInfo?: () => WorkPdfPageInfo | undefined;
+  getPageInfo?: (pageNumber: number) => WorkPdfPageInfo | undefined;
   newObjectDeferred?: () => number;
   newObjectDeferredBegin?: (objectId: number, doOutput?: boolean) => number;
   out?: (content: string) => void;
   write?: (...parts: string[]) => void;
+  workPdfContentLinks?: WorkPdfContentLink[];
   workPdfMarkInfoSubscribed?: boolean;
+  workPdfMcidCounters?: Record<number, number>;
+  workPdfPageStructParents?: Record<number, number>;
   workPdfStructTreePlan?: WorkPdfStructTreePlan;
   workPdfStructTreeRootObjectId?: number;
   workPdfStructTreeSubscribed?: boolean;
@@ -35,13 +51,14 @@ interface WorkPdfJsInternal {
 const MAX_OUTLINE_ENTRIES = 512;
 const MAX_OUTLINE_TITLE_LENGTH = 200;
 const MAX_ACTUAL_TEXT_LENGTH = 2048;
+const MAX_CONTENT_LINKS = 2048;
 const OUTLINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p[data-office-outline-level]';
 
 /**
  * Applies bounded PDF document metadata and outline bookmarks. This is the
  * tagged/accessibility bootstrap: language + title + heading outline + MarkInfo
- * + a stub StructTreeRoot (Document / H1–H6 / P), without inventing a second
- * layout model or claiming full PDF/UA certification / MCID parent trees.
+ * + StructTreeRoot (Document / H1–H6 / P) with ParentTree / MCID links for
+ * vector-run Span content, without claiming full PDF/UA certification.
  */
 export function applyWorkPdfDocumentStructure(
   pdf: JsPdf,
@@ -117,9 +134,10 @@ export function ensureWorkPdfMarkInfo(pdf: JsPdf): void {
 }
 
 /**
- * Emits a bounded StructTreeRoot stub (Document + outline-derived H1–H6/P
- * StructElems with Alt, empty K) via jsPDF postPutResources / putCatalog.
- * Not a full PDF/UA parent tree: no MCIDs, no ParentTree, no page /K links.
+ * Emits StructTreeRoot (Document + outline-derived H1–H6/P + Span content
+ * links) with ParentTree / page StructParents via jsPDF hooks.
+ * Outline role kids keep empty `/K`; vector-run Spans carry MCIDs.
+ * Not a full PDF/UA certification claim.
  */
 export function ensureWorkPdfStructTreeRoot(
   pdf: JsPdf,
@@ -138,13 +156,30 @@ export function ensureWorkPdfStructTreeRoot(
   ) {
     return;
   }
+  const previous = internal.workPdfStructTreePlan;
   internal.workPdfStructTreePlan = {
-    language: plan.language ?? null,
-    outline: plan.outline ?? [],
+    language: plan.language ?? previous?.language ?? null,
+    outline: plan.outline ?? previous?.outline ?? [],
   };
   if (internal.workPdfStructTreeSubscribed) return;
   internal.workPdfStructTreeSubscribed = true;
+  if (!internal.workPdfContentLinks) internal.workPdfContentLinks = [];
+  if (!internal.workPdfMcidCounters) internal.workPdfMcidCounters = {};
+  if (!internal.workPdfPageStructParents) {
+    internal.workPdfPageStructParents = {};
+  }
   try {
+    internal.events.subscribe('putPage', (...args: unknown[]) => {
+      const page = args[0] as
+        | { pageNumber?: number; pageContext?: unknown }
+        | undefined;
+      const pageNumber =
+        typeof page?.pageNumber === 'number' ? page.pageNumber : undefined;
+      if (pageNumber === undefined) return;
+      const parents = internal.workPdfPageStructParents;
+      if (!parents || parents[pageNumber] === undefined) return;
+      internal.write?.(`/StructParents ${parents[pageNumber]}`);
+    });
     internal.events.subscribe('postPutResources', () => {
       internal.workPdfStructTreeRootObjectId =
         writeWorkPdfStructTreeObjects(internal);
@@ -172,8 +207,10 @@ export function workPdfStructRoleFromOutlineLevel(level: number): string {
 }
 
 /**
- * Opens a `/Span` BDC with `/ActualText` for a vector text run. Pairs with
- * {@link endWorkPdfActualTextSpan}. Fail-soft when jsPDF internals are absent.
+ * Opens a `/Span` BDC with `/ActualText` and a page-local `/MCID` for a vector
+ * text run. Pairs with {@link endWorkPdfActualTextSpan}. Fail-soft when jsPDF
+ * internals are absent; falls back to ActualText-only when the MCID budget is
+ * exhausted.
  */
 export function beginWorkPdfActualTextSpan(pdf: JsPdf, text: string): boolean {
   const internal = workPdfJsInternal(pdf);
@@ -181,10 +218,23 @@ export function beginWorkPdfActualTextSpan(pdf: JsPdf, text: string): boolean {
   const clipped = text.slice(0, MAX_ACTUAL_TEXT_LENGTH);
   if (!clipped) return false;
   ensureWorkPdfMarkInfo(pdf);
+  ensureWorkPdfStructTreeRoot(pdf, {});
+  const mcid = allocateWorkPdfMcid(internal);
   try {
-    internal.out(
-      `/Span << /ActualText ${encodePdfActualTextOperand(clipped)} >> BDC`,
-    );
+    if (mcid === null) {
+      internal.out(
+        `/Span << /ActualText ${encodePdfActualTextOperand(clipped)} >> BDC`,
+      );
+    } else {
+      internal.workPdfContentLinks?.push({
+        mcid: mcid.mcid,
+        pageNumber: mcid.pageNumber,
+        text: clipped,
+      });
+      internal.out(
+        `/Span << /ActualText ${encodePdfActualTextOperand(clipped)} /MCID ${mcid.mcid} >> BDC`,
+      );
+    }
     return true;
   } catch {
     return false;
@@ -309,8 +359,34 @@ function workPdfOutlineLevelFromElement(element: HTMLElement): number | null {
 }
 
 /**
- * Writes StructTreeRoot → Document → outline-derived H1–H6/P stubs. Returns the
- * root object id for the catalog `/StructTreeRoot` reference.
+ * Allocates a page-local MCID and StructParents key. Returns null when the
+ * document content-link budget is exhausted.
+ */
+function allocateWorkPdfMcid(
+  internal: WorkPdfJsInternal,
+): { mcid: number; pageNumber: number } | null {
+  const pageInfo = internal.getCurrentPageInfo?.();
+  if (!pageInfo || !Number.isSafeInteger(pageInfo.pageNumber)) return null;
+  const pageNumber = pageInfo.pageNumber;
+  if (!internal.workPdfContentLinks) internal.workPdfContentLinks = [];
+  if (internal.workPdfContentLinks.length >= MAX_CONTENT_LINKS) return null;
+  if (!internal.workPdfMcidCounters) internal.workPdfMcidCounters = {};
+  if (!internal.workPdfPageStructParents) {
+    internal.workPdfPageStructParents = {};
+  }
+  if (internal.workPdfPageStructParents[pageNumber] === undefined) {
+    internal.workPdfPageStructParents[pageNumber] = Object.keys(
+      internal.workPdfPageStructParents,
+    ).length;
+  }
+  const mcid = internal.workPdfMcidCounters[pageNumber] ?? 0;
+  internal.workPdfMcidCounters[pageNumber] = mcid + 1;
+  return { mcid, pageNumber };
+}
+
+/**
+ * Writes StructTreeRoot → Document → outline stubs + Span MCID kids, plus the
+ * ParentTree number tree. Returns the root object id for the catalog.
  */
 function writeWorkPdfStructTreeObjects(
   internal: WorkPdfJsInternal,
@@ -323,9 +399,10 @@ function writeWorkPdfStructTreeObjects(
     language: null,
     outline: [],
   };
-  const kids: Array<{ alt: string; objectId: number; role: string }> = [];
+  const outlineKids: Array<{ alt: string; objectId: number; role: string }> =
+    [];
   for (const entry of plan.outline) {
-    if (kids.length >= MAX_OUTLINE_ENTRIES) break;
+    if (outlineKids.length >= MAX_OUTLINE_ENTRIES) break;
     const alt = entry.title.trim().slice(0, MAX_OUTLINE_TITLE_LENGTH);
     if (!alt) continue;
     if (!Number.isSafeInteger(entry.pageNumber) || entry.pageNumber < 1) {
@@ -337,15 +414,42 @@ function writeWorkPdfStructTreeObjects(
       entry.level >= 1
         ? entry.level
         : 1;
-    kids.push({
+    outlineKids.push({
       alt,
       objectId: deferred(),
       role: workPdfStructRoleFromOutlineLevel(level),
     });
   }
+
+  const contentLinks = internal.workPdfContentLinks ?? [];
+  const spanKids: Array<{
+    alt: string;
+    mcid: number;
+    objectId: number;
+    pageObjId: number;
+    pageNumber: number;
+  }> = [];
+  for (const link of contentLinks) {
+    const pageInfo = internal.getPageInfo?.(link.pageNumber);
+    if (!pageInfo || !Number.isSafeInteger(pageInfo.objId)) continue;
+    spanKids.push({
+      alt: link.text.slice(0, MAX_ACTUAL_TEXT_LENGTH),
+      mcid: link.mcid,
+      objectId: deferred(),
+      pageObjId: pageInfo.objId,
+      pageNumber: link.pageNumber,
+    });
+  }
+
+  const parentTreeObjectId =
+    spanKids.length > 0 ||
+    Object.keys(internal.workPdfPageStructParents ?? {}).length > 0
+      ? deferred()
+      : undefined;
   const rootObjectId = deferred();
   const documentObjectId = deferred();
-  for (const kid of kids) {
+
+  for (const kid of outlineKids) {
     begin(kid.objectId, true);
     out('<<');
     out('/Type /StructElem');
@@ -356,6 +460,20 @@ function writeWorkPdfStructTreeObjects(
     out('>>');
     out('endobj');
   }
+
+  for (const kid of spanKids) {
+    begin(kid.objectId, true);
+    out('<<');
+    out('/Type /StructElem');
+    out('/S /Span');
+    out(`/P ${documentObjectId} 0 R`);
+    out(`/Pg ${kid.pageObjId} 0 R`);
+    out(`/K ${kid.mcid}`);
+    out(`/Alt ${encodePdfActualTextOperand(kid.alt)}`);
+    out('>>');
+    out('endobj');
+  }
+
   begin(documentObjectId, true);
   out('<<');
   out('/Type /StructElem');
@@ -364,20 +482,80 @@ function writeWorkPdfStructTreeObjects(
   if (plan.language) {
     out(`/Lang (${escapePdfLiteralString(plan.language)})`);
   }
-  if (kids.length === 0) {
+  const documentKids = [
+    ...outlineKids.map((kid) => `${kid.objectId} 0 R`),
+    ...spanKids.map((kid) => `${kid.objectId} 0 R`),
+  ];
+  if (documentKids.length === 0) {
     out('/K []');
   } else {
-    out(`/K [${kids.map((kid) => `${kid.objectId} 0 R`).join(' ')}]`);
+    out(`/K [${documentKids.join(' ')}]`);
   }
   out('>>');
   out('endobj');
+
+  if (parentTreeObjectId !== undefined) {
+    begin(parentTreeObjectId, true);
+    out('<<');
+    out(`/Nums [${writeWorkPdfParentTreeNums(internal, spanKids)}]`);
+    out('>>');
+    out('endobj');
+  }
+
+  const parentTreeNextKey = Object.keys(
+    internal.workPdfPageStructParents ?? {},
+  ).length;
+
   begin(rootObjectId, true);
   out('<<');
   out('/Type /StructTreeRoot');
   out(`/K [${documentObjectId} 0 R]`);
+  if (parentTreeObjectId !== undefined) {
+    out(`/ParentTree ${parentTreeObjectId} 0 R`);
+    out(`/ParentTreeNextKey ${parentTreeNextKey}`);
+  }
   out('>>');
   out('endobj');
   return rootObjectId;
+}
+
+/**
+ * Builds ParentTree `/Nums` pairs: StructParents key → MCID-indexed array of
+ * Span StructElem refs (null holes for unused MCID slots).
+ */
+function writeWorkPdfParentTreeNums(
+  internal: WorkPdfJsInternal,
+  spanKids: readonly {
+    mcid: number;
+    objectId: number;
+    pageNumber: number;
+  }[],
+): string {
+  const parents = internal.workPdfPageStructParents ?? {};
+  const byPage = new Map<number, Array<{ mcid: number; objectId: number }>>();
+  for (const kid of spanKids) {
+    const list = byPage.get(kid.pageNumber) ?? [];
+    list.push({ mcid: kid.mcid, objectId: kid.objectId });
+    byPage.set(kid.pageNumber, list);
+  }
+  const parts: string[] = [];
+  const keys = Object.entries(parents)
+    .map(([pageNumber, key]) => ({
+      key,
+      pageNumber: Number(pageNumber),
+    }))
+    .sort((a, b) => a.key - b.key);
+  for (const { key, pageNumber } of keys) {
+    const links = byPage.get(pageNumber) ?? [];
+    const maxMcid = links.reduce((max, link) => Math.max(max, link.mcid), -1);
+    const slots: string[] = [];
+    for (let mcid = 0; mcid <= maxMcid; mcid += 1) {
+      const match = links.find((link) => link.mcid === mcid);
+      slots.push(match ? `${match.objectId} 0 R` : 'null');
+    }
+    parts.push(`${key} [${slots.join(' ')}]`);
+  }
+  return parts.join(' ');
 }
 
 function workPdfJsInternal(pdf: JsPdf): WorkPdfJsInternal | null {

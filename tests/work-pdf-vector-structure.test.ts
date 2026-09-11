@@ -105,10 +105,15 @@ test('writes a visible vector text layer extractable from PDF bytes', () => {
   const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
   expect(ascii).toContain('Vector milestone');
   expect(ascii).toContain('/ActualText (Vector milestone)');
+  expect(ascii).toContain('/MCID 0');
   expect(ascii).toContain('/Span << /ActualText');
   expect(ascii).toContain('BDC');
   expect(ascii).toContain('EMC');
   expect(ascii).toContain('/MarkInfo << /Marked true >>');
+  expect(ascii).toContain('/StructParents 0');
+  expect(ascii).toContain('/ParentTree');
+  expect(ascii).toContain('/S /Span');
+  expect(ascii).toMatch(/\/K\s+0\b/);
 });
 
 test('encodes ActualText operands for Latin and Unicode runs', () => {
@@ -792,6 +797,60 @@ test('applies title, language, outline bookmarks, MarkInfo, and StructTreeRoot s
   const catalog = ascii.match(/\/Type \/Catalog[\s\S]*?endobj/);
   expect(catalog?.[0]).toContain('/StructTreeRoot');
   expect(catalog?.[0]).toMatch(/\/StructTreeRoot \d+ 0 R/);
+});
+
+test('links vector-run MCIDs through ParentTree and page StructParents', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorTextLayer(
+    pdf,
+    [
+      {
+        color: '#112233',
+        fontSize: 14,
+        fontStyle: 'normal',
+        height: 16,
+        text: 'First run',
+        width: 80,
+        x: 20,
+        y: 40,
+      },
+      {
+        color: '#112233',
+        fontSize: 14,
+        fontStyle: 'normal',
+        height: 16,
+        text: 'Second run',
+        width: 90,
+        x: 20,
+        y: 60,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  applyWorkPdfDocumentStructure(pdf, {
+    language: 'en',
+    outline: [{ level: 1, pageNumber: 1, title: 'Heading' }],
+    title: 'MCID parent tree',
+  });
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toContain('/MCID 0');
+  expect(ascii).toContain('/MCID 1');
+  expect(ascii).toContain('/StructParents 0');
+  expect(ascii).toContain('/ParentTree');
+  expect(ascii).toContain('/ParentTreeNextKey 1');
+  expect(ascii).toContain('/S /H1');
+  expect(ascii).toContain('/S /Span');
+  expect(ascii).toContain('/Alt (First run)');
+  expect(ascii).toContain('/Alt (Second run)');
+  expect(ascii).toMatch(/\/Nums\s*\[\s*0\s*\[/);
+  const pageDict = ascii.match(/\/Type \/Page[\s\S]*?endobj/);
+  expect(pageDict?.[0]).toContain('/StructParents 0');
 });
 
 test('emits Document StructTreeRoot stub when outline is empty', () => {

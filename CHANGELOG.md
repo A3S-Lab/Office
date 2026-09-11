@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.155.0 - 2026-09-11
+
+### Writer
+
+- Browser document PDF export links vector-run `/Span` ActualText through
+  page-local `/MCID`, page `/StructParents`, and StructTreeRoot `/ParentTree`
+  Span kids. Outline role stubs keep empty `/K`. Full PDF/UA certification
+  and art/wave/3D borders remain out of scope.
+
 ## 0.154.0 - 2026-09-11
 
 ### Writer

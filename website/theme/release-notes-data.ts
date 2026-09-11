@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.155.0',
+    date: '2026-09-11',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF links vector text through ParentTree and MCID',
+      zh: '文档 PDF 通过 ParentTree 与 MCID 链接矢量文本',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export links vector-run /Span ActualText through page-local /MCID, page /StructParents, and StructTreeRoot /ParentTree Span kids. Outline role stubs keep empty /K. Full PDF/UA certification and art/wave/3D borders remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现通过页内 /MCID、页面 /StructParents 与 StructTreeRoot /ParentTree Span 子节点链接矢量运行的 /Span ActualText。大纲角色桩保持空 /K。完整 PDF/UA 认证与艺术/波浪/三维边框仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'MCID on vector ActualText spans',
+          zh: '矢量 ActualText Span 上的 MCID',
+        },
+        detail: {
+          en: 'Each vector text run emits /Span with /ActualText and a page-local /MCID.',
+          zh: '每次矢量文本运行发出带 /ActualText 与页内 /MCID 的 /Span。',
+        },
+      },
+      {
+        title: {
+          en: 'ParentTree and StructParents',
+          zh: 'ParentTree 与 StructParents',
+        },
+        detail: {
+          en: 'Pages set /StructParents; StructTreeRoot emits a /ParentTree number tree of Span kids.',
+          zh: '页面设置 /StructParents；StructTreeRoot 发出 Span 子节点的 /ParentTree 数字树。',
+        },
+      },
+      {
+        title: {
+          en: 'Full PDF/UA certification stays out of scope',
+          zh: '完整 PDF/UA 认证仍不在范围内',
+        },
+        detail: {
+          en: 'Outline role stubs keep empty /K; PDF/UA certification and art/wave/3D borders are not claimed.',
+          zh: '大纲角色桩保持空 /K；不宣称 PDF/UA 认证与艺术/波浪/三维边框。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.155.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.155.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.154.0',
     date: '2026-09-11',
     kind: 'improved',

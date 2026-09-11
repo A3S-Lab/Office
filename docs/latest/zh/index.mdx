@@ -42,13 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.154.0）
+## `main` 更新内容（0.155.0）
 
-浏览器文档 PDF 导出现加入目录链接的 StructTreeRoot 桩（Document 以及由大纲
-派生的 H1–H6/P 子节点，/K 为空）：
+浏览器文档 PDF 导出现为矢量文本运行加入 ParentTree 与 MCID 内容链接：
 
-- 带标签 PDF 消费方可看到由书签大纲塑造的 Document 树。
-- ParentTree / MCID 内容链接、完整 PDF/UA 认证与艺术/波浪/三维边框仍不在范围内。
+- 矢量 `/Span` ActualText 携带页内 `/MCID`；页面设置 `/StructParents`。
+- StructTreeRoot 发出 `/ParentTree` Span 子节点；大纲角色桩保持空 `/K`。
+- 完整 PDF/UA 认证与艺术/波浪/三维边框仍不在范围内。
 
 产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
 [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。
