@@ -105,6 +105,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.179.0',
     '0.178.0',
     '0.177.0',
     '0.176.0',
@@ -124,7 +125,6 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
     '0.162.0',
     '0.161.0',
     '0.160.0',
-    '0.159.0',
     '0.38.0',
     '0.1.0',
   ]);
@@ -414,13 +414,9 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('Nesting unchanged');
   expect(readme).toContain('Earlier releases stay on the product');
   expect(englishHome).toContain("## What's new on `main` (0.179.0)");
-  expect(englishHome).toContain(
-    'copies language onto structure elements',
-  );
+  expect(englishHome).toContain('copies language onto structure elements');
   expect(chineseHome).toContain('## `main` 更新内容（0.179.0）');
-  expect(chineseHome).toContain(
-    '浏览器文档 PDF 导出现将语言写入结构元素',
-  );
+  expect(chineseHome).toContain('浏览器文档 PDF 导出现将语言写入结构元素');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
   expect(readme).toContain(
