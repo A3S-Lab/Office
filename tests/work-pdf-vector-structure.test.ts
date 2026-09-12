@@ -258,8 +258,9 @@ test('paints underlined vector runs as PDF path operators', () => {
   );
   const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
   expect(ascii).toContain('Underlined');
-  expect(ascii).toContain('/Artifact BMC');
-  expect(ascii).toMatch(/\/Artifact BMC[\s\S]*?\nEMC\n/);
+  expect(ascii).toContain('/Artifact << /Type /Layout >> BDC');
+  expect(ascii).toMatch(/\/Artifact << \/Type \/Layout >> BDC[\s\S]*?\nEMC\n/);
+  expect(ascii).not.toContain('/Artifact BMC');
   // jsPDF flips y from top origin: pageHeight - y
   expect(ascii).toMatch(/20\.\s+[\d.]+\s+m/);
   expect(ascii).toMatch(/110\.\s+[\d.]+\s+l/);
@@ -302,8 +303,9 @@ test('paints highlighted vector runs as PDF fill operators', () => {
   );
   const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
   expect(ascii).toContain('Highlighted');
-  expect(ascii).toContain('/Artifact BMC');
-  expect(ascii).toMatch(/\/Artifact BMC[\s\S]*?\nEMC\n/);
+  expect(ascii).toContain('/Artifact << /Type /Layout >> BDC');
+  expect(ascii).toMatch(/\/Artifact << \/Type \/Layout >> BDC[\s\S]*?\nEMC\n/);
+  expect(ascii).not.toContain('/Artifact BMC');
   // jsPDF normalizes fill RGB and flips y from top origin.
   expect(ascii).toContain('1. 1. 0. rg');
   expect(ascii).toMatch(/20\.\s+240\.\s+90\.\s+-18\.\s+re/);
@@ -656,8 +658,9 @@ test('paints paragraph borders as PDF path operators', () => {
     { pageHeightPoints: 280, pageWidthPoints: 200 },
   );
   const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
-  expect(ascii).toContain('/Artifact BMC');
-  expect(ascii).toMatch(/\/Artifact BMC[\s\S]*?\nEMC\n/);
+  expect(ascii).toContain('/Artifact << /Type /Layout >> BDC');
+  expect(ascii).toMatch(/\/Artifact << \/Type \/Layout >> BDC[\s\S]*?\nEMC\n/);
+  expect(ascii).not.toContain('/Artifact BMC');
   expect(ascii).toContain('0.07 0.13 0.2 RG');
   // top/left/right + double bottom (2) => at least 5 stroked segments
   const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;

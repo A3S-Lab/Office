@@ -44,11 +44,11 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.174.0)
+## What's new on `main` (0.175.0)
 
-Browser document PDF export now marks decorative vector paint as Artifacts:
+Browser document PDF export now emits typed Layout Artifacts for decoration:
 
-- Highlights, underlines, and paragraph borders paint inside `/Artifact BMC` … `EMC` (no MCID / StructElem).
+- Highlights, underlines, and paragraph borders paint inside `/Artifact << /Type /Layout >> BDC` … `EMC` (no MCID / StructElem).
 - Span ActualText / MCID and outline role nesting from `0.172.0`–`0.173.0` are unchanged.
 - Remaining decorative art borders and full PDF/UA certification remain out of scope.
 

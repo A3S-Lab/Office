@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.174.0` marks decorative Writer PDF vector paint as Artifacts:
+Version `0.175.0` upgrades decorative Writer PDF Artifacts to typed Layout BDC:
 
-- **Artifact BMC** — highlights, underlines, and paragraph borders paint inside
-  `/Artifact BMC` … `EMC` (no MCID / StructElem).
+- **Layout Artifact** — highlights, underlines, and paragraph borders paint inside
+  `/Artifact << /Type /Layout >> BDC` … `EMC` (no MCID / StructElem).
 - **Tagged text unchanged** — Span ActualText / MCID and outline role nesting
   from `0.172.0`–`0.173.0` stay in place.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification

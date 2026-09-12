@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.175.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export upgrades decorative Artifact marked content from
+  bare `/Artifact BMC` to ISO-style `/Artifact << /Type /Layout >> BDC` … `EMC`
+  for highlights, underlines, and paragraph borders (still no MCID / StructElem).
+  Remaining decorative art borders and full PDF/UA certification remain out of
+  scope.
+
 ## 0.174.0 - 2026-09-12
 
 ### Writer

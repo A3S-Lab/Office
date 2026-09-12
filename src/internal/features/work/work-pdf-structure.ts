@@ -274,15 +274,15 @@ export function endWorkPdfActualTextSpan(pdf: JsPdf): void {
 }
 
 /**
- * Opens an `/Artifact BMC` region for decorative vector paint (highlights,
- * underlines, paragraph borders) so assistive tech can skip it. No MCID or
- * StructElem. Pairs with {@link endWorkPdfArtifact}.
+ * Opens an `/Artifact << /Type /Layout >> BDC` region for decorative vector
+ * paint (highlights, underlines, paragraph borders) so assistive tech can skip
+ * layout decoration. No MCID or StructElem. Pairs with {@link endWorkPdfArtifact}.
  */
 export function beginWorkPdfArtifact(pdf: JsPdf): boolean {
   const internal = workPdfJsInternal(pdf);
   if (!internal?.out) return false;
   try {
-    internal.out('/Artifact BMC');
+    internal.out('/Artifact << /Type /Layout >> BDC');
     return true;
   } catch {
     return false;
