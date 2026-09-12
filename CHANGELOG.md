@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.171.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export paints Writer `cabins` art paragraph borders as
+  house silhouettes (triangle roof + rectangular body with a door notch) along
+  the measured edge. Remaining decorative art borders and full PDF/UA
+  certification remain out of scope.
+
 ## 0.170.0 - 2026-09-12
 
 ### Writer

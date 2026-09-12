@@ -9,13 +9,15 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(151);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.170.0');
-  await expect(cards.first()).toContainText(
-    '文档 PDF 绘制 birds 与 birdsFlight 艺术边框',
-  );
+  await expect(cards).toHaveCount(152);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.171.0');
+  await expect(cards.first()).toContainText('文档 PDF 绘制 cabins 艺术边框');
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.171.0')).toContainText('小屋剪影');
+  await expect(releaseCard('0.171.0')).toContainText(
+    'cabins 沿测量边绘制三角屋顶 + 带门缺口的矩形屋身',
+  );
   await expect(releaseCard('0.170.0')).toContainText('栖息与飞行剪影');
   await expect(releaseCard('0.170.0')).toContainText(
     'birds 绘制栖息侧影；birdsFlight 绘制展开双翼飞行姿态',
