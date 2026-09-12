@@ -8,6 +8,9 @@
   min-height: 0;
   flex: 1;
   flex-direction: column;
+  /* Named container so compact layout follows the editor, not the viewport. */
+  container-name: work-markdown;
+  container-type: inline-size;
   background: var(--a3s-bg);
 }
 
@@ -238,6 +241,8 @@
 }
 
 .work-markdown-pane.visual {
+  align-self: stretch;
+  min-height: 100%;
   background: color-mix(in srgb, var(--a3s-bg) 82%, var(--a3s-panel));
 }
 
@@ -255,8 +260,10 @@
 }
 
 .work-markdown-workspace.split .work-markdown-canvas {
+  flex: 1 0 auto;
+  align-self: stretch;
   width: 100%;
-  min-height: calc(100% - 32px);
+  min-height: 100%;
   margin: 0;
   border: 0;
   border-radius: 0;
@@ -570,6 +577,9 @@
   gap: 14px;
 }
 
+/* Compact layout follows the editor container so a narrow host pane gets
+   the same source padding and full-height preview as a phone viewport.
+   Keep the viewport query as a fallback when the container has not resolved. */
 @media (max-width: 640px) {
   .work-markdown-workspace.split {
     display: grid;
@@ -668,6 +678,161 @@
 
   .work-markdown-workspace.split .work-markdown-canvas .tiptap {
     padding: 30px 22px 68px;
+  }
+
+  .work-markdown-workspace.split[data-compact-pane="preview"] {
+    background: color-mix(in srgb, var(--a3s-bg) 82%, var(--a3s-panel));
+  }
+
+  .work-markdown-workspace.split[data-compact-pane="preview"]
+    .work-markdown-pane.visual,
+  .work-markdown-workspace.split[data-compact-pane="preview"]
+    .work-markdown-canvas {
+    flex: 1 0 auto;
+    align-self: stretch;
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    background: color-mix(in srgb, var(--a3s-bg) 82%, var(--a3s-panel));
+  }
+
+  .work-markdown-workspace.split[data-compact-pane="preview"]
+    .work-markdown-canvas
+    > div,
+  .work-markdown-workspace.split[data-compact-pane="preview"]
+    .work-markdown-canvas
+    .tiptap {
+    min-height: 100%;
+  }
+
+  .work-markdown-status .work-office-save-status {
+    display: none;
+  }
+}
+
+@container work-markdown (max-width: 640px) {
+  .work-markdown-workspace.split {
+    display: grid;
+    grid-template-rows: 56px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-markdown-compact-switch {
+    z-index: 3;
+    display: grid;
+    min-width: 0;
+    margin: 0;
+    grid-row: 1;
+    grid-column: 1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 6px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--a3s-line);
+    background: color-mix(in srgb, var(--a3s-panel) 97%, var(--a3s-bg));
+  }
+
+  .work-markdown-compact-switch button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--a3s-muted);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 640;
+    cursor: pointer;
+  }
+
+  .work-markdown-compact-switch button[aria-pressed="true"] {
+    border-color: var(--a3s-line);
+    background: var(--a3s-panel);
+    box-shadow: 0 1px 2px rgb(22 28 40 / 6%);
+    color: var(--a3s-ink);
+  }
+
+  .work-markdown-compact-switch button:focus-visible {
+    outline: 2px solid
+      color-mix(in srgb, var(--work-office-accent) 48%, transparent);
+    outline-offset: 1px;
+  }
+
+  .work-markdown-workspace.split .work-markdown-pane {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  .work-markdown-workspace.split[data-compact-pane="source"]
+    .work-markdown-pane.visual,
+  .work-markdown-workspace.split[data-compact-pane="preview"]
+    .work-markdown-pane.source {
+    display: none;
+  }
+
+  .work-markdown-workspace.split .work-markdown-pane-label {
+    display: none;
+  }
+
+  .work-markdown-splitter {
+    display: none;
+  }
+
+  .work-markdown-pane + .work-markdown-pane {
+    border-left: 0;
+  }
+
+  .work-markdown-canvas {
+    width: calc(100% - 24px);
+    margin: 12px;
+  }
+
+  .work-markdown-canvas .tiptap {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+
+  .work-markdown-workspace.split .work-markdown-pane.source textarea {
+    min-height: 100%;
+    padding: 28px 20px 64px;
+  }
+
+  .work-markdown-workspace.split .work-markdown-source-presence-mirror {
+    padding: 28px 20px 64px;
+  }
+
+  .work-markdown-workspace.split .work-markdown-canvas {
+    min-height: 100%;
+  }
+
+  .work-markdown-workspace.split .work-markdown-canvas .tiptap {
+    padding: 30px 22px 68px;
+  }
+
+  .work-markdown-workspace.split[data-compact-pane="preview"] {
+    background: color-mix(in srgb, var(--a3s-bg) 82%, var(--a3s-panel));
+  }
+
+  .work-markdown-workspace.split[data-compact-pane="preview"]
+    .work-markdown-pane.visual,
+  .work-markdown-workspace.split[data-compact-pane="preview"]
+    .work-markdown-canvas {
+    flex: 1 0 auto;
+    align-self: stretch;
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    background: color-mix(in srgb, var(--a3s-bg) 82%, var(--a3s-panel));
+  }
+
+  .work-markdown-workspace.split[data-compact-pane="preview"]
+    .work-markdown-canvas
+    > div,
+  .work-markdown-workspace.split[data-compact-pane="preview"]
+    .work-markdown-canvas
+    .tiptap {
+    min-height: 100%;
   }
 
   .work-markdown-status .work-office-save-status {
