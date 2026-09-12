@@ -9,16 +9,16 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(156);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.175.0');
+  await expect(cards).toHaveCount(157);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.176.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 装饰绘制改用 Layout Artifact BDC',
+    '文档 PDF 加深 MarkInfo、Tabs 与大纲 /Pg',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
-  await expect(releaseCard('0.175.0')).toContainText('Layout Artifact BDC');
-  await expect(releaseCard('0.175.0')).toContainText(
-    '高亮、下划线与段落边框在 /Artifact << /Type /Layout >> BDC … EMC 内绘制',
+  await expect(releaseCard('0.176.0')).toContainText('MarkInfo Suspects false');
+  await expect(releaseCard('0.176.0')).toContainText(
+    '目录 /MarkInfo 在 /Marked true 之外写入 /Suspects false',
   );
   await expect(releaseCard('0.170.0')).toContainText('栖息与飞行剪影');
   await expect(releaseCard('0.170.0')).toContainText(

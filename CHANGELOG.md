@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.176.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export deepens the tagged bootstrap: catalog
+  `/MarkInfo << /Marked true /Suspects false >>`, catalog `/Tabs /S`
+  (structure reading order), and outline-derived H1–H6/P StructElems carry
+  `/Pg` page refs when available. Layout Artifacts and Span nesting from
+  `0.175.0` stay unchanged. Remaining decorative art borders and full PDF/UA
+  certification remain out of scope.
+
 ## 0.175.0 - 2026-09-12
 
 ### Writer

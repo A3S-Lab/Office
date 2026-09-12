@@ -371,12 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.175.0` upgrades decorative Writer PDF Artifacts to typed Layout BDC:
+Version `0.176.0` deepens the tagged PDF catalog and outline StructElems:
 
-- **Layout Artifact** — highlights, underlines, and paragraph borders paint inside
-  `/Artifact << /Type /Layout >> BDC` … `EMC` (no MCID / StructElem).
-- **Tagged text unchanged** — Span ActualText / MCID and outline role nesting
-  from `0.172.0`–`0.173.0` stay in place.
+- **MarkInfo / Tabs** — catalog `/MarkInfo << /Marked true /Suspects false >>`
+  and `/Tabs /S` for structure reading order.
+- **Outline /Pg** — H1–H6/P StructElems carry page refs when jsPDF page objects
+  are available.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

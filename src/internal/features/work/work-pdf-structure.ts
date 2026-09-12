@@ -43,6 +43,7 @@ interface WorkPdfJsInternal {
   workPdfMarkInfoSubscribed?: boolean;
   workPdfMcidCounters?: Record<number, number>;
   workPdfPageStructParents?: Record<number, number>;
+  workPdfStructTabsSubscribed?: boolean;
   workPdfStructTreePlan?: WorkPdfStructTreePlan;
   workPdfStructTreeRootObjectId?: number;
   workPdfStructTreeSubscribed?: boolean;
@@ -58,8 +59,9 @@ const OUTLINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p[data-office-outline-level]';
 /**
  * Applies bounded PDF document metadata and outline bookmarks. This is the
  * tagged/accessibility bootstrap: language + title + heading outline + MarkInfo
- * + StructTreeRoot (Document / H1–H6 / P) with ParentTree / MCID links for
- * vector-run Span content, without claiming full PDF/UA certification.
+ * (Marked + Suspects false) + catalog Tabs /S + StructTreeRoot (Document /
+ * H1–H6 / P with /Pg) with ParentTree / MCID links for vector-run Span content,
+ * without claiming full PDF/UA certification.
  */
 export function applyWorkPdfDocumentStructure(
   pdf: JsPdf,
@@ -83,6 +85,7 @@ export function applyWorkPdfDocumentStructure(
   }
   ensureWorkPdfMarkInfo(pdf);
   ensureWorkPdfViewerPreferences(pdf);
+  ensureWorkPdfStructTabs(pdf);
   const outline = structure.outline ?? [];
   ensureWorkPdfStructTreeRoot(pdf, { language, outline });
   const stack: Array<{ item: OutlineItem; level: number }> = [];
@@ -118,8 +121,9 @@ export function applyWorkPdfDocumentStructure(
 }
 
 /**
- * Declares `/MarkInfo << /Marked true >>` once via jsPDF's putCatalog hook so
- * ActualText Span marked content is catalog-visible.
+ * Declares `/MarkInfo << /Marked true /Suspects false >>` once via jsPDF's
+ * putCatalog hook so ActualText Span marked content is catalog-visible and
+ * structure suspects are denied. Not a PDF/UA certification claim.
  */
 export function ensureWorkPdfMarkInfo(pdf: JsPdf): void {
   const internal = workPdfJsInternal(pdf);
@@ -128,7 +132,7 @@ export function ensureWorkPdfMarkInfo(pdf: JsPdf): void {
   internal.workPdfMarkInfoSubscribed = true;
   try {
     internal.events.subscribe('putCatalog', () => {
-      internal.write?.('/MarkInfo << /Marked true >>');
+      internal.write?.('/MarkInfo << /Marked true /Suspects false >>');
     });
   } catch {
     internal.workPdfMarkInfoSubscribed = false;
@@ -150,6 +154,24 @@ export function ensureWorkPdfViewerPreferences(pdf: JsPdf): void {
     });
   } catch {
     internal.workPdfViewerPreferencesSubscribed = false;
+  }
+}
+
+/**
+ * Declares catalog `/Tabs /S` so tagged-PDF consumers follow structure-tree
+ * reading order. Not a PDF/UA certification claim.
+ */
+export function ensureWorkPdfStructTabs(pdf: JsPdf): void {
+  const internal = workPdfJsInternal(pdf);
+  if (!internal?.events?.subscribe || !internal.write) return;
+  if (internal.workPdfStructTabsSubscribed) return;
+  internal.workPdfStructTabsSubscribed = true;
+  try {
+    internal.events.subscribe('putCatalog', () => {
+      internal.write?.('/Tabs /S');
+    });
+  } catch {
+    internal.workPdfStructTabsSubscribed = false;
   }
 }
 
@@ -546,6 +568,14 @@ function writeWorkPdfStructTreeObjects(
     out('/Type /StructElem');
     out(`/S /${kid.role}`);
     out(`/P ${kid.parentObjectId} 0 R`);
+    try {
+      const pageInfo = internal.getPageInfo?.(kid.pageNumber);
+      if (pageInfo && Number.isSafeInteger(pageInfo.objId)) {
+        out(`/Pg ${pageInfo.objId} 0 R`);
+      }
+    } catch {
+      // jsPDF getPageInfo can throw when the page object is not ready.
+    }
     out(`/Alt ${encodePdfActualTextOperand(kid.alt)}`);
     const nested = [
       ...(outlineChildren.get(kid.objectId) ?? []),

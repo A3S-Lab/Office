@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.176.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF deepens MarkInfo, Tabs, and outline /Pg',
+      zh: '文档 PDF 加深 MarkInfo、Tabs 与大纲 /Pg',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export sets catalog /MarkInfo << /Marked true /Suspects false >>, catalog /Tabs /S for structure reading order, and outline H1–H6/P StructElem /Pg page refs when available. Layout Artifacts and Span nesting from 0.175.0 stay unchanged. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现在目录写入 /MarkInfo << /Marked true /Suspects false >>、目录 /Tabs /S（按结构树阅读顺序），并在可用时为大纲 H1–H6/P StructElem 写入 /Pg。0.175.0 的 Layout Artifact 与 Span 嵌套保持不变。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'MarkInfo Suspects false',
+          zh: 'MarkInfo Suspects false',
+        },
+        detail: {
+          en: 'Catalog /MarkInfo now includes /Suspects false alongside /Marked true.',
+          zh: '目录 /MarkInfo 在 /Marked true 之外写入 /Suspects false。',
+        },
+      },
+      {
+        title: {
+          en: 'Catalog Tabs /S',
+          zh: '目录 Tabs /S',
+        },
+        detail: {
+          en: 'Catalog /Tabs /S asks tagged-PDF consumers to follow structure order.',
+          zh: '目录 /Tabs /S 让带标签 PDF 消费方按结构树顺序阅读。',
+        },
+      },
+      {
+        title: {
+          en: 'Outline StructElem /Pg',
+          zh: '大纲 StructElem /Pg',
+        },
+        detail: {
+          en: 'H1–H6/P outline roles carry /Pg page refs when page objects are available.',
+          zh: 'H1–H6/P 大纲角色在页面对象可用时携带 /Pg。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.176.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.176.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.175.0',
     date: '2026-09-12',
     kind: 'improved',

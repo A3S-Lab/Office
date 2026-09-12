@@ -42,13 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.175.0）
+## `main` 更新内容（0.176.0）
 
-浏览器文档 PDF 导出现为装饰绘制发出带 `/Type /Layout` 的 Artifact：
+浏览器文档 PDF 导出现加深带标签引导：
 
-- 高亮、下划线与段落边框在 `/Artifact << /Type /Layout >> BDC` … `EMC` 内绘制（不分配 MCID / StructElem）。
-- `0.172.0`–`0.173.0` 的 Span ActualText / MCID 与大纲角色嵌套保持不变。
-- 其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。
+- 目录写入 `/MarkInfo << /Marked true /Suspects false >>` 与 `/Tabs /S`（按结构树阅读顺序）。
+- 大纲派生的 H1–H6/P StructElem 在可用时携带 `/Pg` 页面引用。
+- `0.175.0` 的 Layout Artifact 与 Span 嵌套保持不变；其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。
 
 
 ## 按表面探索

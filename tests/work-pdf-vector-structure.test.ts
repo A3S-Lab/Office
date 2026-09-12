@@ -109,7 +109,7 @@ test('writes a visible vector text layer extractable from PDF bytes', () => {
   expect(ascii).toContain('/Span << /ActualText');
   expect(ascii).toContain('BDC');
   expect(ascii).toContain('EMC');
-  expect(ascii).toContain('/MarkInfo << /Marked true >>');
+  expect(ascii).toContain('/MarkInfo << /Marked true /Suspects false >>');
   expect(ascii).toContain('/StructParents 0');
   expect(ascii).toContain('/ParentTree');
   expect(ascii).toContain('/S /Span');
@@ -1522,8 +1522,10 @@ test('applies title, language, outline bookmarks, MarkInfo, and StructTreeRoot s
   expect(ascii).toContain('Quarterly plan');
   expect(ascii).toContain('A3S Work');
   expect(ascii).toContain('Overview');
-  expect(ascii).toContain('/MarkInfo << /Marked true >>');
+  expect(ascii).toContain('/MarkInfo << /Marked true /Suspects false >>');
+  expect(ascii).not.toContain('/MarkInfo << /Marked true >>\n');
   expect(ascii).toContain('/ViewerPreferences << /DisplayDocTitle true >>');
+  expect(ascii).toContain('/Tabs /S');
   expect(ascii).toContain('/Type /StructTreeRoot');
   expect(ascii).toContain('/S /Document');
   expect(ascii).toContain('/Lang (en-US)');
@@ -1533,9 +1535,21 @@ test('applies title, language, outline bookmarks, MarkInfo, and StructTreeRoot s
   expect(ascii).toContain('/Alt (Overview)');
   expect(ascii).toContain('/Alt (Details)');
   expect(ascii).toContain('/Alt (Note)');
+  // Outline StructElems carry /Pg page refs for AT navigation.
+  expect(ascii).toMatch(
+    /\/S \/H1\n\/P \d+ 0 R\n\/Pg \d+ 0 R\n\/Alt \(Overview\)/,
+  );
+  expect(ascii).toMatch(
+    /\/S \/H2\n\/P \d+ 0 R\n\/Pg \d+ 0 R\n\/Alt \(Details\)/,
+  );
+  expect(ascii).toMatch(/\/S \/P\n\/P \d+ 0 R\n\/Pg \d+ 0 R\n\/Alt \(Note\)/);
   const catalog = ascii.match(/\/Type \/Catalog[\s\S]*?endobj/);
   expect(catalog?.[0]).toContain('/StructTreeRoot');
   expect(catalog?.[0]).toMatch(/\/StructTreeRoot \d+ 0 R/);
+  expect(catalog?.[0]).toContain('/Tabs /S');
+  expect(catalog?.[0]).toContain(
+    '/MarkInfo << /Marked true /Suspects false >>',
+  );
 });
 
 test('links vector-run MCIDs through ParentTree and page StructParents', () => {
@@ -1753,7 +1767,7 @@ test('emits Document StructTreeRoot stub when outline is empty', () => {
   expect(ascii).toContain('/Type /StructTreeRoot');
   expect(ascii).toContain('/S /Document');
   expect(ascii).toContain('/Lang (en)');
-  expect(ascii).toContain('/MarkInfo << /Marked true >>');
+  expect(ascii).toContain('/MarkInfo << /Marked true /Suspects false >>');
   expect(ascii).not.toContain('/S /H1');
 });
 
