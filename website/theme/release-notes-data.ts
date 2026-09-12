@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.177.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF wraps unmatched Spans under page /P',
+      zh: '文档 PDF 将无匹配 Span 挂到页级 /P 下',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export nests unmatched vector-run Span MCIDs under a page-level /P StructElem (Document → P → Span with /Pg) when the page has no outline role. Page-matched Spans under H1–H6/P from 0.172.0 stay unchanged. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现在无大纲角色的页面上将未匹配的矢量文本 Span MCID 挂到页级 /P StructElem 下（Document → P → Span，带 /Pg）。0.172.0 起按页匹配到 H1–H6/P 的 Span 保持不变。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Page-level /P for unmatched Spans',
+          zh: '无匹配 Span 的页级 /P',
+        },
+        detail: {
+          en: 'Document kids are outline roots plus page /P wrappers, not bare Spans.',
+          zh: 'Document 子节点为大纲根与页级 /P 包装，不再直接挂裸 Span。',
+        },
+      },
+      {
+        title: {
+          en: 'Outline Span nesting unchanged',
+          zh: '大纲下 Span 嵌套不变',
+        },
+        detail: {
+          en: 'Page-matched Spans still nest under the last outline role on that page.',
+          zh: '按页匹配的 Span 仍挂在该页最后一个大纲角色下。',
+        },
+      },
+      {
+        title: {
+          en: 'PDF/UA certification stays out of scope',
+          zh: 'PDF/UA 认证仍不在范围内',
+        },
+        detail: {
+          en: 'Remaining decorative art borders and full PDF/UA certification are not claimed.',
+          zh: '不宣称其余装饰性艺术边框与完整 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.177.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.177.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.176.0',
     date: '2026-09-12',
     kind: 'improved',

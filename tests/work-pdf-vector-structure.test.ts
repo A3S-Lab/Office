@@ -1707,7 +1707,7 @@ test('nests outline StructElems by level under parent /K', () => {
   expect(nextChapter!.body).toContain(`/P ${document!.id} 0 R`);
 });
 
-test('keeps Spans under Document when their page has no outline role', () => {
+test('wraps Spans under page /P when their page has no outline role', () => {
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'pt',
@@ -1743,13 +1743,27 @@ test('keeps Spans under Document when their page has no outline role', () => {
   const h1 = objects.find((obj) => obj.body.includes('/S /H1'));
   const span = objects.find((obj) => obj.body.includes('/S /Span'));
   const document = objects.find((obj) => obj.body.includes('/S /Document'));
+  const paragraphs = objects.filter(
+    (obj) => obj.body.includes('/S /P') && !obj.body.includes('/S /Document'),
+  );
+  // Body /P wrappers (not outline-level P roles): have /Pg and Span kids.
+  const pageParagraph = paragraphs.find(
+    (obj) =>
+      obj.body.includes('/Pg ') &&
+      span !== undefined &&
+      obj.body.includes(`${span.id} 0 R`),
+  );
   expect(h1).toBeTruthy();
   expect(span).toBeTruthy();
   expect(document).toBeTruthy();
+  expect(pageParagraph).toBeTruthy();
   expect(h1!.body).toContain('/K []');
   expect(document!.body).toContain(`${h1!.id} 0 R`);
-  expect(document!.body).toContain(`${span!.id} 0 R`);
-  expect(span!.body).toContain(`/P ${document!.id} 0 R`);
+  expect(document!.body).toContain(`${pageParagraph!.id} 0 R`);
+  expect(document!.body).not.toContain(`${span!.id} 0 R`);
+  expect(pageParagraph!.body).toContain(`/P ${document!.id} 0 R`);
+  expect(pageParagraph!.body).toContain(`/K [${span!.id} 0 R]`);
+  expect(span!.body).toContain(`/P ${pageParagraph!.id} 0 R`);
 });
 
 test('emits Document StructTreeRoot stub when outline is empty', () => {

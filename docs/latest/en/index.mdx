@@ -44,13 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.176.0)
+## What's new on `main` (0.177.0)
 
-Browser document PDF export deepens the tagged bootstrap:
+Browser document PDF export nests unmatched Spans under page-level paragraphs:
 
-- Catalog `/MarkInfo << /Marked true /Suspects false >>` and `/Tabs /S` (structure reading order).
-- Outline-derived H1–H6/P StructElems carry `/Pg` page refs when available.
-- Layout Artifacts and Span nesting from `0.175.0` are unchanged; remaining decorative art borders and full PDF/UA certification remain out of scope.
+- Pages without an outline role wrap vector-run Span MCIDs in Document → `/P` → Span (with `/Pg`).
+- Page-matched Spans under H1–H6/P outline roles from `0.172.0` are unchanged.
+- Remaining decorative art borders and full PDF/UA certification remain out of scope.
 
 
 ## Explore by surface

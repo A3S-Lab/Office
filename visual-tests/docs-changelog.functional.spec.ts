@@ -9,16 +9,16 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(157);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.176.0');
+  await expect(cards).toHaveCount(158);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.177.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 加深 MarkInfo、Tabs 与大纲 /Pg',
+    '文档 PDF 将无匹配 Span 挂到页级 /P 下',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
-  await expect(releaseCard('0.176.0')).toContainText('MarkInfo Suspects false');
-  await expect(releaseCard('0.176.0')).toContainText(
-    '目录 /MarkInfo 在 /Marked true 之外写入 /Suspects false',
+  await expect(releaseCard('0.177.0')).toContainText('无匹配 Span 的页级 /P');
+  await expect(releaseCard('0.177.0')).toContainText(
+    'Document 子节点为大纲根与页级 /P 包装，不再直接挂裸 Span',
   );
   await expect(releaseCard('0.170.0')).toContainText('栖息与飞行剪影');
   await expect(releaseCard('0.170.0')).toContainText(

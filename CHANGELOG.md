@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.177.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export nests unmatched vector-run Span MCIDs under a
+  page-level `/P` StructElem (Document → P → Span) when the page has no
+  outline role. Page-matched Spans under H1–H6/P outline roles from `0.172.0`
+  stay unchanged. Remaining decorative art borders and full PDF/UA
+  certification remain out of scope.
+
 ## 0.176.0 - 2026-09-12
 
 ### Writer

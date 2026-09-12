@@ -371,12 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.176.0` deepens the tagged PDF catalog and outline StructElems:
+Version `0.177.0` nests unmatched PDF Spans under page-level `/P` roles:
 
-- **MarkInfo / Tabs** — catalog `/MarkInfo << /Marked true /Suspects false >>`
-  and `/Tabs /S` for structure reading order.
-- **Outline /Pg** — H1–H6/P StructElems carry page refs when jsPDF page objects
-  are available.
+- **Document → P → Span** — pages without an outline role wrap vector-run Span
+  MCIDs in a page-level `/P` StructElem (with `/Pg`).
+- **Outline nesting unchanged** — page-matched Spans under H1–H6/P from
+  `0.172.0`–`0.173.0` stay in place.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 
