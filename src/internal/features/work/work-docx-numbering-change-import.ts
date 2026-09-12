@@ -418,16 +418,26 @@ function numberingChangeList(
   const items = nodes.map((node) => node.parentElement?.closest('li'));
   const lists = items.map((item) => item?.parentElement);
   const list = lists[0];
-  const expectsBullet = isBulletNumberingFormat(group.format);
   if (
-    (expectsBullet
-      ? !(list instanceof HTMLUListElement)
-      : !(list instanceof HTMLOListElement)) ||
+    !list ||
     items.some((item) => !(item instanceof HTMLLIElement)) ||
     lists.some((candidate) => candidate !== list)
   ) {
     return null;
   }
+  const expectsBullet = isBulletNumberingFormat(group.format);
+  if (expectsBullet) {
+    if (!(list instanceof HTMLUListElement)) return null;
+    return contiguousListItems(list, items) ? list : null;
+  }
+  if (!(list instanceof HTMLOListElement)) return null;
+  return contiguousListItems(list, items) ? list : null;
+}
+
+function contiguousListItems(
+  list: HTMLOListElement | HTMLUListElement,
+  items: Array<Element | null | undefined>,
+): boolean {
   const directItems = Array.from(list.children).filter(
     (child): child is HTMLLIElement => child instanceof HTMLLIElement,
   );
@@ -435,10 +445,9 @@ function numberingChangeList(
     directItems.indexOf(item as HTMLLIElement),
   );
   const first = indexes[0] ?? -1;
-  return first >= 0 &&
-    indexes.every((index, offset) => index === first + offset)
-    ? list
-    : null;
+  return (
+    first >= 0 && indexes.every((index, offset) => index === first + offset)
+  );
 }
 
 function numberingMarkerNodes(root: ParentNode): Map<string, Text[]> {
