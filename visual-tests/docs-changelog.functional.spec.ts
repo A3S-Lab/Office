@@ -9,14 +9,16 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(154);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.173.0');
-  await expect(cards.first()).toContainText('文档 PDF 按层级嵌套大纲角色');
+  await expect(cards).toHaveCount(155);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.174.0');
+  await expect(cards.first()).toContainText(
+    '文档 PDF 将装饰性绘制标记为 Artifact',
+  );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
-  await expect(releaseCard('0.173.0')).toContainText('大纲角色 /K 嵌套');
-  await expect(releaseCard('0.173.0')).toContainText(
-    'H2 通过书签层级栈嵌套到 H1 的 /K 下；Document /K 仅列出根角色',
+  await expect(releaseCard('0.174.0')).toContainText('装饰绘制的 Artifact BMC');
+  await expect(releaseCard('0.174.0')).toContainText(
+    '高亮、下划线与段落边框在 /Artifact BMC … EMC 内绘制',
   );
   await expect(releaseCard('0.170.0')).toContainText('栖息与飞行剪影');
   await expect(releaseCard('0.170.0')).toContainText(

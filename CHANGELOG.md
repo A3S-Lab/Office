@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.174.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export wraps decorative vector paint (text highlights,
+  underlines, and paragraph borders) in `/Artifact BMC` … `EMC` so assistive
+  tech can skip those strokes and fills. Artifacts allocate no MCID or
+  StructElem. Remaining decorative art borders and full PDF/UA certification
+  remain out of scope.
+
 ## 0.173.0 - 2026-09-12
 
 ### Writer

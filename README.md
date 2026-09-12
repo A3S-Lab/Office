@@ -371,14 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.173.0` nests outline-derived H1–H6/P StructElems by level in browser
-document PDF StructTree export:
+Version `0.174.0` marks decorative Writer PDF vector paint as Artifacts:
 
-- **Outline role nesting** — child outline roles attach under the parent role
-  `/K` using the same level stack as PDF bookmarks; Document `/K` lists root
-  roles only.
-- **Span nesting** — page-matched Span MCIDs from `0.172.0` still nest under the
-  last outline role on that page.
+- **Artifact BMC** — highlights, underlines, and paragraph borders paint inside
+  `/Artifact BMC` … `EMC` (no MCID / StructElem).
+- **Tagged text unchanged** — Span ActualText / MCID and outline role nesting
+  from `0.172.0`–`0.173.0` stay in place.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

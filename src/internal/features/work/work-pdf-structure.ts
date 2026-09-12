@@ -274,6 +274,33 @@ export function endWorkPdfActualTextSpan(pdf: JsPdf): void {
 }
 
 /**
+ * Opens an `/Artifact BMC` region for decorative vector paint (highlights,
+ * underlines, paragraph borders) so assistive tech can skip it. No MCID or
+ * StructElem. Pairs with {@link endWorkPdfArtifact}.
+ */
+export function beginWorkPdfArtifact(pdf: JsPdf): boolean {
+  const internal = workPdfJsInternal(pdf);
+  if (!internal?.out) return false;
+  try {
+    internal.out('/Artifact BMC');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Closes an Artifact marked-content sequence opened by {@link beginWorkPdfArtifact}. */
+export function endWorkPdfArtifact(pdf: JsPdf): void {
+  const internal = workPdfJsInternal(pdf);
+  if (!internal?.out) return;
+  try {
+    internal.out('EMC');
+  } catch {
+    // Ignore when the page stream is unavailable.
+  }
+}
+
+/**
  * Encodes an ActualText operand: PDF literal for Latin-1, UTF-16BE hex (BOM)
  * otherwise. Exported for unit coverage of the escape boundary.
  */

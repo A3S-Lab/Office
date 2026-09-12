@@ -42,12 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.173.0）
+## `main` 更新内容（0.174.0）
 
-浏览器文档 PDF 导出现按大纲层级嵌套大纲角色：
+浏览器文档 PDF 导出现将装饰性矢量绘制标记为 Artifact：
 
-- 大纲派生的 H1–H6/P StructElem 使用与书签相同的层级栈嵌套到父角色 `/K` 下；Document `/K` 仅列出根角色。
-- `0.172.0` 的同页 Span MCID 嵌套行为保持不变。
+- 高亮、下划线与段落边框在 `/Artifact BMC` … `EMC` 内绘制（不分配 MCID / StructElem）。
+- `0.172.0`–`0.173.0` 的 Span ActualText / MCID 与大纲角色嵌套保持不变。
 - 其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。
 
 

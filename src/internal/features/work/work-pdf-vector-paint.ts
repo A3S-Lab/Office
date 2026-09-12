@@ -19,6 +19,7 @@ import {
   type WorkDocumentUnderlineStyle,
 } from './work-document-underline';
 import type { WorkPdfPageBounds } from './work-pdf-text-layer';
+import { beginWorkPdfArtifact, endWorkPdfArtifact } from './work-pdf-structure';
 import {
   workPdfTextColorFromCss,
   type WorkPdfRunHighlight,
@@ -222,31 +223,36 @@ export function appendWorkPdfVectorHighlightLayer(
   }
   const scaleX = pagePoints.pageWidthPoints / pageCss.width;
   const scaleY = pagePoints.pageHeightPoints / pageCss.height;
-  for (const run of highlighted) {
-    const highlight = run.highlight;
-    if (!highlight) continue;
-    const x = run.x * scaleX;
-    const y = run.y * scaleY;
-    const width = run.width * scaleX;
-    const height = run.height * scaleY;
-    if (
-      !Number.isFinite(x) ||
-      !Number.isFinite(y) ||
-      !Number.isFinite(width) ||
-      !Number.isFinite(height) ||
-      width <= 0 ||
-      height <= 0 ||
-      x < -1 ||
-      y < -1 ||
-      x + width > pagePoints.pageWidthPoints + 1 ||
-      y + height > pagePoints.pageHeightPoints + 1
-    ) {
-      continue;
+  const marked = beginWorkPdfArtifact(pdf);
+  try {
+    for (const run of highlighted) {
+      const highlight = run.highlight;
+      if (!highlight) continue;
+      const x = run.x * scaleX;
+      const y = run.y * scaleY;
+      const width = run.width * scaleX;
+      const height = run.height * scaleY;
+      if (
+        !Number.isFinite(x) ||
+        !Number.isFinite(y) ||
+        !Number.isFinite(width) ||
+        !Number.isFinite(height) ||
+        width <= 0 ||
+        height <= 0 ||
+        x < -1 ||
+        y < -1 ||
+        x + width > pagePoints.pageWidthPoints + 1 ||
+        y + height > pagePoints.pageHeightPoints + 1
+      ) {
+        continue;
+      }
+      const rgb = parseCssRgb(highlight.color);
+      if (rgb) pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
+      else pdf.setFillColor(255, 255, 0);
+      pdf.rect(x, y, width, height, 'F');
     }
-    const rgb = parseCssRgb(highlight.color);
-    if (rgb) pdf.setFillColor(rgb[0], rgb[1], rgb[2]);
-    else pdf.setFillColor(255, 255, 0);
-    pdf.rect(x, y, width, height, 'F');
+  } finally {
+    if (marked) endWorkPdfArtifact(pdf);
   }
 }
 
@@ -327,38 +333,43 @@ export function appendWorkPdfVectorUnderlineLayer(
   }
   const scaleX = pagePoints.pageWidthPoints / pageCss.width;
   const scaleY = pagePoints.pageHeightPoints / pageCss.height;
-  for (const run of underlined) {
-    const underline = run.underline;
-    if (!underline) continue;
-    const x1 = run.x * scaleX;
-    const x2 = (run.x + run.width) * scaleX;
-    const y = (run.y + run.height * 0.92) * scaleY;
-    if (
-      !Number.isFinite(x1) ||
-      !Number.isFinite(x2) ||
-      !Number.isFinite(y) ||
-      x2 <= x1 ||
-      x1 < -1 ||
-      x2 > pagePoints.pageWidthPoints + 1 ||
-      y < -1 ||
-      y > pagePoints.pageHeightPoints + 1
-    ) {
-      continue;
+  const marked = beginWorkPdfArtifact(pdf);
+  try {
+    for (const run of underlined) {
+      const underline = run.underline;
+      if (!underline) continue;
+      const x1 = run.x * scaleX;
+      const x2 = (run.x + run.width) * scaleX;
+      const y = (run.y + run.height * 0.92) * scaleY;
+      if (
+        !Number.isFinite(x1) ||
+        !Number.isFinite(x2) ||
+        !Number.isFinite(y) ||
+        x2 <= x1 ||
+        x1 < -1 ||
+        x2 > pagePoints.pageWidthPoints + 1 ||
+        y < -1 ||
+        y > pagePoints.pageHeightPoints + 1
+      ) {
+        continue;
+      }
+      const rgb = parseCssRgb(underline.color);
+      if (rgb) pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
+      else pdf.setDrawColor(0, 0, 0);
+      const thickness =
+        underline.kind === 'thick'
+          ? Math.max(1.2, run.fontSize * ((scaleX + scaleY) / 2) * 0.08)
+          : Math.max(0.6, run.fontSize * ((scaleX + scaleY) / 2) * 0.045);
+      pdf.setLineWidth(thickness);
+      pdf.line(x1, y, x2, y);
+      if (underline.kind === 'double') {
+        const gap = Math.max(1.2, thickness * 1.75);
+        pdf.setLineWidth(Math.max(0.5, thickness * 0.85));
+        pdf.line(x1, y + gap, x2, y + gap);
+      }
     }
-    const rgb = parseCssRgb(underline.color);
-    if (rgb) pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
-    else pdf.setDrawColor(0, 0, 0);
-    const thickness =
-      underline.kind === 'thick'
-        ? Math.max(1.2, run.fontSize * ((scaleX + scaleY) / 2) * 0.08)
-        : Math.max(0.6, run.fontSize * ((scaleX + scaleY) / 2) * 0.045);
-    pdf.setLineWidth(thickness);
-    pdf.line(x1, y, x2, y);
-    if (underline.kind === 'double') {
-      const gap = Math.max(1.2, thickness * 1.75);
-      pdf.setLineWidth(Math.max(0.5, thickness * 0.85));
-      pdf.line(x1, y + gap, x2, y + gap);
-    }
+  } finally {
+    if (marked) endWorkPdfArtifact(pdf);
   }
 }
 
@@ -550,245 +561,253 @@ export function appendWorkPdfVectorParagraphBorderLayer(
   const scaleX = pagePoints.pageWidthPoints / pageCss.width;
   const scaleY = pagePoints.pageHeightPoints / pageCss.height;
   const scale = (scaleX + scaleY) / 2;
-  for (const box of boxes) {
-    const x = box.x * scaleX;
-    const y = box.y * scaleY;
-    const width = box.width * scaleX;
-    const height = box.height * scaleY;
-    if (
-      !Number.isFinite(x) ||
-      !Number.isFinite(y) ||
-      !Number.isFinite(width) ||
-      !Number.isFinite(height) ||
-      width <= 0 ||
-      height <= 0 ||
-      x < -1 ||
-      y < -1 ||
-      x + width > pagePoints.pageWidthPoints + 1 ||
-      y + height > pagePoints.pageHeightPoints + 1
-    ) {
-      continue;
-    }
-    for (const edge of PARAGRAPH_BORDER_BOX_EDGES) {
-      const stroke = box.edges[edge];
-      if (!stroke) continue;
-      const rgb = parseCssRgb(stroke.color);
-      if (rgb) pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
-      else pdf.setDrawColor(0, 0, 0);
-      const thickness =
-        stroke.kind === 'thick'
-          ? Math.max(1.4, stroke.width * scale)
-          : Math.max(0.6, stroke.width * scale);
-      applyWorkPdfBorderDash(pdf, stroke.kind, thickness);
-      pdf.setLineWidth(thickness);
-      if (stroke.kind === 'wave' || stroke.kind === 'doubleWave') {
-        strokeWaveParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind === 'doubleWave',
-        );
-      } else if (stroke.kind === 'zigZag' || stroke.kind === 'zigZagStitch') {
-        strokeZigZagParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind === 'zigZagStitch',
-        );
-      } else if (stroke.kind === 'sawtooth' || stroke.kind === 'sharksTeeth') {
-        strokeSawtoothParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind === 'sharksTeeth',
-        );
-      } else if (
-        stroke.kind === 'triangles' ||
-        stroke.kind === 'triangle1' ||
-        stroke.kind === 'triangle2'
+  const marked = beginWorkPdfArtifact(pdf);
+  try {
+    for (const box of boxes) {
+      const x = box.x * scaleX;
+      const y = box.y * scaleY;
+      const width = box.width * scaleX;
+      const height = box.height * scaleY;
+      if (
+        !Number.isFinite(x) ||
+        !Number.isFinite(y) ||
+        !Number.isFinite(width) ||
+        !Number.isFinite(height) ||
+        width <= 0 ||
+        height <= 0 ||
+        x < -1 ||
+        y < -1 ||
+        x + width > pagePoints.pageWidthPoints + 1 ||
+        y + height > pagePoints.pageHeightPoints + 1
       ) {
-        strokeTrianglesParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind,
-        );
-      } else if (stroke.kind === 'ovals' || stroke.kind === 'rings') {
-        strokeOvalParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind === 'rings',
-        );
-      } else if (
-        stroke.kind === 'marquee' ||
-        stroke.kind === 'marqueeToothed'
-      ) {
-        strokeMarqueeParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind === 'marqueeToothed',
-        );
-      } else if (stroke.kind === 'moons') {
-        strokeMoonParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-        );
-      } else if (stroke.kind === 'bats') {
-        strokeBatsParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-        );
-      } else if (stroke.kind === 'birds' || stroke.kind === 'birdsFlight') {
-        strokeBirdsParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind === 'birdsFlight',
-        );
-      } else if (stroke.kind === 'cabins') {
-        strokeCabinsParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-        );
-      } else if (
-        stroke.kind === 'basicBlackSquares' ||
-        stroke.kind === 'basicWhiteSquares'
-      ) {
-        strokeBasicSquaresParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind === 'basicBlackSquares',
-        );
-      } else if (
-        stroke.kind === 'basicBlackDots' ||
-        stroke.kind === 'basicWhiteDots'
-      ) {
-        strokeBasicDotsParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind === 'basicBlackDots',
-        );
-      } else if (
-        stroke.kind === 'basicBlackDashes' ||
-        stroke.kind === 'basicWhiteDashes'
-      ) {
-        strokeBasicDashesParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind === 'basicBlackDashes',
-        );
-      } else if (stroke.kind === 'basicThinLines') {
-        strokeBasicThinLinesParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-        );
-      } else if (
-        stroke.kind === 'basicWideInline' ||
-        stroke.kind === 'basicWideMidline' ||
-        stroke.kind === 'basicWideOutline'
-      ) {
-        strokeBasicWideParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind,
-        );
-      } else if (
-        stroke.kind === 'threeDEmboss' ||
-        stroke.kind === 'threeDEngrave' ||
-        stroke.kind === 'inset' ||
-        stroke.kind === 'outset'
-      ) {
-        strokeThreeDParagraphBorderEdge(
-          pdf,
-          edge,
-          x,
-          y,
-          width,
-          height,
-          thickness,
-          stroke.kind,
-          rgb ?? [0, 0, 0],
-        );
-      } else {
-        strokeParagraphBorderEdge(pdf, edge, x, y, width, height, 0);
-        if (stroke.kind === 'double') {
-          const gap = Math.max(1.2, thickness * 1.75);
-          pdf.setLineWidth(Math.max(0.5, thickness * 0.85));
-          strokeParagraphBorderEdge(pdf, edge, x, y, width, height, gap);
-        }
+        continue;
       }
-      clearWorkPdfBorderDash(pdf);
+      for (const edge of PARAGRAPH_BORDER_BOX_EDGES) {
+        const stroke = box.edges[edge];
+        if (!stroke) continue;
+        const rgb = parseCssRgb(stroke.color);
+        if (rgb) pdf.setDrawColor(rgb[0], rgb[1], rgb[2]);
+        else pdf.setDrawColor(0, 0, 0);
+        const thickness =
+          stroke.kind === 'thick'
+            ? Math.max(1.4, stroke.width * scale)
+            : Math.max(0.6, stroke.width * scale);
+        applyWorkPdfBorderDash(pdf, stroke.kind, thickness);
+        pdf.setLineWidth(thickness);
+        if (stroke.kind === 'wave' || stroke.kind === 'doubleWave') {
+          strokeWaveParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind === 'doubleWave',
+          );
+        } else if (stroke.kind === 'zigZag' || stroke.kind === 'zigZagStitch') {
+          strokeZigZagParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind === 'zigZagStitch',
+          );
+        } else if (
+          stroke.kind === 'sawtooth' ||
+          stroke.kind === 'sharksTeeth'
+        ) {
+          strokeSawtoothParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind === 'sharksTeeth',
+          );
+        } else if (
+          stroke.kind === 'triangles' ||
+          stroke.kind === 'triangle1' ||
+          stroke.kind === 'triangle2'
+        ) {
+          strokeTrianglesParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind,
+          );
+        } else if (stroke.kind === 'ovals' || stroke.kind === 'rings') {
+          strokeOvalParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind === 'rings',
+          );
+        } else if (
+          stroke.kind === 'marquee' ||
+          stroke.kind === 'marqueeToothed'
+        ) {
+          strokeMarqueeParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind === 'marqueeToothed',
+          );
+        } else if (stroke.kind === 'moons') {
+          strokeMoonParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+          );
+        } else if (stroke.kind === 'bats') {
+          strokeBatsParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+          );
+        } else if (stroke.kind === 'birds' || stroke.kind === 'birdsFlight') {
+          strokeBirdsParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind === 'birdsFlight',
+          );
+        } else if (stroke.kind === 'cabins') {
+          strokeCabinsParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+          );
+        } else if (
+          stroke.kind === 'basicBlackSquares' ||
+          stroke.kind === 'basicWhiteSquares'
+        ) {
+          strokeBasicSquaresParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind === 'basicBlackSquares',
+          );
+        } else if (
+          stroke.kind === 'basicBlackDots' ||
+          stroke.kind === 'basicWhiteDots'
+        ) {
+          strokeBasicDotsParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind === 'basicBlackDots',
+          );
+        } else if (
+          stroke.kind === 'basicBlackDashes' ||
+          stroke.kind === 'basicWhiteDashes'
+        ) {
+          strokeBasicDashesParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind === 'basicBlackDashes',
+          );
+        } else if (stroke.kind === 'basicThinLines') {
+          strokeBasicThinLinesParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+          );
+        } else if (
+          stroke.kind === 'basicWideInline' ||
+          stroke.kind === 'basicWideMidline' ||
+          stroke.kind === 'basicWideOutline'
+        ) {
+          strokeBasicWideParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind,
+          );
+        } else if (
+          stroke.kind === 'threeDEmboss' ||
+          stroke.kind === 'threeDEngrave' ||
+          stroke.kind === 'inset' ||
+          stroke.kind === 'outset'
+        ) {
+          strokeThreeDParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+            stroke.kind,
+            rgb ?? [0, 0, 0],
+          );
+        } else {
+          strokeParagraphBorderEdge(pdf, edge, x, y, width, height, 0);
+          if (stroke.kind === 'double') {
+            const gap = Math.max(1.2, thickness * 1.75);
+            pdf.setLineWidth(Math.max(0.5, thickness * 0.85));
+            strokeParagraphBorderEdge(pdf, edge, x, y, width, height, gap);
+          }
+        }
+        clearWorkPdfBorderDash(pdf);
+      }
     }
+  } finally {
+    if (marked) endWorkPdfArtifact(pdf);
   }
 }
 

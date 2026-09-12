@@ -172,8 +172,9 @@ Still required for R0 exit:
    silhouettes through `0.171.0`; page-matched vector-run Span MCIDs nest
    under outline-derived H1–H6/P StructElem `/K` through `0.172.0`;
    outline-derived H1–H6/P StructElems nest by level under parent `/K`
-   through `0.173.0`; remaining decorative art borders and full PDF/UA
-   certification remain open.
+   through `0.173.0`; decorative highlight / underline / paragraph-border
+   vector paint wraps in `/Artifact BMC` through `0.174.0`; remaining
+   decorative art borders and full PDF/UA certification remain open.
 7. Continuous no-clobber corpus growth for representative Traditional Office
    fixtures (diagnose every intentional normalization).
 
@@ -643,7 +644,8 @@ above this section.
   silhouettes through `0.171.0`; page-matched vector-run Span MCIDs nest
   under outline-derived H1–H6/P StructElem `/K` through `0.172.0`;
   outline-derived H1–H6/P StructElems nest by level under parent `/K`
-  through `0.173.0`; optional host
+  through `0.173.0`; decorative highlight / underline / paragraph-border
+  vector paint wraps in `/Artifact BMC` through `0.174.0`; optional host
   `registerWorkPdfCjkFont` TrueType enables searchable CJK vector text; full
   PDF/UA certification, remaining decorative art borders, and bundled CJK fonts
   remain open.

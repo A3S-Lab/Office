@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.174.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF marks decorative paint as Artifacts',
+      zh: '文档 PDF 将装饰性绘制标记为 Artifact',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export wraps Writer highlight, underline, and paragraph-border vector paint in /Artifact BMC … EMC (no MCID / StructElem). Span nesting and outline role nesting stay unchanged. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 高亮、下划线与段落边框矢量绘制包在 /Artifact BMC … EMC 中（不分配 MCID / StructElem）。Span 与大纲角色嵌套保持不变。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Artifact BMC for decorations',
+          zh: '装饰绘制的 Artifact BMC',
+        },
+        detail: {
+          en: 'Highlights, underlines, and paragraph borders paint inside /Artifact BMC … EMC.',
+          zh: '高亮、下划线与段落边框在 /Artifact BMC … EMC 内绘制。',
+        },
+      },
+      {
+        title: {
+          en: 'No MCID for Artifacts',
+          zh: 'Artifact 不分配 MCID',
+        },
+        detail: {
+          en: 'Decorative Artifacts stay out of ParentTree / StructElem content links.',
+          zh: '装饰性 Artifact 不进入 ParentTree / StructElem 内容链接。',
+        },
+      },
+      {
+        title: {
+          en: 'PDF/UA certification stays out of scope',
+          zh: 'PDF/UA 认证仍不在范围内',
+        },
+        detail: {
+          en: 'Remaining decorative art borders and full PDF/UA certification are not claimed.',
+          zh: '不宣称其余装饰性艺术边框与完整 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.174.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.174.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.173.0',
     date: '2026-09-12',
     kind: 'improved',
