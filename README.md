@@ -371,12 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.180.0` writes catalog PDF `/Lang` beyond the jsPDF enum:
+Version `0.181.0` writes `/Lang` on Span marked-content BDC:
 
-- **Catalog `/Lang` via putCatalog** — any normalized language tag is written
-  once on the catalog (including tags jsPDF `setLanguage` silently skips).
-- **StructElem `/Lang` unchanged** — outline, `/P`, Span, and Document language
-  from `0.179.0` stay in place.
+- **Span BDC `/Lang`** — language is seeded before vector paint so content
+  streams include `/Lang` with ActualText / MCID.
+- **Catalog and StructElem unchanged** — catalog putCatalog and StructElem
+  `/Lang` from `0.179.0`–`0.180.0` stay in place.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

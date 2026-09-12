@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.181.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF writes /Lang on Span marked content',
+      zh: '文档 PDF 在 Span 标记内容上写入 /Lang',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export seeds document language before vector paint and writes /Lang on Span BDC together with ActualText / MCID. Catalog and StructElem /Lang from 0.179.0–0.180.0 stay unchanged. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现在矢量绘制前播种文档语言，并在 Span BDC 上与 ActualText / MCID 一并写入 /Lang。0.179.0–0.180.0 的目录与 StructElem /Lang 保持不变。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Span BDC /Lang',
+          zh: 'Span BDC /Lang',
+        },
+        detail: {
+          en: 'Content streams carry language when language is seeded before vector paint.',
+          zh: '在矢量绘制前播种语言后，内容流携带语言标签。',
+        },
+      },
+      {
+        title: {
+          en: 'Catalog and StructElem unchanged',
+          zh: '目录与 StructElem 不变',
+        },
+        detail: {
+          en: 'putCatalog and StructElem /Lang from 0.179.0–0.180.0 stay as before.',
+          zh: '0.179.0–0.180.0 的 putCatalog 与 StructElem /Lang 保持原样。',
+        },
+      },
+      {
+        title: {
+          en: 'PDF/UA certification stays out of scope',
+          zh: 'PDF/UA 认证仍不在范围内',
+        },
+        detail: {
+          en: 'Remaining decorative art borders and full PDF/UA certification are not claimed.',
+          zh: '不宣称其余装饰性艺术边框与完整 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.181.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.181.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.180.0',
     date: '2026-09-12',
     kind: 'improved',

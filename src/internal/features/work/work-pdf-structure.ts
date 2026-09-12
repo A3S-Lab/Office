@@ -275,10 +275,24 @@ export function workPdfStructRoleFromOutlineLevel(level: number): string {
 }
 
 /**
+ * Seeds catalog + StructTree language before vector paint so Span BDC can
+ * include `/Lang`. Safe to call repeatedly; outline may be filled later by
+ * {@link applyWorkPdfDocumentStructure}. Not a PDF/UA certification claim.
+ */
+export function seedWorkPdfDocumentLanguage(
+  pdf: JsPdf,
+  language?: string,
+): void {
+  const normalized = normalizePdfLanguage(language);
+  ensureWorkPdfCatalogLang(pdf, normalized);
+  ensureWorkPdfStructTreeRoot(pdf, { language: normalized });
+}
+
+/**
  * Opens a `/Span` BDC with `/ActualText` and a page-local `/MCID` for a vector
  * text run. Pairs with {@link endWorkPdfActualTextSpan}. Fail-soft when jsPDF
  * internals are absent; falls back to ActualText-only when the MCID budget is
- * exhausted.
+ * exhausted. When document language was seeded, includes `/Lang` on the BDC.
  */
 export function beginWorkPdfActualTextSpan(pdf: JsPdf, text: string): boolean {
   const internal = workPdfJsInternal(pdf);
@@ -288,10 +302,15 @@ export function beginWorkPdfActualTextSpan(pdf: JsPdf, text: string): boolean {
   ensureWorkPdfMarkInfo(pdf);
   ensureWorkPdfStructTreeRoot(pdf, {});
   const mcid = allocateWorkPdfMcid(internal);
+  const lang =
+    internal.workPdfStructTreePlan?.language ??
+    internal.workPdfCatalogLang ??
+    null;
+  const langOperand = lang ? ` /Lang (${escapePdfLiteralString(lang)})` : '';
   try {
     if (mcid === null) {
       internal.out(
-        `/Span << /ActualText ${encodePdfActualTextOperand(clipped)} >> BDC`,
+        `/Span << /ActualText ${encodePdfActualTextOperand(clipped)}${langOperand} >> BDC`,
       );
     } else {
       internal.workPdfContentLinks?.push({
@@ -300,7 +319,7 @@ export function beginWorkPdfActualTextSpan(pdf: JsPdf, text: string): boolean {
         text: clipped,
       });
       internal.out(
-        `/Span << /ActualText ${encodePdfActualTextOperand(clipped)} /MCID ${mcid.mcid} >> BDC`,
+        `/Span << /ActualText ${encodePdfActualTextOperand(clipped)}${langOperand} /MCID ${mcid.mcid} >> BDC`,
       );
     }
     return true;

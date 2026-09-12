@@ -9,10 +9,10 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(161);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.180.0');
+  await expect(cards).toHaveCount(162);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.181.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 写入超出 jsPDF 枚举的目录 /Lang',
+    '文档 PDF 在 Span 标记内容上写入 /Lang',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);

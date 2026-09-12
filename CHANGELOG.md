@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.181.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export seeds document language before vector paint and
+  writes `/Lang` on Span marked-content BDC (with ActualText / MCID) so content
+  streams carry language for AT. Catalog and StructElem `/Lang` from
+  `0.179.0`–`0.180.0` stay unchanged. Remaining decorative art borders and full
+  PDF/UA certification remain out of scope.
+
 ## 0.180.0 - 2026-09-12
 
 ### Writer

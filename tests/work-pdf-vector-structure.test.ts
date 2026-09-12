@@ -5,6 +5,7 @@ import {
   collectWorkPdfOutlineEntriesFromRoot,
   encodePdfActualTextOperand,
   normalizePdfLanguage,
+  seedWorkPdfDocumentLanguage,
   workPdfStructRoleFromOutlineLevel,
 } from '../src/internal/features/work/work-pdf-structure';
 import {
@@ -114,6 +115,43 @@ test('writes a visible vector text layer extractable from PDF bytes', () => {
   expect(ascii).toContain('/ParentTree');
   expect(ascii).toContain('/S /Span');
   expect(ascii).toMatch(/\/K\s+0\b/);
+});
+
+test('writes /Lang on Span BDC when document language is seeded first', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  seedWorkPdfDocumentLanguage(pdf, 'zh-CN');
+  appendWorkPdfVectorTextLayer(
+    pdf,
+    [
+      {
+        color: '#112233',
+        fontSize: 16,
+        fontStyle: 'normal',
+        height: 18,
+        text: 'Seeded lang run',
+        width: 120,
+        x: 24,
+        y: 36,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  applyWorkPdfDocumentStructure(pdf, {
+    language: 'zh-CN',
+    title: 'Span BDC lang',
+  });
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toContain(
+    '/Span << /ActualText (Seeded lang run) /Lang (zh-CN) /MCID 0 >> BDC',
+  );
+  const catalog = ascii.match(/\/Type \/Catalog[\s\S]*?endobj/);
+  expect(catalog?.[0]).toContain('/Lang (zh-CN)');
 });
 
 test('encodes ActualText operands for Latin and Unicode runs', () => {

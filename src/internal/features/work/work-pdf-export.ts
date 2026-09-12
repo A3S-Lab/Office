@@ -12,6 +12,7 @@ import {
 import {
   applyWorkPdfDocumentStructure,
   collectWorkPdfOutlineEntriesFromRoot,
+  seedWorkPdfDocumentLanguage,
   type WorkPdfOutlineEntry,
 } from './work-pdf-structure';
 import { collectWorkPdfTextRuns } from './work-pdf-text-layer';
@@ -29,6 +30,15 @@ import {
 } from './work-pdf-vector-text';
 
 type PdfPageSize = WorkSpreadsheetPaperSize;
+
+function seedExportPdfLanguage(pdf: JsPdf): void {
+  seedWorkPdfDocumentLanguage(
+    pdf,
+    typeof document !== 'undefined'
+      ? document.documentElement.lang || undefined
+      : undefined,
+  );
+}
 
 export interface WorkPdfExportOptions {
   pageIndexes?: number[];
@@ -176,6 +186,7 @@ export async function exportWorkArtifactPdf(
             );
             pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
             if (pdf) {
+              seedExportPdfLanguage(pdf);
               appendWorkPdfVectorHighlightLayer(pdf, textRuns, page, page);
               appendWorkPdfVectorTextLayer(pdf, textRuns, page, page);
               appendWorkPdfVectorUnderlineLayer(pdf, textRuns, page, page);
@@ -238,6 +249,7 @@ export async function exportWorkArtifactPdf(
           );
           pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
           if (pdf) {
+            seedExportPdfLanguage(pdf);
             appendWorkPdfVectorHighlightLayer(pdf, textRuns, page, page);
             appendWorkPdfVectorTextLayer(pdf, textRuns, page, page);
             appendWorkPdfVectorUnderlineLayer(pdf, textRuns, page, page);
@@ -313,6 +325,7 @@ export async function exportWorkArtifactPdf(
         jsPDF,
       );
       if (pdf) {
+        seedExportPdfLanguage(pdf);
         const pagePoints = {
           pageHeightPoints: pageDefinition.height,
           pageWidthPoints: pageDefinition.width,
