@@ -61,6 +61,10 @@ test('Phone Markdown split view gives one pane the full workspace', async ({
   expect(sourceGeometry.sourceHeight).toBeGreaterThanOrEqual(
     sourceGeometry.workspaceHeight - sourceGeometry.switchHeight - 1,
   );
+  await expect(sourcePane.locator('textarea')).toHaveCSS(
+    'padding',
+    '28px 20px 64px',
+  );
 
   await showPreview.click();
   await expect(showPreview).toHaveAttribute('aria-pressed', 'true');
@@ -70,9 +74,25 @@ test('Phone Markdown split view gives one pane the full workspace', async ({
   await expect(
     previewPane.getByRole('heading', { name: 'A3S Office' }),
   ).toBeVisible();
-  await expect(previewPane.locator('.work-markdown-canvas')).toHaveCSS(
-    'border-top-width',
-    '0px',
+  const previewCanvas = previewPane.locator('.work-markdown-canvas');
+  await expect(previewCanvas).toHaveCSS('border-top-width', '0px');
+  const previewFill = await previewPane.evaluate((pane) => {
+    const canvas = pane.querySelector<HTMLElement>('.work-markdown-canvas');
+    if (!canvas) {
+      throw new Error('Markdown preview canvas is missing.');
+    }
+    const paneStyle = getComputedStyle(pane);
+    const canvasStyle = getComputedStyle(canvas);
+    return {
+      canvasBackground: canvasStyle.backgroundColor,
+      canvasBottom: canvas.getBoundingClientRect().bottom,
+      paneBackground: paneStyle.backgroundColor,
+      paneBottom: pane.getBoundingClientRect().bottom,
+    };
+  });
+  expect(previewFill.canvasBackground).toBe(previewFill.paneBackground);
+  expect(previewFill.canvasBottom).toBeGreaterThanOrEqual(
+    previewFill.paneBottom - 1,
   );
 });
 
