@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.186.0 - 2026-09-12
+
+### Writer
+
+- Numbering revisions now admit current-level bullet `w:numberingChange`
+  originals (ST_NumberFormat nfc `23`) as reviewable bullet-list changes with
+  accept/reject and native round-trip. Picture formats, missing `numId`, and
+  malformed originals stay fail-closed.
+
 ## 0.185.0 - 2026-09-12
 
 ### Writer

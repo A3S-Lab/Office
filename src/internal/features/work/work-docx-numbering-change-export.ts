@@ -30,8 +30,9 @@ export class DocxNumberingChangePatchCollector {
   readonly patches: DocxNumberingChangePatch[] = [];
 
   register(list: HTMLElement, itemIndex: number, id: number): string | null {
+    const tag = list.tagName.toLowerCase();
     if (
-      list.tagName.toLowerCase() !== 'ol' ||
+      (tag !== 'ol' && tag !== 'ul') ||
       list.dataset.changeKind !== 'numbering' ||
       !list.hasAttribute('data-document-change')
     ) {

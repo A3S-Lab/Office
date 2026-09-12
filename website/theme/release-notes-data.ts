@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.186.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Bullet numberingChange becomes reviewable',
+      zh: '项目符号 numberingChange 可审阅',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: current-level bullet w:numberingChange originals (ST_NumberFormat nfc 23) import as atomic bullet-list review cards with accept/reject and native round-trip. Picture formats, missing numId, and malformed originals stay fail-closed.',
+      zh: 'Phase 0 保真：当前级项目符号 w:numberingChange（ST_NumberFormat nfc 23）会导入为可接受/拒绝的原子项目符号列表审阅卡片，并支持原生往返。图片格式、缺失 numId 与畸形 original 仍失败关闭。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'nfc 23 admitted',
+          zh: '准入 nfc 23',
+        },
+        detail: {
+          en: 'Current-level bullet originals become reviewable bullet-list changes.',
+          zh: '当前级项目符号 original 成为可审阅的项目符号列表修订。',
+        },
+      },
+      {
+        title: {
+          en: 'Accept / reject',
+          zh: '接受 / 拒绝',
+        },
+        detail: {
+          en: 'Reject restores disc/circle/square from the prior bullet suffix.',
+          zh: '拒绝会按先验项目符号后缀恢复 disc/circle/square。',
+        },
+      },
+      {
+        title: {
+          en: 'Picture stays closed',
+          zh: '图片仍关闭',
+        },
+        detail: {
+          en: 'Picture numbering and malformed originals remain fail-closed.',
+          zh: '图片编号与畸形 original 仍失败关闭。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#ordered-list-numbering-revisions',
+          zh: './components/document.html#有序列表编号修订',
+        },
+        label: { en: 'Numbering revisions', zh: '编号修订' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.186.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.186.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.185.0',
     date: '2026-09-12',
     kind: 'improved',

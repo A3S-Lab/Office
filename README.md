@@ -371,13 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.185.0` admits companion move-range bookmarks through two-level nested tables:
+Version `0.186.0` admits current-level bullet numbering revisions:
 
-- **Two-level nest** — up to three move-path `w:tbl` ancestors that all contain
-  the move (plain or under one simple `w:sdt`).
-- **Fail-closed edge** — four or more move-path tables stay rejected.
-- **Boundary** — move-range nesting family is closed for R0; full PDF/UA
-  certification remains out of scope.
+- **Bullet `w:numberingChange`** — ST_NumberFormat nfc `23` at the current
+  `w:ilvl` imports as an atomic bullet-list review card with accept/reject.
+- **Native round-trip** — export restores sequential `w:numberingChange`
+  records under bullet `w:numPr` without private markers.
+- **Fail-closed edges** — picture numbering, missing `numId`, and malformed
+  originals stay rejected.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

@@ -327,7 +327,7 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
         },
       },
       {
-        types: ['orderedList'],
+        types: ['orderedList', 'bulletList'],
         attributes: {
           numberingChangeKind: numberingChangeAttribute(
             'kind',
@@ -652,7 +652,7 @@ export function collectDocumentChanges(
       }
     }
     if (
-      node.type.name === 'orderedList' &&
+      (node.type.name === 'orderedList' || node.type.name === 'bulletList') &&
       node.attrs.numberingChangeKind === 'numbering'
     ) {
       const id =
@@ -1042,7 +1042,11 @@ function resolveDocumentChangesTransaction(
   for (const segment of numberingSegments) {
     const position = tr.mapping.map(segment.position);
     const node = tr.doc.nodeAt(position);
-    if (!node || node.type.name !== 'orderedList') return 0;
+    if (
+      !node ||
+      (node.type.name !== 'orderedList' && node.type.name !== 'bulletList')
+    )
+      return 0;
     const attributes =
       decision === 'reject'
         ? restoredDocumentNumberingAttributes(node.attrs, segment.before)
@@ -1315,7 +1319,7 @@ function numberingChangeSegments(
   const segments: NumberingChangeSegment[] = [];
   document.descendants((node, position) => {
     if (
-      node.type.name !== 'orderedList' ||
+      (node.type.name !== 'orderedList' && node.type.name !== 'bulletList') ||
       node.attrs.numberingChangeKind !== 'numbering'
     ) {
       return;

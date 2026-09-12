@@ -117,9 +117,10 @@ Still required for R0 exit:
    opaque. Omitted `w:ilvl` defaults to OOXML level `0` when `w:numId` and a
    supported `w:numberingChange` are present through `0.143.0`; opaque sibling
    `ST_NumberFormat` values in multi-level `w:original` (while the current
-   `w:ilvl` stays common nfc 0–4) are admitted through `0.141.0`; missing
-   `numId`, current-level bullet and picture formats, and malformed originals
-   stay fail-closed.
+   `w:ilvl` stays common nfc 0–4) are admitted through `0.141.0`; current-level
+   bullet `w:numberingChange` (nfc `23`) is admitted through `0.186.0`; missing
+   `numId`, current-level picture formats, and malformed originals stay
+   fail-closed.
 4. Broader relationship-free `w:tblPr` / `w:trPr` / `w:tcPr` / `w:sectPr`
    reviewable subsets only when each property has a bounded fixture and
    accept/reject contract. Relationship-free attribute-only `w:tblpPr` priors
@@ -180,7 +181,7 @@ Still required for R0 exit:
    page-matched Spans nest through child `/P` (H → P → Span) through `0.178.0`; document
    language copies onto outline / `/P` / Span StructElems through `0.179.0`; catalog
    `/Lang` via putCatalog covers tags beyond the jsPDF enum through `0.180.0`; Span
-   BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; Document StructElem `/Alt` carries the document title through `0.182.0`; companion move-range bookmarks admit a text-only nested table beside the move through `0.183.0`; one simple SDT may wrap a one-level nested move-path table through `0.184.0`; up to two nesting levels (three move-path tables) through `0.185.0`; remaining
+   BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; Document StructElem `/Alt` carries the document title through `0.182.0`; companion move-range bookmarks admit a text-only nested table beside the move through `0.183.0`; one simple SDT may wrap a one-level nested move-path table through `0.184.0`; up to two nesting levels (three move-path tables) through `0.185.0`; current-level bullet `w:numberingChange` (nfc `23`) through `0.186.0`; remaining
    decorative art borders and full PDF/UA certification remain open.
 7. Continuous no-clobber corpus growth for representative Traditional Office
    fixtures (diagnose every intentional normalization).
@@ -310,7 +311,7 @@ Do not schedule these as substitutes for R0–R4 exit work:
 | Capability | A3S Office status | Main gap or boundary | Priority |
 | --- | --- | --- | --- |
 | Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported**, including independent native `w:rFonts` ASCII, high ANSI, East Asian, and complex-script slots with exact direct/theme identity, mixed-run segmentation, one script-aware `Cmd/Ctrl+D` dialog, and one-step Undo; complete bounded Office 2010 OpenType ligature, numeral-form, numeral-spacing, style-set, and contextual-alternate controls shared with equations; independent native `w:lang` Latin, East Asian, and bidi proofing slots plus explicit `w:noProof` inclusion/exclusion; mutually exclusive native `w:caps` / `w:smallCaps`; signed native `w:spacing` and `w:position` with explicit zero; all five native `w:em` emphasis values with explicit `none` and direct-format clearing; native `w:vanish` hidden text with explicit visible resets, the standard `Cmd/Ctrl+Shift+H` shortcut, and an editing-only dotted reveal view; independent native `w:outline`, `w:shadow`, `w:emboss`, and `w:imprint` effects with explicit false resets and conflict-safe authoring; native `w:bdr` character borders with 25 visible line styles plus `nil` and `none`, direct/theme colors, bounded width/spacing, shadow, and frame semantics; all 18 native `w:u` values with direct or theme color identity and explicit resets; independent native `w:strike` / `w:dstrike` state with explicit resets; standard shortcuts where Traditional Office defines them; page chrome; formatting revisions; and exact DOCX reopen | Long-tail Word style and typography effects outside the declared typed models can still normalize | Maintain / P0 fidelity |
-| Bullets, numbering, nesting, restarts, RTL lists | **Supported** for common editable structures, including bounded ordered-list style/start revisions, atomic review, and common single-level plus bounded multi-level native `w:numberingChange` round trips (omitted `w:ilvl` as OOXML default level `0` when `w:numId` + supported `w:numberingChange` through `0.143.0`; opaque sibling `ST_NumberFormat` values in `w:original` when current `w:ilvl` stays common nfc 0–4 through `0.141.0`) | Exotic numbering pictures, current-level bullet/picture numbering revisions, and some inherited list metadata remain compatibility work | P1 |
+| Bullets, numbering, nesting, restarts, RTL lists | **Supported** for common editable structures, including bounded ordered-list and bullet-list style/start revisions, atomic review, and common single-level plus bounded multi-level native `w:numberingChange` round trips (omitted `w:ilvl` as OOXML default level `0` when `w:numId` + supported `w:numberingChange` through `0.143.0`; opaque sibling `ST_NumberFormat` values in `w:original` when current `w:ilvl` stays common nfc 0–4 through `0.141.0`; current-level bullet nfc `23` through `0.186.0`) | Exotic numbering pictures, current-level picture numbering revisions, and some inherited list metadata remain compatibility work | P1 |
 | Page size, orientation, columns, section/page breaks | **Supported** per section | Browser line breaking and pagination are not yet desktop-engine exact | P0 |
 | Page margins (`w:pgMar`, `mirrorMargins`, `gutterAtTop`, `rtlGutter`) | **Supported** on current `main`: all seven native twip values, signed top/bottom overlap semantics, strict universal measures, header/footer distances, top/left/right gutters, facing-page swaps, multi-section inheritance, diagnostics, editing, PDF preview, and exact DOCX export | The continuous editing surface projects the first-page horizontal origin; physical-page PDF preview is authoritative for facing-page placement | Maintain / P0 regression gate |
 | Headers, footers, first/even/default variants, page numbers | **Supported** | Complex fields and application-specific placement settings remain partial | P0 |
@@ -462,7 +463,8 @@ above this section.
   numbering `w:original` (while the current `w:ilvl` stays common nfc 0–4) are
   admitted through `0.141.0`. Omitted `w:ilvl` defaults to OOXML level `0`
   when `w:numId` and a supported `w:numberingChange` are present through
-  `0.143.0`; missing `numId`, current-level bullet and picture formats, and
+  `0.143.0`; current-level bullet `w:numberingChange` (nfc `23`) is admitted
+  through `0.186.0`; missing `numId`, current-level picture formats, and
   malformed originals stay fail-closed. Attribute-free empty `w:footnoteRef`
   glyphs in whole-paragraph mark, paragraph-break, and text-move revision
   bodies are admitted through `0.144.0`; attribute-free empty `w:endnoteRef`

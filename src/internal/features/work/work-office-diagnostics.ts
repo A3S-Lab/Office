@@ -583,7 +583,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.numbering',
             'Numbering revisions',
-            `${supportedNumberingRevisionCount} bounded ordered-list numbering revision(s) preserve author, date, prior start, and common decimal, letter, or Roman formats at the current level, including bounded multi-level originals whose sibling levels may carry other ST_NumberFormat values as opaque prior text. Contiguous list-item records remain reviewable as one Work change and round-trip as native w:numberingChange records.`,
+            `${supportedNumberingRevisionCount} bounded ordered-list and bullet-list numbering revision(s) preserve author, date, prior start, and common decimal, letter, Roman, or bullet (nfc 23) formats at the current level, including bounded multi-level originals whose sibling levels may carry other ST_NumberFormat values as opaque prior text. Contiguous list-item records remain reviewable as one Work change and round-trip as native w:numberingChange records.`,
             'info',
           ),
         );

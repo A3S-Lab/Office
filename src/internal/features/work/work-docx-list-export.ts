@@ -79,7 +79,7 @@ export async function listToDocxParagraphs(
               : undefined;
       const runs = await inlineRuns(block);
       const numberingChangeMarker =
-        ordered && blockIndex === 0
+        blockIndex === 0
           ? context.numberingChangeMarker?.(list, itemIndex)
           : null;
       const paragraphChildren = numberingChangeMarker

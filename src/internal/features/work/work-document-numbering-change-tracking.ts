@@ -19,7 +19,12 @@ export function trackDocumentNumberingChangeTransaction(
   let identity: WorkDocumentChangeIdentity | null = null;
   let tracked = false;
   state.doc.descendants((before, position) => {
-    if (before.type.name !== 'orderedList') return;
+    if (
+      before.type.name !== 'orderedList' &&
+      before.type.name !== 'bulletList'
+    ) {
+      return;
+    }
     const after = transaction.doc.nodeAt(position);
     if (
       !after ||

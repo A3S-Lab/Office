@@ -102,6 +102,27 @@ export function restoredDocumentNumberingAttributes(
 ): Record<string, unknown> | null {
   const snapshot = parseDocumentNumberingChange(serialized);
   if (!snapshot) return null;
+  if (isBulletNumberingFormat(snapshot.originalFormat)) {
+    return clearDocumentNumberingChangeAttributes({
+      ...attributes,
+      bulletStyle: bulletStyleFromNumberingSuffix(snapshot.originalSuffix),
+      officeNumberingId: snapshot.officeNumberingId,
+      officeAbstractNumberingId: snapshot.officeAbstractNumberingId,
+      officeNumberingLevel: snapshot.officeNumberingLevel,
+      officeNumberingFormat: 'bullet',
+      officeNumberingText: snapshot.officeNumberingText,
+      officeNumberingSuffix: snapshot.officeNumberingSuffix,
+      officeNumberingAlignment: snapshot.officeNumberingAlignment,
+      officeNumberingIndentLeft: snapshot.officeNumberingIndentLeft,
+      officeNumberingIndentRight: snapshot.officeNumberingIndentRight,
+      officeNumberingIndentStart: snapshot.officeNumberingIndentStart,
+      officeNumberingIndentEnd: snapshot.officeNumberingIndentEnd,
+      officeNumberingIndentHanging: snapshot.officeNumberingIndentHanging,
+      officeNumberingIndentFirstLine: snapshot.officeNumberingIndentFirstLine,
+      officeNumberingRestartAfterLevel:
+        snapshot.officeNumberingRestartAfterLevel,
+    });
+  }
   return clearDocumentNumberingChangeAttributes({
     ...attributes,
     start: snapshot.start,
@@ -137,6 +158,9 @@ export function clearDocumentNumberingChangeAttributes(
   };
 }
 
+/** ST_NumberFormat nfc for Word bullet lists. */
+export const BULLET_NUMBERING_FORMAT = 23;
+
 export function numberingFormatFromType(
   type: DocumentNumberingChangeType,
 ): number {
@@ -158,6 +182,26 @@ export function numberingTypeFromFormat(
   return undefined;
 }
 
+export function isBulletNumberingFormat(format: number): boolean {
+  return format === BULLET_NUMBERING_FORMAT;
+}
+
+export function bulletStyleFromNumberingSuffix(
+  suffix: string,
+): 'disc' | 'circle' | 'square' {
+  if (/^[o○◦\uF06F]$/u.test(suffix)) return 'circle';
+  if (/^[■▪□\uF0A7]$/u.test(suffix)) return 'square';
+  return 'disc';
+}
+
+export function numberingSuffixFromBulletStyle(
+  style: 'disc' | 'circle' | 'square' | string | null | undefined,
+): string {
+  if (style === 'circle') return '○';
+  if (style === 'square') return '■';
+  return '•';
+}
+
 function normalizeDocumentNumberingChange(
   source: Record<string, unknown>,
 ): DocumentNumberingChangeSnapshot {
@@ -168,12 +212,7 @@ function normalizeDocumentNumberingChange(
     8,
     0,
   );
-  const originalFormat = boundedInteger(
-    source.originalFormat,
-    0,
-    4,
-    numberingFormatFromType(type),
-  );
+  const originalFormat = reviewableOriginalFormat(source, type);
   return {
     start: boundedInteger(source.start, 1, MAX_DOCUMENT_NUMBERING_START, 1),
     type,
@@ -203,7 +242,11 @@ function normalizeDocumentNumberingChange(
     ),
     level,
     originalFormat,
-    originalSuffix: originalSuffix(source.originalSuffix),
+    originalSuffix: originalSuffix(
+      source.originalSuffix,
+      originalFormat,
+      source,
+    ),
     originalLevels: originalLevels(source.originalLevels),
   };
 }
@@ -221,15 +264,20 @@ export function rewriteNumberingChangeOriginal(
   return serializeNumberingOriginalLevels(definitions);
 }
 
-/** Common reviewable nfc values: decimal, upper/lower Roman, upper/lower letter. */
+/** Common ordered-list nfc values: decimal, upper/lower Roman, upper/lower letter. */
 export function isCommonNumberingFormat(format: number): boolean {
   return Number.isSafeInteger(format) && format >= 0 && format <= 4;
+}
+
+/** Current-level nfc values admitted as reviewable numbering revisions. */
+export function isReviewableNumberingFormat(format: number): boolean {
+  return isCommonNumberingFormat(format) || isBulletNumberingFormat(format);
 }
 
 /**
  * Parses `%[ilvl]:[start]:[nfc]:[suff]` segments. Sibling levels may carry any
  * ST_NumberFormat nfc (0–99); callers that admit reviewable changes must still
- * require the current `w:ilvl` segment to be common (0–4).
+ * require the current `w:ilvl` segment to be reviewable (0–4 or bullet 23).
  */
 export function parseNumberingOriginalLevels(
   value: string,
@@ -278,6 +326,29 @@ export function serializeNumberingOriginalLevels(
     .join('');
 }
 
+function reviewableOriginalFormat(
+  source: Record<string, unknown>,
+  type: DocumentNumberingChangeType,
+): number {
+  if (isBulletNumberingFormat(Number(source.originalFormat))) {
+    return BULLET_NUMBERING_FORMAT;
+  }
+  if (
+    source.officeNumberingFormat === 'bullet' ||
+    source.bulletStyle === 'disc' ||
+    source.bulletStyle === 'circle' ||
+    source.bulletStyle === 'square'
+  ) {
+    return BULLET_NUMBERING_FORMAT;
+  }
+  return boundedInteger(
+    source.originalFormat,
+    0,
+    4,
+    numberingFormatFromType(type),
+  );
+}
+
 function originalLevels(value: unknown): string {
   if (typeof value !== 'string' || !value.length) return '';
   if (value.length > 1_024) return '';
@@ -292,17 +363,26 @@ function numberingType(value: unknown): DocumentNumberingChangeType {
     : null;
 }
 
-function originalSuffix(value: unknown): string {
+function originalSuffix(
+  value: unknown,
+  format: number,
+  source: Record<string, unknown>,
+): string {
   if (
-    typeof value !== 'string' ||
-    !value.length ||
-    value.length > MAX_ORIGINAL_SUFFIX_LENGTH ||
-    value.includes('%') ||
-    /[\u0000-\u001f\u007f]/.test(value)
+    typeof value === 'string' &&
+    value.length &&
+    value.length <= MAX_ORIGINAL_SUFFIX_LENGTH &&
+    !value.includes('%') &&
+    !/[\u0000-\u001f\u007f]/.test(value)
   ) {
-    return '.';
+    return value;
   }
-  return value;
+  if (isBulletNumberingFormat(format)) {
+    return numberingSuffixFromBulletStyle(
+      typeof source.bulletStyle === 'string' ? source.bulletStyle : 'disc',
+    );
+  }
+  return '.';
 }
 
 function boundedString(value: unknown): string | null {

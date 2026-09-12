@@ -9,16 +9,18 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(166);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.185.0');
-  await expect(cards.first()).toContainText(
-    'Companion move-range 准入两层嵌套表',
-  );
+  await expect(cards).toHaveCount(167);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.186.0');
+  await expect(cards.first()).toContainText('项目符号 numberingChange 可审阅');
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
   await expect(releaseCard('0.182.0')).toContainText('Document /Alt 来自标题');
   await expect(releaseCard('0.182.0')).toContainText(
     '结构树 Document 携带与 Info 字典相同的标题',
+  );
+  await expect(releaseCard('0.186.0')).toContainText('准入 nfc 23');
+  await expect(releaseCard('0.186.0')).toContainText(
+    '当前级项目符号 original 成为可审阅的项目符号列表修订',
   );
   await expect(releaseCard('0.185.0')).toContainText('两层嵌套');
   await expect(releaseCard('0.185.0')).toContainText(

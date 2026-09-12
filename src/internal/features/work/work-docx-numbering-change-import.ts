@@ -1,6 +1,8 @@
 import { MAX_DOCUMENT_NUMBERING_START } from './work-document-lists';
 import {
-  isCommonNumberingFormat,
+  bulletStyleFromNumberingSuffix,
+  isReviewableNumberingFormat,
+  isBulletNumberingFormat,
   numberingTypeFromFormat,
   parseNumberingOriginalLevels,
   serializeDocumentNumberingChange,
@@ -107,7 +109,7 @@ export function applyImportedDocxNumberingChangeMarkers(
 ): void {
   const nodesByMarker = numberingMarkerNodes(document.body);
   const groupsByList = new Map<
-    HTMLOListElement,
+    HTMLOListElement | HTMLUListElement,
     ImportedDocxNumberingChangeGroup[]
   >();
   for (const group of markers.groups) {
@@ -218,13 +220,13 @@ function supportedNumberingChange(
   }
   const definitions = parseNumberingOriginalLevels(original);
   const definition = definitions?.get(level + 1);
-  // Current w:ilvl must stay common nfc 0–4; sibling segments may carry other
-  // ST_NumberFormat values and round-trip as opaque prior text in originalLevels.
-  // Bullet/picture (and other non-common) current-level changes stay fail-closed.
+  // Current w:ilvl must stay reviewable (nfc 0–4 or bullet 23); sibling segments
+  // may carry other ST_NumberFormat values and round-trip as opaque prior text.
+  // Picture and other non-reviewable current-level changes stay fail-closed.
   if (
     !definition ||
     !definitions ||
-    !isCommonNumberingFormat(definition.format)
+    !isReviewableNumberingFormat(definition.format)
   ) {
     return null;
   }
@@ -284,9 +286,15 @@ function sameOriginalSiblingLevels(
 }
 
 function applyNumberingChange(
-  list: HTMLOListElement,
+  list: HTMLOListElement | HTMLUListElement,
   change: ImportedDocxNumberingChangeGroup,
 ): void {
+  if (isBulletNumberingFormat(change.format)) {
+    if (!(list instanceof HTMLUListElement)) return;
+    applyBulletNumberingChange(list, change);
+    return;
+  }
+  if (!(list instanceof HTMLOListElement)) return;
   const type = numberingTypeFromFormat(change.format);
   if (type === undefined) return;
   const attributes = {
@@ -341,10 +349,67 @@ function applyNumberingChange(
   list.dataset.changeBefore = serializeDocumentNumberingChange(attributes);
 }
 
+function applyBulletNumberingChange(
+  list: HTMLUListElement,
+  change: ImportedDocxNumberingChangeGroup,
+): void {
+  const attributes = {
+    start: change.start,
+    type: null,
+    bulletStyle: bulletStyleFromNumberingSuffix(change.suffix),
+    officeNumberingId: optionalDataset(list, 'officeNumberingId'),
+    officeAbstractNumberingId: optionalDataset(
+      list,
+      'officeAbstractNumberingId',
+    ),
+    officeNumberingLevel:
+      optionalDataset(list, 'officeNumberingLevel') ?? String(change.level),
+    officeNumberingFormat: 'bullet',
+    officeNumberingText: `%${change.level + 1}${change.suffix}`,
+    officeNumberingSuffix: optionalDataset(list, 'officeNumberingSuffix'),
+    officeNumberingAlignment: optionalDataset(list, 'officeNumberingAlignment'),
+    officeNumberingIndentLeft: optionalDataset(
+      list,
+      'officeNumberingIndentLeft',
+    ),
+    officeNumberingIndentRight: optionalDataset(
+      list,
+      'officeNumberingIndentRight',
+    ),
+    officeNumberingIndentStart: optionalDataset(
+      list,
+      'officeNumberingIndentStart',
+    ),
+    officeNumberingIndentEnd: optionalDataset(list, 'officeNumberingIndentEnd'),
+    officeNumberingIndentHanging: optionalDataset(
+      list,
+      'officeNumberingIndentHanging',
+    ),
+    officeNumberingIndentFirstLine: optionalDataset(
+      list,
+      'officeNumberingIndentFirstLine',
+    ),
+    officeNumberingRestartAfterLevel: optionalDataset(
+      list,
+      'officeNumberingRestartAfterLevel',
+    ),
+    level: change.level,
+    originalFormat: change.format,
+    originalSuffix: change.suffix,
+    originalLevels: change.originalLevels,
+  };
+  list.dataset.documentChange = 'true';
+  list.dataset.changeKind = 'numbering';
+  list.dataset.changeId = change.id;
+  list.dataset.changeAuthor = change.author;
+  list.dataset.changeDate = change.date;
+  list.dataset.changeBefore = serializeDocumentNumberingChange(attributes);
+}
+
 function numberingChangeList(
   group: ImportedDocxNumberingChangeGroup,
   nodesByMarker: ReadonlyMap<string, Text[]>,
-): HTMLOListElement | null {
+): HTMLOListElement | HTMLUListElement | null {
   if (!group.markers.length) return null;
   const occurrences = group.markers.map((marker) => nodesByMarker.get(marker));
   if (occurrences.some((nodes) => nodes?.length !== 1)) return null;
@@ -353,8 +418,11 @@ function numberingChangeList(
   const items = nodes.map((node) => node.parentElement?.closest('li'));
   const lists = items.map((item) => item?.parentElement);
   const list = lists[0];
+  const expectsBullet = isBulletNumberingFormat(group.format);
   if (
-    !(list instanceof HTMLOListElement) ||
+    (expectsBullet
+      ? !(list instanceof HTMLUListElement)
+      : !(list instanceof HTMLOListElement)) ||
     items.some((item) => !(item instanceof HTMLLIElement)) ||
     lists.some((candidate) => candidate !== list)
   ) {

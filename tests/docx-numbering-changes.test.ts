@@ -29,6 +29,129 @@ const STRICT_WORD_NAMESPACE =
   'http://purl.oclc.org/ooxml/wordprocessingml/main';
 
 describe('DOCX ordered-list numbering revisions', () => {
+  test('imports one contiguous native bullet numbering revision as an atomic review card', () => {
+    const document = wordXml(`
+      <w:p><w:pPr><w:numPr>
+        <w:ilvl w:val="0"/><w:numId w:val="55"/>
+        <w:numberingChange w:id="41" w:author="Ada Reviewer" w:date="2026-09-01T09:30:00Z" w:original="%1:1:23:•"/>
+      </w:numPr></w:pPr><w:r><w:t>First</w:t></w:r></w:p>
+      <w:p><w:pPr><w:numPr>
+        <w:ilvl w:val="0"/><w:numId w:val="55"/>
+        <w:numberingChange w:id="42" w:author="Ada Reviewer" w:date="2026-09-01T09:30:00Z" w:original="%1:2:23:•"/>
+      </w:numPr></w:pPr><w:r><w:t>Second</w:t></w:r></w:p>
+    `);
+
+    const markers = markDocxNumberingChanges(document);
+    expect(markers.groups).toHaveLength(1);
+    const group = markers.groups[0];
+    if (!group) throw new Error('Expected a bullet numbering-change group.');
+    expect(group).toMatchObject({
+      id: 'docx-numbering-change-41',
+      author: 'Ada Reviewer',
+      start: 1,
+      level: 0,
+      format: 23,
+      suffix: '•',
+    });
+    expect(group.markers).toHaveLength(2);
+
+    const html = new DOMParser().parseFromString(
+      [
+        '<ul data-office-bullet-style="circle" data-office-numbering-id="55" data-office-numbering-level="0">',
+        `<li><p>${group.markers[0]}First</p></li>`,
+        `<li><p>${group.markers[1]}Second</p></li>`,
+        '</ul>',
+      ].join(''),
+      'text/html',
+    );
+    applyImportedDocxNumberingChangeMarkers(html, markers);
+
+    const list = html.querySelector('ul');
+    expect(list?.dataset.changeKind).toBe('numbering');
+    expect(list?.dataset.changeId).toBe('docx-numbering-change-41');
+    expect(parseDocumentNumberingChange(list?.dataset.changeBefore)).toEqual(
+      expect.objectContaining({
+        start: 1,
+        type: null,
+        level: 0,
+        originalFormat: 23,
+        originalSuffix: '•',
+      }),
+    );
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: html.body.innerHTML,
+    });
+    const changes = collectDocumentChanges(editor.state.doc);
+    expect(changes).toEqual([
+      expect.objectContaining({
+        id: 'docx-numbering-change-41',
+        kind: 'numbering',
+        text: 'FirstSecond',
+      }),
+    ]);
+    expect(editor.commands.rejectDocumentChange(changes[0]?.id ?? '')).toBe(
+      true,
+    );
+    expect(editor.getHTML()).not.toContain('data-office-bullet-style="circle"');
+    expect(editor.getHTML()).not.toContain('data-change-kind="numbering"');
+    expect(editor.getHTML()).toContain('data-office-numbering-format="bullet"');
+    editor.destroy();
+  });
+
+  test('exports and reopens native bullet numbering revisions without marker leakage', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const before = serializeDocumentNumberingChange({
+      start: 1,
+      type: null,
+      bulletStyle: 'disc',
+      officeNumberingFormat: 'bullet',
+      level: 0,
+      originalFormat: 23,
+      originalSuffix: '•',
+    });
+    artifact.content.html = [
+      '<section data-document-section="true">',
+      `<ul data-office-bullet-style="circle" data-document-change="true" data-change-kind="numbering" data-change-before='${before}' data-change-id="numbering-bullet-9" data-change-author="Ada Reviewer" data-change-date="2026-09-01T10:30:00.000Z">`,
+      '<li><p>First</p></li><li><p>Second</p></li>',
+      '</ul></section>',
+    ].join('');
+    artifact.content.trackChanges = false;
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(xml).not.toContain('__A3S_WORK_NUMBERING_CHANGE_');
+    expect(xml).toMatch(
+      /<w:numberingChange\b[^>]*w:id="1"[^>]*w:author="Ada Reviewer"[^>]*w:original="%1:1:23:•"/,
+    );
+    expect(xml).toMatch(
+      /<w:numberingChange\b[^>]*w:id="2"[^>]*w:author="Ada Reviewer"[^>]*w:original="%1:2:23:•"/,
+    );
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'bullet-numbering-revision.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain('data-change-kind="numbering"');
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: reopened.content.html,
+    });
+    const change = collectDocumentChanges(editor.state.doc)[0];
+    expect(change).toMatchObject({ kind: 'numbering' });
+    expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+    expect(editor.getHTML()).not.toContain('data-office-bullet-style="circle"');
+    expect(editor.getHTML()).not.toContain('data-change-kind="numbering"');
+    editor.destroy();
+  });
+
   test('imports one contiguous native numbering revision as an atomic review card', () => {
     const document = wordXml(`
       <w:p><w:pPr><w:numPr>
@@ -533,14 +656,14 @@ describe('DOCX ordered-list numbering revisions', () => {
       false,
       false,
       false,
-      false,
-      false,
+      true,
+      true,
       true,
       true,
       false,
     ]);
     const marked = markDocxNumberingChanges(document);
-    expect(marked.groups).toHaveLength(5);
+    expect(marked.groups).toHaveLength(7);
     expect(
       marked.groups.find((group) => group.author === 'OmittedIlvl'),
     ).toMatchObject({
@@ -548,6 +671,22 @@ describe('DOCX ordered-list numbering revisions', () => {
       level: 0,
       format: 1,
       suffix: '.',
+    });
+    expect(
+      marked.groups.find((group) => group.author === 'Unsupported'),
+    ).toMatchObject({
+      start: 1,
+      level: 0,
+      format: 23,
+      suffix: '•',
+    });
+    expect(
+      marked.groups.find((group) => group.author === 'OmittedIlvlBullet'),
+    ).toMatchObject({
+      start: 1,
+      level: 0,
+      format: 23,
+      suffix: '•',
     });
     expect(
       marked.groups.find((group) => group.author === 'SiblingFormat'),

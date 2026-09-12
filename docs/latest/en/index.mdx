@@ -44,13 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.185.0)
+## What's new on `main` (0.186.0)
 
-Browser document import admits companion move-range bookmarks through two-level nested tables:
+Browser document import admits current-level bullet numbering revisions:
 
-- Up to three move-path `w:tbl` ancestors that all contain the move (plain or under one simple `w:sdt`).
-- Four or more move-path tables stay fail-closed.
-- R0 move-range nesting family is closed; full PDF/UA certification remains out of scope.
+- ST_NumberFormat nfc `23` `w:numberingChange` originals become atomic bullet-list review cards with accept/reject.
+- Native export restores sequential bullet `w:numberingChange` records without private markers.
+- Picture numbering, missing `numId`, and malformed originals stay fail-closed.
 
 
 ## Explore by surface

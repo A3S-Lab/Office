@@ -42,13 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.185.0）
+## `main` 更新内容（0.186.0）
 
-浏览器文档导入现准入两层嵌套表 companion move-range 书签：
+浏览器文档导入现准入当前级项目符号编号修订：
 
-- 最多三个均包含移动的 move-path `w:tbl` 祖先（普通或单个简单 `w:sdt` 下）。
-- 四个及以上 move-path 表仍失败关闭。
-- R0 move-range 嵌套家族已收口；完整 PDF/UA 认证仍不在范围内。
+- 当前 `w:ilvl` 的 ST_NumberFormat nfc `23` `w:numberingChange` 会成为可接受/拒绝的原子项目符号列表审阅卡片。
+- 原生导出在项目符号 `w:numPr` 下写回连续 `w:numberingChange`，不泄漏私有标记。
+- 图片编号、缺失 `numId` 与畸形 original 仍失败关闭。
 
 
 ## 按表面探索
