@@ -40,6 +40,16 @@ interface MarkdownContent {
 受控源码历史会合并连续输入，把明确命令保留为独立记录，在撤销和重做时恢复源码选区，
 并在宿主替换内容后重新建立历史基线。
 
+## 图表与代码
+
+可视化界面用 [Shiki](https://github.com/shikijs/shiki) 渲染围栏代码，颜色跟随
+编辑器的浅色和深色主题。纯文本围栏保持源码，不上色。
+
+`mermaid` 围栏在图类型受支持时用
+[beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid) 渲染。图表使用
+Office 的纸面和墨色，按设计尺寸显示，并且不加载远程字体。不支持的图仍显示源码。
+选中图表后会展开围栏，以便继续编辑。无论哪种情况，持久化的都仍是 Markdown 字符串。
+
 ## 可视化编辑器的输入法行为
 
 TipTap 可视化界面会把组合输入的预编辑文字保留在本地，等 ProseMirror 完成

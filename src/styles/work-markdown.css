@@ -479,6 +479,66 @@
   font-size: 0.88em;
 }
 
+.work-markdown-canvas .tiptap .work-markdown-token {
+  color: var(--shiki-light, inherit);
+}
+
+:is(.a3s-office, .ds-popover-portal-anchor)[data-theme="dark"]
+  .work-markdown-canvas
+  .tiptap
+  .work-markdown-token {
+  color: var(--shiki-dark, var(--shiki-light, inherit));
+}
+
+@media (prefers-color-scheme: dark) {
+  :is(.a3s-office, .ds-popover-portal-anchor)[data-theme="system"]
+    .work-markdown-canvas
+    .tiptap
+    .work-markdown-token {
+    color: var(--shiki-dark, var(--shiki-light, inherit));
+  }
+}
+
+.work-markdown-canvas .tiptap .work-markdown-code {
+  position: relative;
+}
+
+.work-markdown-canvas .tiptap .work-markdown-mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 1.3em 0;
+  padding: 16px 12px;
+  overflow: auto;
+  border: 1px solid var(--a3s-line);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--a3s-panel-soft) 90%, var(--a3s-bg));
+}
+
+.work-markdown-canvas .tiptap .work-markdown-mermaid[hidden] {
+  display: none;
+}
+
+.work-markdown-canvas .tiptap .work-markdown-mermaid svg {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+}
+
+.work-markdown-canvas
+  .tiptap
+  .work-markdown-code[data-markdown-diagram="rendered"]:not(.is-selected)
+  > pre {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+
 .work-markdown-canvas .tiptap a {
   color: var(--a3s-blue);
   text-decoration: underline;
