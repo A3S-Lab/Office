@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(158);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.177.0');
+  await expect(cards).toHaveCount(159);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.178.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 将无匹配 Span 挂到页级 /P 下',
+    '文档 PDF 将 H1–H6 下 Span 挂到子 /P',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.178.0')).toContainText('H1–H6 下的 H → P → Span');
+  await expect(releaseCard('0.178.0')).toContainText(
+    '标题大纲角色把按页匹配的 Span 包在带子 /Pg 的子 /P 中',
+  );
   await expect(releaseCard('0.177.0')).toContainText('无匹配 Span 的页级 /P');
   await expect(releaseCard('0.177.0')).toContainText(
     'Document 子节点为大纲根与页级 /P 包装，不再直接挂裸 Span',

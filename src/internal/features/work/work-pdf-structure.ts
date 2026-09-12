@@ -179,7 +179,8 @@ export function ensureWorkPdfStructTabs(pdf: JsPdf): void {
  * Emits StructTreeRoot (Document + outline-derived H1–H6/P + Span content
  * links) with ParentTree / page StructParents via jsPDF hooks.
  * Outline roles nest by level under parent `/K` (same stack as bookmarks);
- * page-matched Spans nest under the last outline role on that page;
+ * page-matched Spans nest under the last outline role on that page (H1–H6
+ * wrap those Spans in a child `/P`; outline-level `/P` keeps Spans direct);
  * unmatched Spans nest under a page-level `/P` under Document. Not a full
  * PDF/UA certification claim.
  */
@@ -578,6 +579,7 @@ function writeWorkPdfStructTreeObjects(
     objectId: number;
     pageNumber: number;
     pageObjId: number;
+    parentObjectId: number;
     spanObjectIds: number[];
   }> = [];
   for (const [pageNumber, orphans] of orphanSpansByPage) {
@@ -591,8 +593,34 @@ function writeWorkPdfStructTreeObjects(
       objectId,
       pageNumber,
       pageObjId,
+      parentObjectId: documentObjectId,
       spanObjectIds: orphans.map((span) => span.objectId),
     });
+  }
+
+  // H1–H6 outline roles wrap page-matched Spans in a child /P (H → P → Span).
+  // Outline-level /P roles keep Spans as direct kids.
+  const headingParagraphByOutline = new Map<number, number>();
+  for (const outline of outlineKids) {
+    if (!/^H[1-6]$/.test(outline.role)) continue;
+    const spanIds = spansByOutline.get(outline.objectId);
+    if (!spanIds || spanIds.length === 0) continue;
+    const firstSpan = spanKids.find((span) => span.objectId === spanIds[0]);
+    if (!firstSpan) continue;
+    const objectId = deferred();
+    for (const spanId of spanIds) {
+      const span = spanKids.find((candidate) => candidate.objectId === spanId);
+      if (span) span.parentObjectId = objectId;
+    }
+    pageParagraphs.push({
+      objectId,
+      pageNumber: outline.pageNumber,
+      pageObjId: firstSpan.pageObjId,
+      parentObjectId: outline.objectId,
+      spanObjectIds: [...spanIds],
+    });
+    headingParagraphByOutline.set(outline.objectId, objectId);
+    spansByOutline.delete(outline.objectId);
   }
 
   const parentTreeObjectId =
@@ -616,9 +644,12 @@ function writeWorkPdfStructTreeObjects(
       // jsPDF getPageInfo can throw when the page object is not ready.
     }
     out(`/Alt ${encodePdfActualTextOperand(kid.alt)}`);
+    const headingParagraphId = headingParagraphByOutline.get(kid.objectId);
     const nested = [
       ...(outlineChildren.get(kid.objectId) ?? []),
-      ...(spansByOutline.get(kid.objectId) ?? []),
+      ...(headingParagraphId !== undefined
+        ? [headingParagraphId]
+        : (spansByOutline.get(kid.objectId) ?? [])),
     ];
     if (nested.length === 0) {
       out('/K []');
@@ -634,7 +665,7 @@ function writeWorkPdfStructTreeObjects(
     out('<<');
     out('/Type /StructElem');
     out('/S /P');
-    out(`/P ${documentObjectId} 0 R`);
+    out(`/P ${paragraph.parentObjectId} 0 R`);
     out(`/Pg ${paragraph.pageObjId} 0 R`);
     out(`/K [${paragraph.spanObjectIds.map((id) => `${id} 0 R`).join(' ')}]`);
     out('>>');
@@ -664,7 +695,9 @@ function writeWorkPdfStructTreeObjects(
   }
   const documentKids = [
     ...documentOutlineIds.map((id) => `${id} 0 R`),
-    ...pageParagraphs.map((paragraph) => `${paragraph.objectId} 0 R`),
+    ...pageParagraphs
+      .filter((paragraph) => paragraph.parentObjectId === documentObjectId)
+      .map((paragraph) => `${paragraph.objectId} 0 R`),
   ];
   if (documentKids.length === 0) {
     out('/K []');

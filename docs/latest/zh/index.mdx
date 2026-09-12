@@ -42,12 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.177.0）
+## `main` 更新内容（0.178.0）
 
-浏览器文档 PDF 导出现将无大纲页上的 Span 挂到页级段落下：
+浏览器文档 PDF 导出现将大纲匹配的 Span 挂到标题段落下：
 
-- 无大纲角色的页面把矢量文本 Span MCID 包在 Document → `/P` → Span 中（带 `/Pg`）。
-- `0.172.0` 起按页匹配到 H1–H6/P 大纲角色下的 Span 保持不变。
+- H1–H6 大纲角色把按页匹配的 Span MCID 包在 H → `/P` → Span 中（带 `/Pg`）。
+- 大纲级 `/P` 角色仍直接挂 Span；无匹配页保留 `0.177.0` 的 Document → `/P` → Span。
 - 其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。
 
 

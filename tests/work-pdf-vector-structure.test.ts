@@ -1606,7 +1606,7 @@ test('links vector-run MCIDs through ParentTree and page StructParents', () => {
   expect(pageDict?.[0]).toContain('/StructParents 0');
 });
 
-test('nests page-matched Span MCIDs under outline role /K', () => {
+test('nests page-matched Span MCIDs under outline H1 via child /P', () => {
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'pt',
@@ -1652,16 +1652,76 @@ test('nests page-matched Span MCIDs under outline role /K', () => {
   const h1 = objects.find((obj) => obj.body.includes('/S /H1'));
   const spans = objects.filter((obj) => obj.body.includes('/S /Span'));
   const document = objects.find((obj) => obj.body.includes('/S /Document'));
+  const pageParagraph = objects.find(
+    (obj) =>
+      obj.body.includes('/S /P') &&
+      spans.length > 0 &&
+      spans.every((span) => obj.body.includes(`${span.id} 0 R`)),
+  );
   expect(h1).toBeTruthy();
   expect(spans).toHaveLength(2);
   expect(document).toBeTruthy();
-  const spanRefs = spans.map((span) => `${span.id} 0 R`).join(' ');
-  expect(h1!.body).toContain(`/K [${spanRefs}]`);
+  expect(pageParagraph).toBeTruthy();
+  expect(h1!.body).toContain(`/K [${pageParagraph!.id} 0 R]`);
+  expect(h1!.body).not.toContain(`${spans[0]!.id} 0 R`);
   expect(document!.body).toContain(`/K [${h1!.id} 0 R]`);
+  expect(document!.body).not.toContain(`${pageParagraph!.id} 0 R`);
+  expect(pageParagraph!.body).toContain(`/P ${h1!.id} 0 R`);
+  const spanRefs = spans.map((span) => `${span.id} 0 R`).join(' ');
+  expect(pageParagraph!.body).toContain(`/K [${spanRefs}]`);
   for (const span of spans) {
-    expect(span.body).toContain(`/P ${h1!.id} 0 R`);
+    expect(span.body).toContain(`/P ${pageParagraph!.id} 0 R`);
     expect(document!.body).not.toContain(`${span.id} 0 R`);
   }
+});
+
+test('keeps Spans direct under outline-level /P roles', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorTextLayer(
+    pdf,
+    [
+      {
+        color: '#112233',
+        fontSize: 14,
+        fontStyle: 'normal',
+        height: 16,
+        text: 'Body run',
+        width: 80,
+        x: 20,
+        y: 40,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  applyWorkPdfDocumentStructure(pdf, {
+    language: 'en',
+    outline: [{ level: 7, pageNumber: 1, title: 'Outline paragraph' }],
+    title: 'Outline P direct spans',
+  });
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  const objects = [
+    ...ascii.matchAll(/(\d+)\s+0\s+obj\s*(<<[\s\S]*?>>)\s*endobj/g),
+  ].map((match) => ({ body: match[2]!, id: match[1]! }));
+  const span = objects.find((obj) => obj.body.includes('/S /Span'));
+  const outlineP = objects.find(
+    (obj) =>
+      obj.body.includes('/S /P') &&
+      obj.body.includes('/Alt (Outline paragraph)'),
+  );
+  const document = objects.find((obj) => obj.body.includes('/S /Document'));
+  expect(span).toBeTruthy();
+  expect(outlineP).toBeTruthy();
+  expect(document).toBeTruthy();
+  expect(outlineP!.body).toContain(`/K [${span!.id} 0 R]`);
+  expect(span!.body).toContain(`/P ${outlineP!.id} 0 R`);
+  expect(document!.body).toContain(`${outlineP!.id} 0 R`);
+  expect(document!.body).not.toContain(`${span!.id} 0 R`);
 });
 
 test('nests outline StructElems by level under parent /K', () => {

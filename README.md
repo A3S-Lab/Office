@@ -371,12 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.177.0` nests unmatched PDF Spans under page-level `/P` roles:
+Version `0.178.0` nests outline-matched PDF Spans under heading `/P` roles:
 
-- **Document → P → Span** — pages without an outline role wrap vector-run Span
-  MCIDs in a page-level `/P` StructElem (with `/Pg`).
-- **Outline nesting unchanged** — page-matched Spans under H1–H6/P from
-  `0.172.0`–`0.173.0` stay in place.
+- **H → P → Span** — page-matched Spans under H1–H6 nest through a child `/P`
+  StructElem (with `/Pg`).
+- **Outline `/P` keeps direct Spans** — outline-level `/P` roles still nest
+  Spans as direct kids; unmatched pages keep Document → P → Span from
+  `0.177.0`.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 
