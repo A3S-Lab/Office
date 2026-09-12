@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.182.0` copies the document title onto Document StructElem `/Alt`:
+Version `0.183.0` admits companion move-range bookmarks beside nested tables:
 
-- **Document `/Alt`** — structure tree Document carries the same title as the
-  Info dict (with `/DisplayDocTitle`).
-- **Language stack unchanged** — catalog / StructElem `/Lang` and Span BDC
-  `/Lang` from `0.179.0`–`0.181.0` stay in place.
-- **Boundary** — remaining decorative art borders and full PDF/UA certification
+- **Beside nested `w:tbl`** — flat, untracked text-only nested tables in the
+  same cell as the move are allowed between companion `w:move*Range*` markers.
+- **Fail-closed edges** — deeper nesting, SDT+nested-table combinations, and
+  tracked/rich content inside the beside nested table stay rejected.
+- **Boundary** — remaining move-range edges and full PDF/UA certification
   remain out of scope.
 
 Earlier releases stay on the product

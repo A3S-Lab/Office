@@ -44,13 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.182.0)
+## What's new on `main` (0.183.0)
 
-Browser document PDF export copies the document title onto Document StructElem `/Alt`:
+Browser document import admits companion move-range bookmarks beside nested tables:
 
-- Document `/Alt` carries the Info dict title for assistive structure.
-- Catalog / StructElem `/Lang` and Span BDC `/Lang` from `0.179.0`–`0.181.0` stay unchanged.
-- Remaining decorative art borders and full PDF/UA certification remain out of scope.
+- Flat, untracked text-only nested `w:tbl` in the same cell as the move is allowed.
+- Deeper nesting, SDT+nested-table combinations, and tracked/rich beside-table content stay fail-closed.
+- Remaining move-range edges and full PDF/UA certification remain out of scope.
 
 
 ## Explore by surface

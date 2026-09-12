@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.183.0 - 2026-09-12
+
+### Writer
+
+- Companion `w:move*Range*` bookmarks now admit when a flat, untracked
+  text-only nested `w:tbl` sits beside the move in the same cell. Deeper
+  nesting, SDT+nested-table combinations, and tracked/rich content inside the
+  beside nested table stay fail-closed.
+
 ## 0.182.0 - 2026-09-12
 
 ### Writer

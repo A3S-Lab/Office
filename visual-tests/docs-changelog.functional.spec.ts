@@ -9,16 +9,20 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(163);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.182.0');
+  await expect(cards).toHaveCount(164);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.183.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 将标题写入 Document StructElem /Alt',
+    'Companion move-range 准入移动旁的嵌套表',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
   await expect(releaseCard('0.182.0')).toContainText('Document /Alt 来自标题');
   await expect(releaseCard('0.182.0')).toContainText(
     '结构树 Document 携带与 Info 字典相同的标题',
+  );
+  await expect(releaseCard('0.183.0')).toContainText('旁侧嵌套 w:tbl');
+  await expect(releaseCard('0.183.0')).toContainText(
+    '同单元格纯文本嵌套表不再阻止 companion 书签',
   );
   await expect(releaseCard('0.179.0')).toContainText(
     '大纲、/P 与 Span 的 /Lang',

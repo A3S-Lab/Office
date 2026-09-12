@@ -49,12 +49,13 @@ export interface DocxMoveRangeCompanion {
  * siblings, cross-paragraph placement including across section breaks, one
  * table with the move in a cell and allowlisted chrome / sibling cell
  * text-only content, one-level nested tables when the move lives inside the
- * inner table under those same cell rules, or one simple `w:sdt` whose
+ * inner table under those same cell rules, one text-only nested table that
+ * sits beside the move in the same cell, or one simple `w:sdt` whose
  * content path holds the move's paragraph or flat table). They may be
  * stripped after capture so the text move stays reviewable. Deeper table
  * nesting, SDT combined with nested tables, nested/sibling SDT,
- * section-sandwich, tracked or rich sibling-cell content, and unpaired
- * markers stay fail-closed. */
+ * section-sandwich, tracked or rich sibling-cell / beside-table content, and
+ * unpaired markers stay fail-closed. */
 export function companionDocxMoveRangeBookmarks(
   document: Document,
   movePairs: ReadonlyArray<{ from: Element; to: Element }>,
@@ -137,12 +138,13 @@ function companionForMovePair(
     return null;
   }
   // Each side's sandwich must stay move-only aside from allowlisted table
-  // chrome, sibling-cell text-only content, one-level nested tables, and one
+  // chrome, sibling-cell text-only content, one-level nested tables, one
+  // text-only nested table beside the move in the same cell, and one
   // simple SDT wrapper (deeper nesting, SDT+nested-table combos,
-  // nested/sibling SDT, section breaks, and tracked/rich sibling cells
-  // remain fail-closed via sandwichContainsOnlyMove). The destination may
-  // live in a later section than the source; that does not block companion
-  // admission.
+  // nested/sibling SDT, section breaks, and tracked/rich sibling cells or
+  // beside tables remain fail-closed via sandwichContainsOnlyMove). The
+  // destination may live in a later section than the source; that does not
+  // block companion admission.
   return { rangeId, rangeName, from, to, markers };
 }
 
@@ -191,12 +193,14 @@ function findSandwichMarkers(
  * Every element strictly between the range bookmarks must lie on the move
  * wrapper's ancestor chain, be the wrapper, be inside the wrapper, be
  * allowlisted table chrome on a move-path table (outer and at most one
- * nested), be allowlisted `w:sdtPr` chrome on one simple move SDT, or be
+ * nested), be allowlisted `w:sdtPr` chrome on one simple move SDT, be
  * untracked text-only content in a sibling cell of the innermost move
- * table. At most two `w:tbl` nodes and one `w:sdt` may appear; each must
- * contain the move. SDT plus nested tables, three-or-more table levels,
- * `w:sectPr`, nested or off-path SDTs, tracked revisions, and rich
- * sibling-cell content reject.
+ * table, or belong to one text-only nested table beside the move in the
+ * same cell. At most two move-path `w:tbl` nodes and one `w:sdt` may
+ * appear; each move-path table must contain the move. SDT plus nested
+ * tables, three-or-more move-path table levels, `w:sectPr`, nested or
+ * off-path SDTs, tracked revisions, and rich sibling-cell / beside-table
+ * content reject.
  */
 function sandwichContainsOnlyMove(
   start: Element,
@@ -215,12 +219,16 @@ function sandwichContainsOnlyMove(
   let sawMove = false;
   let tableCount = 0;
   let sdtCount = 0;
+  const besideNestedTables: Element[] = [];
   for (const element of elementsBetween(start, end)) {
     if (element === move) {
       sawMove = true;
       continue;
     }
     if (move.contains(element)) continue;
+    if (besideNestedTables.some((table) => table.contains(element))) {
+      continue;
+    }
     if (ALWAYS_BLOCKED_CONTAINERS.has(element.localName)) return false;
     if (element.localName === 'sdt') {
       sdtCount += 1;
@@ -228,11 +236,17 @@ function sandwichContainsOnlyMove(
       continue;
     }
     if (element.localName === 'tbl') {
-      tableCount += 1;
-      // Outer + one nested table that both contain the move; anything else
-      // (sibling nested tbl, third level, off-path tbl) fails closed.
-      if (tableCount > 2 || !element.contains(move)) return false;
-      continue;
+      if (element.contains(move)) {
+        tableCount += 1;
+        // Outer + one nested table that both contain the move.
+        if (tableCount > 2) return false;
+        continue;
+      }
+      if (isAdmittedBesideNestedTable(element, move, moveTable, moveCell)) {
+        besideNestedTables.push(element);
+        continue;
+      }
+      return false;
     }
     if (element.contains(move)) continue;
     if (isTableChromeOnMovePath(element, moveTables)) {
@@ -361,6 +375,74 @@ function isAdmittedSiblingTableContent(
     default:
       return false;
   }
+}
+
+/**
+ * A flat, untracked text-only nested `w:tbl` may sit beside the move in the
+ * same cell (Compare/Word layouts). Nested tables inside that beside table,
+ * tracked revisions, and non-wordprocessing markup stay fail-closed.
+ */
+function isAdmittedBesideNestedTable(
+  table: Element,
+  move: Element,
+  moveTable: Element | null,
+  moveCell: Element | null,
+): boolean {
+  if (!moveTable || !moveCell) return false;
+  if (!moveCell.contains(table) || !moveTable.contains(table)) return false;
+  if (table.contains(move)) return false;
+  if (!DOCX_WORDPROCESSING_NAMESPACES.has(table.namespaceURI ?? '')) {
+    return false;
+  }
+  return isTextOnlyFlatTable(table);
+}
+
+const BESIDE_NESTED_TABLE_ALLOWED = new Set([
+  ...TABLE_CHROME,
+  'tr',
+  'tc',
+  'p',
+  'pPr',
+  'r',
+  'rPr',
+  't',
+  'bookmarkStart',
+  'bookmarkEnd',
+]);
+
+function isTextOnlyFlatTable(table: Element): boolean {
+  for (const descendant of Array.from(table.querySelectorAll('*'))) {
+    if (!DOCX_WORDPROCESSING_NAMESPACES.has(descendant.namespaceURI ?? '')) {
+      return false;
+    }
+    if (TRACKED_REVISION_NAMES.has(descendant.localName)) return false;
+    if (descendant.localName === 'tbl') return false;
+    if (ALWAYS_BLOCKED_CONTAINERS.has(descendant.localName)) return false;
+    if (!BESIDE_NESTED_TABLE_ALLOWED.has(descendant.localName)) return false;
+    if (
+      (descendant.localName === 'pPr' || descendant.localName === 'rPr') &&
+      !isWordprocessingOnlySubtree(descendant)
+    ) {
+      return false;
+    }
+    if (
+      descendant.localName === 'r' &&
+      !isEmptyOrTextOnlyUntrackedRun(descendant)
+    ) {
+      return false;
+    }
+    if (descendant.localName === 't' && descendant.children.length > 0) {
+      return false;
+    }
+    if (
+      (descendant.localName === 'bookmarkStart' ||
+        descendant.localName === 'bookmarkEnd') &&
+      !isRelationshipFreeBookmarkMarker(descendant)
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function isEmptyOrTextOnlyUntrackedRun(run: Element): boolean {

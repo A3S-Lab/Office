@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.183.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Companion move-range admits nested tables beside the move',
+      zh: 'Companion move-range 准入移动旁的嵌套表',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: companion w:move*Range* bookmarks now admit when a flat, untracked text-only nested w:tbl sits beside the move in the same cell. Deeper nesting, SDT+nested-table combinations, and tracked/rich content inside the beside nested table stay fail-closed.',
+      zh: 'Phase 0 保真：companion w:move*Range* 书签现在准入与移动同单元格的扁平、无修订、纯文本嵌套 w:tbl。更深嵌套、SDT+嵌套表组合，以及旁侧嵌套表内的修订/富内容仍失败关闭。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Beside nested w:tbl',
+          zh: '旁侧嵌套 w:tbl',
+        },
+        detail: {
+          en: 'Same-cell text-only nested tables no longer block companion bookmarks.',
+          zh: '同单元格纯文本嵌套表不再阻止 companion 书签。',
+        },
+      },
+      {
+        title: {
+          en: 'Tracked beside content stays closed',
+          zh: '旁侧修订内容仍关闭',
+        },
+        detail: {
+          en: 'Tracked or rich content inside the beside nested table remains fail-closed.',
+          zh: '旁侧嵌套表内的修订或富内容仍失败关闭。',
+        },
+      },
+      {
+        title: {
+          en: 'Deeper nesting still out of scope',
+          zh: '更深嵌套仍不在范围内',
+        },
+        detail: {
+          en: 'Deeper nesting and SDT+nested-table combinations stay rejected.',
+          zh: '更深嵌套与 SDT+嵌套表组合仍被拒绝。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#move-revisions',
+          zh: './components/document.html#移动修订',
+        },
+        label: { en: 'Move revisions', zh: '移动修订' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.183.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.183.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.182.0',
     date: '2026-09-12',
     kind: 'improved',

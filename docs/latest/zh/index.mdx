@@ -42,13 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.182.0）
+## `main` 更新内容（0.183.0）
 
-浏览器文档 PDF 导出现在将文档标题写入 Document StructElem `/Alt`：
+浏览器文档导入现准入嵌套表旁的 companion move-range 书签：
 
-- Document `/Alt` 携带与 Info 字典相同的标题，便于辅助技术读取结构。
-- `0.179.0`–`0.181.0` 的目录 / StructElem `/Lang` 与 Span BDC `/Lang` 保持不变。
-- 其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。
+- 与移动同单元格的扁平、无修订、纯文本嵌套 `w:tbl` 允许出现在 companion `w:move*Range*` 标记之间。
+- 更深嵌套、SDT+嵌套表组合，以及旁侧嵌套表内的修订/富内容仍失败关闭。
+- 其余 move-range 边界与完整 PDF/UA 认证仍不在范围内。
 
 
 ## 按表面探索
