@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.182.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export copies the document title onto Document StructElem
+  `/Alt` (alongside Info dict title and `/DisplayDocTitle`). Catalog / StructElem
+  `/Lang` and Span BDC `/Lang` from `0.179.0`–`0.181.0` stay unchanged. Remaining
+  decorative art borders and full PDF/UA certification remain out of scope.
+
 ## 0.181.0 - 2026-09-12
 
 ### Writer

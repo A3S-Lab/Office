@@ -177,7 +177,7 @@ Still required for R0 exit:
    page-matched Spans nest through child `/P` (H → P → Span) through `0.178.0`; document
    language copies onto outline / `/P` / Span StructElems through `0.179.0`; catalog
    `/Lang` via putCatalog covers tags beyond the jsPDF enum through `0.180.0`; Span
-   BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; remaining
+   BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; Document StructElem `/Alt` carries the document title through `0.182.0`; remaining
    decorative art borders and full PDF/UA certification remain open.
 7. Continuous no-clobber corpus growth for representative Traditional Office
    fixtures (diagnose every intentional normalization).

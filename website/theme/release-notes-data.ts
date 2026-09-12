@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.182.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF copies title onto Document StructElem /Alt',
+      zh: '文档 PDF 将标题写入 Document StructElem /Alt',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export copies the document title onto Document StructElem /Alt alongside the Info dict title and DisplayDocTitle. Catalog / StructElem /Lang and Span BDC /Lang from 0.179.0–0.181.0 stay unchanged. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现在将文档标题写入 Document StructElem /Alt，与 Info 字典标题及 DisplayDocTitle 对齐。0.179.0–0.181.0 的目录 / StructElem /Lang 与 Span BDC /Lang 保持不变。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Document /Alt from title',
+          zh: 'Document /Alt 来自标题',
+        },
+        detail: {
+          en: 'StructTree Document carries the same title as the Info dict.',
+          zh: '结构树 Document 携带与 Info 字典相同的标题。',
+        },
+      },
+      {
+        title: {
+          en: 'Language stack unchanged',
+          zh: '语言栈不变',
+        },
+        detail: {
+          en: 'Catalog / StructElem /Lang and Span BDC /Lang stay as before.',
+          zh: '目录 / StructElem /Lang 与 Span BDC /Lang 保持原样。',
+        },
+      },
+      {
+        title: {
+          en: 'PDF/UA certification stays out of scope',
+          zh: 'PDF/UA 认证仍不在范围内',
+        },
+        detail: {
+          en: 'Remaining decorative art borders and full PDF/UA certification are not claimed.',
+          zh: '不宣称其余装饰性艺术边框与完整 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.182.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.182.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.181.0',
     date: '2026-09-12',
     kind: 'improved',

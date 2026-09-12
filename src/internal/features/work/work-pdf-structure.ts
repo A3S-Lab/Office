@@ -16,6 +16,7 @@ export interface WorkPdfDocumentStructure {
 interface WorkPdfStructTreePlan {
   language: string | null;
   outline: readonly WorkPdfOutlineEntry[];
+  title: string | null;
 }
 
 interface WorkPdfContentLink {
@@ -61,16 +62,16 @@ const OUTLINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p[data-office-outline-level]';
 /**
  * Applies bounded PDF document metadata and outline bookmarks. This is the
  * tagged/accessibility bootstrap: language (catalog + StructElem `/Lang`) +
- * title + heading outline + MarkInfo (Marked + Suspects false) + catalog
- * Tabs /S + StructTreeRoot (Document / H1–H6 / P with /Pg) with ParentTree /
- * MCID links for vector-run Span content, without claiming full PDF/UA
- * certification.
+ * title (Info dict + Document StructElem `/Alt`) + heading outline + MarkInfo
+ * (Marked + Suspects false) + catalog Tabs /S + StructTreeRoot (Document /
+ * H1–H6 / P with /Pg) with ParentTree / MCID links for vector-run Span content,
+ * without claiming full PDF/UA certification.
  */
 export function applyWorkPdfDocumentStructure(
   pdf: JsPdf,
   structure: WorkPdfDocumentStructure,
 ): void {
-  const title = structure.title?.trim();
+  const title = normalizePdfDocumentTitle(structure.title);
   if (title) {
     pdf.setProperties({
       title,
@@ -84,7 +85,7 @@ export function applyWorkPdfDocumentStructure(
   ensureWorkPdfViewerPreferences(pdf);
   ensureWorkPdfStructTabs(pdf);
   const outline = structure.outline ?? [];
-  ensureWorkPdfStructTreeRoot(pdf, { language, outline });
+  ensureWorkPdfStructTreeRoot(pdf, { language, outline, title });
   const stack: Array<{ item: OutlineItem; level: number }> = [];
   let count = 0;
   for (const entry of outline) {
@@ -204,14 +205,16 @@ export function ensureWorkPdfStructTabs(pdf: JsPdf): void {
  * page-matched Spans nest under the last outline role on that page (H1–H6
  * wrap those Spans in a child `/P`; outline-level `/P` keeps Spans direct);
  * unmatched Spans nest under a page-level `/P` under Document; document
- * language is copied onto outline / `/P` / Span StructElems when set. Not a
- * full PDF/UA certification claim.
+ * language is copied onto outline / `/P` / Span StructElems when set; document
+ * title is copied onto Document StructElem `/Alt` when set. Not a full PDF/UA
+ * certification claim.
  */
 export function ensureWorkPdfStructTreeRoot(
   pdf: JsPdf,
   plan: {
     language?: string | null;
     outline?: readonly WorkPdfOutlineEntry[];
+    title?: string | null;
   },
 ): void {
   const internal = workPdfJsInternal(pdf);
@@ -225,9 +228,14 @@ export function ensureWorkPdfStructTreeRoot(
     return;
   }
   const previous = internal.workPdfStructTreePlan;
+  const title =
+    plan.title !== undefined
+      ? normalizePdfDocumentTitle(plan.title)
+      : (previous?.title ?? null);
   internal.workPdfStructTreePlan = {
     language: plan.language ?? previous?.language ?? null,
     outline: plan.outline ?? previous?.outline ?? [],
+    title,
   };
   if (internal.workPdfStructTreeSubscribed) return;
   internal.workPdfStructTreeSubscribed = true;
@@ -459,6 +467,14 @@ export function normalizePdfLanguage(
   return trimmed;
 }
 
+function normalizePdfDocumentTitle(
+  title: string | null | undefined,
+): string | null {
+  const trimmed = title?.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, MAX_OUTLINE_TITLE_LENGTH);
+}
+
 /** Matches Writer outline: h1–h6 and 0-based `data-office-outline-level` 0–8 → 1–9. */
 function workPdfOutlineLevelFromElement(element: HTMLElement): number | null {
   const headingMatch = /^H([1-6])$/.exec(element.tagName);
@@ -513,6 +529,7 @@ function writeWorkPdfStructTreeObjects(
   const plan = internal.workPdfStructTreePlan ?? {
     language: null,
     outline: [],
+    title: null,
   };
   const outlineKids: Array<{
     alt: string;
@@ -743,6 +760,9 @@ function writeWorkPdfStructTreeObjects(
   out(`/P ${rootObjectId} 0 R`);
   if (plan.language) {
     out(`/Lang (${escapePdfLiteralString(plan.language)})`);
+  }
+  if (plan.title) {
+    out(`/Alt ${encodePdfActualTextOperand(plan.title)}`);
   }
   const documentKids = [
     ...documentOutlineIds.map((id) => `${id} 0 R`),

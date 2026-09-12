@@ -9,13 +9,17 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(162);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.181.0');
+  await expect(cards).toHaveCount(163);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.182.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 在 Span 标记内容上写入 /Lang',
+    '文档 PDF 将标题写入 Document StructElem /Alt',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.182.0')).toContainText('Document /Alt 来自标题');
+  await expect(releaseCard('0.182.0')).toContainText(
+    '结构树 Document 携带与 Info 字典相同的标题',
+  );
   await expect(releaseCard('0.179.0')).toContainText(
     '大纲、/P 与 Span 的 /Lang',
   );

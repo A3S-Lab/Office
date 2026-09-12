@@ -44,12 +44,12 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.181.0)
+## What's new on `main` (0.182.0)
 
-Browser document PDF export writes language on Span marked content:
+Browser document PDF export copies the document title onto Document StructElem `/Alt`:
 
-- Span BDC includes `/Lang` when language is seeded before vector paint.
-- Catalog and StructElem `/Lang` from `0.179.0`–`0.180.0` are unchanged.
+- Document `/Alt` carries the Info dict title for assistive structure.
+- Catalog / StructElem `/Lang` and Span BDC `/Lang` from `0.179.0`–`0.181.0` stay unchanged.
 - Remaining decorative art borders and full PDF/UA certification remain out of scope.
 
 

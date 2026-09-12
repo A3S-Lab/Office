@@ -1567,6 +1567,9 @@ test('applies title, language, outline bookmarks, MarkInfo, and StructTreeRoot s
   expect(ascii).toContain('/Type /StructTreeRoot');
   expect(ascii).toContain('/S /Document');
   expect(ascii).toContain('/Lang (en-US)');
+  expect(ascii).toMatch(
+    /\/S \/Document\n\/P \d+ 0 R\n\/Lang \(en-US\)\n\/Alt \(Quarterly plan\)/,
+  );
   expect(ascii).toContain('/S /H1');
   expect(ascii).toContain('/S /H2');
   expect(ascii).toContain('/S /P');
@@ -1907,8 +1910,32 @@ test('emits Document StructTreeRoot stub when outline is empty', () => {
   expect(ascii).toContain('/Type /StructTreeRoot');
   expect(ascii).toContain('/S /Document');
   expect(ascii).toContain('/Lang (en)');
+  expect(ascii).toMatch(
+    /\/S \/Document\n\/P \d+ 0 R\n\/Lang \(en\)\n\/Alt \(Empty outline\)/,
+  );
   expect(ascii).toContain('/MarkInfo << /Marked true /Suspects false >>');
   expect(ascii).not.toContain('/S /H1');
+});
+
+test('copies document title onto Document StructElem /Alt', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  applyWorkPdfDocumentStructure(pdf, {
+    language: 'zh-CN',
+    title: '  季度计划  ',
+  });
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  const objects = [...ascii.matchAll(/(\d+) 0 obj\n([\s\S]*?)\nendobj/g)].map(
+    (match) => ({ id: Number(match[1]), body: match[2] ?? '' }),
+  );
+  const document = objects.find((obj) => obj.body.includes('/S /Document'));
+  expect(document).toBeTruthy();
+  expect(document!.body).toContain('/Lang (zh-CN)');
+  expect(document!.body).toMatch(/\/Alt <FEFF5B635EA68BA15212>/i);
 });
 
 function stubBoundingRect(

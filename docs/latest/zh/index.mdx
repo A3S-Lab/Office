@@ -42,12 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.181.0）
+## `main` 更新内容（0.182.0）
 
-浏览器文档 PDF 导出现在 Span 标记内容上写入语言：
+浏览器文档 PDF 导出现在将文档标题写入 Document StructElem `/Alt`：
 
-- 在矢量绘制前播种语言后，Span BDC 写入 `/Lang`。
-- `0.179.0`–`0.180.0` 的目录与 StructElem `/Lang` 保持不变。
+- Document `/Alt` 携带与 Info 字典相同的标题，便于辅助技术读取结构。
+- `0.179.0`–`0.181.0` 的目录 / StructElem `/Lang` 与 Span BDC `/Lang` 保持不变。
 - 其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。
 
 
