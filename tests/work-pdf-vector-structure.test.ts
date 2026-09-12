@@ -1641,6 +1641,49 @@ test('nests page-matched Span MCIDs under outline role /K', () => {
   }
 });
 
+test('nests outline StructElems by level under parent /K', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  applyWorkPdfDocumentStructure(pdf, {
+    language: 'en',
+    outline: [
+      { level: 1, pageNumber: 1, title: 'Chapter' },
+      { level: 2, pageNumber: 1, title: 'Section' },
+      { level: 1, pageNumber: 2, title: 'Next chapter' },
+    ],
+    title: 'Outline role nesting',
+  });
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  const objects = [
+    ...ascii.matchAll(/(\d+)\s+0\s+obj\s*(<<[\s\S]*?>>)\s*endobj/g),
+  ].map((match) => ({ body: match[2]!, id: match[1]! }));
+  const document = objects.find((obj) => obj.body.includes('/S /Document'));
+  const h1s = objects.filter((obj) => obj.body.includes('/S /H1'));
+  const h2 = objects.find((obj) => obj.body.includes('/S /H2'));
+  expect(document).toBeTruthy();
+  expect(h1s).toHaveLength(2);
+  expect(h2).toBeTruthy();
+  const chapter = h1s.find((obj) => obj.body.includes('/Alt (Chapter)'));
+  const nextChapter = h1s.find((obj) =>
+    obj.body.includes('/Alt (Next chapter)'),
+  );
+  expect(chapter).toBeTruthy();
+  expect(nextChapter).toBeTruthy();
+  expect(document!.body).toContain(
+    `/K [${chapter!.id} 0 R ${nextChapter!.id} 0 R]`,
+  );
+  expect(document!.body).not.toContain(`${h2!.id} 0 R`);
+  expect(chapter!.body).toContain(`/K [${h2!.id} 0 R]`);
+  expect(h2!.body).toContain(`/P ${chapter!.id} 0 R`);
+  expect(h2!.body).toContain('/K []');
+  expect(nextChapter!.body).toContain('/K []');
+  expect(nextChapter!.body).toContain(`/P ${document!.id} 0 R`);
+});
+
 test('keeps Spans under Document when their page has no outline role', () => {
   const pdf = new jsPDF({
     orientation: 'portrait',

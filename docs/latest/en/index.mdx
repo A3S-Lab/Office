@@ -44,12 +44,12 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.172.0)
+## What's new on `main` (0.173.0)
 
-Browser document PDF export now nests page-matched Span MCIDs under outline roles:
+Browser document PDF export now nests outline roles by level:
 
-- Outline-derived H1–H6/P StructElems receive page-matched vector-run Span kids in `/K` (last outline role on that page; `/P` points at that role).
-- Spans on pages without an outline role stay Document kids.
+- Outline-derived H1–H6/P StructElems nest under parent `/K` with the same level stack as bookmarks; Document `/K` lists root roles only.
+- Page-matched Span MCID nesting from `0.172.0` is unchanged.
 - Remaining decorative art borders and full PDF/UA certification remain out of scope.
 
 

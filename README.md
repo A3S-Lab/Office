@@ -371,12 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.172.0` nests page-matched vector-run Span MCIDs under outline roles
-in browser document PDF StructTree export:
+Version `0.173.0` nests outline-derived H1–H6/P StructElems by level in browser
+document PDF StructTree export:
 
-- **Outline `/K` nesting** — Spans on a page attach to the last outline-derived
-  H1–H6/P StructElem on that page via `/K` and `/P`.
-- **Unmatched pages** — Spans whose page has no outline role stay Document kids.
+- **Outline role nesting** — child outline roles attach under the parent role
+  `/K` using the same level stack as PDF bookmarks; Document `/K` lists root
+  roles only.
+- **Span nesting** — page-matched Span MCIDs from `0.172.0` still nest under the
+  last outline role on that page.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

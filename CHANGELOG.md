@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.173.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export nests outline-derived H1–H6/P StructElems by
+  outline level under parent `/K` (same stack as bookmarks; Document kids are
+  root roles only). Page-matched Span nesting from `0.172.0` is unchanged.
+  Remaining decorative art borders and full PDF/UA certification remain out of
+  scope.
+
 ## 0.172.0 - 2026-09-12
 
 ### Writer

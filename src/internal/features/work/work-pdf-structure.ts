@@ -156,9 +156,9 @@ export function ensureWorkPdfViewerPreferences(pdf: JsPdf): void {
 /**
  * Emits StructTreeRoot (Document + outline-derived H1–H6/P + Span content
  * links) with ParentTree / page StructParents via jsPDF hooks.
- * Page-matched vector-run Spans nest under the last outline role on that
- * page via `/K`; unmatched Spans stay Document kids. Not a full PDF/UA
- * certification claim.
+ * Outline roles nest by level under parent `/K` (same stack as bookmarks);
+ * page-matched Spans nest under the last outline role on that page;
+ * unmatched Spans stay Document kids. Not a full PDF/UA certification claim.
  */
 export function ensureWorkPdfStructTreeRoot(
   pdf: JsPdf,
@@ -406,8 +406,8 @@ function allocateWorkPdfMcid(
 }
 
 /**
- * Writes StructTreeRoot → Document → outline roles (with page-matched Span
- * kids) + unmatched Span MCID kids, plus the ParentTree number tree.
+ * Writes StructTreeRoot → Document → nested outline roles (with page-matched
+ * Span kids) + unmatched Span MCID kids, plus the ParentTree number tree.
  * Returns the root object id for the catalog.
  */
 function writeWorkPdfStructTreeObjects(
@@ -423,10 +423,18 @@ function writeWorkPdfStructTreeObjects(
   };
   const outlineKids: Array<{
     alt: string;
+    level: number;
     objectId: number;
     pageNumber: number;
+    parentObjectId: number;
     role: string;
   }> = [];
+  const rootObjectId = deferred();
+  const documentObjectId = deferred();
+  const outlineStack: Array<{ level: number; objectId: number }> = [];
+  const outlineChildren = new Map<number, number[]>();
+  const documentOutlineIds: number[] = [];
+
   for (const entry of plan.outline) {
     if (outlineKids.length >= MAX_OUTLINE_ENTRIES) break;
     const alt = entry.title.trim().slice(0, MAX_OUTLINE_TITLE_LENGTH);
@@ -440,12 +448,25 @@ function writeWorkPdfStructTreeObjects(
       entry.level >= 1
         ? entry.level
         : 1;
+    while ((outlineStack.at(-1)?.level ?? 0) >= level) outlineStack.pop();
+    const parentObjectId = outlineStack.at(-1)?.objectId ?? documentObjectId;
+    const objectId = deferred();
     outlineKids.push({
       alt,
-      objectId: deferred(),
+      level,
+      objectId,
       pageNumber: entry.pageNumber,
+      parentObjectId,
       role: workPdfStructRoleFromOutlineLevel(level),
     });
+    if (parentObjectId === documentObjectId) {
+      documentOutlineIds.push(objectId);
+    } else {
+      const kids = outlineChildren.get(parentObjectId) ?? [];
+      kids.push(objectId);
+      outlineChildren.set(parentObjectId, kids);
+    }
+    outlineStack.push({ level, objectId });
   }
 
   const contentLinks = internal.workPdfContentLinks ?? [];
@@ -457,8 +478,6 @@ function writeWorkPdfStructTreeObjects(
     pageNumber: number;
     parentObjectId: number;
   }> = [];
-  const rootObjectId = deferred();
-  const documentObjectId = deferred();
   const spansByOutline = new Map<number, number[]>();
   const documentSpanIds: number[] = [];
 
@@ -499,9 +518,12 @@ function writeWorkPdfStructTreeObjects(
     out('<<');
     out('/Type /StructElem');
     out(`/S /${kid.role}`);
-    out(`/P ${documentObjectId} 0 R`);
+    out(`/P ${kid.parentObjectId} 0 R`);
     out(`/Alt ${encodePdfActualTextOperand(kid.alt)}`);
-    const nested = spansByOutline.get(kid.objectId) ?? [];
+    const nested = [
+      ...(outlineChildren.get(kid.objectId) ?? []),
+      ...(spansByOutline.get(kid.objectId) ?? []),
+    ];
     if (nested.length === 0) {
       out('/K []');
     } else {
@@ -533,7 +555,7 @@ function writeWorkPdfStructTreeObjects(
     out(`/Lang (${escapePdfLiteralString(plan.language)})`);
   }
   const documentKids = [
-    ...outlineKids.map((kid) => `${kid.objectId} 0 R`),
+    ...documentOutlineIds.map((id) => `${id} 0 R`),
     ...documentSpanIds.map((id) => `${id} 0 R`),
   ];
   if (documentKids.length === 0) {
