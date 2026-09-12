@@ -44,13 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.183.0)
+## What's new on `main` (0.184.0)
 
-Browser document import admits companion move-range bookmarks beside nested tables:
+Browser document import admits companion move-range bookmarks for SDT-wrapped nested tables:
 
-- Flat, untracked text-only nested `w:tbl` in the same cell as the move is allowed.
-- Deeper nesting, SDT+nested-table combinations, and tracked/rich beside-table content stay fail-closed.
-- Remaining move-range edges and full PDF/UA certification remain out of scope.
+- One simple `w:sdt` may wrap a one-level nested move-path table.
+- Deeper nesting and nested/sibling SDT stay fail-closed.
+- Remaining move-range depth edges and full PDF/UA certification remain out of scope.
 
 
 ## Explore by surface

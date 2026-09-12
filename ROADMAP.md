@@ -108,8 +108,9 @@ Still required for R0 exit:
    text-only move-range generation through `0.137.0`; single-cell table
    companion `w:move*Range*` bookmarks for supported text-only moves through
    `0.136.0`; cross-section companions through `0.131.0`). Text-only nested tables beside the move in the same cell are admitted
-   through `0.183.0`. Remaining fail-closed edges: deeper nesting and
-   SDT+nested-table combinations.
+   through `0.183.0`; one simple SDT wrapping a one-level nested move-path
+   table is admitted through `0.184.0`. Remaining fail-closed edge: deeper
+   nesting (three or more move-path tables).
 3. Remaining complex numbering edge cases that still normalize or diagnose as
    opaque. Omitted `w:ilvl` defaults to OOXML level `0` when `w:numId` and a
    supported `w:numberingChange` are present through `0.143.0`; opaque sibling
@@ -177,7 +178,7 @@ Still required for R0 exit:
    page-matched Spans nest through child `/P` (H → P → Span) through `0.178.0`; document
    language copies onto outline / `/P` / Span StructElems through `0.179.0`; catalog
    `/Lang` via putCatalog covers tags beyond the jsPDF enum through `0.180.0`; Span
-   BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; Document StructElem `/Alt` carries the document title through `0.182.0`; companion move-range bookmarks admit a text-only nested table beside the move through `0.183.0`; remaining
+   BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; Document StructElem `/Alt` carries the document title through `0.182.0`; companion move-range bookmarks admit a text-only nested table beside the move through `0.183.0`; one simple SDT may wrap a one-level nested move-path table through `0.184.0`; remaining
    decorative art borders and full PDF/UA certification remain open.
 7. Continuous no-clobber corpus growth for representative Traditional Office
    fixtures (diagnose every intentional normalization).

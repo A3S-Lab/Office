@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.184.0 - 2026-09-12
+
+### Writer
+
+- Companion `w:move*Range*` bookmarks now admit when one simple `w:sdt` wraps
+  a one-level nested move-path table (outer + inner `w:tbl` both containing
+  the move). Deeper nesting and nested/sibling SDT stay fail-closed.
+
 ## 0.183.0 - 2026-09-12
 
 ### Writer

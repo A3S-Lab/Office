@@ -9,16 +9,20 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(164);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.183.0');
+  await expect(cards).toHaveCount(165);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.184.0');
   await expect(cards.first()).toContainText(
-    'Companion move-range 准入移动旁的嵌套表',
+    'Companion move-range 准入 SDT 包裹的嵌套表',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
   await expect(releaseCard('0.182.0')).toContainText('Document /Alt 来自标题');
   await expect(releaseCard('0.182.0')).toContainText(
     '结构树 Document 携带与 Info 字典相同的标题',
+  );
+  await expect(releaseCard('0.184.0')).toContainText('SDT + 一层嵌套');
+  await expect(releaseCard('0.184.0')).toContainText(
+    '单个简单内容控件可包裹外层+内层 move-path 表',
   );
   await expect(releaseCard('0.183.0')).toContainText('旁侧嵌套 w:tbl');
   await expect(releaseCard('0.183.0')).toContainText(

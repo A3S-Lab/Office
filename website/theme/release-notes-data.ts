@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.184.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Companion move-range admits SDT-wrapped nested tables',
+      zh: 'Companion move-range 准入 SDT 包裹的嵌套表',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: companion w:move*Range* bookmarks now admit when one simple w:sdt wraps a one-level nested move-path table. Deeper nesting and nested/sibling SDT stay fail-closed.',
+      zh: 'Phase 0 保真：companion w:move*Range* 书签现在准入单个简单 w:sdt 包裹一层嵌套 move-path 表。更深嵌套与嵌套/旁侧 SDT 仍失败关闭。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'SDT + one-level nest',
+          zh: 'SDT + 一层嵌套',
+        },
+        detail: {
+          en: 'One simple content control may wrap outer + inner move-path tables.',
+          zh: '单个简单内容控件可包裹外层+内层 move-path 表。',
+        },
+      },
+      {
+        title: {
+          en: 'Deeper nesting stays closed',
+          zh: '更深嵌套仍关闭',
+        },
+        detail: {
+          en: 'Three or more move-path tables remain fail-closed.',
+          zh: '三层及以上 move-path 表仍失败关闭。',
+        },
+      },
+      {
+        title: {
+          en: 'Nested SDT stays closed',
+          zh: '嵌套 SDT 仍关闭',
+        },
+        detail: {
+          en: 'Nested or sibling SDT wrappers stay rejected.',
+          zh: '嵌套或旁侧 SDT 包装仍被拒绝。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#move-revisions',
+          zh: './components/document.html#移动修订',
+        },
+        label: { en: 'Move revisions', zh: '移动修订' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.184.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.184.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.183.0',
     date: '2026-09-12',
     kind: 'improved',

@@ -51,11 +51,11 @@ export interface DocxMoveRangeCompanion {
  * text-only content, one-level nested tables when the move lives inside the
  * inner table under those same cell rules, one text-only nested table that
  * sits beside the move in the same cell, or one simple `w:sdt` whose
- * content path holds the move's paragraph or flat table). They may be
- * stripped after capture so the text move stays reviewable. Deeper table
- * nesting, SDT combined with nested tables, nested/sibling SDT,
- * section-sandwich, tracked or rich sibling-cell / beside-table content, and
- * unpaired markers stay fail-closed. */
+ * content path holds the move's paragraph, flat table, or one-level nested
+ * move-path table). They may be stripped after capture so the text move stays
+ * reviewable. Deeper table nesting, nested/sibling SDT, section-sandwich,
+ * tracked or rich sibling-cell / beside-table content, and unpaired markers
+ * stay fail-closed. */
 export function companionDocxMoveRangeBookmarks(
   document: Document,
   movePairs: ReadonlyArray<{ from: Element; to: Element }>,
@@ -140,11 +140,11 @@ function companionForMovePair(
   // Each side's sandwich must stay move-only aside from allowlisted table
   // chrome, sibling-cell text-only content, one-level nested tables, one
   // text-only nested table beside the move in the same cell, and one
-  // simple SDT wrapper (deeper nesting, SDT+nested-table combos,
-  // nested/sibling SDT, section breaks, and tracked/rich sibling cells or
-  // beside tables remain fail-closed via sandwichContainsOnlyMove). The
-  // destination may live in a later section than the source; that does not
-  // block companion admission.
+  // simple SDT wrapper that may enclose a flat or one-level nested
+  // move-path table (deeper nesting, nested/sibling SDT, section breaks,
+  // and tracked/rich sibling cells or beside tables remain fail-closed via
+  // sandwichContainsOnlyMove). The destination may live in a later section
+  // than the source; that does not block companion admission.
   return { rangeId, rangeName, from, to, markers };
 }
 
@@ -197,10 +197,10 @@ function findSandwichMarkers(
  * untracked text-only content in a sibling cell of the innermost move
  * table, or belong to one text-only nested table beside the move in the
  * same cell. At most two move-path `w:tbl` nodes and one `w:sdt` may
- * appear; each move-path table must contain the move. SDT plus nested
- * tables, three-or-more move-path table levels, `w:sectPr`, nested or
- * off-path SDTs, tracked revisions, and rich sibling-cell / beside-table
- * content reject.
+ * appear; each move-path table must contain the move. One simple SDT may
+ * wrap a flat or one-level nested move-path table. Three-or-more move-path
+ * table levels, nested or off-path SDTs, tracked revisions, and rich
+ * sibling-cell / beside-table content reject.
  */
 function sandwichContainsOnlyMove(
   start: Element,
@@ -261,9 +261,15 @@ function sandwichContainsOnlyMove(
     if (OFF_PATH_CONTENT.has(element.localName)) return false;
     return false;
   }
-  // SDT wrapping a flat paragraph/table stays admitted; combining SDT with
-  // nested tables is not trivially safe, so keep fail-closed.
-  if (sdtCount > 0 && tableCount > 1) return false;
+  // One simple SDT may wrap a flat or one-level nested move-path table.
+  // Nested/off-path SDTs already failed above; deeper nesting is rejected by
+  // moveTables.length / tableCount caps. Require every move-path table to
+  // live under that SDT when both are present.
+  if (sdtCount > 0 && tableCount > 0) {
+    if (!moveSdt || !moveTables.every((table) => moveSdt.contains(table))) {
+      return false;
+    }
+  }
   return sawMove;
 }
 

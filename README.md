@@ -371,13 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.183.0` admits companion move-range bookmarks beside nested tables:
+Version `0.184.0` admits companion move-range bookmarks for SDT-wrapped nested tables:
 
-- **Beside nested `w:tbl`** — flat, untracked text-only nested tables in the
-  same cell as the move are allowed between companion `w:move*Range*` markers.
-- **Fail-closed edges** — deeper nesting, SDT+nested-table combinations, and
-  tracked/rich content inside the beside nested table stay rejected.
-- **Boundary** — remaining move-range edges and full PDF/UA certification
+- **SDT + one-level nest** — one simple `w:sdt` may wrap an outer + inner
+  move-path `w:tbl` that both contain the move.
+- **Fail-closed edges** — deeper nesting and nested/sibling SDT stay rejected.
+- **Boundary** — remaining move-range depth edges and full PDF/UA certification
   remain out of scope.
 
 Earlier releases stay on the product
