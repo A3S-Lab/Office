@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.184.0` admits companion move-range bookmarks for SDT-wrapped nested tables:
+Version `0.185.0` admits companion move-range bookmarks through two-level nested tables:
 
-- **SDT + one-level nest** — one simple `w:sdt` may wrap an outer + inner
-  move-path `w:tbl` that both contain the move.
-- **Fail-closed edges** — deeper nesting and nested/sibling SDT stay rejected.
-- **Boundary** — remaining move-range depth edges and full PDF/UA certification
-  remain out of scope.
+- **Two-level nest** — up to three move-path `w:tbl` ancestors that all contain
+  the move (plain or under one simple `w:sdt`).
+- **Fail-closed edge** — four or more move-path tables stay rejected.
+- **Boundary** — move-range nesting family is closed for R0; full PDF/UA
+  certification remains out of scope.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

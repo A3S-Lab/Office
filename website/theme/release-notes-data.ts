@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.185.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Companion move-range admits two-level nested tables',
+      zh: 'Companion move-range 准入两层嵌套表',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: companion w:move*Range* bookmarks now admit up to two nesting levels of move-path tables (three w:tbl ancestors), including under one simple w:sdt. Four or more move-path tables stay fail-closed. This closes the R0 move-range nesting family.',
+      zh: 'Phase 0 保真：companion w:move*Range* 书签现在准入最多两层嵌套 move-path 表（三个 w:tbl 祖先），含单个简单 w:sdt。四个及以上 move-path 表仍失败关闭。此切片收口 R0 move-range 嵌套家族。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Two-level nest',
+          zh: '两层嵌套',
+        },
+        detail: {
+          en: 'Outer + mid + inner move-path tables that all contain the move are admitted.',
+          zh: '外层+中层+内层均包含移动的 move-path 表现已准入。',
+        },
+      },
+      {
+        title: {
+          en: 'SDT wrap included',
+          zh: '含 SDT 包裹',
+        },
+        detail: {
+          en: 'The same depth works under one simple content control.',
+          zh: '相同深度在单个简单内容控件下同样生效。',
+        },
+      },
+      {
+        title: {
+          en: 'Four-deep stays closed',
+          zh: '四层仍关闭',
+        },
+        detail: {
+          en: 'Four or more move-path tables remain fail-closed.',
+          zh: '四个及以上 move-path 表仍失败关闭。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#move-revisions',
+          zh: './components/document.html#移动修订',
+        },
+        label: { en: 'Move revisions', zh: '移动修订' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.185.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.185.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.184.0',
     date: '2026-09-12',
     kind: 'improved',

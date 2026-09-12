@@ -42,13 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.184.0）
+## `main` 更新内容（0.185.0）
 
-浏览器文档导入现准入 SDT 包裹的一层嵌套表 companion move-range 书签：
+浏览器文档导入现准入两层嵌套表 companion move-range 书签：
 
-- 单个简单 `w:sdt` 可包裹外层+内层均包含移动的 move-path `w:tbl`。
-- 更深嵌套与嵌套/旁侧 SDT 仍失败关闭。
-- 其余 move-range 深度边界与完整 PDF/UA 认证仍不在范围内。
+- 最多三个均包含移动的 move-path `w:tbl` 祖先（普通或单个简单 `w:sdt` 下）。
+- 四个及以上 move-path 表仍失败关闭。
+- R0 move-range 嵌套家族已收口；完整 PDF/UA 认证仍不在范围内。
 
 
 ## 按表面探索

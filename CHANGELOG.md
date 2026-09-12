@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.185.0 - 2026-09-12
+
+### Writer
+
+- Companion `w:move*Range*` bookmarks now admit up to two nesting levels of
+  move-path tables (three `w:tbl` ancestors that all contain the move),
+  including under one simple `w:sdt`. Four or more move-path tables stay
+  fail-closed. This closes the remaining R0 move-range nesting edge.
+
 ## 0.184.0 - 2026-09-12
 
 ### Writer
