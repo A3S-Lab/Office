@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.179.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF copies /Lang onto StructElems',
+      zh: '文档 PDF 将 /Lang 写入 StructElem',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export copies the document language onto outline, page /P, and Span StructElems as /Lang when set (Document already carried /Lang). H → P → Span nesting from 0.178.0 stays unchanged. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现在在设置文档语言时，将 /Lang 写入大纲、页级 /P 与 Span StructElem（Document 原本已有 /Lang）。0.178.0 的 H → P → Span 嵌套保持不变。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: '/Lang on outline, /P, and Span',
+          zh: '大纲、/P 与 Span 的 /Lang',
+        },
+        detail: {
+          en: 'Structure elements inherit the document language tag for AT consumers.',
+          zh: '结构元素继承文档语言标签，便于辅助技术消费。',
+        },
+      },
+      {
+        title: {
+          en: 'Nesting unchanged',
+          zh: '嵌套不变',
+        },
+        detail: {
+          en: 'H → P → Span under H1–H6 and unmatched page /P wrappers stay as before.',
+          zh: 'H1–H6 下的 H → P → Span 与无匹配页级 /P 包装保持原样。',
+        },
+      },
+      {
+        title: {
+          en: 'PDF/UA certification stays out of scope',
+          zh: 'PDF/UA 认证仍不在范围内',
+        },
+        detail: {
+          en: 'Remaining decorative art borders and full PDF/UA certification are not claimed.',
+          zh: '不宣称其余装饰性艺术边框与完整 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.179.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.179.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.178.0',
     date: '2026-09-12',
     kind: 'improved',

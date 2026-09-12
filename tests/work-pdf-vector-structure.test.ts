@@ -1537,12 +1537,14 @@ test('applies title, language, outline bookmarks, MarkInfo, and StructTreeRoot s
   expect(ascii).toContain('/Alt (Note)');
   // Outline StructElems carry /Pg page refs for AT navigation.
   expect(ascii).toMatch(
-    /\/S \/H1\n\/P \d+ 0 R\n\/Pg \d+ 0 R\n\/Alt \(Overview\)/,
+    /\/S \/H1\n\/P \d+ 0 R\n\/Pg \d+ 0 R\n\/Lang \(en-US\)\n\/Alt \(Overview\)/,
   );
   expect(ascii).toMatch(
-    /\/S \/H2\n\/P \d+ 0 R\n\/Pg \d+ 0 R\n\/Alt \(Details\)/,
+    /\/S \/H2\n\/P \d+ 0 R\n\/Pg \d+ 0 R\n\/Lang \(en-US\)\n\/Alt \(Details\)/,
   );
-  expect(ascii).toMatch(/\/S \/P\n\/P \d+ 0 R\n\/Pg \d+ 0 R\n\/Alt \(Note\)/);
+  expect(ascii).toMatch(
+    /\/S \/P\n\/P \d+ 0 R\n\/Pg \d+ 0 R\n\/Lang \(en-US\)\n\/Alt \(Note\)/,
+  );
   const catalog = ascii.match(/\/Type \/Catalog[\s\S]*?endobj/);
   expect(catalog?.[0]).toContain('/StructTreeRoot');
   expect(catalog?.[0]).toMatch(/\/StructTreeRoot \d+ 0 R/);
@@ -1669,8 +1671,10 @@ test('nests page-matched Span MCIDs under outline H1 via child /P', () => {
   expect(pageParagraph!.body).toContain(`/P ${h1!.id} 0 R`);
   const spanRefs = spans.map((span) => `${span.id} 0 R`).join(' ');
   expect(pageParagraph!.body).toContain(`/K [${spanRefs}]`);
+  expect(pageParagraph!.body).toContain('/Lang (en)');
   for (const span of spans) {
     expect(span.body).toContain(`/P ${pageParagraph!.id} 0 R`);
+    expect(span.body).toContain('/Lang (en)');
     expect(document!.body).not.toContain(`${span.id} 0 R`);
   }
 });
@@ -1823,7 +1827,10 @@ test('wraps Spans under page /P when their page has no outline role', () => {
   expect(document!.body).not.toContain(`${span!.id} 0 R`);
   expect(pageParagraph!.body).toContain(`/P ${document!.id} 0 R`);
   expect(pageParagraph!.body).toContain(`/K [${span!.id} 0 R]`);
+  expect(pageParagraph!.body).toContain('/Lang (en)');
   expect(span!.body).toContain(`/P ${pageParagraph!.id} 0 R`);
+  expect(span!.body).toContain('/Lang (en)');
+  expect(h1!.body).toContain('/Lang (en)');
 });
 
 test('emits Document StructTreeRoot stub when outline is empty', () => {

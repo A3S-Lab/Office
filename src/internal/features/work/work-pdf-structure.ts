@@ -181,8 +181,9 @@ export function ensureWorkPdfStructTabs(pdf: JsPdf): void {
  * Outline roles nest by level under parent `/K` (same stack as bookmarks);
  * page-matched Spans nest under the last outline role on that page (H1–H6
  * wrap those Spans in a child `/P`; outline-level `/P` keeps Spans direct);
- * unmatched Spans nest under a page-level `/P` under Document. Not a full
- * PDF/UA certification claim.
+ * unmatched Spans nest under a page-level `/P` under Document; document
+ * language is copied onto outline / `/P` / Span StructElems when set. Not a
+ * full PDF/UA certification claim.
  */
 export function ensureWorkPdfStructTreeRoot(
   pdf: JsPdf,
@@ -643,6 +644,9 @@ function writeWorkPdfStructTreeObjects(
     } catch {
       // jsPDF getPageInfo can throw when the page object is not ready.
     }
+    if (plan.language) {
+      out(`/Lang (${escapePdfLiteralString(plan.language)})`);
+    }
     out(`/Alt ${encodePdfActualTextOperand(kid.alt)}`);
     const headingParagraphId = headingParagraphByOutline.get(kid.objectId);
     const nested = [
@@ -667,6 +671,9 @@ function writeWorkPdfStructTreeObjects(
     out('/S /P');
     out(`/P ${paragraph.parentObjectId} 0 R`);
     out(`/Pg ${paragraph.pageObjId} 0 R`);
+    if (plan.language) {
+      out(`/Lang (${escapePdfLiteralString(plan.language)})`);
+    }
     out(`/K [${paragraph.spanObjectIds.map((id) => `${id} 0 R`).join(' ')}]`);
     out('>>');
     out('endobj');
@@ -679,6 +686,9 @@ function writeWorkPdfStructTreeObjects(
     out('/S /Span');
     out(`/P ${kid.parentObjectId} 0 R`);
     out(`/Pg ${kid.pageObjId} 0 R`);
+    if (plan.language) {
+      out(`/Lang (${escapePdfLiteralString(plan.language)})`);
+    }
     out(`/K ${kid.mcid}`);
     out(`/Alt ${encodePdfActualTextOperand(kid.alt)}`);
     out('>>');

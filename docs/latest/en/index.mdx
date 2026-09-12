@@ -44,12 +44,12 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.178.0)
+## What's new on `main` (0.179.0)
 
-Browser document PDF export nests outline-matched Spans under heading paragraphs:
+Browser document PDF export copies language onto structure elements:
 
-- H1–H6 outline roles wrap page-matched Span MCIDs in H → `/P` → Span (with `/Pg`).
-- Outline-level `/P` roles keep Spans as direct kids; unmatched pages keep Document → `/P` → Span from `0.177.0`.
+- Outline, page `/P`, and Span StructElems carry `/Lang` when the document language is set.
+- H → P → Span nesting under H1–H6 from `0.178.0` is unchanged.
 - Remaining decorative art borders and full PDF/UA certification remain out of scope.
 
 

@@ -371,13 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.178.0` nests outline-matched PDF Spans under heading `/P` roles:
+Version `0.179.0` copies document language onto PDF StructElems:
 
-- **H → P → Span** — page-matched Spans under H1–H6 nest through a child `/P`
-  StructElem (with `/Pg`).
-- **Outline `/P` keeps direct Spans** — outline-level `/P` roles still nest
-  Spans as direct kids; unmatched pages keep Document → P → Span from
-  `0.177.0`.
+- **`/Lang` on outline, `/P`, and Span** — when a document language is set,
+  those StructElems carry `/Lang` (Document already did).
+- **Nesting unchanged** — H → P → Span under H1–H6 and page-level `/P` wrappers
+  from `0.177.0`–`0.178.0` stay in place.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

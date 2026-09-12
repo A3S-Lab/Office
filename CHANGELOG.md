@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.179.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export copies the document language onto outline,
+  page `/P`, and Span StructElems as `/Lang` when set (Document already had
+  `/Lang`). H → P → Span nesting from `0.178.0` stays unchanged. Remaining
+  decorative art borders and full PDF/UA certification remain out of scope.
+
 ## 0.178.0 - 2026-09-12
 
 ### Writer

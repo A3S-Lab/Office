@@ -9,13 +9,19 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(159);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.178.0');
+  await expect(cards).toHaveCount(160);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.179.0');
   await expect(cards.first()).toContainText(
-    '文档 PDF 将 H1–H6 下 Span 挂到子 /P',
+    '文档 PDF 将 /Lang 写入 StructElem',
   );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
+  await expect(releaseCard('0.179.0')).toContainText(
+    '大纲、/P 与 Span 的 /Lang',
+  );
+  await expect(releaseCard('0.179.0')).toContainText(
+    '结构元素继承文档语言标签，便于辅助技术消费',
+  );
   await expect(releaseCard('0.178.0')).toContainText('H1–H6 下的 H → P → Span');
   await expect(releaseCard('0.178.0')).toContainText(
     '标题大纲角色把按页匹配的 Span 包在带子 /Pg 的子 /P 中',
