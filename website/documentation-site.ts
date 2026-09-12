@@ -21,6 +21,7 @@ export const DOCUMENTATION_DEFAULT_VERSION = 'latest';
 
 export const DOCUMENTATION_VERSIONS = [
   'latest',
+  '0.185.0',
   '0.184.0',
   '0.183.0',
   '0.182.0',
@@ -40,7 +41,6 @@ export const DOCUMENTATION_VERSIONS = [
   '0.168.0',
   '0.167.0',
   '0.166.0',
-  '0.165.0',
   '0.38.0',
   '0.1.0',
 ] as const;
