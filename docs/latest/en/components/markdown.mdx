@@ -51,6 +51,19 @@ canonical and undo/redo tracks only local collaborative transactions. See
 [Real-time collaboration](./collaboration.mdx) for initialization, ownership,
 permission, and framework-binding rules.
 
+## Diagrams and code
+
+The visual surface renders fenced code with [Shiki](https://github.com/shikijs/shiki).
+Token colors follow the editor light and dark themes. Plaintext fences stay
+uncolored source.
+
+A `mermaid` fence renders with
+[beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid) when the
+diagram type is supported. The diagram uses the Office ink and paper tokens,
+keeps its designed size, and does not load a remote font. Unsupported diagrams
+stay as source. Selecting the diagram reveals the fence so it can still be
+edited. The Markdown string remains the persisted value either way.
+
 ## Visual-editor IME behavior
 
 The TipTap visual surface keeps composition pre-edit text local. It serializes
