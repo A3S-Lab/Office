@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.187.0 - 2026-09-12
+
+### Writer
+
+- Whole-paragraph mark, paragraph-break, and text-move revision bodies now
+  admit bounded `w:footnoteReference` glyphs that carry exactly one Word-ns
+  numeric `w:id`. Attributed `footnoteRef`, `endnoteReference`, and malformed
+  footnote markers stay fail-closed.
+
 ## 0.186.0 - 2026-09-12
 
 ### Writer

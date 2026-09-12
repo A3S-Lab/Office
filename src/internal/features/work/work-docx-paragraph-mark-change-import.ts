@@ -497,7 +497,8 @@ function isolatedParagraphBreakMarkChange(
  * marked paragraph and its eligible neighbor. Soft breaks, tabs, carriage
  * returns, last-rendered page breaks, page-number and date-field glyphs,
  * footnoteRef, endnoteRef, annotationRef, separator, and continuationSeparator
- * glyphs, non-breaking and soft hyphens, empty/`rPr`-only runs,
+ * glyphs, bounded footnoteReference markers with w:id, non-breaking and soft
+ * hyphens, empty/`rPr`-only runs,
  * relationship-free internal hyperlinks, safe relationship-bound external
  * hyperlinks, relationship-free bookmarks, and supported inline DrawingML
  * pictures match the whole-paragraph mark admission set (including picture-only
@@ -872,7 +873,7 @@ function runIsTextOnly(
       if (!isTextWrappingBreak(child)) return false;
       continue;
     }
-    if (isAdmittedEmptyRunGlyph(child)) continue;
+    if (isAdmittedRunGlyph(child)) continue;
     if (child.localName !== textName || child.children.length) return false;
   }
   return true;
@@ -885,7 +886,7 @@ function runHasVisibleText(
   const textName = kind === 'deletion' ? 'delText' : 't';
   return directChildren(run).some((child) => {
     if (child.namespaceURI !== run.namespaceURI) return false;
-    if (isAdmittedEmptyRunGlyph(child)) return true;
+    if (isAdmittedRunGlyph(child)) return true;
     return (
       child.localName === textName &&
       Boolean(child.textContent) &&
@@ -1060,6 +1061,37 @@ function isAdmittedEmptyRunGlyph(element: Element): boolean {
     ADMITTED_EMPTY_RUN_GLYPHS.has(element.localName) &&
     element.children.length === 0 &&
     element.attributes.length === 0
+  );
+}
+
+/**
+ * Bounded body footnote markers: empty element with exactly one Word-ns w:id.
+ * Attributed footnoteRef, endnoteReference, and malformed ids stay fail-closed.
+ */
+function isAdmittedFootnoteReferenceGlyph(element: Element): boolean {
+  if (
+    element.localName !== 'footnoteReference' ||
+    element.children.length !== 0 ||
+    !DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')
+  ) {
+    return false;
+  }
+  const namespace = element.namespaceURI;
+  if (!namespace) return false;
+  const wordAttributes = Array.from(element.attributes).filter(
+    (candidate) => xmlAttributeNamespace(element, candidate) === namespace,
+  );
+  if (wordAttributes.length !== 1) return false;
+  const only = wordAttributes[0];
+  if (!only || xmlAttributeLocalName(only) !== 'id') return false;
+  const id = only.value.trim();
+  return /^\+?\d{1,10}$/.test(id);
+}
+
+function isAdmittedRunGlyph(element: Element): boolean {
+  return (
+    isAdmittedEmptyRunGlyph(element) ||
+    isAdmittedFootnoteReferenceGlyph(element)
   );
 }
 

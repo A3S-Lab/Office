@@ -132,10 +132,11 @@ Still required for R0 exit:
    (attribute-free empty `w:separator` and `w:continuationSeparator` through
    `0.147.0`; attribute-free empty `w:annotationRef` through `0.146.0`;
    attribute-free empty `w:endnoteRef` through `0.145.0`; attribute-free empty
-   `w:footnoteRef` through `0.144.0`). Attributed `footnoteRef` /
-   `endnoteRef` / `annotationRef` and `footnoteReference` /
-   `endnoteReference` with id stay fail-closed until dedicated fixtures admit
-   them.
+   `w:footnoteRef` through `0.144.0`). Bounded `w:footnoteReference` with exactly
+   one Word-ns numeric `w:id` is admitted in whole-paragraph mark,
+   paragraph-break, and text-move revision bodies through `0.187.0`. Attributed
+   `footnoteRef` / `endnoteRef` / `annotationRef` and `endnoteReference` with id
+   stay fail-closed until dedicated fixtures admit them.
 6. Browser document PDF output toward searchable text, broader vector paint,
    and tagged / PDF/UA structure without a second layout model. PDF bookmarks
    include Writer outline-level paragraphs (`p[data-office-outline-level]`)
@@ -181,7 +182,7 @@ Still required for R0 exit:
    page-matched Spans nest through child `/P` (H → P → Span) through `0.178.0`; document
    language copies onto outline / `/P` / Span StructElems through `0.179.0`; catalog
    `/Lang` via putCatalog covers tags beyond the jsPDF enum through `0.180.0`; Span
-   BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; Document StructElem `/Alt` carries the document title through `0.182.0`; companion move-range bookmarks admit a text-only nested table beside the move through `0.183.0`; one simple SDT may wrap a one-level nested move-path table through `0.184.0`; up to two nesting levels (three move-path tables) through `0.185.0`; current-level bullet `w:numberingChange` (nfc `23`) through `0.186.0`; remaining
+   BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; Document StructElem `/Alt` carries the document title through `0.182.0`; companion move-range bookmarks admit a text-only nested table beside the move through `0.183.0`; one simple SDT may wrap a one-level nested move-path table through `0.184.0`; up to two nesting levels (three move-path tables) through `0.185.0`; current-level bullet `w:numberingChange` (nfc `23`) through `0.186.0`; bounded `w:footnoteReference` with numeric `w:id` in mark / break / move bodies through `0.187.0`; remaining
    decorative art borders and full PDF/UA certification remain open.
 7. Continuous no-clobber corpus growth for representative Traditional Office
    fixtures (diagnose every intentional normalization).
@@ -473,8 +474,10 @@ above this section.
   are admitted through `0.146.0`; attribute-free empty `w:separator` and
   `w:continuationSeparator` glyphs in the same revision bodies are admitted
   through `0.147.0`. The note-adjacent empty glyphs family is complete through
-  `0.147.0`; attributed `footnoteRef` / `endnoteRef` / `annotationRef` and
-  `footnoteReference` / `endnoteReference` with id stay fail-closed. Floating anchors, empty or malformed drawings, unresolved
+  `0.147.0`; bounded `w:footnoteReference` with exactly one Word-ns numeric
+  `w:id` is admitted in whole-paragraph mark, paragraph-break, and text-move
+  revision bodies through `0.187.0`; attributed `footnoteRef` / `endnoteRef` /
+  `annotationRef` and `endnoteReference` with id stay fail-closed. Floating anchors, empty or malformed drawings, unresolved
   embeds, residual deeper / beside-move / SDT+nested move-range edges, and
   remaining complex numbering edge cases remain explicit follow-up work.
   Relationship-free `w:tblPrChange` with a prior `w:jc`

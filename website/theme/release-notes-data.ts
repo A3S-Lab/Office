@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.187.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'footnoteReference with id admitted in revision bodies',
+      zh: '修订正文准入带 id 的 footnoteReference',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: bounded empty w:footnoteReference glyphs with exactly one Word-ns numeric w:id import inside whole-paragraph mark, paragraph-break, and text-move revision bodies. Attributed footnoteRef, endnoteReference, and malformed markers stay fail-closed.',
+      zh: 'Phase 0 保真：仅带一个 Word 命名空间数字 w:id 的空 w:footnoteReference 可进入整段标记、段落分隔与文本移动修订正文。带属性 footnoteRef、endnoteReference 与畸形标记仍失败关闭。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Mark / break / move',
+          zh: '标记 / 分隔 / 移动',
+        },
+        detail: {
+          en: 'Eligible revision bodies admit footnoteReference with numeric id.',
+          zh: '合格修订正文准入带数字 id 的 footnoteReference。',
+        },
+      },
+      {
+        title: {
+          en: 'Required w:id',
+          zh: '必需 w:id',
+        },
+        detail: {
+          en: 'Exactly one Word-ns numeric id is required; extras fail closed.',
+          zh: '必须恰好一个 Word 命名空间数字 id；多余属性失败关闭。',
+        },
+      },
+      {
+        title: {
+          en: 'Related markers closed',
+          zh: '相关标记仍关闭',
+        },
+        detail: {
+          en: 'Attributed footnoteRef and endnoteReference remain fail-closed.',
+          zh: '带属性 footnoteRef 与 endnoteReference 仍失败关闭。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#whole-paragraph-mark-revisions',
+          zh: './components/document.html#整段段落标记修订',
+        },
+        label: { en: 'Paragraph mark revisions', zh: '段落标记修订' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.187.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.187.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.186.0',
     date: '2026-09-12',
     kind: 'improved',

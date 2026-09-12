@@ -930,7 +930,7 @@ describe('DOCX paragraph-mark revisions', () => {
     expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([]);
   });
 
-  test('rejects footnoteReference with id inside whole-paragraph mark revisions', () => {
+  test('admits footnoteReference with id inside whole-paragraph mark revisions', () => {
     const document = wordXml(`
       <w:p>
         <w:pPr><w:rPr>
@@ -938,6 +938,47 @@ describe('DOCX paragraph-mark revisions', () => {
         </w:rPr></w:pPr>
         <w:ins w:id="70" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
           <w:r><w:t>Left</w:t><w:footnoteReference w:id="2"/><w:t>Right</w:t></w:r>
+        </w:ins>
+      </w:p>
+    `);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(true);
+    expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([
+      expect.objectContaining({
+        id: 'docx-paragraph-mark-change-69',
+        kind: 'insertion',
+      }),
+    ]);
+  });
+
+  test('rejects endnoteReference with id inside whole-paragraph mark revisions', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:pPr><w:rPr>
+          <w:ins w:id="691" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+        </w:rPr></w:pPr>
+        <w:ins w:id="701" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
+          <w:r><w:t>Left</w:t><w:endnoteReference w:id="2"/><w:t>Right</w:t></w:r>
+        </w:ins>
+      </w:p>
+    `);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(false);
+    expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([]);
+  });
+
+  test('rejects malformed footnoteReference glyphs inside whole-paragraph mark revisions', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:pPr><w:rPr>
+          <w:ins w:id="692" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+        </w:rPr></w:pPr>
+        <w:ins w:id="702" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
+          <w:r><w:t>Left</w:t><w:footnoteReference w:id="2" w:customMarkFollows="1"/><w:t>Right</w:t></w:r>
         </w:ins>
       </w:p>
     `);

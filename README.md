@@ -371,14 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.186.0` admits current-level bullet numbering revisions:
+Version `0.187.0` admits bounded footnote markers inside revision bodies:
 
-- **Bullet `w:numberingChange`** — ST_NumberFormat nfc `23` at the current
-  `w:ilvl` imports as an atomic bullet-list review card with accept/reject.
-- **Native round-trip** — export restores sequential `w:numberingChange`
-  records under bullet `w:numPr` without private markers.
-- **Fail-closed edges** — picture numbering, missing `numId`, and malformed
-  originals stay rejected.
+- **`w:footnoteReference` with `w:id`** — empty footnote markers that carry
+  exactly one Word-ns numeric id import inside whole-paragraph mark,
+  paragraph-break, and text-move revision bodies.
+- **Review stays atomic** — mark, break, and move admission keep the same
+  accept/reject contracts once the body is eligible.
+- **Fail-closed edges** — attributed `footnoteRef`, `endnoteReference`, and
+  malformed footnote markers stay rejected.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

@@ -44,13 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.186.0)
+## What's new on `main` (0.187.0)
 
-Browser document import admits current-level bullet numbering revisions:
+Writer Phase 0 admits bounded `w:footnoteReference` markers inside revision
+bodies:
 
-- ST_NumberFormat nfc `23` `w:numberingChange` originals become atomic bullet-list review cards with accept/reject.
-- Native export restores sequential bullet `w:numberingChange` records without private markers.
-- Picture numbering, missing `numId`, and malformed originals stay fail-closed.
+- Empty `w:footnoteReference` with exactly one Word-ns numeric `w:id` imports
+  inside eligible whole-paragraph mark, paragraph-break, and text-move bodies.
+- Attributed `footnoteRef`, `endnoteReference`, and malformed footnote markers
+  stay fail-closed.
 
 
 ## Explore by surface

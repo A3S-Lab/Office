@@ -393,7 +393,7 @@ function moveRunIsTextOnly(
       if (!isTextWrappingBreak(child)) return false;
       continue;
     }
-    if (isAdmittedEmptyRunGlyph(child)) continue;
+    if (isAdmittedRunGlyph(child)) continue;
     if (!allowedText.has(child.localName) || child.querySelector('*')) {
       return false;
     }
@@ -409,7 +409,7 @@ function moveRunHasVisibleContent(
     if (!DOCX_WORDPROCESSING_NAMESPACES.has(node.namespaceURI ?? '')) {
       return false;
     }
-    if (isAdmittedEmptyRunGlyph(node)) return true;
+    if (isAdmittedRunGlyph(node)) return true;
     return allowedText.has(node.localName) && Boolean(node.textContent);
   });
 }
@@ -527,6 +527,37 @@ function isAdmittedEmptyRunGlyph(element: Element): boolean {
     ADMITTED_EMPTY_RUN_GLYPHS.has(element.localName) &&
     element.children.length === 0 &&
     element.attributes.length === 0
+  );
+}
+
+/**
+ * Bounded body footnote markers: empty element with exactly one Word-ns w:id.
+ * Attributed footnoteRef, endnoteReference, and malformed ids stay fail-closed.
+ */
+function isAdmittedFootnoteReferenceGlyph(element: Element): boolean {
+  if (
+    element.localName !== 'footnoteReference' ||
+    element.children.length !== 0 ||
+    !DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')
+  ) {
+    return false;
+  }
+  const namespace = element.namespaceURI;
+  if (!namespace) return false;
+  const wordAttributes = Array.from(element.attributes).filter(
+    (candidate) => xmlAttributeNamespace(element, candidate) === namespace,
+  );
+  if (wordAttributes.length !== 1) return false;
+  const only = wordAttributes[0];
+  if (!only || xmlAttributeLocalName(only) !== 'id') return false;
+  const id = only.value.trim();
+  return /^\+?\d{1,10}$/.test(id);
+}
+
+function isAdmittedRunGlyph(element: Element): boolean {
+  return (
+    isAdmittedEmptyRunGlyph(element) ||
+    isAdmittedFootnoteReferenceGlyph(element)
   );
 }
 
