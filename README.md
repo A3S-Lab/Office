@@ -371,11 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.171.0` paints Writer `cabins` art paragraph borders as house silhouettes
-in browser document PDF export:
+Version `0.172.0` nests page-matched vector-run Span MCIDs under outline roles
+in browser document PDF StructTree export:
 
-- **cabins** — triangle roof + rectangular body with a door notch along the
-  measured edge.
+- **Outline `/K` nesting** — Spans on a page attach to the last outline-derived
+  H1–H6/P StructElem on that page via `/K` and `/P`.
+- **Unmatched pages** — Spans whose page has no outline role stay Document kids.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

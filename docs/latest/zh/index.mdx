@@ -42,15 +42,14 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.171.0）
+## `main` 更新内容（0.172.0）
 
-浏览器文档 PDF 导出现将 Writer 的 cabins 艺术边框绘制为小屋剪影：
+浏览器文档 PDF 导出现将同页匹配的 Span MCID 嵌套到大纲角色下：
 
-- 显式 `cabins` — 沿测量边绘制三角屋顶 + 矩形屋身（含门缺口）；不会静默跳过。
+- 大纲派生的 H1–H6/P StructElem 通过 `/K` 接收该页矢量文本 Span 子节点（取该页最后一个大纲角色；Span 的 `/P` 指向该角色）。
+- 无大纲角色页面上的 Span 仍作为 Document 子节点。
 - 其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。
 
-产品时间线见 [更新日志](./changelog.html)。工程细节见仓库
-[CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md)。
 
 ## 按表面探索
 

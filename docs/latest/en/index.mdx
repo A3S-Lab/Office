@@ -44,15 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.171.0)
+## What's new on `main` (0.172.0)
 
-Browser document PDF export now paints Writer cabins art borders as house silhouettes:
+Browser document PDF export now nests page-matched Span MCIDs under outline roles:
 
-- Explicit `cabins` — triangle roof + rectangular body with a door notch along the measured edge; not a silent skip.
+- Outline-derived H1–H6/P StructElems receive page-matched vector-run Span kids in `/K` (last outline role on that page; `/P` points at that role).
+- Spans on pages without an outline role stay Document kids.
 - Remaining decorative art borders and full PDF/UA certification remain out of scope.
 
-Full product timeline: [What's new](./changelog.html). Engineering detail:
-repository [CHANGELOG](https://github.com/A3S-Lab/Office/blob/main/CHANGELOG.md).
 
 ## Explore by surface
 

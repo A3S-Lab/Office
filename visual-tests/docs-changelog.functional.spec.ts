@@ -9,14 +9,16 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(152);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.171.0');
-  await expect(cards.first()).toContainText('文档 PDF 绘制 cabins 艺术边框');
+  await expect(cards).toHaveCount(153);
+  await expect(cards.first()).toHaveAttribute('data-version', '0.172.0');
+  await expect(cards.first()).toContainText(
+    '文档 PDF 将 Span MCID 嵌套到大纲角色下',
+  );
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
-  await expect(releaseCard('0.171.0')).toContainText('小屋剪影');
-  await expect(releaseCard('0.171.0')).toContainText(
-    'cabins 沿测量边绘制三角屋顶 + 带门缺口的矩形屋身',
+  await expect(releaseCard('0.172.0')).toContainText('大纲 /K 嵌套');
+  await expect(releaseCard('0.172.0')).toContainText(
+    '同页 Span StructElem 通过 /K 与 /P 成为该页最后一个大纲角色的子节点',
   );
   await expect(releaseCard('0.170.0')).toContainText('栖息与飞行剪影');
   await expect(releaseCard('0.170.0')).toContainText(

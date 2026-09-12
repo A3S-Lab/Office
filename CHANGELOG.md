@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.172.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export nests page-matched vector-run Span MCIDs under
+  outline-derived H1–H6/P StructElem `/K` (last outline role on that page;
+  unmatched Spans stay Document kids). Remaining decorative art borders and
+  full PDF/UA certification remain out of scope.
+
 ## 0.171.0 - 2026-09-12
 
 ### Writer

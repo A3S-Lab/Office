@@ -1583,6 +1583,109 @@ test('links vector-run MCIDs through ParentTree and page StructParents', () => {
   expect(pageDict?.[0]).toContain('/StructParents 0');
 });
 
+test('nests page-matched Span MCIDs under outline role /K', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorTextLayer(
+    pdf,
+    [
+      {
+        color: '#112233',
+        fontSize: 14,
+        fontStyle: 'normal',
+        height: 16,
+        text: 'First run',
+        width: 80,
+        x: 20,
+        y: 40,
+      },
+      {
+        color: '#112233',
+        fontSize: 14,
+        fontStyle: 'normal',
+        height: 16,
+        text: 'Second run',
+        width: 90,
+        x: 20,
+        y: 60,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  applyWorkPdfDocumentStructure(pdf, {
+    language: 'en',
+    outline: [{ level: 1, pageNumber: 1, title: 'Heading' }],
+    title: 'Outline K nesting',
+  });
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  const objects = [
+    ...ascii.matchAll(/(\d+)\s+0\s+obj\s*(<<[\s\S]*?>>)\s*endobj/g),
+  ].map((match) => ({ body: match[2]!, id: match[1]! }));
+  const h1 = objects.find((obj) => obj.body.includes('/S /H1'));
+  const spans = objects.filter((obj) => obj.body.includes('/S /Span'));
+  const document = objects.find((obj) => obj.body.includes('/S /Document'));
+  expect(h1).toBeTruthy();
+  expect(spans).toHaveLength(2);
+  expect(document).toBeTruthy();
+  const spanRefs = spans.map((span) => `${span.id} 0 R`).join(' ');
+  expect(h1!.body).toContain(`/K [${spanRefs}]`);
+  expect(document!.body).toContain(`/K [${h1!.id} 0 R]`);
+  for (const span of spans) {
+    expect(span.body).toContain(`/P ${h1!.id} 0 R`);
+    expect(document!.body).not.toContain(`${span.id} 0 R`);
+  }
+});
+
+test('keeps Spans under Document when their page has no outline role', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorTextLayer(
+    pdf,
+    [
+      {
+        color: '#112233',
+        fontSize: 14,
+        fontStyle: 'normal',
+        height: 16,
+        text: 'Orphan run',
+        width: 80,
+        x: 20,
+        y: 40,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  applyWorkPdfDocumentStructure(pdf, {
+    language: 'en',
+    outline: [{ level: 1, pageNumber: 2, title: 'Later heading' }],
+    title: 'Unmatched page spans',
+  });
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  const objects = [
+    ...ascii.matchAll(/(\d+)\s+0\s+obj\s*(<<[\s\S]*?>>)\s*endobj/g),
+  ].map((match) => ({ body: match[2]!, id: match[1]! }));
+  const h1 = objects.find((obj) => obj.body.includes('/S /H1'));
+  const span = objects.find((obj) => obj.body.includes('/S /Span'));
+  const document = objects.find((obj) => obj.body.includes('/S /Document'));
+  expect(h1).toBeTruthy();
+  expect(span).toBeTruthy();
+  expect(document).toBeTruthy();
+  expect(h1!.body).toContain('/K []');
+  expect(document!.body).toContain(`${h1!.id} 0 R`);
+  expect(document!.body).toContain(`${span!.id} 0 R`);
+  expect(span!.body).toContain(`/P ${document!.id} 0 R`);
+});
+
 test('emits Document StructTreeRoot stub when outline is empty', () => {
   const pdf = new jsPDF({
     orientation: 'portrait',
