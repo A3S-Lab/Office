@@ -39,6 +39,8 @@ interface WorkPdfJsInternal {
   newObjectDeferredBegin?: (objectId: number, doOutput?: boolean) => number;
   out?: (content: string) => void;
   write?: (...parts: string[]) => void;
+  workPdfCatalogLang?: string | null;
+  workPdfCatalogLangSubscribed?: boolean;
   workPdfContentLinks?: WorkPdfContentLink[];
   workPdfMarkInfoSubscribed?: boolean;
   workPdfMcidCounters?: Record<number, number>;
@@ -58,10 +60,11 @@ const OUTLINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p[data-office-outline-level]';
 
 /**
  * Applies bounded PDF document metadata and outline bookmarks. This is the
- * tagged/accessibility bootstrap: language + title + heading outline + MarkInfo
- * (Marked + Suspects false) + catalog Tabs /S + StructTreeRoot (Document /
- * H1–H6 / P with /Pg) with ParentTree / MCID links for vector-run Span content,
- * without claiming full PDF/UA certification.
+ * tagged/accessibility bootstrap: language (catalog + StructElem `/Lang`) +
+ * title + heading outline + MarkInfo (Marked + Suspects false) + catalog
+ * Tabs /S + StructTreeRoot (Document / H1–H6 / P with /Pg) with ParentTree /
+ * MCID links for vector-run Span content, without claiming full PDF/UA
+ * certification.
  */
 export function applyWorkPdfDocumentStructure(
   pdf: JsPdf,
@@ -76,13 +79,7 @@ export function applyWorkPdfDocumentStructure(
     });
   }
   const language = normalizePdfLanguage(structure.language);
-  if (language) {
-    try {
-      pdf.setLanguage(language as Parameters<JsPdf['setLanguage']>[0]);
-    } catch {
-      // jsPDF only accepts a fixed language enum; ignore unknown tags.
-    }
-  }
+  ensureWorkPdfCatalogLang(pdf, language);
   ensureWorkPdfMarkInfo(pdf);
   ensureWorkPdfViewerPreferences(pdf);
   ensureWorkPdfStructTabs(pdf);
@@ -117,6 +114,31 @@ export function applyWorkPdfDocumentStructure(
     } catch {
       // Outline plugin may be unavailable in some builds.
     }
+  }
+}
+
+/**
+ * Writes catalog `/Lang` for any normalized BCP-47-like tag via putCatalog.
+ * Prefer this over jsPDF `setLanguage`, which silently skips tags outside its
+ * fixed enum (for example `yue`). Not a PDF/UA certification claim.
+ */
+export function ensureWorkPdfCatalogLang(
+  pdf: JsPdf,
+  language: string | null,
+): void {
+  const internal = workPdfJsInternal(pdf);
+  if (!internal?.events?.subscribe || !internal.write) return;
+  internal.workPdfCatalogLang = language;
+  if (internal.workPdfCatalogLangSubscribed) return;
+  internal.workPdfCatalogLangSubscribed = true;
+  try {
+    internal.events.subscribe('putCatalog', () => {
+      const lang = internal.workPdfCatalogLang;
+      if (!lang) return;
+      internal.write?.(`/Lang (${escapePdfLiteralString(lang)})`);
+    });
+  } catch {
+    internal.workPdfCatalogLangSubscribed = false;
   }
 }
 

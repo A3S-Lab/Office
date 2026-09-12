@@ -42,12 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.179.0）
+## `main` 更新内容（0.180.0）
 
-浏览器文档 PDF 导出现将语言写入结构元素：
+浏览器文档 PDF 导出现为任意规范化语言标签写入目录 `/Lang`：
 
-- 设置文档语言时，大纲、页级 `/P` 与 Span StructElem 写入 `/Lang`。
-- `0.178.0` 起 H1–H6 下的 H → P → Span 嵌套保持不变。
+- 通过 putCatalog 写入目录 `/Lang`（含 jsPDF `setLanguage` 会静默跳过的标签）。
+- `0.179.0` 的 StructElem `/Lang` 保持不变。
 - 其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。
 
 

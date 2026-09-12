@@ -44,12 +44,12 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.179.0)
+## What's new on `main` (0.180.0)
 
-Browser document PDF export copies language onto structure elements:
+Browser document PDF export writes catalog language for any normalized tag:
 
-- Outline, page `/P`, and Span StructElems carry `/Lang` when the document language is set.
-- H → P → Span nesting under H1–H6 from `0.178.0` is unchanged.
+- Catalog `/Lang` is emitted via putCatalog (including tags jsPDF `setLanguage` silently skips).
+- StructElem `/Lang` from `0.179.0` is unchanged.
 - Remaining decorative art borders and full PDF/UA certification remain out of scope.
 
 

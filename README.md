@@ -371,12 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.179.0` copies document language onto PDF StructElems:
+Version `0.180.0` writes catalog PDF `/Lang` beyond the jsPDF enum:
 
-- **`/Lang` on outline, `/P`, and Span** — when a document language is set,
-  those StructElems carry `/Lang` (Document already did).
-- **Nesting unchanged** — H → P → Span under H1–H6 and page-level `/P` wrappers
-  from `0.177.0`–`0.178.0` stay in place.
+- **Catalog `/Lang` via putCatalog** — any normalized language tag is written
+  once on the catalog (including tags jsPDF `setLanguage` silently skips).
+- **StructElem `/Lang` unchanged** — outline, `/P`, Span, and Document language
+  from `0.179.0` stay in place.
 - **Boundary** — remaining decorative art borders and full PDF/UA certification
   remain out of scope.
 

@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.180.0 - 2026-09-12
+
+### Writer
+
+- Browser document PDF export writes catalog `/Lang` via putCatalog for any
+  normalized language tag, replacing jsPDF `setLanguage` (which silently skips
+  tags outside its enum, e.g. `yue`). StructElem `/Lang` from `0.179.0` stays
+  unchanged. Remaining decorative art borders and full PDF/UA certification
+  remain out of scope.
+
 ## 0.179.0 - 2026-09-12
 
 ### Writer

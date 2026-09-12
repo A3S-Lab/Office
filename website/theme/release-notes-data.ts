@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.180.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'pdf', 'playground', 'documentation'],
+    title: {
+      en: 'Document PDF writes catalog /Lang beyond jsPDF enum',
+      zh: '文档 PDF 写入超出 jsPDF 枚举的目录 /Lang',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export writes catalog /Lang via putCatalog for any normalized language tag, replacing jsPDF setLanguage which silently skips tags outside its enum (for example yue). StructElem /Lang from 0.179.0 stays unchanged. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现在通过 putCatalog 为任意规范化语言标签写入目录 /Lang，替代会静默跳过枚举外标签（如 yue）的 jsPDF setLanguage。0.179.0 的 StructElem /Lang 保持不变。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Catalog /Lang via putCatalog',
+          zh: '通过 putCatalog 写入目录 /Lang',
+        },
+        detail: {
+          en: 'Normalized tags are written once on the catalog, including beyond the jsPDF enum.',
+          zh: '规范化标签只写入目录一次，覆盖 jsPDF 枚举之外的标签。',
+        },
+      },
+      {
+        title: {
+          en: 'StructElem /Lang unchanged',
+          zh: 'StructElem /Lang 不变',
+        },
+        detail: {
+          en: 'Outline, /P, Span, and Document language from 0.179.0 stay as before.',
+          zh: '0.179.0 起大纲、/P、Span 与 Document 语言保持原样。',
+        },
+      },
+      {
+        title: {
+          en: 'PDF/UA certification stays out of scope',
+          zh: 'PDF/UA 认证仍不在范围内',
+        },
+        detail: {
+          en: 'Remaining decorative art borders and full PDF/UA certification are not claimed.',
+          zh: '不宣称其余装饰性艺术边框与完整 PDF/UA 认证。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.180.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.180.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.179.0',
     date: '2026-09-12',
     kind: 'improved',

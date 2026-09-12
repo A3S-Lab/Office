@@ -1549,9 +1549,30 @@ test('applies title, language, outline bookmarks, MarkInfo, and StructTreeRoot s
   expect(catalog?.[0]).toContain('/StructTreeRoot');
   expect(catalog?.[0]).toMatch(/\/StructTreeRoot \d+ 0 R/);
   expect(catalog?.[0]).toContain('/Tabs /S');
+  expect(catalog?.[0]).toContain('/Lang (en-US)');
   expect(catalog?.[0]).toContain(
     '/MarkInfo << /Marked true /Suspects false >>',
   );
+  expect((catalog?.[0].match(/\/Lang /g) ?? []).length).toBe(1);
+});
+
+test('writes catalog /Lang for tags jsPDF setLanguage silently skips', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: 'a4',
+    compress: false,
+  });
+  applyWorkPdfDocumentStructure(pdf, {
+    language: 'yue',
+    title: 'Catalog lang beyond jsPDF enum',
+  });
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  const catalog = ascii.match(/\/Type \/Catalog[\s\S]*?endobj/);
+  expect(catalog?.[0]).toContain('/Lang (yue)');
+  expect((catalog?.[0].match(/\/Lang /g) ?? []).length).toBe(1);
+  expect(ascii).toContain('/S /Document');
+  expect(ascii).toMatch(/\/S \/Document[\s\S]*?\/Lang \(yue\)/);
 });
 
 test('links vector-run MCIDs through ParentTree and page StructParents', () => {
