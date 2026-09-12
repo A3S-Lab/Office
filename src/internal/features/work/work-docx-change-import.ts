@@ -531,12 +531,14 @@ function isAdmittedEmptyRunGlyph(element: Element): boolean {
 }
 
 /**
- * Bounded body footnote markers: empty element with exactly one Word-ns w:id.
- * Attributed footnoteRef, endnoteReference, and malformed ids stay fail-closed.
+ * Bounded body note markers: empty footnoteReference/endnoteReference with
+ * exactly one Word-ns w:id. Attributed footnoteRef/endnoteRef and malformed
+ * markers stay fail-closed.
  */
-function isAdmittedFootnoteReferenceGlyph(element: Element): boolean {
+function isAdmittedNoteReferenceGlyph(element: Element): boolean {
   if (
-    element.localName !== 'footnoteReference' ||
+    (element.localName !== 'footnoteReference' &&
+      element.localName !== 'endnoteReference') ||
     element.children.length !== 0 ||
     !DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')
   ) {
@@ -556,8 +558,7 @@ function isAdmittedFootnoteReferenceGlyph(element: Element): boolean {
 
 function isAdmittedRunGlyph(element: Element): boolean {
   return (
-    isAdmittedEmptyRunGlyph(element) ||
-    isAdmittedFootnoteReferenceGlyph(element)
+    isAdmittedEmptyRunGlyph(element) || isAdmittedNoteReferenceGlyph(element)
   );
 }
 

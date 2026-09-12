@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.188.0',
+    date: '2026-09-12',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'endnoteReference with id admitted in revision bodies',
+      zh: '修订正文准入带 id 的 endnoteReference',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: bounded empty w:endnoteReference glyphs with exactly one Word-ns numeric w:id import inside whole-paragraph mark, paragraph-break, and text-move revision bodies, mirroring footnoteReference from 0.187.0. Attributed footnoteRef/endnoteRef and malformed markers stay fail-closed.',
+      zh: 'Phase 0 保真：仅带一个 Word 命名空间数字 w:id 的空 w:endnoteReference 可进入整段标记、段落分隔与文本移动修订正文，与 0.187.0 的 footnoteReference 对称。带属性 footnoteRef/endnoteRef 与畸形标记仍失败关闭。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Mark / break / move',
+          zh: '标记 / 分隔 / 移动',
+        },
+        detail: {
+          en: 'Eligible revision bodies admit endnoteReference with numeric id.',
+          zh: '合格修订正文准入带数字 id 的 endnoteReference。',
+        },
+      },
+      {
+        title: {
+          en: 'Mirrors footnoteReference',
+          zh: '对称 footnoteReference',
+        },
+        detail: {
+          en: 'Same bounded id contract as footnoteReference from 0.187.0.',
+          zh: '与 0.187.0 的 footnoteReference 使用相同有界 id 合约。',
+        },
+      },
+      {
+        title: {
+          en: 'Attributed refs closed',
+          zh: '带属性引用仍关闭',
+        },
+        detail: {
+          en: 'Attributed footnoteRef/endnoteRef remain fail-closed.',
+          zh: '带属性 footnoteRef/endnoteRef 仍失败关闭。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#whole-paragraph-mark-revisions',
+          zh: './components/document.html#整段段落标记修订',
+        },
+        label: { en: 'Paragraph mark revisions', zh: '段落标记修订' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.188.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.188.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.187.0',
     date: '2026-09-12',
     kind: 'improved',
