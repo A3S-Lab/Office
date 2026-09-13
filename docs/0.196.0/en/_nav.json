@@ -1,0 +1,35 @@
+[
+  {
+    "text": "Documentation",
+    "link": "/",
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?(?:$|guide(?:/|$)|browser-editor-architecture|native-office-engine|editor-quality-roadmap|cli-reference)"
+  },
+  {
+    "text": "What's new",
+    "link": "/changelog.html",
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?changelog(?:\\.html)?$"
+  },
+  {
+    "text": "Components",
+    "link": "/components/",
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?components/"
+  },
+  {
+    "text": "CLI & Skill",
+    "link": "/automation/",
+    "activeMatch": "^/(?:\\d+\\.\\d+\\.\\d+/)?(?:en/)?automation/"
+  },
+  {
+    "text": "Resources",
+    "items": [
+      {
+        "text": "GitHub",
+        "link": "https://github.com/A3S-Lab/Office"
+      },
+      {
+        "text": "npm",
+        "link": "https://www.npmjs.com/package/@a3s-lab/office"
+      }
+    ]
+  }
+]
