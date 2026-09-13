@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.192.0 - 2026-09-13
+
+### Writer
+
+- Browser document PDF export now paints Writer `archedScallops` art paragraph
+  borders as repeating scallop arches along the measured edge. Remaining
+  decorative art borders and full PDF/UA certification stay out of scope.
+
 ## 0.191.0 - 2026-09-13
 
 ### Writer

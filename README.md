@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.191.0` paints vine art borders in document PDF export:
+Version `0.192.0` paints archedScallops art borders in document PDF export:
 
-- **`vine` art borders** — Writer `vine` paragraph borders paint as curling
-  vine silhouettes along the measured edge.
+- **`archedScallops` art borders** — Writer `archedScallops` paragraph borders
+  paint as repeating scallop arches along the measured edge.
 - **Layout Artifact wrap** — decorative border paint stays inside
   `/Artifact << /Type /Layout >>` BDC like prior art motifs.
 - **Fail-closed edges** — remaining decorative art borders and full PDF/UA

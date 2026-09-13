@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.192.0',
+    date: '2026-09-13',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Document PDF paints archedScallops art borders',
+      zh: '文档 PDF 绘制 archedScallops 艺术边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer archedScallops art paragraph borders as repeating scallop arches along the measured edge. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 archedScallops 艺术段落边框绘制为沿测量边的重复拱形扇贝。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Scallop arches',
+          zh: '拱形扇贝',
+        },
+        detail: {
+          en: 'archedScallops draws repeating half-arch scallops along the measured edge.',
+          zh: 'archedScallops 沿测量边绘制重复的半拱扇贝。',
+        },
+      },
+      {
+        title: {
+          en: 'Admitted into vector plan',
+          zh: '进入矢量计划',
+        },
+        detail: {
+          en: 'archedScallops is admitted into the vector border plan; not a silent skip.',
+          zh: 'archedScallops 进入矢量边框计划；不会静默跳过。',
+        },
+      },
+      {
+        title: {
+          en: 'Scope kept bounded',
+          zh: '范围保持有界',
+        },
+        detail: {
+          en: 'Other decorative art borders and full PDF/UA certification are not claimed.',
+          zh: '其余装饰性艺术边框与完整 PDF/UA 认证仍不宣称。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.192.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.192.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.191.0',
     date: '2026-09-13',
     kind: 'improved',
