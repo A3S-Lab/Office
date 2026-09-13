@@ -371,14 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.190.0` paints apples art borders in document PDF export:
+Version `0.191.0` paints vine art borders in document PDF export:
 
-- **`apples` art borders** — Writer `apples` paragraph borders paint as
-  repeated apple silhouettes along the measured edge.
+- **`vine` art borders** — Writer `vine` paragraph borders paint as curling
+  vine silhouettes along the measured edge.
 - **Layout Artifact wrap** — decorative border paint stays inside
   `/Artifact << /Type /Layout >>` BDC like prior art motifs.
-- **Fail-closed edges** — remaining decorative art borders (for example
-  `vine`) and full PDF/UA certification stay out of scope.
+- **Fail-closed edges** — remaining decorative art borders and full PDF/UA
+  certification stay out of scope.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

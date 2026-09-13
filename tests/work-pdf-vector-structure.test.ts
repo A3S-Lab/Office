@@ -362,7 +362,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     bar: { style: 'single', color: { value: '#556677' }, size: 18 },
   });
   const artAttributes = documentParagraphBordersDomAttributes({
-    top: { style: 'vine', color: { value: '#112233' }, size: 12 },
+    top: { style: 'archedScallops', color: { value: '#112233' }, size: 12 },
   });
   const zigZagAttributes = documentParagraphBordersDomAttributes({
     top: { style: 'zigZag', color: { value: '#112233' }, size: 12 },
@@ -404,6 +404,10 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   const applesAttributes = documentParagraphBordersDomAttributes({
     top: { style: 'apples', color: { value: '#112233' }, size: 12 },
     bottom: { style: 'apples', color: { value: '#445566' }, size: 12 },
+  });
+  const vineAttributes = documentParagraphBordersDomAttributes({
+    top: { style: 'vine', color: { value: '#112233' }, size: 12 },
+    bottom: { style: 'vine', color: { value: '#445566' }, size: 12 },
   });
   const basicSquaresAttributes = documentParagraphBordersDomAttributes({
     top: { style: 'basicBlackSquares', color: { value: '#112233' }, size: 12 },
@@ -457,6 +461,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
       <p id="birds" data-office-paragraph-borders='${birdsAttributes['data-office-paragraph-borders']}' style="${birdsAttributes.style}">Birds</p>
       <p id="cabins" data-office-paragraph-borders='${cabinsAttributes['data-office-paragraph-borders']}' style="${cabinsAttributes.style}">Cabins</p>
       <p id="apples" data-office-paragraph-borders='${applesAttributes['data-office-paragraph-borders']}' style="${applesAttributes.style}">Apples</p>
+      <p id="vine" data-office-paragraph-borders='${vineAttributes['data-office-paragraph-borders']}' style="${vineAttributes.style}">Vine</p>
       <p id="basic-squares" data-office-paragraph-borders='${basicSquaresAttributes['data-office-paragraph-borders']}' style="${basicSquaresAttributes.style}">Basic squares</p>
       <p id="basic-dots" data-office-paragraph-borders='${basicDotsAttributes['data-office-paragraph-borders']}' style="${basicDotsAttributes.style}">Basic dots</p>
       <p id="basic-dashes" data-office-paragraph-borders='${basicDashesAttributes['data-office-paragraph-borders']}' style="${basicDashesAttributes.style}">Basic dashes</p>
@@ -480,6 +485,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   const birds = document.getElementById('birds');
   const cabins = document.getElementById('cabins');
   const apples = document.getElementById('apples');
+  const vine = document.getElementById('vine');
   const basicSquares = document.getElementById('basic-squares');
   const basicDots = document.getElementById('basic-dots');
   const basicDashes = document.getElementById('basic-dashes');
@@ -502,6 +508,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     !(birds instanceof HTMLElement) ||
     !(cabins instanceof HTMLElement) ||
     !(apples instanceof HTMLElement) ||
+    !(vine instanceof HTMLElement) ||
     !(basicSquares instanceof HTMLElement) ||
     !(basicDots instanceof HTMLElement) ||
     !(basicDashes instanceof HTMLElement) ||
@@ -564,6 +571,10 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   expect(workPdfParagraphBordersFromElement(apples)).toEqual({
     top: { color: '#112233', kind: 'apples', width: 16 },
     bottom: { color: '#445566', kind: 'apples', width: 16 },
+  });
+  expect(workPdfParagraphBordersFromElement(vine)).toEqual({
+    top: { color: '#112233', kind: 'vine', width: 16 },
+    bottom: { color: '#445566', kind: 'vine', width: 16 },
   });
   expect(workPdfParagraphBordersFromElement(basicSquares)).toEqual({
     top: { color: '#112233', kind: 'basicBlackSquares', width: 16 },
@@ -1132,6 +1143,39 @@ test('paints apples art borders as apple silhouettes', () => {
         edges: {
           top: { color: '#112233', kind: 'apples', width: 2 },
           bottom: { color: '#445566', kind: 'apples', width: 2 },
+        },
+        height: 40,
+        width: 100,
+        x: 20,
+        y: 30,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toMatch(/0\.07\s+0\.13\s+0\.2\s+RG/);
+  expect(ascii).toMatch(/0\.27\s+0\.33\s+0\.4\s+RG/);
+  const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
+  expect(strokeCount).toBeGreaterThanOrEqual(8);
+  expect(ascii).toMatch(/[\d.]+\s+[\d.]+\s+m/);
+  expect(ascii).toMatch(/\s+l\n/);
+});
+
+test('paints vine art borders as curling vine silhouettes', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorParagraphBorderLayer(
+    pdf,
+    [
+      {
+        edges: {
+          top: { color: '#112233', kind: 'vine', width: 2 },
+          bottom: { color: '#445566', kind: 'vine', width: 2 },
         },
         height: 40,
         width: 100,
