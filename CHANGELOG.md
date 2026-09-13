@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.205.0 - 2026-09-13
+
+### Writer
+
+- Browser document PDF export now paints Writer `checkedBarBlack` art
+  paragraph borders as repeating checkered bar segments along the measured
+  edge. Remaining decorative art borders and full PDF/UA certification stay
+  out of scope.
+
 ## 0.204.0 - 2026-09-13
 
 ### Writer
