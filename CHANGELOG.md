@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.201.0 - 2026-09-13
+
+### Writer
+
+- Browser document PDF export now paints Writer `celticKnotwork` art paragraph
+  borders as repeating interlaced diamond motifs along the measured edge.
+  Remaining decorative art borders and full PDF/UA certification stay out of
+  scope.
+
 ## 0.200.0 - 2026-09-13
 
 ### Writer
