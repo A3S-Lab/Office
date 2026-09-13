@@ -409,9 +409,7 @@ test('routes the concise README and documentation homes to the current release s
 
   expect(readme).toContain('## Current release');
   expect(readme).toContain('Version `0.197.0`');
-  expect(readme).toContain(
-    'repairs ribbon dropdown layout across editors',
-  );
+  expect(readme).toContain('repairs ribbon dropdown layout across editors');
   expect(readme).toContain('Presentation ribbon height');
   expect(readme).toContain('Ribbon select sizing');
   expect(readme).toContain('Portal menus');

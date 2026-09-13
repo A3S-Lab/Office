@@ -21,7 +21,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
         },
       },
       {
-        title: { en: 'Fixed select and color widths', zh: '固定下拉与颜色宽度' },
+        title: {
+          en: 'Fixed select and color widths',
+          zh: '固定下拉与颜色宽度',
+        },
         detail: {
           en: 'Presentation/Markdown/Spreadsheet selects use dedicated ribbon widths; chrome sizes select triggers and color tools at 24px.',
           zh: '演示/Markdown/表格下拉使用专用功能区宽度；chrome 将下拉触发器与颜色工具定为 24px。',
