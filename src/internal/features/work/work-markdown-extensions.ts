@@ -1,10 +1,11 @@
 import { Extension, type Extensions } from '@tiptap/core';
-import { TaskItem, TaskList } from '@tiptap/extension-list';
 import Image from '@tiptap/extension-image';
+import { TaskItem, TaskList } from '@tiptap/extension-list';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TableKit } from '@tiptap/extension-table';
 import { Markdown } from '@tiptap/markdown';
 import StarterKit from '@tiptap/starter-kit';
+import { WorkMarkdownCodeBlock } from './editors/markdown-code-block';
 
 export interface SetWorkMarkdownOptions {
   emitUpdate?: boolean;
@@ -49,6 +50,7 @@ export function createWorkMarkdownExtensions(
 ): Extensions {
   return [
     StarterKit.configure({
+      codeBlock: false,
       link: {
         autolink: true,
         defaultProtocol: 'https',
@@ -57,6 +59,7 @@ export function createWorkMarkdownExtensions(
       underline: false,
       ...(options.collaborative ? { undoRedo: false } : {}),
     }),
+    WorkMarkdownCodeBlock,
     TaskList,
     TaskItem.configure({
       nested: true,
