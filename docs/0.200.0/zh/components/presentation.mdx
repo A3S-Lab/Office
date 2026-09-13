@@ -1,0 +1,187 @@
+---
+title: PresentationEditor
+description: 演示文稿内容、实时协作、放映事件、几何内核与宿主扩展接口。
+---
+
+# PresentationEditor
+
+`PresentationEditor` 使用类型化场景图保存幻灯片，只在编辑文本框时挂载 TipTap。中文等输入法的
+预编辑文字在组合期间只保留于本地，`onChange` 只接收最终确认的内容；编辑器快捷键也会在组合输入
+期间让输入法优先处理键盘事件。
+
+## 属性
+
+| 属性 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `content` | `PresentationContent` | 是 | — | 受控演示文稿内容。 |
+| `onChange` | `(content: PresentationContent) => void` | 是 | — | 返回完整的新演示文稿。 |
+| `collaboration` | `OfficeCollaborationSession` | 否 | 无 | 使用已初始化的 Yjs Presentation 作为规范内容。 |
+| `presence` | `OfficeCollaborationPresence` | 否 | 无 | 发布幻灯片与对象选择、显示远端对象框并支持参与者导航；必须与 `collaboration` 是同一个会话。 |
+| `preview` | `boolean` | 否 | `false` | 只读演示文稿。 |
+| `saveStatus` | `string` | 否 | `'Saved automatically'` | 由宿主管理的保存状态。 |
+| `fileActions` | `readonly OfficeFileAction[]` | 否 | `[]` | 宿主文件操作。 |
+| `kernelWasmUrl` | `string` | 否 | 内置内核 | 吸附、对齐与几何计算内核地址。 |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | 否 | — | 把幻灯片或对象上下文发送给宿主 AI 流程。 |
+| `onStartSlideshow` | `() => void` | 否 | — | 内置放映开始后通知宿主。 |
+| `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
+
+## 内容结构
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `type` | `'presentation'` | 内容类型标识。 |
+| `slides` | `WorkSlide[]` | 幻灯片、元素、备注、批注、切换效果与对象动画。 |
+| `width`, `height` | `number` | 演示文稿画布尺寸。 |
+| `masters` | `WorkPresentationMaster[]` | 母版背景与元素。 |
+| `layouts` | `WorkPresentationLayout[]` | 关联母版的版式、占位符与继承元素。 |
+
+稳定的宿主接入应使用 `fileActions`、`onAgentRequest` 和
+`onStartSlideshow`。内部场景命令运行时不是公共 Extension API。
+
+## 进入与退出动画
+
+`WorkSlide.animations` 是单张幻灯片的规范对象动画顺序。每条记录通过稳定 ID
+指向当前幻灯片中的一个对象。一个对象最多拥有一条可编辑进入动画和一条可编辑退出
+动画，每张幻灯片最多保存 256 条动画记录。
+
+```ts
+type WorkSlideAnimationClass = 'entrance' | 'exit';
+type WorkSlideEntranceAnimationEffect =
+  | 'appear'
+  | 'fade'
+  | 'fly-in'
+  | 'zoom';
+type WorkSlideExitAnimationEffect =
+  | 'disappear'
+  | 'fade-out'
+  | 'fly-out'
+  | 'zoom-out';
+type WorkSlideAnimationEffect =
+  | WorkSlideEntranceAnimationEffect
+  | WorkSlideExitAnimationEffect;
+type WorkSlideAnimationTrigger =
+  | 'on-click'
+  | 'with-previous'
+  | 'after-previous';
+type WorkSlideAnimationDirection = 'left' | 'right' | 'up' | 'down';
+
+interface WorkSlideAnimation {
+  id: string;
+  elementId: string;
+  effect: WorkSlideAnimationEffect;
+  trigger: WorkSlideAnimationTrigger;
+  durationMs: number;
+  delayMs: number;
+  direction?: WorkSlideAnimationDirection;
+}
+
+const slide = {
+  id: 'launch',
+  name: '发布计划',
+  background: '#ffffff',
+  elements: [
+    {
+      id: 'headline',
+      type: 'text',
+      x: 8,
+      y: 10,
+      width: 80,
+      height: 16,
+      text: '发布计划',
+      fontSize: 34,
+      color: '#111827',
+      fill: 'transparent',
+      bold: true,
+      align: 'left',
+    },
+  ],
+  animations: [
+    {
+      id: 'headline-entrance',
+      elementId: 'headline',
+      effect: 'fade',
+      trigger: 'on-click',
+      durationMs: 600,
+      delayMs: 100,
+    },
+    {
+      id: 'headline-exit',
+      elementId: 'headline',
+      effect: 'fade-out',
+      trigger: 'on-click',
+      durationMs: 400,
+      delayMs: 0,
+    },
+  ],
+};
+```
+
+选择对象并打开功能区的**动画**选项卡，即可分别设置或删除进入、退出效果，选择触发
+方式，编辑持续时间和延迟，设置飞入或飞出方向，调整当前类型的前后顺序，并预览当前
+幻灯片。类型选择沿用对象动画工作流，只显示当前上下文匹配的效果和方向。持续
+时间会规范到 100–60,000 毫秒，延迟会规范到 0–60,000 毫秒。会导致同一对象在一组
+提示中重叠的触发或计时选项会被禁用，或在修改前拒绝。每次接受的编辑只产生一个受控
+`onChange` 值和一条撤销记录。
+
+删除对象会同时清理两类动画；复制对象或幻灯片时会创建新的对象与动画 ID，并保持全部
+目标映射。协作层只接受数量受限、动画 ID 唯一、目标对象有效、每个对象每种类型至多
+一个效果、计时已经规范化且同一提示内不重叠的动画序列。
+
+### 触发与放映语义
+
+| 触发方式 | 放映行为 |
+| --- | --- |
+| `on-click` | 开始一个新的单击提示。放映会先消费当前提示，再切换到下一张幻灯片。 |
+| `with-previous` | 从上一项的开始时间加上自身延迟后开始。 |
+| `after-previous` | 从上一项的结束时间加上自身延迟后开始。 |
+
+如果第一项使用 `with-previous` 或 `after-previous`，第一组提示会在打开幻灯片时自动
+开始。同一对象的进入和退出效果只要时间段连续，就可以组合在一组提示中。观众模式和
+演讲者模式会呈现相同的隐藏、播放中和可见状态，因此切换视图不会跳过效果。在
+`prefers-reduced-motion: reduce` 环境中，每组提示会直接跳到最终可见性而不播放装饰性
+运动，但顺序保持不变。
+
+### 原生 PPTX 边界
+
+受支持的子集会使用 `presetClass="entr"` 或 `presetClass="exit"` 以及匹配的效果切换
+方向，导出为原生 PresentationML 计时树。导入时，计时目标的 `cNvPr` 形状 ID 会映射
+回浏览器中的稳定对象 ID；再次导出并重新打开后，类型、效果、顺序、触发方式、持续
+时间、延迟和飞行方向都保持不变。带文字的动画形状仍是一个 PPTX 对象，分组中的动画
+对象保留有效目标；即使对象拥有两种动画，生成列表也只记录一次目标形状。
+
+导入边界是明确且受限的。强调效果、动作路径、不支持的预设、同一对象同类型的重复
+效果、同一提示内重叠的对象时间段、缺失或歧义目标、不一致的进入/退出 transition、
+格式错误的计时以及伪造命名空间的计时树都不会成为可编辑记录；兼容性诊断会说明跳过
+或规范化的内容。导出只写入受支持的可编辑序列，不承诺无损保留源文件中不受支持的
+计时树。音频、视频、排练、录制、点击指定对象触发以及更完整的动画目录仍属于后续工作。
+
+在 Playground 中打开**新建 → 进入与退出动画**，可以在“先进入、再退出”的故事中
+查看八种效果和三种触发方式，通过动画选项卡分别编辑两种类型，并在内置放映中验证。
+模型、命令、组件、协作、剪贴板、放映、原生 PPTX 重开、响应式 Playwright 与本地
+A3S Test 门禁共同保证公开说明与实现保持同步。
+
+## 实时协作
+
+传入已初始化的 `presentation` 协作会话后，Yjs 场景图成为规范内容。幻灯片、母版和
+版式的顺序与 ID 记录分开保存，每个容器拥有按顺序排列的 ID 对象。只追加的创建声明会
+拒绝同一 ID 对应不同对象；删除会写入持久墓碑并永久保留该 ID。本地撤销只跟踪当前
+绑定产生的操作，`presence` 用于发布当前幻灯片与对象选择，并显示远端对象框。
+
+Rust、CLI、MCP 与 A3S Code 提供封闭的 `presentation-create-element`、
+`presentation-update-element`、`presentation-move-element` 和
+`presentation-delete-element`。创建可在一个仍然有效的稳定对象之后插入完整对象。更新会
+比较完整的预期值、当前值和新值，只写入发生变化的顶层字段，因此无关的几何、文本或
+样式并发修改可以合并，同一字段的过期修改会在产生持久更新前失败。移动使用观察到的
+稳定前驱和目标前驱，不使用数组下标；`null` 表示对象顺序数组第一项。对象已经位于目标
+位置时保持幂等，否则源位置过期或锚点失效会原子失败；成功时只修改该对象自己的顺序
+项。删除要求完整对象精确匹配并写入墓碑。四种操作都不允许改变对象的 `id` 或 `type`。
+
+## 内置放映
+
+观众模式与演讲者模式共用同一组导航控件。方向键和 Page Up / Page Down 切换
+幻灯片，空格前进，Home 与 End 跳到首尾，Escape 退出。焦点位于放映按钮时这些
+快捷键仍然有效，输入框和可编辑内容则保留正常键盘行为。
+
+演讲者模式显示当前页、下一页提示、演讲者备注和可暂停计时器。计时器属于同一次放映，
+切换观众与演讲者模式不会归零。手机宽度下，当前幻灯片保持全宽，下一页缩为标题提示，
+备注可以独立滚动，导航控件仍然可用。
