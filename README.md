@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.201.0` paints celticKnotwork art borders in document PDF export:
+Version `0.202.0` paints certificateBanner art borders in document PDF export:
 
-- **`celticKnotwork` art borders** — Writer `celticKnotwork` paragraph borders
-  paint as repeating interlaced diamond motifs along the measured edge.
+- **`certificateBanner` art borders** — Writer `certificateBanner` paragraph
+  borders paint as repeating notched ribbon motifs along the measured edge.
 - **Layout Artifact wrap** — decorative border paint stays inside
   `/Artifact << /Type /Layout >>` BDC like prior art motifs.
 - **Fail-closed edges** — remaining decorative art borders and full PDF/UA

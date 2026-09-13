@@ -1,5 +1,58 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.202.0',
+    date: '2026-09-13',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Document PDF paints certificateBanner art borders',
+      zh: '文档 PDF 绘制 certificateBanner 艺术边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer certificateBanner art paragraph borders as repeating notched ribbon motifs along the measured edge. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 certificateBanner 艺术段落边框绘制为沿测量边的重复缺口缎带造型。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: { en: 'Notched ribbon motifs', zh: '缺口缎带造型' },
+        detail: {
+          en: 'certificateBanner draws repeating notched ribbon motifs with end folds along the measured edge.',
+          zh: 'certificateBanner 沿测量边绘制带缺口端与折痕的重复缎带造型。',
+        },
+      },
+      {
+        title: { en: 'Admitted into vector plan', zh: '进入矢量计划' },
+        detail: {
+          en: 'certificateBanner is admitted into the vector border plan; not a silent skip.',
+          zh: 'certificateBanner 进入矢量边框计划；不会静默跳过。',
+        },
+      },
+      {
+        title: { en: 'Scope kept bounded', zh: '范围保持有界' },
+        detail: {
+          en: 'Other decorative art borders and full PDF/UA certification are not claimed.',
+          zh: '其余装饰性艺术边框与完整 PDF/UA 认证仍不宣称。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.202.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.202.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.201.0',
     date: '2026-09-13',
     kind: 'improved',

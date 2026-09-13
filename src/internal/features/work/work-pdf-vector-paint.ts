@@ -69,6 +69,7 @@ export type WorkPdfParagraphBorderKind =
   | 'cakeSlice'
   | 'candyCorn'
   | 'celticKnotwork'
+  | 'certificateBanner'
   | 'basicBlackSquares'
   | 'basicWhiteSquares'
   | 'basicBlackDots'
@@ -390,7 +391,7 @@ export function appendWorkPdfVectorUnderlineLayer(
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
  * `marqueeToothed` / `moons` / `bats` / `birds` / `birdsFlight` / `cabins` /
- * `apples` / `vine` / `archedScallops` / `babyPacifier` / `babyRattle` / `balloons3Colors` / `balloonsHotAir` / `cakeSlice` / `candyCorn` / `celticKnotwork` / `basicBlackSquares` / `basicWhiteSquares` /
+ * `apples` / `vine` / `archedScallops` / `babyPacifier` / `babyRattle` / `balloons3Colors` / `balloonsHotAir` / `cakeSlice` / `candyCorn` / `celticKnotwork` / `certificateBanner` / `basicBlackSquares` / `basicWhiteSquares` /
  * `basicBlackDots` / `basicWhiteDots` / `basicBlackDashes` /
  * `basicWhiteDashes` / `basicThinLines` / `basicWideInline` /
  * `basicWideMidline` / `basicWideOutline` art motifs; other art border styles are
@@ -546,7 +547,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * moons/bats/birds/cabins/apples/vine/archedScallops/babyPacifier/babyRattle/balloons3Colors/balloonsHotAir/cakeSlice/candyCorn/celticKnotwork/basicSquares/basicDots/
+ * moons/bats/birds/cabins/apples/vine/archedScallops/babyPacifier/babyRattle/balloons3Colors/balloonsHotAir/cakeSlice/candyCorn/celticKnotwork/certificateBanner/basicSquares/basicDots/
  * basicDashes/basicThinLines/basicWide art; not PDF/UA or remaining decorative
  * art).
  */
@@ -822,6 +823,16 @@ export function appendWorkPdfVectorParagraphBorderLayer(
             height,
             thickness,
           );
+        } else if (stroke.kind === 'certificateBanner') {
+          strokeCertificateBannerParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+          );
         } else if (
           stroke.kind === 'basicBlackSquares' ||
           stroke.kind === 'basicWhiteSquares'
@@ -955,6 +966,7 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'cakeSlice' ||
     border.style === 'candyCorn' ||
     border.style === 'celticKnotwork' ||
+    border.style === 'certificateBanner' ||
     border.style === 'basicBlackSquares' ||
     border.style === 'basicWhiteSquares' ||
     border.style === 'basicBlackDots' ||
@@ -3187,6 +3199,145 @@ function strokeCelticKnotworkPolyline(
     const [x1, y1] = inner[(index + 1) % inner.length]!;
     pdf.line(x0, y0, x1, y1);
   }
+}
+
+/**
+ * Certificate-banner motifs along the measured edge for geometric art border
+ * `certificateBanner`. Each motif is a notched ribbon with end folds.
+ */
+function strokeCertificateBannerParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const span = Math.max(3.4, thickness * 3.0);
+  const period = Math.max(7.4, thickness * 6.6);
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeCertificateBannerSilhouettes(
+      pdf,
+      x,
+      yBase,
+      width,
+      0,
+      period,
+      span,
+      outward,
+    );
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeCertificateBannerSilhouettes(
+      pdf,
+      xBase,
+      y,
+      height,
+      1,
+      period,
+      span,
+      outward,
+    );
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeCertificateBannerSilhouettes(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  span: number,
+  outward: 1 | -1,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const centerX = axis === 0 ? originX + along : originX;
+    const centerY = axis === 0 ? originY : originY + along;
+    const half = Math.min(span / 2, length / (count * 2.2));
+    const depth = Math.max(1.4, half * 0.85);
+    const tangentX = axis === 0 ? 1 : 0;
+    const tangentY = axis === 0 ? 0 : 1;
+    const normalX = axis === 0 ? 0 : outward;
+    const normalY = axis === 0 ? outward : 0;
+    strokeCertificateBannerPolyline(
+      pdf,
+      centerX + normalX * depth * 0.08,
+      centerY + normalY * depth * 0.08,
+      half,
+      depth,
+      tangentX,
+      tangentY,
+      normalX,
+      normalY,
+    );
+  }
+}
+
+function strokeCertificateBannerPolyline(
+  pdf: JsPdf,
+  centerX: number,
+  centerY: number,
+  half: number,
+  depth: number,
+  tangentX: number,
+  tangentY: number,
+  normalX: number,
+  normalY: number,
+): void {
+  if (
+    !Number.isFinite(half) ||
+    half <= 0 ||
+    !Number.isFinite(depth) ||
+    depth <= 0
+  ) {
+    return;
+  }
+  const point = (along: number, out: number): [number, number] => [
+    centerX + tangentX * along + normalX * out,
+    centerY + tangentY * along + normalY * out,
+  ];
+  // Ribbon body with V-notched ends (certificate banner silhouette).
+  const path: Array<[number, number]> = [
+    point(-half * 0.95, depth * 0.78),
+    point(-half * 0.55, depth * 0.78),
+    point(-half * 0.72, depth * 0.42),
+    point(-half * 0.55, depth * 0.08),
+    point(half * 0.55, depth * 0.08),
+    point(half * 0.72, depth * 0.42),
+    point(half * 0.55, depth * 0.78),
+    point(half * 0.95, depth * 0.78),
+    point(half * 0.72, depth * 1.02),
+    point(half * 0.95, depth * 1.18),
+    point(0, depth * 0.95),
+    point(-half * 0.95, depth * 1.18),
+    point(-half * 0.72, depth * 1.02),
+  ];
+  for (let index = 0; index < path.length; index += 1) {
+    const [x0, y0] = path[index]!;
+    const [x1, y1] = path[(index + 1) % path.length]!;
+    pdf.line(x0, y0, x1, y1);
+  }
+  // Center fold crease.
+  const creaseL = point(-half * 0.28, depth * 0.42);
+  const creaseR = point(half * 0.28, depth * 0.42);
+  pdf.line(creaseL[0], creaseL[1], creaseR[0], creaseR[1]);
 }
 
 /**
