@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.190.0 - 2026-09-13
+
+### Writer
+
+- Browser document PDF export now paints Writer `apples` art paragraph borders
+  as repeated apple silhouettes along the measured edge. Remaining decorative
+  art borders and full PDF/UA certification stay out of scope.
+
 ## 0.189.0 - 2026-09-13
 
 ### Writer

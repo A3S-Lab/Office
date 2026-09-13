@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.190.0',
+    date: '2026-09-13',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Document PDF paints apples art borders',
+      zh: '文档 PDF 绘制 apples 艺术边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer apples art paragraph borders as apple silhouettes (round body with stem and leaf) along the measured edge. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 apples 艺术段落边框绘制为沿测量边的苹果剪影（圆身体 + 果柄与叶片）。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Apple silhouettes',
+          zh: '苹果剪影',
+        },
+        detail: {
+          en: 'apples draws a round body with stem and leaf along the measured edge.',
+          zh: 'apples 沿测量边绘制带果柄与叶片的圆身体。',
+        },
+      },
+      {
+        title: {
+          en: 'Admitted into vector plan',
+          zh: '进入矢量计划',
+        },
+        detail: {
+          en: 'apples is admitted into the vector border plan; not a silent skip.',
+          zh: 'apples 进入矢量边框计划；不会静默跳过。',
+        },
+      },
+      {
+        title: {
+          en: 'Scope kept bounded',
+          zh: '范围保持有界',
+        },
+        detail: {
+          en: 'Vines and other decorative art borders, plus full PDF/UA certification, are not claimed.',
+          zh: 'vine 等其余装饰性艺术边框与完整 PDF/UA 认证仍不宣称。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.190.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.190.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.189.0',
     date: '2026-09-13',
     kind: 'improved',
