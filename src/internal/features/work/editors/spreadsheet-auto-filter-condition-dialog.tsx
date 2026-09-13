@@ -1,6 +1,7 @@
 import { type FormEvent, useId, useMemo, useState } from 'react';
 import { Button, Dialog, Field } from '../../../design-system/primitives';
 import type {
+  WorkSpreadsheetCustomFilterCondition,
   WorkSpreadsheetFilterCriteria,
 } from '../work-types';
 import { OfficeSelect, type OfficeSelectOption } from './office-controls';
@@ -153,21 +154,26 @@ export function SpreadsheetAutoFilterConditionDialog({
     }
     return options;
   }, [showAverageConditions, showDateConditions, showRankConditions]);
-  const secondConditionOptions = useMemo(
-    () => [
-      ...TEXT_CONDITIONS.map((type) => ({
-        value: type,
+  const secondConditionOptions = useMemo(() => {
+    const options: OfficeSelectOption<
+      WorkSpreadsheetCustomFilterCondition['type']
+    >[] = [];
+    for (const type of TEXT_CONDITIONS) {
+      options.push({
+        value: type as WorkSpreadsheetCustomFilterCondition['type'],
         label: CONDITION_LABELS[type],
         group: '文本与值',
-      })),
-      ...NUMBER_COMPARISON_CONDITIONS.map((type) => ({
-        value: type,
+      });
+    }
+    for (const type of NUMBER_COMPARISON_CONDITIONS) {
+      options.push({
+        value: type as WorkSpreadsheetCustomFilterCondition['type'],
         label: CONDITION_LABELS[type],
         group: '数字',
-      })),
-    ],
-    [],
-  );
+      });
+    }
+    return options;
+  }, []);
   const changePrimaryType = (type: SpreadsheetAutoFilterConditionType) => {
     setDraft((current) => ({
       ...current,
