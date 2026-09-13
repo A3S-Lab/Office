@@ -180,7 +180,9 @@ Still required for R0 exit:
    silhouettes through `0.171.0`; Writer `apples` art paragraph borders paint as
    apple silhouettes through `0.190.0`; Writer `vine` art paragraph borders paint
    as curling vine silhouettes through `0.191.0`; Writer `archedScallops` art
-   paragraph borders paint as scallop arches through `0.192.0`; page-matched vector-run Span MCIDs nest
+   paragraph borders paint as scallop arches through `0.192.0`; Writer
+   `babyPacifier` art paragraph borders paint as pacifier silhouettes through
+   `0.193.0`; page-matched vector-run Span MCIDs nest
    under outline-derived H1–H6/P StructElem `/K` through `0.172.0`;
    outline-derived H1–H6/P StructElems nest by level under parent `/K`
    through `0.173.0`; decorative highlight / underline / paragraph-border
@@ -188,7 +190,7 @@ Still required for R0 exit:
    page-matched Spans nest through child `/P` (H → P → Span) through `0.178.0`; document
    language copies onto outline / `/P` / Span StructElems through `0.179.0`; catalog
    `/Lang` via putCatalog covers tags beyond the jsPDF enum through `0.180.0`; Span
-   BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; Document StructElem `/Alt` carries the document title through `0.182.0`; companion move-range bookmarks admit a text-only nested table beside the move through `0.183.0`; one simple SDT may wrap a one-level nested move-path table through `0.184.0`; up to two nesting levels (three move-path tables) through `0.185.0`; current-level bullet `w:numberingChange` (nfc `23`) through `0.186.0`; bounded `w:footnoteReference` with numeric `w:id` in mark / break / move bodies through `0.187.0`; bounded `w:endnoteReference` with numeric `w:id` through `0.188.0`;    attributed `footnoteRef` / `endnoteRef` / `annotationRef` with numeric `w:val` through `0.189.0`;    Writer `apples` art paragraph borders paint as apple silhouettes through `0.190.0`; Writer `vine` art paragraph borders paint as curling vine silhouettes through `0.191.0`; Writer `archedScallops` art paragraph borders paint as scallop arches through `0.192.0`; remaining
+   BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; Document StructElem `/Alt` carries the document title through `0.182.0`; companion move-range bookmarks admit a text-only nested table beside the move through `0.183.0`; one simple SDT may wrap a one-level nested move-path table through `0.184.0`; up to two nesting levels (three move-path tables) through `0.185.0`; current-level bullet `w:numberingChange` (nfc `23`) through `0.186.0`; bounded `w:footnoteReference` with numeric `w:id` in mark / break / move bodies through `0.187.0`; bounded `w:endnoteReference` with numeric `w:id` through `0.188.0`;    attributed `footnoteRef` / `endnoteRef` / `annotationRef` with numeric `w:val` through `0.189.0`;    Writer `apples` art paragraph borders paint as apple silhouettes through `0.190.0`; Writer `vine` art paragraph borders paint as curling vine silhouettes through `0.191.0`;    Writer `archedScallops` art paragraph borders paint as scallop arches through `0.192.0`; Writer `babyPacifier` art paragraph borders paint as pacifier silhouettes through `0.193.0`; remaining
    decorative art borders and full PDF/UA certification remain open.
 7. Continuous no-clobber corpus growth for representative Traditional Office
    fixtures (diagnose every intentional normalization).

@@ -62,6 +62,7 @@ export type WorkPdfParagraphBorderKind =
   | 'apples'
   | 'vine'
   | 'archedScallops'
+  | 'babyPacifier'
   | 'basicBlackSquares'
   | 'basicWhiteSquares'
   | 'basicBlackDots'
@@ -383,7 +384,7 @@ export function appendWorkPdfVectorUnderlineLayer(
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
  * `marqueeToothed` / `moons` / `bats` / `birds` / `birdsFlight` / `cabins` /
- * `apples` / `vine` / `archedScallops` / `basicBlackSquares` / `basicWhiteSquares` /
+ * `apples` / `vine` / `archedScallops` / `babyPacifier` / `basicBlackSquares` / `basicWhiteSquares` /
  * `basicBlackDots` / `basicWhiteDots` / `basicBlackDashes` /
  * `basicWhiteDashes` / `basicThinLines` / `basicWideInline` /
  * `basicWideMidline` / `basicWideOutline` art motifs; other art border styles are
@@ -539,7 +540,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * moons/bats/birds/cabins/apples/vine/archedScallops/basicSquares/basicDots/
+ * moons/bats/birds/cabins/apples/vine/archedScallops/babyPacifier/basicSquares/basicDots/
  * basicDashes/basicThinLines/basicWide art; not PDF/UA or remaining decorative
  * art).
  */
@@ -745,6 +746,16 @@ export function appendWorkPdfVectorParagraphBorderLayer(
             height,
             thickness,
           );
+        } else if (stroke.kind === 'babyPacifier') {
+          strokeBabyPacifierParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+          );
         } else if (
           stroke.kind === 'basicBlackSquares' ||
           stroke.kind === 'basicWhiteSquares'
@@ -871,6 +882,7 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'apples' ||
     border.style === 'vine' ||
     border.style === 'archedScallops' ||
+    border.style === 'babyPacifier' ||
     border.style === 'basicBlackSquares' ||
     border.style === 'basicWhiteSquares' ||
     border.style === 'basicBlackDots' ||
@@ -2187,6 +2199,144 @@ function strokeArchedScallopPolyline(
     point(half, 0),
     point(half * 0.45, -depth * 0.12),
     point(-half * 0.45, -depth * 0.12),
+  ];
+  for (let index = 0; index < path.length; index += 1) {
+    const [x0, y0] = path[index]!;
+    const [x1, y1] = path[(index + 1) % path.length]!;
+    pdf.line(x0, y0, x1, y1);
+  }
+}
+
+/**
+ * Pacifier motifs along the measured edge for geometric art border
+ * `babyPacifier`. Each motif is a closed handle-ring, shield, and nipple.
+ */
+function strokeBabyPacifierParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const span = Math.max(3.0, thickness * 2.6);
+  const period = Math.max(6.8, thickness * 6.0);
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeBabyPacifierSilhouettes(
+      pdf,
+      x,
+      yBase,
+      width,
+      0,
+      period,
+      span,
+      outward,
+    );
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeBabyPacifierSilhouettes(
+      pdf,
+      xBase,
+      y,
+      height,
+      1,
+      period,
+      span,
+      outward,
+    );
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeBabyPacifierSilhouettes(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  span: number,
+  outward: 1 | -1,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const centerX = axis === 0 ? originX + along : originX;
+    const centerY = axis === 0 ? originY : originY + along;
+    const half = Math.min(span / 2, length / (count * 2.2));
+    const depth = Math.max(1.3, half * 0.9);
+    const tangentX = axis === 0 ? 1 : 0;
+    const tangentY = axis === 0 ? 0 : 1;
+    const normalX = axis === 0 ? 0 : outward;
+    const normalY = axis === 0 ? outward : 0;
+    strokeBabyPacifierPolyline(
+      pdf,
+      centerX + normalX * depth * 0.15,
+      centerY + normalY * depth * 0.15,
+      half,
+      depth,
+      tangentX,
+      tangentY,
+      normalX,
+      normalY,
+    );
+  }
+}
+
+function strokeBabyPacifierPolyline(
+  pdf: JsPdf,
+  centerX: number,
+  centerY: number,
+  half: number,
+  depth: number,
+  tangentX: number,
+  tangentY: number,
+  normalX: number,
+  normalY: number,
+): void {
+  if (
+    !Number.isFinite(half) ||
+    half <= 0 ||
+    !Number.isFinite(depth) ||
+    depth <= 0
+  ) {
+    return;
+  }
+  const point = (along: number, out: number): [number, number] => [
+    centerX + tangentX * along + normalX * out,
+    centerY + tangentY * along + normalY * out,
+  ];
+  // Handle ring → shield shoulders → nipple → close under the handle.
+  const path: Array<[number, number]> = [
+    point(0, depth * 1.05),
+    point(half * 0.28, depth * 0.88),
+    point(half * 0.22, depth * 0.58),
+    point(half * 0.82, depth * 0.32),
+    point(half * 0.95, depth * 0.02),
+    point(half * 0.72, -depth * 0.28),
+    point(half * 0.22, -depth * 0.42),
+    point(half * 0.18, -depth * 0.72),
+    point(0, -depth * 0.88),
+    point(-half * 0.18, -depth * 0.72),
+    point(-half * 0.22, -depth * 0.42),
+    point(-half * 0.72, -depth * 0.28),
+    point(-half * 0.95, depth * 0.02),
+    point(-half * 0.82, depth * 0.32),
+    point(-half * 0.22, depth * 0.58),
+    point(-half * 0.28, depth * 0.88),
   ];
   for (let index = 0; index < path.length; index += 1) {
     const [x0, y0] = path[index]!;
