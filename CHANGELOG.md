@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.203.0 - 2026-09-13
+
+### Writer
+
+- Browser document PDF export now paints Writer `chainLink` art paragraph
+  borders as repeating interlaced oval link motifs along the measured edge.
+  Remaining decorative art borders and full PDF/UA certification stay out of
+  scope.
+
 ## 0.202.0 - 2026-09-13
 
 ### Writer
