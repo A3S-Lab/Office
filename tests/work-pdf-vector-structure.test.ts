@@ -362,7 +362,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     bar: { style: 'single', color: { value: '#556677' }, size: 18 },
   });
   const artAttributes = documentParagraphBordersDomAttributes({
-    top: { style: 'balloons3Colors', color: { value: '#112233' }, size: 12 },
+    top: { style: 'balloonsHotAir', color: { value: '#112233' }, size: 12 },
   });
   const zigZagAttributes = documentParagraphBordersDomAttributes({
     top: { style: 'zigZag', color: { value: '#112233' }, size: 12 },
@@ -421,6 +421,10 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     top: { style: 'babyRattle', color: { value: '#112233' }, size: 12 },
     bottom: { style: 'babyRattle', color: { value: '#445566' }, size: 12 },
   });
+  const balloons3ColorsAttributes = documentParagraphBordersDomAttributes({
+    top: { style: 'balloons3Colors', color: { value: '#112233' }, size: 12 },
+    bottom: { style: 'balloons3Colors', color: { value: '#445566' }, size: 12 },
+  });
   const basicSquaresAttributes = documentParagraphBordersDomAttributes({
     top: { style: 'basicBlackSquares', color: { value: '#112233' }, size: 12 },
     bottom: {
@@ -477,6 +481,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
       <p id="arched-scallops" data-office-paragraph-borders='${archedScallopsAttributes['data-office-paragraph-borders']}' style="${archedScallopsAttributes.style}">Arched scallops</p>
       <p id="baby-pacifier" data-office-paragraph-borders='${babyPacifierAttributes['data-office-paragraph-borders']}' style="${babyPacifierAttributes.style}">Baby pacifier</p>
       <p id="baby-rattle" data-office-paragraph-borders='${babyRattleAttributes['data-office-paragraph-borders']}' style="${babyRattleAttributes.style}">Baby rattle</p>
+      <p id="balloons-3-colors" data-office-paragraph-borders='${balloons3ColorsAttributes['data-office-paragraph-borders']}' style="${balloons3ColorsAttributes.style}">Balloons 3 colors</p>
       <p id="basic-squares" data-office-paragraph-borders='${basicSquaresAttributes['data-office-paragraph-borders']}' style="${basicSquaresAttributes.style}">Basic squares</p>
       <p id="basic-dots" data-office-paragraph-borders='${basicDotsAttributes['data-office-paragraph-borders']}' style="${basicDotsAttributes.style}">Basic dots</p>
       <p id="basic-dashes" data-office-paragraph-borders='${basicDashesAttributes['data-office-paragraph-borders']}' style="${basicDashesAttributes.style}">Basic dashes</p>
@@ -504,6 +509,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   const archedScallops = document.getElementById('arched-scallops');
   const babyPacifier = document.getElementById('baby-pacifier');
   const babyRattle = document.getElementById('baby-rattle');
+  const balloons3Colors = document.getElementById('balloons-3-colors');
   const basicSquares = document.getElementById('basic-squares');
   const basicDots = document.getElementById('basic-dots');
   const basicDashes = document.getElementById('basic-dashes');
@@ -530,6 +536,7 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
     !(archedScallops instanceof HTMLElement) ||
     !(babyPacifier instanceof HTMLElement) ||
     !(babyRattle instanceof HTMLElement) ||
+    !(balloons3Colors instanceof HTMLElement) ||
     !(basicSquares instanceof HTMLElement) ||
     !(basicDots instanceof HTMLElement) ||
     !(basicDashes instanceof HTMLElement) ||
@@ -608,6 +615,10 @@ test('resolves Writer paragraph borders into PDF stroke plans', () => {
   expect(workPdfParagraphBordersFromElement(babyRattle)).toEqual({
     top: { color: '#112233', kind: 'babyRattle', width: 16 },
     bottom: { color: '#445566', kind: 'babyRattle', width: 16 },
+  });
+  expect(workPdfParagraphBordersFromElement(balloons3Colors)).toEqual({
+    top: { color: '#112233', kind: 'balloons3Colors', width: 16 },
+    bottom: { color: '#445566', kind: 'balloons3Colors', width: 16 },
   });
   expect(workPdfParagraphBordersFromElement(basicSquares)).toEqual({
     top: { color: '#112233', kind: 'basicBlackSquares', width: 16 },
@@ -1308,6 +1319,39 @@ test('paints babyRattle art borders as rattle silhouettes', () => {
         edges: {
           top: { color: '#112233', kind: 'babyRattle', width: 2 },
           bottom: { color: '#445566', kind: 'babyRattle', width: 2 },
+        },
+        height: 40,
+        width: 100,
+        x: 20,
+        y: 30,
+      },
+    ],
+    { height: 280, width: 200 },
+    { pageHeightPoints: 280, pageWidthPoints: 200 },
+  );
+  const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
+  expect(ascii).toMatch(/0\.07\s+0\.13\s+0\.2\s+RG/);
+  expect(ascii).toMatch(/0\.27\s+0\.33\s+0\.4\s+RG/);
+  const strokeCount = (ascii.match(/\nS\n/g) ?? []).length;
+  expect(strokeCount).toBeGreaterThanOrEqual(8);
+  expect(ascii).toMatch(/[\d.]+\s+[\d.]+\s+m/);
+  expect(ascii).toMatch(/\s+l\n/);
+});
+
+test('paints balloons3Colors art borders as balloon silhouettes', () => {
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [200, 280],
+    compress: false,
+  });
+  appendWorkPdfVectorParagraphBorderLayer(
+    pdf,
+    [
+      {
+        edges: {
+          top: { color: '#112233', kind: 'balloons3Colors', width: 2 },
+          bottom: { color: '#445566', kind: 'balloons3Colors', width: 2 },
         },
         height: 40,
         width: 100,

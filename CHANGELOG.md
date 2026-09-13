@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.195.0 - 2026-09-13
+
+### Writer
+
+- Browser document PDF export now paints Writer `balloons3Colors` art paragraph
+  borders as repeating balloon silhouettes along the measured edge. Remaining
+  decorative art borders and full PDF/UA certification stay out of scope.
+
 ## 0.194.0 - 2026-09-13
 
 ### Writer

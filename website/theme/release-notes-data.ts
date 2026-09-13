@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.195.0',
+    date: '2026-09-13',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Document PDF paints balloons3Colors art borders',
+      zh: '文档 PDF 绘制 balloons3Colors 艺术边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer balloons3Colors art paragraph borders as repeating balloon silhouettes along the measured edge. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 balloons3Colors 艺术段落边框绘制为沿测量边的重复气球剪影。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Balloon silhouettes',
+          zh: '气球剪影',
+        },
+        detail: {
+          en: 'balloons3Colors draws repeating bulb, knot, and string motifs along the measured edge.',
+          zh: 'balloons3Colors 沿测量边绘制重复的球身、打结与短线造型。',
+        },
+      },
+      {
+        title: {
+          en: 'Admitted into vector plan',
+          zh: '进入矢量计划',
+        },
+        detail: {
+          en: 'balloons3Colors is admitted into the vector border plan; not a silent skip.',
+          zh: 'balloons3Colors 进入矢量边框计划；不会静默跳过。',
+        },
+      },
+      {
+        title: {
+          en: 'Scope kept bounded',
+          zh: '范围保持有界',
+        },
+        detail: {
+          en: 'Other decorative art borders and full PDF/UA certification are not claimed.',
+          zh: '其余装饰性艺术边框与完整 PDF/UA 认证仍不宣称。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.195.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.195.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.194.0',
     date: '2026-09-13',
     kind: 'improved',
