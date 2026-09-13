@@ -1,5 +1,58 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.206.0',
+    date: '2026-09-13',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Document PDF paints checkedBarColor art borders',
+      zh: '文档 PDF 绘制 checkedBarColor 艺术边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer checkedBarColor art paragraph borders as repeating checkered bar segments with single-diagonal cell densify along the measured edge. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 checkedBarColor 艺术段落边框绘制为沿测量边的重复方格条纹段（单斜线填充）。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: { en: 'Light checkered bars', zh: '彩色方格条' },
+        detail: {
+          en: 'checkedBarColor draws repeating checkered bar segments with single-diagonal cell densify along the measured edge.',
+          zh: 'checkedBarColor 沿测量边绘制带单斜线填充的重复方格条纹边框段。',
+        },
+      },
+      {
+        title: { en: 'Admitted into vector plan', zh: '进入矢量计划' },
+        detail: {
+          en: 'checkedBarColor is admitted into the vector border plan; not a silent skip.',
+          zh: 'checkedBarColor 进入矢量边框计划；不会静默跳过。',
+        },
+      },
+      {
+        title: { en: 'Scope kept bounded', zh: '范围保持有界' },
+        detail: {
+          en: 'Other decorative art borders and full PDF/UA certification are not claimed.',
+          zh: '其余装饰性艺术边框与完整 PDF/UA 认证仍不宣称。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.206.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.206.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.205.0',
     date: '2026-09-13',
     kind: 'improved',

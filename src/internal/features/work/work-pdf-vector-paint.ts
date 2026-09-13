@@ -73,6 +73,7 @@ export type WorkPdfParagraphBorderKind =
   | 'chainLink'
   | 'champagneBottle'
   | 'checkedBarBlack'
+  | 'checkedBarColor'
   | 'basicBlackSquares'
   | 'basicWhiteSquares'
   | 'basicBlackDots'
@@ -394,7 +395,7 @@ export function appendWorkPdfVectorUnderlineLayer(
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
  * `marqueeToothed` / `moons` / `bats` / `birds` / `birdsFlight` / `cabins` /
- * `apples` / `vine` / `archedScallops` / `babyPacifier` / `babyRattle` / `balloons3Colors` / `balloonsHotAir` / `cakeSlice` / `candyCorn` / `celticKnotwork` / `certificateBanner` / `chainLink` / `champagneBottle` / `checkedBarBlack` / `basicBlackSquares` / `basicWhiteSquares` /
+ * `apples` / `vine` / `archedScallops` / `babyPacifier` / `babyRattle` / `balloons3Colors` / `balloonsHotAir` / `cakeSlice` / `candyCorn` / `celticKnotwork` / `certificateBanner` / `chainLink` / `champagneBottle` / `checkedBarBlack` / `checkedBarColor` / `basicBlackSquares` / `basicWhiteSquares` /
  * `basicBlackDots` / `basicWhiteDots` / `basicBlackDashes` /
  * `basicWhiteDashes` / `basicThinLines` / `basicWideInline` /
  * `basicWideMidline` / `basicWideOutline` art motifs; other art border styles are
@@ -550,7 +551,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * moons/bats/birds/cabins/apples/vine/archedScallops/babyPacifier/babyRattle/balloons3Colors/balloonsHotAir/cakeSlice/candyCorn/celticKnotwork/certificateBanner/chainLink/champagneBottle/checkedBarBlack/basicSquares/basicDots/
+ * moons/bats/birds/cabins/apples/vine/archedScallops/babyPacifier/babyRattle/balloons3Colors/balloonsHotAir/cakeSlice/candyCorn/celticKnotwork/certificateBanner/chainLink/champagneBottle/checkedBarBlack/checkedBarColor/basicSquares/basicDots/
  * basicDashes/basicThinLines/basicWide art; not PDF/UA or remaining decorative
  * art).
  */
@@ -866,6 +867,16 @@ export function appendWorkPdfVectorParagraphBorderLayer(
             height,
             thickness,
           );
+        } else if (stroke.kind === 'checkedBarColor') {
+          strokeCheckedBarColorParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+          );
         } else if (
           stroke.kind === 'basicBlackSquares' ||
           stroke.kind === 'basicWhiteSquares'
@@ -1003,6 +1014,7 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'chainLink' ||
     border.style === 'champagneBottle' ||
     border.style === 'checkedBarBlack' ||
+    border.style === 'checkedBarColor' ||
     border.style === 'basicBlackSquares' ||
     border.style === 'basicWhiteSquares' ||
     border.style === 'basicBlackDots' ||
@@ -3809,6 +3821,145 @@ function strokeCheckedBarBlackPolyline(
   fillCell(-half, -depth * 0.05, 0, depth * 0.45);
   fillCell(0, depth * 0.45, half, depth * 0.95);
   void midOut;
+}
+
+/**
+ * Colored checked-bar motifs along the measured edge for geometric art border
+ * `checkedBarColor`. Same segmented bar as `checkedBarBlack`, but alternating
+ * cells densify with a single diagonal (color-weight) instead of a cross.
+ */
+function strokeCheckedBarColorParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const span = Math.max(2.8, thickness * 2.4);
+  const period = Math.max(6.0, thickness * 5.2);
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeCheckedBarColorSilhouettes(
+      pdf,
+      x,
+      yBase,
+      width,
+      0,
+      period,
+      span,
+      outward,
+    );
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeCheckedBarColorSilhouettes(
+      pdf,
+      xBase,
+      y,
+      height,
+      1,
+      period,
+      span,
+      outward,
+    );
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeCheckedBarColorSilhouettes(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  span: number,
+  outward: 1 | -1,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const centerX = axis === 0 ? originX + along : originX;
+    const centerY = axis === 0 ? originY : originY + along;
+    const half = Math.min(span / 2, length / (count * 2.2));
+    const depth = Math.max(1.3, half * 0.85);
+    const tangentX = axis === 0 ? 1 : 0;
+    const tangentY = axis === 0 ? 0 : 1;
+    const normalX = axis === 0 ? 0 : outward;
+    const normalY = axis === 0 ? outward : 0;
+    strokeCheckedBarColorPolyline(
+      pdf,
+      centerX + normalX * depth * 0.08,
+      centerY + normalY * depth * 0.08,
+      half,
+      depth,
+      tangentX,
+      tangentY,
+      normalX,
+      normalY,
+    );
+  }
+}
+
+function strokeCheckedBarColorPolyline(
+  pdf: JsPdf,
+  centerX: number,
+  centerY: number,
+  half: number,
+  depth: number,
+  tangentX: number,
+  tangentY: number,
+  normalX: number,
+  normalY: number,
+): void {
+  if (
+    !Number.isFinite(half) ||
+    half <= 0 ||
+    !Number.isFinite(depth) ||
+    depth <= 0
+  ) {
+    return;
+  }
+  const point = (along: number, out: number): [number, number] => [
+    centerX + tangentX * along + normalX * out,
+    centerY + tangentY * along + normalY * out,
+  ];
+  const outline: Array<[number, number]> = [
+    point(-half, -depth * 0.05),
+    point(half, -depth * 0.05),
+    point(half, depth * 0.95),
+    point(-half, depth * 0.95),
+  ];
+  for (let index = 0; index < outline.length; index += 1) {
+    const [x0, y0] = outline[index]!;
+    const [x1, y1] = outline[(index + 1) % outline.length]!;
+    pdf.line(x0, y0, x1, y1);
+  }
+  const midA = point(-half, depth * 0.45);
+  const midB = point(half, depth * 0.45);
+  pdf.line(midA[0], midA[1], midB[0], midB[1]);
+  const vertTop = point(0, -depth * 0.05);
+  const vertBot = point(0, depth * 0.95);
+  pdf.line(vertTop[0], vertTop[1], vertBot[0], vertBot[1]);
+  // Single-diagonal densify on alternating cells (color weight).
+  const a = point(-half, -depth * 0.05);
+  const b = point(0, depth * 0.45);
+  pdf.line(a[0], a[1], b[0], b[1]);
+  const c = point(0, depth * 0.45);
+  const d = point(half, depth * 0.95);
+  pdf.line(c[0], c[1], d[0], d[1]);
 }
 
 /**
