@@ -1059,14 +1059,14 @@
 
 .work-office-ribbon .work-office-toolbar .work-spreadsheet-border-primary,
 .work-office-ribbon .work-office-toolbar .work-spreadsheet-border-disclosure {
-  height: 29px;
+  height: 24px;
   padding: 0;
   border-radius: 0;
 }
 
 .work-office-ribbon .work-office-toolbar .work-spreadsheet-border-primary {
-  width: 29px;
-  min-width: 29px;
+  width: 26px;
+  min-width: 26px;
   border-radius: 6px 0 0 6px;
 }
 

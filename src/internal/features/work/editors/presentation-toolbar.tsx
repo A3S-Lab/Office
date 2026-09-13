@@ -273,6 +273,7 @@ export function PresentationToolbar({
                     <WorkOfficeRibbonGroup label="字体">
                       <OfficeSelect
                         ariaLabel="演示字体"
+                        className="presentation-font-family-select"
                         value={fontFamilyValue}
                         options={presentationFontFamilyOptions(fontFamilyValue)}
                         onValueChange={(fontFamily) =>
@@ -377,6 +378,7 @@ export function PresentationToolbar({
                           ? '对齐所选对象'
                           : '元素对齐到幻灯片'
                       }
+                      className="presentation-align-select"
                       value="none"
                       options={presentationAlignmentOptions}
                       disabled={!can.alignElement('left')}

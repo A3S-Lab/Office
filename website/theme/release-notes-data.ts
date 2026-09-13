@@ -1,5 +1,58 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.197.0',
+    date: '2026-09-13',
+    kind: 'fixed',
+    surfaces: ['presentation', 'spreadsheet', 'markdown', 'documentation'],
+    title: {
+      en: 'Ribbon dropdown layout repaired',
+      zh: '功能区下拉布局修复',
+    },
+    summary: {
+      en: 'Shared shell: Presentation no longer crushes the ribbon to 44px; Presentation, Spreadsheet, and Markdown OfficeSelect controls use fixed ribbon widths; ribbon color pickers and Spreadsheet border controls align to 24px; floating menus keep portal top/left. Unit and Playwright ribbon-select evidence cover the contract.',
+      zh: '共享壳层：演示文稿功能区不再被压成 44px；演示文稿、表格与 Markdown 的 OfficeSelect 使用固定功能区宽度；功能区颜色选择与表格边框控件对齐到 24px；浮动菜单保持 portal 的 top/left。单元测试与 Playwright 功能区下拉证据覆盖该契约。',
+    },
+    highlights: [
+      {
+        title: { en: '74px Presentation ribbon row', zh: '74px 演示功能区行' },
+        detail: {
+          en: 'Remove the 44px presentation-toolbar height pin so font and align selects fit the shared ribbon.',
+          zh: '去掉 presentation-toolbar 的 44px 高度钉死，让字体与对齐下拉落在共享功能区行。',
+        },
+      },
+      {
+        title: { en: 'Fixed select and color widths', zh: '固定下拉与颜色宽度' },
+        detail: {
+          en: 'Presentation/Markdown/Spreadsheet selects use dedicated ribbon widths; chrome sizes select triggers and color tools at 24px.',
+          zh: '演示/Markdown/表格下拉使用专用功能区宽度；chrome 将下拉触发器与颜色工具定为 24px。',
+        },
+      },
+      {
+        title: { en: 'Portal-safe menus', zh: 'Portal 安全菜单' },
+        detail: {
+          en: 'Floating OfficeSelect menus keep portal top/left instead of trigger-relative offsets.',
+          zh: '浮动 OfficeSelect 菜单保持 portal 的 top/left，而不再使用相对触发器的偏移。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/presentation.html',
+          zh: './components/presentation.html',
+        },
+        label: { en: 'Presentation editor', zh: '演示文稿编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.197.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.197.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.196.0',
     date: '2026-09-13',
     kind: 'improved',

@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.197.0 - 2026-09-13
+
+### Shared shell
+
+- Ribbon toolbars no longer crush `OfficeSelect` / number-field / color
+  controls into mismatched heights. Presentation drops the 44px toolbar pin;
+  Presentation and Markdown ribbon selects use fixed widths; Spreadsheet
+  font-size gets a dedicated 64px slot; ribbon color pickers and Spreadsheet
+  border split controls align to the shared 24px row; floating menus keep
+  portal top/left. Presentation animation/transition/design strip selects also
+  receive usable field widths. Unit and Playwright ribbon-select evidence cover
+  the contract.
+
 ## 0.196.0 - 2026-09-13
 
 ### Writer

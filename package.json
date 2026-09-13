@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.196.0",
+  "version": "0.197.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -138,6 +138,7 @@
     "playground:visual:spreadsheet-table": "playwright test visual-tests/spreadsheet-table.functional.spec.ts --config playwright.config.ts",
     "playground:visual:spreadsheet-table-totals": "playwright test visual-tests/spreadsheet-table-totals.functional.spec.ts --config playwright.config.ts",
     "playground:visual:presentation-animation": "playwright test visual-tests/presentation-animation.functional.spec.ts --config playwright.config.ts",
+    "playground:visual:presentation-ribbon-select": "playwright test visual-tests/presentation-ribbon-select.functional.spec.ts --config playwright.config.ts",
     "playground:visual:pdf-page-organization": "playwright test visual-tests/pdf-page-organization.functional.spec.ts --config playwright.config.ts",
     "playground:visual:update": "playwright test --config playwright.config.ts --update-snapshots",
     "office:ops": "bun scripts/office-ui-ops.ts",

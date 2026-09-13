@@ -543,6 +543,53 @@ test('Presentation ribbon collapses with WPS Ctrl+F1', () => {
   expect(screen.getByRole('button', { name: '折叠功能区' })).toBeVisible();
 });
 
+test('keeps Presentation ribbon selects sized for the 74px ribbon row', () => {
+  const commands = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCommands;
+  const can = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCanCommands;
+
+  const { container } = render(
+    <PresentationToolbar
+      selectedSlide={slide}
+      selectedElement={textElement}
+      selectedUnitCount={1}
+      can={can}
+      textFormattingAvailable
+      commentsOpen={false}
+      commentCount={0}
+      designOpen={false}
+      editingDesign={false}
+      transition={slide.transition}
+      commands={commands}
+    />,
+  );
+
+  expect(container.querySelector('.presentation-toolbar')).toBeTruthy();
+  expect(
+    container.querySelector(
+      '.presentation-font-family-select.work-office-select',
+    ),
+  ).toBeTruthy();
+  expect(
+    container.querySelector('.presentation-align-select.work-office-select'),
+  ).toBeTruthy();
+  expect(
+    screen
+      .getByRole('combobox', { name: '演示字体' })
+      .closest('.presentation-font-family-select'),
+  ).toBeTruthy();
+  expect(
+    screen
+      .getByRole('combobox', { name: '元素对齐到幻灯片' })
+      .closest('.presentation-align-select'),
+  ).toBeTruthy();
+});
+
 const textElement: WorkSlideElement = {
   id: 'element-1',
   type: 'text',

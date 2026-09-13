@@ -371,14 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.196.0` paints balloonsHotAir art borders in document PDF export:
+Version `0.197.0` repairs ribbon dropdown layout across editors:
 
-- **`balloonsHotAir` art borders** — Writer `balloonsHotAir` paragraph borders
-  paint as repeating hot-air balloon silhouettes along the measured edge.
-- **Layout Artifact wrap** — decorative border paint stays inside
-  `/Artifact << /Type /Layout >>` BDC like prior art motifs.
-- **Fail-closed edges** — remaining decorative art borders and full PDF/UA
-  certification stay out of scope.
+- **Presentation ribbon height** — remove the 44px toolbar crush so the shared
+  74px ribbon row can host font and align `OfficeSelect` controls.
+- **Ribbon select sizing** — Presentation font/align, Markdown paragraph style,
+  and Spreadsheet font-size selects use fixed ribbon widths; shared chrome sizes
+  select triggers, number fields, and color pickers to 24px.
+- **Portal menus** — floating `OfficeSelect` menus keep portal top/left instead
+  of trigger-relative offsets that misplace dropdown panels.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

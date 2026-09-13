@@ -89,9 +89,31 @@
   white-space: nowrap;
 }
 
-.presentation-toolbar {
-  height: 44px;
-  flex-basis: 44px;
+.presentation-font-family-select {
+  width: 126px;
+  flex: 0 0 126px;
+}
+
+.presentation-font-family-select > button[role="combobox"] {
+  width: 126px;
+  min-width: 0;
+}
+
+.presentation-align-select {
+  width: 112px;
+  flex: 0 0 112px;
+}
+
+.presentation-align-select > button[role="combobox"] {
+  width: 112px;
+  min-width: 0;
+}
+
+.presentation-toolbar .presentation-font-size-field {
+  align-self: center;
+  width: 72px;
+  flex: 0 0 72px;
+  height: 24px;
 }
 
 .presentation-font-size-field {
@@ -184,9 +206,16 @@
   gap: 5px;
 }
 
-.work-presentation-design-controls select {
-  min-width: 130px;
-  padding: 0 7px;
+.work-presentation-design-controls .work-office-select {
+  width: 130px;
+  flex: 0 0 130px;
+}
+
+.work-presentation-design-controls
+  .work-office-select
+  > button[role="combobox"] {
+  width: 130px;
+  min-width: 0;
 }
 
 .work-presentation-design-editing {
@@ -232,7 +261,7 @@
 
 .work-presentation-transition-options .work-office-field.direction,
 .work-presentation-transition-options .work-office-field.speed {
-  width: 76px;
+  width: 90px;
 }
 
 .work-presentation-transition-options .work-office-field.orientation {

@@ -112,11 +112,25 @@
   opacity: 0.45;
 }
 
-.work-office-select-menu,
-.work-office-color-menu {
+.work-office-select-menu:not([data-floating="true"]),
+.work-office-color-menu:not([data-floating="true"]) {
   position: absolute;
   z-index: 80;
   top: calc(100% + 5px);
+  left: 0;
+  min-width: 100%;
+  padding: 5px;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--a3s-panel) 97%, transparent);
+  box-shadow: 0 12px 34px rgb(15 23 42 / 18%);
+  backdrop-filter: blur(18px);
+}
+
+.work-office-select-menu[data-floating="true"],
+.work-office-color-menu[data-floating="true"] {
+  z-index: 80;
+  top: 0;
   left: 0;
   min-width: 100%;
   padding: 5px;

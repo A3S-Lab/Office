@@ -148,6 +148,15 @@
   flex-basis: 112px;
 }
 
+.work-spreadsheet-ribbon-toolbar .work-office-select.work-spreadsheet-font-size,
+.work-spreadsheet-ribbon-toolbar
+  .work-office-select.work-spreadsheet-font-size
+  > button {
+  width: 64px;
+  min-width: 64px;
+  flex-basis: 64px;
+}
+
 .work-spreadsheet-ribbon-toolbar
   .work-office-select.work-spreadsheet-number-format,
 .work-spreadsheet-ribbon-toolbar

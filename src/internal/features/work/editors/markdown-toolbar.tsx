@@ -419,6 +419,7 @@ export function MarkdownToolbar({
               <WorkOfficeRibbonGroup label="样式">
                 <OfficeSelect
                   ariaLabel="段落样式"
+                  className="markdown-paragraph-style-select"
                   value={paragraphStyle}
                   options={[
                     { value: 'paragraph', label: '正文' },

@@ -81,6 +81,11 @@ test('does not leak hidden visual heading or link state into source menus', () =
   expect(screen.getByRole('combobox', { name: '段落样式' })).toHaveTextContent(
     '正文',
   );
+  expect(
+    screen
+      .getByRole('combobox', { name: '段落样式' })
+      .closest('.markdown-paragraph-style-select'),
+  ).toBeTruthy();
   fireEvent.click(screen.getByRole('tab', { name: '插入' }));
   expect(screen.getByRole('button', { name: '添加链接' })).toHaveAttribute(
     'aria-pressed',

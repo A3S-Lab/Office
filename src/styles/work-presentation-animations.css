@@ -18,12 +18,16 @@
   width: 88px;
 }
 
+.work-presentation-animation-options .work-office-field.animation-class {
+  width: 92px;
+}
+
 .work-presentation-animation-options .work-office-field.trigger {
   width: 120px;
 }
 
 .work-presentation-animation-options .work-office-field.direction {
-  width: 82px;
+  width: 88px;
 }
 
 .work-presentation-animation-timing .work-office-field.seconds {

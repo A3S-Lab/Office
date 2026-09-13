@@ -18,6 +18,20 @@
   --work-office-accent: #586574;
 }
 
+.markdown-toolbar .work-office-select {
+  align-self: center;
+}
+
+.markdown-paragraph-style-select {
+  width: 104px;
+  flex: 0 0 104px;
+}
+
+.markdown-paragraph-style-select > button[role="combobox"] {
+  width: 104px;
+  min-width: 0;
+}
+
 .work-markdown-insert-form {
   display: grid;
   gap: 14px;
