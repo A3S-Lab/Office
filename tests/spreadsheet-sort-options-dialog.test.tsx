@@ -7,6 +7,21 @@ import type {
 import { SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS } from '../src/internal/features/work/editors/spreadsheet-sort-custom-list';
 import { SpreadsheetSortDialog } from '../src/internal/features/work/editors/spreadsheet-sort-dialog';
 
+function chooseOfficeSelectOption(
+  ariaLabel: string,
+  optionName: string | RegExp,
+) {
+  fireEvent.click(screen.getByRole('combobox', { name: ariaLabel }));
+  fireEvent.click(screen.getByRole('option', { name: optionName }));
+}
+
+function expectOfficeSelectValue(ariaLabel: string, value: string) {
+  expect(screen.getByRole('combobox', { name: ariaLabel })).toHaveAttribute(
+    'data-selected-value',
+    value,
+  );
+}
+
 test('switches to WPS row sorting and authors horizontal appearance priorities', () => {
   const applied: SpreadsheetSortDialogValue[] = [];
   render(
@@ -46,32 +61,18 @@ test('switches to WPS row sorting and authors horizontal appearance priorities',
   expect(screen.queryByRole('dialog', { name: '排序选项' })).toBeNull();
   expect(header).not.toBeChecked();
   expect(header).toBeDisabled();
-  expect(screen.getByRole('combobox', { name: '排序条件 1 行' })).toHaveValue(
-    '1',
-  );
-  fireEvent.change(
-    screen.getByRole('combobox', { name: '排序条件 1 排序依据' }),
-    { target: { value: 'cell-color' } },
-  );
-  fireEvent.change(
-    screen.getByRole('combobox', { name: '排序条件 1 目标外观' }),
-    { target: { value: 'cell-color:#fce8e6' } },
-  );
+  expectOfficeSelectValue('排序条件 1 行', '1');
+  chooseOfficeSelectOption('排序条件 1 排序依据', '单元格颜色');
+  chooseOfficeSelectOption('排序条件 1 目标外观', '单元格颜色 #FCE8E6');
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 位置' }));
   expect(
-    within(screen.getByRole('combobox', { name: '排序条件 1 位置' })).getByRole(
-      'option',
-      { name: '置于左侧' },
-    ),
+    screen.getByRole('option', { name: '置于左侧' }),
   ).toBeInTheDocument();
-  fireEvent.change(screen.getByRole('combobox', { name: '排序条件 1 位置' }), {
-    target: { value: 'last' },
-  });
+  fireEvent.click(screen.getByRole('option', { name: '置于右侧' }));
   expect(screen.getByText(/单元格颜色 #FCE8E6，置于右侧/)).toBeVisible();
 
   fireEvent.click(screen.getByRole('button', { name: '添加条件' }));
-  expect(screen.getByRole('combobox', { name: '排序条件 2 行' })).toHaveValue(
-    '0',
-  );
+  expectOfficeSelectValue('排序条件 2 行', '0');
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
 
   expect(applied).toEqual([
@@ -125,12 +126,8 @@ test('changes text comparison without resetting existing sort levels', () => {
   );
   fireEvent.click(within(options).getByRole('button', { name: '确定' }));
 
-  expect(screen.getByRole('combobox', { name: '排序条件 1 列' })).toHaveValue(
-    '0',
-  );
-  expect(screen.getByRole('combobox', { name: '排序条件 2 列' })).toHaveValue(
-    '1',
-  );
+  expectOfficeSelectValue('排序条件 1 列', '0');
+  expectOfficeSelectValue('排序条件 2 列', '1');
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
   expect(applied).toEqual([
     {

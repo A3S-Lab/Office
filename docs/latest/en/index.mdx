@@ -44,14 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.207.0)
+## What's new on `main` (0.208.0)
 
-Writer Phase 0 paints `checkered` art paragraph borders in document PDF:
+Spreadsheet dialog dropdowns use shared `OfficeSelect`:
 
-- `checkered` draws repeating 2×2 tile grids with alternating diagonal fills
-  along the measured edge.
-- Remaining decorative art borders and full PDF/UA certification stay out of
-  scope.
+- Custom Sort, data validation, AutoFilter condition, and hyperlink worksheet
+  pickers leave native `<select>` for the shared combobox, including Field
+  `aria-*` forwarding and `data-value` on options.
+- The Custom Lists preference manager keeps its size=10 listbox; ribbon nested
+  portal contracts from `0.198.0` stay unchanged.
 
 
 ## Explore by surface

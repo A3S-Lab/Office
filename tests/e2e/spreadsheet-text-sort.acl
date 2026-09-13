@@ -66,7 +66,7 @@ suite "office-spreadsheet-text-sort" {
         }
 
         expect "code-column-is-secondary" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 列']:has(option[value='1']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 2 列'][data-selected-value='1']")
         }
 
         accessibility "text-sort-dialog-accessibility" {

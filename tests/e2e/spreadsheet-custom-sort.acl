@@ -104,35 +104,44 @@ suite "office-spreadsheet-custom-sort" {
             visible = css(".work-spreadsheet-sort-dialog .work-office-checkbox.checked:has(input[aria-label='数据包含标题']:checked)")
         }
 
-        select "choose-completion-rate" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 列']")
-            values = ["5"]
+        click "open-choose-completion-rate" {
+            target = role("combobox", "排序条件 1 列")
         }
 
-        select "choose-descending" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']")
-            values = ["descending"]
+        click "choose-completion-rate" {
+            target = css(".work-office-select-menu [role='option'][data-value='5']")
+        }
+
+        click "open-choose-descending" {
+            target = role("combobox", "排序条件 1 次序")
+        }
+
+        click "choose-descending" {
+            target = role("option", "降序（Z 到 A）")
         }
 
         click "add-secondary-key" {
             target = role("button", "添加条件")
         }
 
-        select "choose-owner-secondary-key" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 列']")
-            values = ["1"]
+        click "open-choose-owner-secondary-key" {
+            target = role("combobox", "排序条件 2 列")
+        }
+
+        click "choose-owner-secondary-key" {
+            target = css(".work-office-select-menu [role='option'][data-value='1']")
         }
 
         expect "primary-key-is-completion-rate" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 列']:has(option[value='5']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 1 列'][data-selected-value='5']")
         }
 
         expect "primary-direction-is-descending" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(option[value='descending']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 1 次序'][data-selected-value='descending']")
         }
 
         expect "secondary-key-is-owner" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 列']:has(option[value='1']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 2 列'][data-selected-value='1']")
         }
 
         accessibility "custom-sort-dialog-accessibility" {

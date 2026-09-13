@@ -10,6 +10,14 @@ import {
 } from '../src/internal/features/work/editors/spreadsheet-hyperlink';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 
+function chooseOfficeSelectOption(
+  ariaLabel: string,
+  optionName: string | RegExp,
+) {
+  fireEvent.click(screen.getByRole('combobox', { name: ariaLabel }));
+  fireEvent.click(screen.getByRole('option', { name: optionName }));
+}
+
 test('inserts a validated webpage hyperlink from the accessible dialog', () => {
   const content = dialogContent();
   const source = createSpreadsheetHyperlinkDialogSource(content, {
@@ -103,9 +111,7 @@ test('switches between native cell-range and worksheet targets', () => {
 
   values.length = 0;
   fireEvent.click(screen.getByRole('radio', { name: '工作表' }));
-  fireEvent.change(screen.getByRole('combobox', { name: '工作表' }), {
-    target: { value: 'Archive 2025' },
-  });
+  chooseOfficeSelectOption('工作表', 'Archive 2025');
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
   expect(values[0]).toEqual({
     linkType: 'sheet',

@@ -279,7 +279,9 @@ before publishing table-specific latency or memory targets.
 ## Multi-key custom sort
 
 **Data → Sort and Filter → Custom Sort** captures one normalized continuous
-selection and its worksheet identity when the dialog opens. The Traditional Office-compatible
+selection and its worksheet identity when the dialog opens. Column, row, sort-on,
+order, and appearance pickers use the shared `OfficeSelect` combobox (with
+`data-selected-value` / option `data-value` for automation). The Traditional Office-compatible
 **Options** dialog switches between **Sort top to bottom**, whose column keys
 move complete rows, and **Sort left to right**, whose row keys move complete
 columns. The same dialog chooses Simplified Chinese **Pinyin** or **Stroke**

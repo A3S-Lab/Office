@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { type FormEvent, useId, useState } from 'react';
 import { Button, Dialog, Field } from '../../../design-system/primitives';
-import { OfficeCheckbox } from './office-controls';
+import { OfficeCheckbox, OfficeSelect } from './office-controls';
 import {
   SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT,
   SPREADSHEET_DATA_VALIDATION_FORMULA_LIMIT,
@@ -157,29 +157,24 @@ export function SpreadsheetDataValidationDialog({
           </div>
           <div className="work-spreadsheet-data-validation-condition-grid">
             <Field label="允许">
-              <select
+              <OfficeSelect
+                ariaLabel="允许"
                 value={value.type}
-                onChange={(event) =>
-                  changeType(
-                    event.currentTarget.value as SpreadsheetDataValidationType,
-                  )
-                }
-              >
-                {validationTypes.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                options={validationTypes}
+                onValueChange={(type) => changeType(type)}
+              />
             </Field>
 
             {value.type !== 'dropdown' && value.type !== 'custom' && (
               <Field label="数据">
-                <select
+                <OfficeSelect
+                  ariaLabel="数据"
                   value={value.type2}
-                  onChange={(event) => {
-                    const type2 = event.currentTarget
-                      .value as SpreadsheetDataValidationOperator;
+                  options={operators.map((operator) => ({
+                    value: operator,
+                    label: operatorLabels[operator],
+                  }))}
+                  onValueChange={(type2) => {
                     update({
                       type2,
                       ...(!spreadsheetDataValidationNeedsSecondValue(type2)
@@ -188,13 +183,7 @@ export function SpreadsheetDataValidationDialog({
                     });
                     setTouched(true);
                   }}
-                >
-                  {operators.map((operator) => (
-                    <option key={operator} value={operator}>
-                      {operatorLabels[operator]}
-                    </option>
-                  ))}
-                </select>
+                />
               </Field>
             )}
           </div>
@@ -336,20 +325,16 @@ export function SpreadsheetDataValidationDialog({
                 label="错误警告样式"
                 description="停止会阻止无效输入；警告和信息会询问是否保留。三种样式都会写入原生文件。"
               >
-                <select
-                  aria-label="错误警告样式"
+                <OfficeSelect
+                  ariaLabel="错误警告样式"
                   value={value.errorStyle}
-                  onChange={(event) =>
-                    update({
-                      errorStyle: event.currentTarget
-                        .value as SpreadsheetDataValidationDialogValue['errorStyle'],
-                    })
-                  }
-                >
-                  <option value="stop">停止</option>
-                  <option value="warning">警告</option>
-                  <option value="information">信息</option>
-                </select>
+                  options={[
+                    { value: 'stop', label: '停止' },
+                    { value: 'warning', label: '警告' },
+                    { value: 'information', label: '信息' },
+                  ]}
+                  onValueChange={(errorStyle) => update({ errorStyle })}
+                />
               </Field>
               <Field label="错误警告标题">
                 <input

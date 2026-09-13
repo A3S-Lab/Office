@@ -1,5 +1,34 @@
-import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { expect, test, afterEach } from '@rstest/core';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+
+afterEach(() => {
+  cleanup();
+});
+
+function chooseOfficeSelectOption(
+  ariaLabel: string,
+  optionName: string | RegExp,
+) {
+  fireEvent.click(screen.getByRole('combobox', { name: ariaLabel }));
+  fireEvent.click(screen.getByRole('option', { name: optionName }));
+}
+
+function chooseOfficeSelectOptionByValue(ariaLabel: string, value: string) {
+  fireEvent.click(screen.getByRole('combobox', { name: ariaLabel }));
+  fireEvent.click(
+    document.querySelector(
+      `.work-office-select-menu [role='option'][data-value='${value}']`,
+    ) as HTMLElement,
+  );
+}
+
+function expectOfficeSelectValue(ariaLabel: string, value: string) {
+  expect(screen.getByRole('combobox', { name: ariaLabel })).toHaveAttribute(
+    'data-selected-value',
+    value,
+  );
+}
+
 import { SpreadsheetAutoFilterConditionDialog } from '../src/internal/features/work/editors/spreadsheet-auto-filter-condition-dialog';
 import type { WorkSpreadsheetFilterCriteria } from '../src/internal/features/work/work-types';
 
@@ -28,9 +57,7 @@ test('validates and applies a bounded numeric condition', () => {
   expect(
     screen.getByRole('dialog', { name: '自定义自动筛选' }),
   ).toHaveTextContent('季度经营!收入');
-  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
-    target: { value: 'between' },
-  });
+  chooseOfficeSelectOption('筛选条件', '介于');
   fireEvent.change(screen.getByRole('textbox', { name: '下限' }), {
     target: { value: '120' },
   });
@@ -81,9 +108,7 @@ test('shows and invokes the owned clear action for an active condition', () => {
     />,
   );
 
-  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue(
-    'contains',
-  );
+  expectOfficeSelectValue('筛选条件', 'contains');
   expect(screen.getByRole('textbox', { name: '筛选值' })).toHaveValue('风险');
   fireEvent.click(screen.getByRole('button', { name: '清除此列筛选' }));
   expect(clears).toBe(1);
@@ -112,17 +137,13 @@ test('authors two custom conditions with an explicit OR relationship', () => {
     />,
   );
 
-  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
-    target: { value: 'begins-with' },
-  });
+  chooseOfficeSelectOption('筛选条件', '开头是');
   fireEvent.change(screen.getByRole('textbox', { name: '筛选值' }), {
     target: { value: '待' },
   });
   fireEvent.click(screen.getByRole('button', { name: '添加第二个条件' }));
   fireEvent.click(screen.getByRole('radio', { name: '或者' }));
-  fireEvent.change(screen.getByRole('combobox', { name: '第二个筛选条件' }), {
-    target: { value: 'does-not-end-with' },
-  });
+  chooseOfficeSelectOptionByValue('第二个筛选条件', 'does-not-end-with');
   fireEvent.change(screen.getByRole('textbox', { name: '第二个筛选值' }), {
     target: { value: '归档' },
   });
@@ -162,9 +183,7 @@ test('restores and authors WPS wildcard expressions in compound conditions', () 
     />,
   );
 
-  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue(
-    'matches-wildcard',
-  );
+  expectOfficeSelectValue('筛选条件', 'matches-wildcard');
   expect(screen.getByRole('textbox', { name: '通配符表达式' })).toHaveValue(
     'K?ng*',
   );
@@ -178,9 +197,7 @@ test('restores and authors WPS wildcard expressions in compound conditions', () 
   });
   fireEvent.click(screen.getByRole('button', { name: '添加第二个条件' }));
   fireEvent.click(screen.getByRole('radio', { name: '并且' }));
-  fireEvent.change(screen.getByRole('combobox', { name: '第二个筛选条件' }), {
-    target: { value: 'does-not-match-wildcard' },
-  });
+  chooseOfficeSelectOption('第二个筛选条件', '通配符不匹配');
   fireEvent.change(screen.getByRole('textbox', { name: '第二个筛选值' }), {
     target: { value: 'King~*' },
   });
@@ -227,13 +244,9 @@ test('restores and validates a compound numeric condition', () => {
     />,
   );
 
-  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue(
-    'greater-than',
-  );
+  expectOfficeSelectValue('筛选条件', 'greater-than');
   expect(screen.getByRole('radio', { name: '并且' })).toBeChecked();
-  expect(screen.getByRole('combobox', { name: '第二个筛选条件' })).toHaveValue(
-    'less-than',
-  );
+  expectOfficeSelectValue('第二个筛选条件', 'less-than');
   expect(screen.getByRole('textbox', { name: '第二个筛选值' })).toHaveValue(
     '200',
   );
@@ -281,18 +294,14 @@ test('authors bounded Top/Bottom item and percentage filters for numeric columns
     />,
   );
 
-  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue(
-    'top-percent',
-  );
+  expectOfficeSelectValue('筛选条件', 'top-percent');
   expect(screen.getByRole('textbox', { name: '百分比' })).toHaveValue('25');
   fireEvent.change(screen.getByRole('textbox', { name: '百分比' }), {
     target: { value: '101' },
   });
   expect(screen.getByRole('button', { name: '确定' })).toBeDisabled();
 
-  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
-    target: { value: 'bottom' },
-  });
+  chooseOfficeSelectOption('筛选条件', '后几项');
   fireEvent.change(screen.getByRole('textbox', { name: '项目数' }), {
     target: { value: ' 2 ' },
   });
@@ -317,6 +326,9 @@ test('authors bounded Top/Bottom item and percentage filters for numeric columns
     />,
   );
   expect(screen.queryByRole('option', { name: '前几项' })).toBeNull();
+  fireEvent.click(screen.getByRole('combobox', { name: '筛选条件' }));
+  expect(screen.queryByRole('option', { name: '前几项' })).toBeNull();
+  fireEvent.click(screen.getByRole('combobox', { name: '筛选条件' }));
 });
 
 test('restores and authors value-free dynamic date conditions for date columns', () => {
@@ -341,17 +353,15 @@ test('restores and authors value-free dynamic date conditions for date columns',
     />,
   );
 
-  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue(
-    'this-month',
-  );
+  expectOfficeSelectValue('筛选条件', 'this-month');
+  fireEvent.click(screen.getByRole('combobox', { name: '筛选条件' }));
   expect(screen.getByRole('option', { name: '今天' })).toBeVisible();
   expect(screen.getByRole('option', { name: '六月' })).toBeVisible();
+  fireEvent.click(screen.getByRole('combobox', { name: '筛选条件' }));
   expect(screen.queryByRole('textbox')).toBeNull();
   expect(screen.queryByRole('button', { name: '添加第二个条件' })).toBeNull();
 
-  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
-    target: { value: 'year-to-date' },
-  });
+  chooseOfficeSelectOptionByValue('筛选条件', 'year-to-date');
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
   expect(applied).toEqual([{ type: 'dynamic', kind: 'year-to-date' }]);
 });
@@ -378,15 +388,13 @@ test('offers and restores strict average conditions for numeric columns', () => 
     />,
   );
 
-  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue(
-    'above-average',
-  );
+  expectOfficeSelectValue('筛选条件', 'above-average');
+  fireEvent.click(screen.getByRole('combobox', { name: '筛选条件' }));
   expect(screen.getByRole('option', { name: '低于平均值' })).toBeVisible();
   expect(screen.queryByRole('option', { name: '今天' })).toBeNull();
+  fireEvent.click(screen.getByRole('combobox', { name: '筛选条件' }));
   expect(screen.queryByRole('textbox')).toBeNull();
-  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
-    target: { value: 'below-average' },
-  });
+  chooseOfficeSelectOption('筛选条件', '低于平均值');
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
   expect(applied).toEqual([{ type: 'dynamic', kind: 'below-average' }]);
 });

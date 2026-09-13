@@ -347,9 +347,12 @@ suite "office-spreadsheet-ribbon-alignment" {
             text = "执行看板!状态"
         }
 
-        select "choose-wildcard-condition" {
-            target = css(".work-spreadsheet-auto-filter-dialog select[aria-label='筛选条件']")
-            values = ["matches-wildcard"]
+        click "open-choose-wildcard-condition" {
+            target = role("combobox", "筛选条件")
+        }
+
+        click "choose-wildcard-condition" {
+            target = role("option", "通配符匹配")
         }
 
         fill "enter-risk-wildcard" {
@@ -365,9 +368,12 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".work-spreadsheet-auto-filter-conjunction input[type='radio']:checked")
         }
 
-        select "choose-negative-wildcard-condition" {
-            target = css(".work-spreadsheet-auto-filter-dialog select[aria-label='第二个筛选条件']")
-            values = ["does-not-match-wildcard"]
+        click "open-choose-negative-wildcard-condition" {
+            target = role("combobox", "第二个筛选条件")
+        }
+
+        click "choose-negative-wildcard-condition" {
+            target = role("option", "通配符不匹配")
         }
 
         fill "enter-completed-wildcard" {
@@ -448,12 +454,15 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         expect "rank-dialog-defaults-to-ten-items" {
-            visible = css(".work-spreadsheet-auto-filter-dialog select[aria-label='筛选条件']:has(option[value='top']:checked)")
+            visible = css(".work-spreadsheet-auto-filter-dialog [role='combobox'][aria-label='筛选条件'][data-selected-value='top']")
         }
 
-        select "choose-bottom-percent-filter" {
-            target = css(".work-spreadsheet-auto-filter-dialog select[aria-label='筛选条件']")
-            values = ["bottom-percent"]
+        click "open-choose-bottom-percent-filter" {
+            target = role("combobox", "筛选条件")
+        }
+
+        click "choose-bottom-percent-filter" {
+            target = role("option", "后百分比")
         }
 
         fill "enter-bottom-percent" {
@@ -497,13 +506,16 @@ suite "office-spreadsheet-ribbon-alignment" {
             target = css(".fortune-filter-menu [data-a3s-auto-filter-condition]")
         }
 
-        select "choose-above-average-filter" {
-            target = css(".work-spreadsheet-auto-filter-dialog select[aria-label='筛选条件']")
-            values = ["above-average"]
+        click "open-choose-above-average-filter" {
+            target = role("combobox", "筛选条件")
+        }
+
+        click "choose-above-average-filter" {
+            target = role("option", "高于平均值")
         }
 
         expect "average-filter-selected" {
-            visible = css(".work-spreadsheet-auto-filter-dialog select[aria-label='筛选条件']:has(option[value='above-average']:checked)")
+            visible = css(".work-spreadsheet-auto-filter-dialog [role='combobox'][aria-label='筛选条件'][data-selected-value='above-average']")
         }
 
         screenshot "autofilter-average-dialog" {

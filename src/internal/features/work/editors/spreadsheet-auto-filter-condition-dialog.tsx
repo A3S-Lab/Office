@@ -1,9 +1,9 @@
-import { type FormEvent, useId, useState } from 'react';
+import { type FormEvent, useId, useMemo, useState } from 'react';
 import { Button, Dialog, Field } from '../../../design-system/primitives';
 import type {
-  WorkSpreadsheetCustomFilterCondition,
   WorkSpreadsheetFilterCriteria,
 } from '../work-types';
+import { OfficeSelect, type OfficeSelectOption } from './office-controls';
 import {
   AVERAGE_CONDITIONS,
   BLANK_CONDITIONS,
@@ -100,6 +100,89 @@ export function SpreadsheetAutoFilterConditionDialog({
   const secondWildcardValue = WILDCARD_CONDITIONS.includes(
     draft.secondType as (typeof WILDCARD_CONDITIONS)[number],
   );
+  const primaryConditionOptions = useMemo(() => {
+    const options: OfficeSelectOption<SpreadsheetAutoFilterConditionType>[] =
+      [];
+    for (const type of TEXT_CONDITIONS) {
+      options.push({
+        value: type,
+        label: CONDITION_LABELS[type],
+        group: '文本与值',
+      });
+    }
+    for (const type of NUMBER_CONDITIONS) {
+      options.push({
+        value: type,
+        label: CONDITION_LABELS[type],
+        group: '数字',
+      });
+    }
+    if (showRankConditions) {
+      for (const type of RANK_CONDITIONS) {
+        options.push({
+          value: type,
+          label: CONDITION_LABELS[type],
+          group: '排名',
+        });
+      }
+    }
+    if (showAverageConditions) {
+      for (const type of AVERAGE_CONDITIONS) {
+        options.push({
+          value: type,
+          label: CONDITION_LABELS[type],
+          group: '平均值',
+        });
+      }
+    }
+    if (showDateConditions) {
+      for (const type of DATE_CONDITIONS) {
+        options.push({
+          value: type,
+          label: CONDITION_LABELS[type],
+          group: '日期',
+        });
+      }
+    }
+    for (const type of BLANK_CONDITIONS) {
+      options.push({
+        value: type,
+        label: CONDITION_LABELS[type],
+        group: '空白单元格',
+      });
+    }
+    return options;
+  }, [showAverageConditions, showDateConditions, showRankConditions]);
+  const secondConditionOptions = useMemo(
+    () => [
+      ...TEXT_CONDITIONS.map((type) => ({
+        value: type,
+        label: CONDITION_LABELS[type],
+        group: '文本与值',
+      })),
+      ...NUMBER_COMPARISON_CONDITIONS.map((type) => ({
+        value: type,
+        label: CONDITION_LABELS[type],
+        group: '数字',
+      })),
+    ],
+    [],
+  );
+  const changePrimaryType = (type: SpreadsheetAutoFilterConditionType) => {
+    setDraft((current) => ({
+      ...current,
+      type,
+      useSecond:
+        current.useSecond && spreadsheetAutoFilterCustomConditionType(type),
+      ...(BLANK_CONDITIONS.includes(type) ||
+      spreadsheetAutoFilterDynamicConditionType(type)
+        ? { value: '', upperValue: '' }
+        : !NUMBER_CONDITIONS.includes(type)
+          ? { upperValue: '' }
+          : {}),
+    }));
+    setTouched(false);
+  };
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setTouched(true);
@@ -150,78 +233,13 @@ export function SpreadsheetAutoFilterConditionDialog({
           label="筛选条件"
           description="仅隐藏不符合条件的行；其他列的筛选条件会继续生效。"
         >
-          <select
-            aria-label="筛选条件"
-            data-autofocus
+          <OfficeSelect
+            ariaLabel="筛选条件"
+            initialFocus
             value={draft.type}
-            onChange={(event) => {
-              const type = event.currentTarget
-                .value as SpreadsheetAutoFilterConditionType;
-              setDraft((current) => ({
-                ...current,
-                type,
-                useSecond:
-                  current.useSecond &&
-                  spreadsheetAutoFilterCustomConditionType(type),
-                ...(BLANK_CONDITIONS.includes(type) ||
-                spreadsheetAutoFilterDynamicConditionType(type)
-                  ? { value: '', upperValue: '' }
-                  : !NUMBER_CONDITIONS.includes(type)
-                    ? { upperValue: '' }
-                    : {}),
-              }));
-              setTouched(false);
-            }}
-          >
-            <optgroup label="文本与值">
-              {TEXT_CONDITIONS.map((type) => (
-                <option key={type} value={type}>
-                  {CONDITION_LABELS[type]}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="数字">
-              {NUMBER_CONDITIONS.map((type) => (
-                <option key={type} value={type}>
-                  {CONDITION_LABELS[type]}
-                </option>
-              ))}
-            </optgroup>
-            {showRankConditions && (
-              <optgroup label="排名">
-                {RANK_CONDITIONS.map((type) => (
-                  <option key={type} value={type}>
-                    {CONDITION_LABELS[type]}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-            {showAverageConditions && (
-              <optgroup label="平均值">
-                {AVERAGE_CONDITIONS.map((type) => (
-                  <option key={type} value={type}>
-                    {CONDITION_LABELS[type]}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-            {showDateConditions && (
-              <optgroup label="日期">
-                {DATE_CONDITIONS.map((type) => (
-                  <option key={type} value={type}>
-                    {CONDITION_LABELS[type]}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-            <optgroup label="空白单元格">
-              {BLANK_CONDITIONS.map((type) => (
-                <option key={type} value={type}>
-                  {CONDITION_LABELS[type]}
-                </option>
-              ))}
-            </optgroup>
-          </select>
+            options={primaryConditionOptions}
+            onValueChange={changePrimaryType}
+          />
         </Field>
 
         {needsValue && (
@@ -317,31 +335,15 @@ export function SpreadsheetAutoFilterConditionDialog({
             </fieldset>
             <div className="work-spreadsheet-auto-filter-second-condition">
               <Field label="第二个筛选条件">
-                <select
-                  aria-label="第二个筛选条件"
+                <OfficeSelect
+                  ariaLabel="第二个筛选条件"
                   value={draft.secondType}
-                  onChange={(event) => {
-                    const secondType = event.currentTarget
-                      .value as WorkSpreadsheetCustomFilterCondition['type'];
+                  options={secondConditionOptions}
+                  onValueChange={(secondType) => {
                     setDraft((current) => ({ ...current, secondType }));
                     setTouched(false);
                   }}
-                >
-                  <optgroup label="文本与值">
-                    {TEXT_CONDITIONS.map((type) => (
-                      <option key={type} value={type}>
-                        {CONDITION_LABELS[type]}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="数字">
-                    {NUMBER_COMPARISON_CONDITIONS.map((type) => (
-                      <option key={type} value={type}>
-                        {CONDITION_LABELS[type]}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
+                />
               </Field>
               <Field
                 label="第二个筛选值"

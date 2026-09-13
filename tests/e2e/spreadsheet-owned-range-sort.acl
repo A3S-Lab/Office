@@ -217,9 +217,12 @@ suite "office-spreadsheet-owned-range-sort" {
             target = css(".work-spreadsheet-sort-options-dialog[role='dialog'] footer button:first-child")
         }
 
-        select "choose-completion-descending" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']")
-            values = ["descending"]
+        click "open-choose-completion-descending" {
+            target = role("combobox", "排序条件 1 次序")
+        }
+
+        click "choose-completion-descending" {
+            target = role("option", "降序（Z 到 A）")
         }
 
         accessibility "owned-custom-sort-accessibility" {

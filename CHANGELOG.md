@@ -4,6 +4,18 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.208.0 - 2026-09-13
+
+### Spreadsheet
+
+- Custom Sort, data validation, AutoFilter condition, and hyperlink dialogs
+  use shared `OfficeSelect` instead of native `<select>`, with Field
+  `aria-required` / `aria-invalid` / `aria-describedby` forwarded to the
+  combobox trigger and `data-value` on options for a3s-test assertions.
+  The Custom Lists preference manager keeps its size=10 listbox for multi-row
+  browsing. Nested portal menus and ribbon 24px select contracts from
+  `0.198.0` remain in force.
+
 ## 0.207.0 - 2026-09-13
 
 ### Writer

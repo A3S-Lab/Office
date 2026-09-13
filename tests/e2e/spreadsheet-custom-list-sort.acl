@@ -96,14 +96,20 @@ suite "office-spreadsheet-custom-list-sort" {
             visible = css(".work-spreadsheet-sort-dialog[role='dialog']")
         }
 
-        select "choose-status-column" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 列']")
-            values = ["6"]
+        click "open-choose-status-column" {
+            target = role("combobox", "排序条件 1 列")
         }
 
-        select "create-custom-list" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']")
-            values = ["create-custom-list"]
+        click "choose-status-column" {
+            target = css(".work-office-select-menu [role='option'][data-value='6']")
+        }
+
+        click "open-create-custom-list" {
+            target = role("combobox", "排序条件 1 次序")
+        }
+
+        click "create-custom-list" {
+            target = role("option", "新建自定义序列…")
         }
 
         fill "enter-duplicate-custom-list" {
@@ -129,15 +135,27 @@ suite "office-spreadsheet-custom-list-sort" {
         }
 
         expect "custom-list-is-selected" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(option[value='custom-list:7']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 1 次序'][data-selected-value='custom-list:7']")
         }
 
         expect "custom-list-preview-is-visible" {
             text = "有风险 → 进行中 → 正常 → 已完成"
         }
 
+        click "open-order-to-verify-saved-group" {
+            target = role("combobox", "排序条件 1 次序")
+        }
+
         expect "custom-list-is-marked-saved" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(optgroup[label='已保存的序列'] option[value='custom-list:7'])")
+            visible = css(".work-office-select-menu [role='option'][data-value='custom-list:7']")
+        }
+
+        expect "custom-list-saved-group-label" {
+            text = "已保存的序列"
+        }
+
+        click "close-order-menu-after-verify" {
+            target = role("combobox", "排序条件 1 次序")
         }
 
         click "add-secondary-key" {
@@ -145,7 +163,7 @@ suite "office-spreadsheet-custom-list-sort" {
         }
 
         expect "secondary-key-defaults-to-first-unused-column" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 列']:has(option[value='0']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 2 列'][data-selected-value='0']")
         }
 
         accessibility "custom-list-sort-dialog-accessibility" {
@@ -165,8 +183,16 @@ suite "office-spreadsheet-custom-list-sort" {
             target = role("button", "自定义排序")
         }
 
+        click "open-order-before-manager" {
+            target = role("combobox", "排序条件 1 次序")
+        }
+
         expect "saved-custom-list-is-reusable-before-reload" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(option[value='custom-list:7'])")
+            visible = css(".work-office-select-menu [role='option'][data-value='custom-list:7']")
+        }
+
+        click "close-order-before-manager" {
+            target = role("combobox", "排序条件 1 次序")
         }
 
         click "open-custom-list-manager" {
@@ -431,8 +457,12 @@ suite "office-spreadsheet-custom-list-sort" {
             target = role("button", "自定义排序")
         }
 
+        click "open-order-after-reload" {
+            target = role("combobox", "排序条件 1 次序")
+        }
+
         expect "saved-custom-list-survives-reload" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']:has(optgroup[label='已保存的序列'] option[value='custom-list:7']):has(optgroup[label='已保存的序列'] option[value='custom-list:8'])")
+            visible = css(".work-office-select-menu:has([role='option'][data-value='custom-list:7']):has([role='option'][data-value='custom-list:8'])")
         }
 
         expect "managed-region-list-survives-reload" {

@@ -371,15 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.207.0` paints checkered art borders in document PDF export:
+Version `0.208.0` migrates Spreadsheet dialog dropdowns to shared `OfficeSelect`:
 
-- **`checkered` art borders** — Writer `checkered` paragraph borders paint as
-  repeating 2×2 tile grids with alternating diagonal fills along the measured
-  edge.
-- **Layout Artifact wrap** — decorative border paint stays inside
-  `/Artifact << /Type /Layout >>` BDC like prior art motifs.
-- **Fail-closed edges** — remaining decorative art borders and full PDF/UA
-  certification stay out of scope.
+- **Dialog selects** — Custom Sort keys/order/appearance, data validation
+  allow/operator/error style, AutoFilter conditions, and hyperlink worksheet
+  targets leave native `<select>` for the shared combobox.
+- **a11y and e2e hooks** — Field control props reach the combobox trigger;
+  options expose `data-value`; triggers keep `data-selected-value`.
+- **Bounded scope** — Custom Lists keeps its multi-row listbox; ribbon nested
+  portal contracts from `0.198.0` are unchanged.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

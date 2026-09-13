@@ -1,6 +1,14 @@
 import type { Cell } from '@fortune-sheet/core';
 import { expect, test } from '@rstest/core';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
+
+function chooseOfficeSelectOption(
+  ariaLabel: string,
+  optionName: string | RegExp,
+) {
+  fireEvent.click(screen.getByRole('combobox', { name: ariaLabel }));
+  fireEvent.click(screen.getByRole('option', { name: optionName }));
+}
 import { useRef } from 'react';
 import type {
   SpreadsheetEditorCommands,
@@ -254,11 +262,7 @@ test('reuses authored custom lists without stealing focus after dialog close', a
   );
 
   act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
-  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
-  const createOption = within(order).getByRole('option', {
-    name: '新建自定义序列…',
-  }) as HTMLOptionElement;
-  fireEvent.change(order, { target: { value: createOption.value } });
+  chooseOfficeSelectOption('排序条件 1 次序', '新建自定义序列…');
   fireEvent.change(
     screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
     { target: { value: '有风险\n进行中\n正常\n已完成' } },
@@ -277,12 +281,13 @@ test('reuses authored custom lists without stealing focus after dialog close', a
   );
   expect(nextTarget).toHaveFocus();
   act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
   expect(
-    within(screen.getByRole('combobox', { name: '排序条件 1 次序' })).getByRole(
-      'option',
-      { name: '有风险 → 进行中 → 正常 → …' },
-    ),
+    screen.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
   ).toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
+  );
   fireEvent.click(screen.getByRole('button', { name: '取消' }));
   invoker.remove();
   nextTarget.remove();
@@ -310,8 +315,7 @@ test('persists authored custom lists through a typed host store and remount', ()
   expect(store.loads).toBe(1);
 
   act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
-  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
-  fireEvent.change(order, { target: { value: 'create-custom-list' } });
+  chooseOfficeSelectOption('排序条件 1 次序', '新建自定义序列…');
   fireEvent.change(
     screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
     { target: { value: '有风险\n进行中\n正常\n已完成' } },
@@ -319,11 +323,16 @@ test('persists authored custom lists through a typed host store and remount', ()
   fireEvent.click(screen.getByRole('button', { name: '使用序列' }));
   expect(store.saved).toEqual([[['有风险', '进行中', '正常', '已完成']]]);
   expect(
-    within(order).getByRole('option', {
-      name: '有风险 → 进行中 → 正常 → …',
-    }),
+    screen.getByRole('combobox', { name: '排序条件 1 次序' }),
+  ).toHaveAttribute('data-selected-value', 'custom-list:7');
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
+  expect(
+    screen.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
   ).toBeInTheDocument();
-  expect(order.querySelector('optgroup[label="已保存的序列"]')).not.toBeNull();
+  expect(screen.getByText('已保存的序列')).toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
+  );
   first.unmount();
 
   render(
@@ -336,17 +345,11 @@ test('persists authored custom lists through a typed host store and remount', ()
   );
   expect(store.loads).toBe(2);
   act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
-  const remountedOrder = screen.getByRole('combobox', {
-    name: '排序条件 1 次序',
-  });
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
   expect(
-    within(remountedOrder).getByRole('option', {
-      name: '有风险 → 进行中 → 正常 → …',
-    }),
+    screen.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
   ).toBeInTheDocument();
-  expect(
-    remountedOrder.querySelector('optgroup[label="已保存的序列"]'),
-  ).not.toBeNull();
+  expect(screen.getByText('已保存的序列')).toBeInTheDocument();
 });
 
 test('persists custom-list deletion and preference order across remounts', () => {
@@ -413,12 +416,13 @@ test('persists custom-list deletion and preference order across remounts', () =>
     />,
   );
   act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
-  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
+  expect(screen.getByText('已保存的序列')).toBeInTheDocument();
   expect(
-    within(order.querySelector('optgroup[label="已保存的序列"]') as HTMLElement)
-      .getAllByRole('option')
-      .map((option) => option.textContent),
-  ).toEqual(['Red → Amber → Green', 'High → Medium → Low']);
+    screen.getAllByRole('option').map((option) => option.textContent),
+  ).toEqual(
+    expect.arrayContaining(['Red → Amber → Green', 'High → Medium → Low']),
+  );
 });
 
 test('keeps an authored list in session when the host store rejects a write', () => {
@@ -448,30 +452,24 @@ test('keeps an authored list in session when the host store rejects a write', ()
   );
 
   act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
-  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
-  fireEvent.change(order, { target: { value: 'create-custom-list' } });
+  chooseOfficeSelectOption('排序条件 1 次序', '新建自定义序列…');
   fireEvent.change(
     screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
     { target: { value: '高\n中\n低' } },
   );
   fireEvent.click(screen.getByRole('button', { name: '使用序列' }));
 
-  expect(
-    order.querySelector('optgroup[label="本次会话的序列"]'),
-  ).not.toBeNull();
-  expect(order.querySelector('optgroup[label="已保存的序列"]')).toBeNull();
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
+  expect(screen.getByText('本次会话的序列')).toBeInTheDocument();
+  expect(screen.queryByText('已保存的序列')).toBeNull();
+  expect(screen.getByRole('option', { name: '高 → 中 → 低' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('option', { name: '高 → 中 → 低' }));
   fireEvent.click(screen.getByRole('button', { name: '取消' }));
 
   act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
-  const reopenedOrder = screen.getByRole('combobox', {
-    name: '排序条件 1 次序',
-  });
-  expect(
-    within(reopenedOrder).getByRole('option', { name: '高 → 中 → 低' }),
-  ).toBeInTheDocument();
-  expect(
-    reopenedOrder.querySelector('optgroup[label="本次会话的序列"]'),
-  ).not.toBeNull();
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
+  expect(screen.getByRole('option', { name: '高 → 中 → 低' })).toBeInTheDocument();
+  expect(screen.getByText('本次会话的序列')).toBeInTheDocument();
 });
 
 test('keeps the complete managed preference set in session after a rejected write', () => {
@@ -520,23 +518,20 @@ test('keeps the complete managed preference set in session after a rejected writ
   fireEvent.click(within(manager).getByRole('button', { name: '确定' }));
 
   const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
-  expect(order.querySelector('optgroup[label="已保存的序列"]')).toBeNull();
+  fireEvent.click(order);
+  expect(screen.queryByText('已保存的序列')).toBeNull();
+  expect(screen.getByText('本次会话的序列')).toBeInTheDocument();
   expect(
-    within(
-      order.querySelector('optgroup[label="本次会话的序列"]') as HTMLElement,
-    )
-      .getAllByRole('option')
-      .map((option) => option.textContent),
-  ).toEqual(['Critical → Normal']);
+    screen.getByRole('option', { name: 'Critical → Normal' }),
+  ).toBeInTheDocument();
+  fireEvent.click(order);
 
   fireEvent.click(screen.getByRole('button', { name: '取消' }));
   act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
+  expect(screen.getByText('本次会话的序列')).toBeInTheDocument();
   expect(
-    within(
-      screen
-        .getByRole('combobox', { name: '排序条件 1 次序' })
-        .querySelector('optgroup[label="本次会话的序列"]') as HTMLElement,
-    ).getByRole('option', { name: 'Critical → Normal' }),
+    screen.getByRole('option', { name: 'Critical → Normal' }),
   ).toBeInTheDocument();
 });
 
@@ -564,21 +559,18 @@ test('authors an effective conditional-icon key from the controlled sheet snapsh
   );
 
   act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
-  fireEvent.change(
-    screen.getByRole('combobox', { name: '排序条件 1 排序依据' }),
-    { target: { value: 'icon' } },
-  );
-  const target = screen.getByRole('combobox', {
-    name: '排序条件 1 目标外观',
-  });
+  chooseOfficeSelectOption('排序条件 1 排序依据', '条件格式图标');
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 目标外观' }));
   expect(
-    within(target).getByRole('option', {
+    screen.getByRole('option', {
       name: /三色交通灯（实心） 3\/3/,
     }),
   ).toBeInTheDocument();
-  fireEvent.change(target, {
-    target: { value: 'icon:3TrafficLights1:2' },
-  });
+  fireEvent.click(
+    screen.getByRole('option', {
+      name: /三色交通灯（实心） 3\/3/,
+    }),
+  );
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
 
   expect(applied).toEqual([

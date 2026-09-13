@@ -1,5 +1,20 @@
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, within } from '@testing-library/react';
+
+function chooseOfficeSelectOption(
+  ariaLabel: string,
+  optionName: string | RegExp,
+) {
+  fireEvent.click(screen.getByRole('combobox', { name: ariaLabel }));
+  fireEvent.click(screen.getByRole('option', { name: optionName }));
+}
+
+function expectOfficeSelectValue(ariaLabel: string, value: string) {
+  expect(screen.getByRole('combobox', { name: ariaLabel })).toHaveAttribute(
+    'data-selected-value',
+    value,
+  );
+}
 import type {
   SpreadsheetSortCustomList,
   SpreadsheetSortDialogSource,
@@ -30,20 +45,12 @@ test('authors, reorders, and applies accessible WPS multi-key sort levels', () =
   const dialog = screen.getByRole('dialog', { name: '自定义排序' });
   expect(dialog).toHaveTextContent('Sales!A1:C5');
   expect(screen.getByRole('checkbox', { name: '数据包含标题' })).toBeChecked();
-  expect(screen.getByRole('combobox', { name: '排序条件 1 列' })).toHaveValue(
-    '0',
-  );
-  expect(screen.getByRole('combobox', { name: '排序条件 1 次序' })).toHaveValue(
-    'ascending',
-  );
+  expectOfficeSelectValue('排序条件 1 列', '0');
+  expectOfficeSelectValue('排序条件 1 次序', 'ascending');
 
   fireEvent.click(screen.getByRole('button', { name: '添加条件' }));
-  expect(screen.getByRole('combobox', { name: '排序条件 2 列' })).toHaveValue(
-    '1',
-  );
-  fireEvent.change(screen.getByRole('combobox', { name: '排序条件 2 次序' }), {
-    target: { value: 'descending' },
-  });
+  expectOfficeSelectValue('排序条件 2 列', '1');
+  chooseOfficeSelectOption('排序条件 2 次序', '降序（Z 到 A）');
   fireEvent.click(screen.getByRole('button', { name: '上移条件 2' }));
 
   const levels = dialog.querySelectorAll('.work-spreadsheet-sort-level');
@@ -52,17 +59,17 @@ test('authors, reorders, and applies accessible WPS multi-key sort levels', () =
     within(levels[0] as HTMLElement).getByRole('combobox', {
       name: '排序条件 1 列',
     }),
-  ).toHaveValue('1');
+  ).toHaveAttribute('data-selected-value', '1');
   expect(
     within(levels[0] as HTMLElement).getByRole('combobox', {
       name: '排序条件 1 次序',
     }),
-  ).toHaveValue('descending');
+  ).toHaveAttribute('data-selected-value', 'descending');
   expect(
     within(levels[1] as HTMLElement).getByRole('combobox', {
       name: '排序条件 2 列',
     }),
-  ).toHaveValue('0');
+  ).toHaveAttribute('data-selected-value', '0');
 
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
   expect(applied).toEqual([
@@ -170,15 +177,13 @@ test('adds distinct appearance priorities on a one-column range', () => {
   const add = screen.getByRole('button', { name: '添加条件' });
   expect(add).toBeEnabled();
   fireEvent.click(add);
-  expect(screen.getByRole('combobox', { name: '排序条件 2 列' })).toHaveValue(
-    '0',
-  );
+  expectOfficeSelectValue('排序条件 2 列', '0');
   expect(
     screen.getByRole('combobox', { name: '排序条件 2 排序依据' }),
-  ).toHaveValue('cell-color');
+  ).toHaveAttribute('data-selected-value', 'cell-color');
   expect(
     screen.getByRole('combobox', { name: '排序条件 2 目标外观' }),
-  ).toHaveValue('cell-color:none');
+  ).toHaveAttribute('data-selected-value', 'cell-color:none');
 
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
   expect(applied).toEqual([
@@ -224,22 +229,25 @@ test('creates and applies a reusable custom-list order without leaving the dialo
     />,
   );
 
-  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
-  const createOption = within(order).getByRole('option', {
-    name: '新建自定义序列…',
-  }) as HTMLOptionElement;
-  fireEvent.change(order, { target: { value: createOption.value } });
+  chooseOfficeSelectOption('排序条件 1 次序', '新建自定义序列…');
   fireEvent.change(
     screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
     { target: { value: '有风险\n进行中\n正常\n已完成' } },
   );
   fireEvent.click(screen.getByRole('button', { name: '使用序列' }));
 
+  expectOfficeSelectValue('排序条件 1 次序', 'custom-list:7');
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
   expect(
-    within(order).getByRole('option', {
+    screen.getByRole('option', {
       name: '有风险 → 进行中 → 正常 → …',
     }),
   ).toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole('option', {
+      name: '有风险 → 进行中 → 正常 → …',
+    }),
+  );
   expect(remembered).toEqual([
     {
       source: 'session',
@@ -287,10 +295,13 @@ test('keeps a stored identity when the initial key carries the same list', () =>
     />,
   );
 
-  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
-  expect(order).toHaveValue('custom-list:7');
-  expect(order.querySelector('optgroup[label="已保存的序列"]')).not.toBeNull();
-  expect(order.querySelector('optgroup[label="本次会话的序列"]')).toBeNull();
+  expectOfficeSelectValue('排序条件 1 次序', 'custom-list:7');
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
+  expect(screen.getByText('已保存的序列')).toBeInTheDocument();
+  expect(screen.queryByText('本次会话的序列')).toBeNull();
+  fireEvent.click(
+    screen.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
+  );
 });
 
 test('reconciles an active custom-list key after preference edits and deletion', () => {
@@ -338,13 +349,16 @@ test('reconciles an active custom-list key after preference edits and deletion',
   fireEvent.click(within(manager).getByRole('button', { name: '保存更改' }));
   fireEvent.click(within(manager).getByRole('button', { name: '确定' }));
 
-  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
-  expect(
-    within(order).getByRole('option', { name: 'Critical → Normal' }),
-  ).toBeInTheDocument();
-  expect(order).toHaveValue('custom-list:7');
+  expectOfficeSelectValue('排序条件 1 次序', 'custom-list:7');
   expect(updates).toEqual([[['Critical', 'Normal']]]);
   expect(managerButton).toHaveFocus();
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
+  expect(
+    screen.getByRole('option', { name: 'Critical → Normal' }),
+  ).toBeInTheDocument();
+  expect(screen.getByText('已保存的序列')).toBeInTheDocument();
+  // Close the listbox without changing the value.
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
 
   fireEvent.click(managerButton);
   manager = screen.getByRole('dialog', { name: '自定义序列' });
@@ -355,7 +369,7 @@ test('reconciles an active custom-list key after preference edits and deletion',
   fireEvent.click(within(manager).getByRole('button', { name: '删除序列' }));
   fireEvent.click(within(manager).getByRole('button', { name: '确定' }));
 
-  expect(order).toHaveValue('ascending');
+  expectOfficeSelectValue('排序条件 1 次序', 'ascending');
   expect(updates).toEqual([[['Critical', 'Normal']], []]);
 });
 
@@ -385,11 +399,7 @@ test('rejects another authored list after the mounted-editor user-list bound', (
     />,
   );
 
-  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
-  const createOption = within(order).getByRole('option', {
-    name: '新建自定义序列…',
-  }) as HTMLOptionElement;
-  fireEvent.change(order, { target: { value: createOption.value } });
+  chooseOfficeSelectOption('排序条件 1 次序', '新建自定义序列…');
   fireEvent.change(
     screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
     { target: { value: 'Overflow first\nOverflow second' } },
@@ -419,44 +429,25 @@ test('authors cell-color, font-color, and conditional-icon sort levels', () => {
     />,
   );
 
-  fireEvent.change(
-    screen.getByRole('combobox', { name: '排序条件 1 排序依据' }),
-    { target: { value: 'cell-color' } },
-  );
+  chooseOfficeSelectOption('排序条件 1 排序依据', '单元格颜色');
   expect(
     screen.getByRole('combobox', { name: '排序条件 1 目标外观' }),
   ).toHaveAccessibleName('排序条件 1 目标外观');
-  fireEvent.change(
-    screen.getByRole('combobox', { name: '排序条件 1 目标外观' }),
-    { target: { value: 'cell-color:#eef4ff' } },
-  );
-  fireEvent.change(screen.getByRole('combobox', { name: '排序条件 1 位置' }), {
-    target: { value: 'last' },
-  });
+  chooseOfficeSelectOption('排序条件 1 目标外观', '单元格颜色 #EEF4FF');
+  chooseOfficeSelectOption('排序条件 1 位置', '置于底端');
 
   fireEvent.click(screen.getByRole('button', { name: '添加条件' }));
-  fireEvent.change(
-    screen.getByRole('combobox', { name: '排序条件 2 排序依据' }),
-    { target: { value: 'font-color' } },
-  );
-  fireEvent.change(
-    screen.getByRole('combobox', { name: '排序条件 2 目标外观' }),
-    { target: { value: 'font-color:#d84b4f' } },
-  );
+  chooseOfficeSelectOption('排序条件 2 排序依据', '字体颜色');
+  chooseOfficeSelectOption('排序条件 2 目标外观', '字体颜色 #D84B4F');
 
   fireEvent.click(screen.getByRole('button', { name: '添加条件' }));
-  fireEvent.change(
-    screen.getByRole('combobox', { name: '排序条件 3 排序依据' }),
-    { target: { value: 'icon' } },
-  );
+  chooseOfficeSelectOption('排序条件 3 排序依据', '条件格式图标');
+  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 3 目标外观' }));
   expect(
-    within(
-      screen.getByRole('combobox', { name: '排序条件 3 目标外观' }),
-    ).getByRole('option', { name: /三色交通灯（实心） 3\/3/ }),
+    screen.getByRole('option', { name: /三色交通灯（实心） 3\/3/ }),
   ).toBeInTheDocument();
-  fireEvent.change(
-    screen.getByRole('combobox', { name: '排序条件 3 目标外观' }),
-    { target: { value: 'icon:3TrafficLights1:2' } },
+  fireEvent.click(
+    screen.getByRole('option', { name: /三色交通灯（实心） 3\/3/ }),
   );
 
   fireEvent.click(screen.getByRole('button', { name: '确定' }));
@@ -501,18 +492,11 @@ test('reselects an available appearance when the retained-header boundary change
   );
 
   fireEvent.click(screen.getByRole('checkbox', { name: '数据包含标题' }));
-  fireEvent.change(
-    screen.getByRole('combobox', { name: '排序条件 1 排序依据' }),
-    { target: { value: 'cell-color' } },
-  );
-  expect(
-    screen.getByRole('combobox', { name: '排序条件 1 目标外观' }),
-  ).toHaveValue('cell-color:#4472c4');
+  chooseOfficeSelectOption('排序条件 1 排序依据', '单元格颜色');
+  expectOfficeSelectValue('排序条件 1 目标外观', 'cell-color:#4472c4');
 
   fireEvent.click(screen.getByRole('checkbox', { name: '数据包含标题' }));
-  expect(
-    screen.getByRole('combobox', { name: '排序条件 1 目标外观' }),
-  ).toHaveValue('cell-color:#eef4ff');
+  expectOfficeSelectValue('排序条件 1 目标外观', 'cell-color:#eef4ff');
 });
 
 function sortSource(): SpreadsheetSortDialogSource {

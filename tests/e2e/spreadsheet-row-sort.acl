@@ -70,7 +70,7 @@ suite "office-spreadsheet-row-sort" {
         }
 
         expect "first-row-is-primary" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 行']:has(option[value='0']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 1 行'][data-selected-value='0']")
         }
 
         click "add-second-row-key" {
@@ -78,12 +78,15 @@ suite "office-spreadsheet-row-sort" {
         }
 
         expect "second-row-is-secondary" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 行']:has(option[value='1']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 2 行'][data-selected-value='1']")
         }
 
-        select "sort-labels-descending" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 次序']")
-            values = ["descending"]
+        click "open-sort-labels-descending" {
+            target = role("combobox", "排序条件 2 次序")
+        }
+
+        click "sort-labels-descending" {
+            target = role("option", "降序（Z 到 A）")
         }
 
         accessibility "row-sort-dialog-accessibility" {

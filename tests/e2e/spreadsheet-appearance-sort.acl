@@ -41,17 +41,23 @@ suite "office-spreadsheet-appearance-sort" {
         }
 
         expect "status-column-is-primary" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 列']:has(option[value='1']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 1 列'][data-selected-value='1']")
         }
 
-        select "sort-primary-by-cell-color" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 排序依据']")
-            values = ["cell-color"]
+        click "open-sort-primary-by-cell-color" {
+            target = role("combobox", "排序条件 1 排序依据")
         }
 
-        select "put-red-fill-first" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 目标外观']")
-            values = ["cell-color:#fce8e6"]
+        click "sort-primary-by-cell-color" {
+            target = role("option", "单元格颜色")
+        }
+
+        click "open-put-red-fill-first" {
+            target = role("combobox", "排序条件 1 目标外观")
+        }
+
+        click "put-red-fill-first" {
+            target = role("option", "单元格颜色 #FCE8E6")
         }
 
         expect "red-fill-preview" {
@@ -62,19 +68,28 @@ suite "office-spreadsheet-appearance-sort" {
             target = role("button", "添加条件")
         }
 
-        select "reuse-status-column" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 列']")
-            values = ["1"]
+        click "open-reuse-status-column" {
+            target = role("combobox", "排序条件 2 列")
         }
 
-        select "sort-secondary-by-cell-color" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 排序依据']")
-            values = ["cell-color"]
+        click "reuse-status-column" {
+            target = css(".work-office-select-menu [role='option'][data-value='1']")
         }
 
-        select "put-yellow-fill-second" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 2 目标外观']")
-            values = ["cell-color:#fff2cc"]
+        click "open-sort-secondary-by-cell-color" {
+            target = role("combobox", "排序条件 2 排序依据")
+        }
+
+        click "sort-secondary-by-cell-color" {
+            target = role("option", "单元格颜色")
+        }
+
+        click "open-put-yellow-fill-second" {
+            target = role("combobox", "排序条件 2 目标外观")
+        }
+
+        click "put-yellow-fill-second" {
+            target = role("option", "单元格颜色 #FFF2CC")
         }
 
         expect "yellow-fill-preview" {
@@ -86,17 +101,23 @@ suite "office-spreadsheet-appearance-sort" {
         }
 
         expect "task-column-is-tertiary" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 3 列']:has(option[value='0']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 3 列'][data-selected-value='0']")
         }
 
-        select "sort-tertiary-by-font-color" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 3 排序依据']")
-            values = ["font-color"]
+        click "open-sort-tertiary-by-font-color" {
+            target = role("combobox", "排序条件 3 排序依据")
         }
 
-        select "put-red-font-third" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 3 目标外观']")
-            values = ["font-color:#d84b4f"]
+        click "sort-tertiary-by-font-color" {
+            target = role("option", "字体颜色")
+        }
+
+        click "open-put-red-font-third" {
+            target = role("combobox", "排序条件 3 目标外观")
+        }
+
+        click "put-red-font-third" {
+            target = role("option", "字体颜色 #D84B4F")
         }
 
         expect "red-font-preview" {
@@ -108,17 +129,23 @@ suite "office-spreadsheet-appearance-sort" {
         }
 
         expect "score-column-is-fourth" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 4 列']:has(option[value='2']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 4 列'][data-selected-value='2']")
         }
 
-        select "sort-fourth-by-icon" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 4 排序依据']")
-            values = ["icon"]
+        click "open-sort-fourth-by-icon" {
+            target = role("combobox", "排序条件 4 排序依据")
         }
 
-        select "put-high-icon-first" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 4 目标外观']")
-            values = ["icon:3TrafficLights1:2"]
+        click "sort-fourth-by-icon" {
+            target = role("option", "条件格式图标")
+        }
+
+        click "open-put-high-icon-first" {
+            target = role("combobox", "排序条件 4 目标外观")
+        }
+
+        click "put-high-icon-first" {
+            target = css(".work-office-select-menu [role='option'][data-value='icon:3TrafficLights1:2']")
         }
 
         expect "high-icon-preview" {

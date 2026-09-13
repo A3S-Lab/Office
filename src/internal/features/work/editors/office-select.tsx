@@ -29,6 +29,10 @@ export function OfficeSelect<T extends string>({
   className = '',
   ariaKeyShortcuts,
   initialFocus = false,
+  id,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
+  'aria-required': ariaRequired,
 }: {
   ariaLabel: string;
   value: T;
@@ -39,6 +43,10 @@ export function OfficeSelect<T extends string>({
   className?: string;
   ariaKeyShortcuts?: string;
   initialFocus?: boolean;
+  id?: string;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean;
+  'aria-required'?: boolean;
 }) {
   const reactId = useId().replaceAll(':', '');
   const [open, setOpen] = useState(false);
@@ -90,8 +98,12 @@ export function OfficeSelect<T extends string>({
       trigger={(triggerProps, { open: popoverOpen }) => (
         <button
           {...triggerProps}
+          id={id}
           role="combobox"
           aria-expanded={popoverOpen}
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
+          aria-required={ariaRequired}
           aria-keyshortcuts={ariaKeyShortcuts}
           data-selected-value={value}
           data-autofocus={initialFocus ? 'true' : undefined}
@@ -156,6 +168,7 @@ export function OfficeSelect<T extends string>({
                 id={`${reactId}-option-${index}`}
                 aria-label={option.label}
                 aria-selected={option.value === value}
+                data-value={option.value}
                 disabled={option.disabled}
                 tabIndex={index === activeIndex ? 0 : -1}
                 onClick={() => selectOption(index, close)}

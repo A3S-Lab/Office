@@ -67,7 +67,9 @@ These are already the default contract. Do not trade them away for breadth:
    a3s-test and Playwright evidence. Through `0.198.0`, nested portal ribbon
    menus keep parent popovers open, Spreadsheet border/table totals use
    `OfficeSelect` / `OfficeColorPicker`, and Document contextual ribbon selects
-   keep fixed widths on the shared 24px row.
+   keep fixed widths on the shared 24px row. Through `0.208.0`, Spreadsheet
+   Custom Sort, data validation, AutoFilter condition, and hyperlink dialogs
+   also use `OfficeSelect` (Custom Lists keeps its multi-row listbox).
 4. Typed host ports for Yjs, presence, and agents—without shipping cloud
    accounts, storage, or model providers inside this package.
 

@@ -1,6 +1,7 @@
 import { Globe2, Grid2X2, Link2, Table2 } from 'lucide-react';
 import { type FormEvent, useId, useMemo, useState } from 'react';
 import { Button, Dialog, Field } from '../../../design-system/primitives';
+import { OfficeSelect } from './office-controls';
 import type {
   SpreadsheetHyperlinkDialogSource,
   SpreadsheetHyperlinkDialogValue,
@@ -172,20 +173,18 @@ export function SpreadsheetHyperlinkDialog({
 
         {linkType === 'sheet' ? (
           <Field label="工作表" required error={visibleError}>
-            <select
+            <OfficeSelect
+              ariaLabel="工作表"
               value={linkAddress}
-              onBlur={() => setAddressTouched(true)}
-              onChange={(event) => {
-                setLinkAddress(event.currentTarget.value);
+              options={source.sheetOptions.map((sheet) => ({
+                value: sheet.name,
+                label: sheet.name,
+              }))}
+              onValueChange={(next) => {
+                setLinkAddress(next);
                 setAddressTouched(true);
               }}
-            >
-              {source.sheetOptions.map((sheet) => (
-                <option key={sheet.id} value={sheet.name}>
-                  {sheet.name}
-                </option>
-              ))}
-            </select>
+            />
           </Field>
         ) : (
           <Field

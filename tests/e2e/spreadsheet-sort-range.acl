@@ -166,12 +166,15 @@ suite "office-spreadsheet-sort-range" {
         }
 
         expect "completion-column-retained" {
-            visible = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 列']:has(option[value='5']:checked)")
+            visible = css(".work-spreadsheet-sort-dialog [role='combobox'][aria-label='排序条件 1 列'][data-selected-value='5']")
         }
 
-        select "choose-descending" {
-            target = css(".work-spreadsheet-sort-dialog select[aria-label='排序条件 1 次序']")
-            values = ["descending"]
+        click "open-choose-descending" {
+            target = role("combobox", "排序条件 1 次序")
+        }
+
+        click "choose-descending" {
+            target = role("option", "降序（Z 到 A）")
         }
 
         accessibility "expanded-custom-sort-accessibility" {

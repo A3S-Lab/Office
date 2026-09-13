@@ -16,6 +16,7 @@ import {
   spreadsheetSortCustomListsEqual,
   type SpreadsheetSortCustomList,
 } from './spreadsheet-sort-custom-list';
+import { OfficeSelect, type OfficeSelectOption } from './office-controls';
 
 const CREATE_CUSTOM_LIST_ORDER = 'create-custom-list';
 const CUSTOM_LIST_ORDER_PREFIX = 'custom-list:';
@@ -45,6 +46,45 @@ export function SpreadsheetSortOrderControls({
       ? []
       : spreadsheetSortAppearanceTargets(appearanceField, sortOn);
 
+  const sortOnOptions: readonly OfficeSelectOption<string>[] = [
+    { value: 'values', label: '值' },
+    {
+      value: 'cell-color',
+      label: '单元格颜色',
+      disabled:
+        !spreadsheetSortAppearanceTargets(appearanceField, 'cell-color').length,
+    },
+    {
+      value: 'font-color',
+      label: '字体颜色',
+      disabled:
+        !spreadsheetSortAppearanceTargets(appearanceField, 'font-color').length,
+    },
+    {
+      value: 'icon',
+      label: '条件格式图标',
+      disabled: !spreadsheetSortAppearanceTargets(appearanceField, 'icon')
+        .length,
+    },
+  ];
+
+  const appearanceTargetOptions: readonly OfficeSelectOption<string>[] =
+    appearanceTargets.map((target) => ({
+      value: spreadsheetSortAppearanceTargetValue(target),
+      label: spreadsheetSortAppearanceTargetLabel(target),
+    }));
+
+  const positionOptions: readonly OfficeSelectOption<'first' | 'last'>[] = [
+    {
+      value: 'first',
+      label: spreadsheetSortPositionLabel(orientation, 'first'),
+    },
+    {
+      value: 'last',
+      label: spreadsheetSortPositionLabel(orientation, 'last'),
+    },
+  ];
+
   return (
     <div
       className="work-spreadsheet-sort-order-controls"
@@ -52,11 +92,11 @@ export function SpreadsheetSortOrderControls({
     >
       <label>
         <span>排序依据</span>
-        <select
-          aria-label={`排序条件 ${level} 排序依据`}
+        <OfficeSelect
+          ariaLabel={`排序条件 ${level} 排序依据`}
           value={sortOn}
-          onChange={(event) => {
-            const next = event.currentTarget.value;
+          options={sortOnOptions}
+          onValueChange={(next) => {
             if (next === 'values') {
               onChange({ index: sortKey.index, direction: 'ascending' });
               return;
@@ -72,35 +112,7 @@ export function SpreadsheetSortOrderControls({
               );
             }
           }}
-        >
-          <option value="values">值</option>
-          <option
-            value="cell-color"
-            disabled={
-              !spreadsheetSortAppearanceTargets(appearanceField, 'cell-color')
-                .length
-            }
-          >
-            单元格颜色
-          </option>
-          <option
-            value="font-color"
-            disabled={
-              !spreadsheetSortAppearanceTargets(appearanceField, 'font-color')
-                .length
-            }
-          >
-            字体颜色
-          </option>
-          <option
-            value="icon"
-            disabled={
-              !spreadsheetSortAppearanceTargets(appearanceField, 'icon').length
-            }
-          >
-            条件格式图标
-          </option>
-        </select>
+        />
       </label>
 
       {sortOn === 'values' ? (
@@ -115,17 +127,17 @@ export function SpreadsheetSortOrderControls({
         <>
           <label>
             <span>次序</span>
-            <select
-              aria-label={`排序条件 ${level} 目标外观`}
+            <OfficeSelect
+              ariaLabel={`排序条件 ${level} 目标外观`}
               value={
                 appearanceTarget
                   ? spreadsheetSortAppearanceTargetValue(appearanceTarget)
-                  : ''
+                  : (appearanceTargetOptions[0]?.value ?? '')
               }
-              onChange={(event) => {
-                const target = parseSpreadsheetSortAppearanceTargetValue(
-                  event.currentTarget.value,
-                );
+              options={appearanceTargetOptions}
+              disabled={appearanceTargetOptions.length === 0}
+              onValueChange={(raw) => {
+                const target = parseSpreadsheetSortAppearanceTargetValue(raw);
                 if (!target || target.kind !== sortOn) return;
                 onChange(
                   spreadsheetSortAppearanceKey(
@@ -135,26 +147,17 @@ export function SpreadsheetSortOrderControls({
                   ),
                 );
               }}
-            >
-              {appearanceTargets.map((target) => (
-                <option
-                  key={spreadsheetSortAppearanceTargetValue(target)}
-                  value={spreadsheetSortAppearanceTargetValue(target)}
-                >
-                  {spreadsheetSortAppearanceTargetLabel(target)}
-                </option>
-              ))}
-            </select>
+            />
           </label>
           <label>
             <span>位置</span>
-            <select
-              aria-label={`排序条件 ${level} 位置`}
+            <OfficeSelect<'first' | 'last'>
+              ariaLabel={`排序条件 ${level} 位置`}
               value={appearancePosition}
-              onChange={(event) => {
+              options={positionOptions}
+              disabled={!appearanceTarget}
+              onValueChange={(position) => {
                 if (!appearanceTarget) return;
-                const position = event.currentTarget.value;
-                if (position !== 'first' && position !== 'last') return;
                 onChange(
                   spreadsheetSortAppearanceKey(
                     sortKey.index,
@@ -163,14 +166,7 @@ export function SpreadsheetSortOrderControls({
                   ),
                 );
               }}
-            >
-              <option value="first">
-                {spreadsheetSortPositionLabel(orientation, 'first')}
-              </option>
-              <option value="last">
-                {spreadsheetSortPositionLabel(orientation, 'last')}
-              </option>
-            </select>
+            />
           </label>
           {appearanceTarget ? (
             <div className="work-spreadsheet-sort-appearance-preview">
@@ -219,14 +215,50 @@ function SpreadsheetSortValueOrder({
   onBeginCustomListEdit: (entries?: readonly string[]) => void;
   onChange: (key: SpreadsheetSortKey) => void;
 }) {
+  const orderOptions: OfficeSelectOption<string>[] = [
+    { value: 'ascending', label: '升序（A 到 Z）' },
+    { value: 'descending', label: '降序（Z 到 A）' },
+  ];
+  customLists.forEach((customList, customListIndex) => {
+    if (customList.source === 'built-in') {
+      orderOptions.push({
+        value: `${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`,
+        label: customList.label,
+        group: '内置序列',
+      });
+    }
+  });
+  customLists.forEach((customList, customListIndex) => {
+    if (customList.source === 'stored') {
+      orderOptions.push({
+        value: `${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`,
+        label: customList.label,
+        group: '已保存的序列',
+      });
+    }
+  });
+  customLists.forEach((customList, customListIndex) => {
+    if (customList.source === 'session') {
+      orderOptions.push({
+        value: `${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`,
+        label: customList.label,
+        group: '本次会话的序列',
+      });
+    }
+  });
+  orderOptions.push({
+    value: CREATE_CUSTOM_LIST_ORDER,
+    label: '新建自定义序列…',
+  });
+
   return (
     <label>
       <span>次序</span>
-      <select
-        aria-label={`排序条件 ${level} 次序`}
+      <OfficeSelect
+        ariaLabel={`排序条件 ${level} 次序`}
         value={spreadsheetSortOrderValue(sortKey, customLists)}
-        onChange={(event) => {
-          const order = event.currentTarget.value;
+        options={orderOptions}
+        onValueChange={(order) => {
           if (order === CREATE_CUSTOM_LIST_ORDER) {
             onBeginCustomListEdit(sortKey.customList);
             return;
@@ -245,51 +277,7 @@ function SpreadsheetSortValueOrder({
             customList: [...customList.entries],
           });
         }}
-      >
-        <option value="ascending">升序（A 到 Z）</option>
-        <option value="descending">降序（Z 到 A）</option>
-        <optgroup label="内置序列">
-          {customLists.map((customList, customListIndex) =>
-            customList.source === 'built-in' ? (
-              <option
-                key={`built-in:${customListIndex}`}
-                value={`${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`}
-              >
-                {customList.label}
-              </option>
-            ) : null,
-          )}
-        </optgroup>
-        {customLists.some((list) => list.source === 'stored') ? (
-          <optgroup label="已保存的序列">
-            {customLists.map((customList, customListIndex) =>
-              customList.source === 'stored' ? (
-                <option
-                  key={`stored:${customListIndex}`}
-                  value={`${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`}
-                >
-                  {customList.label}
-                </option>
-              ) : null,
-            )}
-          </optgroup>
-        ) : null}
-        {customLists.some((list) => list.source === 'session') ? (
-          <optgroup label="本次会话的序列">
-            {customLists.map((customList, customListIndex) =>
-              customList.source === 'session' ? (
-                <option
-                  key={`session:${customListIndex}`}
-                  value={`${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`}
-                >
-                  {customList.label}
-                </option>
-              ) : null,
-            )}
-          </optgroup>
-        ) : null}
-        <option value={CREATE_CUSTOM_LIST_ORDER}>新建自定义序列…</option>
-      </select>
+      />
     </label>
   );
 }

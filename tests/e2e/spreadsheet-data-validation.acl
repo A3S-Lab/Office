@@ -61,7 +61,7 @@ suite "spreadsheet-data-validation" {
         }
 
         expect "public-template-error-settings-visible" {
-            visible = css(".work-spreadsheet-data-validation-dialog:has(select[aria-label='错误警告样式'] option[value='stop']:checked):has(input[aria-label='错误警告标题'][value='Invalid state'])")
+            visible = css(".work-spreadsheet-data-validation-dialog:has([role='combobox'][aria-label='错误警告样式'][data-selected-value='stop']):has(input[aria-label='错误警告标题'][value='Invalid state'])")
         }
 
         press "close-public-template-dialog" {
@@ -109,7 +109,7 @@ suite "spreadsheet-data-validation" {
         }
 
         expect "public-template-custom-type-visible" {
-            visible = css(".work-spreadsheet-data-validation-dialog select:has(option[value='custom']:checked)")
+            visible = css(".work-spreadsheet-data-validation-dialog [role='combobox'][aria-label='允许'][data-selected-value='custom']")
         }
 
         expect "public-template-custom-formula-visible" {
@@ -223,9 +223,12 @@ suite "spreadsheet-data-validation" {
             target = css(".work-spreadsheet-data-validation-dialog .work-office-checkbox:has(input[aria-label='在单元格内显示下拉箭头'])")
         }
 
-        select "choose-warning-style" {
-            target = css(".work-spreadsheet-data-validation-dialog select[aria-label='错误警告样式']")
-            values = ["warning"]
+        click "open-warning-style" {
+            target = role("combobox", "错误警告样式")
+        }
+
+        click "choose-warning-style" {
+            target = role("option", "警告")
         }
 
         fill "enter-error-title" {
@@ -263,7 +266,7 @@ suite "spreadsheet-data-validation" {
         }
 
         expect "error-style-reopens" {
-            visible = css(".work-spreadsheet-data-validation-dialog:has(select[aria-label='错误警告样式'] option[value='warning']:checked)")
+            visible = css(".work-spreadsheet-data-validation-dialog:has([role='combobox'][aria-label='错误警告样式'][data-selected-value='warning'])")
         }
 
         expect "error-title-reopens" {

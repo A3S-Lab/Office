@@ -9,6 +9,21 @@ import {
 } from '../src/internal/features/work/editors/spreadsheet-data-validation';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 
+function chooseOfficeSelectOption(
+  ariaLabel: string,
+  optionName: string | RegExp,
+) {
+  fireEvent.click(screen.getByRole('combobox', { name: ariaLabel }));
+  fireEvent.click(screen.getByRole('option', { name: optionName }));
+}
+
+function expectOfficeSelectValue(ariaLabel: string, value: string) {
+  expect(screen.getByRole('combobox', { name: ariaLabel })).toHaveAttribute(
+    'data-selected-value',
+    value,
+  );
+}
+
 test('applies an accessible dropdown rule to every selected range', () => {
   const source = dialogSource();
   const values: SpreadsheetDataValidationDialogValue[] = [];
@@ -29,9 +44,7 @@ test('applies an accessible dropdown rule to every selected range', () => {
   const dialog = screen.getByRole('dialog', { name: '数据验证' });
   expect(dialog).toHaveTextContent('Inputs!B2:B3,D5:E5');
   expect(dialog).toHaveTextContent('2 个选定区域');
-  expect(screen.getByRole('combobox', { name: '允许' })).toHaveValue(
-    'dropdown',
-  );
+  expectOfficeSelectValue('允许', 'dropdown');
   expect(
     screen.getByRole('checkbox', { name: '输入无效数据时显示错误警告' }),
   ).toBeChecked();
@@ -58,9 +71,7 @@ test('applies an accessible dropdown rule to every selected range', () => {
   fireEvent.change(screen.getByRole('textbox', { name: '输入信息' }), {
     target: { value: 'Choose a workflow state.' },
   });
-  fireEvent.change(screen.getByRole('combobox', { name: '错误警告样式' }), {
-    target: { value: 'warning' },
-  });
+  chooseOfficeSelectOption('错误警告样式', '警告');
   fireEvent.change(screen.getByRole('textbox', { name: '错误警告标题' }), {
     target: { value: 'Invalid state' },
   });
@@ -101,10 +112,8 @@ test('switches to date validation and normalizes its visible error state', () =>
     />,
   );
 
-  fireEvent.change(screen.getByRole('combobox', { name: '允许' }), {
-    target: { value: 'date' },
-  });
-  expect(screen.getByRole('combobox', { name: '数据' })).toHaveValue('between');
+  chooseOfficeSelectOption('允许', '日期');
+  expectOfficeSelectValue('数据', 'between');
   fireEvent.change(screen.getByRole('textbox', { name: '开始日期' }), {
     target: { value: '2026-13-01' },
   });
@@ -137,9 +146,7 @@ test('authors an accessible custom formula without exposing numeric operators', 
     />,
   );
 
-  fireEvent.change(screen.getByRole('combobox', { name: '允许' }), {
-    target: { value: 'custom' },
-  });
+  chooseOfficeSelectOption('允许', '自定义公式');
   expect(screen.queryByRole('combobox', { name: '数据' })).toBeNull();
   expect(screen.getByRole('textbox', { name: '公式' })).toBeVisible();
   fireEvent.change(screen.getByRole('textbox', { name: '公式' }), {

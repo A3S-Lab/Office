@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { type FormEvent, useId, useMemo, useRef, useState } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
-import { OfficeCheckbox } from './office-controls';
+import { OfficeCheckbox, OfficeSelect } from './office-controls';
 import {
   MAX_SPREADSHEET_SORT_KEYS,
   type SpreadsheetSortDialogSource,
@@ -373,13 +373,17 @@ export function SpreadsheetSortDialog({
                     <span>
                       {value.orientation === 'top-to-bottom' ? '列' : '行'}
                     </span>
-                    <select
-                      aria-label={`排序条件 ${level} ${
+                    <OfficeSelect
+                      ariaLabel={`排序条件 ${level} ${
                         value.orientation === 'top-to-bottom' ? '列' : '行'
                       }`}
-                      value={key.index}
-                      onChange={(event) => {
-                        const fieldIndex = Number(event.currentTarget.value);
+                      value={String(key.index)}
+                      options={fields.map((field) => ({
+                        value: String(field.index),
+                        label: field.label,
+                      }))}
+                      onValueChange={(raw) => {
+                        const fieldIndex = Number(raw);
                         replaceKey(
                           index,
                           spreadsheetSortKeyWithIndex(
@@ -391,13 +395,7 @@ export function SpreadsheetSortDialog({
                           ),
                         );
                       }}
-                    >
-                      {fields.map((field) => (
-                        <option key={field.index} value={field.index}>
-                          {field.label}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </label>
                   <SpreadsheetSortOrderControls
                     appearanceField={appearanceFields.find(

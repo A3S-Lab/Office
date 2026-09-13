@@ -70,7 +70,19 @@ suite "spreadsheet-hyperlink" {
         }
 
         expect "visible-worksheet-options-only" {
-            visible = css("select[aria-required='true']:not(:has(option[value='Hidden Archive']))")
+            visible = css("[role='combobox'][aria-label='工作表'][aria-required='true']")
+        }
+
+        click "open-worksheet-options" {
+            target = role("combobox", "工作表")
+        }
+
+        expect "hidden-worksheet-option-absent" {
+            visible = css(".work-office-select-menu:not(:has([role='option'][data-value='Hidden Archive']))")
+        }
+
+        click "close-worksheet-options" {
+            target = role("combobox", "工作表")
         }
 
         click "choose-webpage" {

@@ -1,5 +1,64 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.208.0',
+    date: '2026-09-13',
+    kind: 'fixed',
+    surfaces: ['spreadsheet', 'documentation'],
+    title: {
+      en: 'Spreadsheet dialogs migrate native selects to OfficeSelect',
+      zh: '表格对话框将原生 select 迁移到 OfficeSelect',
+    },
+    summary: {
+      en: 'Shared shell: Custom Sort, data validation, AutoFilter condition, and hyperlink worksheet dialogs use OfficeSelect instead of native select. Field aria-required/invalid/describedby reach the combobox; options expose data-value for a3s-test. Custom Lists keeps its size=10 listbox; ribbon nested-portal contracts from 0.198.0 stay unchanged.',
+      zh: '共享壳层：自定义排序、数据验证、自动筛选条件与超链接工作表对话框改用 OfficeSelect，不再使用原生 select。Field 的 aria-required/invalid/describedby 到达组合框；选项暴露 data-value 供 a3s-test。自定义序列管理器仍用 size=10 列表框；0.198.0 起的功能区嵌套 portal 合约不变。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Custom Sort and appearance keys',
+          zh: '自定义排序与外观键',
+        },
+        detail: {
+          en: 'Column/row, sort-on, order, appearance target, and position pickers use OfficeSelect with grouped custom-list options.',
+          zh: '列/行、排序依据、次序、外观目标与位置选择改用 OfficeSelect，自定义序列按分组展示。',
+        },
+      },
+      {
+        title: {
+          en: 'Validation, AutoFilter, hyperlink',
+          zh: '数据验证、自动筛选、超链接',
+        },
+        detail: {
+          en: 'Allow/operator/error-style, primary/secondary filter conditions, and worksheet targets leave native select.',
+          zh: '允许/运算符/错误样式、主/次筛选条件与工作表目标离开原生 select。',
+        },
+      },
+      {
+        title: { en: 'Automation hooks', zh: '自动化钩子' },
+        detail: {
+          en: 'Triggers keep data-selected-value; options add data-value; e2e ACLs click role=combobox then role=option.',
+          zh: '触发器保留 data-selected-value；选项增加 data-value；e2e ACL 先点 role=combobox 再点 role=option。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/spreadsheet.html#multi-key-custom-sort',
+          zh: './components/spreadsheet.html',
+        },
+        label: { en: 'Spreadsheet editor', zh: '表格编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.208.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.208.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.207.0',
     date: '2026-09-13',
     kind: 'improved',

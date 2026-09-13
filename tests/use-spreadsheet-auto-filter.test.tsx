@@ -8,6 +8,31 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+
+function chooseOfficeSelectOption(
+  ariaLabel: string,
+  optionName: string | RegExp,
+) {
+  fireEvent.click(screen.getByRole('combobox', { name: ariaLabel }));
+  fireEvent.click(screen.getByRole('option', { name: optionName }));
+}
+
+function chooseOfficeSelectOptionByValue(ariaLabel: string, value: string) {
+  fireEvent.click(screen.getByRole('combobox', { name: ariaLabel }));
+  fireEvent.click(
+    document.querySelector(
+      `.work-office-select-menu [role='option'][data-value='${value}']`,
+    ) as HTMLElement,
+  );
+}
+
+function expectOfficeSelectValue(ariaLabel: string, value: string) {
+  expect(screen.getByRole('combobox', { name: ariaLabel })).toHaveAttribute(
+    'data-selected-value',
+    value,
+  );
+}
+
 import {
   type SpreadsheetAutoFilterController,
   useSpreadsheetAutoFilter,
@@ -169,11 +194,9 @@ test('opens the owned Top 10 action with a bounded default criterion', async () 
   await waitFor(() => expect(result.current.dialog).not.toBeNull());
   render(result.current.dialog);
 
-  expect(screen.getByRole('combobox', { name: '筛选条件' })).toHaveValue('top');
+  expectOfficeSelectValue('筛选条件', 'top');
   expect(screen.getByRole('textbox', { name: '项目数' })).toHaveValue('10');
-  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
-    target: { value: 'bottom-percent' },
-  });
+  chooseOfficeSelectOption('筛选条件', '后百分比');
   fireEvent.change(screen.getByRole('textbox', { name: '百分比' }), {
     target: { value: '50' },
   });
@@ -415,9 +438,7 @@ test('opens the owned condition dialog from the vendor menu and filters controll
   expect(
     screen.getByRole('dialog', { name: '自定义自动筛选' }),
   ).toHaveTextContent('季度经营!状态');
-  fireEvent.change(screen.getByRole('combobox', { name: '筛选条件' }), {
-    target: { value: 'matches-wildcard' },
-  });
+  chooseOfficeSelectOption('筛选条件', '通配符匹配');
   fireEvent.change(screen.getByRole('textbox', { name: '通配符表达式' }), {
     target: { value: '有?险' },
   });
