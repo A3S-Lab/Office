@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.195.0` paints balloons3Colors art borders in document PDF export:
+Version `0.196.0` paints balloonsHotAir art borders in document PDF export:
 
-- **`balloons3Colors` art borders** — Writer `balloons3Colors` paragraph borders
-  paint as repeating balloon silhouettes along the measured edge.
+- **`balloonsHotAir` art borders** — Writer `balloonsHotAir` paragraph borders
+  paint as repeating hot-air balloon silhouettes along the measured edge.
 - **Layout Artifact wrap** — decorative border paint stays inside
   `/Artifact << /Type /Layout >>` BDC like prior art motifs.
 - **Fail-closed edges** — remaining decorative art borders and full PDF/UA
