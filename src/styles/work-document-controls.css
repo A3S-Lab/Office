@@ -547,15 +547,15 @@
 }
 
 .work-document-ribbon .work-document-line-height-select {
-  width: 82px;
-}
-
-.work-document-ribbon .work-document-connector-kind-select {
   width: 96px;
 }
 
+.work-document-ribbon .work-document-connector-kind-select {
+  width: 118px;
+}
+
 .work-document-ribbon .work-document-connector-width-select {
-  width: 72px;
+  width: 118px;
 }
 
 .work-document-ribbon .work-document-connector-style-select {
@@ -575,11 +575,11 @@
 }
 
 .work-document-ribbon .work-document-text-box-border-width-select {
-  width: 72px;
+  width: 118px;
 }
 
 .work-document-ribbon .work-document-field-insert-select {
-  width: 136px;
+  width: 112px;
 }
 
 .work-document-ribbon
@@ -893,7 +893,7 @@
 }
 
 .work-document-table-border-target-select {
-  width: 88px;
+  width: 110px;
 }
 
 .work-document-table-border-target-select > button[role="combobox"] {

@@ -371,15 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.208.0` migrates Spreadsheet dialog dropdowns to shared `OfficeSelect`:
+Version `0.209.0` fixes ribbon dropdown closed-label chrome for Chinese:
 
-- **Dialog selects** — Custom Sort keys/order/appearance, data validation
-  allow/operator/error style, AutoFilter conditions, and hyperlink worksheet
-  targets leave native `<select>` for the shared combobox.
-- **a11y and e2e hooks** — Field control props reach the combobox trigger;
-  options expose `data-value`; triggers keep `data-selected-value`.
-- **Bounded scope** — Custom Lists keeps its multi-row listbox; ribbon nested
-  portal contracts from `0.198.0` are unchanged.
+- **Document widths** — Connector/text-box width, connector kind, line-height,
+  and table border-target `OfficeSelect` triggers widen; field insert closes
+  as `插入域…`.
+- **Spreadsheet default** — Ribbon no longer crushes every `OfficeSelect` to
+  62px; named classes still set font/size/number widths.
+- **Dead CSS** — Native `select` ribbon/editor rules are removed after the
+  OfficeSelect migration.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

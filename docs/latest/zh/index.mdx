@@ -42,14 +42,14 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.208.0）
+## `main` 更新内容（0.209.0）
 
-表格对话框下拉统一为共享 `OfficeSelect`：
+功能区下拉闭合标签适配中文宽度：
 
-- 自定义排序、数据验证、自动筛选条件与超链接工作表选择离开原生 `<select>`，
-  改用共享组合框，并转发 Field 的 `aria-*`、在选项上暴露 `data-value`。
-- 自定义序列偏好管理器仍使用 size=10 列表框；`0.198.0` 起的功能区嵌套
-  portal 合约保持不变。
+- 文档连接符/文本框线宽、连接符种类、行距与表格边框目标 `OfficeSelect`
+  触发器加宽；插入域闭合标签改为 `插入域…`。
+- 表格功能区不再把每个 `OfficeSelect` 默认压成 62px。
+- OfficeSelect 迁移后删除残留的原生 `select` 功能区/编辑器样式。
 
 
 ## 按表面探索

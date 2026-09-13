@@ -746,17 +746,6 @@
   opacity: 0.35;
 }
 
-.work-office-toolbar select {
-  height: 28px;
-  padding: 0 28px 0 9px;
-  border: 1px solid var(--a3s-line);
-  border-radius: 6px;
-  outline: 0;
-  background: var(--a3s-panel);
-  color: var(--a3s-ink);
-  font-size: 10px;
-}
-
 .work-color-tool {
   position: relative;
   display: grid;

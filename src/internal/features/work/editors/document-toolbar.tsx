@@ -1300,7 +1300,7 @@ function DocumentFieldSelect({
       ariaLabel="插入页码、日期或统计域"
       value=""
       options={[
-        { value: '', label: '页码、日期或统计', disabled: true },
+        { value: '', label: '插入域…', disabled: true },
         { value: 'page', label: '页码' },
         { value: 'numPages', label: '总页数' },
         { value: 'section', label: '当前节号' },

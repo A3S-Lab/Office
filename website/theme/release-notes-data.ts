@@ -1,5 +1,64 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.209.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['writer', 'spreadsheet', 'documentation'],
+    title: {
+      en: 'Ribbon OfficeSelect closed labels fit Chinese chrome',
+      zh: '功能区 OfficeSelect 闭合标签适配中文宽度',
+    },
+    summary: {
+      en: 'Shared shell: Document ribbon OfficeSelect triggers widen for connector/text-box widths, connector kind, line height, and table border targets; field insert closes as 插入域…. Spreadsheet ribbon drops the blanket 62px OfficeSelect crush default. Dead native select ribbon/editor CSS is removed after the OfficeSelect migration.',
+      zh: '共享壳层：文档功能区连接符/文本框线宽、连接符种类、行距与表格边框目标 OfficeSelect 触发器加宽；插入域闭合标签改为「插入域…」。表格功能区取消默认把每个 OfficeSelect 压成 62px。OfficeSelect 迁移后删除残留的原生 select 功能区/编辑器样式。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Document ribbon widths',
+          zh: '文档功能区宽度',
+        },
+        detail: {
+          en: 'Connector/text-box width selects move to 118px; line height 96px; table border targets 110px; field insert closed label shortens.',
+          zh: '连接符/文本框线宽选择加宽到 118px；行距 96px；表格边框目标 110px；插入域闭合标签缩短。',
+        },
+      },
+      {
+        title: {
+          en: 'Spreadsheet default',
+          zh: '表格默认宽度',
+        },
+        detail: {
+          en: 'Ribbon OfficeSelect defaults to width:auto; named font/size/number classes keep fixed widths.',
+          zh: '功能区 OfficeSelect 默认 width:auto；具名字体/字号/数字格式类仍保留固定宽度。',
+        },
+      },
+      {
+        title: { en: 'Dead select CSS', zh: '残留 select 样式' },
+        detail: {
+          en: 'Shared ribbon and editor chrome no longer style native select after OfficeSelect migration.',
+          zh: '共享功能区与编辑器壳层在 OfficeSelect 迁移后不再样式化原生 select。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.209.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.209.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.208.0',
     date: '2026-09-13',
     kind: 'fixed',

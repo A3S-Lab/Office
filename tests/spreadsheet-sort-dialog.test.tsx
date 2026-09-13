@@ -442,7 +442,9 @@ test('authors cell-color, font-color, and conditional-icon sort levels', () => {
 
   fireEvent.click(screen.getByRole('button', { name: '添加条件' }));
   chooseOfficeSelectOption('排序条件 3 排序依据', '条件格式图标');
-  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 3 目标外观' }));
+  fireEvent.click(
+    screen.getByRole('combobox', { name: '排序条件 3 目标外观' }),
+  );
   expect(
     screen.getByRole('option', { name: /三色交通灯（实心） 3\/3/ }),
   ).toBeInTheDocument();

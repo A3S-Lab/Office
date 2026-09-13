@@ -65,9 +65,7 @@ test('switches to WPS row sorting and authors horizontal appearance priorities',
   chooseOfficeSelectOption('排序条件 1 排序依据', '单元格颜色');
   chooseOfficeSelectOption('排序条件 1 目标外观', '单元格颜色 #FCE8E6');
   fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 位置' }));
-  expect(
-    screen.getByRole('option', { name: '置于左侧' }),
-  ).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: '置于左侧' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('option', { name: '置于右侧' }));
   expect(screen.getByText(/单元格颜色 #FCE8E6，置于右侧/)).toBeVisible();
 

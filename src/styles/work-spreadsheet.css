@@ -129,13 +129,14 @@
 }
 
 .work-spreadsheet-ribbon-toolbar .work-office-select {
-  width: 62px;
-  flex: 0 0 62px;
+  width: auto;
+  min-width: 0;
+  flex: 0 0 auto;
 }
 
 .work-spreadsheet-ribbon-toolbar .work-office-select > button {
-  width: 62px;
-  min-width: 62px;
+  width: auto;
+  min-width: 0;
 }
 
 .work-spreadsheet-ribbon-toolbar

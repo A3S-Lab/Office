@@ -69,7 +69,10 @@ These are already the default contract. Do not trade them away for breadth:
    `OfficeSelect` / `OfficeColorPicker`, and Document contextual ribbon selects
    keep fixed widths on the shared 24px row. Through `0.208.0`, Spreadsheet
    Custom Sort, data validation, AutoFilter condition, and hyperlink dialogs
-   also use `OfficeSelect` (Custom Lists keeps its multi-row listbox).
+   also use `OfficeSelect` (Custom Lists keeps its multi-row listbox). Through
+   `0.209.0`, Document ribbon Chinese closed labels get wider triggers, the
+   Spreadsheet ribbon drops the 62px crush default, and dead native `select`
+   ribbon CSS is removed.
 4. Typed host ports for Yjs, presence, and agents—without shipping cloud
    accounts, storage, or model providers inside this package.
 

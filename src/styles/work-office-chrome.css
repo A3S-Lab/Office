@@ -674,10 +674,6 @@
   white-space: nowrap;
 }
 
-.work-office-ribbon .work-office-toolbar select {
-  min-width: 104px;
-}
-
 .work-office-ribbon .work-office-toolbar .work-office-select {
   align-self: center;
   flex: 0 0 auto;

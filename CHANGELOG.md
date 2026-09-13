@@ -4,6 +4,18 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.209.0 - 2026-09-14
+
+### Chrome
+
+- Document ribbon `OfficeSelect` triggers widen for Chinese closed labels
+  (connector/text-box widths, connector kind, line height, table border
+  targets) and the field-insert closed label shortens to `插入域…`.
+- Spreadsheet ribbon drops the blanket 62px `OfficeSelect` crush default so
+  only named classes set widths.
+- Shared ribbon/editor chrome no longer styles leftover native `select`
+  rules after the OfficeSelect migration.
+
 ## 0.208.0 - 2026-09-13
 
 ### Spreadsheet

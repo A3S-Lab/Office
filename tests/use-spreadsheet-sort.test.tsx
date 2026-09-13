@@ -462,13 +462,17 @@ test('keeps an authored list in session when the host store rejects a write', ()
   fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
   expect(screen.getByText('本次会话的序列')).toBeInTheDocument();
   expect(screen.queryByText('已保存的序列')).toBeNull();
-  expect(screen.getByRole('option', { name: '高 → 中 → 低' })).toBeInTheDocument();
+  expect(
+    screen.getByRole('option', { name: '高 → 中 → 低' }),
+  ).toBeInTheDocument();
   fireEvent.click(screen.getByRole('option', { name: '高 → 中 → 低' }));
   fireEvent.click(screen.getByRole('button', { name: '取消' }));
 
   act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
   fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 次序' }));
-  expect(screen.getByRole('option', { name: '高 → 中 → 低' })).toBeInTheDocument();
+  expect(
+    screen.getByRole('option', { name: '高 → 中 → 低' }),
+  ).toBeInTheDocument();
   expect(screen.getByText('本次会话的序列')).toBeInTheDocument();
 });
 
@@ -560,7 +564,9 @@ test('authors an effective conditional-icon key from the controlled sheet snapsh
 
   act(() => expect(portRef.current?.open(customSelectionRequest())).toBe(true));
   chooseOfficeSelectOption('排序条件 1 排序依据', '条件格式图标');
-  fireEvent.click(screen.getByRole('combobox', { name: '排序条件 1 目标外观' }));
+  fireEvent.click(
+    screen.getByRole('combobox', { name: '排序条件 1 目标外观' }),
+  );
   expect(
     screen.getByRole('option', {
       name: /三色交通灯（实心） 3\/3/,

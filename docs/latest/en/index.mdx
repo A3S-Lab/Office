@@ -44,15 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.208.0)
+## What's new on `main` (0.209.0)
 
-Spreadsheet dialog dropdowns use shared `OfficeSelect`:
+Ribbon dropdown chrome fits Chinese closed labels:
 
-- Custom Sort, data validation, AutoFilter condition, and hyperlink worksheet
-  pickers leave native `<select>` for the shared combobox, including Field
-  `aria-*` forwarding and `data-value` on options.
-- The Custom Lists preference manager keeps its size=10 listbox; ribbon nested
-  portal contracts from `0.198.0` stay unchanged.
+- Document connector/text-box width, connector kind, line-height, and table
+  border-target `OfficeSelect` triggers widen; field insert shows `插入域…`.
+- Spreadsheet ribbon no longer defaults every `OfficeSelect` to 62px.
+- Dead native `select` ribbon/editor CSS is removed after the OfficeSelect
+  migration.
 
 
 ## Explore by surface

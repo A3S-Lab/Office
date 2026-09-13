@@ -370,10 +370,13 @@ Codex 编辑器操作可在所有五个表面上键入和重现。
 
 ## 当前版本
 
-版本 `0.94.0` 让表 tblCellSpacing 属性修订可审阅：
+版本 `0.209.0` 修复功能区下拉闭合标签的中文宽度：
 
-- **表单元格间距** — dxa `tblCellSpacing` 先验成为 `table-formatting`（`cellSpacing`），支持接受/拒绝、实时修订跟踪与原生 DOCX 导出。
-- **边界** — 更广的 `tblPr` 形态仍为不透明元数据或失败闭合；不透明表夹具仍为 `tblBorders`。
+- **文档宽度** — 连接符/文本框线宽、连接符种类、行距与表格边框目标
+  `OfficeSelect` 触发器加宽；插入域闭合标签改为 `插入域…`。
+- **表格默认** — 功能区不再把每个 `OfficeSelect` 默认压成 62px；具名字体/字号/
+  数字格式类仍保留固定宽度。
+- **残留样式** — OfficeSelect 迁移后删除原生 `select` 功能区/编辑器样式。
 
 更早的版本请查看产品向
 [更新日志](https://a3s-lab.github.io/Office/docs/changelog.html) 时间线，以及完整工程
