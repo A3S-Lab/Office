@@ -67,6 +67,7 @@ export type WorkPdfParagraphBorderKind =
   | 'balloons3Colors'
   | 'balloonsHotAir'
   | 'cakeSlice'
+  | 'candyCorn'
   | 'basicBlackSquares'
   | 'basicWhiteSquares'
   | 'basicBlackDots'
@@ -388,7 +389,7 @@ export function appendWorkPdfVectorUnderlineLayer(
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
  * `marqueeToothed` / `moons` / `bats` / `birds` / `birdsFlight` / `cabins` /
- * `apples` / `vine` / `archedScallops` / `babyPacifier` / `babyRattle` / `balloons3Colors` / `balloonsHotAir` / `cakeSlice` / `basicBlackSquares` / `basicWhiteSquares` /
+ * `apples` / `vine` / `archedScallops` / `babyPacifier` / `babyRattle` / `balloons3Colors` / `balloonsHotAir` / `cakeSlice` / `candyCorn` / `basicBlackSquares` / `basicWhiteSquares` /
  * `basicBlackDots` / `basicWhiteDots` / `basicBlackDashes` /
  * `basicWhiteDashes` / `basicThinLines` / `basicWideInline` /
  * `basicWideMidline` / `basicWideOutline` art motifs; other art border styles are
@@ -544,7 +545,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * moons/bats/birds/cabins/apples/vine/archedScallops/babyPacifier/babyRattle/balloons3Colors/balloonsHotAir/cakeSlice/basicSquares/basicDots/
+ * moons/bats/birds/cabins/apples/vine/archedScallops/babyPacifier/babyRattle/balloons3Colors/balloonsHotAir/cakeSlice/candyCorn/basicSquares/basicDots/
  * basicDashes/basicThinLines/basicWide art; not PDF/UA or remaining decorative
  * art).
  */
@@ -800,6 +801,16 @@ export function appendWorkPdfVectorParagraphBorderLayer(
             height,
             thickness,
           );
+        } else if (stroke.kind === 'candyCorn') {
+          strokeCandyCornParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+          );
         } else if (
           stroke.kind === 'basicBlackSquares' ||
           stroke.kind === 'basicWhiteSquares'
@@ -931,6 +942,7 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'balloons3Colors' ||
     border.style === 'balloonsHotAir' ||
     border.style === 'cakeSlice' ||
+    border.style === 'candyCorn' ||
     border.style === 'basicBlackSquares' ||
     border.style === 'basicWhiteSquares' ||
     border.style === 'basicBlackDots' ||
@@ -2906,6 +2918,118 @@ function strokeCakeSlicePolyline(
   const [tipX, tipY] = path[0]!;
   const [midX, midY] = path[3]!;
   pdf.line(tipX, tipY, midX, midY);
+}
+
+/**
+ * Candy-corn motifs along the measured edge for geometric art border
+ * `candyCorn`. Each motif is a closed triangle with two band dividers.
+ */
+function strokeCandyCornParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const span = Math.max(3.0, thickness * 2.6);
+  const period = Math.max(6.6, thickness * 5.8);
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeCandyCornSilhouettes(pdf, x, yBase, width, 0, period, span, outward);
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeCandyCornSilhouettes(pdf, xBase, y, height, 1, period, span, outward);
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeCandyCornSilhouettes(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  span: number,
+  outward: 1 | -1,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const centerX = axis === 0 ? originX + along : originX;
+    const centerY = axis === 0 ? originY : originY + along;
+    const half = Math.min(span / 2, length / (count * 2.2));
+    const depth = Math.max(1.4, half * 0.95);
+    const tangentX = axis === 0 ? 1 : 0;
+    const tangentY = axis === 0 ? 0 : 1;
+    const normalX = axis === 0 ? 0 : outward;
+    const normalY = axis === 0 ? outward : 0;
+    strokeCandyCornPolyline(
+      pdf,
+      centerX + normalX * depth * 0.08,
+      centerY + normalY * depth * 0.08,
+      half,
+      depth,
+      tangentX,
+      tangentY,
+      normalX,
+      normalY,
+    );
+  }
+}
+
+function strokeCandyCornPolyline(
+  pdf: JsPdf,
+  centerX: number,
+  centerY: number,
+  half: number,
+  depth: number,
+  tangentX: number,
+  tangentY: number,
+  normalX: number,
+  normalY: number,
+): void {
+  if (
+    !Number.isFinite(half) ||
+    half <= 0 ||
+    !Number.isFinite(depth) ||
+    depth <= 0
+  ) {
+    return;
+  }
+  const point = (along: number, out: number): [number, number] => [
+    centerX + tangentX * along + normalX * out,
+    centerY + tangentY * along + normalY * out,
+  ];
+  // Tip (white) → base corners (yellow) → close; two band dividers.
+  const tip = point(0, depth * 1.05);
+  const leftBase = point(-half * 0.95, -depth * 0.12);
+  const rightBase = point(half * 0.95, -depth * 0.12);
+  const path: Array<[number, number]> = [tip, rightBase, leftBase];
+  for (let index = 0; index < path.length; index += 1) {
+    const [x0, y0] = path[index]!;
+    const [x1, y1] = path[(index + 1) % path.length]!;
+    pdf.line(x0, y0, x1, y1);
+  }
+  const upperLeft = point(-half * 0.32, depth * 0.58);
+  const upperRight = point(half * 0.32, depth * 0.58);
+  const lowerLeft = point(-half * 0.62, depth * 0.18);
+  const lowerRight = point(half * 0.62, depth * 0.18);
+  pdf.line(upperLeft[0], upperLeft[1], upperRight[0], upperRight[1]);
+  pdf.line(lowerLeft[0], lowerLeft[1], lowerRight[0], lowerRight[1]);
 }
 
 /**
