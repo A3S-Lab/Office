@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.189.0 - 2026-09-13
+
+### Writer
+
+- Whole-paragraph mark, paragraph-break, and text-move revision bodies now
+  also admit `w:footnoteRef` / `w:endnoteRef` / `w:annotationRef` glyphs that
+  carry exactly one Word-ns numeric `w:val`. Empty `*Ref` glyphs (through
+  `0.146.0`) and `*Reference` with numeric `w:id` (through `0.188.0`) remain
+  admitted. Malformed attributed refs and attributed separators stay
+  fail-closed.
+
 ## 0.188.0 - 2026-09-12
 
 ### Writer

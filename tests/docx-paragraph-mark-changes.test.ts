@@ -912,7 +912,7 @@ describe('DOCX paragraph-mark revisions', () => {
     ]);
   });
 
-  test('rejects attributed footnoteRef glyphs inside whole-paragraph mark revisions', () => {
+  test('admits attributed footnoteRef glyphs inside whole-paragraph mark revisions', () => {
     const document = wordXml(`
       <w:p>
         <w:pPr><w:rPr>
@@ -926,8 +926,13 @@ describe('DOCX paragraph-mark revisions', () => {
     const mark = descendants(document, 'ins').find(
       (revision) => revision.parentElement?.localName === 'rPr',
     );
-    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(false);
-    expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([]);
+    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(true);
+    expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([
+      expect.objectContaining({
+        id: 'docx-paragraph-mark-change-67',
+        kind: 'insertion',
+      }),
+    ]);
   });
 
   test('admits footnoteReference with id inside whole-paragraph mark revisions', () => {
@@ -1019,7 +1024,7 @@ describe('DOCX paragraph-mark revisions', () => {
     ]);
   });
 
-  test('rejects attributed endnoteRef glyphs inside whole-paragraph mark revisions', () => {
+  test('admits attributed endnoteRef glyphs inside whole-paragraph mark revisions', () => {
     const document = wordXml(`
       <w:p>
         <w:pPr><w:rPr>
@@ -1033,8 +1038,13 @@ describe('DOCX paragraph-mark revisions', () => {
     const mark = descendants(document, 'ins').find(
       (revision) => revision.parentElement?.localName === 'rPr',
     );
-    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(false);
-    expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([]);
+    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(true);
+    expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([
+      expect.objectContaining({
+        id: 'docx-paragraph-mark-change-73',
+        kind: 'insertion',
+      }),
+    ]);
   });
 
   test('rejects malformed endnoteReference glyphs inside whole-paragraph mark revisions', () => {
@@ -1080,7 +1090,7 @@ describe('DOCX paragraph-mark revisions', () => {
     ]);
   });
 
-  test('rejects attributed annotationRef glyphs inside whole-paragraph mark revisions', () => {
+  test('admits attributed annotationRef glyphs inside whole-paragraph mark revisions', () => {
     const document = wordXml(`
       <w:p>
         <w:pPr><w:rPr>
@@ -1088,6 +1098,29 @@ describe('DOCX paragraph-mark revisions', () => {
         </w:rPr></w:pPr>
         <w:ins w:id="80" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
           <w:r><w:t>Left</w:t><w:annotationRef w:val="1"/><w:t>Right</w:t></w:r>
+        </w:ins>
+      </w:p>
+    `);
+    const mark = descendants(document, 'ins').find(
+      (revision) => revision.parentElement?.localName === 'rPr',
+    );
+    expect(mark && isSupportedDocxParagraphMarkChange(mark)).toBe(true);
+    expect(markDocxParagraphMarkChanges(document).paragraphs).toEqual([
+      expect.objectContaining({
+        id: 'docx-paragraph-mark-change-79',
+        kind: 'insertion',
+      }),
+    ]);
+  });
+
+  test('rejects malformed attributed footnoteRef glyphs inside whole-paragraph mark revisions', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:pPr><w:rPr>
+          <w:ins w:id="791" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"/>
+        </w:rPr></w:pPr>
+        <w:ins w:id="801" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z">
+          <w:r><w:t>Left</w:t><w:footnoteRef w:val="1" w:id="2"/><w:t>Right</w:t></w:r>
         </w:ins>
       </w:p>
     `);

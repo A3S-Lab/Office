@@ -460,6 +460,90 @@ describe('DOCX paragraph-break merge/split revisions', () => {
     ]);
   });
 
+  test('admits attributed footnoteRef glyphs in paragraph-break bodies', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:del w:id="363" w:author="Ada" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:r>
+              <w:t>Alpha</w:t><w:footnoteRef w:val="1"/><w:t>mark</w:t>
+            </w:r>
+          </w:p>
+          <w:p>
+            <w:r><w:t>Bravo</w:t><w:footnoteRef w:val="1"/><w:t>next</w:t></w:r>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const mark = descendants(document, 'del')[0];
+    expect(mark && isIsolatedDocxParagraphBreakMarkChange(mark)).toBe(true);
+    expect(markDocxParagraphBreakChanges(document).paragraphs).toEqual([
+      expect.objectContaining({
+        kind: 'merge',
+        author: 'Ada',
+      }),
+    ]);
+  });
+
+  test('admits attributed endnoteRef glyphs in paragraph-break bodies', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:del w:id="364" w:author="Ada" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:r>
+              <w:t>Alpha</w:t><w:endnoteRef w:val="1"/><w:t>mark</w:t>
+            </w:r>
+          </w:p>
+          <w:p>
+            <w:r><w:t>Bravo</w:t><w:endnoteRef w:val="1"/><w:t>next</w:t></w:r>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const mark = descendants(document, 'del')[0];
+    expect(mark && isIsolatedDocxParagraphBreakMarkChange(mark)).toBe(true);
+    expect(markDocxParagraphBreakChanges(document).paragraphs).toEqual([
+      expect.objectContaining({
+        kind: 'merge',
+        author: 'Ada',
+      }),
+    ]);
+  });
+
+  test('admits attributed annotationRef glyphs in paragraph-break bodies', () => {
+    const document = parseXml(`
+      <w:document xmlns:w="${WORD_NAMESPACE}">
+        <w:body>
+          <w:p>
+            <w:pPr><w:rPr>
+              <w:del w:id="365" w:author="Ada" w:date="2026-09-05T01:00:00Z"/>
+            </w:rPr></w:pPr>
+            <w:r>
+              <w:t>Alpha</w:t><w:annotationRef w:val="1"/><w:t>mark</w:t>
+            </w:r>
+          </w:p>
+          <w:p>
+            <w:r><w:t>Bravo</w:t><w:annotationRef w:val="1"/><w:t>next</w:t></w:r>
+          </w:p>
+        </w:body>
+      </w:document>
+    `);
+    const mark = descendants(document, 'del')[0];
+    expect(mark && isIsolatedDocxParagraphBreakMarkChange(mark)).toBe(true);
+    expect(markDocxParagraphBreakChanges(document).paragraphs).toEqual([
+      expect.objectContaining({
+        kind: 'merge',
+        author: 'Ada',
+      }),
+    ]);
+  });
+
   test('admits footnoteReference with id in paragraph-break bodies', () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}">

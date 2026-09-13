@@ -532,8 +532,8 @@ function isAdmittedEmptyRunGlyph(element: Element): boolean {
 
 /**
  * Bounded body note markers: empty footnoteReference/endnoteReference with
- * exactly one Word-ns w:id. Attributed footnoteRef/endnoteRef and malformed
- * markers stay fail-closed.
+ * exactly one Word-ns w:id, or footnoteRef/endnoteRef/annotationRef with
+ * exactly one Word-ns numeric w:val. Malformed markers stay fail-closed.
  */
 function isAdmittedNoteReferenceGlyph(element: Element): boolean {
   if (
@@ -544,6 +544,30 @@ function isAdmittedNoteReferenceGlyph(element: Element): boolean {
   ) {
     return false;
   }
+  return hasExactlyOneNumericWordAttribute(element, 'id');
+}
+
+/**
+ * Real-world note-marker CT_Empty glyphs sometimes carry a numeric w:val.
+ * Admit only that single Word-ns attribute; extras stay fail-closed.
+ */
+function isAdmittedAttributedNoteRefGlyph(element: Element): boolean {
+  if (
+    (element.localName !== 'footnoteRef' &&
+      element.localName !== 'endnoteRef' &&
+      element.localName !== 'annotationRef') ||
+    element.children.length !== 0 ||
+    !DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')
+  ) {
+    return false;
+  }
+  return hasExactlyOneNumericWordAttribute(element, 'val');
+}
+
+function hasExactlyOneNumericWordAttribute(
+  element: Element,
+  localName: string,
+): boolean {
   const namespace = element.namespaceURI;
   if (!namespace) return false;
   const wordAttributes = Array.from(element.attributes).filter(
@@ -551,14 +575,16 @@ function isAdmittedNoteReferenceGlyph(element: Element): boolean {
   );
   if (wordAttributes.length !== 1) return false;
   const only = wordAttributes[0];
-  if (!only || xmlAttributeLocalName(only) !== 'id') return false;
-  const id = only.value.trim();
-  return /^\+?\d{1,10}$/.test(id);
+  if (!only || xmlAttributeLocalName(only) !== localName) return false;
+  const value = only.value.trim();
+  return /^\+?\d{1,10}$/.test(value);
 }
 
 function isAdmittedRunGlyph(element: Element): boolean {
   return (
-    isAdmittedEmptyRunGlyph(element) || isAdmittedNoteReferenceGlyph(element)
+    isAdmittedEmptyRunGlyph(element) ||
+    isAdmittedNoteReferenceGlyph(element) ||
+    isAdmittedAttributedNoteRefGlyph(element)
   );
 }
 

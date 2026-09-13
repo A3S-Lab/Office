@@ -42,12 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.188.0）
+## `main` 更新内容（0.189.0）
 
-Writer Phase 0 现准入修订正文中的有界 `w:endnoteReference` 标记：
+Writer Phase 0 现准入修订正文中的带属性 note-ref 字形：
 
-- 仅带一个 Word 命名空间数字 `w:id` 的空 `w:endnoteReference` 可进入合格的整段标记、段落分隔与文本移动修订正文。
-- 带属性 `footnoteRef` / `endnoteRef` 与畸形标记仍失败关闭。
+- 仅带一个 Word 命名空间数字 `w:val` 的 `w:footnoteRef` / `w:endnoteRef` / `w:annotationRef` 可进入合格的整段标记、段落分隔与文本移动修订正文。
+- 畸形带属性引用与带属性分隔符仍失败关闭。
 
 
 ## 按表面探索

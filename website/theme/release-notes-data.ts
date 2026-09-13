@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.189.0',
+    date: '2026-09-13',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Attributed note-ref glyphs admitted in revision bodies',
+      zh: '修订正文准入带属性 note-ref 字形',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: w:footnoteRef / w:endnoteRef / w:annotationRef glyphs with exactly one Word-ns numeric w:val import inside whole-paragraph mark, paragraph-break, and text-move revision bodies. Empty *Ref glyphs and *Reference with w:id remain admitted. Malformed attributed refs and attributed separators stay fail-closed.',
+      zh: 'Phase 0 保真：仅带一个 Word 命名空间数字 w:val 的 w:footnoteRef / w:endnoteRef / w:annotationRef 可进入整段标记、段落分隔与文本移动修订正文。空 *Ref 与带 w:id 的 *Reference 仍准入。畸形带属性引用与带属性分隔符仍失败关闭。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Mark / break / move',
+          zh: '标记 / 分隔 / 移动',
+        },
+        detail: {
+          en: 'Eligible revision bodies admit attributed footnoteRef, endnoteRef, and annotationRef.',
+          zh: '合格修订正文准入带属性 footnoteRef、endnoteRef 与 annotationRef。',
+        },
+      },
+      {
+        title: {
+          en: 'Required w:val',
+          zh: '必需 w:val',
+        },
+        detail: {
+          en: 'Exactly one Word-ns numeric val is required; extras fail closed.',
+          zh: '必须恰好一个 Word 命名空间数字 val；多余属性失败关闭。',
+        },
+      },
+      {
+        title: {
+          en: 'Prior contracts kept',
+          zh: '既有合约保留',
+        },
+        detail: {
+          en: 'Empty *Ref and *Reference with numeric id stay admitted.',
+          zh: '空 *Ref 与带数字 id 的 *Reference 仍准入。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html#whole-paragraph-mark-revisions',
+          zh: './components/document.html#整段段落标记修订',
+        },
+        label: { en: 'Paragraph mark revisions', zh: '段落标记修订' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.189.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.189.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.188.0',
     date: '2026-09-12',
     kind: 'improved',

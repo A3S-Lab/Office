@@ -371,16 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.188.0` admits bounded endnote markers inside revision bodies:
+Version `0.189.0` admits attributed note-ref glyphs inside revision bodies:
 
-- **`w:endnoteReference` with `w:id`** — empty endnote markers that carry
-  exactly one Word-ns numeric id import inside whole-paragraph mark,
-  paragraph-break, and text-move revision bodies (mirrors `0.187.0`
-  footnoteReference).
+- **`footnoteRef` / `endnoteRef` / `annotationRef` with `w:val`** — note-ref
+  glyphs that carry exactly one Word-ns numeric `w:val` import inside
+  whole-paragraph mark, paragraph-break, and text-move revision bodies.
 - **Review stays atomic** — mark, break, and move admission keep the same
   accept/reject contracts once the body is eligible.
-- **Fail-closed edges** — attributed `footnoteRef` / `endnoteRef` and
-  malformed note markers stay rejected.
+- **Fail-closed edges** — malformed attributed refs (extra attributes /
+  non-numeric vals) and attributed separators stay rejected.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

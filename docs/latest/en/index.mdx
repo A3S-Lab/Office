@@ -44,15 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.188.0)
+## What's new on `main` (0.189.0)
 
-Writer Phase 0 admits bounded `w:endnoteReference` markers inside revision
-bodies:
+Writer Phase 0 admits attributed note-ref glyphs inside revision bodies:
 
-- Empty `w:endnoteReference` with exactly one Word-ns numeric `w:id` imports
-  inside eligible whole-paragraph mark, paragraph-break, and text-move bodies.
-- Attributed `footnoteRef` / `endnoteRef` and malformed note markers stay
-  fail-closed.
+- `w:footnoteRef` / `w:endnoteRef` / `w:annotationRef` with exactly one
+  Word-ns numeric `w:val` import inside eligible whole-paragraph mark,
+  paragraph-break, and text-move bodies.
+- Malformed attributed refs and attributed separators stay fail-closed.
 
 
 ## Explore by surface
