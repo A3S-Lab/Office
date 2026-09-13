@@ -105,6 +105,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.189.0',
     '0.188.0',
     '0.187.0',
     '0.186.0',
@@ -124,7 +125,6 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
     '0.172.0',
     '0.171.0',
     '0.170.0',
-    '0.169.0',
     '0.38.0',
     '0.1.0',
   ]);
@@ -412,7 +412,9 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain(
     'admits attributed note-ref glyphs inside revision bodies',
   );
-  expect(readme).toContain('`footnoteRef` / `endnoteRef` / `annotationRef` with `w:val`');
+  expect(readme).toContain(
+    '`footnoteRef` / `endnoteRef` / `annotationRef` with `w:val`',
+  );
   expect(readme).toContain('Review stays atomic');
   expect(readme).toContain('Earlier releases stay on the product');
   expect(englishHome).toContain("## What's new on `main` (0.189.0)");
