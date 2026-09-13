@@ -71,6 +71,7 @@ export type WorkPdfParagraphBorderKind =
   | 'celticKnotwork'
   | 'certificateBanner'
   | 'chainLink'
+  | 'champagneBottle'
   | 'basicBlackSquares'
   | 'basicWhiteSquares'
   | 'basicBlackDots'
@@ -392,7 +393,7 @@ export function appendWorkPdfVectorUnderlineLayer(
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
  * `marqueeToothed` / `moons` / `bats` / `birds` / `birdsFlight` / `cabins` /
- * `apples` / `vine` / `archedScallops` / `babyPacifier` / `babyRattle` / `balloons3Colors` / `balloonsHotAir` / `cakeSlice` / `candyCorn` / `celticKnotwork` / `certificateBanner` / `chainLink` / `basicBlackSquares` / `basicWhiteSquares` /
+ * `apples` / `vine` / `archedScallops` / `babyPacifier` / `babyRattle` / `balloons3Colors` / `balloonsHotAir` / `cakeSlice` / `candyCorn` / `celticKnotwork` / `certificateBanner` / `chainLink` / `champagneBottle` / `basicBlackSquares` / `basicWhiteSquares` /
  * `basicBlackDots` / `basicWhiteDots` / `basicBlackDashes` /
  * `basicWhiteDashes` / `basicThinLines` / `basicWideInline` /
  * `basicWideMidline` / `basicWideOutline` art motifs; other art border styles are
@@ -548,7 +549,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * moons/bats/birds/cabins/apples/vine/archedScallops/babyPacifier/babyRattle/balloons3Colors/balloonsHotAir/cakeSlice/candyCorn/celticKnotwork/certificateBanner/chainLink/basicSquares/basicDots/
+ * moons/bats/birds/cabins/apples/vine/archedScallops/babyPacifier/babyRattle/balloons3Colors/balloonsHotAir/cakeSlice/candyCorn/celticKnotwork/certificateBanner/chainLink/champagneBottle/basicSquares/basicDots/
  * basicDashes/basicThinLines/basicWide art; not PDF/UA or remaining decorative
  * art).
  */
@@ -844,6 +845,16 @@ export function appendWorkPdfVectorParagraphBorderLayer(
             height,
             thickness,
           );
+        } else if (stroke.kind === 'champagneBottle') {
+          strokeChampagneBottleParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+          );
         } else if (
           stroke.kind === 'basicBlackSquares' ||
           stroke.kind === 'basicWhiteSquares'
@@ -979,6 +990,7 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'celticKnotwork' ||
     border.style === 'certificateBanner' ||
     border.style === 'chainLink' ||
+    border.style === 'champagneBottle' ||
     border.style === 'basicBlackSquares' ||
     border.style === 'basicWhiteSquares' ||
     border.style === 'basicBlackDots' ||
@@ -3485,6 +3497,154 @@ function strokeChainLinkPolyline(
   const d = point(half * 0.18, depth * 0.62);
   pdf.line(a[0], a[1], b[0], b[1]);
   pdf.line(c[0], c[1], d[0], d[1]);
+}
+
+/**
+ * Champagne-bottle motifs along the measured edge for geometric art border
+ * `champagneBottle`. Each motif is a closed bottle silhouette with cork.
+ */
+function strokeChampagneBottleParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const span = Math.max(3.0, thickness * 2.6);
+  const period = Math.max(6.6, thickness * 5.8);
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeChampagneBottleSilhouettes(
+      pdf,
+      x,
+      yBase,
+      width,
+      0,
+      period,
+      span,
+      outward,
+    );
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeChampagneBottleSilhouettes(
+      pdf,
+      xBase,
+      y,
+      height,
+      1,
+      period,
+      span,
+      outward,
+    );
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeChampagneBottleSilhouettes(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  span: number,
+  outward: 1 | -1,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const centerX = axis === 0 ? originX + along : originX;
+    const centerY = axis === 0 ? originY : originY + along;
+    const half = Math.min(span / 2, length / (count * 2.2));
+    const depth = Math.max(1.5, half * 1.05);
+    const tangentX = axis === 0 ? 1 : 0;
+    const tangentY = axis === 0 ? 0 : 1;
+    const normalX = axis === 0 ? 0 : outward;
+    const normalY = axis === 0 ? outward : 0;
+    strokeChampagneBottlePolyline(
+      pdf,
+      centerX + normalX * depth * 0.08,
+      centerY + normalY * depth * 0.08,
+      half,
+      depth,
+      tangentX,
+      tangentY,
+      normalX,
+      normalY,
+    );
+  }
+}
+
+function strokeChampagneBottlePolyline(
+  pdf: JsPdf,
+  centerX: number,
+  centerY: number,
+  half: number,
+  depth: number,
+  tangentX: number,
+  tangentY: number,
+  normalX: number,
+  normalY: number,
+): void {
+  if (
+    !Number.isFinite(half) ||
+    half <= 0 ||
+    !Number.isFinite(depth) ||
+    depth <= 0
+  ) {
+    return;
+  }
+  const point = (along: number, out: number): [number, number] => [
+    centerX + tangentX * along + normalX * out,
+    centerY + tangentY * along + normalY * out,
+  ];
+  // Bottle body + neck silhouette (closed), cork at the tip.
+  const outline: Array<[number, number]> = [
+    point(-half * 0.55, depth * 0.08),
+    point(-half * 0.62, depth * 0.42),
+    point(-half * 0.48, depth * 0.78),
+    point(-half * 0.18, depth * 0.95),
+    point(half * 0.18, depth * 0.95),
+    point(half * 0.48, depth * 0.78),
+    point(half * 0.62, depth * 0.42),
+    point(half * 0.55, depth * 0.08),
+    point(half * 0.22, -depth * 0.05),
+    point(half * 0.16, -depth * 0.32),
+    point(half * 0.12, -depth * 0.55),
+    point(half * 0.18, -depth * 0.68),
+    point(half * 0.08, -depth * 0.82),
+    point(-half * 0.08, -depth * 0.82),
+    point(-half * 0.18, -depth * 0.68),
+    point(-half * 0.12, -depth * 0.55),
+    point(-half * 0.16, -depth * 0.32),
+    point(-half * 0.22, -depth * 0.05),
+  ];
+  for (let index = 0; index < outline.length; index += 1) {
+    const [x0, y0] = outline[index]!;
+    const [x1, y1] = outline[(index + 1) % outline.length]!;
+    pdf.line(x0, y0, x1, y1);
+  }
+  // Foil / neck ring.
+  const ringL = point(-half * 0.2, -depth * 0.18);
+  const ringR = point(half * 0.2, -depth * 0.18);
+  pdf.line(ringL[0], ringL[1], ringR[0], ringR[1]);
+  // Label band across the body.
+  const labelL = point(-half * 0.42, depth * 0.48);
+  const labelR = point(half * 0.42, depth * 0.48);
+  pdf.line(labelL[0], labelL[1], labelR[0], labelR[1]);
 }
 
 /**

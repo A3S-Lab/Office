@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.204.0 - 2026-09-13
+
+### Writer
+
+- Browser document PDF export now paints Writer `champagneBottle` art
+  paragraph borders as repeating bottle silhouettes with cork and label band
+  along the measured edge. Remaining decorative art borders and full PDF/UA
+  certification stay out of scope.
+
 ## 0.203.0 - 2026-09-13
 
 ### Writer

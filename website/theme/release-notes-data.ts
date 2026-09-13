@@ -1,5 +1,58 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.204.0',
+    date: '2026-09-13',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Document PDF paints champagneBottle art borders',
+      zh: '文档 PDF 绘制 champagneBottle 艺术边框',
+    },
+    summary: {
+      en: 'Phase 0 fidelity: browser document PDF export paints Writer champagneBottle art paragraph borders as repeating bottle silhouettes with cork and label band along the measured edge. Remaining decorative art borders and full PDF/UA certification remain out of scope.',
+      zh: 'Phase 0 保真：浏览器文档 PDF 导出现将 Writer 的 champagneBottle 艺术段落边框绘制为沿测量边的重复香槟瓶剪影（含软木塞与标签带）。其余装饰性艺术边框与完整 PDF/UA 认证仍不在范围内。',
+    },
+    highlights: [
+      {
+        title: { en: 'Bottle silhouettes', zh: '酒瓶剪影' },
+        detail: {
+          en: 'champagneBottle draws repeating bottle silhouettes with cork and label band along the measured edge.',
+          zh: 'champagneBottle 沿测量边绘制带软木塞与标签带的重复酒瓶造型。',
+        },
+      },
+      {
+        title: { en: 'Admitted into vector plan', zh: '进入矢量计划' },
+        detail: {
+          en: 'champagneBottle is admitted into the vector border plan; not a silent skip.',
+          zh: 'champagneBottle 进入矢量边框计划；不会静默跳过。',
+        },
+      },
+      {
+        title: { en: 'Scope kept bounded', zh: '范围保持有界' },
+        detail: {
+          en: 'Other decorative art borders and full PDF/UA certification are not claimed.',
+          zh: '其余装饰性艺术边框与完整 PDF/UA 认证仍不宣称。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.204.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.204.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.203.0',
     date: '2026-09-13',
     kind: 'improved',
