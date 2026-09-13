@@ -3817,12 +3817,7 @@ function strokeCheckedBarBlackPolyline(
   const vertBot = point(0, depth * 0.95);
   pdf.line(vertTop[0], vertTop[1], vertBot[0], vertBot[1]);
   // Fill alternating cells with diagonals (black-check densify).
-  const fillCell = (
-    a0: number,
-    o0: number,
-    a1: number,
-    o1: number,
-  ): void => {
+  const fillCell = (a0: number, o0: number, a1: number, o1: number): void => {
     const p00 = point(a0, o0);
     const p11 = point(a1, o1);
     const p01 = point(a0, o1);
@@ -4081,8 +4076,18 @@ function strokeCheckeredPolyline(
   }
   // 2×2 grid.
   const midH = point(0, depth * 0.45);
-  pdf.line(point(-half, depth * 0.45)[0], point(-half, depth * 0.45)[1], point(half, depth * 0.45)[0], point(half, depth * 0.45)[1]);
-  pdf.line(point(0, -depth * 0.05)[0], point(0, -depth * 0.05)[1], point(0, depth * 0.95)[0], point(0, depth * 0.95)[1]);
+  pdf.line(
+    point(-half, depth * 0.45)[0],
+    point(-half, depth * 0.45)[1],
+    point(half, depth * 0.45)[0],
+    point(half, depth * 0.45)[1],
+  );
+  pdf.line(
+    point(0, -depth * 0.05)[0],
+    point(0, -depth * 0.05)[1],
+    point(0, depth * 0.95)[0],
+    point(0, depth * 0.95)[1],
+  );
   // Alternating cells: full cross densify (tile checker).
   const fill = (a0: number, o0: number, a1: number, o1: number): void => {
     const p00 = point(a0, o0);

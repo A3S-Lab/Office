@@ -166,7 +166,6 @@
   color: var(--a3s-faint);
 }
 
-.work-presentation-design-panel select,
 .work-presentation-design-panel input:not([type="checkbox"], [type="color"]) {
   height: 27px;
   border: 1px solid var(--a3s-line);
@@ -349,7 +348,6 @@
 
 .work-presentation-chart-panel button,
 .work-presentation-chart-panel input,
-.work-presentation-chart-panel select,
 .work-presentation-chart-panel textarea {
   border: 1px solid var(--a3s-line);
   border-radius: 5px;

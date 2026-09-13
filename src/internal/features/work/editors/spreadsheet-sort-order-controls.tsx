@@ -51,14 +51,14 @@ export function SpreadsheetSortOrderControls({
     {
       value: 'cell-color',
       label: '单元格颜色',
-      disabled:
-        !spreadsheetSortAppearanceTargets(appearanceField, 'cell-color').length,
+      disabled: !spreadsheetSortAppearanceTargets(appearanceField, 'cell-color')
+        .length,
     },
     {
       value: 'font-color',
       label: '字体颜色',
-      disabled:
-        !spreadsheetSortAppearanceTargets(appearanceField, 'font-color').length,
+      disabled: !spreadsheetSortAppearanceTargets(appearanceField, 'font-color')
+        .length,
     },
     {
       value: 'icon',

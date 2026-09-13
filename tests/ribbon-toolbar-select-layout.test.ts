@@ -21,6 +21,8 @@ test('Presentation ribbon does not crush the shared 74px toolbar height', () => 
   expect(css).toContain(
     '.work-presentation-design-controls .work-office-select',
   );
+  expect(css).not.toMatch(/\.work-presentation-design-panel\s+select\b/);
+  expect(css).not.toMatch(/\.work-presentation-chart-panel\s+select\b/);
 });
 
 test('shared ribbon chrome sizes OfficeSelect triggers without native select leftovers', () => {
