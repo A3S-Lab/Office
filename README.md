@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.206.0` paints checkedBarColor art borders in document PDF export:
+Version `0.207.0` paints checkered art borders in document PDF export:
 
-- **`checkedBarColor` art borders** — Writer `checkedBarColor` paragraph
-  borders paint as repeating checkered bar segments with single-diagonal cell
-  densify along the measured edge.
+- **`checkered` art borders** — Writer `checkered` paragraph borders paint as
+  repeating 2×2 tile grids with alternating diagonal fills along the measured
+  edge.
 - **Layout Artifact wrap** — decorative border paint stays inside
   `/Artifact << /Type /Layout >>` BDC like prior art motifs.
 - **Fail-closed edges** — remaining decorative art borders and full PDF/UA

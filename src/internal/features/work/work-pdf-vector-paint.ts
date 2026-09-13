@@ -74,6 +74,7 @@ export type WorkPdfParagraphBorderKind =
   | 'champagneBottle'
   | 'checkedBarBlack'
   | 'checkedBarColor'
+  | 'checkered'
   | 'basicBlackSquares'
   | 'basicWhiteSquares'
   | 'basicBlackDots'
@@ -395,7 +396,7 @@ export function appendWorkPdfVectorUnderlineLayer(
  * and geometric `zigZag` / `zigZagStitch` / `sawtooth` / `sharksTeeth` /
  * `triangles` / `triangle1` / `triangle2` / `ovals` / `rings` / `marquee` /
  * `marqueeToothed` / `moons` / `bats` / `birds` / `birdsFlight` / `cabins` /
- * `apples` / `vine` / `archedScallops` / `babyPacifier` / `babyRattle` / `balloons3Colors` / `balloonsHotAir` / `cakeSlice` / `candyCorn` / `celticKnotwork` / `certificateBanner` / `chainLink` / `champagneBottle` / `checkedBarBlack` / `checkedBarColor` / `basicBlackSquares` / `basicWhiteSquares` /
+ * `apples` / `vine` / `archedScallops` / `babyPacifier` / `babyRattle` / `balloons3Colors` / `balloonsHotAir` / `cakeSlice` / `candyCorn` / `celticKnotwork` / `certificateBanner` / `chainLink` / `champagneBottle` / `checkedBarBlack` / `checkedBarColor` / `checkered` / `basicBlackSquares` / `basicWhiteSquares` /
  * `basicBlackDots` / `basicWhiteDots` / `basicBlackDashes` /
  * `basicWhiteDashes` / `basicThinLines` / `basicWideInline` /
  * `basicWideMidline` / `basicWideOutline` art motifs; other art border styles are
@@ -551,7 +552,7 @@ export function clearWorkPdfParagraphBorderStripsOnCanvas(
 /**
  * Paints paragraph borders as native PDF path operators at measured paragraph
  * geometry (common + wave + 3D + zigZag/sawtooth/triangle/oval/marquee/moon/
- * moons/bats/birds/cabins/apples/vine/archedScallops/babyPacifier/babyRattle/balloons3Colors/balloonsHotAir/cakeSlice/candyCorn/celticKnotwork/certificateBanner/chainLink/champagneBottle/checkedBarBlack/checkedBarColor/basicSquares/basicDots/
+ * moons/bats/birds/cabins/apples/vine/archedScallops/babyPacifier/babyRattle/balloons3Colors/balloonsHotAir/cakeSlice/candyCorn/celticKnotwork/certificateBanner/chainLink/champagneBottle/checkedBarBlack/checkedBarColor/checkered/basicSquares/basicDots/
  * basicDashes/basicThinLines/basicWide art; not PDF/UA or remaining decorative
  * art).
  */
@@ -877,6 +878,16 @@ export function appendWorkPdfVectorParagraphBorderLayer(
             height,
             thickness,
           );
+        } else if (stroke.kind === 'checkered') {
+          strokeCheckeredParagraphBorderEdge(
+            pdf,
+            edge,
+            x,
+            y,
+            width,
+            height,
+            thickness,
+          );
         } else if (
           stroke.kind === 'basicBlackSquares' ||
           stroke.kind === 'basicWhiteSquares'
@@ -1015,6 +1026,7 @@ function workPdfParagraphBorderStrokeFromDocumentBorder(
     border.style === 'champagneBottle' ||
     border.style === 'checkedBarBlack' ||
     border.style === 'checkedBarColor' ||
+    border.style === 'checkered' ||
     border.style === 'basicBlackSquares' ||
     border.style === 'basicWhiteSquares' ||
     border.style === 'basicBlackDots' ||
@@ -3960,6 +3972,129 @@ function strokeCheckedBarColorPolyline(
   const c = point(0, depth * 0.45);
   const d = point(half, depth * 0.95);
   pdf.line(c[0], c[1], d[0], d[1]);
+}
+
+/**
+ * Checkered tile motifs along the measured edge for geometric art border
+ * `checkered`. Each motif is a 2×2 tile grid with alternating diagonal fills.
+ */
+function strokeCheckeredParagraphBorderEdge(
+  pdf: JsPdf,
+  edge: WorkPdfParagraphBorderBoxEdge,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+): void {
+  const paintEdge = paragraphBorderPaintEdge(edge);
+  const span = Math.max(3.0, thickness * 2.5);
+  const period = Math.max(6.4, thickness * 5.4);
+  if (paintEdge === 'top' || paintEdge === 'bottom') {
+    const yBase = paintEdge === 'top' ? y : y + height;
+    const outward = paintEdge === 'top' ? -1 : 1;
+    strokeCheckeredSilhouettes(pdf, x, yBase, width, 0, period, span, outward);
+  } else {
+    const xBase = paintEdge === 'left' ? x : x + width;
+    const outward = paintEdge === 'left' ? -1 : 1;
+    strokeCheckeredSilhouettes(pdf, xBase, y, height, 1, period, span, outward);
+  }
+}
+
+/** axis: 0 = horizontal along +x, 1 = vertical along +y. */
+function strokeCheckeredSilhouettes(
+  pdf: JsPdf,
+  originX: number,
+  originY: number,
+  length: number,
+  axis: 0 | 1,
+  period: number,
+  span: number,
+  outward: 1 | -1,
+): void {
+  if (
+    !Number.isFinite(length) ||
+    length <= 0 ||
+    !Number.isFinite(period) ||
+    period <= 0
+  ) {
+    return;
+  }
+  const count = Math.max(2, Math.ceil(length / period));
+  for (let index = 0; index < count; index += 1) {
+    const along = ((index + 0.5) * length) / count;
+    const centerX = axis === 0 ? originX + along : originX;
+    const centerY = axis === 0 ? originY : originY + along;
+    const half = Math.min(span / 2, length / (count * 2.2));
+    const depth = Math.max(1.4, half * 0.95);
+    const tangentX = axis === 0 ? 1 : 0;
+    const tangentY = axis === 0 ? 0 : 1;
+    const normalX = axis === 0 ? 0 : outward;
+    const normalY = axis === 0 ? outward : 0;
+    strokeCheckeredPolyline(
+      pdf,
+      centerX + normalX * depth * 0.08,
+      centerY + normalY * depth * 0.08,
+      half,
+      depth,
+      tangentX,
+      tangentY,
+      normalX,
+      normalY,
+    );
+  }
+}
+
+function strokeCheckeredPolyline(
+  pdf: JsPdf,
+  centerX: number,
+  centerY: number,
+  half: number,
+  depth: number,
+  tangentX: number,
+  tangentY: number,
+  normalX: number,
+  normalY: number,
+): void {
+  if (
+    !Number.isFinite(half) ||
+    half <= 0 ||
+    !Number.isFinite(depth) ||
+    depth <= 0
+  ) {
+    return;
+  }
+  const point = (along: number, out: number): [number, number] => [
+    centerX + tangentX * along + normalX * out,
+    centerY + tangentY * along + normalY * out,
+  ];
+  const outline: Array<[number, number]> = [
+    point(-half, -depth * 0.05),
+    point(half, -depth * 0.05),
+    point(half, depth * 0.95),
+    point(-half, depth * 0.95),
+  ];
+  for (let index = 0; index < outline.length; index += 1) {
+    const [x0, y0] = outline[index]!;
+    const [x1, y1] = outline[(index + 1) % outline.length]!;
+    pdf.line(x0, y0, x1, y1);
+  }
+  // 2×2 grid.
+  const midH = point(0, depth * 0.45);
+  pdf.line(point(-half, depth * 0.45)[0], point(-half, depth * 0.45)[1], point(half, depth * 0.45)[0], point(half, depth * 0.45)[1]);
+  pdf.line(point(0, -depth * 0.05)[0], point(0, -depth * 0.05)[1], point(0, depth * 0.95)[0], point(0, depth * 0.95)[1]);
+  // Alternating cells: full cross densify (tile checker).
+  const fill = (a0: number, o0: number, a1: number, o1: number): void => {
+    const p00 = point(a0, o0);
+    const p11 = point(a1, o1);
+    const p01 = point(a0, o1);
+    const p10 = point(a1, o0);
+    pdf.line(p00[0], p00[1], p11[0], p11[1]);
+    pdf.line(p01[0], p01[1], p10[0], p10[1]);
+  };
+  fill(-half, -depth * 0.05, 0, depth * 0.45);
+  fill(0, depth * 0.45, half, depth * 0.95);
+  void midH;
 }
 
 /**
