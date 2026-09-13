@@ -1015,14 +1015,20 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css("[role='menu'][aria-label='框线位置'] button[role='menuitemradio']:first-child:focus")
         }
 
-        select "choose-thick-border" {
-            target = css("select[aria-label='框线样式']")
-            values = ["thick"]
+        click "open-thick-border" {
+            target = role("combobox", "框线样式")
         }
 
-        fill "choose-red-border" {
-            target = css("[aria-label='框线颜色']")
-            value = "#b42318"
+        click "choose-thick-border" {
+            target = role("option", "粗实线")
+        }
+
+        click "open-border-color" {
+            target = role("button", "框线颜色")
+        }
+
+        click "choose-red-border" {
+            target = role("option", "颜色 #c00000")
         }
 
         click "apply-outside-border" {

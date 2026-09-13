@@ -103,6 +103,23 @@
   padding: 0;
 }
 
+.work-document-ribbon
+  .work-document-font-actions
+  .work-document-underline-color {
+  height: 24px;
+  flex-basis: 26px;
+  width: 26px;
+}
+
+.work-document-ribbon
+  .work-document-font-actions
+  .work-document-underline-color
+  .work-office-color-trigger {
+  width: 26px;
+  min-width: 26px;
+  height: 24px;
+}
+
 .work-document-underline-menu {
   --work-office-menu-accent: var(--work-office-accent);
 
@@ -533,11 +550,43 @@
   width: 82px;
 }
 
+.work-document-ribbon .work-document-connector-kind-select {
+  width: 96px;
+}
+
+.work-document-ribbon .work-document-connector-width-select {
+  width: 72px;
+}
+
+.work-document-ribbon .work-document-connector-style-select {
+  width: 88px;
+}
+
+.work-document-ribbon .work-document-connector-arrow-select {
+  width: 104px;
+}
+
+.work-document-ribbon .work-document-picture-wrap-distance-select {
+  width: 120px;
+}
+
+.work-document-ribbon .work-document-text-box-shape-select {
+  width: 104px;
+}
+
+.work-document-ribbon .work-document-text-box-border-width-select {
+  width: 72px;
+}
+
+.work-document-ribbon .work-document-field-insert-select {
+  width: 136px;
+}
+
 .work-document-ribbon
   .work-office-ribbon-group
   > .work-document-page-setup-choice {
   display: grid;
-  width: 84px;
+  width: 118px;
   align-content: center;
   gap: 2px;
   padding-inline: 1px;
@@ -558,7 +607,7 @@
   .work-office-select
   > button[role="combobox"] {
   min-width: 0;
-  height: 28px;
+  height: 24px;
   gap: 4px;
   padding-inline: 6px 5px;
 }
@@ -838,7 +887,7 @@
 }
 
 .work-document-table-border-select > button[role="combobox"] {
-  height: 29px;
+  height: 24px;
   padding-inline: 6px 4px;
   font-size: 9px;
 }
@@ -848,7 +897,7 @@
 }
 
 .work-document-table-border-target-select > button[role="combobox"] {
-  height: 29px;
+  height: 24px;
   padding-inline: 6px 4px;
   font-size: 9px;
 }
@@ -890,7 +939,7 @@
 
 .work-document-table-layout-select > button[role="combobox"] {
   min-width: 86px;
-  height: 29px;
+  height: 24px;
   padding-inline: 7px 4px;
   font-size: 9px;
 }

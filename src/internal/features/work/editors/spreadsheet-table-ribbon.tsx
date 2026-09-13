@@ -6,7 +6,7 @@ import type {
   WorkSpreadsheetTable,
   WorkSpreadsheetTableStyle,
 } from '../work-types';
-import { OfficeCheckbox } from './office-controls';
+import { OfficeCheckbox, OfficeSelect } from './office-controls';
 import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
 import type {
   SpreadsheetEditorCanCommands,
@@ -263,13 +263,12 @@ function SpreadsheetTableTotalsMenu({
                   <strong>{column.name}</strong>
                   <label>
                     <span>函数</span>
-                    <select
-                      aria-label={`${column.name} 汇总函数`}
-                      data-selected-value={selected}
+                    <OfficeSelect
+                      ariaLabel={`${column.name} 汇总函数`}
                       disabled={!table.totalsRow}
                       value={selected}
-                      onChange={(event) => {
-                        const value = event.currentTarget.value;
+                      options={totalsFunctionOptions}
+                      onValueChange={(value) => {
                         if (value === 'none') {
                           patchColumn(offset, {
                             totalsFunction: null,
@@ -298,13 +297,7 @@ function SpreadsheetTableTotalsMenu({
                           });
                         }
                       }}
-                    >
-                      {totalsFunctionOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </label>
                   <label>
                     <span>标签</span>

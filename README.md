@@ -371,15 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.197.0` repairs ribbon dropdown layout across editors:
+Version `0.198.0` continues the ribbon dropdown UX pass:
 
-- **Presentation ribbon height** — remove the 44px toolbar crush so the shared
-  74px ribbon row can host font and align `OfficeSelect` controls.
-- **Ribbon select sizing** — Presentation font/align, Markdown paragraph style,
-  and Spreadsheet font-size selects use fixed ribbon widths; shared chrome sizes
-  select triggers, number fields, and color pickers to 24px.
-- **Portal menus** — floating `OfficeSelect` menus keep portal top/left instead
-  of trigger-relative offsets that misplace dropdown panels.
+- **Nested portal menus** — parent ribbon popovers stay open while
+  `OfficeSelect` / `OfficeColorPicker` menus are used inside them.
+- **Spreadsheet panels** — border style/color and table totals leave native
+  `<select>` / color inputs for shared Office controls.
+- **Document contextual ribbons** — page-setup, table, connector, picture,
+  text-box, and field-insert selects keep fixed widths on the shared 24px row;
+  underline color and Spreadsheet underline split match that height.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

@@ -42,12 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.197.0）
+## `main` 更新内容（0.198.0）
 
-共享功能区下拉布局已修复（演示文稿与 Markdown）：
+共享壳层：嵌套 portal 菜单不再关掉父级功能区弹出层：
 
-- 演示文稿工具条不再钉死 44px；字体与对齐 `OfficeSelect` 落在共享 74px 功能区行。
-- 浮动下拉菜单保持 portal 定位，面板在触发器下方打开而不是漂移。
+- 表格边框与汇总行离开原生 select，改用 `OfficeSelect` / `OfficeColorPicker`；
+  嵌套 portal 菜单不再关掉父级功能区弹出层。
+- 文档页面设置与情景功能区下拉在共享 24px 行上保持固定宽度。
 
 
 ## 按表面探索

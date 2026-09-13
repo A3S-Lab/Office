@@ -1424,7 +1424,9 @@ test('edits native totals-row functions, labels, and custom formulas', () => {
   const unitsFunction = within(menu).getByRole('combobox', {
     name: 'Units 汇总函数',
   });
-  fireEvent.change(unitsFunction, { target: { value: 'average' } });
+  expect(unitsFunction).toHaveAttribute('data-selected-value', 'sum');
+  fireEvent.click(unitsFunction);
+  fireEvent.click(screen.getByRole('option', { name: '平均值' }));
   expect(patches.at(-1)).toEqual({
     totalsColumns: {
       1: { totalsFunction: 'average', totalsFormula: null, totalsLabel: null },
@@ -1434,7 +1436,8 @@ test('edits native totals-row functions, labels, and custom formulas', () => {
   const stateFunction = within(menu).getByRole('combobox', {
     name: 'State 汇总函数',
   });
-  fireEvent.change(stateFunction, { target: { value: 'custom' } });
+  fireEvent.click(stateFunction);
+  fireEvent.click(screen.getByRole('option', { name: '自定义' }));
   expect(patches.at(-1)).toEqual({
     totalsColumns: {
       2: {

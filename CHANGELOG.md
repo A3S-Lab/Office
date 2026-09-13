@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.198.0 - 2026-09-13
+
+### Shared shell
+
+- Nested portal dropdowns no longer dismiss their parent ribbon popover on
+  outside pointer or focus moves into a higher layer. Spreadsheet border and
+  table totals panels use `OfficeSelect` / `OfficeColorPicker` instead of native
+  `<select>` and color inputs. Document page-setup, table, connector, picture,
+  text-box, and field-insert ribbon selects keep fixed widths with 24px triggers;
+  Spreadsheet underline split and Document underline color align to the same
+  24px row. `OfficeSelect` and `OfficeColorPicker` expose `data-selected-value`
+  for e2e assertions.
+
 ## 0.197.0 - 2026-09-13
 
 ### Shared shell

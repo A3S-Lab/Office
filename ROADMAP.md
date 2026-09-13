@@ -64,9 +64,10 @@ These are already the default contract. Do not trade them away for breadth:
    structures stay fail-closed with diagnostics.
 2. One user intent produces one controlled update and one Undo record.
 3. Shared ribbon / shortcut / focus contracts across the five surfaces, with
-   a3s-test and Playwright evidence. Through `0.197.0`, Presentation no longer
-   crushes the ribbon to 44px, and Presentation / Markdown ribbon `OfficeSelect`
-   controls use fixed widths with portal-safe floating menus.
+   a3s-test and Playwright evidence. Through `0.198.0`, nested portal ribbon
+   menus keep parent popovers open, Spreadsheet border/table totals use
+   `OfficeSelect` / `OfficeColorPicker`, and Document contextual ribbon selects
+   keep fixed widths on the shared 24px row.
 4. Typed host ports for Yjs, presence, and agents—without shipping cloud
    accounts, storage, or model providers inside this package.
 

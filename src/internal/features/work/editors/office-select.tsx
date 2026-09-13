@@ -93,6 +93,7 @@ export function OfficeSelect<T extends string>({
           role="combobox"
           aria-expanded={popoverOpen}
           aria-keyshortcuts={ariaKeyShortcuts}
+          data-selected-value={value}
           data-autofocus={initialFocus ? 'true' : undefined}
           onClick={(event) => {
             if (!popoverOpen) {

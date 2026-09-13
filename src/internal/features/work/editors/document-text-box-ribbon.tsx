@@ -113,6 +113,7 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
     <>
       <WorkOfficeRibbonGroup label="形状" priority="high">
         <OfficeSelect<WorkDocumentShapeType>
+          className="work-document-text-box-shape-select"
           ariaLabel="文本框形状"
           value={properties.shapeType}
           options={shapeOptions}
@@ -285,6 +286,7 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
           onValueChange={(borderColor) => update({ borderColor })}
         />
         <OfficeSelect
+          className="work-document-text-box-border-width-select"
           ariaLabel="文本框边框粗细"
           value={String(properties.borderWidth)}
           options={borderWidthOptionsForValue(String(properties.borderWidth))}

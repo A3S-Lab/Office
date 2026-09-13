@@ -1296,6 +1296,7 @@ function DocumentFieldSelect({
 }) {
   return (
     <OfficeSelect
+      className="work-document-field-insert-select"
       ariaLabel="插入页码、日期或统计域"
       value=""
       options={[

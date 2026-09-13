@@ -167,11 +167,17 @@
   line-height: 1;
 }
 
-.work-spreadsheet-table-totals-column select,
+.work-spreadsheet-table-totals-column .work-office-select,
 .work-spreadsheet-table-totals-column input {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
+}
+
+.work-spreadsheet-table-totals-column
+  .work-office-select
+  > button[role="combobox"],
+.work-spreadsheet-table-totals-column input {
   height: 28px;
   padding: 0 7px;
   border: 1px solid var(--a3s-line-strong);
@@ -181,7 +187,9 @@
   font-size: 11px;
 }
 
-.work-spreadsheet-table-totals-column select:disabled,
+.work-spreadsheet-table-totals-column
+  .work-office-select
+  > button[role="combobox"]:disabled,
 .work-spreadsheet-table-totals-column input:disabled {
   cursor: not-allowed;
   opacity: 0.55;

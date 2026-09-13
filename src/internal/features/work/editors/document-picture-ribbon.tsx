@@ -186,6 +186,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
       </WorkOfficeRibbonGroup>
       <WorkOfficeRibbonGroup label="与文字距离">
         <OfficeSelect
+          className="work-document-picture-wrap-distance-select"
           ariaLabel="图片与文字距离"
           value={wrapDistanceValue}
           options={imageWrapDistanceOptionsForValue(wrapDistanceValue)}

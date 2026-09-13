@@ -84,16 +84,14 @@ test('supports keyboard border selection with persistent line and color settings
   fireEvent.keyDown(menu, { key: 'Home' });
   expect(top).toHaveFocus();
 
-  fireEvent.change(within(dialog).getByRole('combobox', { name: '框线样式' }), {
-    target: { value: 'thick' },
-  });
-  fireEvent.change(within(dialog).getByLabelText('框线颜色'), {
-    target: { value: '#b42318' },
-  });
+  fireEvent.click(within(dialog).getByRole('combobox', { name: '框线样式' }));
+  fireEvent.click(screen.getByRole('option', { name: '粗实线' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: '框线颜色' }));
+  fireEvent.click(screen.getByRole('option', { name: '颜色 #c00000' }));
   fireEvent.click(outside);
 
   expect(formats).toEqual([
-    { target: 'outside', color: '#b42318', style: 'thick' },
+    { target: 'outside', color: '#c00000', style: 'thick' },
   ]);
   expect(screen.queryByRole('dialog', { name: '框线设置' })).toBeNull();
   expect(disclosure).toHaveFocus();
@@ -105,12 +103,12 @@ test('supports keyboard border selection with persistent line and color settings
   );
   expect(primary).toHaveAttribute(
     'title',
-    '外侧框线（粗实线，#B42318；Cmd/Ctrl+Shift+&）',
+    '外侧框线（粗实线，#C00000；Cmd/Ctrl+Shift+&）',
   );
   fireEvent.click(primary);
   expect(formats).toEqual([
-    { target: 'outside', color: '#b42318', style: 'thick' },
-    { target: 'outside', color: '#b42318', style: 'thick' },
+    { target: 'outside', color: '#c00000', style: 'thick' },
+    { target: 'outside', color: '#c00000', style: 'thick' },
   ]);
 });
 

@@ -1,6 +1,8 @@
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { OfficeColorPicker, OfficeSelect } from './office-controls';
+import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import type {
   SpreadsheetCellBorderFormat,
   SpreadsheetCellBorderStyle,
@@ -11,7 +13,6 @@ import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
-import { moveOfficeMenuFocus } from './office-menu-keyboard';
 
 const spreadsheetBorderStyleOptions: readonly {
   value: SpreadsheetCellBorderStyle;
@@ -177,36 +178,20 @@ export function SpreadsheetBorderRibbon({
           <div className="work-spreadsheet-border-settings">
             <label>
               <span>线型</span>
-              <select
-                aria-label="框线样式"
+              <OfficeSelect<SpreadsheetCellBorderStyle>
+                ariaLabel="框线样式"
                 value={style}
-                onChange={(event) =>
-                  setStyle(event.target.value as SpreadsheetCellBorderStyle)
-                }
-              >
-                {spreadsheetBorderStyleOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                options={spreadsheetBorderStyleOptions}
+                onValueChange={setStyle}
+              />
             </label>
             <label>
               <span>颜色</span>
-              <span className="work-spreadsheet-border-color-control">
-                <span
-                  className="work-spreadsheet-border-color-swatch"
-                  style={{ backgroundColor: color }}
-                  aria-hidden="true"
-                />
-                <input
-                  type="color"
-                  aria-label="框线颜色"
-                  value={color}
-                  onChange={(event) => setColor(event.target.value)}
-                />
-                <output>{color.toUpperCase()}</output>
-              </span>
+              <OfficeColorPicker
+                ariaLabel="框线颜色"
+                value={color}
+                onValueChange={setColor}
+              />
             </label>
           </div>
         </>

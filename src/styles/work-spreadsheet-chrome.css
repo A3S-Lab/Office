@@ -930,26 +930,32 @@
   border-radius: 6px;
 }
 
+.work-office-ribbon
+  .work-office-toolbar
+  .work-spreadsheet-underline-split-root {
+  height: 24px;
+}
+
 .work-office-ribbon .work-office-toolbar .work-spreadsheet-underline-primary,
 .work-office-ribbon
   .work-office-toolbar
   .work-spreadsheet-underline-disclosure {
-  height: 29px;
+  height: 24px;
   padding: 0;
   border-radius: 0;
 }
 
 .work-office-ribbon .work-office-toolbar .work-spreadsheet-underline-primary {
-  width: 29px;
-  min-width: 29px;
+  width: 23px;
+  min-width: 23px;
   border-radius: 6px 0 0 6px;
 }
 
 .work-office-ribbon
   .work-office-toolbar
   .work-spreadsheet-underline-disclosure {
-  width: 16px;
-  min-width: 16px;
+  width: 12px;
+  min-width: 12px;
   border-left: 1px solid color-mix(in srgb, var(--a3s-line) 72%, transparent);
   border-radius: 0 6px 6px 0;
 }
@@ -1266,52 +1272,18 @@
   font-size: 10px;
 }
 
-.work-spreadsheet-border-settings select,
-.work-spreadsheet-border-color-control {
+.work-spreadsheet-border-settings .work-office-select,
+.work-spreadsheet-border-settings .work-office-color-picker {
   width: 100%;
-  height: 30px;
   min-width: 0;
-  border: 1px solid var(--a3s-line);
-  border-radius: 6px;
-  background: var(--a3s-panel);
-  color: var(--a3s-ink);
-  font: inherit;
 }
 
-.work-spreadsheet-border-settings select {
-  padding-inline: 7px;
-}
-
-.work-spreadsheet-border-color-control {
-  position: relative;
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  align-items: center;
-  gap: 5px;
-  padding: 0 6px;
-}
-
-.work-spreadsheet-border-color-control input {
-  position: absolute;
-  inset: 0;
+.work-spreadsheet-border-settings .work-office-select > button[role="combobox"],
+.work-spreadsheet-border-settings .work-office-color-trigger {
   width: 100%;
-  height: 100%;
-  cursor: pointer;
-  opacity: 0;
-}
-
-.work-spreadsheet-border-color-swatch {
-  width: 16px;
-  height: 16px;
-  border: 1px solid var(--a3s-line-strong);
-  border-radius: 4px;
-}
-
-.work-spreadsheet-border-color-control output {
-  overflow: hidden;
-  color: var(--a3s-muted);
-  font-size: 9px;
-  text-overflow: ellipsis;
+  min-width: 0;
+  height: 28px;
+  box-sizing: border-box;
 }
 
 @media (max-width: 480px) {

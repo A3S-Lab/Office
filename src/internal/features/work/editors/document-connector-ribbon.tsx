@@ -117,6 +117,7 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
     <>
       <WorkOfficeRibbonGroup label="连接线" priority="high">
         <OfficeSelect<WorkDocumentConnectorKind>
+          className="work-document-connector-kind-select"
           ariaLabel="连接符类型"
           value={properties.connectorKind}
           options={connectorKindOptions}
@@ -131,6 +132,7 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           onValueChange={(lineColor) => update({ lineColor })}
         />
         <OfficeSelect
+          className="work-document-connector-width-select"
           ariaLabel="连接符线条粗细"
           value={String(properties.lineWidth)}
           options={widthOptionsForValue(String(properties.lineWidth))}
@@ -138,6 +140,7 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           onValueChange={(value) => update({ lineWidth: Number(value) })}
         />
         <OfficeSelect<WorkDocumentConnectorLineStyle>
+          className="work-document-connector-style-select"
           ariaLabel="连接符线条样式"
           value={properties.lineStyle}
           options={lineStyleOptions}
@@ -145,6 +148,7 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           onValueChange={(lineStyle) => update({ lineStyle })}
         />
         <OfficeSelect<WorkDocumentConnectorArrow>
+          className="work-document-connector-arrow-select"
           ariaLabel="连接符起点箭头"
           value={properties.startArrow}
           options={arrowOptions}
@@ -153,6 +157,7 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
         />
         <ArrowUpRight size={18} aria-hidden="true" />
         <OfficeSelect<WorkDocumentConnectorArrow>
+          className="work-document-connector-arrow-select"
           ariaLabel="连接符终点箭头"
           value={properties.endArrow}
           options={arrowOptions}

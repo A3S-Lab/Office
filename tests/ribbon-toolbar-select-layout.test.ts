@@ -58,3 +58,47 @@ test('ported OfficeSelect menus keep floating top/left instead of trigger-relati
   );
   expect(css).toMatch(/\.work-office-select-menu\[data-floating="true"\]/);
 });
+
+test('Document page-setup ribbon choices are wide enough for Chinese labels', () => {
+  const css = readFileSync(
+    join(stylesRoot, 'work-document-controls.css'),
+    'utf8',
+  );
+  expect(css).toContain('.work-document-page-setup-choice');
+  expect(css).toMatch(
+    /\.work-document-ribbon[\s\S]*\.work-document-page-setup-choice[\s\S]*width:\s*118px/m,
+  );
+  expect(css).toMatch(
+    /\.work-document-page-setup-choice[\s\S]*button\[role="combobox"\][\s\S]*height:\s*24px/m,
+  );
+});
+
+test('Spreadsheet border settings use OfficeSelect and OfficeColorPicker, not native select', () => {
+  const css = readFileSync(
+    join(stylesRoot, 'work-spreadsheet-chrome.css'),
+    'utf8',
+  );
+  expect(css).toContain(
+    '.work-spreadsheet-border-settings .work-office-select',
+  );
+  expect(css).toContain(
+    '.work-spreadsheet-border-settings .work-office-color-picker',
+  );
+  expect(css).not.toMatch(/\.work-spreadsheet-border-settings\s+select\b/);
+});
+
+test('Document contextual ribbon selects keep fixed widths and 24px table comboboxes', () => {
+  const css = readFileSync(
+    join(stylesRoot, 'work-document-controls.css'),
+    'utf8',
+  );
+  expect(css).toContain('.work-document-connector-kind-select');
+  expect(css).toContain('.work-document-field-insert-select');
+  expect(css).toContain('.work-document-picture-wrap-distance-select');
+  expect(css).toMatch(
+    /\.work-document-table-border-select\s*>\s*button\[role="combobox"\]\s*\{[^}]*height:\s*24px/s,
+  );
+  expect(css).toMatch(
+    /\.work-document-table-layout-select\s*>\s*button\[role="combobox"\]\s*\{[^}]*height:\s*24px/s,
+  );
+});

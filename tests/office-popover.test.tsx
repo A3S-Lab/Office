@@ -2,6 +2,55 @@ import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Popover } from '../src/internal/design-system/primitives';
 
+test('keeps a parent portal dialog open while a nested portal menu is used', async () => {
+  render(
+    <Popover
+      label="Open borders"
+      panelLabel="Border settings"
+      panelRole="dialog"
+      portal
+      trigger={(triggerProps) => (
+        <button {...triggerProps}>Open borders</button>
+      )}
+    >
+      <Popover
+        label="Line style"
+        panelLabel="Line style"
+        panelRole="listbox"
+        portal
+        trigger={(triggerProps) => (
+          <button {...triggerProps} role="combobox">
+            Thin
+          </button>
+        )}
+      >
+        {(close) => (
+          <button type="button" role="option" onClick={close}>
+            Thick
+          </button>
+        )}
+      </Popover>
+    </Popover>,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Open borders' }));
+  expect(screen.getByRole('dialog', { name: 'Border settings' })).toBeVisible();
+
+  fireEvent.click(screen.getByRole('combobox', { name: 'Line style' }));
+  const option = screen.getByRole('option', { name: 'Thick' });
+  expect(option).toBeVisible();
+
+  fireEvent.pointerDown(option);
+  expect(screen.getByRole('dialog', { name: 'Border settings' })).toBeVisible();
+  expect(screen.getByRole('listbox', { name: 'Line style' })).toBeVisible();
+
+  fireEvent.click(option);
+  await waitFor(() =>
+    expect(screen.queryByRole('listbox', { name: 'Line style' })).toBeNull(),
+  );
+  expect(screen.getByRole('dialog', { name: 'Border settings' })).toBeVisible();
+});
+
 test('carries the editor control accent into a portal panel', () => {
   render(
     <section data-a3s-office data-theme="dark">

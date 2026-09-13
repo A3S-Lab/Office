@@ -195,6 +195,7 @@ export function OfficeColorPicker({
           {...triggerProps}
           className="work-office-color-trigger"
           title={ariaLabel}
+          data-selected-value={value}
         >
           {triggerIcon ? (
             <span className="work-office-color-trigger-icon" aria-hidden="true">

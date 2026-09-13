@@ -1,5 +1,64 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.198.0',
+    date: '2026-09-13',
+    kind: 'fixed',
+    surfaces: ['writer', 'spreadsheet', 'documentation'],
+    title: {
+      en: 'Ribbon nested dropdowns and native selects repaired',
+      zh: '功能区嵌套下拉与原生选择框修复',
+    },
+    summary: {
+      en: 'Shared shell: nested portal menus keep parent ribbon popovers open; Spreadsheet border/table totals use OfficeSelect and OfficeColorPicker; Document page-setup and contextual ribbon selects keep fixed widths at 24px; underline and table combobox heights match the ribbon row; select and color triggers expose data-selected-value for e2e.',
+      zh: '共享壳层：嵌套 portal 菜单不再关掉父级功能区弹出层；表格边框/汇总行使用 OfficeSelect 与 OfficeColorPicker；文档页面设置与情景功能区下拉保持固定宽度并对齐 24px；下划线与表格组合框高度对齐功能区行；下拉与颜色触发器暴露 data-selected-value 供 e2e 断言。',
+    },
+    highlights: [
+      {
+        title: { en: 'Nested portal dismiss', zh: '嵌套 portal 关闭行为' },
+        detail: {
+          en: 'Pointer and focus outside-dismiss ignore higher open layers so border/style color menus stay usable inside ribbon popovers.',
+          zh: '指针与焦点的外侧关闭会忽略更高层打开的菜单，使边框样式/颜色菜单在功能区弹出层内可用。',
+        },
+      },
+      {
+        title: {
+          en: 'OfficeSelect migration in Spreadsheet panels',
+          zh: '表格面板迁移到 OfficeSelect',
+        },
+        detail: {
+          en: 'Border style/color and table totals functions leave native select/color inputs for shared Office controls.',
+          zh: '边框样式/颜色与表格汇总函数离开原生 select/颜色输入，改用共享 Office 控件。',
+        },
+      },
+      {
+        title: {
+          en: '24px contextual ribbon selects',
+          zh: '24px 情景功能区下拉',
+        },
+        detail: {
+          en: 'Page-setup, table, connector, picture, text-box, field-insert, and underline controls keep readable fixed widths on the shared 24px row.',
+          zh: '页面设置、表格、连接符、图片、文本框、域插入与下划线控件在共享 24px 行上保持可读固定宽度。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/spreadsheet.html',
+          zh: './components/spreadsheet.html',
+        },
+        label: { en: 'Spreadsheet editor', zh: '电子表格编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.198.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.198.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.197.0',
     date: '2026-09-13',
     kind: 'fixed',

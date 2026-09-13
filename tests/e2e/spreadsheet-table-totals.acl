@@ -65,25 +65,31 @@ suite "office-spreadsheet-table-totals" {
         }
 
         expect "units-sum-selected" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数'][data-selected-value='sum']")
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] [role='combobox'][aria-label='Units 汇总函数'][data-selected-value='sum']")
         }
 
-        select "change-units-function" {
-            target = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数']")
-            values = ["average"]
+        click "open-units-function" {
+            target = role("combobox", "Units 汇总函数")
+        }
+
+        click "change-units-function" {
+            target = role("option", "平均值")
         }
 
         wait "units-average-ready" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数'][data-selected-value='average']")
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] [role='combobox'][aria-label='Units 汇总函数'][data-selected-value='average']")
         }
 
         expect "units-average-selected" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Units 汇总函数'][data-selected-value='average']")
+            visible = css("[role='dialog'][aria-label='表格汇总行设置'] [role='combobox'][aria-label='Units 汇总函数'][data-selected-value='average']")
         }
 
-        select "choose-custom-function" {
-            target = css("[role='dialog'][aria-label='表格汇总行设置'] select[aria-label='Revenue 汇总函数']")
-            values = ["custom"]
+        click "open-revenue-function" {
+            target = role("combobox", "Revenue 汇总函数")
+        }
+
+        click "choose-custom-function" {
+            target = role("option", "自定义")
         }
 
         wait "custom-formula-ready" {

@@ -42,17 +42,32 @@ const PORTAL_INHERITED_CUSTOM_PROPERTIES = [
   '--work-office-control-accent',
 ] as const;
 
-const openPopoverStack: symbol[] = [];
+type OpenPopoverLayer = {
+  token: symbol;
+  contains: (node: Node) => boolean;
+};
 
-function pushOpenPopover(token: symbol) {
-  const existing = openPopoverStack.indexOf(token);
-  if (existing >= 0) openPopoverStack.splice(existing, 1);
-  openPopoverStack.push(token);
+const openPopoverLayers: OpenPopoverLayer[] = [];
+
+function pushOpenPopover(layer: OpenPopoverLayer) {
+  const existing = openPopoverLayers.findIndex(
+    (entry) => entry.token === layer.token,
+  );
+  if (existing >= 0) openPopoverLayers.splice(existing, 1);
+  openPopoverLayers.push(layer);
 }
 
 function removeOpenPopover(token: symbol) {
-  const index = openPopoverStack.lastIndexOf(token);
-  if (index >= 0) openPopoverStack.splice(index, 1);
+  const index = openPopoverLayers.findIndex((entry) => entry.token === token);
+  if (index >= 0) openPopoverLayers.splice(index, 1);
+}
+
+function isInsideHigherOpenPopover(token: symbol, target: Node): boolean {
+  const index = openPopoverLayers.findIndex((entry) => entry.token === token);
+  if (index < 0) return false;
+  return openPopoverLayers
+    .slice(index + 1)
+    .some((layer) => layer.contains(target));
 }
 
 export function Popover({
@@ -206,20 +221,24 @@ export function Popover({
   useEffect(() => {
     if (!open) return;
     const token = tokenRef.current;
-    pushOpenPopover(token);
+    const contains = (node: Node) =>
+      Boolean(
+        rootRef.current?.contains(node) ||
+          panelElementRef.current?.contains(node),
+      );
+    pushOpenPopover({ token, contains });
 
     const closeFromOutside = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        (rootRef.current?.contains(event.target) ||
-          panelElementRef.current?.contains(event.target))
-      ) {
-        return;
-      }
+      if (!(event.target instanceof Node)) return;
+      if (contains(event.target)) return;
+      // Nested portal menus live outside this panel; keep the parent open
+      // while a higher layer owns the pointer target.
+      if (isInsideHigherOpenPopover(token, event.target)) return;
       updateOpen(false);
     };
     const closeFromKeyboard = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || openPopoverStack.at(-1) !== token) return;
+      if (event.key !== 'Escape' || openPopoverLayers.at(-1)?.token !== token)
+        return;
       event.preventDefault();
       event.stopPropagation();
       close();
@@ -237,12 +256,14 @@ export function Popover({
     if (!open) return;
     const root = rootRef.current;
     const panel = panelElementRef.current;
+    const token = tokenRef.current;
     const closeFromFocusOut = (event: FocusEvent) => {
       const nextTarget = event.relatedTarget;
       if (
         nextTarget instanceof Node &&
         (rootRef.current?.contains(nextTarget) ||
-          panelElementRef.current?.contains(nextTarget))
+          panelElementRef.current?.contains(nextTarget) ||
+          isInsideHigherOpenPopover(token, nextTarget))
       ) {
         return;
       }
