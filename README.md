@@ -371,12 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.220.0` keeps Document **段落样式库** compact after heading 4–6 honesty:
+Version `0.221.0` keeps Spreadsheet **字号** honest for unformatted cells:
 
-- **One ribbon row** — Gallery chips scroll horizontally instead of wrapping to a
-  second row that broke the desktop height contract.
-- **Closed labels stay honest** — Levels 4–6 remain selectable in the gallery and
-  the compact **段落样式** combobox.
+- **Closed label matches paint** — Ribbon and Format Cells show `11` when the
+  cell has no explicit `fs`, matching FortuneSheet `defaultFontSize`.
+- **Single default** — Grow/shrink stepping uses the same
+  `DEFAULT_SPREADSHEET_FONT_SIZE` constant as the canvas.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

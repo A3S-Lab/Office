@@ -121,6 +121,7 @@ import {
   createSpreadsheetFormatCellsDialogSource,
   type SpreadsheetFormatCellsDialogSource,
 } from './spreadsheet-format-cells-dialog-model';
+import { DEFAULT_SPREADSHEET_FONT_SIZE } from './spreadsheet-font-size';
 import { spreadsheetFreezePanesStatus } from './spreadsheet-freeze-panes';
 import {
   resolveSpreadsheetGoToTarget,
@@ -2151,7 +2152,7 @@ function SpreadsheetEditorSurface({
             columnHeaderHeight={headingsVisible ? 24 : 0}
             defaultRowHeight={24}
             defaultColWidth={96}
-            defaultFontSize={11}
+            defaultFontSize={DEFAULT_SPREADSHEET_FONT_SIZE}
             filterContextMenu={SPREADSHEET_AUTO_FILTER_MENU_ITEMS}
             hooks={workbookHooks}
             onChange={handleWorkbookChange}

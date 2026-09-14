@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.221.0 - 2026-09-14
+
+### Spreadsheet
+
+- Unformatted-cell **字号** closed label and Format Cells font size match the
+  FortuneSheet canvas default (`11`) instead of showing `10` while paint stays
+  at `11`. Grow/shrink stepping and ribbon/format-cells contracts use
+  `DEFAULT_SPREADSHEET_FONT_SIZE`.
+
 ## 0.220.0 - 2026-09-14
 
 ### Document

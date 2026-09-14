@@ -48,6 +48,10 @@ suite "office-spreadsheet-font-size-border-shortcuts" {
             target = role("combobox", "字号")
         }
 
+        expect "default-eleven-points-selected" {
+            visible = css("[role='listbox'][aria-label='字号'] [role='option'][aria-label='11'][aria-selected='true']")
+        }
+
         click "choose-nine-points" {
             target = role("option", "9")
         }

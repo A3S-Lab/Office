@@ -28,6 +28,7 @@ import {
   spreadsheetFontFamilyOptions,
   spreadsheetFontSizeOptions,
 } from './spreadsheet-editor-support';
+import { DEFAULT_SPREADSHEET_FONT_SIZE } from './spreadsheet-font-size';
 import {
   type SpreadsheetNumberFormatPreset,
   spreadsheetNumberFormatCode,
@@ -121,7 +122,7 @@ export function SpreadsheetFontRibbonGroup({
 }: SpreadsheetHomeFormatRibbonProps) {
   const fontFamily =
     typeof toolbarCell?.ff === 'string' ? toolbarCell.ff : 'Aptos';
-  const fontSize = Number(toolbarCell?.fs ?? 10);
+  const fontSize = Number(toolbarCell?.fs ?? DEFAULT_SPREADSHEET_FONT_SIZE);
   const bold = Number(toolbarCell?.bl) === 1;
   const italic = Number(toolbarCell?.it) === 1;
   const strike = Number(toolbarCell?.cl) === 1;

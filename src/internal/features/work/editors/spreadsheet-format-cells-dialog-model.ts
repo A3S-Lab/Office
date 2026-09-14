@@ -29,6 +29,7 @@ import {
   type SpreadsheetCellRange,
   spreadsheetCellRangeArea,
 } from './spreadsheet-cell-range';
+import { DEFAULT_SPREADSHEET_FONT_SIZE } from './spreadsheet-font-size';
 
 export {
   spreadsheetFormatCellsTabs,
@@ -171,7 +172,9 @@ export function createSpreadsheetFormatCellsDialogSource(
           : 'Aptos',
       ),
       fontSize: values((cell) =>
-        typeof cell?.fs === 'number' && Number.isFinite(cell.fs) ? cell.fs : 10,
+        typeof cell?.fs === 'number' && Number.isFinite(cell.fs)
+          ? cell.fs
+          : DEFAULT_SPREADSHEET_FONT_SIZE,
       ),
       fontColor: values((cell) => normalizedColor(cell?.fc, '#172033')),
       bold: values((cell) => Number(cell?.bl) === 1),

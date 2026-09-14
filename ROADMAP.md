@@ -91,6 +91,9 @@ These are already the default contract. Do not trade them away for breadth:
    Through `0.220.0`, Document **段落样式库** stays on one compact ribbon row
    via horizontal scroll after those extra heading chips, instead of wrapping
    into a second row that broke the desktop height contract.
+   Through `0.221.0`, Spreadsheet **字号** closed label and Format Cells default
+   use `11` for unformatted cells so they match FortuneSheet canvas paint
+   instead of showing `10`.
    Through `0.216.0`, curated
    What's new notes use the `writer` surface for Document work and reject unknown
    changelog surface keys so docs SSG cannot crash on a typo. Through `0.210.0`, Document table layout/border-target, Presentation

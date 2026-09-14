@@ -37,6 +37,68 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.221.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Spreadsheet font-size closed label matches canvas default',
+      zh: '电子表格字号关闭标签与画布默认一致',
+    },
+    summary: {
+      en: 'Spreadsheet: unformatted cells show 字号 11 on the ribbon and Format Cells dialog, matching FortuneSheet defaultFontSize instead of a dishonest 10.',
+      zh: '电子表格：未设置格式的单元格在功能区与设置单元格格式中显示字号 11，与 FortuneSheet defaultFontSize 一致，而不再错误显示 10。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Closed label is paint',
+          zh: '关闭标签即绘制',
+        },
+        detail: {
+          en: 'Missing cell.fs falls back to DEFAULT_SPREADSHEET_FONT_SIZE (11).',
+          zh: '缺少 cell.fs 时回退到 DEFAULT_SPREADSHEET_FONT_SIZE（11）。',
+        },
+      },
+      {
+        title: {
+          en: 'Format Cells aligned',
+          zh: '设置单元格格式对齐',
+        },
+        detail: {
+          en: 'The font tab default uses the same shared constant.',
+          zh: '字体选项卡默认值使用同一共享常量。',
+        },
+      },
+      {
+        title: {
+          en: 'Contracts',
+          zh: '契约',
+        },
+        detail: {
+          en: 'Unit, ribbon, and spreadsheet-font-size-border-shortcuts a3s-test cover the default closed value.',
+          zh: '单元、功能区与 spreadsheet-font-size-border-shortcuts a3s-test 覆盖默认关闭值。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.221.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.221.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.220.0',
     date: '2026-09-14',
     kind: 'fixed',

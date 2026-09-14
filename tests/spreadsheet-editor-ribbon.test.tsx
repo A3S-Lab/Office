@@ -584,6 +584,9 @@ test('routes WPS font, underline styles, vertical alignment, and wrapping throug
 
   const font = screen.getByRole('combobox', { name: '字体' });
   expect(font).toHaveTextContent('Arial');
+  expect(screen.getByRole('combobox', { name: '字号' })).toHaveTextContent(
+    '11',
+  );
   fireEvent.click(font);
   const simSun = screen.getByRole('option', { name: '宋体' });
   expect(simSun.querySelector('span')).toHaveAttribute(

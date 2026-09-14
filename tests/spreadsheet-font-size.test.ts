@@ -6,9 +6,14 @@ import {
   nextSpreadsheetFontSize,
   spreadsheetFontSizeApiCalls,
 } from '../src/internal/features/work/editors/spreadsheet-font-size-command';
+import { DEFAULT_SPREADSHEET_FONT_SIZE } from '../src/internal/features/work/editors/spreadsheet-font-size';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 
 describe('spreadsheet font-size stepping', () => {
+  test('default matches FortuneSheet canvas paint size for unformatted cells', () => {
+    expect(DEFAULT_SPREADSHEET_FONT_SIZE).toBe(11);
+  });
+
   test('moves custom and standard sizes through the shared WPS scale', () => {
     expect(nextSpreadsheetFontSize(10, 'grow')).toBe(11);
     expect(nextSpreadsheetFontSize(10.5, 'grow')).toBe(11);
