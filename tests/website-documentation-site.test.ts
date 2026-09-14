@@ -409,7 +409,9 @@ test('routes the concise README and documentation homes to the current release s
 
   expect(readme).toContain('## Current release');
   expect(readme).toContain('Version `0.213.0`');
-  expect(readme).toContain('turns Presentation object alignment into a command menu');
+  expect(readme).toContain(
+    'turns Presentation object alignment into a command menu',
+  );
   expect(readme).toContain('Align launcher');
   expect(readme).toContain('Coverage');
   expect(englishHome).toContain("## What's new on `main` (0.213.0)");
@@ -417,9 +419,7 @@ test('routes the concise README and documentation homes to the current release s
     'Presentation object alignment is a command menu',
   );
   expect(chineseHome).toContain('## `main` 更新内容（0.213.0）');
-  expect(chineseHome).toContain(
-    '演示对象对齐改为命令菜单',
-  );
+  expect(chineseHome).toContain('演示对象对齐改为命令菜单');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
   expect(readme).toContain(
