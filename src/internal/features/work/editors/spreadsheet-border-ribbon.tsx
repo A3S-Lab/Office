@@ -176,7 +176,7 @@ export function SpreadsheetBorderRibbon({
             )}
           </div>
           <div className="work-spreadsheet-border-settings">
-            <label>
+            <div className="work-office-field">
               <span>线型</span>
               <OfficeSelect<SpreadsheetCellBorderStyle>
                 ariaLabel="框线样式"
@@ -184,15 +184,15 @@ export function SpreadsheetBorderRibbon({
                 options={spreadsheetBorderStyleOptions}
                 onValueChange={setStyle}
               />
-            </label>
-            <label>
+            </div>
+            <div className="work-office-field">
               <span>颜色</span>
               <OfficeColorPicker
                 ariaLabel="框线颜色"
                 value={color}
                 onValueChange={setColor}
               />
-            </label>
+            </div>
           </div>
         </>
       )}

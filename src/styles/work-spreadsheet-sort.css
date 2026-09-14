@@ -125,15 +125,15 @@
   font-weight: 700;
 }
 
-.work-spreadsheet-sort-level > label,
-.work-spreadsheet-sort-order-controls > label {
+.work-spreadsheet-sort-level > .work-office-field,
+.work-spreadsheet-sort-order-controls > .work-office-field {
   display: grid;
   min-width: 0;
   gap: 4px;
 }
 
-.work-spreadsheet-sort-level > label > span,
-.work-spreadsheet-sort-order-controls > label > span {
+.work-spreadsheet-sort-level > .work-office-field > span,
+.work-spreadsheet-sort-order-controls > .work-office-field > span {
   color: var(--a3s-muted);
   font-size: 9px;
 }
@@ -498,7 +498,7 @@
   }
 
   .work-spreadsheet-sort-order-controls[data-appearance="true"]
-    > label:last-of-type {
+    > .work-spreadsheet-sort-position-field {
     grid-column: 1 / -1;
   }
 
@@ -514,7 +514,7 @@
   }
 
   .work-spreadsheet-sort-order-controls[data-appearance="true"]
-    > label:last-of-type {
+    > .work-spreadsheet-sort-position-field {
     grid-column: auto;
   }
 }

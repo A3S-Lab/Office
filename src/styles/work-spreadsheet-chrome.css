@@ -1264,7 +1264,7 @@
   border-top: 1px solid var(--a3s-line);
 }
 
-.work-spreadsheet-border-settings > label {
+.work-spreadsheet-border-settings > .work-office-field {
   display: grid;
   min-width: 0;
   gap: 5px;

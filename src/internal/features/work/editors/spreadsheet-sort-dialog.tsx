@@ -369,7 +369,7 @@ export function SpreadsheetSortDialog({
                   <legend>
                     {index === 0 ? '主要关键字' : `次要关键字 ${index}`}
                   </legend>
-                  <label>
+                  <div className="work-office-field">
                     <span>
                       {value.orientation === 'top-to-bottom' ? '列' : '行'}
                     </span>
@@ -396,7 +396,7 @@ export function SpreadsheetSortDialog({
                         );
                       }}
                     />
-                  </label>
+                  </div>
                   <SpreadsheetSortOrderControls
                     appearanceField={appearanceFields.find(
                       (candidate) => candidate.index === key.index,

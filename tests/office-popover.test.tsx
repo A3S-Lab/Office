@@ -19,7 +19,7 @@ test('keeps a parent portal dialog open while a nested portal menu is used', asy
         panelRole="listbox"
         portal
         trigger={(triggerProps) => (
-          <button {...triggerProps} role="combobox">
+          <button {...triggerProps} role="combobox" aria-expanded="false">
             Thin
           </button>
         )}

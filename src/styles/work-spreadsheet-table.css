@@ -155,13 +155,15 @@
   white-space: nowrap;
 }
 
-.work-spreadsheet-table-totals-column label {
+.work-spreadsheet-table-totals-column label,
+.work-spreadsheet-table-totals-column .work-office-field {
   display: grid;
   min-width: 0;
   gap: 3px;
 }
 
-.work-spreadsheet-table-totals-column label > span {
+.work-spreadsheet-table-totals-column label > span,
+.work-spreadsheet-table-totals-column .work-office-field > span {
   color: var(--a3s-muted);
   font-size: 9px;
   line-height: 1;

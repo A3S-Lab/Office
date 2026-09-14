@@ -261,7 +261,7 @@ function SpreadsheetTableTotalsMenu({
                   key={`${table.id}-${offset}`}
                 >
                   <strong>{column.name}</strong>
-                  <label>
+                  <div className="work-office-field">
                     <span>函数</span>
                     <OfficeSelect
                       ariaLabel={`${column.name} 汇总函数`}
@@ -298,7 +298,7 @@ function SpreadsheetTableTotalsMenu({
                         }
                       }}
                     />
-                  </label>
+                  </div>
                   <label>
                     <span>标签</span>
                     <input

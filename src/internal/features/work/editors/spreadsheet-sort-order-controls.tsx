@@ -90,7 +90,7 @@ export function SpreadsheetSortOrderControls({
       className="work-spreadsheet-sort-order-controls"
       data-appearance={sortOn === 'values' ? undefined : 'true'}
     >
-      <label>
+      <div className="work-office-field">
         <span>排序依据</span>
         <OfficeSelect
           ariaLabel={`排序条件 ${level} 排序依据`}
@@ -113,7 +113,7 @@ export function SpreadsheetSortOrderControls({
             }
           }}
         />
-      </label>
+      </div>
 
       {sortOn === 'values' ? (
         <SpreadsheetSortValueOrder
@@ -125,7 +125,7 @@ export function SpreadsheetSortOrderControls({
         />
       ) : (
         <>
-          <label>
+          <div className="work-office-field">
             <span>次序</span>
             <OfficeSelect
               ariaLabel={`排序条件 ${level} 目标外观`}
@@ -148,8 +148,8 @@ export function SpreadsheetSortOrderControls({
                 );
               }}
             />
-          </label>
-          <label>
+          </div>
+          <div className="work-office-field work-spreadsheet-sort-position-field">
             <span>位置</span>
             <OfficeSelect<'first' | 'last'>
               ariaLabel={`排序条件 ${level} 位置`}
@@ -167,7 +167,7 @@ export function SpreadsheetSortOrderControls({
                 );
               }}
             />
-          </label>
+          </div>
           {appearanceTarget ? (
             <div className="work-spreadsheet-sort-appearance-preview">
               {appearanceTarget.kind === 'icon' ? (
@@ -252,7 +252,7 @@ function SpreadsheetSortValueOrder({
   });
 
   return (
-    <label>
+    <div className="work-office-field">
       <span>次序</span>
       <OfficeSelect
         ariaLabel={`排序条件 ${level} 次序`}
@@ -278,7 +278,7 @@ function SpreadsheetSortValueOrder({
           });
         }}
       />
-    </label>
+    </div>
   );
 }
 
