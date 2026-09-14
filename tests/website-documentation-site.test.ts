@@ -419,9 +419,7 @@ test('routes the concise README and documentation homes to the current release s
     'Spreadsheet **字号** stays honest for unformatted cells',
   );
   expect(chineseHome).toContain('## `main` 更新内容（0.221.0）');
-  expect(chineseHome).toContain(
-    '电子表格「字号」对未设置格式的单元格保持诚实',
-  );
+  expect(chineseHome).toContain('电子表格「字号」对未设置格式的单元格保持诚实');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
   expect(readme).toContain(
