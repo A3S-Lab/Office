@@ -144,9 +144,7 @@ test('Spreadsheet persists, applies, and undoes a custom-list sort', async ({
   await expect(
     page.getByRole('option', { name: '北区 → 中区 → 南区' }),
   ).toBeVisible();
-  await expect(
-    page.getByRole('option', { name: '紧急 → 普通' }),
-  ).toBeVisible();
+  await expect(page.getByRole('option', { name: '紧急 → 普通' })).toBeVisible();
   await closeOfficeSelect(reopenedOrder);
   if (usesNarrowManagerLayout) {
     await page.setViewportSize({ width: 768, height: 800 });
@@ -202,9 +200,7 @@ test('Spreadsheet persists, applies, and undoes a custom-list sort', async ({
   await expect(
     page.getByRole('option', { name: '北区 → 中区 → 南区' }),
   ).toBeVisible();
-  await expect(
-    page.getByRole('option', { name: '紧急 → 普通' }),
-  ).toBeVisible();
+  await expect(page.getByRole('option', { name: '紧急 → 普通' })).toBeVisible();
   await expect(
     page.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
   ).toHaveCount(0);
