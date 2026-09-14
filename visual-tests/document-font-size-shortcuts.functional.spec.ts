@@ -34,17 +34,18 @@ test('Writer steps font size with WPS grow and shrink shortcuts', async ({
   const title = page.locator('.work-document-editable .ProseMirror h1').first();
   await title.click();
   await selectBlockText(title);
+  // h1 CSS paint is 24px → 18pt; grow/shrink must step from that, not body 10.5.
   await page.keyboard.press('Control+]');
   await expect(
-    title.locator("[style*='font-size: 12pt']").first(),
+    title.locator("[style*='font-size: 22pt']").first(),
   ).toBeVisible();
   await expect(textRibbon.getByRole('combobox', { name: '字号' })).toHaveText(
-    '12',
+    '22',
   );
 
   await page.keyboard.press('Control+[');
   await expect(
-    title.locator("[style*='font-size: 10.5pt']").first(),
+    title.locator("[style*='font-size: 18pt']").first(),
   ).toBeVisible();
   await expect(
     page.locator('.work-document-editable .ProseMirror'),

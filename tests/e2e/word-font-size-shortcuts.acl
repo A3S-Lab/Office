@@ -53,7 +53,7 @@ suite "office-word-font-size-shortcuts" {
         }
 
         expect "grown-font-size-applied" {
-            visible = css(".work-document-editable .ProseMirror h1 [style*='font-size: 12pt']")
+            visible = css(".work-document-editable .ProseMirror h1 [style*='font-size: 22pt']")
         }
 
         press "shrink-font" {
@@ -61,7 +61,7 @@ suite "office-word-font-size-shortcuts" {
         }
 
         expect "shrunk-font-size-applied" {
-            visible = css(".work-document-editable .ProseMirror h1 [style*='font-size: 10.5pt']")
+            visible = css(".work-document-editable .ProseMirror h1 [style*='font-size: 18pt']")
         }
 
         expect "editor-focus-restored" {

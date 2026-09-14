@@ -657,6 +657,7 @@ test('keeps heading 字号 and 行距 closed labels honest with CSS defaults', (
     extensions: createWorkDocumentExtensions(),
     content: '<h1>Heading size</h1>',
   });
+  editor.commands.setTextSelection(textRange(editor, 'Heading size'));
   const view = render(
     <DocumentHomeRibbon
       editor={editor}
@@ -676,6 +677,19 @@ test('keeps heading 字号 and 行距 closed labels honest with CSS defaults', (
   );
   expect(screen.getByRole('combobox', { name: '行距' })).not.toHaveTextContent(
     '默认行距',
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '增大字号' }));
+  expect(editor.getAttributes('textStyle').fontSize).toBe('22pt');
+  fireEvent.click(screen.getByRole('button', { name: '减小字号' }));
+  expect(editor.getAttributes('textStyle').fontSize).toBe('18pt');
+  editor.chain().unsetFontSize().run();
+  view.rerender(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
   );
 
   fireEvent.click(
