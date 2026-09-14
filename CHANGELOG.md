@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.218.0 - 2026-09-14
+
+### Spreadsheet
+
+- Custom Sort **次序** keeps an orphan custom-list closed label as state
+  (`自定义序列`) instead of the command name `新建自定义序列…` when the
+  active key's list is no longer in `customLists`. **新建自定义序列…** stays
+  an open-only command that starts list editing and never becomes the closed
+  value. Unit coverage pins `orphan-custom-list` on
+  `SpreadsheetSortOrderControls`.
+
 ## 0.217.0 - 2026-09-14
 
 ### Document

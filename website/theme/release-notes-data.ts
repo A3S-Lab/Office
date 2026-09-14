@@ -37,6 +37,68 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.218.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Custom Sort orphan order closed label stays honest',
+      zh: '自定义排序孤立次序关闭标签如实表示状态',
+    },
+    summary: {
+      en: 'Spreadsheet: Custom Sort 次序 shows 自定义序列 when the active custom list is missing from customLists, instead of the command name 新建自定义序列…. 新建自定义序列… only opens list editing.',
+      zh: '电子表格：自定义排序「次序」在活动自定义序列已不在 customLists 中时显示「自定义序列」，而不再显示命令名「新建自定义序列…」。「新建自定义序列…」只打开序列编辑。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Closed label is state',
+          zh: '关闭标签即状态',
+        },
+        detail: {
+          en: 'Orphan custom-list keys keep 自定义序列 on the closed combobox, never 新建自定义序列….',
+          zh: '孤立自定义序列键在关闭组合框上显示「自定义序列」，不再是「新建自定义序列…」。',
+        },
+      },
+      {
+        title: {
+          en: '新建自定义序列… stays a command',
+          zh: '「新建自定义序列…」仍为命令',
+        },
+        detail: {
+          en: 'Choosing 新建自定义序列… starts list editing and never becomes the closed value.',
+          zh: '选择「新建自定义序列…」开始编辑序列，不会成为关闭值。',
+        },
+      },
+      {
+        title: {
+          en: 'Contracts',
+          zh: '契约',
+        },
+        detail: {
+          en: 'Unit coverage pins orphan-custom-list on SpreadsheetSortOrderControls.',
+          zh: '单元覆盖将 orphan-custom-list 钉在 SpreadsheetSortOrderControls 上。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.218.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.218.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.217.0',
     date: '2026-09-14',
     kind: 'fixed',

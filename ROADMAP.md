@@ -82,6 +82,9 @@ These are already the default contract. Do not trade them away for breadth:
    `OfficeSelect` with a disabled empty closed value. Through `0.217.0`, Document page-layout **分栏** closed labels show the current
    column count (`四栏` / `五栏` / `六栏`) instead of the command name `更多分栏`,
    with counts 1–6 as options and **更多分栏** only opening the columns panel.
+   Through `0.218.0`, Spreadsheet Custom Sort **次序** shows `自定义序列` for an
+   orphan custom-list key instead of the command name `新建自定义序列…`, which
+   stays open-only.
    Through `0.216.0`, curated
    What's new notes use the `writer` surface for Document work and reject unknown
    changelog surface keys so docs SSG cannot crash on a typo. Through `0.210.0`, Document table layout/border-target, Presentation

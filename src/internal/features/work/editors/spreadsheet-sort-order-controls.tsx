@@ -1,24 +1,26 @@
+import { OfficeSelect, type OfficeSelectOption } from './office-controls';
 import type {
   SpreadsheetSortKey,
   SpreadsheetSortOrientation,
 } from './spreadsheet-sort';
 import {
   parseSpreadsheetSortAppearanceTargetValue,
+  type SpreadsheetSortAppearanceField,
+  type SpreadsheetSortAppearanceKind,
+  type SpreadsheetSortAppearanceTarget,
   spreadsheetSortAppearanceTargetLabel,
   spreadsheetSortAppearanceTargets,
   spreadsheetSortAppearanceTargetsEqual,
   spreadsheetSortAppearanceTargetValue,
-  type SpreadsheetSortAppearanceField,
-  type SpreadsheetSortAppearanceKind,
-  type SpreadsheetSortAppearanceTarget,
 } from './spreadsheet-sort-appearance';
 import {
-  spreadsheetSortCustomListsEqual,
   type SpreadsheetSortCustomList,
+  spreadsheetSortCustomListsEqual,
 } from './spreadsheet-sort-custom-list';
-import { OfficeSelect, type OfficeSelectOption } from './office-controls';
 
 const CREATE_CUSTOM_LIST_ORDER = 'create-custom-list';
+const ORPHAN_CUSTOM_LIST_ORDER = 'orphan-custom-list';
+const ORPHAN_CUSTOM_LIST_LABEL = '自定义序列';
 const CUSTOM_LIST_ORDER_PREFIX = 'custom-list:';
 
 export function SpreadsheetSortOrderControls({
@@ -246,6 +248,13 @@ function SpreadsheetSortValueOrder({
       });
     }
   });
+  const orderValue = spreadsheetSortOrderValue(sortKey, customLists);
+  if (orderValue === ORPHAN_CUSTOM_LIST_ORDER) {
+    orderOptions.push({
+      value: ORPHAN_CUSTOM_LIST_ORDER,
+      label: ORPHAN_CUSTOM_LIST_LABEL,
+    });
+  }
   orderOptions.push({
     value: CREATE_CUSTOM_LIST_ORDER,
     label: '新建自定义序列…',
@@ -256,11 +265,14 @@ function SpreadsheetSortValueOrder({
       <span>次序</span>
       <OfficeSelect
         ariaLabel={`排序条件 ${level} 次序`}
-        value={spreadsheetSortOrderValue(sortKey, customLists)}
+        value={orderValue}
         options={orderOptions}
         onValueChange={(order) => {
           if (order === CREATE_CUSTOM_LIST_ORDER) {
             onBeginCustomListEdit(sortKey.customList);
+            return;
+          }
+          if (order === ORPHAN_CUSTOM_LIST_ORDER) {
             return;
           }
           if (order === 'ascending' || order === 'descending') {
@@ -352,7 +364,7 @@ function spreadsheetSortKeyAppearanceTarget(
   return key.sortOn === 'icon' ? { kind: 'icon', icon: { ...key.icon } } : null;
 }
 
-function spreadsheetSortOrderValue(
+export function spreadsheetSortOrderValue(
   key: SpreadsheetSortKey,
   customLists: readonly SpreadsheetSortCustomList[],
 ): string {
@@ -361,7 +373,7 @@ function spreadsheetSortOrderValue(
     spreadsheetSortCustomListsEqual(customList.entries, key.customList ?? []),
   );
   return index < 0
-    ? CREATE_CUSTOM_LIST_ORDER
+    ? ORPHAN_CUSTOM_LIST_ORDER
     : `${CUSTOM_LIST_ORDER_PREFIX}${index}`;
 }
 

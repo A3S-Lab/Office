@@ -15,6 +15,7 @@ function expectOfficeSelectValue(ariaLabel: string, value: string) {
     value,
   );
 }
+
 import type {
   SpreadsheetSortCustomList,
   SpreadsheetSortDialogSource,
@@ -27,6 +28,10 @@ import {
   SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS,
 } from '../src/internal/features/work/editors/spreadsheet-sort-custom-list';
 import { SpreadsheetSortDialog } from '../src/internal/features/work/editors/spreadsheet-sort-dialog';
+import {
+  SpreadsheetSortOrderControls,
+  spreadsheetSortOrderValue,
+} from '../src/internal/features/work/editors/spreadsheet-sort-order-controls';
 
 test('authors, reorders, and applies accessible WPS multi-key sort levels', () => {
   const applied: SpreadsheetSortDialogValue[] = [];
@@ -413,6 +418,45 @@ test('rejects another authored list after the mounted-editor user-list bound', (
     screen.getByRole('textbox', { name: '排序条件 1 自定义序列' }),
   ).toHaveAttribute('aria-invalid', 'true');
   expect(remembered).toEqual([]);
+});
+
+test('keeps orphan custom-list closed label as state, not 新建自定义序列…', () => {
+  const orphanEntries = ['孤儿甲', '孤儿乙', '孤儿丙'];
+  expect(
+    spreadsheetSortOrderValue(
+      { index: 0, customList: orphanEntries },
+      SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS,
+    ),
+  ).toBe('orphan-custom-list');
+
+  const began: Array<readonly string[] | undefined> = [];
+  render(
+    <SpreadsheetSortOrderControls
+      appearanceField={undefined}
+      customLists={SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS}
+      level={1}
+      orientation="top-to-bottom"
+      sortKey={{ index: 0, customList: orphanEntries }}
+      onBeginCustomListEdit={(entries) => {
+        began.push(entries);
+      }}
+      onChange={() => undefined}
+    />,
+  );
+
+  const order = screen.getByRole('combobox', { name: '排序条件 1 次序' });
+  expect(order).toHaveAttribute('data-selected-value', 'orphan-custom-list');
+  expect(order).toHaveTextContent('自定义序列');
+  expect(order).not.toHaveTextContent('新建自定义序列…');
+
+  fireEvent.click(order);
+  expect(
+    screen.getByRole('option', { name: '自定义序列' }),
+  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('option', { name: '新建自定义序列…' }));
+  expect(began).toEqual([orphanEntries]);
+  expect(order).toHaveAttribute('data-selected-value', 'orphan-custom-list');
+  expect(order).toHaveTextContent('自定义序列');
 });
 
 test('authors cell-color, font-color, and conditional-icon sort levels', () => {
