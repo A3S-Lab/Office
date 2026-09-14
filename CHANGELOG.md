@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.210.0 - 2026-09-14
+
+### Chrome
+
+- Document table layout and border-target `OfficeSelect` triggers widen for
+  Chinese closed labels (`固定列宽` / `内部横框线`).
+- Presentation animation trigger field widens so `与上一动画同时` /
+  `上一动画之后` fit when closed.
+- Spreadsheet number-format stack and date-time trigger widen for
+  `会计专用` / `科学计数` / `日期和时间`.
+- Custom Sort level CSS drops orphaned native `select` rules after the
+  OfficeSelect migration (Custom Lists listbox styling stays).
+
 ## 0.209.0 - 2026-09-14
 
 ### Chrome

@@ -893,7 +893,7 @@
 }
 
 .work-document-table-border-target-select {
-  width: 110px;
+  width: 128px;
 }
 
 .work-document-table-border-target-select > button[role="combobox"] {
@@ -934,11 +934,11 @@
 }
 
 .work-document-table-layout-select {
-  width: 86px;
+  width: 104px;
 }
 
 .work-document-table-layout-select > button[role="combobox"] {
-  min-width: 86px;
+  min-width: 104px;
   height: 24px;
   padding-inline: 7px 4px;
   font-size: 9px;

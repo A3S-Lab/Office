@@ -191,19 +191,6 @@
     var(--a3s-panel);
 }
 
-.work-spreadsheet-sort-level select {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid var(--a3s-line-strong);
-  border-radius: 5px;
-  background: var(--a3s-panel);
-  color: var(--a3s-ink);
-  font-size: 11px;
-}
-
 .work-spreadsheet-sort-level-actions {
   display: flex;
   gap: 4px;

@@ -163,22 +163,22 @@
 .work-spreadsheet-ribbon-toolbar
   .work-office-select.work-spreadsheet-number-format
   > button {
-  width: 94px;
-  min-width: 94px;
-  flex-basis: 94px;
+  width: 112px;
+  min-width: 112px;
+  flex-basis: 112px;
 }
 
 .work-spreadsheet-number-format-stack {
   display: flex;
-  width: 94px;
+  width: 112px;
   height: 51px;
-  flex: 0 0 94px;
+  flex: 0 0 112px;
   flex-direction: column;
   gap: 2px;
 }
 
 .work-spreadsheet-number-format-stack > .work-spreadsheet-ribbon-menu-root {
-  width: 94px;
+  width: 112px;
   min-width: 0;
 }
 
@@ -186,8 +186,8 @@
   .work-office-toolbar
   .work-spreadsheet-number-format-stack
   .work-spreadsheet-date-time-trigger.with-label {
-  width: 94px;
-  min-width: 94px;
+  width: 112px;
+  min-width: 112px;
   height: 21px;
   flex-direction: row;
   justify-content: flex-start;
@@ -209,7 +209,7 @@
   .work-spreadsheet-number-format-stack
   .work-spreadsheet-date-time-trigger.with-label
   > span {
-  max-width: 66px;
+  max-width: 84px;
   font-size: 9px;
   line-height: 11px;
 }

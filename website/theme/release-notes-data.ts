@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.210.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['writer', 'spreadsheet', 'presentation', 'documentation'],
+    title: {
+      en: 'More ribbon/panel OfficeSelect widths for Chinese closed labels',
+      zh: '继续加宽功能区/面板 OfficeSelect 中文闭合标签',
+    },
+    summary: {
+      en: 'Shared shell: Document table layout and border-target OfficeSelect triggers widen; Presentation animation trigger fits 与上一动画同时 / 上一动画之后; Spreadsheet number-format stack and date-time trigger widen for 会计专用 / 科学计数 / 日期和时间; Custom Sort drops orphaned native select CSS.',
+      zh: '共享壳层：文档表格布局与边框目标 OfficeSelect 触发器加宽；演示文稿动画触发字段适配「与上一动画同时」「上一动画之后」；表格数字格式栈与日期时间触发器加宽以适配「会计专用」「科学计数」「日期和时间」；自定义排序删除残留的原生 select 样式。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Document table selects',
+          zh: '文档表格选择',
+        },
+        detail: {
+          en: 'Layout select 104px; border-target select 128px for Chinese closed labels.',
+          zh: '布局选择 104px；边框目标选择 128px，适配中文闭合标签。',
+        },
+      },
+      {
+        title: {
+          en: 'Presentation animation trigger',
+          zh: '演示文稿动画触发',
+        },
+        detail: {
+          en: 'Animation options trigger field widens to 168px.',
+          zh: '动画选项触发字段加宽到 168px。',
+        },
+      },
+      {
+        title: {
+          en: 'Spreadsheet number stack',
+          zh: '表格数字格式栈',
+        },
+        detail: {
+          en: 'Number-format OfficeSelect and date-time trigger use 112px; Custom Sort level CSS no longer styles native select.',
+          zh: '数字格式 OfficeSelect 与日期时间触发器改为 112px；自定义排序层级样式不再作用于原生 select。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.210.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.210.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.209.0',
     date: '2026-09-14',
     kind: 'fixed',

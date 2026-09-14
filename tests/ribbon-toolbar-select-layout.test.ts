@@ -48,6 +48,12 @@ test('Spreadsheet ribbon gives named OfficeSelects dedicated widths without a 62
   expect(css).not.toMatch(
     /\.work-spreadsheet-ribbon-toolbar\s+\.work-office-select\s*\{[^}]*width:\s*62px/s,
   );
+  expect(css).toMatch(
+    /\.work-office-select\.work-spreadsheet-number-format[\s\S]*?width:\s*112px/s,
+  );
+  expect(css).toMatch(
+    /\.work-spreadsheet-date-time-trigger\.with-label\s*>\s*span\s*\{[^}]*max-width:\s*84px/s,
+  );
 });
 
 test('Markdown ribbon gives the paragraph-style select a fixed ribbon width', () => {
@@ -113,14 +119,36 @@ test('Document contextual ribbon selects keep fixed widths and 24px table combob
     /\.work-document-ribbon\s+\.work-document-line-height-select\s*\{[^}]*width:\s*96px/s,
   );
   expect(css).toMatch(
-    /\.work-document-table-border-target-select\s*\{[^}]*width:\s*110px/s,
+    /\.work-document-table-border-target-select\s*\{[^}]*width:\s*128px/s,
   );
   expect(css).toMatch(
     /\.work-document-table-border-select\s*>\s*button\[role="combobox"\]\s*\{[^}]*height:\s*24px/s,
   );
   expect(css).toMatch(
+    /\.work-document-table-layout-select\s*\{[^}]*width:\s*104px/s,
+  );
+  expect(css).toMatch(
     /\.work-document-table-layout-select\s*>\s*button\[role="combobox"\]\s*\{[^}]*height:\s*24px/s,
   );
+});
+
+test('Presentation animation trigger select fits long Chinese closed labels', () => {
+  const css = readFileSync(
+    join(stylesRoot, 'work-presentation-animations.css'),
+    'utf8',
+  );
+  expect(css).toMatch(
+    /\.work-presentation-animation-options\s+\.work-office-field\.trigger\s*\{[^}]*width:\s*168px/s,
+  );
+});
+
+test('Spreadsheet sort levels no longer style orphaned native select', () => {
+  const css = readFileSync(
+    join(stylesRoot, 'work-spreadsheet-sort.css'),
+    'utf8',
+  );
+  expect(css).not.toMatch(/\.work-spreadsheet-sort-level\s+select\b/);
+  expect(css).toContain('.work-spreadsheet-sort-custom-list-manager select');
 });
 
 test('shared editor toolbar no longer styles native select', () => {
