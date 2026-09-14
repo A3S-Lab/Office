@@ -6,7 +6,11 @@ import type {
   WorkSpreadsheetTable,
   WorkSpreadsheetTableStyle,
 } from '../work-types';
-import { OfficeCheckbox, OfficeSelect } from './office-controls';
+import {
+  CommittedOfficeTextField,
+  OfficeCheckbox,
+  OfficeSelect,
+} from './office-controls';
 import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
 import type {
   SpreadsheetEditorCanCommands,
@@ -157,20 +161,6 @@ function SpreadsheetTableTotalsMenu({
   sheetId: string;
   table: WorkSpreadsheetTable;
 }) {
-  const [drafts, setDrafts] = useState<
-    Record<number, { formula: string; label: string }>
-  >({});
-  useEffect(() => {
-    const next: Record<number, { formula: string; label: string }> = {};
-    table.columns.forEach((column, offset) => {
-      next[offset] = {
-        formula: column.totalsFormula ?? '',
-        label: column.totalsLabel ?? '',
-      };
-    });
-    setDrafts(next);
-  }, [table.id, table.columns]);
-
   const patchColumn = (
     offset: number,
     patch: {
@@ -249,12 +239,10 @@ function SpreadsheetTableTotalsMenu({
               const selected = column.totalsFormula
                 ? 'custom'
                 : (column.totalsFunction ?? 'none');
-              const draft = drafts[offset] ?? {
-                formula: column.totalsFormula ?? '',
-                label: column.totalsLabel ?? '',
-              };
               const formulaEnabled = selected === 'custom';
               const labelEnabled = selected === 'none';
+              const committedLabel = column.totalsLabel ?? '';
+              const committedFormula = column.totalsFormula ?? '';
               return (
                 <div
                   className="work-spreadsheet-table-totals-column"
@@ -276,12 +264,8 @@ function SpreadsheetTableTotalsMenu({
                           });
                         } else if (value === 'custom') {
                           const formula =
-                            draft.formula ||
+                            committedFormula ||
                             `=SUM(${table.name}[${escapeTotalsColumnName(column.name)}])`;
-                          setDrafts((current) => ({
-                            ...current,
-                            [offset]: { ...draft, formula },
-                          }));
                           patchColumn(offset, {
                             totalsFunction: 'custom',
                             totalsFormula: formula,
@@ -301,51 +285,35 @@ function SpreadsheetTableTotalsMenu({
                   </div>
                   <label>
                     <span>标签</span>
-                    <input
+                    <CommittedOfficeTextField
                       aria-label={`${column.name} 汇总标签`}
                       disabled={!table.totalsRow || !labelEnabled}
-                      value={draft.label}
-                      onChange={(event) => {
-                        const value = event.currentTarget.value;
-                        setDrafts((current) => ({
-                          ...current,
-                          [offset]: { ...draft, label: value },
-                        }));
-                      }}
-                      onBlur={() => {
+                      value={committedLabel}
+                      formatValue={(value) => value}
+                      parseValue={(draft) => draft}
+                      onValueCommit={(value) => {
                         if (!labelEnabled) return;
                         patchColumn(offset, {
-                          totalsLabel: draft.label.trim() || null,
+                          totalsLabel: value.trim() || null,
                         });
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') event.currentTarget.blur();
                       }}
                     />
                   </label>
                   <label>
                     <span>自定义公式</span>
-                    <input
+                    <CommittedOfficeTextField
                       aria-label={`${column.name} 汇总公式`}
                       disabled={!table.totalsRow || !formulaEnabled}
                       placeholder="=SUM(Table[Column])"
-                      value={draft.formula}
-                      onChange={(event) => {
-                        const value = event.currentTarget.value;
-                        setDrafts((current) => ({
-                          ...current,
-                          [offset]: { ...draft, formula: value },
-                        }));
-                      }}
-                      onBlur={() => {
+                      value={committedFormula}
+                      formatValue={(value) => value}
+                      parseValue={(draft) => draft}
+                      onValueCommit={(value) => {
                         if (!formulaEnabled) return;
                         patchColumn(offset, {
                           totalsFunction: 'custom',
-                          totalsFormula: draft.formula.trim() || null,
+                          totalsFormula: value.trim() || null,
                         });
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') event.currentTarget.blur();
                       }}
                     />
                   </label>

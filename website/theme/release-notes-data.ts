@@ -37,6 +37,68 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.224.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Escape restores dirty Spreadsheet totals-row drafts before closing',
+      zh: 'Escape 在关闭汇总行弹出层前还原脏草稿',
+    },
+    summary: {
+      en: 'Spreadsheet: Escape on dirty Table Design 汇总标签 and 汇总公式 drafts restores the committed value before dismissing the totals popover.',
+      zh: '表格：在脏的「汇总标签」与「汇总公式」上按 Escape 时，先还原已提交值，再关闭汇总行弹出层。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Totals label',
+          zh: '汇总标签',
+        },
+        detail: {
+          en: 'Dirty label drafts restore instead of blur-committing on Escape.',
+          zh: '脏的标签草稿在 Escape 时还原，而不再因失焦提交。',
+        },
+      },
+      {
+        title: {
+          en: 'Custom formula',
+          zh: '自定义公式',
+        },
+        detail: {
+          en: 'Dirty formula drafts restore before the totals popover closes.',
+          zh: '脏的自定义公式在汇总行弹出层关闭前还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Shared committed text field',
+          zh: '共享提交文本框',
+        },
+        detail: {
+          en: 'Totals fields reuse CommittedOfficeTextField Escape consumers.',
+          zh: '汇总行字段复用 CommittedOfficeTextField 的 Escape 消费约定。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.224.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.224.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.223.0',
     date: '2026-09-15',
     kind: 'fixed',

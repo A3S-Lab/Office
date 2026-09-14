@@ -1452,6 +1452,70 @@ test('edits native totals-row functions, labels, and custom formulas', () => {
   });
 });
 
+test('cancels a dirty totals-label draft before Escape closes the totals popover', () => {
+  const patches: unknown[] = [];
+  const table = {
+    id: 'table-totals-escape',
+    name: 'Sales',
+    range: {
+      row: [0, 3] as [number, number],
+      column: [0, 0] as [number, number],
+    },
+    columns: [{ name: 'Item', totalsLabel: 'Total' }],
+    filters: [],
+    headerRow: true,
+    totalsRow: true,
+    style: { family: 'medium' as const, number: 2 },
+    showFirstColumn: false,
+    showLastColumn: false,
+    showRowStripes: true,
+    showColumnStripes: false,
+  };
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="tableDesign"
+      activeTable={table}
+      activeTableSheetId="sheet-1"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          updateTable: (_sheetId, _tableId, patch) => {
+            patches.push(patch);
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      findOpen={false}
+      gridLinesVisible
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '汇总行' });
+  fireEvent.click(trigger);
+  const label = screen.getByRole('textbox', { name: 'Item 汇总标签' });
+  fireEvent.change(label, { target: { value: 'Grand Total' } });
+  expect(label).toHaveValue('Grand Total');
+
+  fireEvent.keyDown(label, { key: 'Escape' });
+  expect(
+    screen.getByRole('dialog', { name: '表格汇总行设置' }),
+  ).toBeInTheDocument();
+  expect(label).toHaveValue('Total');
+  expect(patches).toEqual([]);
+
+  fireEvent.keyDown(label, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '表格汇总行设置' })).toBeNull();
+  expect(trigger).toHaveFocus();
+  expect(patches).toEqual([]);
+});
+
 function spreadsheetCan(): SpreadsheetEditorCanCommands {
   return {
     activateSheet: () => true,

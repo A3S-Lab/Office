@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.224.0 - 2026-09-15
+
+### Spreadsheet
+
+- Escape on dirty Table Design **汇总行** label and custom-formula drafts
+  restores the committed value before closing the popover. First Escape
+  cancels the draft; a second Escape dismisses the surface.
+
 ## 0.223.0 - 2026-09-15
 
 ### Shared / Document

@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.223.0` restores Escape draft cancel on nested toolbar surfaces:
+Version `0.224.0` restores Escape draft cancel on Spreadsheet table totals:
 
-- **Table cell margins** — Dirty 单元格边距 fields restore before the popover closes.
-- **Numbering start** — Dirty 起始编号 restores before the library closes.
-- **Color picker hex** — Dirty custom color restores before the palette closes.
+- **Totals label** — Dirty 汇总标签 restores before the popover closes.
+- **Custom formula** — Dirty 汇总公式 restores before the popover closes.
+- Uses shared `CommittedOfficeTextField` Escape consumers (same contract as Document L2 drafts).
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

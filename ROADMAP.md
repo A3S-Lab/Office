@@ -99,6 +99,8 @@ These are already the default contract. Do not trade them away for breadth:
    Through `0.223.0`, Escape on dirty nested toolbar drafts (单元格边距,
    起始编号, shared color hex) restores the committed value before closing the
    L2 surface.
+   Through `0.224.0`, Spreadsheet Table Design **汇总行** dirty label and
+   custom-formula drafts restore on Escape before the popover closes.
    Through `0.216.0`, curated
    What's new notes use the `writer` surface for Document work and reject unknown
    changelog surface keys so docs SSG cannot crash on a typo. Through `0.210.0`, Document table layout/border-target, Presentation
