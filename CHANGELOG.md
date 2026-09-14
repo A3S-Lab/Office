@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.220.0 - 2026-09-14
+
+### Document
+
+- Keep the **段落样式库** on one compact ribbon row when heading levels 4–6 are
+  present: horizontal scroll instead of a second grid row, so desktop gallery
+  height stays within the visual contract while closed labels remain honest.
+
 ## 0.219.0 - 2026-09-14
 
 ### Document

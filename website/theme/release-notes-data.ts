@@ -37,6 +37,68 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.220.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Paragraph style gallery stays compact with heading 4–6',
+      zh: '段落样式库在标题 4–6 下仍保持紧凑',
+    },
+    summary: {
+      en: 'Document: 段落样式库 scrolls horizontally on one ribbon row after heading levels 4–6 were added, so desktop gallery height stays within the visual contract while closed labels remain honest.',
+      zh: '文档：在覆盖标题 4–6 后，「段落样式库」在一行内横向滚动，桌面高度仍符合视觉契约，关闭标签继续如实表示状态。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One ribbon row',
+          zh: '单行功能区',
+        },
+        detail: {
+          en: 'Gallery chips use horizontal scroll instead of wrapping into a second grid row.',
+          zh: '样式芯片横向滚动，而不再折成第二行网格。',
+        },
+      },
+      {
+        title: {
+          en: 'Honesty preserved',
+          zh: '诚实性保留',
+        },
+        detail: {
+          en: 'Heading levels 4–6 remain available in the gallery and compact 段落样式 combobox.',
+          zh: '标题 4–6 仍可在样式库与紧凑「段落样式」组合框中选择。',
+        },
+      },
+      {
+        title: {
+          en: 'Contracts',
+          zh: '契约',
+        },
+        detail: {
+          en: 'Desktop visual coverage keeps gallery height ≤ 50px and width in the 250–270px band.',
+          zh: '桌面视觉覆盖将样式库高度保持在 ≤ 50px，宽度仍在 250–270px 区间。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.220.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.220.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.219.0',
     date: '2026-09-14',
     kind: 'fixed',

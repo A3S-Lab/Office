@@ -371,13 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.219.0` keeps Document and Markdown **段落样式** closed labels honest
-for heading levels 4–6:
+Version `0.220.0` keeps Document **段落样式库** compact after heading 4–6 honesty:
 
-- **Closed label is state** — An active `h4` / `h5` / `h6` shows `标题 4` /
-  `标题 5` / `标题 6`, not `正文`.
-- **Apply covers 1–6** — Gallery and combobox options match the TipTap heading
-  schema used for DOCX / Markdown import.
+- **One ribbon row** — Gallery chips scroll horizontally instead of wrapping to a
+  second row that broke the desktop height contract.
+- **Closed labels stay honest** — Levels 4–6 remain selectable in the gallery and
+  the compact **段落样式** combobox.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
