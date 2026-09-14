@@ -1,0 +1,64 @@
+---
+title: Extension model
+description: Extend document and Markdown editing while keeping host integrations typed.
+---
+
+# Extension model
+
+A3S Office is modular without pretending that every editor has the same
+interaction model. Document and Markdown surfaces accept TipTap extensions;
+spreadsheet, presentation, and PDF currently expose typed host ports while
+their internal command contexts remain private.
+
+## TipTap extensions
+
+```tsx
+import { Extension } from '@tiptap/core';
+import { useMemo } from 'react';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const ReviewShortcut = Extension.create({
+  name: 'hostReviewShortcut',
+  addKeyboardShortcuts() {
+    return {
+      'Mod-Shift-r': () => {
+        this.editor.commands.focus();
+        return true;
+      },
+    };
+  },
+});
+
+export function Editor(props) {
+  const extensions = useMemo(() => [ReviewShortcut], []);
+  return <DocumentEditor {...props} extensions={extensions} />;
+}
+```
+
+Rules:
+
+1. Every extension needs a unique `name`; collisions with built-in extensions
+   fail explicitly.
+2. Keep the extension array reference stable.
+3. Custom Nodes and Marks need matching DOCX or Markdown round-trip semantics.
+4. Do not import implementation modules from `@a3s-lab/office/internal` paths.
+
+In a collaborative Document, `extensions` currently accepts behavior-only
+TipTap `Extension` values such as shortcuts and plugins. Custom Nodes, Marks,
+global attributes, extension kits, and other schema mutations are rejected
+because every participant must use the same versioned shared schema; add them
+through an A3S Office schema migration before storing them in shared content.
+
+## Host extension ports
+
+| Port | Use |
+| --- | --- |
+| `fileActions` | Save, export, history, approval, or domain-specific file commands. |
+| `onAgentRequest` | Send structured editor context to the host AI workflow. |
+| `getSelectionMenuItems` | Completely define selected-text actions and their asynchronous logic. |
+| `loadSource` / `onSave` | Own the PDF source and persistence lifecycle. |
+| `onStartSlideshow` | Synchronize presentation playback with host routing or devices. |
+
+The library never infers host behavior from localized labels or keyword
+matching. Selection-menu callbacks receive typed context and safe commands;
+the host owns prompts, model calls, authorization, and persistence.
