@@ -419,9 +419,7 @@ test('routes the concise README and documentation homes to the current release s
     'Escape restores dirty nested toolbar drafts before closing L2 surfaces',
   );
   expect(chineseHome).toContain('## `main` 更新内容（0.223.0）');
-  expect(chineseHome).toContain(
-    'Escape 在关闭二级表面前先还原脏草稿',
-  );
+  expect(chineseHome).toContain('Escape 在关闭二级表面前先还原脏草稿');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
   expect(readme).toContain(
