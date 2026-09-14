@@ -294,11 +294,11 @@ describe('spreadsheet command controller', () => {
         },
         {
           name: 'setCellFormatByRange',
-          args: ['fs', 11, { row: [0, 0], column: [1, 2] }, { id: 'sheet-1' }],
+          args: ['fs', 11, { row: [0, 1], column: [1, 1] }, { id: 'sheet-1' }],
         },
         {
           name: 'setCellFormatByRange',
-          args: ['fs', 11, { row: [1, 1], column: [1, 1] }, { id: 'sheet-1' }],
+          args: ['fs', 12, { row: [0, 0], column: [2, 2] }, { id: 'sheet-1' }],
         },
       ],
     ]);
