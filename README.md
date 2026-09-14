@@ -371,14 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.216.0` keeps What's new SSG from crashing on unknown changelog
-surfaces:
+Version `0.217.0` keeps Document page-layout **分栏** closed labels honest:
 
-- **Writer surface, not `document`** — Document field-insert notes use the
-  `writer` key `ReleaseCard` can label, so SSG no longer reads `.en` of an
-  undefined surface.
-- **Contract** — `OfficeReleaseSurface` is an explicit union, and unit coverage
-  rejects unknown surface keys before the docs site builds.
+- **Closed label is state** — When the document uses four or more columns, the
+  combobox shows `四栏` / `五栏` / `六栏`, not the command name `更多分栏`.
+- **更多分栏 stays a command** — Options cover counts 1–6; **更多分栏** only
+  opens the advanced columns panel and never becomes the closed value.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

@@ -98,3 +98,38 @@ test('executes WPS page-setup presets and routes advanced settings', async () =>
   expect(layoutToggles).toBe(1);
   expect(sections).toBe(1);
 });
+
+test('column select closed label is the current count, not the more-columns command', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Layout target</p>',
+  });
+  const advancedTargets: DocumentLayoutPanelTab[] = [];
+  render(
+    <DocumentPageLayoutRibbon
+      editor={editor}
+      layout={{
+        ...layout,
+        columns: { count: 4, spacing: 12, separator: false },
+      }}
+      layoutOpen={false}
+      pageColor="#ffffff"
+      onLayoutChange={() => undefined}
+      onOpenLayout={(target) => advancedTargets.push(target)}
+      onToggleLayout={() => undefined}
+      onPageColorChange={() => undefined}
+      onInsertSection={() => undefined}
+    />,
+  );
+
+  const columns = screen.getByRole('combobox', { name: '分栏' });
+  expect(columns).toHaveAttribute('data-selected-value', '4');
+  expect(columns).toHaveTextContent('四栏');
+  expect(columns).not.toHaveTextContent('更多分栏');
+
+  fireEvent.click(columns);
+  fireEvent.click(await screen.findByRole('option', { name: '更多分栏' }));
+  expect(advancedTargets).toEqual(['columns']);
+  expect(columns).toHaveAttribute('data-selected-value', '4');
+  expect(columns).toHaveTextContent('四栏');
+});

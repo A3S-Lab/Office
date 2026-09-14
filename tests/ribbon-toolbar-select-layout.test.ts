@@ -39,6 +39,22 @@ test('Presentation align-to-slide stays executable for a single selection unit',
   expect(source).not.toContain('canAlignElement: selectionUnits.length >= 2');
 });
 
+test('Document column select closed value is the current count, not 更多分栏', () => {
+  const source = readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      '../src/internal/features/work/editors/document-page-layout-ribbon.tsx',
+    ),
+    'utf8',
+  );
+  expect(source).toContain('function documentColumnClosedValue');
+  expect(source).toContain("{ value: '4', label: '四栏' }");
+  expect(source).toContain(
+    'const columnPreset = documentColumnClosedValue(layout.columns.count)',
+  );
+  expect(source).toContain("{ value: 'more', label: '更多分栏' }");
+});
+
 test('Document field insert is a command menu instead of a fake OfficeSelect', () => {
   const source = readFileSync(
     join(

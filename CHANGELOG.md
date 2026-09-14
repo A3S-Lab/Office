@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.217.0 - 2026-09-14
+
+### Document
+
+- Keep the page-layout **分栏** closed label as the current column count
+  (`四栏` / `五栏` / `六栏`) instead of the command name `更多分栏` when
+  `layout.columns.count > 3`. Count options cover 1–6; **更多分栏** stays a
+  command that opens the advanced columns panel and never becomes the closed
+  value. Unit, source-layout, and `word-insert-page-layout` a3s-test contracts
+  cover the closed value while the panel is open.
+
 ## 0.216.0 - 2026-09-14
 
 ### Documentation

@@ -72,6 +72,10 @@ suite "office-word-insert-page-layout" {
             visible = css(".work-document-section[data-section-column-count='2']")
         }
 
+        expect "column-select-keeps-count-label" {
+            visible = css("[role='combobox'][aria-label='分栏'][data-selected-value='2']")
+        }
+
         click "reopen-columns" {
             target = role("combobox", "分栏")
         }
@@ -86,6 +90,10 @@ suite "office-word-insert-page-layout" {
 
         expect "advanced-columns-keep-preset" {
             visible = css("input[aria-label='分栏数量'][value='2']")
+        }
+
+        expect "advanced-columns-do-not-steal-closed-label" {
+            visible = css("[role='combobox'][aria-label='分栏'][data-selected-value='2']")
         }
 
         press "close-advanced-columns" {

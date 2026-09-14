@@ -25,7 +25,20 @@ type DocumentMarginPreset =
   | 'narrow'
   | 'normal'
   | 'wide';
-type DocumentColumnPreset = '1' | '2' | '3' | 'more';
+type DocumentColumnCount = '1' | '2' | '3' | '4' | '5' | '6';
+type DocumentColumnPreset = DocumentColumnCount | 'more';
+
+const documentColumnCountOptions = [
+  { value: '1', label: '一栏' },
+  { value: '2', label: '两栏' },
+  { value: '3', label: '三栏' },
+  { value: '4', label: '四栏' },
+  { value: '5', label: '五栏' },
+  { value: '6', label: '六栏' },
+] as const satisfies readonly {
+  value: DocumentColumnCount;
+  label: string;
+}[];
 
 const documentMarginPresets = {
   normal: { top: 25.4, right: 25.4, bottom: 25.4, left: 25.4 },
@@ -60,10 +73,7 @@ export function DocumentPageLayoutRibbon({
 }) {
   const pageBreakCommand = getDocumentCommandDefinition('insertPageBreak');
   const marginPreset = documentMarginPreset(layout.margins);
-  const columnPreset: DocumentColumnPreset =
-    layout.columns.count >= 1 && layout.columns.count <= 3
-      ? (String(layout.columns.count) as DocumentColumnPreset)
-      : 'more';
+  const columnPreset = documentColumnClosedValue(layout.columns.count);
   const update = (patch: Partial<WorkDocumentSectionLayout>) =>
     onLayoutChange({ ...layout, ...patch });
 
@@ -138,13 +148,11 @@ export function DocumentPageLayoutRibbon({
         </div>
         <div className="work-office-field work-document-page-setup-choice">
           <span>分栏</span>
-          <OfficeSelect
+          <OfficeSelect<DocumentColumnPreset>
             ariaLabel="分栏"
             value={columnPreset}
             options={[
-              { value: '1', label: '一栏' },
-              { value: '2', label: '两栏' },
-              { value: '3', label: '三栏' },
+              ...documentColumnCountOptions,
               { value: 'more', label: '更多分栏' },
             ]}
             onValueChange={(preset) => {
@@ -199,6 +207,14 @@ export function DocumentPageLayoutRibbon({
       </WorkOfficeRibbonGroup>
     </>
   );
+}
+
+function documentColumnClosedValue(count: number): DocumentColumnCount {
+  const clamped = Math.min(
+    Number(documentColumnCountOptions.at(-1)?.value ?? 6),
+    Math.max(1, Math.round(count) || 1),
+  );
+  return String(clamped) as DocumentColumnCount;
 }
 
 function documentMarginPreset(

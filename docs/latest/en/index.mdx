@@ -44,13 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.216.0)
+## What's new on `main` (0.217.0)
 
-What's new SSG stays up when Document notes use the Writer surface:
+Document page-layout **分栏** closed labels stay honest:
 
-- Curated changelog cards only label known surfaces (`writer`, not
-  `document`).
-- `OfficeReleaseSurface` is typed, and unit coverage rejects unknown keys.
+- Closed label is the current column count (`四栏` / `五栏` / `六栏`), never
+  the command name `更多分栏`.
+- Count options cover 1–6; **更多分栏** only opens the advanced columns panel.
 
 ## Explore by surface
 

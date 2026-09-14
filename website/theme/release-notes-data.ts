@@ -37,6 +37,68 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.217.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Document page-layout columns closed label stays honest',
+      zh: '文档页面布局分栏关闭标签如实表示状态',
+    },
+    summary: {
+      en: 'Document: page-layout 分栏 shows the current column count (四栏 / 五栏 / 六栏) as the closed label instead of the command name 更多分栏 when count > 3. Options cover 1–6; 更多分栏 only opens the columns panel.',
+      zh: '文档：页面布局「分栏」在栏数大于 3 时以当前栏数（四栏 / 五栏 / 六栏）作为关闭标签，而不再显示命令名「更多分栏」。选项覆盖 1–6；「更多分栏」只打开分栏面板。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Closed label is state',
+          zh: '关闭标签即状态',
+        },
+        detail: {
+          en: 'Four or more columns keep 四栏 / 五栏 / 六栏 on the closed combobox, never 更多分栏.',
+          zh: '四栏及以上时关闭组合框显示「四栏」/「五栏」/「六栏」，不再是「更多分栏」。',
+        },
+      },
+      {
+        title: {
+          en: '更多分栏 stays a command',
+          zh: '「更多分栏」仍为命令',
+        },
+        detail: {
+          en: 'Count options cover 1–6; 更多分栏 opens the advanced columns panel and never becomes the closed value.',
+          zh: '栏数选项覆盖 1–6；「更多分栏」打开高级分栏面板，不会成为关闭值。',
+        },
+      },
+      {
+        title: {
+          en: 'Contracts',
+          zh: '契约',
+        },
+        detail: {
+          en: 'Unit, source-layout, and word-insert-page-layout a3s-test contracts cover the closed value while the panel is open.',
+          zh: '单元、源布局与 word-insert-page-layout a3s-test 契约覆盖面板打开时的关闭值。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.217.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.217.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.216.0',
     date: '2026-09-14',
     kind: 'fixed',
