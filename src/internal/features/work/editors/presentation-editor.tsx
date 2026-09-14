@@ -81,8 +81,8 @@ import {
   stepOfficeZoom,
   useOfficeEditorWheelZoom,
 } from './use-office-editor-wheel-zoom';
-import { usePresentationClipboard } from './use-presentation-clipboard';
 import { usePresentationAnimationCommands } from './use-presentation-animation-commands';
+import { usePresentationClipboard } from './use-presentation-clipboard';
 import { usePresentationDesignCommands } from './use-presentation-design-commands';
 import { usePresentationElementCommands } from './use-presentation-element-commands';
 import { usePresentationGeometry } from './use-presentation-geometry';
@@ -809,7 +809,7 @@ function PresentationEditingSurface({
         },
       },
       elements: {
-        canAlignElement: selectionUnits.length >= 2,
+        canAlignElement: selectionUnits.length >= 1,
         canDistributeElements: selectionUnits.length >= 3,
         canGroupElements: canGroupSelection,
         canReorderElement: selectedElements.length > 0,

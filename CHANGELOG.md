@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.214.0 - 2026-09-14
+
+### Presentation
+
+- Object alignment stays enabled for a single selected unit so align-to-slide
+  matches the ribbon label and ArrangementController path; relative multi-object
+  align still requires two or more units.
+- Source and Playwright contracts assert `canAlignElement` uses
+  `selectionUnits.length >= 1` and the align menu opens after selecting one title.
+
 ## 0.213.0 - 2026-09-14
 
 ### Presentation

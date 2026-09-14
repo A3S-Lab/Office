@@ -27,6 +27,18 @@ test('Presentation ribbon does not crush the shared 74px toolbar height', () => 
   expect(css).not.toMatch(/\.work-presentation-chart-panel\s+select\b/);
 });
 
+test('Presentation align-to-slide stays executable for a single selection unit', () => {
+  const source = readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      '../src/internal/features/work/editors/presentation-editor.tsx',
+    ),
+    'utf8',
+  );
+  expect(source).toContain('canAlignElement: selectionUnits.length >= 1');
+  expect(source).not.toContain('canAlignElement: selectionUnits.length >= 2');
+});
+
 test('shared ribbon chrome sizes OfficeSelect triggers without native select leftovers', () => {
   const css = readFileSync(join(stylesRoot, 'work-office-chrome.css'), 'utf8');
   expect(css).toContain(

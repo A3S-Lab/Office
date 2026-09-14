@@ -371,14 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.213.0` turns Presentation object alignment into a command menu:
+Version `0.214.0` keeps Presentation align-to-slide executable for one object:
 
-- **Align launcher** — Object alignment uses a `Popover` menu with `menuitem`
-  actions instead of an `OfficeSelect` stuck on a disabled `none` closed value,
-  so the closed label stays `对象对齐` without fake select state.
-- **Coverage** — Unit and Playwright checks cover menu actions, Escape
-  dismissal, and Chinese closed-label fit on font/align triggers. Dialog Escape
-  ownership (`0.211.0`) and unclipped dialog menus (`0.212.0`) remain in force.
+- **Single-unit align** — `canAlignElement` allows one selection unit so
+  align-to-slide matches the ribbon label and ArrangementController path.
+- **Coverage** — Source and Playwright contracts assert the align menu opens
+  after selecting one title. The command-menu closed label `对象对齐` from
+  `0.213.0` remains.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

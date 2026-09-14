@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.214.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['presentation', 'documentation'],
+    title: {
+      en: 'Single-object align-to-slide stays enabled',
+      zh: '单对象对齐到幻灯片保持可执行',
+    },
+    summary: {
+      en: 'Presentation: canAlignElement allows one selection unit so the align command menu opens for align-to-slide, matching the ArrangementController single-element path and ribbon label.',
+      zh: '演示：canAlignElement 允许单个选中单元，对齐命令菜单可打开并对齐到幻灯片，与 ArrangementController 单元素路径及工具条文案一致。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One unit enables align-to-slide',
+          zh: '单单元即可对齐到幻灯片',
+        },
+        detail: {
+          en: 'canAlignElement uses selectionUnits.length >= 1 instead of requiring two units.',
+          zh: 'canAlignElement 使用 selectionUnits.length >= 1，不再要求两个单元。',
+        },
+      },
+      {
+        title: {
+          en: 'Playwright opens align on title click',
+          zh: 'Playwright 单击标题即可打开对齐',
+        },
+        detail: {
+          en: 'Ribbon visual contract asserts the align trigger is enabled after selecting one title.',
+          zh: '功能条视觉契约在选中一个标题后断言对齐触发器可用。',
+        },
+      },
+      {
+        title: {
+          en: 'Source contract for canExecute',
+          zh: 'canExecute 源码契约',
+        },
+        detail: {
+          en: 'Layout tests lock presentation-editor canAlignElement to >= 1.',
+          zh: '布局测试锁定 presentation-editor 的 canAlignElement 为 >= 1。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/presentation.html',
+          zh: './components/presentation.html',
+        },
+        label: { en: 'Presentation editor', zh: '演示编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.214.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.214.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.213.0',
     date: '2026-09-14',
     kind: 'fixed',

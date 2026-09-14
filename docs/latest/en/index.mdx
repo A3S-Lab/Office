@@ -44,15 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.213.0)
+## What's new on `main` (0.214.0)
 
-Presentation object alignment is a command menu:
+Presentation single-object align-to-slide stays enabled:
 
-- Align actions use a `Popover` with `menuitem` entries instead of an
-  `OfficeSelect` stuck on a disabled `none` closed value.
-- The closed label stays `对象对齐`; unit and Playwright checks cover actions,
-  Escape dismissal, and Chinese closed-label fit. Dialog Escape ownership
-  (`0.211.0`) and unclipped dialog menus (`0.212.0`) remain.
+- `canAlignElement` allows one selection unit so the align command menu opens
+  for align-to-slide.
+- Source and Playwright contracts cover the enabled trigger after selecting one
+  title. The `0.213.0` command-menu closed label `对象对齐` remains.
 
 ## Explore by surface
 
