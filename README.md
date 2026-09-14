@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.222.0` keeps Document heading **字号** and **行距** honest:
+Version `0.223.0` restores Escape draft cancel on nested toolbar surfaces:
 
-- **Closed label matches paint** — Unmarked h1–h3 show effective CSS sizes
-  (18 / 15 / 12.75 pt) instead of body `10.5`.
-- **Line spacing** — Unmarked h1–h2 show `1.32` / `1.4` instead of **默认行距**.
+- **Table cell margins** — Dirty 单元格边距 fields restore before the popover closes.
+- **Numbering start** — Dirty 起始编号 restores before the library closes.
+- **Color picker hex** — Dirty custom color restores before the palette closes.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

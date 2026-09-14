@@ -432,6 +432,41 @@ test('applies one table style per radio-gallery keyboard move', () => {
   expect(updateCount).toBe(3);
 });
 
+test('cancels a dirty cell-margin draft before Escape closes the popover', async () => {
+  editor = createTableEditor();
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  const trigger = screen.getByRole('button', { name: '单元格边距' });
+  fireEvent.click(trigger);
+  const topMargin = screen.getByRole('textbox', {
+    name: '单元格上边距（厘米）',
+  });
+  await waitFor(() => expect(topMargin).toHaveFocus());
+  const original = (topMargin as HTMLInputElement).value;
+
+  fireEvent.change(topMargin, { target: { value: '0.5' } });
+  fireEvent.keyDown(topMargin, { key: 'Escape' });
+
+  expect(
+    screen.getByRole('dialog', { name: '单元格边距设置' }),
+  ).toBeInTheDocument();
+  expect(topMargin).toHaveValue(original);
+  expect(
+    Number(
+      (
+        firstTableAttributes(editor).geometry as {
+          cellMargins?: { top?: number };
+        }
+      ).cellMargins?.top ?? 0,
+    ),
+  ).toBeCloseTo(0, 1);
+
+  fireEvent.keyDown(topMargin, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '单元格边距设置' })).toBeNull();
+  expect(trigger).toHaveFocus();
+});
+
 test('aligns table cells and applies Word-style sizing from Layout', () => {
   editor = createTableEditor();
   editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);

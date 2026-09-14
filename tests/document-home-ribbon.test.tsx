@@ -884,6 +884,38 @@ test('edits numbering style, start value, and continuation from the ribbon', () 
   expect(editor.getHTML()).toContain('<ol start="5" type="A">');
 });
 
+test('cancels a dirty numbering-start draft before Escape closes the library', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<ol start="7" type="I"><li><p>Item</p></li></ol>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Item'));
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '编号库' });
+  fireEvent.click(trigger);
+  const library = screen.getByRole('dialog', { name: '编号库' });
+  const start = within(library).getByRole('textbox', { name: '起始编号' });
+  expect(start).toHaveValue('7');
+
+  fireEvent.change(start, { target: { value: '12' } });
+  fireEvent.keyDown(start, { key: 'Escape' });
+
+  expect(screen.getByRole('dialog', { name: '编号库' })).toBeInTheDocument();
+  expect(start).toHaveValue('7');
+  expect(editor.getHTML()).toContain('<ol start="7" type="I">');
+
+  fireEvent.keyDown(start, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '编号库' })).toBeNull();
+  expect(trigger).toHaveFocus();
+});
+
 function textRange(editor: Editor, text: string): { from: number; to: number } {
   let range: { from: number; to: number } | null = null;
   editor.state.doc.descendants((node, position) => {

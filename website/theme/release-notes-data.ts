@@ -37,6 +37,68 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.223.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['shared', 'writer'],
+    title: {
+      en: 'Escape restores dirty nested toolbar drafts before closing L2',
+      zh: 'Escape 在关闭二级表面前还原脏草稿',
+    },
+    summary: {
+      en: 'Shared/Document: Escape on dirty table cell-margin, numbering-start, and color-picker hex drafts restores the committed value before dismissing the nested surface.',
+      zh: '共享/文档：在脏的单元格边距、起始编号与颜色选择器自定义色值上按 Escape 时，先还原已提交值，再关闭二级表面。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Table cell margins',
+          zh: '单元格边距',
+        },
+        detail: {
+          en: 'Dirty centimeter drafts restore instead of blur-committing on Escape.',
+          zh: '脏的厘米草稿在 Escape 时还原，而不再因失焦提交。',
+        },
+      },
+      {
+        title: {
+          en: 'Numbering start',
+          zh: '起始编号',
+        },
+        detail: {
+          en: 'Dirty start values restore before the numbering library closes.',
+          zh: '脏的起始编号在编号库关闭前还原。',
+        },
+      },
+      {
+        title: {
+          en: 'Custom color hex',
+          zh: '自定义色值',
+        },
+        detail: {
+          en: 'Dirty hex drafts restore before the shared color palette closes.',
+          zh: '脏的自定义色值在共享调色板关闭前还原。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.223.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.223.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.222.0',
     date: '2026-09-14',
     kind: 'fixed',

@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.223.0 - 2026-09-15
+
+### Shared / Document
+
+- Escape on dirty L2 drafts restores the committed value before closing
+  nested popovers: table **单元格边距**, numbering library **起始编号**, and
+  shared color-picker custom hex. First Escape cancels the draft; a second
+  Escape dismisses the surface.
+
 ## 0.222.0 - 2026-09-14
 
 ### Document

@@ -92,7 +92,7 @@ test('shows a readable custom-color preview before applying a valid value', () =
   expect(selected).toEqual(['#fff2cc']);
 });
 
-test('discards an unapplied custom color when the palette is reopened', async () => {
+test('cancels a dirty custom-color draft before Escape closes the palette', async () => {
   render(
     <OfficeColorPicker
       ariaLabel="文字颜色"
@@ -108,6 +108,11 @@ test('discards an unapplied custom color when the palette is reopened', async ()
   expect(input).toHaveAttribute('aria-invalid', 'true');
 
   fireEvent.keyDown(input, { key: 'Escape' });
+  expect(screen.getByRole('dialog', { name: '文字颜色' })).toBeInTheDocument();
+  expect(input).toHaveValue('#111827');
+  expect(input).not.toHaveAttribute('aria-invalid');
+
+  fireEvent.keyDown(input, { key: 'Escape' });
   expect(screen.queryByRole('dialog', { name: '文字颜色' })).toBeNull();
   expect(trigger).toHaveFocus();
 
@@ -117,9 +122,6 @@ test('discards an unapplied custom color when the palette is reopened', async ()
       '#111827',
     ),
   );
-  expect(
-    screen.getByRole('textbox', { name: '自定义颜色值' }),
-  ).not.toHaveAttribute('aria-invalid');
 });
 
 test('runs an optional reset action and restores focus to the trigger', () => {

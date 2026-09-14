@@ -27,6 +27,7 @@ export function DocumentTableMarginsPopover({ editor }: { editor: Editor }) {
   const [open, setOpen] = useState(false);
   const [drafts, setDrafts] = useState(() => marginDrafts(margins));
   const customized = !sameMargins(margins, DEFAULT_DOCUMENT_TABLE_CELL_MARGINS);
+  const committedDrafts = marginDrafts(margins);
 
   const commit = (side: DocumentTableCellMarginSide, rawValue: string) => {
     const centimeters = Number(rawValue);
@@ -79,25 +80,33 @@ export function DocumentTableMarginsPopover({ editor }: { editor: Editor }) {
         <legend>单元格边距</legend>
         <p>设置文字到单元格边框的距离。</p>
         <div className="work-document-table-margins-grid">
-          {marginFields.map(({ side, label, ariaLabel }) => (
-            <fieldset key={side} className="work-document-table-margin-field">
-              <legend className="sr-only">{label}边距</legend>
-              <span aria-hidden="true">{label}</span>
-              <OfficeNumberField
-                ariaLabel={ariaLabel}
-                value={drafts[side]}
-                min={0}
-                max={5}
-                step={0.05}
-                onValueChange={(value) =>
-                  setDrafts((current) => ({ ...current, [side]: value }))
-                }
-                onCommit={(value) => commit(side, value)}
-                onCancel={() => setDrafts(marginDrafts(currentMargins(editor)))}
-              />
-              <small>厘米</small>
-            </fieldset>
-          ))}
+          {marginFields.map(({ side, label, ariaLabel }) => {
+            const dirty = drafts[side] !== committedDrafts[side];
+            return (
+              <fieldset key={side} className="work-document-table-margin-field">
+                <legend className="sr-only">{label}边距</legend>
+                <span aria-hidden="true">{label}</span>
+                <OfficeNumberField
+                  ariaLabel={ariaLabel}
+                  value={drafts[side]}
+                  min={0}
+                  max={5}
+                  step={0.05}
+                  escapeConsumer={dirty}
+                  onValueChange={(value) =>
+                    setDrafts((current) => ({ ...current, [side]: value }))
+                  }
+                  onCommit={(value) => commit(side, value)}
+                  onCancel={
+                    dirty
+                      ? () => setDrafts(marginDrafts(currentMargins(editor)))
+                      : undefined
+                  }
+                />
+                <small>厘米</small>
+              </fieldset>
+            );
+          })}
         </div>
         <button
           type="button"

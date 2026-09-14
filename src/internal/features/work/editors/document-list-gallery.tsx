@@ -232,6 +232,8 @@ function OrderedListControl({
   );
   const [focusIndex, setFocusIndex] = useState(activeIndex);
   const validStart = validStartValue(startValue);
+  const committedStart = String(activeState?.start ?? 1);
+  const startDirty = startValue !== committedStart;
   const focusActiveOption = () => {
     setFocusIndex(activeIndex);
     requestAnimationFrame(() =>
@@ -386,7 +388,13 @@ function OrderedListControl({
                     min={1}
                     max={MAX_DOCUMENT_NUMBERING_START}
                     step={1}
+                    escapeConsumer={startDirty}
                     onValueChange={setStartValue}
+                    onCancel={
+                      startDirty
+                        ? () => setStartValue(committedStart)
+                        : undefined
+                    }
                   />
                   <button
                     type="submit"

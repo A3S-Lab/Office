@@ -110,6 +110,7 @@ export function OfficeColorPicker({
   );
   const colorRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const normalizedDraft = normalizeCssColor(draft);
+  const draftDirty = draft !== value;
 
   useEffect(() => setDraft(value), [value]);
   useEffect(() => {
@@ -274,6 +275,7 @@ export function OfficeColorPicker({
                 aria-invalid={
                   draft.trim() && !normalizedDraft ? true : undefined
                 }
+                data-office-escape-consumer={draftDirty || undefined}
                 value={draft}
                 spellCheck={false}
                 onChange={(event) => setDraft(event.target.value)}
@@ -281,6 +283,10 @@ export function OfficeColorPicker({
                   if (event.key === 'Enter') {
                     event.preventDefault();
                     applyDraft(close);
+                  } else if (event.key === 'Escape' && draftDirty) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setDraft(value);
                   }
                 }}
               />
