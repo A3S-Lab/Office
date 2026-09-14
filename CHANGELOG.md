@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.212.0 - 2026-09-14
+
+### Chrome
+
+- Dialog surfaces keep `overflow: visible` so portaled `OfficeSelect` /
+  `Popover` menus inside the modal focus scope are not clipped by the rounded
+  dialog box; scrolling stays on `.ds-dialog-body`.
+- Layout contract coverage locks the overflow split.
+
 ## 0.211.0 - 2026-09-14
 
 ### Chrome

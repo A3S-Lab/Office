@@ -42,12 +42,14 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.211.0）
+## `main` 更新内容（0.212.0）
 
-对话框 Escape 现在优先交给已打开的 `OfficeSelect` / `Popover`：
+对话框内的 `OfficeSelect` / `Popover` 菜单不再被裁切：
 
-- 在排序、自动筛选、超链接、数据验证等父对话框内，Escape 先关闭列表。
-- 第二次 Escape 再关闭对话框；单元测试锁定该顺序。
+- `.ds-dialog` 保持 `overflow: visible`，使模态焦点范围内的门户列表不被圆角
+  对话框裁切。
+- 滚动仍由 `.ds-dialog-body` 承担；布局契约锁定该分工。Escape 仍先关闭列表再
+  关闭父对话框（`0.211.0`）。
 
 
 ## 按表面探索

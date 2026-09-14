@@ -370,11 +370,13 @@ Codex 编辑器操作可在所有五个表面上键入和重现。
 
 ## 当前版本
 
-版本 `0.211.0` 修复对话框内下拉的嵌套 Escape 归属：
+版本 `0.212.0` 保证对话框内下拉菜单完整可见：
 
-- **对话框 Escape** — 已打开的 `OfficeSelect` / `Popover` 优先消费 Escape，
-  使排序、自动筛选、超链接、数据验证等父对话框在列表关闭前保持打开。
-- **覆盖** — 单元测试断言 Escape 先关闭下拉，第二次 Escape 再关闭对话框。
+- **对话框溢出** — `.ds-dialog` 保持 `overflow: visible`，使模态焦点范围内
+  门户化的 `OfficeSelect` / `Popover` 菜单不被圆角对话框裁切；滚动仍在
+  `.ds-dialog-body`。
+- **覆盖** — 布局契约锁定溢出分工；`0.211.0` 的 Escape 归属仍先关闭列表再
+  关闭父对话框。
 
 更早的版本请查看产品向
 [更新日志](https://a3s-lab.github.io/Office/docs/changelog.html) 时间线，以及完整工程

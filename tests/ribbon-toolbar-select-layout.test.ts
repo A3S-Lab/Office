@@ -1,7 +1,7 @@
-import { expect, test } from '@rstest/core';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { expect, test } from '@rstest/core';
 
 const stylesRoot = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -154,4 +154,12 @@ test('Spreadsheet sort levels no longer style orphaned native select', () => {
 test('shared editor toolbar no longer styles native select', () => {
   const css = readFileSync(join(stylesRoot, 'work-editor.css'), 'utf8');
   expect(css).not.toMatch(/\.work-office-toolbar\s+select\s*\{/);
+});
+
+test('Dialog surface keeps overflow visible so portaled OfficeSelect menus are not clipped', () => {
+  const css = readFileSync(join(stylesRoot, 'design-system-forms.css'), 'utf8');
+  expect(css).toMatch(/\.ds-dialog\s*\{[^}]*overflow:\s*visible/s);
+  expect(css).not.toMatch(/\.ds-dialog\s*\{[^}]*overflow:\s*hidden/s);
+  expect(css).toMatch(/\.ds-dialog-body\s*\{[^}]*overflow:\s*auto/s);
+  expect(css).toMatch(/\.ds-dialog-body\s*\{[^}]*flex:\s*1\s+1\s+auto/s);
 });

@@ -23,7 +23,10 @@
   width: min(440px, 100%);
   max-height: calc(100dvh - 32px);
   flex-direction: column;
-  overflow: hidden;
+  /* Keep overflow visible so portaled OfficeSelect / Popover menus inside the
+     dialog focus scope are not clipped by the rounded surface. Scroll stays on
+     .ds-dialog-body. */
+  overflow: visible;
   border: 1px solid var(--a3s-overlay-border);
   border-radius: var(--a3s-overlay-radius);
   background: var(--a3s-overlay-surface);
@@ -51,6 +54,7 @@
 }
 
 .ds-dialog-body {
+  flex: 1 1 auto;
   min-height: 0;
   padding: 4px 24px 20px;
   overflow: auto;

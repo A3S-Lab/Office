@@ -1,5 +1,73 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.212.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: [
+      'writer',
+      'spreadsheet',
+      'presentation',
+      'markdown',
+      'documentation',
+    ],
+    title: {
+      en: 'Dialog menus stay unclipped for OfficeSelect',
+      zh: '对话框内 OfficeSelect 菜单不再被裁切',
+    },
+    summary: {
+      en: 'Shared shell: dialog surfaces keep overflow visible so portaled OfficeSelect/Popover menus inside the modal focus scope are not clipped by the rounded dialog box; body scrolling is unchanged.',
+      zh: '共享壳层：对话框表面保持 overflow visible，使模态焦点范围内门户化的 OfficeSelect/Popover 菜单不被圆角对话框裁切；正文滚动行为不变。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Visible dialog overflow',
+          zh: '对话框可见溢出',
+        },
+        detail: {
+          en: '.ds-dialog uses overflow: visible; .ds-dialog-body keeps overflow: auto and flex growth for tall forms.',
+          zh: '.ds-dialog 使用 overflow: visible；.ds-dialog-body 保持 overflow: auto 与 flex 增长以容纳高表单。',
+        },
+      },
+      {
+        title: {
+          en: 'Focus-scoped portals preserved',
+          zh: '保留焦点范围内门户',
+        },
+        detail: {
+          en: 'Menus still portal into the dialog focus root so Tab trapping and inert isolation stay intact.',
+          zh: '菜单仍门户到对话框焦点根，Tab 陷阱与 inert 隔离保持不变。',
+        },
+      },
+      {
+        title: {
+          en: 'Layout contract coverage',
+          zh: '布局契约覆盖',
+        },
+        detail: {
+          en: 'CSS contract tests lock the overflow split so clipping regressions fail closed.',
+          zh: 'CSS 契约测试锁定溢出分工，裁切回归会 fail-closed。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/spreadsheet.html',
+          zh: './components/spreadsheet.html',
+        },
+        label: { en: 'Spreadsheet editor', zh: '表格编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.212.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.212.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.211.0',
     date: '2026-09-14',
     kind: 'fixed',

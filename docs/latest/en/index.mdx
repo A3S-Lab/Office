@@ -44,13 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.211.0)
+## What's new on `main` (0.212.0)
 
-Dialog Escape now defers to an open `OfficeSelect` / `Popover`:
+Dialog-hosted `OfficeSelect` / `Popover` menus stay unclipped:
 
-- Escape closes the listbox first inside Sort, AutoFilter, hyperlink, data
-  validation, and other parent dialogs.
-- A second Escape then dismisses the dialog; unit coverage locks the order.
+- `.ds-dialog` keeps `overflow: visible` so portaled listboxes inside the modal
+  focus scope are not cut by the rounded dialog surface.
+- `.ds-dialog-body` remains the scroll container; layout contracts lock the
+  split. Escape still closes the listbox before the parent dialog (`0.211.0`).
 
 
 ## Explore by surface

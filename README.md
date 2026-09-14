@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.211.0` fixes nested Escape ownership for dialog dropdowns:
+Version `0.212.0` keeps dialog-hosted dropdown menus fully visible:
 
-- **Dialog Escape** — An open `OfficeSelect` / `Popover` consumes Escape first
-  so Sort, AutoFilter, hyperlink, data validation, and other parent dialogs
-  stay open until the listbox closes.
-- **Coverage** — Unit tests assert Escape closes the select, then a second
-  Escape closes the dialog.
+- **Dialog overflow** — `.ds-dialog` stays `overflow: visible` so portaled
+  `OfficeSelect` / `Popover` menus inside the modal focus scope are not clipped
+  by the rounded dialog surface; scrolling stays on `.ds-dialog-body`.
+- **Coverage** — Layout contracts lock the overflow split; Escape ownership
+  from `0.211.0` still closes the listbox before the parent dialog.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
