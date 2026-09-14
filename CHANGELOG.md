@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.225.0 - 2026-09-15
+
+### Spreadsheet
+
+- Escape on a dirty Table Design **表格名称** draft restores the committed
+  name and marks the field as an Escape consumer so nested/task-pane surfaces
+  are not dismissed on the first Escape. Clean fields still let Escape bubble.
+
 ## 0.224.0 - 2026-09-15
 
 ### Spreadsheet

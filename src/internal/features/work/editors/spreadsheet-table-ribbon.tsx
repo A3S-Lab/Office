@@ -368,6 +368,8 @@ function SpreadsheetTableNameControl({
     }
   };
 
+  const dirty = name !== table.name;
+
   return (
     <label className="work-spreadsheet-table-name">
       <span>表格名称</span>
@@ -376,6 +378,7 @@ function SpreadsheetTableNameControl({
         aria-label="表格名称"
         autoCapitalize="none"
         spellCheck={false}
+        data-office-escape-consumer={dirty || undefined}
         value={name}
         onBlur={commit}
         onChange={(event) => setName(event.currentTarget.value)}
@@ -383,8 +386,9 @@ function SpreadsheetTableNameControl({
           if (event.key === 'Enter') {
             event.preventDefault();
             commit();
-          } else if (event.key === 'Escape') {
+          } else if (event.key === 'Escape' && dirty) {
             event.preventDefault();
+            event.stopPropagation();
             setName(table.name);
           }
         }}

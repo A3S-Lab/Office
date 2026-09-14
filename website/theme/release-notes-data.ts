@@ -37,6 +37,68 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.225.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Escape restores dirty Spreadsheet table-name drafts without leaking',
+      zh: 'Escape 还原脏的表格名称草稿且不泄漏关闭',
+    },
+    summary: {
+      en: 'Spreadsheet: Escape on a dirty Table Design 表格名称 draft restores the committed name and marks the field as an Escape consumer so nested/task-pane surfaces stay open.',
+      zh: '表格：在脏的「表格名称」上按 Escape 时，先还原已提交名称并标记 Escape 消费者，避免关闭嵌套/任务窗格表面。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Table name',
+          zh: '表格名称',
+        },
+        detail: {
+          en: 'Dirty name drafts restore and set data-office-escape-consumer.',
+          zh: '脏的名称草稿在 Escape 时还原，并设置 data-office-escape-consumer。',
+        },
+      },
+      {
+        title: {
+          en: 'No parent dismiss',
+          zh: '不关闭父表面',
+        },
+        detail: {
+          en: 'First Escape cancels the draft without dismissing parent/task-pane surfaces.',
+          zh: '第一次 Escape 取消草稿，不关闭父级/任务窗格表面。',
+        },
+      },
+      {
+        title: {
+          en: 'Clean field bubble',
+          zh: '干净字段冒泡',
+        },
+        detail: {
+          en: 'Clean table-name fields still let Escape bubble to close parent surfaces.',
+          zh: '干净的表格名称字段仍让 Escape 冒泡以关闭父表面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.225.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.225.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.224.0',
     date: '2026-09-15',
     kind: 'fixed',

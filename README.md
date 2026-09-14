@@ -371,11 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.224.0` restores Escape draft cancel on Spreadsheet table totals:
+Version `0.225.0` restores Escape draft cancel on Spreadsheet Table Design **表格名称**:
 
-- **Totals label** — Dirty 汇总标签 restores before the popover closes.
-- **Custom formula** — Dirty 汇总公式 restores before the popover closes.
-- Uses shared `CommittedOfficeTextField` Escape consumers (same contract as Document L2 drafts).
+- Dirty table-name drafts restore the committed name and set `data-office-escape-consumer`.
+- First Escape cancels the draft without leaking to parent/task-pane surfaces.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

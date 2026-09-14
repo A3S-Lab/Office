@@ -1452,6 +1452,72 @@ test('edits native totals-row functions, labels, and custom formulas', () => {
   });
 });
 
+test('cancels a dirty table-name draft without leaking Escape to parent surfaces', () => {
+  const patches: unknown[] = [];
+  const leaked: string[] = [];
+  const table = {
+    id: 'table-name-escape',
+    name: 'SalesTable',
+    range: {
+      row: [0, 3] as [number, number],
+      column: [0, 2] as [number, number],
+    },
+    columns: [{ name: 'Item' }, { name: 'Qty' }, { name: 'State' }],
+    filters: [],
+    headerRow: true,
+    totalsRow: false,
+    style: { family: 'medium' as const, number: 2 },
+    showFirstColumn: false,
+    showLastColumn: false,
+    showRowStripes: true,
+    showColumnStripes: false,
+  };
+  render(
+    <div
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') leaked.push('parent');
+      }}
+    >
+      <SpreadsheetEditorRibbon
+        activeTab="tableDesign"
+        activeTable={table}
+        activeTableSheetId="sheet-1"
+        can={spreadsheetCan()}
+        commands={spreadsheetCommands(
+          () => true,
+          () => true,
+          {
+            updateTable: (_sheetId, _tableId, patch) => {
+              patches.push(patch);
+              return true;
+            },
+          },
+        )}
+        content={{ type: 'spreadsheet', sheets: [] }}
+        findOpen={false}
+        gridLinesVisible
+        panel={null}
+        toolbarCell={null}
+        onTabChange={() => undefined}
+        onTogglePanel={() => undefined}
+      />
+    </div>,
+  );
+
+  const name = screen.getByRole('textbox', { name: '表格名称' });
+  fireEvent.change(name, { target: { value: 'Sales_Draft' } });
+  expect(name).toHaveAttribute('data-office-escape-consumer', 'true');
+
+  fireEvent.keyDown(name, { key: 'Escape' });
+  expect(name).toHaveValue('SalesTable');
+  expect(name).not.toHaveAttribute('data-office-escape-consumer');
+  expect(patches).toEqual([]);
+  expect(leaked).toEqual([]);
+
+  fireEvent.keyDown(name, { key: 'Escape' });
+  expect(leaked).toEqual(['parent']);
+});
+
 test('cancels a dirty totals-label draft before Escape closes the totals popover', () => {
   const patches: unknown[] = [];
   const table = {
