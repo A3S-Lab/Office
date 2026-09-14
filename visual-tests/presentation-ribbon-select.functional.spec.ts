@@ -22,16 +22,55 @@ test('Presentation ribbon keeps OfficeSelect controls on the 74px row', async ({
   await title.click();
 
   const fontSelect = ribbon.locator('.presentation-font-family-select');
-  const alignSelect = ribbon.locator('.presentation-align-select');
+  const alignMenu = ribbon.locator('.presentation-align-menu');
   await expect(fontSelect).toBeVisible();
-  await expect(alignSelect).toBeVisible();
+  await expect(alignMenu).toBeVisible();
 
   const fontBox = await fontSelect.boundingBox();
-  const alignBox = await alignSelect.boundingBox();
+  const alignBox = await alignMenu.boundingBox();
   expect(fontBox?.width ?? 0).toBeGreaterThanOrEqual(110);
   expect(alignBox?.width ?? 0).toBeGreaterThanOrEqual(100);
 
   const fontTrigger = fontSelect.getByRole('combobox', { name: '演示字体' });
+  const fontOverflow = await fontTrigger.evaluate((node) => {
+    const label = node.querySelector('span');
+    if (!(label instanceof HTMLElement)) return null;
+    return {
+      scrollWidth: label.scrollWidth,
+      clientWidth: label.clientWidth,
+    };
+  });
+  expect(fontOverflow).not.toBeNull();
+  expect(fontOverflow!.scrollWidth).toBeLessThanOrEqual(
+    fontOverflow!.clientWidth + 1,
+  );
+
+  const alignTrigger = alignMenu.getByRole('button', {
+    name: '元素对齐到幻灯片',
+  });
+  await expect(alignTrigger).toContainText('对象对齐');
+  const alignOverflow = await alignTrigger.evaluate((node) => {
+    const label = node.querySelector('span');
+    if (!(label instanceof HTMLElement)) return null;
+    return {
+      scrollWidth: label.scrollWidth,
+      clientWidth: label.clientWidth,
+    };
+  });
+  expect(alignOverflow).not.toBeNull();
+  expect(alignOverflow!.scrollWidth).toBeLessThanOrEqual(
+    alignOverflow!.clientWidth + 1,
+  );
+
+  await alignTrigger.click();
+  const alignPanel = page.getByRole('menu', { name: '元素对齐到幻灯片' });
+  await expect(alignPanel).toBeVisible();
+  await expect(
+    alignPanel.getByRole('menuitem', { name: '左对齐' }),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(alignPanel).toBeHidden();
+
   await fontTrigger.click();
   const fontMenu = page.getByRole('listbox', { name: '演示字体' });
   await expect(fontMenu).toBeVisible();

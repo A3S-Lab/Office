@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.213.0 - 2026-09-14
+
+### Presentation
+
+- Object alignment is a ribbon command menu (`Popover` + `menuitem`) instead of
+  an `OfficeSelect` stuck on a disabled `none` closed value, so the closed label
+  stays `对象对齐` while actions run without fake select state.
+- Presentation ribbon Playwright coverage asserts Chinese closed-label fit via
+  `scrollWidth` and Escape dismissal of the align menu.
+
 ## 0.212.0 - 2026-09-14
 
 ### Chrome

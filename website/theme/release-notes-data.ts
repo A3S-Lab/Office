@@ -1,5 +1,57 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.213.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['presentation', 'documentation'],
+    title: {
+      en: 'Presentation align control is a command menu',
+      zh: '演示对象对齐改为命令菜单',
+    },
+    summary: {
+      en: 'Presentation: object alignment uses a Popover command menu instead of an OfficeSelect with a disabled none closed value, so the closed label stays 对象对齐 while actions run without fake select state.',
+      zh: '演示：对象对齐改为 Popover 命令菜单，不再使用禁用 none 闭合值的 OfficeSelect；闭合标签保持「对象对齐」，动作不再依赖假选择状态。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Command launcher, not select',
+          zh: '命令启动器而非选择器',
+        },
+        detail: {
+          en: 'Align actions are menuitems; Escape closes the menu; no listbox value of none.',
+          zh: '对齐动作为 menuitem；Escape 关闭菜单；不再有 none 的 listbox 值。',
+        },
+      },
+      {
+        title: {
+          en: 'Closed-label fit checks',
+          zh: '闭合标签适配检查',
+        },
+        detail: {
+          en: 'Playwright asserts Chinese closed labels on font and align triggers do not overflow.',
+          zh: 'Playwright 断言字体与对齐触发器上的中文闭合标签不溢出。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/presentation.html',
+          zh: './components/presentation.html',
+        },
+        label: { en: 'Presentation editor', zh: '演示编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.213.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.213.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.212.0',
     date: '2026-09-14',
     kind: 'fixed',

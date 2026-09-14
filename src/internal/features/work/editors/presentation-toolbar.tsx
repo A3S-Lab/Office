@@ -3,11 +3,15 @@ import {
   AlignHorizontalSpaceBetween,
   AlignLeft,
   AlignRight,
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
+  AlignVerticalJustifyStart,
   AlignVerticalSpaceBetween,
   ArrowDownToLine,
   ArrowUpToLine,
   BarChart3,
   Bold,
+  ChevronDown,
   ClipboardPaste,
   Copy,
   Grid2X2,
@@ -33,6 +37,8 @@ import {
   Ungroup,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Popover } from '../../../design-system/primitives';
+import type { OfficeKernelPresentationAlignment } from '../../../kernel/office-kernel-protocol';
 import {
   DOCUMENT_LINK_VALIDATION_MESSAGE,
   normalizeDocumentHref,
@@ -54,6 +60,7 @@ import {
   officeFontFamilies,
   officeFontFamilyLabel,
 } from './office-font-families';
+import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import { OfficeTableInsertPopover } from './office-table-insert-popover';
 import type {
   PresentationEditorCanCommands,
@@ -89,15 +96,18 @@ const basePresentationFontFamilyOptions = officeFontFamilies.map(
   }),
 );
 
-const presentationAlignmentOptions = [
-  { value: 'none', label: '对象对齐', disabled: true },
-  { value: 'left', label: '左对齐' },
-  { value: 'center', label: '水平居中' },
-  { value: 'right', label: '右对齐' },
-  { value: 'top', label: '顶端对齐' },
-  { value: 'middle', label: '垂直居中' },
-  { value: 'bottom', label: '底端对齐' },
-] as const;
+const presentationAlignmentActions = [
+  { value: 'left', label: '左对齐', Icon: AlignLeft },
+  { value: 'center', label: '水平居中', Icon: AlignCenter },
+  { value: 'right', label: '右对齐', Icon: AlignRight },
+  { value: 'top', label: '顶端对齐', Icon: AlignVerticalJustifyStart },
+  { value: 'middle', label: '垂直居中', Icon: AlignVerticalJustifyCenter },
+  { value: 'bottom', label: '底端对齐', Icon: AlignVerticalJustifyEnd },
+] as const satisfies readonly {
+  value: OfficeKernelPresentationAlignment;
+  label: string;
+  Icon: typeof AlignLeft;
+}[];
 
 export function PresentationToolbar({
   selectedSlide,
@@ -372,20 +382,10 @@ export function PresentationToolbar({
                     </WorkOfficeRibbonGroup>
                   )}
                   <WorkOfficeRibbonGroup label="排列">
-                    <OfficeSelect
-                      ariaLabel={
-                        selectedUnitCount > 1
-                          ? '对齐所选对象'
-                          : '元素对齐到幻灯片'
-                      }
-                      className="presentation-align-select"
-                      value="none"
-                      options={presentationAlignmentOptions}
-                      disabled={!can.alignElement('left')}
-                      onValueChange={(alignment) => {
-                        if (alignment === 'none') return;
-                        commands.alignElement(alignment);
-                      }}
+                    <PresentationAlignMenu
+                      selectedUnitCount={selectedUnitCount}
+                      can={can}
+                      commands={commands}
                     />
                     {selectedUnitCount >= 3 && (
                       <>
@@ -681,6 +681,65 @@ export function PresentationToolbar({
       />
       {officeDialog.dialog}
     </>
+  );
+}
+
+function PresentationAlignMenu({
+  selectedUnitCount,
+  can,
+  commands,
+}: {
+  selectedUnitCount: number;
+  can: PresentationEditorCanCommands;
+  commands: PresentationEditorCommands;
+}) {
+  const label = selectedUnitCount > 1 ? '对齐所选对象' : '元素对齐到幻灯片';
+  const disabled = !can.alignElement('left');
+
+  return (
+    <Popover
+      label={label}
+      panelLabel={label}
+      panelRole="menu"
+      portal
+      className="presentation-align-menu"
+      panelClassName="work-office-context-menu presentation-align-menu-panel"
+      disabled={disabled}
+      focusFirstOnOpen
+      onPanelKeyDown={moveOfficeMenuFocus}
+      trigger={(triggerProps, { open }) => (
+        <button
+          {...triggerProps}
+          type="button"
+          className={`presentation-align-trigger${open ? ' open' : ''}`}
+          title={label}
+        >
+          <span>对象对齐</span>
+          <ChevronDown size={14} aria-hidden="true" />
+        </button>
+      )}
+    >
+      {(close) =>
+        presentationAlignmentActions.map(
+          ({ value, label: itemLabel, Icon }) => (
+            <button
+              key={value}
+              type="button"
+              role="menuitem"
+              tabIndex={-1}
+              disabled={!can.alignElement(value)}
+              onClick={() => {
+                close();
+                commands.alignElement(value);
+              }}
+            >
+              <Icon size={15} aria-hidden="true" />
+              <span>{itemLabel}</span>
+            </button>
+          ),
+        )
+      }
+    </Popover>
   );
 }
 

@@ -17,7 +17,9 @@ test('Presentation ribbon does not crush the shared 74px toolbar height', () => 
     /\.presentation-toolbar\s*\{[^}]*\bflex-basis:\s*44px\b/s,
   );
   expect(css).toContain('.presentation-font-family-select');
-  expect(css).toContain('.presentation-align-select');
+  expect(css).toContain('.presentation-align-menu');
+  expect(css).toContain('.presentation-align-trigger');
+  expect(css).not.toContain('.presentation-align-select');
   expect(css).toContain(
     '.work-presentation-design-controls .work-office-select',
   );

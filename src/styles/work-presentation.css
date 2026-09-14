@@ -99,14 +99,66 @@
   min-width: 0;
 }
 
-.presentation-align-select {
+.presentation-align-menu {
   width: 112px;
   flex: 0 0 112px;
 }
 
-.presentation-align-select > button[role="combobox"] {
+.presentation-align-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
   width: 112px;
   min-width: 0;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 6px;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.presentation-align-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-align-trigger:hover:not(:disabled),
+.presentation-align-trigger.open,
+.presentation-align-trigger[aria-expanded="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--a3s-accent, #2563eb) 45%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--a3s-accent, #2563eb) 6%,
+    var(--a3s-panel)
+  );
+}
+
+.presentation-align-trigger:focus-visible {
+  outline: 2px solid
+    color-mix(in srgb, var(--a3s-accent, #2563eb) 55%, transparent);
+  outline-offset: 1px;
+}
+
+.presentation-align-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.presentation-align-menu-panel {
+  min-width: 148px;
 }
 
 .presentation-toolbar .presentation-font-size-field {

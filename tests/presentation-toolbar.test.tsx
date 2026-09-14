@@ -575,9 +575,7 @@ test('keeps Presentation ribbon selects sized for the 74px ribbon row', () => {
       '.presentation-font-family-select.work-office-select',
     ),
   ).toBeTruthy();
-  expect(
-    container.querySelector('.presentation-align-select.work-office-select'),
-  ).toBeTruthy();
+  expect(container.querySelector('.presentation-align-menu')).toBeTruthy();
   expect(
     screen
       .getByRole('combobox', { name: '演示字体' })
@@ -585,9 +583,52 @@ test('keeps Presentation ribbon selects sized for the 74px ribbon row', () => {
   ).toBeTruthy();
   expect(
     screen
-      .getByRole('combobox', { name: '元素对齐到幻灯片' })
-      .closest('.presentation-align-select'),
+      .getByRole('button', { name: '元素对齐到幻灯片' })
+      .closest('.presentation-align-menu'),
   ).toBeTruthy();
+  expect(screen.getByText('对象对齐')).toBeTruthy();
+});
+
+test('Presentation align menu launches alignment commands without a fake select value', () => {
+  const calls: string[] = [];
+  const commands = new Proxy(
+    {},
+    {
+      get: (_target, property) => (value?: string) => {
+        calls.push(
+          value === undefined
+            ? String(property)
+            : `${String(property)}:${value}`,
+        );
+        return true;
+      },
+    },
+  ) as PresentationEditorCommands;
+  const can = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCanCommands;
+
+  render(
+    <PresentationToolbar
+      selectedSlide={slide}
+      selectedElement={textElement}
+      selectedUnitCount={1}
+      can={can}
+      textFormattingAvailable
+      commentsOpen={false}
+      commentCount={0}
+      designOpen={false}
+      editingDesign={false}
+      transition={slide.transition}
+      commands={commands}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '元素对齐到幻灯片' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: '水平居中' }));
+  expect(calls).toContain('alignElement:center');
+  expect(screen.queryByRole('listbox')).toBeNull();
 });
 
 const textElement: WorkSlideElement = {
